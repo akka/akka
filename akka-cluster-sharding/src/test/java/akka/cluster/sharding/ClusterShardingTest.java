@@ -204,7 +204,7 @@ public class ClusterShardingTest {
         }).
         match(String.class, s -> s.equals("member-removed"), s -> {
           // Let singletons hand over gracefully before stopping the system
-          context().system().scheduler().scheduleOnce(Duration.create(3, SECONDS),
+          context().system().scheduler().scheduleOnce(Duration.create(10, SECONDS),
               self(), "stop-system", context().dispatcher(), self());
         }).
         match(String.class, s -> s.equals("stop-system"), s -> {
