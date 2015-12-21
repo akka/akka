@@ -56,7 +56,7 @@ object ClusterShardingGracefulShutdownSpec {
       case "member-removed" ⇒
         // Let singletons hand over gracefully before stopping the system
         import context.dispatcher
-        system.scheduler.scheduleOnce(3.seconds, self, "stop-system")
+        system.scheduler.scheduleOnce(10.seconds, self, "stop-system")
 
       case "stop-system" ⇒
         system.terminate()
