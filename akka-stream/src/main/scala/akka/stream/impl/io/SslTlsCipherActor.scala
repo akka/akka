@@ -9,11 +9,12 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus._
 import javax.net.ssl.SSLEngineResult.Status._
 import javax.net.ssl._
 import akka.actor._
-import akka.stream.ActorMaterializerSettings
+import akka.stream.{ ConnectionException, ActorMaterializerSettings }
 import akka.stream.impl.FanIn.InputBunch
 import akka.stream.impl.FanOut.OutputBunch
 import akka.stream.impl._
 import akka.util.ByteString
+import com.typesafe.sslconfig.akka.{ AkkaSSLConfig, SSLEngineConfigurator }
 import scala.annotation.tailrec
 import akka.stream.io._
 
@@ -41,7 +42,8 @@ private[akka] object SslTlsCipherActor {
 /**
  * INTERNAL API.
  */
-private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslContext: SSLContext,
+private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings,
+                                      sslContext: SSLContext,
                                       firstSession: NegotiateNewSession, role: Role, closing: Closing,
                                       hostInfo: Option[(String, Int)], tracing: Boolean)
   extends Actor with ActorLogging with Pump {
@@ -139,12 +141,16 @@ private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslCo
   val transportInChoppingBlock = new ChoppingBlock(TransportIn, "TransportIn")
   transportInChoppingBlock.prepare(transportInBuffer)
 
+  // ssl-config
+  val sslConfig = AkkaSSLConfig(context.system)
+  val hostnameVerifier = sslConfig.hostnameVerifier
+
   val engine: SSLEngine = {
     val e = hostInfo match {
       case Some((hostname, port)) ⇒ sslContext.createSSLEngine(hostname, port)
       case None                   ⇒ sslContext.createSSLEngine()
     }
-
+    sslConfig.sslEngineConfigurator.configure(e, sslContext)
     e.setUseClientMode(role == Client)
     e
   }
@@ -162,6 +168,7 @@ private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslCo
       case None                  ⇒ // do nothing
     }
     sslParameters foreach (p ⇒ engine.setSSLParameters(p))
+
     engine.beginHandshake()
     lastHandshakeStatus = engine.getHandshakeStatus
   }
@@ -417,8 +424,15 @@ private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslCo
 
   private def handshakeFinished(): Unit = {
     if (tracing) log.debug("handshake finished")
-    currentSession = engine.getSession
-    corkUser = false
+    val session = engine.getSession
+
+    hostInfo.map(_._1) match {
+      case Some(hostname) if !hostnameVerifier.verify(hostname, session) ⇒
+        fail(new ConnectionException(s"Hostname verification failed! Expected session to be for $hostname"), closeTransport = true)
+      case _ ⇒
+        currentSession = session
+        corkUser = false
+    }
   }
 
   override def receive = inputBunch.subreceive.orElse[Any, Unit](outputBunch.subreceive)

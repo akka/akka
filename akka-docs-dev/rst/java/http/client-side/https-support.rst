@@ -45,18 +45,21 @@ to rely on the configured default client-side ``HttpsContext``.
 If no custom ``HttpsContext`` is defined the default context uses Java's default TLS settings. Customizing the
 ``HttpsContext`` can make the Https client less secure. Understand what you are doing!
 
-Hostname verification on Java 6
--------------------------------
+Hostname verification
+---------------------
 
 Hostname verification proves that the Akka HTTP client is actually communicating with the server it intended to
 communicate with. Without this check a man-in-the-middle attack is possible. In the attack scenario, an alternative
 certificate would be presented which was issued for another host name. Checking the host name in the certificate
 against the host name the connection was opened against is therefore vital.
 
-The default ``HttpsContext`` enables hostname verification. Akka HTTP relies on a Java 7 feature to implement
-the verification. To prevent an unintended security downgrade, accessing the default ``HttpsContext`` on Java 6
-will fail with an exception. Specifying a custom ``HttpsContext`` or customizing the default one is also possible
-on Java 6.
+The default ``HttpsContext`` enables hostname verification. Akka HTTP relies on the `Typesafe SSL-Config`_ library
+to implement this and security options for SSL/TLS. Hostname verification is provided by the JDK
+and used by Akka HTTP since Java 7, and on Java 6 the verification is implemented by ssl-config manually.
 
+.. note::
+  We highly recommend updating your Java runtime to the latest available release,
+  preferably JDK 8, as it includes this and many more security features related to TLS.
 
+.. _Typesafe SSL-Config: https://github.com/typesafehub/ssl-config
 .. _akka.http.javadsl.Http: @github@/akka-http-core/src/main/scala/akka/http/javadsl/Http.scala
