@@ -20,10 +20,19 @@ import akka.testkit.EventFilter
 import javax.net.ssl.SSLException
 
 class TlsEndpointVerificationSpec extends AkkaSpec("""
-    akka.loglevel = DEBUG
-    akka.io.tcp.trace-logging = off""") with ScalaFutures {
+    akka.loglevel = INFO
+    akka.io.tcp.trace-logging = off
+  """) with ScalaFutures {
+
   implicit val materializer = ActorMaterializer()
+
+  /*
+   * Useful when debugging against "what if we hit a real website"
+   */
+  val includeTestsHittingActualWebsites = false
+
   val timeout = Timeout(Span(3, Seconds))
+  implicit val patience = PatienceConfig(Span(10, Seconds))
 
   "The client implementation" should {
     "not accept certificates signed by unknown CA" in {
@@ -45,6 +54,40 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
 
       whenReady(pipe(HttpRequest(uri = "https://hijack.de/")).failed, timeout) { e ⇒
         e shouldBe an[Exception]
+      }
+    }
+
+    if (includeTestsHittingActualWebsites) {
+      /*
+       * Requires the following DNS spoof to be running:
+       * sudo /usr/local/bin/python ./dnschef.py --fakedomains www.howsmyssl.com --fakeip 54.173.126.144
+       *
+       * Read up about it on: https://tersesystems.com/2014/03/31/testing-hostname-verification/
+       */
+      "fail hostname verification on spoofed https://www.howsmyssl.com/" in {
+        val req = HttpRequest(uri = "https://www.howsmyssl.com/")
+        val ex = intercept[Exception] {
+          Http().singleRequest(req).futureValue
+        }
+        if (Java6Compat.isJava6) {
+          // our manual verification
+          ex.getMessage should include("Hostname verification failed")
+        } else {
+          // JDK built-in verification
+          val expectedMsg = "No subject alternative DNS name matching www.howsmyssl.com found"
+
+          var e: Throwable = ex
+          while (e.getCause != null) e = e.getCause
+
+          info("TLS failure cause: " + e.getMessage)
+          e.getMessage should include(expectedMsg)
+        }
+      }
+
+      "pass hostname verification on https://www.playframework.com/" in {
+        val req = HttpRequest(uri = "https://www.playframework.com/")
+        val res = Http().singleRequest(req).futureValue
+        res.status should ===(StatusCodes.OK)
       }
     }
   }

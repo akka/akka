@@ -114,7 +114,8 @@ object SslTls {
   private[akka] case class TlsModule(plainIn: Inlet[SslTlsOutbound], plainOut: Outlet[SslTlsInbound],
                                      cipherIn: Inlet[ByteString], cipherOut: Outlet[ByteString],
                                      shape: Shape, attributes: Attributes,
-                                     sslContext: SSLContext, firstSession: NegotiateNewSession,
+                                     sslContext: SSLContext,
+                                     firstSession: NegotiateNewSession,
                                      role: Role, closing: Closing, hostInfo: Option[(String, Int)]) extends Module {
     override def subModules: Set[Module] = Set.empty
 
