@@ -414,7 +414,7 @@ initialization. The buffer has demand for up to two elements without any downstr
 
 The following code example demonstrates a buffer class corresponding to the message sequence chart above.
 
-.. includecode:: code/docs/stream/GraphStageDocSpec.scala#detached
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/GraphStageDocTest.java#detached
 
 Thread safety of custom processing stages
 =========================================
