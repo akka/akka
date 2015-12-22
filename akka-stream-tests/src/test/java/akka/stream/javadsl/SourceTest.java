@@ -11,10 +11,7 @@ import akka.dispatch.OnSuccess;
 import akka.japi.JavaPartialFunction;
 import akka.japi.Pair;
 import akka.japi.function.*;
-import akka.stream.Graph;
-import akka.stream.OverflowStrategy;
-import akka.stream.StreamTest;
-import akka.stream.UniformFanInShape;
+import akka.stream.*;
 import akka.stream.impl.ConstantFun;
 import akka.stream.stage.*;
 import akka.stream.testkit.AkkaSpec;
@@ -776,4 +773,9 @@ public class SourceTest extends StreamTest {
     assertEquals((Object) 0, result);
   }
 
+  public void mustSuitablyOverrideAttributeHandlingMethods() {
+    @SuppressWarnings("unused")
+    final Source<Integer, BoxedUnit> f =
+        Source.single(42).withAttributes(Attributes.name("")).addAttributes(Attributes.asyncBoundary()).named("");
+  }
 }

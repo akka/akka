@@ -10,7 +10,7 @@ import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.control.NoStackTrace
-import akka.stream.{ SourceShape, ActorMaterializer }
+import akka.stream._
 import akka.stream.testkit._
 
 class SourceSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
@@ -265,6 +265,13 @@ class SourceSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
         .grouped(10)
         .runWith(Sink.head)
         .futureValue should ===(Seq(false, true, false, true, false, true, false, true, false, true))
+    }
+  }
+
+  "A Source" must {
+    "suitably override attribute handling methods" in {
+      import Attributes._
+      val s: Source[Int, Unit] = Source.single(42).withAttributes(asyncBoundary).addAttributes(none).named("")
     }
   }
 

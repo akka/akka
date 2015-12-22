@@ -202,14 +202,27 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
   }
 
   /**
-   * Change the attributes of this [[Flow]] to the given ones. Note that this
+   * Change the attributes of this [[Flow]] to the given ones and seal the list
+   * of attributes. This means that further calls will not be able to remove these
+   * attributes, but instead add new ones. Note that this
    * operation has no effect on an empty Flow (because the attributes apply
    * only to the contained processing stages).
    */
   override def withAttributes(attr: Attributes): Repr[Out] =
-    if (this.module eq EmptyModule) this
+    if (isIdentity) this
     else new Flow(module.withAttributes(attr).nest())
 
+  /**
+   * Add the given attributes to this Flow. Further calls to `withAttributes`
+   * will not remove these attributes. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
+   */
+  override def addAttributes(attr: Attributes): Repr[Out] = withAttributes(module.attributes and attr)
+
+  /**
+   * Add a ``name`` attribute to this Flow.
+   */
   override def named(name: String): Repr[Out] = withAttributes(Attributes.name(name))
 
   /**
@@ -1585,7 +1598,9 @@ trait FlowOps[+Out, +Mat] {
 
   def withAttributes(attr: Attributes): Repr[Out]
 
-  def named(name: String): Repr[Out] = withAttributes(Attributes.name(name))
+  def addAttributes(attr: Attributes): Repr[Out]
+
+  def named(name: String): Repr[Out]
 
   /** INTERNAL API */
   private[scaladsl] def andThen[T](op: SymbolicStage[Out, T]): Repr[T] =
