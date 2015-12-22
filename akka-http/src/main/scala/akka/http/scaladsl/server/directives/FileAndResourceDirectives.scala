@@ -91,7 +91,7 @@ trait FileAndResourceDirectives {
                   complete {
                     HttpEntity.Default(contentType, length,
                       StreamConverters.fromInputStream(() ⇒ url.openStream())
-                        .withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
+                        .withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher))) // TODO is this needed? It already uses `val inputStreamSource = name("inputStreamSource") and IODispatcher`
                   }
                 }
               } else complete(HttpEntity.Empty)

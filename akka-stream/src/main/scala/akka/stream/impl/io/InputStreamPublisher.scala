@@ -50,7 +50,7 @@ private[akka] class InputStreamPublisher(is: InputStream, bytesReadPromise: Prom
       if (totalDemand > 0) self ! Continue
     }
 
-  def readAndEmit() = try {
+  def readAndEmit(): Unit = if (totalDemand > 0) try {
     // blocking read
     val readBytes = is.read(arr)
 
