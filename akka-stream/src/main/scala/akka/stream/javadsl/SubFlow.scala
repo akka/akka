@@ -83,6 +83,29 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
     new SubFlow(delegate.via(flow))
 
   /**
+   * Transform this [[Flow]] by appending the given processing steps, ensuring
+   * that an `asyncBoundary` attribute is set around those steps.
+   *
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Flow             |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   * In ~~> | this | ~Out~> | flow | ~~> T
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   *
+   * The materialized value of the combined [[Flow]] will be the materialized
+   * value of the current flow (ignoring the other Flow’s value), use
+   * [[Flow#viaMat viaMat]] if a different strategy is needed.
+   */
+  def viaAsync[T, M](flow: Graph[FlowShape[Out, T], M]): SubFlow[In, T, Mat] =
+    new SubFlow(delegate.viaAsync(flow))
+
+  /**
    * Connect this [[SubFlow]] to a [[Sink]], concatenating the processing steps of both.
    * This means that all sub-flows that result from the previous sub-stream operator
    * will be attached to the given sink.
