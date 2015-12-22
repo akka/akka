@@ -272,4 +272,10 @@ public class BidiFlowTest extends StreamTest {
     Arrays.sort(rr);
     assertArrayEquals(new Long[] { 3L, 12L }, rr);
   }
+  
+  public void mustSuitablyOverrideAttributeHandlingMethods() {
+    @SuppressWarnings("unused")
+    final BidiFlow<Integer, Long, ByteString, String, BoxedUnit> b =
+        bidi.withAttributes(Attributes.name("")).addAttributes(Attributes.asyncBoundary()).named("");
+  }
 }

@@ -1039,9 +1039,28 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
   def initialDelay(delay: FiniteDuration): SubSource[Out, Mat] =
     new SubSource(delegate.initialDelay(delay))
 
+  /**
+   * Change the attributes of this [[Source]] to the given ones and seal the list
+   * of attributes. This means that further calls will not be able to remove these
+   * attributes, but instead add new ones. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
+   */
   def withAttributes(attr: Attributes): SubSource[Out, Mat] =
     new SubSource(delegate.withAttributes(attr))
 
+  /**
+   * Add the given attributes to this Source. Further calls to `withAttributes`
+   * will not remove these attributes. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
+   */
+  def addAttributes(attr: Attributes): SubSource[Out, Mat] =
+    new SubSource(delegate.addAttributes(attr))
+
+  /**
+   * Add a ``name`` attribute to this Flow.
+   */
   def named(name: String): SubSource[Out, Mat] =
     new SubSource(delegate.named(name))
 

@@ -3,9 +3,10 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.{ SinkShape, ActorMaterializer }
+import akka.stream._
 import akka.stream.testkit.TestPublisher.ManualProbe
 import akka.stream.testkit._
+import scala.concurrent.Future
 
 class SinkSpec extends AkkaSpec {
 
@@ -119,6 +120,10 @@ class SinkSpec extends AkkaSpec {
       }
     }
 
+    "suitably override attribute handling methods" in {
+      import Attributes._
+      val s: Sink[Int, Future[Int]] = Sink.head[Int].withAttributes(asyncBoundary).addAttributes(none).named("")
+    }
   }
 
 }
