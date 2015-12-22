@@ -61,7 +61,7 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
     new Source(delegate.concatSubstreams)
 
   /**
-   * Transform this [[Flow]] by appending the given processing steps.
+   * Transform this [[SubSource]] by appending the given processing steps.
    * {{{
    *     +----------------------------+
    *     | Resulting Source           |
@@ -79,6 +79,27 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    */
   def via[T, M](flow: Graph[FlowShape[Out, T], M]): SubSource[T, Mat] =
     new SubSource(delegate.via(flow))
+
+  /**
+   * Transform this [[SubSource]] by appending the given processing steps, ensuring
+   * that an `asyncBoundary` attribute is set around those steps.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Source           |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   *     |  | this | ~Out~> | flow | ~~> T
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The materialized value of the combined [[Flow]] will be the materialized
+   * value of the current flow (ignoring the other Flow’s value), use
+   * [[Flow#viaMat viaMat]] if a different strategy is needed.
+   */
+  def viaAsync[T, M](flow: Graph[FlowShape[Out, T], M]): SubSource[T, Mat] =
+    new SubSource(delegate.viaAsync(flow))
 
   /**
    * Connect this [[SubSource]] to a [[Sink]], concatenating the processing steps of both.

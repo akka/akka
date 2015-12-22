@@ -383,6 +383,26 @@ trait FlowOps[+Out, +Mat] {
   def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T]
 
   /**
+   * Transform this [[Flow]] by appending the given processing steps, ensuring
+   * that an `asyncBoundary` attribute is set around those steps.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Flow             |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   * In ~~> | this | ~Out~> | flow | ~~> T
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The materialized value of the combined [[Flow]] will be the materialized
+   * value of the current flow (ignoring the other Flow’s value), use
+   * [[Flow#viaMat viaMat]] if a different strategy is needed.
+   */
+  def viaAsync[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] = via(flow.addAttributes(Attributes.asyncBoundary))
+
+  /**
    * Recover allows to send last element on failure and gracefully complete the stream
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
@@ -1634,6 +1654,26 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * flow into the materialized value of the resulting Flow.
    */
   def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): ReprMat[T, Mat3]
+
+  /**
+   * Transform this [[Flow]] by appending the given processing steps, ensuring
+   * that an `asyncBoundary` attribute is set around those steps.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Flow             |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   * In ~~> | this | ~Out~> | flow | ~~> T
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The `combine` function is used to compose the materialized values of this flow and that
+   * flow into the materialized value of the resulting Flow.
+   */
+  def viaAsyncMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): ReprMat[T, Mat3] =
+    viaMat(flow.addAttributes(Attributes.asyncBoundary))(combine)
 
   /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
