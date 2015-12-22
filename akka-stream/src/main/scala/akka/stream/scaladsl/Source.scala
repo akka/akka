@@ -110,13 +110,26 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
   def runForeach(f: Out ⇒ Unit)(implicit materializer: Materializer): Future[Unit] = runWith(Sink.foreach(f))
 
   /**
-   * Nests the current Source and returns a Source with the given Attributes
-   * @param attr the attributes to add
-   * @return a new Source with the added attributes
+   * Change the attributes of this [[Source]] to the given ones and seal the list
+   * of attributes. This means that further calls will not be able to remove these
+   * attributes, but instead add new ones. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
    */
   override def withAttributes(attr: Attributes): Repr[Out] =
-    new Source(module.withAttributes(attr).nest()) // User API
+    new Source(module.withAttributes(attr).nest())
 
+  /**
+   * Add the given attributes to this Source. Further calls to `withAttributes`
+   * will not remove these attributes. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
+   */
+  override def addAttributes(attr: Attributes): Repr[Out] = withAttributes(module.attributes and attr)
+
+  /**
+   * Add a ``name`` attribute to this Flow.
+   */
   override def named(name: String): Repr[Out] = withAttributes(Attributes.name(name))
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */

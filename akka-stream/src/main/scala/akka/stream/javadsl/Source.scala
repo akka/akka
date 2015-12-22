@@ -353,6 +353,47 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.viaMat(flow)(combinerToScala(combine)))
 
   /**
+   * Transform this [[Source]] by appending the given processing stages, ensuring
+   * that an `asyncBoundary` attribute is set around those steps.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Source           |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   *     |  | this | ~Out~> | flow | ~~> T
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The materialized value of the combined [[Flow]] will be the materialized
+   * value of the current flow (ignoring the other Flow’s value), use
+   * `viaMat` if a different strategy is needed.
+   */
+  def viaAsync[T, M](flow: Graph[FlowShape[Out, T], M]): javadsl.Source[T, Mat] =
+    new Source(delegate.viaAsync(flow))
+
+  /**
+   * Transform this [[Source]] by appending the given processing stages, ensuring
+   * that an `asyncBoundary` attribute is set around those steps.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Source           |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   *     |  | this | ~Out~> | flow | ~~> T
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The `combine` function is used to compose the materialized values of this flow and that
+   * flow into the materialized value of the resulting Flow.
+   */
+  def viaAsyncMat[T, M, M2](flow: Graph[FlowShape[Out, T], M], combine: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
+    new Source(delegate.viaAsyncMat(flow)(combinerToScala(combine)))
+
+  /**
    * Connect this [[Source]] to a [[Sink]], concatenating the processing steps of both.
    * {{{
    *     +----------------------------+
@@ -1599,9 +1640,28 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
   def initialDelay(delay: FiniteDuration): javadsl.Source[Out, Mat] =
     new Source(delegate.initialDelay(delay))
 
+  /**
+   * Change the attributes of this [[Source]] to the given ones and seal the list
+   * of attributes. This means that further calls will not be able to remove these
+   * attributes, but instead add new ones. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
+   */
   override def withAttributes(attr: Attributes): javadsl.Source[Out, Mat] =
     new Source(delegate.withAttributes(attr))
 
+  /**
+   * Add the given attributes to this Source. Further calls to `withAttributes`
+   * will not remove these attributes. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
+   */
+  override def addAttributes(attr: Attributes): javadsl.Source[Out, Mat] =
+    new Source(delegate.addAttributes(attr))
+
+  /**
+   * Add a ``name`` attribute to this Flow.
+   */
   override def named(name: String): javadsl.Source[Out, Mat] =
     new Source(delegate.named(name))
 

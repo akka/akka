@@ -192,6 +192,28 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](delegate: scaladsl.BidiFlow[I1, O
   def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): BidiFlow[I1, O1, I2, O2, Mat2] =
     new BidiFlow(delegate.mapMaterializedValue(f.apply _))
 
+  /**
+   * Change the attributes of this [[Source]] to the given ones and seal the list
+   * of attributes. This means that further calls will not be able to remove these
+   * attributes, but instead add new ones. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
+   */
   override def withAttributes(attr: Attributes): BidiFlow[I1, O1, I2, O2, Mat] =
     new BidiFlow(delegate.withAttributes(attr))
+
+  /**
+   * Add the given attributes to this Source. Further calls to `withAttributes`
+   * will not remove these attributes. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
+   */
+  override def addAttributes(attr: Attributes): BidiFlow[I1, O1, I2, O2, Mat] =
+    new BidiFlow(delegate.addAttributes(attr))
+
+  /**
+   * Add a ``name`` attribute to this Flow.
+   */
+  override def named(name: String): BidiFlow[I1, O1, I2, O2, Mat] =
+    new BidiFlow(delegate.named(name))
 }

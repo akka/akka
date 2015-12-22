@@ -220,4 +220,29 @@ class FlowDocSpec extends AkkaSpec {
 
     //#flow-mat-combine
   }
+
+  "explicit fusing" in {
+    //#explicit-fusing
+    import akka.stream.Fusing
+
+    val flow = Flow[Int].map(_ * 2).filter(_ > 500)
+    val fused = Fusing.aggressive(flow)
+
+    Source.fromIterator { () => Iterator from 0 }
+      .via(fused)
+      .take(1000)
+    //#explicit-fusing
+  }
+
+  "defining asynchronous boundaries" in {
+    //#flow-async
+    import akka.stream.Attributes.asyncBoundary
+
+    Source(List(1, 2, 3))
+      .map(_ + 1)
+      .withAttributes(asyncBoundary)
+      .map(_ * 2)
+      .to(Sink.ignore)
+    //#flow-async
+  }
 }
