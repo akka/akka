@@ -119,9 +119,9 @@ object Sink {
 
   /**
    * A `Sink` that keeps on collecting incoming elements until upstream terminates.
-   * As upstream may be unbounded, `Flow[T].take` or the stricter ``Flow[T].limit` (and their variants)
+   * As upstream may be unbounded, `Flow[T].take` or the stricter `Flow[T].limit` (and their variants)
    * may be used to ensure boundedness.
-   * Materializes into a Future` of `Seq[T]` containing all the collected elements.
+   * Materializes into a `Future` of `Seq[T]` containing all the collected elements.
    *
    * See also [[Flow.limit]], [[Flow.limitWeighted]], [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
    */
