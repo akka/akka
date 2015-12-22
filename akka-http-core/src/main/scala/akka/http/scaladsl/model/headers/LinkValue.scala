@@ -43,6 +43,7 @@ object LinkParams {
   val prev = rel("prev")
   val first = rel("first")
   val last = rel("last")
+  val blockedBy = rel("blocked-by")
 
   // http://tools.ietf.org/html/rfc5988#section-5.3
   // can be either a bare word, an absolute URI, or a quoted, space-separated string of zero-or-more of either.
