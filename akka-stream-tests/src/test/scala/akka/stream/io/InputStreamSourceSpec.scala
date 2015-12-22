@@ -3,17 +3,18 @@
  */
 package akka.stream.io
 
-import java.io.InputStream
+import java.io.{ OutputStream, PipedOutputStream, PipedInputStream, InputStream }
 import java.util.concurrent.CountDownLatch
 
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.StreamConverters
+import akka.stream.scaladsl.{ Source, Sink, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.{ Attributes, OverflowStrategy, ActorMaterializer, ActorMaterializerSettings }
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class InputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) with ScalaFutures {
 
@@ -21,6 +22,17 @@ class InputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) with ScalaF
   implicit val materializer = ActorMaterializer(settings)
 
   "InputStreamSource" must {
+
+    "not signal when no demand" in {
+      val f = StreamConverters.fromInputStream(() ⇒ new InputStream {
+        override def read(): Int = 42
+      })
+
+      Await.result(f
+        .takeWithin(5.seconds)
+        .runForeach(it ⇒ ()), 10.seconds)
+    }
+
     "read bytes from InputStream" in assertAllStagesStopped {
       val f = StreamConverters.fromInputStream(() ⇒ new InputStream {
         @volatile var buf = List("a", "b", "c").map(_.charAt(0).toInt)
