@@ -111,6 +111,11 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
       Await.result(r, 1.second).toSet should ===(Set(3L, 12L))
     }
 
+    "suitably override attribute handling methods" in {
+      import Attributes._
+      val b: BidiFlow[Int, Long, ByteString, String, Unit] = bidi.withAttributes(name("")).addAttributes(asyncBoundary).named("")
+    }
+
   }
 
 }

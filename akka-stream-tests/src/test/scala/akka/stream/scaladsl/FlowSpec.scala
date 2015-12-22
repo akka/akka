@@ -586,6 +586,11 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
         }
       }
     }
+
+    "suitably override attribute handling methods" in {
+      import Attributes._
+      val f: Flow[Int, Int, Unit] = Flow[Int].withAttributes(asyncBoundary).addAttributes(none).named("")
+    }
   }
 
   object TestException extends RuntimeException with NoStackTrace

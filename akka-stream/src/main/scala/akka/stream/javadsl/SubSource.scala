@@ -61,7 +61,7 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
     new Source(delegate.concatSubstreams)
 
   /**
-   * Transform this [[Flow]] by appending the given processing steps.
+   * Transform this [[SubSource]] by appending the given processing steps.
    * {{{
    *     +----------------------------+
    *     | Resulting Source           |
@@ -79,6 +79,27 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    */
   def via[T, M](flow: Graph[FlowShape[Out, T], M]): SubSource[T, Mat] =
     new SubSource(delegate.via(flow))
+
+  /**
+   * Transform this [[SubSource]] by appending the given processing steps, ensuring
+   * that an `asyncBoundary` attribute is set around those steps.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Source           |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   *     |  | this | ~Out~> | flow | ~~> T
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The materialized value of the combined [[Flow]] will be the materialized
+   * value of the current flow (ignoring the other Flow’s value), use
+   * [[Flow#viaMat viaMat]] if a different strategy is needed.
+   */
+  def viaAsync[T, M](flow: Graph[FlowShape[Out, T], M]): SubSource[T, Mat] =
+    new SubSource(delegate.viaAsync(flow))
 
   /**
    * Connect this [[SubSource]] to a [[Sink]], concatenating the processing steps of both.
@@ -1039,9 +1060,28 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
   def initialDelay(delay: FiniteDuration): SubSource[Out, Mat] =
     new SubSource(delegate.initialDelay(delay))
 
+  /**
+   * Change the attributes of this [[Source]] to the given ones and seal the list
+   * of attributes. This means that further calls will not be able to remove these
+   * attributes, but instead add new ones. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
+   */
   def withAttributes(attr: Attributes): SubSource[Out, Mat] =
     new SubSource(delegate.withAttributes(attr))
 
+  /**
+   * Add the given attributes to this Source. Further calls to `withAttributes`
+   * will not remove these attributes. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
+   */
+  def addAttributes(attr: Attributes): SubSource[Out, Mat] =
+    new SubSource(delegate.addAttributes(attr))
+
+  /**
+   * Add a ``name`` attribute to this Flow.
+   */
   def named(name: String): SubSource[Out, Mat] =
     new SubSource(delegate.named(name))
 

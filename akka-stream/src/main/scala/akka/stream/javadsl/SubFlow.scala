@@ -83,6 +83,29 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
     new SubFlow(delegate.via(flow))
 
   /**
+   * Transform this [[Flow]] by appending the given processing steps, ensuring
+   * that an `asyncBoundary` attribute is set around those steps.
+   *
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Flow             |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   * In ~~> | this | ~Out~> | flow | ~~> T
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   *
+   * The materialized value of the combined [[Flow]] will be the materialized
+   * value of the current flow (ignoring the other Flow’s value), use
+   * [[Flow#viaMat viaMat]] if a different strategy is needed.
+   */
+  def viaAsync[T, M](flow: Graph[FlowShape[Out, T], M]): SubFlow[In, T, Mat] =
+    new SubFlow(delegate.viaAsync(flow))
+
+  /**
    * Connect this [[SubFlow]] to a [[Sink]], concatenating the processing steps of both.
    * This means that all sub-flows that result from the previous sub-stream operator
    * will be attached to the given sink.
@@ -1040,9 +1063,28 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
   def initialDelay(delay: FiniteDuration): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.initialDelay(delay))
 
+  /**
+   * Change the attributes of this [[Source]] to the given ones and seal the list
+   * of attributes. This means that further calls will not be able to remove these
+   * attributes, but instead add new ones. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
+   */
   def withAttributes(attr: Attributes): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.withAttributes(attr))
 
+  /**
+   * Add the given attributes to this Source. Further calls to `withAttributes`
+   * will not remove these attributes. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
+   */
+  def addAttributes(attr: Attributes): SubFlow[In, Out, Mat] =
+    new SubFlow(delegate.addAttributes(attr))
+
+  /**
+   * Add a ``name`` attribute to this Flow.
+   */
   def named(name: String): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.named(name))
 

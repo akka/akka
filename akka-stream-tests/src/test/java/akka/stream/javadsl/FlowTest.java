@@ -785,4 +785,9 @@ public class FlowTest extends StreamTest {
     assertEquals((Object) 0, result);
   }
 
+  public void mustSuitablyOverrideAttributeHandlingMethods() {
+    @SuppressWarnings("unused")
+    final Flow<Integer, Integer, BoxedUnit> f =
+        Flow.of(Integer.class).withAttributes(Attributes.name("")).addAttributes(Attributes.asyncBoundary()).named("");
+  }
 }

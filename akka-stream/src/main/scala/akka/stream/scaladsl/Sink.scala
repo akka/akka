@@ -40,9 +40,28 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
   def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): Sink[In, Mat2] =
     new Sink(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
 
+  /**
+   * Change the attributes of this [[Source]] to the given ones and seal the list
+   * of attributes. This means that further calls will not be able to remove these
+   * attributes, but instead add new ones. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
+   */
   override def withAttributes(attr: Attributes): Sink[In, Mat] =
     new Sink(module.withAttributes(attr).nest())
 
+  /**
+   * Add the given attributes to this Source. Further calls to `withAttributes`
+   * will not remove these attributes. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
+   */
+  override def addAttributes(attr: Attributes): Sink[In, Mat] =
+    withAttributes(module.attributes and attr)
+
+  /**
+   * Add a ``name`` attribute to this Flow.
+   */
   override def named(name: String): Sink[In, Mat] = withAttributes(Attributes.name(name))
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */

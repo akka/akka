@@ -202,14 +202,27 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
   }
 
   /**
-   * Change the attributes of this [[Flow]] to the given ones. Note that this
+   * Change the attributes of this [[Flow]] to the given ones and seal the list
+   * of attributes. This means that further calls will not be able to remove these
+   * attributes, but instead add new ones. Note that this
    * operation has no effect on an empty Flow (because the attributes apply
    * only to the contained processing stages).
    */
   override def withAttributes(attr: Attributes): Repr[Out] =
-    if (this.module eq EmptyModule) this
+    if (isIdentity) this
     else new Flow(module.withAttributes(attr).nest())
 
+  /**
+   * Add the given attributes to this Flow. Further calls to `withAttributes`
+   * will not remove these attributes. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
+   */
+  override def addAttributes(attr: Attributes): Repr[Out] = withAttributes(module.attributes and attr)
+
+  /**
+   * Add a ``name`` attribute to this Flow.
+   */
   override def named(name: String): Repr[Out] = withAttributes(Attributes.name(name))
 
   /**
@@ -368,6 +381,26 @@ trait FlowOps[+Out, +Mat] {
    * [[Flow#viaMat viaMat]] if a different strategy is needed.
    */
   def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T]
+
+  /**
+   * Transform this [[Flow]] by appending the given processing steps, ensuring
+   * that an `asyncBoundary` attribute is set around those steps.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Flow             |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   * In ~~> | this | ~Out~> | flow | ~~> T
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The materialized value of the combined [[Flow]] will be the materialized
+   * value of the current flow (ignoring the other Flow’s value), use
+   * [[Flow#viaMat viaMat]] if a different strategy is needed.
+   */
+  def viaAsync[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] = via(flow.addAttributes(Attributes.asyncBoundary))
 
   /**
    * Recover allows to send last element on failure and gracefully complete the stream
@@ -1585,7 +1618,9 @@ trait FlowOps[+Out, +Mat] {
 
   def withAttributes(attr: Attributes): Repr[Out]
 
-  def named(name: String): Repr[Out] = withAttributes(Attributes.name(name))
+  def addAttributes(attr: Attributes): Repr[Out]
+
+  def named(name: String): Repr[Out]
 
   /** INTERNAL API */
   private[scaladsl] def andThen[T](op: SymbolicStage[Out, T]): Repr[T] =
@@ -1619,6 +1654,26 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * flow into the materialized value of the resulting Flow.
    */
   def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): ReprMat[T, Mat3]
+
+  /**
+   * Transform this [[Flow]] by appending the given processing steps, ensuring
+   * that an `asyncBoundary` attribute is set around those steps.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Flow             |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   * In ~~> | this | ~Out~> | flow | ~~> T
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The `combine` function is used to compose the materialized values of this flow and that
+   * flow into the materialized value of the resulting Flow.
+   */
+  def viaAsyncMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): ReprMat[T, Mat3] =
+    viaMat(flow.addAttributes(Attributes.asyncBoundary))(combine)
 
   /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.

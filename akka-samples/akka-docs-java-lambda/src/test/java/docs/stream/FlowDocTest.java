@@ -6,9 +6,11 @@ package docs.stream;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import akka.japi.Pair;
 import org.junit.AfterClass;
@@ -275,6 +277,25 @@ public class FlowDocTest {
     //#flow-mat-combine
   }
 
-
+  public void fusingAndAsync() {
+    //#explicit-fusing
+    Flow<Integer, Integer, BoxedUnit> flow =
+        Flow.of(Integer.class).map(x -> x * 2).filter(x -> x > 500);
+    Graph<FlowShape<Integer, Integer>, BoxedUnit> fused =
+        akka.stream.Fusing.aggressive(flow);
+    
+    Source.fromIterator(() -> Stream.iterate(0, x -> x + 1).iterator())
+        .via(fused)
+        .take(1000);
+    //#explicit-fusing
+    
+    //#flow-async
+    Source.range(1, 3)
+        .map(x -> x + 1)
+        .withAttributes(Attributes.asyncBoundary())
+        .map(x -> x * 2)
+        .to(Sink.ignore());
+    //#flow-async
+  }
 
 }
