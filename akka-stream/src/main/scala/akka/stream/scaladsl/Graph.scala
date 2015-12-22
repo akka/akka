@@ -904,6 +904,12 @@ object GraphDSL extends GraphApply {
       override def withAttributes(attr: Attributes): Repr[Out] =
         throw new UnsupportedOperationException("Cannot set attributes on chained ops from a junction output port")
 
+      override def addAttributes(attr: Attributes): Repr[Out] =
+        throw new UnsupportedOperationException("Cannot set attributes on chained ops from a junction output port")
+
+      override def named(name: String): Repr[Out] =
+        throw new UnsupportedOperationException("Cannot set attributes on chained ops from a junction output port")
+
       override def importAndGetPort(b: Builder[_]): Outlet[Out @uncheckedVariance] = outlet
 
       override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] =

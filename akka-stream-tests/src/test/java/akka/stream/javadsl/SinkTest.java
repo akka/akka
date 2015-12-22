@@ -13,16 +13,13 @@ import java.util.concurrent.TimeUnit;
 import akka.actor.ActorRef;
 import akka.japi.function.Function;
 import akka.japi.function.Procedure;
-import akka.stream.Graph;
-import akka.stream.UniformFanInShape;
-import akka.stream.UniformFanOutShape;
+import akka.stream.*;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import akka.stream.StreamTest;
 import akka.japi.function.Function2;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
@@ -101,4 +98,9 @@ public class SinkTest extends StreamTest {
     probe2.expectMsgEquals("done2");
   }
 
+  public void mustSuitablyOverrideAttributeHandlingMethods() {
+    @SuppressWarnings("unused")
+    final Sink<Integer, Future<Integer>> s =
+        Sink.<Integer> head().withAttributes(Attributes.name("")).addAttributes(Attributes.asyncBoundary()).named("");
+  }
 }

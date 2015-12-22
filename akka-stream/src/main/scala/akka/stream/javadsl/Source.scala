@@ -1599,9 +1599,28 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
   def initialDelay(delay: FiniteDuration): javadsl.Source[Out, Mat] =
     new Source(delegate.initialDelay(delay))
 
+  /**
+   * Change the attributes of this [[Source]] to the given ones and seal the list
+   * of attributes. This means that further calls will not be able to remove these
+   * attributes, but instead add new ones. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
+   */
   override def withAttributes(attr: Attributes): javadsl.Source[Out, Mat] =
     new Source(delegate.withAttributes(attr))
 
+  /**
+   * Add the given attributes to this Source. Further calls to `withAttributes`
+   * will not remove these attributes. Note that this
+   * operation has no effect on an empty Flow (because the attributes apply
+   * only to the contained processing stages).
+   */
+  override def addAttributes(attr: Attributes): javadsl.Source[Out, Mat] =
+    new Source(delegate.addAttributes(attr))
+
+  /**
+   * Add a ``name`` attribute to this Flow.
+   */
   override def named(name: String): javadsl.Source[Out, Mat] =
     new Source(delegate.named(name))
 
