@@ -597,7 +597,13 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[MissingTypesProblem]("akka.remote.InvalidAssociation$"),
         ProblemFilters.exclude[MissingMethodProblem]("akka.remote.InvalidAssociation.apply"),
         ProblemFilters.exclude[MissingMethodProblem]("akka.remote.InvalidAssociation.copy"),
-        ProblemFilters.exclude[MissingMethodProblem]("akka.remote.InvalidAssociation.this")
+        ProblemFilters.exclude[MissingMethodProblem]("akka.remote.InvalidAssociation.this"),
+
+        // #19281 BackoffSupervisor updates
+        ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.BackoffSupervisor.akka$pattern$BackoffSupervisor$$child_="),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.BackoffSupervisor.akka$pattern$BackoffSupervisor$$restartCount"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.BackoffSupervisor.akka$pattern$BackoffSupervisor$$restartCount_="),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.BackoffSupervisor.akka$pattern$BackoffSupervisor$$child")
       )
     )
   }
