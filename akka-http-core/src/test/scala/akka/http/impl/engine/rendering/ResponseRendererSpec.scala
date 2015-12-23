@@ -156,6 +156,24 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
               |
               |""", close = false)
       }
+
+      "add charset to application/json" in new TestSetup() {
+
+        ResponseRenderingContext(
+          requestMethod = HttpMethods.HEAD,
+          response = HttpResponse(
+            headers = List(Age(30)),
+            entity = HttpEntity.Default(ContentTypes.`application/json`, 100, Source.empty))) should renderTo(
+            """HTTP/1.1 200 OK
+            |Age: 30
+            |Server: akka-http/1.0.0
+            |Date: Thu, 25 Aug 2011 09:10:29 GMT
+            |Content-Type: application/json ; charset=UTF-8
+            |Content-Length: 100
+            |
+            |""", close = false)
+
+      }
     }
 
     "a response with a Strict body," - {
