@@ -96,7 +96,7 @@ logic in Flows and attaching those to :class:`StreamIO` in order to implement yo
 
 In this example both client and server may need to close the stream based on a parsed command - ``BYE`` in the case
 of the server, and ``q`` in the case of the client. This is implemented by using a custom :class:`PushStage`
-(see :ref:`stream-using-push-pull-stage-java`) which completes the stream once it encounters such command.
+which completes the stream once it encounters such command.
 
 Streaming File IO
 =================
