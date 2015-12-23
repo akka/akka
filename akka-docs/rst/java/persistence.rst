@@ -738,6 +738,11 @@ Plugin development requires the following imports:
 
 .. includecode:: code/docs/persistence/PersistencePluginDocTest.java#plugin-imports
 
+By default, persistence plugins are started on-demand, as they are used. In some case, however, it might be beneficial
+to start a certain plugin eagerly. In order to do that, you should first add the ``akka.persistence.Persistence``
+under the ``akka.extensions`` key. Then, specify the IDs of plugins you wish to start automatically under
+``akka.persistence.journal.auto-start-journals`` and ``akka.persistence.snapshot-store.auto-start-snapshot-stores``.
+
 .. _journal-plugin-api-java:
 
 Journal plugin API
