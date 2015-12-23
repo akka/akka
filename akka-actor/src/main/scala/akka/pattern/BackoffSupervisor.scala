@@ -4,22 +4,24 @@
 package akka.pattern
 
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.Duration
 import java.util.concurrent.ThreadLocalRandom
+import java.util.Optional
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.DeadLetterSuppression
 import akka.actor.Props
 import akka.actor.Terminated
-import java.util.Optional
-import scala.concurrent.duration.Duration
 import akka.actor.SupervisorStrategy.Decider
+import akka.actor.SupervisorStrategy.Directive
+import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.OneForOneStrategy
 import akka.actor.SupervisorStrategy
 
 object BackoffSupervisor {
 
   /**
-   * Props for creating an [[BackoffSupervisor]] actor.
+   * Props for creating a [[BackoffSupervisor]] actor.
    *
    * Exceptions in the child are handled with the default supervision strategy, i.e.
    * most exceptions will immediately restart the child. You can define another
@@ -45,7 +47,7 @@ object BackoffSupervisor {
   }
 
   /**
-   * Props for creating an [[BackoffSupervisor]] actor with a custom
+   * Props for creating a [[BackoffSupervisor]] actor with a custom
    * supervision strategy.
    *
    * Exceptions in the child are handled with the given `supervisionStrategy`. A
@@ -78,6 +80,12 @@ object BackoffSupervisor {
   }
 
   /**
+   * Props for creating a [[BackoffSupervisor]] actor from [[BackoffOptions]].
+   * @param options the [[BackoffOptions]] that specify how to construct a backoff-supervisor.
+   */
+  def props(options: BackoffOptions): Props = options.props
+
+  /**
    * Send this message to the [[BackoffSupervisor]] and it will reply with
    * [[BackoffSupervisor.CurrentChild]] containing the `ActorRef` of the current child, if any.
    */
@@ -89,6 +97,10 @@ object BackoffSupervisor {
    */
   def getCurrentChild = GetCurrentChild
 
+  /**
+   * Send this message to the [[BackoffSupervisor]] and it will reply with
+   * [[BackoffSupervisor.CurrentChild]] containing the `ActorRef` of the current child, if any.
+   */
   final case class CurrentChild(ref: Option[ActorRef]) {
     /**
      * Java API: The `ActorRef` of the current child, if any
@@ -96,8 +108,36 @@ object BackoffSupervisor {
     def getRef: Optional[ActorRef] = Optional.ofNullable(ref.orNull)
   }
 
-  private case object StartChild extends DeadLetterSuppression
-  private case class ResetRestartCount(current: Int) extends DeadLetterSuppression
+  /**
+   * Send this message to the [[BackoffSupervisor]] and it will reset the back-off.
+   * This should be used in conjunction with `withManualReset` in [[BackoffOptions]].
+   */
+  final case object Reset
+
+  /**
+   * Java API: Send this message to the [[BackoffSupervisor]] and it will reset the back-off.
+   * This should be used in conjunction with `withManualReset` in [[BackoffOptions]].
+   */
+  def reset = Reset
+
+  /**
+   * Send this message to the [[BackoffSupervisor]] and it will reply with
+   * [[BackoffSupervisor.RestartCount]] containing the current restart count.
+   */
+  final case object GetRestartCount
+
+  /**
+   * Java API: Send this message to the [[BackoffSupervisor]] and it will reply with
+   * [[BackoffSupervisor.RestartCount]] containing the current restart count.
+   */
+  def getRestartCount = GetRestartCount
+
+  final case class RestartCount(count: Int)
+
+  private[akka] final case object StartChild extends DeadLetterSuppression
+
+  // not final for binary compatibility with 2.4.1 
+  private[akka] case class ResetRestartCount(current: Int) extends DeadLetterSuppression
 
   /**
    * INTERNAL API
@@ -121,59 +161,45 @@ object BackoffSupervisor {
 }
 
 /**
- * This actor can be used to supervise a child actor and start it again
- * after a back-off duration if the child actor is stopped.
- *
- * This is useful in situations where the re-start of the child actor should be
- * delayed e.g. in order to give an external resource time to recover before the
- * child actor tries contacting it again (after being restarted).
- *
- * Specifically this pattern is useful for for persistent actors,
- * which are stopped in case of persistence failures.
- * Just restarting them immediately would probably fail again (since the data
- * store is probably unavailable). It is better to try again after a delay.
- *
- * It supports exponential back-off between the given `minBackoff` and
- * `maxBackoff` durations. For example, if `minBackoff` is 3 seconds and
- * `maxBackoff` 30 seconds the start attempts will be delayed with
- * 3, 6, 12, 24, 30, 30 seconds. The exponential back-off counter is reset
- * if the actor is not terminated within the `minBackoff` duration.
- *
- * In addition to the calculated exponential back-off an additional
- * random delay based the given `randomFactor` is added, e.g. 0.2 adds up to 20%
- * delay. The reason for adding a random delay is to avoid that all failing
- * actors hit the backend resource at the same time.
- *
- * You can retrieve the current child `ActorRef` by sending `BackoffSupervisor.GetCurrentChild`
- * message to this actor and it will reply with [[akka.pattern.BackoffSupervisor.CurrentChild]]
- * containing the `ActorRef` of the current child, if any.
- *
- * The `BackoffSupervisor`delegates all messages from the child to the parent of the
- * `BackoffSupervisor`, with the supervisor as sender.
- *
- * The `BackoffSupervisor` forwards all other messages to the child, if it is currently running.
- *
- * The child can stop itself and send a [[akka.actor.PoisonPill]] to the parent supervisor
- * if it wants to do an intentional stop.
- *
- * Exceptions in the child are handled with the given `supervisionStrategy`. A
- * `Restart` will perform a normal immediate restart of the child. A `Stop` will
- * stop the child, but it will be started again after the back-off duration.
+ * Back-off supervisor that stops and starts a child actor using a back-off algorithm when the child actor stops.
+ * This back-off supervisor is created by using `akka.pattern.BackoffSupervisor.props`
+ * with `Backoff.onStop`.
  */
 final class BackoffSupervisor(
-  childProps: Props,
-  childName: String,
+  val childProps: Props,
+  val childName: String,
   minBackoff: FiniteDuration,
   maxBackoff: FiniteDuration,
+  val reset: BackoffReset,
   randomFactor: Double,
-  override val supervisorStrategy: SupervisorStrategy)
-  extends Actor {
+  strategy: SupervisorStrategy)
+  extends Actor with HandleBackoff {
 
   import BackoffSupervisor._
   import context.dispatcher
 
-  private var child: Option[ActorRef] = None
-  private var restartCount = 0
+  // to keep binary compatibility with 2.4.1
+  override val supervisorStrategy = strategy match {
+    case oneForOne: OneForOneStrategy ⇒
+      OneForOneStrategy(oneForOne.maxNrOfRetries, oneForOne.withinTimeRange, oneForOne.loggingEnabled) {
+        case ex ⇒
+          val defaultDirective: Directive =
+            super.supervisorStrategy.decider.applyOrElse(ex, (_: Any) ⇒ Escalate)
+
+          strategy.decider.applyOrElse(ex, (_: Any) ⇒ defaultDirective)
+      }
+    case s ⇒ s
+  }
+
+  // for binary compatibility with 2.4.1
+  def this(
+    childProps: Props,
+    childName: String,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
+    randomFactor: Double,
+    supervisorStrategy: SupervisorStrategy) =
+    this(childProps, childName, minBackoff, maxBackoff, AutoReset(minBackoff), randomFactor, supervisorStrategy)
 
   // for binary compatibility with 2.4.0
   def this(
@@ -184,28 +210,56 @@ final class BackoffSupervisor(
     randomFactor: Double) =
     this(childProps, childName, minBackoff, maxBackoff, randomFactor, SupervisorStrategy.defaultStrategy)
 
-  override def preStart(): Unit =
-    startChild()
+  def onTerminated: Receive = {
+    case Terminated(ref) if child.contains(ref) ⇒
+      child = None
+      val restartDelay = calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
+      context.system.scheduler.scheduleOnce(restartDelay, self, StartChild)
+      restartCount += 1
+  }
+
+  def receive = onTerminated orElse handleBackoff
+}
+
+private[akka] trait HandleBackoff { this: Actor ⇒
+  def childProps: Props
+  def childName: String
+  def reset: BackoffReset
+
+  var child: Option[ActorRef] = None
+  var restartCount = 0
+
+  import BackoffSupervisor._
+  import context.dispatcher
+
+  override def preStart(): Unit = startChild()
 
   def startChild(): Unit =
     if (child.isEmpty) {
       child = Some(context.watch(context.actorOf(childProps, childName)))
     }
 
-  def receive = {
-    case Terminated(ref) if child.contains(ref) ⇒
-      child = None
-      val restartDelay = calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
-      context.system.scheduler.scheduleOnce(restartDelay, self, StartChild)
-      restartCount += 1
-
+  def handleBackoff: Receive = {
     case StartChild ⇒
       startChild()
-      context.system.scheduler.scheduleOnce(minBackoff, self, ResetRestartCount(restartCount))
+      reset match {
+        case AutoReset(resetBackoff) ⇒
+          val _ = context.system.scheduler.scheduleOnce(resetBackoff, self, ResetRestartCount(restartCount))
+        case _ ⇒ // ignore
+      }
+
+    case Reset ⇒
+      reset match {
+        case ManualReset ⇒ restartCount = 0
+        case msg         ⇒ unhandled(msg)
+      }
 
     case ResetRestartCount(current) ⇒
       if (current == restartCount)
         restartCount = 0
+
+    case GetRestartCount ⇒
+      sender() ! RestartCount(restartCount)
 
     case GetCurrentChild ⇒
       sender() ! CurrentChild(child)
@@ -220,4 +274,3 @@ final class BackoffSupervisor(
     }
   }
 }
-
