@@ -1,8 +1,8 @@
 .. _migration-2.0-scala:
 
-############################
- Migration Guide 1.0 to 2.x
-############################
+##########################
+Migration Guide 1.0 to 2.x
+##########################
 
 The 2.0 release contains some structural changes that require some
 simple, mechanical source-level changes in client code. While these are detailed below,
@@ -128,7 +128,7 @@ Should be replaced by
 .. includecode:: code/docs/MigrationsScala.scala#bidiflow-wrap
 
 FlowGraph class and builder methods have been renamed
-===========================================
+=====================================================
 
 Due to incorrect overlap with the :class:`Flow` concept we renamed the :class:`FlowGraph` class to :class:`GraphDSL`.
 There is now only one graph creation method called ``create`` which is analogous to the old ``partial`` method. For
@@ -473,7 +473,7 @@ Update procedure
 1. All custom shapes must use ``@uncheckedVariance`` on their ``Inlet`` and ``Outlet`` members.
 
 Renamed ``inlet()`` and ``outlet()`` to ``in()`` and ``out()`` in ``SourceShape``, ``SinkShape`` and ``FlowShape``
-==========================================================================================================
+==================================================================================================================
 
 The input and output ports of these shapes where called ``inlet()`` and ``outlet()`` compared to other shapes that
 consistently used ``in()`` and ``out()``. Now all :class:`Shape` s use ``in()`` and ``out()``.

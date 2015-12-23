@@ -1,8 +1,8 @@
 .. _migration-2.0-java:
 
-############################
- Migration Guide 1.0 to 2.x
-############################
+##########################
+Migration Guide 1.0 to 2.x
+##########################
 
 The 2.0 release contains some structural changes that require some
 simple, mechanical source-level changes in client code. While these are detailed below,
@@ -80,6 +80,7 @@ Update procedure
    ``BidiFlow.fromFlows`` or ``BidiFlow.fromFlowsMat``
 5. Replace all uses of ``BidiFlow.apply()`` (Scala DSL) or ``BidiFlow.create()`` (Java DSL) when it converts two
    functions to a ``BidiFlow`` with ``BidiFlow.fromFunctions``
+
 Example
 ^^^^^^^
 
@@ -122,7 +123,7 @@ Should be replaced by
 
 
 Renamed ``inlet()`` and ``outlet()`` to ``in()`` and ``out()`` in ``SourceShape``, ``SinkShape`` and ``FlowShape``
-==========================================================================================================
+==================================================================================================================
 
 The input and output ports of these shapes where called ``inlet()`` and ``outlet()`` compared to other shapes that
 consistently used ``in()`` and ``out()``. Now all :class:`Shape` s use ``in()`` and ``out()``.

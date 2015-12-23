@@ -91,7 +91,7 @@ Sometimes it is not possible (or needed) to construct the entire computation gra
 all of its different phases in different places and in the end connect them all into a complete graph and run it.
 
 This can be achieved by returning a different ``Shape`` than ``ClosedShape``, for example ``FlowShape(in, out)``, from the
-function given to ``GraphDSL.create``. See :ref:`predefined_shapes`) for a list of such predefined shapes.
+function given to ``GraphDSL.create``. See :ref:`predefined-shapes`) for a list of such predefined shapes.
 
 Making a ``Graph`` a :class:`RunnableGraph` requires all ports to be connected, and if they are not
 it will throw an exception at construction time, which helps to avoid simple
@@ -180,9 +180,14 @@ of type ``O``. To represent this interface, we need to define a custom :class:`S
 
 .. includecode:: code/docs/stream/FlowGraphDocSpec.scala#flow-graph-components-shape
 
+.. _predefined-shapes:
+
+Predefined shapes
+-----------------
+
 In general a custom :class:`Shape` needs to be able to provide all its input and output ports, be able to copy itself, and also be
 able to create a new instance from given ports. There are some predefined shapes provided to avoid unnecessary
-boilerplate
+boilerplate:
 
  * :class:`SourceShape`, :class:`SinkShape`, :class:`FlowShape` for simpler shapes,
  * :class:`UniformFanInShape` and :class:`UniformFanOutShape` for junctions with multiple input (or output) ports
@@ -246,8 +251,8 @@ turns an object into a sequence of bytes.
 
 The other stage that we talked about is a little more involved since reversing
 a framing protocol means that any received chunk of bytes may correspond to
-zero or more messages. This is best implemented using a :class:`PushPullStage`
-(see also :ref:`stream-using-push-pull-stage-scala`).
+zero or more messages. This is best implemented using a :class:`GraphStage`
+(see also :ref:`graphstage-scala`).
 
 .. includecode:: code/docs/stream/BidiFlowDocSpec.scala#framing
 
