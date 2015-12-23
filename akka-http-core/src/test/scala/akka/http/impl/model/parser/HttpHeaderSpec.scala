@@ -194,6 +194,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     "Content-Type" in {
       "Content-Type: application/pdf" =!=
         `Content-Type`(`application/pdf`)
+      "Content-Type: application/json" =!=
+        `Content-Type`(`application/json`)
       "Content-Type: text/plain; charset=utf8" =!=
         `Content-Type`(ContentType(`text/plain`, `UTF-8`)).renderedTo("text/plain; charset=UTF-8")
       "Content-Type: text/xml2; version=3; charset=windows-1252" =!=
