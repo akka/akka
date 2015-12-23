@@ -194,8 +194,8 @@ turns an object into a sequence of bytes.
 
 The other stage that we talked about is a little more involved since reversing
 a framing protocol means that any received chunk of bytes may correspond to
-zero or more messages. This is best implemented using a :class:`PushPullStage`
-(see also :ref:`stream-using-push-pull-stage-java`).
+zero or more messages. This is best implemented using a :class:`GraphStage`
+(see also :ref:`graphstage-java`).
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/BidiFlowDocTest.java#framing
 

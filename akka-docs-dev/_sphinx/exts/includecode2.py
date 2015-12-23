@@ -48,7 +48,7 @@ class IncludeCode2(Directive):
             lines = f.readlines()
             f.close()
         except (IOError, OSError):
-            return [document.reporter.warning(
+            return [document.reporter.error(
                 'Include file %r not found or reading it failed' % fn,
                 line=self.lineno)]
         except UnicodeError:
@@ -98,8 +98,7 @@ class IncludeCode2(Directive):
         text = ''.join(res)
 
         if text == "":
-            # in includecode2 it indeed is a warning, an empty code block will be inserted
-            return [document.reporter.warning('Snippet "' + snippet + '" not found!', line=self.lineno)]
+            return [document.reporter.error('Snippet "' + snippet + '" not found!', line=self.lineno)]
 
         retnode = nodes.literal_block(text, text, source=fn)
         document.settings.env.note_dependency(rel_fn)

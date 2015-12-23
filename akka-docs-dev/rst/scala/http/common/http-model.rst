@@ -294,21 +294,21 @@ Because of the number of ways one may interact with headers (i.e. try to match a
 or the other way around etc), a helper trait for custom Header types and their companions classes are provided by Akka HTTP.
 Thanks to extending :class:`ModeledCustomHeader` instead of the plain ``CustomHeader`` such header can be matched
 
-.. includecode:: ../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/CustomHeaderRoutingSpec.scala
+.. includecode:: ../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala
    :include: modeled-api-key-custom-header
 
 Which allows the this CustomHeader to be used in the following scenarios:
 
-.. includecode:: ../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/CustomHeaderRoutingSpec.scala
+.. includecode:: ../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala
    :include: matching-examples
 
 Including usage within the header directives like in the following :ref:`-headerValuePF-` example:
 
-.. includecode:: ../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/CustomHeaderRoutingSpec.scala
+.. includecode:: ../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala
    :include: matching-in-routes
 
 One can also directly extend :class:`CustomHeader` which requires less boilerplate, however that has the downside of
-matching against :ref:`RawHeader` instances not working out-of-the-box, thus limiting its usefulnes in the routing layer
+matching against :class:`RawHeader` instances not working out-of-the-box, thus limiting its usefulnes in the routing layer
 of Akka HTTP. For only rendering such header however it would be enough.
 
 .. note::
