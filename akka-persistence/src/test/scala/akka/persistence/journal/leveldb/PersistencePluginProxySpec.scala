@@ -9,7 +9,6 @@ import akka.persistence._
 import akka.persistence.journal.PersistencePluginProxy
 import akka.testkit.{ TestProbe, AkkaSpec }
 import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration._
 
 object PersistencePluginProxySpec {
   lazy val config = ConfigFactory.parseString(
@@ -54,6 +53,8 @@ object PersistencePluginProxySpec {
 
   def targetAddressConfig(system: ActorSystem) = ConfigFactory.parseString(
     s"""
+      |akka.extensions = ["akka.persistence.Persistence"]
+      |akka.persistence.journal.auto-start-journals = [""]
       |akka.persistence.journal.proxy.target-journal-address = "${system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress}"
       |akka.persistence.snapshot-store.proxy.target-snapshot-store-address = "${system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress}"
     """.stripMargin)
