@@ -1480,7 +1480,7 @@ object AkkaBuild extends Build {
     )
     def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
     def akkaImport(packageName: String = "akka.*") = versionedImport(packageName, "2.3", "2.4")
-    def streamAndHttpImport(packageName: String) = versionedImport(packageName, "1.0", "1.1")
+    def streamAndHttpImport(packageName: String) = versionedImport(packageName, "2.0", "2.1")
     def configImport(packageName: String = "com.typesafe.config.*") = versionedImport(packageName, "1.2.0", "1.3.0")
     def protobufImport(packageName: String = "com.google.protobuf.*") = versionedImport(packageName, "2.5.0", "2.6.0")
     def scalaImport(packageName: String = "scala.*") = versionedImport(packageName, s"$scalaEpoch.$scalaMajor", s"$scalaEpoch.${scalaMajor+1}")
