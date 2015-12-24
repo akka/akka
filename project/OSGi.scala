@@ -46,7 +46,8 @@ object OSGi {
 
   val slf4j = exports(Seq("akka.event.slf4j.*"))
 
-  val persistence = exports(Seq("akka.persistence.*"))
+  val persistence = exports(Seq("akka.persistence.*"),
+    imports = Seq(optionalResolution("org.fusesource.leveldbjni.*"), optionalResolution("org.iq80.leveldb.*")))
 
   val persistenceQuery = exports(Seq("akka.persistence.query.*"))
 
