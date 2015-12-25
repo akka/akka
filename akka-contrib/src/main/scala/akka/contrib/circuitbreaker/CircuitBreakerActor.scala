@@ -1,9 +1,10 @@
 /**
-  * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
-  */
+ * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.contrib.circuitbreaker
 
 import akka.actor._
+import akka.event.LoggingAdapter
 import akka.pattern._
 import akka.util.Timeout
 
@@ -42,22 +43,22 @@ object CircuitBreakerActor {
 
   sealed trait CircuitBreakerCommand
 
-  case class TellOnly(msg: Any) extends CircuitBreakerCommand
+  final case class TellOnly(msg: Any) extends CircuitBreakerCommand
 
   sealed trait CircuitBreakerResponse
-  case class CircuitOpenFailure(failedMsg: Any)
+  final case class CircuitOpenFailure(failedMsg: Any)
 
   sealed trait CircuitBreakerEvent
-  case class CircuitOpen(circuit: ActorRef) extends CircuitBreakerCommand
-  case class CircuitClosed(circuit: ActorRef) extends CircuitBreakerCommand
-  case class CircuitHalfOpen(circuit: ActorRef) extends CircuitBreakerCommand
+  final case class CircuitOpen(circuit: ActorRef) extends CircuitBreakerCommand
+  final case class CircuitClosed(circuit: ActorRef) extends CircuitBreakerCommand
+  final case class CircuitHalfOpen(circuit: ActorRef) extends CircuitBreakerCommand
 
   sealed trait CircuitBreakerState
   case object Open extends CircuitBreakerState
   case object Closed extends CircuitBreakerState
   case object HalfOpen extends CircuitBreakerState
 
-  case class CircuitBreakerStateData(failureCount: Int = 0, firstHalfOpenMessageSent: Boolean = false)
+  final case class CircuitBreakerStateData(failureCount: Int = 0, firstHalfOpenMessageSent: Boolean = false)
 
   /**
    * Convenience builder with appropriate defaults to create the CircuitBreakerActor props
@@ -71,11 +72,10 @@ object CircuitBreakerActor {
    * @param failureDetector      function to detect if the a message received from the target actor as
    *                             response from a request represent a failure, defaults to a function accepting every
    *                             response making this circuit breaker be activated by response timeouts only
-   *
    * @param openCircuitFailureConverter  function to map a failure into a response message.
    *                                     Defaults to an identify function
    */
-  case class CircuitBreakerActorBuilder(
+  final case class CircuitBreakerActorBuilder(
     maxFailures: Int, callTimeout: Timeout, resetTimeout: Timeout,
     circuitEventListener: Option[ActorRef] = None,
     failureDetector: Any ⇒ Boolean = { _ ⇒ false },
@@ -161,7 +161,7 @@ class CircuitBreakerActor(
       case Event(message, state) ⇒
         log.debug("CLOSED: Sending message {} expecting a response withing timeout {}", message, callTimeout)
         val currentSender = sender()
-        forwardRequest(message, sender, state)
+        forwardRequest(message, sender, state, log)
         stay
 
     }
@@ -206,7 +206,7 @@ class CircuitBreakerActor(
 
       case Event(message, state @ CircuitBreakerStateData(_, false)) ⇒
         log.debug("HALF-OPEN: First message {} received, forwarding it to target {}", message, target)
-        forwardRequest(message, sender, state)
+        forwardRequest(message, sender, state, log)
         stay using state.copy(firstHalfOpenMessageSent = true)
 
       case Event(message, CircuitBreakerStateData(_, true)) ⇒
@@ -217,7 +217,7 @@ class CircuitBreakerActor(
     }
   }
 
-  def forwardRequest(message: Any, currentSender: ActorRef, state: CircuitBreakerStateData) = {
+  def forwardRequest(message: Any, currentSender: ActorRef, state: CircuitBreakerStateData, log: LoggingAdapter) = {
     import context.dispatcher
 
     target.ask(message)(callTimeout).onComplete {
