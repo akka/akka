@@ -30,7 +30,6 @@ object CircuitBreakerActor {
    *                         response from a request represent a failure
    * @param failureMap   function to map a failure into a response message. The failing response message is wrapped
    *                     into a [[akka.contrib.circuitbreaker.CircuitBreakerActor.CircuitOpenFailure]] object
-   * @return
    */
   def props(target: ActorRef,
             maxFailures: Int,
@@ -60,21 +59,6 @@ object CircuitBreakerActor {
 
   final case class CircuitBreakerStateData(failureCount: Int = 0, firstHalfOpenMessageSent: Boolean = false)
 
-  /**
-   * Convenience builder with appropriate defaults to create the CircuitBreakerActor props
-   *
-   * @param maxFailures  maximum number of failures before opening the circuit
-   * @param callTimeout  timeout before considering the ongoing call a failure
-   * @param resetTimeout time after which the channel will be closed after entering the open state
-   * @param circuitEventListener an actor that will receive a series of messages of type
-   *                             [[akka.contrib.circuitbreaker.CircuitBreakerActor.CircuitBreakerEvent]]
-   *                             defaults to None
-   * @param failureDetector      function to detect if the a message received from the target actor as
-   *                             response from a request represent a failure, defaults to a function accepting every
-   *                             response making this circuit breaker be activated by response timeouts only
-   * @param openCircuitFailureConverter  function to map a failure into a response message.
-   *                                     Defaults to an identify function
-   */
   final case class CircuitBreakerActorBuilder(
     maxFailures: Int, callTimeout: Timeout, resetTimeout: Timeout,
     circuitEventListener: Option[ActorRef] = None,
@@ -85,7 +69,6 @@ object CircuitBreakerActor {
      * Creates the props for a [[akka.contrib.circuitbreaker.CircuitBreakerActor]] proxying the given target
      *
      * @param target the target actor ref
-     * @return
      */
     def propsForTarget(target: ActorRef) = CircuitBreakerActor.props(target, maxFailures, callTimeout, resetTimeout, circuitEventListener, failureDetector, openCircuitFailureConverter)
 
@@ -97,8 +80,6 @@ object CircuitBreakerActor {
    * Extends [[scala.concurrent.Future]] with the method failForOpenCircuitWith to handle
    *   [[akka.contrib.circuitbreaker.CircuitBreakerActor.CircuitOpenFailure]] failure responses throwing
    *   an exception built with the given exception builder
-   *
-   * @param future
    */
   implicit class CircuitBreakerAwareFuture(val future: Future[Any]) extends AnyVal {
     def failForOpenCircuit(implicit executionContext: ExecutionContext): Future[Any] = failForOpenCircuitWith(new OpenCircuitException)
