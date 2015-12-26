@@ -1338,3 +1338,36 @@ abstract class AbstractOutHandler extends OutHandler
  * (completing when upstream completes, failing when upstream fails, completing when downstream cancels).
  */
 abstract class AbstractInOutHandler extends InHandler with OutHandler
+
+private[akka] trait CallbackWrapper[T] {
+  trait CallbackState
+  case class NotInitialized(list: List[T]) extends CallbackState
+  case class Initialized(f: T ⇒ Unit) extends CallbackState
+  case class Stopped(f: T ⇒ Unit) extends CallbackState
+
+  private val callbackState = new AtomicReference[CallbackState](NotInitialized(Nil))
+
+  def stopCallback(f: T ⇒ Unit): Unit = {
+    callbackState.set(Stopped(f))
+  }
+
+  def initCallback(f: T ⇒ Unit): Unit = {
+    val list = (callbackState.getAndSet(Initialized(f)): @unchecked) match {
+      case NotInitialized(l) ⇒ l
+    }
+    list.reverse.foreach(f)
+  }
+
+  def callback(arg: T): Unit = {
+    callbackState.get() match {
+      case list @ NotInitialized(l) ⇒
+        if (!callbackState.compareAndSet(list, NotInitialized(arg :: l)))
+          callbackState.get() match {
+            case NotInitialized(_) ⇒ throw new IllegalStateException("Concurrent call of SourceQueue.offer is detected")
+            case Initialized(cb)   ⇒ cb(arg)
+          }
+      case Initialized(cb) ⇒ cb(arg)
+      case Stopped(cb)     ⇒ cb(arg)
+    }
+  }
+}
