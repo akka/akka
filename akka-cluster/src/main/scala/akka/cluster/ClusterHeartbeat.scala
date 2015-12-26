@@ -108,24 +108,21 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   def active: Actor.Receive = {
     case HeartbeatTick                ⇒ heartbeat()
     case HeartbeatRsp(from)           ⇒ heartbeatRsp(from)
-    case MemberUp(m)                  ⇒ addMember(m)
     case MemberRemoved(m, _)          ⇒ removeMember(m)
+    case evt: MemberEvent             ⇒ addMember(evt.member)
     case UnreachableMember(m)         ⇒ unreachableMember(m)
     case ReachableMember(m)           ⇒ reachableMember(m)
-    case _: MemberEvent               ⇒ // not interested in other types of MemberEvent
     case ExpectedFirstHeartbeat(from) ⇒ triggerFirstHeartbeat(from)
   }
 
   def init(snapshot: CurrentClusterState): Unit = {
-    val nodes: Set[UniqueAddress] = snapshot.members.collect {
-      case m if m.status == MemberStatus.Up ⇒ m.uniqueAddress
-    }(collection.breakOut)
+    val nodes: Set[UniqueAddress] = snapshot.members.map(_.uniqueAddress)
     val unreachable: Set[UniqueAddress] = snapshot.unreachable.map(_.uniqueAddress)
     state = state.init(nodes, unreachable)
   }
 
   def addMember(m: Member): Unit =
-    if (m.uniqueAddress != selfUniqueAddress)
+    if (m.uniqueAddress != selfUniqueAddress && !state.contains(m.uniqueAddress))
       state = state.addMember(m.uniqueAddress)
 
   def removeMember(m: Member): Unit =
@@ -187,6 +184,8 @@ private[cluster] case class ClusterHeartbeatSenderState(
 
   def init(nodes: Set[UniqueAddress], unreachable: Set[UniqueAddress]): ClusterHeartbeatSenderState =
     copy(ring = ring.copy(nodes = nodes + selfAddress, unreachable = unreachable))
+
+  def contains(node: UniqueAddress): Boolean = ring.nodes(node)
 
   def addMember(node: UniqueAddress): ClusterHeartbeatSenderState =
     membershipChange(ring :+ node)
