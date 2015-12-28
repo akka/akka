@@ -40,8 +40,8 @@ Use the package settings and optionally specify the mainClass in ``build.sbt`` f
 .. includecode:: ../../../akka-samples/akka-sample-main-scala/build.sbt
 
 
-.. note:: Use the ``JavaServerAppPackaging``. Don't use ``AkkaAppPackaging`` (previously named 
-   ``packageArchetype.akka_application``, since it doesn't have the same flexibility and quality
+.. note:: Use the ``JavaServerAppPackaging``. Don't use the deprecated ``AkkaAppPackaging`` (previously named 
+   ``packageArchetype.akka_application``), since it doesn't have the same flexibility and quality
    as the ``JavaServerAppPackaging``.
 
 Use sbt task ``dist`` package the application.
