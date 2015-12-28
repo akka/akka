@@ -15,9 +15,9 @@ class RecipeSeq extends RecipeSpec {
       val MaxAllowedSeqSize = 100
 
       //#draining-to-seq
-      val strictUnsafe: Future[immutable.Seq[Message]] = myData.runWith(Sink.seq) // dangerous! if myData is unbounded, cause OutOfMemory exception
-      val strictSafe1: Future[immutable.Seq[Message]] = myData.limit(MaxAllowedSeqSize).runWith(Sink.seq) // ok. Future will fail with a `StreamLimitReachedException` if there are more than MaxAllowedSeqSize incoming elements
-      val strictSafe2: Future[immutable.Seq[Message]] = myData.take(MaxAllowedSeqSize).runWith(Sink.seq) // ok. Collect up until `MaxAllowedSeqSize`-th elements only
+      val strictUnsafe: Future[immutable.Seq[Message]] = myData.runWith(Sink.seq) // dangerous! if myData is unbounded, will cause OutOfMemory exception
+      val strictSafe1: Future[immutable.Seq[Message]] = myData.limit(MaxAllowedSeqSize).runWith(Sink.seq) // ok. Future will fail with a `StreamLimitReachedException` if the number of incoming elements is larger than MaxAllowedSeqSize
+      val strictSafe2: Future[immutable.Seq[Message]] = myData.take(MaxAllowedSeqSize).runWith(Sink.seq) // ok. Collect up until `MaxAllowedSeqSize`-th elements only (drop the rest if any)
       //#draining-to-seq
 
       Await.result(strictSafe1, 3.seconds) should be(List("1", "2", "3"))
