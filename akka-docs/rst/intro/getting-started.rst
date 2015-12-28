@@ -142,7 +142,7 @@ project.
 
 Summary of the essential parts for using Akka with SBT:
 
-SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <https://github.com/harrah/xsbt/wiki/Setup>`_
+SBT installation instructions on `http://www.scala-sbt.org/release/tutorial/Setup.html <http://www.scala-sbt.org/release/tutorial/Setup.html>`_
 
 ``build.sbt`` file:
 
