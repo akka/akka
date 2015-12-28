@@ -172,7 +172,7 @@ and then it takes a while for it to be populated.
 Dependencies
 ------------
 
-To use the Cluster Singleton you must add the following dependency in your project.
+To use Distributed Publish Subscribe you must add the following dependency in your project.
 
 sbt::
 
