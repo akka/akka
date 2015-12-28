@@ -15,11 +15,12 @@ class RecipeToStrict extends RecipeSpec {
       val MaxAllowedSeqSize = 100
 
       //#draining-to-seq
-      val strict: Future[immutable.Seq[Message]] =
-        myData.grouped(MaxAllowedSeqSize).runWith(Sink.head)
+      val strictUnsafe: Future[immutable.Seq[Message]] = myData.runWith(Sink.seq) // dangerous! if myData is unbounded, cause OutOfMemory exception
+      val strictSafe1: Future[immutable.Seq[Message]] = myData.limit(MaxAllowedSeqSize).runWith(Sink.seq) // ok. Future will fail with a `StreamLimitReachedException` if there are more than MaxAllowedSeqSize incoming elements
+      val strictSafe2: Future[immutable.Seq[Message]] = myData.take(MaxAllowedSeqSize).runWith(Sink.seq) // ok. Collect up until `MaxAllowedSeqSize`-th elements only
       //#draining-to-seq
 
-      Await.result(strict, 3.seconds) should be(List("1", "2", "3"))
+      Await.result(strictSafe1, 3.seconds) should be(List("1", "2", "3"))
     }
 
   }
