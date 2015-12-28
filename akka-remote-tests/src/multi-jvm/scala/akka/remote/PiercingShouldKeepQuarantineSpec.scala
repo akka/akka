@@ -16,6 +16,8 @@ object PiercingShouldKeepQuarantineSpec extends MultiNodeConfig {
       #akka.loglevel = INFO
       #akka.remote.log-remote-lifecycle-events = INFO
       akka.remote.retry-gate-closed-for = 0.5s
+      
+      akka.diagnostics.checker.disabled-checks += retry-gate-closed-for
                               """)))
 
   class Subject extends Actor {

@@ -27,6 +27,7 @@ akka {
         port = 0
     }
 }
+akka.diagnostics.checker.disabled-checks += retry-gate-closed-for
 """)) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
 
   val other = ActorSystem("other", ConfigFactory.parseString("akka.remote.netty.tcp.port=2666")
@@ -59,7 +60,7 @@ akka {
     }).withDeploy(Deploy.local))
 
     expectMsg(20.seconds, ref)
-    // we don't expect real quarantine when the UID is unknown, i.e. QuarantinedEvent is not published 
+    // we don't expect real quarantine when the UID is unknown, i.e. QuarantinedEvent is not published
     probe.expectNoMsg(3.seconds)
     // The following verifies ticket #3870, i.e. make sure that re-delivery of Watch message is stopped.
     // It was observed as periodic logging of "address is now gated" when the gate was lifted.

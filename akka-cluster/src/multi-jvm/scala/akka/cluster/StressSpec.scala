@@ -164,6 +164,10 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
         }
       }
     }
+
+    akka.diagnostics.checker.confirmed-typos = ["akka.test.cluster-stress-spec"]
+    akka.diagnostics.checker.disabled-checks = [auto-down, power-user-settings]
+    akka.diagnostics.recorder.enabled = off
     """))
 
   class Settings(conf: Config) {

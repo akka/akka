@@ -35,6 +35,9 @@ object AkkaProtocolStressTest {
       }
 
     }
+
+    akka.diagnostics.checker.disabled-checks += transport-failure-detector
+    akka.diagnostics.checker.disabled-checks += retry-gate-closed-for
                                                    """)
 
   object ResendFinal

@@ -32,6 +32,7 @@ object DispatcherActorSpec {
       }
     }
 
+    akka.diagnostics.checker.disabled-checks += dispatcher-throughput
     """
   class TestActor extends Actor {
     def receive = {

@@ -32,6 +32,9 @@ object Ticket15109Spec extends MultiNodeConfig {
       akka.remote.transport-failure-detector.heartbeat-interval = 1 s
       akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
       akka.remote.retry-gate-closed-for = 0.5 s
+      
+      akka.diagnostics.checker.disabled-checks += transport-failure-detector
+      akka.diagnostics.checker.disabled-checks += retry-gate-closed-for
                               """)))
 
   testTransport(on = true)
