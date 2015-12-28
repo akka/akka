@@ -6,7 +6,7 @@ import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
-class RecipeToStrict extends RecipeSpec {
+class RecipeSeq extends RecipeSpec {
 
   "Recipe for draining a stream into a strict collection" must {
 

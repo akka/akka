@@ -54,9 +54,9 @@ collection itself, so we can just call ``mapConcat(identity)``.
 Draining a stream to a strict collection
 ----------------------------------------
 
-**Situation:** A finite sequence of elements is given as a stream, but a scala collection is needed instead.
+**Situation:** A possibly unbounded sequence of elements is given as a stream, which needs to be collected into a Scala collection while ensuring boundedness
 
-A common situation when working with streams is one where we need to collect the incoming elements into a Scala collection.
+A common situation when working with streams is one where we need to collect incoming elements into a Scala collection.
 This operation is supported via ``Sink.seq``, which materializes into a ``Future[Seq[T]]``.
 
 The function ``limit`` or ``take`` should always be used in order to guarantee stream boundedness, thus preventing the program from running out of memory.
