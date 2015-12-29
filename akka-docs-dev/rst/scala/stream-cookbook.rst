@@ -57,11 +57,13 @@ Draining a stream to a strict collection
 **Situation:** A possibly unbounded sequence of elements is given as a stream, which needs to be collected into a Scala collection while ensuring boundedness
 
 A common situation when working with streams is one where we need to collect incoming elements into a Scala collection.
-This operation is supported via ``Sink.seq``, which materializes into a ``Future[Seq[T]]``.
+This operation is supported via ``Sink.seq`` which materializes into a ``Future[Seq[T]]``.
 
-The function ``limit`` or ``take`` should always be used in order to guarantee stream boundedness, thus preventing the program from running out of memory.
+In conjunction, the function ``limit`` or ``take`` should always be used in order to guarantee stream boundedness, thus preventing the program from running out of memory.
 
-.. includecode:: code/docs/stream/cookbook/RecipeToStrict.scala#draining-to-seq
+.. includecode:: code/docs/stream/cookbook/RecipeToStrict.scala#draining-to-seq-unsafe
+.. includecode:: code/docs/stream/cookbook/RecipeToStrict.scala#draining-to-seq-limit
+.. includecode:: code/docs/stream/cookbook/RecipeToStrict.scala#draining-to-seq-take
 
 Calculating the digest of a ByteString stream
 ---------------------------------------------
