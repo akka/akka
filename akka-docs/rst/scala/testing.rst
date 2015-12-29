@@ -748,14 +748,13 @@ options:
 
 .. includecode:: code/docs/testkit/TestkitDocSpec.scala#logging-receive
 
-.
-  If the aforementioned setting is not given in the :ref:`configuration`, this method will
-  pass through the given :class:`Receive` function unmodified, meaning that
-  there is no runtime cost unless actually enabled.
+If the aforementioned setting is not given in the :ref:`configuration`, this method will
+pass through the given :class:`Receive` function unmodified, meaning that
+there is no runtime cost unless actually enabled.
 
-  The logging feature is coupled to this specific local mark-up because
-  enabling it uniformly on all actors is not usually what you need, and it
-  would lead to endless loops if it were applied to event bus logger listeners.
+The logging feature is coupled to this specific local mark-up because
+enabling it uniformly on all actors is not usually what you need, and it
+would lead to endless loops if it were applied to event bus logger listeners.
 
 * *Logging of special messages*
 

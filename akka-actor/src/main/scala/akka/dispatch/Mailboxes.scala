@@ -6,7 +6,6 @@ package akka.dispatch
 
 import java.lang.reflect.ParameterizedType
 import java.util.concurrent.ConcurrentHashMap
-
 import akka.ConfigurationException
 import akka.actor.{ Actor, ActorRef, ActorSystem, DeadLetter, Deploy, DynamicAccess, Props }
 import akka.dispatch.sysmsg.{ EarliestFirstSystemMessageList, LatestFirstSystemMessageList, SystemMessage, SystemMessageList }
@@ -14,8 +13,9 @@ import akka.event.EventStream
 import akka.event.Logging.Warning
 import akka.util.Reflect
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.util.control.NonFatal
+import java.util.concurrent.atomic.AtomicReference
+import scala.annotation.tailrec
 
 object Mailboxes {
   final val DefaultMailboxId = "akka.actor.default-mailbox"
@@ -136,10 +136,12 @@ private[akka] class Mailboxes(
       lazy val mqType: Class[_] = getProducedMessageQueueType(mailboxType)
       if (hasMailboxRequirement && !mailboxRequirement.isAssignableFrom(mqType))
         throw new IllegalArgumentException(
-          s"produced message queue type [$mqType] does not fulfill requirement for dispatcher [${id}]")
+          s"produced message queue type [$mqType] does not fulfill requirement for dispatcher [$id]. " +
+            s"Must be a subclass of [$mailboxRequirement].")
       if (hasRequiredType(actorClass) && !actorRequirement.isAssignableFrom(mqType))
         throw new IllegalArgumentException(
-          s"produced message queue type [$mqType] does not fulfill requirement for actor class [$actorClass]")
+          s"produced message queue type [$mqType] does not fulfill requirement for actor class [$actorClass]. " +
+            s"Must be a subclass of [$actorRequirement].")
       mailboxType
     }
 
@@ -229,5 +231,43 @@ private[akka] class Mailboxes(
     ConfigFactory.parseMap(Map("id" -> id).asJava)
       .withFallback(settings.config.getConfig(id))
       .withFallback(defaultMailboxConfig)
+  }
+
+  private val stashCapacityCache = new AtomicReference[Map[String, Int]](Map.empty[String, Int])
+  private val defaultStashCapacity: Int =
+    stashCapacityFromConfig(Dispatchers.DefaultDispatcherId, Mailboxes.DefaultMailboxId)
+
+  /**
+   * INTERNAL API: The capacity of the stash. Configured in the actor's mailbox or dispatcher config.
+   */
+  private[akka] final def stashCapacity(dispatcher: String, mailbox: String): Int = {
+
+    @tailrec def updateCache(cache: Map[String, Int], key: String, value: Int): Boolean = {
+      stashCapacityCache.compareAndSet(cache, cache.updated(key, value)) ||
+        updateCache(stashCapacityCache.get, key, value) // recursive, try again
+    }
+
+    if (dispatcher == Dispatchers.DefaultDispatcherId && mailbox == Mailboxes.DefaultMailboxId)
+      defaultStashCapacity
+    else {
+      val cache = stashCapacityCache.get
+      val key = dispatcher + "-" + mailbox
+      cache.get(key) match {
+        case Some(value) ⇒ value
+        case None ⇒
+          val value = stashCapacityFromConfig(dispatcher, mailbox)
+          updateCache(cache, key, value)
+          value
+      }
+    }
+  }
+
+  private def stashCapacityFromConfig(dispatcher: String, mailbox: String): Int = {
+    val disp = settings.config.getConfig(dispatcher)
+    val fallback = disp.withFallback(settings.config.getConfig(Mailboxes.DefaultMailboxId))
+    val config =
+      if (mailbox == Mailboxes.DefaultMailboxId) fallback
+      else settings.config.getConfig(mailbox).withFallback(fallback)
+    config.getInt("stash-capacity")
   }
 }

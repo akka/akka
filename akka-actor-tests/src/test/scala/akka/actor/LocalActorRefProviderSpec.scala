@@ -22,8 +22,7 @@ object LocalActorRefProviderSpec {
         default-dispatcher {
           executor = "thread-pool-executor"
           thread-pool-executor {
-            core-pool-size-min = 16
-            core-pool-size-max = 16
+            fixed-pool-size = 16
           }
         }
       }

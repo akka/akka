@@ -7,7 +7,7 @@ import language.existentials
 import language.postfixOps
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import scala.util.control.NonFatal
 import akka.actor._
 import akka.actor.SupervisorStrategy.Stop
@@ -562,7 +562,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
           updateLatestGossip(newGossip)
 
           logInfo("Node [{}] is JOINING, roles [{}]", node.address, roles.mkString(", "))
-          if (node != selfUniqueAddress)
+          if (node == selfUniqueAddress) {
+            if (localMembers.isEmpty)
+              leaderActions() // important for deterministic oldest when bootstrapping
+          } else
             sender() ! Welcome(selfUniqueAddress, latestGossip)
 
           publish(latestGossip)
@@ -974,11 +977,11 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       // handle changes
 
       // replace changed members
-      val newMembers = changedMembers ++ localMembers -- removedUnreachable
+      val newMembers = changedMembers union localMembers diff removedUnreachable
 
       // removing REMOVED nodes from the `seen` table
       val removed = removedUnreachable.map(_.uniqueAddress)
-      val newSeen = localSeen -- removed
+      val newSeen = localSeen diff removed
       // removing REMOVED nodes from the `reachability` table
       val newReachability = localOverview.reachability.remove(removed)
       val newOverview = localOverview copy (seen = newSeen, reachability = newReachability)
@@ -1036,7 +1039,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
     if (changedMembers.nonEmpty) {
       // replace changed members
-      val newMembers = changedMembers ++ localMembers
+      val newMembers = changedMembers union localMembers
       val newGossip = localGossip.copy(members = newMembers)
       updateLatestGossip(newGossip)
 

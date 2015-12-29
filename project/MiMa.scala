@@ -3,7 +3,7 @@
  */
 package akka
 
-import com.typesafe.tools.mima.plugin.MimaKeys.{binaryIssueFilters, previousArtifact}
+import com.typesafe.tools.mima.plugin.MimaKeys.{bbcIssueFilters, previousArtifacts}
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import sbt._
 
@@ -12,8 +12,8 @@ object MiMa extends AutoPlugin {
   override def trigger = allRequirements
 
   override val projectSettings = mimaDefaultSettings ++ Seq(
-    previousArtifact := None,
-    binaryIssueFilters ++= mimaIgnoredProblems
+    previousArtifacts := Set.empty,
+    bbcIssueFilters ++= mimaIgnoredProblems
   )
 
   case class FilterAnyProblem(name: String) extends com.typesafe.tools.mima.core.ProblemFilter {
@@ -23,7 +23,7 @@ object MiMa extends AutoPlugin {
       case m: MemberProblem => m.ref.owner.fullName != name && m.ref.owner.fullName != (name + '$')
     }
   }
-  
+
   case class FilterAnyProblemStartingWith(start: String) extends com.typesafe.tools.mima.core.ProblemFilter {
     import com.typesafe.tools.mima.core._
     override def apply(p: Problem): Boolean = p match {
@@ -33,8 +33,9 @@ object MiMa extends AutoPlugin {
   }
 
   val mimaIgnoredProblems = {
-      import com.typesafe.tools.mima.core._
-    Seq(
+    import com.typesafe.tools.mima.core._
+
+    val bcIssuesBetween23and24 = Seq(
       FilterAnyProblem("akka.remote.testconductor.Terminate"),
       FilterAnyProblem("akka.remote.testconductor.TerminateMsg"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.testconductor.Conductor.shutdown"),
@@ -428,7 +429,7 @@ object MiMa extends AutoPlugin {
       // method nrOfInstances(akka.actor.ActorSystem) in trait akka.routing.Pool does not have a correspondent in old version
       // ok to exclude, since we don't call nrOfInstances(sys) for old implementations
       ProblemFilters.exclude[MissingMethodProblem]("akka.routing.Pool.nrOfInstances"),
-      
+
       // method paths(akka.actor.ActorSystem) in trait akka.routing.Group does not have a correspondent in old version
       // ok to exclude, since we don't call paths(sys) for old implementations
       ProblemFilters.exclude[MissingMethodProblem]("akka.routing.Group.paths"),
@@ -539,7 +540,6 @@ object MiMa extends AutoPlugin {
       // issue #17554
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.maxResendRate"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.resendLimit"),
-
       //changes introduced by #16911
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.RemoteActorRefProvider.afterSendSystemMessage"),
       FilterAnyProblem("akka.remote.RemoteWatcher"),
@@ -548,18 +548,10 @@ object MiMa extends AutoPlugin {
       FilterAnyProblem("akka.remote.RemoteWatcher$Rewatch"),
       FilterAnyProblem("akka.remote.RemoteWatcher$RewatchRemote"),
       FilterAnyProblem("akka.remote.RemoteWatcher$Stats"),
-
-      // toString is available on any object, mima is confused due to a generated toString appearing #17722
-      ProblemFilters.exclude[MissingMethodProblem]("akka.japi.Pair.toString"),
-      
-      // #17805
-      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorCell.clearActorFields"),
-      
       // internal changes introduced by #17253
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ClusterDaemon.coreSupervisor"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterCoreSupervisor.publisher"),
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ClusterCoreSupervisor.coreDaemon"),
-
       // protofbuf embedding #13783
       FilterAnyProblemStartingWith("akka.remote.WireFormats"),
       FilterAnyProblemStartingWith("akka.remote.ContainerFormats"),
@@ -567,10 +559,46 @@ object MiMa extends AutoPlugin {
       FilterAnyProblemStartingWith("akka.remote.testconductor.TestConductorProtocol"),
       FilterAnyProblemStartingWith("akka.cluster.protobuf.msg.ClusterMessages"),
       FilterAnyProblemStartingWith("akka.cluster.protobuf.ClusterMessageSerializer"),
-      
       // #13584 change in internal actor
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ClusterCoreDaemon.akka$cluster$ClusterCoreDaemon$$isJoiningToUp$1")
+    )
 
-     )
+    Map(
+      "2.3.11" -> Seq(
+        ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorCell.clearActorFields"), // #17805, incompatibility with 2.4.x fixed in 2.3.12
+        ProblemFilters.exclude[MissingMethodProblem]("akka.japi.Pair.toString") // reported on PR validation machine which uses Java 1.8.0_45
+      ),
+      "2.3.14" -> bcIssuesBetween23and24,
+      "2.4.0" -> Seq(
+        FilterAnyProblem("akka.remote.transport.ProtocolStateActor"),
+        FilterAnyProblem("akka.persistence.journal.inmem.InmemJournal"),
+        FilterAnyProblem("akka.persistence.journal.inmem.InmemStore"),
+
+        //#18353 Changes to methods and fields private to remoting actors
+        ProblemFilters.exclude[MissingMethodProblem]("akka.remote.EndpointManager.retryGateEnabled"),
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.EndpointManager.pruneTimerCancellable"),
+        
+        // #18722 internal changes to actor
+        FilterAnyProblem("akka.cluster.sharding.DDataShardCoordinator"),
+
+        // #18328 optimize VersionVector for size 1
+        FilterAnyProblem("akka.cluster.ddata.VersionVector"),
+
+        // #19133 change in internal actor
+        ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.gated"),
+
+        // debug logging in ReplayFilter, change of internal actor
+        ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.ReplayFilter.this"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.AsyncWriteJournal.akka$persistence$journal$AsyncWriteJournal$_setter_$akka$persistence$journal$AsyncWriteJournal$$replayDebugEnabled_="),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.AsyncWriteJournal.akka$persistence$journal$AsyncWriteJournal$$replayDebugEnabled"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.ReplayFilter.props"),
+
+        // report invalid association events #18758
+        ProblemFilters.exclude[MissingTypesProblem]("akka.remote.InvalidAssociation$"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.remote.InvalidAssociation.apply"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.remote.InvalidAssociation.copy"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.remote.InvalidAssociation.this")
+      )
+    )
   }
 }

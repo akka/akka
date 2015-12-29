@@ -407,8 +407,7 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends PersistenceSpec(c
 }
 
 class LeveldbAtLeastOnceDeliverySpec extends AtLeastOnceDeliverySpec(
-  // TODO disable debug logging once happy with stability of this test
-  ConfigFactory.parseString("""akka.logLevel = DEBUG""") withFallback PersistenceSpec.config("leveldb", "AtLeastOnceDeliverySpec"))
+  PersistenceSpec.config("leveldb", "AtLeastOnceDeliverySpec"))
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class InmemAtLeastOnceDeliverySpec extends AtLeastOnceDeliverySpec(PersistenceSpec.config("inmem", "AtLeastOnceDeliverySpec"))

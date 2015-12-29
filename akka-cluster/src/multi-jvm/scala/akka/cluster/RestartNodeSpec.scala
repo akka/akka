@@ -52,7 +52,7 @@ abstract class RestartNodeSpec
 
   override def afterAll(): Unit = {
     runOn(second) {
-      if (secondSystem.isTerminated)
+      if (secondSystem.whenTerminated.isCompleted)
         shutdown(restartedSecondSystem)
       else
         shutdown(secondSystem)

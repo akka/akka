@@ -430,12 +430,17 @@ abstract class ActorSystem extends ActorRefFactory {
    * will recursively stop all its child actors, then the system guardian
    * (below which the logging actors reside) and the execute all registered
    * termination handlers (see [[ActorSystem#registerOnTermination]]).
+   * Be careful to not schedule any operations on completion of the returned future
+   * using the `dispatcher` of this actor system as it will have been shut down before the
+   * future completes.
    */
   def terminate(): Future[Terminated]
 
   /**
    * Returns a Future which will be completed after the ActorSystem has been terminated
-   * and termination hooks have been executed.
+   * and termination hooks have been executed. Be careful to not schedule any operations
+   * on the `dispatcher` of this actor system as it will have been shut down before this
+   * future completes.
    */
   def whenTerminated: Future[Terminated]
 

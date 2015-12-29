@@ -12,6 +12,7 @@
 {% set script_files = script_files + ['_static/scrollTo.js'] %}
 {% set script_files = script_files + ['_static/contentsFix.js'] %}
 {% set script_files = script_files + ['_static/ga.js'] %}
+{% set script_files = script_files + ['_static/warnOldDocs.js'] %}
 {% set css_files = css_files + ['_static/prettify.css'] %}
 {% set css_files = css_files + ['_static/base.css'] %}
 {% set css_files = css_files + ['_static/docs.css'] %}
@@ -22,6 +23,7 @@
 {% block relbar2 %}{% endblock %}
 
 {% block extrahead %}
+  <!-- Akka release version-->
   {%- if include_analytics %}
     <!--Google Analytics-->
     <script type="text/javascript">

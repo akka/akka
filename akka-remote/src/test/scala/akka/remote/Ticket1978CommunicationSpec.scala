@@ -42,13 +42,12 @@ object Configuration {
         hostname = localhost
         port = %d
         security {
-          enable = on
           trust-store = "%s"
           key-store = "%s"
           key-store-password = "changeme"
           key-password = "changeme"
           trust-store-password = "changeme"
-          protocol = "TLSv1"
+          protocol = "TLSv1.2"
           random-number-generator = "%s"
           enabled-algorithms = [%s]
         }
@@ -75,8 +74,8 @@ object Configuration {
       }
 
       val engine = NettySSLSupport.initializeClientSSL(settings, NoLogging).getEngine
-      val gotAllSupported = enabled.toSet -- engine.getSupportedCipherSuites.toSet
-      val gotAllEnabled = enabled.toSet -- engine.getEnabledCipherSuites.toSet
+      val gotAllSupported = enabled.toSet diff engine.getSupportedCipherSuites.toSet
+      val gotAllEnabled = enabled.toSet diff engine.getEnabledCipherSuites.toSet
       gotAllSupported.isEmpty || (throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported))
       gotAllEnabled.isEmpty || (throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled))
       engine.getSupportedProtocols.contains(settings.SSLProtocol.get) ||

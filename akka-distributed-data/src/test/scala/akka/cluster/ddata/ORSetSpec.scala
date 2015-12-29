@@ -12,6 +12,7 @@ import akka.cluster.ddata.Replicator.Changed
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ORSetSpec extends WordSpec with Matchers {
 
   val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
@@ -59,6 +60,14 @@ class ORSetSpec extends WordSpec with Matchers {
 
       c5.elements should not contain (user1)
       c5.elements should not contain (user2)
+
+      val c6 = c3.merge(c5)
+      c6.elements should not contain (user1)
+      c6.elements should not contain (user2)
+
+      val c7 = c5.merge(c3)
+      c7.elements should not contain (user1)
+      c7.elements should not contain (user2)
     }
 
     "be able to add removed" in {
@@ -220,30 +229,30 @@ class ORSetSpec extends WordSpec with Matchers {
 
   "ORSet unit test" must {
     "verify subtractDots" in {
-      val dot = new VersionVector(TreeMap(nodeA -> 3, nodeB -> 2, nodeD -> 14, nodeG -> 22))
-      val vvector = new VersionVector(TreeMap(nodeA -> 4, nodeB -> 1, nodeC -> 1, nodeD -> 14, nodeE -> 5, nodeF -> 2))
-      val expected = new VersionVector(TreeMap(nodeB -> 2, nodeG -> 22))
+      val dot = VersionVector(TreeMap(nodeA -> 3L, nodeB -> 2L, nodeD -> 14L, nodeG -> 22L))
+      val vvector = VersionVector(TreeMap(nodeA -> 4L, nodeB -> 1L, nodeC -> 1L, nodeD -> 14L, nodeE -> 5L, nodeF -> 2L))
+      val expected = VersionVector(TreeMap(nodeB -> 2L, nodeG -> 22L))
       ORSet.subtractDots(dot, vvector) should be(expected)
     }
 
     "verify mergeCommonKeys" in {
       val commonKeys: Set[String] = Set("K1", "K2")
-      val thisDot1 = new VersionVector(TreeMap(nodeA -> 3, nodeD -> 7))
-      val thisDot2 = new VersionVector(TreeMap(nodeB -> 5, nodeC -> 2))
-      val thisVvector = new VersionVector(TreeMap(nodeA -> 3, nodeB -> 5, nodeC -> 2, nodeD -> 7))
+      val thisDot1 = VersionVector(TreeMap(nodeA -> 3L, nodeD -> 7L))
+      val thisDot2 = VersionVector(TreeMap(nodeB -> 5L, nodeC -> 2L))
+      val thisVvector = VersionVector(TreeMap(nodeA -> 3L, nodeB -> 5L, nodeC -> 2L, nodeD -> 7L))
       val thisSet = new ORSet(
         elementsMap = Map("K1" -> thisDot1, "K2" -> thisDot2),
         vvector = thisVvector)
-      val thatDot1 = new VersionVector(TreeMap(nodeA -> 3))
-      val thatDot2 = new VersionVector(TreeMap(nodeB -> 6))
-      val thatVvector = new VersionVector(TreeMap(nodeA -> 3, nodeB -> 6, nodeC -> 1, nodeD -> 8))
+      val thatDot1 = VersionVector(nodeA, 3L)
+      val thatDot2 = VersionVector(nodeB, 6L)
+      val thatVvector = VersionVector(TreeMap(nodeA -> 3L, nodeB -> 6L, nodeC -> 1L, nodeD -> 8L))
       val thatSet = new ORSet(
         elementsMap = Map("K1" -> thatDot1, "K2" -> thatDot2),
         vvector = thatVvector)
 
       val expectedDots = Map(
-        "K1" -> new VersionVector(TreeMap(nodeA -> 3)),
-        "K2" -> new VersionVector(TreeMap(nodeB -> 6, nodeC -> 2)))
+        "K1" -> VersionVector(nodeA, 3L),
+        "K2" -> VersionVector(TreeMap(nodeB -> 6L, nodeC -> 2L)))
 
       ORSet.mergeCommonKeys(commonKeys, thisSet, thatSet) should be(expectedDots)
     }
@@ -251,14 +260,14 @@ class ORSetSpec extends WordSpec with Matchers {
     "verify mergeDisjointKeys" in {
       val keys: Set[Any] = Set("K3", "K4", "K5")
       val elements: Map[Any, VersionVector] = Map(
-        "K3" -> new VersionVector(TreeMap(nodeA -> 4)),
-        "K4" -> new VersionVector(TreeMap(nodeA -> 3, nodeD -> 8)),
-        "K5" -> new VersionVector(TreeMap(nodeA -> 2)))
-      val vvector = new VersionVector(TreeMap(nodeA -> 3, nodeD -> 7))
-      val acc: Map[Any, VersionVector] = Map("K1" -> new VersionVector(TreeMap(nodeA -> 3)))
+        "K3" -> VersionVector(nodeA, 4L),
+        "K4" -> VersionVector(TreeMap(nodeA -> 3L, nodeD -> 8L)),
+        "K5" -> VersionVector(nodeA, 2L))
+      val vvector = VersionVector(TreeMap(nodeA -> 3L, nodeD -> 7L))
+      val acc: Map[Any, VersionVector] = Map("K1" -> VersionVector(nodeA, 3L))
       val expectedDots = acc ++ Map(
-        "K3" -> new VersionVector(TreeMap(nodeA -> 4)),
-        "K4" -> new VersionVector(TreeMap(nodeD -> 8))) // "a" -> 3 removed, optimized to include only those unseen
+        "K3" -> VersionVector(nodeA, 4L),
+        "K4" -> VersionVector(nodeD, 8L)) // "a" -> 3 removed, optimized to include only those unseen
 
       ORSet.mergeDisjointKeys(keys, elements, vvector, acc) should be(expectedDots)
     }

@@ -364,6 +364,14 @@ else
   important sbt upload-release
 fi
 
+echolog "Updating http://doc.akka.io/docs/versions.json [from $script_dir/../../akka-docs/versions.json]..."
+if [ $dry_run ]; then
+  echodry "Not actually updating versions.json. Command:"
+  echodry "  important scp $script_dir/../../akka-docs/versions.json ${publish_path}/docs/"
+else
+  important scp $script_dir/../../akka-docs/versions.json ${publish_path}/docs/
+fi
+
 if [ $dry_run ]; then
   if [ $no_revert ]; then
     echodry "No revert: git branch ${release_branch} and git tag v${version} remain"

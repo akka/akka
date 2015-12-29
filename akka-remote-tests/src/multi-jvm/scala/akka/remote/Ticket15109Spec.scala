@@ -31,7 +31,6 @@ object Ticket15109Spec extends MultiNodeConfig {
       ## Keep it tight, otherwise reestablishing a connection takes too much time
       akka.remote.transport-failure-detector.heartbeat-interval = 1 s
       akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
-      akka.remote.quarantine-systems-for = 1 d
       akka.remote.retry-gate-closed-for = 0.5 s
       
       akka.diagnostics.checker.disabled-checks += transport-failure-detector

@@ -35,7 +35,9 @@ public class JavaUdpMulticastTest {
             for (Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces(); interfaces.hasMoreElements() && ipv6Iface == null;) {
                 NetworkInterface interf = interfaces.nextElement();
                 // awdl0 is a special interface on OSX that we cannot use
-                if (!interf.getDisplayName().equals("awdl0")) {
+                if (!interf.getDisplayName().equals("awdl0") &&
+                        // we do not want to use virtual docker interfaces
+                        !interf.getDisplayName().contains("docker")) {
                     for (Enumeration<InetAddress> addresses = interf.getInetAddresses(); addresses.hasMoreElements() && ipv6Iface == null; ) {
                         InetAddress address = addresses.nextElement();
                         if (address instanceof Inet6Address) {

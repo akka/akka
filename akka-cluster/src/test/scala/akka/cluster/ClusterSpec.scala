@@ -135,5 +135,12 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       }
     }
 
+    "allow to resolve remotePathOf any actor" in {
+      val remotePath = cluster.remotePathOf(testActor)
+
+      testActor.path.address.host should ===(None)
+      cluster.remotePathOf(testActor).uid should ===(testActor.path.uid)
+      cluster.remotePathOf(testActor).address should ===(selfAddress)
+    }
   }
 }

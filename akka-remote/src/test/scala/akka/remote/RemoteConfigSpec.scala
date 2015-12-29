@@ -82,6 +82,8 @@ class RemoteConfigSpec extends AkkaSpec(
       import s._
 
       ConnectionTimeout should ===(15.seconds)
+      ConnectionTimeout should ===(new AkkaProtocolSettings(RARP(system).provider.remoteSettings.config)
+        .HandshakeTimeout)
       WriteBufferHighWaterMark should ===(None)
       WriteBufferLowWaterMark should ===(None)
       SendBufferSize should ===(Some(256000))
@@ -127,7 +129,7 @@ class RemoteConfigSpec extends AkkaSpec(
       sslSettings.SSLKeyPassword should ===(Some("changeme"))
       sslSettings.SSLTrustStore should ===(Some("truststore"))
       sslSettings.SSLTrustStorePassword should ===(Some("changeme"))
-      sslSettings.SSLProtocol should ===(Some("TLSv1"))
+      sslSettings.SSLProtocol should ===(Some("TLSv1.2"))
       sslSettings.SSLEnabledAlgorithms should ===(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
       sslSettings.SSLRandomNumberGenerator should ===(None)
     }

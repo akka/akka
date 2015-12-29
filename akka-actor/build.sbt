@@ -9,6 +9,6 @@ OSGi.actor
 
 Dependencies.actor
 
-MimaKeys.previousArtifact := akkaPreviousArtifact("akka-actor").value
+MimaKeys.previousArtifacts := akkaPreviousArtifacts("akka-actor").value
 
 spray.boilerplate.BoilerplatePlugin.Boilerplate.settings

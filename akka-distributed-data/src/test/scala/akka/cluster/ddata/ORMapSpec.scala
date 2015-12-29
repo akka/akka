@@ -101,7 +101,7 @@ class ORMapSpec extends WordSpec with Matchers {
 
       val m3 = merged1.remove(node1, "b").put(node1, "b", GSet.empty + "B2")
       // same thing if only put is used
-      // val m3 = merged1.put(node1, "b", GSet() + "B2")
+      //      val m3 = merged1.put(node1, "b", GSet.empty + "B2")
       val merged2 = merged1 merge m3
 
       merged2.entries("a").elements should be(Set("A"))

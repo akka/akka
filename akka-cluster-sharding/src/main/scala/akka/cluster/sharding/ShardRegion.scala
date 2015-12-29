@@ -4,17 +4,11 @@
 package akka.cluster.sharding
 
 import java.net.URLEncoder
-import scala.collection.immutable
-import akka.actor.Actor
-import akka.actor.ActorLogging
-import akka.actor.ActorRef
-import akka.actor.ActorSelection
-import akka.actor.Address
-import akka.actor.Deploy
-import akka.actor.PoisonPill
-import akka.actor.Props
-import akka.actor.RootActorPath
-import akka.actor.Terminated
+import akka.pattern.AskTimeoutException
+import akka.util.Timeout
+
+import akka.pattern.{ ask, pipe }
+import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.ClusterDomainEvent
 import akka.cluster.ClusterEvent.CurrentClusterState
@@ -23,6 +17,11 @@ import akka.cluster.ClusterEvent.MemberRemoved
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.Member
 import akka.cluster.MemberStatus
+
+import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.concurrent.Future
+import scala.reflect.ClassTag
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -167,19 +166,26 @@ object ShardRegion {
    */
   def gracefulShutdownInstance = GracefulShutdown
 
-  /*
+  sealed trait ShardRegionQuery
+
+  /**
    * Send this message to the `ShardRegion` actor to request for [[CurrentRegions]],
    * which contains the addresses of all registered regions.
-   * Intended for testing purpose to see when cluster sharding is "ready".
+   * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
+   * the state of the shard regions.
    */
-  @SerialVersionUID(1L) final case object GetCurrentRegions extends ShardRegionCommand
+  @SerialVersionUID(1L) final case object GetCurrentRegions extends ShardRegionQuery
 
+  /**
+   * Java API:
+   */
   def getCurrentRegionsInstance = GetCurrentRegions
 
   /**
    * Reply to `GetCurrentRegions`
    */
   @SerialVersionUID(1L) final case class CurrentRegions(regions: Set[Address]) {
+
     /**
      * Java API
      */
@@ -188,6 +194,102 @@ object ShardRegion {
       regions.asJava
     }
 
+  }
+
+  /**
+   * Send this message to the `ShardRegion` actor to request for [[ClusterShardingStats]],
+   * which contains statistics about the currently running sharded entities in the
+   * entire cluster. If the `timeout` is reached without answers from all shard regions
+   * the reply will contain an emmpty map of regions.
+   *
+   * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
+   * the state of the shard regions.
+   */
+  @SerialVersionUID(1L) case class GetClusterShardingStats(timeout: FiniteDuration) extends ShardRegionQuery
+
+  /**
+   * Reply to [[GetClusterShardingStats]], contains statistics about all the sharding regions
+   * in the cluster.
+   */
+  @SerialVersionUID(1L) final case class ClusterShardingStats(regions: Map[Address, ShardRegionStats]) {
+
+    /**
+     * Java API
+     */
+    def getRegions(): java.util.Map[Address, ShardRegionStats] = {
+      import scala.collection.JavaConverters._
+      regions.asJava
+    }
+  }
+
+  /**
+   * Send this message to the `ShardRegion` actor to request for [[ShardRegionStats]],
+   * which contains statistics about the currently running sharded entities in the
+   * entire region.
+   * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
+   * the state of the shard regions.
+   *
+   * For the statistics for the entire cluster, see [[GetClusterShardingStats$]].
+   */
+  @SerialVersionUID(1L) case object GetShardRegionStats extends ShardRegionQuery
+
+  /**
+   * Java API:
+   */
+  def getRegionStatsInstance = GetShardRegionStats
+
+  @SerialVersionUID(1L) final case class ShardRegionStats(stats: Map[ShardId, Int]) {
+
+    /**
+     * Java API
+     */
+    def getStats(): java.util.Map[ShardId, Int] = {
+      import scala.collection.JavaConverters._
+      stats.asJava
+    }
+
+  }
+
+  /**
+   * Send this message to a `ShardRegion` actor instance to request a
+   * [[CurrentShardRegionState]] which describes the current state of the region.
+   * The state contains information about what shards are running in this region
+   * and what entities are running on each of those shards.
+   */
+  @SerialVersionUID(1L) case object GetShardRegionState extends ShardRegionQuery
+
+  /**
+   * Java API:
+   */
+  def getShardRegionStateInstance = GetShardRegionState
+
+  /**
+   * Reply to [[GetShardRegionState$]]
+   *
+   * If gathering the shard information times out the set of shards will be empty.
+   */
+  @SerialVersionUID(1L) final case class CurrentShardRegionState(shards: Set[ShardState]) {
+
+    /**
+     * Java API:
+     *
+     * If gathering the shard information times out the set of shards will be empty.
+     */
+    def getShards(): java.util.Set[ShardState] = {
+      import scala.collection.JavaConverters._
+      shards.asJava
+    }
+  }
+
+  @SerialVersionUID(1L) final case class ShardState(shardId: ShardId, entityIds: Set[EntityId]) {
+
+    /**
+     * Java API:
+     */
+    def getEntityIds(): java.util.Set[EntityId] = {
+      import scala.collection.JavaConverters._
+      entityIds.asJava
+    }
   }
 
   private case object Retry extends ShardRegionCommand
@@ -255,7 +357,7 @@ class ShardRegion(
   val cluster = Cluster(context.system)
 
   // sort by age, oldest first
-  val ageOrdering = Ordering.fromLessThan[Member] { (a, b) ⇒ a.isOlderThan(b) }
+  val ageOrdering = Member.ageOrdering
   var membersByAge: immutable.SortedSet[Member] = immutable.SortedSet.empty(ageOrdering)
 
   var regions = Map.empty[ActorRef, Set[ShardId]]
@@ -264,6 +366,7 @@ class ShardRegion(
   var loggedFullBufferWarning = false
   var shards = Map.empty[ShardId, ActorRef]
   var shardsByRef = Map.empty[ActorRef, ShardId]
+  var startingShards = Set.empty[ShardId]
   var handingOff = Set.empty[ActorRef]
   var gracefulShutdownInProgress = false
 
@@ -313,19 +416,20 @@ class ShardRegion(
     case state: CurrentClusterState              ⇒ receiveClusterState(state)
     case msg: CoordinatorMessage                 ⇒ receiveCoordinatorMessage(msg)
     case cmd: ShardRegionCommand                 ⇒ receiveCommand(cmd)
+    case query: ShardRegionQuery                 ⇒ receiveQuery(query)
     case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
     case msg: RestartShard                       ⇒ deliverMessage(msg, sender())
   }
 
   def receiveClusterState(state: CurrentClusterState): Unit = {
-    changeMembers(immutable.SortedSet.empty(ageOrdering) ++ state.members.filter(m ⇒
+    changeMembers(immutable.SortedSet.empty(ageOrdering) union state.members.filter(m ⇒
       m.status == MemberStatus.Up && matchingRole(m)))
   }
 
   def receiveClusterEvent(evt: ClusterDomainEvent): Unit = evt match {
     case MemberUp(m) ⇒
       if (matchingRole(m))
-        changeMembers(membersByAge + m)
+        changeMembers(membersByAge - m + m) // replace
 
     case MemberRemoved(m, _) ⇒
       if (m.uniqueAddress == cluster.selfUniqueAddress)
@@ -412,20 +516,35 @@ class ShardRegion(
       else {
         sendGracefulShutdownToCoordinator()
         requestShardBufferHomes()
+        tryCompleteGracefulShutdown()
       }
 
     case GracefulShutdown ⇒
       log.debug("Starting graceful shutdown of region and all its shards")
       gracefulShutdownInProgress = true
       sendGracefulShutdownToCoordinator()
+      tryCompleteGracefulShutdown()
 
+    case _ ⇒ unhandled(cmd)
+  }
+
+  def receiveQuery(query: ShardRegionQuery): Unit = query match {
     case GetCurrentRegions ⇒
       coordinator match {
         case Some(c) ⇒ c.forward(GetCurrentRegions)
         case None    ⇒ sender() ! CurrentRegions(Set.empty)
       }
 
-    case _ ⇒ unhandled(cmd)
+    case GetShardRegionState ⇒
+      replyToRegionStateQuery(sender())
+
+    case GetShardRegionStats ⇒
+      replyToRegionStatsQuery(sender())
+
+    case msg: GetClusterShardingStats ⇒
+      coordinator.fold(sender ! ClusterShardingStats(Map.empty))(_ forward msg)
+
+    case _ ⇒ unhandled(query)
   }
 
   def receiveTerminated(ref: ActorRef): Unit = {
@@ -442,6 +561,7 @@ class ShardRegion(
 
       shardsByRef = shardsByRef - ref
       shards = shards - shardId
+      startingShards -= shardId
       if (handingOff.contains(ref)) {
         handingOff = handingOff - ref
         log.debug("Shard [{}] handoff complete", shardId)
@@ -453,10 +573,40 @@ class ShardRegion(
         }
       }
 
-      if (gracefulShutdownInProgress && shards.isEmpty && shardBuffers.isEmpty)
-        context.stop(self) // all shards have been rebalanced, complete graceful shutdown
+      tryCompleteGracefulShutdown()
     }
   }
+
+  def replyToRegionStateQuery(ref: ActorRef): Unit = {
+    askAllShards[Shard.CurrentShardState](Shard.GetCurrentShardState).map { shardStates ⇒
+      CurrentShardRegionState(shardStates.map {
+        case (shardId, state) ⇒ ShardRegion.ShardState(shardId, state.entityIds)
+      }.toSet)
+    }.recover {
+      case x: AskTimeoutException ⇒ CurrentShardRegionState(Set.empty)
+    }.pipeTo(ref)
+  }
+
+  def replyToRegionStatsQuery(ref: ActorRef): Unit = {
+    askAllShards[Shard.ShardStats](Shard.GetShardStats).map { shardStats ⇒
+      ShardRegionStats(shardStats.map {
+        case (shardId, stats) ⇒ (shardId, stats.entityCount)
+      }.toMap)
+    }.recover {
+      case x: AskTimeoutException ⇒ ShardRegionStats(Map.empty)
+    }.pipeTo(ref)
+  }
+
+  def askAllShards[T: ClassTag](msg: Any): Future[Seq[(ShardId, T)]] = {
+    implicit val timeout: Timeout = 3.seconds
+    Future.sequence(shards.toSeq.map {
+      case (shardId, ref) ⇒ (ref ? msg).mapTo[T].map(t ⇒ (shardId, t))
+    })
+  }
+
+  private def tryCompleteGracefulShutdown() =
+    if (gracefulShutdownInProgress && shards.isEmpty && shardBuffers.isEmpty)
+      context.stop(self) // all shards have been rebalanced, complete graceful shutdown
 
   def register(): Unit = {
     coordinatorSelection.foreach(_ ! registrationMessage)
@@ -484,7 +634,7 @@ class ShardRegion(
 
   def initializeShard(id: ShardId, shard: ActorRef): Unit = {
     log.debug("Shard was initialized {}", id)
-    shards = shards.updated(id, shard)
+    startingShards -= id
     deliverBufferedMessages(id, shard)
   }
 
@@ -574,29 +724,37 @@ class ShardRegion(
         }
     }
 
-  def getShard(id: ShardId): Option[ActorRef] = shards.get(id).orElse(
-    entityProps match {
-      case Some(props) if !shardsByRef.values.exists(_ == id) ⇒
-        log.debug("Starting shard [{}] in region", id)
+  def getShard(id: ShardId): Option[ActorRef] = {
+    if (startingShards.contains(id))
+      None
+    else {
+      shards.get(id).orElse(
+        entityProps match {
+          case Some(props) if !shardsByRef.values.exists(_ == id) ⇒
+            log.debug("Starting shard [{}] in region", id)
 
-        val name = URLEncoder.encode(id, "utf-8")
-        val shard = context.watch(context.actorOf(
-          Shard.props(
-            typeName,
-            id,
-            props,
-            settings,
-            extractEntityId,
-            extractShardId,
-            handOffStopMessage).withDispatcher(context.props.dispatcher),
-          name))
-        shardsByRef = shardsByRef.updated(shard, id)
-        None
-      case Some(props) ⇒
-        None
-      case None ⇒
-        throw new IllegalStateException("Shard must not be allocated to a proxy only ShardRegion")
-    })
+            val name = URLEncoder.encode(id, "utf-8")
+            val shard = context.watch(context.actorOf(
+              Shard.props(
+                typeName,
+                id,
+                props,
+                settings,
+                extractEntityId,
+                extractShardId,
+                handOffStopMessage).withDispatcher(context.props.dispatcher),
+              name))
+            shardsByRef = shardsByRef.updated(shard, id)
+            shards = shards.updated(id, shard)
+            startingShards += id
+            None
+          case Some(props) ⇒
+            None
+          case None ⇒
+            throw new IllegalStateException("Shard must not be allocated to a proxy only ShardRegion")
+        })
+    }
+  }
 
   def sendGracefulShutdownToCoordinator(): Unit =
     if (gracefulShutdownInProgress)

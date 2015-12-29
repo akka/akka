@@ -8,4 +8,3 @@ Formatting.formatSettings
 enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 OSGi.protobuf
-

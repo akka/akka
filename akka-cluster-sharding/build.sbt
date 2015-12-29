@@ -9,6 +9,6 @@ OSGi.clusterSharding
 
 Dependencies.clusterSharding
 
-//MimaKeys.previousArtifact := akkaPreviousArtifact("akka-cluster-sharding").value
+MimaKeys.previousArtifacts := akkaPreviousArtifacts("akka-cluster-sharding").value
 
 enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)

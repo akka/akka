@@ -12,7 +12,15 @@ In case of questions about the contribution process or for discussion of specifi
 
 These guidelines are meant to be a living document that should be changed and adapted as needed. We encourage changes that makes it easier to achieve our goals in an efficient way.
 
-These guidelines mainly applies to Typesafe’s “mature” projects - not necessarily to projects of the type ‘collection of scripts’ etc.
+These guidelines mainly apply to Typesafe’s “mature” projects - not necessarily to projects of the type ‘collection of scripts’ etc.
+
+## Branches summary
+
+Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
+
+* `master` – development branch of Akka 2.4.x
+* `release-2.3` – maintanance branch of Akka 2.3.x
+* `release 2.3-dev` – development branch of Akka Streams and HTTP (only)
 
 ## General Workflow
 
@@ -170,7 +178,7 @@ the validator to test all projects.
 
 ## Source style
 
-Akka uses [Scalariform](https://github.com/mdr/scalariform) to enforce some of the code style rules.
+Akka uses [Scalariform](https://github.com/daniel-trinh/scalariform) to enforce some of the code style rules.
 
 ## Contributing Modules
 

@@ -139,9 +139,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
   val cluster = Cluster(context.system)
   var singleton: Option[ActorRef] = None
   // sort by age, oldest first
-  val ageOrdering = Ordering.fromLessThan[Member] {
-    (a, b) ⇒ a.isOlderThan(b)
-  }
+  val ageOrdering = Member.ageOrdering
   var membersByAge: immutable.SortedSet[Member] = immutable.SortedSet.empty(ageOrdering)
 
   var buffer = new java.util.LinkedList[(Any, ActorRef)]
@@ -170,7 +168,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
   def handleInitial(state: CurrentClusterState): Unit = {
     trackChange {
       () ⇒
-        membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.collect {
+        membersByAge = immutable.SortedSet.empty(ageOrdering) union state.members.collect {
           case m if m.status == MemberStatus.Up && matchingRole(m) ⇒ m
         }
     }
@@ -203,8 +201,9 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
    */
   def add(m: Member): Unit = {
     if (matchingRole(m))
-      trackChange {
-        () ⇒ membersByAge += m
+      trackChange { () ⇒
+        membersByAge -= m // replace
+        membersByAge += m
       }
   }
 

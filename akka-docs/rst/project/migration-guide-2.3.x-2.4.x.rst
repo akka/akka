@@ -413,6 +413,12 @@ implement it yourself either as a helper trait or simply by overriding ``persist
 
     override def persistenceId = self.path.toStringWithoutAddress
 
+Failures
+--------
+
+Backend journal failures during recovery and persist are treated differently than in 2.3.x. The ``PersistenceFailure``
+message is removed and the actor is unconditionally stopped. The new behavior and reasons for it is explained in
+:ref:`failures-scala`. 
 
 Persist sequence of events
 --------------------------
@@ -470,6 +476,13 @@ max-message-batch-size config
 
 Configuration property ``akka.persistence.journal.max-message-batch-size`` has been moved into the plugin configuration
 section, to allow different values for different journal plugins. See ``reference.conf``.
+
+akka.persistence.snapshot-store.plugin config
+---------------------------------------------
+
+The configuration property ``akka.persistence.snapshot-store.plugin`` now by default is empty. To restore the previous
+setting add ``akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"`` to your application.conf.
+See ``reference.conf``.
 
 PersistentView is deprecated
 ----------------------------
@@ -640,3 +653,29 @@ Now:
 
 The Java API remains unchanged and has simply gained the 2nd overload which allows ``ActorSelection`` to be
 passed in directly (without converting to ``ActorPath``).
+
+
+Actor system shutdown
+---------------------
+``ActorSystem.shutdown``, ``ActorSystem.awaitTermination`` and ``ActorSystem.isTerminated`` has been
+deprecated in favor of ``ActorSystem.terminate`` and ``ActorSystem.whenTerminated```. Both returns a
+``Future[Terminated]`` value that will complete when the actor system has terminated.
+
+To get the same behavior as ``ActorSystem.awaitTermination`` block and wait for ``Future[Terminated]`` value
+with ``Await.result`` from the Scala standard library.
+
+To trigger a termination and wait for it to complete:
+
+    import scala.concurrent.duration._
+    Await.result(system.terminate(), 10.seconds)
+
+Be careful to not do any operations on the ``Future[Terminated]`` using the ``system.dispatcher``
+as ``ExecutionContext`` as it will be shut down with the ``ActorSystem``, instead use for example
+the Scala standard library context from ``scala.concurrent.ExecutionContext.global``.
+
+    // import system.dispatcher <- this would not work
+    import scala.concurrent.ExecutionContext.Implicits.global
+
+    system.terminate().foreach { _ =>
+      println("Actor system was shut down")
+    }

@@ -4,7 +4,7 @@
 
 package akka.cluster.sharding;
 
-import java.util.concurrent.TimeUnit;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import scala.concurrent.duration.Duration;
 
 import akka.actor.AbstractActor;
@@ -139,7 +139,7 @@ public class ClusterShardingTest {
     @Override
     public void preStart() throws Exception {
       super.preStart();
-      context().setReceiveTimeout(Duration.create(120, TimeUnit.SECONDS));
+      context().setReceiveTimeout(Duration.create(120, SECONDS));
     }
 
     void updateState(CounterChanged event) {
@@ -198,9 +198,19 @@ public class ClusterShardingTest {
           region.tell(ShardRegion.gracefulShutdownInstance(), self());
         }).
         match(Terminated.class, t -> t.actor().equals(region), t -> {
-          cluster.registerOnMemberRemoved(() -> system.terminate());
+          cluster.registerOnMemberRemoved(() ->
+            self().tell("member-removed", self()));
           cluster.leave(cluster.selfAddress());
-        }).build());
+        }).
+        match(String.class, s -> s.equals("member-removed"), s -> {
+          // Let singletons hand over gracefully before stopping the system
+          context().system().scheduler().scheduleOnce(Duration.create(10, SECONDS),
+              self(), "stop-system", context().dispatcher(), self());
+        }).
+        match(String.class, s -> s.equals("stop-system"), s -> {
+          system.terminate();
+        }).
+        build());
     }
   }
   //#graceful-shutdown

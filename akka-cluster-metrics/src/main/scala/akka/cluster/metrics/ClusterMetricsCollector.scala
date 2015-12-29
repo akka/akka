@@ -13,7 +13,7 @@ import akka.cluster.Member
 import akka.cluster.Cluster
 import scala.collection.immutable
 import akka.cluster.MemberStatus
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import akka.actor.Terminated
 import akka.actor.DeadLetterSuppression
 
@@ -211,7 +211,7 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
    * Updates the initial node ring for those nodes that are [[akka.cluster.MemberStatus]] `Up`.
    */
   def receiveState(state: CurrentClusterState): Unit =
-    nodes = (state.members -- state.unreachable) collect {
+    nodes = (state.members diff state.unreachable) collect {
       case m if m.status == MemberStatus.Up || m.status == MemberStatus.WeaklyUp ⇒ m.address
     }
 

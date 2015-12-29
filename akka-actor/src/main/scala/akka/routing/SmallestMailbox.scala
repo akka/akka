@@ -5,7 +5,7 @@ package akka.routing
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import com.typesafe.config.Config
 import akka.actor.ActorCell
 import akka.actor.ActorRefWithCell
@@ -183,7 +183,7 @@ final case class SmallestMailboxPool(
   def this(config: Config) =
     this(
       nrOfInstances = config.getInt("nr-of-instances"),
-      resizer = DefaultResizer.fromConfig(config),
+      resizer = Resizer.fromConfig(config),
       usePoolDispatcher = config.hasPath("pool-dispatcher"))
 
   /**

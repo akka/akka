@@ -10,7 +10,7 @@ import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import scala.concurrent.duration._
 import akka.testkit._
 import akka.testkit.TestEvent._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import akka.remote.testconductor.RoleName
 import akka.actor.Props
 import akka.actor.Actor
@@ -34,7 +34,10 @@ object SurviveNetworkInstabilityMultiJvmSpec extends MultiNodeConfig {
   val eighth = role("eighth")
 
   commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString("akka.remote.system-message-buffer-size=100")).
+    ConfigFactory.parseString("""
+      akka.remote.system-message-buffer-size=100
+      akka.remote.netty.tcp.connection-timeout = 10s
+      """)).
     withFallback(MultiNodeClusterSpec.clusterConfig))
 
   testTransport(on = true)
@@ -223,7 +226,7 @@ abstract class SurviveNetworkInstabilitySpec
         cluster.join(first)
 
         // let them join and stabilize heartbeating
-        Thread.sleep(5000)
+        Thread.sleep(5000.millis.dilated.toMillis)
       }
 
       enterBarrier("joined-5")

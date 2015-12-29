@@ -11,8 +11,6 @@ OSGi.distributedData
 
 Dependencies.distributedData
 
-//MimaKeys.previousArtifact := akkaPreviousArtifact("akka-distributed-data").value
+MimaKeys.previousArtifacts := akkaPreviousArtifacts("akka-distributed-data-experimental").value
 
 enablePlugins(MultiNodeScalaTest)
-
-

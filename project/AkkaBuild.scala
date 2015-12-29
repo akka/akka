@@ -53,7 +53,7 @@ object AkkaBuild extends Build {
         samplePersistenceJava, samplePersistenceScala, samplePersistenceJavaLambda,
         sampleRemoteJava, sampleRemoteScala, sampleSupervisionJavaLambda,
         sampleDistributedDataScala, sampleDistributedDataJava),
-      
+
       S3.host in S3.upload := "downloads.typesafe.com.s3.amazonaws.com",
       S3.progress in S3.upload := true,
       mappings in S3.upload <<= (Release.releaseDirectory, version) map { (d, v) =>
@@ -111,7 +111,7 @@ object AkkaBuild extends Build {
   lazy val benchJmh = Project(
     id = "akka-bench-jmh",
     base = file("akka-bench-jmh"),
-    dependencies = Seq(actor, persistence, testkit).map(_ % "compile;compile->test;provided->provided")
+    dependencies = Seq(actor, persistence, distributedData, testkit).map(_ % "compile;compile->test;provided->provided")
   ).disablePlugins(ValidatePullRequest)
 
   lazy val protobuf = Project(
@@ -418,17 +418,28 @@ object AkkaBuild extends Build {
     mavenLocalResolverSettings ++
     JUnitFileReporting.settings ++ StatsDMetrics.settings
 
-  def akkaPreviousArtifact(id: String): Def.Initialize[Option[sbt.ModuleID]] = Def.setting {
+  def akkaPreviousArtifacts(id: String): Def.Initialize[Set[sbt.ModuleID]] = Def.setting {
     if (enableMiMa) {
-      val version: String = "2.3.11" // FIXME verify all 2.3.x versions
-      val fullId = crossVersion.value match {
-        case _ : CrossVersion.Binary => id + "_" + scalaBinaryVersion.value
-        case _ : CrossVersion.Full => id + "_" + scalaVersion.value
-        case CrossVersion.Disabled => id
+      val versions = {
+        val akka23Versions = Seq("2.3.11", "2.3.12", "2.3.13", "2.3.14")
+        val akka24Versions = Seq("2.4.0")
+        val akka24NewArtifacts = Seq(
+          "akka-cluster-sharding",
+          "akka-cluster-tools",
+          "akka-persistence",
+          "akka-distributed-data-experimental",
+          "akka-persistence-query-experimental"
+        )
+        scalaBinaryVersion.value match {
+          case "2.11" if !akka24NewArtifacts.contains(id) => akka23Versions ++ akka24Versions
+          case _ => akka24Versions // Only Akka 2.4.x for scala > than 2.11
+        }
       }
-      Some(organization.value % fullId % version) // the artifact to compare binary compatibility with
+
+      // check against all binary compatible artifacts
+      versions.map(organization.value %% id % _).toSet
     }
-    else None
+    else Set.empty
   }
 
   def loadSystemProperties(fileName: String): Unit = {

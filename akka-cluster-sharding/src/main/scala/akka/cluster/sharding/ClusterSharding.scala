@@ -123,9 +123,6 @@ import akka.dispatch.Dispatchers
  *
  * The `ShardRegion` actor can also be started in proxy only mode, i.e. it will not
  * host any entities itself, but knows how to delegate messages to the right location.
- * A `ShardRegion` starts in proxy only mode if the roles of the node does not include
- * the node role specified in `akka.cluster.sharding.role` config property
- * or if the specified `entityProps` is `None`/`null`.
  *
  * If the state of the entities are persistent you may stop entities that are not used to
  * reduce memory consumption. This is done by the application specific implementation of

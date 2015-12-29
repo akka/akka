@@ -218,7 +218,7 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: SigarP
   override def metrics(): Set[Metric] = {
     // Must obtain cpuPerc in one shot. See https://github.com/akka/akka/issues/16121
     val cpuPerc = sigar.getCpuPerc
-    super.metrics ++ Set(cpuCombined(cpuPerc), cpuStolen(cpuPerc)).flatten
+    super.metrics union Set(cpuCombined(cpuPerc), cpuStolen(cpuPerc)).flatten
   }
 
   /**

@@ -20,8 +20,7 @@ object DispatcherActorSpec {
       throughput = 101
       executor = "thread-pool-executor"
       thread-pool-executor {
-        core-pool-size-min = 1
-        core-pool-size-max = 1
+        fixed-pool-size = 1
       }
     }
     test-throughput-deadline-dispatcher {
@@ -29,8 +28,7 @@ object DispatcherActorSpec {
       throughput-deadline-time = 100 milliseconds
       executor = "thread-pool-executor"
       thread-pool-executor {
-        core-pool-size-min = 1
-        core-pool-size-max = 1
+        fixed-pool-size = 1
       }
     }
 

@@ -110,7 +110,7 @@ final case class ScatterGatherFirstCompletedPool(
     this(
       nrOfInstances = config.getInt("nr-of-instances"),
       within = config.getMillisDuration("within"),
-      resizer = DefaultResizer.fromConfig(config),
+      resizer = Resizer.fromConfig(config),
       usePoolDispatcher = config.hasPath("pool-dispatcher"))
 
   /**

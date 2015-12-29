@@ -9,6 +9,6 @@ OSGi.clusterTools
 
 Dependencies.clusterTools
 
-//MimaKeys.previousArtifact := akkaPreviousArtifact("akka-cluster-tools").value
+MimaKeys.previousArtifacts := akkaPreviousArtifacts("akka-cluster-tools").value
 
 enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)

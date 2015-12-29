@@ -21,7 +21,7 @@ import akka.serialization.Serialization
 import akka.util.ByteString
 import akka.{ OnlyCauseStackTrace, AkkaException }
 import java.io.NotSerializableException
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.{ TimeUnit, TimeoutException, ConcurrentHashMap }
 import scala.annotation.tailrec
 import scala.concurrent.duration.{ Duration, Deadline }
 import scala.util.control.NonFatal
@@ -129,8 +129,11 @@ private[remote] final case class ShutDownAssociation(localAddress: Address, remo
 /**
  * INTERNAL API
  */
-@SerialVersionUID(1L)
-private[remote] final case class InvalidAssociation(localAddress: Address, remoteAddress: Address, cause: Throwable)
+@SerialVersionUID(2L)
+private[remote] final case class InvalidAssociation(localAddress: Address,
+                                                    remoteAddress: Address,
+                                                    cause: Throwable,
+                                                    disassociationInfo: Option[DisassociateInfo] = None)
   extends EndpointException("Invalid address: " + remoteAddress, cause) with AssociationProblem
 
 /**
@@ -168,6 +171,7 @@ private[remote] object ReliableDeliverySupervisor {
 
   case object IsIdle
   case object Idle
+  case object TooLongIdle
 
   def props(
     handleOrActive: Option[AkkaProtocolHandle],
@@ -200,6 +204,8 @@ private[remote] class ReliableDeliverySupervisor(
   val autoResendTimer = context.system.scheduler.schedule(
     settings.SysResendTimeout, settings.SysResendTimeout, self, AttemptSysMsgRedelivery)
 
+  private var bufferWasInUse = false
+
   override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
     case e @ (_: AssociationProblem) ⇒ Escalate
     case NonFatal(e) ⇒
@@ -207,12 +213,14 @@ private[remote] class ReliableDeliverySupervisor(
       log.warning("Association with remote system [{}] has failed, address is now gated for [{}] ms. Reason: [{}] {}",
         remoteAddress, settings.RetryGateClosedFor.toMillis, e.getMessage, causedBy)
       uidConfirmed = false // Need confirmation of UID again
-      if ((resendBuffer.nacked.nonEmpty || resendBuffer.nonAcked.nonEmpty) && bailoutAt.isEmpty)
-        bailoutAt = Some(Deadline.now + settings.InitialSysMsgDeliveryTimeout)
-      context.become(gated)
-      currentHandle = None
-      context.parent ! StoppedReading(self)
-      Stop
+      if (bufferWasInUse) {
+        if ((resendBuffer.nacked.nonEmpty || resendBuffer.nonAcked.nonEmpty) && bailoutAt.isEmpty)
+          bailoutAt = Some(Deadline.now + settings.InitialSysMsgDeliveryTimeout)
+        context.become(gated(writerTerminated = false, earlyUngateRequested = false))
+        currentHandle = None
+        context.parent ! StoppedReading(self)
+        Stop
+      } else Escalate
   }
 
   var currentHandle: Option[AkkaProtocolHandle] = handleOrActive
@@ -237,6 +245,7 @@ private[remote] class ReliableDeliverySupervisor(
   var writer: ActorRef = createWriter()
   var uid: Option[Int] = handleOrActive map { _.handshakeInfo.uid }
   var bailoutAt: Option[Deadline] = None
+  var maxSilenceTimer: Option[Cancellable] = None
   // Processing of Acks has to be delayed until the UID after a reconnect is discovered. Depending whether the
   // UID matches the expected one, pending Acks can be processed, or must be dropped. It is guaranteed that for
   // any inbound connections (calling createWriter()) the first message from that connection is GotUid() therefore
@@ -255,6 +264,7 @@ private[remote] class ReliableDeliverySupervisor(
     (resendBuffer.nacked ++ resendBuffer.nonAcked) foreach { s ⇒ context.system.deadLetters ! s.copy(seqOpt = None) }
     receiveBuffers.remove(Link(localAddress, remoteAddress))
     autoResendTimer.cancel()
+    maxSilenceTimer.foreach(_.cancel())
   }
 
   override def postRestart(reason: Throwable): Unit = {
@@ -291,7 +301,7 @@ private[remote] class ReliableDeliverySupervisor(
       context.parent ! StoppedReading(self)
       if (resendBuffer.nonAcked.nonEmpty || resendBuffer.nacked.nonEmpty)
         context.system.scheduler.scheduleOnce(settings.SysResendTimeout, self, AttemptSysMsgRedelivery)
-      context.become(idle)
+      goToIdle()
     case g @ GotUid(receivedUid, _) ⇒
       bailoutAt = None
       context.parent ! g
@@ -305,12 +315,19 @@ private[remote] class ReliableDeliverySupervisor(
       writer forward s
   }
 
-  def gated: Receive = {
-    case Terminated(_) ⇒
-      context.system.scheduler.scheduleOnce(settings.RetryGateClosedFor, self, Ungate)
+  def gated(writerTerminated: Boolean, earlyUngateRequested: Boolean): Receive = {
+    case Terminated(_) if !writerTerminated ⇒
+      if (earlyUngateRequested)
+        self ! Ungate
+      else
+        context.system.scheduler.scheduleOnce(settings.RetryGateClosedFor, self, Ungate)
+      context.become(gated(writerTerminated = true, earlyUngateRequested))
     case IsIdle ⇒ sender() ! Idle
     case Ungate ⇒
-      if (resendBuffer.nonAcked.nonEmpty || resendBuffer.nacked.nonEmpty) {
+      if (!writerTerminated) {
+        // Ungate was sent from EndpointManager, but we must wait for Terminated first.
+        context.become(gated(writerTerminated = false, earlyUngateRequested = true))
+      } else if (resendBuffer.nonAcked.nonEmpty || resendBuffer.nacked.nonEmpty) {
         // If we talk to a system we have not talked to before (or has given up talking to in the past) stop
         // system delivery attempts after the specified time. This act will drop the pending system messages and gate the
         // remote address at the EndpointManager level stopping this actor. In case the remote system becomes reachable
@@ -321,8 +338,8 @@ private[remote] class ReliableDeliverySupervisor(
             new java.util.concurrent.TimeoutException("Delivery of system messages timed out and they were dropped."))
         writer = createWriter()
         // Resending will be triggered by the incoming GotUid message after the connection finished
-        context.become(receive)
-      } else context.become(idle)
+        goToActive()
+      } else goToIdle()
     case AttemptSysMsgRedelivery               ⇒ // Ignore
     case s @ Send(msg: SystemMessage, _, _, _) ⇒ tryBuffer(s.copy(seqOpt = Some(nextSeq())))
     case s: Send                               ⇒ context.system.deadLetters ! s
@@ -338,16 +355,32 @@ private[remote] class ReliableDeliverySupervisor(
       writer = createWriter()
       // Resending will be triggered by the incoming GotUid message after the connection finished
       handleSend(s)
-      context.become(receive)
+      goToActive()
     case AttemptSysMsgRedelivery ⇒
       if (resendBuffer.nacked.nonEmpty || resendBuffer.nonAcked.nonEmpty) {
         writer = createWriter()
         // Resending will be triggered by the incoming GotUid message after the connection finished
-        context.become(receive)
+        goToActive()
       }
+    case TooLongIdle ⇒
+      throw new HopelessAssociation(localAddress, remoteAddress, uid,
+        new TimeoutException("Remote system has been silent for too long. " +
+          s"(more than ${settings.QuarantineSilentSystemTimeout.toUnit(TimeUnit.HOURS)} hours)"))
     case EndpointWriter.FlushAndStop ⇒ context.stop(self)
     case EndpointWriter.StopReading(w, replyTo) ⇒
       replyTo ! EndpointWriter.StoppedReading(w)
+  }
+
+  private def goToIdle(): Unit = {
+    if (bufferWasInUse && maxSilenceTimer.isEmpty)
+      maxSilenceTimer = Some(context.system.scheduler.scheduleOnce(settings.QuarantineSilentSystemTimeout, self, TooLongIdle))
+    context.become(idle)
+  }
+
+  private def goToActive(): Unit = {
+    maxSilenceTimer.foreach(_.cancel())
+    maxSilenceTimer = None
+    context.become(receive)
   }
 
   def flushWait: Receive = {
@@ -381,6 +414,7 @@ private[remote] class ReliableDeliverySupervisor(
   private def tryBuffer(s: Send): Unit =
     try {
       resendBuffer = resendBuffer buffer s
+      bufferWasInUse = true
     } catch {
       case NonFatal(e) ⇒ throw new HopelessAssociation(localAddress, remoteAddress, uid, e)
     }
@@ -969,7 +1003,8 @@ private[remote] class EndpointReader(
         localAddress,
         remoteAddress,
         InvalidAssociationException("The remote system has quarantined this system. No further associations " +
-          "to the remote system are possible until this system is restarted."))
+          "to the remote system are possible until this system is restarted."),
+        Some(AssociationHandle.Quarantined))
   }
 
   private def deliverAndAck(): Unit = {

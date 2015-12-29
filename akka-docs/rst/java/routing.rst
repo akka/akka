@@ -280,7 +280,7 @@ configuration.
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-balancing-pool2
 
 The ``BalancingPool`` automatically uses a special ``BalancingDispatcher`` for its
-routees - disregarding any dispatcher that is set on the the routee Props object.
+routees - disregarding any dispatcher that is set on the routee Props object.
 This is needed in order to implement the balancing semantics via
 sharing the same mailbox by all the routees.
 
@@ -388,7 +388,7 @@ TailChoppingPool and TailChoppingGroup
 --------------------------------------
 
 The TailChoppingRouter will first send the message to one, randomly picked, routee
-and then after a small delay to to a second routee (picked randomly from the remaining routees) and so on.
+and then after a small delay to a second routee (picked randomly from the remaining routees) and so on.
 It waits for first reply it gets back and forwards it back to original sender. Other replies are discarded.
 
 The goal of this router is to decrease latency by performing redundant queries to multiple routees, assuming that
@@ -436,7 +436,7 @@ There is 3 ways to define what data to use for the consistent hash key.
   The key is part of the message and it's convenient to define it together
   with the message definition.
  
-* The messages can be be wrapped in a ``akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope``
+* The messages can be wrapped in a ``akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope``
   to define what data to use for the consistent hash key. The sender knows
   the key to use.
  
@@ -507,7 +507,7 @@ to every routee of a router.
 
 In this example the router receives the ``Broadcast`` message, extracts its payload
 (``"Watch out for Davy Jones' locker"``), and then sends the payload on to all of the router's
-routees. It is up to each each routee actor to handle the received payload message.
+routees. It is up to each routee actor to handle the received payload message.
 
 PoisonPill Messages
 -------------------
@@ -581,7 +581,7 @@ Management Messages
 * Sending ``akka.routing.AdjustPoolSize`` to a pool router actor will add or remove that number of routees to
   its collection of routees.
 
-These management messages may be handled after other messages, so if you send ``AddRoutee`` immediately followed
+These management messages may be handled after other messages, so if you send ``AddRoutee`` immediately followed by
 an ordinary message you are not guaranteed that the routees have been changed when the ordinary message
 is routed. If you need to know when the change has been applied you can send ``AddRoutee`` followed by ``GetRoutees``
 and when you receive the ``Routees`` reply you know that the preceding change has been applied.
@@ -594,7 +594,16 @@ Dynamically Resizable Pool
 All pools can be used with a fixed number of routees or with a resize strategy to adjust the number
 of routees dynamically.
 
-Pool with resizer defined in configuration:
+There are two types of resizers: the default ``Resizer`` and the ``OptimalSizeExploringResizer``.
+
+Default Resizer
+---------------
+
+The default resizer ramps up and down pool size based on pressure, measured by the percentage of busy routees
+in the pool. It ramps up pool size if the pressure is higher than a certain threshold and backs off if the
+pressure is lower than certain threshold. Both thresholds are configurable.
+
+Pool with default resizer defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-resize-pool
 
@@ -609,6 +618,41 @@ Pool with resizer defined in code:
 
 *It is also worth pointing out that if you define the ``router`` in the configuration file then this value
 will be used instead of any programmatically sent parameters.*
+
+Optimal Size Exploring Resizer
+------------------------------
+
+The ``OptimalSizeExploringResizer`` resizes the pool to an optimal size that provides the most message throughput.
+
+It achieves this by keeping track of message throughput at each pool size and performing one of the following
+three resizing operations periodically:
+
+* Downsize if it hasn't seen all routees ever fully utilized for a period of time.
+* Explore to a random nearby pool size to try and collect throughput metrics.
+* Optimize to a nearby pool size with a better (than any other nearby sizes) throughput metrics.
+
+When the pool is fully-utilized (i.e. all routees are busy), it randomly choose between exploring and optimizing.
+When the pool has not been fully-utilized for a period of time, it will downsize the pool to the last seen max
+utilization multiplied by a configurable ratio.
+
+By constantly exploring and optimizing, the resizer will eventually walk to the optimal size and
+remain nearby. When the optimal size changes it will start walking towards the new one.
+This resizer works best when you expect the pool size to performance function to be a convex function.
+For example, when you have a CPU bound tasks, the optimal size is bound to the number of CPU cores.
+When your task is IO bound, the optimal size is bound to optimal number of concurrent connections to that IO service -
+e.g. a 4 node elastic search cluster may handle 4-8 concurrent requests at optimal speed.
+
+It keeps a performance log so it's stateful as well as having a larger memory footprint than the default ``Resizer``.
+The memory usage is O(n) where n is the number of sizes you allow, i.e. upperBound - lowerBound.
+
+Pool with ``OptimalSizeExploringResizer`` defined in configuration:
+
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-optimal-size-exploring-resize-pool
+
+.. includecode:: code/docs/jrouting/RouterDocTest.java#optimal-size-exploring-resize-pool
+
+Several more configuration options are available and described in ``akka.actor.deployment.default.optimal-size-exploring-resizer``
+section of the reference :ref:`configuration`.
 
 .. note::
 

@@ -580,8 +580,8 @@ See :ref:`futures-scala` for more information on how to await or query a
 future.
 
 The ``onComplete``, ``onSuccess``, or ``onFailure`` methods of the ``Future`` can be
-used to register a callback to get a notification when the Future completes.
-Gives you a way to avoid blocking.
+used to register a callback to get a notification when the Future completes, giving
+you a way to avoid blocking.
 
 .. warning::
 
@@ -948,7 +948,7 @@ Initialization via preStart
 
 The method ``preStart()`` of an actor is only called once directly during the initialization of the first instance, that
 is, at creation of its ``ActorRef``. In the case of restarts, ``preStart()`` is called from ``postRestart()``, therefore
-if not overridden, ``preStart()`` is called on every incarnation. However, overriding ``postRestart()`` one can disable
+if not overridden, ``preStart()`` is called on every incarnation. However, by overriding ``postRestart()`` one can disable
 this behavior, and ensure that there is only one call to ``preStart()``.
 
 One useful usage of this pattern is to disable creation of new ``ActorRefs`` for children during restarts. This can be

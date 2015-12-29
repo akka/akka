@@ -9,6 +9,6 @@ OSGi.persistence
 
 Dependencies.persistence
 
-MimaKeys.previousArtifact := akkaPreviousArtifact("akka-persistence-experimental").value
+MimaKeys.previousArtifacts := akkaPreviousArtifacts("akka-persistence").value
 
 fork in Test := true

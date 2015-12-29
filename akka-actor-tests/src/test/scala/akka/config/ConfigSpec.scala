@@ -110,6 +110,7 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
           getInt("task-queue-size") should ===(-1)
           getString("task-queue-type") should ===("linked")
           getBoolean("allow-core-timeout") should ===(true)
+          getString("fixed-pool-size") should ===("off")
         }
 
         // Debug config

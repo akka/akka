@@ -8,7 +8,7 @@ import akka.event.AddressTerminatedTopic
 import akka.pattern.ask
 import akka.remote.transport.AssociationHandle.{ HandleEventListener, InboundPayload, HandleEvent }
 import akka.remote.transport._
-import akka.remote.transport.Transport.{ AssociationEvent, InvalidAssociationException }
+import akka.remote.transport.Transport.InvalidAssociationException
 import akka.testkit._
 import akka.util.ByteString
 import com.typesafe.config._
@@ -16,7 +16,7 @@ import java.io.NotSerializableException
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import akka.testkit.SocketUtil.temporaryServerAddress
 
 object RemotingSpec {
@@ -68,7 +68,7 @@ object RemotingSpec {
       key-store-password = "changeme"
       key-password = "changeme"
       trust-store-password = "changeme"
-      protocol = "TLSv1"
+      protocol = "TLSv1.2"
       random-number-generator = "AES128CounterSecureRNG"
       enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
     }
@@ -82,8 +82,6 @@ object RemotingSpec {
       actor.provider = "akka.remote.RemoteActorRefProvider"
 
       remote {
-        transport = "akka.remote.Remoting"
-
         retry-gate-closed-for = 1 s
         log-remote-lifecycle-events = on
 
@@ -640,7 +638,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       val config = ConfigFactory.parseString(s"""
         akka.remote.enabled-transports = ["akka.remote.test"]
         akka.remote.retry-gate-closed-for = 5s
-        akka.remote.log-lifecylce-events = on
+        akka.remote.log-remote-lifecycle-events = on
         #akka.loglevel = DEBUG
 
         akka.remote.test {
@@ -720,7 +718,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       val config = ConfigFactory.parseString(s"""
         akka.remote.enabled-transports = ["akka.remote.test"]
         akka.remote.retry-gate-closed-for = 5s
-        akka.remote.log-lifecylce-events = on
+        akka.remote.log-remote-lifecycle-events = on
 
         akka.remote.test {
           registry-key = JMeMndLLsw
