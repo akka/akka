@@ -17,6 +17,7 @@ import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
@@ -144,9 +145,9 @@ object Sink {
    *
    * See also [[Flow.limit]], [[Flow.limitWeighted]], [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
    */
-  def seq[T]: Sink[T, Future[Seq[T]]] = {
+  def seq[T]: Sink[T, Future[immutable.Seq[T]]] = {
     Flow[T].grouped(Integer.MAX_VALUE).toMat(Sink.headOption)(Keep.right) mapMaterializedValue { e ⇒
-      e.map(_.getOrElse(Seq.empty[T]))(ExecutionContexts.sameThreadExecutionContext)
+      e.map(_.getOrElse(immutable.Seq.empty[T]))(ExecutionContexts.sameThreadExecutionContext)
     }
   }
 
