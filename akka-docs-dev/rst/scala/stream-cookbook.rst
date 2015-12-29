@@ -59,11 +59,15 @@ Draining a stream to a strict collection
 A common situation when working with streams is one where we need to collect incoming elements into a Scala collection.
 This operation is supported via ``Sink.seq`` which materializes into a ``Future[Seq[T]]``.
 
-In conjunction, the function ``limit`` or ``take`` should always be used in order to guarantee stream boundedness, thus preventing the program from running out of memory.
+The function ``limit`` or ``take`` should always be used in conjunction in order to guarantee stream boundedness, thus preventing the program from running out of memory.
 
-.. includecode:: code/docs/stream/cookbook/RecipeToStrict.scala#draining-to-seq-unsafe
-.. includecode:: code/docs/stream/cookbook/RecipeToStrict.scala#draining-to-seq-limit
-.. includecode:: code/docs/stream/cookbook/RecipeToStrict.scala#draining-to-seq-take
+For example, this is best avoided:
+
+.. includecode:: code/docs/stream/cookbook/RecipeSeq.scala#draining-to-seq-unsafe
+
+Rather, use ``limit`` or ``take`` to ensure that the resulting ``Seq`` will contain only up to ``MaxAllowedSeqSize`` elements:
+
+.. includecode:: code/docs/stream/cookbook/RecipeSeq.scala#draining-to-seq-safe
 
 Calculating the digest of a ByteString stream
 ---------------------------------------------

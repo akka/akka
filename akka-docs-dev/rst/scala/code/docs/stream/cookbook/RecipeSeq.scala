@@ -1,3 +1,6 @@
+/**
+ *  Copyright (C) 2015 Typesafe <http://typesafe.com/>
+ */
 package docs.stream.cookbook
 
 import akka.stream.scaladsl.{ Sink, Source }
@@ -11,36 +14,42 @@ class RecipeSeq extends RecipeSpec {
   "Recipe for draining a stream into a strict collection" must {
 
     "work" in {
-      val myData = Source(List("1", "2", "3"))
+      val result = immutable.Seq[Message]("1", "2", "3")
+      val myData = Source(result)
       val MaxAllowedSeqSize = 100
 
       //#draining-to-seq-unsafe
-      val strictUnsafe: Future[immutable.Seq[Message]] = myData.runWith(Sink.seq) // dangerous! if myData is unbounded, will cause OutOfMemory exception
+      val unsafe: Future[Seq[Message]] = myData.runWith(Sink.seq) // dangerous!
       //#draining-to-seq-unsafe
 
-      Await.result(strictUnsafe, 3.seconds) should be(List("1", "2", "3"))
+      Await.result(unsafe, 3.seconds) should be(result)
     }
 
     "work together with limit(n)" in {
-      val myData = Source(List("1", "2", "3"))
+      val result = List("1", "2", "3")
+      val myData = Source(result)
       val MaxAllowedSeqSize = 100
 
-      //#draining-to-seq-limit
-      val strictSafe1: Future[immutable.Seq[Message]] = myData.limit(MaxAllowedSeqSize).runWith(Sink.seq) // ok. Future will fail with a `StreamLimitReachedException` if the number of incoming elements is larger than MaxAllowedSeqSize
-      //#draining-to-seq-limit
+      //#draining-to-seq-safe
+      // OK. Future will fail with a `StreamLimitReachedException`
+      // if the number of incoming elements is larger than MaxAllowedSeqSize
+      val safe1: Future[immutable.Seq[Message]] = myData.limit(MaxAllowedSeqSize).runWith(Sink.seq)
+      //#draining-to-seq-safe
 
-      Await.result(strictSafe1, 3.seconds) should be(List("1", "2", "3"))
+      Await.result(safe1, 3.seconds) should be(result)
     }
 
     "work together with take(n)" in {
-      val myData = Source(List("1", "2", "3"))
+      val result = List("1", "2", "3")
+      val myData = Source(result)
       val MaxAllowedSeqSize = 100
 
-      //#draining-to-seq-take
-      val strictSafe2: Future[immutable.Seq[Message]] = myData.take(MaxAllowedSeqSize).runWith(Sink.seq) // ok. Collect up until `MaxAllowedSeqSize`-th elements only (drop the rest if any)
-      //#draining-to-seq-take
+      //#draining-to-seq-safe
+      // OK. Collect up until MaxAllowedSeqSize-th elements only, then cancel upstream
+      val safe2: Future[immutable.Seq[Message]] = myData.take(MaxAllowedSeqSize).runWith(Sink.seq)
+      //#draining-to-seq-safe
 
-      Await.result(strictSafe2, 3.seconds) should be(List("1", "2", "3"))
+      Await.result(safe2, 3.seconds) should be(result)
     }
   }
 
