@@ -5,15 +5,14 @@
 package akka.persistence
 
 import java.util.concurrent.atomic.AtomicReference
+import java.util.function.Consumer
 import akka.actor._
-import akka.dispatch.Dispatchers
 import akka.event.{ Logging, LoggingAdapter }
-import akka.persistence.journal.{ AsyncWriteJournal, EventAdapters, IdentityEventAdapters, ReplayFilter }
+import akka.persistence.journal.{ EventAdapters, IdentityEventAdapters }
 import akka.util.Helpers.ConfigOps
 import com.typesafe.config.Config
 import scala.annotation.tailrec
 import scala.concurrent.duration._
-import java.util.Locale
 import akka.util.Reflect
 import scala.util.control.NonFatal
 
@@ -167,6 +166,20 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
 
   private val journalFallbackConfigPath = "akka.persistence.journal-plugin-fallback"
   private val snapshotStoreFallbackConfigPath = "akka.persistence.snapshot-store-plugin-fallback"
+
+
+  config.getStringList("journal.auto-start-journals").forEach(new Consumer[String] {
+    override def accept(id: String): Unit = {
+      log.info(s"Auto-starting journal plugin `$id`")
+      journalFor(id)
+    }
+  })
+  config.getStringList("snapshot-store.auto-start-snapshot-stores").forEach(new Consumer[String] {
+    override def accept(id: String): Unit = {
+      log.info(s"Auto-starting snapshot store `$id`")
+      snapshotStoreFor(id)
+    }
+  })
 
   /**
    * Returns an [[akka.persistence.journal.EventAdapters]] object which serves as a per-journal collection of bound event adapters.
