@@ -617,16 +617,13 @@ trait FlowOps[+Out, +Mat] {
    * requested from upstream publishers that will then not be processed downstream
    * of this step.
    *
-   * The stream will be completed without producing any elements if `n` is zero
-   * or negative.
-   *
-   * '''Emits when''' the specified number of elements to take has not yet been reached
+   * '''Emits when''' upstream emits and the number of emitted elements has not reached max
    *
    * '''Backpressures when''' downstream backpressures
    *
-   * '''Completes when''' the defined number of elements has been taken or upstream completes
+   * '''Completes when''' upstream completes and the number of emitted elements has not reached max
    *
-   * '''Cancels when''' the defined number of elements has been taken or downstream cancels
+   * '''Cancels when''' downstream cancels
    *
    * See also [[FlowOps.take]], [[FlowOps.takeWithin]], [[FlowOps.takeWhile]]
    */
@@ -642,16 +639,13 @@ trait FlowOps[+Out, +Mat] {
    * requested from upstream publishers that will then not be processed downstream
    * of this step.
    *
-   * The stream will be completed without producing any elements if `n` is zero
-   * or negative.
-   *
-   * '''Emits when''' the specified number of elements to take has not yet been reached
+   * '''Emits when''' upstream emits and the accumulated cost has not reached max
    *
    * '''Backpressures when''' downstream backpressures
    *
-   * '''Completes when''' the defined number of elements has been taken or upstream completes
+   * '''Completes when''' upstream completes and the number of emitted elements has not reached max
    *
-   * '''Cancels when''' the defined number of elements has been taken or downstream cancels
+   * '''Cancels when''' downstream cancels
    *
    * See also [[FlowOps.take]], [[FlowOps.takeWithin]], [[FlowOps.takeWhile]]
    */
