@@ -4,8 +4,7 @@
 package akka.stream.scaladsl
 
 import scala.concurrent.duration._
-import akka.stream.ActorMaterializer
-import akka.stream.OverflowStrategy
+import akka.stream.{ Attributes, ActorMaterializer, OverflowStrategy }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._
@@ -136,6 +135,14 @@ class ActorRefSourceSpec extends AkkaSpec {
       val exc = TE("testfailure")
       ref ! Status.Failure(exc)
       s.expectError(exc)
+    }
+
+    "set actor name equal to stage name" in assertAllStagesStopped {
+      val s = TestSubscriber.manualProbe[Int]()
+      val name = "SomeCustomName"
+      val ref = Source.actorRef(10, OverflowStrategy.fail).withAttributes(Attributes.name(name)).to(Sink.fromSubscriber(s)).run()
+      ref.path.name.contains(name) should ===(true)
+      ref ! PoisonPill
     }
   }
 }
