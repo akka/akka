@@ -136,9 +136,8 @@ For snapshot versions, the snapshot repository needs to be added as well:
 Using Akka with SBT
 -------------------
 
-The simplest way to get started with Akka and SBT is to check out the
-`Akka/SBT template <https://www.typesafe.com/resources/getting-started/typesafe-stack/downloading-installing.html#template-projects-for-scala-akka-and-play>`_
-project.
+The simplest way to get started with Akka and SBT is to use
+`Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_ with one of the SBT `templates <https://www.typesafe.com/activator/templates>`_.
 
 Summary of the essential parts for using Akka with SBT:
 
