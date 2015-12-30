@@ -5,7 +5,6 @@ package akka.stream.impl
 
 import akka.stream._
 import akka.stream.scaladsl._
-
 import language.higherKinds
 
 object SubFlowImpl {
@@ -37,5 +36,4 @@ class SubFlowImpl[In, Out, Mat, F[+_], C](val subFlow: Flow[In, Out, Unit],
   override def mergeSubstreamsWithParallelism(breadth: Int): F[Out] = mergeBackFunction(subFlow, breadth)
 
   def to[M](sink: Graph[SinkShape[Out], M]): C = finishFunction(subFlow.to(sink))
-
 }
