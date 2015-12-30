@@ -1,11 +1,12 @@
+package akka.http.impl.engine.parsing
+
 /**
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.impl.engine.parsing
-
 import akka.http.ParserSettings
 import akka.stream.impl.fusing.GraphInterpreter
+import com.typesafe.config.ConfigFactory
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.parboiled2.CharPredicate
@@ -288,14 +289,10 @@ private[http] object BodyPartParser {
     require(headerValueCacheLimit >= 0, "headerValueCacheLimit must be >= 0")
     def headerValueCacheLimit(headerName: String) = headerValueCacheLimit
   }
+  
+  object Settings {
+    def apply(s: ParserSettings): Settings = Settings(s.maxHeaderNameLength, s.maxHeaderValueLength, s.maxHeaderCount, s.illegalHeaderWarnings, s.headerValueCacheLimit("default"), s.uriParsingMode, s.cookieParsingMode)
+  }
 
-  // TODO: load from config
-  val defaultSettings = Settings(
-    maxHeaderNameLength = 64,
-    maxHeaderValueLength = 8192,
-    maxHeaderCount = 64,
-    illegalHeaderWarnings = true,
-    headerValueCacheLimit = 8,
-    uriParsingMode = Uri.ParsingMode.Relaxed,
-    cookieParsingMode = ParserSettings.CookieParsingMode.RFC6265)
+  val defaultSettings = Settings(ParserSettings.fromSubConfig(ConfigFactory.load, ConfigFactory.systemProperties()))
 }
