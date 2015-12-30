@@ -5,7 +5,7 @@
 package akka.http.scaladsl.server
 
 import scala.collection.immutable
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ Future, ExecutionContext }
 import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
@@ -29,4 +29,9 @@ object RouteResult {
                                                rejectionHandler: RejectionHandler = RejectionHandler.default,
                                                exceptionHandler: ExceptionHandler = null): Flow[HttpRequest, HttpResponse, Unit] =
     Route.handlerFlow(route)
+
+  implicit def routeResult2Route(f: Future[RouteResult]): Route =
+    new StandardRoute {
+      override def apply(ctx: RequestContext): Future[RouteResult] = f
+    }
 }

@@ -9,6 +9,8 @@ import model.HttpMethods._
 import model.StatusCodes
 import akka.testkit.EventFilter
 
+import scala.concurrent.Future
+
 class BasicRouteSpecs extends RoutingSpec {
 
   "routes created by the concatenation operator '~'" should {
@@ -189,4 +191,31 @@ class BasicRouteSpecs extends RoutingSpec {
       } ~> check { status shouldEqual StatusCodes.MethodNotAllowed }
     }
   }
+
+  "RouteResult creation by user" should {
+    "allow handling route with Future[RouteResult]" in {
+      val routes = {
+        def askSomeone(i: Int, ctx: RequestContext): Future[RouteResult] =
+          if (i == 42) ctx.complete(s"Done: $i")
+          else ctx.reject(ValidationRejection(s"Nein, $i!"))
+
+        parameter("q".as[Int]) { q ⇒
+          extractRequestContext { ctx ⇒
+            askSomeone(q, ctx)
+          }
+        }
+      }
+
+      Get("/?q=42") ~> routes ~> check {
+        val theResponse = responseAs[String]
+        info("theResponse = " + theResponse)
+      }
+
+      Get("/?q=9") ~> routes ~> check {
+        handled should ===(false)
+        rejections should ===(List(ValidationRejection("Nein, 9!")))
+      }
+    }
+  }
+
 }
