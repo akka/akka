@@ -22,7 +22,7 @@ class FlowCompileSpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system))
 
   "Flow" should {
-    "should not run" in {
+    "not run" in {
       val open: Flow[Int, Int, _] = Flow[Int]
       "open.run()" shouldNot compile
     }
@@ -52,7 +52,7 @@ class FlowCompileSpec extends AkkaSpec {
       val closedSink: Sink[String, _] = Flow[String].map(_.hashCode).to(Sink.asPublisher[Int](false))
       val appended: Sink[Int, _] = open.to(closedSink)
       "appended.run()" shouldNot compile
-      "appended.connect(Sink.head[Int])" shouldNot compile
+      "appended.to(Sink.head[Int])" shouldNot compile
       intSeq.to(appended).run
     }
     "be appended to Source" in {
@@ -60,22 +60,22 @@ class FlowCompileSpec extends AkkaSpec {
       val closedSource: Source[Int, _] = strSeq.via(Flow[String].map(_.hashCode))
       val closedSource2: Source[String, _] = closedSource.via(open)
       "closedSource2.run()" shouldNot compile
-      "strSeq.connect(closedSource2)" shouldNot compile
+      "strSeq.to(closedSource2)" shouldNot compile
       closedSource2.to(Sink.asPublisher[String](false)).run
     }
   }
 
   "Sink" should {
-    val openSource: Sink[Int, _] =
+    val openSink: Sink[Int, _] =
       Flow[Int].map(_.toString).to(Sink.asPublisher[String](false))
     "accept Source" in {
-      intSeq.to(openSource)
+      intSeq.to(openSink)
     }
     "not accept Sink" in {
-      "openSource.connect(Sink.head[String])" shouldNot compile
+      "openSink.to(Sink.head[String])" shouldNot compile
     }
     "not run()" in {
-      "openSource.run()" shouldNot compile
+      "openSink.run()" shouldNot compile
     }
   }
 
@@ -86,7 +86,7 @@ class FlowCompileSpec extends AkkaSpec {
       openSource.to(Sink.asPublisher[String](false))
     }
     "not be accepted by Source" in {
-      "openSource.connect(intSeq)" shouldNot compile
+      "openSource.to(intSeq)" shouldNot compile
     }
     "not run()" in {
       "openSource.run()" shouldNot compile
@@ -101,11 +101,29 @@ class FlowCompileSpec extends AkkaSpec {
       closed.run()
     }
     "not be accepted by Source" in {
-      "intSeq.connect(closed)" shouldNot compile
+      "intSeq.to(closed)" shouldNot compile
     }
 
     "not accept Sink" in {
-      "closed.connect(Sink.head[String])" shouldNot compile
+      "closed.to(Sink.head[String])" shouldNot compile
+    }
+  }
+
+  "FlowOps" should {
+    "be extensible" in {
+      val f: FlowOps[Int, Unit] { type Closed = Sink[Int, Unit] } = Flow[Int]
+      val fm = f.map(identity)
+      val f2: FlowOps[Int, Unit] = fm
+      val s: Sink[Int, Unit] = fm.to(Sink.ignore)
+    }
+
+    "be extensible (with MaterializedValue)" in {
+      val f: FlowOpsMat[Int, Unit] { type ClosedMat[+M] = Sink[Int, M] } = Flow[Int]
+      val fm = f.map(identity).concatMat(Source.empty)(Keep.both)
+      // this asserts only the FlowOpsMat part of the signature, but fm also carries the
+      // CloseMat type without which `.to(sink)` does not work
+      val f2: FlowOpsMat[Int, (Unit, Unit)] = fm
+      val s: Sink[Int, (Unit, Unit)] = fm.to(Sink.ignore)
     }
   }
 }
