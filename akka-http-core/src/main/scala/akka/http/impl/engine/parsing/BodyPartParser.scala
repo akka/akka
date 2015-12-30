@@ -293,6 +293,6 @@ private[http] object BodyPartParser {
   object Settings {
     def apply(s: ParserSettings): Settings = Settings(s.maxHeaderNameLength, s.maxHeaderValueLength, s.maxHeaderCount, s.illegalHeaderWarnings, s.headerValueCacheLimit("default"), s.uriParsingMode, s.cookieParsingMode)
   }
-
+  
   val defaultSettings = Settings(ParserSettings.fromSubConfig(ConfigFactory.load, ConfigFactory.systemProperties()))
 }
