@@ -48,6 +48,7 @@ object CircuitBreakerProxy {
   sealed trait CircuitBreakerCommand
 
   final case class TellOnly(msg: Any) extends CircuitBreakerCommand
+  final case class Passthrough(msg: Any) extends CircuitBreakerCommand
 
   sealed trait CircuitBreakerResponse
   final case class CircuitOpenFailure(failedMsg: Any)
@@ -127,6 +128,8 @@ final class CircuitBreakerProxy(
   failureDetector: Any ⇒ Boolean,
   failureMap: CircuitOpenFailure ⇒ Any) extends Actor with ActorLogging with FSM[CircuitBreakerState, CircuitBreakerStateData] {
 
+  context watch target
+
   startWith(Closed, CircuitBreakerStateData(failureCount = 0))
 
   def callSucceededHandling: StateFunction = {
@@ -135,8 +138,23 @@ final class CircuitBreakerProxy(
       goto(Closed) using CircuitBreakerStateData(failureCount = 0, firstHalfOpenMessageSent = false)
   }
 
+  def passthroughHandling: StateFunction = {
+    case Event(Passthrough(message), state) ⇒
+      log.debug("Received a passthrough message in state {}, forwarding the message to the target actor without altering current state", state)
+      target ! message
+      stay
+  }
+
+  def targetTerminationHandling: StateFunction = {
+    case Event(Terminated(`target`), state) ⇒
+      log.debug("Target actor {} terminated while in state {}, terminating this proxy too", target, state)
+      stop
+  }
+
+  def commonStateHandling: StateFunction = { callSucceededHandling orElse passthroughHandling orElse targetTerminationHandling }
+
   when(Closed) {
-    ({
+    commonStateHandling orElse {
       case Event(TellOnly(message), _) ⇒
         log.debug("CLOSED: Sending message {} without expecting any response", message)
         target ! message
@@ -157,11 +175,11 @@ final class CircuitBreakerProxy(
         forwardRequest(message, sender, state, log)
         stay
 
-    }: StateFunction) orElse callSucceededHandling
+    }
   }
 
   when(Open, stateTimeout = resetTimeout.duration) {
-    callSucceededHandling orElse {
+    commonStateHandling orElse {
       case Event(StateTimeout, state) ⇒
         log.debug("Timeout expired for state OPEN, going to half open")
         goto(HalfOpen) using state.copy(firstHalfOpenMessageSent = false)
@@ -184,7 +202,7 @@ final class CircuitBreakerProxy(
   }
 
   when(HalfOpen) {
-    callSucceededHandling orElse {
+    commonStateHandling orElse {
       case Event(TellOnly(message), _) ⇒
         log.debug("HALF-OPEN: Dropping TellOnly request for message {}", message)
         stay

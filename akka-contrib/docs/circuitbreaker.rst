@@ -36,3 +36,7 @@ That also means that your ``CircuitBreakerActor`` will be useful to protect you 
 temporary failures in the target actor includecode:: code/docs/stream/io/StreamFileDocSpec.scala#file-source
 
 .. includecode:: @contribSrc@/src/test/scala/akka/contrib/circuitbreaker/sample/CircuitBreakerAskWithFailure.scala#ask-with-failure-sample
+
+To send messages to the `target` actor without expecting any response you can wrap your message in a ``TellOnly`` or a ``Passthrough``
+envelope. The difference between the two is that ``TellOnly`` will forward the message only when in closed mode and
+``Passthrough`` will do it in any state.
