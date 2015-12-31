@@ -3,11 +3,15 @@
  */
 package akka.stream.impl.fusing
 
+import java.io.InputStream
+import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicBoolean
 import akka.actor.Cancellable
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.stream._
+import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
+import akka.stream.impl.io.InputStreamSinkStage.{ Failed, Data }
 import akka.stream.stage._
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
@@ -69,7 +73,6 @@ object GraphStages {
     override val shape = FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-      var initialized = false
 
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
@@ -116,6 +119,51 @@ object GraphStages {
       override def isCancelled: Boolean = cancelled.get()
     }
   }
+
+  private class TerminationWatcher[T] extends GraphStageWithMaterializedValue[FlowShape[T, T], Future[Unit]] {
+    val name = "TerminationWatcher"
+    val in = Inlet[T](name + ".in")
+    val out = Outlet[T](name + ".out")
+    override def initialAttributes = Attributes.name(name)
+    override val shape = FlowShape(in, out)
+
+    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Unit]) = {
+      trait SharingTerminationFuture {
+        val finishFuture: Future[Unit]
+      }
+      val logic = new GraphStageLogic(shape) with SharingTerminationFuture {
+        val finishPromise = Promise[Unit]
+        val finishFuture = finishPromise.future
+
+        setHandler(in, new InHandler {
+          override def onPush(): Unit = push(out, grab(in))
+
+          override def onUpstreamFinish(): Unit = {
+            finishPromise.success(())
+            super.onUpstreamFinish()
+          }
+
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            finishPromise.failure(ex)
+            super.onUpstreamFailure(ex)
+          }
+        })
+        setHandler(out, new OutHandler {
+          override def onPull(): Unit = pull(in)
+          override def onDownstreamFinish(): Unit = {
+            finishPromise.success(())
+            super.onDownstreamFinish()
+          }
+        })
+      }
+      (logic, logic.finishFuture)
+    }
+
+    override def toString = name
+  }
+  private val _terminationWatcher = new TerminationWatcher[Any]
+  def terminationWatcher[T]: GraphStageWithMaterializedValue[FlowShape[T, T], Future[Unit]] =
+    _terminationWatcher.asInstanceOf[GraphStageWithMaterializedValue[FlowShape[T, T], Future[Unit]]]
 
   class TickSource[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T)
     extends GraphStageWithMaterializedValue[SourceShape[T], Cancellable] {

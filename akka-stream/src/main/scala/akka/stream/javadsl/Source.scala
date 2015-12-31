@@ -11,7 +11,7 @@ import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
 import akka.stream.Attributes._
 import akka.stream._
-import akka.stream.impl.fusing.Delay
+import akka.stream.impl.fusing.{ GraphStages, Delay }
 import akka.stream.impl.{ ConstantFun, StreamLayout }
 import akka.stream.stage.Stage
 import akka.util.ByteString
@@ -1625,6 +1625,15 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * '''Cancels when''' downstream cancels
    */
   def detach: javadsl.Source[Out, Mat] = new Source(delegate.detach)
+
+  /**
+    * Materializes to `Future[Unit]` that completes on getting termination message.
+    * The Future completes with success when received complete message from upstream or cancel
+    * from downstream. It fails with the same error when received error message from
+    * downstream.
+    */
+  def watchTermination[M]()(matF: function.Function2[Mat, Future[Unit], M]): javadsl.Source[Out, M] =
+    new Source(delegate.watchTermination()(combinerToScala(matF)))
 
   /**
    * Delays the initial element by the specified duration.
