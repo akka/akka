@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.testkit
 
+import akka.http.ParserSettings
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Await, Future }
@@ -135,6 +136,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
     implicit def injectIntoRoute(implicit timeout: RouteTestTimeout,
                                  defaultHostInfo: DefaultHostInfo,
                                  routingSettings: RoutingSettings,
+                                 parserSettings: ParserSettings,
                                  executionContext: ExecutionContext,
                                  materializer: Materializer,
                                  routingLog: RoutingLog,
@@ -148,7 +150,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
             request.withEffectiveUri(
               securedConnection = defaultHostInfo.securedConnection,
               defaultHostHeader = defaultHostInfo.host)
-          val ctx = new RequestContextImpl(effectiveRequest, routingLog.requestLog(effectiveRequest), routingSettings)
+          val ctx = new RequestContextImpl(effectiveRequest, routingLog.requestLog(effectiveRequest), routingSettings, parserSettings)
           val sealedExceptionHandler = ExceptionHandler.seal(exceptionHandler)
           val semiSealedRoute = // sealed for exceptions but not for rejections
             Directives.handleExceptions(sealedExceptionHandler) { route }

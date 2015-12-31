@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.testkit
 
+import akka.http.ParserSettings
+
 import scala.annotation.varargs
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -55,7 +57,7 @@ abstract class RouteTest extends AllDirectives {
         securedConnection = defaultHostInfo.isSecuredConnection(),
         defaultHostHeader = defaultHostInfo.getHost().asScala)
 
-    val result = scalaRoute(new server.RequestContextImpl(effectiveRequest, NoLogging, RoutingSettings(system)))
+    val result = scalaRoute(new server.RequestContextImpl(effectiveRequest, NoLogging, RoutingSettings(system), ParserSettings(system)))
 
     result.awaitResult(awaitDuration) match {
       case RouteResult.Complete(response) ⇒ createTestResponse(response)

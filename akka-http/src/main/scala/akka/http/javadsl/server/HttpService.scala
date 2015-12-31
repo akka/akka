@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.server
 
+import akka.http.ParserSettings
+
 import scala.concurrent.Future
 import akka.actor.ActorSystem
 import akka.http.scaladsl.{ server, Http }
@@ -13,6 +15,7 @@ import akka.stream.{ ActorMaterializer, Materializer }
 import akka.stream.scaladsl.{ Keep, Sink }
 
 trait HttpServiceBase {
+
   /**
    * Starts a server on the given interface and port and uses the route to handle incoming requests.
    */
@@ -34,6 +37,7 @@ trait HttpServiceBase {
   def handleConnectionsWithRoute(interface: String, port: Int, route: Route, system: ActorSystem, materializer: Materializer): Future[ServerBinding] = {
     implicit val s = system
     implicit val m = materializer
+    implicit val ps = ParserSettings(system.settings.config)
 
     import system.dispatcher
     val r: server.Route = RouteImplementation(route)

@@ -27,7 +27,7 @@ import akka.stream.impl.fusing.SubSource
 private[http] final class BodyPartParser(defaultContentType: ContentType,
                                          boundary: String,
                                          log: LoggingAdapter,
-                                         settings: BodyPartParser.Settings = BodyPartParser.defaultSettings)
+                                         settings: BodyPartParser.Settings)
   extends PushPullStage[ByteString, BodyPartParser.Output] {
   import BodyPartParser._
   import settings._
@@ -289,10 +289,9 @@ private[http] object BodyPartParser {
     require(headerValueCacheLimit >= 0, "headerValueCacheLimit must be >= 0")
     def headerValueCacheLimit(headerName: String) = headerValueCacheLimit
   }
-  
+
   object Settings {
     def apply(s: ParserSettings): Settings = Settings(s.maxHeaderNameLength, s.maxHeaderValueLength, s.maxHeaderCount, s.illegalHeaderWarnings, s.headerValueCacheLimit("default"), s.uriParsingMode, s.cookieParsingMode)
   }
-  
-  val defaultSettings = Settings(ParserSettings.fromSubConfig(ConfigFactory.load, ConfigFactory.systemProperties()))
+
 }

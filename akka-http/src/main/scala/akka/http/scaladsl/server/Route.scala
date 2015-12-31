@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.server
 
+import akka.http.ParserSettings
 import akka.stream.Materializer
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -42,7 +43,8 @@ object Route {
                                 routingLog: RoutingLog,
                                 executionContext: ExecutionContext = null,
                                 rejectionHandler: RejectionHandler = RejectionHandler.default,
-                                exceptionHandler: ExceptionHandler = null): Flow[HttpRequest, HttpResponse, Unit] =
+                                exceptionHandler: ExceptionHandler = null,
+                                parserSettings: ParserSettings): Flow[HttpRequest, HttpResponse, Unit] =
     Flow[HttpRequest].mapAsync(1)(asyncHandler(route))
 
   /**
@@ -53,7 +55,8 @@ object Route {
                                  routingLog: RoutingLog,
                                  executionContext: ExecutionContext = null,
                                  rejectionHandler: RejectionHandler = RejectionHandler.default,
-                                 exceptionHandler: ExceptionHandler = null): HttpRequest ⇒ Future[HttpResponse] = {
+                                 exceptionHandler: ExceptionHandler = null,
+                                 parserSettings: ParserSettings): HttpRequest ⇒ Future[HttpResponse] = {
     val effectiveEC = if (executionContext ne null) executionContext else materializer.executionContext
 
     {
@@ -61,7 +64,7 @@ object Route {
 
       val sealedRoute = seal(route)
       request ⇒
-        sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request), routingSettings)).fast
+        sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request), routingSettings, parserSettings)).fast
           .map {
             case RouteResult.Complete(response) ⇒ response
             case RouteResult.Rejected(rejected) ⇒ throw new IllegalStateException(s"Unhandled rejections '$rejected', unsealed RejectionHandler?!")

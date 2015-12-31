@@ -5,6 +5,8 @@
 package akka.http.scaladsl.server
 package directives
 
+import akka.http.ParserSettings
+
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
 import akka.event.LoggingAdapter
@@ -170,6 +172,12 @@ trait BasicDirectives {
     mapRequestContext(_ withSettings settings)
 
   /**
+   * Runs its inner route with the given alternative [[ParserSettings]].
+   */
+  def withParserSettings(parserSettings: ParserSettings): Directive0 =
+    mapRequestContext(_ withParserSettings parserSettings)
+
+  /**
    * Runs the inner route with settings mapped by the given function.
    */
   def mapSettings(f: RoutingSettings ⇒ RoutingSettings): Directive0 =
@@ -195,5 +203,6 @@ object BasicDirectives extends BasicDirectives {
   private val _extractMaterializer: Directive1[Materializer] = extract(_.materializer)
   private val _extractLog: Directive1[LoggingAdapter] = extract(_.log)
   private val _extractSettings: Directive1[RoutingSettings] = extract(_.settings)
+  private val _extractParserSettings: Directive1[ParserSettings] = extract(_.parserSettings)
   private val _extractRequestContext: Directive1[RequestContext] = extract(conforms)
 }

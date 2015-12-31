@@ -61,6 +61,7 @@ trait FileUploadDirectives {
       extractRequestContext.flatMap { ctx ⇒
         implicit val mat = ctx.materializer
         implicit val ec = ctx.executionContext
+        implicit val ps = ctx.parserSettings
 
         val onePartSource: Source[(FileInfo, Source[ByteString, Any]), Any] = formData.parts
           .filter(part ⇒ part.filename.isDefined && part.name == fieldName)

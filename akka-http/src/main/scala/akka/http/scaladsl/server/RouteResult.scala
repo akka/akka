@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl.server
 
+import akka.http.ParserSettings
+
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
 import akka.stream.Materializer
@@ -27,6 +29,7 @@ object RouteResult {
                                                routingLog: RoutingLog,
                                                executionContext: ExecutionContext = null,
                                                rejectionHandler: RejectionHandler = RejectionHandler.default,
-                                               exceptionHandler: ExceptionHandler = null): Flow[HttpRequest, HttpResponse, Unit] =
+                                               exceptionHandler: ExceptionHandler = null,
+                                               parserSettings: ParserSettings): Flow[HttpRequest, HttpResponse, Unit] =
     Route.handlerFlow(route)
 }
