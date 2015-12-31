@@ -1627,13 +1627,25 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
   def detach: javadsl.Source[Out, Mat] = new Source(delegate.detach)
 
   /**
-    * Materializes to `Future[Unit]` that completes on getting termination message.
-    * The Future completes with success when received complete message from upstream or cancel
-    * from downstream. It fails with the same error when received error message from
-    * downstream.
-    */
-  def watchTermination[M]()(matF: function.Function2[Mat, Future[Unit], M]): javadsl.Source[Out, M] =
-    new Source(delegate.watchTermination()(combinerToScala(matF)))
+   * Materializes to `Future[Unit]` that completes on getting termination message.
+   * The Future completes with success when received complete message from upstream or cancel
+   * from downstream. It fails with the same error when received error message from
+   * downstream.
+   *
+   * Taking `Future` as materialization value for resulting `Source`. In other words it's combine
+   * materialize values with Keep.right
+   */
+  def watchTermination[M](): javadsl.Source[Out, Future[Unit]] =
+    new Source(delegate.watchTermination())
+
+  /**
+   * Materializes to `Future[Unit]` that completes on getting termination message.
+   * The Future completes with success when received complete message from upstream or cancel
+   * from downstream. It fails with the same error when received error message from
+   * downstream.
+   */
+  def watchTerminationMat[M]()(matF: function.Function2[Mat, Future[Unit], M]): javadsl.Source[Out, M] =
+    new Source(delegate.watchTerminationMat()(combinerToScala(matF)))
 
   /**
    * Delays the initial element by the specified duration.

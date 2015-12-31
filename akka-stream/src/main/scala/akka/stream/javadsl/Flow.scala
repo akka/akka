@@ -1459,13 +1459,24 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   def detach: javadsl.Flow[In, Out, Mat] = new Flow(delegate.detach)
 
   /**
-    * Materializes to `Future[Unit]` that completes on getting termination message.
-    * The Future completes with success when received complete message from upstream or cancel
-    * from downstream. It fails with the same error when received error message from
-    * downstream.
-    */
-  def watchTermination[M]()(matF: function.Function2[Mat, Future[Unit], M]): javadsl.Flow[In, Out, M] =
-    new Flow(delegate.watchTermination()(combinerToScala(matF)))
+   * Materializes to `Future[Unit]` that completes on getting termination message.
+   * The Future completes with success when received complete message from upstream or cancel
+   * from downstream. It fails with the same error when received error message from
+   * downstream.
+   *
+   * Taking `Future` as materialization value for resulting `Flow`. In other words it's combine
+   * materialize values with Keep.right
+   */
+  def watchTermination[M](): javadsl.Flow[In, Out, Future[Unit]] =
+    new Flow(delegate.watchTermination())
+  /**
+   * Materializes to `Future[Unit]` that completes on getting termination message.
+   * The Future completes with success when received complete message from upstream or cancel
+   * from downstream. It fails with the same error when received error message from
+   * downstream.
+   */
+  def watchTerminationMat[M]()(matF: function.Function2[Mat, Future[Unit], M]): javadsl.Flow[In, Out, M] =
+    new Flow(delegate.watchTerminationMat()(combinerToScala(matF)))
 
   /**
    * Delays the initial element by the specified duration.

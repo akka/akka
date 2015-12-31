@@ -1790,8 +1790,20 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * The Future completes with success when received complete message from upstream or cancel
    * from downstream. It fails with the same error when received error message from
    * downstream.
+   *
+   * Taking `Future` as materialization value for resulting `Flow`. In other words it's combine
+   * materialize values with Keep.right
    */
-  def watchTermination[Mat2]()(matF: (Mat, Future[Unit]) ⇒ Mat2): ReprMat[Out, Mat2] =
+  def watchTermination(): ReprMat[Out, Future[Unit]] =
+    viaMat(GraphStages.terminationWatcher)(Keep.right)
+
+  /**
+   * Materializes to `Future[Unit]` that completes on getting termination message.
+   * The Future completes with success when received complete message from upstream or cancel
+   * from downstream. It fails with the same error when received error message from
+   * downstream.
+   */
+  def watchTerminationMat[Mat2]()(matF: (Mat, Future[Unit]) ⇒ Mat2): ReprMat[Out, Mat2] =
     viaMat(GraphStages.terminationWatcher)(matF)
 
   /**
