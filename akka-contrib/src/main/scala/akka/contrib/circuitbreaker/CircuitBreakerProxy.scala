@@ -136,7 +136,7 @@ final class CircuitBreakerProxy(
   }
 
   when(Closed) {
-    callSucceededHandling orElse {
+    ({
       case Event(TellOnly(message), _) ⇒
         log.debug("CLOSED: Sending message {} without expecting any response", message)
         target ! message
@@ -157,7 +157,7 @@ final class CircuitBreakerProxy(
         forwardRequest(message, sender, state, log)
         stay
 
-    }
+    }: StateFunction) orElse callSucceededHandling
   }
 
   when(Open, stateTimeout = resetTimeout.duration) {
@@ -171,7 +171,7 @@ final class CircuitBreakerProxy(
         stay
 
       case Event(openNotification @ CircuitOpenFailure(_), _) ⇒
-        log.error("Why did I send message {} to myself?", openNotification)
+        log.error("Unexpected circuit open notification {} sent to myself. Please report this as a bug.", openNotification)
         stay
 
       case Event(message, state) ⇒
