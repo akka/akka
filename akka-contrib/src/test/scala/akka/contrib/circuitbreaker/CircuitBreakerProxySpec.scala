@@ -4,17 +4,17 @@
 package akka.contrib.circuitbreaker
 
 import akka.actor.ActorRef
-import akka.contrib.circuitbreaker.CircuitBreakerActor._
+import akka.contrib.circuitbreaker.CircuitBreakerProxy._
 import akka.testkit.{ AkkaSpec, TestProbe }
 import org.scalatest.GivenWhenThen
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class CircuitBreakerActorSpec extends AkkaSpec() with GivenWhenThen {
+class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
 
   val baseCircuitBreakerPropsBuilder =
-    CircuitBreakerActorPropsBuilder(
+    CircuitBreakerPropsBuilder(
       maxFailures = 2,
       callTimeout = 200 millis,
       resetTimeout = 1 second,
@@ -45,11 +45,14 @@ class CircuitBreakerActorSpec extends AkkaSpec() with GivenWhenThen {
       sender.expectMsg(reply)
     }
 
-    def circuitBreakerToReceivesSelfNotificationMessage =
+    def circuitBreakerReceivesSelfNotificationMessage() =
       receiver.expectNoMsg(baseCircuitBreakerPropsBuilder.resetTimeout.duration / 4)
 
-    def resetTimeoutToExpires =
+    def resetTimeoutExpires() =
       receiver.expectNoMsg(baseCircuitBreakerPropsBuilder.resetTimeout.duration + 100.millis)
+
+    def callTimeoutExpiresWithoutResponse() =
+      sender.expectNoMsg(baseCircuitBreakerPropsBuilder.callTimeout.duration + 100.millis)
 
     def messageIsRejectedWithOpenCircuitNotification(message: Any) = {
       sender.send(circuitBreaker, message)
@@ -139,7 +142,7 @@ class CircuitBreakerActorSpec extends AkkaSpec() with GivenWhenThen {
         receiverRespondsWithFailureToRequest(s"request$index")
       }
 
-      circuitBreakerToReceivesSelfNotificationMessage
+      circuitBreakerReceivesSelfNotificationMessage()
 
       sender.send(circuitBreaker, "request in open state")
       receiver.expectNoMsg
@@ -152,7 +155,7 @@ class CircuitBreakerActorSpec extends AkkaSpec() with GivenWhenThen {
         receiverRespondsWithFailureToRequest(s"request$index")
       }
 
-      circuitBreakerToReceivesSelfNotificationMessage
+      circuitBreakerReceivesSelfNotificationMessage()
 
       sender.send(circuitBreaker, "request in open state")
       sender.expectMsg(CircuitOpenFailure("request in open state"))
@@ -168,21 +171,21 @@ class CircuitBreakerActorSpec extends AkkaSpec() with GivenWhenThen {
         receiverRespondsWithFailureToRequest(s"request$index")
       }
 
-      circuitBreakerToReceivesSelfNotificationMessage
+      circuitBreakerReceivesSelfNotificationMessage()
 
       sender.send(circuitBreaker, "request in open state")
       sender.expectMsg("NOT SENT: request in open state")
     }
 
-    "enter open state after reaching the threshold of timed-out responses" in {
-      val sender = TestProbe()
-      val receiver = TestProbe()
-      val circuitBreaker = system.actorOf(baseCircuitBreakerPropsBuilder.props(target = receiver.ref))
+    "enter open state after reaching the threshold of timed-out responses" in new CircuitBreakerScenario {
+      Given("A circuit breaker actor pointing to a test probe")
+      val circuitBreaker = defaultCircuitBreaker
 
+      When("A number of request equal to the timed-out responses threashold is done without receiving response within the configured timeout")
       sender.send(circuitBreaker, "request1")
       sender.send(circuitBreaker, "request2")
 
-      Thread.sleep(baseCircuitBreakerPropsBuilder.callTimeout.duration.toMillis + 100)
+      callTimeoutExpiresWithoutResponse()
 
       receiver.expectMsg("request1")
       receiver.reply("this should be timed out 1")
@@ -190,8 +193,7 @@ class CircuitBreakerActorSpec extends AkkaSpec() with GivenWhenThen {
       receiver.expectMsg("request2")
       receiver.reply("this should be timed out 2")
 
-      // Have to wait a bit to let the circuit breaker receive the self notification message
-      Thread.sleep(300)
+      circuitBreakerReceivesSelfNotificationMessage()
 
       sender.send(circuitBreaker, "request in open state")
       receiver.expectNoMsg
@@ -205,14 +207,14 @@ class CircuitBreakerActorSpec extends AkkaSpec() with GivenWhenThen {
       receiverRespondsWithFailureToRequest("request1")
       receiverRespondsWithFailureToRequest("request2")
 
-      circuitBreakerToReceivesSelfNotificationMessage
+      circuitBreakerReceivesSelfNotificationMessage()
 
       Then("Messages are ignored")
       messageIsRejectedWithOpenCircuitNotification("IGNORED SINCE IN OPEN STATE1")
       messageIsRejectedWithOpenCircuitNotification("IGNORED SINCE IN OPEN STATE2")
 
       When("ENTERING HALF OPEN STATE")
-      resetTimeoutToExpires
+      resetTimeoutExpires()
 
       Then("First message should be forwarded, following ones ignored if the failure persist")
       sender.send(circuitBreaker, "First message in half-open state, should be forwarded")
@@ -233,12 +235,12 @@ class CircuitBreakerActorSpec extends AkkaSpec() with GivenWhenThen {
       receiverRespondsWithFailureToRequest("request1")
       receiverRespondsWithFailureToRequest("request2")
 
-      resetTimeoutToExpires
+      resetTimeoutExpires()
 
       And("Receiving a successful response")
       receiverRespondsToRequestWith("First message in half-open state, should be forwarded", "This should close the circuit")
 
-      circuitBreakerToReceivesSelfNotificationMessage
+      circuitBreakerReceivesSelfNotificationMessage()
 
       Then("circuit is re-closed")
       sender.send(circuitBreaker, "request1")
@@ -257,12 +259,12 @@ class CircuitBreakerActorSpec extends AkkaSpec() with GivenWhenThen {
       receiverRespondsWithFailureToRequest("request1")
       receiverRespondsWithFailureToRequest("request2")
 
-      resetTimeoutToExpires
+      resetTimeoutExpires()
 
       And("Receiving a failure response")
       receiverRespondsWithFailureToRequest("First message in half-open state, should be forwarded")
 
-      circuitBreakerToReceivesSelfNotificationMessage
+      circuitBreakerReceivesSelfNotificationMessage()
 
       Then("circuit is opened again")
       sender.send(circuitBreaker, "this should be ignored")
@@ -282,13 +284,13 @@ class CircuitBreakerActorSpec extends AkkaSpec() with GivenWhenThen {
       receiverRespondsWithFailureToRequest("request1")
       receiverRespondsWithFailureToRequest("request2")
 
-      circuitBreakerToReceivesSelfNotificationMessage
+      circuitBreakerReceivesSelfNotificationMessage()
 
       Then("An event is sent")
       eventListener.expectMsg(CircuitOpen(circuitBreaker))
 
       When("Entering HALF OPEN state")
-      resetTimeoutToExpires
+      resetTimeoutExpires
 
       Then("An event is sent")
       eventListener.expectMsg(CircuitHalfOpen(circuitBreaker))

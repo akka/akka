@@ -1,7 +1,7 @@
 package akka.contrib.circuitbreaker.sample
 
 import akka.actor.{ Actor, ActorLogging, ActorRef }
-import akka.contrib.circuitbreaker.CircuitBreakerActor.{ CircuitBreakerActorPropsBuilder, CircuitOpenFailure }
+import akka.contrib.circuitbreaker.CircuitBreakerProxy.{ CircuitBreakerPropsBuilder, CircuitOpenFailure }
 
 import scala.concurrent.duration._
 
@@ -11,7 +11,7 @@ class CircuitBreaker(potentiallyFailingService: ActorRef) extends Actor with Act
 
   val serviceCircuitBreaker =
     context.actorOf(
-      CircuitBreakerActorPropsBuilder(maxFailures = 3, callTimeout = 2.seconds, resetTimeout = 30.seconds)
+      CircuitBreakerPropsBuilder(maxFailures = 3, callTimeout = 2.seconds, resetTimeout = 30.seconds)
         .copy(
           failureDetector = {
             _ match {
