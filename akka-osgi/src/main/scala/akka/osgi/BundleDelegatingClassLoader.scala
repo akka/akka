@@ -35,10 +35,10 @@ object BundleDelegatingClassLoader {
  */
 class BundleDelegatingClassLoader(bundle: Bundle, fallBackClassLoader: ClassLoader) extends ClassLoader(fallBackClassLoader) {
 
-  private val bundles = findTransitiveBundles(bundle).toList
+  private val bundles = findTransitiveBundles(bundle)
 
   override def findClass(name: String): Class[_] = {
-    @tailrec def find(remaining: List[Bundle]): Class[_] = {
+    @tailrec def find(remaining: Seq[Bundle]): Class[_] = {
       if (remaining.isEmpty) throw new ClassNotFoundException(name)
       else Try { remaining.head.loadClass(name) } match {
         case Success(cls) ⇒ cls
@@ -49,7 +49,7 @@ class BundleDelegatingClassLoader(bundle: Bundle, fallBackClassLoader: ClassLoad
   }
 
   override def findResource(name: String): URL = {
-    @tailrec def find(remaining: List[Bundle]): URL = {
+    @tailrec def find(remaining: Seq[Bundle]): URL = {
       if (remaining.isEmpty) getParent.getResource(name)
       else Option { remaining.head.getResource(name) } match {
         case Some(r) ⇒ r
@@ -66,8 +66,8 @@ class BundleDelegatingClassLoader(bundle: Bundle, fallBackClassLoader: ClassLoad
     java.util.Collections.enumeration(resources.asJava)
   }
 
-  private def findTransitiveBundles(bundle: Bundle): Set[Bundle] = {
-    @tailrec def process(processed: Set[Bundle], remaining: Set[Bundle]): Set[Bundle] = {
+  private def findTransitiveBundles(bundle: Bundle): Seq[Bundle] = {
+    @tailrec def process(processed: Seq[Bundle], remaining: Seq[Bundle]): Seq[Bundle] = {
       if (remaining.isEmpty) {
         processed
       } else {
@@ -76,20 +76,20 @@ class BundleDelegatingClassLoader(bundle: Bundle, fallBackClassLoader: ClassLoad
           process(processed, rest)
         } else {
           val wiring = b.adapt(classOf[BundleWiring])
-          val direct: Set[Bundle] =
-            if (wiring == null) Set.empty
+          val direct: Seq[Bundle] =
+            if (wiring == null) Seq.empty
             else {
-              val requiredWires: List[BundleWire] =
-                wiring.getRequiredWires(BundleRevision.PACKAGE_NAMESPACE).asScala.toList
+              val requiredWires: Seq[BundleWire] =
+                wiring.getRequiredWires(BundleRevision.PACKAGE_NAMESPACE).asScala.toSeq
               requiredWires.flatMap {
                 wire ⇒ Option(wire.getProviderWiring) map { _.getBundle }
-              }.toSet
+              }
             }
-          process(processed + b, rest ++ (direct -- processed))
+          process(Seq(b) ++ processed, rest ++ direct.diff(processed))
         }
       }
     }
-    process(Set.empty, Set(bundle))
+    process(Seq.empty, Seq(bundle))
   }
 }
 
