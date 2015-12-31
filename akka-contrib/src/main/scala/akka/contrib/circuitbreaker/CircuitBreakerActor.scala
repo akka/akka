@@ -11,6 +11,11 @@ import akka.util.Timeout
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success }
 
+/**
+ * This is an Actor which implements the circuit breaker pattern,
+ * you may also be interested in the raw circuit breaker [[akka.pattern.CircuitBreaker]]
+ *
+ */
 object CircuitBreakerActor {
 
   /**
@@ -59,7 +64,7 @@ object CircuitBreakerActor {
 
   final case class CircuitBreakerStateData(failureCount: Int = 0, firstHalfOpenMessageSent: Boolean = false)
 
-  final case class CircuitBreakerActorBuilder(
+  final case class CircuitBreakerActorPropsBuilder(
     maxFailures: Int, callTimeout: Timeout, resetTimeout: Timeout,
     circuitEventListener: Option[ActorRef] = None,
     failureDetector: Any ⇒ Boolean = { _ ⇒ false },
@@ -70,11 +75,11 @@ object CircuitBreakerActor {
      *
      * @param target the target actor ref
      */
-    def propsForTarget(target: ActorRef) = CircuitBreakerActor.props(target, maxFailures, callTimeout, resetTimeout, circuitEventListener, failureDetector, openCircuitFailureConverter)
+    def props(target: ActorRef) = CircuitBreakerActor.props(target, maxFailures, callTimeout, resetTimeout, circuitEventListener, failureDetector, openCircuitFailureConverter)
 
   }
 
-  class OpenCircuitException extends Exception("Circuit Open so unable to complete operation")
+  final class OpenCircuitException extends Exception("Circuit Open so unable to complete operation")
 
   /**
    * Extends [[scala.concurrent.Future]] with the method failForOpenCircuitWith to handle
@@ -106,7 +111,7 @@ object CircuitBreakerInternalEvents {
 import CircuitBreakerActor._
 import CircuitBreakerInternalEvents._
 
-class CircuitBreakerActor(
+final class CircuitBreakerActor(
   target: ActorRef,
   maxFailures: Int,
   callTimeout: Timeout,

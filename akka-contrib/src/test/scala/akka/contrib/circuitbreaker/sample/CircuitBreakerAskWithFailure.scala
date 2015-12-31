@@ -16,7 +16,7 @@ class CircuitBreakerAskWithFailure(potentiallyFailingService: ActorRef) extends 
 
   val serviceCircuitBreaker =
     context.actorOf(
-      CircuitBreakerActorBuilder(maxFailures = 3, callTimeout = askTimeout, resetTimeout = 30.seconds).propsForTarget(potentiallyFailingService),
+      CircuitBreakerActorPropsBuilder(maxFailures = 3, callTimeout = askTimeout, resetTimeout = 30.seconds).props(potentiallyFailingService),
       "serviceCircuitBreaker")
 
   import context.dispatcher
