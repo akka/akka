@@ -8,7 +8,6 @@ import akka.actor._
 import akka.persistence.{ Recovery, PersistentActor }
 import akka.persistence.query._
 import akka.stream.{ FlowShape, ActorMaterializer }
-import akka.stream.scaladsl.FlowGraph
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.javadsl
 import akka.testkit.AkkaSpec
@@ -153,7 +152,7 @@ object PersistenceQueryDocSpec {
       .map(envelope => envelope.event)
       .map(convertToReadSideTypes) // convert to datatype
       .grouped(20) // batch inserts into groups of 20
-      .runWith(Sink(dbBatchWriter)) // write batches to read-side database
+      .runWith(Sink.fromSubscriber(dbBatchWriter)) // write batches to read-side database
     //#projection-into-different-store-rs
   }
 

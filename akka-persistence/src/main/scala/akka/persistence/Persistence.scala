@@ -167,7 +167,6 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   private val journalFallbackConfigPath = "akka.persistence.journal-plugin-fallback"
   private val snapshotStoreFallbackConfigPath = "akka.persistence.snapshot-store-plugin-fallback"
 
-
   config.getStringList("journal.auto-start-journals").forEach(new Consumer[String] {
     override def accept(id: String): Unit = {
       log.info(s"Auto-starting journal plugin `$id`")
