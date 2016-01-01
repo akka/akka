@@ -21,7 +21,7 @@ object Dependencies {
     // Compile
 
     // FIXME: change to project dependency once akka-stream merged to master
-    val akkaStream = "com.typesafe.akka" %% "akka-stream-experimental" % "1.0"
+    val akkaStream = "com.typesafe.akka" %% "akka-stream-experimental" % "2.0.1"
 
     val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.13.4" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
@@ -60,7 +60,7 @@ object Dependencies {
       val junitIntf    = "com.novocode"                % "junit-interface"              % "0.11"             % "test" // MIT
       val scalaXml     = "org.scala-lang.modules"     %% "scala-xml"                    % "1.0.4"            % "test"
       // FIXME: change to project dependency once akka-stream merged to master
-      val akkaStreamTestkit = "com.typesafe.akka" %% "akka-stream-testkit-experimental" % "1.0" % "test"
+      val akkaStreamTestkit = "com.typesafe.akka" %% "akka-stream-testkit-experimental" % "2.0.1" % "test"
 
       // metrics, measurements, perf testing
       val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.2"            % "test" // ApacheV2

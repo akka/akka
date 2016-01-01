@@ -335,7 +335,7 @@ public class PersistenceQueryDocTest {
       .eventsByPersistenceId("user-1337", 0L, Long.MAX_VALUE)
       .map(envelope -> envelope.event())
       .grouped(20) // batch inserts into groups of 20
-      .runWith(Sink.create(dbBatchWriter), mat); // write batches to read-side database
+      .runWith(Sink.fromSubscriber(dbBatchWriter), mat); // write batches to read-side database
     //#projection-into-different-store-rs
   }
 
