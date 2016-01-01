@@ -4,6 +4,7 @@
 package akka.contrib.circuitbreaker
 
 import akka.actor._
+import akka.contrib.circuitbreaker.CircuitBreakerProxy.CircuitOpenFailure
 import akka.event.LoggingAdapter
 import akka.pattern._
 import akka.util.Timeout
@@ -86,28 +87,6 @@ object CircuitBreakerProxy {
     def props(target: ActorRef) = CircuitBreakerProxy.props(target, maxFailures, callTimeout, resetTimeout, circuitEventListener, failureDetector, openCircuitFailureConverter)
 
   }
-
-  final class OpenCircuitException extends Exception("Circuit Open so unable to complete operation")
-
-  /**
-   * Extends [[scala.concurrent.Future]] with the method failForOpenCircuitWith to handle
-   *   [[akka.contrib.circuitbreaker.CircuitBreakerProxy.CircuitOpenFailure]] failure responses throwing
-   *   an exception built with the given exception builder
-   */
-  implicit class CircuitBreakerAwareFuture(val future: Future[Any]) extends AnyVal {
-    def failForOpenCircuit(implicit executionContext: ExecutionContext): Future[Any] = failForOpenCircuitWith(new OpenCircuitException)
-
-    def failForOpenCircuitWith(throwing: ⇒ Throwable)(implicit executionContext: ExecutionContext): Future[Any] = {
-      future.flatMap {
-        _ match {
-          case CircuitOpenFailure(_) ⇒ Future.failed(throwing)
-          case result                ⇒ Future.successful(result)
-        }
-      }
-    }
-
-  }
-
 }
 
 object CircuitBreakerInternalEvents {
