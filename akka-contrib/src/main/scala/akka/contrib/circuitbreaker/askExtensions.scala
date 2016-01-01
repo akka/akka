@@ -34,22 +34,18 @@ object implicits {
   implicit def askWithCircuitBreaker(actorRef: ActorRef) = new AskeableWithCircuitBreakerActor(actorRef)
 
   /**
-   * Wraps the ``ask`` method in [[akka.pattern.AskSupport]] method to handle failures connected to the circuit
+   * Wraps the `ask` method in [[akka.pattern.AskSupport]] method to handle failures connected to the circuit
    * breaker being in open state
-   * @throws akka.contrib.circuitbreaker.OpenCircuitException if the call failed because the circuit breaker proxy
-   *                                                          state was OPEN
    */
-  @throws[OpenCircuitException]
+  @throws[akka.contrib.circuitbreaker.OpenCircuitException]("if the call failed because the circuit breaker proxy state was OPEN")
   def askWithCircuitBreaker(circuitBreakerProxy: ActorRef, message: Any)(implicit executionContext: ExecutionContext, timeout: Timeout): Future[Any] =
     circuitBreakerProxy.internalAskWithCircuitBreaker(message, timeout, ActorRef.noSender)
 
   /**
-    * Wraps the ``ask`` method in [[akka.pattern.AskSupport]] method to handle failures connected to the circuit
+    * Wraps the `ask` method in [[akka.pattern.AskSupport]] method to handle failures connected to the circuit
     * breaker being in open state
-    * @throws akka.contrib.circuitbreaker.OpenCircuitException if the call failed because the circuit breaker proxy
-   *                                                          state was OPEN
    */
-  @throws[OpenCircuitException]
+  @throws[akka.contrib.circuitbreaker.OpenCircuitException]("if the call failed because the circuit breaker proxy state was OPEN")
   def askWithCircuitBreaker(circuitBreakerProxy: ActorRef, message: Any, sender: ActorRef)(implicit executionContext: ExecutionContext, timeout: Timeout): Future[Any] =
     circuitBreakerProxy.internalAskWithCircuitBreaker(message, timeout, sender)
 

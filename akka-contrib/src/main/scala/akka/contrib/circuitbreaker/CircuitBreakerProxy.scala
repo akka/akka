@@ -9,13 +9,11 @@ import akka.event.LoggingAdapter
 import akka.pattern._
 import akka.util.Timeout
 
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success }
+import scala.util.{Failure, Success}
 
 /**
  * This is an Actor which implements the circuit breaker pattern,
  * you may also be interested in the raw circuit breaker [[akka.pattern.CircuitBreaker]]
- *
  */
 object CircuitBreakerProxy {
 
@@ -95,8 +93,8 @@ object CircuitBreakerInternalEvents {
   case object CallSucceeded extends CircuitBreakerInternalEvent
 }
 
-import CircuitBreakerProxy._
-import CircuitBreakerInternalEvents._
+import akka.contrib.circuitbreaker.CircuitBreakerInternalEvents._
+import akka.contrib.circuitbreaker.CircuitBreakerProxy._
 
 final class CircuitBreakerProxy(
   target: ActorRef,
