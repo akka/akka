@@ -128,13 +128,9 @@ object GraphStages {
     override val shape = FlowShape(in, out)
 
     override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Unit]) = {
-      trait SharingTerminationFuture {
-        val finishFuture: Future[Unit]
-      }
-      val logic = new GraphStageLogic(shape) with SharingTerminationFuture {
-        val finishPromise = Promise[Unit]
-        val finishFuture = finishPromise.future
+      val finishPromise = Promise[Unit]
 
+      (new GraphStageLogic(shape) {
         setHandler(in, new InHandler {
           override def onPush(): Unit = push(out, grab(in))
 
@@ -155,8 +151,7 @@ object GraphStages {
             super.onDownstreamFinish()
           }
         })
-      }
-      (logic, logic.finishFuture)
+      }, finishPromise.future)
     }
 
     override def toString = name
