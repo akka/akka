@@ -16,7 +16,7 @@ because of the workload.
 
 A simple implementation can be given by this class
 
-.. includecode:: @contribSrc@/src/test/scala/akka/contrib/circuitbreaker/sample/SimpleService.scala#simple-service
+.. includecode:: @contribSrc@/src/test/scala/akka/contrib/circuitbreaker/sample/CircuitBreaker.scala#simple-service
 
 
 If we want to interface with this service using the Circuit Breaker we can use two approaches:
@@ -28,15 +28,26 @@ Using a non-conversational approach:
 Using the ``ask`` pattern, in this case it is useful to be able to map circuit open failures to the same type of failures
 returned by the service (a ``Left[String]`` in our case):
 
-.. includecode:: @contribSrc@/src/test/scala/akka/contrib/circuitbreaker/sample/CircuitBreakerAsk.scala#ask-sample
-
+.. includecode:: @contribSrc@/src/test/scala/akka/contrib/circuitbreaker/sample/CircuitBreaker.scala#ask-sample
 
 If it is not possible to define define a specific error response, you can map the Open Circuit notification to a failure.
 That also means that your ``CircuitBreakerActor`` will be useful to protect you from time out for extra workload or
-temporary failures in the target actor includecode:: code/docs/stream/io/StreamFileDocSpec.scala#file-source
+temporary failures in the target actor.
+You can decide to do that in two ways:
 
-.. includecode:: @contribSrc@/src/test/scala/akka/contrib/circuitbreaker/sample/CircuitBreakerAskWithFailure.scala#ask-with-failure-sample
+The first is to use the ``askWithCircuitBreaker`` method on the ``ActorRef`` or ``ActorSelection`` instance pointing to
+your circuit breaker proxy (enabled by importing ``import akka.contrib.circuitbreaker.implicits.askWithCircuitBreaker``)
+
+.. includecode:: @contribSrc@/src/test/scala/akka/contrib/circuitbreaker/sample/CircuitBreaker.scala#ask-with-circuit-breaker-sample
+
+The second is to map the future response of your ``ask`` pattern application with the ``failForOpenCircuit``
+enabled by importing ``import akka.contrib.circuitbreaker.implicits.futureExtensions``
+
+.. includecode:: @contribSrc@/src/test/scala/akka/contrib/circuitbreaker/sample/CircuitBreaker.scala#ask-with-failure-sample
+
+#### Direct Communication With The Target Actor
 
 To send messages to the `target` actor without expecting any response you can wrap your message in a ``TellOnly`` or a ``Passthrough``
 envelope. The difference between the two is that ``TellOnly`` will forward the message only when in closed mode and
 ``Passthrough`` will do it in any state.
+

@@ -6,12 +6,15 @@ package akka.contrib.circuitbreaker
 import akka.actor.{ ActorRef, PoisonPill }
 import akka.contrib.circuitbreaker.CircuitBreakerProxy._
 import akka.testkit.{ AkkaSpec, TestProbe }
-import org.scalatest.GivenWhenThen
+import akka.util.Timeout
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{ Millis, Second, Span }
+import org.scalatest.{ GivenWhenThen, Matchers }
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
+class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen with Matchers with ScalaFutures {
 
   val baseCircuitBreakerPropsBuilder =
     CircuitBreakerPropsBuilder(
@@ -403,6 +406,130 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
       And("The circuit is still closed for ordinary messages")
       sender.send(circuitBreaker, "This should NOT be received")
       receiver.expectNoMsg()
+    }
+  }
+
+  "Ask Extension" should {
+    implicit val patienceConfig = PatienceConfig(timeout = Span(1, Second), interval = Span(100, Millis))
+    import implicits.askWithCircuitBreaker
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    implicit val timeout: Timeout = 2.seconds
+
+    "work as a ASK pattern if circuit is closed" in new CircuitBreakerScenario {
+      Given("A circuit breaker actor proxying a test probe")
+      val circuitBreaker = defaultCircuitBreaker
+
+      When("Doing a askWithCircuitBreaker request")
+      val responseFuture = circuitBreaker.askWithCircuitBreaker("request")
+
+      Then("The message is sent to the target actor")
+      receiver.expectMsg("request")
+
+      When("Then target actor replies")
+      receiver.reply("response")
+
+      Then("The response is available as result of the future returned by the askWithCircuitBreaker method")
+      whenReady(responseFuture) { response ⇒
+        response should be("response")
+      }
+    }
+
+    "transform the response into a failure with CircuitOpenException cause if circuit is open" in new CircuitBreakerScenario {
+      Given("A circuit breaker actor proxying a test probe")
+      val circuitBreaker = defaultCircuitBreaker
+
+      When("The circuit breaker proxy enters OPEN state")
+      receiverRespondsWithFailureToRequest("request1")
+      receiverRespondsWithFailureToRequest("request2")
+
+      circuitBreakerReceivesSelfNotificationMessage()
+
+      And("Doing a askWithCircuitBreaker request")
+      val responseFuture = circuitBreaker.askWithCircuitBreaker("request")
+
+      Then("The message is NOT sent to the target actor")
+      receiver.expectNoMsg()
+
+      And("The response is converted into a failure")
+      whenReady(responseFuture.failed) { failure ⇒
+        failure shouldBe a[OpenCircuitException]
+      }
+    }
+  }
+
+  "Future Extension" should {
+    implicit val patienceConfig = PatienceConfig(timeout = Span(1, Second), interval = Span(100, Millis))
+    import implicits.futureExtensions
+    import akka.pattern.ask
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    implicit val timeout: Timeout = 2.seconds
+
+    "work as a ASK pattern if circuit is closed" in new CircuitBreakerScenario {
+      Given("A circuit breaker actor proxying a test probe")
+      val circuitBreaker = defaultCircuitBreaker
+
+      When("Doing a askWithCircuitBreaker request")
+      val responseFuture = (circuitBreaker ? "request").failForOpenCircuit
+
+      Then("The message is sent to the target actor")
+      receiver.expectMsg("request")
+
+      When("Then target actor replies")
+      receiver.reply("response")
+
+      Then("The response is available as result of the future returned by the askWithCircuitBreaker method")
+      whenReady(responseFuture) { response ⇒
+        response should be("response")
+      }
+    }
+
+    "transform the response into a failure with CircuitOpenException cause if circuit is open" in new CircuitBreakerScenario {
+      Given("A circuit breaker actor proxying a test probe")
+      val circuitBreaker = defaultCircuitBreaker
+
+      When("The circuit breaker proxy enters OPEN state")
+      receiverRespondsWithFailureToRequest("request1")
+      receiverRespondsWithFailureToRequest("request2")
+
+      circuitBreakerReceivesSelfNotificationMessage()
+
+      And("Doing a askWithCircuitBreaker request")
+      val responseFuture = (circuitBreaker ? "request").failForOpenCircuit
+
+      Then("The message is NOT sent to the target actor")
+      receiver.expectNoMsg()
+
+      And("The response is converted into a failure")
+      whenReady(responseFuture.failed) { failure ⇒
+        failure shouldBe a[OpenCircuitException]
+      }
+    }
+
+    "transform the response into a failure with the given exception as cause if circuit is open" in new CircuitBreakerScenario {
+      class MyException(message: String) extends Exception(message)
+
+      Given("A circuit breaker actor proxying a test probe")
+      val circuitBreaker = defaultCircuitBreaker
+
+      When("The circuit breaker proxy enters OPEN state")
+      receiverRespondsWithFailureToRequest("request1")
+      receiverRespondsWithFailureToRequest("request2")
+
+      circuitBreakerReceivesSelfNotificationMessage()
+
+      And("Doing a askWithCircuitBreaker request")
+      val responseFuture = (circuitBreaker ? "request").failForOpenCircuitWith(new MyException("Circuit is open"))
+
+      Then("The message is NOT sent to the target actor")
+      receiver.expectNoMsg()
+
+      And("The response is converted into a failure")
+      whenReady(responseFuture.failed) { failure ⇒
+        failure shouldBe a[MyException]
+        failure.getMessage() should be("Circuit is open")
+      }
     }
   }
 
