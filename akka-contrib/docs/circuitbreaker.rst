@@ -49,5 +49,6 @@ enabled by importing ``import akka.contrib.circuitbreaker.implicits.futureExtens
 
 To send messages to the `target` actor without expecting any response you can wrap your message in a ``TellOnly`` or a ``Passthrough``
 envelope. The difference between the two is that ``TellOnly`` will forward the message only when in closed mode and
-``Passthrough`` will do it in any state.
+``Passthrough`` will do it in any state. You can for example use the ``Passthrough`` envelope to wrap a ``PoisonPill``
+message to terminate the target actor. That will cause the circuit breaker proxy to be terminated too
 

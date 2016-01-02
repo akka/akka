@@ -9,7 +9,7 @@ import akka.event.LoggingAdapter
 import akka.pattern._
 import akka.util.Timeout
 
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 /**
  * This is an Actor which implements the circuit breaker pattern,
@@ -20,7 +20,11 @@ object CircuitBreakerProxy {
   /**
    * Creates an circuit breaker actor proxying a target actor intended for request-reply interactions.
    * It is possible to send messages through this proxy without expecting a response wrapping them into a
-   * [[akka.contrib.circuitbreaker.CircuitBreakerProxy.TellOnly]]
+   * [[akka.contrib.circuitbreaker.CircuitBreakerProxy.TellOnly]] or a
+   * [[akka.contrib.circuitbreaker.CircuitBreakerProxy.Passthrough]] the difference between the two being that
+   * a message wrapped into a [[akka.contrib.circuitbreaker.CircuitBreakerProxy.Passthrough]] is going to be
+   * forwarded even when the circuit is open (e.g. if you need to terminate the target and proxy actors sending
+   * a [[akka.actor.PoisonPill]] message)
    *
    * The circuit breaker implements the same state machine documented in [[akka.pattern.CircuitBreaker]]
    *
