@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.contrib.circuitbreaker
 
 import akka.actor.{ ActorSelection, Actor, ActorRef }
@@ -18,32 +21,33 @@ final class OpenCircuitException extends Exception("Unable to complete operation
 object implicits {
   /**
    * Import this implicit to enable the methods `failForOpenCircuit` and `failForOpenCircuitWith`
-   * to [[scala.concurrent.Future]] in order to handle
-   * [[akka.contrib.circuitbreaker.CircuitBreakerProxy.CircuitOpenFailure]] failure responses throwing an
-   * [[akka.contrib.circuitbreaker.OpenCircuitException]] or an exception  built with the given
+   * to [[scala.concurrent.Future]] converting
+   * [[akka.contrib.circuitbreaker.CircuitBreakerProxy.CircuitOpenFailure]] into a failure caused either by an
+   * [[akka.contrib.circuitbreaker.OpenCircuitException]] or by an exception  built with the given
    * exception builder
    */
   implicit def futureExtensions(future: Future[Any]) = new CircuitBreakerAwareFuture(future)
 
   /**
    * Import this implicit method to get an extended versions of the `ask` pattern for
-   * [[akka.actor.ActorRef]] and [[akka.actor.ActorSelection]] in order to handle
-   * [[akka.contrib.circuitbreaker.CircuitBreakerProxy.CircuitOpenFailure]] failure responses throwing an
+   * [[akka.actor.ActorRef]] and [[akka.actor.ActorSelection]] converting
+   * [[akka.contrib.circuitbreaker.CircuitBreakerProxy.CircuitOpenFailure]] into a failure caused by an
    * [[akka.contrib.circuitbreaker.OpenCircuitException]]
    */
   implicit def askWithCircuitBreaker(actorRef: ActorRef) = new AskeableWithCircuitBreakerActor(actorRef)
 
   /**
-   * Wraps the `ask` method in [[akka.pattern.AskSupport]] method to handle failures connected to the circuit
-   * breaker being in open state
+   * Wraps the `ask` method in [[akka.pattern.AskSupport]] method to convert
+   * [[akka.contrib.circuitbreaker.CircuitBreakerProxy.CircuitOpenFailure]] responses into a failure response caused
+   * by an [[akka.contrib.circuitbreaker.OpenCircuitException]]
    */
   @throws[akka.contrib.circuitbreaker.OpenCircuitException]("if the call failed because the circuit breaker proxy state was OPEN")
   def askWithCircuitBreaker(circuitBreakerProxy: ActorRef, message: Any)(implicit executionContext: ExecutionContext, timeout: Timeout): Future[Any] =
     circuitBreakerProxy.internalAskWithCircuitBreaker(message, timeout, ActorRef.noSender)
 
   /**
-    * Wraps the `ask` method in [[akka.pattern.AskSupport]] method to handle failures connected to the circuit
-    * breaker being in open state
+   * Wraps the `ask` method in [[akka.pattern.AskSupport]] method to convert failures connected to the circuit
+   * breaker being in open state
    */
   @throws[akka.contrib.circuitbreaker.OpenCircuitException]("if the call failed because the circuit breaker proxy state was OPEN")
   def askWithCircuitBreaker(circuitBreakerProxy: ActorRef, message: Any, sender: ActorRef)(implicit executionContext: ExecutionContext, timeout: Timeout): Future[Any] =
