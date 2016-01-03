@@ -25,6 +25,7 @@ trait RouteTestResultComponent {
    * A receptacle for the response or rejections created by a route.
    */
   class RouteTestResult(timeout: FiniteDuration)(implicit fm: Materializer) {
+    import fm.executionContext
     private[this] var result: Option[Either[immutable.Seq[Rejection], HttpResponse]] = None
     private[this] val latch = new CountDownLatch(1)
 
@@ -95,6 +96,6 @@ trait RouteTestResultComponent {
       failTest("Request was neither completed nor rejected within " + timeout)
 
     private def awaitAllElements[T](data: Source[T, _]): immutable.Seq[T] =
-      data.grouped(100000).runWith(Sink.headOption).awaitResult(timeout).getOrElse(Nil)
+      data.limit(100000).runWith(Sink.seq).awaitResult(timeout)
   }
 }

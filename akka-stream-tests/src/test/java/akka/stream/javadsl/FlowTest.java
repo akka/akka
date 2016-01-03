@@ -251,7 +251,7 @@ public class FlowTest extends StreamTest {
         .mergeSubstreams();
 
     final Future<List<List<String>>> future =
-        Source.from(input).via(flow).grouped(10).runWith(Sink.<List<List<String>>> head(), materializer);
+        Source.from(input).via(flow).limit(10).runWith(Sink.<List<String>> seq(), materializer);
     final Object[] result = Await.result(future, Duration.create(1, TimeUnit.SECONDS)).toArray();
     Arrays.sort(result, (Comparator<Object>)(Object) new Comparator<List<String>>() {
       @Override
@@ -277,7 +277,7 @@ public class FlowTest extends StreamTest {
     	.concatSubstreams();
 
     final Future<List<List<String>>> future =
-        Source.from(input).via(flow).grouped(10).runWith(Sink.<List<List<String>>> head(), materializer);
+        Source.from(input).via(flow).limit(10).runWith(Sink.<List<String>> seq(), materializer);
     final List<List<String>> result = Await.result(future, Duration.create(1, TimeUnit.SECONDS));
 
     assertEquals(Arrays.asList(Arrays.asList("A", "B", "C"), Arrays.asList(".", "D"), Arrays.asList(".", "E", "F")), result);
@@ -297,7 +297,7 @@ public class FlowTest extends StreamTest {
 	    .concatSubstreams();
 
     final Future<List<List<String>>> future =
-        Source.from(input).via(flow).grouped(10).runWith(Sink.<List<List<String>>> head(), materializer);
+        Source.from(input).via(flow).limit(10).runWith(Sink.<List<String>> seq(), materializer);
     final List<List<String>> result = Await.result(future, Duration.create(1, TimeUnit.SECONDS));
 
     assertEquals(Arrays.asList(Arrays.asList("A", "B", "C", "."), Arrays.asList("D", "."), Arrays.asList("E", "F")), result);
@@ -350,7 +350,7 @@ public class FlowTest extends StreamTest {
 
     // collecting
     final Publisher<String> pub = source.runWith(publisher, materializer);
-    final Future<List<String>> all = Source.fromPublisher(pub).grouped(100).runWith(Sink.<List<String>>head(), materializer);
+    final Future<List<String>> all = Source.fromPublisher(pub).limit(100).runWith(Sink.<String>seq(), materializer);
 
     final List<String> result = Await.result(all, Duration.apply(200, TimeUnit.MILLISECONDS));
     assertEquals(new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<String>(result));
@@ -438,7 +438,7 @@ public class FlowTest extends StreamTest {
         probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals(Arrays.asList(1, 2, 3), result.first());
 
-    Future<List<Integer>> tailFuture = result.second().grouped(4).runWith(Sink.<List<Integer>>head(), materializer);
+    Future<List<Integer>> tailFuture = result.second().limit(4).runWith(Sink.<Integer>seq(), materializer);
     List<Integer> tailResult = Await.result(tailFuture, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals(Arrays.asList(4, 5, 6), tailResult);
   }

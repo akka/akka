@@ -11,7 +11,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
 
   implicit val materializer = ActorMaterializer()
   val source = Source(List(1, 2, 3))
-  val sink = Flow[Int].grouped(10).toMat(Sink.head)(Keep.right)
+  val sink = Flow[Int].limit(10).toMat(Sink.seq)(Keep.right)
 
   "Reverse Arrows in the Graph DSL" must {
 

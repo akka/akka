@@ -80,7 +80,7 @@ class FlowErrorDocSpec extends AkkaSpec {
       }
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
     val source = Source(List(1, 3, -1, 5, 7)).via(flow)
-    val result = source.grouped(1000).runWith(Sink.head)
+    val result = source.limit(1000).runWith(Sink.seq)
     // the negative element cause the scan stage to be restarted,
     // i.e. start from 0 again
     // result here will be a Future completed with Success(Vector(0, 1, 4, 0, 5, 12))

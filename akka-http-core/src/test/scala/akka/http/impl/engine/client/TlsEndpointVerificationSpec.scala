@@ -16,8 +16,6 @@ import akka.http.scaladsl.model.{ StatusCodes, HttpResponse, HttpRequest }
 import akka.http.scaladsl.model.headers.Host
 import org.scalatest.time.{ Span, Seconds }
 import scala.concurrent.Future
-import akka.testkit.EventFilter
-import javax.net.ssl.SSLException
 
 class TlsEndpointVerificationSpec extends AkkaSpec("""
     akka.loglevel = INFO

@@ -27,7 +27,7 @@ class RecipeParseLines extends RecipeSpec {
         .map(_.utf8String)
       //#parse-lines
 
-      Await.result(linesStream.grouped(10).runWith(Sink.head), 3.seconds) should be(List(
+      Await.result(linesStream.limit(10).runWith(Sink.seq), 3.seconds) should be(List(
         "Hello World\r!",
         "Hello Akka!",
         "Hello Streams!",
