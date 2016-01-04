@@ -36,12 +36,12 @@ temporary failures in the target actor.
 You can decide to do that in two ways:
 
 The first is to use the ``askWithCircuitBreaker`` method on the ``ActorRef`` or ``ActorSelection`` instance pointing to
-your circuit breaker proxy (enabled by importing ``import akka.contrib.circuitbreaker.implicits.askWithCircuitBreaker``)
+your circuit breaker proxy (enabled by importing ``import akka.contrib.circuitbreaker.Implicits.askWithCircuitBreaker``)
 
 .. includecode:: @contribSrc@/src/test/scala/akka/contrib/circuitbreaker/sample/CircuitBreaker.scala#ask-with-circuit-breaker-sample
 
 The second is to map the future response of your ``ask`` pattern application with the ``failForOpenCircuit``
-enabled by importing ``import akka.contrib.circuitbreaker.implicits.futureExtensions``
+enabled by importing ``import akka.contrib.circuitbreaker.Implicits.futureExtensions``
 
 .. includecode:: @contribSrc@/src/test/scala/akka/contrib/circuitbreaker/sample/CircuitBreaker.scala#ask-with-failure-sample
 
