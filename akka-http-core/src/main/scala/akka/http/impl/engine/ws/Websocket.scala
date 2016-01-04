@@ -84,8 +84,11 @@ private[http] object Websocket {
     val collectMessage: Flow[MessageDataPart, Message, Unit] =
       Flow[MessageDataPart]
         .prefixAndTail(1)
-        .map {
-          case (seq, remaining) ⇒ seq.head match {
+        .mapConcat {
+          // happens if we get a MessageEnd first which creates a new substream but which is then
+          // filtered out by collect in `prepareMessages` below
+          case (Nil, _) ⇒ Nil
+          case (first +: Nil, remaining) ⇒ (first match {
             case TextMessagePart(text, true) ⇒
               SubSource.kill(remaining)
               TextMessage.Strict(text)
@@ -104,7 +107,7 @@ private[http] object Websocket {
                   .collect {
                     case t: BinaryMessagePart if t.data.nonEmpty ⇒ t.data
                   })
-          }
+          }) :: Nil
         }
 
     def prepareMessages: Flow[MessagePart, Message, Unit] =
