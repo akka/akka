@@ -7,8 +7,6 @@ package akka.http.impl.engine.ws
 import akka.stream.stage._
 import akka.util.{ ByteStringBuilder, ByteString }
 
-import scala.annotation.tailrec
-
 /**
  * A utf16 (= Java char) to utf8 encoder.
  *
