@@ -6,7 +6,6 @@ package akka.http.impl.engine.ws
 
 import akka.util.ByteString
 
-import scala.annotation.tailrec
 import scala.util.Try
 
 /**
