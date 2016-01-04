@@ -5,7 +5,7 @@
 package akka.http.impl.engine.ws
 
 import akka.util.ByteString
-import akka.stream.stage.{ TerminationDirective, StatefulStage, SyncDirective, Context }
+import akka.stream.stage.{ StatefulStage, SyncDirective, Context }
 
 import scala.annotation.tailrec
 

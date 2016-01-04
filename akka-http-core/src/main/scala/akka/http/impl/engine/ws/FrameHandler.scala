@@ -5,7 +5,7 @@
 package akka.http.impl.engine.ws
 
 import akka.stream.scaladsl.Flow
-import akka.stream.stage.{ TerminationDirective, SyncDirective, Context, StatefulStage }
+import akka.stream.stage.{ SyncDirective, Context, StatefulStage }
 import akka.util.ByteString
 import Protocol.Opcode
 
