@@ -463,7 +463,26 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         expectComplete(messageIn)
 
         messageOut.sendComplete()
-        // especially mustn't be Procotol.CloseCodes.NoCodePresent
+        // especially mustn't be Protocol.CloseCodes.NoCodePresent
+        expectCloseCodeOnNetwork(Protocol.CloseCodes.Regular)
+        netOut.expectComplete()
+        netIn.expectCancellation()
+      }
+      "after receiving regular close frame when idle (but some data was exchanged before)" in new ServerTestSetup {
+        val msg = "äbcdef€\uffff"
+        val input = frame(Opcode.Text, ByteString(msg, "UTF-8"), fin = true, mask = true)
+
+        // send at least one regular frame to trigger #19340 afterwards
+        pushInput(input)
+        expectMessage(TextMessage.Strict(msg))
+
+        pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
+        expectComplete(messageIn)
+
+        netIn.expectNoMsg(100.millis) // especially the cancellation not yet
+        expectNoNetworkData()
+        messageOut.sendComplete()
+
         expectCloseCodeOnNetwork(Protocol.CloseCodes.Regular)
         netOut.expectComplete()
         netIn.expectCancellation()
