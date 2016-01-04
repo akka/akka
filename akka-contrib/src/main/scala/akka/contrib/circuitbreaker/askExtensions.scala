@@ -10,7 +10,7 @@ import scala.language.implicitConversions
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-final class OpenCircuitException extends Exception("Unable to complete operation since the Circuit Breaker Actor Proxy is in Open State")
+final class OpenCircuitException extends RuntimeException("Unable to complete operation since the Circuit Breaker Actor Proxy is in Open State")
 
 /**
  * Convenience implicit conversions to provide circuit-breaker aware management of the ask pattern,
@@ -18,7 +18,7 @@ final class OpenCircuitException extends Exception("Unable to complete operation
  * `Future` result of an `ask` pattern to fail in case of
  * [[akka.contrib.circuitbreaker.CircuitBreakerProxy.CircuitOpenFailure]] response
  */
-object implicits {
+object Implicits {
   /**
    * Import this implicit to enable the methods `failForOpenCircuit` and `failForOpenCircuitWith`
    * to [[scala.concurrent.Future]] converting
@@ -81,7 +81,7 @@ final class AskeableWithCircuitBreakerActor(val actorRef: ActorRef) extends AnyV
   @throws[OpenCircuitException]
   private[circuitbreaker] def internalAskWithCircuitBreaker(message: Any, timeout: Timeout, sender: ActorRef)(implicit executionContext: ExecutionContext) = {
     import akka.pattern.ask
-    import implicits.futureExtensions
+    import Implicits.futureExtensions
 
     ask(actorRef, message, sender)(timeout).failForOpenCircuit
   }
@@ -93,7 +93,7 @@ final class AskeableWithCircuitBreakerActorSelection(val actorSelection: ActorSe
 
   private[circuitbreaker] def internalAskWithCircuitBreaker(message: Any, timeout: Timeout, sender: ActorRef)(implicit executionContext: ExecutionContext) = {
     import akka.pattern.ask
-    import implicits.futureExtensions
+    import Implicits.futureExtensions
 
     ask(actorSelection, message, sender)(timeout).failForOpenCircuit
   }

@@ -411,7 +411,7 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen with Matcher
 
   "Ask Extension" should {
     implicit val patienceConfig = PatienceConfig(timeout = Span(1, Second), interval = Span(100, Millis))
-    import implicits.askWithCircuitBreaker
+    import Implicits.askWithCircuitBreaker
 
     import scala.concurrent.ExecutionContext.Implicits.global
     implicit val timeout: Timeout = 2.seconds
@@ -460,7 +460,7 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen with Matcher
 
   "Future Extension" should {
     implicit val patienceConfig = PatienceConfig(timeout = Span(1, Second), interval = Span(100, Millis))
-    import implicits.futureExtensions
+    import Implicits.futureExtensions
     import akka.pattern.ask
 
     import scala.concurrent.ExecutionContext.Implicits.global

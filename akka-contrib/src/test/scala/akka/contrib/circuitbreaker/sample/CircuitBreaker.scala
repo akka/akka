@@ -144,7 +144,7 @@ class CircuitBreakerAsk(potentiallyFailingService: ActorRef) extends Actor with 
 class CircuitBreakerAskWithFailure(potentiallyFailingService: ActorRef) extends Actor with ActorLogging {
   import SimpleService._
   import akka.pattern._
-  import akka.contrib.circuitbreaker.implicits.futureExtensions
+  import akka.contrib.circuitbreaker.Implicits.futureExtensions
 
   implicit val askTimeout: Timeout = 2.seconds
 
@@ -175,7 +175,7 @@ class CircuitBreakerAskWithFailure(potentiallyFailingService: ActorRef) extends 
 //#ask-with-circuit-breaker-sample
 class CircuitBreakerAskWithCircuitBreaker(potentiallyFailingService: ActorRef) extends Actor with ActorLogging {
   import SimpleService._
-  import akka.contrib.circuitbreaker.implicits.askWithCircuitBreaker
+  import akka.contrib.circuitbreaker.Implicits.askWithCircuitBreaker
 
   implicit val askTimeout: Timeout = 2.seconds
 
