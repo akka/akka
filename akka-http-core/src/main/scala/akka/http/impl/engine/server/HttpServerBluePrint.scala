@@ -57,16 +57,19 @@ private[http] object HttpServerBluePrint {
         requestPreparation(settings) atop
         controller(settings, log) atop
         parsingRendering(settings, log) atop
-        new ProtocolSwitchStage(settings, log) atop
-        unwrapTls
+        websocketSupport(settings, log) atop
+        tlsSupport
 
     theStack.withAttributes(HttpAttributes.remoteAddress(remoteAddress))
   }
 
-  val unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, Unit] =
-    BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect { case x: SessionBytes ⇒ x.bytes })
+  val tlsSupport: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, SessionBytes, Unit] =
+    BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect { case x: SessionBytes ⇒ x })
 
-  def parsingRendering(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, ByteString, RequestOutput, Unit] =
+  def websocketSupport(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes, Unit] =
+    BidiFlow.fromGraph(new ProtocolSwitchStage(settings, log))
+
+  def parsingRendering(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, SessionBytes, RequestOutput, Unit] =
     BidiFlow.fromFlows(rendering(settings, log), parsing(settings, log))
 
   def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, Unit] =
@@ -114,7 +117,7 @@ private[http] object HttpServerBluePrint {
       }
     })
 
-  def parsing(settings: ServerSettings, log: LoggingAdapter): Flow[ByteString, RequestOutput, Unit] = {
+  def parsing(settings: ServerSettings, log: LoggingAdapter): Flow[SessionBytes, RequestOutput, Unit] = {
     import settings._
 
     // the initial header parser we initially use for every connection,
@@ -137,7 +140,7 @@ private[http] object HttpServerBluePrint {
       case x ⇒ x
     }
 
-    Flow[ByteString].transform(() ⇒
+    Flow[SessionBytes].transform(() ⇒
       // each connection uses a single (private) request parser instance for all its requests
       // which builds a cache of all header instances seen on that connection
       rootParser.createShallowCopy().stage).named("rootParser")
@@ -344,12 +347,12 @@ private[http] object HttpServerBluePrint {
     One2OneBidiFlow[HttpRequest, HttpResponse](pipeliningLimit).reversed
 
   private class ProtocolSwitchStage(settings: ServerSettings, log: LoggingAdapter)
-    extends GraphStage[BidiShape[ResponseRenderingOutput, ByteString, ByteString, ByteString]] {
+    extends GraphStage[BidiShape[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes]] {
 
-    private val fromNet = Inlet[ByteString]("fromNet")
+    private val fromNet = Inlet[SessionBytes]("fromNet")
     private val toNet = Outlet[ByteString]("toNet")
 
-    private val toHttp = Outlet[ByteString]("toHttp")
+    private val toHttp = Outlet[SessionBytes]("toHttp")
     private val fromHttp = Inlet[ResponseRenderingOutput]("fromHttp")
 
     override def initialAttributes = Attributes.name("ProtocolSwitchStage")
@@ -432,14 +435,14 @@ private[http] object HttpServerBluePrint {
         })
 
         setHandler(fromNet, new InHandler {
-          override def onPush(): Unit = sourceOut.push(grab(fromNet))
+          override def onPush(): Unit = sourceOut.push(grab(fromNet).bytes)
         })
         sourceOut.setHandler(new OutHandler {
           override def onPull(): Unit = {
             if (!hasBeenPulled(fromNet)) pull(fromNet)
             cancelTimeout(timeoutKey)
             sourceOut.setHandler(new OutHandler {
-              override def onPull(): Unit = pull(fromNet)
+              override def onPull(): Unit = if (!hasBeenPulled(fromNet)) pull(fromNet)
             })
           }
         })
