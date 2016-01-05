@@ -782,7 +782,7 @@ private[stream] object TimerKeys {
   case object GroupedWithinTimerKey
 }
 
-private[stream] class GroupedWithin[T](n: Int, d: FiniteDuration) extends GraphStage[FlowShape[T, immutable.Seq[T]]] {
+private[stream] final class GroupedWithin[T](n: Int, d: FiniteDuration) extends GraphStage[FlowShape[T, immutable.Seq[T]]] {
   val in = Inlet[T]("in")
   val out = Outlet[immutable.Seq[T]]("out")
   override def initialAttributes = Attributes.name("GroupedWithin")
@@ -854,7 +854,7 @@ private[stream] class GroupedWithin[T](n: Int, d: FiniteDuration) extends GraphS
   }
 }
 
-private[stream] class Delay[T](d: FiniteDuration, strategy: DelayOverflowStrategy) extends SimpleLinearGraphStage[T] {
+private[stream] final class Delay[T](d: FiniteDuration, strategy: DelayOverflowStrategy) extends SimpleLinearGraphStage[T] {
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     val size = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
@@ -932,7 +932,7 @@ private[stream] class Delay[T](d: FiniteDuration, strategy: DelayOverflowStrateg
   override def toString = "Delay"
 }
 
-private[stream] class TakeWithin[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
+private[stream] final class TakeWithin[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     setHandler(in, new InHandler {
@@ -952,7 +952,7 @@ private[stream] class TakeWithin[T](timeout: FiniteDuration) extends SimpleLinea
   override def toString = "TakeWithin"
 }
 
-private[stream] class DropWithin[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
+private[stream] final class DropWithin[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
 
     private var allow = false
@@ -973,4 +973,38 @@ private[stream] class DropWithin[T](timeout: FiniteDuration) extends SimpleLinea
   }
 
   override def toString = "DropWithin"
+}
+
+/**
+ * INTERNAL API
+ */
+private[stream] final class Reduce[T](f: (T, T) ⇒ T) extends SimpleLinearGraphStage[T] {
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+    override def toString = s"Reduce.Logic(aggregator=$aggregator)"
+    var aggregator: Option[T] = None
+
+    setHandler(in, new InHandler {
+      override def onPush(): Unit = {
+        aggregator = Some(aggregator match {
+          case Some(agg) ⇒ f(agg, grab(in))
+          case None      ⇒ grab(in)
+        })
+        pull(in)
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        aggregator match {
+          case Some(agg) ⇒ push(out, agg)
+          case None      ⇒ //do nothing
+        }
+        completeStage()
+      }
+    })
+
+    setHandler(out, new OutHandler {
+      override def onPull(): Unit = pull(in)
+    })
+  }
+  override def toString = "Reduce"
 }

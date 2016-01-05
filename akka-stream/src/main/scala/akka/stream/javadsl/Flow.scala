@@ -555,6 +555,22 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.fold(zero)(f.apply))
 
   /**
+   * Similar to `fold` but uses first element as zero element.
+   * Applies the given function towards its current and next value,
+   * yielding the next current value.
+   *
+   * '''Emits when''' upstream completes
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def reduce[T >: Out](f: function.Function2[T, T, T]): javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.reduce(f.apply))
+
+  /**
    * Intersperses stream with provided element, similar to how [[scala.collection.immutable.List.mkString]]
    * injects a separator between a List's elements.
    *

@@ -113,7 +113,7 @@ we have a stream of streams, where every substream will serve identical words.
 To count the words, we need to process the stream of streams (the actual groups
 containing identical words). ``groupBy`` returns a :class:`SubSource`, which
 means that we transform the resulting substreams directly. In this case we use
-the ``fold`` combinator to aggregate the word itself and the number of its
+the ``reduce`` combinator to aggregate the word itself and the number of its
 occurrences within a :class:`Pair<String, Integer>`. Each substream will then
 emit one final value—precisely such a pair—when the overall input completes. As
 a last step we merge back these values from the substreams into one single
@@ -133,8 +133,8 @@ stream cannot continue without violating its resource bound, in this case
 By extracting the parts specific to *wordcount* into
 
 * a ``groupKey`` function that defines the groups
-* a ``foldZero`` that defines the zero element used by the fold on the substream given the group key
-* a ``fold`` function that does the actual reduction
+* a ``map`` map each element to value that is used by the reduce on the substream
+* a ``reduce`` function that does the actual reduction
 
 we get a generalized version below:
 
