@@ -74,29 +74,6 @@ sealed trait HttpEntity extends jm.HttpEntity {
    */
   def withContentType(contentType: ContentType): HttpEntity
 
-  /**
-   * Apply the given size limit to this entity by returning a new entity instance which automatically verifies that the
-   * data stream encapsulated by this instance produces at most `maxBytes` data bytes. In case this verification fails
-   * the respective stream will be terminated with an `EntityStreamException` either directly at materialization
-   * time (if the Content-Length is known) or whenever more data bytes than allowed have been read.
-   *
-   * When called on `Strict` entities the method will return the entity itself if the length is within the bound,
-   * otherwise a `Default` entity with a single element data stream. This allows for potential refinement of the
-   * entity size limit at a later point (before materialization of the data stream).
-   *
-   * By default all message entities produced by the HTTP layer automatically carry the limit that is defined in the
-   * application's `max-content-length` config setting. If the entity is transformed in a way that changes the
-   * Content-Length and then another limit is applied then this new limit will be evaluated against the new
-   * Content-Length. If the entity is transformed in a way that changes the Content-Length and no new limit is applied
-   * then the previous limit will be applied against the previous Content-Length.
-   *
-   * Note that the size limit applied via this method will only have any effect if the `Source` instance contained
-   * in this entity has been appropriately modified via the `HttpEntity.limitable` method. For all entities created
-   * by the HTTP layer itself this is always the case, but if you create entities yourself and would like them to
-   * properly respect limits defined via this method you need to make sure to apply `HttpEntity.limitable` yourself.
-   */
-  def withSizeLimit(maxBytes: Long): HttpEntity
-
   /** Java API */
   override def getContentType: jm.ContentType = contentType
 
@@ -123,10 +100,8 @@ sealed trait HttpEntity extends jm.HttpEntity {
 sealed trait BodyPartEntity extends HttpEntity with jm.BodyPartEntity {
   override def withContentType(contentType: ContentType): BodyPartEntity
 
-  /**
-   * See [[HttpEntity#withSizeLimit]].
-   */
-  def withSizeLimit(maxBytes: Long): BodyPartEntity
+  override def withSizeLimit(maxBytes: Long): BodyPartEntity
+  override def withoutSizeLimit: BodyPartEntity
 }
 
 /**
@@ -240,15 +215,15 @@ object HttpEntity {
     override def transformDataBytes(newContentLength: Long, transformer: Flow[ByteString, ByteString, Any]): UniversalEntity =
       HttpEntity.Default(contentType, newContentLength, Source.single(data) via transformer)
 
-    def withContentType(contentType: ContentType): HttpEntity.Strict =
+    override def withContentType(contentType: ContentType): HttpEntity.Strict =
       if (contentType == this.contentType) this else copy(contentType = contentType)
 
-    /**
-     * See [[HttpEntity#withSizeLimit]].
-     */
-    def withSizeLimit(maxBytes: Long): UniversalEntity =
+    override def withSizeLimit(maxBytes: Long): UniversalEntity =
       if (data.length <= maxBytes) this
       else HttpEntity.Default(contentType, data.length, limitableByteSource(Source.single(data))) withSizeLimit maxBytes
+
+    override def withoutSizeLimit: UniversalEntity =
+      withSizeLimit(SizeLimit.Disabled)
 
     override def productPrefix = "HttpEntity.Strict"
 
@@ -299,11 +274,11 @@ object HttpEntity {
     def withContentType(contentType: ContentType): HttpEntity.Default =
       if (contentType == this.contentType) this else copy(contentType = contentType)
 
-    /**
-     * See [[HttpEntity#withSizeLimit]].
-     */
-    def withSizeLimit(maxBytes: Long): HttpEntity.Default =
+    override def withSizeLimit(maxBytes: Long): HttpEntity.Default =
       copy(data = data withAttributes Attributes(SizeLimit(maxBytes, Some(contentLength))))
+
+    override def withoutSizeLimit: HttpEntity.Default =
+      withSizeLimit(SizeLimit.Disabled)
 
     override def productPrefix = "HttpEntity.Default"
 
@@ -320,17 +295,17 @@ object HttpEntity {
     type Self <: HttpEntity.WithoutKnownLength
     def contentType: ContentType
     def data: Source[ByteString, Any]
-    def contentLengthOption: Option[Long] = None
-    def isKnownEmpty = data eq Source.empty
-    def dataBytes: Source[ByteString, Any] = data
+    override def contentLengthOption: Option[Long] = None
+    override def isKnownEmpty = data eq Source.empty
+    override def dataBytes: Source[ByteString, Any] = data
 
-    /**
-     * See [[HttpEntity#withSizeLimit]].
-     */
-    def withSizeLimit(maxBytes: Long): Self =
+    override def withSizeLimit(maxBytes: Long): Self =
       withData(data withAttributes Attributes(SizeLimit(maxBytes)))
 
-    def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): Self =
+    override def withoutSizeLimit: Self =
+      withData(data withAttributes Attributes(SizeLimit(SizeLimit.Disabled)))
+
+    override def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): Self =
       withData(data via transformer)
 
     def withData(data: Source[ByteString, Any]): Self
@@ -346,10 +321,10 @@ object HttpEntity {
     type Self = HttpEntity.CloseDelimited
 
     override def isCloseDelimited: Boolean = true
-    def withContentType(contentType: ContentType): HttpEntity.CloseDelimited =
+    override def withContentType(contentType: ContentType): HttpEntity.CloseDelimited =
       if (contentType == this.contentType) this else copy(contentType = contentType)
 
-    def withData(data: Source[ByteString, Any]): HttpEntity.CloseDelimited = copy(data = data)
+    override def withData(data: Source[ByteString, Any]): HttpEntity.CloseDelimited = copy(data = data)
 
     override def productPrefix = "HttpEntity.CloseDelimited"
   }
@@ -386,6 +361,9 @@ object HttpEntity {
 
     override def withSizeLimit(maxBytes: Long): HttpEntity.Chunked =
       copy(chunks = chunks withAttributes Attributes(SizeLimit(maxBytes)))
+
+    override def withoutSizeLimit: HttpEntity.Chunked =
+      withSizeLimit(SizeLimit.Disabled)
 
     override def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): HttpEntity.Chunked = {
       val newData =
@@ -494,6 +472,8 @@ object HttpEntity {
 
         override def preStart(ctx: LifecycleContext) =
           ctx.attributes.getFirst[SizeLimit] match {
+            case Some(limit: SizeLimit) if limit.isDisabled ⇒
+            // "no limit"
             case Some(SizeLimit(bytes, cl @ Some(contentLength))) ⇒
               if (contentLength > bytes) throw EntityStreamSizeException(bytes, cl)
             // else we still count but never throw an error
@@ -514,5 +494,10 @@ object HttpEntity {
   /**
    * INTERNAL API
    */
-  private case class SizeLimit(maxBytes: Long, contentLength: Option[Long] = None) extends Attributes.Attribute
+  private final case class SizeLimit(maxBytes: Long, contentLength: Option[Long] = None) extends Attributes.Attribute {
+    def isDisabled = maxBytes < 0
+  }
+  private object SizeLimit {
+    val Disabled = -1 // any negative value will do
+  }
 }
