@@ -1634,6 +1634,7 @@ trait FlowOps[+Out, +Mat] {
  */
 trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
 
+  type Repr[+O] <: FlowOpsMat[O, Mat]
   type ReprMat[+O, +M] <: FlowOpsMat[O, M]
   type ClosedMat[+M] <: Graph[_, M]
 
