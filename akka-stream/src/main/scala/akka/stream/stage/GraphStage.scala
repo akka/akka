@@ -315,7 +315,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   /**
    * INTERNAL API
    */
-  private[stream] def interpreter: GraphInterpreter =
+  private[akka] def interpreter: GraphInterpreter =
     if (_interpreter == null)
       throw new IllegalStateException("not yet initialized: only setHandler is allowed in GraphStageLogic constructor")
     else _interpreter
