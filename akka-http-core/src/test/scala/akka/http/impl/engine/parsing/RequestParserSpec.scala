@@ -4,13 +4,23 @@
 
 package akka.http.impl.engine.parsing
 
-import akka.stream.impl.fusing.GraphInterpreter
-import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import akka.util.ByteString
+
+import akka.actor.ActorSystem
+
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl._
+
+import akka.stream.io.{ SslTlsPlacebo, SessionBytes }
+
 import org.scalatest.matchers.Matcher
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
-import akka.actor.ActorSystem
+
 import akka.http.ParserSettings
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.util._
@@ -24,9 +34,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
-import akka.stream.{ OverflowStrategy, ActorMaterializer }
-import akka.stream.scaladsl._
-import akka.util.ByteString
 
 class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -233,10 +240,10 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "don't overflow the stack for large buffers of chunks" in new Test {
-        override val awaitAtMost = 3000.millis
+        override val awaitAtMost = 10000.millis
 
         val x = NotEnoughDataException
-        val numChunks = 15000 // failed starting from 4000 with sbt started with `-Xss2m`
+        val numChunks = 12000 // failed starting from 4000 with sbt started with `-Xss2m`
         val oneChunk = "1\r\nz\n"
         val manyChunks = (oneChunk * numChunks) + "0\r\n"
 
@@ -473,7 +480,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
     def multiParse(parser: HttpRequestParser)(input: Seq[String]): Seq[Either[RequestOutput, StrictEqualHttpRequest]] =
       Source(input.toList)
-        .map(ByteString.apply)
+        .map(bytes ⇒ SessionBytes(SslTlsPlacebo.dummySession, ByteString(bytes)))
         .transform(() ⇒ parser.stage).named("parser")
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
         .prefixAndTail(1)

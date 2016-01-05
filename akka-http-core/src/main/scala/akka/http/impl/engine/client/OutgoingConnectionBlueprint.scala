@@ -100,8 +100,8 @@ private[http] object OutgoingConnectionBlueprint {
       val wrapTls = b.add(Flow[ByteString].map(SendBytes))
       terminationMerge.out ~> requestRendering ~> logger ~> wrapTls
 
-      val unwrapTls = b.add(Flow[SslTlsInbound].collect { case SessionBytes(_, bytes) ⇒ bytes })
-      unwrapTls ~> responseParsingMerge.in0
+      val collectSessionBytes = b.add(Flow[SslTlsInbound].collect { case s: SessionBytes ⇒ s })
+      collectSessionBytes ~> responseParsingMerge.in0
 
       methodBypassFanout.out(0) ~> terminationMerge.in0
 
@@ -113,7 +113,7 @@ private[http] object OutgoingConnectionBlueprint {
       BidiShape(
         methodBypassFanout.in,
         wrapTls.out,
-        unwrapTls.in,
+        collectSessionBytes.in,
         terminationFanout.out(1))
     })
 
@@ -154,8 +154,8 @@ private[http] object OutgoingConnectionBlueprint {
    * 2. Read from the dataInput until exactly one response has been fully received
    * 3. Go back to 1.
    */
-  class ResponseParsingMerge(rootParser: HttpResponseParser) extends GraphStage[FanInShape2[ByteString, HttpMethod, List[ResponseOutput]]] {
-    private val dataInput = Inlet[ByteString]("data")
+  class ResponseParsingMerge(rootParser: HttpResponseParser) extends GraphStage[FanInShape2[SessionBytes, HttpMethod, List[ResponseOutput]]] {
+    private val dataInput = Inlet[SessionBytes]("data")
     private val methodBypassInput = Inlet[HttpMethod]("method")
     private val out = Outlet[List[ResponseOutput]]("out")
 
@@ -174,7 +174,7 @@ private[http] object OutgoingConnectionBlueprint {
         override def onPush(): Unit = {
           val method = grab(methodBypassInput)
           parser.setRequestMethodForNextResponse(method)
-          val output = parser.onPush(ByteString.empty)
+          val output = parser.parseBytes(ByteString.empty)
           drainParser(output)
         }
         override def onUpstreamFinish(): Unit =
@@ -185,7 +185,7 @@ private[http] object OutgoingConnectionBlueprint {
       setHandler(dataInput, new InHandler {
         override def onPush(): Unit = {
           val bytes = grab(dataInput)
-          val output = parser.onPush(bytes)
+          val output = parser.parseSessionBytes(bytes)
           drainParser(output)
         }
         override def onUpstreamFinish(): Unit =
