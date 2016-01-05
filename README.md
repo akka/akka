@@ -14,4 +14,6 @@ Akka is Open Source and available under the Apache 2 License.
 
 Learn more at [akka.io](http://akka.io/). Join the [akka-user](https://groups.google.com/forum/#!forum/akka-user) mailing list. Follow [@akkateam](https://twitter.com/akkateam) on twitter.
 
+If you are looking to contribute back to Akka, the [CONTRIBUTING.md](contributing.md) file should provide you with all the information needed to get started. 
+
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/akka/akka?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
