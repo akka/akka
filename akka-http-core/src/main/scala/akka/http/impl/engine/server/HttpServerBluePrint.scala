@@ -166,8 +166,7 @@ private[http] object HttpServerBluePrint {
     }
 
     Flow[ResponseRenderingContext]
-      .via(Flow[ResponseRenderingContext].transform(() ⇒ responseRendererFactory.newRenderer).named("renderer"))
-      .flatMapConcat(ConstantFun.scalaIdentityFunction)
+      .via(responseRendererFactory.renderer.named("renderer"))
       .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorHandling(errorHandler)).named("errorLogger"))
   }
 
