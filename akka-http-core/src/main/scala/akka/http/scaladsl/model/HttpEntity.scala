@@ -28,7 +28,7 @@ sealed trait HttpEntity extends jm.HttpEntity {
   /**
    * Determines whether this entity is known to be empty.
    */
-  def isKnownEmpty: Boolean
+  override def isKnownEmpty: Boolean
 
   /**
    * The `ContentType` associated with this entity.
@@ -98,30 +98,30 @@ sealed trait HttpEntity extends jm.HttpEntity {
   def withSizeLimit(maxBytes: Long): HttpEntity
 
   /** Java API */
-  def getContentType: jm.ContentType = contentType
+  override def getContentType: jm.ContentType = contentType
 
   /** Java API */
-  def getDataBytes: stream.javadsl.Source[ByteString, AnyRef] =
+  override def getDataBytes: stream.javadsl.Source[ByteString, AnyRef] =
     stream.javadsl.Source.fromGraph(dataBytes.asInstanceOf[Source[ByteString, AnyRef]])
 
   /** Java API */
-  def getContentLengthOption: japi.Option[JLong] =
+  override def getContentLengthOption: japi.Option[JLong] =
     japi.Option.fromScalaOption(contentLengthOption.asInstanceOf[Option[JLong]]) // Scala autoboxing
 
   // default implementations, should be overridden
-  def isCloseDelimited: Boolean = false
-  def isIndefiniteLength: Boolean = false
-  def isDefault: Boolean = false
-  def isChunked: Boolean = false
+  override def isCloseDelimited: Boolean = false
+  override def isIndefiniteLength: Boolean = false
+  override def isDefault: Boolean = false
+  override def isChunked: Boolean = false
 
   /** Java API */
-  def toStrict(timeoutMillis: Long, materializer: Materializer): Future[jm.HttpEntity.Strict] =
+  override def toStrict(timeoutMillis: Long, materializer: Materializer): Future[jm.HttpEntity.Strict] =
     toStrict(timeoutMillis.millis)(materializer)
 }
 
 /* An entity that can be used for body parts */
 sealed trait BodyPartEntity extends HttpEntity with jm.BodyPartEntity {
-  def withContentType(contentType: ContentType): BodyPartEntity
+  override def withContentType(contentType: ContentType): BodyPartEntity
 
   /**
    * See [[HttpEntity#withSizeLimit]].
@@ -225,11 +225,11 @@ object HttpEntity {
   final case class Strict(contentType: ContentType, data: ByteString)
     extends jm.HttpEntity.Strict with UniversalEntity {
 
-    def contentLength: Long = data.length
+    override def contentLength: Long = data.length
 
-    def isKnownEmpty: Boolean = data.isEmpty
+    override def isKnownEmpty: Boolean = data.isEmpty
 
-    def dataBytes: Source[ByteString, Unit] = Source(data :: Nil)
+    override def dataBytes: Source[ByteString, Unit] = Source(data :: Nil)
 
     override def toStrict(timeout: FiniteDuration)(implicit fm: Materializer) =
       FastFuture.successful(this)
@@ -363,10 +363,10 @@ object HttpEntity {
     type Self = HttpEntity.IndefiniteLength
 
     override def isIndefiniteLength: Boolean = true
-    def withContentType(contentType: ContentType): HttpEntity.IndefiniteLength =
+    override def withContentType(contentType: ContentType): HttpEntity.IndefiniteLength =
       if (contentType == this.contentType) this else copy(contentType = contentType)
 
-    def withData(data: Source[ByteString, Any]): HttpEntity.IndefiniteLength = copy(data = data)
+    override def withData(data: Source[ByteString, Any]): HttpEntity.IndefiniteLength = copy(data = data)
 
     override def productPrefix = "HttpEntity.IndefiniteLength"
   }
@@ -377,14 +377,14 @@ object HttpEntity {
   final case class Chunked(contentType: ContentType, chunks: Source[ChunkStreamPart, Any])
     extends jm.HttpEntity.Chunked with MessageEntity {
 
-    def isKnownEmpty = chunks eq Source.empty
-    def contentLengthOption: Option[Long] = None
+    override def isKnownEmpty = chunks eq Source.empty
+    override def contentLengthOption: Option[Long] = None
 
     override def isChunked: Boolean = true
 
-    def dataBytes: Source[ByteString, Any] = chunks.map(_.data).filter(_.nonEmpty)
+    override def dataBytes: Source[ByteString, Any] = chunks.map(_.data).filter(_.nonEmpty)
 
-    def withSizeLimit(maxBytes: Long): HttpEntity.Chunked =
+    override def withSizeLimit(maxBytes: Long): HttpEntity.Chunked =
       copy(chunks = chunks withAttributes Attributes(SizeLimit(maxBytes)))
 
     override def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): HttpEntity.Chunked = {
