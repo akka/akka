@@ -85,6 +85,45 @@ public interface HttpEntity {
     Source<ByteString, Object> getDataBytes();
 
     /**
+     * Apply the given size limit to this entity by returning a new entity instance which automatically verifies that the
+     * data stream encapsulated by this instance produces at most `maxBytes` data bytes. In case this verification fails
+     * the respective stream will be terminated with an `EntityStreamException` either directly at materialization
+     * time (if the Content-Length is known) or whenever more data bytes than allowed have been read.
+     *
+     * When called on `Strict` entities the method will return the entity itself if the length is within the bound,
+     * otherwise a `Default` entity with a single element data stream. This allows for potential refinement of the
+     * entity size limit at a later point (before materialization of the data stream).
+     *
+     * By default all message entities produced by the HTTP layer automatically carry the limit that is defined in the
+     * application's `max-content-length` config setting. If the entity is transformed in a way that changes the
+     * Content-Length and then another limit is applied then this new limit will be evaluated against the new
+     * Content-Length. If the entity is transformed in a way that changes the Content-Length and no new limit is applied
+     * then the previous limit will be applied against the previous Content-Length.
+     *
+     * Note that the size limit applied via this method will only have any effect if the `Source` instance contained
+     * in this entity has been appropriately modified via the `HttpEntity.limitable` method. For all entities created
+     * by the HTTP layer itself this is always the case, but if you create entities yourself and would like them to
+     * properly respect limits defined via this method you need to make sure to apply `HttpEntity.limitable` yourself.
+     */
+    HttpEntity withSizeLimit(long maxBytes);
+
+    /**
+     * Lift the size limit from this entity by returning a new entity instance which skips the size verification.
+     *
+     * By default all message entities produced by the HTTP layer automatically carry the limit that is defined in the
+     * application's `max-content-length` config setting. It is recommended to always keep an upper limit on accepted
+     * entities to avoid potential attackers flooding you with too large requests/responses, so use this method with caution.
+     *
+     * Note that the size limit applied via this method will only have any effect if the `Source` instance contained
+     * in this entity has been appropriately modified via the `HttpEntity.limitable` method. For all entities created
+     * by the HTTP layer itself this is always the case, but if you create entities yourself and would like them to
+     * properly respect limits defined via this method you need to make sure to apply `HttpEntity.limitable` yourself.
+     *
+     * See [[withSizeLimit]] for more details.
+     */
+    HttpEntity withoutSizeLimit();
+
+    /**
      * Returns a future of a strict entity that contains the same data as this entity
      * which is only completed when the complete entity has been collected. As the
      * duration of receiving the complete entity cannot be predicted, a timeout needs to
