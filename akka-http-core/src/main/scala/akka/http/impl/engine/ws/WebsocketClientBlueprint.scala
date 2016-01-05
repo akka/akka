@@ -79,7 +79,7 @@ object WebsocketClientBlueprint {
         parser.setRequestMethodForNextResponse(HttpMethods.GET)
 
         def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective = {
-          parser.onPush(elem) match {
+          parser.parseBytes(elem) match {
             case NeedMoreData ⇒ ctx.pull()
             case ResponseStart(status, protocol, headers, entity, close) ⇒
               val response = HttpResponse(status, headers, protocol = protocol)
