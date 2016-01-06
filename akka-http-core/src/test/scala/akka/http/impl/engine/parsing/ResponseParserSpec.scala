@@ -115,14 +115,14 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
       "a response with 3 headers, a body and remaining content" in new Test {
         Seq("""HTTP/1.1 500 Internal Server Error
-              |User-Agent: curl/7.19.7 xyz
-              |Connection:close
-              |Content-Length: 17
-              |Content-Type: text/plain; charset=UTF-8
-              |
-              |Sh""", "ake your BOODY!HTTP/1.") should generalMultiParseTo(
-          Right(HttpResponse(InternalServerError, List(`User-Agent`("curl/7.19.7 xyz"), Connection("close")),
-            "Shake your BOODY!")))
+          |User-Agent: curl/7.19.7 xyz
+          |Connection:close
+          |Content-Length: 17
+          |Content-Type: text/plain; charset=UTF-8
+          |
+          |Sh""", "ake your BOODY!HTTP/1.") should generalMultiParseTo(
+            Right(HttpResponse(InternalServerError, List(`User-Agent`("curl/7.19.7 xyz"), Connection("close")),
+              "Shake your BOODY!")))
         closeAfterResponseCompletion shouldEqual Seq(true)
       }
 
@@ -204,13 +204,13 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
       "response with additional transfer encodings" in new Test {
         Seq("""HTTP/1.1 200 OK
-              |Transfer-Encoding: fancy, chunked
-              |Cont""", """ent-Type: application/pdf
-                          |
-                          |""") should generalMultiParseTo(
-          Right(HttpResponse(headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
-            entity = HttpEntity.Chunked(`application/pdf`, source()))),
-          Left(EntityStreamError(ErrorInfo("Entity stream truncation"))))
+          |Transfer-Encoding: fancy, chunked
+          |Cont""", """ent-Type: application/pdf
+          |
+          |""") should generalMultiParseTo(
+            Right(HttpResponse(headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
+              entity = HttpEntity.Chunked(`application/pdf`, source()))),
+            Left(EntityStreamError(ErrorInfo("Entity stream truncation"))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
     }
