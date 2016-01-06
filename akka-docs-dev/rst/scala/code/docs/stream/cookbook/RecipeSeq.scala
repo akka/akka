@@ -33,7 +33,8 @@ class RecipeSeq extends RecipeSpec {
       //#draining-to-seq-safe
       // OK. Future will fail with a `StreamLimitReachedException`
       // if the number of incoming elements is larger than MaxAllowedSeqSize
-      val safe1: Future[immutable.Seq[Message]] = myData.limit(MaxAllowedSeqSize).runWith(Sink.seq)
+      val safe1: Future[immutable.Seq[Message]] =
+        myData.limit(MaxAllowedSeqSize).runWith(Sink.seq)
       //#draining-to-seq-safe
 
       Await.result(safe1, 3.seconds) should be(result)
