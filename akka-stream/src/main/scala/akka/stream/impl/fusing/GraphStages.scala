@@ -8,11 +8,14 @@ import akka.actor.Cancellable
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.impl.StreamLayout._
 import akka.stream.impl.ReactiveStreamsCompliance
+
+import scala.util.Try
 
 /**
  * INTERNAL API
@@ -196,5 +199,25 @@ object GraphStages {
       })
     }
     override def toString: String = s"SingleSource($elem)"
+  }
+
+  private[stream] final class FutureSource[T](val future: Future[T]) extends GraphStage[SourceShape[T]] {
+    ReactiveStreamsCompliance.requireNonNullElement(future)
+    val shape = SourceShape(Outlet[T]("future.out"))
+    val out = shape.out
+    override def initialAttributes: Attributes = DefaultAttributes.futureSource
+    override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = {
+          val cb = getAsyncCallback[Try[T]] {
+            case scala.util.Success(v) ⇒ emit(out, v, () ⇒ completeStage())
+            case scala.util.Failure(t) ⇒ failStage(t)
+          }.invoke _
+          future.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext)
+          setHandler(out, eagerTerminateOutput) // After first pull we won't produce anything more
+        }
+      })
+    }
+    override def toString: String = "FutureSource"
   }
 }
