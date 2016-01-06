@@ -316,13 +316,16 @@ public class TwitterStreamQuickstartDocTest {
   @Test
   public void demonstrateCountOnFiniteStream() {
     //#tweets-fold-count
+    Flow<Tweet, Integer, BoxedUnit> count =
+      Flow.of(Tweet.class).map(t -> 1);
+
     final Sink<Integer, Future<Integer>> sumSink =
       Sink.<Integer, Integer>fold(0, (acc, elem) -> acc + elem);
 
-    final RunnableGraph<Future<Integer>> counter =
-        tweets.map(t -> 1).toMat(sumSink, Keep.right());
+    final RunnableGraph<Future<Integer>> counterGraph =
+      tweets.via(count).toMat(sumSink, Keep.right());
 
-    final Future<Integer> sum = counter.run(mat);
+    final Future<Integer> sum = counterGraph.run(mat);
 
     sum.foreach(new Foreach<Integer>() {
       public void each(Integer c) {
