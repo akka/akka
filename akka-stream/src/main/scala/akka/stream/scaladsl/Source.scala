@@ -215,7 +215,7 @@ object Source {
    * The stream terminates with a failure if the `Future` is completed with a failure.
    */
   def fromFuture[T](future: Future[T]): Source[T, Unit] =
-    single(future).mapAsyncUnordered(1)(ConstantFun.scalaIdentityFunction).withAttributes(DefaultAttributes.futureSource)
+    fromGraph(new FutureSource(future))
 
   /**
    * Elements are emitted periodically with the specified interval.
