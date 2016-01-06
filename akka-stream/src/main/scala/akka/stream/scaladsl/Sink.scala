@@ -147,7 +147,7 @@ object Sink {
    */
   def seq[T]: Sink[T, Future[immutable.Seq[T]]] = {
     Flow[T].grouped(Integer.MAX_VALUE).toMat(Sink.headOption)(Keep.right) mapMaterializedValue { e ⇒
-      e.map(_.getOrElse(immutable.Seq.empty[T]))(ExecutionContexts.sameThreadExecutionContext)
+      e.map(_.getOrElse(Nil))(ExecutionContexts.sameThreadExecutionContext)
     }
   }
 
