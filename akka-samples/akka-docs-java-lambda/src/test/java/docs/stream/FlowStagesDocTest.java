@@ -155,7 +155,7 @@ public class FlowStagesDocTest {
   @Test
   public void demonstrateVariousPushPullStages() throws Exception {
     final Sink<Integer, Future<List<Integer>>> sink =
-            Flow.of(Integer.class).limit(10).toMat(Sink.seq(), Keep.right());
+      Flow.of(Integer.class).limit(10).toMat(Sink.seq(), Keep.right());
 
     //#stage-chain
     final RunnableGraph<Future<List<Integer>>> runnable =
