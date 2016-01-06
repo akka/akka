@@ -37,7 +37,7 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
 
   if (settings.fuzzingMode) {
     _logger.warning("Fuzzing mode is enabled on this system. If you see this warning on your production system then " +
-      "set akka.materializer.debug.fuzzing-mode to off.")
+      "set akka.stream.materializer.debug.fuzzing-mode to off.")
   }
 
   override def shutdown(): Unit =
