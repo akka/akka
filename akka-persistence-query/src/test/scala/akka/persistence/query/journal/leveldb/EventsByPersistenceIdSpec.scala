@@ -120,7 +120,7 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
       expectMsg(s"${2L}-deleted")
 
       val src = queries.currentEventsByPersistenceId("h", 0L, Long.MaxValue)
-      src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectNext("h-3") expectComplete()
+      src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectNext("h-3").expectComplete()
     }
 
     "return empty stream for empty journal" in {
