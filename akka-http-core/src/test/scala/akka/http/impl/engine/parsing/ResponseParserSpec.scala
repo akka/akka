@@ -121,8 +121,8 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |Content-Type: text/plain; charset=UTF-8
           |
           |Sh""", "ake your BOODY!HTTP/1.") should generalMultiParseTo(
-            Right(HttpResponse(InternalServerError, List(`User-Agent`("curl/7.19.7 xyz"), Connection("close")),
-              "Shake your BOODY!")))
+          Right(HttpResponse(InternalServerError, List(`User-Agent`("curl/7.19.7 xyz"), Connection("close")),
+            "Shake your BOODY!")))
         closeAfterResponseCompletion shouldEqual Seq(true)
       }
 
@@ -208,9 +208,9 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |Cont""", """ent-Type: application/pdf
           |
           |""") should generalMultiParseTo(
-            Right(HttpResponse(headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
-              entity = HttpEntity.Chunked(`application/pdf`, source()))),
-            Left(EntityStreamError(ErrorInfo("Entity stream truncation"))))
+          Right(HttpResponse(headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
+            entity = HttpEntity.Chunked(`application/pdf`, source()))),
+          Left(EntityStreamError(ErrorInfo("Entity stream truncation"))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
     }
