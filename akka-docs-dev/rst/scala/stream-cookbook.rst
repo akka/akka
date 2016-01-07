@@ -65,7 +65,7 @@ For example, this is best avoided:
 
 .. includecode:: code/docs/stream/cookbook/RecipeSeq.scala#draining-to-seq-unsafe
 
-Rather, use ``limit`` or ``take`` to ensure that the resulting ``Seq`` will contain only up to ``MaxAllowedSeqSize`` elements:
+Rather, use ``limit`` or ``take`` to ensure that the resulting ``Seq`` will contain only up to ``max`` elements:
 
 .. includecode:: code/docs/stream/cookbook/RecipeSeq.scala#draining-to-seq-safe
 
