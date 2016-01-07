@@ -23,6 +23,7 @@ object Route {
    * "Seals" a route by wrapping it with exception handling and rejection conversion.
    */
   def seal(route: Route)(implicit routingSettings: RoutingSettings,
+                         parserSettings: ParserSettings,
                          rejectionHandler: RejectionHandler = RejectionHandler.default,
                          exceptionHandler: ExceptionHandler = null): Route = {
     import directives.ExecutionDirectives._

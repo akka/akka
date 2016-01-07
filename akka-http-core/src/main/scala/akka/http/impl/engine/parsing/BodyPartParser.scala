@@ -1,8 +1,8 @@
-package akka.http.impl.engine.parsing
 
 /**
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
+package akka.http.impl.engine.parsing
 
 import akka.http.ParserSettings
 import akka.stream.impl.fusing.GraphInterpreter

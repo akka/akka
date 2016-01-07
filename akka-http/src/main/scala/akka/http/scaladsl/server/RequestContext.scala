@@ -44,7 +44,11 @@ trait RequestContext {
    */
   def settings: RoutingSettings
 
-  implicit def parserSettings: ParserSettings
+  /**
+   *  The default ParserSettings to be used for configuring BodyParser.
+   */
+  def parserSettings: ParserSettings
+
   /**
    * Returns a copy of this context with the given fields updated.
    */

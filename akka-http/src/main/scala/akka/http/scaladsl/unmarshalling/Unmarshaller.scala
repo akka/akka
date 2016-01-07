@@ -4,7 +4,6 @@
 
 package akka.http.scaladsl.unmarshalling
 
-import akka.http.ParserSettings
 import akka.stream.Materializer
 
 import scala.util.control.{ NoStackTrace, NonFatal }

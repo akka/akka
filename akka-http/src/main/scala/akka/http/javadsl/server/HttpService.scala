@@ -37,7 +37,6 @@ trait HttpServiceBase {
   def handleConnectionsWithRoute(interface: String, port: Int, route: Route, system: ActorSystem, materializer: Materializer): Future[ServerBinding] = {
     implicit val s = system
     implicit val m = materializer
-    implicit val ps = ParserSettings(system.settings.config)
 
     import system.dispatcher
     val r: server.Route = RouteImplementation(route)

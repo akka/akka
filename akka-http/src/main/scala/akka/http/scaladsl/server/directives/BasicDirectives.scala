@@ -184,10 +184,22 @@ trait BasicDirectives {
     mapRequestContext(ctx ⇒ ctx.withSettings(f(ctx.settings)))
 
   /**
+   * Runs the inner route with settings mapped by the given function.
+   */
+  def mapParserSettings(f: ParserSettings ⇒ ParserSettings): Directive0 =
+    mapRequestContext(ctx ⇒ ctx.withParserSettings(f(ctx.parserSettings)))
+
+  /**
    * Extracts the [[RoutingSettings]] from the [[RequestContext]].
    */
   def extractSettings: Directive1[RoutingSettings] =
     BasicDirectives._extractSettings
+
+  /**
+   * Extracts the [[ParserSettings]] from the [[RequestContext]].
+   */
+  def extractParserSettings: Directive1[ParserSettings] =
+    BasicDirectives._extractParserSettings
 
   /**
    * Extracts the [[RequestContext]] itself.
