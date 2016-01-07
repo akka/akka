@@ -116,13 +116,6 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehaviour {
 
       Await.result(sys.terminate(), Duration.Inf)
     }
-
-    "wrap ipv6 addresses in brackets if missing" in {
-      val socketAddress = InetSocketAddress.createUnresolved("0:0:0:0:0:0:0:1", 2552)
-
-      val address = NettyTransport.addressFromSocketAddress(socketAddress, "tcp", "example", None, None)
-      address.flatMap(_.host) should ===(Some("[0:0:0:0:0:0:0:1]"))
-    }
   }
 }
 
