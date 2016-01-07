@@ -75,7 +75,11 @@ object Address {
   /**
    * Constructs a new Address with the specified protocol, system name, host and port
    */
-  def apply(protocol: String, system: String, host: String, port: Int) = new Address(protocol, system, Some(host), Some(port))
+  def apply(protocol: String, system: String, host: String, port: Int) = {
+    require(!host.contains(":") || host.startsWith("["), s"IPv6 address $host must be wrapped with [] to be safe")
+    new Address(protocol, system, Some(host), Some(port))
+  }
+
 }
 
 private[akka] trait PathUtils {
