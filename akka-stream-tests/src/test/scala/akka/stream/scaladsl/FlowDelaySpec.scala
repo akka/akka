@@ -8,6 +8,7 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{ AkkaSpec, TestPublisher, TestSubscriber }
 import akka.stream.{ DelayOverflowStrategy, ActorMaterializer }
+import akka.stream.OverflowStrategies.Fail
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -103,7 +104,7 @@ class FlowDelaySpec extends AkkaSpec {
         .withAttributes(inputBuffer(16, 16))
         .runWith(TestSink.probe[Int])
         .request(100)
-        .expectError(new DelayOverflowStrategy.Fail.BufferOverflowException("Buffer overflow for delay combinator (max capacity was: 16)!"))
+        .expectError(new Fail.BufferOverflowException("Buffer overflow for delay combinator (max capacity was: 16)!"))
 
     }
 

@@ -44,7 +44,7 @@ trait SinkQueue[T] {
   def pull(): Future[Option[T]]
 }
 
-sealed trait StreamCallbackStatus[T]
+sealed trait StreamCallbackStatus[+T]
 
 /**
  * Contains types that is used as return types for async callbacks to streams
@@ -55,17 +55,17 @@ object StreamCallbackStatus {
    * This class/message type is used to indicate success async call to stream.
    * @param result - result of async calls to stream
    */
-  case class Success[T](result: T) extends StreamCallbackStatus[T]
+  final case class Success[+T](result: T) extends StreamCallbackStatus[T]
 
   /**
    * Type is used to indicate that stream is failed before or during call to the stream
    * @param cause - exception that stream failed with
    */
-  case class Failure[T](cause: Throwable) extends StreamCallbackStatus[T]
+  final case class Failure(cause: Throwable) extends StreamCallbackStatus[Nothing]
 
   /**
    * Type is used to indicate that stream is completed before call
    */
-  case class StreamCompleted[T]() extends StreamCallbackStatus[T]
+  case object StreamCompleted extends StreamCallbackStatus[Nothing]
 }
 

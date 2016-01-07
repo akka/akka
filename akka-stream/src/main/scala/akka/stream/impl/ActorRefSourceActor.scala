@@ -6,14 +6,15 @@ package akka.stream.impl
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.actor.Status
-import akka.stream.OverflowStrategy
+import akka.stream.OverflowStrategies._
+import akka.stream.{ OverflowStrategy, OverflowStrategies }
 
 /**
  * INTERNAL API
  */
 private[akka] object ActorRefSourceActor {
   def props(bufferSize: Int, overflowStrategy: OverflowStrategy) = {
-    require(overflowStrategy != OverflowStrategy.Backpressure, "Backpressure overflowStrategy not supported")
+    require(overflowStrategy != OverflowStrategies.Backpressure, "Backpressure overflowStrategy not supported")
     Props(new ActorRefSourceActor(bufferSize, overflowStrategy))
   }
 }
@@ -58,7 +59,7 @@ private[akka] class ActorRefSourceActor(bufferSize: Int, overflowStrategy: Overf
         log.debug("Dropping element because there is no downstream demand: [{}]", elem)
       else if (!buffer.isFull)
         buffer.enqueue(elem)
-      else (overflowStrategy: @unchecked) match {
+      else overflowStrategy match {
         case DropHead ⇒
           log.debug("Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
           buffer.dropHead()

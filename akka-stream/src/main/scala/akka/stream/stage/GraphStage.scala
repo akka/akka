@@ -1339,11 +1339,21 @@ abstract class AbstractOutHandler extends OutHandler
  */
 abstract class AbstractInOutHandler extends InHandler with OutHandler
 
+/**
+ * This trait wraps callback for `GraphStage` stage instances and handle gracefully cases when stage is
+ * not yet initialized or already finished.
+ *
+ * While `GraphStage` has not initialized it adds all requests to list.
+ * As soon as `GraphStage` is started it stops collecting requests (pointing to real callback
+ * function) and run all the callbacks from the list
+ *
+ * Supposed to be used by GraphStages that share call back to outer world
+ */
 private[akka] trait CallbackWrapper[T] {
-  trait CallbackState
-  case class NotInitialized(list: List[T]) extends CallbackState
-  case class Initialized(f: T ⇒ Unit) extends CallbackState
-  case class Stopped(f: T ⇒ Unit) extends CallbackState
+  private trait CallbackState
+  private case class NotInitialized(list: List[T]) extends CallbackState
+  private case class Initialized(f: T ⇒ Unit) extends CallbackState
+  private case class Stopped(f: T ⇒ Unit) extends CallbackState
 
   private val callbackState = new AtomicReference[CallbackState](NotInitialized(Nil))
 
@@ -1360,14 +1370,15 @@ private[akka] trait CallbackWrapper[T] {
 
   def callback(arg: T): Unit = {
     callbackState.get() match {
+      case Initialized(cb) ⇒ cb(arg)
       case list @ NotInitialized(l) ⇒
         if (!callbackState.compareAndSet(list, NotInitialized(arg :: l)))
           callbackState.get() match {
-            case NotInitialized(_) ⇒ throw new IllegalStateException("Concurrent call of SourceQueue.offer is detected")
+            case NotInitialized(_) ⇒ throw new IllegalStateException("Concurrent call of CallbackWrapper is detected")
             case Initialized(cb)   ⇒ cb(arg)
+            case Stopped(cb)       ⇒ cb(arg)
           }
-      case Initialized(cb) ⇒ cb(arg)
-      case Stopped(cb)     ⇒ cb(arg)
+      case Stopped(cb) ⇒ cb(arg)
     }
   }
 }

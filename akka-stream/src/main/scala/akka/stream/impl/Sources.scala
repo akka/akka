@@ -3,10 +3,9 @@
  */
 package akka.stream.impl
 
-import akka.stream.OverflowStrategy._
+import akka.stream.OverflowStrategies._
 import akka.stream._
 import akka.stream.stage._
-
 import scala.concurrent.{ Future, Promise }
 
 /**
@@ -43,7 +42,7 @@ private[akka] class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStr
       private def receiveElem(elem: T, promise: Offered): Unit = {
         if (!buffer.isFull) {
           enqueueAndSuccess(elem, promise)
-        } else (overflowStrategy: @unchecked) match {
+        } else overflowStrategy match {
           case DropHead ⇒
             buffer.dropHead()
             enqueueAndSuccess(elem, promise)
@@ -89,7 +88,7 @@ private[akka] class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStr
         override def onDownstreamFinish(): Unit = {
           pendingOffer match {
             case Some((elem, promise)) ⇒
-              promise.success(StreamCallbackStatus.StreamCompleted[Boolean]())
+              promise.success(StreamCallbackStatus.StreamCompleted)
               pendingOffer = None
             case None ⇒ // do nothing
           }
@@ -122,7 +121,7 @@ private[akka] class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStr
     (stageLogic, new SourceQueue[T] {
       override def watchCompletion() = stageLogic.completion.future
       override def offer(element: T): Future[StreamCallbackStatus[Boolean]] = {
-        val p = Promise[StreamCallbackStatus[Boolean]]
+        val p = Promise[StreamCallbackStatus[Boolean]]()
         stageLogic.callback((element, p))
         p.future
       }

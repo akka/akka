@@ -6,7 +6,7 @@ package akka.stream.impl.fusing
 import akka.event.Logging.LogLevel
 import akka.event.{ LogSource, Logging, LoggingAdapter }
 import akka.stream.Attributes.{ InputBuffer, LogLevels }
-import akka.stream.DelayOverflowStrategy.EmitEarly
+import akka.stream.OverflowStrategies._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ FixedSizeBuffer, BoundedBuffer, ReactiveStreamsCompliance }
 import akka.stream.stage._
@@ -367,8 +367,6 @@ private[akka] final case class Sliding[T](n: Int, step: Int) extends PushPullSta
  */
 private[akka] final case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy) extends DetachedStage[T, T] {
 
-  import OverflowStrategy._
-
   private val buffer = FixedSizeBuffer[T](size)
 
   override def onPush(elem: T, ctx: DetachedContext[T]): UpstreamDirective =
@@ -389,8 +387,8 @@ private[akka] final case class Buffer[T](size: Int, overflowStrategy: OverflowSt
     if (buffer.isEmpty) ctx.finish()
     else ctx.absorbTermination()
 
-  val enqueueAction: (DetachedContext[T], T) ⇒ UpstreamDirective = {
-    (overflowStrategy: @unchecked) match {
+  val enqueueAction: (DetachedContext[T], T) ⇒ UpstreamDirective =
+    overflowStrategy match {
       case DropHead ⇒ (ctx, elem) ⇒
         if (buffer.isFull) buffer.dropHead()
         buffer.enqueue(elem)
@@ -417,7 +415,7 @@ private[akka] final case class Buffer[T](size: Int, overflowStrategy: OverflowSt
           ctx.pull()
         }
     }
-  }
+
 }
 
 /**
@@ -864,7 +862,7 @@ private[stream] class Delay[T](d: FiniteDuration, strategy: DelayOverflowStrateg
 
     setHandler(in, handler = new InHandler {
       override def onPush(): Unit = {
-        if (buffer.isFull) (strategy: @unchecked) match {
+        if (buffer.isFull) strategy match {
           case EmitEarly ⇒
             if (!isTimerActive(timerName))
               push(out, buffer.dequeue()._2)
@@ -872,24 +870,24 @@ private[stream] class Delay[T](d: FiniteDuration, strategy: DelayOverflowStrateg
               cancelTimer(timerName)
               onTimer(timerName)
             }
-          case DelayOverflowStrategy.DropHead ⇒
+          case DropHead ⇒
             buffer.dropHead()
             grabAndPull(true)
-          case DelayOverflowStrategy.DropTail ⇒
+          case DropTail ⇒
             buffer.dropTail()
             grabAndPull(true)
-          case DelayOverflowStrategy.DropNew ⇒
+          case DropNew ⇒
             grab(in)
             if (!isTimerActive(timerName)) scheduleOnce(timerName, d)
-          case DelayOverflowStrategy.DropBuffer ⇒
+          case DropBuffer ⇒
             buffer.clear()
             grabAndPull(true)
-          case DelayOverflowStrategy.Fail ⇒
-            failStage(new DelayOverflowStrategy.Fail.BufferOverflowException(s"Buffer overflow for delay combinator (max capacity was: $size)!"))
-          case DelayOverflowStrategy.Backpressure ⇒ throw new IllegalStateException("Delay buffer must never overflow in Backpressure mode")
+          case Fail ⇒
+            failStage(new Fail.BufferOverflowException(s"Buffer overflow for delay combinator (max capacity was: $size)!"))
+          case Backpressure ⇒ throw new IllegalStateException("Delay buffer must never overflow in Backpressure mode")
         }
         else {
-          grabAndPull(strategy != DelayOverflowStrategy.Backpressure || buffer.size < size - 1)
+          grabAndPull(strategy != Backpressure || buffer.size < size - 1)
           if (!isTimerActive(timerName)) scheduleOnce(timerName, d)
         }
       }

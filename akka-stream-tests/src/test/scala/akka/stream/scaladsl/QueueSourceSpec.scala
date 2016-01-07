@@ -123,7 +123,7 @@ class QueueSourceSpec extends AkkaSpec {
 
       sub.cancel()
 
-      expectMsgAllOf(StreamCallbackStatus.StreamCompleted(), ())
+      expectMsgAllOf(StreamCallbackStatus.StreamCompleted, ())
     }
 
     "fail stream on buffer overflow in fail mode" in assertAllStagesStopped {

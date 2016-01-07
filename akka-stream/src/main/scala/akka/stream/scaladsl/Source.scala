@@ -387,7 +387,7 @@ object Source {
    */
   def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] = {
     require(bufferSize >= 0, "bufferSize must be greater than or equal to 0")
-    require(overflowStrategy != OverflowStrategy.Backpressure, "Backpressure overflowStrategy not supported")
+    require(overflowStrategy != OverflowStrategies.Backpressure, "Backpressure overflowStrategy not supported")
     new Source(new ActorRefSource(bufferSize, overflowStrategy, DefaultAttributes.actorRefSource, shape("ActorRefSource")))
   }
 
