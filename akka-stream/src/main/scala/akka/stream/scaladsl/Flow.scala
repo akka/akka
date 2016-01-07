@@ -623,6 +623,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Completes when''' upstream completes and the number of emitted elements has not reached max
    *
+   * '''Errors when''' the total number of incoming element exceeds max
+   *
    * '''Cancels when''' downstream cancels
    *
    * See also [[FlowOps.take]], [[FlowOps.takeWithin]], [[FlowOps.takeWhile]]
@@ -644,6 +646,8 @@ trait FlowOps[+Out, +Mat] {
    * '''Backpressures when''' downstream backpressures
    *
    * '''Completes when''' upstream completes and the number of emitted elements has not reached max
+   *
+   * '''Errors when''' when the accumulated cost exceeds max
    *
    * '''Cancels when''' downstream cancels
    *
