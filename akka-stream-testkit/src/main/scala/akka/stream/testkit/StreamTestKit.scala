@@ -251,9 +251,13 @@ object TestSubscriber {
     /**
      * Expect and return a stream element.
      */
-    def expectNext(): I = probe.receiveOne(probe.remaining) match {
-      case OnNext(elem) ⇒ elem.asInstanceOf[I]
-      case other        ⇒ throw new AssertionError("expected OnNext, found " + other)
+    def expectNext(): I = {
+      val t = probe.remaining
+      probe.receiveOne(t) match {
+        case null         ⇒ throw new AssertionError(s"Expected OnNext(_), yet no element signaled during $t")
+        case OnNext(elem) ⇒ elem.asInstanceOf[I]
+        case other        ⇒ throw new AssertionError("expected OnNext, found " + other)
+      }
     }
 
     /**
