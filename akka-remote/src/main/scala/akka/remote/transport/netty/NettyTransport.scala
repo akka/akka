@@ -238,32 +238,16 @@ private[transport] object NettyTransport {
   val uniqueIdCounter = new AtomicInteger(0)
 
   def addressFromSocketAddress(addr: SocketAddress, schemeIdentifier: String, systemName: String,
-                               hostName: Option[String], port: Option[Int]): Option[Address] = {
-
-    addr match {
-      case sa: InetSocketAddress ⇒
-        Some(Address(
-          schemeIdentifier,
-          systemName,
-          ipv6SafeHostname(hostName.getOrElse(sa.getHostString)),
-          port.getOrElse(sa.getPort)))
-
-      case _ ⇒ None
-    }
+                               hostName: Option[String], port: Option[Int]): Option[Address] = addr match {
+    case sa: InetSocketAddress ⇒ Some(Address(schemeIdentifier, systemName,
+      hostName.getOrElse(sa.getAddress.getHostAddress), port.getOrElse(sa.getPort))) // perhaps use getHostString in jdk 1.7
+    case _ ⇒ None
   }
 
   // Need to do like this for binary compatibility reasons
   def addressFromSocketAddress(addr: SocketAddress, schemeIdentifier: String, systemName: String,
                                hostName: Option[String]): Option[Address] =
     addressFromSocketAddress(addr, schemeIdentifier, systemName, hostName, port = None)
-
-  /**
-   * Wraps an ipv6 address hostname in [] to avoid having it parsed as hostname + port.
-   */
-  private def ipv6SafeHostname(unsafeHostname: String): String =
-    if (unsafeHostname.contains(":") && !unsafeHostname.startsWith("[")) s"[$unsafeHostname]"
-    else unsafeHostname
-
 }
 
 // FIXME: Split into separate UDP and TCP classes
