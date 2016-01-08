@@ -19,6 +19,8 @@ import akka.stream.scaladsl._
 import akka.stream.ActorMaterializer
 import HttpEntity._
 
+import scala.util.control.NonFatal
+
 class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
     akka.event-handlers = ["akka.testkit.TestEventListener"]
@@ -583,17 +585,26 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
 
     def renderTo(expected: String, close: Boolean): Matcher[ResponseRenderingContext] =
       equal(expected.stripMarginWithNewline("\r\n") -> close).matcher[(String, Boolean)] compose { ctx ⇒
-        val renderer = newRenderer
-        val rendererOutputSource = Await.result(Source.single(ctx)
-          .transform(() ⇒ renderer).named("renderer")
-          .runWith(Sink.head), 1.second)
-        val future =
-          rendererOutputSource.grouped(1000).map(
-            _.map {
+        val (wasCompletedFuture, resultFuture) =
+          (Source.single(ctx) ++ Source.maybe[ResponseRenderingContext]) // never send upstream completion
+            .via(renderer.named("renderer"))
+            .map {
               case ResponseRenderingOutput.HttpData(bytes)      ⇒ bytes
               case _: ResponseRenderingOutput.SwitchToWebsocket ⇒ throw new IllegalStateException("Didn't expect websocket response")
-            }).runWith(Sink.head).map(_.reduceLeft(_ ++ _).utf8String)
-        Await.result(future, 250.millis) -> renderer.isComplete
+            }
+            .groupedWithin(1000, 100.millis)
+            .viaMat(StreamUtils.identityFinishReporter[Seq[ByteString]])(Keep.right)
+            .toMat(Sink.head)(Keep.both).run()
+
+        // we try to find out if the renderer has already flagged completion even without the upstream being completed
+        val wasCompleted =
+          try {
+            Await.ready(wasCompletedFuture, 100.millis)
+            true
+          } catch {
+            case NonFatal(_) ⇒ false
+          }
+        Await.result(resultFuture, 250.millis).reduceLeft(_ ++ _).utf8String -> wasCompleted
       }
 
     override def currentTimeMillis() = DateTime(2011, 8, 25, 9, 10, 29).clicks // provide a stable date for testing
