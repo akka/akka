@@ -569,6 +569,7 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
   import settings._
 
   val cluster = Cluster(context.system)
+  val verboseHeartbeat = cluster.settings.Debug.VerboseHeartbeatLogging
   import cluster.selfAddress
 
   require(role.forall(cluster.selfRoles.contains),
@@ -620,7 +621,7 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
       pubSubMediator.tell(msg, tunnel)
 
     case Heartbeat ⇒
-      log.debug("Heartbeat from client [{}]", sender().path)
+      if (verboseHeartbeat) log.debug("Heartbeat from client [{}]", sender().path)
       sender() ! HeartbeatRsp
 
     case GetContacts ⇒
