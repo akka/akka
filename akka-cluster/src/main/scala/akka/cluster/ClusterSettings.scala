@@ -106,5 +106,9 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     cc.getMillisDuration("metrics.moving-average-half-life")
   } requiring (_ > Duration.Zero, "metrics.moving-average-half-life must be > 0")
 
+  object Debug {
+    val VerboseHeartbeatLogging = cc.getBoolean("debug.verbose-heartbeat-logging")
+  }
+
 }
 
