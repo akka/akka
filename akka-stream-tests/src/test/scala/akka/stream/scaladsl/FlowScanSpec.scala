@@ -19,7 +19,6 @@ class FlowScanSpec extends AkkaSpec {
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
   implicit val materializer = ActorMaterializer(settings)
-  import materializer.executionContext
 
   "A Scan" must {
 
