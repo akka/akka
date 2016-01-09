@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class RecipeToStrict extends RecipeTest {
+public class RecipeSeq extends RecipeTest {
   static ActorSystem system;
 
   @BeforeClass
@@ -38,20 +38,54 @@ public class RecipeToStrict extends RecipeTest {
   final Materializer mat = ActorMaterializer.create(system);
 
   @Test
-  public void workWithPrintln() throws Exception {
+  public void drainSourceToList() throws Exception {
     new JavaTestKit(system) {
       {
+        //#draining-to-list-unsafe
         final Source<String, BoxedUnit> myData = Source.from(Arrays.asList("1", "2", "3"));
         final int MAX_ALLOWED_SIZE = 100;
 
-        //#draining-to-list
-        final Future<List<String>> strings = myData
-          .grouped(MAX_ALLOWED_SIZE).runWith(Sink.head(), mat);
-        //#draining-to-list
+        final Future<List<String>> strings = myData.runWith(Sink.seq(), mat); // dangerous!
+        //#draining-to-list-unsafe
 
         Await.result(strings, new FiniteDuration(1, TimeUnit.SECONDS));
       }
     };
   }
 
+  @Test
+  public void drainSourceToListWithLimit() throws Exception {
+    new JavaTestKit(system) {
+      {
+        //#draining-to-list-safe
+        final Source<String, BoxedUnit> myData = Source.from(Arrays.asList("1", "2", "3"));
+        final int MAX_ALLOWED_SIZE = 100;
+
+        // OK. Future will fail with a `StreamLimitReachedException`
+        // if the number of incoming elements is larger than max
+        final Future<List<String>> strings =
+          myData.limit(MAX_ALLOWED_SIZE).runWith(Sink.seq(), mat);
+        //#draining-to-list-safe
+
+        Await.result(strings, new FiniteDuration(1, TimeUnit.SECONDS));
+      }
+    };
+  }
+
+  public void drainSourceToListWithTake() throws Exception {
+    new JavaTestKit(system) {
+      {
+        final Source<String, BoxedUnit> myData = Source.from(Arrays.asList("1", "2", "3"));
+        final int MAX_ALLOWED_SIZE = 100;
+
+        //#draining-to-list-safe
+        // OK. Collect up until max-th elements only, then cancel upstream
+        final Future<List<String>> strings =
+                myData.take(MAX_ALLOWED_SIZE).runWith(Sink.seq(), mat);
+        //#draining-to-list-safe
+
+        Await.result(strings, new FiniteDuration(1, TimeUnit.SECONDS));
+      }
+    };
+  }
 }
