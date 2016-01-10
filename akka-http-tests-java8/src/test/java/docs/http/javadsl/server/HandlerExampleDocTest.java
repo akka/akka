@@ -6,6 +6,8 @@ package docs.http.javadsl.server;
 
 import akka.dispatch.Mapper;
 import akka.http.javadsl.model.HttpRequest;
+import akka.http.javadsl.model.HttpResponse;
+import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.*;
 import akka.http.javadsl.server.values.Parameters;
 import akka.http.javadsl.server.values.PathMatchers;
@@ -21,12 +23,24 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
         //#simple-handler-example-full
         class TestHandler extends akka.http.javadsl.server.AllDirectives {
             //#simple-handler
-            Handler handler = new Handler() {
+            Handler handlerString = new Handler() {
                 static final long serialVersionUID = 1L;
                 @Override
                 public RouteResult apply(RequestContext ctx) {
-                    return ctx.complete("This was a " + ctx.request().method().value()  +
-                            " request to "+ctx.request().getUri());
+                    return ctx.complete(String.format("This was a %s request to %s",
+                      ctx.request().method().value(), ctx.request().getUri()));
+                }
+            };
+            Handler handlerResponse = new Handler() {
+                static final long serialVersionUID = 1L;
+                @Override
+                public RouteResult apply(RequestContext ctx) {
+                    // with full control over the returned HttpResponse:
+                    final HttpResponse response = HttpResponse.create()
+                        .withEntity(String.format("Accepted %s request to %s",
+                          ctx.request().method().value(), ctx.request().getUri()))
+                        .withStatus(StatusCodes.ACCEPTED);
+                    return ctx.complete(response);
                 }
             };
             //#simple-handler
@@ -34,11 +48,11 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
             Route createRoute() {
                 return route(
                     get(
-                        handleWith(handler)
+                        handleWith(handlerString)
                     ),
                     post(
                         path("abc").route(
-                            handleWith(handler)
+                            handleWith(handlerResponse)
                         )
                     )
                 );
@@ -55,8 +69,8 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
             .assertStatusCode(404);
 
         r.run(HttpRequest.POST("/abc"))
-            .assertStatusCode(200)
-            .assertEntity("This was a POST request to http://example.com/abc");
+            .assertStatusCode(202)
+            .assertEntity("Accepted POST request to http://example.com/abc");
         //#simple-handler-example-full
     }
 

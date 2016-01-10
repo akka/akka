@@ -57,64 +57,77 @@ private[http] object HttpServerBluePrint {
         requestPreparation(settings) atop
         controller(settings, log) atop
         parsingRendering(settings, log) atop
-        new ProtocolSwitchStage(settings, log) atop
-        unwrapTls
+        websocketSupport(settings, log) atop
+        tlsSupport
 
     theStack.withAttributes(HttpAttributes.remoteAddress(remoteAddress))
   }
 
-  val unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, Unit] =
-    BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect { case x: SessionBytes ⇒ x.bytes })
+  val tlsSupport: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, SessionBytes, Unit] =
+    BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect { case x: SessionBytes ⇒ x })
 
-  def parsingRendering(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, ByteString, RequestOutput, Unit] =
+  def websocketSupport(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes, Unit] =
+    BidiFlow.fromGraph(new ProtocolSwitchStage(settings, log))
+
+  def parsingRendering(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, SessionBytes, RequestOutput, Unit] =
     BidiFlow.fromFlows(rendering(settings, log), parsing(settings, log))
 
   def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, Unit] =
     BidiFlow.fromGraph(new ControllerStage(settings, log)).reversed
 
   def requestPreparation(settings: ServerSettings): BidiFlow[HttpResponse, HttpResponse, RequestOutput, HttpRequest, Unit] =
-    BidiFlow.fromFlows(Flow[HttpResponse],
-      Flow[RequestOutput]
-        .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
-        .prefixAndTail(1)
-        .map(p ⇒ p._1.head -> p._2)
-        .concatSubstreams
-        .via(requestStartOrRunIgnore(settings)))
+    BidiFlow.fromFlows(Flow[HttpResponse], new PrepareRequests(settings))
 
-  def requestStartOrRunIgnore(settings: ServerSettings): Flow[(ParserOutput.RequestOutput, Source[ParserOutput.RequestOutput, Unit]), HttpRequest, Unit] =
-    Flow.fromGraph(new GraphStage[FlowShape[(RequestOutput, Source[RequestOutput, Unit]), HttpRequest]] {
-      val in = Inlet[(RequestOutput, Source[RequestOutput, Unit])]("RequestStartThenRunIgnore.in")
-      val out = Outlet[HttpRequest]("RequestStartThenRunIgnore.out")
-      override val shape: FlowShape[(RequestOutput, Source[RequestOutput, Unit]), HttpRequest] = FlowShape.of(in, out)
+  final class PrepareRequests(settings: ServerSettings) extends GraphStage[FlowShape[RequestOutput, HttpRequest]] {
+    val in = Inlet[RequestOutput]("RequestStartThenRunIgnore.in")
+    val out = Outlet[HttpRequest]("RequestStartThenRunIgnore.out")
+    override val shape: FlowShape[RequestOutput, HttpRequest] = FlowShape.of(in, out)
 
-      override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) {
-        val remoteAddress = inheritedAttributes.get[HttpAttributes.RemoteAddress].flatMap(_.address)
+    override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) {
+      val remoteAddress = inheritedAttributes.get[HttpAttributes.RemoteAddress].flatMap(_.address)
 
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = grab(in) match {
-            case (RequestStart(method, uri, protocol, hdrs, createEntity, _, _), entityParts) ⇒
-              val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
-              val effectiveHeaders =
-                if (settings.remoteAddressHeader && remoteAddress.isDefined)
-                  headers.`Remote-Address`(RemoteAddress(remoteAddress.get)) +: hdrs
-                else hdrs
+      val idle = new InHandler {
+        def onPush(): Unit = grab(in) match {
+          case RequestStart(method, uri, protocol, hdrs, entityCreator, _, _) ⇒
+            val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
+            val effectiveHeaders =
+              if (settings.remoteAddressHeader && remoteAddress.isDefined)
+                headers.`Remote-Address`(RemoteAddress(remoteAddress.get)) +: hdrs
+              else hdrs
 
-              val entity = createEntity(entityParts) withSizeLimit settings.parserSettings.maxContentLength
-              push(out, HttpRequest(effectiveMethod, uri, effectiveHeaders, entity, protocol))
-
-            case (wat, src) ⇒
-              SubSource.kill(src)
-              pull(in)
-          }
-        })
-
-        setHandler(out, new OutHandler {
-          override def onPull(): Unit = pull(in)
-        })
+            val entity = createEntity(entityCreator) withSizeLimit settings.parserSettings.maxContentLength
+            push(out, HttpRequest(effectiveMethod, uri, effectiveHeaders, entity, protocol))
+        }
       }
-    })
+      setHandler(in, idle)
 
-  def parsing(settings: ServerSettings, log: LoggingAdapter): Flow[ByteString, RequestOutput, Unit] = {
+      def createEntity(creator: EntityCreator[RequestOutput, RequestEntity]): RequestEntity =
+        creator match {
+          case StrictEntityCreator(entity) ⇒ entity
+          case StreamedEntityCreator(creator) ⇒
+            val entitySource = new SubSourceOutlet[RequestOutput]("EntitySource")
+            entitySource.setHandler(new OutHandler {
+              def onPull(): Unit = pull(in)
+            })
+            setHandler(in, new InHandler {
+              def onPush(): Unit = grab(in) match {
+                case MessageEnd ⇒
+                  entitySource.complete()
+                  setHandler(in, idle)
+                case x ⇒ entitySource.push(x)
+              }
+              override def onUpstreamFinish(): Unit = completeStage()
+            })
+            creator(Source.fromGraph(entitySource.source))
+        }
+
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = pull(in)
+      })
+    }
+  }
+
+  def parsing(settings: ServerSettings, log: LoggingAdapter): Flow[SessionBytes, RequestOutput, Unit] = {
     import settings._
 
     // the initial header parser we initially use for every connection,
@@ -137,7 +150,7 @@ private[http] object HttpServerBluePrint {
       case x ⇒ x
     }
 
-    Flow[ByteString].transform(() ⇒
+    Flow[SessionBytes].transform(() ⇒
       // each connection uses a single (private) request parser instance for all its requests
       // which builds a cache of all header instances seen on that connection
       rootParser.createShallowCopy().stage).named("rootParser")
@@ -156,8 +169,7 @@ private[http] object HttpServerBluePrint {
     }
 
     Flow[ResponseRenderingContext]
-      .via(Flow[ResponseRenderingContext].transform(() ⇒ responseRendererFactory.newRenderer).named("renderer"))
-      .flatMapConcat(ConstantFun.scalaIdentityFunction)
+      .via(responseRendererFactory.renderer.named("renderer"))
       .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorHandling(errorHandler)).named("errorLogger"))
   }
 
@@ -344,12 +356,12 @@ private[http] object HttpServerBluePrint {
     One2OneBidiFlow[HttpRequest, HttpResponse](pipeliningLimit).reversed
 
   private class ProtocolSwitchStage(settings: ServerSettings, log: LoggingAdapter)
-    extends GraphStage[BidiShape[ResponseRenderingOutput, ByteString, ByteString, ByteString]] {
+    extends GraphStage[BidiShape[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes]] {
 
-    private val fromNet = Inlet[ByteString]("fromNet")
+    private val fromNet = Inlet[SessionBytes]("fromNet")
     private val toNet = Outlet[ByteString]("toNet")
 
-    private val toHttp = Outlet[ByteString]("toHttp")
+    private val toHttp = Outlet[SessionBytes]("toHttp")
     private val fromHttp = Inlet[ResponseRenderingOutput]("fromHttp")
 
     override def initialAttributes = Attributes.name("ProtocolSwitchStage")
@@ -432,14 +444,14 @@ private[http] object HttpServerBluePrint {
         })
 
         setHandler(fromNet, new InHandler {
-          override def onPush(): Unit = sourceOut.push(grab(fromNet))
+          override def onPush(): Unit = sourceOut.push(grab(fromNet).bytes)
         })
         sourceOut.setHandler(new OutHandler {
           override def onPull(): Unit = {
             if (!hasBeenPulled(fromNet)) pull(fromNet)
             cancelTimeout(timeoutKey)
             sourceOut.setHandler(new OutHandler {
-              override def onPull(): Unit = pull(fromNet)
+              override def onPull(): Unit = if (!hasBeenPulled(fromNet)) pull(fromNet)
             })
           }
         })

@@ -6,13 +6,11 @@ package akka.http.impl.engine.ws
 
 import java.util.Random
 import akka.event.LoggingAdapter
-import akka.stream.impl.fusing.GraphInterpreter
 import akka.util.ByteString
 import scala.concurrent.duration._
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.stage._
-import akka.http.impl.util._
 import akka.http.scaladsl.model.ws._
 import akka.stream.impl.fusing.SubSource
 
@@ -37,9 +35,9 @@ private[http] object Websocket {
 
   /** The lowest layer that implements the binary protocol */
   def framing: BidiFlow[ByteString, FrameEvent, FrameEvent, ByteString, Unit] =
-    BidiFlow.fromFlowsMat(
+    BidiFlow.fromFlows(
       Flow[ByteString].via(FrameEventParser),
-      Flow[FrameEvent].transform(() ⇒ new FrameEventRenderer))(Keep.none)
+      Flow[FrameEvent].transform(() ⇒ new FrameEventRenderer))
       .named("ws-framing")
 
   /** The layer that handles masking using the rules defined in the specification */
@@ -54,9 +52,9 @@ private[http] object Websocket {
   def frameHandling(serverSide: Boolean = true,
                     closeTimeout: FiniteDuration,
                     log: LoggingAdapter): BidiFlow[FrameEventOrError, FrameHandler.Output, FrameOutHandler.Input, FrameStart, Unit] =
-    BidiFlow.fromFlowsMat(
+    BidiFlow.fromFlows(
       FrameHandler.create(server = serverSide),
-      FrameOutHandler.create(serverSide, closeTimeout, log))(Keep.none)
+      FrameOutHandler.create(serverSide, closeTimeout, log))
       .named("ws-frame-handling")
 
   /**
@@ -86,8 +84,11 @@ private[http] object Websocket {
     val collectMessage: Flow[MessageDataPart, Message, Unit] =
       Flow[MessageDataPart]
         .prefixAndTail(1)
-        .map {
-          case (seq, remaining) ⇒ seq.head match {
+        .mapConcat {
+          // happens if we get a MessageEnd first which creates a new substream but which is then
+          // filtered out by collect in `prepareMessages` below
+          case (Nil, _) ⇒ Nil
+          case (first +: Nil, remaining) ⇒ (first match {
             case TextMessagePart(text, true) ⇒
               SubSource.kill(remaining)
               TextMessage.Strict(text)
@@ -106,7 +107,7 @@ private[http] object Websocket {
                   .collect {
                     case t: BinaryMessagePart if t.data.nonEmpty ⇒ t.data
                   })
-          }
+          }) :: Nil
         }
 
     def prepareMessages: Flow[MessagePart, Message, Unit] =
@@ -132,7 +133,6 @@ private[http] object Websocket {
       val merge = b.add(BypassMerge)
       val messagePreparation = b.add(prepareMessages)
       val messageRendering = b.add(renderMessages.via(LiftCompletions))
-      // val messageRendering = b.add(renderMessages.transform(() ⇒ new LiftCompletions))
 
       // user handler
       split.out1 ~> messagePreparation
