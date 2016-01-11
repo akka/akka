@@ -58,7 +58,11 @@ object ClusterClientSettings {
       refreshContactsInterval = config.getDuration("refresh-contacts-interval", MILLISECONDS).millis,
       heartbeatInterval = config.getDuration("heartbeat-interval", MILLISECONDS).millis,
       acceptableHeartbeatPause = config.getDuration("acceptable-heartbeat-pause", MILLISECONDS).millis,
-      bufferSize = config.getInt("buffer-size"))
+      bufferSize = config.getInt("buffer-size"),
+      reconnectTimeout = config.getString("reconnect-timeout") match {
+        case "off" ⇒ None
+        case _     ⇒ Some(config.getDuration("reconnect-timeout", MILLISECONDS).millis)
+      })
   }
 
   /**
@@ -96,6 +100,10 @@ object ClusterClientSettings {
  *   When the buffer is full old messages will be dropped when new messages are sent via the
  *   client. Use 0 to disable buffering, i.e. messages will be dropped immediately if the
  *   location of the receptionist is unavailable.
+ * @param reconnectTimeout If the connection to the receptionist is lost and cannot
+ *   be re-established within this duration the cluster client will be stopped. This makes it possible
+ *   to watch it from another actor and possibly acquire a new list of initialContacts from some
+ *   external service registry
  */
 final class ClusterClientSettings(
   val initialContacts: Set[ActorPath],
@@ -103,9 +111,23 @@ final class ClusterClientSettings(
   val refreshContactsInterval: FiniteDuration,
   val heartbeatInterval: FiniteDuration,
   val acceptableHeartbeatPause: FiniteDuration,
-  val bufferSize: Int) extends NoSerializationVerificationNeeded {
+  val bufferSize: Int,
+  val reconnectTimeout: Option[FiniteDuration]) extends NoSerializationVerificationNeeded {
 
   require(bufferSize >= 0 && bufferSize <= 10000, "bufferSize must be >= 0 and <= 10000")
+
+  /**
+   * For binary/source compatibility
+   */
+  def this(
+    initialContacts: Set[ActorPath],
+    establishingGetContactsInterval: FiniteDuration,
+    refreshContactsInterval: FiniteDuration,
+    heartbeatInterval: FiniteDuration,
+    acceptableHeartbeatPause: FiniteDuration,
+    bufferSize: Int) =
+    this(initialContacts, establishingGetContactsInterval, refreshContactsInterval, heartbeatInterval,
+      acceptableHeartbeatPause, bufferSize, None)
 
   /**
    * Scala API
@@ -135,15 +157,19 @@ final class ClusterClientSettings(
   def withBufferSize(bufferSize: Int): ClusterClientSettings =
     copy(bufferSize = bufferSize)
 
+  def withReconnectTimeout(reconnectTimeout: Option[FiniteDuration]): ClusterClientSettings =
+    copy(reconnectTimeout = reconnectTimeout)
+
   private def copy(
     initialContacts: Set[ActorPath] = initialContacts,
     establishingGetContactsInterval: FiniteDuration = establishingGetContactsInterval,
     refreshContactsInterval: FiniteDuration = refreshContactsInterval,
     heartbeatInterval: FiniteDuration = heartbeatInterval,
     acceptableHeartbeatPause: FiniteDuration = acceptableHeartbeatPause,
-    bufferSize: Int = bufferSize): ClusterClientSettings =
+    bufferSize: Int = bufferSize,
+    reconnectTimeout: Option[FiniteDuration] = reconnectTimeout): ClusterClientSettings =
     new ClusterClientSettings(initialContacts, establishingGetContactsInterval, refreshContactsInterval,
-      heartbeatInterval, acceptableHeartbeatPause, bufferSize)
+      heartbeatInterval, acceptableHeartbeatPause, bufferSize, reconnectTimeout)
 }
 
 object ClusterClient {
@@ -172,6 +198,7 @@ object ClusterClient {
   private[akka] object Internal {
     case object RefreshContactsTick
     case object HeartbeatTick
+    case object ReconnectTimeout
   }
 }
 
@@ -257,27 +284,37 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
   def receive = establishing
 
   def establishing: Actor.Receive = {
-    case Contacts(contactPoints) ⇒
-      if (contactPoints.nonEmpty) {
-        contacts = contactPoints.map(context.actorSelection)
-        contacts foreach { _ ! Identify(None) }
-      }
-    case ActorIdentity(_, Some(receptionist)) ⇒
-      log.info("Connected to [{}]", receptionist.path)
-      scheduleRefreshContactsTick(refreshContactsInterval)
-      sendBuffered(receptionist)
-      context.become(active(receptionist))
-      failureDetector.heartbeat()
-    case ActorIdentity(_, None) ⇒ // ok, use another instead
-    case HeartbeatTick ⇒
-      failureDetector.heartbeat()
-    case RefreshContactsTick ⇒ sendGetContacts()
-    case Send(path, msg, localAffinity) ⇒
-      buffer(DistributedPubSubMediator.Send(path, msg, localAffinity))
-    case SendToAll(path, msg) ⇒
-      buffer(DistributedPubSubMediator.SendToAll(path, msg))
-    case Publish(topic, msg) ⇒
-      buffer(DistributedPubSubMediator.Publish(topic, msg))
+    val connectTimerCancelable = settings.reconnectTimeout.map { timeout ⇒
+      context.system.scheduler.scheduleOnce(timeout, self, ReconnectTimeout)
+    }
+
+    {
+      case Contacts(contactPoints) ⇒
+        if (contactPoints.nonEmpty) {
+          contacts = contactPoints.map(context.actorSelection)
+          contacts foreach { _ ! Identify(None) }
+        }
+      case ActorIdentity(_, Some(receptionist)) ⇒
+        log.info("Connected to [{}]", receptionist.path)
+        scheduleRefreshContactsTick(refreshContactsInterval)
+        sendBuffered(receptionist)
+        context.become(active(receptionist))
+        connectTimerCancelable.foreach(_.cancel())
+        failureDetector.heartbeat()
+      case ActorIdentity(_, None) ⇒ // ok, use another instead
+      case HeartbeatTick ⇒
+        failureDetector.heartbeat()
+      case RefreshContactsTick ⇒ sendGetContacts()
+      case Send(path, msg, localAffinity) ⇒
+        buffer(DistributedPubSubMediator.Send(path, msg, localAffinity))
+      case SendToAll(path, msg) ⇒
+        buffer(DistributedPubSubMediator.SendToAll(path, msg))
+      case Publish(topic, msg) ⇒
+        buffer(DistributedPubSubMediator.Publish(topic, msg))
+      case ReconnectTimeout ⇒
+        log.warning("Receptionist reconnect not successful within {} stopping cluster client", settings.reconnectTimeout)
+        context.stop(self)
+    }
   }
 
   def active(receptionist: ActorRef): Actor.Receive = {

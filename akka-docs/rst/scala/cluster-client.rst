@@ -146,3 +146,25 @@ a parameter to the ``ClusterClient.props`` factory method, i.e. each client can 
 with different settings if needed.
   
 .. includecode:: ../../../akka-cluster-tools/src/main/resources/reference.conf#cluster-client-config
+
+Failure handling
+----------------
+When the cluster client is started it must be provided with a list of initial contacts which are cluster
+nodes where receptionists are running. It will then repeatedly (with an interval configurable
+by ``establishing-get-contacts-interval``) try to contact those until it gets in contact with one of them.
+While running, the list of contacts are continuously updated with data from the receptionists (again, with an
+interval configurable with ``refresh-contacts-interval``), so that if there are more receptionists in the cluster
+than the initial contacts provided to the client the client will learn about them.
+
+While the client is running it will detect failures in its connection to the receptionist by heartbeats
+if more than a configurable amount of heartbeats are missed the client will try to reconnect to its known
+set of contacts to find a receptionist it can access.
+
+When the cluster cannot be reached at all
+-----------------------------------------
+It is possible to make the cluster client stop entirely if it cannot find a receptionist it can talk to
+within a configurable interval. This is configured with the ``reconnect-timeout``, which defaults to ``off``.
+This can be useful when initial contacts are provided from some kind of service registry, cluster node addresses
+are entirely dynamic and the entire cluster might shut down or crash, be restarted on new addresses. Since the
+client will be stopped in that case a monitoring actor can watch it and upon ``Terminate`` a new set of initial
+contacts can be fetched and a new cluster client started.
