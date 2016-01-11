@@ -349,19 +349,13 @@ trait FlowOps[+Out, +Mat] {
   import akka.stream.impl.Stages._
   import GraphDSL.Implicits._
 
-  type Repr[+O] <: FlowOps[O, Mat]
+  type Repr[+O] <: FlowOps[O, Mat] {
+    type Repr[+OO] = FlowOps.this.Repr[OO]
+    type Closed = FlowOps.this.Closed
+  }
 
   // result of closing a Source is RunnableGraph, closing a Flow is Sink
   type Closed
-
-  /*
-   * Repr is actually self-bounded, but that would be a cyclic type declaration that is illegal in Scala.
-   * Therefore we need to help the compiler by specifying that Repr expressions can be flattened.
-   */
-  import language.implicitConversions
-  private implicit def reprFlatten0[O1](r: Repr[O1]#Closed): Closed = r.asInstanceOf[Closed]
-  private implicit def reprFlatten1[O1, O2](r: Repr[O1]#Repr[O2]): Repr[O2] = r.asInstanceOf[Repr[O2]]
-  private implicit def reprFlatten2[O1, O2, O3](r: Repr[O1]#Repr[O2]#Repr[O3]): Repr[O3] = r.asInstanceOf[Repr[O3]]
 
   /**
    * Transform this [[Flow]] by appending the given processing steps.
@@ -1634,7 +1628,18 @@ trait FlowOps[+Out, +Mat] {
  */
 trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
 
-  type ReprMat[+O, +M] <: FlowOpsMat[O, M]
+  type Repr[+O] <: ReprMat[O, Mat] {
+    type Repr[+OO] = FlowOpsMat.this.Repr[OO]
+    type ReprMat[+OO, +MM] = FlowOpsMat.this.ReprMat[OO, MM]
+    type Closed = FlowOpsMat.this.Closed
+    type ClosedMat[+M] = FlowOpsMat.this.ClosedMat[M]
+  }
+  type ReprMat[+O, +M] <: FlowOpsMat[O, M] {
+    type Repr[+OO] = FlowOpsMat.this.ReprMat[OO, M @uncheckedVariance]
+    type ReprMat[+OO, +MM] = FlowOpsMat.this.ReprMat[OO, MM]
+    type Closed = FlowOpsMat.this.ClosedMat[M @uncheckedVariance]
+    type ClosedMat[+MM] = FlowOpsMat.this.ClosedMat[MM]
+  }
   type ClosedMat[+M] <: Graph[_, M]
 
   /**
