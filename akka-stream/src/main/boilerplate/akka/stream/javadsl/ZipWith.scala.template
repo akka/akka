@@ -1,0 +1,42 @@
+/**
+ * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.stream.javadsl
+
+import akka.stream._
+import akka.stream.scaladsl
+import akka.japi.function
+
+/**
+ * Combine the elements of multiple streams into a stream of combined elements using a combiner function.
+ *
+ * '''Emits when''' all of the inputs has an element available
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' any upstream completes
+ *
+ * '''Cancels when''' downstream cancels
+ */
+object ZipWith {
+
+  /**
+   * Create a new `ZipWith` vertex with the specified input types and zipping-function `f`.
+   *
+   * @param f zipping-function from the input values to the output value
+   * @param attributes optional attributes for this vertex
+   */
+  def create[A, B, Out](f: function.Function2[A, B, Out]): Graph[FanInShape2[A, B, Out], Unit] =
+    scaladsl.ZipWith(f.apply _)
+
+  [3..20#/** Create a new `ZipWith` specialized for 1 inputs.
+   *
+   * @param f zipping-function from the input values to the output value
+   * @param attributes optional attributes for this vertex
+   */
+  def create1[[#T1#], Out](f: function.Function1[[#T1#], Out]): Graph[FanInShape1[[#T1#], Out], Unit] =
+    scaladsl.ZipWith(f.apply _)#
+    
+  ]
+
+}

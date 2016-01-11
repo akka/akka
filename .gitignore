@@ -13,7 +13,8 @@
 .*.swp
 .DS_Store
 .cache
-.cache
+.cache-tests
+.cache-main
 .classpath
 .codefellow
 .ensime*
@@ -44,6 +45,9 @@ akka-contrib/rst_preprocessed/
 akka-docs/_build/
 akka-docs/exts/
 akka-docs/rst_preprocessed/
+akka-docs-dev/_build/
+akka-docs-dev/exts/
+akka-docs-dev/rst_preprocessed/
 akka-osgi/src/main/resources/*.conf
 akka.sublime-project
 akka.sublime-workspace
@@ -78,6 +82,7 @@ tm.out
 worker*.log
 *-shim.sbt
 test-output
+.tmpBin
 
 # Default sigar library extract location.
 native/

@@ -1,0 +1,52 @@
+/**
+ * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.stream.tck
+
+import java.util.concurrent.Executors
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration._
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{ Flow, Sink, Source }
+import akka.stream.testkit.TestPublisher
+import org.reactivestreams.{ Subscriber, Subscription, Processor, Publisher }
+import org.reactivestreams.tck.IdentityProcessorVerification
+import org.reactivestreams.tck.TestEnvironment
+import org.scalatest.testng.TestNGSuiteLike
+import org.testng.annotations.AfterClass
+
+abstract class AkkaIdentityProcessorVerification[T](env: TestEnvironment, publisherShutdownTimeout: Long)
+  extends IdentityProcessorVerification[T](env, publisherShutdownTimeout)
+  with TestNGSuiteLike with ActorSystemLifecycle {
+
+  def this(printlnDebug: Boolean) =
+    this(new TestEnvironment(Timeouts.defaultTimeoutMillis, printlnDebug), Timeouts.publisherShutdownTimeoutMillis)
+
+  def this() = this(false)
+
+  override def createFailedPublisher(): Publisher[T] =
+    TestPublisher.error(new Exception("Unable to serve subscribers right now!"))
+
+  def processorFromSubscriberAndPublisher(sub: Subscriber[T], pub: Publisher[T]): Processor[T, T] = {
+    new Processor[T, T] {
+      override def onSubscribe(s: Subscription): Unit = sub.onSubscribe(s)
+      override def onError(t: Throwable): Unit = sub.onError(t)
+      override def onComplete(): Unit = sub.onComplete()
+      override def onNext(t: T): Unit = sub.onNext(t)
+      override def subscribe(s: Subscriber[_ >: T]): Unit = pub.subscribe(s)
+    }
+  }
+
+  /** By default Akka Publishers do not support Fanout! */
+  override def maxSupportedSubscribers: Long = 1L
+
+  override lazy val publisherExecutorService: ExecutorService =
+    Executors.newFixedThreadPool(3)
+
+  @AfterClass
+  def shutdownPublisherExecutorService(): Unit = {
+    publisherExecutorService.shutdown()
+    publisherExecutorService.awaitTermination(3, TimeUnit.SECONDS)
+  }
+}
