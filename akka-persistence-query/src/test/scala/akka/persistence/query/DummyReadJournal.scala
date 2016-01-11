@@ -14,7 +14,7 @@ import scala.runtime.BoxedUnit
  */
 class DummyReadJournal extends scaladsl.ReadJournal with scaladsl.AllPersistenceIdsQuery {
   override def allPersistenceIds(): Source[String, Unit] =
-    Source(() ⇒ Iterator.from(0)).map(_.toString)
+    Source.fromIterator(() ⇒ Iterator.from(0)).map(_.toString)
 }
 
 object DummyReadJournal {
