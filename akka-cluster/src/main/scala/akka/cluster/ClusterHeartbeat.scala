@@ -63,6 +63,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   import ClusterHeartbeatSender._
 
   val cluster = Cluster(context.system)
+  val verboseHeartbeat = cluster.settings.Debug.VerboseHeartbeatLogging
   import cluster.{ selfAddress, selfUniqueAddress, scheduler }
   import cluster.settings._
   import cluster.InfoLogger._
@@ -144,10 +145,10 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
 
   def heartbeat(): Unit = {
     state.activeReceivers foreach { to ⇒
-      if (cluster.failureDetector.isMonitoring(to.address))
-        log.debug("Cluster Node [{}] - Heartbeat to [{}]", selfAddress, to.address)
-      else {
-        log.debug("Cluster Node [{}] - First Heartbeat to [{}]", selfAddress, to.address)
+      if (cluster.failureDetector.isMonitoring(to.address)) {
+        if (verboseHeartbeat) log.debug("Cluster Node [{}] - Heartbeat to [{}]", selfAddress, to.address)
+      } else {
+        if (verboseHeartbeat) log.debug("Cluster Node [{}] - First Heartbeat to [{}]", selfAddress, to.address)
         // schedule the expected first heartbeat for later, which will give the
         // other side a chance to reply, and also trigger some resends if needed
         scheduler.scheduleOnce(HeartbeatExpectedResponseAfter, self, ExpectedFirstHeartbeat(to))
@@ -158,13 +159,13 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   }
 
   def heartbeatRsp(from: UniqueAddress): Unit = {
-    log.debug("Cluster Node [{}] - Heartbeat response from [{}]", selfAddress, from.address)
+    if (verboseHeartbeat) log.debug("Cluster Node [{}] - Heartbeat response from [{}]", selfAddress, from.address)
     state = state.heartbeatRsp(from)
   }
 
   def triggerFirstHeartbeat(from: UniqueAddress): Unit =
     if (state.activeReceivers(from) && !failureDetector.isMonitoring(from.address)) {
-      log.debug("Cluster Node [{}] - Trigger extra expected heartbeat from [{}]", selfAddress, from.address)
+      if (verboseHeartbeat) log.debug("Cluster Node [{}] - Trigger extra expected heartbeat from [{}]", selfAddress, from.address)
       failureDetector.heartbeat(from.address)
     }
 
