@@ -141,11 +141,27 @@ public class FlowStagesDocTest {
   //#pushstage
 
   static //#doubler-stateful
-  public class Duplicator2<A> extends StatefulStage<A, A> {
-    @Override public StageState<A, A> initial() {
-      return new StageState<A, A>() {
-        @Override public SyncDirective onPush(A elem, Context<A> ctx) {
-          return emit(Arrays.asList(elem, elem).iterator(), ctx);
+  public class Duplicator2<A> extends GraphStage<FlowShape<A, A>> {
+    Inlet<A> in = Inlet.<A>create("Duplicator.in");
+    Outlet<A> out = Outlet.<A>create("Duplicator.out");
+
+    @Override public FlowShape<A, A> shape() {
+      return FlowShape.of(in, out);
+    }
+
+    @Override public GraphStageLogic createLogic(Attributes inheritedAttributes) {
+      final Shape shape = shape();
+      return new GraphStageLogic(shape) {
+        {
+          setHandler(in, new AbstractInHandler() {
+            @Override public void onPush() {
+              A elem = grab(in);
+              emitMultiple(out, Arrays.asList(elem, elem).iterator());
+            }
+          });
+          setHandler(out, new AbstractOutHandler() {
+            @Override public void onPull() { pull(in); }
+          });
         }
       };
     }
