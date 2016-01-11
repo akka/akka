@@ -922,10 +922,9 @@ object GraphDSL extends GraphApply {
 
       def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Closed =
         super.~>(sink)(b)
-
     }
 
-    private class DisabledPortOps[Out, Mat](msg: String) extends PortOpsImpl[Out](null, null) {
+    private class DisabledPortOps[Out](msg: String) extends PortOpsImpl[Out](null, null) {
       override def importAndGetPort(b: Builder[_]): Outlet[Out] = throw new IllegalArgumentException(msg)
 
       override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] =
