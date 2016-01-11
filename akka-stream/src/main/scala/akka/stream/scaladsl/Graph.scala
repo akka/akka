@@ -499,24 +499,25 @@ final class Partition[T](outputPorts: Int, partitioner: T ⇒ Int) extends Graph
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
     private var outPending: Option[(Int, T)] = None
+    private var downstreamRunning = outputPorts
 
     setHandler(in, new InHandler {
       override def onPush() = {
         val elem = grab(in)
         val idx = partitioner(elem)
-        if (isAvailable(out(idx))) {
-          if (!isClosed(out(idx))) {
+        if (!isClosed(out(idx))) {
+          if (isAvailable(out(idx))) {
             push(out(idx), elem)
-            if (out.exists(x ⇒ isAvailable(x)) && !hasBeenPulled(in))
+            if (out.exists(isAvailable(_)))
               pull(in)
-          }
-        } else {
-          outPending = Some(idx -> elem)
-        }
+          } else
+            outPending = Some(idx -> elem)
+        } else if (out.exists(isAvailable(_)))
+          pull(in)
       }
 
       override def onUpstreamFinish(): Unit = {
-        if (!outPending.isDefined)
+        if (outPending.isEmpty)
           completeStage()
       }
     })
@@ -526,24 +527,35 @@ final class Partition[T](outputPorts: Int, partitioner: T ⇒ Int) extends Graph
         setHandler(o, new OutHandler {
           override def onPull() = {
             outPending match {
-              case Some((i, elem)) if (i == idx) ⇒
-                push(o, elem)
-                outPending = None
-                if (!hasBeenPulled(in)) {
-                  pull(in)
+              case Some((i, elem)) ⇒
+                if (i == idx) {
+                  push(o, elem)
+                  outPending = None
+                  if (!isClosed(in)) {
+                    if (!hasBeenPulled(in)) {
+                      pull(in)
+                    }
+                  } else
+                    completeStage()
                 }
-              case None ⇒
-                if (outPending.isEmpty && !hasBeenPulled(in)) {
+              case _ ⇒
+                if (!hasBeenPulled(in))
                   pull(in)
-                }
             }
           }
 
           override def onDownstreamFinish(): Unit = {
-            if (out.forall(isClosed(_)))
+            downstreamRunning -= 1
+            if (downstreamRunning == 0)
               completeStage()
             else {
-              outPending.foreach { case (i, _) if (i == idx) ⇒ outPending = None }
+              outPending match {
+                case Some((i, _)) if (i == idx) ⇒
+                  outPending = None
+                  if (!hasBeenPulled(in))
+                    pull(in)
+                case _ ⇒
+              }
             }
           }
         })
