@@ -16,7 +16,7 @@ import akka.stream.impl.ConstantFun
  *
  * '''Backpressures when''' downstream backpressures
  *
- * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+ * '''Completes when''' all upstreams complete (eagerComplete=false) or one upstream completes (eagerComplete=true)
  *
  * '''Cancels when''' downstream cancels
  */
@@ -36,20 +36,20 @@ object Merge {
   /**
    * Create a new `Merge` stage with the specified output type.
    *
-   * @param eagerClose set to true in order to make this stage eagerly
+   * @param eagerComplete set to true in order to make this stage eagerly
    *                   finish as soon as one of its inputs completes
    */
-  def create[T](inputPorts: Int, eagerClose: Boolean): Graph[UniformFanInShape[T, T], Unit] =
-    scaladsl.Merge(inputPorts, eagerClose = eagerClose)
+  def create[T](inputPorts: Int, eagerComplete: Boolean): Graph[UniformFanInShape[T, T], Unit] =
+    scaladsl.Merge(inputPorts, eagerComplete = eagerComplete)
 
   /**
    * Create a new `Merge` stage with the specified output type.
    *
-   * @param eagerClose set to true in order to make this stage eagerly
+   * @param eagerComplete set to true in order to make this stage eagerly
    *                   finish as soon as one of its inputs completes
    */
-  def create[T](clazz: Class[T], inputPorts: Int, eagerClose: Boolean): Graph[UniformFanInShape[T, T], Unit] =
-    create(inputPorts, eagerClose)
+  def create[T](clazz: Class[T], inputPorts: Int, eagerComplete: Boolean): Graph[UniformFanInShape[T, T], Unit] =
+    create(inputPorts, eagerComplete)
 }
 
 /**
@@ -61,7 +61,7 @@ object Merge {
  *
  * '''Backpressures when''' downstream backpressures
  *
- * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+ * '''Completes when''' all upstreams complete (eagerComplete=false) or one upstream completes (eagerComplete=true)
  *
  * '''Cancels when''' downstream cancels
  */
@@ -80,20 +80,20 @@ object MergePreferred {
   /**
    * Create a new `MergePreferred` stage with the specified output type.
    *
-   * @param eagerClose set to true in order to make this stage eagerly
+   * @param eagerComplete set to true in order to make this stage eagerly
    *                   finish as soon as one of its inputs completes
    */
-  def create[T](secondaryPorts: Int, eagerClose: Boolean): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] =
-    scaladsl.MergePreferred(secondaryPorts, eagerClose = eagerClose)
+  def create[T](secondaryPorts: Int, eagerComplete: Boolean): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] =
+    scaladsl.MergePreferred(secondaryPorts, eagerComplete = eagerComplete)
 
   /**
    * Create a new `MergePreferred` stage with the specified output type.
    *
-   * @param eagerClose set to true in order to make this stage eagerly
+   * @param eagerComplete set to true in order to make this stage eagerly
    *                   finish as soon as one of its inputs completes
    */
-  def create[T](clazz: Class[T], secondaryPorts: Int, eagerClose: Boolean): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] =
-    create(secondaryPorts, eagerClose)
+  def create[T](clazz: Class[T], secondaryPorts: Int, eagerComplete: Boolean): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] =
+    create(secondaryPorts, eagerComplete)
 
 }
 

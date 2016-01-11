@@ -43,8 +43,8 @@ In that case you can still manually fuse those graphs which shall run on less Ac
   * all Stages (this includes all built-in linear operators)
   * TCP connections
 
-Introduced proper named constructor methods insted of ``wrap()``
-================================================================
+Introduced proper named constructor methods instead of ``wrap()``
+=================================================================
 
 There were several, unrelated uses of ``wrap()`` which made it hard to find and hard to understand the intention of
 the call. Therefore these use-cases now have methods with different names, helping Java 8 type inference (by reducing
@@ -351,8 +351,8 @@ should be replaced by
 
 .. includecode:: code/docs/MigrationsScala.scala#flatMapConcat
 
-`Sink.fanoutPublisher() and Sink.publisher() is now a single method`
-====================================================================
+`Sink.fanoutPublisher()` and `Sink.publisher()` is now a single method
+======================================================================
 
 It was a common user mistake to use ``Sink.publisher`` and get into trouble since it would only support
 a single ``Subscriber``, and the discoverability of the apprpriate fix was non-obvious (Sink.fanoutPublisher).
