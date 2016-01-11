@@ -1,0 +1,43 @@
+/**
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.stream.javadsl
+
+import akka.stream._
+import akka.stream.scaladsl
+import akka.japi.function
+import akka.japi.Pair
+import akka.japi.tuple._
+
+/**
+ * Split one stream into several streams using a splitting function.
+ *
+ * '''Emits when''' all of the outputs stops backpressuring and there is an input element available
+ *
+ * '''Backpressures when''' any of the outputs backpressures
+ *
+ * '''Completes when''' upstream completes
+ *
+ * '''Cancels when''' any downstream cancels
+ */
+object UnzipWith {
+
+  /**
+   * Create a new `UnzipWith` vertex with the specified input type and unzipping-function `f`.
+   *
+   * @param f unzipping-function from the input value to the pair of output values
+   */
+  def create[In, A, B](f: function.Function[In, Pair[A, B]]):  Graph[FanOutShape2[In, A, B], Unit] =
+    scaladsl.UnzipWith[In, A, B]((in: In) => f.apply(in) match { case Pair(a, b) => (a, b) })
+
+
+  [3..20#/** Create a new `UnzipWith` specialized for 1 outputs.
+   *
+   * @param f unzipping-function from the input value to the output values
+   */
+  def create1[In, [#T1#]](f: function.Function[In, Tuple1[[#T1#]]]): Graph[FanOutShape1[In, [#T1#]], Unit] =
+    scaladsl.UnzipWith[In, [#T1#]]((in: In) => f.apply(in).toScala)#
+
+  ]
+
+}
