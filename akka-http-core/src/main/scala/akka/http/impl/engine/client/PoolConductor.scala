@@ -140,15 +140,16 @@ private object PoolConductor {
               slotStates(slotIx) = slotStateAfterDisconnect(slotStates(slotIx), failed)
           }
           pull(slotIn)
-          val tryPull = nextSlot == -1
+          val wasBlocked = nextSlot == -1
           nextSlot = bestSlot()
-          if (tryPull) tryPullCtx()
+          val nowUnblocked = nextSlot != -1
+          if (wasBlocked && nowUnblocked) pull(ctxIn) // get next request context
         }
       })
 
       setHandler(out, eagerTerminateOutput)
 
-      val tryPullCtx = () ⇒ if (nextSlot != -1) pull(ctxIn)
+      val tryPullCtx = () ⇒ if (nextSlot != -1 && !hasBeenPulled(ctxIn)) pull(ctxIn)
 
       override def preStart(): Unit = {
         pull(ctxIn)
