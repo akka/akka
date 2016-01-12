@@ -44,6 +44,43 @@ object OSGi {
 
   val remote = exports(Seq("akka.remote.*"))
 
+  val parsing = exports(Seq("akka.parboiled2.*", "akka.shapeless.*"),
+    imports = Seq(optionalResolution("scala.quasiquotes")))
+
+  val httpCore = exports(Seq("akka.http.*"),
+    imports = Seq(streamAndHttpImport("akka.stream.*"),
+      streamAndHttpImport("akka.parboiled2.*"),
+      streamAndHttpImport("akka.shapeless.*")))
+
+  val http = exports(Seq("akka.http.impl.server",
+    "akka.http.scaladsl.server.*", "akka.http.javadsl.server.*",
+    "akka.http.scaladsl.client", "akka.http.scaladsl.coding", "akka.http.scaladsl.common",
+    "akka.http.scaladsl.marshalling", "akka.http.scaladsl.unmarshalling"),
+    imports = Seq(streamAndHttpImport("akka.stream.*"),
+      streamAndHttpImport("akka.http.*"),
+      streamAndHttpImport("akka.parboiled2.*")))
+
+  val httpTestkit = exports(Seq("akka.http.scaladsl.testkit.*", "akka.http.javadsl.testkit.*"),
+    imports = Seq(streamAndHttpImport("akka.stream.*"),
+      streamAndHttpImport("akka.http.*")))
+
+  val httpSprayJson = exports(Seq("akka.http.scaladsl.marshallers.sprayjson"),
+    imports = Seq(streamAndHttpImport("akka.stream.*"),
+      streamAndHttpImport("akka.http.*")))
+
+  val httpXml = exports(Seq("akka.http.scaladsl.marshallers.xml"),
+    imports = Seq(streamAndHttpImport("akka.stream.*"),
+      streamAndHttpImport("akka.http.*")))
+
+  val httpJackson = exports(Seq("akka.http.javadsl.marshallers.jackson"),
+    imports = Seq(streamAndHttpImport("akka.stream.*"),
+      streamAndHttpImport("akka.http.*")))
+
+  val stream = exports(Seq("akka.stream.*"))
+
+  val streamTestkit = exports(Seq("akka.stream.testkit.*"),
+    imports = Seq(streamAndHttpImport("akka.stream.*")))
+
   val slf4j = exports(Seq("akka.event.slf4j.*"))
 
   val persistence = exports(Seq("akka.persistence.*"),
@@ -65,6 +102,7 @@ object OSGi {
   )
   def defaultImports(scalaVersion: String) = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(scalaVersion), "*")
   def akkaImport(packageName: String = "akka.*") = versionedImport(packageName, "2.4", "2.5")
+  def streamAndHttpImport(packageName: String) = versionedImport(packageName, "2.0", "2.4") // TODO not sure about the range
   def configImport(packageName: String = "com.typesafe.config.*") = versionedImport(packageName, "1.3.0", "1.4.0")
   def scalaImport(version: String) = {
     val packageName = "scala.*"
