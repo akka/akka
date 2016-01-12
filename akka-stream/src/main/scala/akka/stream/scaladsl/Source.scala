@@ -237,14 +237,10 @@ object Source {
   /**
    * Create a `Source` that will continually emit the given element.
    */
-  def repeat[T](element: T): Source[T, Unit] =
-    single(new immutable.Iterable[T] {
-      override val iterator: Iterator[T] = Iterator.continually(element)
-
-      override def toString: String = "repeat(" + element + ")"
-    })
-      .mapConcat(ConstantFun.scalaIdentityFunction)
-      .withAttributes(DefaultAttributes.repeat)
+  def repeat[T](element: T): Source[T, Unit] = {
+    val next = Some((element, element))
+    unfold(element)(_ => next).withAttributes(DefaultAttributes.repeat)
+  }
 
   /**
    * Create a `Source` that will unfold a value of type `S` into
