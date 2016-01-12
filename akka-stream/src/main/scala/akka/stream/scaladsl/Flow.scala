@@ -752,6 +752,26 @@ trait FlowOps[+Out, +Mat] {
   }
 
   /**
+   * Filters our consecutive duplicated elements from the stream.
+   *
+   * Examples:
+   *
+   * {{{
+   *   var nums = Source(List(1,1,1,2,2,1,1))
+   *   nums.dedupe   // 1, 2, 1
+   * }}}
+   *
+   * '''Emits when''' upstream emits element distinct from element emitted previously
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def dedupe: Repr[Out] = via(new Dedupe())
+
+  /**
    * Intersperses stream with provided element, similar to how [[scala.collection.immutable.List.mkString]]
    * injects a separator between a List's elements.
    *

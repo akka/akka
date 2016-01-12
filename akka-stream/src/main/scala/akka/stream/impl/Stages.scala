@@ -43,6 +43,7 @@ private[stream] object Stages {
     val scan = name("scan")
     val fold = name("fold")
     val intersperse = name("intersperse")
+    val dedupe = name("dedupe")
     val buffer = name("buffer")
     val conflate = name("conflate")
     val expand = name("expand")

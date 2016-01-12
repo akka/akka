@@ -7,6 +7,7 @@ import akka.event.Logging.LogLevel
 import akka.event.{ LogSource, Logging, LoggingAdapter }
 import akka.stream.Attributes.{ InputBuffer, LogLevels }
 import akka.stream.DelayOverflowStrategy.EmitEarly
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ FixedSizeBuffer, BoundedBuffer, ReactiveStreamsCompliance }
 import akka.stream.stage._
@@ -278,6 +279,39 @@ final case class Intersperse[T](start: Option[T], inject: T, end: Option[T]) ext
     setHandler(in, startInHandler)
     setHandler(out, outHandler)
   }
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] final case class Dedupe[T]() extends GraphStage[FlowShape[T, T]] {
+  private val in = Inlet[T]("Dedupe.in")
+  private val out = Outlet[T]("Dedupe.out")
+
+  override def shape: FlowShape[T, T] = FlowShape(in, out)
+  override def initialAttributes = DefaultAttributes.dedupe
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+    var last: Any = null
+    val inHandler = new InHandler {
+      override def onPush(): Unit = {
+        val elem = grab(in)
+        if (elem != last) {
+          last = elem
+          push(out, elem)
+        } else pull(in)
+      }
+    }
+
+    val outHandler = new OutHandler {
+      override def onPull(): Unit = pull(in)
+    }
+
+    setHandler(in, inHandler)
+    setHandler(out, outHandler)
+  }
+
+  override def toString = "Dedupe"
 }
 
 /**
