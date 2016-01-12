@@ -284,6 +284,11 @@ object Flow {
   def apply[T]: Flow[T, T, NotUsed] = identity.asInstanceOf[Flow[T, T, NotUsed]]
 
   /**
+   * Helper to create `Flow` from a function.
+   */
+  def fromFunction[A, B](f: A ⇒ B): Flow[A, B, NotUsed] = apply[A].map(f)
+
+  /**
    * A graph with the shape of a flow logically is a flow, this method makes
    * it so also in type.
    */
