@@ -80,7 +80,7 @@ private[http] object Websocket {
       }
     }
 
-    /** Collects user-level API messages from MessageDataParts */
+    /* Collects user-level API messages from MessageDataParts */
     val collectMessage: Flow[MessageDataPart, Message, Unit] =
       Flow[MessageDataPart]
         .prefixAndTail(1)
@@ -178,7 +178,6 @@ private[http] object Websocket {
       setHandler(user, ignoreTerminateOutput)
 
       override def preStart(): Unit = {
-        super.preStart()
         pullIn()
       }
     }
