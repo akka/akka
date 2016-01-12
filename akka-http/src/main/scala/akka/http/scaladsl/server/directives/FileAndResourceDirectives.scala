@@ -83,7 +83,7 @@ trait FileAndResourceDirectives {
   def getFromResource(resourceName: String, contentType: ContentType, classLoader: ClassLoader = defaultClassLoader): Route =
     if (!resourceName.endsWith("/"))
       get {
-        Option(classLoader.getResource(resourceName)) flatMap ResourceFile.apply match {
+        Option(classLoader.getResource(resourceName)).flatMap(r ⇒ ResourceFile(r, classLoader)) match {
           case Some(ResourceFile(url, length, lastModified)) ⇒
             conditionalFor(length, lastModified) {
               if (length > 0) {
@@ -204,7 +204,7 @@ object FileAndResourceDirectives extends FileAndResourceDirectives {
   }
 
   object ResourceFile {
-    def apply(url: URL): Option[ResourceFile] = url.getProtocol match {
+    def apply(url: URL, classLoader: ClassLoader): Option[ResourceFile] = url.getProtocol match {
       case "file" ⇒
         val file = new File(url.toURI)
         if (file.isDirectory) None
@@ -222,7 +222,18 @@ object FileAndResourceDirectives extends FileAndResourceDirectives {
             ResourceFile(url, entry.getSize, entry.getTime)
           }
         } finally jar.close()
-      case _ ⇒ None
+      case proto ⇒
+        // In OSGi trailing slashes refer to directories. If url already ended with a slash, we wouldn't get here.
+        def isBundleDir = classLoader.getResource(url.getPath + "/") != null
+        if (!proto.equals("bundle") || !isBundleDir) {
+          val conn = url.openConnection()
+          try {
+            conn.setUseCaches(false) // otherwise the JDK will keep the connection open when we close
+            val len = conn.getContentLength
+            val lm = conn.getLastModified
+            Some(ResourceFile(url, len, lm))
+          } finally conn.getInputStream.close() // conn might have already opened the stream
+        } else None
     }
   }
   case class ResourceFile(url: URL, length: Long, lastModified: Long)
