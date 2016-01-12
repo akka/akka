@@ -75,8 +75,8 @@ private[http] object OutgoingConnectionBlueprint {
         case (Seq(MessageEnd), remaining) ⇒
           SubSource.kill(remaining)
           false
-        case _ ⇒
-          true
+        case (seq, _) ⇒
+          seq.nonEmpty
       }
       .map {
         case (Seq(ResponseStart(statusCode, protocol, headers, createEntity, _)), entityParts) ⇒

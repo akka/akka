@@ -77,7 +77,9 @@ private[http] object HttpServerBluePrint {
       Flow[RequestOutput]
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
         .prefixAndTail(1)
-        .map(p ⇒ p._1.head -> p._2)
+        .collect {
+          case (seq, rest) if seq.nonEmpty ⇒ seq.head -> rest
+        }
         .concatSubstreams
         .via(requestStartOrRunIgnore(settings)))
 
