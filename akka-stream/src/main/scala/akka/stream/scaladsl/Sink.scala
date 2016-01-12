@@ -31,6 +31,8 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
 
   override val shape: SinkShape[In] = module.shape.asInstanceOf[SinkShape[In]]
 
+  def contramap[In2](f: In2 ⇒ In): Sink[In2, Mat] = Flow.fromFunction(f).toMat(this)(Keep.right)
+
   /**
    * Connect this `Sink` to a `Source` and run it. The returned value is the materialized value
    * of the `Source`, e.g. the `Subscriber` of a [[Source#subscriber]].
