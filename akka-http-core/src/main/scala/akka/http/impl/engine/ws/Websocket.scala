@@ -86,8 +86,8 @@ private[http] object Websocket {
     val collectMessage: Flow[MessageDataPart, Message, Unit] =
       Flow[MessageDataPart]
         .prefixAndTail(1)
-        .map {
-          case (seq, remaining) ⇒ seq.head match {
+        .collect {
+          case (seq, remaining) if seq.nonEmpty ⇒ seq.head match {
             case TextMessagePart(text, true) ⇒
               SubSource.kill(remaining)
               TextMessage.Strict(text)
@@ -172,7 +172,7 @@ private[http] object Websocket {
           }
         }
       })
-      val pullIn = () ⇒ pull(in)
+      val pullIn = () ⇒ tryPull(in)
 
       setHandler(bypass, eagerTerminateOutput)
       setHandler(user, ignoreTerminateOutput)
