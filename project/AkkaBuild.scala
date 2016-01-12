@@ -41,6 +41,7 @@ object AkkaBuild extends Build {
   val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.5")
   val Seq(scalaEpoch, scalaMajor) = """(\d+)\.(\d+)\..*""".r.unapplySeq(requestedScalaVersion).get.map(_.toInt)
   val streamAndHttpVersion = "2.0.1"
+  val streamAndHttpBinCompVersion = "2.0.1"
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
@@ -235,7 +236,8 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.remote,
       // disable parallel tests
       parallelExecution in Test := false,
-      previousArtifact := akkaPreviousArtifact("akka-remote")
+      previousArtifact := akkaPreviousArtifact("akka-remote"),
+      binaryIssueFilters ++= MimaIgnoredProblems.akkaRemote
     )
   )
 
@@ -371,9 +373,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.httpCore ++ Seq(
       version := streamAndHttpVersion,
       Dependencies.httpCore,
-      // FIXME include mima when akka-http-core-2.3.x is released
-      //previousArtifact := akkaPreviousArtifact("akka-http-core-experimental")
-      previousArtifact := None
+      previousArtifact := akkaPreviousArtifact("akka-http-core-experimental", version = streamAndHttpBinCompVersion)
     )
     ++ (if (GenJavaDocEnabled) Seq(
       // genjavadoc needs to generate synthetic methods since the java code uses them
@@ -393,9 +393,7 @@ object AkkaBuild extends Build {
         Seq(
           version := streamAndHttpVersion,
           Dependencies.http,
-          // FIXME include mima when akka-http-scala-2.3.x is released
-          //previousArtifact := akkaPreviousArtifact("akka-http-scala")
-          previousArtifact := None,
+          previousArtifact := akkaPreviousArtifact("akka-http-experimental", version = streamAndHttpBinCompVersion),
           scalacOptions in Compile += "-language:_"
         )
   )
@@ -410,9 +408,7 @@ object AkkaBuild extends Build {
         Seq(
           version := streamAndHttpVersion,
           libraryDependencies ++= Dependencies.httpTestkit,
-          // FIXME include mima when akka-http-scala-2.3.x is released
-          //previousArtifact := akkaPreviousArtifact("akka-http-testkit-scala")
-          previousArtifact := None,
+          previousArtifact := akkaPreviousArtifact("akka-http-testkit-experimental", version = streamAndHttpBinCompVersion),
           scalacOptions in Compile  += "-language:_"
         )
   )
@@ -435,7 +431,8 @@ object AkkaBuild extends Build {
     id = "akka-http-marshallers-scala-experimental",
     base = file("akka-http-marshallers-scala"),
     settings = parentSettings ++ Seq(
-      version := streamAndHttpVersion
+      version := streamAndHttpVersion,
+      previousArtifact := akkaPreviousArtifact("akka-http-marshallers-scala-experimental", version = streamAndHttpBinCompVersion)
     )
   ).aggregate(httpSprayJson, httpXml)
 
@@ -455,7 +452,8 @@ object AkkaBuild extends Build {
       base = file(s"akka-http-marshallers-scala/akka-http-$name"),
       dependencies = Seq(http),
       settings = defaultSettings ++ formatSettings ++ Seq(
-        version := streamAndHttpVersion
+        version := streamAndHttpVersion,
+        previousArtifact := akkaPreviousArtifact(s"akka-http-$name-experimental", version = streamAndHttpBinCompVersion)
       )
     )
 
@@ -464,7 +462,8 @@ object AkkaBuild extends Build {
     id = "akka-http-marshallers-java-experimental",
     base = file("akka-http-marshallers-java"),
     settings = defaultSettings ++ parentSettings ++ Seq(
-      version := streamAndHttpVersion
+      version := streamAndHttpVersion,
+      previousArtifact := akkaPreviousArtifact("akka-http-marshallers-java-experimental", version = streamAndHttpBinCompVersion)
     )
   ).aggregate(httpJackson)
 
@@ -479,7 +478,8 @@ object AkkaBuild extends Build {
       base = file(s"akka-http-marshallers-java/akka-http-$name"),
       dependencies = Seq(http),
       settings = defaultSettings ++ formatSettings ++ Seq(
-        version := streamAndHttpVersion
+        version := streamAndHttpVersion,
+        previousArtifact := akkaPreviousArtifact(s"akka-http-$name-experimental", version = streamAndHttpBinCompVersion)
       )
     )
 
@@ -536,9 +536,7 @@ object AkkaBuild extends Build {
       scalacOptions += "-language:_",
       // ScalaDoc doesn't like the macros
       sources in doc in Compile := List(),
-      // FIXME include mima when akka-http-core-2.3.x is released
-      //previousArtifact := akkaPreviousArtifact("akka-parsing-experimental")
-      previousArtifact := None
+      previousArtifact := akkaPreviousArtifact("akka-parsing-experimental", version = streamAndHttpBinCompVersion)
     )
   )
 
@@ -549,9 +547,8 @@ object AkkaBuild extends Build {
       spray.boilerplate.BoilerplatePlugin.Boilerplate.settings ++ Seq(
       version := streamAndHttpVersion,
       libraryDependencies ++= Dependencies.stream,
-      // FIXME include mima when akka-stream-experimental-2.3.x has been released
-      //previousArtifact := akkaPreviousArtifact("akka-stream-experimental")
-      previousArtifact := None
+      previousArtifact := akkaPreviousArtifact("akka-stream-experimental", version = streamAndHttpBinCompVersion),
+      binaryIssueFilters ++= MimaIgnoredProblems.akkaStream
     )
   )
 
@@ -562,7 +559,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.streamTestkit ++ Seq(
       version := streamAndHttpVersion,
       libraryDependencies ++= Dependencies.streamTestkit,
-      previousArtifact := None
+      previousArtifact := akkaPreviousArtifact("akka-stream-testkit-experimental", version = streamAndHttpBinCompVersion)
     )
   )
 
@@ -572,8 +569,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(streamTestkit % "test->test", stream),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ Seq(
       version := streamAndHttpVersion,
-      libraryDependencies ++= Dependencies.streamTest,
-      previousArtifact := None
+      libraryDependencies ++= Dependencies.streamTest
     )
   )
 
@@ -1126,9 +1122,9 @@ object AkkaBuild extends Build {
         .map(dirName => file(dirName.trim))
     },
 
-    validatePullRequestTask
+    validatePullRequestTask,
     // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
-    //validatePullRequest <<= validatePullRequest.dependsOn(reportBinaryIssues)
+    validatePullRequest <<= validatePullRequest.dependsOn(reportBinaryIssues)
 
   ) ++ mavenLocalResolverSettings ++ JUnitFileReporting.settings ++ StatsDMetrics.settings
 
@@ -1311,9 +1307,10 @@ object AkkaBuild extends Build {
     }
   }
 
-  lazy val mimaIgnoredProblems = {
+  object MimaIgnoredProblems {
     import com.typesafe.tools.mima.core._
-    Seq(
+
+    val akkaRemote = Seq(
       // add filters here, see release-2.2 branch
       FilterAnyProblem("akka.remote.testconductor.Terminate"),
       FilterAnyProblem("akka.remote.testconductor.TerminateMsg"),
@@ -1332,12 +1329,12 @@ object AkkaBuild extends Build {
       ProblemFilters.exclude[MissingTypesProblem]("akka.remote.ReliableDeliverySupervisor$GotUid$"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor#GotUid.apply")
     )
+
+    val akkaStream = Seq()
   }
 
   lazy val mimaSettings = mimaDefaultSettings ++ Seq(
-    // MiMa
-    previousArtifact := None,
-    binaryIssueFilters ++= mimaIgnoredProblems
+    previousArtifact := None
   )
 
   def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.3.0",
