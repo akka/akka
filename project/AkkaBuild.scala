@@ -257,7 +257,7 @@ object AkkaBuild extends Build {
     base = file("akka-http-core"),
     dependencies = Seq(stream, parsing, streamTestkit % "test->test"),
     settings = defaultSettings
-  )
+  ).disablePlugins(Unidoc) // TODO remove me
 
   lazy val http = Project(
     id = "akka-http-experimental",
