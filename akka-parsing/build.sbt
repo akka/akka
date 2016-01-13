@@ -1,4 +1,4 @@
-import akka.{ AkkaBuild, Dependencies, Formatting, SphinxDoc }
+import akka._
 import akka.ValidatePullRequest._
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import com.typesafe.sbt.SbtSite.site
@@ -12,6 +12,8 @@ AkkaBuild.defaultSettings
 Formatting.docFormatSettings
 
 site.settings
+
+OSGi.parsing
 
 Dependencies.parsing
 
