@@ -13,10 +13,10 @@ import akka.japi.pf.ReceiveBuilder;
 //#imports
 
 //#my-actor
-public class MyActor extends AbstractActor {
+public class MyJavaActor extends AbstractActor {
   private final LoggingAdapter log = Logging.getLogger(context().system(), this);
 
-  public MyActor() {
+  public MyJavaActor() {
     receive(ReceiveBuilder.
       match(String.class, s -> {
         log.info("Received String message: {}", s);
