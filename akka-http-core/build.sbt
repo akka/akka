@@ -10,3 +10,5 @@ OSGi.httpCore
 Dependencies.httpCore
 
 MimaKeys.previousArtifacts := akkaStreamAndHttpPreviousArtifacts("akka-http-core").value
+
+disablePlugins(Unidoc) // TODO remove me
