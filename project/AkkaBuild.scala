@@ -62,7 +62,11 @@ object AkkaBuild extends Build {
     ),
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel,
       cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
-      slf4j, agent, persistence, persistenceQuery, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit, benchJmh, typed, protobuf)
+      slf4j, agent, persistence, persistenceQuery, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit, benchJmh, typed, protobuf,
+      // streamAndHttp, // does not seem to work
+      stream, streamTestkit, streamTests, streamTestsTck,
+      httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests
+    )
   )
 
   lazy val akkaScalaNightly = Project(
@@ -73,7 +77,9 @@ object AkkaBuild extends Build {
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel,
       cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
       slf4j, persistence, persistenceQuery, persistenceTck, kernel, osgi, contrib, multiNodeTestkit, benchJmh, typed, protobuf,
-      streamAndHttp
+      // streamAndHttp, // does not seem to work
+      stream, streamTestkit, streamTests, streamTestsTck,
+      httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests
     )
   ).disablePlugins(ValidatePullRequest)
 
@@ -103,7 +109,12 @@ object AkkaBuild extends Build {
   lazy val benchJmh = Project(
     id = "akka-bench-jmh",
     base = file("akka-bench-jmh"),
-    dependencies = Seq(actor, persistence, distributedData, testkit).map(_ % "compile;compile->test;provided->provided")
+    dependencies = Seq(
+      actor,
+      http, stream, streamTests,
+      persistence, distributedData,
+      testkit
+    ).map(_ % "compile;compile->test;provided->provided")
   ).disablePlugins(ValidatePullRequest)
 
   lazy val protobuf = Project(
@@ -235,7 +246,7 @@ object AkkaBuild extends Build {
       httpCore,
       http,
       httpTestkit,
-      httpTests, httpTestsJava8,
+      httpTests,
       httpMarshallersScala, httpMarshallersJava
     )
   )
@@ -289,7 +300,21 @@ object AkkaBuild extends Build {
     settings =
       defaultSettings ++ Seq(
           publishArtifact := false,
-          scalacOptions in Compile  += "-language:_"
+          scalacOptions in Compile  += "-language:_",
+          // test discovery is broken when sbt isn't run with a Java 8 compatible JVM, so we define a single
+          // Suite where all tests need to be registered
+          definedTests in Test := {
+            def pseudoJUnitRunWithFingerprint =
+              // we emulate a junit-interface fingerprint here which cannot be accessed statically
+              new sbt.testing.AnnotatedFingerprint {
+                def annotationName = "org.junit.runner.RunWith"
+                def isModule = false
+              }
+            Seq(new TestDefinition("AllJavaTests", pseudoJUnitRunWithFingerprint, false, Array.empty))
+          },
+          // don't ignore Suites which is the default for the junit-interface
+          testOptions += Tests.Argument(TestFrameworks.JUnit, "--ignore-runners="),
+          mainClass in run in Test := Some("akka.http.javadsl.SimpleServerApp")
         )
   )
 
@@ -332,47 +357,10 @@ object AkkaBuild extends Build {
       settings = defaultSettings
     )
 
-  lazy val httpTestsJava8 = Project(
-    id = "akka-http-tests-java8-experimental",
-    base = file("akka-http-tests-java8"),
-    dependencies = Seq(http, httpJackson, httpTestkit % "test"),
-    settings =
-      defaultSettings ++
-        Seq(
-          publishArtifact := false,
-          Dependencies.httpTestsJava8,
-          fork in run := true,
-          connectInput := true,
-          javacOptions in compile := Seq("-source", "8"),
-          fork in Test := true,
-          // test discovery is broken when sbt isn't run with a Java 8 compatible JVM, so we define a single
-          // Suite where all tests need to be registered
-          definedTests in Test := {
-            def pseudoJUnitRunWithFingerprint =
-              // we emulate a junit-interface fingerprint here which cannot be accessed statically
-              new sbt.testing.AnnotatedFingerprint {
-                def annotationName = "org.junit.runner.RunWith"
-                def isModule = false
-              }
-            Seq(new TestDefinition("AllJavaTests", pseudoJUnitRunWithFingerprint, false, Array.empty))
-          },
-          // don't ignore Suites which is the default for the junit-interface
-          testOptions += Tests.Argument(TestFrameworks.JUnit, "--ignore-runners="),
-          mainClass in run in Test := Some("akka.http.javadsl.SimpleServerApp")
-        )
-  )
-
-  lazy val macroParadise = Seq(
-    DependencyHelpers.versionDependentDeps(
-      Dependencies.Compile.scalaReflect % "provided"
-    ),
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
-  )
-
   lazy val parsing = Project(
     id = "akka-parsing-experimental",
     base = file("akka-parsing"),
-    settings = defaultSettings ++ OSGi.parsing ++ macroParadise ++ Seq(
+    settings = defaultSettings ++ Seq(
       scalacOptions += "-language:_",
       // ScalaDoc doesn't like the macros
       sources in doc in Compile := List()
