@@ -62,7 +62,7 @@ private[http] object Websocket {
    */
   def messageAPI(serverSide: Boolean,
                  closeTimeout: FiniteDuration): BidiFlow[FrameHandler.Output, Message, Message, FrameOutHandler.Input, Unit] = {
-    /** Completes this branch of the flow if no more messages are expected and converts close codes into errors */
+    /* Completes this branch of the flow if no more messages are expected and converts close codes into errors */
     class PrepareForUserHandler extends PushStage[MessagePart, MessagePart] {
       var inMessage = false
       def onPush(elem: MessagePart, ctx: Context[MessagePart]): SyncDirective = elem match {
@@ -80,7 +80,7 @@ private[http] object Websocket {
       }
     }
 
-    /** Collects user-level API messages from MessageDataParts */
+    /* Collects user-level API messages from MessageDataParts */
     val collectMessage: Flow[MessageDataPart, Message, Unit] =
       Flow[MessageDataPart]
         .prefixAndTail(1)
@@ -172,13 +172,12 @@ private[http] object Websocket {
           }
         }
       })
-      val pullIn = () ⇒ pull(in)
+      val pullIn = () ⇒ tryPull(in)
 
       setHandler(bypass, eagerTerminateOutput)
       setHandler(user, ignoreTerminateOutput)
 
       override def preStart(): Unit = {
-        super.preStart()
         pullIn()
       }
     }
