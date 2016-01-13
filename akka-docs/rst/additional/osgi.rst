@@ -14,14 +14,11 @@ These legacy capabilities are OSGi's major strength and it's major weakness. The
 implementors would be unlikely to rush to support OSGi metadata in existing JARs. There were already a handful of new
 concepts to learn in the JRE and the added value to teams that were managing well with straight J2EE was not obvious.
 Facilities emerged to "wrap" binary JARs so they could be used as bundles, but this functionality was only used in limited
-situations. An application of the "80/20 Rule" here would ahve that "80% of the complexity is with 20% of the configuration",
+situations. An application of the "80/20 Rule" here would have that "80% of the complexity is with 20% of the configuration",
 but it was enough to give OSGi a reputation that has stuck with it to this day.
 
-Today, the situation is much different. Most popular artifacts available in open source repositories are instrumented
-with OSGi bundle metadata and are tested and deployed in production environments. Generating the metadata is a reduced
-to a simple build step with permissive defaults via plugins that are available for all popular build tools. Various
-deployment options exist for embedding OSGi in the smallest Java applications (such as for plugin architectures) all
-the way up to enterprise containers with modular (of course!) command lines and comprehensive management interfaces.
+This document aims to the productivity basics folks need to use it with Akka, the 20% that users need to get 80% of what they want.
+For more information than is provided here, `OSGi In Action <https://www.manning.com/books/osgi-in-action>`_ is worth exploring.
 
 Core Components and Structure of OSGi Applications
 --------------------------------------------------
@@ -29,7 +26,7 @@ Core Components and Structure of OSGi Applications
 The fundamental unit of deployment in OSGi is the ``Bundle``. A bundle is a Java JAR with `additional
 entries <https://www.osgi.org/bundle-headers-reference/>` in ``MANIFEST.MF`` that minimally expose the name and version
 of the bundle and packages for import and export. Since these manifest entries are ignored outside OSGi deployments,
-a bundle can interchangably be used as a JAR in the JRE.
+a bundle can interchangeably be used as a JAR in the JRE.
 
 When a bundle is loaded, a specialized implementation of the Java ``ClassLoader`` is instantiated for each bundle. Each
 classloader reads the manifest entries and publishes both it's capabilities (in the form of the bundle's exports) and
@@ -46,7 +43,7 @@ FSM of a bundle in an OSGi container:
    mean that a bundle can be started.
 
 3. STARTING: A bundle that is started can be used by other bundles. For an otherwise complete application closure of
-   resolved bundles, the implication here is they must be started in the order dicted by a depth-first search for all to
+   resolved bundles, the implication here is they must be started in the order directed by a depth-first search for all to
    be started. When a bundle is starting, any exposed lifecycle interfaces in the bundle are called, giving the bundle
    the opportunity to start it's own service endpoints and threads.
 
@@ -63,7 +60,7 @@ Note the dependency in this FSM on lifecycle interfaces. While there is no requi
 interfaces or accepts such callbacks, the lifecycle interfaces provide the semantics of a ``main()`` method and allow
 the bundle to start and stop long-running services such as REST web services, ActorSystems, Clusters, etc.
 
-Secondly, note when considering requirements and capabilities, it's a common misconception to equate these with repsoitory
+Secondly, note when considering requirements and capabilities, it's a common misconception to equate these with repository
 dependencies as might be found in Maven or Ivy. While they provide similar practical functionality, OSGi has several
 parallel type of dependency (such as Blueprint Services) that cannot be easily mapped to repository capabilities. In fact,
 the core specification leaves these facilities up to the container in use. In turn, some containers have tooling to generate
