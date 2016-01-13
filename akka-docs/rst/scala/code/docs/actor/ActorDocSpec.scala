@@ -21,21 +21,16 @@ import akka.util._
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
-object x {
+//#my-actor
+class MyActor extends Actor {
+  val log = Logging(context.system, this)
 
-  //#my-actor
-  class MyActor extends Actor {
-    val log = Logging(context.system, this)
-
-    def receive = {
-      case "test" => log.info("received test")
-      case _      => log.info("received unknown message")
-    }
+  def receive = {
+    case "test" => log.info("received test")
+    case _      => log.info("received unknown message")
   }
-
-  //#my-actor
 }
-import x._
+//#my-actor
 
 final case class DoIt(msg: ImmutableMessage)
 final case class Message(s: String)

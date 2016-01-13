@@ -8,12 +8,12 @@ import java.io.File
 import _root_.akka.http.scaladsl.model.Uri
 import _root_.akka.stream._
 import _root_.akka.stream.scaladsl._
-import _root_.akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
-import _root_.akka.stream.testkit.{AkkaSpec, TestPublisher, TestSubscriber}
+import _root_.akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import _root_.akka.stream.testkit.{ AkkaSpec, TestPublisher, TestSubscriber }
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Random, Success, Try}
+import scala.concurrent.{ ExecutionContext, Future, Promise }
+import scala.util.{ Failure, Random, Success, Try }
 
 class MigrationsScala extends AkkaSpec {
 
