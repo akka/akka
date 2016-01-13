@@ -371,6 +371,11 @@ private[http] object HttpServerBluePrint {
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
       import akka.http.impl.engine.rendering.ResponseRenderingOutput._
 
+      /*
+       * These handlers are in charge until a switch command comes in, then they
+       * are replaced.
+       */
+
       setHandler(fromHttp, new InHandler {
         override def onPush(): Unit =
           grab(fromHttp) match {
@@ -381,21 +386,22 @@ private[http] object HttpServerBluePrint {
               cancel(fromHttp)
               switchToWebsocket(handlerFlow)
           }
+        override def onUpstreamFinish(): Unit = complete(toNet)
+        override def onUpstreamFailure(ex: Throwable): Unit = fail(toNet, ex)
       })
       setHandler(toNet, new OutHandler {
         override def onPull(): Unit = pull(fromHttp)
+        override def onDownstreamFinish(): Unit = completeStage()
       })
 
       setHandler(fromNet, new InHandler {
-        def onPush(): Unit = push(toHttp, grab(fromNet))
-
-        // propagate error but don't close stage yet to prevent fromHttp/fromWs being cancelled
-        // too eagerly
+        override def onPush(): Unit = push(toHttp, grab(fromNet))
+        override def onUpstreamFinish(): Unit = complete(toHttp)
         override def onUpstreamFailure(ex: Throwable): Unit = fail(toHttp, ex)
       })
       setHandler(toHttp, new OutHandler {
         override def onPull(): Unit = pull(fromNet)
-        override def onDownstreamFinish(): Unit = ()
+        override def onDownstreamFinish(): Unit = cancel(fromNet)
       })
 
       private var activeTimers = 0
@@ -438,13 +444,22 @@ private[http] object HttpServerBluePrint {
 
         sinkIn.setHandler(new InHandler {
           override def onPush(): Unit = push(toNet, sinkIn.grab())
+          override def onUpstreamFinish(): Unit = complete(toNet)
+          override def onUpstreamFailure(ex: Throwable): Unit = fail(toNet, ex)
         })
         setHandler(toNet, new OutHandler {
           override def onPull(): Unit = sinkIn.pull()
+          override def onDownstreamFinish(): Unit = {
+            completeStage()
+            sinkIn.cancel()
+            sourceOut.complete()
+          }
         })
 
         setHandler(fromNet, new InHandler {
           override def onPush(): Unit = sourceOut.push(grab(fromNet).bytes)
+          override def onUpstreamFinish(): Unit = sourceOut.complete()
+          override def onUpstreamFailure(ex: Throwable): Unit = sourceOut.fail(ex)
         })
         sourceOut.setHandler(new OutHandler {
           override def onPull(): Unit = {
@@ -454,6 +469,7 @@ private[http] object HttpServerBluePrint {
               override def onPull(): Unit = if (!hasBeenPulled(fromNet)) pull(fromNet)
             })
           }
+          override def onDownstreamFinish(): Unit = cancel(fromNet)
         })
 
         Websocket.framing.join(frameHandler).runWith(sourceOut.source, sinkIn.sink)(subFusingMaterializer)

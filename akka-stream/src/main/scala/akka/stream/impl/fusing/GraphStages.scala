@@ -105,6 +105,89 @@ object GraphStages {
   private val _detacher = new Detacher[Any]
   def detacher[T]: GraphStage[FlowShape[T, T]] = _detacher.asInstanceOf[GraphStage[FlowShape[T, T]]]
 
+  final class Breaker(callback: Breaker.Operation ⇒ Unit) {
+    import Breaker._
+    def complete(): Unit = callback(Complete)
+    def fail(ex: Throwable): Unit = callback(Fail(ex))
+  }
+
+  object Breaker extends GraphStageWithMaterializedValue[FlowShape[Any, Any], Future[Breaker]] {
+    sealed trait Operation
+    case object Complete extends Operation
+    case class Fail(ex: Throwable) extends Operation
+
+    override val initialAttributes = Attributes.name("breaker")
+    override val shape = FlowShape(Inlet[Any]("breaker.in"), Outlet[Any]("breaker.out"))
+
+    override def createLogicAndMaterializedValue(attr: Attributes) = {
+      val promise = Promise[Breaker]
+
+      val logic = new GraphStageLogic(shape) {
+
+        passAlong(shape.in, shape.out)
+        setHandler(shape.out, eagerTerminateOutput)
+
+        override def preStart(): Unit = {
+          pull(shape.in)
+          promise.success(new Breaker(getAsyncCallback[Operation] {
+            case Complete ⇒ completeStage()
+            case Fail(ex) ⇒ failStage(ex)
+          }.invoke))
+        }
+      }
+
+      (logic, promise.future)
+    }
+  }
+
+  def breaker[T]: Graph[FlowShape[T, T], Future[Breaker]] = Breaker.asInstanceOf[Graph[FlowShape[T, T], Future[Breaker]]]
+
+  object BidiBreaker extends GraphStageWithMaterializedValue[BidiShape[Any, Any, Any, Any], Future[Breaker]] {
+    import Breaker._
+
+    override val initialAttributes = Attributes.name("breaker")
+    override val shape = BidiShape(
+      Inlet[Any]("breaker.in1"), Outlet[Any]("breaker.out1"),
+      Inlet[Any]("breaker.in2"), Outlet[Any]("breaker.out2"))
+
+    override def createLogicAndMaterializedValue(attr: Attributes) = {
+      val promise = Promise[Breaker]
+
+      val logic = new GraphStageLogic(shape) {
+
+        setHandler(shape.in1, new InHandler {
+          override def onPush(): Unit = push(shape.out1, grab(shape.in1))
+          override def onUpstreamFinish(): Unit = complete(shape.out1)
+          override def onUpstreamFailure(ex: Throwable): Unit = fail(shape.out1, ex)
+        })
+        setHandler(shape.in2, new InHandler {
+          override def onPush(): Unit = push(shape.out2, grab(shape.in2))
+          override def onUpstreamFinish(): Unit = complete(shape.out2)
+          override def onUpstreamFailure(ex: Throwable): Unit = fail(shape.out2, ex)
+        })
+        setHandler(shape.out1, new OutHandler {
+          override def onPull(): Unit = pull(shape.in1)
+          override def onDownstreamFinish(): Unit = cancel(shape.in1)
+        })
+        setHandler(shape.out2, new OutHandler {
+          override def onPull(): Unit = pull(shape.in2)
+          override def onDownstreamFinish(): Unit = cancel(shape.in2)
+        })
+
+        override def preStart(): Unit = {
+          promise.success(new Breaker(getAsyncCallback[Operation] {
+            case Complete ⇒ completeStage()
+            case Fail(ex) ⇒ failStage(ex)
+          }.invoke))
+        }
+      }
+
+      (logic, promise.future)
+    }
+  }
+
+  def bidiBreaker[T1, T2]: Graph[BidiShape[T1, T1, T2, T2], Future[Breaker]] = BidiBreaker.asInstanceOf[Graph[BidiShape[T1, T1, T2, T2], Future[Breaker]]]
+
   private object TickSource {
     class TickSourceCancellable(cancelled: AtomicBoolean) extends Cancellable {
       private val cancelPromise = Promise[Unit]()
