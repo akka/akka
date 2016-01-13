@@ -33,7 +33,7 @@ trait ScalaXmlSupport {
 
   /**
    * Provides a SAXParser for the NodeSeqUnmarshaller to use. Override to provide a custom SAXParser implementation.
-   * Will be called once for for every request to be unmarshalled. The default implementation calls [[ScalaXmlSupport.createSaferSAXParser]].
+   * Will be called once for for every request to be unmarshalled. The default implementation calls `ScalaXmlSupport.createSaferSAXParser`.
    */
   protected def createSAXParser(): SAXParser = ScalaXmlSupport.createSaferSAXParser()
 }

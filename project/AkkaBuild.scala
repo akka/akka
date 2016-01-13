@@ -16,6 +16,7 @@ import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import sbt.Keys._
 import sbt._
 import sbtunidoc.Plugin.ScalaUnidoc
+import sbtunidoc.Plugin.JavaUnidoc
 import sbtunidoc.Plugin.UnidocKeys._
 
 object AkkaBuild extends Build {
@@ -40,6 +41,7 @@ object AkkaBuild extends Build {
     base = file("."),
     settings = parentSettings ++ Release.settings ++
       SphinxDoc.akkaSettings ++ Dist.settings ++ s3Settings ++
+      UnidocRoot.akkaSettings ++
       Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
       Dist.distExclude := Seq(actorTests.id, docs.id, samples.id, osgi.id),
@@ -65,7 +67,8 @@ object AkkaBuild extends Build {
       slf4j, agent, persistence, persistenceQuery, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit, benchJmh, typed, protobuf,
       // streamAndHttp, // does not seem to work
       stream, streamTestkit, streamTests, streamTestsTck,
-      httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests
+      httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests, httpTestkit,
+      docsDev // TODO merge with `docs`
     )
   )
 
@@ -79,7 +82,8 @@ object AkkaBuild extends Build {
       slf4j, persistence, persistenceQuery, persistenceTck, kernel, osgi, contrib, multiNodeTestkit, benchJmh, typed, protobuf,
       // streamAndHttp, // does not seem to work
       stream, streamTestkit, streamTests, streamTestsTck,
-      httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests
+      httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests, httpTestkit,
+      docsDev // TODO merge with `docs`
     )
   ).disablePlugins(ValidatePullRequest)
 
@@ -216,14 +220,11 @@ object AkkaBuild extends Build {
       SphinxDoc.akkaSettings ++
       Dist.settings ++
       Protobuf.settings ++ Seq(
-      unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject,
       Dist.distExclude := Seq(),
       //      testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository"
-      //      sources in JavaDoc <<= junidocSources,
-
-      // javacOptions in JavaDoc ++= Seq("-Xdoclint:none"), TODO likely still needed
+//     javacOptions in JavaDoc ++= Seq("-Xdoclint:none"), TODO likely still needed
       //      artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
       //      packageDoc in Compile <<= packageDoc in JavaDoc,
 
@@ -256,13 +257,6 @@ object AkkaBuild extends Build {
     base = file("akka-http-core"),
     dependencies = Seq(stream, parsing, streamTestkit % "test->test"),
     settings = defaultSettings
-//      ++ (if (GenJavaDocEnabled) Seq(
-//       // genjavadoc needs to generate synthetic methods since the java code uses them
-//      scalacOptions += "-P:genjavadoc:suppressSynthetic=false",
-//       // FIXME: see #18056
-//      sources in JavaDoc ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
-//    ) else Nil
-//      )
   )
 
   lazy val http = Project(
@@ -415,6 +409,13 @@ object AkkaBuild extends Build {
       typed % "compile;test->test", distributedData)
   )
 
+  lazy val docsDev = Project(
+    id = "akka-docs-dev",
+    base = file("akka-docs-dev"),
+    dependencies = Seq(streamTestkit % "test->test", stream, httpCore, http, httpTestkit, httpSprayJson, httpXml),
+    settings = defaultSettings
+  )
+
   lazy val contrib = Project(
     id = "akka-contrib",
     base = file("akka-contrib"),
@@ -541,7 +542,8 @@ object AkkaBuild extends Build {
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
 
-  lazy val defaultSettings = resolverSettings ++ TestExtras.Filter.settings ++
+  lazy val defaultSettings = resolverSettings ++
+    TestExtras.Filter.settings ++
     Protobuf.settings ++ Seq(
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
@@ -551,7 +553,7 @@ object AkkaBuild extends Build {
     // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
     javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked", "-XDignore.symbol.file"),
     javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
-    javacOptions in doc ++= Seq("-encoding", "UTF-8", "-source", "1.8"),
+    javacOptions in doc ++= Seq(),
     incOptions := incOptions.value.withNameHashing(true),
 
     crossVersion := CrossVersion.binary,
@@ -596,7 +598,14 @@ object AkkaBuild extends Build {
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")
   ) ++
     mavenLocalResolverSettings ++
-    JUnitFileReporting.settings
+    JUnitFileReporting.settings ++
+    docLintingSettings
+
+  lazy val docLintingSettings = Seq(
+     javacOptions in compile ++= Seq("-Xdoclint:none"),
+     javacOptions in test ++= Seq("-Xdoclint:none"),
+     javacOptions in doc ++= Seq("-Xdoclint:none")
+   )
 
   def akkaPreviousArtifacts(id: String): Def.Initialize[Set[sbt.ModuleID]] = Def.setting {
     if (enableMiMa) {
