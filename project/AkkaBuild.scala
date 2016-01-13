@@ -243,7 +243,7 @@ object AkkaBuild extends Build {
   lazy val httpCore = Project(
     id = "akka-http-core-experimental",
     base = file("akka-http-core"),
-    dependencies = Seq(parsing, streamTestkit % "test->test", stream),
+    dependencies = Seq(stream, parsing, streamTestkit % "test->test"),
     settings = defaultSettings
 //      ++ (if (GenJavaDocEnabled) Seq(
 //       // genjavadoc needs to generate synthetic methods since the java code uses them
