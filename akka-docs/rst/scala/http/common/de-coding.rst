@@ -12,5 +12,5 @@ The support is not enabled automatically, but must be explicitly requested.
 For enabling message encoding/decoding with :ref:`Routing DSL <http-high-level-server-side-api>` see the :ref:`CodingDirectives`.
 
 .. _HTTP spec: http://tools.ietf.org/html/rfc7231#section-3.1.2.1
-.. _akka.http.scaladsl.coding: https://github.com/akka/akka/tree/release-2.3-dev/akka-http/src/main/scala/akka/http/scaladsl/coding
+.. _akka.http.scaladsl.coding: @github@/akka-http/src/main/scala/akka/http/scaladsl/coding
 
