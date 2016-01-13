@@ -99,6 +99,14 @@ object UnidocRoot extends AutoPlugin {
 
   override def trigger = noTrigger
 
+  val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(Seq(
+    javacOptions in (JavaUnidoc, unidoc) ++= Seq("-Xdoclint:none"), // TODO likely still needed
+    // genjavadoc needs to generate synthetic methods since the java code uses them
+    scalacOptions += "-P:genjavadoc:suppressSynthetic=false",
+    // FIXME: see #18056
+    sources in(JavaUnidoc, unidoc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
+  )).getOrElse(Nil)
+
   def settings(ignoreAggregates: Seq[Project], ignoreProjects: Seq[Project]) = {
     val withoutAggregates = ignoreAggregates.foldLeft(inAnyProject) { _ -- inAggregates(_, transitive = true, includeRoot = true) }
     val docProjectFilter = ignoreProjects.foldLeft(withoutAggregates) { _ -- inProjects(_) }

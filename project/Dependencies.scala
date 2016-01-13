@@ -4,6 +4,7 @@ import sbt._
 import Keys._
 
 object Dependencies {
+  import DependencyHelpers._
 
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
   lazy val scalaStmVersion = settingKey[String]("The version of ScalaSTM to use.")
@@ -20,9 +21,6 @@ object Dependencies {
   object Compile {
     // Compile
 
-    // FIXME: change to project dependency once akka-stream merged to master
-    val akkaStream = "com.typesafe.akka" %% "akka-stream-experimental" % "2.0.1"
-
     val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.13.4" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
@@ -30,14 +28,33 @@ object Dependencies {
     val netty         = "io.netty"                    % "netty"                        % "3.10.3.Final" // ApacheV2
     val scalaStm      = Def.setting { "org.scala-stm" %% "scala-stm" % scalaStmVersion.value } // Modified BSD (Scala)
 
+    val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1" // Scala License
+    val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
+
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.12"       // MIT
-    // mirrored in OSGi sample
+
+        // mirrored in OSGi sample
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.3.1"       // ApacheV2
     val osgiCompendium= "org.osgi"                    % "org.osgi.compendium"          % "4.3.1"       // ApacheV2
 
     // TODO remove with metrics from akka-cluster
     val sigar         = "org.fusesource"              % "sigar"                        % "1.6.4"       // ApacheV2
+
+    // reactive streams
+    val reactiveStreams = "org.reactivestreams"       % "reactive-streams"             % "1.0.0" // CC0
+
+    // ssl-config
+    val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % "0.1.0" // ApacheV2
+
+    // For akka-http spray-json support
+    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.2"       // ApacheV2
+
+    // For akka-http-jackson support
+    val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % "2.4.3"       // ApacheV2
+
+    // For akka-http-testkit-java
+     val junit       = "junit"                         % "junit"                        % "4.11"        // Common Public License 1.0
 
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
@@ -59,8 +76,6 @@ object Dependencies {
       val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
       val junitIntf    = "com.novocode"                % "junit-interface"              % "0.11"             % "test" // MIT
       val scalaXml     = "org.scala-lang.modules"     %% "scala-xml"                    % "1.0.4"            % "test"
-      // FIXME: change to project dependency once akka-stream merged to master
-      val akkaStreamTestkit = "com.typesafe.akka" %% "akka-stream-testkit-experimental" % "2.0.1" % "test"
 
       // metrics, measurements, perf testing
       val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.2"            % "test" // ApacheV2
@@ -72,19 +87,25 @@ object Dependencies {
       // sigar logging
       val slf4jJul      = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.12"    % "test"    // MIT
       val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % "1.7.12"    % "test"    // MIT
+
+      lazy val sprayJson = Compile.sprayJson % "test"
+
+      // reactive streams tck
+      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.0" % "test" // CC0
     }
 
     object Provided {
       // TODO remove from "test" config
       val sigarLoader  = "io.kamon"         % "sigar-loader"        % "1.6.6-rev002"     %     "optional;provided;test" // ApacheV2
-      
+
       val levelDB       = "org.iq80.leveldb"            % "leveldb"          % "0.7"    %  "optional;provided"     // ApacheV2
       val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"    %  "optional;provided"     // New BSD
     }
-    
+
   }
 
   import Compile._
+  // TODO check if `l ++=` everywhere expensive?
   val l = libraryDependencies
 
   val actor = l ++= Seq(config)
@@ -98,13 +119,13 @@ object Dependencies {
   val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.scalaXml)
 
   val cluster = l ++= Seq(Test.junit, Test.scalatest.value)
-  
+
   val clusterTools = l ++= Seq(Test.junit, Test.scalatest.value)
-  
+
   val clusterSharding = l ++= Seq(Provided.levelDB, Provided.levelDBNative, Test.junit, Test.scalatest.value, Test.commonsIo)
 
   val clusterMetrics = l ++= Seq(Provided.sigarLoader, Test.slf4jJul, Test.slf4jLog4j, Test.logback, Test.mockito)
-  
+
   val distributedData = l ++= Seq(Test.junit, Test.scalatest.value)
 
   val slf4j = l ++= Seq(slf4jApi, Test.logback)
@@ -113,7 +134,7 @@ object Dependencies {
 
   val persistence = l ++= Seq(Provided.levelDB, Provided.levelDBNative, Test.scalatest.value, Test.junit, Test.commonsIo, Test.scalaXml)
 
-  val persistenceQuery = l ++= Seq(akkaStream, Test.scalatest.value, Test.junit, Test.commonsIo, Test.akkaStreamTestkit)
+  val persistenceQuery = l ++= Seq(Test.scalatest.value, Test.junit, Test.commonsIo)
 
   val persistenceTck = l ++= Seq(Test.scalatest.value.copy(configurations = Some("compile")), Test.junit.copy(configurations = Some("compile")))
 
@@ -126,6 +147,69 @@ object Dependencies {
   val docs = l ++= Seq(Test.scalatest.value, Test.junit, Test.junitIntf, Docs.sprayJson, Docs.gson)
 
   val contrib = l ++= Seq(Test.junitIntf, Test.commonsIo)
-  
+
   val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
+
+  // akka stream & http
+
+  lazy val httpCore = l ++= Seq(
+    Test.sprayJson, // for WS Autobahn test metadata
+    Test.junitIntf, Test.junit, Test.scalatest.value)
+
+  lazy val http = l ++= Seq()
+
+  // special, since it also includes a compiler plugin
+  lazy val parsing = Seq(
+    DependencyHelpers.versionDependentDeps(
+      Dependencies.Compile.scalaReflect % "provided"
+    ),
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
+  )
+
+  lazy val httpTestkit = l ++= Seq(
+    Test.junit, Test.junitIntf, Compile.junit % "provided", Test.scalatest.value.copy(configurations = Some("provided; test")))
+
+  // TODO collapse those
+  lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)
+  lazy val httpTestsJava8 = l ++= Seq(Test.junit, Test.junitIntf)
+
+  lazy val httpXml = versionDependentDeps(scalaXml)
+
+  lazy val httpSprayJson = versionDependentDeps(sprayJson)
+
+  lazy val httpJackson = l ++= Seq(jackson)
+
+  lazy val stream = l ++= Seq[sbt.ModuleID](
+    sslConfigAkka,
+    reactiveStreams,
+    Test.junitIntf,
+    Test.scalatest.value)
+
+  lazy val streamTestkit = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.junit)
+
+  lazy val streamTests = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.junit, Test.junitIntf, Test.commonsIo)
+
+  lazy val streamTestsTck = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.junit, Test.reactiveStreamsTck)
+
+}
+
+object DependencyHelpers {
+  case class ScalaVersionDependentModuleID(modules: String => Seq[ModuleID]) {
+    def %(config: String): ScalaVersionDependentModuleID =
+      ScalaVersionDependentModuleID(version => modules(version).map(_ % config))
+  }
+  object ScalaVersionDependentModuleID {
+    implicit def liftConstantModule(mod: ModuleID): ScalaVersionDependentModuleID = versioned(_ => mod)
+
+    def versioned(f: String => ModuleID): ScalaVersionDependentModuleID = ScalaVersionDependentModuleID(v => Seq(f(v)))
+    def fromPF(f: PartialFunction[String, ModuleID]): ScalaVersionDependentModuleID =
+      ScalaVersionDependentModuleID(version => if (f.isDefinedAt(version)) Seq(f(version)) else Nil)
+  }
+
+  /**
+   * Use this as a dependency setting if the dependencies contain both static and Scala-version
+   * dependent entries.
+   */
+  def versionDependentDeps(modules: ScalaVersionDependentModuleID*): Def.Setting[Seq[ModuleID]] =
+    libraryDependencies <++= scalaVersion(version => modules.flatMap(m => m.modules(version)))
 }
