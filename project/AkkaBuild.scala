@@ -403,10 +403,16 @@ object AkkaBuild extends Build {
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
-    dependencies = Seq(actor, testkit % "test->test",
+    dependencies = Seq(
+      actor,
+      testkit % "compile;test->test",
       remote % "compile;test->test", cluster, clusterMetrics, slf4j, agent, camel, osgi,
       persistence % "compile;provided->provided;test->test", persistenceTck, persistenceQuery,
-      typed % "compile;test->test", distributedData)
+      typed % "compile;test->test", distributedData,
+      stream, streamTestkit % "compile;test->test",
+      http, httpSprayJson, httpJackson, httpXml,
+      httpTests % "compile;test->test", httpTestkit % "compile;test->test"
+    )
   )
 
   lazy val docsDev = Project(
