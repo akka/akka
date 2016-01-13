@@ -47,39 +47,28 @@ object OSGi {
   val parsing = exports(Seq("akka.parboiled2.*", "akka.shapeless.*"),
     imports = Seq(optionalResolution("scala.quasiquotes")))
 
-  val httpCore = exports(Seq("akka.http.*"),
-    imports = Seq(streamAndHttpImport("akka.stream.*"),
-      streamAndHttpImport("akka.parboiled2.*"),
-      streamAndHttpImport("akka.shapeless.*")))
+  val httpCore = exports(Seq("akka.http.*"))
 
   val http = exports(Seq("akka.http.impl.server",
     "akka.http.scaladsl.server.*", "akka.http.javadsl.server.*",
     "akka.http.scaladsl.client", "akka.http.scaladsl.coding", "akka.http.scaladsl.common",
     "akka.http.scaladsl.marshalling", "akka.http.scaladsl.unmarshalling"),
-    imports = Seq(streamAndHttpImport("akka.stream.*"),
-      streamAndHttpImport("akka.http.*"),
-      streamAndHttpImport("akka.parboiled2.*")))
+    imports = Seq(
+      streamAndHttpImport("akka.stream.*"),
+      streamAndHttpImport("akka.parboiled2.*"))
+  )
 
-  val httpTestkit = exports(Seq("akka.http.scaladsl.testkit.*", "akka.http.javadsl.testkit.*"),
-    imports = Seq(streamAndHttpImport("akka.stream.*"),
-      streamAndHttpImport("akka.http.*")))
+  val httpTestkit = exports(Seq("akka.http.scaladsl.testkit.*", "akka.http.javadsl.testkit.*"))
 
-  val httpSprayJson = exports(Seq("akka.http.scaladsl.marshallers.sprayjson"),
-    imports = Seq(streamAndHttpImport("akka.stream.*"),
-      streamAndHttpImport("akka.http.*")))
+  val httpSprayJson = exports(Seq("akka.http.scaladsl.marshallers.sprayjson"))
 
-  val httpXml = exports(Seq("akka.http.scaladsl.marshallers.xml"),
-    imports = Seq(streamAndHttpImport("akka.stream.*"),
-      streamAndHttpImport("akka.http.*")))
+  val httpXml = exports(Seq("akka.http.scaladsl.marshallers.xml"))
 
-  val httpJackson = exports(Seq("akka.http.javadsl.marshallers.jackson"),
-    imports = Seq(streamAndHttpImport("akka.stream.*"),
-      streamAndHttpImport("akka.http.*")))
+  val httpJackson = exports(Seq("akka.http.javadsl.marshallers.jackson"))
 
   val stream = exports(Seq("akka.stream.*"))
 
-  val streamTestkit = exports(Seq("akka.stream.testkit.*"),
-    imports = Seq(streamAndHttpImport("akka.stream.*")))
+  val streamTestkit = exports(Seq("akka.stream.testkit.*"))
 
   val slf4j = exports(Seq("akka.event.slf4j.*"))
 
