@@ -89,15 +89,14 @@ object CircuitBreakerProxy {
     def props(target: ActorRef) = CircuitBreakerProxy.props(target, maxFailures, callTimeout, resetTimeout, circuitEventListener, failureDetector, openCircuitFailureConverter)
 
   }
+
+  private[CircuitBreakerProxy] object CircuitBreakerInternalEvents {
+    sealed trait CircuitBreakerInternalEvent
+    case object CallFailed extends CircuitBreakerInternalEvent
+    case object CallSucceeded extends CircuitBreakerInternalEvent
+  }
 }
 
-object CircuitBreakerInternalEvents {
-  sealed trait CircuitBreakerInternalEvent
-  case object CallFailed extends CircuitBreakerInternalEvent
-  case object CallSucceeded extends CircuitBreakerInternalEvent
-}
-
-import akka.contrib.circuitbreaker.CircuitBreakerInternalEvents._
 import akka.contrib.circuitbreaker.CircuitBreakerProxy._
 
 final class CircuitBreakerProxy(
@@ -108,6 +107,8 @@ final class CircuitBreakerProxy(
   circuitEventListener: Option[ActorRef],
   failureDetector: Any ⇒ Boolean,
   failureMap: CircuitOpenFailure ⇒ Any) extends Actor with ActorLogging with FSM[CircuitBreakerState, CircuitBreakerStateData] {
+
+  import CircuitBreakerInternalEvents._
 
   context watch target
 
@@ -137,7 +138,7 @@ final class CircuitBreakerProxy(
   when(Closed) {
     commonStateHandling orElse {
       case Event(TellOnly(message), _) ⇒
-        log.debug("CLOSED: Sending message {} without expecting any response", message)
+        log.debug("Closed: Sending message {} without expecting any response", message)
         target ! message
         stay
 
@@ -166,11 +167,11 @@ final class CircuitBreakerProxy(
         goto(HalfOpen) using state.copy(firstHalfOpenMessageSent = false)
 
       case Event(CallFailed, state) ⇒
-        log.debug("OPEN: Call received a further call failed notification, probably from a previous timed out event, ignoring")
+        log.debug("Open: Call received a further call failed notification, probably from a previous timed out event, ignoring")
         stay
 
       case Event(openNotification @ CircuitOpenFailure(_), _) ⇒
-        log.error("Unexpected circuit open notification {} sent to myself. Please report this as a bug.", openNotification)
+        log.warning("Unexpected circuit open notification {} sent to myself. Please report this as a bug.", openNotification)
         stay
 
       case Event(message, state) ⇒
@@ -185,19 +186,19 @@ final class CircuitBreakerProxy(
   when(HalfOpen) {
     commonStateHandling orElse {
       case Event(TellOnly(message), _) ⇒
-        log.debug("HALF-OPEN: Dropping TellOnly request for message {}", message)
+        log.debug("HalfOpen: Dropping TellOnly request for message {}", message)
         stay
 
       case Event(CallFailed, CircuitBreakerStateData(_, true)) ⇒
-        log.debug("HALF-OPEN: First forwarded call failed returning to OPEN state")
+        log.debug("HalfOpen: First forwarded call failed returning to OPEN state")
         goto(Open)
 
       case Event(CallFailed, CircuitBreakerStateData(_, false)) ⇒
-        log.debug("HALF-OPEN: Call received a further call failed notification, probably from a previous timed out event, ignoring")
+        log.debug("HalfOpen: Call received a further call failed notification, probably from a previous timed out event, ignoring")
         stay
 
       case Event(message, state @ CircuitBreakerStateData(_, false)) ⇒
-        log.debug("HALF-OPEN: First message {} received, forwarding it to target {}", message, target)
+        log.debug("HalfOpen: First message {} received, forwarding it to target {}", message, target)
         forwardRequest(message, sender, state, log)
         stay using state.copy(firstHalfOpenMessageSent = true)
 
