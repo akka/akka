@@ -1134,8 +1134,10 @@ object AkkaBuild extends Build {
   val validatePullRequestTask = validatePullRequest := ()
 
   def githubUrl(v: String): String = {
-    val branch = "release-2.3-dev"
-    "http://github.com/akka/akka/tree/" + branch
+    val tagOrBranch =
+      if (v.contains("-SNAPSHOT")) "stream-http-2.0"
+      else "akka-stream-and-http-experimental-" + v
+    "https://github.com/akka/akka/tree/" + tagOrBranch
   }
 
   // preprocessing settings for sphinx
