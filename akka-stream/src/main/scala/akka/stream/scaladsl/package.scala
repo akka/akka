@@ -47,9 +47,6 @@ package akka.stream
  * by those methods that materialize the Flow into a series of
  * [[org.reactivestreams.Processor]] instances. The returned reactive stream
  * is fully started and active.
- *
- * Use [[ImplicitMaterializer]] to define an implicit [[akka.stream.Materializer]]
- * inside an [[akka.actor.Actor]].
  */
 package object scaladsl {
 }
