@@ -18,9 +18,9 @@ These guidelines mainly apply to Typesafe’s “mature” projects - not necess
 
 Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
 
-* `master` – development branch of Akka 2.4.x
+* `master` – active development branch of Akka 2.4.x
 * `release-2.3` – maintanance branch of Akka 2.3.x
-* `release 2.3-dev` – development branch of Akka Streams and HTTP (only)
+* similarily `release-2.#` branches contain legacy versions of Akka
 
 ## General Workflow
 
