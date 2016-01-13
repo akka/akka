@@ -10,7 +10,8 @@ import scala.language.implicitConversions
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-final class OpenCircuitException extends RuntimeException("Unable to complete operation since the Circuit Breaker Actor Proxy is in Open State")
+sealed class OpenCircuitException(message: String) extends RuntimeException(message)
+private[circuitbreaker] final object OpenCircuitException extends OpenCircuitException("Unable to complete operation since the Circuit Breaker Actor Proxy is in Open State")
 
 /**
  * Convenience implicit conversions to provide circuit-breaker aware management of the ask pattern,
@@ -60,9 +61,9 @@ object Implicits {
  * [[akka.contrib.circuitbreaker.CircuitBreakerProxy.CircuitOpenFailure]] failure responses throwing
  * an exception built with the given exception builder
  */
-class CircuitBreakerAwareFuture(val future: Future[Any]) extends AnyVal {
+final class CircuitBreakerAwareFuture(val future: Future[Any]) extends AnyVal {
   @throws[OpenCircuitException]
-  def failForOpenCircuit(implicit executionContext: ExecutionContext): Future[Any] = failForOpenCircuitWith(new OpenCircuitException)
+  def failForOpenCircuit(implicit executionContext: ExecutionContext): Future[Any] = failForOpenCircuitWith(OpenCircuitException)
 
   def failForOpenCircuitWith(throwing: ⇒ Throwable)(implicit executionContext: ExecutionContext): Future[Any] = {
     future.flatMap {
