@@ -17,7 +17,7 @@ object OSGi {
     OsgiKeys.exportPackage := Seq("akka*"),
     OsgiKeys.privatePackage := Seq("akka.osgi.impl"),
     //akka-actor packages are not imported, as contained in the CP
-    OsgiKeys.importPackage := (osgiOptionalImports map optionalResolution) ++ Seq("!sun.misc", scalaVersion(scalaImport).value, configImport(), "*"),
+    OsgiKeys.importPackage := (osgiOptionalImports map optionalResolution) ++ Seq("!sun.misc", scalaJava8CompatImport(), scalaVersion(scalaImport).value, configImport(), "*"),
     // dynamicImportPackage needed for loading classes defined in configuration
     OsgiKeys.dynamicImportPackage := Seq("*")
   )
@@ -47,15 +47,16 @@ object OSGi {
   val parsing = exports(Seq("akka.parboiled2.*", "akka.shapeless.*"),
     imports = Seq(optionalResolution("scala.quasiquotes")))
 
-  val httpCore = exports(Seq("akka.http.*"))
+  val httpCore = exports(Seq("akka.http.*"), imports = Seq(scalaJava8CompatImport()))
 
   val http = exports(Seq("akka.http.impl.server",
     "akka.http.scaladsl.server.*", "akka.http.javadsl.server.*",
     "akka.http.scaladsl.client", "akka.http.scaladsl.coding", "akka.http.scaladsl.common",
     "akka.http.scaladsl.marshalling", "akka.http.scaladsl.unmarshalling"),
     imports = Seq(
-      streamAndHttpImport("akka.stream.*"),
-      streamAndHttpImport("akka.parboiled2.*"))
+      scalaJava8CompatImport(),
+      akkaImport("akka.stream.*"),
+      akkaImport("akka.parboiled2.*"))
   )
 
   val httpTestkit = exports(Seq("akka.http.scaladsl.testkit.*", "akka.http.javadsl.testkit.*"))
@@ -66,7 +67,7 @@ object OSGi {
 
   val httpJackson = exports(Seq("akka.http.javadsl.marshallers.jackson"))
 
-  val stream = exports(Seq("akka.stream.*"))
+  val stream = exports(Seq("akka.stream.*"), imports = Seq(scalaJava8CompatImport()))
 
   val streamTestkit = exports(Seq("akka.stream.testkit.*"))
 
@@ -91,7 +92,6 @@ object OSGi {
   )
   def defaultImports(scalaVersion: String) = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(scalaVersion), "*")
   def akkaImport(packageName: String = "akka.*") = versionedImport(packageName, "2.4", "2.5")
-  def streamAndHttpImport(packageName: String) = versionedImport(packageName, "2.0", "2.4") // TODO not sure about the range
   def configImport(packageName: String = "com.typesafe.config.*") = versionedImport(packageName, "1.3.0", "1.4.0")
   def scalaImport(version: String) = {
     val packageName = "scala.*"
@@ -99,6 +99,7 @@ object OSGi {
     val ScalaVersion(epoch, major) = version
     versionedImport(packageName, s"$epoch.$major", s"$epoch.${major.toInt+1}")
   }
+  def scalaJava8CompatImport(packageName: String = "scala.compat.java8.*") = versionedImport(packageName, "0.7.0", "1.0.0")
   def kamonImport(packageName: String = "kamon.sigar.*") = optionalResolution(versionedImport(packageName, "1.6.5", "1.6.6"))
   def sigarImport(packageName: String = "org.hyperic.*") = optionalResolution(versionedImport(packageName, "1.6.5", "1.6.6"))
   def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)
