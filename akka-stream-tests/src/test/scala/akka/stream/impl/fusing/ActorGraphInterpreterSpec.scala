@@ -7,9 +7,9 @@ import java.util.concurrent.CountDownLatch
 
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.{AkkaSpec, TestPublisher, TestSubscriber}
+import akka.stream.testkit.{ AkkaSpec, TestPublisher, TestSubscriber }
 import akka.testkit.EventFilter
 
 import scala.concurrent.Await
