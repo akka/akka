@@ -263,11 +263,13 @@ private[stream] object TcpConnectionStage {
         // (or half-close is turned off)
         if (isClosed(bytesOut) || !role.halfClose) connection ! Close
         // We still read, so we only close the write side
-        else connection ! ConfirmedClose
+        else if (connection != null) connection ! ConfirmedClose
+        else completeStage()
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
-        connection ! Abort
+        if (connection != null) connection ! Abort
+        else failStage(ex)
       }
     })
 
