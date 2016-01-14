@@ -49,7 +49,7 @@ private[http] abstract class SettingsCompanion[T](protected val prefix: String) 
 private[http] object SettingsCompanion {
   lazy val configAdditions: Config = {
     val localHostName =
-      try new InetSocketAddress(InetAddress.getLocalHost, 80).getHostStringJava6Compatible
+      try new InetSocketAddress(InetAddress.getLocalHost, 80).getHostString
       catch { case NonFatal(_) ⇒ "" }
     ConfigFactory.parseMap(Map("akka.http.hostname" -> localHostName).asJava)
   }

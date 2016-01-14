@@ -16,7 +16,7 @@ import akka.http.impl.engine.HttpConnectionTimeoutException
 import akka.http.impl.engine.client._
 import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebsocketClientBlueprint
-import akka.http.impl.util.{ Java6Compat, ReadTheDocumentationException, StreamUtils }
+import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ WebsocketUpgradeResponse, WebsocketRequest, Message }
@@ -770,12 +770,7 @@ trait DefaultSSLContextCreation {
     defaultParams.setCipherSuites(cipherSuites)
 
     // hostname!
-    if (!Java6Compat.trySetEndpointIdentificationAlgorithm(defaultParams, "https")) {
-      log.info("Unable to use JDK built-in hostname verification, please consider upgrading your Java runtime to " +
-        "a more up to date version (JDK7+). Using Typesafe ssl-config hostname verification.")
-      // enabling the JDK7+ solution did not work, however this is fine since we do handle hostname
-      // verification directly in SslTlsCipherActor manually by applying an ssl-config provider verifier
-    }
+    defaultParams.setEndpointIdentificationAlgorithm("https")
 
     HttpsContext(sslContext, sslParameters = Some(defaultParams))
   }
