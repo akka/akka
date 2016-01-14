@@ -766,7 +766,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       } else {
         setOrAddEmitting(out, new EmittingIterator(out, elems, getNonEmittingHandler(out), andThen))
       }
-    }
+    } else andThen()
 
   /**
    * Emit a sequence of elements through the given outlet, suspending execution if necessary.
