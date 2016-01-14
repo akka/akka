@@ -107,7 +107,7 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
           Source.fromIterator(() ⇒ Iterator.continually(TestByteStrings.head)).runWith(FileIO.toPath(f))(materializer)
 
           materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
-          val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSource").get
+          val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSink").get
           assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
         } finally shutdown(sys)
       }
