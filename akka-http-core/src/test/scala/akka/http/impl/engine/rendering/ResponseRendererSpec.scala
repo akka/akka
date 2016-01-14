@@ -414,8 +414,10 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
     }
 
     "render a CustomHeader header" - {
-      "if suppressRendering = false" in new TestSetup(None) {
+      "if renderInResponses = true" in new TestSetup(None) {
         case class MyHeader(number: Int) extends CustomHeader {
+          def renderInRequests = false
+          def renderInResponses = true
           def name: String = "X-My-Header"
           def value: String = s"No$number"
         }
@@ -428,10 +430,10 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
             |"""
         }
       }
-      "not if suppressRendering = true" in new TestSetup(None) {
+      "not if renderInResponses = false" in new TestSetup(None) {
         case class MyInternalHeader(number: Int) extends CustomHeader {
-          override def suppressRendering: Boolean = true
-
+          def renderInRequests = false
+          def renderInResponses = false
           def name: String = "X-My-Internal-Header"
           def value: String = s"No$number"
         }

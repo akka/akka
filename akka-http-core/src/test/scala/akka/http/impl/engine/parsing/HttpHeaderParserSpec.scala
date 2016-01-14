@@ -108,7 +108,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
     }
 
     "retrieve the EmptyHeader" in new TestSetup() {
-      parseAndCache("\r\n")() shouldEqual HttpHeaderParser.EmptyHeader
+      parseAndCache("\r\n")() shouldEqual EmptyHeader
     }
 
     "retrieve a cached header with an exact header name match" in new TestSetup() {
