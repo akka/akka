@@ -100,7 +100,7 @@ object UnidocRoot extends AutoPlugin {
   override def trigger = noTrigger
 
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(Seq(
-    javacOptions in (JavaUnidoc, unidoc) ++= Seq("-Xdoclint:none"), // TODO likely still needed
+    javacOptions in (JavaUnidoc, unidoc) ++= Seq("-Xdoclint:none"),
     // genjavadoc needs to generate synthetic methods since the java code uses them
     scalacOptions += "-P:genjavadoc:suppressSynthetic=false",
     // FIXME: see #18056

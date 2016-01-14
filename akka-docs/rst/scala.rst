@@ -12,6 +12,8 @@ Scala Documentation
    scala/index-futures
    scala/index-network
    scala/index-utilities
+   scala/stream/index
+   scala/http/index
    scala/howto
    experimental/index
    dev/index
