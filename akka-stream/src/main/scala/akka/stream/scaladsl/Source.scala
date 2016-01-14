@@ -239,7 +239,7 @@ object Source {
    */
   def repeat[T](element: T): Source[T, Unit] = {
     val next = Some((element, element))
-    unfold(element)(_ => next).withAttributes(DefaultAttributes.repeat)
+    unfold(element)(_ ⇒ next).withAttributes(DefaultAttributes.repeat)
   }
 
   /**

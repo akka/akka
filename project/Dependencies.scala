@@ -54,7 +54,10 @@ object Dependencies {
     val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % "2.4.3"       // ApacheV2
 
     // For akka-http-testkit-java
-     val junit       = "junit"                         % "junit"                        % "4.11"        // Common Public License 1.0
+    val junit       = "junit"                         % "junit"                        % "4.11"        // Common Public License 1.0
+
+    // For Java 8 Conversions
+    val java8Compat = "org.scala-lang.modules"       %% "scala-java8-compat"           % "0.7.0"       // Scala License
 
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
@@ -182,6 +185,7 @@ object Dependencies {
   lazy val stream = l ++= Seq[sbt.ModuleID](
     sslConfigAkka,
     reactiveStreams,
+    java8Compat,
     Test.junitIntf,
     Test.scalatest.value)
 
