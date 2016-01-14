@@ -185,13 +185,6 @@ object Source {
     new Source(scaladsl.Source.unfoldAsync(s)((s: S) ⇒ f.apply(s)))
 
   /**
-   * Simpler [[unfold]], for infinite sequences.
-   */
-  def unfoldInf[S, E](s: S, f: function.Function[S, (S, E)]): Source[E, Unit] = {
-    new Source(scaladsl.Source.unfoldInf(s)((s: S) ⇒ f.apply(s)))
-  }
-
-  /**
    * Create a `Source` that immediately ends the stream with the `cause` failure to every connected `Sink`.
    */
   def failed[T](cause: Throwable): Source[T, Unit] =

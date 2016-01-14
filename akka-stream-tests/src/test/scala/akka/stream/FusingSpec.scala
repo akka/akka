@@ -10,7 +10,7 @@ import org.scalactic.ConversionCheckedTripleEquals
 import akka.stream.Attributes._
 import akka.stream.Fusing.FusedGraph
 import scala.annotation.tailrec
-import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl.StreamLayout.{ CopiedModule, Module }
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.duration._
 import akka.stream.impl.fusing.GraphInterpreter
@@ -23,7 +23,7 @@ class FusingSpec extends AkkaSpec with ScalaFutures with ConversionCheckedTriple
   implicit val patience = PatienceConfig(1.second)
 
   def graph(async: Boolean) =
-    Source.unfoldInf(1)(x ⇒ (x, x)).filter(_ % 2 == 1)
+    Source.unfold(1)(x ⇒ Some(x -> x)).filter(_ % 2 == 1)
       .alsoTo(Flow[Int].fold(0)(_ + _).to(Sink.head.named("otherSink")).addAttributes(if (async) Attributes.asyncBoundary else Attributes.none))
       .via(Flow[Int].fold(1)(_ + _).named("mainSink"))
 
@@ -36,13 +36,13 @@ class FusingSpec extends AkkaSpec with ScalaFutures with ConversionCheckedTriple
 
     @tailrec def rec(curr: Module): Unit = {
       if (Debug) println(extractName(curr, "unknown"))
-      if (curr.attributes.contains(to)) () // done
-      else {
-        val outs = curr.inPorts.map(ups)
-        outs.size should ===(1)
-        val out = outs.head
-        val next = owner(out)
-        rec(next)
+      curr match {
+        case CopiedModule(_, attributes, copyOf) if (attributes and copyOf.attributes).contains(to) ⇒ ()
+        case other if other.attributes.contains(to) ⇒ ()
+        case _ ⇒
+          val outs = curr.inPorts.map(ups)
+          outs.size should ===(1)
+          rec(owner(outs.head))
       }
     }
 
@@ -57,8 +57,8 @@ class FusingSpec extends AkkaSpec with ScalaFutures with ConversionCheckedTriple
       module.downstreams.size should ===(modules - 1)
       module.info.downstreams.size should be >= downstreams
       module.info.upstreams.size should be >= downstreams
-      singlePath(fused, Attributes.Name("mainSink"), Attributes.Name("unfoldInf"))
-      singlePath(fused, Attributes.Name("otherSink"), Attributes.Name("unfoldInf"))
+      singlePath(fused, Attributes.Name("mainSink"), Attributes.Name("unfold"))
+      singlePath(fused, Attributes.Name("otherSink"), Attributes.Name("unfold"))
     }
 
     "fuse a moderately complex graph" in {

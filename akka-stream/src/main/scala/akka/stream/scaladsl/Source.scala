@@ -260,7 +260,7 @@ object Source {
    * }}}
    */
   def unfold[S, E](s: S)(f: S ⇒ Option[(S, E)]): Source[E, Unit] =
-    Source.fromGraph(new Unfold(s, f)).withAttributes(DefaultAttributes.unfold)
+    Source.fromGraph(new Unfold(s, f))
 
   /**
    * Same as [[unfold]], but uses an async function to generate the next state-element tuple.
@@ -278,31 +278,7 @@ object Source {
    * }}}
    */
   def unfoldAsync[S, E](s: S)(f: S ⇒ Future[Option[(S, E)]]): Source[E, Unit] =
-    Source.fromGraph(new UnfoldAsync(s, f)).withAttributes(DefaultAttributes.unfoldAsync)
-
-  /**
-   * Simpler [[unfold]], for infinite sequences.
-   *
-   * {{{
-   *   Source.unfoldInf(0 → 1) {
-   *    case (a, b) ⇒ (b → (a + b)) → a
-   *   }
-   * }}}
-   */
-  def unfoldInf[S, E](s: S)(f: S ⇒ (S, E)): Source[E, Unit] = {
-    Source.fromGraph(GraphDSL.create() { implicit b ⇒
-      import GraphDSL.Implicits._
-
-      val uzip = b.add(UnzipWith(f))
-      val cnct = b.add(Concat[S]())
-      val init = Source.single(s)
-
-      init ~> cnct ~> uzip.in
-      cnct <~ Flow[S].buffer(2, OverflowStrategy.backpressure) <~ uzip.out0
-
-      SourceShape(uzip.out1)
-    }).withAttributes(DefaultAttributes.unfoldInf)
-  }
+    Source.fromGraph(new UnfoldAsync(s, f))
 
   /**
    * A `Source` with no elements, i.e. an empty stream that is completed immediately for every connected `Sink`.
