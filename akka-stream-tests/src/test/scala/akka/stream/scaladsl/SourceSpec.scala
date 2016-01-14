@@ -252,7 +252,7 @@ class SourceSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
     }
 
     "generate an unbounded fibonacci sequence" in {
-      Source.unfoldInf((0, 1))({ case (a, b) ⇒ (b, a + b) → a })
+      Source.unfold((0, 1))({ case (a, b) ⇒ Some((b, a + b) → a) })
         .take(36)
         .runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }
         .futureValue should ===(expected)
