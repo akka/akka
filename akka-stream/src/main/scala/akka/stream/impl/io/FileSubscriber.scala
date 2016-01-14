@@ -3,8 +3,9 @@
  */
 package akka.stream.impl.io
 
-import java.io.{ File, RandomAccessFile }
+import java.io.File
 import java.nio.channels.FileChannel
+import java.util.Collections
 
 import akka.actor.{ Deploy, ActorLogging, Props }
 import akka.stream.actor.{ ActorSubscriberMessage, WatermarkRequestStrategy }
@@ -19,6 +20,9 @@ private[akka] object FileSubscriber {
     Props(classOf[FileSubscriber], f, completionPromise, bufSize, append).withDeploy(Deploy.local)
   }
 
+  import java.nio.file.StandardOpenOption._
+  val Write = Collections.singleton(WRITE)
+  val Append = Collections.singleton(APPEND)
 }
 
 /** INTERNAL API */
@@ -28,17 +32,13 @@ private[akka] class FileSubscriber(f: File, bytesWrittenPromise: Promise[Long], 
 
   override protected val requestStrategy = WatermarkRequestStrategy(highWatermark = bufSize)
 
-  private var raf: RandomAccessFile = _
   private var chan: FileChannel = _
 
   private var bytesWritten: Long = 0
 
   override def preStart(): Unit = try {
-    raf = new RandomAccessFile(f, "rw") // best way to express this in JDK6, OpenOption are available since JDK7
-    chan = raf.getChannel
-
-    // manually supporting appending to files - in Java 7 we could use OpenModes: FileChannel.open(f, openOptions.asJava)
-    if (append) chan.position(chan.size())
+    val openOptions = if (append) FileSubscriber.Append else FileSubscriber.Write
+    chan = FileChannel.open(f.toPath, openOptions)
 
     super.preStart()
   } catch {
@@ -75,7 +75,6 @@ private[akka] class FileSubscriber(f: File, bytesWrittenPromise: Promise[Long], 
     bytesWrittenPromise.trySuccess(bytesWritten)
 
     if (chan ne null) chan.close()
-    if (raf ne null) raf.close()
     super.postStop()
   }
 }

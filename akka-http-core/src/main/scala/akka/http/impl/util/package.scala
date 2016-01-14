@@ -4,12 +4,9 @@
 
 package akka.http.impl
 
-import java.net.InetSocketAddress
-
 import language.implicitConversions
 import language.higherKinds
 import java.nio.charset.Charset
-import java.util.concurrent.atomic.AtomicInteger
 import com.typesafe.config.Config
 import akka.stream.scaladsl.{ Flow, Source }
 import akka.stream.stage._
@@ -18,7 +15,6 @@ import scala.concurrent.{ Await, Future }
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
 import scala.util.matching.Regex
-import akka.event.LoggingAdapter
 import akka.util.ByteString
 import akka.actor._
 
@@ -40,8 +36,6 @@ package object util {
   private[http] implicit def enhanceConfig(config: Config): EnhancedConfig = new EnhancedConfig(config)
   private[http] implicit def enhanceString_(s: String): EnhancedString = new EnhancedString(s)
   private[http] implicit def enhanceRegex(regex: Regex): EnhancedRegex = new EnhancedRegex(regex)
-  private[http] implicit def enhanceInetSocketAddress(address: InetSocketAddress): EnhancedInetSocketAddress =
-    new EnhancedInetSocketAddress(address)
   private[http] implicit def enhanceByteStrings(byteStrings: TraversableOnce[ByteString]): EnhancedByteStringTraversableOnce =
     new EnhancedByteStringTraversableOnce(byteStrings)
   private[http] implicit def enhanceByteStringsMat[Mat](byteStrings: Source[ByteString, Mat]): EnhancedByteStringSource[Mat] =
@@ -75,7 +69,7 @@ package object util {
   private[http] def installEventStreamLoggerFor(channel: Class[_])(implicit system: ActorSystem): Unit = {
     synchronized {
       if (eventStreamLogger == null)
-        eventStreamLogger = system.actorOf(Props[util.EventStreamLogger].withDeploy(Deploy.local), name = "event-stream-logger")
+        eventStreamLogger = system.actorOf(Props[util.EventStreamLogger]().withDeploy(Deploy.local), name = "event-stream-logger")
     }
     system.eventStream.subscribe(eventStreamLogger, channel)
   }
@@ -178,6 +172,4 @@ package util {
         }
       }
   }
-
-  private[http] class ReadTheDocumentationException(message: String) extends RuntimeException(message)
 }
