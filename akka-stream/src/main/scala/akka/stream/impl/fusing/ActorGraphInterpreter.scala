@@ -269,12 +269,12 @@ private[stream] object ActorGraphInterpreter {
       }
 
     def exposedPublisher(publisher: ActorPublisher[Any]): Unit = {
+      exposedPublisher = publisher
       upstreamFailed match {
         case _: Some[_] ⇒
           publisher.shutdown(upstreamFailed)
         case _ ⇒
           if (upstreamCompleted) publisher.shutdown(None)
-          else exposedPublisher = publisher
       }
     }
 
