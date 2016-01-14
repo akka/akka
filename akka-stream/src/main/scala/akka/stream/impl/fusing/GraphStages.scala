@@ -65,14 +65,16 @@ object GraphStages {
 
   def identity[T] = Identity.asInstanceOf[SimpleLinearGraphStage[T]]
 
-  private class Detacher[T] extends GraphStage[FlowShape[T, T]] {
+  /**
+   * INERNAL API
+   */
+  private[stream] final class Detacher[T] extends GraphStage[FlowShape[T, T]] {
     val in = Inlet[T]("in")
     val out = Outlet[T]("out")
     override def initialAttributes = Attributes.name("Detacher")
     override val shape = FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-      var initialized = false
 
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
