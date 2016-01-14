@@ -100,6 +100,9 @@ private[stream] object Stages {
     val fileSource = name("fileSource") and IODispatcher
     val unfoldResourceSource = name("unfoldResourceSource") and IODispatcher
     val unfoldResourceSourceAsync = name("unfoldResourceSourceAsync") and IODispatcher
+    val asJavaStream = name("asJavaStream") and IODispatcher
+    val javaCollectorParallelUnordered = name("javaCollectorParallelUnordered")
+    val javaCollector = name("javaCollector")
 
     val subscriberSink = name("subscriberSink")
     val cancelledSink = name("cancelledSink")
@@ -117,7 +120,8 @@ private[stream] object Stages {
     val queueSink = name("queueSink")
     val outputStreamSink = name("outputStreamSink") and IODispatcher
     val inputStreamSink = name("inputStreamSink") and IODispatcher
-    val fileSink = name("fileSource") and IODispatcher
+    val fileSink = name("fileSink") and IODispatcher
+    val fromJavaStream = name("fromJavaStream")
   }
 
   import DefaultAttributes._
