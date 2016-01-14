@@ -159,16 +159,12 @@ final class MergePreferred[T] private (val secondaryPorts: Int, val eagerComplet
       if (eagerComplete || openInputs == 0) completeStage()
     }
 
-    setHandler(out, new OutHandler {
-      private var first = true
-      override def onPull(): Unit = {
-        if (first) {
-          first = false
-          tryPull(preferred)
-          shape.inSeq.foreach(tryPull)
-        }
-      }
-    })
+    override def preStart(): Unit = {
+      tryPull(preferred)
+      shape.inSeq.foreach(tryPull)
+    }
+
+    setHandler(out, eagerTerminateOutput)
 
     val pullMe = Array.tabulate(secondaryPorts)(i ⇒ {
       val port = in(i)
