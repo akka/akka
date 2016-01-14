@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
 import akka.actor.{ ActorRef, Props }
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.stage.{ AsyncCallback, GraphStageLogic, GraphStageWithMaterializedValue, InHandler }
 import org.reactivestreams.{ Publisher, Subscriber }
@@ -243,6 +244,8 @@ private[akka] final class SeqStage[T] extends GraphStageWithMaterializedValue[Si
   val in = Inlet[T]("seq.in")
 
   override val shape: SinkShape[T] = SinkShape.of(in)
+
+  override protected def initialAttributes: Attributes = DefaultAttributes.seqSink
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val p: Promise[immutable.Seq[T]] = Promise()
