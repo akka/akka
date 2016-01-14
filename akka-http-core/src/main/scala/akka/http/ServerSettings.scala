@@ -46,7 +46,10 @@ final case class ServerSettings(
 
 object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.server") {
   final case class Timeouts(idleTimeout: Duration,
+                            requestTimeout: Duration,
                             bindTimeout: FiniteDuration) {
+    require(idleTimeout > Duration.Zero, "idleTimeout must be infinite or > 0")
+    require(requestTimeout > Duration.Zero, "requestTimeout must be infinite or > 0")
     require(bindTimeout > Duration.Zero, "bindTimeout must be > 0")
   }
   implicit def timeoutsShortcut(s: ServerSettings): Timeouts = s.timeouts
@@ -55,6 +58,7 @@ object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.serve
     c.getString("server-header").toOption.map(Server(_)),
     Timeouts(
       c getPotentiallyInfiniteDuration "idle-timeout",
+      c getPotentiallyInfiniteDuration "request-timeout",
       c getFiniteDuration "bind-timeout"),
     c getInt "max-connections",
     c getInt "pipelining-limit",

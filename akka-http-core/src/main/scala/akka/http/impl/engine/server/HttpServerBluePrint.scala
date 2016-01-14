@@ -5,12 +5,19 @@
 package akka.http.impl.engine.server
 
 import java.net.InetSocketAddress
-import java.util.Random
-import akka.stream.impl.fusing.GraphInterpreter
+import java.util.concurrent.atomic.AtomicReference
+import scala.concurrent.{ Promise, Future }
+import scala.concurrent.duration.{ Deadline, FiniteDuration, Duration }
 import scala.collection.immutable
-import org.reactivestreams.{ Publisher, Subscriber }
 import scala.util.control.NonFatal
+import akka.actor.Cancellable
+import akka.japi.Function
 import akka.event.LoggingAdapter
+import akka.util.ByteString
+import akka.stream._
+import akka.stream.io._
+import akka.stream.scaladsl._
+import akka.stream.stage._
 import akka.http.ServerSettings
 import akka.http.impl.engine.HttpConnectionTimeoutException
 import akka.http.impl.engine.parsing.ParserOutput._
@@ -18,16 +25,12 @@ import akka.http.impl.engine.parsing._
 import akka.http.impl.engine.rendering.{ HttpResponseRendererFactory, ResponseRenderingContext, ResponseRenderingOutput }
 import akka.http.impl.engine.ws._
 import akka.http.impl.util._
-import akka.http.scaladsl.Http
+import akka.http.scaladsl.util.FastFuture.EnhancedFuture
+import akka.http.scaladsl.{ TimeoutAccess, Http }
+import akka.http.scaladsl.model.headers.`Timeout-Access`
+import akka.http.javadsl.model
 import akka.http.scaladsl.model._
-import akka.stream._
-import akka.stream.impl.ConstantFun
-import akka.stream.io._
-import akka.stream.scaladsl._
-import akka.stream.stage._
-import akka.util.ByteString
 import akka.http.scaladsl.model.ws.Message
-import akka.stream.impl.fusing.SubSource
 
 /**
  * INTERNAL API
@@ -54,6 +57,7 @@ private[http] object HttpServerBluePrint {
   def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter): Http.ServerLayer = {
     val theStack =
       userHandlerGuard(settings.pipeliningLimit) atop
+        requestTimeoutSupport(settings.timeouts.requestTimeout) atop
         requestPreparation(settings) atop
         controller(settings, log) atop
         parsingRendering(settings, log) atop
@@ -78,6 +82,12 @@ private[http] object HttpServerBluePrint {
   def requestPreparation(settings: ServerSettings): BidiFlow[HttpResponse, HttpResponse, RequestOutput, HttpRequest, Unit] =
     BidiFlow.fromFlows(Flow[HttpResponse], new PrepareRequests(settings))
 
+  def requestTimeoutSupport(timeout: Duration): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, Unit] =
+    timeout match {
+      case x: FiniteDuration ⇒ BidiFlow.fromGraph(new RequestTimeoutSupport(x)).reversed
+      case _                 ⇒ BidiFlow.identity
+    }
+
   final class PrepareRequests(settings: ServerSettings) extends GraphStage[FlowShape[RequestOutput, HttpRequest]] {
     val in = Inlet[RequestOutput]("RequestStartThenRunIgnore.in")
     val out = Outlet[HttpRequest]("RequestStartThenRunIgnore.out")
@@ -97,6 +107,7 @@ private[http] object HttpServerBluePrint {
 
             val entity = createEntity(entityCreator) withSizeLimit settings.parserSettings.maxContentLength
             push(out, HttpRequest(effectiveMethod, uri, effectiveHeaders, entity, protocol))
+          case _ ⇒ throw new IllegalStateException
         }
       }
       setHandler(in, idle)
@@ -171,6 +182,104 @@ private[http] object HttpServerBluePrint {
     Flow[ResponseRenderingContext]
       .via(responseRendererFactory.renderer.named("renderer"))
       .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorHandling(errorHandler)).named("errorLogger"))
+  }
+
+  class RequestTimeoutSupport(initialTimeout: FiniteDuration)
+    extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
+    private val requestIn = Inlet[HttpRequest]("requestIn")
+    private val requestOut = Outlet[HttpRequest]("requestOut")
+    private val responseIn = Inlet[HttpResponse]("responseIn")
+    private val responseOut = Outlet[HttpResponse]("responseOut")
+
+    override def initialAttributes = Attributes.name("RequestTimeoutSupport")
+
+    val shape = new BidiShape(requestIn, requestOut, responseIn, responseOut)
+
+    def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
+      var openTimeouts = immutable.Queue[TimeoutAccessImpl]()
+      setHandler(requestIn, new InHandler {
+        def onPush(): Unit = {
+          val request = grab(requestIn)
+          val (entity, requestEnd) = HttpEntity.captureTermination(request.entity)
+          val access = new TimeoutAccessImpl(request, initialTimeout, requestEnd,
+            getAsyncCallback(emitTimeoutResponse), interpreter.materializer)
+          openTimeouts = openTimeouts.enqueue(access)
+          push(requestOut, request.copy(headers = request.headers :+ `Timeout-Access`(access), entity = entity))
+        }
+        override def onUpstreamFinish() = complete(requestOut)
+        override def onUpstreamFailure(ex: Throwable) = fail(requestOut, ex)
+        def emitTimeoutResponse(response: (TimeoutAccess, HttpResponse)) =
+          if (openTimeouts.head eq response._1) {
+            emit(responseOut, response._2, () ⇒ complete(responseOut))
+          } // else the application response arrived after we scheduled the timeout response, which is close but ok
+      })
+      // TODO: provide and use default impl for simply connecting an input and an output port as we do here
+      setHandler(requestOut, new OutHandler {
+        def onPull(): Unit = pull(requestIn)
+        override def onDownstreamFinish() = cancel(requestIn)
+      })
+      setHandler(responseIn, new InHandler {
+        def onPush(): Unit = {
+          openTimeouts.head.clear()
+          openTimeouts = openTimeouts.tail
+          push(responseOut, grab(responseIn))
+        }
+        override def onUpstreamFinish() = complete(responseOut)
+        override def onUpstreamFailure(ex: Throwable) = fail(responseOut, ex)
+      })
+      setHandler(responseOut, new OutHandler {
+        def onPull(): Unit = pull(responseIn)
+        override def onDownstreamFinish() = cancel(responseIn)
+      })
+    }
+  }
+
+  private class TimeoutSetup(val timeoutBase: Deadline,
+                             val scheduledTask: Cancellable,
+                             val timeout: Duration,
+                             val handler: HttpRequest ⇒ HttpResponse)
+
+  private class TimeoutAccessImpl(request: HttpRequest, initialTimeout: FiniteDuration, requestEnd: Future[Unit],
+                                  trigger: AsyncCallback[(TimeoutAccess, HttpResponse)], materializer: Materializer)
+    extends AtomicReference[Future[TimeoutSetup]] with TimeoutAccess with (HttpRequest ⇒ HttpResponse) { self ⇒
+    import materializer.executionContext
+
+    set {
+      requestEnd.fast.map(_ ⇒ new TimeoutSetup(Deadline.now, schedule(initialTimeout, this), initialTimeout, this))
+    }
+
+    override def apply(request: HttpRequest) = HttpResponse(StatusCodes.ServiceUnavailable, entity = "The server was not able " +
+      "to produce a timely response to your request.\r\nPlease try again in a short while!")
+
+    def clear(): Unit = // best effort timeout cancellation
+      get.fast.foreach(setup ⇒ if (setup.scheduledTask ne null) setup.scheduledTask.cancel())
+
+    override def updateTimeout(timeout: Duration): Unit = update(timeout, null: HttpRequest ⇒ HttpResponse)
+    override def updateHandler(handler: HttpRequest ⇒ HttpResponse): Unit = update(null, handler)
+    override def update(timeout: Duration, handler: HttpRequest ⇒ HttpResponse): Unit = {
+      val promise = Promise[TimeoutSetup]()
+      for (old ← getAndSet(promise.future).fast)
+        promise.success {
+          if ((old.scheduledTask eq null) || old.scheduledTask.cancel()) {
+            val newHandler = if (handler eq null) old.handler else handler
+            val newTimeout = if (timeout eq null) old.timeout else timeout
+            val newScheduling = newTimeout match {
+              case x: FiniteDuration ⇒ schedule(old.timeoutBase + x - Deadline.now, newHandler)
+              case _                 ⇒ null // don't schedule a new timeout
+            }
+            new TimeoutSetup(old.timeoutBase, newScheduling, newTimeout, newHandler)
+          } else old // too late, the previously set timeout cannot be cancelled anymore
+        }
+    }
+    private def schedule(delay: FiniteDuration, handler: HttpRequest ⇒ HttpResponse): Cancellable =
+      materializer.scheduleOnce(delay, new Runnable { def run() = trigger.invoke(self, handler(request)) })
+
+    import akka.http.impl.util.JavaMapping.Implicits._
+    /** JAVA API **/
+    def update(timeout: Duration, handler: Function[model.HttpRequest, model.HttpResponse]): Unit =
+      update(timeout, handler(_: HttpRequest).asScala)
+    def updateHandler(handler: Function[model.HttpRequest, model.HttpResponse]): Unit =
+      updateHandler(handler(_: HttpRequest).asScala)
   }
 
   class ControllerStage(settings: ServerSettings, log: LoggingAdapter)
