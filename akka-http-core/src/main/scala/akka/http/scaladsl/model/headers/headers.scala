@@ -795,6 +795,13 @@ final case class `Set-Cookie`(cookie: HttpCookie) extends jm.headers.SetCookie w
   protected def companion = `Set-Cookie`
 }
 
+object `Timeout-Access` extends ModeledCompanion[`Timeout-Access`]
+final case class `Timeout-Access`(timeoutAccess: akka.http.scaladsl.TimeoutAccess)
+  extends jm.headers.TimeoutAccess with SyntheticHeader {
+  def renderValue[R <: Rendering](r: R): r.type = r ~~ timeoutAccess.toString
+  protected def companion = `Timeout-Access`
+}
+
 /**
  * Model for the synthetic `Tls-Session-Info` header which carries the SSLSession of the connection
  * the message carrying this header was received with.

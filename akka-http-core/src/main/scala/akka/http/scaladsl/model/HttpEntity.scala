@@ -21,6 +21,7 @@ import akka.{ japi, stream }
 import akka.http.scaladsl.model.ContentType.{ NonBinary, Binary }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.impl.util.StreamUtils
 import akka.http.impl.util.JavaMapping.Implicits._
 
 import scala.compat.java8.OptionConverters._
@@ -503,4 +504,24 @@ object HttpEntity {
   private object SizeLimit {
     val Disabled = -1 // any negative value will do
   }
+
+  /**
+   * INTERNAL API
+   */
+  private[http] def captureTermination[T <: HttpEntity](entity: T): (T, Future[Unit]) =
+    entity match {
+      case x: HttpEntity.Strict ⇒ x.asInstanceOf[T] -> FastFuture.successful(())
+      case x: HttpEntity.Default ⇒
+        val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
+        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
+      case x: HttpEntity.Chunked ⇒
+        val (newChunks, whenCompleted) = StreamUtils.captureTermination(x.chunks)
+        x.copy(chunks = newChunks).asInstanceOf[T] -> whenCompleted
+      case x: HttpEntity.CloseDelimited ⇒
+        val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
+        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
+      case x: HttpEntity.IndefiniteLength ⇒
+        val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
+        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
+    }
 }
