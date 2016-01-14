@@ -161,8 +161,8 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
                   render(x)
                   renderHeaders(tail, alwaysClose, connHeader, serverSeen = true, transferEncodingSeen, dateSeen)
 
-                case x: CustomHeader ⇒
-                  if (!x.suppressRendering) render(x)
+                case x: CustomHeader if x.renderInResponses ⇒
+                  render(x)
                   renderHeaders(tail, alwaysClose, connHeader, serverSeen, transferEncodingSeen, dateSeen)
 
                 case x: RawHeader if (x is "content-type") || (x is "content-length") || (x is "transfer-encoding") ||
@@ -171,7 +171,8 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
                   renderHeaders(tail, alwaysClose, connHeader, serverSeen, transferEncodingSeen, dateSeen)
 
                 case x ⇒
-                  render(x)
+                  if (x.renderInResponses) render(x)
+                  else log.warning("HTTP header '{}' is not allowed in responses", x)
                   renderHeaders(tail, alwaysClose, connHeader, serverSeen, transferEncodingSeen, dateSeen)
               }
 

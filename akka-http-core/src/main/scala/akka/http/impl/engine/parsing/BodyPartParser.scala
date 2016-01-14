@@ -146,7 +146,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
         else if (doubleDash(input, ix)) terminate()
         else fail("Illegal multipart boundary in message content")
 
-      case HttpHeaderParser.EmptyHeader ⇒ parseEntity(headers.toList, contentType)(input, lineEnd)
+      case EmptyHeader ⇒ parseEntity(headers.toList, contentType)(input, lineEnd)
 
       case h: `Content-Type` ⇒
         if (cth.isEmpty) parseHeaderLines(input, lineEnd, headers, headerCount + 1, Some(h))
@@ -261,6 +261,8 @@ private[http] object BodyPartParser {
   val boundaryChar = CharPredicate.Digit ++ CharPredicate.Alpha ++ "'()+_,-./:=? "
 
   private object BoundaryHeader extends HttpHeader {
+    def renderInRequests = false
+    def renderInResponses = false
     def name = ""
     def lowercaseName = ""
     def value = ""
