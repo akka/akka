@@ -12,7 +12,7 @@ private[http] final case class UpgradeToWebsocketResponseHeader(handler: Either[
   extends InternalCustomHeader("UpgradeToWebsocketResponseHeader")
 
 private[http] abstract class InternalCustomHeader(val name: String) extends CustomHeader {
-  override def suppressRendering: Boolean = true
-
-  def value(): String = ""
+  final def renderInRequests = false
+  final def renderInResponses = false
+  def value: String = ""
 }
