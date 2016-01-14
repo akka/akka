@@ -34,16 +34,17 @@ public class FormFieldsTest extends JUnitRouteTest {
     static RequestVal<Option<Integer>> optionalIntParam = FormFields.intValue("optionalIntParam").optional();
 
     private Map.Entry<String, String> entry(String name, String value) {
-        return new AbstractMap.SimpleImmutableEntry<String, String>(name, value);
+        return new AbstractMap.SimpleImmutableEntry<>(name, value);
     }
-    private HttpRequest urlEncodedRequest(Map.Entry<String, String>... entries) {
+    @SafeVarargs
+    final private HttpRequest urlEncodedRequest(Map.Entry<String, String>... entries) {
         StringBuilder sb = new StringBuilder();
         boolean next = false;
         for (Map.Entry<String, String> entry: entries) {
             if (next) {
                 sb.append('&');
-                next = true;
             }
+            next = true;
             sb.append(entry.getKey());
             sb.append('=');
             sb.append(entry.getValue());
