@@ -35,7 +35,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     akka.stdout-loglevel = ERROR
     windows-connection-abort-workaround-enabled = auto
     akka.log-dead-letters = OFF
-  """)
+    akka.http.server.request-timeout = infinite""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
