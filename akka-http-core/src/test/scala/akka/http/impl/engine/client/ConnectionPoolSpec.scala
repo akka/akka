@@ -356,6 +356,8 @@ class ConnectionPoolSpec extends AkkaSpec("""
   }
 
   case class ConnNrHeader(nr: Int) extends CustomHeader {
+    def renderInRequests = false
+    def renderInResponses = true
     def name = "Conn-Nr"
     def value = nr.toString
   }
