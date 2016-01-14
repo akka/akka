@@ -9,10 +9,9 @@ import akka.actor.ActorSystem
 import akka.stream.impl.ActorMaterializerImpl
 import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
-import akka.stream.scaladsl.{ FileIO, Sink, Source }
+import akka.stream.scaladsl.{ FileIO, Source }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.StreamTestKit
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.ActorAttributes

@@ -240,7 +240,7 @@ private[transport] object NettyTransport {
   def addressFromSocketAddress(addr: SocketAddress, schemeIdentifier: String, systemName: String,
                                hostName: Option[String], port: Option[Int]): Option[Address] = addr match {
     case sa: InetSocketAddress ⇒ Some(Address(schemeIdentifier, systemName,
-      hostName.getOrElse(sa.getAddress.getHostAddress), port.getOrElse(sa.getPort))) // perhaps use getHostString in jdk 1.7
+      hostName.getOrElse(sa.getHostString), port.getOrElse(sa.getPort)))
     case _ ⇒ None
   }
 

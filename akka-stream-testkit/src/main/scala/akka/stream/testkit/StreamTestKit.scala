@@ -183,7 +183,7 @@ object TestSubscriber {
   trait SubscriberEvent extends DeadLetterSuppression with NoSerializationVerificationNeeded
   final case class OnSubscribe(subscription: Subscription) extends SubscriberEvent
   final case class OnNext[I](element: I) extends SubscriberEvent
-  final case object OnComplete extends SubscriberEvent
+  case object OnComplete extends SubscriberEvent
   final case class OnError(cause: Throwable) extends SubscriberEvent {
     override def toString: String = {
       val str = new StringWriter
@@ -397,7 +397,7 @@ object TestSubscriber {
      * See also [[#expectSubscriptionAndComplete(Throwable, Boolean)]] if no demand should be signalled.
      */
     def expectSubscriptionAndError(cause: Throwable): Self =
-      expectSubscriptionAndError(cause, true)
+      expectSubscriptionAndError(cause, signalDemand = true)
 
     /**
      * Fluent DSL
@@ -555,8 +555,7 @@ object TestSubscriber {
       @tailrec def drain(): immutable.Seq[I] =
         self.expectEvent(deadline.timeLeft) match {
           case OnError(ex) ⇒
-            // TODO once on JDK7+ this could be made an AssertionError, since it can carry ex in its cause param
-            throw new AssertionError(s"toStrict received OnError(${ex.getMessage}) while draining stream! Accumulated elements: ${b.result()}")
+            throw new AssertionError(s"toStrict received OnError while draining stream! Accumulated elements: ${b.result()}", ex)
           case OnComplete ⇒
             b.result()
           case OnNext(i: I @unchecked) ⇒
