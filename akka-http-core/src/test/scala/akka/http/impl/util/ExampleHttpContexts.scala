@@ -43,7 +43,7 @@ object ExampleHttpContexts {
     context.init(null, certManagerFactory.getTrustManagers, new SecureRandom)
 
     val params = new SSLParameters()
-    Java6Compat.trySetEndpointIdentificationAlgorithm(params, "https")
+    params.setEndpointIdentificationAlgorithm("https")
     HttpsContext(context, sslParameters = Some(params))
   }
 

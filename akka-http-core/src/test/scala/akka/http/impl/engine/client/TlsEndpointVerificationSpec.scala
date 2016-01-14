@@ -69,19 +69,14 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
         val ex = intercept[Exception] {
           Http().singleRequest(req).futureValue
         }
-        if (Java6Compat.isJava6) {
-          // our manual verification
-          ex.getMessage should include("Hostname verification failed")
-        } else {
-          // JDK built-in verification
-          val expectedMsg = "No subject alternative DNS name matching www.howsmyssl.com found"
+        // JDK built-in verification
+        val expectedMsg = "No subject alternative DNS name matching www.howsmyssl.com found"
 
-          var e: Throwable = ex
-          while (e.getCause != null) e = e.getCause
+        var e: Throwable = ex
+        while (e.getCause != null) e = e.getCause
 
-          info("TLS failure cause: " + e.getMessage)
-          e.getMessage should include(expectedMsg)
-        }
+        info("TLS failure cause: " + e.getMessage)
+        e.getMessage should include(expectedMsg)
       }
 
       "pass hostname verification on https://www.playframework.com/" in {
