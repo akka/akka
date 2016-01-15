@@ -1,9 +1,9 @@
-.. _circuit-breaker:
+.. _circuit-breaker-proxy:
 
 Circuit-Breaker Actor
 =====================
 
-This is an alternative implementation of the [Akka Circuit Breaker Pattern](http://doc.akka.io/docs/akka/snapshot/common/circuitbreaker.html).
+This is an alternative implementation of the :ref:`Akka Circuit Breaker Pattern <circuit-breaker>`.
 The main difference is that it is intended to be used only for request-reply interactions with an actor using the Circuit-Breaker as a proxy of the target one
 in order to provide the same failfast functionalities and a protocol similar to the circuit-breaker implementation in Akka.
 
