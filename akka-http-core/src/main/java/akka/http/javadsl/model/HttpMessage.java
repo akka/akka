@@ -4,10 +4,10 @@
 
 package akka.http.javadsl.model;
 
-import akka.japi.Option;
 import akka.util.ByteString;
 
 import java.io.File;
+import java.util.Optional;
 
 /**
  * The base type for an Http message (request or response).
@@ -37,13 +37,13 @@ public interface HttpMessage {
      * Try to find the first header with the given name (case-insensitive) and return
      * Some(header), otherwise this method returns None.
      */
-    Option<HttpHeader> getHeader(String headerName);
+    Optional<HttpHeader> getHeader(String headerName);
 
     /**
      * Try to find the first header of the given class and return
      * Some(header), otherwise this method returns None.
      */
-    <T extends HttpHeader> Option<T> getHeader(Class<T> headerClass);
+    <T extends HttpHeader> Optional<T> getHeader(Class<T> headerClass);
 
     /**
      * The entity of this message.

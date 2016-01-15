@@ -5,11 +5,12 @@
 package akka.http.javadsl.model;
 
 import java.util.Map;
+import java.util.Optional;
+
 import scala.concurrent.Future;
 import akka.http.javadsl.model.headers.ContentDisposition;
 import akka.http.javadsl.model.headers.ContentDispositionType;
 import akka.http.javadsl.model.headers.RangeUnit;
-import akka.japi.Option;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Source;
 
@@ -52,11 +53,11 @@ public interface Multipart {
 
         Iterable<HttpHeader> getHeaders();
 
-        Option<ContentDisposition> getContentDispositionHeader();
+        Optional<ContentDisposition> getContentDispositionHeader();
 
         Map<String, String> getDispositionParams();
 
-        Option<ContentDispositionType> getDispositionType();
+        Optional<ContentDispositionType> getDispositionType();
 
         Future<? extends Multipart.BodyPart.Strict> toStrict(long timeoutMillis, Materializer materializer);
 
@@ -106,7 +107,7 @@ public interface Multipart {
             String getName();
             Map<String, String> getAdditionalDispositionParams();
             Iterable<HttpHeader> getAdditionalHeaders();
-            Option<String> getFilename();
+            Optional<String> getFilename();
 
             Future<Multipart.FormData.BodyPart.Strict> toStrict(long timeoutMillis, Materializer materializer);
 

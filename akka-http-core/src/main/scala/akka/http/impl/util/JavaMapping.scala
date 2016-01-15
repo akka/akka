@@ -5,6 +5,7 @@
 package akka.http.impl.util
 
 import java.net.InetAddress
+import java.util.Optional
 import java.{ util ⇒ ju, lang ⇒ jl }
 import akka.japi.Pair
 import akka.stream.javadsl
@@ -16,6 +17,8 @@ import akka.japi
 import akka.http.impl.model.{ JavaQuery, JavaUri }
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.{ model ⇒ sm }
+
+import scala.compat.java8.OptionConverters._
 
 import scala.util.Try
 
@@ -101,10 +104,10 @@ private[http] object JavaMapping {
       def toScala(javaObject: ju.Map[K, V]): immutable.Map[K, V] = javaObject.asScala.toMap
       def toJava(scalaObject: immutable.Map[K, V]): ju.Map[K, V] = scalaObject.asJava
     }
-  implicit def option[_J, _S](implicit mapping: JavaMapping[_J, _S]): JavaMapping[akka.japi.Option[_J], Option[_S]] =
-    new JavaMapping[akka.japi.Option[_J], Option[_S]] {
-      def toScala(javaObject: japi.Option[_J]): Option[_S] = javaObject.asScala.map(mapping.toScala)
-      def toJava(scalaObject: Option[_S]): japi.Option[_J] = japi.Option.fromScalaOption(scalaObject.map(mapping.toJava))
+  implicit def option[_J, _S](implicit mapping: JavaMapping[_J, _S]): JavaMapping[Optional[_J], Option[_S]] =
+    new JavaMapping[Optional[_J], Option[_S]] {
+      def toScala(javaObject: Optional[_J]): Option[_S] = javaObject.asScala.map(mapping.toScala)
+      def toJava(scalaObject: Option[_S]): Optional[_J] = scalaObject.map(mapping.toJava).asJava
     }
 
   implicit def flowMapping[JIn, SIn, JOut, SOut, M](implicit inMapping: JavaMapping[JIn, SIn], outMapping: JavaMapping[JOut, SOut]): JavaMapping[javadsl.Flow[JIn, JOut, M], scaladsl.Flow[SIn, SOut, M]] =

@@ -209,11 +209,11 @@ public class MigrationsJava {
 
     Uri uri = null;
     //#raw-query
-    final akka.japi.Option<String> theRawQueryString = uri.rawQueryString();
+    final Optional<String> theRawQueryString = uri.rawQueryString();
     //#raw-query
 
     //#query-param
-    final akka.japi.Option<String> aQueryParam = uri.query().get("a");
+    final Optional<String> aQueryParam = uri.query().get("a");
     //#query-param
 
     //#file-source-sink

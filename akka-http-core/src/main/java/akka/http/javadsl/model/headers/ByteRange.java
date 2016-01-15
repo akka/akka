@@ -5,17 +5,18 @@
 package akka.http.javadsl.model.headers;
 
 import akka.http.scaladsl.model.headers.ByteRange$;
-import akka.japi.Option;
+
+import java.util.OptionalLong;
 
 public abstract class ByteRange {
     public abstract boolean isSlice();
     public abstract boolean isFromOffset();
     public abstract boolean isSuffix();
 
-    public abstract Option<Long> getSliceFirst();
-    public abstract Option<Long> getSliceLast();
-    public abstract Option<Long> getOffset();
-    public abstract Option<Long> getSuffixLength();
+    public abstract OptionalLong getSliceFirst();
+    public abstract OptionalLong getSliceLast();
+    public abstract OptionalLong getOffset();
+    public abstract OptionalLong getSuffixLength();
 
     public static ByteRange createSlice(long first, long last) {
         return ByteRange$.MODULE$.apply(first, last);

@@ -202,7 +202,7 @@ public class HttpServerExampleDocTest {
                                         .withEntity(ContentTypes.TEXT_HTML_UTF8,
                                             "<html><body>Hello world!</body></html>");
                             else if (uri.path().equals("/hello")) {
-                                String name = Util.getOrElse(uri.query().get("name"), "Mister X");
+                                String name = uri.query().get("name").orElse("Mister X");
 
                                 return
                                     HttpResponse.create()

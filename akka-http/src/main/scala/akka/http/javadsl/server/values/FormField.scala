@@ -5,17 +5,17 @@
 package akka.http.javadsl.server
 package values
 
+import java.util.Optional
 import java.{ lang ⇒ jl }
 
 import akka.http.impl.server.{ FormFieldImpl, Util }
 import akka.http.scaladsl.unmarshalling._
 import akka.japi.function.Function
-import akka.japi.{ Option ⇒ JOption }
 
 import scala.reflect.ClassTag
 
 trait FormField[T] extends RequestVal[T] {
-  def optional: RequestVal[JOption[T]]
+  def optional: RequestVal[Optional[T]]
   def withDefault(defaultValue: T): RequestVal[T]
 }
 
