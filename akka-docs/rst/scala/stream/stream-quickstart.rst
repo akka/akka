@@ -118,7 +118,7 @@ The runnable graph can then be ``run()`` to materialize a stream out of it.
 Both :class:`Graph` and :class:`RunnableGraph` are *immutable, thread-safe, and freely shareable*.
 
 A graph can also have one of several other shapes, with one or more unconnected ports. Having unconnected ports
-expresses a grapth that is a *partial graph*. Concepts around composing and nesting graphs in large structures are
+expresses a graph that is a *partial graph*. Concepts around composing and nesting graphs in large structures are
 explained in detail in :ref:`composition-scala`. It is also possible to wrap complex computation graphs
 as Flows, Sinks or Sources, which will be explained in detail in
 :ref:`constructing-sources-sinks-flows-from-partial-graphs-scala`.
