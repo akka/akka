@@ -4,16 +4,19 @@
 
 package akka.http.impl.server
 
+import java.util.Optional
+
 import akka.http.javadsl.server.RequestVal
 import akka.http.javadsl.server.values.Parameter
 import akka.http.scaladsl.common.{ NameUnmarshallerReceptacle, NameReceptacle }
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.unmarshalling._
-import akka.japi.{ Option ⇒ JOption }
 
 import scala.reflect.ClassTag
 import akka.http.scaladsl.server.directives.ParameterDirectives
 import akka.http.scaladsl.server.Directive1
+
+import scala.compat.java8.OptionConverters._
 
 /**
  * INTERNAL API
@@ -25,19 +28,19 @@ private[http] class ParameterImpl[T, U](receptacle: NameReceptacle[T])(
   import ParameterDirectives._
   def directive: Directive1[U] = parameter(receptacle).map(conv)
 
-  def optional: RequestVal[JOption[U]] =
-    new StandaloneExtractionImpl[JOption[U]] {
-      def directive: Directive1[JOption[U]] = optionalDirective
+  def optional: RequestVal[Optional[U]] =
+    new StandaloneExtractionImpl[Optional[U]] {
+      def directive: Directive1[Optional[U]] = optionalDirective
     }
 
-  private def optionalDirective: Directive1[JOption[U]] =
+  private def optionalDirective: Directive1[Optional[U]] =
     extractMaterializer.flatMap { implicit fm ⇒
-      parameter(receptacle.?).map(v ⇒ JOption.fromScalaOption(v.map(conv)))
+      parameter(receptacle.?).map(v ⇒ v.map(conv).asJava)
     }
 
   def withDefault(defaultValue: U): RequestVal[U] =
     new StandaloneExtractionImpl[U] {
-      def directive: Directive1[U] = optionalDirective.map(_.getOrElse(defaultValue))
+      def directive: Directive1[U] = optionalDirective.map(_.orElse(defaultValue))
     }
 }
 private[http] object ParameterImpl {

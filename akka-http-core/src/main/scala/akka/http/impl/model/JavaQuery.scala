@@ -4,6 +4,7 @@
 
 package akka.http.impl.model
 
+import java.util.Optional
 import java.{ util ⇒ ju }
 import akka.http.impl.model.parser.CharacterClasses
 import akka.http.impl.util.StringRendering
@@ -11,15 +12,16 @@ import akka.http.javadsl.model.HttpCharset
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.model.UriRendering
 import akka.http.scaladsl.{ model ⇒ sm }
-import akka.japi.{ Pair, Option }
+import akka.japi.Pair
 import akka.parboiled2.CharPredicate
 
 import scala.collection.JavaConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
+import scala.compat.java8.OptionConverters._
 
 /** INTERNAL API */
 case class JavaQuery(query: sm.Uri.Query) extends jm.Query {
-  override def get(key: String): Option[String] = query.get(key)
+  override def get(key: String): Optional[String] = query.get(key).asJava
   override def toMap: ju.Map[String, String] = query.toMap.asJava
   override def toList: ju.List[Pair[String, String]] = query.map(_.asJava).asJava
   override def getOrElse(key: String, _default: String): String = query.getOrElse(key, _default)

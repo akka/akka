@@ -26,7 +26,7 @@ public class JavaApiTestCases {
     if (request.method() == HttpMethods.GET) {
       Uri uri = request.getUri();
       if (uri.path().equals("/hello")) {
-        String name = Util.getOrElse(uri.query().get("name"), "Mister X");
+        String name = uri.query().get("name").orElse("Mister X");
 
         return
           HttpResponse.create()
