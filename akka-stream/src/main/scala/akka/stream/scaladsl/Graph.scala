@@ -3,15 +3,16 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.impl.Stages.{ StageModule, SymbolicStage }
-import akka.stream.impl._
-import akka.stream.impl.StreamLayout._
 import akka.stream._
+import akka.stream.impl._
+import akka.stream.impl.fusing.GraphStages
+import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
+import akka.stream.impl.Stages.{ StageModule, SymbolicStage }
+import akka.stream.impl.StreamLayout._
 import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import scala.collection.immutable
-import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
 
 object Merge {
   /**
@@ -236,8 +237,8 @@ object Interleave {
    * @param segmentSize number of elements to send downstream before switching to next input port
    * @param eagerClose if true, interleave completes upstream if any of its upstream completes.
    */
-  def apply[T](inputPorts: Int, segmentSize: Int, eagerClose: Boolean = false): Interleave[T] =
-    new Interleave(inputPorts, segmentSize, eagerClose)
+  def apply[T](inputPorts: Int, segmentSize: Int, eagerClose: Boolean = false): Graph[UniformFanInShape[T, T], Unit] =
+    GraphStages.withDetachedInputs(new Interleave[T](inputPorts, segmentSize, eagerClose))
 }
 
 /**
@@ -640,7 +641,8 @@ object Concat {
   /**
    * Create a new `Concat`.
    */
-  def apply[T](inputPorts: Int = 2): Concat[T] = new Concat(inputPorts)
+  def apply[T](inputPorts: Int = 2): Graph[UniformFanInShape[T, T], Unit] =
+    GraphStages.withDetachedInputs(new Concat[T](inputPorts))
 }
 
 /**
