@@ -4,10 +4,13 @@
 
 package akka.http.scaladsl.coding
 
+import akka.stream.{ Attributes, FlowShape }
+import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
+
 import scala.concurrent.duration._
 import org.scalatest.WordSpec
 import akka.util.ByteString
-import akka.stream.stage.{ SyncDirective, Context, PushStage, Stage }
+import akka.stream.stage._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
 import headers._
@@ -34,10 +37,17 @@ class DecoderSpec extends WordSpec with CodecSpecSupport {
   case object DummyDecoder extends StreamDecoder {
     val encoding = HttpEncodings.compress
 
-    def newDecompressorStage(maxBytesPerChunk: Int): () ⇒ Stage[ByteString, ByteString] =
-      () ⇒ new PushStage[ByteString, ByteString] {
-        def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective =
-          ctx.push(elem ++ ByteString("compressed"))
+    override def newDecompressorStage(maxBytesPerChunk: Int): () ⇒ GraphStage[FlowShape[ByteString, ByteString]] =
+      () ⇒ new SimpleLinearGraphStage[ByteString] {
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+          setHandler(in, new InHandler {
+            override def onPush(): Unit = push(out, grab(in) ++ ByteString("compressed"))
+          })
+          setHandler(out, new OutHandler {
+            override def onPull(): Unit = pull(in)
+          })
+        }
       }
   }
+
 }
