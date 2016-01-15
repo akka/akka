@@ -103,7 +103,7 @@ object Sink {
 
   /**
    * A `Sink` that materializes into a `Future` of the optional first value received.
-   * If the stream completes before signaling at least a single element, the value of the Future will be an empty [[akka.japi.Option]].
+   * If the stream completes before signaling at least a single element, the value of the Future will be an empty [[java.util.Optional]].
    * If the stream signals an error errors before signaling at least a single element, the Future will be failed with the streams exception.
    *
    * See also [[head]].
@@ -124,7 +124,7 @@ object Sink {
 
   /**
    * A `Sink` that materializes into a `Future` of the optional last value received.
-   * If the stream completes before signaling at least a single element, the value of the Future will be an empty [[akka.japi.Option]].
+   * If the stream completes before signaling at least a single element, the value of the Future will be an empty [[java.util.Optional]].
    * If the stream signals an error errors before signaling at least a single element, the Future will be failed with the streams exception.
    *
    * See also [[head]].
