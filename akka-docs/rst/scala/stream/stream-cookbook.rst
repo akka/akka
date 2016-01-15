@@ -54,7 +54,7 @@ collection itself, so we can just call ``mapConcat(identity)``.
 Draining a stream to a strict collection
 ----------------------------------------
 
-**Situation:** A finite sequence of elements is given as a stream, but a scala collection is needed instead.
+**Situation:** A finite sequence of elements is given as a stream, but a Scala collection is needed instead.
 
 In this recipe we will use the ``grouped`` stream operation that groups incoming elements into a stream of limited
 size collections (it can be seen as the almost opposite version of the "Flattening a stream of sequences" recipe
@@ -287,7 +287,7 @@ We introduce a boolean variable ``waitingFirstValue`` to denote whether the firs
 a null can be used with the same purpose). In the downstream ``onPull()`` handler the difference from the previous
 version is that we call ``holdDownstream()`` if the first element is not yet available and thus blocking our downstream. The
 upstream ``onPush()`` handler sets ``waitingFirstValue`` to false, and after checking if ``holdDownstream()`` has been called it
-either releaves the upstream producer, or both the upstream producer and downstream consumer by calling ``pushAndPull()``
+either relieves the upstream producer, or both the upstream producer and downstream consumer by calling ``pushAndPull()``
 
 .. includecode:: ../code/docs/stream/cookbook/RecipeHold.scala#hold-version-2
 

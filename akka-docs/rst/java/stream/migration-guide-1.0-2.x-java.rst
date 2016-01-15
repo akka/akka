@@ -389,8 +389,8 @@ replaced with a single method: ``Sink.asPublisher(fanout: Boolean)``.
 Update procedure
 ----------------
 
-1. Replace all occurences of ``Sink.publisher`` with ``Sink.asPublisher(false)``
-2. Replace all occurences of ``Sink.fanoutPublisher`` with ``Sink.asPublisher(true)``
+1. Replace all occurrences of ``Sink.publisher`` with ``Sink.asPublisher(false)``
+2. Replace all occurrences of ``Sink.fanoutPublisher`` with ``Sink.asPublisher(true)``
 
 Example
 ^^^^^^^
