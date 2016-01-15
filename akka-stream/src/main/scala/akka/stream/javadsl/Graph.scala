@@ -257,7 +257,6 @@ object Zip {
  * '''Cancels when''' any downstream cancels
  */
 object Unzip {
-  import akka.japi.function.Function
 
   /**
    * Creates a new `Unzip` stage with the specified output types.

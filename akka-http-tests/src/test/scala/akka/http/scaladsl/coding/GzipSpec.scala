@@ -33,7 +33,6 @@ class GzipSpec extends CoderSpec {
     }
     "throw an error if compressed data is just missing the trailer at the end" in {
       def brokenCompress(payload: String) = Gzip.newCompressor.compress(ByteString(payload, "UTF-8"))
-
       val ex = the[RuntimeException] thrownBy ourDecode(brokenCompress("abcdefghijkl"))
       ex.getCause.getMessage should equal("Truncated GZIP stream")
     }
