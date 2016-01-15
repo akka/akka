@@ -126,5 +126,44 @@ class FlowJoinSpec extends AkkaSpec(ConfigFactory.parseString("akka.loglevel=INF
       probe.requestNext(("traveler1", "ignition"))
       probe.requestNext(("traveler2", "traveler1"))
     }
+
+    "allow for concat cycle" in assertAllStagesStopped {
+      val flow = Flow.fromGraph(GraphDSL.create(TestSource.probe[String](system), Sink.head[String])(Keep.both) { implicit b ⇒
+        (source, sink) ⇒
+          import GraphDSL.Implicits._
+          val concat = b.add(Concat[String](2))
+          val broadcast = b.add(Broadcast[String](2, eagerCancel = true))
+          source ~> concat.in(0)
+          concat.out ~> broadcast.in
+          broadcast.out(0) ~> sink
+
+          FlowShape(concat.in(1), broadcast.out(1))
+      })
+
+      val (probe, result) = flow.join(Flow[String]).run()
+      probe.sendNext("lonely traveler")
+      whenReady(result) { r ⇒
+        r shouldBe "lonely traveler"
+        probe.sendComplete()
+      }
+    }
+
+    "allow for interleave cycle" in assertAllStagesStopped {
+      val source = Source.single("lonely traveler")
+
+      val flow1 = Flow.fromGraph(GraphDSL.create(Sink.head[String]) { implicit b ⇒
+        sink ⇒
+          import GraphDSL.Implicits._
+          val merge = b.add(Interleave[String](2, 1))
+          val broadcast = b.add(Broadcast[String](2, eagerCancel = true))
+          source ~> merge.in(0)
+          merge.out ~> broadcast.in
+          broadcast.out(0) ~> sink
+
+          FlowShape(merge.in(1), broadcast.out(1))
+      })
+
+      whenReady(flow1.join(Flow[String]).run())(_ shouldBe "lonely traveler")
+    }
   }
 }

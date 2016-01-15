@@ -4,15 +4,18 @@
 package akka.stream.impl.fusing
 
 import java.util.concurrent.atomic.AtomicBoolean
+
 import akka.actor.Cancellable
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.stream._
 import akka.stream.stage._
+
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.impl.StreamLayout._
 import akka.stream.impl.ReactiveStreamsCompliance
+import akka.stream.scaladsl.GraphDSL
 
 /**
  * INTERNAL API
@@ -282,4 +285,26 @@ object GraphStages {
     }
     override def toString: String = s"SingleSource($elem)"
   }
+
+  /**
+   * INTERNAL API.
+   *
+   * Fusing graphs that have cycles involving FanIn stages might lead to deadlocks if
+   * demand is not carefully managed.
+   *
+   * This means that FanIn stages need to early pull every relevant input on startup.
+   * This can either be implemented inside the stage itself, or this method can be used,
+   * which adds a detacher stage to every input.
+   */
+  private[stream] def withDetachedInputs[T](stage: GraphStage[UniformFanInShape[T, T]]) =
+    GraphDSL.create() { implicit builder ⇒
+      import GraphDSL.Implicits._
+      val concat = builder.add(stage)
+      val ds = concat.inSeq.map { inlet ⇒
+        val detacher = builder.add(GraphStages.detacher[T])
+        detacher ~> inlet
+        detacher.in
+      }
+      UniformFanInShape(concat.out, ds: _*)
+    }
 }
