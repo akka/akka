@@ -136,7 +136,7 @@ object Receiver {
 
 class Receiver extends Actor {
   /**
-   * Simulate loosing 75% of all messages on the receiving end. We want to see the redelivery in action!
+   * Simulate losing 75% of all messages on the receiving end. We want to see the redelivery in action!
    */
   def shouldSendAck = ThreadLocalRandom.current.nextDouble() < 0.25
 
