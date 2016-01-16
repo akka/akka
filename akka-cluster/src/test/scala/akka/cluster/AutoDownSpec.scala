@@ -88,7 +88,7 @@ class AutoDownSpec extends AkkaSpec {
       expectMsg(DownCalled(memberC.address))
     }
 
-    "not down unreachable when loosing leadership inbetween detection and specified duration" in {
+    "not down unreachable when losing leadership inbetween detection and specified duration" in {
       val a = autoDownActor(2.seconds)
       a ! LeaderChanged(Some(memberA.address))
       a ! UnreachableMember(memberC)

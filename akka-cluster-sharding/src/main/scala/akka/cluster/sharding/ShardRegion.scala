@@ -135,7 +135,7 @@ object ShardRegion {
    * reduce memory consumption. This is done by the application specific implementation of
    * the entity actors for example by defining receive timeout (`context.setReceiveTimeout`).
    * If a message is already enqueued to the entity when it stops itself the enqueued message
-   * in the mailbox will be dropped. To support graceful passivation without loosing such
+   * in the mailbox will be dropped. To support graceful passivation without losing such
    * messages the entity actor can send this `Passivate` message to its parent `ShardRegion`.
    * The specified wrapped `stopMessage` will be sent back to the entity, which is
    * then supposed to stop itself. Incoming messages will be buffered by the `ShardRegion`
