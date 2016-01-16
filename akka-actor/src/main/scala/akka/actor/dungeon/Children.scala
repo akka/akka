@@ -71,14 +71,20 @@ private[akka] trait Children { this: ActorCell ⇒
     ref
   }
 
-  private[akka] def removeFunctionRef(ref: FunctionRef): Unit = {
+  private[akka] def removeFunctionRef(ref: FunctionRef): Boolean = {
     require(ref.path.parent eq self.path, "trying to remove FunctionRef from wrong ActorCell")
-    ref.stop()
     val name = ref.path.name
-    @tailrec def rec(): Unit = {
+    @tailrec def rec(): Boolean = {
       val old = functionRefs
-      val removed = old - name
-      if (!Unsafe.instance.compareAndSwapObject(this, AbstractActorCell.functionRefsOffset, old, removed)) rec()
+      if (!old.contains(name)) false
+      else {
+        val removed = old - name
+        if (!Unsafe.instance.compareAndSwapObject(this, AbstractActorCell.functionRefsOffset, old, removed)) rec()
+        else {
+          ref.stop()
+          true
+        }
+      }
     }
     rec()
   }
