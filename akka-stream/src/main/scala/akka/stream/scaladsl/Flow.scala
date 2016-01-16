@@ -6,9 +6,11 @@ package akka.stream.scaladsl
 import akka.event.LoggingAdapter
 import akka.stream.Attributes._
 import akka.stream._
+import akka.Done
 import akka.stream.impl.Stages.{ DirectProcessor, StageModule }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.stream.impl._
+import akka.stream.impl.fusing.GraphStages.TerminationWatcher
 import akka.stream.impl.fusing._
 import akka.stream.stage.AbstractStage.{ PushPullGraphStage, PushPullGraphStageWithMaterializedValue }
 import akka.stream.stage._
@@ -1850,6 +1852,15 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def alsoToMat[Mat2, Mat3](that: Graph[SinkShape[Out], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[Out, Mat3] =
     viaMat(alsoToGraph(that))(matF)
+
+  /**
+   * Materializes to `Future[Done]` that completes on getting termination message.
+   * The Future completes with success when received complete message from upstream or cancel
+   * from downstream. It fails with the same error when received error message from
+   * downstream.
+   */
+  def watchTermination[Mat2]()(matF: (Mat, Future[Done]) ⇒ Mat2): ReprMat[Out, Mat2] =
+    viaMat(GraphStages.terminationWatcher)(matF)
 
   /**
    * INTERNAL API.

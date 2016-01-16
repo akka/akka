@@ -75,6 +75,8 @@ private[stream] object Stages {
     val unfoldAsync = name("unfoldAsync")
     val delay = name("delay") and inputBuffer(16, 16)
 
+    val terminationWatcher = name("terminationWatcher")
+
     val publisherSource = name("publisherSource")
     val iterableSource = name("iterableSource")
     val futureSource = name("futureSource")

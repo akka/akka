@@ -3,7 +3,7 @@
  */
 package akka.stream.javadsl
 
-import akka.NotUsed
+import akka.{ NotUsed, Done }
 import akka.event.LoggingAdapter
 import akka.japi.{ function, Pair }
 import akka.stream.impl.Timers.{ DelayInitial, IdleInject }
@@ -1555,6 +1555,15 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * '''Cancels when''' downstream cancels
    */
   def detach: javadsl.Flow[In, Out, Mat] = new Flow(delegate.detach)
+
+  /**
+   * Materializes to `Future[Done]` that completes on getting termination message.
+   * The Future completes with success when received complete message from upstream or cancel
+   * from downstream. It fails with the same error when received error message from
+   * downstream.
+   */
+  def watchTermination[M]()(matF: function.Function2[Mat, Future[Done], M]): javadsl.Flow[In, Out, M] =
+    new Flow(delegate.watchTermination()(combinerToScala(matF)))
 
   /**
    * Delays the initial element by the specified duration.
