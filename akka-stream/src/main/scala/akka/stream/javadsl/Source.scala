@@ -458,6 +458,17 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     runWith(Sink.fold(zero, f), materializer)
 
   /**
+   * Shortcut for running this `Source` with a reduce function.
+   * The given function is invoked for every received element, giving it its previous
+   * output (from the second ones) an the element as input.
+   * The returned [[scala.concurrent.Future]] will be completed with value of the final
+   * function evaluation when the input stream ends, or completed with `Failure`
+   * if there is a failure is signaled in the stream.
+   */
+  def runReduce[U >: Out](f: function.Function2[U, U, U], materializer: Materializer): Future[U] =
+    runWith(Sink.reduce(f), materializer)
+
+  /**
    * Concatenate this [[Source]] with the given one, meaning that once current
    * is exhausted and all result elements have been generated,
    * the given source elements will be produced.
@@ -1005,6 +1016,22 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    */
   def fold[T](zero: T)(f: function.Function2[T, Out, T]): javadsl.Source[T, Mat] =
     new Source(delegate.fold(zero)(f.apply))
+
+  /**
+   * Similar to `fold` but uses first element as zero element.
+   * Applies the given function towards its current and next value,
+   * yielding the next current value.
+   *
+   * '''Emits when''' upstream completes
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def reduce(f: function.Function2[Out, Out, Out @uncheckedVariance]): javadsl.Source[Out, Mat] =
+    new Source(delegate.reduce(f.apply))
 
   /**
    * Intersperses stream with provided element, similar to how [[scala.collection.immutable.List.mkString]]

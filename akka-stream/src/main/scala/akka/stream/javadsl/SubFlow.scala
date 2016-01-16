@@ -401,6 +401,22 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
     new SubFlow(delegate.fold(zero)(f.apply))
 
   /**
+   * Similar to `fold` but uses first element as zero element.
+   * Applies the given function towards its current and next value,
+   * yielding the next current value.
+   *
+   * '''Emits when''' upstream completes
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def reduce(f: function.Function2[Out, Out, Out @uncheckedVariance]): SubFlow[In, Out, Mat] =
+    new SubFlow(delegate.reduce(f.apply))
+
+  /**
    * Intersperses stream with provided element, similar to how [[scala.collection.immutable.List.mkString]]
    * injects a separator between a List's elements.
    *
