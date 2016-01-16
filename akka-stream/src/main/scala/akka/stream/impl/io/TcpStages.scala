@@ -16,7 +16,7 @@ import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.impl.fusing.GraphStages.detacher
 import akka.stream.scaladsl.Tcp.{ OutgoingConnection, ServerBinding }
 import akka.stream.scaladsl.{ BidiFlow, Flow, Tcp ⇒ StreamTcp }
-import akka.stream.stage.GraphStageLogic.StageActorRef
+import akka.stream.stage.GraphStageLogic.StageActor
 import akka.stream.stage._
 import akka.util.ByteString
 
@@ -48,12 +48,12 @@ private[stream] class ConnectionSourceStage(val tcpManager: ActorRef,
     val bindingPromise = Promise[ServerBinding]
 
     val logic = new TimerGraphStageLogic(shape) {
-      implicit var self: StageActorRef = _
+      implicit def self: ActorRef = stageActor.ref
       var listener: ActorRef = _
       var unbindPromise = Promise[Unit]()
 
       override def preStart(): Unit = {
-        self = getStageActorRef(receive)
+        getStageActor(receive)
         tcpManager ! Tcp.Bind(self, endpoint, backlog, options, pullMode = true)
       }
 
@@ -63,7 +63,7 @@ private[stream] class ConnectionSourceStage(val tcpManager: ActorRef,
         msg match {
           case Bound(localAddress) ⇒
             listener = sender
-            self.watch(listener)
+            stageActor.watch(listener)
             if (isAvailable(out)) listener ! ResumeAccepting(1)
             val target = self
             bindingPromise.success(ServerBinding(localAddress)(() ⇒ { target ! Unbind; unbindPromise.future }))
@@ -118,7 +118,7 @@ private[stream] class ConnectionSourceStage(val tcpManager: ActorRef,
 
       private def tryUnbind(): Unit = {
         if (listener ne null) {
-          self.unwatch(listener)
+          stageActor.unwatch(listener)
           setKeepGoing(true)
           listener ! Unbind
         }
@@ -169,7 +169,7 @@ private[stream] object TcpConnectionStage {
    * easier to maintain and understand.
    */
   class TcpStreamLogic(val shape: FlowShape[ByteString, ByteString], val role: TcpRole) extends GraphStageLogic(shape) {
-    implicit private var self: StageActorRef = _
+    implicit def self: ActorRef = stageActor.ref
 
     private def bytesIn = shape.in
     private def bytesOut = shape.out
@@ -185,14 +185,12 @@ private[stream] object TcpConnectionStage {
       role match {
         case Inbound(conn, _) ⇒
           setHandler(bytesOut, readHandler)
-          self = getStageActorRef(connected)
           connection = conn
-          self.watch(connection)
+          getStageActor(connected).watch(connection)
           connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
           pull(bytesIn)
         case ob @ Outbound(manager, cmd, _, _) ⇒
-          self = getStageActorRef(connecting(ob))
-          self.watch(manager)
+          getStageActor(connecting(ob)).watch(manager)
           manager ! cmd
       }
     }
@@ -207,9 +205,9 @@ private[stream] object TcpConnectionStage {
           role.asInstanceOf[Outbound].localAddressPromise.success(c.localAddress)
           connection = sender
           setHandler(bytesOut, readHandler)
-          self.unwatch(ob.manager)
-          self = getStageActorRef(connected)
-          self.watch(connection)
+          stageActor.unwatch(ob.manager)
+          stageActor.become(connected)
+          stageActor.watch(connection)
           connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
           if (isAvailable(bytesOut)) connection ! ResumeReading
           pull(bytesIn)
