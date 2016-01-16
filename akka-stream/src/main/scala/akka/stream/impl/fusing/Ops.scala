@@ -1071,3 +1071,38 @@ private[stream] final class DropWithin[T](timeout: FiniteDuration) extends Simpl
 
   override def toString = "DropWithin"
 }
+
+/**
+ * INTERNAL API
+ */
+private[stream] final class Reduce[T](f: (T, T) ⇒ T) extends SimpleLinearGraphStage[T] {
+  override def initialAttributes: Attributes = DefaultAttributes.reduce
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+    override def toString = s"Reduce.Logic(aggregator=$aggregator)"
+    var aggregator: T = _
+
+    setHandler(in, new InHandler {
+      override def onPush(): Unit = {
+        aggregator = grab(in)
+        pull(in)
+        setHandler(in, rest)
+      }
+    })
+    def rest = new InHandler {
+      override def onPush(): Unit = {
+        aggregator = f(aggregator, grab(in))
+        pull(in)
+      }
+      override def onUpstreamFinish(): Unit = {
+        push(out, aggregator)
+        completeStage()
+      }
+    }
+
+    setHandler(out, new OutHandler {
+      override def onPull(): Unit = pull(in)
+    })
+  }
+  override def toString = "Reduce"
+}
