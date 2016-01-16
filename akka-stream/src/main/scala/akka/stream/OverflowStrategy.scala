@@ -3,48 +3,53 @@
  */
 package akka.stream
 
+import OverflowStrategies._
+
 /**
- * Represents a strategy that decides how to deal with a buffer that is full but is about to receive a new element.
+ * Represents a strategy that decides how to deal with a buffer of time based stage
+ * that is full but is about to receive a new element.
  */
-sealed abstract class OverflowStrategy extends Serializable
-sealed trait DelayOverflowStrategy extends Serializable
+sealed abstract class DelayOverflowStrategy extends Serializable
 
-private[akka] trait BaseOverflowStrategy {
+final case class BufferOverflowException(msg: String) extends RuntimeException(msg)
+/**
+ * Represents a strategy that decides how to deal with a buffer that is full but is
+ * about to receive a new element.
+ */
+sealed abstract class OverflowStrategy extends DelayOverflowStrategy
 
+private[akka] object OverflowStrategies {
   /**
    * INTERNAL API
    */
-  private[akka] case object DropHead extends OverflowStrategy with DelayOverflowStrategy
-
+  private[akka] case object DropHead extends OverflowStrategy
   /**
    * INTERNAL API
    */
-  private[akka] case object DropTail extends OverflowStrategy with DelayOverflowStrategy
-
+  private[akka] case object DropTail extends OverflowStrategy
   /**
    * INTERNAL API
    */
-  private[akka] case object DropBuffer extends OverflowStrategy with DelayOverflowStrategy
-
+  private[akka] case object DropBuffer extends OverflowStrategy
   /**
    * INTERNAL API
    */
-  private[akka] case object DropNew extends OverflowStrategy with DelayOverflowStrategy
-
+  private[akka] case object DropNew extends OverflowStrategy
   /**
    * INTERNAL API
    */
-  private[akka] case object Backpressure extends OverflowStrategy with DelayOverflowStrategy
-
+  private[akka] case object Backpressure extends OverflowStrategy
   /**
    * INTERNAL API
    */
-  private[akka] case object Fail extends OverflowStrategy with DelayOverflowStrategy {
-    final case class BufferOverflowException(msg: String) extends RuntimeException(msg)
-  }
+  private[akka] case object Fail extends OverflowStrategy
+  /**
+   * INTERNAL API
+   */
+  private[akka] case object EmitEarly extends DelayOverflowStrategy
 }
 
-object OverflowStrategy extends BaseOverflowStrategy {
+object OverflowStrategy {
   /**
    * If the buffer is full when a new element arrives, drops the oldest element from the buffer to make space for
    * the new element.
@@ -79,12 +84,7 @@ object OverflowStrategy extends BaseOverflowStrategy {
   def fail: OverflowStrategy = Fail
 }
 
-object DelayOverflowStrategy extends BaseOverflowStrategy {
-  /**
-   * INTERNAL API
-   */
-  private[akka] case object EmitEarly extends DelayOverflowStrategy
-
+object DelayOverflowStrategy {
   /**
    * If the buffer is full when a new element is available this strategy send next element downstream without waiting
    */
