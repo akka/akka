@@ -10,7 +10,7 @@ import akka.actor.{ ActorRef, Props }
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.stage.{ AsyncCallback, GraphStageLogic, GraphStageWithMaterializedValue, InHandler }
+import akka.stream.stage._
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -243,11 +243,7 @@ private[akka] final class HeadOptionStage[T] extends GraphStageWithMaterializedV
  * INTERNAL API
  */
 private[akka] class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkShape[T], SinkQueue[T]] {
-  trait RequestElementCallback[E] {
-    val requestElement = new AtomicReference[AnyRef](Nil)
-  }
-
-  type Requested[E] = Promise[Option[T]]
+  type Requested[E] = Promise[Option[E]]
 
   val in = Inlet[T]("queueSink.in")
   override val shape: SinkShape[T] = SinkShape.of(in)
@@ -261,14 +257,16 @@ private[akka] class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkS
     val buffer = FixedSizeBuffer[Received[T]](maxBuffer + 1)
     var currentRequest: Option[Requested[T]] = None
 
-    val stageLogic = new GraphStageLogic(shape) with RequestElementCallback[Requested[T]] {
+    val stageLogic = new GraphStageLogic(shape) with CallbackWrapper[Requested[T]] {
 
       override def preStart(): Unit = {
         setKeepGoing(true)
-        val list = requestElement.getAndSet(callback.invoke _).asInstanceOf[List[Requested[T]]]
-        list.reverse.foreach(callback.invoke)
+        initCallback(callback.invoke)
         pull(in)
       }
+
+      override def postStop(): Unit = stopCallback(promise ⇒
+        promise.failure(new IllegalStateException("Stream is terminated. QueueSink is detached")))
 
       private val callback: AsyncCallback[Requested[T]] =
         getAsyncCallback(promise ⇒ currentRequest match {
@@ -311,17 +309,8 @@ private[akka] class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkS
 
     (stageLogic, new SinkQueue[T] {
       override def pull(): Future[Option[T]] = {
-        val ref = stageLogic.requestElement
         val p = Promise[Option[T]]
-        ref.get() match {
-          case l: List[_] ⇒
-            if (!ref.compareAndSet(l, p :: l))
-              ref.get() match {
-                case _: List[_]         ⇒ throw new IllegalStateException("Concurrent call of SinkQueue.pull() is detected")
-                case f: Function1[_, _] ⇒ f.asInstanceOf[Requested[T] ⇒ Unit](p)
-              }
-          case f: Function1[_, _] ⇒ f.asInstanceOf[Requested[T] ⇒ Unit](p)
-        }
+        stageLogic.invoke(p)
         p.future
       }
     })

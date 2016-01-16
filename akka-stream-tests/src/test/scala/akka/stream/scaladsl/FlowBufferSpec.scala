@@ -6,8 +6,7 @@ package akka.stream.scaladsl
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, OverflowStrategy }
-import akka.stream.OverflowStrategy.Fail.BufferOverflowException
+import akka.stream.{ BufferOverflowException, ActorMaterializer, ActorMaterializerSettings, OverflowStrategy }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._

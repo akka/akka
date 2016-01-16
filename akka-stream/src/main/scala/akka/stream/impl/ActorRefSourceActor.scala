@@ -6,14 +6,15 @@ package akka.stream.impl
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.actor.Status
-import akka.stream.OverflowStrategy
+import akka.stream.OverflowStrategies._
+import akka.stream.{ BufferOverflowException, OverflowStrategy, OverflowStrategies }
 
 /**
  * INTERNAL API
  */
 private[akka] object ActorRefSourceActor {
   def props(bufferSize: Int, overflowStrategy: OverflowStrategy) = {
-    require(overflowStrategy != OverflowStrategy.Backpressure, "Backpressure overflowStrategy not supported")
+    require(overflowStrategy != OverflowStrategies.Backpressure, "Backpressure overflowStrategy not supported")
     Props(new ActorRefSourceActor(bufferSize, overflowStrategy))
   }
 }
@@ -58,7 +59,7 @@ private[akka] class ActorRefSourceActor(bufferSize: Int, overflowStrategy: Overf
         log.debug("Dropping element because there is no downstream demand: [{}]", elem)
       else if (!buffer.isFull)
         buffer.enqueue(elem)
-      else (overflowStrategy: @unchecked) match {
+      else overflowStrategy match {
         case DropHead ⇒
           log.debug("Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
           buffer.dropHead()
@@ -76,7 +77,7 @@ private[akka] class ActorRefSourceActor(bufferSize: Int, overflowStrategy: Overf
           log.debug("Dropping the new element because buffer is full and overflowStrategy is: [DropNew]")
         case Fail ⇒
           log.error("Failing because buffer is full and overflowStrategy is: [Fail]")
-          onErrorThenStop(new Fail.BufferOverflowException(s"Buffer overflow (max capacity was: $bufferSize)!"))
+          onErrorThenStop(new BufferOverflowException(s"Buffer overflow (max capacity was: $bufferSize)!"))
         case Backpressure ⇒
           // there is a precondition check in Source.actorRefSource factory method
           log.debug("Backpressuring because buffer is full and overflowStrategy is: [Backpressure]")

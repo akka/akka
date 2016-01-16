@@ -272,28 +272,34 @@ object Source {
   /**
    * Creates a `Source` that is materialized as an [[akka.stream.SourceQueue]].
    * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
-   * otherwise they will be buffered until request for demand is received.
+   * otherwise they will be buffered until request for demand is received. Elements in the buffer will be discarded
+   * if downstream is terminated.
    *
    * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements if
    * there is no space available in the buffer.
    *
    * Acknowledgement mechanism is available.
-   * [[akka.stream.SourceQueue.offer]] returns ``Future[Boolean]`` which completes with true
-   * if element was added to buffer or sent downstream. It completes
-   * with false if element was dropped.
+   * [[akka.stream.SourceQueue.offer]] returns ``Future[StreamCallbackStatus[Boolean]]`` which completes with `Success(true)`
+   * if element was added to buffer or sent downstream. It completes with `Success(false)` if element was dropped. Can also complete
+   * with [[akka.stream.StreamCallbackStatus.Failure]] - when stream failed or [[akka.stream.StreamCallbackStatus.StreamCompleted]]
+   * when downstream is completed.
    *
-   * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete `offer():Future` until buffer is full.
+   * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete last `offer():Future`
+   * call when buffer is full.
    *
-   * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped
-   * if there is no demand from downstream. When `bufferSize` is 0 the `overflowStrategy` does
-   * not matter.
+   * You can watch accessibility of stream with [[akka.stream.SourceQueue.watchCompletion]].
+   * It returns future that completes with success when stream is completed or fail when stream is failed.
    *
-   * @param bufferSize The size of the buffer in element count
+   * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait for downstream demand.
+   * When `bufferSize` is 0 the `overflowStrategy` does not matter.
+   *
+   * SourceQueue that current source is materialized to is for single thread usage only.
+   *
+   * @param bufferSize size of buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
-   * @param timeout Timeout for ``SourceQueue.offer(T):Future[Boolean]``
    */
-  def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy, timeout: FiniteDuration): Source[T, SourceQueue[T]] =
-    new Source(scaladsl.Source.queue(bufferSize, overflowStrategy, timeout))
+  def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, SourceQueue[T]] =
+    new Source(scaladsl.Source.queue(bufferSize, overflowStrategy))
 
 }
 
@@ -1263,7 +1269,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * @param seed Provides the first state for a batched value using the first unconsumed element as a start
    * @param aggregate Takes the currently batched value and the current pending element to produce a new aggregate
    */
-  def batch[S](max: Long, seed: function.Function[Out, S],aggregate: function.Function2[S, Out, S]): javadsl.Source[S, Mat] =
+  def batch[S](max: Long, seed: function.Function[Out, S], aggregate: function.Function2[S, Out, S]): javadsl.Source[S, Mat] =
     new Source(delegate.batch(max, seed.apply)(aggregate.apply))
 
   /**
@@ -1294,7 +1300,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * @param seed Provides the first state for a batched value using the first unconsumed element as a start
    * @param aggregate Takes the currently batched value and the current pending element to produce a new batch
    */
-  def batchWeighted[S](max: Long, costFn: function.Function[Out, Long], seed: function.Function[Out, S],aggregate: function.Function2[S, Out, S]): javadsl.Source[S, Mat] =
+  def batchWeighted[S](max: Long, costFn: function.Function[Out, Long], seed: function.Function[Out, S], aggregate: function.Function2[S, Out, S]): javadsl.Source[S, Mat] =
     new Source(delegate.batchWeighted(max, costFn.apply, seed.apply)(aggregate.apply))
 
   /**
