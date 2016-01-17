@@ -13,6 +13,7 @@ import org.junit.Test;
 import scala.PartialFunction;
 import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
+import scala.concurrent.Await;
 
 import java.util.concurrent.TimeUnit;
 
@@ -26,9 +27,8 @@ public class InitializationDocTest {
   }
 
   @AfterClass
-  public static void afterClass() {
-    system.terminate();
-    system.awaitTermination(Duration.create("5 seconds"));
+  public static void afterClass() throws Exception {
+    Await.result(system.terminate(), Duration.create("5 seconds"));
   }
 
   public static class MessageInitExample extends AbstractActor {

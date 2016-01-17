@@ -108,7 +108,8 @@ private[http] object HttpServerBluePrint {
 
             val entity = createEntity(entityCreator) withSizeLimit settings.parserSettings.maxContentLength
             push(out, HttpRequest(effectiveMethod, uri, effectiveHeaders, entity, protocol))
-          case _ ⇒ throw new IllegalStateException
+          case other ⇒
+            throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
         }
       }
       setHandler(in, idle)

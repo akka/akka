@@ -72,7 +72,7 @@ private[akka] class GroupByProcessorImpl(settings: ActorMaterializerSettings, va
       if (keyToSubstreamOutput.size == maxSubstreams)
         throw new IllegalStateException(s"cannot open substream for key '$key': too many substreams open")
       val substreamOutput = createSubstreamOutput()
-      val substreamFlow = Source.fromPublisher(substreamOutput)
+      val substreamFlow = Source.fromPublisher[Any](substreamOutput)
       primaryOutputs.enqueueOutputElement(substreamFlow)
       keyToSubstreamOutput(key) = substreamOutput
       nextPhase(dispatchToSubstream(elem, substreamOutput))

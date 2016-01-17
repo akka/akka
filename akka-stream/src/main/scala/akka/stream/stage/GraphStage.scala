@@ -1014,13 +1014,13 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     private var available = false
     private var closed = false
 
-    private val callback = getAsyncCallback[ActorPublisherMessage] {
+    private val callback = getAsyncCallback[SubSink.Command] {
       case SubSink.RequestOne ⇒
         if (!closed) {
           available = true
           handler.onPull()
         }
-      case ActorPublisherMessage.Cancel ⇒
+      case SubSink.Cancel ⇒
         if (!closed) {
           available = false
           closed = true

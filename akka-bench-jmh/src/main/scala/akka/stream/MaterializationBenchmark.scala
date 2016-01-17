@@ -9,6 +9,8 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import org.openjdk.jmh.annotations._
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object MaterializationBenchmark {
 
@@ -51,22 +53,23 @@ object MaterializationBenchmark {
       flow ⇒
         import GraphDSL.Implicits._
         Source.single(()) ~> flow ~> Sink.ignore
-      ClosedShape
+        ClosedShape
     })
   }
 
   val graphWithImportedFlowBuilder = (numOfFlows: Int) =>
-    RunnableGraph.fromGraph(GraphDSL.create(Source.single(())) { implicit b ⇒ source ⇒
-      import GraphDSL.Implicits._
-      val flow = Flow[Unit].map(identity)
-      var out: Outlet[Unit] = source.out
-      for (i <- 0 until numOfFlows) {
-        val flowShape = b.add(flow)
-        out ~> flowShape
-        out = flowShape.outlet
-      }
-      out ~> Sink.ignore
-      ClosedShape
+    RunnableGraph.fromGraph(GraphDSL.create(Source.single(())) { implicit b ⇒
+      source ⇒
+        import GraphDSL.Implicits._
+        val flow = Flow[Unit].map(identity)
+        var out: Outlet[Unit] = source.out
+        for (i <- 0 until numOfFlows) {
+          val flowShape = b.add(flow)
+          out ~> flowShape
+          out = flowShape.outlet
+        }
+        out ~> Sink.ignore
+        ClosedShape
     })
 }
 
@@ -97,8 +100,7 @@ class MaterializationBenchmark {
 
   @TearDown
   def shutdown() {
-    system.terminate()
-    system.awaitTermination()
+    Await.result(system.terminate(), 5.seconds)
   }
 
   @Benchmark

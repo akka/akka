@@ -95,8 +95,7 @@ class DontLeakActorsOnFailingConnectionSpecs extends WordSpecLike with Matchers 
   }
 
   override def afterAll = {
-    system.terminate()
-    system.awaitTermination(3.seconds)
+    Await.result(system.terminate(), 3.seconds)
   }
 
 }
