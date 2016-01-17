@@ -92,7 +92,7 @@ object ConnectionTestApp {
     readLine()
     println("===================== \n\n" + system.asInstanceOf[ActorSystemImpl].printTree + "\n\n========================")
     readLine()
-    system.shutdown()
+    system.terminate()
   }
 
 }

@@ -77,7 +77,7 @@ public class WSEchoTestClientApp {
             for (String msg: messages)
                 System.out.println(msg);
         } finally {
-            system.shutdown();
+            system.terminate();
         }
     }
 }

@@ -73,7 +73,7 @@ est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscin
   implicit val materializer = ActorMaterializer()
 
   override def afterAll() = {
-    system.shutdown()
+    system.terminate()
     system.awaitTermination(10.seconds)
   }
 }

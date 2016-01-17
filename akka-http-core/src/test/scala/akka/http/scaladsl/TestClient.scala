@@ -28,7 +28,7 @@ object TestClient extends App {
   fetchServerVersion1()
 
   //  Console.readLine()
-  //  system.shutdown()
+  //  system.terminate()
 
   def fetchServerVersion1(): Unit = {
     println(s"Fetching HTTPS server version of host `$host` via a direct low-level connection ...")
@@ -62,5 +62,5 @@ object TestClient extends App {
     }
   }
 
-  def shutdown(): Unit = system.shutdown()
+  def shutdown(): Unit = system.terminate()
 }

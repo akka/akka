@@ -316,7 +316,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
     }
   }
 
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 
   class TestSetup(val userAgent: Option[`User-Agent`] = Some(`User-Agent`("akka-http/1.0.0")),
                   serverAddress: InetSocketAddress = new InetSocketAddress("test.com", 8080))
