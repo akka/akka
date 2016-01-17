@@ -238,5 +238,14 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
         assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
       } finally shutdown(sys)
     }
+
+    "work when more bytes pulled from InputStream than available" in assertAllStagesStopped {
+      val inputStream = Source.single(byteString).runWith(StreamConverters.asInputStream())
+
+      readN(inputStream, byteString.size * 2) should ===((byteString.size, byteString))
+      inputStream.read() should ===(-1)
+
+      inputStream.close()
+    }
   }
 }

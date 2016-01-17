@@ -193,6 +193,9 @@ private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapt
           case Data(data) ⇒
             detachedChunk = Some(data)
             detachedChunk
+          case Finished =>
+            isStageAlive = false
+            None
           case _ ⇒ None
         }
       case Some(_) ⇒ detachedChunk
