@@ -237,7 +237,7 @@ public class HttpServerExampleDocTest {
             System.out.println("Press ENTER to stop.");
             new BufferedReader(new InputStreamReader(System.in)).readLine();
         } finally {
-            system.shutdown();
+            system.terminate();
         }
     }
     public static void main(String[] args) throws Exception {

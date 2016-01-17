@@ -16,5 +16,5 @@ trait WithMaterializerSpec extends BeforeAndAfterAll { _: Suite ⇒
   implicit lazy val system = ActorSystem(getClass.getSimpleName, testConf)
 
   implicit lazy val materializer = ActorMaterializer()
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 }

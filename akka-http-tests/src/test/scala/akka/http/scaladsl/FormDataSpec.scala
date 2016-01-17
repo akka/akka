@@ -36,7 +36,7 @@ class FormDataSpec extends WordSpec with Matchers with ScalaFutures with BeforeA
   }
 
   override def afterAll() = {
-    system.shutdown()
+    system.terminate()
     system.awaitTermination(10.seconds)
   }
 }

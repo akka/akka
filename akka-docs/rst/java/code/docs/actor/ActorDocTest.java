@@ -64,7 +64,7 @@ public class ActorDocTest {
 
   @AfterClass
   public static void afterClass() {
-    system.shutdown();
+    system.terminate();
     system.awaitTermination(Duration.create("5 seconds"));
   }
 
@@ -314,7 +314,7 @@ public class ActorDocTest {
       swapper.tell(Swap, ActorRef.noSender()); // logs Ho
       swapper.tell(Swap, ActorRef.noSender()); // logs Hi
       swapper.tell(Swap, ActorRef.noSender()); // logs Ho
-      system.shutdown();
+      system.terminate();
     }
   }
   //#swapper

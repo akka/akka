@@ -66,7 +66,7 @@ class ActorSystemResource extends ExternalResource {
     _materializer = createMaterializer(_system)
   }
   override def after(): Unit = {
-    _system.shutdown()
+    _system.terminate()
     _system.awaitTermination(5.seconds)
     _system = null
     _materializer = null

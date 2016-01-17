@@ -78,7 +78,7 @@ class IntroSpec extends TypedSpec {
   def `must say hello`(): Unit = {
     //#hello-world
     import HelloWorld._
-    // using global pool since we want to run tasks after system shutdown
+    // using global pool since we want to run tasks after system.terminate
     import scala.concurrent.ExecutionContext.Implicits.global
 
     val system: ActorSystem[Greet] = ActorSystem("hello", Props(greeter))

@@ -159,12 +159,12 @@ object WSClientAutobahnTest extends App {
   def updateReportsAndShutdown(): Unit =
     updateReports().onComplete { res ⇒
       println("Reports should now be accessible at http://localhost:8080/cwd/reports/clients/index.html")
-      system.shutdown()
+      system.terminate()
     }
 
   import scala.concurrent.duration._
   import system.dispatcher
-  system.scheduler.scheduleOnce(60.seconds)(system.shutdown())
+  system.scheduler.scheduleOnce(60.seconds)(system.terminate())
 
   def runWs[T](uri: Uri, clientFlow: Flow[Message, Message, T]): T =
     Http().singleWebsocketRequest(uri, clientFlow)._2

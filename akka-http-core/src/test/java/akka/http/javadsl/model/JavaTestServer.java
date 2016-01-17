@@ -51,7 +51,7 @@ public class JavaTestServer {
             System.out.println("Press ENTER to stop.");
             new BufferedReader(new InputStreamReader(System.in)).readLine();
         } finally {
-            system.shutdown();
+            system.terminate();
         }
     }
 

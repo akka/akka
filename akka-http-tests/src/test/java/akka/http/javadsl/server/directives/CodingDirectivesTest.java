@@ -30,7 +30,7 @@ public class CodingDirectivesTest extends JUnitRouteTest {
 
     @AfterClass
     public static void tearDown() {
-        system.shutdown();
+        system.terminate();
         system.awaitTermination();
         system = null;
     }

@@ -33,7 +33,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
 
   implicit val materializer = ActorMaterializer()
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 
   "HttpEntity" - {
     "support dataBytes" - {

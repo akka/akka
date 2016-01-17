@@ -61,7 +61,7 @@ class ActorMaterializerSpec extends AkkaSpec with ImplicitSender {
     "report correctly if it has been shut down from the side" in {
       val sys = ActorSystem()
       val m = ActorMaterializer.create(sys)
-      sys.shutdown()
+      sys.terminate()
       sys.awaitTermination()
       m.isShutdown should ===(true)
     }
