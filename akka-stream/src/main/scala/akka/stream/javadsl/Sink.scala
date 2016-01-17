@@ -140,6 +140,8 @@ object Sink {
    * As upstream may be unbounded, `Flow[T].take` or the stricter `Flow[T].limit` (and their variants)
    * may be used to ensure boundedness.
    * Materializes into a `Future` of `Seq[T]` containing all the collected elements.
+   * `List` is limited to `Integer.MAX_VALUE` elements, this Sink will cancel the stream
+   * after having received that many elements.
    *
    * See also [[Flow.limit]], [[Flow.limitWeighted]], [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
    */
