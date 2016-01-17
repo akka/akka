@@ -201,6 +201,8 @@ object WSClientAutobahnTest extends App {
     val sink = Sink.head[Message]
     runWs(uri, Flow.fromSinkAndSourceMat(sink, Source.maybe[Message])(Keep.left)).flatMap {
       case tm: TextMessage ⇒ tm.textStream.runWith(Sink.fold("")(_ + _))
+      case other ⇒
+        throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
     }
   }
   def runToSingleJsonValue[T: JsonReader](uri: Uri): Future[T] =

@@ -14,7 +14,6 @@ import com.typesafe.config.ConfigFactory;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 import static docs.actor.Messages.Swap.Swap;
-import static docs.actor.Messages.*;
 import static akka.japi.Util.immutableSeq;
 
 import java.util.concurrent.TimeUnit;
@@ -63,9 +62,8 @@ public class ActorDocTest {
   }
 
   @AfterClass
-  public static void afterClass() {
-    system.terminate();
-    system.awaitTermination(Duration.create("5 seconds"));
+  public static void afterClass() throws Exception {
+    Await.result(system.terminate(), Duration.create("5 seconds"));
   }
 
   static

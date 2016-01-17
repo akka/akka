@@ -14,6 +14,8 @@ import scala.concurrent.Lock
 import scala.util.Success
 import akka.stream.impl.fusing.GraphStages
 import org.reactivestreams._
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -110,8 +112,7 @@ class FlowMapBenchmark {
 
   @TearDown
   def shutdown() {
-    system.terminate()
-    system.awaitTermination()
+    Await.result(system.terminate(), 5.seconds)
   }
 
   @Benchmark
@@ -132,6 +133,5 @@ class FlowMapBenchmark {
       f = f.via(flow)
     f
   }
-
 
 }

@@ -86,14 +86,14 @@ public class JavaApiTestCases {
 
     // just for the sake of explicitly touching the interfaces
     if (mediaType.binary()) anything = (akka.http.javadsl.model.MediaType.Binary) mediaType;
-    if (1 == 2) anything = (akka.http.javadsl.model.MediaType.Multipart) mediaType;
-    if (1 == 2) anything = (akka.http.javadsl.model.MediaType.WithOpenCharset) mediaType;
-    if (1 == 2) anything = (akka.http.javadsl.model.MediaType.WithFixedCharset) mediaType;
+    anything = (akka.http.javadsl.model.MediaType.Multipart) mediaType;
+    anything = (akka.http.javadsl.model.MediaType.WithOpenCharset) mediaType;
+    anything = (akka.http.javadsl.model.MediaType.WithFixedCharset) mediaType;
 
     if (type.binary()) anything = (akka.http.javadsl.model.ContentType.Binary) type;
-    if (1 == 2) anything = (akka.http.javadsl.model.ContentType.NonBinary) type;
-    if (1 == 2) anything = (akka.http.javadsl.model.ContentType.WithCharset) type;
-    if (1 == 2) anything = (akka.http.javadsl.model.ContentType.WithFixedCharset) type;
+    anything = (akka.http.javadsl.model.ContentType.NonBinary) type;
+    anything = (akka.http.javadsl.model.ContentType.WithCharset) type;
+    anything = (akka.http.javadsl.model.ContentType.WithFixedCharset) type;
 
     return anything;
   }

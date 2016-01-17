@@ -4,18 +4,18 @@
 
 package akka.stream.io
 
-import java.io.{FileInputStream, File}
+import java.io.{ FileInputStream, File }
 import java.util.concurrent.TimeUnit
 
 import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
-import akka.stream.{Attributes, ActorMaterializer}
+import akka.stream.{ Attributes, ActorMaterializer }
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import org.openjdk.jmh.annotations._
 
 import scala.concurrent.duration._
-import scala.concurrent.{Promise, Await, Future}
+import scala.concurrent.{ Promise, Await, Future }
 
 /**
  * Benchmark                         (bufSize)  Mode  Cnt    Score    Error  Units
@@ -64,8 +64,7 @@ class FileSourcesBenchmark {
 
   @TearDown
   def shutdown() {
-    system.terminate()
-    system.awaitTermination()
+    Await.result(system.terminate(), Duration.Inf)
   }
 
   @Benchmark
@@ -101,6 +100,5 @@ class FileSourcesBenchmark {
 
     Await.result(p.future, 30.seconds)
   }
-
 
 }

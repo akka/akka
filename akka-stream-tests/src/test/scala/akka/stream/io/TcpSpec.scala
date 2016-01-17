@@ -392,7 +392,7 @@ class TcpSpec extends AkkaSpec("akka.stream.materializer.subscription-timeout.ti
       val result = Source.maybe[ByteString].via(Tcp(system2).outgoingConnection(serverAddress)).runFold(0)(_ + _.size)(mat2)
 
       // Getting rid of existing connection actors by using a blunt instrument
-      system2.actorSelection(akka.io.Tcp(system2).getManager.path / "selectors" / "$a" / "*") ! Kill
+      system2.actorSelection(akka.io.Tcp(system2).getManager.path / "selectors" / s"$$a" / "*") ! Kill
 
       a[StreamTcpException] should be thrownBy
         Await.result(result, 3.seconds)

@@ -1,6 +1,6 @@
 /**
-  * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
-  */
+ * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ */
 
 package akka.stream
 
@@ -10,7 +10,7 @@ import akka.stream.scaladsl._
 import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 import scala.concurrent._
-import scala.concurrent.duration.Duration.Inf
+import scala.concurrent.duration._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -44,13 +44,12 @@ class FlatMapMergeBenchmark {
 
   @TearDown
   def shutdown() {
-    system.terminate()
-    system.awaitTermination()
+    Await.result(system.terminate(), 5.seconds)
   }
 
   @Benchmark
   @OperationsPerInvocation(100000) // Note: needs to match NumberOfElements.
   def flat_map_merge_100k_elements() {
-    Await.result(graph.run(), Inf)
+    Await.result(graph.run(), Duration.Inf)
   }
 }

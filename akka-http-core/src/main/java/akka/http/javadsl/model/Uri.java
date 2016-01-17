@@ -4,14 +4,12 @@
 
 package akka.http.javadsl.model;
 
+import java.nio.charset.Charset;
+
 import akka.http.impl.model.JavaUri;
 import akka.http.scaladsl.model.UriJavaAccessor;
-import akka.japi.Pair;
 import akka.parboiled2.ParserInput$;
 
-import java.nio.charset.Charset;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
