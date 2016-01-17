@@ -27,7 +27,7 @@ public class InitializationDocTest {
 
   @AfterClass
   public static void afterClass() {
-    system.shutdown();
+    system.terminate();
     system.awaitTermination(Duration.create("5 seconds"));
   }
 

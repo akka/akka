@@ -30,5 +30,5 @@ object HttpHeaderParserTestBed extends App {
      """.stripMargin.replace("%TRIE%", parser.formatTrie)
   }
 
-  system.shutdown()
+  system.terminate()
 }

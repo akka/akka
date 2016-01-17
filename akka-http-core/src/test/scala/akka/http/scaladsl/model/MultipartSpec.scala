@@ -22,7 +22,7 @@ class MultipartSpec extends WordSpec with Matchers with Inside with BeforeAndAft
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 
   "Multipart.General" should {
     "support `toStrict` on the streamed model" in {

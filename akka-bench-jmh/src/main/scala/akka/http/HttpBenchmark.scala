@@ -56,7 +56,7 @@ class HttpBenchmark {
   def shutdown() = {
     Await.ready(Http().shutdownAllConnectionPools(), 1.second)
     binding.unbind()
-    system.shutdown()
+    system.terminate()
     system.awaitTermination()
   }
 
