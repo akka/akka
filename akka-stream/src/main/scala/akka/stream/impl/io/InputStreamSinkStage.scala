@@ -196,6 +196,9 @@ private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapt
           case Finished =>
             isStageAlive = false
             None
+          case Failed(ex) ⇒
+            isStageAlive = false
+            throw new IOException(ex)
           case _ ⇒ None
         }
       case Some(_) ⇒ detachedChunk
