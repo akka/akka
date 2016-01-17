@@ -421,7 +421,7 @@ private[http] object HttpServerBluePrint {
       /*
        * Websocket support
        */
-      def switchToWebsocket(handlerFlow: Either[Flow[FrameEvent, FrameEvent, Any], Flow[Message, Message, Any]]): Unit = {
+      def switchToWebsocket(handlerFlow: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]]): Unit = {
         val frameHandler = handlerFlow match {
           case Left(frameHandler) ⇒ frameHandler
           case Right(messageHandler) ⇒

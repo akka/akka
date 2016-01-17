@@ -7,8 +7,7 @@ package akka.http.impl.util
 import java.net.InetAddress
 import java.{ util ⇒ ju, lang ⇒ jl }
 import akka.japi.Pair
-import akka.stream.javadsl
-import akka.stream.scaladsl
+import akka.stream.{ Graph, FlowShape, javadsl, scaladsl }
 
 import scala.collection.immutable
 import scala.reflect.ClassTag
@@ -112,6 +111,16 @@ private[http] object JavaMapping {
       def toScala(javaObject: javadsl.Flow[JIn, JOut, M]): S =
         scaladsl.Flow[SIn].map(inMapping.toJava).viaMat(javaObject)(scaladsl.Keep.right).map(outMapping.toScala)
       def toJava(scalaObject: scaladsl.Flow[SIn, SOut, M]): J =
+        javadsl.Flow.fromGraph {
+          scaladsl.Flow[JIn].map(inMapping.toScala).viaMat(scalaObject)(scaladsl.Keep.right).map(outMapping.toJava)
+        }
+    }
+
+  implicit def graphFlowMapping[JIn, SIn, JOut, SOut, M](implicit inMapping: JavaMapping[JIn, SIn], outMapping: JavaMapping[JOut, SOut]): JavaMapping[Graph[FlowShape[JIn, JOut], M], Graph[FlowShape[SIn, SOut], M]] =
+    new JavaMapping[Graph[FlowShape[JIn, JOut], M], Graph[FlowShape[SIn, SOut], M]] {
+      def toScala(javaObject: Graph[FlowShape[JIn, JOut], M]): S =
+        scaladsl.Flow[SIn].map(inMapping.toJava).viaMat(javaObject)(scaladsl.Keep.right).map(outMapping.toScala)
+      def toJava(scalaObject: Graph[FlowShape[SIn, SOut], M]): J =
         javadsl.Flow.fromGraph {
           scaladsl.Flow[JIn].map(inMapping.toScala).viaMat(scalaObject)(scaladsl.Keep.right).map(outMapping.toJava)
         }
