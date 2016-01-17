@@ -712,6 +712,12 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 import scala.collection.JavaConverters._
 
 //# https-context-impl
+/**
+ * TLS configuration for an HTTPS server binding or client connection.
+ * For the sslContext please refer to the com.typeasfe.ssl-config library.
+ * The remaining four parameters configure the initial session that will
+ * be negotiated, see [[akka.stream.io.NegotiateNewSession]] for details.
+ */
 final case class HttpsContext(sslContext: SSLContext,
                               enabledCipherSuites: Option[immutable.Seq[String]] = None,
                               enabledProtocols: Option[immutable.Seq[String]] = None,
