@@ -56,7 +56,7 @@ private[akka] class InputStreamSinkStage(readTimeout: FiniteDuration) extends Gr
       override def wakeUp(msg: AdapterToStageMessage): Unit = callback.invoke(msg)
 
       private def sendPullIfAllowed(): Unit =
-        if (!pullRequestIsSent) {
+        if (dataQueue.remainingCapacity() > 1 && !hasBeenPulled(in)) {
           pullRequestIsSent = true
           pull(in)
         }
@@ -69,7 +69,7 @@ private[akka] class InputStreamSinkStage(readTimeout: FiniteDuration) extends Gr
           require(dataQueue.remainingCapacity() > 1)
           pullRequestIsSent = false
           dataQueue.add(Data(grab(in)))
-          if (dataQueue.remainingCapacity() > 1) sendPullIfAllowed()
+          sendPullIfAllowed()
         }
         override def onUpstreamFinish(): Unit = {
           dataQueue.add(Finished)
@@ -136,7 +136,8 @@ private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapt
                 case Failed(ex) ⇒
                   isStageAlive = false
                   throw new IOException(ex)
-                case null ⇒ throw new IOException("Timeout on waiting for new data")
+                case null ⇒
+                  throw new IOException("Timeout on waiting for new data")
               }
             } catch {
               case ex: InterruptedException ⇒ throw new IOException(ex)
@@ -193,15 +194,17 @@ private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapt
           case Data(data) ⇒
             detachedChunk = Some(data)
             detachedChunk
-          case Finished =>
+          case Finished ⇒
             isStageAlive = false
             None
           case Failed(ex) ⇒
             isStageAlive = false
             throw new IOException(ex)
-          case _ ⇒ None
+          case _ ⇒
+            None
         }
-      case Some(_) ⇒ detachedChunk
+      case Some(_) ⇒
+        detachedChunk
     }
   }
 }
