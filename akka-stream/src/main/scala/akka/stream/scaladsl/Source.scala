@@ -225,14 +225,14 @@ object Source {
    * receive new tick elements as soon as it has requested more elements.
    */
   def tick[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T): Source[T, Cancellable] =
-    fromGraph(new TickSource[T](initialDelay, interval, tick).withAttributes(DefaultAttributes.tickSource))
+    fromGraph(new TickSource[T](initialDelay, interval, tick))
 
   /**
    * Create a `Source` with one element.
    * Every connected `Sink` of this stream will see an individual stream consisting of one element.
    */
   def single[T](element: T): Source[T, Unit] =
-    fromGraph(new GraphStages.SingleSource(element).withAttributes(DefaultAttributes.singleSource))
+    fromGraph(new GraphStages.SingleSource(element))
 
   /**
    * Create a `Source` that will continually emit the given element.
