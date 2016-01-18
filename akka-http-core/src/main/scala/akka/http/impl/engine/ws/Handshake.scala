@@ -5,18 +5,14 @@
 package akka.http.impl.engine.ws
 
 import java.util.Random
-
 import scala.collection.immutable
 import scala.collection.immutable.Seq
 import scala.reflect.ClassTag
-
-import akka.stream.scaladsl.Flow
-
 import akka.http.impl.util._
-
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.ws.{ Message, UpgradeToWebsocket }
 import akka.http.scaladsl.model._
+import akka.stream.{ Graph, FlowShape }
 
 /**
  * Server-side implementation of the Websocket handshake
@@ -95,16 +91,16 @@ private[http] object Handshake {
         val header = new UpgradeToWebsocketLowLevel {
           def requestedProtocols: Seq[String] = clientSupportedSubprotocols
 
-          def handle(handler: Either[Flow[FrameEvent, FrameEvent, Any], Flow[Message, Message, Any]], subprotocol: Option[String]): HttpResponse = {
+          def handle(handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]], subprotocol: Option[String]): HttpResponse = {
             require(subprotocol.forall(chosen ⇒ clientSupportedSubprotocols.contains(chosen)),
               s"Tried to choose invalid subprotocol '$subprotocol' which wasn't offered by the client: [${requestedProtocols.mkString(", ")}]")
             buildResponse(key.get, handler, subprotocol)
           }
 
-          def handleFrames(handlerFlow: Flow[FrameEvent, FrameEvent, Any], subprotocol: Option[String]): HttpResponse =
+          def handleFrames(handlerFlow: Graph[FlowShape[FrameEvent, FrameEvent], Any], subprotocol: Option[String]): HttpResponse =
             handle(Left(handlerFlow), subprotocol)
 
-          override def handleMessages(handlerFlow: Flow[Message, Message, Any], subprotocol: Option[String] = None): HttpResponse =
+          override def handleMessages(handlerFlow: Graph[FlowShape[Message, Message], Any], subprotocol: Option[String] = None): HttpResponse =
             handle(Right(handlerFlow), subprotocol)
         }
         Some(header)
@@ -130,7 +126,7 @@ private[http] object Handshake {
           concatenated value to obtain a 20-byte value and base64-
           encoding (see Section 4 of [RFC4648]) this 20-byte hash.
     */
-    def buildResponse(key: `Sec-WebSocket-Key`, handler: Either[Flow[FrameEvent, FrameEvent, Any], Flow[Message, Message, Any]], subprotocol: Option[String]): HttpResponse =
+    def buildResponse(key: `Sec-WebSocket-Key`, handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]], subprotocol: Option[String]): HttpResponse =
       HttpResponse(
         StatusCodes.SwitchingProtocols,
         subprotocol.map(p ⇒ `Sec-WebSocket-Protocol`(Seq(p))).toList :::

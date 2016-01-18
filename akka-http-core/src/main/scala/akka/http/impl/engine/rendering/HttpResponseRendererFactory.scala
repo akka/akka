@@ -6,7 +6,7 @@ package akka.http.impl.engine.rendering
 
 import akka.http.impl.engine.ws.{ FrameEvent, UpgradeToWebsocketResponseHeader }
 import akka.http.scaladsl.model.ws.Message
-import akka.stream.{ Outlet, Inlet, Attributes, FlowShape }
+import akka.stream.{ Outlet, Inlet, Attributes, FlowShape, Graph }
 
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
@@ -253,7 +253,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
   sealed trait CloseMode
   case object DontClose extends CloseMode
   case object CloseConnection extends CloseMode
-  case class SwitchToWebsocket(handler: Either[Flow[FrameEvent, FrameEvent, Any], Flow[Message, Message, Any]]) extends CloseMode
+  case class SwitchToWebsocket(handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]]) extends CloseMode
 }
 
 /**
@@ -270,5 +270,5 @@ private[http] sealed trait ResponseRenderingOutput
 /** INTERNAL API */
 private[http] object ResponseRenderingOutput {
   private[http] case class HttpData(bytes: ByteString) extends ResponseRenderingOutput
-  private[http] case class SwitchToWebsocket(httpResponseBytes: ByteString, handler: Either[Flow[FrameEvent, FrameEvent, Any], Flow[Message, Message, Any]]) extends ResponseRenderingOutput
+  private[http] case class SwitchToWebsocket(httpResponseBytes: ByteString, handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]]) extends ResponseRenderingOutput
 }
