@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.nio.charset.Charset;
 
@@ -148,7 +149,7 @@ public class MigrationsJava {
     }
 
     //#source-creators
-    Source<Integer, Promise<Option<Integer>>> src = Source.<Integer>maybe();
+    Source<Integer, Promise<Optional<Integer>>> src = Source.<Integer>maybe();
     // Complete the promise with an empty option to emulate the old lazyEmpty
     promise.trySuccess(scala.Option.empty());
 
@@ -208,11 +209,11 @@ public class MigrationsJava {
 
     Uri uri = null;
     //#raw-query
-    final akka.japi.Option<String> theRawQueryString = uri.rawQueryString();
+    final Optional<String> theRawQueryString = uri.rawQueryString();
     //#raw-query
 
     //#query-param
-    final akka.japi.Option<String> aQueryParam = uri.query().get("a");
+    final Optional<String> aQueryParam = uri.query().get("a");
     //#query-param
 
     //#file-source-sink

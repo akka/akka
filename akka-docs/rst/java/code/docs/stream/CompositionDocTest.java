@@ -4,6 +4,7 @@
 package docs.stream;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 import akka.stream.ClosedShape;
 import org.junit.AfterClass;
@@ -213,21 +214,21 @@ public class CompositionDocTest {
 
   //#mat-combine-4a
   static class MyClass {
-    private Promise<Option<Integer>> p;
+    private Promise<Optional<Integer>> p;
     private OutgoingConnection conn;
 
-    public MyClass(Promise<Option<Integer>> p, OutgoingConnection conn) {
+    public MyClass(Promise<Optional<Integer>> p, OutgoingConnection conn) {
       this.p = p;
       this.conn = conn;
     }
 
     public void close() {
-      p.success(Option.empty());
+      p.success(Optional.empty());
     }
   }
 
   static class Combiner {
-    static Future<MyClass> f(Promise<Option<Integer>> p,
+    static Future<MyClass> f(Promise<Optional<Integer>> p,
         Pair<Future<OutgoingConnection>, Future<String>> rest) {
       return rest.first().map(new Mapper<OutgoingConnection, MyClass>() {
         public MyClass apply(OutgoingConnection c) {
@@ -242,13 +243,13 @@ public class CompositionDocTest {
   public void materializedValues() throws Exception {
     //#mat-combine-1
     // Materializes to Promise<BoxedUnit>                                     (red)
-    final Source<Integer, Promise<Option<Integer>>> source = Source.<Integer>maybe();
+    final Source<Integer, Promise<Optional<Integer>>> source = Source.<Integer>maybe();
 
     // Materializes to BoxedUnit                                              (black)
     final Flow<Integer, Integer, BoxedUnit> flow1 = Flow.of(Integer.class).take(100);
 
     // Materializes to Promise<Option<>>                                     (red)
-    final Source<Integer, Promise<Option<Integer>>> nestedSource =
+    final Source<Integer, Promise<Optional<Integer>>> nestedSource =
       source.viaMat(flow1, Keep.left()).named("nestedSource");
       //#mat-combine-1
 

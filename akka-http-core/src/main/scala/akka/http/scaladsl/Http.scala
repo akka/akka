@@ -6,7 +6,7 @@ package akka.http.scaladsl
 
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
-import java.util.{ Collection ⇒ JCollection }
+import java.util.{ Collection ⇒ JCollection, Optional }
 import javax.net.ssl._
 
 import akka.actor._
@@ -21,7 +21,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ WebsocketUpgradeResponse, WebsocketRequest, Message }
 import akka.http.scaladsl.util.FastFuture
-import akka.japi
 import akka.stream.Materializer
 import akka.stream.io._
 import akka.stream.scaladsl._
@@ -34,6 +33,8 @@ import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future, Promise, TimeoutException }
 import scala.util.Try
 import scala.util.control.NonFatal
+
+import scala.compat.java8.OptionConverters._
 
 class HttpExt(private val config: Config)(implicit val system: ActorSystem) extends akka.actor.Extension
   with DefaultSSLContextCreation {
@@ -723,16 +724,16 @@ final case class HttpsContext(sslContext: SSLContext,
   override def getSslContext: SSLContext = sslContext
 
   /** Java API */
-  override def getEnabledCipherSuites: japi.Option[JCollection[String]] = enabledCipherSuites.map(_.asJavaCollection)
+  override def getEnabledCipherSuites: Optional[JCollection[String]] = enabledCipherSuites.map(_.asJavaCollection).asJava
 
   /** Java API */
-  override def getEnabledProtocols: japi.Option[JCollection[String]] = enabledProtocols.map(_.asJavaCollection)
+  override def getEnabledProtocols: Optional[JCollection[String]] = enabledProtocols.map(_.asJavaCollection).asJava
 
   /** Java API */
-  override def getClientAuth: japi.Option[ClientAuth] = clientAuth
+  override def getClientAuth: Optional[ClientAuth] = clientAuth.asJava
 
   /** Java API */
-  override def getSslParameters: japi.Option[SSLParameters] = sslParameters
+  override def getSslParameters: Optional[SSLParameters] = sslParameters.asJava
 }
 
 trait DefaultSSLContextCreation {

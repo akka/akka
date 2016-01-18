@@ -3,18 +3,16 @@
  */
 package akka.stream.javadsl
 
-import java.io.{ InputStream, OutputStream, File }
+import java.util.Optional
 
 import akka.actor.{ ActorRef, Props }
 import akka.dispatch.ExecutionContexts
 import akka.japi.function
-import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout
 import akka.stream.{ javadsl, scaladsl, _ }
-import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Subscriber }
 
-import scala.concurrent.duration.FiniteDuration
+import scala.compat.java8.OptionConverters._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
@@ -105,14 +103,14 @@ object Sink {
 
   /**
    * A `Sink` that materializes into a `Future` of the optional first value received.
-   * If the stream completes before signaling at least a single element, the value of the Future will be an empty [[akka.japi.Option]].
+   * If the stream completes before signaling at least a single element, the value of the Future will be an empty [[java.util.Optional]].
    * If the stream signals an error errors before signaling at least a single element, the Future will be failed with the streams exception.
    *
    * See also [[head]].
    */
-  def headOption[In](): Sink[In, Future[akka.japi.Option[In]]] =
+  def headOption[In](): Sink[In, Future[Optional[In]]] =
     new Sink(scaladsl.Sink.headOption[In].mapMaterializedValue(
-      _.map(akka.japi.Option.fromScalaOption)(ExecutionContexts.sameThreadExecutionContext)))
+      _.map(_.asJava)(ExecutionContexts.sameThreadExecutionContext)))
 
   /**
    * A `Sink` that materializes into a `Future` of the last value received.
@@ -126,14 +124,14 @@ object Sink {
 
   /**
    * A `Sink` that materializes into a `Future` of the optional last value received.
-   * If the stream completes before signaling at least a single element, the value of the Future will be an empty [[akka.japi.Option]].
+   * If the stream completes before signaling at least a single element, the value of the Future will be an empty [[java.util.Optional]].
    * If the stream signals an error errors before signaling at least a single element, the Future will be failed with the streams exception.
    *
    * See also [[head]].
    */
-  def lastOption[In](): Sink[In, Future[akka.japi.Option[In]]] =
+  def lastOption[In](): Sink[In, Future[Optional[In]]] =
     new Sink(scaladsl.Sink.lastOption[In].mapMaterializedValue(
-      _.map(akka.japi.Option.fromScalaOption)(ExecutionContexts.sameThreadExecutionContext)))
+      _.map(_.asJava)(ExecutionContexts.sameThreadExecutionContext)))
 
   /**
    * A `Sink` that keeps on collecting incoming elements until upstream terminates.

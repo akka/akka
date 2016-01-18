@@ -5,6 +5,7 @@ package akka.stream.javadsl
 
 import java.io.{ OutputStream, InputStream, File }
 import java.util
+import java.util.Optional
 
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
@@ -23,6 +24,8 @@ import scala.collection.immutable.Range.Inclusive
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.language.{ higherKinds, implicitConversions }
+
+import scala.compat.java8.OptionConverters._
 
 /** Java API */
 object Source {
@@ -45,8 +48,16 @@ object Source {
    * If the downstream of this source cancels before the promise has been completed, then the promise will be completed
    * with None.
    */
-  def maybe[T]: Source[T, Promise[Option[T]]] =
-    new Source(scaladsl.Source.maybe[T])
+  def maybe[T]: Source[T, Promise[Optional[T]]] = {
+    new Source(scaladsl.Source.maybe[T].mapMaterializedValue { scalaOptionPromise: Promise[Option[T]] ⇒
+      val javaOptionPromise = Promise[Optional[T]]()
+      scalaOptionPromise.completeWith(
+        javaOptionPromise.future
+          .map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext))
+
+      javaOptionPromise
+    })
+  }
 
   /**
    * Helper to create [[Source]] from `Publisher`.
@@ -175,14 +186,16 @@ object Source {
    * Create a `Source` that will unfold a value of type `S` into
    * a pair of the next state `S` and output elements of type `E`.
    */
-  def unfold[S, E](s: S, f: function.Function[S, Option[(S, E)]]): Source[E, Unit] =
-    new Source(scaladsl.Source.unfold(s)((s: S) ⇒ f.apply(s)))
+  def unfold[S, E](s: S, f: function.Function[S, Optional[(S, E)]]): Source[E, Unit] =
+    new Source(scaladsl.Source.unfold(s)((s: S) ⇒ f.apply(s).asScala))
 
   /**
    * Same as [[unfold]], but uses an async function to generate the next state-element tuple.
    */
-  def unfoldAsync[S, E](s: S, f: function.Function[S, Future[Option[(S, E)]]]): Source[E, Unit] =
-    new Source(scaladsl.Source.unfoldAsync(s)((s: S) ⇒ f.apply(s)))
+  def unfoldAsync[S, E](s: S, f: function.Function[S, Future[Optional[(S, E)]]]): Source[E, Unit] =
+    new Source(
+      scaladsl.Source.unfoldAsync(s)(
+        (s: S) ⇒ f.apply(s).map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)))
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` failure to every connected `Sink`.
