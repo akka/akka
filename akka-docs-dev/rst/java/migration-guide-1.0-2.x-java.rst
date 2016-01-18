@@ -428,22 +428,32 @@ read the* ``GraphStage`` *documentation (TODO) for details.*
 GroupBy, SplitWhen and SplitAfter now return SubFlow or SubSource
 =================================================================
 
-Previously the ``groupBy``, ``splitWhen``, and ``splitAfter`` combinators
-returned a type that included a :class:`Source` within its elements.
-Transforming these substreams was only possible by nesting the respective
-combinators inside a ``map`` of the outer stream. This has been made more
-convenient and also safer by dropping down into transforming the substreams
-instead: the return type is now a :class:`SubSource` (for sources) or a
-:class:`SubFlow` (for flows) that does not implement the :class:`Graph`
-interface and therefore only represents an unfinished intermediate builder
-step.
+Previously the ``groupBy``, ``splitWhen``, and ``splitAfter``
+combinators returned a type that included a :class:`Source` within its
+elements. Transforming these substreams was only possible by nesting
+the respective combinators inside a ``map`` of the outer stream.
+While this design enabled maximum flexibility for handling substreams,
+it ultimately made it too easy to create a (potentially suprising)
+deadlock. You can read more in `SubFlow-Motivation-Thread`_.
+
+These operations have been made more convenient and also safer by
+dropping down into transforming the substreams instead: the return
+type is now a :class:`SubFlow` that does not implement the
+:class:`Graph` interface and therefore only represents an unfinished
+intermediate builder step. The substream mode can be ended by closing
+the substreams (i.e. attaching a :class:`Sink`) or merging them back
+together.
+
+.. _SubFlow-Motivation-Thread: https://groups.google.com/d/msg/akka-user/_blLOcIHxJ4/i1DOoylmEgAJ
 
 Update Procedure
 ----------------
 
-The transformations that were done on the substreams need to be lifted up one
-level. This only works for cases where the processing topology is homogenous
-for all substreams.
+The transformations that were done on the substreams need to be lifted
+up one level. This only works for cases where the processing topology
+is homogenous for all substreams. If your substream processing
+topology is heterogeneous, consider creating a graph (see
+:ref:`stream-graph-java`).
 
 Example
 ^^^^^^^
