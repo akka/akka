@@ -21,6 +21,9 @@ import akka.stream.io.SslTlsPlacebo
 import java.net.InetSocketAddress
 import akka.stream.impl.fusing.GraphStages
 import akka.util.ByteString
+import akka.http.scaladsl.model.StatusCodes
+import akka.stream.testkit.scaladsl.TestSink
+import scala.concurrent.Future
 
 class WebsocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.fuzzing-mode=off")
   with ScalaFutures with ConversionCheckedTripleEquals with Eventually {
@@ -30,6 +33,73 @@ class WebsocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
   implicit val materializer = ActorMaterializer()
 
   "A Websocket server" must {
+
+    "not reset the connection when no data are flowing" in Utils.assertAllStagesStopped {
+      val source = TestPublisher.probe[Message]()
+      val bindingFuture = Http().bindAndHandleSync({
+        case HttpRequest(_, _, headers, _, _) ⇒
+          val upgrade = headers.collectFirst { case u: UpgradeToWebsocket ⇒ u }.get
+          upgrade.handleMessages(Flow.fromSinkAndSource(Sink.ignore, Source.fromPublisher(source)), None)
+      }, interface = "localhost", port = 0)
+      val binding = Await.result(bindingFuture, 3.seconds)
+      val myPort = binding.localAddress.getPort
+
+      val (response, sink) = Http().singleWebsocketRequest(
+        WebsocketRequest("ws://127.0.0.1:" + myPort),
+        Flow.fromSinkAndSourceMat(TestSink.probe[Message], Source.empty)(Keep.left))
+
+      response.futureValue.response.status.isSuccess should ===(true)
+      sink
+        .request(10)
+        .expectNoMsg(500.millis)
+
+      source
+        .sendNext(TextMessage("hello"))
+        .sendComplete()
+      sink
+        .expectNext(TextMessage("hello"))
+        .expectComplete()
+
+      binding.unbind()
+    }
+
+    "not reset the connection when no data are flowing and the connection is closed from the client" in Utils.assertAllStagesStopped {
+      val source = TestPublisher.probe[Message]()
+      val bindingFuture = Http().bindAndHandleSync({
+        case HttpRequest(_, _, headers, _, _) ⇒
+          val upgrade = headers.collectFirst { case u: UpgradeToWebsocket ⇒ u }.get
+          upgrade.handleMessages(Flow.fromSinkAndSource(Sink.ignore, Source.fromPublisher(source)), None)
+      }, interface = "localhost", port = 0)
+      val binding = Await.result(bindingFuture, 3.seconds)
+      val myPort = binding.localAddress.getPort
+
+      val ((response, breaker), sink) =
+        Source.empty
+          .viaMat {
+            Http().websocketClientLayer(WebsocketRequest("ws://localhost:" + myPort))
+              .atop(SslTlsPlacebo.forScala)
+              .joinMat(Flow.fromGraph(GraphStages.breaker[ByteString]).via(
+                Tcp().outgoingConnection(new InetSocketAddress("localhost", myPort), halfClose = true)))(Keep.both)
+          }(Keep.right)
+          .toMat(TestSink.probe[Message])(Keep.both)
+          .run()
+
+      response.futureValue.response.status.isSuccess should ===(true)
+      sink
+        .request(10)
+        .expectNoMsg(1500.millis)
+
+      breaker.value.get.get.complete()
+
+      source
+        .sendNext(TextMessage("hello"))
+        .sendComplete()
+      sink
+        .expectNext(TextMessage("hello"))
+        .expectComplete()
+
+      binding.unbind()
+    }
 
     "echo 100 elements and then shut down without error" in Utils.assertAllStagesStopped {
 
@@ -93,7 +163,7 @@ class WebsocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
           .run()
       eventually(messages should ===(N))
       // breaker should have been fulfilled long ago
-      breaker.value.get.get.complete()
+      breaker.value.get.get.completeAndCancel()
       completion.futureValue
 
       binding.unbind()

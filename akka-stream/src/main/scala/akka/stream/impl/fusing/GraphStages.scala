@@ -108,13 +108,19 @@ object GraphStages {
   final class Breaker(callback: Breaker.Operation ⇒ Unit) {
     import Breaker._
     def complete(): Unit = callback(Complete)
+    def cancel(): Unit = callback(Cancel)
     def fail(ex: Throwable): Unit = callback(Fail(ex))
+    def completeAndCancel(): Unit = callback(CompleteAndCancel)
+    def failAndCancel(ex: Throwable): Unit = callback(FailAndCancel(ex))
   }
 
   object Breaker extends GraphStageWithMaterializedValue[FlowShape[Any, Any], Future[Breaker]] {
     sealed trait Operation
     case object Complete extends Operation
+    case object Cancel extends Operation
     case class Fail(ex: Throwable) extends Operation
+    case object CompleteAndCancel extends Operation
+    case class FailAndCancel(ex: Throwable) extends Operation
 
     override val initialAttributes = Attributes.name("breaker")
     override val shape = FlowShape(Inlet[Any]("breaker.in"), Outlet[Any]("breaker.out"))
@@ -130,8 +136,11 @@ object GraphStages {
         override def preStart(): Unit = {
           pull(shape.in)
           promise.success(new Breaker(getAsyncCallback[Operation] {
-            case Complete ⇒ completeStage()
-            case Fail(ex) ⇒ failStage(ex)
+            case Complete          ⇒ complete(shape.out)
+            case Cancel            ⇒ cancel(shape.in)
+            case Fail(ex)          ⇒ fail(shape.out, ex)
+            case CompleteAndCancel ⇒ completeStage()
+            case FailAndCancel(ex) ⇒ failStage(ex)
           }.invoke))
         }
       }
@@ -176,8 +185,17 @@ object GraphStages {
 
         override def preStart(): Unit = {
           promise.success(new Breaker(getAsyncCallback[Operation] {
-            case Complete ⇒ completeStage()
-            case Fail(ex) ⇒ failStage(ex)
+            case Complete ⇒
+              complete(shape.out1)
+              complete(shape.out2)
+            case Cancel ⇒
+              cancel(shape.in1)
+              cancel(shape.in2)
+            case Fail(ex) ⇒
+              fail(shape.out1, ex)
+              fail(shape.out2, ex)
+            case CompleteAndCancel ⇒ completeStage()
+            case FailAndCancel(ex) ⇒ failStage(ex)
           }.invoke))
         }
       }
