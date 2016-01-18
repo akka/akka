@@ -30,6 +30,7 @@ import scala.concurrent.duration.FiniteDuration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 
 import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
 import static org.junit.Assert.*;
@@ -537,17 +538,7 @@ public class FlowTest extends StreamTest {
   public void mustBeAbleToUseExpand() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
-    final Flow<String, String, NotUsed> flow = Flow.of(String.class).expand(new Function<String, String>() {
-      @Override
-      public String apply(String in) throws Exception {
-        return in;
-      }
-    }, new Function<String, Pair<String, String>>() {
-      @Override
-      public Pair<String, String> apply(String in) throws Exception {
-        return new Pair<String, String>(in, in);
-      }
-    });
+    final Flow<String, String, NotUsed> flow = Flow.of(String.class).expand(in -> Stream.iterate(in, i -> i).iterator());
     final Sink<String, Future<String>> sink = Sink.<String>head();
     Future<String> future = Source.from(input).via(flow).runWith(sink, materializer);
     String result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
