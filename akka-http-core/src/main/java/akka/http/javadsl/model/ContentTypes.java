@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http:__www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http:__www.typesafe.com>
  */
 package akka.http.javadsl.model;
 

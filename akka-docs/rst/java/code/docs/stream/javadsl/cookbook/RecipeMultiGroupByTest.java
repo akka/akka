@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2015 Typesafe <http://typesafe.com/>
+ *  Copyright (C) 2015-2016 Typesafe <http://typesafe.com/>
  */
 package docs.stream.javadsl.cookbook;
 
