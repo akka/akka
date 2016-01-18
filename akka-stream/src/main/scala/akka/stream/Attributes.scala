@@ -143,6 +143,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
       if (i.hasNext)
         i.next() match {
           case Name(n) ⇒
+            // FIXME this URLEncode is a bug IMO, if that format is important then that is how it should be store in Name
             val nn = URLEncoder.encode(n, "UTF-8")
             if (buf ne null) concatNames(i, null, buf.append('-').append(nn))
             else if (first ne null) {
@@ -171,11 +172,12 @@ object Attributes {
   final case class Name(n: String) extends Attribute
   final case class InputBuffer(initial: Int, max: Int) extends Attribute
   final case class LogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel) extends Attribute
+  final case object AsyncBoundary extends Attribute
+
   object LogLevels {
     /** Use to disable logging on certain operations when configuring [[Attributes.LogLevels]] */
     final val Off: Logging.LogLevel = Logging.levelFor("off").get
   }
-  final case object AsyncBoundary extends Attribute
 
   /**
    * INTERNAL API
