@@ -10,9 +10,10 @@ import akka.http.javadsl.model.MediaTypes;
 import akka.http.javadsl.server.RequestVal;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
-import akka.japi.Option;
 import akka.japi.Pair;
 import org.junit.Test;
+
+import java.util.Optional;
 
 public class FormFieldsTest extends JUnitRouteTest {
     static FormField<String> stringParam = FormFields.stringValue("stringParam");
@@ -29,7 +30,7 @@ public class FormFieldsTest extends JUnitRouteTest {
     static FormField<Long> hexLongParam = FormFields.hexLongValue("hexLongParam");
 
     static RequestVal<String> nameWithDefault = FormFields.stringValue("nameWithDefault").withDefault("John Doe");
-    static RequestVal<Option<Integer>> optionalIntParam = FormFields.intValue("optionalIntParam").optional();
+    static RequestVal<Optional<Integer>> optionalIntParam = FormFields.intValue("optionalIntParam").optional();
 
     private Pair<String, String> param(String name, String value) {
         return Pair.create(name, value);

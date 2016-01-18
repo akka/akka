@@ -6,13 +6,13 @@ package akka.http.javadsl.model;
 
 import akka.http.impl.model.JavaUri;
 import akka.http.scaladsl.model.UriJavaAccessor;
-import akka.japi.Option;
 import akka.japi.Pair;
 import akka.parboiled2.ParserInput$;
 
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Represents an Uri. Use the `withX` methods to create modified copies of a given instance.
@@ -66,12 +66,12 @@ public abstract class Uri {
     /**
      * Returns a decoded String representation of the query of this Uri.
      */
-    public abstract Option<String> queryString(Charset charset);
+    public abstract Optional<String> queryString(Charset charset);
 
     /**
      * Returns an undecoded String representation of the query of this Uri.
      */
-    public abstract Option<String> rawQueryString();
+    public abstract Optional<String> rawQueryString();
 
     /**
      *  Returns the parsed Query instance of this Uri.
@@ -86,7 +86,7 @@ public abstract class Uri {
     /**
      * Returns the fragment part of this Uri.
      */
-    public abstract Option<String> fragment();
+    public abstract Optional<String> fragment();
 
     /**
      * Returns a copy of this instance with a new scheme.
@@ -146,7 +146,7 @@ public abstract class Uri {
     /**
      * Returns a copy of this instance with a new optional fragment.
      */
-    public abstract Uri fragment(Option<String> fragment);
+    public abstract Uri fragment(Optional<String> fragment);
 
     public static final akka.http.scaladsl.model.Uri.ParsingMode STRICT = UriJavaAccessor.pmStrict();
     public static final akka.http.scaladsl.model.Uri.ParsingMode RELAXED = UriJavaAccessor.pmRelaxed();
