@@ -5,6 +5,7 @@ package akka.stream.io
 
 import java.lang.{ Integer ⇒ jInteger }
 import java.security.Principal
+import java.util.Optional
 
 import akka.japi
 import akka.stream._
@@ -14,6 +15,7 @@ import javax.net.ssl._
 import scala.annotation.varargs
 import scala.collection.immutable
 import java.security.cert.Certificate
+import scala.compat.java8.OptionConverters
 
 /**
  * Stream cipher support based upon JSSE.
@@ -106,8 +108,8 @@ object SslTls {
    * The SSLEngine may use this information e.g. when an endpoint identification algorithm was
    * configured using [[SSLParameters.setEndpointIdentificationAlgorithm]].
    */
-  def create(sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role, hostInfo: japi.Option[japi.Pair[String, jInteger]], closing: Closing): JavaFlow =
-    new javadsl.BidiFlow(apply(sslContext, firstSession, role, closing, hostInfo.asScala.map(e ⇒ (e.first, e.second))))
+  def create(sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role, hostInfo: Optional[japi.Pair[String, jInteger]], closing: Closing): JavaFlow =
+    new javadsl.BidiFlow(apply(sslContext, firstSession, role, closing, OptionConverters.toScala(hostInfo).map(e ⇒ (e.first, e.second))))
 
   /**
    * INTERNAL API.

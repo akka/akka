@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl.model
 
+import java.util.OptionalLong
+
 import language.implicitConversions
 import java.io.File
 import java.lang.{ Iterable ⇒ JIterable, Long ⇒ JLong }
@@ -20,6 +22,8 @@ import akka.http.scaladsl.model.ContentType.{ NonBinary, Binary }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
+
+import scala.compat.java8.OptionConverters._
 
 /**
  * Models the entity (aka "body" or "content) of an HTTP message.
@@ -82,8 +86,7 @@ sealed trait HttpEntity extends jm.HttpEntity {
     stream.javadsl.Source.fromGraph(dataBytes.asInstanceOf[Source[ByteString, AnyRef]])
 
   /** Java API */
-  override def getContentLengthOption: japi.Option[JLong] =
-    japi.Option.fromScalaOption(contentLengthOption.asInstanceOf[Option[JLong]]) // Scala autoboxing
+  override def getContentLengthOption: OptionalLong = contentLengthOption.asPrimitive
 
   // default implementations, should be overridden
   override def isCloseDelimited: Boolean = false

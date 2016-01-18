@@ -14,10 +14,10 @@ The ``RequestVal`` builder is made up of 2 steps, initially you need to pick whi
 match if the header is not present in the request). This is done using one of the below depicted methods::
 
   RequestVal<T> instance()
-  RequestVal<<Option<T>> optionalInstance()
+  RequestVal<<Optional<T>> optionalInstance()
 
   RequestVal<String> value()
-  RequestVal<Option<String>> optionalValue()
+  RequestVal<Optional<String>> optionalValue()
 
 Examples
 --------
