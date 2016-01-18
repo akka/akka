@@ -45,15 +45,6 @@ object AkkaBuild extends Build {
       Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
       Dist.distExclude := Seq(actorTests.id, docs.id, samples.id, osgi.id),
-
-      // FIXME problem with scalaunidoc:doc, there must be a better way
-      unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(protobuf, samples,
-        sampleCamelJava, sampleCamelScala, sampleClusterJava, sampleClusterScala, sampleFsmScala, sampleFsmJavaLambda,
-        sampleMainJava, sampleMainScala, sampleMainJavaLambda, sampleMultiNodeScala,
-        samplePersistenceJava, samplePersistenceScala, samplePersistenceJavaLambda,
-        sampleRemoteJava, sampleRemoteScala, sampleSupervisionJavaLambda,
-        sampleDistributedDataScala, sampleDistributedDataJava),
-
       S3.host in S3.upload := "downloads.typesafe.com.s3.amazonaws.com",
       S3.progress in S3.upload := true,
       mappings in S3.upload <<= (Release.releaseDirectory, version) map { (d, v) =>
@@ -67,8 +58,7 @@ object AkkaBuild extends Build {
       slf4j, agent, persistence, persistenceQuery, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit, benchJmh, typed, protobuf,
       // streamAndHttp, // does not seem to work
       stream, streamTestkit, streamTests, streamTestsTck,
-      httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests, httpTestkit,
-      docsDev // TODO merge with `docs`
+      httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests, httpTestkit
     )
   )
 
@@ -82,8 +72,7 @@ object AkkaBuild extends Build {
       slf4j, persistence, persistenceQuery, persistenceTck, kernel, osgi, contrib, multiNodeTestkit, benchJmh, typed, protobuf,
       // streamAndHttp, // does not seem to work
       stream, streamTestkit, streamTests, streamTestsTck,
-      httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests, httpTestkit,
-      docsDev // TODO merge with `docs`
+      httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests, httpTestkit
     )
   ).disablePlugins(ValidatePullRequest)
 
@@ -213,103 +202,34 @@ object AkkaBuild extends Build {
     dependencies = Seq(persistence % "compile;provided->provided;test->test", testkit % "compile;test->test")
   )
 
-  lazy val streamAndHttp = Project(
-    id = "akka-stream-and-http-experimental",
-    base = file("akka-stream-and-http"),
-    settings = parentSettings ++ Release.settings ++
-      SphinxDoc.akkaSettings ++
-      Dist.settings ++
-      Protobuf.settings ++ Seq(
-      Dist.distExclude := Seq(),
-      //      testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
-      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
-      Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository"
-//     javacOptions in JavaDoc ++= Seq("-Xdoclint:none"), TODO likely still needed
-      //      artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
-      //      packageDoc in Compile <<= packageDoc in JavaDoc,
-
-      //      // generate online version of docs
-      //      sphinxInputs in Sphinx <<= sphinxInputs in Sphinx in LocalProject(docsDev.id) map { inputs => inputs.copy(tags = inputs.tags :+ "online") },
-      //      // don't regenerate the pdf, just reuse the akka-docs version
-      //      generatedPdf in Sphinx <<= generatedPdf in Sphinx in LocalProject(docsDev.id) map identity,
-      //      generatedEpub in Sphinx <<= generatedEpub in Sphinx in LocalProject(docsDev.id) map identity,
-
-      //      publishArtifact in packageSite := false
-    ),
-    aggregate = Seq(parsing, stream, streamTestkit, streamTests, streamTestsTck, httpParent)
-  )
-
-  lazy val httpParent = Project(
-    id = "akka-http-parent-experimental",
-    base = file("akka-http-parent"),
-    settings = parentSettings,
-    aggregate = Seq(
-      httpCore,
-      http,
-      httpTestkit,
-      httpTests,
-      httpMarshallersScala, httpMarshallersJava
-    )
-  )
-
   lazy val httpCore = Project(
     id = "akka-http-core-experimental",
     base = file("akka-http-core"),
-    dependencies = Seq(stream, parsing, streamTestkit % "test->test"),
-    settings = defaultSettings
-  ).disablePlugins(Unidoc) // TODO remove me
+    dependencies = Seq(stream, parsing, streamTestkit % "test->test")
+  )
 
   lazy val http = Project(
     id = "akka-http-experimental",
     base = file("akka-http"),
-    dependencies = Seq(httpCore),
-    settings =
-      defaultSettings ++
-        Seq(
-          scalacOptions in Compile += "-language:_"
-        )
+    dependencies = Seq(httpCore)
   )
 
   lazy val streamTestkit = Project(
     id = "akka-stream-testkit",
     base = file("akka-stream-testkit"), // TODO that persistence dependency
-    dependencies = Seq(stream, persistence % "compile;provided->provided;test->test", testkit % "compile;test->test"),
-    settings = defaultSettings ++ experimentalSettings
+    dependencies = Seq(stream, persistence % "compile;provided->provided;test->test", testkit % "compile;test->test")
   )
 
   lazy val httpTestkit = Project(
     id = "akka-http-testkit-experimental",
     base = file("akka-http-testkit"),
-    dependencies = Seq(http, streamTestkit),
-    settings =
-      defaultSettings ++ Seq(
-          scalacOptions in Compile  += "-language:_"
-        )
+    dependencies = Seq(http, streamTestkit)
   )
 
   lazy val httpTests = Project(
     id = "akka-http-tests-experimental",
     base = file("akka-http-tests"),
-    dependencies = Seq(httpTestkit % "test", httpSprayJson, httpXml, httpJackson),
-    settings =
-      defaultSettings ++ Seq(
-          publishArtifact := false,
-          scalacOptions in Compile  += "-language:_",
-          // test discovery is broken when sbt isn't run with a Java 8 compatible JVM, so we define a single
-          // Suite where all tests need to be registered
-          definedTests in Test := {
-            def pseudoJUnitRunWithFingerprint =
-              // we emulate a junit-interface fingerprint here which cannot be accessed statically
-              new sbt.testing.AnnotatedFingerprint {
-                def annotationName = "org.junit.runner.RunWith"
-                def isModule = false
-              }
-            Seq(new TestDefinition("AllJavaTests", pseudoJUnitRunWithFingerprint, false, Array.empty))
-          },
-          // don't ignore Suites which is the default for the junit-interface
-          testOptions += Tests.Argument(TestFrameworks.JUnit, "--ignore-runners="),
-          mainClass in run in Test := Some("akka.http.javadsl.SimpleServerApp")
-        )
+    dependencies = Seq(httpTestkit % "test", httpSprayJson, httpXml, httpJackson)
   )
 
   lazy val httpMarshallersScala = Project(
@@ -323,13 +243,11 @@ object AkkaBuild extends Build {
 
   lazy val httpSprayJson =
     httpMarshallersScalaSubproject("spray-json")
-      .settings(Dependencies.httpSprayJson)
-      .settings(OSGi.httpSprayJson: _*)
 
   lazy val httpMarshallersJava = Project(
     id = "akka-http-marshallers-java-experimental",
     base = file("akka-http-marshallers-java"),
-    settings = defaultSettings ++ parentSettings
+    settings = parentSettings
   ).aggregate(httpJackson)
 
   lazy val httpJackson =
@@ -339,47 +257,37 @@ object AkkaBuild extends Build {
     Project(
       id = s"akka-http-$name-experimental",
       base = file(s"akka-http-marshallers-scala/akka-http-$name"),
-      dependencies = Seq(http),
-      settings = defaultSettings
+      dependencies = Seq(http)
     )
 
   def httpMarshallersJavaSubproject(name: String) =
     Project(
       id = s"akka-http-$name-experimental",
       base = file(s"akka-http-marshallers-java/akka-http-$name"),
-      dependencies = Seq(http),
-      settings = defaultSettings
+      dependencies = Seq(http)
     )
 
   lazy val parsing = Project(
     id = "akka-parsing-experimental",
-    base = file("akka-parsing"),
-    settings = defaultSettings ++ Seq(
-      scalacOptions += "-language:_",
-      // ScalaDoc doesn't like the macros
-      sources in doc in Compile := List()
-    )
+    base = file("akka-parsing")
   )
 
   lazy val stream = Project(
     id = "akka-stream-experimental",
     base = file("akka-stream"),
-    dependencies = Seq(actor),
-    settings = defaultSettings ++ experimentalSettings
+    dependencies = Seq(actor)
   )
 
   lazy val streamTests = Project(
     id = "akka-stream-tests-experimental",
     base = file("akka-stream-tests"),
-    dependencies = Seq(streamTestkit % "test->test", stream),
-    settings = defaultSettings ++ experimentalSettings
+    dependencies = Seq(streamTestkit % "test->test", stream)
   )
 
   lazy val streamTestsTck = Project(
     id = "akka-stream-tests-tck-experimental",
     base = file("akka-stream-tests-tck"),
-    dependencies = Seq(streamTestkit % "test->test", stream),
-    settings = defaultSettings ++ experimentalSettings
+    dependencies = Seq(streamTestkit % "test->test", stream)
   )
 
   lazy val kernel = Project(
@@ -413,13 +321,6 @@ object AkkaBuild extends Build {
       http, httpSprayJson, httpJackson, httpXml,
       httpTests % "compile;test->test", httpTestkit % "compile;test->test"
     )
-  )
-
-  lazy val docsDev = Project(
-    id = "akka-docs-dev",
-    base = file("akka-docs-dev"),
-    dependencies = Seq(streamTestkit % "test->test", stream, httpCore, http, httpTestkit, httpSprayJson, httpXml),
-    settings = defaultSettings
   )
 
   lazy val contrib = Project(
@@ -489,7 +390,8 @@ object AkkaBuild extends Build {
 
   val dontPublishSettings = Seq(
     publishSigned := (),
-    publish := ()
+    publish := (),
+    publishArtifact in Compile := false
   )
 
   override lazy val settings =
