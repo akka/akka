@@ -78,8 +78,8 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
           case x: `Raw-Request-URI` ⇒ // we never render this header
             renderHeaders(tail, hostHeaderSeen, userAgentSeen, transferEncodingSeen)
 
-          case x: CustomHeader ⇒
-            if (!x.suppressRendering) render(x)
+          case x: CustomHeader if x.renderInRequests ⇒
+            render(x)
             renderHeaders(tail, hostHeaderSeen, userAgentSeen, transferEncodingSeen)
 
           case x: RawHeader if (x is "content-type") || (x is "content-length") || (x is "transfer-encoding") ||
@@ -88,7 +88,8 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
             renderHeaders(tail, hostHeaderSeen, userAgentSeen, transferEncodingSeen)
 
           case x ⇒
-            render(x)
+            if (x.renderInRequests) render(x)
+            else log.warning("HTTP header '{}' is not allowed in requests", x)
             renderHeaders(tail, hostHeaderSeen, userAgentSeen, transferEncodingSeen)
         }
 

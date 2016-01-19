@@ -136,7 +136,7 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
       resultHeader match {
         case null ⇒ continue(input, lineStart)(parseHeaderLinesAux(headers, headerCount, ch, clh, cth, teh, e100c, hh))
 
-        case HttpHeaderParser.EmptyHeader ⇒
+        case EmptyHeader ⇒
           val close = HttpMessage.connectionCloseExpected(protocol, ch)
           setCompletionHandling(CompletionIsEntityStreamError)
           parseEntity(headers.toList, protocol, input, lineEnd, clh, cth, teh, e100c, hh, close)
@@ -206,7 +206,7 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
         catch { case e: ParsingException ⇒ errorInfo = e.info; 0 }
       if (errorInfo eq null) {
         headerParser.resultHeader match {
-          case HttpHeaderParser.EmptyHeader ⇒
+          case EmptyHeader ⇒
             val lastChunk =
               if (extension.isEmpty && headers.isEmpty) HttpEntity.LastChunk else HttpEntity.LastChunk(extension, headers)
             emit(EntityChunk(lastChunk))

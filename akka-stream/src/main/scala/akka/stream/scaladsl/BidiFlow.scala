@@ -155,6 +155,11 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
 }
 
 object BidiFlow {
+  private[this] val _identity: BidiFlow[Any, Any, Any, Any, Unit] =
+    BidiFlow.fromFlows(Flow[Any], Flow[Any])
+
+  def identity[A, B]: BidiFlow[A, A, B, B, Unit] = _identity.asInstanceOf[BidiFlow[A, A, B, B, Unit]]
+
   /**
    * A graph with the shape of a flow logically is a flow, this method makes
    * it so also in type.
