@@ -20,7 +20,7 @@ import akka.stream.impl.fusing.SubSource
  *
  * Defines components of the websocket stack.
  */
-private[http] object Websocket {
+private[http] object WebSocket {
   import FrameHandler._
 
   /**

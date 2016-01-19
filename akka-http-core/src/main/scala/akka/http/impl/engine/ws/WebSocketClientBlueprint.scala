@@ -26,29 +26,29 @@ import akka.http.impl.engine.parsing.HttpMessageParser.StateResult
 import akka.http.impl.engine.parsing.ParserOutput.{ RemainingBytes, ResponseStart, NeedMoreData }
 import akka.http.impl.engine.parsing.{ ParserOutput, HttpHeaderParser, HttpResponseParser }
 import akka.http.impl.engine.rendering.{ HttpRequestRendererFactory, RequestRenderingContext }
-import akka.http.impl.engine.ws.Handshake.Client.NegotiatedWebsocketSettings
+import akka.http.impl.engine.ws.Handshake.Client.NegotiatedWebSocketSettings
 import akka.http.impl.util.StreamUtils
 
-object WebsocketClientBlueprint {
+object WebSocketClientBlueprint {
   /**
-   * Returns a WebsocketClientLayer that can be materialized once.
+   * Returns a WebSocketClientLayer that can be materialized once.
    */
-  def apply(request: WebsocketRequest,
+  def apply(request: WebSocketRequest,
             settings: ClientConnectionSettings,
-            log: LoggingAdapter): Http.WebsocketClientLayer =
+            log: LoggingAdapter): Http.WebSocketClientLayer =
     (simpleTls.atopMat(handshake(request, settings, log))(Keep.right) atop
-      Websocket.framing atop
-      Websocket.stack(serverSide = false, maskingRandomFactory = settings.websocketRandomFactory, log = log)).reversed
+      WebSocket.framing atop
+      WebSocket.stack(serverSide = false, maskingRandomFactory = settings.websocketRandomFactory, log = log)).reversed
 
   /**
    * A bidi flow that injects and inspects the WS handshake and then goes out of the way. This BidiFlow
    * can only be materialized once.
    */
-  def handshake(request: WebsocketRequest,
+  def handshake(request: WebSocketRequest,
                 settings: ClientConnectionSettings,
-                log: LoggingAdapter): BidiFlow[ByteString, ByteString, ByteString, ByteString, Future[WebsocketUpgradeResponse]] = {
+                log: LoggingAdapter): BidiFlow[ByteString, ByteString, ByteString, ByteString, Future[WebSocketUpgradeResponse]] = {
     import request._
-    val result = Promise[WebsocketUpgradeResponse]()
+    val result = Promise[WebSocketUpgradeResponse]()
 
     val valve = StreamUtils.OneTimeValve()
 
@@ -85,7 +85,7 @@ object WebsocketClientBlueprint {
             case ResponseStart(status, protocol, headers, entity, close) ⇒
               val response = HttpResponse(status, headers, protocol = protocol)
               Handshake.Client.validateResponse(response, subprotocol.toList, key) match {
-                case Right(NegotiatedWebsocketSettings(protocol)) ⇒
+                case Right(NegotiatedWebSocketSettings(protocol)) ⇒
                   result.success(ValidUpgrade(response, protocol))
 
                   become(transparent)
@@ -100,8 +100,8 @@ object WebsocketClientBlueprint {
                       throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
                   }
                 case Left(problem) ⇒
-                  result.success(InvalidUpgradeResponse(response, s"Websocket server at $uri returned $problem"))
-                  ctx.fail(throw new IllegalArgumentException(s"Websocket upgrade did not finish because of '$problem'"))
+                  result.success(InvalidUpgradeResponse(response, s"WebSocket server at $uri returned $problem"))
+                  ctx.fail(throw new IllegalArgumentException(s"WebSocket upgrade did not finish because of '$problem'"))
               }
             case other ⇒
               throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
