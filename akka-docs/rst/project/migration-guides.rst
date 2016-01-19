@@ -14,3 +14,4 @@ Migration Guides
    migration-guide-eventsourced-2.3.x
    migration-guide-2.3.x-2.4.x
    migration-guide-2.4.x-2.5.x
+   migration-streams-2.0.x-2.4.x
