@@ -14,7 +14,7 @@ import scala.collection.immutable
 import scala.reflect.ClassTag
 import akka.{ NotUsed, japi }
 import akka.http.impl.model.{ JavaQuery, JavaUri }
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model ⇒ jm, HttpConnectionContext, ConnectionContext, HttpsConnectionContext }
 import akka.http.scaladsl.{ model ⇒ sm }
 
 import scala.compat.java8.OptionConverters._
@@ -82,7 +82,7 @@ private[http] object JavaMapping {
     }
   }
 
-  /** This trivial mapping isn't enabled by default to prevent it from conflicting with the `Inherited` ones `*/
+  /** This trivial mapping isn't enabled by default to prevent it from conflicting with the `Inherited` ones */
   def identity[T]: JavaMapping[T, T] =
     new JavaMapping[T, T] {
       def toJava(scalaObject: T): J = scalaObject
@@ -163,6 +163,10 @@ private[http] object JavaMapping {
     def toJava(scalaObject: S): J = scalaObject
     def toScala(javaObject: J): S = cast[S](javaObject)
   }
+
+  implicit object ConnectionContext extends Inherited[ConnectionContext, akka.http.scaladsl.HttpConnectionContext]
+  implicit object HttpConnectionContext extends Inherited[HttpConnectionContext, akka.http.scaladsl.HttpConnectionContext]
+  implicit object HttpsConnectionContext extends Inherited[HttpsConnectionContext, akka.http.scaladsl.HttpsConnectionContext]
 
   implicit object DateTime extends Inherited[jm.DateTime, akka.http.scaladsl.model.DateTime]
 

@@ -2,7 +2,7 @@ package akka.http.impl.engine.client
 
 import javax.net.ssl.SSLContext
 
-import akka.http.scaladsl.{ HttpsContext, Http }
+import akka.http.scaladsl.{ ConnectionContext, Http }
 import akka.http.scaladsl.model.{ HttpHeader, HttpResponse, HttpRequest }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Sink, Source }
@@ -28,7 +28,7 @@ class ClientCancellationSpec extends AkkaSpec("""
       { req ⇒ HttpResponse() }, // TLS client does full-close, no need for the connection:close header
       addressTls.getHostName,
       addressTls.getPort,
-      httpsContext = Some(HttpsContext(SSLContext.getDefault)))(noncheckedMaterializer)
+      connectionContext = ConnectionContext.https(SSLContext.getDefault))(noncheckedMaterializer)
 
     def testCase(connection: Flow[HttpRequest, HttpResponse, Any]): Unit = Utils.assertAllStagesStopped {
       val requests = TestPublisher.probe[HttpRequest]()
