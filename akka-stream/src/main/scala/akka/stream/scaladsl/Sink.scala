@@ -34,6 +34,26 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
   def contramap[In2](f: In2 ⇒ In): Sink[In2, Mat] = Flow.fromFunction(f).toMat(this)(Keep.right)
 
   /**
+   * Connect this `Sink` to a `Flow`.
+   * This function is equivalent to [[Flow#to]].
+   *
+   * The materialized value of the combined [[Sink]] will be the materialized
+   * value of the given flow (ignoring the current Sink’s value), use
+   * [[Sink#prependMat[Mat2* prependMat]] if a different strategy is needed.
+   */
+  def prepend[In2, Mat2](flow: Flow[In2, In, Mat2]): Sink[In2, Mat2] = flow.to(this)
+
+  /**
+   * Connect this `Sink` to a `Flow`.
+   * This function is equivalent to [[Flow#toMat]].
+   *
+   * The `combine` function is used to compose the materialized values of this sink and that
+   * Flow into the materialized value of the resulting Sink.
+   */
+  def prependMat[In2, Mat2, Mat3](flow: Flow[In2, In, Mat2])(combine: (Mat2, Mat) ⇒ Mat3): Sink[In2, Mat3] =
+    flow.toMat(this)(combine)
+
+  /**
    * Connect this `Sink` to a `Source` and run it. The returned value is the materialized value
    * of the `Source`, e.g. the `Subscriber` of a [[Source#subscriber]].
    */
