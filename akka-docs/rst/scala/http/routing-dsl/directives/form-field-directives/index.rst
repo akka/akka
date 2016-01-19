@@ -8,3 +8,6 @@ FormFieldDirectives
 
    formField
    formFields
+   formFieldSeq
+   formFieldMap
+   formFieldMultiMap
