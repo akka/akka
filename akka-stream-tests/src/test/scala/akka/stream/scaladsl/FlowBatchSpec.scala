@@ -9,20 +9,20 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.stream.{ OverflowStrategy, ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 
-class FlowAggregateSpec extends AkkaSpec {
+class FlowBatchSpec extends AkkaSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "Aggregate" must {
+  "Batch" must {
 
     "pass-through elements unchanged when there is no rate difference" in {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      Source.fromPublisher(publisher).aggregate(max = 2, seed = i ⇒ i)(aggregate = _ + _).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).batch(max = 2, seed = i ⇒ i)(aggregate = _ + _).to(Sink.fromSubscriber(subscriber)).run()
       val sub = subscriber.expectSubscription()
 
       for (i ← 1 to 100) {
@@ -38,7 +38,7 @@ class FlowAggregateSpec extends AkkaSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[List[Int]]()
 
-      Source.fromPublisher(publisher).aggregate(max = Long.MaxValue, seed = i ⇒ List(i))(aggregate = (ints, i) ⇒ i :: ints).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).batch(max = Long.MaxValue, seed = i ⇒ List(i))(aggregate = (ints, i) ⇒ i :: ints).to(Sink.fromSubscriber(subscriber)).run()
       val sub = subscriber.expectSubscription()
 
       for (i ← 1 to 10) {
@@ -52,7 +52,7 @@ class FlowAggregateSpec extends AkkaSpec {
 
     "work on a variable rate chain" in {
       val future = Source(1 to 1000)
-        .aggregate(max = 100, seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i)
+        .batch(max = 100, seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i)
         .map { i ⇒ if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }
         .runFold(0)(_ + _)
       Await.result(future, 10.seconds) should be(500500)
@@ -62,7 +62,7 @@ class FlowAggregateSpec extends AkkaSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      Source.fromPublisher(publisher).aggregate(max = 2, seed = i ⇒ i)(aggregate = _ + _).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).batch(max = 2, seed = i ⇒ i)(aggregate = _ + _).to(Sink.fromSubscriber(subscriber)).run()
       val sub = subscriber.expectSubscription()
 
       sub.request(1)
@@ -89,7 +89,7 @@ class FlowAggregateSpec extends AkkaSpec {
 
     "work with a buffer and fold" in {
       val future = Source(1 to 50)
-        .aggregate(max = Long.MaxValue, seed = i ⇒ i)(aggregate = _ + _)
+        .batch(max = Long.MaxValue, seed = i ⇒ i)(aggregate = _ + _)
         .buffer(50, OverflowStrategy.backpressure)
         .runFold(0)(_ + _)
       Await.result(future, 3.seconds) should be((1 to 50).sum)
