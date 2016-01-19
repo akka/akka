@@ -27,17 +27,17 @@ object TestServer extends App {
 
   try {
     val binding = Http().bindAndHandleSync({
-      case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) if req.header[UpgradeToWebsocket].isDefined ⇒
-        req.header[UpgradeToWebsocket] match {
-          case Some(upgrade) ⇒ upgrade.handleMessages(echoWebsocketService) // needed for running the autobahn test suite
+      case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) if req.header[UpgradeToWebSocket].isDefined ⇒
+        req.header[UpgradeToWebSocket] match {
+          case Some(upgrade) ⇒ upgrade.handleMessages(echoWebSocketService) // needed for running the autobahn test suite
           case None          ⇒ HttpResponse(400, entity = "Not a valid websocket request!")
         }
       case HttpRequest(GET, Uri.Path("/"), _, _, _)      ⇒ index
       case HttpRequest(GET, Uri.Path("/ping"), _, _, _)  ⇒ HttpResponse(entity = "PONG!")
       case HttpRequest(GET, Uri.Path("/crash"), _, _, _) ⇒ sys.error("BOOM!")
       case req @ HttpRequest(GET, Uri.Path("/ws-greeter"), _, _, _) ⇒
-        req.header[UpgradeToWebsocket] match {
-          case Some(upgrade) ⇒ upgrade.handleMessages(greeterWebsocketService)
+        req.header[UpgradeToWebSocket] match {
+          case Some(upgrade) ⇒ upgrade.handleMessages(greeterWebSocketService)
           case None          ⇒ HttpResponse(400, entity = "Not a valid websocket request!")
         }
       case _: HttpRequest ⇒ HttpResponse(404, entity = "Unknown resource!")
@@ -66,10 +66,10 @@ object TestServer extends App {
          |  </body>
          |</html>""".stripMargin))
 
-  def echoWebsocketService: Flow[Message, Message, NotUsed] =
+  def echoWebSocketService: Flow[Message, Message, NotUsed] =
     Flow[Message] // just let message flow directly to the output
 
-  def greeterWebsocketService: Flow[Message, Message, NotUsed] =
+  def greeterWebSocketService: Flow[Message, Message, NotUsed] =
     Flow[Message]
       .collect {
         case TextMessage.Strict(name) ⇒ TextMessage(s"Hello '$name'")

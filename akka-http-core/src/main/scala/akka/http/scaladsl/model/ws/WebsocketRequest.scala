@@ -11,16 +11,16 @@ import scala.collection.immutable
 import akka.http.scaladsl.model.{ HttpHeader, Uri }
 
 /**
- * Represents a Websocket request.
+ * Represents a WebSocket request.
  * @param uri The target URI to connect to.
- * @param extraHeaders Extra headers to add to the Websocket request.
- * @param subprotocol A Websocket subprotocol if required.
+ * @param extraHeaders Extra headers to add to the WebSocket request.
+ * @param subprotocol A WebSocket subprotocol if required.
  */
-final case class WebsocketRequest(
+final case class WebSocketRequest(
   uri: Uri,
   extraHeaders: immutable.Seq[HttpHeader] = Nil,
   subprotocol: Option[String] = None)
-object WebsocketRequest {
-  implicit def fromTargetUri(uri: Uri): WebsocketRequest = WebsocketRequest(uri)
-  implicit def fromTargetUriString(uriString: String): WebsocketRequest = WebsocketRequest(uriString)
+object WebSocketRequest {
+  implicit def fromTargetUri(uri: Uri): WebSocketRequest = WebSocketRequest(uri)
+  implicit def fromTargetUriString(uriString: String): WebSocketRequest = WebSocketRequest(uriString)
 }

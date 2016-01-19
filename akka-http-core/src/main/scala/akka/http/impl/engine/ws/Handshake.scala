@@ -10,21 +10,21 @@ import scala.collection.immutable.Seq
 import scala.reflect.ClassTag
 import akka.http.impl.util._
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.model.ws.{ Message, UpgradeToWebsocket }
+import akka.http.scaladsl.model.ws.{ Message, UpgradeToWebSocket }
 import akka.http.scaladsl.model._
 import akka.stream.{ Graph, FlowShape }
 
 /**
- * Server-side implementation of the Websocket handshake
+ * Server-side implementation of the WebSocket handshake
  *
  * INTERNAL API
  */
 private[http] object Handshake {
-  val CurrentWebsocketVersion = 13
+  val CurrentWebSocketVersion = 13
 
   object Server {
     /**
-     *  Validates a client Websocket handshake. Returns either `Right(UpgradeToWebsocket)` or
+     *  Validates a client WebSocket handshake. Returns either `Right(UpgradeToWebSocket)` or
      *  `Left(MessageStartError)`.
      *
      *  From: http://tools.ietf.org/html/rfc6455#section-4.2.1
@@ -62,7 +62,7 @@ private[http] object Handshake {
      *        to speak.  The interpretation of this header field is discussed
      *        in Section 9.1.
      */
-    def websocketUpgrade(headers: List[HttpHeader], hostHeaderPresent: Boolean): Option[UpgradeToWebsocket] = {
+    def websocketUpgrade(headers: List[HttpHeader], hostHeaderPresent: Boolean): Option[UpgradeToWebSocket] = {
       def find[T <: HttpHeader: ClassTag]: Option[T] =
         headers.collectFirst {
           case t: T ⇒ t
@@ -83,12 +83,12 @@ private[http] object Handshake {
       // FIXME See #18709
       // val extensions = find[`Sec-WebSocket-Extensions`]
 
-      if (upgrade.exists(_.hasWebsocket) &&
+      if (upgrade.exists(_.hasWebSocket) &&
         connection.exists(_.hasUpgrade) &&
-        version.exists(_.hasVersion(CurrentWebsocketVersion)) &&
+        version.exists(_.hasVersion(CurrentWebSocketVersion)) &&
         key.exists(k ⇒ k.isValid)) {
 
-        val header = new UpgradeToWebsocketLowLevel {
+        val header = new UpgradeToWebSocketLowLevel {
           def requestedProtocols: Seq[String] = clientSupportedSubprotocols
 
           def handle(handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]], subprotocol: Option[String]): HttpResponse = {
@@ -134,11 +134,11 @@ private[http] object Handshake {
             UpgradeHeader,
             ConnectionUpgradeHeader,
             `Sec-WebSocket-Accept`.forKey(key),
-            UpgradeToWebsocketResponseHeader(handler)))
+            UpgradeToWebSocketResponseHeader(handler)))
   }
 
   object Client {
-    case class NegotiatedWebsocketSettings(subprotocol: Option[String])
+    case class NegotiatedWebSocketSettings(subprotocol: Option[String])
 
     /**
      * Builds a WebSocket handshake request.
@@ -156,7 +156,7 @@ private[http] object Handshake {
         UpgradeHeader,
         ConnectionUpgradeHeader,
         key,
-        SecWebsocketVersionHeader) ++ protocol ++ extraHeaders
+        SecWebSocketVersionHeader) ++ protocol ++ extraHeaders
 
       (HttpRequest(HttpMethods.GET, uri.toRelative, headers), key)
     }
@@ -165,7 +165,7 @@ private[http] object Handshake {
      * Tries to validate the HTTP response. Returns either Right(settings) or an error message if
      * the response cannot be validated.
      */
-    def validateResponse(response: HttpResponse, subprotocols: Seq[String], key: `Sec-WebSocket-Key`): Either[String, NegotiatedWebsocketSettings] = {
+    def validateResponse(response: HttpResponse, subprotocols: Seq[String], key: `Sec-WebSocket-Key`): Either[String, NegotiatedWebSocketSettings] = {
       /*
        From http://tools.ietf.org/html/rfc6455#section-4.1
 
@@ -249,8 +249,8 @@ private[http] object Handshake {
         case None ⇒
           val subs = response.header[`Sec-WebSocket-Protocol`].flatMap(_.protocols.headOption)
 
-          if (subprotocols.isEmpty && subs.isEmpty) Right(NegotiatedWebsocketSettings(None)) // no specific one selected
-          else if (subs.nonEmpty && subprotocols.contains(subs.get)) Right(NegotiatedWebsocketSettings(Some(subs.get)))
+          if (subprotocols.isEmpty && subs.isEmpty) Right(NegotiatedWebSocketSettings(None)) // no specific one selected
+          else if (subs.nonEmpty && subprotocols.contains(subs.get)) Right(NegotiatedWebSocketSettings(Some(subs.get)))
           else Left(s"response that indicated that the given subprotocol was not supported. (client supported: ${subprotocols.mkString(", ")}, server supported: $subs)")
         case Some(problem) ⇒ Left(problem)
       }
@@ -259,5 +259,5 @@ private[http] object Handshake {
 
   val UpgradeHeader = Upgrade(List(UpgradeProtocol("websocket")))
   val ConnectionUpgradeHeader = Connection(List("upgrade"))
-  val SecWebsocketVersionHeader = `Sec-WebSocket-Version`(Seq(CurrentWebsocketVersion))
+  val SecWebSocketVersionHeader = `Sec-WebSocket-Version`(Seq(CurrentWebSocketVersion))
 }

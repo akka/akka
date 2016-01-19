@@ -689,6 +689,7 @@ private[http] object `Sec-WebSocket-Accept` extends ModeledCompanion[`Sec-WebSoc
  */
 private[http] final case class `Sec-WebSocket-Accept`(key: String) extends ResponseHeader {
   protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ key
+
   protected def companion = `Sec-WebSocket-Accept`
 }
 
@@ -697,12 +698,12 @@ private[http] final case class `Sec-WebSocket-Accept`(key: String) extends Respo
  */
 // http://tools.ietf.org/html/rfc6455#section-4.3
 private[http] object `Sec-WebSocket-Extensions` extends ModeledCompanion[`Sec-WebSocket-Extensions`] {
-  implicit val extensionsRenderer = Renderer.defaultSeqRenderer[WebsocketExtension]
+  implicit val extensionsRenderer = Renderer.defaultSeqRenderer[WebSocketExtension]
 }
 /**
  * INTERNAL API
  */
-private[http] final case class `Sec-WebSocket-Extensions`(extensions: immutable.Seq[WebsocketExtension])
+private[http] final case class `Sec-WebSocket-Extensions`(extensions: immutable.Seq[WebSocketExtension])
   extends ResponseHeader {
   require(extensions.nonEmpty, "Sec-WebSocket-Extensions.extensions must not be empty")
   import `Sec-WebSocket-Extensions`.extensionsRenderer
@@ -725,10 +726,11 @@ private[http] object `Sec-WebSocket-Key` extends ModeledCompanion[`Sec-WebSocket
  */
 private[http] final case class `Sec-WebSocket-Key`(key: String) extends RequestHeader {
   protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ key
+
   protected def companion = `Sec-WebSocket-Key`
 
   /**
-   * Checks if the key value is valid according to the Websocket specification, i.e.
+   * Checks if the key value is valid according to the WebSocket specification, i.e.
    * if the String is a Base64 representation of 16 bytes.
    */
   def isValid: Boolean = Try(Base64.rfc2045().decode(key)).toOption.exists(_.length == 16)
@@ -858,7 +860,7 @@ final case class Upgrade(protocols: immutable.Seq[UpgradeProtocol]) extends Requ
 
   protected def companion = Upgrade
 
-  def hasWebsocket: Boolean = protocols.exists(_.name equalsIgnoreCase "websocket")
+  def hasWebSocket: Boolean = protocols.exists(_.name equalsIgnoreCase "websocket")
 }
 
 // http://tools.ietf.org/html/rfc7231#section-5.5.3

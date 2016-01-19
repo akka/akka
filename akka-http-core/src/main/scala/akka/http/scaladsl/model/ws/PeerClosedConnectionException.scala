@@ -7,7 +7,7 @@ package akka.http.scaladsl.model.ws
 import akka.http.javadsl
 
 /**
- * A PeerClosedConnectionException will be reported to the Websocket handler if the peer has closed the connection.
+ * A PeerClosedConnectionException will be reported to the WebSocket handler if the peer has closed the connection.
  * `closeCode` and `closeReason` contain close messages as reported by the peer.
  */
 class PeerClosedConnectionException(val closeCode: Int, val closeReason: String)

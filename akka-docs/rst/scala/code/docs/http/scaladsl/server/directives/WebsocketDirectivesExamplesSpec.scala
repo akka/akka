@@ -15,7 +15,7 @@ import docs.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.model.ws.{ TextMessage, Message, BinaryMessage }
 import akka.http.scaladsl.testkit.WSProbe
 
-class WebsocketDirectivesExamplesSpec extends RoutingSpec {
+class WebSocketDirectivesExamplesSpec extends RoutingSpec {
   "greeter-service" in {
     def greeter: Flow[Message, Message, Any] =
       Flow[Message].mapConcat {
@@ -28,18 +28,18 @@ class WebsocketDirectivesExamplesSpec extends RoutingSpec {
       }
     val websocketRoute =
       path("greeter") {
-        handleWebsocketMessages(greeter)
+        handleWebSocketMessages(greeter)
       }
 
     // tests:
     // create a testing probe representing the client-side
     val wsClient = WSProbe()
 
-    // WS creates a Websocket request for testing
+    // WS creates a WebSocket request for testing
     WS("/greeter", wsClient.flow) ~> websocketRoute ~>
       check {
         // check response for WS Upgrade headers
-        isWebsocketUpgrade shouldEqual true
+        isWebSocketUpgrade shouldEqual true
 
         // manually run a WS conversation
         wsClient.sendMessage("Peter")
@@ -74,18 +74,18 @@ class WebsocketDirectivesExamplesSpec extends RoutingSpec {
 
     def websocketMultipleProtocolRoute =
       path("services") {
-        handleWebsocketMessagesForProtocol(greeterService, "greeter") ~
-          handleWebsocketMessagesForProtocol(echoService, "echo")
+        handleWebSocketMessagesForProtocol(greeterService, "greeter") ~
+          handleWebSocketMessagesForProtocol(echoService, "echo")
       }
 
     // tests:
     val wsClient = WSProbe()
 
-    // WS creates a Websocket request for testing
+    // WS creates a WebSocket request for testing
     WS("/services", wsClient.flow, List("other", "echo")) ~>
       websocketMultipleProtocolRoute ~>
       check {
-        expectWebsocketUpgradeWithProtocol { protocol ⇒
+        expectWebSocketUpgradeWithProtocol { protocol ⇒
           protocol shouldEqual "echo"
 
           wsClient.sendMessage("Peter")

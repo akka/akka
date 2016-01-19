@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.headers._
 import akka.parboiled2._
 
 // see grammar at http://tools.ietf.org/html/rfc6455#section-4.3
-private[parser] trait WebsocketHeaders { this: Parser with CommonRules with CommonActions ⇒
+private[parser] trait WebSocketHeaders { this: Parser with CommonRules with CommonActions ⇒
   import CharacterClasses._
   import Base64Parsing.rfc2045Alphabet
 
@@ -44,7 +44,7 @@ private[parser] trait WebsocketHeaders { this: Parser with CommonRules with Comm
 
   private def extension = rule {
     `extension-token` ~ zeroOrMore(ws(";") ~ `extension-param`) ~>
-      ((name, params) ⇒ WebsocketExtension(name, Map(params: _*)))
+      ((name, params) ⇒ WebSocketExtension(name, Map(params: _*)))
   }
   private def `extension-token`: Rule1[String] = token
   private def `extension-param`: Rule1[(String, String)] =

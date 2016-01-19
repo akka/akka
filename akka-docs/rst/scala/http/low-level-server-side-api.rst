@@ -12,7 +12,7 @@ It sports the following features:
 - Full support for `HTTP pipelining`_
 - Full support for asynchronous HTTP streaming including "chunked" transfer encoding accessible through an idiomatic API
 - Optional SSL/TLS encryption
-- Websocket support
+- WebSocket support
 
 .. _HTTP persistent connections: http://en.wikipedia.org/wiki/HTTP_persistent_connection
 .. _HTTP pipelining: http://en.wikipedia.org/wiki/HTTP_pipelining

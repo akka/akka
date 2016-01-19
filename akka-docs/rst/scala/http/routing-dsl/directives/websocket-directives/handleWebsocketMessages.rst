@@ -1,27 +1,27 @@
-.. _-handleWebsocketMessages-:
+.. _-handleWebSocketMessages-:
 
-handleWebsocketMessages
+handleWebSocketMessages
 =======================
 
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/WebsocketDirectives.scala
-   :snippet: handleWebsocketMessages
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/WebSocketDirectives.scala
+   :snippet: handleWebSocketMessages
 
 Description
 -----------
 
-The directive first checks if the request was a valid Websocket handshake request and if yes, it completes the request
-with the passed handler. Otherwise, the request is rejected with an ``ExpectedWebsocketRequestRejection``.
+The directive first checks if the request was a valid WebSocket handshake request and if yes, it completes the request
+with the passed handler. Otherwise, the request is rejected with an ``ExpectedWebSocketRequestRejection``.
 
-Websocket subprotocols offered in the ``Sec-Websocket-Protocol`` header of the request are ignored. If you want to
-support several protocols use the :ref:`-handleWebsocketMessagesForProtocol-` directive, instead.
+WebSocket subprotocols offered in the ``Sec-WebSocket-Protocol`` header of the request are ignored. If you want to
+support several protocols use the :ref:`-handleWebSocketMessagesForProtocol-` directive, instead.
 
-For more information about the Websocket support, see :ref:`server-side-websocket-support-scala`.
+For more information about the WebSocket support, see :ref:`server-side-websocket-support-scala`.
 
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/WebsocketDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala
    :snippet: greeter-service

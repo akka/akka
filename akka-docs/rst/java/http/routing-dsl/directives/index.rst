@@ -55,8 +55,8 @@ RangeDirectives
 SchemeDirectives
   Contains a single directive ``scheme`` to filter requests based on the URI scheme (http vs. https).
 
-WebsocketDirectives
-  Contains directives to support answering Websocket requests.
+WebSocketDirectives
+  Contains directives to support answering WebSocket requests.
 
 TODO this page should be rewritten as the corresponding Scala page
 
