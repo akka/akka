@@ -11,11 +11,11 @@ import akka.http.scaladsl
 import akka.http.scaladsl.model.ws.{ InvalidUpgradeResponse, ValidUpgrade }
 
 /**
- * Represents an upgrade response for a Websocket upgrade request. Can either be valid, in which
+ * Represents an upgrade response for a WebSocket upgrade request. Can either be valid, in which
  * case the `chosenSubprotocol` method is valid, or if invalid, the `invalidationReason` method
  * can be used to find out why the upgrade failed.
  */
-trait WebsocketUpgradeResponse {
+trait WebSocketUpgradeResponse {
   def isValid: Boolean
 
   /**
@@ -35,12 +35,12 @@ trait WebsocketUpgradeResponse {
   def invalidationReason: String
 }
 
-object WebsocketUpgradeResponse {
+object WebSocketUpgradeResponse {
   import akka.http.impl.util.JavaMapping.Implicits._
-  def adapt(scalaResponse: scaladsl.model.ws.WebsocketUpgradeResponse): WebsocketUpgradeResponse =
+  def adapt(scalaResponse: scaladsl.model.ws.WebSocketUpgradeResponse): WebSocketUpgradeResponse =
     scalaResponse match {
       case ValidUpgrade(resp, chosen) ⇒
-        new WebsocketUpgradeResponse {
+        new WebSocketUpgradeResponse {
           def isValid: Boolean = true
           def response: HttpResponse = resp
           def chosenSubprotocol: Optional[String] = chosen.asJava
@@ -48,7 +48,7 @@ object WebsocketUpgradeResponse {
             throw new UnsupportedOperationException("invalidationReason must not be called for valid response")
         }
       case InvalidUpgradeResponse(resp, cause) ⇒
-        new WebsocketUpgradeResponse {
+        new WebSocketUpgradeResponse {
           def isValid: Boolean = false
           def response: HttpResponse = resp
           def chosenSubprotocol: Optional[String] = throw new UnsupportedOperationException("chosenSubprotocol must not be called for valid response")

@@ -12,7 +12,7 @@ private[http] sealed trait FrameEventOrError
 private[http] final case class FrameError(p: ProtocolException) extends FrameEventOrError
 
 /**
- * The low-level Websocket framing model.
+ * The low-level WebSocket framing model.
  *
  * INTERNAL API
  */

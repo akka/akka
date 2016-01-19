@@ -11,7 +11,7 @@ import akka.stream.scaladsl.{ Keep, BidiFlow, Flow }
 import akka.stream.stage.{ SyncDirective, Context, StatefulStage }
 
 /**
- * Implements Websocket Frame masking.
+ * Implements WebSocket Frame masking.
  *
  * INTERNAL API
  */

@@ -14,16 +14,16 @@ import akka.http.scaladsl.testkit.WSProbe
 import akka.http.scaladsl.model.headers.`Sec-WebSocket-Protocol`
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.ws._
-import akka.http.scaladsl.server.{ UnsupportedWebsocketSubprotocolRejection, ExpectedWebsocketRequestRejection, Route, RoutingSpec }
+import akka.http.scaladsl.server.{ UnsupportedWebSocketSubprotocolRejection, ExpectedWebSocketRequestRejection, Route, RoutingSpec }
 
-class WebsocketDirectivesSpec extends RoutingSpec {
-  "the handleWebsocketMessages directive" should {
+class WebSocketDirectivesSpec extends RoutingSpec {
+  "the handleWebSocketMessages directive" should {
     "handle websocket requests" in {
       val wsClient = WSProbe()
 
       WS("http://localhost/", wsClient.flow) ~> websocketRoute ~>
         check {
-          isWebsocketUpgrade shouldEqual true
+          isWebSocketUpgrade shouldEqual true
           wsClient.sendMessage("Peter")
           wsClient.expectMessage("Hello Peter!")
 
@@ -42,7 +42,7 @@ class WebsocketDirectivesSpec extends RoutingSpec {
 
       WS("http://localhost/", wsClient.flow, List("other", "echo", "greeter")) ~> websocketMultipleProtocolRoute ~>
         check {
-          expectWebsocketUpgradeWithProtocol { protocol ⇒
+          expectWebSocketUpgradeWithProtocol { protocol ⇒
             protocol shouldEqual "echo"
 
             wsClient.sendMessage("Peter")
@@ -62,7 +62,7 @@ class WebsocketDirectivesSpec extends RoutingSpec {
     "reject websocket requests if no subprotocol matches" in {
       WS("http://localhost/", Flow[Message], List("other")) ~> websocketMultipleProtocolRoute ~> check {
         rejections.collect {
-          case UnsupportedWebsocketSubprotocolRejection(p) ⇒ p
+          case UnsupportedWebSocketSubprotocolRejection(p) ⇒ p
         }.toSet shouldEqual Set("greeter", "echo")
       }
 
@@ -74,20 +74,20 @@ class WebsocketDirectivesSpec extends RoutingSpec {
     }
     "reject non-websocket requests" in {
       Get("http://localhost/") ~> websocketRoute ~> check {
-        rejection shouldEqual ExpectedWebsocketRequestRejection
+        rejection shouldEqual ExpectedWebSocketRequestRejection
       }
 
       Get("http://localhost/") ~> Route.seal(websocketRoute) ~> check {
         status shouldEqual StatusCodes.BadRequest
-        responseAs[String] shouldEqual "Expected Websocket Upgrade request"
+        responseAs[String] shouldEqual "Expected WebSocket Upgrade request"
       }
     }
   }
 
-  def websocketRoute = handleWebsocketMessages(greeter)
+  def websocketRoute = handleWebSocketMessages(greeter)
   def websocketMultipleProtocolRoute =
-    handleWebsocketMessagesForProtocol(echo, "echo") ~
-      handleWebsocketMessagesForProtocol(greeter, "greeter")
+    handleWebSocketMessagesForProtocol(echo, "echo") ~
+      handleWebSocketMessagesForProtocol(greeter, "greeter")
 
   def greeter: Flow[Message, Message, Any] =
     Flow[Message].mapConcat {

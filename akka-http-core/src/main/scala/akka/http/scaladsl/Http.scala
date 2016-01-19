@@ -14,27 +14,24 @@ import akka.http._
 import akka.http.impl.engine.HttpConnectionTimeoutException
 import akka.http.impl.engine.client._
 import akka.http.impl.engine.server._
-import akka.http.impl.engine.ws.WebsocketClientBlueprint
+import akka.http.impl.engine.ws.WebSocketClientBlueprint
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
-import akka.http.scaladsl.model.ws.{ WebsocketUpgradeResponse, WebsocketRequest, Message }
+import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgradeResponse }
 import akka.http.scaladsl.util.FastFuture
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.io._
 import akka.stream.scaladsl._
 import com.typesafe.config.Config
-import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
 import com.typesafe.sslconfig.akka._
+import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
 import com.typesafe.sslconfig.ssl._
 
-import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future, Promise, TimeoutException }
 import scala.util.Try
 import scala.util.control.NonFatal
-
-import scala.compat.java8.OptionConverters._
 
 class HttpExt(private val config: Config)(implicit val system: ActorSystem) extends akka.actor.Extension
   with DefaultSSLContextCreation {
@@ -629,7 +626,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   //#
 
   /**
-   * The type of the client-side Websocket layer as a stand-alone BidiFlow
+   * The type of the client-side WebSocket layer as a stand-alone BidiFlow
    * that can be put atop the TCP layer to form an HTTP client.
    *
    * {{{
@@ -640,7 +637,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
    *                +------+
    * }}}
    */
-  type WebsocketClientLayer = BidiFlow[Message, SslTlsOutbound, SslTlsInbound, Message, Future[WebsocketUpgradeResponse]]
+  type WebSocketClientLayer = BidiFlow[Message, SslTlsOutbound, SslTlsInbound, Message, Future[WebSocketUpgradeResponse]]
 
   /**
    * Represents a prospective HTTP server binding.
@@ -756,10 +753,16 @@ trait DefaultSSLContextCreation {
     val cipherSuites = sslConfig.configureCipherSuites(defaultCiphers, config)
     defaultParams.setCipherSuites(cipherSuites)
 
+    // auth!
+    val clientAuth = config.sslParametersConfig.clientAuth match {
+      case ClientAuth.Default ⇒ None
+      case auth               ⇒ Some(auth)
+    }
     // hostname!
     defaultParams.setEndpointIdentificationAlgorithm("https")
 
-    HttpsContext(sslContext, sslParameters = Some(defaultParams))
+    //    new HttpsConnectionContext(sslContext, Some(cipherSuites.toList), Some(defaultProtocols.toList), clientAuth, Some(defaultParams))
+    new HttpsConnectionContext(sslContext, None, None, None, Some(defaultParams)) // previously
   }
 
 }

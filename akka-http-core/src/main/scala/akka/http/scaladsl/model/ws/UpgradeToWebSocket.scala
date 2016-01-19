@@ -13,11 +13,11 @@ import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.model.HttpResponse
 
 /**
- * A custom header that will be added to an Websocket upgrade HttpRequest that
- * enables a request handler to upgrade this connection to a Websocket connection and
- * registers a Websocket handler.
+ * A custom header that will be added to an WebSocket upgrade HttpRequest that
+ * enables a request handler to upgrade this connection to a WebSocket connection and
+ * registers a WebSocket handler.
  */
-trait UpgradeToWebsocket extends jm.ws.UpgradeToWebsocket {
+trait UpgradeToWebSocket extends jm.ws.UpgradeToWebSocket {
   /**
    * A sequence of protocols the client accepts.
    *
@@ -26,11 +26,11 @@ trait UpgradeToWebsocket extends jm.ws.UpgradeToWebsocket {
   def requestedProtocols: immutable.Seq[String]
 
   /**
-   * The high-level interface to create a Websocket server based on "messages".
+   * The high-level interface to create a WebSocket server based on "messages".
    *
    * Returns a response to return in a request handler that will signal the
-   * low-level HTTP implementation to upgrade the connection to Websocket and
-   * use the supplied handler to handle incoming Websocket messages.
+   * low-level HTTP implementation to upgrade the connection to WebSocket and
+   * use the supplied handler to handle incoming WebSocket messages.
    *
    * Optionally, a subprotocol out of the ones requested by the client can be chosen.
    */
@@ -38,10 +38,10 @@ trait UpgradeToWebsocket extends jm.ws.UpgradeToWebsocket {
                      subprotocol: Option[String] = None): HttpResponse
 
   /**
-   * The high-level interface to create a Websocket server based on "messages".
+   * The high-level interface to create a WebSocket server based on "messages".
    *
    * Returns a response to return in a request handler that will signal the
-   * low-level HTTP implementation to upgrade the connection to Websocket and
+   * low-level HTTP implementation to upgrade the connection to WebSocket and
    * use the supplied inSink to consume messages received from the client and
    * the supplied outSource to produce message to sent to the client.
    *
