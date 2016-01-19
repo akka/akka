@@ -394,6 +394,10 @@ object AkkaBuild extends Build {
     publishArtifact in Compile := false
   )
 
+  val dontPublishDocsSettings = Seq(
+    sources in doc in Compile := List()
+  )
+
   override lazy val settings =
     super.settings ++
     buildSettings ++
