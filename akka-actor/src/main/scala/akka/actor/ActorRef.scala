@@ -12,7 +12,9 @@ import akka.serialization.{ Serialization, JavaSerializer }
 import akka.event.EventStream
 import scala.annotation.tailrec
 import java.util.concurrent.ConcurrentHashMap
-import akka.event.LoggingAdapter
+import akka.event.{ Logging, LoggingAdapter }
+import java.util.concurrent.atomic.AtomicReference
+import scala.util.control.NonFatal
 
 object ActorRef {
 
@@ -686,4 +688,140 @@ private[akka] class VirtualPathContainer(
     val iter = children.values.iterator
     while (iter.hasNext) f(iter.next)
   }
+}
+
+/**
+ * INTERNAL API
+ *
+ * This kind of ActorRef passes all received messages to the given function for
+ * performing a non-blocking side-effect. The intended use is to transform the
+ * message before sending to the real target actor. Such references can be created
+ * by calling `ActorCell.addFunctionRef` and must be deregistered when no longer
+ * needed by calling `ActorCell.removeFunctionRef`. FunctionRefs do not count
+ * towards the live children of an actor, they do not receive the Terminate command
+ * and do not prevent the parent from terminating. FunctionRef is properly
+ * registered for remote lookup and ActorSelection.
+ *
+ * When using the watch() feature you must ensure that upon reception of the
+ * Terminated message the watched actorRef is unwatch()ed.
+ */
+private[akka] final class FunctionRef(override val path: ActorPath,
+                                      override val provider: ActorRefProvider,
+                                      val eventStream: EventStream,
+                                      f: (ActorRef, Any) ⇒ Unit) extends MinimalActorRef {
+
+  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
+    f(sender, message)
+  }
+
+  override def sendSystemMessage(message: SystemMessage): Unit = {
+    message match {
+      case w: Watch   ⇒ addWatcher(w.watchee, w.watcher)
+      case u: Unwatch ⇒ remWatcher(u.watchee, u.watcher)
+      case DeathWatchNotification(actorRef, _, _) ⇒
+        this.!(Terminated(actorRef)(existenceConfirmed = true, addressTerminated = false))
+      case _ ⇒ //ignore all other messages
+    }
+  }
+
+  private[this] var watching = ActorCell.emptyActorRefSet
+  private[this] val _watchedBy = new AtomicReference[Set[ActorRef]](ActorCell.emptyActorRefSet)
+
+  override def isTerminated = _watchedBy.get() == null
+
+  //noinspection EmptyCheck
+  protected def sendTerminated(): Unit = {
+    val watchedBy = _watchedBy.getAndSet(null)
+    if (watchedBy != null) {
+      if (watchedBy.nonEmpty) {
+        watchedBy foreach sendTerminated(ifLocal = false)
+        watchedBy foreach sendTerminated(ifLocal = true)
+      }
+      if (watching.nonEmpty) {
+        watching foreach unwatchWatched
+        watching = Set.empty
+      }
+    }
+  }
+
+  private def sendTerminated(ifLocal: Boolean)(watcher: ActorRef): Unit =
+    if (watcher.asInstanceOf[ActorRefScope].isLocal == ifLocal)
+      watcher.asInstanceOf[InternalActorRef].sendSystemMessage(DeathWatchNotification(this, existenceConfirmed = true, addressTerminated = false))
+
+  private def unwatchWatched(watched: ActorRef): Unit =
+    watched.asInstanceOf[InternalActorRef].sendSystemMessage(Unwatch(watched, this))
+
+  override def stop(): Unit = sendTerminated()
+
+  @tailrec private def addWatcher(watchee: ActorRef, watcher: ActorRef): Unit =
+    _watchedBy.get() match {
+      case null ⇒
+        sendTerminated(ifLocal = true)(watcher)
+        sendTerminated(ifLocal = false)(watcher)
+
+      case watchedBy ⇒
+        val watcheeSelf = watchee == this
+        val watcherSelf = watcher == this
+
+        if (watcheeSelf && !watcherSelf) {
+          if (!watchedBy.contains(watcher))
+            if (!_watchedBy.compareAndSet(watchedBy, watchedBy + watcher))
+              addWatcher(watchee, watcher) // try again
+        } else if (!watcheeSelf && watcherSelf) {
+          publish(Logging.Warning(path.toString, classOf[FunctionRef], s"externally triggered watch from $watcher to $watchee is illegal on FunctionRef"))
+        } else {
+          publish(Logging.Error(path.toString, classOf[FunctionRef], s"BUG: illegal Watch($watchee,$watcher) for $this"))
+        }
+    }
+
+  @tailrec private def remWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {
+    _watchedBy.get() match {
+      case null ⇒ // do nothing...
+      case watchedBy ⇒
+        val watcheeSelf = watchee == this
+        val watcherSelf = watcher == this
+
+        if (watcheeSelf && !watcherSelf) {
+          if (watchedBy.contains(watcher))
+            if (!_watchedBy.compareAndSet(watchedBy, watchedBy - watcher))
+              remWatcher(watchee, watcher) // try again
+        } else if (!watcheeSelf && watcherSelf) {
+          publish(Logging.Warning(path.toString, classOf[FunctionRef], s"externally triggered unwatch from $watcher to $watchee is illegal on FunctionRef"))
+        } else {
+          publish(Logging.Error(path.toString, classOf[FunctionRef], s"BUG: illegal Unwatch($watchee,$watcher) for $this"))
+        }
+    }
+  }
+
+  private def publish(e: Logging.LogEvent): Unit = try eventStream.publish(e) catch { case NonFatal(_) ⇒ }
+
+  /**
+   * Have this FunctionRef watch the given Actor. This method must not be
+   * called concurrently from different threads, it should only be called by
+   * its parent Actor.
+   *
+   * Upon receiving the Terminated message, unwatch() must be called from a
+   * safe context (i.e. normally from the parent Actor).
+   */
+  def watch(actorRef: ActorRef): Unit = {
+    watching += actorRef
+    actorRef.asInstanceOf[InternalActorRef].sendSystemMessage(Watch(actorRef.asInstanceOf[InternalActorRef], this))
+  }
+
+  /**
+   * Have this FunctionRef unwatch the given Actor. This method must not be
+   * called concurrently from different threads, it should only be called by
+   * its parent Actor.
+   */
+  def unwatch(actorRef: ActorRef): Unit = {
+    watching -= actorRef
+    actorRef.asInstanceOf[InternalActorRef].sendSystemMessage(Unwatch(actorRef.asInstanceOf[InternalActorRef], this))
+  }
+
+  /**
+   * Query whether this FunctionRef is currently watching the given Actor. This
+   * method must not be called concurrently from different threads, it should
+   * only be called by its parent Actor.
+   */
+  def isWatching(actorRef: ActorRef): Boolean = watching.contains(actorRef)
 }

@@ -128,13 +128,33 @@ object GraphStageLogic {
   /**
    * Minimal actor to work with other actors and watch them in a synchronous ways
    */
-  final class StageActorRef(val provider: ActorRefProvider, val log: LoggingAdapter,
-                            getAsyncCallback: StageActorRef.Receive ⇒ AsyncCallback[(ActorRef, Any)],
-                            initialReceive: StageActorRef.Receive,
-                            override val path: ActorPath) extends akka.actor.MinimalActorRef {
-    import StageActorRef._
+  final class StageActor(materializer: ActorMaterializer,
+                         getAsyncCallback: StageActorRef.Receive ⇒ AsyncCallback[(ActorRef, Any)],
+                         initialReceive: StageActorRef.Receive) {
 
     private val callback = getAsyncCallback(internalReceive)
+
+    private val functionRef: FunctionRef = {
+      val cell = materializer.supervisor match {
+        case ref: LocalActorRef                        ⇒ ref.underlying
+        case ref: RepointableActorRef if ref.isStarted ⇒ ref.underlying.asInstanceOf[ActorCell]
+        case unknown ⇒
+          throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${unknown.getClass.getName}]")
+      }
+      cell.addFunctionRef {
+        case (_, m @ (PoisonPill | Kill)) ⇒
+          materializer.logger.warning("{} message sent to StageActor({}) will be ignored, since it is not a real Actor." +
+            "Use a custom message type to communicate with it instead.", m, functionRef.path)
+        case pair ⇒ callback.invoke(pair)
+      }
+    }
+
+    /**
+     * The ActorRef by which this StageActor can be contacted from the outside.
+     * This is a full-fledged ActorRef that supports watching and being watched
+     * as well as location transparent (remote) communication.
+     */
+    def ref: ActorRef = functionRef
 
     @volatile
     private[this] var behaviour = initialReceive
@@ -143,30 +163,12 @@ object GraphStageLogic {
     private[akka] def internalReceive(pack: (ActorRef, Any)): Unit = {
       pack._2 match {
         case Terminated(ref) ⇒
-          if (watching contains ref) {
-            watching -= ref
+          if (functionRef.isWatching(ref)) {
+            functionRef.unwatch(ref)
             behaviour(pack)
           }
         case _ ⇒ behaviour(pack)
       }
-    }
-
-    override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
-      message match {
-        case m @ (PoisonPill | Kill) ⇒
-          log.warning("{} message sent to StageActorRef({}) will be ignored, since it is not a real Actor." +
-            "Use a custom message type to communicate with it instead.", m, path)
-        case _ ⇒
-          callback.invoke((sender, message))
-      }
-    }
-
-    override def sendSystemMessage(message: SystemMessage): Unit = message match {
-      case w: Watch   ⇒ addWatcher(w.watchee, w.watcher)
-      case u: Unwatch ⇒ remWatcher(u.watchee, u.watcher)
-      case DeathWatchNotification(actorRef, _, _) ⇒
-        this.!(Terminated(actorRef)(existenceConfirmed = true, addressTerminated = false))
-      case _ ⇒ //ignore all other messages
     }
 
     /**
@@ -177,92 +179,14 @@ object GraphStageLogic {
       behaviour = receive
     }
 
-    private[this] var watching = ActorCell.emptyActorRefSet
-    private[this] val _watchedBy = new AtomicReference[Set[ActorRef]](ActorCell.emptyActorRefSet)
+    def stop(): Unit = functionRef.stop()
 
-    override def isTerminated = _watchedBy.get() == StageTerminatedTombstone
+    def watch(actorRef: ActorRef): Unit = functionRef.watch(actorRef)
 
-    //noinspection EmptyCheck
-    protected def sendTerminated(): Unit = {
-      val watchedBy = _watchedBy.getAndSet(StageTerminatedTombstone)
-      if (watchedBy != StageTerminatedTombstone) {
-        if (watchedBy.nonEmpty) {
-          watchedBy foreach sendTerminated(ifLocal = false)
-          watchedBy foreach sendTerminated(ifLocal = true)
-        }
-        if (watching.nonEmpty) {
-          watching foreach unwatchWatched
-          watching = Set.empty
-        }
-      }
-    }
-
-    private def sendTerminated(ifLocal: Boolean)(watcher: ActorRef): Unit =
-      if (watcher.asInstanceOf[ActorRefScope].isLocal == ifLocal)
-        watcher.asInstanceOf[InternalActorRef].sendSystemMessage(DeathWatchNotification(this, existenceConfirmed = true, addressTerminated = false))
-
-    private def unwatchWatched(watched: ActorRef): Unit =
-      watched.asInstanceOf[InternalActorRef].sendSystemMessage(Unwatch(watched, this))
-
-    override def stop(): Unit = sendTerminated()
-
-    @tailrec final def addWatcher(watchee: ActorRef, watcher: ActorRef): Unit =
-      _watchedBy.get() match {
-        case StageTerminatedTombstone ⇒
-          sendTerminated(ifLocal = true)(watcher)
-          sendTerminated(ifLocal = false)(watcher)
-
-        case watchedBy ⇒
-          val watcheeSelf = watchee == this
-          val watcherSelf = watcher == this
-
-          if (watcheeSelf && !watcherSelf) {
-            if (!watchedBy.contains(watcher))
-              if (!_watchedBy.compareAndSet(watchedBy, watchedBy + watcher))
-                addWatcher(watchee, watcher) // try again
-          } else if (!watcheeSelf && watcherSelf) {
-            log.warning("externally triggered watch from {} to {} is illegal on StageActorRef", watcher, watchee)
-          } else {
-            log.error("BUG: illegal Watch(%s,%s) for %s".format(watchee, watcher, this))
-          }
-      }
-
-    @tailrec final def remWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {
-      _watchedBy.get() match {
-        case StageTerminatedTombstone ⇒ // do nothing...
-        case watchedBy ⇒
-          val watcheeSelf = watchee == this
-          val watcherSelf = watcher == this
-
-          if (watcheeSelf && !watcherSelf) {
-            if (watchedBy.contains(watcher))
-              if (!_watchedBy.compareAndSet(watchedBy, watchedBy - watcher))
-                remWatcher(watchee, watcher) // try again
-          } else if (!watcheeSelf && watcherSelf) {
-            log.warning("externally triggered unwatch from {} to {} is illegal on StageActorRef", watcher, watchee)
-          } else {
-            log.error("BUG: illegal Unwatch(%s,%s) for %s".format(watchee, watcher, this))
-          }
-      }
-    }
-
-    def watch(actorRef: ActorRef): Unit = {
-      watching += actorRef
-      actorRef.asInstanceOf[InternalActorRef].sendSystemMessage(Watch(actorRef.asInstanceOf[InternalActorRef], this))
-    }
-
-    def unwatch(actorRef: ActorRef): Unit = {
-      watching -= actorRef
-      actorRef.asInstanceOf[InternalActorRef].sendSystemMessage(Unwatch(actorRef.asInstanceOf[InternalActorRef], this))
-    }
+    def unwatch(actorRef: ActorRef): Unit = functionRef.unwatch(actorRef)
   }
   object StageActorRef {
     type Receive = ((ActorRef, Any)) ⇒ Unit
-
-    val StageTerminatedTombstone = null
-
-    // globally sequential, one should not depend on these names in any case
-    val name = SeqActorName("StageActorRef")
   }
 }
 
@@ -950,8 +874,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final protected def createAsyncCallback[T](handler: Procedure[T]): AsyncCallback[T] =
     getAsyncCallback(handler.apply)
 
-  private var _stageActorRef: StageActorRef = _
-  final def stageActorRef: ActorRef = _stageActorRef match {
+  private var _stageActor: StageActor = _
+  final def stageActor: StageActor = _stageActor match {
     case null ⇒ throw StageActorRefNotInitializedException()
     case ref  ⇒ ref
   }
@@ -974,14 +898,12 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * @return minimal actor with watch method
    */
   // FIXME: I don't like the Pair allocation :(
-  final protected def getStageActorRef(receive: ((ActorRef, Any)) ⇒ Unit): StageActorRef = {
-    _stageActorRef match {
+  final protected def getStageActor(receive: ((ActorRef, Any)) ⇒ Unit): StageActor = {
+    _stageActor match {
       case null ⇒
         val actorMaterializer = ActorMaterializer.downcast(interpreter.materializer)
-        val provider = actorMaterializer.supervisor.asInstanceOf[InternalActorRef].provider
-        val path = actorMaterializer.supervisor.path / StageActorRef.name.next()
-        _stageActorRef = new StageActorRef(provider, actorMaterializer.logger, getAsyncCallback, receive, path)
-        _stageActorRef
+        _stageActor = new StageActor(actorMaterializer, getAsyncCallback, receive)
+        _stageActor
       case existing ⇒
         existing.become(receive)
         existing
@@ -995,9 +917,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   // Internal hooks to avoid reliance on user calling super in postStop
   /** INTERNAL API */
   protected[stream] def afterPostStop(): Unit = {
-    if (_stageActorRef ne null) {
-      _stageActorRef.stop()
-      _stageActorRef = null
+    if (_stageActor ne null) {
+      _stageActor.stop()
+      _stageActor = null
     }
   }
 
