@@ -243,8 +243,8 @@ private[akka] final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out, de
  */
 final case class Intersperse[T](start: Option[T], inject: T, end: Option[T]) extends GraphStage[FlowShape[T, T]] {
   ReactiveStreamsCompliance.requireNonNullElement(inject)
-  if(start.isDefined) ReactiveStreamsCompliance.requireNonNullElement(start.get)
-  if(end.isDefined) ReactiveStreamsCompliance.requireNonNullElement(end.get)
+  if (start.isDefined) ReactiveStreamsCompliance.requireNonNullElement(start.get)
+  if (end.isDefined) ReactiveStreamsCompliance.requireNonNullElement(end.get)
 
   private val in = Inlet[T]("in")
   private val out = Outlet[T]("out")
