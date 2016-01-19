@@ -49,7 +49,7 @@ object GraphStages {
   }
 
   object Identity extends SimpleLinearGraphStage[Any] {
-    override def initialAttributes = Attributes.name("identityOp")
+    override def initialAttributes = DefaultAttributes.identityOp
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
       setHandler(in, new InHandler {
@@ -70,9 +70,9 @@ object GraphStages {
    * INERNAL API
    */
   private[stream] final class Detacher[T] extends GraphStage[FlowShape[T, T]] {
-    val in = Inlet[T]("in")
-    val out = Outlet[T]("out")
-    override def initialAttributes = Attributes.name("Detacher")
+    val in = Inlet[T]("Detacher.in")
+    val out = Outlet[T]("Detacher.out")
+    override def initialAttributes = DefaultAttributes.detacher
     override val shape = FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
@@ -224,13 +224,11 @@ object GraphStages {
     }
   }
 
-  class TickSource[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T)
+  final class TickSource[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T)
     extends GraphStageWithMaterializedValue[SourceShape[T], Cancellable] {
-
-    val out = Outlet[T]("TimerSource.out")
-    override def initialAttributes = Attributes.name("TickSource")
-    override val shape = SourceShape(out)
-
+    override val shape = SourceShape(Outlet[T]("TickSource.out"))
+    val out = shape.out
+    override def initialAttributes: Attributes = DefaultAttributes.tickSource
     override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Cancellable) = {
       import TickSource._
 
@@ -248,9 +246,7 @@ object GraphStages {
           cancellable.cancelFuture.onComplete(_ ⇒ callback.invoke(()))(interpreter.materializer.executionContext)
         }
 
-        setHandler(out, new OutHandler {
-          override def onPull() = () // Do nothing
-        })
+        setHandler(out, eagerTerminateOutput)
 
         override protected def onTimer(timerKey: Any) =
           if (isAvailable(out)) push(out, tick)
@@ -269,9 +265,9 @@ object GraphStages {
    *
    * This source is not reusable, it is only created internally.
    */
-  private[stream] class MaterializedValueSource[T](val computation: MaterializedValueNode, val out: Outlet[T]) extends GraphStage[SourceShape[T]] {
+  private[stream] final class MaterializedValueSource[T](val computation: MaterializedValueNode, val out: Outlet[T]) extends GraphStage[SourceShape[T]] {
     def this(computation: MaterializedValueNode) = this(computation, Outlet[T]("matValue"))
-    override def initialAttributes: Attributes = Attributes.name("matValueSource")
+    override def initialAttributes: Attributes = DefaultAttributes.materializedValueSource
     override val shape = SourceShape(out)
 
     private val promise = Promise[T]
@@ -287,10 +283,11 @@ object GraphStages {
       }
     }
 
-    override def toString: String = s"MatValSrc($computation)"
+    override def toString: String = s"MaterializedValueSource($computation)"
   }
 
-  private[stream] class SingleSource[T](val elem: T) extends GraphStage[SourceShape[T]] {
+  private[stream] final class SingleSource[T](val elem: T) extends GraphStage[SourceShape[T]] {
+    override def initialAttributes: Attributes = DefaultAttributes.singleSource
     ReactiveStreamsCompliance.requireNonNullElement(elem)
     val out = Outlet[T]("single.out")
     val shape = SourceShape(out)

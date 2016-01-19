@@ -534,7 +534,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def filterNot(p: Out ⇒ Boolean): Repr[Out] =
-    via(Flow[Out].filter(!p(_)).withAttributes(name("filterNot")))
+    via(Flow[Out].filter(!p(_)).withAttributes(DefaultAttributes.filterNot))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
@@ -738,12 +738,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def intersperse[T >: Out](start: T, inject: T, end: T): Repr[T] = {
-    ReactiveStreamsCompliance.requireNonNullElement(start)
-    ReactiveStreamsCompliance.requireNonNullElement(inject)
-    ReactiveStreamsCompliance.requireNonNullElement(end)
+  def intersperse[T >: Out](start: T, inject: T, end: T): Repr[T] =
     via(Intersperse(Some(start), inject, Some(end)))
-  }
 
   /**
    * Intersperses stream with provided element, similar to how [[scala.collection.immutable.List.mkString]]
@@ -767,10 +763,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def intersperse[T >: Out](inject: T): Repr[T] = {
-    ReactiveStreamsCompliance.requireNonNullElement(inject)
+  def intersperse[T >: Out](inject: T): Repr[T] =
     via(Intersperse(None, inject, None))
-  }
 
   /**
    * Chunk up this stream into groups of elements received within a time window,
@@ -790,11 +784,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream completes
    */
-  def groupedWithin(n: Int, d: FiniteDuration): Repr[immutable.Seq[Out]] = {
-    require(n > 0, "n must be greater than 0")
-    require(d > Duration.Zero)
-    via(new GroupedWithin[Out](n, d).withAttributes(name("groupedWithin")))
-  }
+  def groupedWithin(n: Int, d: FiniteDuration): Repr[immutable.Seq[Out]] =
+    via(new GroupedWithin[Out](n, d))
 
   /**
    * Shifts elements emission in time by a specified amount. It allows to store elements
@@ -822,7 +813,7 @@ trait FlowOps[+Out, +Mat] {
    * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   def delay(of: FiniteDuration, strategy: DelayOverflowStrategy = DelayOverflowStrategy.dropTail): Repr[Out] =
-    via(new Delay[Out](of, strategy).withAttributes(name("delay")))
+    via(new Delay[Out](of, strategy))
 
   /**
    * Discard the given number of elements at the beginning of the stream.
@@ -850,7 +841,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def dropWithin(d: FiniteDuration): Repr[Out] =
-    via(new DropWithin[Out](d).withAttributes(name("dropWithin")))
+    via(new DropWithin[Out](d))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after the given
@@ -890,7 +881,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels or timer fires
    */
-  def takeWithin(d: FiniteDuration): Repr[Out] = via(new TakeWithin[Out](d).withAttributes(name("takeWithin")))
+  def takeWithin(d: FiniteDuration): Repr[Out] = via(new TakeWithin[Out](d))
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by conflating elements into a summary
@@ -1285,13 +1276,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def throttle(elements: Int, per: FiniteDuration, maximumBurst: Int,
-               mode: ThrottleMode): Repr[Out] = {
-    require(elements > 0, "elements must be > 0")
-    require(per.toMillis > 0, "per time must be > 0")
-    require(!(mode == ThrottleMode.Enforcing && maximumBurst < 0), "maximumBurst must be > 0 in Enforcing mode")
-    via(new Throttle(elements, per, maximumBurst, _ ⇒ 1, mode))
-  }
+  def throttle(elements: Int, per: FiniteDuration, maximumBurst: Int, mode: ThrottleMode): Repr[Out] =
+    throttle(elements, per, maximumBurst, _ ⇒ 1, mode)
 
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
@@ -1320,11 +1306,8 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def throttle(cost: Int, per: FiniteDuration, maximumBurst: Int,
-               costCalculation: (Out) ⇒ Int, mode: ThrottleMode): Repr[Out] = {
-    require(per.toMillis > 0, "per time must be > 0")
-    require(!(mode == ThrottleMode.Enforcing && maximumBurst < 0), "maximumBurst must be > 0 in Enforcing mode")
+               costCalculation: (Out) ⇒ Int, mode: ThrottleMode): Repr[Out] =
     via(new Throttle(cost, per, maximumBurst, costCalculation, mode))
-  }
 
   /**
    * Detaches upstream demand from downstream demand without detaching the

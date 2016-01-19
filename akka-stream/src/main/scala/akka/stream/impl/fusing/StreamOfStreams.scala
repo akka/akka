@@ -5,6 +5,7 @@ package akka.stream.impl.fusing
 
 import java.util.concurrent.atomic.AtomicReference
 import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.stage._
 import akka.stream.scaladsl._
@@ -30,7 +31,7 @@ final class FlattenMerge[T, M](breadth: Int) extends GraphStage[FlowShape[Graph[
   private val in = Inlet[Graph[SourceShape[T], M]]("flatten.in")
   private val out = Outlet[T]("flatten.out")
 
-  override def initialAttributes = Attributes.name("FlattenMerge")
+  override def initialAttributes = DefaultAttributes.flattenMerge
   override val shape = FlowShape(in, out)
 
   override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
@@ -111,7 +112,7 @@ final class PrefixAndTail[T](n: Int) extends GraphStage[FlowShape[T, (immutable.
   val out: Outlet[(immutable.Seq[T], Source[T, Unit])] = Outlet("PrefixAndTail.out")
   override val shape: FlowShape[T, (immutable.Seq[T], Source[T, Unit])] = FlowShape(in, out)
 
-  override def initialAttributes = Attributes.name("PrefixAndTail")
+  override def initialAttributes = DefaultAttributes.prefixAndTail
 
   private final class PrefixAndTailLogic(_shape: Shape) extends TimerGraphStageLogic(_shape) with OutHandler with InHandler {
 
