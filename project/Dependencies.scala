@@ -45,7 +45,7 @@ object Dependencies {
     val reactiveStreams = "org.reactivestreams"       % "reactive-streams"             % "1.0.0" // CC0
 
     // ssl-config
-    val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % "0.1.0" // ApacheV2
+    val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % "0.1.1" // ApacheV2
 
     // For akka-http spray-json support
     val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.2"       // ApacheV2
