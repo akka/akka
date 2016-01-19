@@ -82,12 +82,20 @@ private[typed] class ActorContextAdapter[T](ctx: akka.actor.ActorContext) extend
   def spawn[U](props: Props[U], name: String) = ctx.spawn(props, name)
   def actorOf(props: a.Props) = ctx.actorOf(props)
   def actorOf(props: a.Props, name: String) = ctx.actorOf(props, name)
-  def stop(child: ActorRef[Nothing]) = ctx.child(child.path.name) match {
-    case Some(ref) if ref == child.untypedRef ⇒
-      ctx.stop(child.untypedRef)
-      true
-    case _ ⇒ false // none of our business
-  }
+  def stop(child: ActorRef[Nothing]) =
+    child.untypedRef match {
+      case f: akka.actor.FunctionRef ⇒
+        val cell = ctx.asInstanceOf[akka.actor.ActorCell]
+        cell.removeFunctionRef(f)
+      case _ ⇒
+        ctx.child(child.path.name) match {
+          case Some(ref) if ref == child.untypedRef ⇒
+            ctx.stop(child.untypedRef)
+            true
+          case _ ⇒
+            false // none of our business
+        }
+    }
   def watch[U](other: ActorRef[U]) = { ctx.watch(other.untypedRef); other }
   def watch(other: a.ActorRef) = { ctx.watch(other); other }
   def unwatch[U](other: ActorRef[U]) = { ctx.unwatch(other.untypedRef); other }
@@ -98,7 +106,11 @@ private[typed] class ActorContextAdapter[T](ctx: akka.actor.ActorContext) extend
     import ctx.dispatcher
     ctx.system.scheduler.scheduleOnce(delay, target.untypedRef, msg)
   }
-  def spawnAdapter[U](f: U ⇒ T) = ActorRef[U](ctx.actorOf(akka.actor.Props(classOf[MessageWrapper], f)))
+  def spawnAdapter[U](f: U ⇒ T) = {
+    val cell = ctx.asInstanceOf[akka.actor.ActorCell]
+    val ref = cell.addFunctionRef((_, msg) ⇒ ctx.self ! f(msg.asInstanceOf[U]))
+    ActorRef[U](ref)
+  }
 }
 
 /**
