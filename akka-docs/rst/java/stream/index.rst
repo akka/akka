@@ -23,3 +23,4 @@ Streams
    stream-cookbook
    ../../general/stream/stream-configuration
    migration-guide-1.0-2.x-java
+   migration-guide-2.0-2.4-java
