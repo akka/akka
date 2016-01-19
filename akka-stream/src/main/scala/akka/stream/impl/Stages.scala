@@ -48,8 +48,6 @@ private[stream] object Stages {
     val intersperse = name("intersperse")
     val buffer = name("buffer")
     val conflate = name("conflate")
-    val aggregate = name("aggregate")
-    val aggregateWeighted = name("aggregateWeighted")
     val expand = name("expand")
     val mapConcat = name("mapConcat")
     val detacher = name("detacher")
@@ -204,15 +202,6 @@ private[stream] object Stages {
 
   final case class Conflate[In, Out](seed: In ⇒ Out, aggregate: (Out, In) ⇒ Out, attributes: Attributes = conflate) extends SymbolicStage[In, Out] {
     override def create(attr: Attributes): Stage[In, Out] = fusing.Conflate(seed, aggregate, supervision(attr))
-  }
-
-  final case class Aggregate[In, Out](max: Long, seed: In ⇒ Out, aggregateFn: (Out, In) ⇒ Out, attributes: Attributes = aggregate) extends SymbolicStage[In, Out] {
-    private[this] val inc: Any ⇒ Long = _ ⇒ 1L
-    override def create(attr: Attributes): Stage[In, Out] = fusing.AggregateWeighted(max, inc, seed, aggregateFn, supervision(attr))
-  }
-
-  final case class AggregateWeighted[In, Out](max: Long, weightFn: In ⇒ Long, seed: In ⇒ Out, aggregateFn: (Out, In) ⇒ Out, attributes: Attributes = aggregateWeighted) extends SymbolicStage[In, Out] {
-    override def create(attr: Attributes): Stage[In, Out] = fusing.AggregateWeighted(max, weightFn, seed, aggregateFn, supervision(attr))
   }
 
   final case class MapConcat[In, Out](f: In ⇒ immutable.Iterable[Out], attributes: Attributes = mapConcat) extends SymbolicStage[In, Out] {
