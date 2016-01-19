@@ -9,7 +9,7 @@ import akka.actor.ActorSystem;
 import akka.dispatch.Futures;
 import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
-import akka.http.javadsl.model.ws.WebsocketRequest;
+import akka.http.javadsl.model.ws.WebSocketRequest;
 import akka.japi.function.Function;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
@@ -67,8 +67,8 @@ public class WSEchoTestClientApp {
                 Flow.fromSinkAndSourceMat(echoSink, echoSource, Keep.<Future<List<String>>, NotUsed>left());
 
             Future<List<String>> result =
-                Http.get(system).singleWebsocketRequest(
-                    WebsocketRequest.create("ws://echo.websocket.org"),
+                Http.get(system).singleWebSocketRequest(
+                    WebSocketRequest.create("ws://echo.websocket.org"),
                     echoClient,
                     materializer
                 ).second();

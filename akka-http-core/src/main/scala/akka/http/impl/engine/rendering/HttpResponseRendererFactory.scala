@@ -5,7 +5,7 @@
 package akka.http.impl.engine.rendering
 
 import akka.NotUsed
-import akka.http.impl.engine.ws.{ FrameEvent, UpgradeToWebsocketResponseHeader }
+import akka.http.impl.engine.ws.{ FrameEvent, UpgradeToWebSocketResponseHeader }
 import akka.http.scaladsl.model.ws.Message
 import akka.stream.{ Outlet, Inlet, Attributes, FlowShape, Graph }
 
@@ -63,10 +63,10 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
 
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) {
-        var closeMode: CloseMode = DontClose // signals what to do after the current response
-        def close: Boolean = closeMode != DontClose
-        def closeIf(cond: Boolean): Unit = if (cond) closeMode = CloseConnection
-        var transferring = false
+        private[this] var closeMode: CloseMode = DontClose // signals what to do after the current response
+        private[this] def close: Boolean = closeMode != DontClose
+        private[this] def closeIf(cond: Boolean): Unit =
+          if (cond) closeMode = CloseConnection
 
         setHandler(in, new InHandler {
           override def onPush(): Unit =
@@ -205,8 +205,8 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
                 else if (connHeader != null && connHeader.hasUpgrade) {
                   r ~~ connHeader ~~ CrLf
                   headers
-                    .collectFirst { case u: UpgradeToWebsocketResponseHeader ⇒ u }
-                    .foreach { header ⇒ closeMode = SwitchToWebsocket(header.handler) }
+                    .collectFirst { case u: UpgradeToWebSocketResponseHeader ⇒ u }
+                    .foreach { header ⇒ closeMode = SwitchToWebSocket(header.handler) }
                 }
                 if (mustRenderTransferEncodingChunkedHeader && !transferEncodingSeen)
                   r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
@@ -229,7 +229,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
 
                 Strict {
                   closeMode match {
-                    case SwitchToWebsocket(handler) ⇒ ResponseRenderingOutput.SwitchToWebsocket(r.get, handler)
+                    case SwitchToWebSocket(handler) ⇒ ResponseRenderingOutput.SwitchToWebSocket(r.get, handler)
                     case _                          ⇒ ResponseRenderingOutput.HttpData(r.get)
                   }
                 }
@@ -268,7 +268,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
   sealed trait CloseMode
   case object DontClose extends CloseMode
   case object CloseConnection extends CloseMode
-  case class SwitchToWebsocket(handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]]) extends CloseMode
+  case class SwitchToWebSocket(handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]]) extends CloseMode
 }
 
 /**
@@ -285,5 +285,5 @@ private[http] sealed trait ResponseRenderingOutput
 /** INTERNAL API */
 private[http] object ResponseRenderingOutput {
   private[http] case class HttpData(bytes: ByteString) extends ResponseRenderingOutput
-  private[http] case class SwitchToWebsocket(httpResponseBytes: ByteString, handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]]) extends ResponseRenderingOutput
+  private[http] case class SwitchToWebSocket(httpResponseBytes: ByteString, handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]]) extends ResponseRenderingOutput
 }

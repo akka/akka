@@ -16,13 +16,13 @@ import akka.http.javadsl.model.ws.TextMessage;
 
 import akka.http.javadsl.server.HttpApp;
 
-public class WebsocketRoutingExample extends HttpApp {
+public class WebSocketRoutingExample extends HttpApp {
     //#websocket-route
     @Override
     public Route createRoute() {
         return
             path("greeter").route(
-                handleWebsocketMessages(greeter())
+                handleWebSocketMessages(greeter())
             );
     }
     //#websocket-route
