@@ -3,21 +3,17 @@
  */
 package akka.stream.scaladsl
 
-import java.io.{ InputStream, OutputStream, File }
 import akka.dispatch.ExecutionContexts
 import akka.actor.{ Status, ActorRef, Props }
 import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
-import akka.stream.impl.io.{ InputStreamSinkStage, OutputStreamSink, FileSink }
 import akka.stream.stage.{ Context, PushStage, SyncDirective, TerminationDirective }
 import akka.stream.{ javadsl, _ }
-import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.tailrec
-import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
@@ -226,6 +222,39 @@ object Sink {
    */
   def fold[U, T](zero: U)(f: (U, T) ⇒ U): Sink[T, Future[U]] =
     Flow[T].fold(zero)(f).toMat(Sink.head)(Keep.right).named("foldSink")
+
+  def javaCollector[T, A, R](collector: java.util.stream.Collector[T, A, R]): Sink[T, Future[R]] =
+    Flow[T]
+      .fold(new CollectorState(collector)) { (state, elem) ⇒ state.update(elem) }
+      .map(_.finish())
+      .toMat(Sink.head)(Keep.right).named("javaCollectorSink")
+
+  def javaCollectorParallelUnordered[T, A, R](parallelism: Int)(collector: java.util.stream.Collector[T, A, R]): Sink[T, Future[R]] = {
+    if (parallelism == 1) javaCollector(collector)
+    else {
+      Sink.fromGraph(GraphDSL.create(Sink.head[R]) { implicit b ⇒
+        sink ⇒
+          import GraphDSL.Implicits._
+
+          val balance = b.add(Balance[T](parallelism))
+          val merge = b.add(Merge[CollectorState[T, A, R]](parallelism))
+
+          for (i ← 0 until parallelism) {
+            val worker = Flow[T]
+              .fold(new CollectorState(collector)) { (state, elem) ⇒ state.update(elem) }
+              .addAttributes(Attributes.asyncBoundary)
+
+            balance.out(i) ~> worker ~> merge.in(i)
+          }
+
+          merge.out
+            .fold(new ReducerState(collector)) { (state, elem) ⇒ state.update(elem.accumulated) }
+            .map(_.finish()) ~> sink.in
+
+          SinkShape(balance.in)
+      })
+    }
+  }
 
   /**
    * A `Sink` that when the flow is completed, either through a failure or normal

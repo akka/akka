@@ -186,6 +186,12 @@ object Source {
       override def toString: String = "() => Iterator"
     })
 
+  def fromJavaStream[T, S <: java.util.stream.BaseStream[T, S]](stream: () ⇒ java.util.stream.BaseStream[T, S]): Source[T, Unit] = {
+
+    import scala.collection.JavaConverters._
+    Source.fromIterator(() ⇒ stream().iterator().asScala)
+  }
+
   /**
    * A graph with the shape of a source logically is a source, this method makes
    * it so also in type.

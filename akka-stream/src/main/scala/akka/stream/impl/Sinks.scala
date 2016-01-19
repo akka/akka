@@ -4,17 +4,19 @@
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicReference
+import java.util.function.BiConsumer
 
 import akka.actor.{ ActorRef, Props }
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.stage.{ AsyncCallback, GraphStageLogic, GraphStageWithMaterializedValue, InHandler }
+import akka.stream.stage._
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.{ Future, Promise }
 import scala.language.postfixOps
+import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
 /**
@@ -171,7 +173,7 @@ private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any
 
 private[akka] final class LastOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
 
-  val in = Inlet[T]("lastOption.in")
+  val in: Inlet[T] = Inlet("lastOption.in")
 
   override val shape: SinkShape[T] = SinkShape.of(in)
 
@@ -208,7 +210,7 @@ private[akka] final class LastOptionStage[T] extends GraphStageWithMaterializedV
 
 private[akka] final class HeadOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
 
-  val in = Inlet[T]("headOption.in")
+  val in: Inlet[T] = Inlet("headOption.in")
 
   override val shape: SinkShape[T] = SinkShape.of(in)
 
@@ -248,7 +250,7 @@ private[akka] class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkS
 
   type Requested[E] = Promise[Option[T]]
 
-  val in = Inlet[T]("queueSink.in")
+  val in: Inlet[T] = Inlet("queueSink.in")
   override val shape: SinkShape[T] = SinkShape.of(in)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
@@ -325,4 +327,34 @@ private[akka] class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkS
       }
     })
   }
+}
+
+/**
+ * INTERNAL API
+ *
+ * Helper class to be able to express collection as a fold using mutable data
+ */
+private[akka] class CollectorState[T, A, R](val collector: java.util.stream.Collector[T, A, R]) {
+  val accumulated = collector.supplier().get()
+  val accumulator = collector.accumulator()
+
+  def update(elem: T): CollectorState[T, A, R] = {
+    accumulator.accept(accumulated, elem)
+    this
+  }
+
+  def finish(): R = collector.finisher().apply(accumulated)
+}
+
+private[akka] class ReducerState[T, A, R](val collector: java.util.stream.Collector[T, A, R]) {
+  var reduced: A = null.asInstanceOf[A]
+  val combiner = collector.combiner()
+
+  def update(batch: A): ReducerState[T, A, R] = {
+    if (reduced == null) reduced = batch
+    else reduced = combiner(reduced, batch)
+    this
+  }
+
+  def finish(): R = collector.finisher().apply(reduced)
 }

@@ -3,12 +3,16 @@
  */
 package akka.stream.scaladsl
 
+import java.util.function.ToIntFunction
+import java.util.stream.Collectors
+
 import akka.stream._
-import akka.stream.testkit.TestPublisher.ManualProbe
 import akka.stream.testkit._
+import akka.testkit.DefaultTimeout
+import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.Future
 
-class SinkSpec extends AkkaSpec {
+class SinkSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
 
   import GraphDSL.Implicits._
 
@@ -124,6 +128,54 @@ class SinkSpec extends AkkaSpec {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].withAttributes(asyncBoundary).addAttributes(none).named("")
     }
+  }
+
+  "Java collector Sink" must {
+    import scala.compat.java8.FunctionConverters._
+
+    "work in the happy case" in {
+      Source(1 to 100).map(_.toString).runWith(Sink.javaCollector(Collectors.joining(", ")))
+        .futureValue should ===((1 to 100).mkString(", "))
+    }
+
+    "work parallelly in the happy case" in {
+
+      val intIdentity: ToIntFunction[Int] = new ToIntFunction[Int] {
+        override def applyAsInt(value: Int): Int = value
+      }
+
+      Source(1 to 100).runWith(Sink.javaCollectorParallelUnordered(4)(Collectors.summingInt[Int](intIdentity)))
+        .futureValue should ===(5050)
+    }
+
+    "be reusable" in {
+
+    }
+
+    "fail if getting the supplier fails" in {
+
+    }
+
+    "fail if the supplier fails" in {
+
+    }
+
+    "fail if getting the accumulator fails" in {
+
+    }
+
+    "fail if the accumulator fails" in {
+
+    }
+
+    "fail if getting the finisher fails" in {
+
+    }
+
+    "fail if the finisher fails" in {
+
+    }
+
   }
 
 }
