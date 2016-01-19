@@ -195,14 +195,19 @@ private[http] object Websocket {
 
     def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
 
-      passAlong(bypass, out, doFinish = true, doFail = true)
-      passAlong(user, out, doFinish = false, doFail = false)
+      class PassAlong[T <: AnyRef](from: Inlet[T]) extends InHandler with (() ⇒ Unit) {
+        override def apply(): Unit = tryPull(from)
+        override def onPush(): Unit = emit(out, grab(from), this)
+        override def onUpstreamFinish(): Unit =
+          if (isClosed(bypass) && isClosed(user)) completeStage()
+      }
+      setHandler(bypass, new PassAlong(bypass))
+      setHandler(user, new PassAlong(user))
       passAlong(tick, out, doFinish = false, doFail = false)
 
       setHandler(out, eagerTerminateOutput)
 
       override def preStart(): Unit = {
-        super.preStart()
         pull(bypass)
         pull(user)
         pull(tick)
