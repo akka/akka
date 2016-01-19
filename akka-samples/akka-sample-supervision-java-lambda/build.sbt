@@ -1,6 +1,6 @@
 name := "akka-supervision-java-lambda"
 
-version := "1.0"
+version := "2.4-SNAPSHOT"
 
 scalaVersion := "2.11.7"
 

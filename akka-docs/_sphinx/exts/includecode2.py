@@ -43,7 +43,7 @@ class IncludeCode2(Directive):
         encoding = self.options.get('encoding', env.config.source_encoding)
         codec_info = codecs.lookup(encoding)
         try:
-            f = codecs.StreamReaderWriter(open(fn, 'U'),
+            f = codecs.StreamReaderWriter(open(fn, 'Ub'),
                     codec_info[2], codec_info[3], 'strict')
             lines = f.readlines()
             f.close()
