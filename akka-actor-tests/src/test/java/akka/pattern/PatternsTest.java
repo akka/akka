@@ -15,7 +15,7 @@ import static akka.pattern.Patterns.pipe;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 public class PatternsTest {
 
