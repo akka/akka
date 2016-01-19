@@ -5,15 +5,34 @@
 package akka.http.scaladsl.server
 package directives
 
+import akka.http.impl.util._
+import akka.http.scaladsl.common._
+import akka.http.scaladsl.server.directives.RouteDirectives._
+import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
+import akka.http.scaladsl.util.FastFuture._
+
+import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.{ Failure, Success }
-import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
-import akka.http.scaladsl.common._
-import akka.http.impl.util._
-import akka.http.scaladsl.util.FastFuture._
 
 trait FormFieldDirectives extends ToNameReceptacleEnhancements {
   import FormFieldDirectives._
+
+  /**
+   * Extracts HTTP form fields from the request as a ``Map[String, String]``.
+   */
+  def formFieldMap: Directive1[Map[String, String]] = _formFieldMap
+
+  /**
+   * Extracts HTTP form fields from the request as a ``Map[String, List[String]]``.
+   */
+  def formFieldMultiMap: Directive1[Map[String, List[String]]] = _formFieldMultiMap
+
+  /**
+   * Extracts HTTP form fields from the request as a ``Seq[(String, String)]``.
+   */
+  def formFieldSeq: Directive1[immutable.Seq[(String, String)]] = _formFieldSeq
 
   /**
    * Extracts an HTTP form field from the request.
@@ -40,6 +59,50 @@ trait FormFieldDirectives extends ToNameReceptacleEnhancements {
 }
 
 object FormFieldDirectives extends FormFieldDirectives {
+
+  private val _formFieldSeq: Directive1[immutable.Seq[(String, String)]] = {
+    import BasicDirectives._
+    import FutureDirectives._
+    import akka.http.scaladsl.unmarshalling._
+
+    extract { ctx ⇒
+      import ctx.{ executionContext, materializer }
+      Unmarshal(ctx.request.entity).to[StrictForm].fast.flatMap { form ⇒
+        val fields = form.fields.collect {
+          case (name, field) if name.nonEmpty ⇒
+            Unmarshal(field).to[String].map(fieldString ⇒ (name, fieldString))
+        }
+        Future.sequence(fields)
+      }
+    }.flatMap { sequenceF ⇒
+      onComplete(sequenceF).flatMap {
+        case Success(x)                                  ⇒ provide(x)
+        case Failure(x: UnsupportedContentTypeException) ⇒ reject(UnsupportedRequestContentTypeRejection(x.supported))
+        case Failure(_)                                  ⇒ reject // TODO Use correct rejections
+      }
+    }
+  }
+
+  private val _formFieldMultiMap: Directive1[Map[String, List[String]]] = {
+    @tailrec def append(
+      map: Map[String, List[String]],
+      fields: immutable.Seq[(String, String)]): Map[String, List[String]] = {
+      if (fields.isEmpty) {
+        map
+      } else {
+        val (key, value) = fields.head
+        append(map.updated(key, value :: map.getOrElse(key, Nil)), fields.tail)
+      }
+    }
+
+    _formFieldSeq.map {
+      case seq ⇒
+        append(Map.empty, seq)
+    }
+  }
+
+  private val _formFieldMap: Directive1[Map[String, String]] = _formFieldSeq.map(_.toMap)
+
   sealed trait FieldMagnet {
     type Out
     def apply(): Out
@@ -64,10 +127,10 @@ object FormFieldDirectives extends FormFieldDirectives {
         def apply(value: A) = f(value)
       }
 
-    import akka.http.scaladsl.unmarshalling.{ FromStrictFormFieldUnmarshaller ⇒ FSFFU, _ }
     import BasicDirectives._
-    import RouteDirectives._
     import FutureDirectives._
+    import RouteDirectives._
+    import akka.http.scaladsl.unmarshalling.{ FromStrictFormFieldUnmarshaller ⇒ FSFFU, _ }
     type SFU = FromEntityUnmarshaller[StrictForm]
     type FSFFOU[T] = Unmarshaller[Option[StrictForm.Field], T]
 
@@ -82,8 +145,7 @@ object FormFieldDirectives extends FormFieldDirectives {
     //////////////////// "regular" formField extraction ////////////////////
 
     private def fieldOfForm[T](fieldName: String, fu: Unmarshaller[Option[StrictForm.Field], T])(implicit sfu: SFU): RequestContext ⇒ Future[T] = { ctx ⇒
-      import ctx.executionContext
-      import ctx.materializer
+      import ctx.{ executionContext, materializer }
       sfu(ctx.request.entity).fast.flatMap(form ⇒ fu(form field fieldName))
     }
     private def filter[T](fieldName: String, fu: FSFFOU[T])(implicit sfu: SFU): Directive1[T] =
@@ -124,8 +186,7 @@ object FormFieldDirectives extends FormFieldDirectives {
 
     private def repeatedFilter[T](fieldName: String, fu: FSFFU[T])(implicit sfu: SFU): Directive1[Iterable[T]] =
       extract { ctx ⇒
-        import ctx.executionContext
-        import ctx.materializer
+        import ctx.{ executionContext, materializer }
         sfu(ctx.request.entity).fast.flatMap(form ⇒ Future.sequence(form.fields.collect { case (`fieldName`, value) ⇒ fu(value) }))
       }.flatMap { result ⇒
         handleFieldResult(fieldName, result)
@@ -137,8 +198,8 @@ object FormFieldDirectives extends FormFieldDirectives {
 
     //////////////////// tuple support ////////////////////
 
-    import akka.http.scaladsl.server.util.TupleOps._
     import akka.http.scaladsl.server.util.BinaryPolyFunc
+    import akka.http.scaladsl.server.util.TupleOps._
 
     implicit def forTuple[T](implicit fold: FoldLeft[Directive0, T, ConvertFieldDefAndConcatenate.type]): FieldDefAux[T, fold.Out] =
       fieldDef[T, fold.Out](fold(pass, _))
