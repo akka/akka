@@ -371,6 +371,11 @@ private[http] object HttpServerBluePrint {
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
       import akka.http.impl.engine.rendering.ResponseRenderingOutput._
 
+      /*
+       * These handlers are in charge until a switch command comes in, then they
+       * are replaced.
+       */
+
       setHandler(fromHttp, new InHandler {
         override def onPush(): Unit =
           grab(fromHttp) match {
@@ -381,21 +386,22 @@ private[http] object HttpServerBluePrint {
               cancel(fromHttp)
               switchToWebsocket(handlerFlow)
           }
+        override def onUpstreamFinish(): Unit = complete(toNet)
+        override def onUpstreamFailure(ex: Throwable): Unit = fail(toNet, ex)
       })
       setHandler(toNet, new OutHandler {
         override def onPull(): Unit = pull(fromHttp)
+        override def onDownstreamFinish(): Unit = completeStage()
       })
 
       setHandler(fromNet, new InHandler {
-        def onPush(): Unit = push(toHttp, grab(fromNet))
-
-        // propagate error but don't close stage yet to prevent fromHttp/fromWs being cancelled
-        // too eagerly
+        override def onPush(): Unit = push(toHttp, grab(fromNet))
+        override def onUpstreamFinish(): Unit = complete(toHttp)
         override def onUpstreamFailure(ex: Throwable): Unit = fail(toHttp, ex)
       })
       setHandler(toHttp, new OutHandler {
         override def onPull(): Unit = pull(fromNet)
-        override def onDownstreamFinish(): Unit = ()
+        override def onDownstreamFinish(): Unit = cancel(fromNet)
       })
 
       private var activeTimers = 0
@@ -427,36 +433,60 @@ private[http] object HttpServerBluePrint {
           case Right(messageHandler) ⇒
             Websocket.stack(serverSide = true, maskingRandomFactory = settings.websocketRandomFactory, log = log).join(messageHandler)
         }
+
         val sinkIn = new SubSinkInlet[ByteString]("FrameSink")
-        val sourceOut = new SubSourceOutlet[ByteString]("FrameSource")
-
-        val timeoutKey = SubscriptionTimeout(() ⇒ {
-          sourceOut.timeout(timeout)
-          if (sourceOut.isClosed) completeStage()
-        })
-        addTimeout(timeoutKey)
-
         sinkIn.setHandler(new InHandler {
           override def onPush(): Unit = push(toNet, sinkIn.grab())
-        })
-        setHandler(toNet, new OutHandler {
-          override def onPull(): Unit = sinkIn.pull()
-        })
-
-        setHandler(fromNet, new InHandler {
-          override def onPush(): Unit = sourceOut.push(grab(fromNet).bytes)
-        })
-        sourceOut.setHandler(new OutHandler {
-          override def onPull(): Unit = {
-            if (!hasBeenPulled(fromNet)) pull(fromNet)
-            cancelTimeout(timeoutKey)
-            sourceOut.setHandler(new OutHandler {
-              override def onPull(): Unit = if (!hasBeenPulled(fromNet)) pull(fromNet)
-            })
-          }
+          override def onUpstreamFinish(): Unit = complete(toNet)
+          override def onUpstreamFailure(ex: Throwable): Unit = fail(toNet, ex)
         })
 
-        Websocket.framing.join(frameHandler).runWith(sourceOut.source, sinkIn.sink)(subFusingMaterializer)
+        if (isClosed(fromNet)) {
+          setHandler(toNet, new OutHandler {
+            override def onPull(): Unit = sinkIn.pull()
+            override def onDownstreamFinish(): Unit = {
+              completeStage()
+              sinkIn.cancel()
+            }
+          })
+          Websocket.framing.join(frameHandler).runWith(Source.empty, sinkIn.sink)(subFusingMaterializer)
+        } else {
+          val sourceOut = new SubSourceOutlet[ByteString]("FrameSource")
+
+          val timeoutKey = SubscriptionTimeout(() ⇒ {
+            sourceOut.timeout(timeout)
+            if (sourceOut.isClosed) completeStage()
+          })
+          addTimeout(timeoutKey)
+
+          setHandler(toNet, new OutHandler {
+            override def onPull(): Unit = sinkIn.pull()
+            override def onDownstreamFinish(): Unit = {
+              completeStage()
+              sinkIn.cancel()
+              sourceOut.complete()
+            }
+          })
+
+          setHandler(fromNet, new InHandler {
+            override def onPush(): Unit = sourceOut.push(grab(fromNet).bytes)
+            override def onUpstreamFinish(): Unit = sourceOut.complete()
+            override def onUpstreamFailure(ex: Throwable): Unit = sourceOut.fail(ex)
+          })
+          sourceOut.setHandler(new OutHandler {
+            override def onPull(): Unit = {
+              if (!hasBeenPulled(fromNet)) pull(fromNet)
+              cancelTimeout(timeoutKey)
+              sourceOut.setHandler(new OutHandler {
+                override def onPull(): Unit = if (!hasBeenPulled(fromNet)) pull(fromNet)
+                override def onDownstreamFinish(): Unit = cancel(fromNet)
+              })
+            }
+            override def onDownstreamFinish(): Unit = cancel(fromNet)
+          })
+
+          Websocket.framing.join(frameHandler).runWith(sourceOut.source, sinkIn.sink)(subFusingMaterializer)
+        }
       }
     }
   }
