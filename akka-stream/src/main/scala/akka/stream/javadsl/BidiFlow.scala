@@ -5,10 +5,17 @@ package akka.stream.javadsl
 
 import akka.japi.function
 import akka.stream._
+import akka.stream.scaladsl.Flow
 
 import scala.concurrent.duration.FiniteDuration
 
 object BidiFlow {
+
+  private[this] val _identity: BidiFlow[Object, Object, Object, Object, Unit] =
+    BidiFlow.fromFlows(Flow.of(classOf[Object]), Flow.of(classOf[Object]))
+
+  def identity[A, B]: BidiFlow[A, A, B, B, Unit] = _identity.asInstanceOf[BidiFlow[A, A, B, B, Unit]]
+
   /**
    * A graph with the shape of a BidiFlow logically is a BidiFlow, this method makes
    * it so also in type.
