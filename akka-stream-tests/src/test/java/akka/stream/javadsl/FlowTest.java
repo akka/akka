@@ -534,6 +534,61 @@ public class FlowTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseBatch() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final List<String> input = Arrays.asList("A", "B", "C");
+    final Flow<String, String, NotUsed> flow = Flow.of(String.class).batch(3L, new Function<String, String>() {
+      @Override
+      public String apply(String s) throws Exception {
+        return s;
+      }
+    }, new Function2<String, String, String>() {
+      @Override
+      public String apply(String aggr, String in) throws Exception {
+        return aggr + in;
+      }
+    });
+    Future <String> future = Source.from(input).via(flow).runFold("", new Function2<String, String, String>() {
+      @Override
+      public String apply(String aggr, String in) throws Exception {
+        return aggr + in;
+      }
+    }, materializer);
+    String result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
+    assertEquals("ABC", result);
+  }
+
+  @Test
+  public void mustBeAbleToUseBatchWeighted() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final List<String> input = Arrays.asList("A", "B", "C");
+    final Flow<String, String, NotUsed> flow = Flow.of(String.class).batchWeighted(3L, new Function<String, Object>() {
+      @Override
+      public Object apply(String s) throws Exception {
+        return 1L;
+      }
+    }, new Function<String, String>() {
+      @Override
+      public String apply(String s) throws Exception {
+        return s;
+      }
+    }, new Function2<String, String, String>() {
+      @Override
+      public String apply(String aggr, String in) throws Exception {
+        return aggr + in;
+      }
+    });
+    Future <String> future = Source.from(input).via(flow).runFold("", new Function2<String, String, String>() {
+      @Override
+      public String apply(String aggr, String in) throws Exception {
+        return aggr + in;
+      }
+    }, materializer);
+    String result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
+    assertEquals("ABC", result);
+  }
+
+  @Test
   public void mustBeAbleToUseExpand() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
