@@ -108,7 +108,7 @@ This is how it can be used as input :class:`Source` to a :class:`Flow`:
 .. includecode:: ../code/docs/stream/ActorPublisherDocTest.java#actor-publisher-usage
 
 You can only attach one subscriber to this publisher. Use a ``Broadcast``-element or
-attach a ``Sink.asPublisher(true)`` to enable multiple subscribers.
+attach a ``Sink.asPublisher(AsPublisher.WITH_FANOUT)`` to enable multiple subscribers.
 
 ActorSubscriber
 ^^^^^^^^^^^^^^^
@@ -414,7 +414,7 @@ by using the Publisher-:class:`Sink`:
 
 .. includecode:: ../code/docs/stream/ReactiveStreamsDocTest.java#source-publisher
 
-A publisher that is created with ``Sink.asPublisher(false)`` supports only a single subscription.
+A publisher that is created with ``Sink.asPublisher(AsPublisher.WITHOUT_FANOUT)`` supports only a single subscription.
 Additional subscription attempts will be rejected with an :class:`IllegalStateException`.
 
 A publisher that supports multiple subscribers using fan-out/broadcasting is created as follows:

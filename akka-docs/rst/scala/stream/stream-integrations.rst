@@ -409,7 +409,7 @@ by using the Publisher-:class:`Sink`:
 
 .. includecode:: ../code/docs/stream/ReactiveStreamsDocSpec.scala#source-publisher
 
-A publisher that is created with ``Sink.asPublisher(false)`` supports only a single subscription.
+A publisher that is created with ``Sink.asPublisher(fanout = false)`` supports only a single subscription.
 Additional subscription attempts will be rejected with an :class:`IllegalStateException`.
 
 A publisher that supports multiple subscribers using fan-out/broadcasting is created as follows:
