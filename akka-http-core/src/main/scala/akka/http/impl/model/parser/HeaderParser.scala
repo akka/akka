@@ -156,7 +156,7 @@ private[http] object HeaderParser {
     "www-authenticate",
     "x-forwarded-for")
 
-  trait Settings {
+  abstract class Settings {
     def uriParsingMode: Uri.ParsingMode
     def cookieParsingMode: ParserSettings.CookieParsingMode
   }

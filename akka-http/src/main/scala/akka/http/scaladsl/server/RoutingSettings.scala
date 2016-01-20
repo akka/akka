@@ -8,17 +8,35 @@ import com.typesafe.config.Config
 import akka.actor.ActorRefFactory
 import akka.http.impl.util._
 
-case class RoutingSettings(
-  verboseErrorMessages: Boolean,
-  fileGetConditional: Boolean,
-  renderVanityFooter: Boolean,
-  rangeCountLimit: Int,
-  rangeCoalescingThreshold: Long,
-  decodeMaxBytesPerChunk: Int,
-  fileIODispatcher: String)
+final class RoutingSettings(
+  val verboseErrorMessages: Boolean,
+  val fileGetConditional: Boolean,
+  val renderVanityFooter: Boolean,
+  val rangeCountLimit: Int,
+  val rangeCoalescingThreshold: Long,
+  val decodeMaxBytesPerChunk: Int,
+  val fileIODispatcher: String) {
+
+  def copy(
+    verboseErrorMessages: Boolean = verboseErrorMessages,
+    fileGetConditional: Boolean = fileGetConditional,
+    renderVanityFooter: Boolean = renderVanityFooter,
+    rangeCountLimit: Int = rangeCountLimit,
+    rangeCoalescingThreshold: Long = rangeCoalescingThreshold,
+    decodeMaxBytesPerChunk: Int = decodeMaxBytesPerChunk,
+    fileIODispatcher: String = fileIODispatcher): RoutingSettings =
+    new RoutingSettings(
+      verboseErrorMessages,
+      fileGetConditional,
+      renderVanityFooter,
+      rangeCountLimit,
+      rangeCoalescingThreshold,
+      decodeMaxBytesPerChunk,
+      fileIODispatcher)
+}
 
 object RoutingSettings extends SettingsCompanion[RoutingSettings]("akka.http.routing") {
-  def fromSubConfig(root: Config, c: Config) = apply(
+  def fromSubConfig(root: Config, c: Config) = new RoutingSettings(
     c getBoolean "verbose-error-messages",
     c getBoolean "file-get-conditional",
     c getBoolean "render-vanity-footer",

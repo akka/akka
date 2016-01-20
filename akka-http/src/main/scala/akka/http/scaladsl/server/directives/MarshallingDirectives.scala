@@ -5,10 +5,15 @@
 package akka.http.scaladsl.server
 package directives
 
+import akka.actor.ActorSystem
+import akka.http.ParserSettings
+import akka.http.scaladsl.model.Multipart
+import akka.http.scaladsl.model.Multipart.ByteRanges
+
 import scala.concurrent.Promise
 import scala.util.{ Failure, Success }
 import akka.http.scaladsl.marshalling.ToResponseMarshaller
-import akka.http.scaladsl.unmarshalling.{ Unmarshaller, FromRequestUnmarshaller }
+import akka.http.scaladsl.unmarshalling.{ FromEntityUnmarshaller, MultipartUnmarshallers, Unmarshaller, FromRequestUnmarshaller }
 import akka.http.impl.util._
 
 trait MarshallingDirectives {

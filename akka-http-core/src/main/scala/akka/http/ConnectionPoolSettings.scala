@@ -27,13 +27,13 @@ object ConnectionPoolSetup {
     ConnectionPoolSetup(settings, connectionContext, log)
 }
 
-final case class ConnectionPoolSettings(
-  maxConnections: Int,
-  maxRetries: Int,
-  maxOpenRequests: Int,
-  pipeliningLimit: Int,
-  idleTimeout: Duration,
-  connectionSettings: ClientConnectionSettings) {
+final class ConnectionPoolSettings(
+  val maxConnections: Int,
+  val maxRetries: Int,
+  val maxOpenRequests: Int,
+  val pipeliningLimit: Int,
+  val idleTimeout: Duration,
+  val connectionSettings: ClientConnectionSettings) {
 
   require(maxConnections > 0, "max-connections must be > 0")
   require(maxRetries >= 0, "max-retries must be >= 0")
@@ -44,7 +44,7 @@ final case class ConnectionPoolSettings(
 
 object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings]("akka.http.host-connection-pool") {
   def fromSubConfig(root: Config, c: Config) = {
-    apply(
+    new ConnectionPoolSettings(
       c getInt "max-connections",
       c getInt "max-retries",
       c getInt "max-open-requests",

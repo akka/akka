@@ -5,8 +5,6 @@
 package akka.http.impl.engine.parsing
 
 import akka.NotUsed
-import akka.http.ParserSettings
-import akka.stream.impl.fusing.GraphInterpreter
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.parboiled2.CharPredicate
@@ -27,7 +25,7 @@ import akka.stream.impl.fusing.SubSource
 private[http] final class BodyPartParser(defaultContentType: ContentType,
                                          boundary: String,
                                          log: LoggingAdapter,
-                                         settings: BodyPartParser.Settings = BodyPartParser.defaultSettings)
+                                         settings: BodyPartParser.Settings)
   extends PushPullStage[ByteString, BodyPartParser.Output] {
   import BodyPartParser._
   import settings._
@@ -277,28 +275,9 @@ private[http] object BodyPartParser {
   final case class EntityPart(data: ByteString) extends Output
   final case class ParseError(info: ErrorInfo) extends PartStart
 
-  final case class Settings(
-    maxHeaderNameLength: Int,
-    maxHeaderValueLength: Int,
-    maxHeaderCount: Int,
-    illegalHeaderWarnings: Boolean,
-    headerValueCacheLimit: Int,
-    uriParsingMode: Uri.ParsingMode,
-    cookieParsingMode: ParserSettings.CookieParsingMode) extends HttpHeaderParser.Settings {
-    require(maxHeaderNameLength > 0, "maxHeaderNameLength must be > 0")
-    require(maxHeaderValueLength > 0, "maxHeaderValueLength must be > 0")
-    require(maxHeaderCount > 0, "maxHeaderCount must be > 0")
-    require(headerValueCacheLimit >= 0, "headerValueCacheLimit must be >= 0")
-    def headerValueCacheLimit(headerName: String) = headerValueCacheLimit
+  abstract class Settings extends HttpHeaderParser.Settings {
+    def maxHeaderCount: Int
+    def illegalHeaderWarnings: Boolean
+    def defaultHeaderValueCacheLimit: Int
   }
-
-  // TODO: load from config
-  val defaultSettings = Settings(
-    maxHeaderNameLength = 64,
-    maxHeaderValueLength = 8192,
-    maxHeaderCount = 64,
-    illegalHeaderWarnings = true,
-    headerValueCacheLimit = 8,
-    uriParsingMode = Uri.ParsingMode.Relaxed,
-    cookieParsingMode = ParserSettings.CookieParsingMode.RFC6265)
 }
