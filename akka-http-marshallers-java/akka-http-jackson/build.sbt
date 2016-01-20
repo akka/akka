@@ -7,3 +7,5 @@ Formatting.formatSettings
 OSGi.httpJackson
 Dependencies.httpJackson
 MimaKeys.previousArtifacts := akkaStreamAndHttpPreviousArtifacts("akka-http-jackson").value
+
+enablePlugins(ScaladocNoVerificationOfDiagrams)
