@@ -906,7 +906,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.limit]], [[FlowOps.limitWeighted]] [[FlowOps.batch]] [[FlowOps.batchWeighted]]
    */
-  def conflate[S](seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S] = andThen(Conflate(seed, aggregate))
+  def conflate[S](seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S] =  //andThen(Conflate(seed, aggregate))
+    via(Batch(1L, ConstantFun.returnZero[Out], seed, aggregate).withAttributes(DefaultAttributes.conflate))
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by aggregating elements into batches
@@ -931,7 +932,7 @@ trait FlowOps[+Out, +Mat] {
    * @param aggregate Takes the currently batched value and the current pending element to produce a new aggregate
    */
   def batch[S](max: Long, seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S] =
-    via(Batch(max, seed, aggregate))
+    via(Batch(max, ConstantFun.returnOne[Out], seed, aggregate).withAttributes(DefaultAttributes.batch))
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by aggregating elements into batches
@@ -962,7 +963,7 @@ trait FlowOps[+Out, +Mat] {
    * @param aggregate Takes the currently batched value and the current pending element to produce a new batch
    */
   def batchWeighted[S](max: Long, costFn: Out ⇒ Long, seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S] =
-    via(BatchWeighted(max, costFn, seed, aggregate))
+    via(Batch(max, costFn, seed, aggregate).withAttributes(DefaultAttributes.batchWeighted))
 
   /**
    * Allows a faster downstream to progress independently of a slower publisher by extrapolating elements from an older

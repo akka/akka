@@ -48,6 +48,8 @@ private[stream] object Stages {
     val intersperse = name("intersperse")
     val buffer = name("buffer")
     val conflate = name("conflate")
+    val batch = name("batch")
+    val batchWeighted = name("batchWeighted")
     val expand = name("expand")
     val mapConcat = name("mapConcat")
     val detacher = name("detacher")
