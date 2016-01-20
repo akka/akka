@@ -592,7 +592,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
             .via(renderer.named("renderer"))
             .map {
               case ResponseRenderingOutput.HttpData(bytes)      ⇒ bytes
-              case _: ResponseRenderingOutput.SwitchToWebsocket ⇒ throw new IllegalStateException("Didn't expect websocket response")
+              case _: ResponseRenderingOutput.SwitchToWebSocket ⇒ throw new IllegalStateException("Didn't expect websocket response")
             }
             .groupedWithin(1000, 100.millis)
             .viaMat(StreamUtils.identityFinishReporter[Seq[ByteString]])(Keep.right)

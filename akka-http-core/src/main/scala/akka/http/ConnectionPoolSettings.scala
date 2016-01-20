@@ -4,31 +4,27 @@
 
 package akka.http
 
-import java.lang.{ Iterable ⇒ JIterable }
-import java.util.Optional
-
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
 import akka.http.impl.util._
-import akka.http.scaladsl.HttpsContext
+import akka.http.javadsl.ConnectionContext
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
-import scala.compat.java8.OptionConverters._
 
 final case class HostConnectionPoolSetup(host: String, port: Int, setup: ConnectionPoolSetup)
 
 final case class ConnectionPoolSetup(
   settings: ConnectionPoolSettings,
-  httpsContext: Option[HttpsContext],
+  conContext: ConnectionContext = ConnectionContext.noEncryption(),
   log: LoggingAdapter)
 
 object ConnectionPoolSetup {
   /** Java API */
   def create(settings: ConnectionPoolSettings,
-             httpsContext: Optional[akka.http.javadsl.HttpsContext],
+             connectionContext: ConnectionContext,
              log: LoggingAdapter): ConnectionPoolSetup =
-    ConnectionPoolSetup(settings, httpsContext.asScala.map(_.asInstanceOf[HttpsContext]), log)
+    ConnectionPoolSetup(settings, connectionContext, log)
 }
 
 final case class ConnectionPoolSettings(

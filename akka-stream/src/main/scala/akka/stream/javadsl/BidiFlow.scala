@@ -6,7 +6,6 @@ package akka.stream.javadsl
 import akka.NotUsed
 import akka.japi.function
 import akka.stream._
-import akka.stream.scaladsl.Flow
 
 import scala.concurrent.duration.FiniteDuration
 

@@ -11,7 +11,7 @@ import akka.http.javadsl.ServerBinding;
 import akka.japi.Function;
 import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
-import akka.http.javadsl.model.ws.Websocket;
+import akka.http.javadsl.model.ws.WebSocket;
 import akka.japi.JavaPartialFunction;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
@@ -39,9 +39,9 @@ public class JavaTestServer {
                                     System.out.println("Handling request to " + request.getUri());
 
                                     if (request.getUri().path().equals("/"))
-                                        return Websocket.handleWebsocketRequestWith(request, echoMessages());
+                                        return WebSocket.handleWebSocketRequestWith(request, echoMessages());
                                     else if (request.getUri().path().equals("/greeter"))
-                                        return Websocket.handleWebsocketRequestWith(request, greeter());
+                                        return WebSocket.handleWebSocketRequestWith(request, greeter());
                                     else
                                         return JavaApiTestCases.handleRequest(request);
                                 }

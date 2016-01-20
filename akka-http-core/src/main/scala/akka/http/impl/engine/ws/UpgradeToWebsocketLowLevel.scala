@@ -5,7 +5,7 @@
 package akka.http.impl.engine.ws
 
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.ws.UpgradeToWebsocket
+import akka.http.scaladsl.model.ws.UpgradeToWebSocket
 import akka.stream.{ Graph, FlowShape }
 
 /**
@@ -13,14 +13,14 @@ import akka.stream.{ Graph, FlowShape }
  *
  * INTERNAL API
  */
-private[http] abstract class UpgradeToWebsocketLowLevel extends InternalCustomHeader("UpgradeToWebsocket") with UpgradeToWebsocket {
+private[http] abstract class UpgradeToWebSocketLowLevel extends InternalCustomHeader("UpgradeToWebSocket") with UpgradeToWebSocket {
   /**
-   * The low-level interface to create Websocket server based on "frames".
+   * The low-level interface to create WebSocket server based on "frames".
    * The user needs to handle control frames manually in this case.
    *
    * Returns a response to return in a request handler that will signal the
-   * low-level HTTP implementation to upgrade the connection to Websocket and
-   * use the supplied handler to handle incoming Websocket frames.
+   * low-level HTTP implementation to upgrade the connection to WebSocket and
+   * use the supplied handler to handle incoming WebSocket frames.
    *
    * INTERNAL API (for now)
    */

@@ -158,7 +158,7 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
           def resolve(fileName: String): ContentType = ContentTypeResolver.Default(fileName)
         }))
 
-      case HandleWebsocketMessages(handler) ⇒ handleWebsocketMessages(JavaMapping.toScala(handler))
+      case HandleWebSocketMessages(handler) ⇒ handleWebSocketMessages(JavaMapping.toScala(handler))
       case Redirect(uri, code)              ⇒ redirect(uri.asScala, code.asScala.asInstanceOf[Redirection]) // guarded by require in Redirect
 
       case dyn: DynamicDirectiveRoute1[t1Type] ⇒

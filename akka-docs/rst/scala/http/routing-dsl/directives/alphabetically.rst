@@ -86,11 +86,11 @@ Directive                                   Description
                                             given ``ExceptionHandler``
 :ref:`-handleRejections-`                   Transforms rejections produced by the inner route using the given
                                             ``RejectionHandler``
-:ref:`-handleWebsocketMessages-`            Handles websocket requests with the given handler and rejects other requests
-                                            with an ``ExpectedWebsocketRequestRejection``
-:ref:`-handleWebsocketMessagesForProtocol-` Handles websocket requests with the given handler if the subprotocol matches
-                                            and rejects other requests with an ``ExpectedWebsocketRequestRejection`` or
-                                            an ``UnsupportedWebsocketSubprotocolRejection``.
+:ref:`-handleWebSocketMessages-`            Handles websocket requests with the given handler and rejects other requests
+                                            with an ``ExpectedWebSocketRequestRejection``
+:ref:`-handleWebSocketMessagesForProtocol-` Handles websocket requests with the given handler if the subprotocol matches
+                                            and rejects other requests with an ``ExpectedWebSocketRequestRejection`` or
+                                            an ``UnsupportedWebSocketSubprotocolRejection``.
 :ref:`-handleWith-`                         Completes the request using a given function
 :ref:`-head-`                               Rejects all non-HEAD requests
 :ref:`-headerValue-`                        Extracts an HTTP header value using a given ``HttpHeader ⇒ Option[T]``

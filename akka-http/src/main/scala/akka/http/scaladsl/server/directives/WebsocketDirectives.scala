@@ -7,59 +7,59 @@ package directives
 
 import scala.collection.immutable
 
-import akka.http.scaladsl.model.ws.{ UpgradeToWebsocket, Message }
+import akka.http.scaladsl.model.ws.{ UpgradeToWebSocket, Message }
 import akka.stream.scaladsl.Flow
 
-trait WebsocketDirectives {
+trait WebSocketDirectives {
   import RouteDirectives._
   import HeaderDirectives._
   import BasicDirectives._
 
   /**
-   * Extract the [[UpgradeToWebsocket]] header if existent. Rejects with an [[ExpectedWebsocketRequestRejection]], otherwise.
+   * Extract the [[UpgradeToWebSocket]] header if existent. Rejects with an [[ExpectedWebSocketRequestRejection]], otherwise.
    */
-  def extractUpgradeToWebsocket: Directive1[UpgradeToWebsocket] =
-    optionalHeaderValueByType[UpgradeToWebsocket](()).flatMap {
+  def extractUpgradeToWebSocket: Directive1[UpgradeToWebSocket] =
+    optionalHeaderValueByType[UpgradeToWebSocket](()).flatMap {
       case Some(upgrade) ⇒ provide(upgrade)
-      case None          ⇒ reject(ExpectedWebsocketRequestRejection)
+      case None          ⇒ reject(ExpectedWebSocketRequestRejection)
     }
 
   /**
-   * Extract the list of Websocket subprotocols as offered by the client in the [[Sec-Websocket-Protocol]] header if
-   * this is a Websocket request. Rejects with an [[ExpectedWebsocketRequestRejection]], otherwise.
+   * Extract the list of WebSocket subprotocols as offered by the client in the [[Sec-WebSocket-Protocol]] header if
+   * this is a WebSocket request. Rejects with an [[ExpectedWebSocketRequestRejection]], otherwise.
    */
-  def extractOfferedWsProtocols: Directive1[immutable.Seq[String]] = extractUpgradeToWebsocket.map(_.requestedProtocols)
+  def extractOfferedWsProtocols: Directive1[immutable.Seq[String]] = extractUpgradeToWebSocket.map(_.requestedProtocols)
 
   /**
-   * Handles Websocket requests with the given handler and rejects other requests with an
-   * [[ExpectedWebsocketRequestRejection]].
+   * Handles WebSocket requests with the given handler and rejects other requests with an
+   * [[ExpectedWebSocketRequestRejection]].
    */
-  def handleWebsocketMessages(handler: Flow[Message, Message, Any]): Route =
-    handleWebsocketMessagesForOptionalProtocol(handler, None)
+  def handleWebSocketMessages(handler: Flow[Message, Message, Any]): Route =
+    handleWebSocketMessagesForOptionalProtocol(handler, None)
 
   /**
-   * Handles Websocket requests with the given handler if the given subprotocol is offered in the request and
-   * rejects other requests with an [[ExpectedWebsocketRequestRejection]] or an [[UnsupportedWebsocketSubprotocolRejection]].
+   * Handles WebSocket requests with the given handler if the given subprotocol is offered in the request and
+   * rejects other requests with an [[ExpectedWebSocketRequestRejection]] or an [[UnsupportedWebSocketSubprotocolRejection]].
    */
-  def handleWebsocketMessagesForProtocol(handler: Flow[Message, Message, Any], subprotocol: String): Route =
-    handleWebsocketMessagesForOptionalProtocol(handler, Some(subprotocol))
+  def handleWebSocketMessagesForProtocol(handler: Flow[Message, Message, Any], subprotocol: String): Route =
+    handleWebSocketMessagesForOptionalProtocol(handler, Some(subprotocol))
 
   /**
-   * Handles Websocket requests with the given handler and rejects other requests with an
-   * [[ExpectedWebsocketRequestRejection]].
+   * Handles WebSocket requests with the given handler and rejects other requests with an
+   * [[ExpectedWebSocketRequestRejection]].
    *
-   * If the `subprotocol` parameter is None any Websocket request is accepted. If the `subprotocol` parameter is
-   * `Some(protocol)` a Websocket request is only accepted if the list of subprotocols supported by the client (as
-   * announced in the Websocket request) contains `protocol`. If the client did not offer the protocol in question
-   * the request is rejected with an [[UnsupportedWebsocketSubprotocolRejection]] rejection.
+   * If the `subprotocol` parameter is None any WebSocket request is accepted. If the `subprotocol` parameter is
+   * `Some(protocol)` a WebSocket request is only accepted if the list of subprotocols supported by the client (as
+   * announced in the WebSocket request) contains `protocol`. If the client did not offer the protocol in question
+   * the request is rejected with an [[UnsupportedWebSocketSubprotocolRejection]] rejection.
    *
-   * To support several subprotocols you may chain several `handleWebsocketMessage` Routes.
+   * To support several subprotocols you may chain several `handleWebSocketMessage` Routes.
    */
-  def handleWebsocketMessagesForOptionalProtocol(handler: Flow[Message, Message, Any], subprotocol: Option[String]): Route =
-    extractUpgradeToWebsocket { upgrade ⇒
+  def handleWebSocketMessagesForOptionalProtocol(handler: Flow[Message, Message, Any], subprotocol: Option[String]): Route =
+    extractUpgradeToWebSocket { upgrade ⇒
       if (subprotocol.forall(sub ⇒ upgrade.requestedProtocols.exists(_ equalsIgnoreCase sub)))
         complete(upgrade.handleMessages(handler, subprotocol))
       else
-        reject(UnsupportedWebsocketSubprotocolRejection(subprotocol.get)) // None.forall == true
+        reject(UnsupportedWebSocketSubprotocolRejection(subprotocol.get)) // None.forall == true
     }
 }

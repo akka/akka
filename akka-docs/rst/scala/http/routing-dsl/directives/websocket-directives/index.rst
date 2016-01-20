@@ -1,10 +1,10 @@
-.. _WebsocketDirectives:
+.. _WebSocketDirectives:
 
-WebsocketDirectives
+WebSocketDirectives
 ===================
 
 .. toctree::
    :maxdepth: 1
 
-   handleWebsocketMessages
-   handleWebsocketMessagesForProtocol
+   handleWebSocketMessages
+   handleWebSocketMessagesForProtocol

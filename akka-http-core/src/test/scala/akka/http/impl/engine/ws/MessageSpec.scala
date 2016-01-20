@@ -26,7 +26,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
     0 // but don't finish it
     )
 
-  "The Websocket implementation should" - {
+  "The WebSocket implementation should" - {
     "collect messages from frames" - {
       "for binary messages" - {
         "for an empty message" in new ClientTestSetup {
@@ -864,7 +864,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
     Source.fromPublisher(netIn)
       .via(printEvent("netIn"))
       .via(FrameEventParser)
-      .via(Websocket
+      .via(WebSocket
         .stack(serverSide, maskingRandomFactory = Randoms.SecureRandomInstances, closeTimeout = closeTimeout, log = system.log)
         .join(messageHandler))
       .via(printEvent("frameRendererIn"))

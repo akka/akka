@@ -9,7 +9,7 @@ import scala.collection.immutable
 import scala.annotation.varargs
 import akka.http.javadsl.model.HttpMethods
 
-abstract class AllDirectives extends WebsocketDirectives
+abstract class AllDirectives extends WebSocketDirectives
 
 /**
  *
