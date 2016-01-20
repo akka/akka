@@ -4,6 +4,7 @@
 
 package akka.http.javadsl.model;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
@@ -19,7 +20,6 @@ import akka.stream.javadsl.Source;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -55,11 +55,11 @@ public class JavaTestServer {
         }
     }
 
-    public static Flow<Message, Message, BoxedUnit> echoMessages() {
+    public static Flow<Message, Message, NotUsed> echoMessages() {
         return Flow.create(); // the identity operation
     }
 
-    public static Flow<Message, Message, BoxedUnit> greeter() {
+    public static Flow<Message, Message, NotUsed> greeter() {
         return
             Flow.<Message>create()
                 .collect(new JavaPartialFunction<Message, Message>() {

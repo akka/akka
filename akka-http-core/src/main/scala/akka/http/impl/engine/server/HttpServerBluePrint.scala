@@ -10,6 +10,7 @@ import scala.concurrent.{ Promise, Future }
 import scala.concurrent.duration.{ Deadline, FiniteDuration, Duration }
 import scala.collection.immutable
 import scala.util.control.NonFatal
+import akka.NotUsed
 import akka.actor.Cancellable
 import akka.japi.Function
 import akka.event.LoggingAdapter
@@ -67,22 +68,22 @@ private[http] object HttpServerBluePrint {
     theStack.withAttributes(HttpAttributes.remoteAddress(remoteAddress))
   }
 
-  val tlsSupport: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, SessionBytes, Unit] =
+  val tlsSupport: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, SessionBytes, NotUsed] =
     BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect { case x: SessionBytes ⇒ x })
 
-  def websocketSupport(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes, Unit] =
+  def websocketSupport(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes, NotUsed] =
     BidiFlow.fromGraph(new ProtocolSwitchStage(settings, log))
 
-  def parsingRendering(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, SessionBytes, RequestOutput, Unit] =
+  def parsingRendering(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, SessionBytes, RequestOutput, NotUsed] =
     BidiFlow.fromFlows(rendering(settings, log), parsing(settings, log))
 
-  def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, Unit] =
+  def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, NotUsed] =
     BidiFlow.fromGraph(new ControllerStage(settings, log)).reversed
 
-  def requestPreparation(settings: ServerSettings): BidiFlow[HttpResponse, HttpResponse, RequestOutput, HttpRequest, Unit] =
+  def requestPreparation(settings: ServerSettings): BidiFlow[HttpResponse, HttpResponse, RequestOutput, HttpRequest, NotUsed] =
     BidiFlow.fromFlows(Flow[HttpResponse], new PrepareRequests(settings))
 
-  def requestTimeoutSupport(timeout: Duration): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, Unit] =
+  def requestTimeoutSupport(timeout: Duration): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] =
     timeout match {
       case x: FiniteDuration ⇒ BidiFlow.fromGraph(new RequestTimeoutSupport(x)).reversed
       case _                 ⇒ BidiFlow.identity
@@ -138,7 +139,7 @@ private[http] object HttpServerBluePrint {
     }
   }
 
-  def parsing(settings: ServerSettings, log: LoggingAdapter): Flow[SessionBytes, RequestOutput, Unit] = {
+  def parsing(settings: ServerSettings, log: LoggingAdapter): Flow[SessionBytes, RequestOutput, NotUsed] = {
     import settings._
 
     // the initial header parser we initially use for every connection,
@@ -168,7 +169,7 @@ private[http] object HttpServerBluePrint {
       .map(establishAbsoluteUri)
   }
 
-  def rendering(settings: ServerSettings, log: LoggingAdapter): Flow[ResponseRenderingContext, ResponseRenderingOutput, Unit] = {
+  def rendering(settings: ServerSettings, log: LoggingAdapter): Flow[ResponseRenderingContext, ResponseRenderingOutput, NotUsed] = {
     import settings._
 
     val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log)
@@ -439,7 +440,7 @@ private[http] object HttpServerBluePrint {
 
       def with100ContinueTrigger[T <: ParserOutput](createEntity: EntityCreator[T, RequestEntity]) =
         StreamedEntityCreator {
-          createEntity.compose[Source[T, Unit]] {
+          createEntity.compose[Source[T, NotUsed]] {
             _.via(Flow[T].transform(() ⇒ new PushPullStage[T, T] {
               private var oneHundredContinueSent = false
               def onPush(elem: T, ctx: Context[T]) = ctx.push(elem)
@@ -461,7 +462,7 @@ private[http] object HttpServerBluePrint {
    *  - produces exactly one response per request
    *  - has not more than `pipeliningLimit` responses outstanding
    */
-  def userHandlerGuard(pipeliningLimit: Int): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, Unit] =
+  def userHandlerGuard(pipeliningLimit: Int): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] =
     One2OneBidiFlow[HttpRequest, HttpResponse](pipeliningLimit).reversed
 
   private class ProtocolSwitchStage(settings: ServerSettings, log: LoggingAdapter)

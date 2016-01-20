@@ -5,6 +5,7 @@
 package akka.http.javadsl
 
 import java.net.InetSocketAddress
+import akka.NotUsed
 import akka.japi.function.Function;
 import scala.concurrent.Future
 import akka.stream.Materializer
@@ -31,7 +32,7 @@ class IncomingConnection private[http] (delegate: akka.http.scaladsl.Http.Incomi
    *
    * Use `Flow.join` or one of the handleXXX methods to consume handle requests on this connection.
    */
-  def flow: Flow[HttpResponse, HttpRequest, Unit] = Flow.fromGraph(delegate.flow).asInstanceOf[Flow[HttpResponse, HttpRequest, Unit]]
+  def flow: Flow[HttpResponse, HttpRequest, NotUsed] = Flow.fromGraph(delegate.flow).asInstanceOf[Flow[HttpResponse, HttpRequest, NotUsed]]
 
   /**
    * Handles the connection with the given flow, which is materialized exactly once

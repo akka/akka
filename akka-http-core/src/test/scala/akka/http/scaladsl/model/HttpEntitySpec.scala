@@ -5,6 +5,7 @@
 package akka.http.scaladsl.model
 
 import java.util.concurrent.TimeoutException
+import akka.NotUsed
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.concurrent.{ Promise, Await }
 import scala.concurrent.duration._
@@ -176,7 +177,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
         strict.toString + " == " + expectedRendering)
     }
 
-  def duplicateBytesTransformer(): Flow[ByteString, ByteString, Unit] =
+  def duplicateBytesTransformer(): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].transform(() ⇒ StreamUtils.byteStringTransformer(doubleChars, () ⇒ trailer))
 
   def trailer: ByteString = ByteString("--dup")

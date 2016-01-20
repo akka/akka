@@ -5,6 +5,7 @@ package docs.http.scaladsl.server
 
 import java.io.File
 
+import akka.Done
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import akka.stream.io.{ Framing }
@@ -73,18 +74,18 @@ class FileUploadExamplesSpec extends RoutingSpec {
     val csvUploads =
       path("metadata" / LongNumber) { id =>
         entity(as[Multipart.FormData]) { formData =>
-          val done = formData.parts.mapAsync(1) {
+          val done: Future[Done] = formData.parts.mapAsync(1) {
             case b: BodyPart if b.filename.exists(_.endsWith(".csv")) =>
               b.entity.dataBytes
                 .via(splitLines)
                 .map(_.utf8String.split(",").toVector)
                 .runForeach(csv =>
                   metadataActor ! MetadataActor.Entry(id, csv))
-            case _ => Future.successful(Unit)
+            case _ => Future.successful(Done)
           }.runWith(Sink.ignore)
 
           // when processing have finished create a response for the user
-          onSuccess(done) {
+          onSuccess(done) { _ =>
             complete {
               "ok!"
             }

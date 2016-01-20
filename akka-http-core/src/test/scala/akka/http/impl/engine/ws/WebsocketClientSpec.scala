@@ -6,6 +6,7 @@ package akka.http.impl.engine.ws
 
 import java.util.Random
 
+import akka.NotUsed
 import akka.http.scaladsl.model.ws.{ InvalidUpgradeResponse, WebsocketUpgradeResponse }
 import akka.stream.ClosedShape
 
@@ -119,7 +120,7 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
     }
 
     "don't send out frames before handshake was finished successfully" in new TestSetup {
-      def clientImplementation: Flow[Message, Message, Unit] =
+      def clientImplementation: Flow[Message, Message, NotUsed] =
         Flow.fromSinkAndSourceMat(Sink.ignore, Source.single(TextMessage("fast message")))(Keep.none)
 
       expectWireData(UpgradeRequestBytes)
@@ -291,7 +292,7 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
 
   abstract class TestSetup extends WSTestSetupBase {
     protected def noMsgTimeout: FiniteDuration = 100.millis
-    protected def clientImplementation: Flow[Message, Message, Unit]
+    protected def clientImplementation: Flow[Message, Message, NotUsed]
     protected def requestedSubProtocol: Option[String] = None
 
     val random = new Random(0)
@@ -362,14 +363,14 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
   }
 
   trait ClientEchoes extends TestSetup {
-    override def clientImplementation: Flow[Message, Message, Unit] = echoServer
-    def echoServer: Flow[Message, Message, Unit] = Flow[Message]
+    override def clientImplementation: Flow[Message, Message, NotUsed] = echoServer
+    def echoServer: Flow[Message, Message, NotUsed] = Flow[Message]
   }
   trait ClientProbes extends TestSetup {
     lazy val messagesOut = TestPublisher.probe[Message]()
     lazy val messagesIn = TestSubscriber.probe[Message]()
 
-    override def clientImplementation: Flow[Message, Message, Unit] =
+    override def clientImplementation: Flow[Message, Message, NotUsed] =
       Flow.fromSinkAndSourceMat(Sink.fromSubscriber(messagesIn), Source.fromPublisher(messagesOut))(Keep.none)
   }
 }

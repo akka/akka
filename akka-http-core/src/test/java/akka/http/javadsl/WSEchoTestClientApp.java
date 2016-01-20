@@ -4,6 +4,7 @@
 
 package akka.http.javadsl;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.dispatch.Futures;
 import akka.http.javadsl.model.ws.Message;
@@ -19,7 +20,6 @@ import akka.stream.javadsl.Source;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 
 import java.util.Arrays;
 import java.util.List;
@@ -49,7 +49,7 @@ public class WSEchoTestClientApp {
                         system.dispatcher(),
                         ignoredMessage);
 
-            Source<Message, BoxedUnit> echoSource =
+            Source<Message, NotUsed> echoSource =
                 Source.from(Arrays.<Message>asList(
                         TextMessage.create("abc"),
                         TextMessage.create("def"),
@@ -60,10 +60,10 @@ public class WSEchoTestClientApp {
                 Flow.of(Message.class)
                     .map(messageStringifier)
                     .grouped(1000)
-                    .toMat(Sink.<List<String>>head(), Keep.<BoxedUnit, Future<List<String>>>right());
+                    .toMat(Sink.<List<String>>head(), Keep.<NotUsed, Future<List<String>>>right());
 
             Flow<Message, Message, Future<List<String>>> echoClient =
-                Flow.fromSinkAndSourceMat(echoSink, echoSource, Keep.<Future<List<String>>, BoxedUnit>left());
+                Flow.fromSinkAndSourceMat(echoSink, echoSource, Keep.<Future<List<String>>, NotUsed>left());
 
             Future<List<String>> result =
                 Http.get(system).singleWebsocketRequest(
