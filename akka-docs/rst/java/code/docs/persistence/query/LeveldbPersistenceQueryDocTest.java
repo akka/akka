@@ -6,8 +6,8 @@ package docs.persistence.query;
 
 import java.util.HashSet;
 import java.util.Set;
-import scala.runtime.BoxedUnit;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.persistence.journal.WriteEventAdapter;
 import akka.persistence.journal.Tagged;
@@ -37,7 +37,7 @@ public class LeveldbPersistenceQueryDocTest {
         PersistenceQuery.get(system).getReadJournalFor(LeveldbReadJournal.class, 
             LeveldbReadJournal.Identifier());
     
-    Source<EventEnvelope, BoxedUnit> source =
+    Source<EventEnvelope, NotUsed> source =
         queries.eventsByPersistenceId("some-persistence-id", 0, Long.MAX_VALUE);
     //#EventsByPersistenceId
   }
@@ -48,7 +48,7 @@ public class LeveldbPersistenceQueryDocTest {
         PersistenceQuery.get(system).getReadJournalFor(LeveldbReadJournal.class, 
             LeveldbReadJournal.Identifier());
     
-    Source<String, BoxedUnit> source = queries.allPersistenceIds();
+    Source<String, NotUsed> source = queries.allPersistenceIds();
     //#AllPersistenceIds
   }
   
@@ -58,7 +58,7 @@ public class LeveldbPersistenceQueryDocTest {
         PersistenceQuery.get(system).getReadJournalFor(LeveldbReadJournal.class, 
             LeveldbReadJournal.Identifier());
     
-    Source<EventEnvelope, BoxedUnit> source =
+    Source<EventEnvelope, NotUsed> source =
         queries.eventsByTag("green", 0);
     //#EventsByTag
   }

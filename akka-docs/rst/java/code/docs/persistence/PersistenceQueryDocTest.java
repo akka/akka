@@ -8,6 +8,8 @@ import static akka.pattern.Patterns.ask;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Iterator;
+
+import akka.NotUsed;
 import com.typesafe.config.Config;
 
 import akka.actor.*;
@@ -113,27 +115,27 @@ public class PersistenceQueryDocTest {
     }
 
     @Override
-    public Source<EventEnvelope, BoxedUnit> eventsByTag(String tag, long offset) {
+    public Source<EventEnvelope, NotUsed> eventsByTag(String tag, long offset) {
       final Props props = MyEventsByTagPublisher.props(tag, offset, refreshInterval);
       return Source.<EventEnvelope>actorPublisher(props).
-          mapMaterializedValue(m -> BoxedUnit.UNIT);
+          mapMaterializedValue(m -> NotUsed.getInstance());
     }
 
     @Override
-    public Source<EventEnvelope, BoxedUnit> eventsByPersistenceId(String persistenceId,
+    public Source<EventEnvelope, NotUsed> eventsByPersistenceId(String persistenceId,
         long fromSequenceNr, long toSequenceNr) {
       // implement in a similar way as eventsByTag
       throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Source<String, BoxedUnit> allPersistenceIds() {
+    public Source<String, NotUsed> allPersistenceIds() {
       // implement in a similar way as eventsByTag
       throw new UnsupportedOperationException("Not implemented yet");
     }
     
     @Override
-    public Source<String, BoxedUnit> currentPersistenceIds() {
+    public Source<String, NotUsed> currentPersistenceIds() {
       // implement in a similar way as eventsByTag
       throw new UnsupportedOperationException("Not implemented yet");
     }
@@ -166,25 +168,25 @@ public class PersistenceQueryDocTest {
     }
 
     @Override
-    public akka.stream.scaladsl.Source<EventEnvelope, BoxedUnit> eventsByTag(
+    public akka.stream.scaladsl.Source<EventEnvelope, NotUsed> eventsByTag(
         String tag, long offset) {
       return javadslReadJournal.eventsByTag(tag, offset).asScala();
     }
 
     @Override
-    public akka.stream.scaladsl.Source<EventEnvelope, BoxedUnit> eventsByPersistenceId(
+    public akka.stream.scaladsl.Source<EventEnvelope, NotUsed> eventsByPersistenceId(
         String persistenceId, long fromSequenceNr, long toSequenceNr) {
       return javadslReadJournal.eventsByPersistenceId(persistenceId, fromSequenceNr, 
           toSequenceNr).asScala();
     }
 
     @Override
-    public akka.stream.scaladsl.Source<String, BoxedUnit> allPersistenceIds() {
+    public akka.stream.scaladsl.Source<String, NotUsed> allPersistenceIds() {
       return javadslReadJournal.allPersistenceIds().asScala();
     }
     
     @Override
-    public akka.stream.scaladsl.Source<String, BoxedUnit> currentPersistenceIds() {
+    public akka.stream.scaladsl.Source<String, NotUsed> currentPersistenceIds() {
       return javadslReadJournal.currentPersistenceIds().asScala();
     }
     
@@ -209,7 +211,7 @@ public class PersistenceQueryDocTest {
           "akka.persistence.query.my-read-journal");
 
     // issue query to journal
-    Source<EventEnvelope, BoxedUnit> source =
+    Source<EventEnvelope, NotUsed> source =
       readJournal.eventsByPersistenceId("user-1337", 0, Long.MAX_VALUE);
 
     // materialize stream, consuming events
@@ -262,7 +264,7 @@ public class PersistenceQueryDocTest {
 
     //#events-by-tag
     // assuming journal is able to work with numeric offsets we can:
-    final Source<EventEnvelope, BoxedUnit> blueThings =
+    final Source<EventEnvelope, NotUsed> blueThings =
       readJournal.eventsByTag("blue", 0L);
 
     // find top 10 blue things:
@@ -276,7 +278,7 @@ public class PersistenceQueryDocTest {
         }, mat);
 
     // start another query, from the known offset
-    Source<EventEnvelope, BoxedUnit> blue = readJournal.eventsByTag("blue", 10);
+    Source<EventEnvelope, NotUsed> blue = readJournal.eventsByTag("blue", 10);
     //#events-by-tag
   }
 

@@ -6,6 +6,7 @@ package docs.stream;
 import java.util.Arrays;
 import java.util.Optional;
 
+import akka.NotUsed;
 import akka.stream.ClosedShape;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -20,7 +21,7 @@ import akka.stream.javadsl.Tcp.OutgoingConnection;
 import akka.testkit.JavaTestKit;
 import akka.util.ByteString;
 import scala.concurrent.*;
-import scala.runtime.BoxedUnit;
+
 import scala.Option;
 
 public class CompositionDocTest {
@@ -56,47 +57,47 @@ public class CompositionDocTest {
   @Test
   public void nestedFlow() throws Exception {
     //#nested-flow
-    final Source<Integer, BoxedUnit> nestedSource =
+    final Source<Integer, NotUsed> nestedSource =
       Source.single(0) // An atomic source
         .map(i -> i + 1) // an atomic processing stage
         .named("nestedSource"); // wraps up the current Source and gives it a name
 
-    final Flow<Integer, Integer, BoxedUnit> nestedFlow =
+    final Flow<Integer, Integer, NotUsed> nestedFlow =
       Flow.of(Integer.class).filter(i -> i != 0) // an atomic processing stage
         .map(i -> i - 2) // another atomic processing stage
         .named("nestedFlow"); // wraps up the Flow, and gives it a name
 
-    final Sink<Integer, BoxedUnit> nestedSink =
+    final Sink<Integer, NotUsed> nestedSink =
       nestedFlow.to(Sink.fold(0, (acc, i) -> acc + i)) // wire an atomic sink to the nestedFlow
         .named("nestedSink"); // wrap it up
 
     // Create a RunnableGraph
-    final RunnableGraph<BoxedUnit> runnableGraph = nestedSource.to(nestedSink);
+    final RunnableGraph<NotUsed> runnableGraph = nestedSource.to(nestedSink);
     //#nested-flow
   }
 
   @Test
   public void reusingComponents() throws Exception {
-    final Source<Integer, BoxedUnit> nestedSource =
+    final Source<Integer, NotUsed> nestedSource =
       Source.single(0) // An atomic source
         .map(i -> i + 1) // an atomic processing stage
         .named("nestedSource"); // wraps up the current Source and gives it a name
 
-    final Flow<Integer, Integer, BoxedUnit> nestedFlow =
+    final Flow<Integer, Integer, NotUsed> nestedFlow =
       Flow.of(Integer.class).filter(i -> i != 0) // an atomic processing stage
         .map(i -> i - 2) // another atomic processing stage
         .named("nestedFlow"); // wraps up the Flow, and gives it a name
 
-    final Sink<Integer, BoxedUnit> nestedSink =
+    final Sink<Integer, NotUsed> nestedSink =
       nestedFlow.to(Sink.fold(0, (acc, i) -> acc + i)) // wire an atomic sink to the nestedFlow
         .named("nestedSink"); // wrap it up
 
     //#reuse
     // Create a RunnableGraph from our components
-    final RunnableGraph<BoxedUnit> runnableGraph = nestedSource.to(nestedSink);
+    final RunnableGraph<NotUsed> runnableGraph = nestedSource.to(nestedSink);
 
     // Usage is uniform, no matter if modules are composite or atomic
-    final RunnableGraph<BoxedUnit> runnableGraph2 =
+    final RunnableGraph<NotUsed> runnableGraph2 =
       Source.single(0).to(Sink.fold(0, (acc, i) -> acc + i));
     //#reuse
   }
@@ -150,7 +151,7 @@ public class CompositionDocTest {
   @Test
   public void partialGraph() throws Exception {
     //#partial-graph
-    final Graph<FlowShape<Integer, Integer>, BoxedUnit> partial =
+    final Graph<FlowShape<Integer, Integer>, NotUsed> partial =
       GraphDSL.create(builder -> {
         final UniformFanOutShape<Integer, Integer> B = builder.add(Broadcast.create(2));
         final UniformFanInShape<Integer, Integer> C = builder.add(Merge.create(2));
@@ -173,10 +174,10 @@ public class CompositionDocTest {
     //#partial-flow-dsl
     // Convert the partial graph of FlowShape to a Flow to get
     // access to the fluid DSL (for example to be able to call .filter())
-    final Flow<Integer, Integer, BoxedUnit> flow = Flow.fromGraph(partial);
+    final Flow<Integer, Integer, NotUsed> flow = Flow.fromGraph(partial);
 
     // Simple way to create a graph backed Source
-    final Source<Integer, BoxedUnit> source = Source.fromGraph(
+    final Source<Integer, NotUsed> source = Source.fromGraph(
       GraphDSL.create(builder -> {
         final UniformFanInShape<Integer, Integer> merge = builder.add(Merge.create(2));
         builder.from(builder.add(Source.single(0))).toFanIn(merge);
@@ -187,23 +188,23 @@ public class CompositionDocTest {
     );
 
     // Building a Sink with a nested Flow, using the fluid DSL
-    final Sink<Integer, BoxedUnit> sink = Flow.of(Integer.class)
+    final Sink<Integer, NotUsed> sink = Flow.of(Integer.class)
       .map(i -> i * 2)
       .drop(10)
       .named("nestedFlow")
       .to(Sink.head());
 
     // Putting all together
-    final RunnableGraph<BoxedUnit> closed = source.via(flow.filter(i -> i > 1)).to(sink);
+    final RunnableGraph<NotUsed> closed = source.via(flow.filter(i -> i > 1)).to(sink);
     //#partial-flow-dsl
   }
 
   @Test
   public void closedGraph() throws Exception {
     //#embed-closed
-    final RunnableGraph<BoxedUnit> closed1 =
+    final RunnableGraph<NotUsed> closed1 =
       Source.single(0).to(Sink.foreach(System.out::println));
-    final RunnableGraph<BoxedUnit> closed2 =
+    final RunnableGraph<NotUsed> closed2 =
       RunnableGraph.fromGraph(
         GraphDSL.create(builder -> {
           final ClosedShape embeddedClosed = builder.add(closed1);
@@ -246,7 +247,7 @@ public class CompositionDocTest {
     final Source<Integer, Promise<Optional<Integer>>> source = Source.<Integer>maybe();
 
     // Materializes to BoxedUnit                                              (black)
-    final Flow<Integer, Integer, BoxedUnit> flow1 = Flow.of(Integer.class).take(100);
+    final Flow<Integer, Integer, NotUsed> flow1 = Flow.of(Integer.class).take(100);
 
     // Materializes to Promise<Option<>>                                     (red)
     final Source<Integer, Promise<Optional<Integer>>> nestedSource =
@@ -255,7 +256,7 @@ public class CompositionDocTest {
 
     //#mat-combine-2
     // Materializes to BoxedUnit                                              (orange)
-    final Flow<Integer, ByteString, BoxedUnit> flow2 = Flow.of(Integer.class)
+    final Flow<Integer, ByteString, NotUsed> flow2 = Flow.of(Integer.class)
       .map(i -> ByteString.fromString(i.toString()));
 
     // Materializes to Future<OutgoingConnection>                             (yellow)
@@ -287,19 +288,19 @@ public class CompositionDocTest {
   @Test
   public void attributes() throws Exception {
     //#attributes-inheritance
-    final Source<Integer, BoxedUnit> nestedSource =
+    final Source<Integer, NotUsed> nestedSource =
       Source.single(0)
         .map(i -> i + 1)
         .named("nestedSource"); // Wrap, no inputBuffer set
 
-    final Flow<Integer, Integer, BoxedUnit> nestedFlow =
+    final Flow<Integer, Integer, NotUsed> nestedFlow =
       Flow.of(Integer.class).filter(i -> i != 0)
         .via(Flow.of(Integer.class)
           .map(i -> i - 2)
           .withAttributes(Attributes.inputBuffer(4, 4))) // override
         .named("nestedFlow"); // Wrap, no inputBuffer set
 
-    final Sink<Integer, BoxedUnit> nestedSink =
+    final Sink<Integer, NotUsed> nestedSink =
       nestedFlow.to(Sink.fold(0, (acc, i) -> acc + i)) // wire an atomic sink to the nestedFlow
         .withAttributes(Attributes.name("nestedSink")
           .and(Attributes.inputBuffer(3, 3))); // override

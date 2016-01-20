@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.ws
 
+import akka.NotUsed
+
 import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
@@ -24,10 +26,10 @@ object EchoTestClientApp extends App {
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
 
-  def delayedCompletion(delay: FiniteDuration): Source[Nothing, Unit] =
+  def delayedCompletion(delay: FiniteDuration): Source[Nothing, NotUsed] =
     Source.single(1)
       .mapAsync(1)(_ ⇒ akka.pattern.after(delay, system.scheduler)(Future(1)))
-      .drop(1).asInstanceOf[Source[Nothing, Unit]]
+      .drop(1).asInstanceOf[Source[Nothing, NotUsed]]
 
   def messages: List[Message] =
     List(
@@ -36,7 +38,7 @@ object EchoTestClientApp extends App {
       TextMessage("Test 2"),
       BinaryMessage(ByteString("def")))
 
-  def source: Source[Message, Unit] =
+  def source: Source[Message, NotUsed] =
     Source(messages) ++ delayedCompletion(1.second) // otherwise, we may start closing too soon
 
   def sink: Sink[Message, Future[Seq[String]]] =

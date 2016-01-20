@@ -4,6 +4,7 @@
 package akka.stream.scaladsl
 
 import java.io.{ InputStream, OutputStream, File }
+import akka.{ Done, NotUsed }
 import akka.dispatch.ExecutionContexts
 import akka.actor.{ Status, ActorRef, Props }
 import akka.stream.actor.ActorSubscriber
@@ -87,14 +88,14 @@ object Sink {
   /**
    * Helper to create [[Sink]] from `Subscriber`.
    */
-  def fromSubscriber[T](subscriber: Subscriber[T]): Sink[T, Unit] =
+  def fromSubscriber[T](subscriber: Subscriber[T]): Sink[T, NotUsed] =
     new Sink(new SubscriberSink(subscriber, DefaultAttributes.subscriberSink, shape("SubscriberSink")))
 
   /**
    * A `Sink` that immediately cancels its upstream after materialization.
    */
-  def cancelled[T]: Sink[T, Unit] =
-    new Sink[Any, Unit](new CancelSink(DefaultAttributes.cancelledSink, shape("CancelledSink")))
+  def cancelled[T]: Sink[T, NotUsed] =
+    new Sink[Any, NotUsed](new CancelSink(DefaultAttributes.cancelledSink, shape("CancelledSink")))
 
   /**
    * A `Sink` that materializes into a `Future` of the first value received.
@@ -169,7 +170,7 @@ object Sink {
   /**
    * A `Sink` that will consume the stream and discard the elements.
    */
-  def ignore: Sink[Any, Future[Unit]] =
+  def ignore: Sink[Any, Future[Done]] =
     new Sink(new SinkholeSink(DefaultAttributes.ignoreSink, shape("SinkholeSink")))
 
   /**
@@ -178,13 +179,13 @@ object Sink {
    * normal end of the stream, or completed with `Failure` if there is a failure signaled in
    * the stream..
    */
-  def foreach[T](f: T ⇒ Unit): Sink[T, Future[Unit]] =
+  def foreach[T](f: T ⇒ Unit): Sink[T, Future[Done]] =
     Flow[T].map(f).toMat(Sink.ignore)(Keep.right).named("foreachSink")
 
   /**
    * Combine several sinks with fun-out strategy like `Broadcast` or `Balance` and returns `Sink`.
    */
-  def combine[T, U](first: Sink[U, _], second: Sink[U, _], rest: Sink[U, _]*)(strategy: Int ⇒ Graph[UniformFanOutShape[T, U], Unit]): Sink[T, Unit] =
+  def combine[T, U](first: Sink[U, _], second: Sink[U, _], rest: Sink[U, _]*)(strategy: Int ⇒ Graph[UniformFanOutShape[T, U], NotUsed]): Sink[T, NotUsed] =
 
     Sink.fromGraph(GraphDSL.create() { implicit b ⇒
       import GraphDSL.Implicits._
@@ -214,7 +215,7 @@ object Sink {
    *
    * @see [[#mapAsyncUnordered]]
    */
-  def foreachParallel[T](parallelism: Int)(f: T ⇒ Unit)(implicit ec: ExecutionContext): Sink[T, Future[Unit]] =
+  def foreachParallel[T](parallelism: Int)(f: T ⇒ Unit)(implicit ec: ExecutionContext): Sink[T, Future[Done]] =
     Flow[T].mapAsyncUnordered(parallelism)(t ⇒ Future(f(t))).toMat(Sink.ignore)(Keep.right)
 
   /**
@@ -232,19 +233,19 @@ object Sink {
    * completion, apply the provided function with [[scala.util.Success]]
    * or [[scala.util.Failure]].
    */
-  def onComplete[T](callback: Try[Unit] ⇒ Unit): Sink[T, Unit] = {
+  def onComplete[T](callback: Try[Done] ⇒ Unit): Sink[T, NotUsed] = {
 
-    def newOnCompleteStage(): PushStage[T, Unit] = {
-      new PushStage[T, Unit] {
-        override def onPush(elem: T, ctx: Context[Unit]): SyncDirective = ctx.pull()
+    def newOnCompleteStage(): PushStage[T, NotUsed] = {
+      new PushStage[T, NotUsed] {
+        override def onPush(elem: T, ctx: Context[NotUsed]): SyncDirective = ctx.pull()
 
-        override def onUpstreamFailure(cause: Throwable, ctx: Context[Unit]): TerminationDirective = {
+        override def onUpstreamFailure(cause: Throwable, ctx: Context[NotUsed]): TerminationDirective = {
           callback(Failure(cause))
           ctx.fail(cause)
         }
 
-        override def onUpstreamFinish(ctx: Context[Unit]): TerminationDirective = {
-          callback(Success[Unit](()))
+        override def onUpstreamFinish(ctx: Context[NotUsed]): TerminationDirective = {
+          callback(Success(Done))
           ctx.finish()
         }
       }
@@ -268,7 +269,7 @@ object Sink {
    * to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
    * limiting stage in front of this `Sink`.
    */
-  def actorRef[T](ref: ActorRef, onCompleteMessage: Any): Sink[T, Unit] =
+  def actorRef[T](ref: ActorRef, onCompleteMessage: Any): Sink[T, NotUsed] =
     new Sink(new ActorRefSink(ref, onCompleteMessage, DefaultAttributes.actorRefSink, shape("ActorRefSink")))
 
   /**
@@ -285,7 +286,7 @@ object Sink {
    * function will be sent to the destination actor.
    */
   def actorRefWithAck[T](ref: ActorRef, onInitMessage: Any, ackMessage: Any, onCompleteMessage: Any,
-                         onFailureMessage: (Throwable) ⇒ Any = Status.Failure): Sink[T, Unit] =
+                         onFailureMessage: (Throwable) ⇒ Any = Status.Failure): Sink[T, NotUsed] =
     Sink.fromGraph(new ActorRefBackpressureSinkStage(ref, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage))
 
   /**

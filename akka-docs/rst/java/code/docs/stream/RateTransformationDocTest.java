@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
+import akka.NotUsed;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -32,7 +33,6 @@ import scala.collection.Iterator;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import scala.runtime.BoxedUnit;
 import scala.util.Random;
 
 public class RateTransformationDocTest {
@@ -57,7 +57,7 @@ public class RateTransformationDocTest {
   @Test
   public void conflateShouldSummarize() throws Exception {
     //#conflate-summarize
-    final Flow<Double, Tuple3<Double, Double, Integer>, BoxedUnit> statsFlow =
+    final Flow<Double, Tuple3<Double, Double, Integer>, NotUsed> statsFlow =
       Flow.of(Double.class)
         .conflate(elem -> Collections.singletonList(elem), (acc, elem) -> {
           return Stream
@@ -85,7 +85,7 @@ public class RateTransformationDocTest {
   public void conflateShouldSample() throws Exception {
     //#conflate-sample
     final Double p = 0.01;
-    final Flow<Double, Double, BoxedUnit> sampleFlow = Flow.of(Double.class)
+    final Flow<Double, Double, NotUsed> sampleFlow = Flow.of(Double.class)
       .conflate(elem -> Collections.singletonList(elem), (acc, elem) -> {
         if (r.nextDouble() < p) {
           return Stream
@@ -108,7 +108,7 @@ public class RateTransformationDocTest {
   @Test
   public void expandShouldRepeatLast() throws Exception {
     //#expand-last
-    final Flow<Double, Double, BoxedUnit> lastFlow = Flow.of(Double.class)
+    final Flow<Double, Double, NotUsed> lastFlow = Flow.of(Double.class)
       .expand(d -> d, s -> new Pair<>(s, s));
     //#expand-last
 
@@ -131,13 +131,13 @@ public class RateTransformationDocTest {
   public void expandShouldTrackDrift() throws Exception {
     @SuppressWarnings("unused")
     //#expand-drift
-	final Flow<Double, Pair<Double, Integer>, BoxedUnit> driftFlow = Flow.of(Double.class)
+	final Flow<Double, Pair<Double, Integer>, NotUsed> driftFlow = Flow.of(Double.class)
       .expand(d -> new Pair<Double, Integer>(d, 0), t -> {
         return new Pair<>(t, new Pair<>(t.first(), t.second() + 1));
       });
     //#expand-drift
     final TestLatch latch = new TestLatch(2, system);
-    final Flow<Double, Pair<Double, Integer>, BoxedUnit> realDriftFlow = Flow.of(Double.class)
+    final Flow<Double, Pair<Double, Integer>, NotUsed> realDriftFlow = Flow.of(Double.class)
     	      .expand(d -> { latch.countDown(); return new Pair<Double, Integer>(d, 0); }, t -> {
     	        return new Pair<>(t, new Pair<>(t.first(), t.second() + 1));
     	      });

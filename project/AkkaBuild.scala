@@ -56,7 +56,6 @@ object AkkaBuild extends Build {
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel,
       cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
       slf4j, agent, persistence, persistenceQuery, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit, benchJmh, typed, protobuf,
-      // streamAndHttp, // does not seem to work
       stream, streamTestkit, streamTests, streamTestsTck,
       httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests, httpTestkit
     )
@@ -70,7 +69,6 @@ object AkkaBuild extends Build {
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel,
       cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
       slf4j, persistence, persistenceQuery, persistenceTck, kernel, osgi, contrib, multiNodeTestkit, benchJmh, typed, protobuf,
-      // streamAndHttp, // does not seem to work
       stream, streamTestkit, streamTests, streamTestsTck,
       httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests, httpTestkit
     )

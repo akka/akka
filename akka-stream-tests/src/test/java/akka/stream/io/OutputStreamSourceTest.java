@@ -17,7 +17,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 
 import java.io.OutputStream;
 import java.util.concurrent.TimeUnit;

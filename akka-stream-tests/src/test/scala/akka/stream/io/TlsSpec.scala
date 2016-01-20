@@ -4,6 +4,8 @@ import java.security.KeyStore
 import java.security.SecureRandom
 import java.util.concurrent.TimeoutException
 
+import akka.NotUsed
+
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -115,7 +117,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
 
     trait CommunicationSetup extends Named {
       def decorateFlow(leftClosing: Closing, rightClosing: Closing,
-                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]): Flow[SslTlsOutbound, SslTlsInbound, Unit]
+                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]): Flow[SslTlsOutbound, SslTlsInbound, NotUsed]
       def cleanup(): Unit = ()
     }
 

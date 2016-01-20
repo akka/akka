@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl
 
+import akka.NotUsed
 import akka.actor._
 import akka.stream.Supervision._
 import akka.stream.impl._
@@ -39,8 +40,8 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
   implicit val materializer = ActorMaterializer(settings)
 
-  val identity: Flow[Any, Any, Unit] ⇒ Flow[Any, Any, Unit] = in ⇒ in.map(e ⇒ e)
-  val identity2: Flow[Any, Any, Unit] ⇒ Flow[Any, Any, Unit] = in ⇒ identity(in)
+  val identity: Flow[Any, Any, NotUsed] ⇒ Flow[Any, Any, NotUsed] = in ⇒ in.map(e ⇒ e)
+  val identity2: Flow[Any, Any, NotUsed] ⇒ Flow[Any, Any, NotUsed] = in ⇒ identity(in)
 
   class BrokenActorInterpreter(_shell: GraphInterpreterShell, brokenMessage: Any)
     extends ActorGraphInterpreter(_shell) {
@@ -56,7 +57,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
   }
 
-  val faultyFlow: Flow[Any, Any, Unit] ⇒ Flow[Any, Any, Unit] = in ⇒ in.via({
+  val faultyFlow: Flow[Any, Any, NotUsed] ⇒ Flow[Any, Any, NotUsed] = in ⇒ in.via({
     val stage = new PushPullGraphStage((_) ⇒ fusing.Map({ x: Any ⇒ x }, stoppingDecider), Attributes.none)
 
     val assembly = new GraphAssembly(
@@ -299,11 +300,11 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "be covariant" in {
       val f1: Source[Fruit, _] = Source.fromIterator[Fruit](apples)
       val p1: Publisher[Fruit] = Source.fromIterator[Fruit](apples).runWith(Sink.asPublisher(false))
-      val f2: SubFlow[Fruit, _, Source[Fruit, Unit]#Repr, _] = Source.fromIterator[Fruit](apples).splitWhen(_ ⇒ true)
-      val f3: SubFlow[Fruit, _, Source[Fruit, Unit]#Repr, _] = Source.fromIterator[Fruit](apples).groupBy(2, _ ⇒ true)
+      val f2: SubFlow[Fruit, _, Source[Fruit, NotUsed]#Repr, _] = Source.fromIterator[Fruit](apples).splitWhen(_ ⇒ true)
+      val f3: SubFlow[Fruit, _, Source[Fruit, NotUsed]#Repr, _] = Source.fromIterator[Fruit](apples).groupBy(2, _ ⇒ true)
       val f4: Source[(immutable.Seq[Fruit], Source[Fruit, _]), _] = Source.fromIterator[Fruit](apples).prefixAndTail(1)
-      val d1: SubFlow[Fruit, _, Flow[String, Fruit, Unit]#Repr, _] = Flow[String].map(_ ⇒ new Apple).splitWhen(_ ⇒ true)
-      val d2: SubFlow[Fruit, _, Flow[String, Fruit, Unit]#Repr, _] = Flow[String].map(_ ⇒ new Apple).groupBy(2, _ ⇒ true)
+      val d1: SubFlow[Fruit, _, Flow[String, Fruit, NotUsed]#Repr, _] = Flow[String].map(_ ⇒ new Apple).splitWhen(_ ⇒ true)
+      val d2: SubFlow[Fruit, _, Flow[String, Fruit, NotUsed]#Repr, _] = Flow[String].map(_ ⇒ new Apple).groupBy(2, _ ⇒ true)
       val d3: Flow[String, (immutable.Seq[Apple], Source[Fruit, _]), _] = Flow[String].map(_ ⇒ new Apple).prefixAndTail(1)
     }
 
@@ -504,7 +505,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "call future subscribers' onError should be called instead of onSubscribed after initial upstream reported an error" in {
-      new ChainSetup[Int, String, Unit](_.map(_ ⇒ throw TestException), settings.withInputBuffer(initialSize = 1, maxSize = 1),
+      new ChainSetup[Int, String, NotUsed](_.map(_ ⇒ throw TestException), settings.withInputBuffer(initialSize = 1, maxSize = 1),
         toFanoutPublisher(1)) {
         downstreamSubscription.request(1)
         upstreamSubscription.expectRequest(1)
@@ -589,7 +590,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     "suitably override attribute handling methods" in {
       import Attributes._
-      val f: Flow[Int, Int, Unit] = Flow[Int].withAttributes(asyncBoundary).addAttributes(none).named("")
+      val f: Flow[Int, Int, NotUsed] = Flow[Int].withAttributes(asyncBoundary).addAttributes(none).named("")
     }
   }
 

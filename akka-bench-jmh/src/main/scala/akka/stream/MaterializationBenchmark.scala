@@ -5,6 +5,7 @@
 package akka.stream
 
 import java.util.concurrent.TimeUnit
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import org.openjdk.jmh.annotations._
@@ -38,7 +39,7 @@ object MaterializationBenchmark {
     })
 
   val graphWithNestedImportsBuilder = (numOfNestedGraphs: Int) => {
-    var flow: Graph[FlowShape[Unit, Unit], Unit] = Flow[Unit].map(identity)
+    var flow: Graph[FlowShape[Unit, Unit], NotUsed] = Flow[Unit].map(identity)
     for (_ <- 1 to numOfNestedGraphs) {
       flow = GraphDSL.create(flow) { b ⇒
         flow ⇒
@@ -78,10 +79,10 @@ class MaterializationBenchmark {
   implicit val system = ActorSystem("MaterializationBenchmark")
   implicit val materializer = ActorMaterializer()
 
-  var flowWithMap: RunnableGraph[Unit] = _
-  var graphWithJunctions: RunnableGraph[Unit] = _
-  var graphWithNestedImports: RunnableGraph[Unit] = _
-  var graphWithImportedFlow: RunnableGraph[Unit] = _
+  var flowWithMap: RunnableGraph[NotUsed] = _
+  var graphWithJunctions: RunnableGraph[NotUsed] = _
+  var graphWithNestedImports: RunnableGraph[NotUsed] = _
+  var graphWithImportedFlow: RunnableGraph[NotUsed] = _
 
   @Param(Array("1", "10", "100", "1000"))
   val complexity = 0

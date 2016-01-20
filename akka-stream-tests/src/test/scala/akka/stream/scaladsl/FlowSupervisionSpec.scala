@@ -13,6 +13,7 @@ import scala.concurrent.Await
 import akka.stream.Supervision
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.ActorAttributes
+import akka.NotUsed
 
 class FlowSupervisionSpec extends AkkaSpec {
   import ActorAttributes.supervisionStrategy
@@ -23,7 +24,7 @@ class FlowSupervisionSpec extends AkkaSpec {
 
   val failingMap = Flow[Int].map(n ⇒ if (n == 3) throw exc else n)
 
-  def run(f: Flow[Int, Int, Unit]): immutable.Seq[Int] =
+  def run(f: Flow[Int, Int, NotUsed]): immutable.Seq[Int] =
     Await.result(Source((1 to 5).toSeq ++ (1 to 5)).via(f).grouped(1000).runWith(Sink.head), 3.seconds)
 
   "Stream supervision" must {

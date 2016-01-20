@@ -3,6 +3,7 @@
  */
 package akka.stream.impl.fusing
 
+import akka.NotUsed
 import akka.stream.{ Attributes, Shape, Supervision }
 import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.stage.GraphStageWithMaterializedValue
@@ -18,7 +19,7 @@ class InterpreterStressSpec extends AkkaSpec with GraphInterpreterSpecKit {
   val f = (x: Int) ⇒ x + 1
 
   val map: GraphStageWithMaterializedValue[Shape, Any] =
-    new PushPullGraphStage[Int, Int, Unit]((_) ⇒ Map(f, stoppingDecider), Attributes.none)
+    new PushPullGraphStage[Int, Int, NotUsed]((_) ⇒ Map(f, stoppingDecider), Attributes.none)
       .asInstanceOf[GraphStageWithMaterializedValue[Shape, Any]]
 
   "Interpreter" must {

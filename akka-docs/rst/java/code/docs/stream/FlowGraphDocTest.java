@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import akka.NotUsed;
 import akka.stream.ClosedShape;
 import akka.stream.SourceShape;
 import org.junit.AfterClass;
@@ -18,7 +19,6 @@ import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import scala.runtime.BoxedUnit;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.*;
@@ -45,13 +45,13 @@ public class FlowGraphDocTest {
   @Test
   public void demonstrateBuildSimpleGraph() throws Exception {
     //#simple-flow-graph
-    final Source<Integer, BoxedUnit> in = Source.from(Arrays.asList(1, 2, 3, 4, 5));
+    final Source<Integer, NotUsed> in = Source.from(Arrays.asList(1, 2, 3, 4, 5));
     final Sink<List<String>, Future<List<String>>> sink = Sink.head();
     final Sink<List<Integer>, Future<List<Integer>>> sink2 = Sink.head();
-    final Flow<Integer, Integer, BoxedUnit> f1 = Flow.of(Integer.class).map(elem -> elem + 10);
-    final Flow<Integer, Integer, BoxedUnit> f2 = Flow.of(Integer.class).map(elem -> elem + 20);
-    final Flow<Integer, String, BoxedUnit> f3 = Flow.of(Integer.class).map(elem -> elem.toString());
-    final Flow<Integer, Integer, BoxedUnit> f4 = Flow.of(Integer.class).map(elem -> elem + 30);
+    final Flow<Integer, Integer, NotUsed> f1 = Flow.of(Integer.class).map(elem -> elem + 10);
+    final Flow<Integer, Integer, NotUsed> f2 = Flow.of(Integer.class).map(elem -> elem + 20);
+    final Flow<Integer, String, NotUsed> f3 = Flow.of(Integer.class).map(elem -> elem.toString());
+    final Flow<Integer, Integer, NotUsed> f4 = Flow.of(Integer.class).map(elem -> elem + 30);
 
     final RunnableGraph<Future<List<String>>> result =
       RunnableGraph.<Future<List<String>>>fromGraph(
@@ -81,8 +81,8 @@ public class FlowGraphDocTest {
   public void demonstrateConnectErrors() {
     try {
       //#simple-graph
-      final RunnableGraph<BoxedUnit> g =
-        RunnableGraph.<BoxedUnit>fromGraph(
+      final RunnableGraph<NotUsed> g =
+        RunnableGraph.<NotUsed>fromGraph(
           GraphDSL
             .create((b) -> {
                 final SourceShape<Integer> source1 = b.add(Source.from(Arrays.asList(1, 2, 3, 4, 5)));
@@ -107,7 +107,7 @@ public class FlowGraphDocTest {
     //#flow-graph-reusing-a-flow
     final Sink<Integer, Future<Integer>> topHeadSink = Sink.head();
     final Sink<Integer, Future<Integer>> bottomHeadSink = Sink.head();
-    final Flow<Integer, Integer, BoxedUnit> sharedDoubler = Flow.of(Integer.class).map(elem -> elem * 2);
+    final Flow<Integer, Integer, NotUsed> sharedDoubler = Flow.of(Integer.class).map(elem -> elem * 2);
 
     final RunnableGraph<Pair<Future<Integer>, Future<Integer>>> g =
       RunnableGraph.<Pair<Future<Integer>, Future<Integer>>>fromGraph(
@@ -139,7 +139,7 @@ public class FlowGraphDocTest {
       return a + b;
     });
 
-    final Flow<Future<Integer>, Integer, BoxedUnit> flatten = Flow.<Future<Integer>>create()
+    final Flow<Future<Integer>, Integer, NotUsed> flatten = Flow.<Future<Integer>>create()
       .mapAsync(4, x -> {
         return x;
       });

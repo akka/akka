@@ -3,6 +3,7 @@
  */
 package akka.stream.javadsl
 
+import akka.NotUsed
 import akka.event.LoggingAdapter
 import akka.japi.{ function, Pair }
 import akka.stream.impl.Timers.{ DelayInitial, IdleInject }
@@ -22,9 +23,9 @@ object Flow {
   private[this] val _identity = new javadsl.Flow(scaladsl.Flow[Any])
 
   /** Create a `Flow` which can process elements of type `T`. */
-  def create[T](): javadsl.Flow[T, T, Unit] = fromGraph(scaladsl.Flow[T])
+  def create[T](): javadsl.Flow[T, T, NotUsed] = fromGraph(scaladsl.Flow[T])
 
-  def fromProcessor[I, O](processorFactory: function.Creator[Processor[I, O]]): javadsl.Flow[I, O, Unit] =
+  def fromProcessor[I, O](processorFactory: function.Creator[Processor[I, O]]): javadsl.Flow[I, O, NotUsed] =
     new Flow(scaladsl.Flow.fromProcessor(() ⇒ processorFactory.create()))
 
   def fromProcessorMat[I, O, Mat](processorFactory: function.Creator[Pair[Processor[I, O], Mat]]): javadsl.Flow[I, O, Mat] =
@@ -34,7 +35,7 @@ object Flow {
     })
 
   /** Create a `Flow` which can process elements of type `T`. */
-  def of[T](clazz: Class[T]): javadsl.Flow[T, T, Unit] = create[T]()
+  def of[T](clazz: Class[T]): javadsl.Flow[T, T, NotUsed] = create[T]()
 
   /**
    * A graph with the shape of a flow logically is a flow, this method makes it so also in type.
@@ -49,7 +50,7 @@ object Flow {
   /**
    * Helper to create `Flow` from a `Sink`and a `Source`.
    */
-  def fromSinkAndSource[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, Unit] =
+  def fromSinkAndSource[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, NotUsed] =
     new Flow(scaladsl.Flow.fromSinkAndSourceMat(sink, source)(scaladsl.Keep.none))
 
   /**
@@ -890,7 +891,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * '''Cancels when''' downstream cancels or substream cancels
    */
-  def prefixAndTail(n: Int): javadsl.Flow[In, akka.japi.Pair[java.util.List[Out @uncheckedVariance], javadsl.Source[Out @uncheckedVariance, Unit]], Mat] =
+  def prefixAndTail(n: Int): javadsl.Flow[In, akka.japi.Pair[java.util.List[Out @uncheckedVariance], javadsl.Source[Out @uncheckedVariance, NotUsed]], Mat] =
     new Flow(delegate.prefixAndTail(n).map { case (taken, tail) ⇒ akka.japi.Pair(taken.asJava, tail.asJava) })
 
   /**

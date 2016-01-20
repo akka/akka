@@ -2,11 +2,11 @@ package docs.stream;
 
 import java.util.Arrays;
 
+import akka.NotUsed;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import scala.runtime.BoxedUnit;
 import akka.actor.ActorSystem;
 import akka.stream.*;
 import akka.stream.javadsl.*;
@@ -34,13 +34,13 @@ public class GraphCyclesDocTest {
 
   final static SilenceSystemOut.System System = SilenceSystemOut.get();
 
-  final Source<Integer, BoxedUnit> source = Source.from(Arrays.asList(1, 2, 3, 4, 5));
+  final Source<Integer, NotUsed> source = Source.from(Arrays.asList(1, 2, 3, 4, 5));
 
   @Test
   public void demonstrateDeadlockedCycle() {
     //#deadlocked
     // WARNING! The graph below deadlocks!
-    final Flow<Integer, Integer, BoxedUnit> printFlow =
+    final Flow<Integer, Integer, NotUsed> printFlow =
       Flow.of(Integer.class).map(s -> {
         System.out.println(s);
         return s;
@@ -62,7 +62,7 @@ public class GraphCyclesDocTest {
 
   @Test
   public void demonstrateUnfairCycle() {
-    final Flow<Integer, Integer, BoxedUnit> printFlow =
+    final Flow<Integer, Integer, NotUsed> printFlow =
         Flow.of(Integer.class).map(s -> {
           System.out.println(s);
           return s;
@@ -85,7 +85,7 @@ public class GraphCyclesDocTest {
 
   @Test
   public void demonstrateDroppingCycle() {
-    final Flow<Integer, Integer, BoxedUnit> printFlow =
+    final Flow<Integer, Integer, NotUsed> printFlow =
         Flow.of(Integer.class).map(s -> {
           System.out.println(s);
           return s;
@@ -109,7 +109,7 @@ public class GraphCyclesDocTest {
 
   @Test
   public void demonstrateZippingCycle() {
-    final Flow<Integer, Integer, BoxedUnit> printFlow =
+    final Flow<Integer, Integer, NotUsed> printFlow =
         Flow.of(Integer.class).map(s -> {
           System.out.println(s);
           return s;
@@ -133,7 +133,7 @@ public class GraphCyclesDocTest {
 
   @Test
   public void demonstrateLiveZippingCycle() {
-    final Flow<Integer, Integer, BoxedUnit> printFlow =
+    final Flow<Integer, Integer, NotUsed> printFlow =
         Flow.of(Integer.class).map(s -> {
           System.out.println(s);
           return s;

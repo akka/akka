@@ -3,6 +3,7 @@
  */
 package akka.persistence.query.javadsl
 
+import akka.NotUsed
 import akka.stream.javadsl.Source
 import akka.persistence.query.EventEnvelope
 
@@ -25,6 +26,6 @@ trait EventsByPersistenceIdQuery extends ReadJournal {
    * stored events is provided by [[CurrentEventsByPersistenceIdQuery#currentEventsByPersistenceId]].
    */
   def eventsByPersistenceId(persistenceId: String, fromSequenceNr: Long,
-                            toSequenceNr: Long): Source[EventEnvelope, Unit]
+                            toSequenceNr: Long): Source[EventEnvelope, NotUsed]
 
 }
