@@ -299,10 +299,12 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
   }
 
   implicit class ToGraphStage[I, O](stage: Stage[I, O]) {
-    def toGS =
+    def toGS: PushPullGraphStage[Any, Any, Any] = {
+      val s = stage
       new PushPullGraphStage[Any, Any, Any](
-        (_) ⇒ stage.asInstanceOf[Stage[Any, Any]],
+        (_) ⇒ s.asInstanceOf[Stage[Any, Any]],
         Attributes.none)
+    }
   }
 
   abstract class OneBoundedSetup[T](_ops: GraphStageWithMaterializedValue[Shape, Any]*) extends Builder {
