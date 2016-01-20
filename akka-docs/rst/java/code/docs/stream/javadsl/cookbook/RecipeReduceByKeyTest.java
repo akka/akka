@@ -3,6 +3,7 @@
  */
 package docs.stream.javadsl.cookbook;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.japi.function.Function;
@@ -19,7 +20,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
-import scala.runtime.BoxedUnit;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -47,12 +47,12 @@ public class RecipeReduceByKeyTest extends RecipeTest {
   public void work() throws Exception {
     new JavaTestKit(system) {
       {
-        final Source<String, BoxedUnit> words = Source.from(Arrays.asList("hello", "world", "and", "hello", "akka"));
+        final Source<String, NotUsed> words = Source.from(Arrays.asList("hello", "world", "and", "hello", "akka"));
 
         //#word-count
         final int MAXIMUM_DISTINCT_WORDS = 1000;
         
-        final Source<Pair<String, Integer>, BoxedUnit> counts = words
+        final Source<Pair<String, Integer>, NotUsed> counts = words
             // split the words into separate streams first
           .groupBy(MAXIMUM_DISTINCT_WORDS, i -> i)
           // add counting logic to the streams
@@ -74,7 +74,7 @@ public class RecipeReduceByKeyTest extends RecipeTest {
   }
 
   //#reduce-by-key-general
-  static public <In, K, Out> Flow<In, Pair<K, Out>, BoxedUnit> reduceByKey(
+  static public <In, K, Out> Flow<In, Pair<K, Out>, NotUsed> reduceByKey(
       int maximumGroupSize,
       Function<In, K> groupKey,
       Function<K, Out> foldZero,
@@ -96,12 +96,12 @@ public class RecipeReduceByKeyTest extends RecipeTest {
   public void workGeneralised() throws Exception {
     new JavaTestKit(system) {
       {
-        final Source<String, BoxedUnit> words = Source.from(Arrays.asList("hello", "world", "and", "hello", "akka"));
+        final Source<String, NotUsed> words = Source.from(Arrays.asList("hello", "world", "and", "hello", "akka"));
 
         //#reduce-by-key-general2
         final int MAXIMUM_DISTINCT_WORDS = 1000;
 
-        Source<Pair<String, Integer>, BoxedUnit> counts = words.via(reduceByKey(
+        Source<Pair<String, Integer>, NotUsed> counts = words.via(reduceByKey(
           MAXIMUM_DISTINCT_WORDS,
           word -> word,
           key -> 0,

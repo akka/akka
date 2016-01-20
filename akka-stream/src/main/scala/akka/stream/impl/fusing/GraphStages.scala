@@ -4,6 +4,7 @@
 package akka.stream.impl.fusing
 
 import java.util.concurrent.atomic.AtomicBoolean
+import akka.Done
 import akka.actor.Cancellable
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
@@ -211,12 +212,12 @@ object GraphStages {
 
   private object TickSource {
     class TickSourceCancellable(cancelled: AtomicBoolean) extends Cancellable {
-      private val cancelPromise = Promise[Unit]()
+      private val cancelPromise = Promise[Done]()
 
-      def cancelFuture: Future[Unit] = cancelPromise.future
+      def cancelFuture: Future[Done] = cancelPromise.future
 
       override def cancel(): Boolean = {
-        if (!isCancelled) cancelPromise.trySuccess(())
+        if (!isCancelled) cancelPromise.trySuccess(Done)
         true
       }
 

@@ -4,6 +4,7 @@
 
 package akka.stream
 
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import java.util.concurrent.TimeUnit
@@ -24,9 +25,9 @@ class FlatMapMergeBenchmark {
   @Param(Array("0", "1", "10"))
   val NumberOfStreams = 0
 
-  var graph: RunnableGraph[Future[Unit]] = _
+  var graph: RunnableGraph[Future[Done]] = _
 
-  def createSource(count: Int): Graph[SourceShape[Int], Unit] = akka.stream.Fusing.aggressive(Source.repeat(1).take(count))
+  def createSource(count: Int): Graph[SourceShape[Int], NotUsed] = akka.stream.Fusing.aggressive(Source.repeat(1).take(count))
 
   @Setup
   def setup() {

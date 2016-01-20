@@ -10,6 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.net.BindException;
+
+import akka.Done;
+import akka.NotUsed;
 import org.junit.ClassRule;
 import org.junit.Test;
 import scala.concurrent.Await;
@@ -34,7 +37,7 @@ public class TcpTest extends StreamTest {
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("TcpTest",
     AkkaSpec.testConf());
 
-  final Sink<IncomingConnection, Future<BoxedUnit>> echoHandler =
+  final Sink<IncomingConnection, Future<Done>> echoHandler =
       Sink.foreach(new Procedure<IncomingConnection>() {
         public void apply(IncomingConnection conn) {
           conn.handleWith(Flow.of(ByteString.class), materializer);
@@ -112,7 +115,7 @@ public class TcpTest extends StreamTest {
           Source.from(testInput)
               // TODO getHostString in Java7
               .viaMat(Tcp.get(system).outgoingConnection(serverAddress.getHostName(), serverAddress.getPort()),
-                  Keep.<BoxedUnit, Future<OutgoingConnection>> right())
+                  Keep.<NotUsed, Future<OutgoingConnection>> right())
               .to(Sink.<ByteString> ignore())
               .run(materializer),
           FiniteDuration.create(5, TimeUnit.SECONDS));

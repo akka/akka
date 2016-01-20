@@ -3,6 +3,7 @@
  */
 package akka.stream.tck
 
+import akka.Done
 import akka.stream.impl.SinkholeSubscriber
 import org.reactivestreams.tck.{ TestEnvironment, SubscriberWhiteboxVerification }
 import org.reactivestreams.tck.SubscriberWhiteboxVerification.{ SubscriberPuppet, WhiteboxSubscriberProbe }
@@ -14,7 +15,7 @@ import org.reactivestreams.{ Subscription, Subscriber }
 class SinkholeSubscriberTest extends SubscriberWhiteboxVerification[JInt](new TestEnvironment()) with TestNGSuiteLike {
   override def createSubscriber(probe: WhiteboxSubscriberProbe[JInt]): Subscriber[JInt] = {
     new Subscriber[JInt] {
-      val hole = new SinkholeSubscriber[JInt](Promise[Unit]())
+      val hole = new SinkholeSubscriber[JInt](Promise[Done]())
 
       override def onError(t: Throwable): Unit = {
         hole.onError(t)

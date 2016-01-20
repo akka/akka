@@ -8,11 +8,9 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-import akka.actor.ActorRef;
+import akka.NotUsed;
 import akka.japi.function.Function;
-import akka.japi.function.Procedure;
 import akka.stream.*;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -23,7 +21,6 @@ import scala.concurrent.duration.Duration;
 import akka.japi.function.Function2;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
-import scala.runtime.BoxedUnit;
 
 public class SinkTest extends StreamTest {
   public SinkTest() {
@@ -80,8 +77,8 @@ public class SinkTest extends StreamTest {
     final Sink<Integer, ?> sink2 = Sink.actorRef(probe2.getRef(), "done2");
 
     final Sink<Integer, ?> sink = Sink.combine(sink1, sink2, new ArrayList<Sink<Integer, ?>>(),
-            new Function<Integer, Graph<UniformFanOutShape<Integer, Integer>, BoxedUnit>>() {
-              public Graph<UniformFanOutShape<Integer, Integer>, BoxedUnit> apply(Integer elem) {
+            new Function<Integer, Graph<UniformFanOutShape<Integer, Integer>, NotUsed>>() {
+              public Graph<UniformFanOutShape<Integer, Integer>, NotUsed> apply(Integer elem) {
                 return Broadcast.create(elem);
               }
             }

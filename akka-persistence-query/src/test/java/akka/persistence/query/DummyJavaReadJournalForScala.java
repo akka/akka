@@ -4,8 +4,7 @@
 
 package akka.persistence.query;
 
-import scala.runtime.BoxedUnit;
-
+import akka.NotUsed;
 
 /**
  * Use for tests only!
@@ -23,7 +22,7 @@ public class DummyJavaReadJournalForScala implements akka.persistence.query.scal
   }
 
   @Override
-  public akka.stream.scaladsl.Source<String, BoxedUnit> allPersistenceIds() {
+  public akka.stream.scaladsl.Source<String, NotUsed> allPersistenceIds() {
     return readJournal.allPersistenceIds().asScala();
   }
 

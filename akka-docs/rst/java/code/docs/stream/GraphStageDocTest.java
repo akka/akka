@@ -1,5 +1,7 @@
 package docs.stream;
 
+import akka.Done;
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 //#imports
 import akka.dispatch.Futures;
@@ -7,7 +9,6 @@ import akka.dispatch.Mapper;
 import akka.dispatch.OnSuccess;
 import akka.japi.Option;
 import akka.japi.Predicate;
-import akka.japi.function.Effect;
 import akka.japi.function.Procedure;
 import akka.stream.*;
 import akka.stream.javadsl.*;
@@ -20,7 +21,6 @@ import akka.japi.Function;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import scala.Tuple2;
 import scala.concurrent.Await;
@@ -29,7 +29,6 @@ import scala.concurrent.Future;
 import scala.concurrent.Promise;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 
 import java.util.*;
 
@@ -96,10 +95,10 @@ public class GraphStageDocTest {
   public void demonstrateCustomSourceUsage() throws Exception {
     //#simple-source-usage
     // A GraphStage is a proper Graph, just like what GraphDSL.create would return
-    Graph<SourceShape<Integer>, BoxedUnit> sourceGraph = new NumbersSource();
+    Graph<SourceShape<Integer>, NotUsed> sourceGraph = new NumbersSource();
 
     // Create a Source from the Graph to access the DSL
-    Source<Integer, BoxedUnit> mySource = Source.fromGraph(sourceGraph);
+    Source<Integer, NotUsed> mySource = Source.fromGraph(sourceGraph);
 
     // Returns 55
     Future<Integer> result1 = mySource.take(10).runFold(0, (sum, next) -> sum + next, mat);
@@ -162,7 +161,7 @@ public class GraphStageDocTest {
   @Test
   public void demonstrateOneToOne() throws Exception {
     // tests:
-    final Graph<FlowShape<String, Integer>, BoxedUnit> stringLength =
+    final Graph<FlowShape<String, Integer>, NotUsed> stringLength =
       Flow.fromGraph(new Map<String, Integer>(new Function<String, Integer>() {
         @Override
         public Integer apply(String str) {
@@ -229,7 +228,7 @@ public class GraphStageDocTest {
   public void demonstrateAManyToOneElementGraphStage() throws Exception {
 
     // tests:
-    Graph<FlowShape<Integer, Integer>, BoxedUnit> evenFilter =
+    Graph<FlowShape<Integer, Integer>, NotUsed> evenFilter =
       Flow.fromGraph(new Filter<Integer>(n -> n % 2 == 0));
 
     Future<Integer> result =
@@ -298,7 +297,7 @@ public class GraphStageDocTest {
   @Test
   public void demonstrateAOneToManyElementGraphStage() throws Exception {
     // tests:
-    Graph<FlowShape<Integer, Integer>, BoxedUnit> duplicator =
+    Graph<FlowShape<Integer, Integer>, NotUsed> duplicator =
             Flow.fromGraph(new Duplicator<Integer>());
 
     Future<Integer> result =
@@ -355,7 +354,7 @@ public class GraphStageDocTest {
   @Test
   public void demonstrateASimplerOneToManyStage() throws Exception {
     // tests:
-    Graph<FlowShape<Integer, Integer>, BoxedUnit> duplicator =
+    Graph<FlowShape<Integer, Integer>, NotUsed> duplicator =
             Flow.fromGraph(new Duplicator2<Integer>());
 
     Future<Integer> result =
@@ -387,9 +386,9 @@ public class GraphStageDocTest {
   // will close upstream when the future completes
   public class KillSwitch<A> extends GraphStage<FlowShape<A, A>> {
 
-    private final Future<BoxedUnit> switchF;
+    private final Future<Done> switchF;
 
-    public KillSwitch(Future<BoxedUnit> switchF) {
+    public KillSwitch(Future<Done> switchF) {
       this.switchF = switchF;
     }
 
@@ -423,18 +422,18 @@ public class GraphStageDocTest {
 
         @Override
         public void preStart() {
-          AsyncCallback<BoxedUnit> callback = createAsyncCallback(new Procedure<BoxedUnit>() {
+          AsyncCallback<Done> callback = createAsyncCallback(new Procedure<Done>() {
             @Override
-            public void apply(BoxedUnit param) throws Exception {
+            public void apply(Done param) throws Exception {
               completeStage();
             }
           });
 
           ExecutionContext ec = system.dispatcher();
-          switchF.onSuccess(new OnSuccess<BoxedUnit>() {
+          switchF.onSuccess(new OnSuccess<Done>() {
             @Override
-            public void onSuccess(BoxedUnit result) throws Throwable {
-              callback.invoke(BoxedUnit.UNIT);
+            public void onSuccess(Done result) throws Throwable {
+              callback.invoke(Done.getInstance());
             }
           }, ec);
         }
@@ -447,16 +446,16 @@ public class GraphStageDocTest {
   public void demonstrateAnAsynchronousSideChannel() throws Exception{
 
     // tests:
-    Promise<BoxedUnit> switchF = Futures.promise();
-    Graph<FlowShape<Integer, Integer>, BoxedUnit> killSwitch =
+    Promise<Done> switchF = Futures.promise();
+    Graph<FlowShape<Integer, Integer>, NotUsed> killSwitch =
       Flow.fromGraph(new KillSwitch<>(switchF.future()));
 
     ExecutionContext ec = system.dispatcher();
 
     // TODO this is probably racey, is there a way to make sure it happens after?
-    Future<Integer> valueAfterKill = switchF.future().flatMap(new Mapper<BoxedUnit, Future<Integer>>() {
+    Future<Integer> valueAfterKill = switchF.future().flatMap(new Mapper<Done, Future<Integer>>() {
       @Override
-      public Future<Integer> apply(BoxedUnit parameter) {
+      public Future<Integer> apply(Done parameter) {
         return Futures.successful(4);
       }
     }, ec);
@@ -467,7 +466,7 @@ public class GraphStageDocTest {
         .via(killSwitch)
         .runFold(0, (n, sum) -> n + sum, mat);
 
-    switchF.success(BoxedUnit.UNIT);
+    switchF.success(Done.getInstance());
 
     assertEquals(new Integer(6), Await.result(result, Duration.create(3, "seconds")));
   }
@@ -694,7 +693,7 @@ public class GraphStageDocTest {
 
     TestSubscriber.ManualProbe<Integer> subscriber = TestSubscriber.manualProbe(system);
     TestPublisher.Probe<Integer> publisher = TestPublisher.probe(0, system);
-    RunnableGraph<BoxedUnit> flow2 =
+    RunnableGraph<NotUsed> flow2 =
       Source.fromPublisher(publisher)
         .via(new TwoBuffer<>())
         .to(Sink.fromSubscriber(subscriber));

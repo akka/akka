@@ -5,6 +5,7 @@ package akka.stream.stage
 
 import java.util
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicReference }
+import akka.NotUsed
 import akka.actor._
 import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Unwatch, Watch }
 import akka.event.LoggingAdapter
@@ -43,9 +44,9 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
  * its input and output ports and a factory function that creates a [[GraphStageLogic]] which implements the processing
  * logic that ties the ports together.
  */
-abstract class GraphStage[S <: Shape] extends GraphStageWithMaterializedValue[S, Unit] {
-  final override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) =
-    (createLogic(inheritedAttributes), Unit)
+abstract class GraphStage[S <: Shape] extends GraphStageWithMaterializedValue[S, NotUsed] {
+  final override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, NotUsed) =
+    (createLogic(inheritedAttributes), NotUsed)
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic
 }
@@ -964,7 +965,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       }
     }.invoke _)
 
-    def sink: Graph[SinkShape[T], Unit] = _sink
+    def sink: Graph[SinkShape[T], NotUsed] = _sink
 
     def setHandler(handler: InHandler): Unit = this.handler = handler
 
@@ -1038,7 +1039,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     /**
      * Get the Source for this dynamic output port.
      */
-    def source: Graph[SourceShape[T], Unit] = _source
+    def source: Graph[SourceShape[T], NotUsed] = _source
 
     /**
      * Set OutHandler for this dynamic output port; this needs to be done before

@@ -6,6 +6,7 @@ package akka.http.impl.engine.ws
 
 import java.util.Random
 
+import akka.NotUsed
 import akka.stream.scaladsl.{ Keep, BidiFlow, Flow }
 import akka.stream.stage.{ SyncDirective, Context, StatefulStage }
 
@@ -15,10 +16,10 @@ import akka.stream.stage.{ SyncDirective, Context, StatefulStage }
  * INTERNAL API
  */
 private[http] object Masking {
-  def apply(serverSide: Boolean, maskRandom: () ⇒ Random): BidiFlow[ /* net in */ FrameEvent, /* app out */ FrameEventOrError, /* app in */ FrameEvent, /* net out */ FrameEvent, Unit] =
+  def apply(serverSide: Boolean, maskRandom: () ⇒ Random): BidiFlow[ /* net in */ FrameEvent, /* app out */ FrameEventOrError, /* app in */ FrameEvent, /* net out */ FrameEvent, NotUsed] =
     BidiFlow.fromFlowsMat(unmaskIf(serverSide), maskIf(!serverSide, maskRandom))(Keep.none)
 
-  def maskIf(condition: Boolean, maskRandom: () ⇒ Random): Flow[FrameEvent, FrameEvent, Unit] =
+  def maskIf(condition: Boolean, maskRandom: () ⇒ Random): Flow[FrameEvent, FrameEvent, NotUsed] =
     if (condition)
       Flow[FrameEvent]
         .transform(() ⇒ new Masking(maskRandom())) // new random per materialization
@@ -27,7 +28,7 @@ private[http] object Masking {
           case FrameError(ex) ⇒ throw ex
         }
     else Flow[FrameEvent]
-  def unmaskIf(condition: Boolean): Flow[FrameEvent, FrameEventOrError, Unit] =
+  def unmaskIf(condition: Boolean): Flow[FrameEvent, FrameEventOrError, NotUsed] =
     if (condition) Flow[FrameEvent].transform(() ⇒ new Unmasking())
     else Flow[FrameEvent]
 

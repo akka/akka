@@ -3,6 +3,7 @@
  */
 package docs.stream.javadsl.cookbook;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
@@ -19,7 +20,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
-import scala.runtime.BoxedUnit;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -80,12 +80,12 @@ public class RecipeDigest extends RecipeTest {
       //#calculating-digest
 
       {
-        Source<ByteString, BoxedUnit> data = Source.from(Arrays.asList(
+        Source<ByteString, NotUsed> data = Source.from(Arrays.asList(
           ByteString.fromString("abcdbcdecdef"),
           ByteString.fromString("defgefghfghighijhijkijkljklmklmnlmnomnopnopq")));
 
         //#calculating-digest2
-        final Source<ByteString, BoxedUnit> digest = data
+        final Source<ByteString, NotUsed> digest = data
           .transform(() -> digestCalculator("SHA-256"));
         //#calculating-digest2
 

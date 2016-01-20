@@ -3,6 +3,7 @@
  */
 package akka.stream.io
 
+import akka.NotUsed
 import akka.actor.{ ActorSystem, Kill }
 import akka.io.Tcp._
 import akka.stream.scaladsl.Tcp.IncomingConnection
@@ -342,7 +343,7 @@ class TcpSpec extends AkkaSpec("akka.stream.materializer.subscription-timeout.ti
 
     "properly full-close if requested" in assertAllStagesStopped {
       val serverAddress = temporaryServerAddress()
-      val writeButIgnoreRead: Flow[ByteString, ByteString, Unit] =
+      val writeButIgnoreRead: Flow[ByteString, ByteString, NotUsed] =
         Flow.fromSinkAndSourceMat(Sink.ignore, Source.single(ByteString("Early response")))(Keep.right)
 
       val binding =

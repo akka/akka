@@ -7,6 +7,7 @@ package akka.stream.io
 import java.io.{FileInputStream, File}
 import java.util.concurrent.TimeUnit
 
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream.{Attributes, ActorMaterializer}
 import akka.stream.scaladsl._
@@ -47,7 +48,7 @@ class FileSourcesBenchmark {
 
   var fileChannelSource: Source[ByteString, Future[Long]] = _
   var fileInputStreamSource: Source[ByteString, Future[Long]] = _
-  var ioSourceLinesIterator: Source[ByteString, Unit] = _
+  var ioSourceLinesIterator: Source[ByteString, NotUsed] = _
 
   @Setup
   def setup() {
@@ -95,7 +96,7 @@ class FileSourcesBenchmark {
    */
   @Benchmark
   def naive_ioSourceLinesIterator() = {
-    val p = Promise[Unit]()
+    val p = Promise[Done]()
     ioSourceLinesIterator.to(Sink.onComplete(p.complete(_))).run()
 
     Await.result(p.future, 30.seconds)
