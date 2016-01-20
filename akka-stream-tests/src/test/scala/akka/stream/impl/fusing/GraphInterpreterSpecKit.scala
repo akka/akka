@@ -298,14 +298,18 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
       .init()
   }
 
-  abstract class OneBoundedSetup[T](ops: Array[GraphStageWithMaterializedValue[Shape, Any]]) extends Builder {
+  implicit class ToGraphStage[I, O](stage: Stage[I, O]) {
+    def toGS =
+      new PushPullGraphStage[Any, Any, Any](
+        (_) ⇒ stage.asInstanceOf[Stage[Any, Any]],
+        Attributes.none)
+  }
 
-    def this(ops: Iterable[Stage[_, _]]) = {
-      this(ops.map { op ⇒
-        new PushPullGraphStage[Any, Any, Any](
-          (_) ⇒ op.asInstanceOf[Stage[Any, Any]],
-          Attributes.none)
-      }.toArray.asInstanceOf[Array[GraphStageWithMaterializedValue[Shape, Any]]])
+  abstract class OneBoundedSetup[T](_ops: GraphStageWithMaterializedValue[Shape, Any]*) extends Builder {
+    val ops = _ops.toArray
+
+    def this(op: Seq[Stage[_, _]], dummy: Int = 42) = {
+      this(op.map(_.toGS): _*)
     }
 
     val upstream = new UpstreamOneBoundedProbe[T]
@@ -339,7 +343,7 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
       outOwners(0) = Boundary
 
       while (i < ops.length) {
-        val stage = ops(i).asInstanceOf[PushPullGraphStage[_, _, _]]
+        val stage = ops(i).asInstanceOf[GraphStageWithMaterializedValue[FlowShape[_, _], _]]
         ins(i) = stage.shape.in
         inOwners(i) = i
         outs(i + 1) = stage.shape.out

@@ -109,7 +109,7 @@ public class RateTransformationDocTest {
   public void expandShouldRepeatLast() throws Exception {
     //#expand-last
     final Flow<Double, Double, NotUsed> lastFlow = Flow.of(Double.class)
-      .expand(d -> d, s -> new Pair<>(s, s));
+      .expand(in -> Stream.iterate(in, i -> i).iterator());
     //#expand-last
 
     final Pair<TestPublisher.Probe<Double>, Future<List<Double>>> probeFut = TestSource.<Double> probe(system)
@@ -132,15 +132,11 @@ public class RateTransformationDocTest {
     @SuppressWarnings("unused")
     //#expand-drift
 	final Flow<Double, Pair<Double, Integer>, NotUsed> driftFlow = Flow.of(Double.class)
-      .expand(d -> new Pair<Double, Integer>(d, 0), t -> {
-        return new Pair<>(t, new Pair<>(t.first(), t.second() + 1));
-      });
+      .expand(d -> Stream.iterate(0, i -> i + 1).map(i -> new Pair<>(d, i)).iterator());
     //#expand-drift
     final TestLatch latch = new TestLatch(2, system);
     final Flow<Double, Pair<Double, Integer>, NotUsed> realDriftFlow = Flow.of(Double.class)
-    	      .expand(d -> { latch.countDown(); return new Pair<Double, Integer>(d, 0); }, t -> {
-    	        return new Pair<>(t, new Pair<>(t.first(), t.second() + 1));
-    	      });
+    	      .expand(d -> { latch.countDown(); return Stream.iterate(0, i -> i + 1).map(i -> new Pair<>(d, i)).iterator(); });
 
     final Pair<TestPublisher.Probe<Double>, TestSubscriber.Probe<Pair<Double, Integer>>> pubSub = TestSource.<Double> probe(system)
       .via(realDriftFlow)

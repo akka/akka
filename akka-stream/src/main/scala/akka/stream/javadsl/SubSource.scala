@@ -662,7 +662,7 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    *
    * '''Emits when''' downstream stops backpressuring
    *
-   * '''Backpressures when''' downstream backpressures
+   * '''Backpressures when''' downstream backpressures or iterator runs emtpy
    *
    * '''Completes when''' upstream completes
    *
@@ -672,11 +672,8 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
    *                    state.
    */
-  def expand[S, U](seed: function.Function[Out, S], extrapolate: function.Function[S, akka.japi.Pair[U, S]]): SubSource[U, Mat] =
-    new SubSource(delegate.expand(seed(_))(s ⇒ {
-      val p = extrapolate(s)
-      (p.first, p.second)
-    }))
+  def expand[U](extrapolate: function.Function[Out, java.util.Iterator[U]]): SubSource[U, Mat] =
+    new SubSource(delegate.expand(in ⇒ extrapolate(in).asScala))
 
   /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.

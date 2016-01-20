@@ -36,6 +36,7 @@ The Current List of Modules
    peek-mailbox
    aggregator
    receive-pipeline
+   circuitbreaker
 
 Suggested Way of Using these Contributions
 ------------------------------------------
