@@ -3,6 +3,8 @@
  */
 package docs.stream;
 
+import akka.Done;
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.dispatch.Foreach;
 import akka.japi.JavaPartialFunction;
@@ -20,7 +22,6 @@ import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -167,7 +168,7 @@ public class TwitterStreamQuickstartDocTest {
     public static final Hashtag AKKA = new Hashtag("#akka");
     //#model
 
-    public static final Source<Tweet, BoxedUnit> tweets = Source.from(
+    public static final Source<Tweet, NotUsed> tweets = Source.from(
       Arrays.asList(new Tweet[] {
         new Tweet(new Author("rolandkuhn"), System.currentTimeMillis(), "#akka rocks!"),
         new Tweet(new Author("patriknw"), System.currentTimeMillis(), "#akka !"),
@@ -184,7 +185,7 @@ public class TwitterStreamQuickstartDocTest {
 
   static abstract class Example0 {
     //#tweet-source
-    Source<Tweet, BoxedUnit> tweets;
+    Source<Tweet, NotUsed> tweets;
     //#tweet-source
   }
 
@@ -220,7 +221,7 @@ public class TwitterStreamQuickstartDocTest {
     //#first-sample
 
     //#authors-filter-map
-    final Source<Author, BoxedUnit> authors =
+    final Source<Author, NotUsed> authors =
       tweets
         .filter(t -> t.hashtags().contains(AKKA))
         .map(t -> t.author);
@@ -241,7 +242,7 @@ public class TwitterStreamQuickstartDocTest {
           }
         };
 
-      final Source<Author, BoxedUnit> authors =
+      final Source<Author, NotUsed> authors =
         tweets.collect(collectFunction);
       //#authors-collect
     };
@@ -261,22 +262,22 @@ public class TwitterStreamQuickstartDocTest {
   @Test
   public void demonstrateMapConcat() {
     //#hashtags-mapConcat
-    final Source<Hashtag, BoxedUnit> hashtags =
+    final Source<Hashtag, NotUsed> hashtags =
       tweets.mapConcat(t -> new ArrayList<Hashtag>(t.hashtags()));
     //#hashtags-mapConcat
   }
 
   static abstract class HiddenDefinitions {
     //#flow-graph-broadcast
-    Sink<Author, BoxedUnit> writeAuthors;
-    Sink<Hashtag, BoxedUnit> writeHashtags;
+    Sink<Author, NotUsed> writeAuthors;
+    Sink<Hashtag, NotUsed> writeHashtags;
     //#flow-graph-broadcast
   }
 
   @Test
   public void demonstrateBroadcast() {
-    final Sink<Author, Future<BoxedUnit>> writeAuthors = Sink.ignore();
-    final Sink<Hashtag, Future<BoxedUnit>> writeHashtags = Sink.ignore();
+    final Sink<Author, Future<Done>> writeAuthors = Sink.ignore();
+    final Sink<Hashtag, Future<Done>> writeHashtags = Sink.ignore();
 
     //#flow-graph-broadcast
     RunnableGraph.fromGraph(GraphDSL.create(b -> {
@@ -340,7 +341,7 @@ public class TwitterStreamQuickstartDocTest {
 
   @Test
   public void demonstrateMaterializeMultipleTimes() {
-    final Source<Tweet, BoxedUnit> tweetsInMinuteFromNow = tweets; // not really in second, just acting as if
+    final Source<Tweet, NotUsed> tweetsInMinuteFromNow = tweets; // not really in second, just acting as if
 
     //#tweets-runnable-flow-materialized-twice
     final Sink<Integer, Future<Integer>> sumSink =

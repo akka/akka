@@ -3,6 +3,7 @@
  */
 package akka.stream.impl.fusing
 
+import akka.NotUsed
 import akka.stream.{ OverflowStrategy, Attributes }
 import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.testkit.AkkaSpec
@@ -340,7 +341,7 @@ class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
     "implement buffer" in new TestSetup {
       val source = new UpstreamProbe[String]("source")
       val sink = new DownstreamProbe[String]("sink")
-      val buffer = new PushPullGraphStage[String, String, Unit](
+      val buffer = new PushPullGraphStage[String, String, NotUsed](
         (_) ⇒ new Buffer[String](2, OverflowStrategy.backpressure),
         Attributes.none)
 

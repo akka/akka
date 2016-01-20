@@ -3,6 +3,8 @@
  */
 package docs.stream.javadsl.cookbook;
 
+import akka.Done;
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.*;
 import akka.stream.javadsl.*;
@@ -11,7 +13,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.Future;
-import scala.runtime.BoxedUnit;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +38,7 @@ public class RecipeDroppyBroadcast extends RecipeTest {
     new JavaTestKit(system) {
       //#droppy-bcast
       // Makes a sink drop elements if too slow
-      public <T> Sink<T, Future<BoxedUnit>> droppySink(Sink<T, Future<BoxedUnit>> sink, int size) {
+      public <T> Sink<T, Future<Done>> droppySink(Sink<T, Future<Done>> sink, int size) {
         return Flow.<T> create()
           .buffer(size, OverflowStrategy.dropHead())
           .toMat(sink, Keep.right());
@@ -50,11 +51,11 @@ public class RecipeDroppyBroadcast extends RecipeTest {
           nums.add(i + 1);
         }
 
-        final Sink<Integer, Future<BoxedUnit>> mySink1 = Sink.ignore();
-        final Sink<Integer, Future<BoxedUnit>> mySink2 = Sink.ignore();
-        final Sink<Integer, Future<BoxedUnit>> mySink3 = Sink.ignore();
+        final Sink<Integer, Future<Done>> mySink1 = Sink.ignore();
+        final Sink<Integer, Future<Done>> mySink2 = Sink.ignore();
+        final Sink<Integer, Future<Done>> mySink3 = Sink.ignore();
 
-        final Source<Integer, BoxedUnit> myData = Source.from(nums);
+        final Source<Integer, NotUsed> myData = Source.from(nums);
 
         //#droppy-bcast2
         RunnableGraph.fromGraph(GraphDSL.create(builder -> {

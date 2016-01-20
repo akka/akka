@@ -4,6 +4,7 @@
 
 package docs.http.javadsl.server;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.dispatch.OnFailure;
 import akka.http.impl.util.Util;
@@ -98,7 +99,7 @@ public class HttpServerExampleDocTest {
         Source<IncomingConnection, Future<ServerBinding>> serverSource =
             Http.get(system).bind("localhost", 8080, materializer);
 
-        Flow<IncomingConnection, IncomingConnection, BoxedUnit> failureDetection =
+        Flow<IncomingConnection, IncomingConnection, NotUsed> failureDetection =
             Flow.of(IncomingConnection.class).transform(() ->
                 new PushStage<IncomingConnection, IncomingConnection>() {
                     @Override
@@ -136,7 +137,7 @@ public class HttpServerExampleDocTest {
         Source<IncomingConnection, Future<ServerBinding>> serverSource =
             Http.get(system).bind("localhost", 8080, materializer);
 
-        Flow<HttpRequest, HttpRequest, BoxedUnit> failureDetection =
+        Flow<HttpRequest, HttpRequest, NotUsed> failureDetection =
                 Flow.of(HttpRequest.class).transform(() ->
                 new PushStage<HttpRequest, HttpRequest>() {
                     @Override
@@ -151,7 +152,7 @@ public class HttpServerExampleDocTest {
                     }
                 });
 
-        Flow<HttpRequest, HttpResponse, BoxedUnit> httpEcho =
+        Flow<HttpRequest, HttpResponse, NotUsed> httpEcho =
                 Flow.of(HttpRequest.class)
                     .via(failureDetection)
                     .map(request -> {

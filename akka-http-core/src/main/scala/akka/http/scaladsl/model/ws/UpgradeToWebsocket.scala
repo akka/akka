@@ -5,10 +5,10 @@
 package akka.http.scaladsl.model.ws
 
 import java.lang.Iterable
-import akka.http.impl.util.JavaMapping
-
 import scala.collection.immutable
+import akka.NotUsed
 import akka.stream._
+import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.model.HttpResponse
 
@@ -85,6 +85,6 @@ trait UpgradeToWebsocket extends jm.ws.UpgradeToWebsocket {
                          subprotocol: String): HttpResponse =
     handleMessages(createScalaFlow(inSink, outSource), subprotocol = Some(subprotocol))
 
-  private[this] def createScalaFlow(inSink: Graph[SinkShape[jm.ws.Message], _ <: Any], outSource: Graph[SourceShape[jm.ws.Message], _ <: Any]): Graph[FlowShape[Message, Message], Unit] =
-    JavaMapping.toScala(scaladsl.Flow.fromSinkAndSourceMat(inSink, outSource)(scaladsl.Keep.none): Graph[FlowShape[jm.ws.Message, jm.ws.Message], Unit])
+  private[this] def createScalaFlow(inSink: Graph[SinkShape[jm.ws.Message], _ <: Any], outSource: Graph[SourceShape[jm.ws.Message], _ <: Any]): Graph[FlowShape[Message, Message], NotUsed] =
+    JavaMapping.toScala(scaladsl.Flow.fromSinkAndSourceMat(inSink, outSource)(scaladsl.Keep.none): Graph[FlowShape[jm.ws.Message, jm.ws.Message], NotUsed])
 }

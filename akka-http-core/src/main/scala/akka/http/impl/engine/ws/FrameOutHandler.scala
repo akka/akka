@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.ws
 
+import akka.NotUsed
 import akka.event.LoggingAdapter
 import akka.stream.scaladsl.Flow
 import scala.concurrent.duration.FiniteDuration
@@ -145,6 +146,6 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
 private[http] object FrameOutHandler {
   type Input = AnyRef
 
-  def create(serverSide: Boolean, closeTimeout: FiniteDuration, log: LoggingAdapter): Flow[Input, FrameStart, Unit] =
+  def create(serverSide: Boolean, closeTimeout: FiniteDuration, log: LoggingAdapter): Flow[Input, FrameStart, NotUsed] =
     Flow[Input].transform(() ⇒ new FrameOutHandler(serverSide, closeTimeout, log))
 }

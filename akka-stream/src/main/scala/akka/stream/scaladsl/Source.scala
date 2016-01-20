@@ -4,6 +4,7 @@
 package akka.stream.scaladsl
 
 import java.io.{ OutputStream, InputStream, File }
+import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.{ DefaultAttributes, StageModule }
@@ -107,7 +108,8 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * normal end of the stream, or completed with `Failure` if there is a failure signaled in
    * the stream.
    */
-  def runForeach(f: Out ⇒ Unit)(implicit materializer: Materializer): Future[Unit] = runWith(Sink.foreach(f))
+  // FIXME: Out => Unit should stay, right??
+  def runForeach(f: Out ⇒ Unit)(implicit materializer: Materializer): Future[Done] = runWith(Sink.foreach(f))
 
   /**
    * Change the attributes of this [[Source]] to the given ones and seal the list
@@ -138,7 +140,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
   /**
    * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
    */
-  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], Unit]): Source[U, Unit] =
+  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
     Source.fromGraph(GraphDSL.create() { implicit b ⇒
       import GraphDSL.Implicits._
       val c = b.add(strategy(rest.size + 2))
@@ -167,7 +169,7 @@ object Source {
    * that mediate the flow of elements downstream and the propagation of
    * back-pressure upstream.
    */
-  def fromPublisher[T](publisher: Publisher[T]): Source[T, Unit] =
+  def fromPublisher[T](publisher: Publisher[T]): Source[T, NotUsed] =
     new Source(new PublisherSource(publisher, DefaultAttributes.publisherSource, shape("PublisherSource")))
 
   /**
@@ -180,7 +182,7 @@ object Source {
    * Elements are pulled out of the iterator in accordance with the demand coming
    * from the downstream transformation steps.
    */
-  def fromIterator[T](f: () ⇒ Iterator[T]): Source[T, Unit] =
+  def fromIterator[T](f: () ⇒ Iterator[T]): Source[T, NotUsed] =
     apply(new immutable.Iterable[T] {
       override def iterator: Iterator[T] = f()
       override def toString: String = "() => Iterator"
@@ -205,7 +207,7 @@ object Source {
    * stream will see an individual flow of elements (always starting from the
    * beginning) regardless of when they subscribed.
    */
-  def apply[T](iterable: immutable.Iterable[T]): Source[T, Unit] =
+  def apply[T](iterable: immutable.Iterable[T]): Source[T, NotUsed] =
     single(iterable).mapConcat(ConstantFun.scalaIdentityFunction).withAttributes(DefaultAttributes.iterableSource)
 
   /**
@@ -214,7 +216,7 @@ object Source {
    * may happen before or after materializing the `Flow`.
    * The stream terminates with a failure if the `Future` is completed with a failure.
    */
-  def fromFuture[T](future: Future[T]): Source[T, Unit] =
+  def fromFuture[T](future: Future[T]): Source[T, NotUsed] =
     fromGraph(new FutureSource(future))
 
   /**
@@ -231,13 +233,13 @@ object Source {
    * Create a `Source` with one element.
    * Every connected `Sink` of this stream will see an individual stream consisting of one element.
    */
-  def single[T](element: T): Source[T, Unit] =
+  def single[T](element: T): Source[T, NotUsed] =
     fromGraph(new GraphStages.SingleSource(element))
 
   /**
    * Create a `Source` that will continually emit the given element.
    */
-  def repeat[T](element: T): Source[T, Unit] = {
+  def repeat[T](element: T): Source[T, NotUsed] = {
     val next = Some((element, element))
     unfold(element)(_ ⇒ next).withAttributes(DefaultAttributes.repeat)
   }
@@ -255,7 +257,7 @@ object Source {
    *   }
    * }}}
    */
-  def unfold[S, E](s: S)(f: S ⇒ Option[(S, E)]): Source[E, Unit] =
+  def unfold[S, E](s: S)(f: S ⇒ Option[(S, E)]): Source[E, NotUsed] =
     Source.fromGraph(new Unfold(s, f))
 
   /**
@@ -273,14 +275,14 @@ object Source {
    *   }
    * }}}
    */
-  def unfoldAsync[S, E](s: S)(f: S ⇒ Future[Option[(S, E)]]): Source[E, Unit] =
+  def unfoldAsync[S, E](s: S)(f: S ⇒ Future[Option[(S, E)]]): Source[E, NotUsed] =
     Source.fromGraph(new UnfoldAsync(s, f))
 
   /**
    * A `Source` with no elements, i.e. an empty stream that is completed immediately for every connected `Sink`.
    */
-  def empty[T]: Source[T, Unit] = _empty
-  private[this] val _empty: Source[Nothing, Unit] =
+  def empty[T]: Source[T, NotUsed] = _empty
+  private[this] val _empty: Source[Nothing, NotUsed] =
     new Source(
       new PublisherSource[Nothing](
         EmptyPublisher,
@@ -304,7 +306,7 @@ object Source {
   /**
    * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
    */
-  def failed[T](cause: Throwable): Source[T, Unit] =
+  def failed[T](cause: Throwable): Source[T, NotUsed] =
     new Source(
       new PublisherSource(
         ErrorPublisher(cause, "FailedSource")[T],
@@ -366,7 +368,7 @@ object Source {
   /**
    * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
    */
-  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], Unit]): Source[U, Unit] =
+  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
     Source.fromGraph(GraphDSL.create() { implicit b ⇒
       import GraphDSL.Implicits._
       val c = b.add(strategy(rest.size + 2))

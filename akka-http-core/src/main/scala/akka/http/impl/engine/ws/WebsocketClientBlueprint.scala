@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.ws
 
+import akka.NotUsed
 import akka.http.scaladsl.model.ws._
 
 import scala.concurrent.{ Future, Promise }
@@ -129,7 +130,7 @@ object WebsocketClientBlueprint {
     }) mapMaterializedValue (_ ⇒ result.future)
   }
 
-  def simpleTls: BidiFlow[SslTlsInbound, ByteString, ByteString, SendBytes, Unit] =
+  def simpleTls: BidiFlow[SslTlsInbound, ByteString, ByteString, SendBytes, NotUsed] =
     BidiFlow.fromFlowsMat(
       Flow[SslTlsInbound].collect { case SessionBytes(_, bytes) ⇒ bytes },
       Flow[ByteString].map(SendBytes))(Keep.none)

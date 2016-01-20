@@ -5,6 +5,7 @@ package docs.stream
 
 //#imports
 
+import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
 import akka.stream.{ ClosedShape, ActorMaterializer, OverflowStrategy }
 import akka.stream.scaladsl._
@@ -73,7 +74,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     //#first-sample
 
     //#authors-filter-map
-    val authors: Source[Author, Unit] =
+    val authors: Source[Author, NotUsed] =
       tweets
         .filter(_.hashtags.contains(akka))
         .map(_.author)
@@ -82,7 +83,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
     trait Example3 {
       //#authors-collect
-      val authors: Source[Author, Unit] =
+      val authors: Source[Author, NotUsed] =
         tweets.collect { case t if t.hashtags.contains(akka) => t.author }
       //#authors-collect
     }
@@ -101,7 +102,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
   "mapConcat hashtags" in {
     //#hashtags-mapConcat
-    val hashtags: Source[Hashtag, Unit] = tweets.mapConcat(_.hashtags.toList)
+    val hashtags: Source[Hashtag, NotUsed] = tweets.mapConcat(_.hashtags.toList)
     //#hashtags-mapConcat
   }
 
@@ -113,8 +114,8 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
   }
 
   "simple broadcast" in {
-    val writeAuthors: Sink[Author, Future[Unit]] = Sink.ignore
-    val writeHashtags: Sink[Hashtag, Future[Unit]] = Sink.ignore
+    val writeAuthors: Sink[Author, Future[Done]] = Sink.ignore
+    val writeHashtags: Sink[Hashtag, Future[Done]] = Sink.ignore
 
     // format: OFF
     //#flow-graph-broadcast
@@ -151,7 +152,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
       import scala.concurrent.duration._
 
       //#backpressure-by-readline
-      val completion: Future[Unit] =
+      val completion: Future[Done] =
         Source(1 to 10)
           .map(i => { println(s"map => $i"); i })
           .runForeach { i => readLine(s"Element = $i; continue reading? [press enter]\n") }
@@ -163,7 +164,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
   "count elements on finite stream" in {
     //#tweets-fold-count
-    val count: Flow[Tweet, Int, Unit] = Flow[Tweet].map(_ => 1)
+    val count: Flow[Tweet, Int, NotUsed] = Flow[Tweet].map(_ => 1)
 
     val sumSink: Sink[Int, Future[Int]] = Sink.fold[Int, Int](0)(_ + _)
 

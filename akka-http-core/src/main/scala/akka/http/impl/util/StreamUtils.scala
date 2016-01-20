@@ -6,6 +6,7 @@ package akka.http.impl.util
 
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 
+import akka.NotUsed
 import akka.http.scaladsl.model.RequestEntity
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
@@ -51,7 +52,7 @@ private[http] object StreamUtils {
   def failedPublisher[T](ex: Throwable): Publisher[T] =
     impl.ErrorPublisher(ex, "failed").asInstanceOf[Publisher[T]]
 
-  def mapErrorTransformer(f: Throwable ⇒ Throwable): Flow[ByteString, ByteString, Unit] = {
+  def mapErrorTransformer(f: Throwable ⇒ Throwable): Flow[ByteString, ByteString, NotUsed] = {
     val transformer = new PushStage[ByteString, ByteString] {
       override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective =
         ctx.push(element)
@@ -79,7 +80,7 @@ private[http] object StreamUtils {
     source.transform(() ⇒ transformer) -> promise.future
   }
 
-  def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString, Unit] = {
+  def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString, NotUsed] = {
     val transformer = new StatefulStage[ByteString, ByteString] {
 
       def skipping = new State {
@@ -289,7 +290,7 @@ private[http] object StreamUtils {
    * Similar to Source.maybe but doesn't rely on materialization. Can only be used once.
    */
   trait OneTimeValve {
-    def source[T]: Source[T, Unit]
+    def source[T]: Source[T, NotUsed]
     def open(): Unit
   }
   object OneTimeValve {
@@ -297,7 +298,7 @@ private[http] object StreamUtils {
       val promise = Promise[Unit]()
       val _source = Source.fromFuture(promise.future).drop(1) // we are only interested in the completion event
 
-      def source[T]: Source[T, Unit] = _source.asInstanceOf[Source[T, Unit]] // safe, because source won't generate any elements
+      def source[T]: Source[T, NotUsed] = _source.asInstanceOf[Source[T, NotUsed]] // safe, because source won't generate any elements
       def open(): Unit = promise.success(())
     }
   }

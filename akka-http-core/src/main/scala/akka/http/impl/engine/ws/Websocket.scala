@@ -5,6 +5,7 @@
 package akka.http.impl.engine.ws
 
 import java.util.Random
+import akka.NotUsed
 import akka.event.LoggingAdapter
 import akka.util.ByteString
 import scala.concurrent.duration._
@@ -28,20 +29,20 @@ private[http] object Websocket {
   def stack(serverSide: Boolean,
             maskingRandomFactory: () ⇒ Random,
             closeTimeout: FiniteDuration = 3.seconds,
-            log: LoggingAdapter): BidiFlow[FrameEvent, Message, Message, FrameEvent, Unit] =
+            log: LoggingAdapter): BidiFlow[FrameEvent, Message, Message, FrameEvent, NotUsed] =
     masking(serverSide, maskingRandomFactory) atop
       frameHandling(serverSide, closeTimeout, log) atop
       messageAPI(serverSide, closeTimeout)
 
   /** The lowest layer that implements the binary protocol */
-  def framing: BidiFlow[ByteString, FrameEvent, FrameEvent, ByteString, Unit] =
+  def framing: BidiFlow[ByteString, FrameEvent, FrameEvent, ByteString, NotUsed] =
     BidiFlow.fromFlows(
       Flow[ByteString].via(FrameEventParser),
       Flow[FrameEvent].transform(() ⇒ new FrameEventRenderer))
       .named("ws-framing")
 
   /** The layer that handles masking using the rules defined in the specification */
-  def masking(serverSide: Boolean, maskingRandomFactory: () ⇒ Random): BidiFlow[FrameEvent, FrameEventOrError, FrameEvent, FrameEvent, Unit] =
+  def masking(serverSide: Boolean, maskingRandomFactory: () ⇒ Random): BidiFlow[FrameEvent, FrameEventOrError, FrameEvent, FrameEvent, NotUsed] =
     Masking(serverSide, maskingRandomFactory)
       .named("ws-masking")
 
@@ -51,7 +52,7 @@ private[http] object Websocket {
    */
   def frameHandling(serverSide: Boolean = true,
                     closeTimeout: FiniteDuration,
-                    log: LoggingAdapter): BidiFlow[FrameEventOrError, FrameHandler.Output, FrameOutHandler.Input, FrameStart, Unit] =
+                    log: LoggingAdapter): BidiFlow[FrameEventOrError, FrameHandler.Output, FrameOutHandler.Input, FrameStart, NotUsed] =
     BidiFlow.fromFlows(
       FrameHandler.create(server = serverSide),
       FrameOutHandler.create(serverSide, closeTimeout, log))
@@ -61,7 +62,7 @@ private[http] object Websocket {
    * The layer that provides the high-level user facing API on top of frame handling.
    */
   def messageAPI(serverSide: Boolean,
-                 closeTimeout: FiniteDuration): BidiFlow[FrameHandler.Output, Message, Message, FrameOutHandler.Input, Unit] = {
+                 closeTimeout: FiniteDuration): BidiFlow[FrameHandler.Output, Message, Message, FrameOutHandler.Input, NotUsed] = {
     /* Completes this branch of the flow if no more messages are expected and converts close codes into errors */
     class PrepareForUserHandler extends PushStage[MessagePart, MessagePart] {
       var inMessage = false
@@ -81,7 +82,7 @@ private[http] object Websocket {
     }
 
     /* Collects user-level API messages from MessageDataParts */
-    val collectMessage: Flow[MessageDataPart, Message, Unit] =
+    val collectMessage: Flow[MessageDataPart, Message, NotUsed] =
       Flow[MessageDataPart]
         .prefixAndTail(1)
         .mapConcat {
@@ -110,7 +111,7 @@ private[http] object Websocket {
           }) :: Nil
         }
 
-    def prepareMessages: Flow[MessagePart, Message, Unit] =
+    def prepareMessages: Flow[MessagePart, Message, NotUsed] =
       Flow[MessagePart]
         .transform(() ⇒ new PrepareForUserHandler)
         .splitWhen(_.isMessageEnd) // FIXME using splitAfter from #16885 would simplify protocol a lot
@@ -121,7 +122,7 @@ private[http] object Websocket {
         .concatSubstreams
         .named("ws-prepare-messages")
 
-    def renderMessages: Flow[Message, FrameStart, Unit] =
+    def renderMessages: Flow[Message, FrameStart, NotUsed] =
       MessageToFrameRenderer.create(serverSide)
         .named("ws-render-messages")
 

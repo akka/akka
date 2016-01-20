@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.coding
 
+import akka.NotUsed
 import akka.http.scaladsl.model._
 import akka.stream.Materializer
 import akka.stream.stage.Stage
@@ -26,7 +27,7 @@ trait Decoder {
   def maxBytesPerChunk: Int
   def withMaxBytesPerChunk(maxBytesPerChunk: Int): Decoder
 
-  def decoderFlow: Flow[ByteString, ByteString, Unit]
+  def decoderFlow: Flow[ByteString, ByteString, NotUsed]
   def decode(input: ByteString)(implicit mat: Materializer): Future[ByteString] =
     Source.single(input).via(decoderFlow).runWith(Sink.fold(ByteString.empty)(_ ++ _))
 }
@@ -48,7 +49,7 @@ trait StreamDecoder extends Decoder { outer ⇒
         outer.newDecompressorStage(maxBytesPerChunk)
     }
 
-  def decoderFlow: Flow[ByteString, ByteString, Unit] =
+  def decoderFlow: Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].transform(newDecompressorStage(maxBytesPerChunk))
 
 }

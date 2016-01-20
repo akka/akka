@@ -3,6 +3,7 @@
  */
 package docs.stream;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import akka.http.javadsl.model.Uri;
@@ -19,7 +20,6 @@ import scala.Option;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
 import scala.concurrent.Promise;
-import scala.runtime.BoxedUnit;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -67,30 +67,30 @@ public class MigrationsJava {
     Inlet<Integer> inlet1 = null;
     Inlet<Integer> inlet2 = null;
 
-    Flow<Integer, Integer, BoxedUnit> flow = Flow.of(Integer.class);
-    Flow<Integer, Integer, BoxedUnit> flow1 = Flow.of(Integer.class);
-    Flow<Integer, Integer, BoxedUnit> flow2 = Flow.of(Integer.class);
+    Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class);
+    Flow<Integer, Integer, NotUsed> flow1 = Flow.of(Integer.class);
+    Flow<Integer, Integer, NotUsed> flow2 = Flow.of(Integer.class);
 
     Promise<Option<Integer>> promise = null;
 
 
     {
-      Graph<SourceShape<Integer>, BoxedUnit> graphSource = null;
-      Graph<SinkShape<Integer>, BoxedUnit> graphSink = null;
-      Graph<FlowShape<Integer, Integer>, BoxedUnit> graphFlow = null;
+      Graph<SourceShape<Integer>, NotUsed> graphSource = null;
+      Graph<SinkShape<Integer>, NotUsed> graphSink = null;
+      Graph<FlowShape<Integer, Integer>, NotUsed> graphFlow = null;
 
       //#flow-wrap
-      Source<Integer, BoxedUnit> source = Source.fromGraph(graphSource);
-      Sink<Integer, BoxedUnit> sink = Sink.fromGraph(graphSink);
-      Flow<Integer, Integer, BoxedUnit> aflow = Flow.fromGraph(graphFlow);
+      Source<Integer, NotUsed> source = Source.fromGraph(graphSource);
+      Sink<Integer, NotUsed> sink = Sink.fromGraph(graphSink);
+      Flow<Integer, Integer, NotUsed> aflow = Flow.fromGraph(graphFlow);
       Flow.fromSinkAndSource(Sink.<Integer>head(), Source.single(0));
       Flow.fromSinkAndSourceMat(Sink.<Integer>head(), Source.single(0), Keep.left());
       //#flow-wrap
 
-      Graph<BidiShape<Integer, Integer, Integer, Integer>, BoxedUnit> bidiGraph = null;
+      Graph<BidiShape<Integer, Integer, Integer, Integer>, NotUsed> bidiGraph = null;
 
       //#bidi-wrap
-      BidiFlow<Integer, Integer, Integer, Integer, BoxedUnit> bidiFlow =
+      BidiFlow<Integer, Integer, Integer, Integer, NotUsed> bidiFlow =
         BidiFlow.fromGraph(bidiGraph);
       BidiFlow.fromFlows(flow1, flow2);
       BidiFlow.fromFlowsMat(flow1, flow2, Keep.both());
@@ -158,10 +158,10 @@ public class MigrationsJava {
       FiniteDuration.create(200, TimeUnit.MILLISECONDS),
       "tick");
 
-    final Source<Integer, BoxedUnit> pubSource =
+    final Source<Integer, NotUsed> pubSource =
       Source.fromPublisher(TestPublisher.<Integer>manualProbe(true, sys));
 
-    final Source<Integer, BoxedUnit> futSource =
+    final Source<Integer, NotUsed> futSource =
       Source.fromFuture(Futures.successful(42));
 
     final Source<Integer, Subscriber<Integer>> subSource =
@@ -169,7 +169,7 @@ public class MigrationsJava {
     //#source-creators
 
     //#sink-creators
-    final Sink<Integer, BoxedUnit> subSink =
+    final Sink<Integer, NotUsed> subSink =
       Sink.fromSubscriber(TestSubscriber.<Integer>manualProbe(sys));
     //#sink-creators
 
@@ -182,14 +182,14 @@ public class MigrationsJava {
     //#sink-as-publisher
 
     //#empty-flow
-    Flow<Integer, Integer, BoxedUnit> emptyFlow = Flow.<Integer>create();
+    Flow<Integer, Integer, NotUsed> emptyFlow = Flow.<Integer>create();
     // or
-    Flow<Integer, Integer, BoxedUnit> emptyFlow2 = Flow.of(Integer.class);
+    Flow<Integer, Integer, NotUsed> emptyFlow2 = Flow.of(Integer.class);
     //#empty-flow
 
     //#flatMapConcat
-    Flow.<Source<Integer, BoxedUnit>>create().
-      <Integer, BoxedUnit>flatMapConcat(i -> i);
+    Flow.<Source<Integer, NotUsed>>create().
+      <Integer, NotUsed>flatMapConcat(i -> i);
     //#flatMapConcat
 
     //#group-flatten

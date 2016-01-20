@@ -5,6 +5,8 @@ package akka.stream.javadsl
 
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.Optional
+import akka.NotUsed
+
 import scala.collection.immutable
 import scala.concurrent.duration._
 import java.net.InetSocketAddress
@@ -69,7 +71,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
      * A flow representing the client on the other side of the connection.
      * This flow can be materialized only once.
      */
-    def flow: Flow[ByteString, ByteString, Unit] = new Flow(delegate.flow)
+    def flow: Flow[ByteString, ByteString, NotUsed] = new Flow(delegate.flow)
   }
 
   /**

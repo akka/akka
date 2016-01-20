@@ -8,6 +8,8 @@ import static org.junit.Assert.assertEquals;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import akka.Done;
+import akka.NotUsed;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -15,7 +17,6 @@ import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import scala.runtime.BoxedUnit;
 import akka.actor.*;
 import akka.japi.Pair;
 import akka.stream.*;
@@ -43,10 +44,10 @@ public class StreamPartialFlowGraphDocTest {
   @Test
   public void demonstrateBuildWithOpenPorts() throws Exception {
     //#simple-partial-flow-graph
-    final Graph<FanInShape2<Integer, Integer, Integer>, BoxedUnit> zip =
+    final Graph<FanInShape2<Integer, Integer, Integer>, NotUsed> zip =
       ZipWith.create((Integer left, Integer right) -> Math.max(left, right));
     
-    final Graph<UniformFanInShape<Integer, Integer>, BoxedUnit> pickMaxOfThree =
+    final Graph<UniformFanInShape<Integer, Integer>, NotUsed> pickMaxOfThree =
         GraphDSL.create(builder -> {
           final FanInShape2<Integer, Integer, Integer> zip1 = builder.add(zip);
           final FanInShape2<Integer, Integer, Integer> zip2 = builder.add(zip);
@@ -95,9 +96,9 @@ public class StreamPartialFlowGraphDocTest {
   @Test
   public void demonstrateBuildSourceFromPartialFlowGraphCreate() throws Exception {
     //#source-from-partial-flow-graph
-    final Source<Integer, BoxedUnit> ints = Source.fromIterator(() -> new Ints());
+    final Source<Integer, NotUsed> ints = Source.fromIterator(() -> new Ints());
     
-    final Source<Pair<Integer, Integer>, BoxedUnit> pairs = Source.fromGraph(
+    final Source<Pair<Integer, Integer>, NotUsed> pairs = Source.fromGraph(
       GraphDSL.create(
         builder -> {
           final FanInShape2<Integer, Integer, Pair<Integer, Integer>> zip =
@@ -118,7 +119,7 @@ public class StreamPartialFlowGraphDocTest {
   @Test
   public void demonstrateBuildFlowFromPartialFlowGraphCreate() throws Exception {
     //#flow-from-partial-flow-graph
-    final Flow<Integer, Pair<Integer, String>, BoxedUnit> pairs = Flow.fromGraph(GraphDSL.create(
+    final Flow<Integer, Pair<Integer, String>, NotUsed> pairs = Flow.fromGraph(GraphDSL.create(
         b -> {
           final UniformFanOutShape<Integer, Integer> bcast = b.add(Broadcast.create(2));
           final FanInShape2<Integer, String, Pair<Integer, String>> zip =
@@ -143,10 +144,10 @@ public class StreamPartialFlowGraphDocTest {
   @Test
   public void demonstrateBuildSourceWithCombine() throws Exception {
     //#source-combine
-    Source<Integer, BoxedUnit> source1 = Source.single(1);
-    Source<Integer, BoxedUnit> source2 = Source.single(2);
+    Source<Integer, NotUsed> source1 = Source.single(1);
+    Source<Integer, NotUsed> source2 = Source.single(2);
 
-    final Source<Integer, BoxedUnit> sources = Source.combine(source1, source2, new ArrayList<>(),
+    final Source<Integer, NotUsed> sources = Source.combine(source1, source2, new ArrayList<>(),
             i -> Merge.<Integer>create(i));
     //#source-combine
     final Future<Integer> result=
@@ -163,9 +164,9 @@ public class StreamPartialFlowGraphDocTest {
     ActorRef actorRef =  probe.getRef();
 
     //#sink-combine
-    Sink<Integer, BoxedUnit> sendRmotely = Sink.actorRef(actorRef, "Done");
-    Sink<Integer, Future<BoxedUnit>> localProcessing = Sink.<Integer>foreach(a -> { /*do something useful*/ } );
-    Sink<Integer, BoxedUnit> sinks = Sink.combine(sendRmotely,localProcessing, new ArrayList<>(), a -> Broadcast.create(a));
+    Sink<Integer, NotUsed> sendRemotely = Sink.actorRef(actorRef, "Done");
+    Sink<Integer, Future<Done>> localProcessing = Sink.<Integer>foreach(a -> { /*do something useful*/ } );
+    Sink<Integer, NotUsed> sinks = Sink.combine(sendRemotely,localProcessing, new ArrayList<>(), a -> Broadcast.create(a));
 
     Source.<Integer>from(Arrays.asList(new Integer[]{0, 1, 2})).runWith(sinks, mat);
     //#sink-combine

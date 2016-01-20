@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.parsing
 
+import akka.NotUsed
 import akka.http.scaladsl.model._
 import akka.stream.impl.fusing.GraphInterpreter
 import akka.stream.scaladsl.{ Sink, Source }
@@ -63,17 +64,17 @@ private[http] object ParserOutput {
 
   //////////////////////////////////////
 
-  sealed abstract class EntityCreator[-A <: ParserOutput, +B >: HttpEntity.Strict <: HttpEntity] extends (Source[A, Unit] ⇒ B)
+  sealed abstract class EntityCreator[-A <: ParserOutput, +B >: HttpEntity.Strict <: HttpEntity] extends (Source[A, NotUsed] ⇒ B)
 
   final case class StrictEntityCreator(entity: HttpEntity.Strict) extends EntityCreator[ParserOutput, HttpEntity.Strict] {
-    def apply(parts: Source[ParserOutput, Unit]) = {
+    def apply(parts: Source[ParserOutput, NotUsed]) = {
       // We might need to drain stray empty tail streams which will be read by no one.
       SubSource.kill(parts)
       entity
     }
   }
-  final case class StreamedEntityCreator[-A <: ParserOutput, +B >: HttpEntity.Strict <: HttpEntity](creator: Source[A, Unit] ⇒ B)
+  final case class StreamedEntityCreator[-A <: ParserOutput, +B >: HttpEntity.Strict <: HttpEntity](creator: Source[A, NotUsed] ⇒ B)
     extends EntityCreator[A, B] {
-    def apply(parts: Source[A, Unit]) = creator(parts)
+    def apply(parts: Source[A, NotUsed]) = creator(parts)
   }
 }

@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl
 
+import akka.NotUsed
 import akka.stream._
 import akka.stream.impl._
 import akka.stream.impl.fusing.GraphStages
@@ -237,7 +238,7 @@ object Interleave {
    * @param segmentSize number of elements to send downstream before switching to next input port
    * @param eagerClose if true, interleave completes upstream if any of its upstream completes.
    */
-  def apply[T](inputPorts: Int, segmentSize: Int, eagerClose: Boolean = false): Graph[UniformFanInShape[T, T], Unit] =
+  def apply[T](inputPorts: Int, segmentSize: Int, eagerClose: Boolean = false): Graph[UniformFanInShape[T, T], NotUsed] =
     GraphStages.withDetachedInputs(new Interleave[T](inputPorts, segmentSize, eagerClose))
 }
 
@@ -744,7 +745,7 @@ object Concat {
   /**
    * Create a new `Concat`.
    */
-  def apply[T](inputPorts: Int = 2): Graph[UniformFanInShape[T, T], Unit] =
+  def apply[T](inputPorts: Int = 2): Graph[UniformFanInShape[T, T], NotUsed] =
     GraphStages.withDetachedInputs(new Concat[T](inputPorts))
 }
 
@@ -994,7 +995,7 @@ object GraphDSL extends GraphApply {
 
     // Although Mat is always Unit, it cannot be removed as a type parameter, otherwise the "override type"
     // won't work below
-    trait PortOps[+Out] extends FlowOps[Out, Unit] with CombinerBase[Out] {
+    trait PortOps[+Out] extends FlowOps[Out, NotUsed] with CombinerBase[Out] {
       override type Repr[+O] = PortOps[O]
       override type Closed = Unit
       def outlet: Outlet[Out @uncheckedVariance]
@@ -1022,8 +1023,9 @@ object GraphDSL extends GraphApply {
         new PortOpsImpl(op.shape.out.asInstanceOf[Outlet[U]], b)
       }
 
-      def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Closed =
+      def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Closed = {
         super.~>(sink)(b)
+      }
     }
 
     private class DisabledPortOps[Out](msg: String) extends PortOpsImpl[Out](null, null) {

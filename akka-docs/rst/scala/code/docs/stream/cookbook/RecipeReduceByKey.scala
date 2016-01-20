@@ -1,5 +1,6 @@
 package docs.stream.cookbook
 
+import akka.NotUsed
 import akka.stream.{ Graph, FlowShape, Inlet, Outlet, Attributes, OverflowStrategy }
 import akka.stream.scaladsl._
 import scala.concurrent.{ Await, Future }
@@ -17,7 +18,7 @@ class RecipeReduceByKey extends RecipeSpec {
       def words = Source(List("hello", "world", "and", "hello", "universe", "akka") ++ List.fill(1000)("rocks!"))
 
       //#word-count
-      val counts: Source[(String, Int), Unit] = words
+      val counts: Source[(String, Int), NotUsed] = words
         // split the words into separate streams first
         .groupBy(MaximumDistinctWords, identity)
         // add counting logic to the streams
@@ -45,7 +46,7 @@ class RecipeReduceByKey extends RecipeSpec {
       def reduceByKey[In, K, Out](
         maximumGroupSize: Int,
         groupKey: (In) => K,
-        foldZero: (K) => Out)(fold: (Out, In) => Out): Flow[In, (K, Out), Unit] = {
+        foldZero: (K) => Out)(fold: (Out, In) => Out): Flow[In, (K, Out), NotUsed] = {
 
         Flow[In]
           .groupBy(maximumGroupSize, groupKey)

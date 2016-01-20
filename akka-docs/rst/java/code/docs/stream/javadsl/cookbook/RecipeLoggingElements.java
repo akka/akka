@@ -3,6 +3,7 @@
  */
 package docs.stream.javadsl.cookbook;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
@@ -19,7 +20,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.runtime.AbstractFunction0;
-import scala.runtime.BoxedUnit;
 
 import java.util.Arrays;
 
@@ -45,7 +45,7 @@ public class RecipeLoggingElements extends RecipeTest {
       final SilenceSystemOut.System System = SilenceSystemOut.get(getTestActor());
 
       {
-        final Source<String, BoxedUnit> mySource = Source.from(Arrays.asList("1", "2", "3"));
+        final Source<String, NotUsed> mySource = Source.from(Arrays.asList("1", "2", "3"));
 
         //#println-debug
         mySource.map(elem -> {
@@ -65,7 +65,7 @@ public class RecipeLoggingElements extends RecipeTest {
       }
 
       {
-        final Source<String, BoxedUnit> mySource = Source.from(Arrays.asList("1", "2", "3"));
+        final Source<String, NotUsed> mySource = Source.from(Arrays.asList("1", "2", "3"));
 
         final int onElement = Logging.WarningLevel();
         final int onFinish = Logging.ErrorLevel();
@@ -82,7 +82,8 @@ public class RecipeLoggingElements extends RecipeTest {
         mySource.log("custom", adapter);
         //#log-custom
 
-        new DebugFilter("customLogger", "[custom] Element: ", false, false, 3).intercept(new AbstractFunction0  () {
+
+        new DebugFilter("customLogger", "[custom] Element: ", false, false, 3).intercept(new AbstractFunction0<Object> () {
           public Void apply() {
             mySource.log("custom", adapter).runWith(Sink.ignore(), mat);
             return null;

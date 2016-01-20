@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.rendering
 
+import akka.NotUsed
 import akka.http.impl.engine.ws.{ FrameEvent, UpgradeToWebsocketResponseHeader }
 import akka.http.scaladsl.model.ws.Message
 import akka.stream.{ Outlet, Inlet, Attributes, FlowShape, Graph }
@@ -53,7 +54,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
   // split out so we can stabilize by overriding in tests
   protected def currentTimeMillis(): Long = System.currentTimeMillis()
 
-  def renderer: Flow[ResponseRenderingContext, ResponseRenderingOutput, Unit] = Flow.fromGraph(HttpResponseRenderer)
+  def renderer: Flow[ResponseRenderingContext, ResponseRenderingOutput, NotUsed] = Flow.fromGraph(HttpResponseRenderer)
 
   object HttpResponseRenderer extends GraphStage[FlowShape[ResponseRenderingContext, ResponseRenderingOutput]] {
     val in = Inlet[ResponseRenderingContext]("in")

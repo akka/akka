@@ -6,12 +6,13 @@ package akka.stream.javadsl
 import akka.stream.scaladsl
 import akka.stream.{ Inlet, Shape, Graph }
 import akka.japi.function
+import akka.NotUsed
 
 private[stream] abstract class GraphCreate {
   /**
    * Creates a new [[Graph]] of the given [[Shape]] by passing a [[GraphDSL.Builder]] to the given create function.
    */
-  def create[S <: Shape](block: function.Function[GraphDSL.Builder[Unit], S]): Graph[S, Unit] =
+  def create[S <: Shape](block: function.Function[GraphDSL.Builder[NotUsed], S]): Graph[S, NotUsed] =
     scaladsl.GraphDSL.create() { b ⇒ block.apply(b.asJava) }
 
   /**

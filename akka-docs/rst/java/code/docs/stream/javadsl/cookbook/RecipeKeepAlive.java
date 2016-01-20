@@ -3,6 +3,7 @@
  */
 package docs.stream.javadsl.cookbook;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
@@ -12,7 +13,6 @@ import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.runtime.BoxedUnit;
 
 import java.util.concurrent.TimeUnit;
 
@@ -43,7 +43,7 @@ public class RecipeKeepAlive extends RecipeTest {
 
         //@formatter:off
         //#inject-keepalive
-        Flow<ByteString, ByteString, BoxedUnit> keepAliveInject =
+        Flow<ByteString, ByteString, NotUsed> keepAliveInject =
           Flow.of(ByteString.class).keepAlive(
               scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS),
               () -> keepAliveMessage);

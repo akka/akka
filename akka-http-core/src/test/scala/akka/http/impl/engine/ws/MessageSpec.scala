@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.ws
 
+import akka.NotUsed
+
 import scala.concurrent.duration._
 import scala.util.Random
 import org.scalatest.{ Matchers, FreeSpec }
@@ -854,7 +856,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
     val messageIn = TestSubscriber.probe[Message]
     val messageOut = TestPublisher.probe[Message]()
 
-    val messageHandler: Flow[Message, Message, Unit] =
+    val messageHandler: Flow[Message, Message, NotUsed] =
       Flow.fromSinkAndSource(
         Flow[Message].buffer(1, OverflowStrategy.backpressure).to(Sink.fromSubscriber(messageIn)), // alternatively need to request(1) before expectComplete
         Source.fromPublisher(messageOut))
@@ -971,7 +973,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
   }
 
   val trace = false // set to `true` for debugging purposes
-  def printEvent[T](marker: String): Flow[T, T, Unit] =
+  def printEvent[T](marker: String): Flow[T, T, NotUsed] =
     if (trace) akka.http.impl.util.printEvent(marker)
     else Flow[T]
 }

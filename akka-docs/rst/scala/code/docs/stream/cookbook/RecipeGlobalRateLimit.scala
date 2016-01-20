@@ -1,5 +1,6 @@
 package docs.stream.cookbook
 
+import akka.NotUsed
 import akka.actor.{ Props, ActorRef, Actor }
 import akka.actor.Actor.Receive
 import akka.stream.ClosedShape
@@ -78,7 +79,7 @@ class RecipeGlobalRateLimit extends RecipeSpec {
     "work" in {
 
       //#global-limiter-flow
-      def limitGlobal[T](limiter: ActorRef, maxAllowedWait: FiniteDuration): Flow[T, T, Unit] = {
+      def limitGlobal[T](limiter: ActorRef, maxAllowedWait: FiniteDuration): Flow[T, T, NotUsed] = {
         import akka.pattern.ask
         import akka.util.Timeout
         Flow[T].mapAsync(4)((element: T) => {
