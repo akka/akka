@@ -11,8 +11,8 @@ import scala.annotation.tailrec
 import akka.parboiled2.CharUtils
 import akka.util.ByteString
 import akka.http.impl.util._
-import akka.http.scaladsl.model.{ IllegalHeaderException, StatusCodes, HttpHeader, ErrorInfo, Uri }
-import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model.{ IllegalHeaderException, StatusCodes, HttpHeader, ErrorInfo }
+import akka.http.scaladsl.model.headers.{ EmptyHeader, RawHeader }
 import akka.http.impl.model.parser.HeaderParser
 import akka.http.impl.model.parser.CharacterClasses._
 
@@ -412,14 +412,6 @@ private[http] object HttpHeaderParser {
     def maxHeaderNameLength: Int
     def maxHeaderValueLength: Int
     def headerValueCacheLimit(headerName: String): Int
-  }
-
-  object EmptyHeader extends HttpHeader {
-    def name = ""
-    def lowercaseName = ""
-    def value = ""
-    def render[R <: Rendering](r: R): r.type = r
-    override def toString = "EmptyHeader"
   }
 
   private def predefinedHeaders = Seq(
