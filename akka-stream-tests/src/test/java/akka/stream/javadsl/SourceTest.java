@@ -31,6 +31,7 @@ import scala.util.Try;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 
 import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
 import static akka.stream.testkit.TestPublisher.ManualProbe;
@@ -439,17 +440,7 @@ public class SourceTest extends StreamTest {
   public void mustBeAbleToUseExpand() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
-    Future<String> future = Source.from(input).expand(new Function<String, String>() {
-      @Override
-      public String apply(String in) throws Exception {
-        return in;
-      }
-    }, new Function<String, Pair<String, String>>() {
-      @Override
-      public Pair<String, String> apply(String in) throws Exception {
-        return new Pair<String, String>(in, in);
-      }
-    }).runWith(Sink.<String>head(), materializer);
+    Future<String> future = Source.from(input).expand(in -> Stream.iterate(in, i -> i).iterator()).runWith(Sink.<String>head(), materializer);
     String result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals("A", result);
   }
