@@ -4,12 +4,15 @@
 
 package akka.http.scaladsl.unmarshalling
 
+import akka.actor.ActorSystem
+import akka.http.ParserSettings
+
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import akka.util.ByteString
 import akka.event.{ NoLogging, LoggingAdapter }
-import akka.stream.OverflowStrategy
-import akka.stream.impl.fusing.{ GraphInterpreter, IteratorInterpreter }
+import akka.stream.{ActorMaterializer, OverflowStrategy}
+import akka.stream.impl.fusing.IteratorInterpreter
 import akka.stream.scaladsl._
 import akka.http.impl.engine.parsing.BodyPartParser
 import akka.http.impl.util._
@@ -59,7 +62,7 @@ trait MultipartUnmarshallers {
                                                                                                         createStreamed: (MediaType.Multipart, Source[BP, Any]) ⇒ T,
                                                                                                         createStrictBodyPart: (HttpEntity.Strict, List[HttpHeader]) ⇒ BPS,
                                                                                                         createStrict: (MediaType.Multipart, immutable.Seq[BPS]) ⇒ T)(implicit log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[T] =
-    Unmarshaller { implicit ec ⇒
+    Unmarshaller.withMaterializer { implicit ec ⇒ mat =>
       entity ⇒
         if (entity.contentType.mediaType.isMultipart && mediaRange.matches(entity.contentType.mediaType)) {
           entity.contentType.mediaType.params.get("boundary") match {
@@ -67,7 +70,7 @@ trait MultipartUnmarshallers {
               FastFuture.failed(new RuntimeException("Content-Type with a multipart media type must have a 'boundary' parameter"))
             case Some(boundary) ⇒
               import BodyPartParser._
-              val parser = new BodyPartParser(defaultContentType, boundary, log)
+              val parser = new BodyPartParser(defaultContentType, boundary, log, ParserSettings(ActorMaterializer.downcast(mat).system)) // TODO we could cache it
               FastFuture.successful {
                 entity match {
                   case HttpEntity.Strict(ContentType(mediaType: MediaType.Multipart, _), data) ⇒

@@ -4,32 +4,33 @@
 
 package akka.http
 
-import java.util.Locale
-import akka.actor.ActorSystem
+import akka.actor.{ ActorRefFactory, ActorSystem }
+import akka.stream.{ ActorMaterializer, Materializer }
 import com.typesafe.config.Config
 import scala.collection.JavaConverters._
 import akka.http.scaladsl.model.{ StatusCode, HttpMethod, Uri }
 import akka.http.impl.util._
-import akka.http.impl.engine.parsing.HttpHeaderParser
+import akka.http.impl.engine.parsing.{ BodyPartParser, HttpHeaderParser }
 
-final case class ParserSettings(
-  maxUriLength: Int,
-  maxMethodLength: Int,
-  maxResponseReasonLength: Int,
-  maxHeaderNameLength: Int,
-  maxHeaderValueLength: Int,
-  maxHeaderCount: Int,
-  maxContentLength: Long,
-  maxChunkExtLength: Int,
-  maxChunkSize: Int,
-  uriParsingMode: Uri.ParsingMode,
-  cookieParsingMode: ParserSettings.CookieParsingMode,
-  illegalHeaderWarnings: Boolean,
-  errorLoggingVerbosity: ParserSettings.ErrorLoggingVerbosity,
-  headerValueCacheLimits: Map[String, Int],
-  includeTlsSessionInfoHeader: Boolean,
-  customMethods: String ⇒ Option[HttpMethod],
-  customStatusCodes: Int ⇒ Option[StatusCode]) extends HttpHeaderParser.Settings {
+final class ParserSettings(
+  val maxUriLength: Int,
+  val maxMethodLength: Int,
+  val maxResponseReasonLength: Int,
+  val maxHeaderNameLength: Int,
+  val maxHeaderValueLength: Int,
+  val maxHeaderCount: Int,
+  val maxContentLength: Long,
+  val maxChunkExtLength: Int,
+  val maxChunkSize: Int,
+  val uriParsingMode: Uri.ParsingMode,
+  val cookieParsingMode: ParserSettings.CookieParsingMode,
+  val illegalHeaderWarnings: Boolean,
+  val errorLoggingVerbosity: ParserSettings.ErrorLoggingVerbosity,
+  val headerValueCacheLimits: Map[String, Int],
+  val includeTlsSessionInfoHeader: Boolean,
+  val customMethods: String ⇒ Option[HttpMethod],
+  val customStatusCodes: Int ⇒ Option[StatusCode])
+  extends BodyPartParser.Settings {
 
   require(maxUriLength > 0, "max-uri-length must be > 0")
   require(maxMethodLength > 0, "max-method-length must be > 0")
@@ -41,9 +42,9 @@ final case class ParserSettings(
   require(maxChunkExtLength > 0, "max-chunk-ext-length must be > 0")
   require(maxChunkSize > 0, "max-chunk-size must be > 0")
 
-  val defaultHeaderValueCacheLimit: Int = headerValueCacheLimits("default")
+  override val defaultHeaderValueCacheLimit: Int = headerValueCacheLimits("default")
 
-  def headerValueCacheLimit(headerName: String): Int =
+  override def headerValueCacheLimit(headerName: String): Int =
     headerValueCacheLimits.getOrElse(headerName, defaultHeaderValueCacheLimit)
 
   def withCustomMethods(methods: HttpMethod*): ParserSettings = {
@@ -54,6 +55,41 @@ final case class ParserSettings(
     val map = codes.map(c ⇒ c.intValue -> c).toMap
     copy(customStatusCodes = map.get)
   }
+
+  def copy(maxUriLength: Int = maxUriLength,
+           maxMethodLength: Int = maxMethodLength,
+           maxResponseReasonLength: Int = maxResponseReasonLength,
+           maxHeaderNameLength: Int = maxHeaderNameLength,
+           maxHeaderValueLength: Int = maxHeaderValueLength,
+           maxHeaderCount: Int = maxHeaderCount,
+           maxContentLength: Long = maxContentLength,
+           maxChunkExtLength: Int = maxChunkExtLength,
+           maxChunkSize: Int = maxChunkSize,
+           uriParsingMode: Uri.ParsingMode = uriParsingMode,
+           cookieParsingMode: ParserSettings.CookieParsingMode = cookieParsingMode,
+           illegalHeaderWarnings: Boolean = illegalHeaderWarnings,
+           errorLoggingVerbosity: ParserSettings.ErrorLoggingVerbosity = errorLoggingVerbosity,
+           headerValueCacheLimits: Map[String, Int] = headerValueCacheLimits,
+           includeTlsSessionInfoHeader: Boolean = includeTlsSessionInfoHeader,
+           customMethods: String ⇒ Option[HttpMethod] = customMethods,
+           customStatusCodes: Int ⇒ Option[StatusCode] = customStatusCodes): ParserSettings =
+    new ParserSettings(maxUriLength,
+      maxMethodLength,
+      maxResponseReasonLength,
+      maxHeaderNameLength,
+      maxHeaderValueLength,
+      maxHeaderCount,
+      maxContentLength,
+      maxChunkExtLength,
+      maxChunkSize,
+      uriParsingMode,
+      cookieParsingMode,
+      illegalHeaderWarnings,
+      errorLoggingVerbosity,
+      headerValueCacheLimits,
+      includeTlsSessionInfoHeader,
+      customMethods,
+      customStatusCodes)
 }
 
 object ParserSettings extends SettingsCompanion[ParserSettings]("akka.http.parsing") {
@@ -61,7 +97,7 @@ object ParserSettings extends SettingsCompanion[ParserSettings]("akka.http.parsi
     val c = inner.withFallback(root.getConfig(prefix))
     val cacheConfig = c getConfig "header-cache"
 
-    apply(
+    new ParserSettings(
       c getIntBytes "max-uri-length",
       c getIntBytes "max-method-length",
       c getIntBytes "max-response-reason-length",
@@ -130,5 +166,8 @@ object ParserSettings extends SettingsCompanion[ParserSettings]("akka.http.parsi
    * Java API
    */
   def create(configOverrides: String): ParserSettings = ParserSettings(configOverrides)
+
+  implicit def default(implicit refFactory: ActorRefFactory): ParserSettings =
+    apply(actorSystem)
 }
 
