@@ -21,7 +21,7 @@ private[akka] object ConstantFun {
 
   def scalaIdentityFunction[T]: T ⇒ T = conforms
 
-  def returnZero[T](t: T): Long = 0L
+  val zeroLong = (_: Any) ⇒ 0L
 
-  def returnOne[T](t: T): Long = 1L
+  val oneLong = (_: Any) ⇒ 1L
 }

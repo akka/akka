@@ -478,6 +478,9 @@ private[akka] final case class Conflate[In, Out](seed: In ⇒ Out, aggregate: (O
   override def restart(): Conflate[In, Out] = copy()
 }
 
+/**
+ * INTERNAL API
+ */
 private[akka] final case class Batch[In, Out](max: Long, costFn: In ⇒ Long, seed: In ⇒ Out, aggregate: (Out, In) ⇒ Out)
   extends GraphStage[FlowShape[In, Out]] {
 
