@@ -299,10 +299,12 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
   }
 
   implicit class ToGraphStage[I, O](stage: Stage[I, O]) {
-    def toGS =
+    def toGS: PushPullGraphStage[Any, Any, Any] = {
+      val s = stage
       new PushPullGraphStage[Any, Any, Any](
-        (_) ⇒ stage.asInstanceOf[Stage[Any, Any]],
+        (_) ⇒ s.asInstanceOf[Stage[Any, Any]],
         Attributes.none)
+    }
   }
 
   abstract class OneBoundedSetup[T](_ops: GraphStageWithMaterializedValue[Shape, Any]*) extends Builder {
@@ -368,8 +370,8 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
       events
     }
 
-    class UpstreamOneBoundedProbe[T] extends UpstreamBoundaryStageLogic[T] {
-      val out = Outlet[T]("out")
+    class UpstreamOneBoundedProbe[TT] extends UpstreamBoundaryStageLogic[TT] {
+      val out = Outlet[TT]("out")
       out.id = 0
 
       setHandler(out, new OutHandler {
@@ -381,7 +383,7 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
         override def onDownstreamFinish(): Unit = lastEvent += Cancel
       })
 
-      def onNext(elem: T): Unit = {
+      def onNext(elem: TT): Unit = {
         push(out, elem)
         run()
       }
@@ -390,7 +392,7 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
         run()
       }
 
-      def onNextAndComplete(elem: T): Unit = {
+      def onNextAndComplete(elem: TT): Unit = {
         push(out, elem)
         complete(out)
         run()
@@ -402,8 +404,8 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
       }
     }
 
-    class DownstreamOneBoundedPortProbe[T] extends DownstreamBoundaryStageLogic[T] {
-      val in = Inlet[T]("in")
+    class DownstreamOneBoundedPortProbe[TT] extends DownstreamBoundaryStageLogic[TT] {
+      val in = Inlet[TT]("in")
       in.id = 0
 
       setHandler(in, new InHandler {

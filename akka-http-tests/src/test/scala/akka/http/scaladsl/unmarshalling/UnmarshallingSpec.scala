@@ -23,5 +23,5 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
       Unmarshal(HttpEntity("árvíztűrő ütvefúrógép")).to[Array[Char]] should evaluateTo("árvíztűrő ütvefúrógép".toCharArray)
     }
   }
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 }

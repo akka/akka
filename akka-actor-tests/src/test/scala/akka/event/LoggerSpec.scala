@@ -170,7 +170,7 @@ class LoggerSpec extends WordSpec with Matchers {
       out.size should be > (0)
     }
 
-    "drain logger queue on system shutdown" in {
+    "drain logger queue on system.terminate" in {
       val out = new java.io.ByteArrayOutputStream()
       Console.withOut(out) {
         val sys = ActorSystem("defaultLogger", slowConfig)

@@ -11,9 +11,7 @@ import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.stage._
 import akka.stream.scaladsl._
 import akka.stream.actor.ActorSubscriberMessage
-import akka.stream.actor.ActorSubscriberMessage._
 import akka.stream.actor.ActorPublisherMessage
-import akka.stream.actor.ActorPublisherMessage._
 import java.{ util ⇒ ju }
 import scala.collection.immutable
 import scala.concurrent._
@@ -375,7 +373,9 @@ final class Split[T](decision: Split.SplitDecision, p: T ⇒ Boolean) extends Gr
  * INTERNAL API
  */
 object SubSink {
-  val RequestOne = Request(1) // No need to frivolously allocate these
+  sealed trait Command
+  case object RequestOne extends Command
+  case object Cancel extends Command
 }
 
 /**
@@ -390,30 +390,30 @@ final class SubSink[T](name: String, externalCallback: ActorSubscriberMessage �
   override def initialAttributes = Attributes.name(s"SubSink($name)")
   override val shape = SinkShape(in)
 
-  val status = new AtomicReference[AnyRef]
+  private val status = new AtomicReference[AnyRef]
 
   def pullSubstream(): Unit = status.get match {
     case f: AsyncCallback[Any] @unchecked ⇒ f.invoke(RequestOne)
     case null ⇒
       if (!status.compareAndSet(null, RequestOne))
-        status.get.asInstanceOf[ActorPublisherMessage ⇒ Unit](RequestOne)
+        status.get.asInstanceOf[Command ⇒ Unit](RequestOne)
   }
 
   def cancelSubstream(): Unit = status.get match {
     case f: AsyncCallback[Any] @unchecked ⇒ f.invoke(Cancel)
     case x ⇒ // a potential RequestOne is overwritten
       if (!status.compareAndSet(x, Cancel))
-        status.get.asInstanceOf[ActorPublisherMessage ⇒ Unit](Cancel)
+        status.get.asInstanceOf[Command ⇒ Unit](Cancel)
   }
 
   override def createLogic(attr: Attributes) = new GraphStageLogic(shape) with InHandler {
     setHandler(in, this)
 
-    override def onPush(): Unit = externalCallback(OnNext(grab(in)))
-    override def onUpstreamFinish(): Unit = externalCallback(OnComplete)
-    override def onUpstreamFailure(ex: Throwable): Unit = externalCallback(OnError(ex))
+    override def onPush(): Unit = externalCallback(ActorSubscriberMessage.OnNext(grab(in)))
+    override def onUpstreamFinish(): Unit = externalCallback(ActorSubscriberMessage.OnComplete)
+    override def onUpstreamFailure(ex: Throwable): Unit = externalCallback(ActorSubscriberMessage.OnError(ex))
 
-    @tailrec private def setCB(cb: AsyncCallback[ActorPublisherMessage]): Unit = {
+    @tailrec private def setCB(cb: AsyncCallback[Command]): Unit = {
       status.get match {
         case null ⇒
           if (!status.compareAndSet(null, cb)) setCB(cb)
@@ -429,7 +429,7 @@ final class SubSink[T](name: String, externalCallback: ActorSubscriberMessage �
     }
 
     override def preStart(): Unit = {
-      val ourOwnCallback = getAsyncCallback[ActorPublisherMessage] {
+      val ourOwnCallback = getAsyncCallback[Command] {
         case RequestOne ⇒ tryPull(in)
         case Cancel     ⇒ completeStage()
         case _          ⇒ throw new IllegalStateException("Bug")
@@ -452,7 +452,7 @@ object SubSource {
   private[akka] def kill[T, M](s: Source[T, M]): Unit = {
     s.module match {
       case GraphStageModule(_, _, stage: SubSource[_]) ⇒
-        stage.externalCallback.invoke(Cancel)
+        stage.externalCallback.invoke(SubSink.Cancel)
       case pub: PublisherSource[_] ⇒
         pub.create(null)._1.subscribe(new CancellingSubscriber)
       case m ⇒
@@ -467,7 +467,7 @@ object SubSource {
 /**
  * INTERNAL API
  */
-final class SubSource[T](name: String, private[fusing] val externalCallback: AsyncCallback[ActorPublisherMessage])
+final class SubSource[T](name: String, private[fusing] val externalCallback: AsyncCallback[SubSink.Command])
   extends GraphStage[SourceShape[T]] {
   import SubSink._
 
@@ -475,48 +475,48 @@ final class SubSource[T](name: String, private[fusing] val externalCallback: Asy
   override def initialAttributes = Attributes.name(s"SubSource($name)")
   override val shape: SourceShape[T] = SourceShape(out)
 
-  val status = new AtomicReference[AnyRef]
+  private val status = new AtomicReference[AnyRef]
 
   def pushSubstream(elem: T): Unit = status.get match {
-    case f: AsyncCallback[Any] @unchecked ⇒ f.invoke(OnNext(elem))
+    case f: AsyncCallback[Any] @unchecked ⇒ f.invoke(ActorSubscriberMessage.OnNext(elem))
     case _                                ⇒ throw new IllegalStateException("cannot push to uninitialized substream")
   }
 
   def completeSubstream(): Unit = status.get match {
-    case f: AsyncCallback[Any] @unchecked ⇒ f.invoke(OnComplete)
+    case f: AsyncCallback[Any] @unchecked ⇒ f.invoke(ActorSubscriberMessage.OnComplete)
     case null ⇒
-      if (!status.compareAndSet(null, OnComplete))
-        status.get.asInstanceOf[AsyncCallback[Any]].invoke(OnComplete)
+      if (!status.compareAndSet(null, ActorSubscriberMessage.OnComplete))
+        status.get.asInstanceOf[AsyncCallback[Any]].invoke(ActorSubscriberMessage.OnComplete)
   }
 
   def failSubstream(ex: Throwable): Unit = status.get match {
-    case f: AsyncCallback[Any] @unchecked ⇒ f.invoke(OnError(ex))
+    case f: AsyncCallback[Any] @unchecked ⇒ f.invoke(ActorSubscriberMessage.OnError(ex))
     case null ⇒
-      val failure = OnError(ex)
+      val failure = ActorSubscriberMessage.OnError(ex)
       if (!status.compareAndSet(null, failure))
         status.get.asInstanceOf[AsyncCallback[Any]].invoke(failure)
   }
 
   def timeout(d: FiniteDuration): Boolean =
-    status.compareAndSet(null, OnError(new SubscriptionTimeoutException(s"Substream Source has not been materialized in $d")))
+    status.compareAndSet(null, ActorSubscriberMessage.OnError(new SubscriptionTimeoutException(s"Substream Source has not been materialized in $d")))
 
   override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with OutHandler {
     setHandler(out, this)
 
     @tailrec private def setCB(cb: AsyncCallback[ActorSubscriberMessage]): Unit = {
       status.get match {
-        case null                ⇒ if (!status.compareAndSet(null, cb)) setCB(cb)
-        case OnComplete          ⇒ completeStage()
-        case OnError(ex)         ⇒ failStage(ex)
-        case _: AsyncCallback[_] ⇒ failStage(new IllegalStateException("Substream Source cannot be materialized more than once"))
+        case null                               ⇒ if (!status.compareAndSet(null, cb)) setCB(cb)
+        case ActorSubscriberMessage.OnComplete  ⇒ completeStage()
+        case ActorSubscriberMessage.OnError(ex) ⇒ failStage(ex)
+        case _: AsyncCallback[_]                ⇒ failStage(new IllegalStateException("Substream Source cannot be materialized more than once"))
       }
     }
 
     override def preStart(): Unit = {
       val ourOwnCallback = getAsyncCallback[ActorSubscriberMessage] {
-        case OnComplete   ⇒ completeStage()
-        case OnError(ex)  ⇒ failStage(ex)
-        case OnNext(elem) ⇒ push(out, elem.asInstanceOf[T])
+        case ActorSubscriberMessage.OnComplete   ⇒ completeStage()
+        case ActorSubscriberMessage.OnError(ex)  ⇒ failStage(ex)
+        case ActorSubscriberMessage.OnNext(elem) ⇒ push(out, elem.asInstanceOf[T])
       }
       setCB(ourOwnCallback)
     }

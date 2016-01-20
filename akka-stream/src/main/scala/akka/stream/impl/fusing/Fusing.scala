@@ -504,6 +504,7 @@ private[stream] object Fusing {
     private def removeMapping[T](orig: T, map: ju.Map[T, List[T]]): T =
       map.remove(orig) match {
         case null     ⇒ null.asInstanceOf[T]
+        case Nil      ⇒ throw new IllegalStateException("mappings corrupted")
         case x :: Nil ⇒ x
         case x :: xs ⇒
           map.put(orig, xs)

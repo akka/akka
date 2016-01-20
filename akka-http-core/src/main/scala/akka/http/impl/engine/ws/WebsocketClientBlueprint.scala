@@ -96,11 +96,15 @@ object WebsocketClientBlueprint {
                   parser.onPull() match {
                     case NeedMoreData          ⇒ ctx.pull()
                     case RemainingBytes(bytes) ⇒ ctx.push(bytes)
+                    case other ⇒
+                      throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
                   }
                 case Left(problem) ⇒
                   result.success(InvalidUpgradeResponse(response, s"Websocket server at $uri returned $problem"))
                   ctx.fail(throw new IllegalArgumentException(s"Websocket upgrade did not finish because of '$problem'"))
               }
+            case other ⇒
+              throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
           }
         }
       }

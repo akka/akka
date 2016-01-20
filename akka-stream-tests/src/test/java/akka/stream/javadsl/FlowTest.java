@@ -385,7 +385,6 @@ public class FlowTest extends StreamTest {
     })).run(materializer);
 
     List<Object> output = Arrays.asList(probe.receiveN(3));
-    @SuppressWarnings("unchecked")
     List<Pair<String, Integer>> expected = Arrays.asList(new Pair<String, Integer>("A", 1), new Pair<String, Integer>(
         "B", 2), new Pair<String, Integer>("C", 3));
     assertEquals(expected, output);

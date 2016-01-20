@@ -12,6 +12,7 @@ import akka.stream.ActorMaterializer
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
+import scala.concurrent.Await
 
 class FormDataSpec extends WordSpec with Matchers with ScalaFutures with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName)
@@ -36,7 +37,6 @@ class FormDataSpec extends WordSpec with Matchers with ScalaFutures with BeforeA
   }
 
   override def afterAll() = {
-    system.shutdown()
-    system.awaitTermination(10.seconds)
+    Await.result(system.terminate(), 10.seconds)
   }
 }

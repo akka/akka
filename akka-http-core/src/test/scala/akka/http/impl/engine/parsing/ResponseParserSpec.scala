@@ -240,7 +240,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 
   private class Test {
     var closeAfterResponseCompletion = Seq.empty[Boolean]

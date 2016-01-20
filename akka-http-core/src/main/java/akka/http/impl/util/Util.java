@@ -36,7 +36,6 @@ public abstract class Util {
     public static <T, U extends T> Source<U, scala.Unit> upcastSource(Source<T, scala.Unit> p) {
         return (Source<U, scala.Unit>)(Object) p;
     }
-    @SuppressWarnings("unchecked")
     public static scala.collection.immutable.Map<String, String> convertMapToScala(Map<String, String> map) {
         return emptyMap.$plus$plus(scala.collection.JavaConverters.mapAsScalaMapConverter(map).asScala());
     }
@@ -58,7 +57,6 @@ public abstract class Util {
     public static <T, U extends T> Seq<U> convertIterable(Iterable<T> els) {
         return scala.collection.JavaConverters.iterableAsScalaIterableConverter((Iterable<U>)els).asScala().toVector();
     }
-    @SuppressWarnings("unchecked")
     public static <T, U extends T> Seq<U> convertArray(T[] els) {
         return Util.<T, U>convertIterable(Arrays.asList(els));
     }

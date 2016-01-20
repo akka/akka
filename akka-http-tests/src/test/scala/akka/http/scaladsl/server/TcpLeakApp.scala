@@ -43,5 +43,5 @@ object TcpLeakApp extends App {
     }
 
   readLine()
-  system.shutdown()
+  system.terminate()
 }

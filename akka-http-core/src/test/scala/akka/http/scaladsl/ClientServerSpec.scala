@@ -449,7 +449,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
   }
 
   override def afterAll() = {
-    system.shutdown()
+    system.terminate()
     system2.shutdown()
   }
 
