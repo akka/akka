@@ -8,7 +8,7 @@ import java.net.InetSocketAddress
 import java.util.Optional
 import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.model.ws._
-import akka.stream
+import akka.{ NotUsed, stream }
 import akka.stream.io.{ SslTlsInbound, SslTlsOutbound }
 
 import scala.language.implicitConversions
@@ -46,7 +46,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Constructs a server layer stage using the configured default [[ServerSettings]]. The returned [[BidiFlow]] isn't
    * reusable and can only be materialized once.
    */
-  def serverLayer(materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, Unit] =
+  def serverLayer(materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
     adaptServerLayer(delegate.serverLayer()(materializer))
 
   /**
@@ -54,7 +54,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * can only be materialized once.
    */
   def serverLayer(settings: ServerSettings,
-                  materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, Unit] =
+                  materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
     adaptServerLayer(delegate.serverLayer(settings)(materializer))
 
   /**
@@ -64,7 +64,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   def serverLayer(settings: ServerSettings,
                   remoteAddress: Optional[InetSocketAddress],
-                  materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, Unit] =
+                  materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
     adaptServerLayer(delegate.serverLayer(settings, remoteAddress.asScala)(materializer))
 
   /**
@@ -75,7 +75,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   def serverLayer(settings: ServerSettings,
                   remoteAddress: Optional[InetSocketAddress],
                   log: LoggingAdapter,
-                  materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, Unit] =
+                  materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
     adaptServerLayer(delegate.serverLayer(settings, remoteAddress.asScala, log)(materializer))
 
   /**
@@ -205,14 +205,14 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   /**
    * Constructs a client layer stage using the configured default [[ClientConnectionSettings]].
    */
-  def clientLayer(hostHeader: headers.Host): BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, Unit] =
+  def clientLayer(hostHeader: headers.Host): BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, NotUsed] =
     adaptClientLayer(delegate.clientLayer(JavaMapping.toScala(hostHeader)))
 
   /**
    * Constructs a client layer stage using the given [[ClientConnectionSettings]].
    */
   def clientLayer(hostHeader: headers.Host,
-                  settings: ClientConnectionSettings): BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, Unit] =
+                  settings: ClientConnectionSettings): BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, NotUsed] =
     adaptClientLayer(delegate.clientLayer(JavaMapping.toScala(hostHeader), settings))
 
   /**
@@ -220,7 +220,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   def clientLayer(hostHeader: headers.Host,
                   settings: ClientConnectionSettings,
-                  log: LoggingAdapter): BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, Unit] =
+                  log: LoggingAdapter): BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, NotUsed] =
     adaptClientLayer(delegate.clientLayer(JavaMapping.toScala(hostHeader), settings, log))
 
   /**
@@ -454,7 +454,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
    * object of type `T` from the application which is emitted together with the corresponding response.
    */
-  def superPool[T](materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], Unit] =
+  def superPool[T](materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], NotUsed] =
     adaptTupleFlow(delegate.superPool[T]()(materializer))
 
   /**
@@ -474,7 +474,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   def superPool[T](settings: ConnectionPoolSettings,
                    httpsContext: Optional[HttpsContext],
-                   log: LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], Unit] =
+                   log: LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], NotUsed] =
     adaptTupleFlow(delegate.superPool[T](settings, httpsContext, log)(materializer))
 
   /**
@@ -616,12 +616,12 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     JavaMapping.toJava(scalaFlow)(JavaMapping.flowMapping[Pair[HttpRequest, T], (scaladsl.model.HttpRequest, T), Pair[Try[HttpResponse], T], (Try[scaladsl.model.HttpResponse], T), Mat])
   }
 
-  private def adaptServerLayer(serverLayer: scaladsl.Http.ServerLayer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, Unit] =
+  private def adaptServerLayer(serverLayer: scaladsl.Http.ServerLayer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
     new BidiFlow(
       JavaMapping.adapterBidiFlow[HttpResponse, sm.HttpResponse, sm.HttpRequest, HttpRequest]
         .atop(serverLayer))
 
-  private def adaptClientLayer(clientLayer: scaladsl.Http.ClientLayer): BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, Unit] =
+  private def adaptClientLayer(clientLayer: scaladsl.Http.ClientLayer): BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, NotUsed] =
     new BidiFlow(
       JavaMapping.adapterBidiFlow[HttpRequest, sm.HttpRequest, sm.HttpResponse, HttpResponse]
         .atop(clientLayer))

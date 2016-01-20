@@ -4,6 +4,7 @@
 
 package docs.stream;
 
+import akka.NotUsed;
 import akka.actor.*;
 import akka.dispatch.Futures;
 import akka.dispatch.MessageDispatcher;
@@ -22,7 +23,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
-import scala.runtime.BoxedUnit;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
@@ -290,14 +290,14 @@ public class IntegrationDocTest {
 
       {
         //#tweet-authors
-        final Source<Author, BoxedUnit> authors = tweets
+        final Source<Author, NotUsed> authors = tweets
           .filter(t -> t.hashtags().contains(AKKA))
           .map(t -> t.author);
 
         //#tweet-authors
 
         //#email-addresses-mapAsync
-        final Source<String, BoxedUnit> emailAddresses = authors
+        final Source<String, NotUsed> emailAddresses = authors
           .mapAsync(4, author -> addressSystem.lookupEmail(author.handle))
           .filter(o -> o.isPresent())
           .map(o -> o.get());
@@ -305,7 +305,7 @@ public class IntegrationDocTest {
         //#email-addresses-mapAsync
 
         //#send-emails
-        final RunnableGraph<BoxedUnit> sendEmails = emailAddresses
+        final RunnableGraph<NotUsed> sendEmails = emailAddresses
           .mapAsync(4, address ->
             emailServer.send(new Email(address, "Akka", "I like your tweet")))
           .to(Sink.ignore());
@@ -331,18 +331,18 @@ public class IntegrationDocTest {
       final AddressSystem2 addressSystem = new AddressSystem2();
 
       {
-        final Source<Author, BoxedUnit> authors = tweets
+        final Source<Author, NotUsed> authors = tweets
           .filter(t -> t.hashtags().contains(AKKA))
           .map(t -> t.author);
 
         //#email-addresses-mapAsync-supervision
         final Attributes resumeAttrib =
           ActorAttributes.withSupervisionStrategy(Supervision.getResumingDecider());
-        final Flow<Author, String, BoxedUnit> lookupEmail =
+        final Flow<Author, String, NotUsed> lookupEmail =
             Flow.of(Author.class)
             .mapAsync(4, author -> addressSystem.lookupEmail(author.handle))
             .withAttributes(resumeAttrib);
-        final Source<String, BoxedUnit> emailAddresses = authors.via(lookupEmail);
+        final Source<String, NotUsed> emailAddresses = authors.via(lookupEmail);
 
         //#email-addresses-mapAsync-supervision
       }
@@ -358,18 +358,18 @@ public class IntegrationDocTest {
 
       {
         //#external-service-mapAsyncUnordered
-        final Source<Author, BoxedUnit> authors =
+        final Source<Author, NotUsed> authors =
           tweets
             .filter(t -> t.hashtags().contains(AKKA))
             .map(t -> t.author);
 
-        final Source<String, BoxedUnit> emailAddresses =
+        final Source<String, NotUsed> emailAddresses =
           authors
             .mapAsyncUnordered(4, author -> addressSystem.lookupEmail(author.handle))
             .filter(o -> o.isPresent())
             .map(o -> o.get());
 
-        final RunnableGraph<BoxedUnit> sendEmails =
+        final RunnableGraph<NotUsed> sendEmails =
           emailAddresses
             .mapAsyncUnordered(4, address ->
               emailServer.send(new Email(address, "Akka", "I like your tweet")))
@@ -389,19 +389,19 @@ public class IntegrationDocTest {
       final SmsServer smsServer = new SmsServer(getRef());
 
       {
-        final Source<Author, BoxedUnit> authors =
+        final Source<Author, NotUsed> authors =
           tweets
             .filter(t -> t.hashtags().contains(AKKA))
             .map(t -> t.author);
 
-        final Source<String, BoxedUnit> phoneNumbers = authors.mapAsync(4, author -> addressSystem.lookupPhoneNumber(author.handle))
+        final Source<String, NotUsed> phoneNumbers = authors.mapAsync(4, author -> addressSystem.lookupPhoneNumber(author.handle))
           .filter(o -> o.isPresent())
           .map(o -> o.get());
 
         //#blocking-mapAsync
         final MessageDispatcher blockingEc = system.dispatchers().lookup("blocking-dispatcher");
 
-        final RunnableGraph<BoxedUnit> sendTextMessages =
+        final RunnableGraph<NotUsed> sendTextMessages =
           phoneNumbers
             .mapAsync(4, phoneNo  ->
               Futures.future(() ->
@@ -436,17 +436,17 @@ public class IntegrationDocTest {
       final SmsServer smsServer = new SmsServer(probe.ref());
 
       {
-        final Source<Author, BoxedUnit> authors =
+        final Source<Author, NotUsed> authors =
           tweets
             .filter(t -> t.hashtags().contains(AKKA))
             .map(t -> t.author);
 
-        final Source<String, BoxedUnit> phoneNumbers = authors.mapAsync(4, author -> addressSystem.lookupPhoneNumber(author.handle))
+        final Source<String, NotUsed> phoneNumbers = authors.mapAsync(4, author -> addressSystem.lookupPhoneNumber(author.handle))
           .filter(o -> o.isPresent())
           .map(o -> o.get());
 
         //#blocking-map
-        final Flow<String, Boolean, BoxedUnit> send =
+        final Flow<String, Boolean, NotUsed> send =
           Flow.of(String.class)
           .map(phoneNo -> smsServer.send(new TextMessage(phoneNo, "I like your tweet")))
           .withAttributes(ActorAttributes.dispatcher("blocking-dispatcher"));
@@ -477,9 +477,9 @@ public class IntegrationDocTest {
 
       {
         //#save-tweets
-        final Source<Tweet, BoxedUnit> akkaTweets = tweets.filter(t -> t.hashtags().contains(AKKA));
+        final Source<Tweet, NotUsed> akkaTweets = tweets.filter(t -> t.hashtags().contains(AKKA));
 
-        final RunnableGraph<BoxedUnit> saveTweets =
+        final RunnableGraph<NotUsed> saveTweets =
           akkaTweets
             .mapAsync(4, tweet -> ask(database, new Save(tweet), 300))
             .to(Sink.ignore());

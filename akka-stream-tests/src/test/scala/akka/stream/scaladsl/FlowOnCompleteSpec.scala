@@ -3,6 +3,8 @@
  */
 package akka.stream.scaladsl
 
+import akka.Done
+
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 import scala.util.control.NoStackTrace
@@ -31,7 +33,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
       proc.sendNext(42)
       onCompleteProbe.expectNoMsg(100.millis)
       proc.sendComplete()
-      onCompleteProbe.expectMsg(Success(()))
+      onCompleteProbe.expectMsg(Success(Done))
     }
 
     "yield the first error" in assertAllStagesStopped {
@@ -53,7 +55,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendComplete()
-      onCompleteProbe.expectMsg(Success(()))
+      onCompleteProbe.expectMsg(Success(Done))
       onCompleteProbe.expectNoMsg(100.millis)
     }
 
@@ -75,7 +77,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
       proc.sendComplete()
       onCompleteProbe.expectMsg("map-42")
       onCompleteProbe.expectMsg("foreach-42")
-      onCompleteProbe.expectMsg(Success(()))
+      onCompleteProbe.expectMsg(Success(Done))
     }
 
   }

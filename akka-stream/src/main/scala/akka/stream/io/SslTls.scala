@@ -7,7 +7,7 @@ import java.lang.{ Integer ⇒ jInteger }
 import java.security.Principal
 import java.util.Optional
 
-import akka.japi
+import akka.{ NotUsed, japi }
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
 import akka.util.ByteString
@@ -55,8 +55,8 @@ import scala.compat.java8.OptionConverters
  */
 object SslTls {
 
-  type ScalaFlow = scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, Unit]
-  type JavaFlow = javadsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, Unit]
+  type ScalaFlow = scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed]
+  type JavaFlow = javadsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed]
 
   /**
    * Scala API: create a StreamTls [[akka.stream.scaladsl.BidiFlow]]. The
@@ -158,13 +158,13 @@ object SslTlsPlacebo {
   // this constructs a session for (invalid) protocol SSL_NULL_WITH_NULL_NULL
   private[akka] val dummySession = SSLContext.getDefault.createSSLEngine.getSession
 
-  val forScala: scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, Unit] =
+  val forScala: scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, NotUsed] =
     scaladsl.BidiFlow.fromGraph(scaladsl.GraphDSL.create() { implicit b ⇒
       val top = b.add(scaladsl.Flow[SslTlsOutbound].collect { case SendBytes(bytes) ⇒ bytes })
       val bottom = b.add(scaladsl.Flow[ByteString].map(SessionBytes(dummySession, _)))
       BidiShape.fromFlows(top, bottom)
     })
-  val forJava: javadsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, Unit] =
+  val forJava: javadsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, NotUsed] =
     new javadsl.BidiFlow(forScala)
 }
 

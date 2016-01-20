@@ -1,5 +1,7 @@
 package akka.stream.scaladsl
 
+import akka.NotUsed
+
 import scala.collection.immutable
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
@@ -29,7 +31,7 @@ object GraphOpsIntegrationSpec {
       }
     }
 
-    def apply[In, Out](pipeline: Flow[In, Out, _]): Graph[ShufflePorts[In, Out], Unit] = {
+    def apply[In, Out](pipeline: Flow[In, Out, _]): Graph[ShufflePorts[In, Out], NotUsed] = {
       GraphDSL.create() { implicit b ⇒
         val merge = b.add(Merge[In](2))
         val balance = b.add(Balance[Out](2))

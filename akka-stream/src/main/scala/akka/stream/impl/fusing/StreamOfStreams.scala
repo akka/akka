@@ -4,6 +4,7 @@
 package akka.stream.impl.fusing
 
 import java.util.concurrent.atomic.AtomicReference
+import akka.NotUsed
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.SubscriptionTimeoutException
@@ -107,10 +108,10 @@ final class FlattenMerge[T, M](breadth: Int) extends GraphStage[FlowShape[Graph[
 /**
  * INTERNAL API
  */
-final class PrefixAndTail[T](n: Int) extends GraphStage[FlowShape[T, (immutable.Seq[T], Source[T, Unit])]] {
+final class PrefixAndTail[T](n: Int) extends GraphStage[FlowShape[T, (immutable.Seq[T], Source[T, NotUsed])]] {
   val in: Inlet[T] = Inlet("PrefixAndTail.in")
-  val out: Outlet[(immutable.Seq[T], Source[T, Unit])] = Outlet("PrefixAndTail.out")
-  override val shape: FlowShape[T, (immutable.Seq[T], Source[T, Unit])] = FlowShape(in, out)
+  val out: Outlet[(immutable.Seq[T], Source[T, NotUsed])] = Outlet("PrefixAndTail.out")
+  override val shape: FlowShape[T, (immutable.Seq[T], Source[T, NotUsed])] = FlowShape(in, out)
 
   override def initialAttributes = DefaultAttributes.prefixAndTail
 
@@ -143,7 +144,7 @@ final class PrefixAndTail[T](n: Int) extends GraphStage[FlowShape[T, (immutable.
       }
     }
 
-    private def openSubstream(): Source[T, Unit] = {
+    private def openSubstream(): Source[T, NotUsed] = {
       val timeout = ActorMaterializer.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
       tailSource = new SubSourceOutlet[T]("TailSource")
       tailSource.setHandler(subHandler)
@@ -215,17 +216,17 @@ object Split {
   /** Splits after the current element. The current element will be the last element in the current substream. */
   case object SplitAfter extends SplitDecision
 
-  def when[T](p: T ⇒ Boolean): Graph[FlowShape[T, Source[T, Unit]], Unit] = new Split(Split.SplitBefore, p)
-  def after[T](p: T ⇒ Boolean): Graph[FlowShape[T, Source[T, Unit]], Unit] = new Split(Split.SplitAfter, p)
+  def when[T](p: T ⇒ Boolean): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] = new Split(Split.SplitBefore, p)
+  def after[T](p: T ⇒ Boolean): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] = new Split(Split.SplitAfter, p)
 }
 
 /**
  * INERNAL API
  */
-final class Split[T](decision: Split.SplitDecision, p: T ⇒ Boolean) extends GraphStage[FlowShape[T, Source[T, Unit]]] {
+final class Split[T](decision: Split.SplitDecision, p: T ⇒ Boolean) extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
   val in: Inlet[T] = Inlet("Split.in")
-  val out: Outlet[Source[T, Unit]] = Outlet("Split.out")
-  override val shape: FlowShape[T, Source[T, Unit]] = FlowShape(in, out)
+  val out: Outlet[Source[T, NotUsed]] = Outlet("Split.out")
+  override val shape: FlowShape[T, Source[T, NotUsed]] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     import Split._

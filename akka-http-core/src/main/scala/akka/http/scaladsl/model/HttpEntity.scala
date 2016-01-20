@@ -17,7 +17,7 @@ import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream._
-import akka.{ japi, stream }
+import akka.{ NotUsed, japi, stream }
 import akka.http.scaladsl.model.ContentType.{ NonBinary, Binary }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model ⇒ jm }
@@ -208,7 +208,7 @@ object HttpEntity {
 
     override def isKnownEmpty: Boolean = data.isEmpty
 
-    override def dataBytes: Source[ByteString, Unit] = Source(data :: Nil)
+    override def dataBytes: Source[ByteString, NotUsed] = Source(data :: Nil)
 
     override def toStrict(timeout: FiniteDuration)(implicit fm: Materializer) =
       FastFuture.successful(this)

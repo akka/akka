@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import akka.NotUsed;
 import akka.stream.javadsl.GraphDSL;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -26,7 +27,6 @@ import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 import static org.junit.Assert.assertArrayEquals;
 
 public class BidiFlowDocTest {
@@ -110,7 +110,7 @@ public class BidiFlowDocTest {
   //#codec
   @SuppressWarnings("unused")
   //#codec
-  public final BidiFlow<Message, ByteString, ByteString, Message, BoxedUnit> codecVerbose =
+  public final BidiFlow<Message, ByteString, ByteString, Message, NotUsed> codecVerbose =
       BidiFlow.fromGraph(GraphDSL.create(b -> {
         final FlowShape<Message, ByteString> top =
                 b.add(Flow.of(Message.class).map(BidiFlowDocTest::toBytes));
@@ -119,7 +119,7 @@ public class BidiFlowDocTest {
         return BidiShape.fromFlows(top, bottom);
       }));
 
-  public final BidiFlow<Message, ByteString, ByteString, Message, BoxedUnit> codec =
+  public final BidiFlow<Message, ByteString, ByteString, Message, NotUsed> codec =
       BidiFlow.fromFunctions(BidiFlowDocTest::toBytes, BidiFlowDocTest::fromBytes);
   //#codec
   
@@ -186,7 +186,7 @@ public class BidiFlowDocTest {
     }
   }
   
-  public final BidiFlow<ByteString, ByteString, ByteString, ByteString, BoxedUnit> framing =
+  public final BidiFlow<ByteString, ByteString, ByteString, ByteString, NotUsed> framing =
       BidiFlow.fromGraph(GraphDSL.create(b -> {
         final FlowShape<ByteString, ByteString> top =
                 b.add(Flow.of(ByteString.class).map(BidiFlowDocTest::addLengthHeader));
@@ -210,16 +210,16 @@ public class BidiFlowDocTest {
      *         |  +-------+            +---------+  |
      *         +------------------------------------+
      */
-    final BidiFlow<Message, ByteString, ByteString, Message, BoxedUnit> stack =
+    final BidiFlow<Message, ByteString, ByteString, Message, NotUsed> stack =
         codec.atop(framing);
 
     // test it by plugging it into its own inverse and closing the right end
-    final Flow<Message, Message, BoxedUnit> pingpong = 
+    final Flow<Message, Message, NotUsed> pingpong =
         Flow.of(Message.class).collect(new PFBuilder<Message, Message>()
             .match(Ping.class, p -> new Pong(p.id))
             .build()
             );
-    final Flow<Message, Message, BoxedUnit> flow =
+    final Flow<Message, Message, NotUsed> flow =
         stack.atop(stack.reversed()).join(pingpong);
     final Future<List<Message>> result = Source
         .from(Arrays.asList(0, 1, 2))

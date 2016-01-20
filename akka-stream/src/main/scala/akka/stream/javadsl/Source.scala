@@ -7,6 +7,7 @@ import java.io.{ OutputStream, InputStream, File }
 import java.util
 import java.util.Optional
 
+import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
@@ -29,13 +30,13 @@ import scala.compat.java8.OptionConverters._
 
 /** Java API */
 object Source {
-  private[this] val _empty = new Source[Any, Unit](scaladsl.Source.empty)
+  private[this] val _empty = new Source[Any, NotUsed](scaladsl.Source.empty)
 
   /**
    * Create a `Source` with no elements, i.e. an empty stream that is completed immediately
    * for every connected `Sink`.
    */
-  def empty[O](): Source[O, Unit] = _empty.asInstanceOf[Source[O, Unit]]
+  def empty[O](): Source[O, NotUsed] = _empty.asInstanceOf[Source[O, NotUsed]]
 
   /**
    * Create a `Source` which materializes a [[scala.concurrent.Promise]] which controls what element
@@ -67,7 +68,7 @@ object Source {
    * that mediate the flow of elements downstream and the propagation of
    * back-pressure upstream.
    */
-  def fromPublisher[O](publisher: Publisher[O]): javadsl.Source[O, Unit] =
+  def fromPublisher[O](publisher: Publisher[O]): javadsl.Source[O, NotUsed] =
     new Source(scaladsl.Source.fromPublisher(publisher))
 
   /**
@@ -88,7 +89,7 @@ object Source {
    * in accordance with the demand coming from the downstream transformation
    * steps.
    */
-  def fromIterator[O](f: function.Creator[java.util.Iterator[O]]): javadsl.Source[O, Unit] =
+  def fromIterator[O](f: function.Creator[java.util.Iterator[O]]): javadsl.Source[O, NotUsed] =
     new Source(scaladsl.Source.fromIterator(() ⇒ f.create().asScala))
 
   /**
@@ -111,7 +112,7 @@ object Source {
    * being used as a `Source`. Otherwise the stream may fail with
    * `ConcurrentModificationException` or other more subtle errors may occur.
    */
-  def from[O](iterable: java.lang.Iterable[O]): javadsl.Source[O, Unit] = {
+  def from[O](iterable: java.lang.Iterable[O]): javadsl.Source[O, NotUsed] = {
     // this adapter is not immutable if the the underlying java.lang.Iterable is modified
     // but there is not anything we can do to prevent that from happening.
     // ConcurrentModificationException will be thrown in some cases.
@@ -132,7 +133,7 @@ object Source {
    *
    * @see [[scala.collection.immutable.Range.inclusive(Int, Int)]]
    */
-  def range(start: Int, end: Int): javadsl.Source[Integer, Unit] = range(start, end, 1)
+  def range(start: Int, end: Int): javadsl.Source[Integer, NotUsed] = range(start, end, 1)
 
   /**
    * Creates [[Source]] that represents integer values in range ''[start;end]'', with the given step.
@@ -142,7 +143,7 @@ object Source {
    *
    * @see [[scala.collection.immutable.Range.inclusive(Int, Int, Int)]]
    */
-  def range(start: Int, end: Int, step: Int): javadsl.Source[Integer, Unit] =
+  def range(start: Int, end: Int, step: Int): javadsl.Source[Integer, NotUsed] =
     fromIterator[Integer](new function.Creator[util.Iterator[Integer]]() {
       def create(): util.Iterator[Integer] =
         new Inclusive(start, end, step) {
@@ -156,7 +157,7 @@ object Source {
    * may happen before or after materializing the `Flow`.
    * The stream terminates with a failure if the `Future` is completed with a failure.
    */
-  def fromFuture[O](future: Future[O]): javadsl.Source[O, Unit] =
+  def fromFuture[O](future: Future[O]): javadsl.Source[O, NotUsed] =
     new Source(scaladsl.Source.fromFuture(future))
 
   /**
@@ -173,26 +174,26 @@ object Source {
    * Create a `Source` with one element.
    * Every connected `Sink` of this stream will see an individual stream consisting of one element.
    */
-  def single[T](element: T): Source[T, Unit] =
+  def single[T](element: T): Source[T, NotUsed] =
     new Source(scaladsl.Source.single(element))
 
   /**
    * Create a `Source` that will continually emit the given element.
    */
-  def repeat[T](element: T): Source[T, Unit] =
+  def repeat[T](element: T): Source[T, NotUsed] =
     new Source(scaladsl.Source.repeat(element))
 
   /**
    * Create a `Source` that will unfold a value of type `S` into
    * a pair of the next state `S` and output elements of type `E`.
    */
-  def unfold[S, E](s: S, f: function.Function[S, Optional[(S, E)]]): Source[E, Unit] =
+  def unfold[S, E](s: S, f: function.Function[S, Optional[(S, E)]]): Source[E, NotUsed] =
     new Source(scaladsl.Source.unfold(s)((s: S) ⇒ f.apply(s).asScala))
 
   /**
    * Same as [[unfold]], but uses an async function to generate the next state-element tuple.
    */
-  def unfoldAsync[S, E](s: S, f: function.Function[S, Future[Optional[(S, E)]]]): Source[E, Unit] =
+  def unfoldAsync[S, E](s: S, f: function.Function[S, Future[Optional[(S, E)]]]): Source[E, NotUsed] =
     new Source(
       scaladsl.Source.unfoldAsync(s)(
         (s: S) ⇒ f.apply(s).map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)))
@@ -200,7 +201,7 @@ object Source {
   /**
    * Create a `Source` that immediately ends the stream with the `cause` failure to every connected `Sink`.
    */
-  def failed[T](cause: Throwable): Source[T, Unit] =
+  def failed[T](cause: Throwable): Source[T, NotUsed] =
     new Source(scaladsl.Source.failed(cause))
 
   /**
@@ -262,7 +263,7 @@ object Source {
    * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
    */
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: java.util.List[Source[T, _]],
-                    strategy: function.Function[java.lang.Integer, _ <: Graph[UniformFanInShape[T, U], Unit]]): Source[U, Unit] = {
+                    strategy: function.Function[java.lang.Integer, _ <: Graph[UniformFanInShape[T, U], NotUsed]]): Source[U, NotUsed] = {
     import scala.collection.JavaConverters._
     val seq = if (rest != null) rest.asScala.map(_.asScala) else Seq()
     new Source(scaladsl.Source.combine(first.asScala, second.asScala, seq: _*)(num ⇒ strategy.apply(num)))
@@ -674,7 +675,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    */
   def zipMat[T, M, M2](that: Graph[SourceShape[T], M],
                        matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] =
-    this.viaMat(Flow.create[Out].zipMat(that, Keep.right[Unit, M]), matF)
+    this.viaMat(Flow.create[Out].zipMat(that, Keep.right[NotUsed, M]), matF)
 
   /**
    * Put together the elements of current [[Source]] and the given one
@@ -710,7 +711,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * normal end of the stream, or completed with `Failure` if there is a failure is signaled in
    * the stream.
    */
-  def runForeach(f: function.Procedure[Out], materializer: Materializer): Future[Unit] =
+  def runForeach(f: function.Procedure[Out], materializer: Materializer): Future[Done] =
     runWith(Sink.foreach(f), materializer)
 
   // COMMON OPS //
@@ -1319,7 +1320,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * '''Cancels when''' downstream cancels or substream cancels
    */
-  def prefixAndTail(n: Int): javadsl.Source[akka.japi.Pair[java.util.List[Out @uncheckedVariance], javadsl.Source[Out @uncheckedVariance, Unit]], Mat] =
+  def prefixAndTail(n: Int): javadsl.Source[akka.japi.Pair[java.util.List[Out @uncheckedVariance], javadsl.Source[Out @uncheckedVariance, NotUsed]], Mat] =
     new Source(delegate.prefixAndTail(n).map { case (taken, tail) ⇒ akka.japi.Pair(taken.asJava, tail.asJava) })
 
   /**

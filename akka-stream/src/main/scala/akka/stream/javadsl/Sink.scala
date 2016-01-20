@@ -5,6 +5,7 @@ package akka.stream.javadsl
 
 import java.util.Optional
 
+import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Props }
 import akka.dispatch.ExecutionContexts
 import akka.japi.function
@@ -31,19 +32,19 @@ object Sink {
   /**
    * Helper to create [[Sink]] from `Subscriber`.
    */
-  def fromSubscriber[In](subs: Subscriber[In]): Sink[In, Unit] =
+  def fromSubscriber[In](subs: Subscriber[In]): Sink[In, NotUsed] =
     new Sink(scaladsl.Sink.fromSubscriber(subs))
 
   /**
    * A `Sink` that immediately cancels its upstream after materialization.
    */
-  def cancelled[T](): Sink[T, Unit] =
+  def cancelled[T](): Sink[T, NotUsed] =
     new Sink(scaladsl.Sink.cancelled)
 
   /**
    * A `Sink` that will consume the stream and discard the elements.
    */
-  def ignore[T](): Sink[T, Future[Unit]] =
+  def ignore[T](): Sink[T, Future[Done]] =
     new Sink(scaladsl.Sink.ignore)
 
   /**
@@ -66,7 +67,7 @@ object Sink {
    * normal end of the stream, or completed with `Failure` if there is a failure is signaled in
    * the stream..
    */
-  def foreach[T](f: function.Procedure[T]): Sink[T, Future[Unit]] =
+  def foreach[T](f: function.Procedure[T]): Sink[T, Future[Done]] =
     new Sink(scaladsl.Sink.foreach(f.apply))
 
   /**
@@ -80,7 +81,7 @@ object Sink {
    * [[akka.stream.Supervision.Resume]] or [[akka.stream.Supervision.Restart]] the
    * element is dropped and the stream continues.
    */
-  def foreachParallel[T](parallel: Int)(f: function.Procedure[T])(ec: ExecutionContext): Sink[T, Future[Unit]] =
+  def foreachParallel[T](parallel: Int)(f: function.Procedure[T])(ec: ExecutionContext): Sink[T, Future[Done]] =
     new Sink(scaladsl.Sink.foreachParallel(parallel)(f.apply)(ec))
 
   /**
@@ -88,7 +89,7 @@ object Sink {
    * completion, apply the provided function with [[scala.util.Success]]
    * or [[scala.util.Failure]].
    */
-  def onComplete[In](callback: function.Procedure[Try[Unit]]): Sink[In, Unit] =
+  def onComplete[In](callback: function.Procedure[Try[Done]]): Sink[In, NotUsed] =
     new Sink(scaladsl.Sink.onComplete[In](x ⇒ callback.apply(x)))
 
   /**
@@ -162,7 +163,7 @@ object Sink {
    * limiting stage in front of this `Sink`.
    *
    */
-  def actorRef[In](ref: ActorRef, onCompleteMessage: Any): Sink[In, Unit] =
+  def actorRef[In](ref: ActorRef, onCompleteMessage: Any): Sink[In, NotUsed] =
     new Sink(scaladsl.Sink.actorRef[In](ref, onCompleteMessage))
 
   /**
@@ -179,7 +180,7 @@ object Sink {
    * message will be sent to the destination actor.
    */
   def actorRefWithAck[In](ref: ActorRef, onInitMessage: Any, ackMessage: Any, onCompleteMessage: Any,
-                          onFailureMessage: function.Function[Throwable, Any]): Sink[In, Unit] =
+                          onFailureMessage: function.Function[Throwable, Any]): Sink[In, NotUsed] =
     new Sink(scaladsl.Sink.actorRefWithAck[In](ref, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage.apply))
 
   /**
@@ -203,7 +204,7 @@ object Sink {
   /**
    * Combine several sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink`.
    */
-  def combine[T, U](output1: Sink[U, _], output2: Sink[U, _], rest: java.util.List[Sink[U, _]], strategy: function.Function[java.lang.Integer, Graph[UniformFanOutShape[T, U], Unit]]): Sink[T, Unit] = {
+  def combine[T, U](output1: Sink[U, _], output2: Sink[U, _], rest: java.util.List[Sink[U, _]], strategy: function.Function[java.lang.Integer, Graph[UniformFanOutShape[T, U], NotUsed]]): Sink[T, NotUsed] = {
     import scala.collection.JavaConverters._
     val seq = if (rest != null) rest.asScala.map(_.asScala) else Seq()
     new Sink(scaladsl.Sink.combine(output1.asScala, output2.asScala, seq: _*)(num ⇒ strategy.apply(num)))

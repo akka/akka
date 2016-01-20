@@ -5,6 +5,7 @@ package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.NotUsed
 import akka.actor._
 import akka.stream._
 import akka.stream.impl.AcknowledgePublisher.{ Ok, Rejected }
@@ -67,10 +68,10 @@ private[akka] final class SubscriberSource[Out](val attributes: Attributes, shap
  * that mediate the flow of elements downstream and the propagation of
  * back-pressure upstream.
  */
-private[akka] final class PublisherSource[Out](p: Publisher[Out], val attributes: Attributes, shape: SourceShape[Out]) extends SourceModule[Out, Unit](shape) {
-  override def create(context: MaterializationContext) = (p, ())
+private[akka] final class PublisherSource[Out](p: Publisher[Out], val attributes: Attributes, shape: SourceShape[Out]) extends SourceModule[Out, NotUsed](shape) {
+  override def create(context: MaterializationContext) = (p, NotUsed)
 
-  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Unit] = new PublisherSource[Out](p, attributes, shape)
+  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, NotUsed] = new PublisherSource[Out](p, attributes, shape)
   override def withAttributes(attr: Attributes): Module = new PublisherSource[Out](p, attr, amendShape(attr))
 }
 

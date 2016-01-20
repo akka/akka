@@ -6,6 +6,7 @@ package akka.stream.impl
 
 import java.util.concurrent.TimeoutException
 
+import akka.Done
 import akka.stream.scaladsl._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.{ AkkaSpec, TestPublisher, TestSubscriber }
@@ -147,7 +148,7 @@ class TimeoutsSpec extends AkkaSpec {
       val upstream = Flow.fromSinkAndSourceMat(Sink.ignore, Source.fromPublisher(upstreamWriter))(Keep.left)
       val downstream = Flow.fromSinkAndSourceMat(Sink.ignore, Source.fromPublisher(downstreamWriter))(Keep.left)
 
-      val assembly: RunnableGraph[(Future[Unit], Future[Unit])] = upstream
+      val assembly: RunnableGraph[(Future[Done], Future[Done])] = upstream
         .joinMat(BidiFlow.bidirectionalIdleTimeout[Int, String](2.seconds))(Keep.left)
         .joinMat(downstream)(Keep.both)
 

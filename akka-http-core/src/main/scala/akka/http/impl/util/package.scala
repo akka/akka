@@ -4,6 +4,8 @@
 
 package akka.http.impl
 
+import akka.NotUsed
+
 import language.implicitConversions
 import language.higherKinds
 import java.nio.charset.Charset
@@ -41,7 +43,7 @@ package object util {
   private[http] implicit def enhanceByteStringsMat[Mat](byteStrings: Source[ByteString, Mat]): EnhancedByteStringSource[Mat] =
     new EnhancedByteStringSource(byteStrings)
 
-  private[http] def printEvent[T](marker: String): Flow[T, T, Unit] =
+  private[http] def printEvent[T](marker: String): Flow[T, T, NotUsed] =
     Flow[T].transform(() ⇒ new PushPullStage[T, T] {
       override def onPush(element: T, ctx: Context[T]): SyncDirective = {
         println(s"$marker: $element")

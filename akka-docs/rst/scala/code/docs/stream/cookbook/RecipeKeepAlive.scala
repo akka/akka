@@ -1,5 +1,6 @@
 package docs.stream.cookbook
 
+import akka.NotUsed
 import akka.stream.ClosedShape
 import akka.stream.scaladsl._
 import akka.stream.testkit._
@@ -14,7 +15,7 @@ class RecipeKeepAlive extends RecipeSpec {
 
       //#inject-keepalive
       import scala.concurrent.duration._
-      val injectKeepAlive: Flow[ByteString, ByteString, Unit] =
+      val injectKeepAlive: Flow[ByteString, ByteString, NotUsed] =
         Flow[ByteString].keepAlive(1.second, () => keepaliveMessage)
       //#inject-keepalive
 

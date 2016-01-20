@@ -5,6 +5,7 @@
 package akka.http.impl.engine.client
 
 import java.net.InetSocketAddress
+import akka.NotUsed
 import akka.http.ConnectionPoolSettings
 
 import scala.concurrent.{ Promise, Future }
@@ -69,7 +70,7 @@ private object PoolFlow {
   */
   def apply(connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
             remoteAddress: InetSocketAddress, settings: ConnectionPoolSettings, log: LoggingAdapter)(
-              implicit system: ActorSystem, fm: Materializer): Flow[RequestContext, ResponseContext, Unit] =
+              implicit system: ActorSystem, fm: Materializer): Flow[RequestContext, ResponseContext, NotUsed] =
     Flow.fromGraph(GraphDSL.create[FlowShape[RequestContext, ResponseContext]]() { implicit b ⇒
       import settings._
       import GraphDSL.Implicits._

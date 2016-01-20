@@ -5,6 +5,7 @@ package akka.stream.io
 
 import java.nio.ByteOrder
 
+import akka.NotUsed
 import akka.stream.scaladsl.{ Keep, BidiFlow, Flow }
 import akka.stream.stage._
 import akka.util.{ ByteIterator, ByteStringBuilder, ByteString }
@@ -30,7 +31,7 @@ object Framing {
    *                           exceeded this Flow will fail the stream.
    * @return
    */
-  def delimiter(delimiter: ByteString, maximumFrameLength: Int, allowTruncation: Boolean = false): Flow[ByteString, ByteString, Unit] =
+  def delimiter(delimiter: ByteString, maximumFrameLength: Int, allowTruncation: Boolean = false): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].transform(() ⇒ new DelimiterFramingStage(delimiter, maximumFrameLength, allowTruncation))
       .named("delimiterFraming")
 
@@ -52,7 +53,7 @@ object Framing {
   def lengthField(fieldLength: Int,
                   fieldOffset: Int = 0,
                   maximumFrameLength: Int,
-                  byteOrder: ByteOrder = ByteOrder.LITTLE_ENDIAN): Flow[ByteString, ByteString, Unit] = {
+                  byteOrder: ByteOrder = ByteOrder.LITTLE_ENDIAN): Flow[ByteString, ByteString, NotUsed] = {
     require(fieldLength >= 1 && fieldLength <= 4, "Length field length must be 1, 2, 3 or 4.")
     Flow[ByteString].transform(() ⇒ new LengthFieldFramingStage(fieldLength, fieldOffset, maximumFrameLength, byteOrder))
       .named("lengthFieldFraming")
@@ -77,7 +78,7 @@ object Framing {
    *                             included in this limit.
    * @return
    */
-  def simpleFramingProtocol(maximumMessageLength: Int): BidiFlow[ByteString, ByteString, ByteString, ByteString, Unit] = {
+  def simpleFramingProtocol(maximumMessageLength: Int): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
     val decoder = lengthField(4, 0, maximumMessageLength + 4, ByteOrder.BIG_ENDIAN).map(_.drop(4))
     val encoder = Flow[ByteString].transform(() ⇒ new PushStage[ByteString, ByteString] {
 

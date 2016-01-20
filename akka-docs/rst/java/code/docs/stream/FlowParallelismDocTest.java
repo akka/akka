@@ -3,10 +3,10 @@
  */
 package docs.stream;
 
-import scala.runtime.BoxedUnit;
 
 import static org.junit.Assert.assertEquals;
 
+import akka.NotUsed;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,10 +37,10 @@ public class FlowParallelismDocTest {
   static class Pancake {}
 
   //#pipelining
-    Flow<ScoopOfBatter, HalfCookedPancake, BoxedUnit> fryingPan1 =
+    Flow<ScoopOfBatter, HalfCookedPancake, NotUsed> fryingPan1 =
       Flow.of(ScoopOfBatter.class).map(batter -> new HalfCookedPancake());
 
-    Flow<HalfCookedPancake, Pancake, BoxedUnit> fryingPan2 =
+    Flow<HalfCookedPancake, Pancake, NotUsed> fryingPan2 =
       Flow.of(HalfCookedPancake.class).map(halfCooked -> new Pancake());
   //#pipelining
 
@@ -49,17 +49,17 @@ public class FlowParallelismDocTest {
     //#pipelining
 
     // With the two frying pans we can fully cook pancakes
-    Flow<ScoopOfBatter, Pancake, BoxedUnit> pancakeChef = fryingPan1.via(fryingPan2);
+    Flow<ScoopOfBatter, Pancake, NotUsed> pancakeChef = fryingPan1.via(fryingPan2);
     //#pipelining
   }
 
   @Test
   public void demonstrateParallelism() {
     //#parallelism
-    Flow<ScoopOfBatter, Pancake, BoxedUnit> fryingPan =
+    Flow<ScoopOfBatter, Pancake, NotUsed> fryingPan =
       Flow.of(ScoopOfBatter.class).map(batter -> new Pancake());
 
-    Flow<ScoopOfBatter, Pancake, BoxedUnit> pancakeChef =
+    Flow<ScoopOfBatter, Pancake, NotUsed> pancakeChef =
       Flow.fromGraph(GraphDSL.create(b -> {
         final UniformFanInShape<Pancake, Pancake> mergePancakes =
           b.add(Merge.create(2));
@@ -82,7 +82,7 @@ public class FlowParallelismDocTest {
   @Test
   public void parallelPipeline() {
     //#parallel-pipeline
-    Flow<ScoopOfBatter, Pancake, BoxedUnit> pancakeChef =
+    Flow<ScoopOfBatter, Pancake, NotUsed> pancakeChef =
       Flow.fromGraph(GraphDSL.create(b -> {
         final UniformFanInShape<Pancake, Pancake> mergePancakes =
           b.add(Merge.create(2));
@@ -109,7 +109,7 @@ public class FlowParallelismDocTest {
   @Test
   public void pipelinedParallel() {
     //#pipelined-parallel
-    Flow<ScoopOfBatter, HalfCookedPancake, BoxedUnit> pancakeChefs1 =
+    Flow<ScoopOfBatter, HalfCookedPancake, NotUsed> pancakeChefs1 =
       Flow.fromGraph(GraphDSL.create(b -> {
         final UniformFanInShape<HalfCookedPancake, HalfCookedPancake> mergeHalfCooked =
           b.add(Merge.create(2));
@@ -124,7 +124,7 @@ public class FlowParallelismDocTest {
         return FlowShape.of(dispatchBatter.in(), mergeHalfCooked.out());
       }));
 
-    Flow<HalfCookedPancake, Pancake, BoxedUnit> pancakeChefs2 =
+    Flow<HalfCookedPancake, Pancake, NotUsed> pancakeChefs2 =
       Flow.fromGraph(GraphDSL.create(b -> {
         final UniformFanInShape<Pancake, Pancake> mergePancakes =
           b.add(Merge.create(2));
@@ -139,7 +139,7 @@ public class FlowParallelismDocTest {
         return FlowShape.of(dispatchHalfCooked.in(), mergePancakes.out());
       }));
 
-    Flow<ScoopOfBatter, Pancake, BoxedUnit> kitchen =
+    Flow<ScoopOfBatter, Pancake, NotUsed> kitchen =
         pancakeChefs1.via(pancakeChefs2);
     //#pipelined-parallel
   }

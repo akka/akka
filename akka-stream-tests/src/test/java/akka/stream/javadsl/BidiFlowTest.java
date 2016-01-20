@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import akka.NotUsed;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -15,7 +16,6 @@ import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 import akka.japi.Pair;
 import akka.stream.*;
 import akka.stream.testkit.AkkaSpec;
@@ -34,11 +34,11 @@ public class BidiFlowTest extends StreamTest {
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource(
       "FlowTest", AkkaSpec.testConf());
 
-  private final BidiFlow<Integer, Long, ByteString, String, BoxedUnit> bidi = BidiFlow
+  private final BidiFlow<Integer, Long, ByteString, String, NotUsed> bidi = BidiFlow
       .fromGraph(GraphDSL.create(
-              new Function<GraphDSL.Builder<BoxedUnit>, BidiShape<Integer, Long, ByteString, String>>() {
+              new Function<GraphDSL.Builder<NotUsed>, BidiShape<Integer, Long, ByteString, String>>() {
                   @Override
-                  public BidiShape<Integer, Long, ByteString, String> apply(Builder<BoxedUnit> b)
+                  public BidiShape<Integer, Long, ByteString, String> apply(Builder<NotUsed> b)
                           throws Exception {
                       final FlowShape<Integer, Long> top = b.add(Flow
                         .of(Integer.class).map(new Function<Integer, Long>() {
@@ -59,12 +59,12 @@ public class BidiFlowTest extends StreamTest {
                   }
               }));
 
-  private final BidiFlow<Long, Integer, String, ByteString, BoxedUnit> inverse = BidiFlow
+  private final BidiFlow<Long, Integer, String, ByteString, NotUsed> inverse = BidiFlow
       .fromGraph(
               GraphDSL.create(
-                      new Function<GraphDSL.Builder<BoxedUnit>, BidiShape<Long, Integer, String, ByteString>>() {
+                      new Function<GraphDSL.Builder<NotUsed>, BidiShape<Long, Integer, String, ByteString>>() {
                           @Override
-                          public BidiShape<Long, Integer, String, ByteString> apply(Builder<BoxedUnit> b)
+                          public BidiShape<Long, Integer, String, ByteString> apply(Builder<NotUsed> b)
                                   throws Exception {
                               final FlowShape<Long, Integer> top = b.add(Flow.of(Long.class)
                                 .map(new Function<Long, Integer>() {
@@ -152,7 +152,7 @@ public class BidiFlowTest extends StreamTest {
 
   @Test
   public void mustWorkAsAFlowThatIsOpenOnTheLeft() throws Exception {
-    final Flow<Integer, String, BoxedUnit> f = bidi.join(Flow.of(Long.class).map(
+    final Flow<Integer, String, NotUsed> f = bidi.join(Flow.of(Long.class).map(
         new Function<Long, ByteString>() {
           @Override public ByteString apply(Long arg) {
             return ByteString.fromString("Hello " + arg);
@@ -164,7 +164,7 @@ public class BidiFlowTest extends StreamTest {
 
   @Test
   public void mustWorkAsAFlowThatIsOpenOnTheRight() throws Exception {
-    final Flow<ByteString, Long, BoxedUnit> f = Flow.of(String.class).map(
+    final Flow<ByteString, Long, NotUsed> f = Flow.of(String.class).map(
         new Function<String, Integer>() {
           @Override public Integer apply(String arg) {
             return Integer.valueOf(arg);
@@ -177,7 +177,7 @@ public class BidiFlowTest extends StreamTest {
 
   @Test
   public void mustWorkWhenAtopItsInverse() throws Exception {
-    final Flow<Integer,String,BoxedUnit> f = bidi.atop(inverse).join(Flow.of(Integer.class).map(
+    final Flow<Integer,String,NotUsed> f = bidi.atop(inverse).join(Flow.of(Integer.class).map(
         new Function<Integer, String>() {
           @Override public String apply(Integer arg) {
             return arg.toString();
@@ -189,7 +189,7 @@ public class BidiFlowTest extends StreamTest {
 
   @Test
   public void mustWorkWhenReversed() throws Exception {
-    final Flow<Integer,String,BoxedUnit> f = Flow.of(Integer.class).map(
+    final Flow<Integer,String,NotUsed> f = Flow.of(Integer.class).map(
         new Function<Integer, String>() {
           @Override public String apply(Integer arg) {
             return arg.toString();
@@ -275,7 +275,7 @@ public class BidiFlowTest extends StreamTest {
   
   public void mustSuitablyOverrideAttributeHandlingMethods() {
     @SuppressWarnings("unused")
-    final BidiFlow<Integer, Long, ByteString, String, BoxedUnit> b =
+    final BidiFlow<Integer, Long, ByteString, String, NotUsed> b =
         bidi.withAttributes(Attributes.name("")).addAttributes(Attributes.asyncBoundary()).named("");
   }
 }

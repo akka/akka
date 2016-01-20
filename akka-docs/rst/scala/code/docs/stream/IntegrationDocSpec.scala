@@ -3,6 +3,8 @@
  */
 package docs.stream
 
+import akka.NotUsed
+
 import scala.concurrent.duration._
 import akka.stream.testkit.AkkaSpec
 import akka.stream.scaladsl._
@@ -132,21 +134,21 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val emailServer = new EmailServer(probe.ref)
 
     //#tweet-authors
-    val authors: Source[Author, Unit] =
+    val authors: Source[Author, NotUsed] =
       tweets
         .filter(_.hashtags.contains(akka))
         .map(_.author)
     //#tweet-authors
 
     //#email-addresses-mapAsync
-    val emailAddresses: Source[String, Unit] =
+    val emailAddresses: Source[String, NotUsed] =
       authors
         .mapAsync(4)(author => addressSystem.lookupEmail(author.handle))
         .collect { case Some(emailAddress) => emailAddress }
     //#email-addresses-mapAsync
 
     //#send-emails
-    val sendEmails: RunnableGraph[Unit] =
+    val sendEmails: RunnableGraph[NotUsed] =
       emailAddresses
         .mapAsync(4)(address => {
           emailServer.send(
@@ -168,14 +170,14 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
   "lookup email with mapAsync and supervision" in {
     val addressSystem = new AddressSystem2
-    val authors: Source[Author, Unit] =
+    val authors: Source[Author, NotUsed] =
       tweets.filter(_.hashtags.contains(akka)).map(_.author)
 
     //#email-addresses-mapAsync-supervision
     import ActorAttributes.supervisionStrategy
     import Supervision.resumingDecider
 
-    val emailAddresses: Source[String, Unit] =
+    val emailAddresses: Source[String, NotUsed] =
       authors.via(
         Flow[Author].mapAsync(4)(author => addressSystem.lookupEmail(author.handle))
           .withAttributes(supervisionStrategy(resumingDecider)))
@@ -188,15 +190,15 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val emailServer = new EmailServer(probe.ref)
 
     //#external-service-mapAsyncUnordered
-    val authors: Source[Author, Unit] =
+    val authors: Source[Author, NotUsed] =
       tweets.filter(_.hashtags.contains(akka)).map(_.author)
 
-    val emailAddresses: Source[String, Unit] =
+    val emailAddresses: Source[String, NotUsed] =
       authors
         .mapAsyncUnordered(4)(author => addressSystem.lookupEmail(author.handle))
         .collect { case Some(emailAddress) => emailAddress }
 
-    val sendEmails: RunnableGraph[Unit] =
+    val sendEmails: RunnableGraph[NotUsed] =
       emailAddresses
         .mapAsyncUnordered(4)(address => {
           emailServer.send(
@@ -231,7 +233,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     //#blocking-mapAsync
     val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
 
-    val sendTextMessages: RunnableGraph[Unit] =
+    val sendTextMessages: RunnableGraph[NotUsed] =
       phoneNumbers
         .mapAsync(4)(phoneNo => {
           Future {
@@ -271,7 +273,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
         smsServer.send(TextMessage(to = phoneNo, body = "I like your tweet"))
       }
       .withAttributes(ActorAttributes.dispatcher("blocking-dispatcher"))
-    val sendTextMessages: RunnableGraph[Unit] =
+    val sendTextMessages: RunnableGraph[NotUsed] =
       phoneNumbers.via(send).to(Sink.ignore)
 
     sendTextMessages.run()
@@ -291,10 +293,10 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val database = system.actorOf(Props(classOf[DatabaseService], probe.ref), "db")
 
     //#save-tweets
-    val akkaTweets: Source[Tweet, Unit] = tweets.filter(_.hashtags.contains(akka))
+    val akkaTweets: Source[Tweet, NotUsed] = tweets.filter(_.hashtags.contains(akka))
 
     implicit val timeout = Timeout(3.seconds)
-    val saveTweets: RunnableGraph[Unit] =
+    val saveTweets: RunnableGraph[NotUsed] =
       akkaTweets
         .mapAsync(4)(tweet => database ? Save(tweet))
         .to(Sink.ignore)

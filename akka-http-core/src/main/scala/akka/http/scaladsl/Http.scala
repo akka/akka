@@ -21,6 +21,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ WebsocketUpgradeResponse, WebsocketRequest, Message }
 import akka.http.scaladsl.util.FastFuture
+import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.io._
 import akka.stream.scaladsl._
@@ -400,7 +401,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    */
   def superPool[T](settings: ConnectionPoolSettings = ConnectionPoolSettings(system),
                    httpsContext: Option[HttpsContext] = None,
-                   log: LoggingAdapter = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), Unit] =
+                   log: LoggingAdapter = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
     clientFlow[T](settings) { request ⇒ request -> cachedGateway(request, settings, httpsContext, log) }
 
   /**
@@ -560,7 +561,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
       .mapMaterializedValue(_ ⇒ HostConnectionPool(hcps)(gatewayFuture))
 
   private def clientFlow[T](settings: ConnectionPoolSettings)(f: HttpRequest ⇒ (HttpRequest, Future[PoolGateway]))(
-    implicit system: ActorSystem, fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), Unit] = {
+    implicit system: ActorSystem, fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] = {
     // a connection pool can never have more than pipeliningLimit * maxConnections requests in flight at any point
     val parallelism = settings.pipeliningLimit * settings.maxConnections
     Flow[(HttpRequest, T)].mapAsyncUnordered(parallelism) {
@@ -601,7 +602,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
    *                +------+
    * }}}
    */
-  type ServerLayer = BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, Unit]
+  type ServerLayer = BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed]
   //#
 
   //#client-layer
@@ -617,7 +618,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
    *                +------+
    * }}}
    */
-  type ClientLayer = BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, Unit]
+  type ClientLayer = BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, NotUsed]
   //#
 
   /**
@@ -657,7 +658,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   final case class IncomingConnection(
     localAddress: InetSocketAddress,
     remoteAddress: InetSocketAddress,
-    flow: Flow[HttpResponse, HttpRequest, Unit]) {
+    flow: Flow[HttpResponse, HttpRequest, NotUsed]) {
 
     /**
      * Handles the connection with the given flow, which is materialized exactly once

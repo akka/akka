@@ -7,13 +7,14 @@ import static org.junit.Assert.assertEquals;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import akka.NotUsed;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import scala.runtime.BoxedUnit;
 
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
@@ -46,7 +47,7 @@ public class FlowErrorDocTest {
   public void demonstrateFailStream() throws Exception {
     //#stop
     final Materializer mat = ActorMaterializer.create(system);
-    final Source<Integer, BoxedUnit> source = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5))
+    final Source<Integer, NotUsed> source = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5))
       .map(elem -> 100 / elem);
     final Sink<Integer, Future<Integer>> fold =
       Sink.fold(0, (acc, elem) -> acc + elem);
@@ -70,7 +71,7 @@ public class FlowErrorDocTest {
     final Materializer mat = ActorMaterializer.create(
       ActorMaterializerSettings.create(system).withSupervisionStrategy(decider),
       system);
-    final Source<Integer, BoxedUnit> source = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5))
+    final Source<Integer, NotUsed> source = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5))
       .map(elem -> 100 / elem);
     final Sink<Integer, Future<Integer>> fold =
       Sink.fold(0, (acc, elem) -> acc + elem);
@@ -92,10 +93,10 @@ public class FlowErrorDocTest {
       else
         return Supervision.stop();
     };
-    final Flow<Integer, Integer, BoxedUnit> flow =
+    final Flow<Integer, Integer, NotUsed> flow =
         Flow.of(Integer.class).filter(elem -> 100 / elem < 50).map(elem -> 100 / (5 - elem))
         .withAttributes(ActorAttributes.withSupervisionStrategy(decider));
-    final Source<Integer, BoxedUnit> source = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5))
+    final Source<Integer, NotUsed> source = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5))
       .via(flow); 
     final Sink<Integer, Future<Integer>> fold =
       Sink.fold(0, (acc, elem) -> acc + elem);
@@ -117,13 +118,13 @@ public class FlowErrorDocTest {
       else
         return Supervision.stop();
     };
-    final Flow<Integer, Integer, BoxedUnit> flow =
+    final Flow<Integer, Integer, NotUsed> flow =
       Flow.of(Integer.class).scan(0, (acc, elem) -> {
         if (elem < 0) throw new IllegalArgumentException("negative not allowed");
         else return acc + elem;
       })
       .withAttributes(ActorAttributes.withSupervisionStrategy(decider));
-    final Source<Integer, BoxedUnit> source = Source.from(Arrays.asList(1, 3, -1, 5, 7))
+    final Source<Integer, NotUsed> source = Source.from(Arrays.asList(1, 3, -1, 5, 7))
       .via(flow);
     final Future<List<Integer>> result = source.grouped(1000)
       .runWith(Sink.<List<Integer>>head(), mat);

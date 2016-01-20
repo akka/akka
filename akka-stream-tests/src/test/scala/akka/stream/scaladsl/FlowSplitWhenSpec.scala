@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl
 
+import akka.NotUsed
 import akka.stream._
 import akka.stream.Supervision.resumingDecider
 import akka.stream.impl.SubscriptionTimeoutException
@@ -144,7 +145,7 @@ class FlowSplitWhenSpec extends AkkaSpec {
 
       substream.cancel()
 
-      masterStream.expectNext(())
+      masterStream.expectNext(NotUsed)
       masterStream.expectNoMsg(100.millis)
       masterStream.cancel()
       inputs.expectCancellation()
@@ -217,7 +218,7 @@ class FlowSplitWhenSpec extends AkkaSpec {
         .splitWhen(elem ⇒ if (elem == 3) throw exc else elem % 3 == 0)
         .lift
         .runWith(Sink.asPublisher(false))
-      val subscriber = TestSubscriber.manualProbe[Source[Int, Unit]]()
+      val subscriber = TestSubscriber.manualProbe[Source[Int, NotUsed]]()
       publisher.subscribe(subscriber)
 
       val upstreamSubscription = publisherProbeProbe.expectSubscription()
@@ -290,7 +291,7 @@ class FlowSplitWhenSpec extends AkkaSpec {
         .lift
         .withAttributes(ActorAttributes.supervisionStrategy(resumingDecider))
         .runWith(Sink.asPublisher(false))
-      val subscriber = TestSubscriber.manualProbe[Source[Int, Unit]]()
+      val subscriber = TestSubscriber.manualProbe[Source[Int, NotUsed]]()
       publisher.subscribe(subscriber)
 
       val upstreamSubscription = publisherProbeProbe.expectSubscription()
@@ -330,7 +331,7 @@ class FlowSplitWhenSpec extends AkkaSpec {
 
     "pass along early cancellation" in assertAllStagesStopped {
       val up = TestPublisher.manualProbe[Int]()
-      val down = TestSubscriber.manualProbe[Source[Int, Unit]]()
+      val down = TestSubscriber.manualProbe[Source[Int, NotUsed]]()
 
       val flowSubscriber = Source.asSubscriber[Int].splitWhen(_ % 3 == 0).lift.to(Sink.fromSubscriber(down)).run()
 

@@ -3,6 +3,7 @@
  */
 package docs.stream.javadsl.cookbook;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
@@ -22,7 +23,6 @@ import scala.Tuple2;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 
 import java.util.Arrays;
 import java.util.List;
@@ -47,7 +47,7 @@ public class RecipeByteStrings extends RecipeTest {
 
   final Materializer mat = ActorMaterializer.create(system);
 
-  final Source<ByteString, BoxedUnit> rawBytes = Source.from(Arrays.asList(
+  final Source<ByteString, NotUsed> rawBytes = Source.from(Arrays.asList(
     ByteString.fromArray(new byte[] { 1, 2 }),
     ByteString.fromArray(new byte[] { 3 }),
     ByteString.fromArray(new byte[] { 4, 5, 6 }),
@@ -93,7 +93,7 @@ public class RecipeByteStrings extends RecipeTest {
 
       {
         //#bytestring-chunker2
-        Source<ByteString, BoxedUnit> chunksStream =
+        Source<ByteString, NotUsed> chunksStream =
           rawBytes.transform(() -> new Chunker(CHUNK_LIMIT));
         //#bytestring-chunker2
 
@@ -143,17 +143,17 @@ public class RecipeByteStrings extends RecipeTest {
 
       {
         //#bytes-limiter2
-        Flow<ByteString, ByteString, BoxedUnit> limiter =
+        Flow<ByteString, ByteString, NotUsed> limiter =
           Flow.of(ByteString.class).transform(() -> new ByteLimiter(SIZE_LIMIT));
         //#bytes-limiter2
 
-        final Source<ByteString, BoxedUnit> bytes1 = Source.from(Arrays.asList(
+        final Source<ByteString, NotUsed> bytes1 = Source.from(Arrays.asList(
           ByteString.fromArray(new byte[] { 1, 2 }),
           ByteString.fromArray(new byte[] { 3 }),
           ByteString.fromArray(new byte[] { 4, 5, 6 }),
           ByteString.fromArray(new byte[] { 7, 8, 9 })));
 
-        final Source<ByteString, BoxedUnit> bytes2 = Source.from(Arrays.asList(
+        final Source<ByteString, NotUsed> bytes2 = Source.from(Arrays.asList(
           ByteString.fromArray(new byte[] { 1, 2 }),
           ByteString.fromArray(new byte[] { 3 }),
           ByteString.fromArray(new byte[] { 4, 5, 6 }),
@@ -184,14 +184,14 @@ public class RecipeByteStrings extends RecipeTest {
   public void compacting() throws Exception {
     new JavaTestKit(system) {
       {
-        final Source<ByteString, BoxedUnit> rawBytes = Source.from(Arrays.asList(
+        final Source<ByteString, NotUsed> rawBytes = Source.from(Arrays.asList(
           ByteString.fromArray(new byte[] { 1, 2 }),
           ByteString.fromArray(new byte[] { 3 }),
           ByteString.fromArray(new byte[] { 4, 5, 6 }),
           ByteString.fromArray(new byte[] { 7, 8, 9 })));
 
         //#compacting-bytestrings
-        Source<ByteString, BoxedUnit> compacted = rawBytes.map(bs -> bs.compact());
+        Source<ByteString, NotUsed> compacted = rawBytes.map(bs -> bs.compact());
         //#compacting-bytestrings
 
         FiniteDuration timeout = FiniteDuration.create(3, TimeUnit.SECONDS);

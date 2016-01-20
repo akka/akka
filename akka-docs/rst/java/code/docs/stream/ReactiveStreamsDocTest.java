@@ -4,6 +4,7 @@
 
 package docs.stream;
 
+import akka.NotUsed;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
@@ -25,7 +26,6 @@ import org.reactivestreams.Processor;
 //#imports
 import org.reactivestreams.Subscription;
 
-import scala.runtime.BoxedUnit;
 
 import java.lang.Exception;
 
@@ -55,7 +55,7 @@ public class ReactiveStreamsDocTest {
     static class Data {
 
       static //#authors
-      final Flow<Tweet, Author, BoxedUnit> authors = Flow.of(Tweet.class)
+      final Flow<Tweet, Author, NotUsed> authors = Flow.of(Tweet.class)
         .filter(t -> t.hashtags().contains(AKKA))
         .map(t -> t.author);
 
@@ -243,7 +243,7 @@ public class ReactiveStreamsDocTest {
                   }
                 };
 
-        final Flow<Integer, Integer, BoxedUnit> flow = Flow.fromProcessor(factory);
+        final Flow<Integer, Integer, NotUsed> flow = Flow.fromProcessor(factory);
 
         //#use-processor
       }

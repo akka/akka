@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.client
 
+import akka.NotUsed
 import akka.stream.impl.fusing.GraphInterpreter
 import language.existentials
 import scala.annotation.tailrec
@@ -60,7 +61,7 @@ private[http] object OutgoingConnectionBlueprint {
 
     val requestRendererFactory = new HttpRequestRendererFactory(userAgentHeader, requestHeaderSizeHint, log)
 
-    val requestRendering: Flow[HttpRequest, ByteString, Unit] = Flow[HttpRequest]
+    val requestRendering: Flow[HttpRequest, ByteString, NotUsed] = Flow[HttpRequest]
       .map(RequestRenderingContext(_, hostHeader))
       .via(Flow[RequestRenderingContext].flatMapConcat(requestRendererFactory.renderToSource).named("renderer"))
 

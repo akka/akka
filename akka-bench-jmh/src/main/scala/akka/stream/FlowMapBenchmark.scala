@@ -5,6 +5,7 @@
 package akka.stream
 
 import java.util.concurrent.TimeUnit
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
@@ -57,7 +58,7 @@ class FlowMapBenchmark {
   final val successFailure = Success(new Exception)
 
   // safe to be benchmark scoped because the flows we construct in this bench are stateless
-  var flow: Source[Int, Unit] = _
+  var flow: Source[Int, NotUsed] = _
 
   @Param(Array("8", "32", "128"))
   val initialInputBufferSize = 0

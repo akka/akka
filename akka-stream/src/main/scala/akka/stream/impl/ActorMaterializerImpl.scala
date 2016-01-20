@@ -5,6 +5,7 @@ package akka.stream.impl
 
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
 import java.{ util ⇒ ju }
+import akka.NotUsed
 import akka.actor._
 import akka.event.Logging
 import akka.dispatch.Dispatchers
@@ -134,7 +135,7 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
             assignPort(tls.plainIn, FanIn.SubInput[Any](impl, SslTlsCipherActor.UserIn))
             assignPort(tls.cipherIn, FanIn.SubInput[Any](impl, SslTlsCipherActor.TransportIn))
 
-            matVal.put(atomic, ())
+            matVal.put(atomic, NotUsed)
 
           case graph: GraphModule ⇒
             matGraph(graph, effectiveAttributes, matVal)

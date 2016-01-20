@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.parsing
 
+import akka.NotUsed
 import akka.http.ParserSettings
 import akka.stream.impl.fusing.GraphInterpreter
 import scala.annotation.tailrec
@@ -272,7 +273,7 @@ private[http] object BodyPartParser {
 
   sealed trait Output
   sealed trait PartStart extends Output
-  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Source[Output, Unit] ⇒ BodyPartEntity) extends PartStart
+  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Source[Output, NotUsed] ⇒ BodyPartEntity) extends PartStart
   final case class EntityPart(data: ByteString) extends Output
   final case class ParseError(info: ErrorInfo) extends PartStart
 
