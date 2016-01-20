@@ -19,14 +19,14 @@ import akka.http.impl.util._
 
 import akka.http.scaladsl.model.headers.`User-Agent`
 
-final case class ClientConnectionSettings(
-  userAgentHeader: Option[`User-Agent`],
-  connectingTimeout: FiniteDuration,
-  idleTimeout: Duration,
-  requestHeaderSizeHint: Int,
-  websocketRandomFactory: () ⇒ Random,
-  socketOptions: immutable.Traversable[SocketOption],
-  parserSettings: ParserSettings) {
+final class ClientConnectionSettings(
+  val userAgentHeader: Option[`User-Agent`],
+  val connectingTimeout: FiniteDuration,
+  val idleTimeout: Duration,
+  val requestHeaderSizeHint: Int,
+  val websocketRandomFactory: () ⇒ Random,
+  val socketOptions: immutable.Traversable[SocketOption],
+  val parserSettings: ParserSettings) {
 
   require(connectingTimeout >= Duration.Zero, "connectingTimeout must be >= 0")
   require(requestHeaderSizeHint > 0, "request-size-hint must be > 0")
@@ -35,14 +35,14 @@ final case class ClientConnectionSettings(
 object ClientConnectionSettings extends SettingsCompanion[ClientConnectionSettings]("akka.http.client") {
   def fromSubConfig(root: Config, inner: Config) = {
     val c = inner.withFallback(root.getConfig(prefix))
-    apply(
-      c.getString("user-agent-header").toOption.map(`User-Agent`(_)),
-      c getFiniteDuration "connecting-timeout",
-      c getPotentiallyInfiniteDuration "idle-timeout",
-      c getIntBytes "request-header-size-hint",
-      Randoms.SecureRandomInstances, // can currently only be overridden from code
-      SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
-      ParserSettings.fromSubConfig(root, c.getConfig("parsing")))
+    new ClientConnectionSettings(
+      userAgentHeader = c.getString("user-agent-header").toOption.map(`User-Agent`(_)),
+      connectingTimeout = c getFiniteDuration "connecting-timeout",
+      idleTimeout = c getPotentiallyInfiniteDuration "idle-timeout",
+      requestHeaderSizeHint = c getIntBytes "request-header-size-hint",
+      websocketRandomFactory = Randoms.SecureRandomInstances, // can currently only be overridden from code
+      socketOptions = SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
+      parserSettings = ParserSettings.fromSubConfig(root, c.getConfig("parsing")))
   }
 
   /**

@@ -5,8 +5,9 @@
 package akka.http.scaladsl.server
 
 import scala.concurrent.{ Future, ExecutionContextExecutor }
-import akka.stream.Materializer
+import akka.stream.{ ActorMaterializer, Materializer }
 import akka.event.LoggingAdapter
+import akka.http.ParserSettings
 import akka.http.scaladsl.marshalling.{ Marshal, ToResponseMarshallable }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture
@@ -21,13 +22,17 @@ private[http] class RequestContextImpl(
   val executionContext: ExecutionContextExecutor,
   val materializer: Materializer,
   val log: LoggingAdapter,
-  val settings: RoutingSettings) extends RequestContext {
+  val settings: RoutingSettings,
+  val parserSettings: ParserSettings) extends RequestContext {
+
+  def this(request: HttpRequest, log: LoggingAdapter, settings: RoutingSettings, parserSettings: ParserSettings)(implicit ec: ExecutionContext, materializer: Materializer) =
+    this(request, request.uri.path, ec, materializer, log, settings, parserSettings)
 
   def this(request: HttpRequest, log: LoggingAdapter, settings: RoutingSettings)(implicit ec: ExecutionContextExecutor, materializer: Materializer) =
-    this(request, request.uri.path, ec, materializer, log, settings)
+    this(request, request.uri.path, ec, materializer, log, settings, ParserSettings(ActorMaterializer.downcast(materializer).system))
 
   def reconfigure(executionContext: ExecutionContextExecutor, materializer: Materializer, log: LoggingAdapter, settings: RoutingSettings): RequestContext =
-    copy(executionContext = executionContext, materializer = materializer, log = log, settings = settings)
+    copy(executionContext = executionContext, materializer = materializer, log = log, routingSettings = settings)
 
   override def complete(trm: ToResponseMarshallable): Future[RouteResult] =
     trm(request)(executionContext)
@@ -56,8 +61,11 @@ private[http] class RequestContextImpl(
   override def withLog(log: LoggingAdapter): RequestContext =
     if (log != this.log) copy(log = log) else this
 
-  override def withSettings(settings: RoutingSettings): RequestContext =
-    if (settings != this.settings) copy(settings = settings) else this
+  override def withRoutingSettings(routingSettings: RoutingSettings): RequestContext =
+    if (routingSettings != this.settings) copy(routingSettings = routingSettings) else this
+
+  override def withParserSettings(parserSettings: ParserSettings): RequestContext =
+    if (parserSettings != this.parserSettings) copy(parserSettings = parserSettings) else this
 
   override def mapRequest(f: HttpRequest ⇒ HttpRequest): RequestContext =
     copy(request = f(request))
@@ -86,6 +94,7 @@ private[http] class RequestContextImpl(
                    executionContext: ExecutionContextExecutor = executionContext,
                    materializer: Materializer = materializer,
                    log: LoggingAdapter = log,
-                   settings: RoutingSettings = settings) =
-    new RequestContextImpl(request, unmatchedPath, executionContext, materializer, log, settings)
+                   routingSettings: RoutingSettings = settings,
+                   parserSettings: ParserSettings = parserSettings) =
+    new RequestContextImpl(request, unmatchedPath, executionContext, materializer, log, routingSettings, parserSettings)
 }

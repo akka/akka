@@ -76,7 +76,6 @@ trait FileUploadDirectives {
       case Some(tuple) ⇒ provide(tuple)
       case None        ⇒ reject(MissingFormFieldRejection(fieldName))
     }
-
 }
 
 object FileUploadDirectives extends FileUploadDirectives

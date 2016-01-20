@@ -22,21 +22,21 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers.{ Host, Server }
 
-final case class ServerSettings(
-  serverHeader: Option[Server],
-  timeouts: ServerSettings.Timeouts,
-  maxConnections: Int,
-  pipeliningLimit: Int,
-  remoteAddressHeader: Boolean,
-  rawRequestUriHeader: Boolean,
-  transparentHeadRequests: Boolean,
-  verboseErrorMessages: Boolean,
-  responseHeaderSizeHint: Int,
-  backlog: Int,
-  socketOptions: immutable.Traversable[SocketOption],
-  defaultHostHeader: Host,
-  websocketRandomFactory: () ⇒ Random,
-  parserSettings: ParserSettings) {
+final class ServerSettings(
+  val serverHeader: Option[Server],
+  val timeouts: ServerSettings.Timeouts,
+  val maxConnections: Int,
+  val pipeliningLimit: Int,
+  val remoteAddressHeader: Boolean,
+  val rawRequestUriHeader: Boolean,
+  val transparentHeadRequests: Boolean,
+  val verboseErrorMessages: Boolean,
+  val responseHeaderSizeHint: Int,
+  val backlog: Int,
+  val socketOptions: immutable.Traversable[SocketOption],
+  val defaultHostHeader: Host,
+  val websocketRandomFactory: () ⇒ Random,
+  val parserSettings: ParserSettings) {
 
   require(0 < maxConnections, "max-connections must be > 0")
   require(0 < pipeliningLimit && pipeliningLimit <= 1024, "pipelining-limit must be > 0 and <= 1024")
@@ -45,18 +45,19 @@ final case class ServerSettings(
 }
 
 object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.server") {
-  final case class Timeouts(idleTimeout: Duration,
-                            requestTimeout: Duration,
-                            bindTimeout: FiniteDuration) {
+  final class Timeouts(
+    val idleTimeout: Duration,
+    val requestTimeout: Duration,
+    val bindTimeout: FiniteDuration) {
     require(idleTimeout > Duration.Zero, "idleTimeout must be infinite or > 0")
     require(requestTimeout > Duration.Zero, "requestTimeout must be infinite or > 0")
     require(bindTimeout > Duration.Zero, "bindTimeout must be > 0")
   }
   implicit def timeoutsShortcut(s: ServerSettings): Timeouts = s.timeouts
 
-  def fromSubConfig(root: Config, c: Config) = apply(
+  def fromSubConfig(root: Config, c: Config) = new ServerSettings(
     c.getString("server-header").toOption.map(Server(_)),
-    Timeouts(
+    new Timeouts(
       c getPotentiallyInfiniteDuration "idle-timeout",
       c getPotentiallyInfiniteDuration "request-timeout",
       c getFiniteDuration "bind-timeout"),
