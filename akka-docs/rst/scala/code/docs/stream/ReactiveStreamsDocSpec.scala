@@ -42,7 +42,7 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
 
   val impl = new Fixture {
     override def tweets: Publisher[Tweet] =
-      TwitterStreamQuickstartDocSpec.tweets.runWith(Sink.asPublisher(false))
+      TwitterStreamQuickstartDocSpec.tweets.runWith(Sink.asPublisher(fanout = false))
 
     override def storage = TestSubscriber.manualProbe[Author]
 

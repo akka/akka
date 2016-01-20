@@ -337,7 +337,7 @@ public class FlowTest extends StreamTest {
     final Source<String, NotUsed> in1 = Source.from(Arrays.asList("a", "b", "c"));
     final Source<String, NotUsed> in2 = Source.from(Arrays.asList("d", "e", "f"));
 
-    final Sink<String, Publisher<String>> publisher = Sink.asPublisher(false);
+    final Sink<String, Publisher<String>> publisher = Sink.asPublisher(AsPublisher.WITHOUT_FANOUT);
 
     final Source<String, NotUsed> source = Source.fromGraph(
             GraphDSL.create(new Function<GraphDSL.Builder<NotUsed>, SourceShape<String>>() {
