@@ -5,6 +5,7 @@
 package akka.http.scaladsl.server
 
 import akka.NotUsed
+import akka.http.ParserSettings
 
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
@@ -25,6 +26,7 @@ object RouteResult {
   final case class Rejected(rejections: immutable.Seq[Rejection]) extends RouteResult
 
   implicit def route2HandlerFlow(route: Route)(implicit routingSettings: RoutingSettings,
+                                               parserSettings: ParserSettings,
                                                materializer: Materializer,
                                                routingLog: RoutingLog,
                                                executionContext: ExecutionContext = null,
