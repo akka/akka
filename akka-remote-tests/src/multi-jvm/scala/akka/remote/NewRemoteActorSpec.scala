@@ -52,7 +52,7 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
 
   def initialParticipants = roles.size
 
-  // ensure that system shutdown is successful
+  // ensure that system.terminate is successful
   override def verifySystemShutdown = true
 
   "A new remote actor" must {
@@ -116,7 +116,7 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
         enterBarrier("deployed")
 
         // master system is supposed to be shutdown after slave
-        // this should be triggered by slave system shutdown
+        // this should be triggered by slave system.terminate
         expectMsgPF() { case Terminated(`actor`) ⇒ true }
       }
 
@@ -126,7 +126,7 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
 
       // Important that this is the last test.
       // It should not be any barriers here.
-      // verifySystemShutdown = true will ensure that system shutdown is successful
+      // verifySystemShutdown = true will ensure that system.terminate is successful
     }
   }
 }

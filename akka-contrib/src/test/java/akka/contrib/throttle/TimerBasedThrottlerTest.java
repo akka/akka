@@ -10,7 +10,6 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 import scala.concurrent.duration.Duration;
 import com.typesafe.config.ConfigFactory;
-import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;

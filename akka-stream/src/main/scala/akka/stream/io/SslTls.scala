@@ -382,6 +382,10 @@ sealed trait SslTlsOutbound
  *  - `enabledProtocols` will be passed to `SSLEngine::setEnabledProtocols()`
  *  - `clientAuth` will be passed to `SSLEngine::setWantClientAuth()` or `SSLEngine.setNeedClientAuth()`, respectively
  *  - `sslParameters` will be passed to `SSLEngine::setSSLParameters()`
+ *
+ * Please note that passing `clientAuth = None` means that no change is done
+ * on client authentication requirements while `clientAuth = Some(ClientAuth.None)`
+ * switches off client authentication.
  */
 case class NegotiateNewSession(
   enabledCipherSuites: Option[immutable.Seq[String]],

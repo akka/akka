@@ -712,7 +712,7 @@ trait TestKitBase {
  *     }
  *
  *   } finally {
- *     system.shutdown()
+ *     system.terminate()
  *   }
  * }
  * }}}

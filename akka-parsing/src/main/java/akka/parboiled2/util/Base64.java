@@ -73,7 +73,6 @@ package akka.parboiled2.util;
 
 import java.util.Arrays;
 
-@SuppressWarnings({"UnnecessaryParentheses"})
 public class Base64 {
 
     // -------- FIELDS -------------------------------------------------------------------------------------------------

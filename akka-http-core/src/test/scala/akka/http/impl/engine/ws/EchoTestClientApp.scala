@@ -59,12 +59,12 @@ object EchoTestClientApp extends App {
     case Success(res) ⇒
       println("Run successful. Got these elements:")
       res.foreach(println)
-      system.shutdown()
+      system.terminate()
     case Failure(e) ⇒
       println("Run failed.")
       e.printStackTrace()
-      system.shutdown()
+      system.terminate()
   }
 
-  system.scheduler.scheduleOnce(10.seconds)(system.shutdown())
+  system.scheduler.scheduleOnce(10.seconds)(system.terminate())
 }

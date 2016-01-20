@@ -96,6 +96,6 @@ public class SimpleServerApp extends HttpApp {
         new SimpleServerApp().bindRoute("localhost", 8080, system);
         System.out.println("Type RETURN to exit");
         System.in.read();
-        system.shutdown();
+        system.terminate();
     }
 }
