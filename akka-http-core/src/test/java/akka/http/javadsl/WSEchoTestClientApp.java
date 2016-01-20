@@ -26,6 +26,7 @@ import java.util.List;
 
 public class WSEchoTestClientApp {
     private static final Function<Message, String> messageStringifier = new Function<Message, String>() {
+        private static final long serialVersionUID = 1L;
         @Override
         public String apply(Message msg) throws Exception {
             if (msg.isText() && msg.asTextMessage().isStrict())
@@ -77,7 +78,7 @@ public class WSEchoTestClientApp {
             for (String msg: messages)
                 System.out.println(msg);
         } finally {
-            system.shutdown();
+            system.terminate();
         }
     }
 }

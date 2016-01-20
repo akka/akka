@@ -46,7 +46,7 @@ object WSServerAutobahnTest extends App {
       case _       ⇒ throw new Exception("akka.ws-mode MUST be sleep or read.")
     }
   } finally {
-    system.shutdown()
+    system.terminate()
   }
 
   def echoWebsocketService: Flow[Message, Message, NotUsed] =

@@ -65,7 +65,7 @@ public class PetStoreExample {
             System.out.println("Type RETURN to exit");
             System.in.read();
         } finally {
-            system.shutdown();
+            system.terminate();
         }
     }
 }

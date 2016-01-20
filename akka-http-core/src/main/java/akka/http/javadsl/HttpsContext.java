@@ -15,6 +15,12 @@ import java.util.Optional;
 
 import scala.compat.java8.OptionConverters;
 
+/**
+ * TLS configuration for an HTTPS server binding or client connection.
+ * For the sslContext please refer to the com.typeasfe.ssl-config library.
+ * The remaining four parameters configure the initial session that will
+ * be negotiated, see {@link akka.stream.io.NegotiateNewSession} for details.
+ */
 public abstract class HttpsContext {
     
     public abstract SSLContext getSslContext();
