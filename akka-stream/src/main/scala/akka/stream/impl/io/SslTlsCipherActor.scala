@@ -15,7 +15,6 @@ import akka.stream.impl.FanOut.OutputBunch
 import akka.stream.impl._
 import akka.util.ByteString
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import com.typesafe.sslconfig.ssl.ClientAuth
 import scala.annotation.tailrec
 import akka.stream.io._
 
