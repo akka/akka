@@ -4,11 +4,9 @@
 package akka.http.javadsl
 
 import java.util.{ Collection ⇒ JCollection, Optional }
-import java.{ util ⇒ ju }
 import javax.net.ssl.{ SSLContext, SSLParameters }
-
 import akka.http.scaladsl
-import com.typesafe.sslconfig.ssl.ClientAuth
+import akka.stream.io.ClientAuth
 
 import scala.compat.java8.OptionConverters
 
@@ -27,18 +25,18 @@ object ConnectionContext {
     scaladsl.ConnectionContext.noEncryption()
 }
 
-trait ConnectionContext {
+abstract class ConnectionContext {
   def isSecure: Boolean
   /** Java API */
   def getDefaultPort: Int
 }
 
-trait HttpConnectionContext extends ConnectionContext {
+trait HttpConnectionContext extends akka.http.javadsl.ConnectionContext {
   override final def isSecure = false
   override final def getDefaultPort = 80
 }
 
-trait HttpsConnectionContext extends ConnectionContext {
+trait HttpsConnectionContext extends akka.http.javadsl.ConnectionContext {
   override final def isSecure = true
   override final def getDefaultPort = 443
 

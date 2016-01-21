@@ -4,13 +4,11 @@
 
 package akka.http.scaladsl
 
-import akka.stream.io.NegotiateNewSession
+import akka.stream.io.{ ClientAuth, NegotiateNewSession }
 
 import scala.collection.JavaConverters._
 import java.util.{ Optional, Collection ⇒ JCollection }
 import javax.net.ssl._
-
-import com.typesafe.sslconfig.ssl.ClientAuth
 
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters._

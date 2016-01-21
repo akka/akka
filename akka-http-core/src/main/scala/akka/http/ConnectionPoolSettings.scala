@@ -16,7 +16,7 @@ final case class HostConnectionPoolSetup(host: String, port: Int, setup: Connect
 
 final case class ConnectionPoolSetup(
   settings: ConnectionPoolSettings,
-  conContext: ConnectionContext = ConnectionContext.noEncryption(),
+  connectionContext: ConnectionContext = ConnectionContext.noEncryption(),
   log: LoggingAdapter)
 
 object ConnectionPoolSetup {
