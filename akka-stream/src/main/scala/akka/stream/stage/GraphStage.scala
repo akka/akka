@@ -301,6 +301,14 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   }
 
   /**
+   * Assign callbacks for linear stage for both [[Inlet]] and [[Outlet]]
+   */
+  final protected def setHandlers(in: Inlet[_], out: Outlet[_], handler: InHandler with OutHandler): Unit = {
+    setHandler(in, handler)
+    setHandler(out, handler)
+  }
+
+  /**
    * Retrieves the current callback for the events on the given [[Inlet]]
    */
   final protected def getHandler(in: Inlet[_]): InHandler = {

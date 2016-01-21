@@ -19,30 +19,35 @@ abstract class ByteStringParser[T] extends GraphStage[FlowShape[ByteString, T]] 
   final override val shape = FlowShape(bytesIn, objOut)
 
   class ParsingLogic extends GraphStageLogic(shape) {
+    var pullOnParserRequest = false
     override def preStart(): Unit = pull(bytesIn)
     setHandler(objOut, eagerTerminateOutput)
 
     private var buffer = ByteString.empty
     private var current: ParseStep[T] = FinishedParser
+    private var acceptUpstreamFinish: Boolean = true
 
     final protected def startWith(step: ParseStep[T]): Unit = current = step
 
     @tailrec private def doParse(): Unit =
       if (buffer.nonEmpty) {
+        val reader = new ByteReader(buffer)
         val cont = try {
-          val reader = new ByteReader(buffer)
-          val (elem, next) = current.parse(reader)
-          emit(objOut, elem)
-          if (next == FinishedParser) {
+          val parseResult = current.parse(reader)
+          acceptUpstreamFinish = parseResult.acceptUpstreamFinish
+          parseResult.result.map(emit(objOut, _))
+          if (parseResult.nextStep == FinishedParser) {
             completeStage()
             false
           } else {
             buffer = reader.remainingData
-            current = next
+            current = parseResult.nextStep
             true
           }
         } catch {
           case NeedMoreData ⇒
+            acceptUpstreamFinish = false
+            if (current.canWorkWithPartialData) buffer = reader.remainingData
             pull(bytesIn)
             false
         }
@@ -51,11 +56,12 @@ abstract class ByteStringParser[T] extends GraphStage[FlowShape[ByteString, T]] 
 
     setHandler(bytesIn, new InHandler {
       override def onPush(): Unit = {
+        pullOnParserRequest = false
         buffer ++= grab(bytesIn)
         doParse()
       }
       override def onUpstreamFinish(): Unit =
-        if (buffer.isEmpty) completeStage()
+        if (buffer.isEmpty && acceptUpstreamFinish) completeStage()
         else current.onTruncation()
     })
   }
@@ -63,13 +69,28 @@ abstract class ByteStringParser[T] extends GraphStage[FlowShape[ByteString, T]] 
 
 object ByteStringParser {
 
+  /**
+   * @param result - parser can return some element for downstream or return None if no element was generated
+   * @param nextStep - next parser
+   * @param acceptUpstreamFinish - if true - stream will complete when received `onUpstreamFinish`, if "false"
+   *                             - onTruncation will be called
+   */
+  case class ParseResult[+T](result: Option[T],
+                             nextStep: ParseStep[T],
+                             acceptUpstreamFinish: Boolean = true)
+
   trait ParseStep[+T] {
-    def parse(reader: ByteReader): (T, ParseStep[T])
+    /**
+     * Must return true when NeedMoreData will clean buffer. If returns false - next pulled
+     * data will be appended to existing data in buffer
+     */
+    def canWorkWithPartialData: Boolean = false
+    def parse(reader: ByteReader): ParseResult[T]
     def onTruncation(): Unit = throw new IllegalStateException("truncated data in ByteStringParser")
   }
 
   object FinishedParser extends ParseStep[Nothing] {
-    def parse(reader: ByteReader) =
+    override def parse(reader: ByteReader) =
       throw new IllegalStateException("no initial parser installed: you must use startWith(...)")
   }
 
@@ -83,6 +104,7 @@ object ByteStringParser {
     def remainingSize: Int = input.size - off
 
     def currentOffset: Int = off
+
     def remainingData: ByteString = input.drop(off)
     def fromStartToHere: ByteString = input.take(off)
 
