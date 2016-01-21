@@ -20,4 +20,8 @@ private[akka] object ConstantFun {
   def javaIdentityFunction[T]: JFun[T, T] = JavaIdentityFunction.asInstanceOf[JFun[T, T]]
 
   def scalaIdentityFunction[T]: T ⇒ T = conforms
+
+  val zeroLong = (_: Any) ⇒ 0L
+
+  val oneLong = (_: Any) ⇒ 1L
 }

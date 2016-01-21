@@ -481,6 +481,83 @@ private[akka] final case class Conflate[In, Out](seed: In ⇒ Out, aggregate: (O
 /**
  * INTERNAL API
  */
+private[akka] final case class Batch[In, Out](max: Long, costFn: In ⇒ Long, seed: In ⇒ Out, aggregate: (Out, In) ⇒ Out)
+  extends GraphStage[FlowShape[In, Out]] {
+
+  val in = Inlet[In]("Batch.in")
+  val out = Outlet[Out]("Batch.out")
+
+  override val shape: FlowShape[In, Out] = FlowShape.of(in, out)
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+    private var agg: Out = null.asInstanceOf[Out]
+    private var left: Long = max
+    private var pending: In = null.asInstanceOf[In]
+
+    private def flush(): Unit = {
+      push(out, agg)
+      left = max
+      if (pending != null) {
+        val elem = pending
+        agg = seed(elem)
+        left -= costFn(elem)
+        pending = null.asInstanceOf[In]
+      } else {
+        agg = null.asInstanceOf[Out]
+      }
+    }
+
+    override def preStart() = pull(in)
+
+    setHandler(in, new InHandler {
+
+      override def onPush(): Unit = {
+        val elem = grab(in)
+        val cost = costFn(elem)
+        if (agg == null) {
+          left -= cost
+          agg = seed(elem)
+        } else if (left < cost) {
+          pending = elem
+        } else {
+          left -= cost
+          agg = aggregate(agg, elem)
+        }
+
+        if (isAvailable(out)) flush()
+        if (pending == null) pull(in)
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        if (agg == null) completeStage()
+      }
+    })
+
+    setHandler(out, new OutHandler {
+
+      override def onPull(): Unit = {
+        if (agg == null) {
+          if (isClosed(in)) completeStage()
+          else if (!hasBeenPulled(in)) pull(in)
+        } else if (isClosed(in)) {
+          push(out, agg)
+          if (pending == null) completeStage()
+          else {
+            agg = seed(pending)
+            pending = null.asInstanceOf[In]
+          }
+        } else {
+          flush()
+          if (!hasBeenPulled(in)) pull(in)
+        }
+      }
+    })
+  }
+}
+
+/**
+ * INTERNAL API
+ */
 private[akka] final class Expand[In, Out](extrapolate: In ⇒ Iterator[Out]) extends GraphStage[FlowShape[In, Out]] {
   private val in = Inlet[In]("expand.in")
   private val out = Outlet[Out]("expand.out")
