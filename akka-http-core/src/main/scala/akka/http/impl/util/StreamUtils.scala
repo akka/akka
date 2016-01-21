@@ -10,6 +10,7 @@ import akka.NotUsed
 import akka.http.scaladsl.model.RequestEntity
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ PublisherSink, SinkModule, SourceModule }
 import akka.stream.scaladsl._
 import akka.stream.stage._
@@ -114,41 +115,47 @@ private[http] object StreamUtils {
     Flow[ByteString].transform(() ⇒ transformer).named("sliceBytes")
   }
 
-  def limitByteChunksStage(maxBytesPerChunk: Int): PushPullStage[ByteString, ByteString] =
-    new StatefulStage[ByteString, ByteString] {
-      def initial = WaitingForData
+  def limitByteChunksStage(maxBytesPerChunk: Int): GraphStage[FlowShape[ByteString, ByteString]] =
+    new SimpleLinearGraphStage[ByteString] {
+      override def initialAttributes = Attributes.name("limitByteChunksStage")
+      var remaining = ByteString.empty
 
-      case object WaitingForData extends State {
-        def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective =
-          if (elem.size <= maxBytesPerChunk) ctx.push(elem)
-          else {
-            become(DeliveringData(elem.drop(maxBytesPerChunk)))
-            ctx.push(elem.take(maxBytesPerChunk))
-          }
-      }
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
 
-      case class DeliveringData(remaining: ByteString) extends State {
-        def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective =
-          throw new IllegalStateException("Not expecting data")
-
-        override def onPull(ctx: Context[ByteString]): SyncDirective = {
+        def splitAndPush(elem: ByteString): Unit = {
           val toPush = remaining.take(maxBytesPerChunk)
           val toKeep = remaining.drop(maxBytesPerChunk)
+          push(out, toPush)
+          remaining = toKeep
+        }
+        setHandlers(in, out, WaitingForData)
 
-          become {
-            if (toKeep.isEmpty) WaitingForData
-            else DeliveringData(toKeep)
+        case object WaitingForData extends InHandler with OutHandler {
+          override def onPush(): Unit = {
+            val elem = grab(in)
+            if (elem.size <= maxBytesPerChunk) push(out, elem)
+            else {
+              splitAndPush(elem)
+              setHandlers(in, out, DeliveringData)
+            }
           }
-          if (ctx.isFinishing) ctx.pushAndFinish(toPush)
-          else ctx.push(toPush)
+          override def onPull(): Unit = pull(in)
         }
-      }
 
-      override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective =
-        current match {
-          case WaitingForData    ⇒ ctx.finish()
-          case _: DeliveringData ⇒ ctx.absorbTermination()
+        case object DeliveringData extends InHandler() with OutHandler {
+          var finishing = false
+          override def onPush(): Unit = throw new IllegalStateException("Not expecting data")
+          override def onPull(): Unit = {
+            splitAndPush(remaining)
+            if (remaining.isEmpty) {
+              if (finishing) completeStage() else setHandlers(in, out, WaitingForData)
+            }
+          }
+          override def onUpstreamFinish(): Unit = if (remaining.isEmpty) completeStage() else finishing = true
         }
+
+        override def toString = "limitByteChunksStage"
+      }
     }
 
   def mapEntityError(f: Throwable ⇒ Throwable): RequestEntity ⇒ RequestEntity =
