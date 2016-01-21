@@ -5,19 +5,22 @@ package akka.stream.impl.io
 
 import java.io.InputStream
 
+import akka.Done
 import akka.actor.{ Deploy, ActorLogging, DeadLetterSuppression, Props }
 import akka.io.DirectByteBufferPool
 import akka.stream.actor.ActorPublisherMessage
+import akka.stream.io.IOResult
 import akka.util.ByteString
 import akka.util.ByteString.ByteString1C
 
 import scala.annotation.tailrec
 import scala.concurrent.Promise
+import scala.util.{ Failure, Success }
 
 /** INTERNAL API */
 private[akka] object InputStreamPublisher {
 
-  def props(is: InputStream, completionPromise: Promise[Long], chunkSize: Int): Props = {
+  def props(is: InputStream, completionPromise: Promise[IOResult], chunkSize: Int): Props = {
     require(chunkSize > 0, s"chunkSize must be > 0 (was $chunkSize)")
 
     Props(classOf[InputStreamPublisher], is, completionPromise, chunkSize).withDeploy(Deploy.local)
@@ -27,7 +30,7 @@ private[akka] object InputStreamPublisher {
 }
 
 /** INTERNAL API */
-private[akka] class InputStreamPublisher(is: InputStream, bytesReadPromise: Promise[Long], chunkSize: Int)
+private[akka] class InputStreamPublisher(is: InputStream, completionPromise: Promise[IOResult], chunkSize: Int)
   extends akka.stream.actor.ActorPublisher[ByteString]
   with ActorLogging {
 
@@ -73,8 +76,14 @@ private[akka] class InputStreamPublisher(is: InputStream, bytesReadPromise: Prom
 
   override def postStop(): Unit = {
     super.postStop()
-    bytesReadPromise.trySuccess(readBytesTotal)
 
-    if (is ne null) is.close()
+    try {
+      if (is ne null) is.close()
+    } catch {
+      case ex: Exception ⇒
+        completionPromise.success(IOResult(readBytesTotal, Failure(ex)))
+    }
+
+    completionPromise.trySuccess(IOResult(readBytesTotal, Success(Done)))
   }
 }
