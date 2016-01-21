@@ -54,9 +54,6 @@ to the Actor as a message.
 .. includecode:: ../../code/docs/http/scaladsl/HttpClientExampleSpec.scala
    :include: single-request-in-actor-example
 
-An ``ActorMaterializer`` instance needed for Http to perfom its duties can be obtained using the ``ImplicitMaterializer``
-helper trait.
-
 Example
 -------
 
