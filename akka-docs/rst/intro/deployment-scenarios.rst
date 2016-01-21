@@ -59,3 +59,15 @@ Use ``Ctrl-C`` to interrupt and exit the application.
 
 On a Windows machine you can also use the ``bin\akka-sample-main-scala.bat`` script.
 
+
+In a Docker container
+=====================
+You can use both Akka remoting and Akka Cluster inside of Docker containers. But note
+that you will need to take special care with the network configuration when using Docker,
+described here: :ref:`remote-configuration-nat`
+
+For an example of how to set up a project using Akka Cluster and Docker take a look at the
+`"akka-docker-cluster" activator template`__.
+
+__ https://www.typesafe.com/activator/template/akka-docker-cluster
+
