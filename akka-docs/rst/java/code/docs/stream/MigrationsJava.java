@@ -7,6 +7,9 @@ import java.util.stream.Stream;
 
 import akka.japi.Pair;
 import akka.stream.javadsl.*;
+//#asPublisher-import
+import static akka.stream.javadsl.AsPublisher.*;
+//#asPublisher-import
 
 public class MigrationsJava {
 
@@ -19,6 +22,11 @@ public class MigrationsJava {
         Stream.iterate(new Pair<>(in, 0),
                        p -> new Pair<>(in, p.second() + 1)).iterator());
     //#expand-state
+    
+    //#asPublisher
+    Sink.asPublisher(WITH_FANOUT);    // instead of Sink.asPublisher(true)
+    Sink.asPublisher(WITHOUT_FANOUT); // instead of Sink.asPublisher(false)
+    //#asPublisher
   }
 
 }

@@ -58,8 +58,8 @@ object Sink {
    * If `fanout` is `false` then the materialized `Publisher` will only support a single `Subscriber` and
    * reject any additional `Subscriber`s.
    */
-  def asPublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
-    new Sink(scaladsl.Sink.asPublisher(fanout))
+  def asPublisher[T](fanout: AsPublisher): Sink[T, Publisher[T]] =
+    new Sink(scaladsl.Sink.asPublisher(fanout == AsPublisher.WITH_FANOUT))
 
   /**
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized

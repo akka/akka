@@ -33,7 +33,7 @@ public class SinkTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseFanoutPublisher() throws Exception {
-    final Sink<Object, Publisher<Object>> pubSink = Sink.asPublisher(true);
+    final Sink<Object, Publisher<Object>> pubSink = Sink.asPublisher(AsPublisher.WITH_FANOUT);
     @SuppressWarnings("unused")
     final Publisher<Object> publisher = Source.from(new ArrayList<Object>()).runWith(pubSink, materializer);
   }
