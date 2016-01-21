@@ -8,6 +8,8 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 import akka.NotUsed;
 import akka.japi.function.Function;
@@ -40,21 +42,17 @@ public class SinkTest extends StreamTest {
   
   @Test
   public void mustBeAbleToUseFuture() throws Exception {
-    final Sink<Integer, Future<Integer>> futSink = Sink.head();
+    final Sink<Integer, CompletionStage<Integer>> futSink = Sink.head();
     final List<Integer> list = Collections.singletonList(1);
-    final Future<Integer> future = Source.from(list).runWith(futSink, materializer);
-    assert Await.result(future, Duration.create("1 second")).equals(1);
+    final CompletionStage<Integer> future = Source.from(list).runWith(futSink, materializer);
+    assert future.toCompletableFuture().get(1, TimeUnit.SECONDS).equals(1);
   }
 
   @Test
   public void mustBeAbleToUseFold() throws Exception {
-    Sink<Integer, Future<Integer>> foldSink = Sink.fold(0, new Function2<Integer, Integer, Integer>() {
-      @Override public Integer apply(Integer arg1, Integer arg2) throws Exception {
-        return arg1 + arg2;
-      }
-    });
+    Sink<Integer, CompletionStage<Integer>> foldSink = Sink.fold(0, (arg1, arg2) -> arg1 + arg2);
     @SuppressWarnings("unused")
-    Future<Integer> integerFuture = Source.from(new ArrayList<Integer>()).runWith(foldSink, materializer);
+    CompletionStage<Integer> integerFuture = Source.from(new ArrayList<Integer>()).runWith(foldSink, materializer);
   }
   
   @Test
@@ -97,7 +95,7 @@ public class SinkTest extends StreamTest {
 
   public void mustSuitablyOverrideAttributeHandlingMethods() {
     @SuppressWarnings("unused")
-    final Sink<Integer, Future<Integer>> s =
+    final Sink<Integer, CompletionStage<Integer>> s =
         Sink.<Integer> head().withAttributes(Attributes.name("")).addAttributes(Attributes.asyncBoundary()).named("");
   }
 }

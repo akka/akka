@@ -13,6 +13,8 @@ import akka.http.javadsl.server._
 
 import scala.annotation.varargs
 import scala.concurrent.Future
+import java.util.concurrent.CompletionStage
+import scala.compat.java8.FutureConverters._
 
 abstract class BasicDirectives extends BasicDirectivesBase {
   /**
@@ -152,16 +154,22 @@ abstract class BasicDirectives extends BasicDirectivesBase {
         res
       }
       def returnTypeMatches(method: Method): Boolean =
-        method.getReturnType == classOf[RouteResult] || returnsFuture(method)
+        method.getReturnType == classOf[RouteResult] || returnsFuture(method) || returnsCompletionStage(method)
 
       def returnsFuture(method: Method): Boolean =
         method.getReturnType == classOf[Future[_]] &&
           method.getGenericReturnType.isInstanceOf[ParameterizedType] &&
           method.getGenericReturnType.asInstanceOf[ParameterizedType].getActualTypeArguments()(0) == classOf[RouteResult]
 
+      def returnsCompletionStage(method: Method): Boolean =
+        method.getReturnType == classOf[CompletionStage[_]] &&
+          method.getGenericReturnType.isInstanceOf[ParameterizedType] &&
+          method.getGenericReturnType.asInstanceOf[ParameterizedType].getActualTypeArguments()(0) == classOf[RouteResult]
+
       /** Makes sure both RouteResult and Future[RouteResult] are acceptable result types. */
       def adaptResult(method: Method): (RequestContext, AnyRef) ⇒ RouteResult =
-        if (returnsFuture(method)) (ctx, v) ⇒ ctx.completeWith(v.asInstanceOf[Future[RouteResult]])
+        if (returnsFuture(method)) (ctx, v) ⇒ ctx.completeWith(v.asInstanceOf[Future[RouteResult]].toJava)
+        else if (returnsCompletionStage(method)) (ctx, v) => ctx.completeWith(v.asInstanceOf[CompletionStage[RouteResult]])
         else (_, v) ⇒ v.asInstanceOf[RouteResult]
 
       val IdentityAdaptor: (RequestContext, Seq[Any]) ⇒ Seq[Any] = (_, ps) ⇒ ps

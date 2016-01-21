@@ -5,16 +5,16 @@
 package akka.http.javadsl.server.examples.simple;
 
 import akka.actor.ActorSystem;
-import akka.dispatch.Futures;
 import akka.http.javadsl.server.*;
 import akka.http.javadsl.server.values.Parameter;
 import akka.http.javadsl.server.values.Parameters;
 import akka.http.javadsl.server.values.PathMatcher;
 import akka.http.javadsl.server.values.PathMatchers;
-import scala.concurrent.Future;
 
 import java.io.IOException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public class SimpleServerApp extends HttpApp {
     static Parameter<Integer> x = Parameters.intValue("x");
@@ -29,12 +29,8 @@ public class SimpleServerApp extends HttpApp {
         int result = x * y;
         return ctx.complete(String.format("%d * %d = %d", x, y, result));
     }
-    public static Future<RouteResult> multiplyAsync(final RequestContext ctx, final int x, final int y) {
-        return Futures.future(new Callable<RouteResult>() {
-            public RouteResult call() throws Exception {
-                return multiply(ctx, x, y);
-            }
-        }, ctx.executionContext());
+    public static CompletionStage<RouteResult> multiplyAsync(final RequestContext ctx, final int x, final int y) {
+        return CompletableFuture.supplyAsync(() -> multiply(ctx, x, y), ctx.executionContext());
     }
 
     @Override

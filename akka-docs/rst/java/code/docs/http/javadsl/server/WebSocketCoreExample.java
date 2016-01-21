@@ -7,6 +7,7 @@ package docs.http.javadsl.server;
 //#websocket-example-using-core
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import akka.NotUsed;
@@ -50,7 +51,7 @@ public class WebSocketCoreExample {
         try {
             final Materializer materializer = ActorMaterializer.create(system);
 
-            Future<ServerBinding> serverBindingFuture =
+            CompletionStage<ServerBinding> serverBindingFuture =
                 Http.get(system).bindAndHandleSync(
                     new Function<HttpRequest, HttpResponse>() {
                         public HttpResponse apply(HttpRequest request) throws Exception {
@@ -59,7 +60,7 @@ public class WebSocketCoreExample {
                     }, "localhost", 8080, materializer);
 
             // will throw if binding fails
-            Await.result(serverBindingFuture, new FiniteDuration(1, TimeUnit.SECONDS));
+            serverBindingFuture.toCompletableFuture().get(1, TimeUnit.SECONDS);
             System.out.println("Press ENTER to stop.");
             new BufferedReader(new InputStreamReader(System.in)).readLine();
         } finally {

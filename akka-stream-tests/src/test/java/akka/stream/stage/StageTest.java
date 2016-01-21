@@ -3,6 +3,7 @@
  */
 package akka.stream.stage;
 
+import akka.NotUsed;
 import akka.stream.StreamTest;
 import akka.stream.javadsl.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Sink;
@@ -19,6 +20,8 @@ import scala.concurrent.duration.Duration;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 public class StageTest extends StreamTest {
   public StageTest() {
@@ -32,16 +35,16 @@ public class StageTest extends StreamTest {
   @Test
   public void javaStageUsage() throws Exception {
     final java.lang.Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5);
-    final Source<Integer, ?> ints = Source.from(input);
+    final Source<Integer, NotUsed> ints = Source.from(input);
     final JavaIdentityStage<Integer> identity = new JavaIdentityStage<Integer>();
 
-    final Future<List<Integer>> result =
+    final CompletionStage<List<Integer>> result =
       ints
         .via(identity)
         .via(identity)
         .grouped(1000)
         .runWith(Sink.<List<Integer>>head(), materializer);
 
-    assertEquals(Arrays.asList(0, 1, 2, 3, 4, 5), Await.result(result, Duration.create(3, "seconds")));
+    assertEquals(Arrays.asList(0, 1, 2, 3, 4, 5), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 }

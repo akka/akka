@@ -48,7 +48,7 @@ used for writing stream tests that use familiar :class:`TestProbe` from the
 :mod:`akka-testkit` API.
 
 One of the more straightforward tests would be to materialize stream to a
-:class:`Future` and then use ``pipe`` pattern to pipe the result of that future
+:class:`CompletionStage` and then use ``PatternsCS.pipe`` pattern to pipe the result of that future
 to the probe.
 
 .. includecode:: ../code/docs/stream/StreamTestKitDocTest.java#pipeto-testprobe

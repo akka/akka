@@ -137,11 +137,11 @@ re-materialized the respective pool is automatically and transparently restarted
 
 In addition to the automatic shutdown via the configured idle timeouts it's also possible to trigger the immediate
 shutdown of a specific pool by calling ``shutdown()`` on the :class:`HostConnectionPool` instance that the pool client
-flow materializes into. This ``shutdown()`` call produces a ``Future[Unit]`` which is fulfilled when the pool
+flow materializes into. This ``shutdown()`` call produces a ``CompletionStage<Done>`` which is fulfilled when the pool
 termination has been completed.
 
 It's also possible to trigger the immediate termination of *all* connection pools in the ``ActorSystem`` at the same
-time by calling ``Http.get(system).shutdownAllConnectionPools()``. This call too produces a ``Future[Unit]`` which is fulfilled when
+time by calling ``Http.get(system).shutdownAllConnectionPools()``. This call too produces a ``CompletionStage<Done>`` which is fulfilled when
 all pools have terminated.
 
 

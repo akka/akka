@@ -7,6 +7,7 @@ import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import akka.NotUsed;
@@ -46,15 +47,15 @@ public class FlowGraphDocTest {
   public void demonstrateBuildSimpleGraph() throws Exception {
     //#simple-flow-graph
     final Source<Integer, NotUsed> in = Source.from(Arrays.asList(1, 2, 3, 4, 5));
-    final Sink<List<String>, Future<List<String>>> sink = Sink.head();
-    final Sink<List<Integer>, Future<List<Integer>>> sink2 = Sink.head();
+    final Sink<List<String>, CompletionStage<List<String>>> sink = Sink.head();
+    final Sink<List<Integer>, CompletionStage<List<Integer>>> sink2 = Sink.head();
     final Flow<Integer, Integer, NotUsed> f1 = Flow.of(Integer.class).map(elem -> elem + 10);
     final Flow<Integer, Integer, NotUsed> f2 = Flow.of(Integer.class).map(elem -> elem + 20);
     final Flow<Integer, String, NotUsed> f3 = Flow.of(Integer.class).map(elem -> elem.toString());
     final Flow<Integer, Integer, NotUsed> f4 = Flow.of(Integer.class).map(elem -> elem + 30);
 
-    final RunnableGraph<Future<List<String>>> result =
-      RunnableGraph.<Future<List<String>>>fromGraph(
+    final RunnableGraph<CompletionStage<List<String>>> result =
+      RunnableGraph.<CompletionStage<List<String>>>fromGraph(
         GraphDSL
           .create(
             sink,
@@ -70,7 +71,7 @@ public class FlowGraphDocTest {
               return ClosedShape.getInstance();
             }));
     //#simple-flow-graph
-    final List<String> list = Await.result(result.run(mat), Duration.create(3, TimeUnit.SECONDS));
+    final List<String> list = result.run(mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
     final String[] res = list.toArray(new String[] {});
     Arrays.sort(res, null);
     assertArrayEquals(new String[] { "31", "32", "33", "34", "35", "41", "42", "43", "44", "45" }, res);
@@ -105,12 +106,12 @@ public class FlowGraphDocTest {
   @Test
   public void demonstrateReusingFlowInGraph() throws Exception {
     //#flow-graph-reusing-a-flow
-    final Sink<Integer, Future<Integer>> topHeadSink = Sink.head();
-    final Sink<Integer, Future<Integer>> bottomHeadSink = Sink.head();
+    final Sink<Integer, CompletionStage<Integer>> topHeadSink = Sink.head();
+    final Sink<Integer, CompletionStage<Integer>> bottomHeadSink = Sink.head();
     final Flow<Integer, Integer, NotUsed> sharedDoubler = Flow.of(Integer.class).map(elem -> elem * 2);
 
-    final RunnableGraph<Pair<Future<Integer>, Future<Integer>>> g =
-      RunnableGraph.<Pair<Future<Integer>, Future<Integer>>>fromGraph(
+    final RunnableGraph<Pair<CompletionStage<Integer>, CompletionStage<Integer>>> g =
+      RunnableGraph.<Pair<CompletionStage<Integer>, CompletionStage<Integer>>>fromGraph(
         GraphDSL.create(
           topHeadSink, // import this sink into the graph
           bottomHeadSink, // and this as well
@@ -127,24 +128,22 @@ public class FlowGraphDocTest {
         )
       );
     //#flow-graph-reusing-a-flow
-    final Pair<Future<Integer>, Future<Integer>> pair = g.run(mat);
-    assertEquals(Integer.valueOf(2), Await.result(pair.first(), Duration.create(3, TimeUnit.SECONDS)));
-    assertEquals(Integer.valueOf(2), Await.result(pair.second(), Duration.create(3, TimeUnit.SECONDS)));
+    final Pair<CompletionStage<Integer>, CompletionStage<Integer>> pair = g.run(mat);
+    assertEquals(Integer.valueOf(2), pair.first().toCompletableFuture().get(3, TimeUnit.SECONDS));
+    assertEquals(Integer.valueOf(2), pair.second().toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   @Test
   public void demonstrateMatValue() throws Exception {
     //#flow-graph-matvalue
-    final Sink<Integer, Future<Integer>> foldSink = Sink.<Integer, Integer> fold(0, (a, b) -> {
+    final Sink<Integer, CompletionStage<Integer>> foldSink = Sink.<Integer, Integer> fold(0, (a, b) -> {
       return a + b;
     });
 
-    final Flow<Future<Integer>, Integer, NotUsed> flatten = Flow.<Future<Integer>>create()
-      .mapAsync(4, x -> {
-        return x;
-      });
+    final Flow<CompletionStage<Integer>, Integer, NotUsed> flatten =
+        Flow.<CompletionStage<Integer>>create().mapAsync(4, x -> x);
 
-    final Flow<Integer, Integer, Future<Integer>> foldingFlow = Flow.fromGraph(
+    final Flow<Integer, Integer, CompletionStage<Integer>> foldingFlow = Flow.fromGraph(
       GraphDSL.create(foldSink,
       (b, fold) -> {
         return FlowShape.of(
@@ -155,7 +154,7 @@ public class FlowGraphDocTest {
 
     //#flow-graph-matvalue-cycle
     // This cannot produce any value:
-    final Source<Integer, Future<Integer>> cyclicSource = Source.fromGraph(
+    final Source<Integer, CompletionStage<Integer>> cyclicSource = Source.fromGraph(
       GraphDSL.create(foldSink,
       (b, fold) -> {
         // - Fold cannot complete until its upstream mapAsync completes

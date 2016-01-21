@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class RecipeReduceByKeyTest extends RecipeTest {
@@ -63,8 +65,8 @@ public class RecipeReduceByKeyTest extends RecipeTest {
           .mergeSubstreams();
         //#word-count
 
-        final Future<List<Pair<String, Integer>>> f = counts.grouped(10).runWith(Sink.head(), mat);
-        final Set<Pair<String, Integer>> result = Await.result(f, getRemainingTime()).stream().collect(Collectors.toSet());
+        final CompletionStage<List<Pair<String, Integer>>> f = counts.grouped(10).runWith(Sink.head(), mat);
+        final Set<Pair<String, Integer>> result = f.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().collect(Collectors.toSet());
         final Set<Pair<String, Integer>> expected = new HashSet<>();
         expected.add(new Pair<>("hello", 2));
         expected.add(new Pair<>("world", 1));
@@ -106,8 +108,8 @@ public class RecipeReduceByKeyTest extends RecipeTest {
           (left, right) -> left + right));
 
         //#reduce-by-key-general2
-        final Future<List<Pair<String, Integer>>> f = counts.grouped(10).runWith(Sink.head(), mat);
-        final Set<Pair<String, Integer>> result = Await.result(f, getRemainingTime()).stream().collect(Collectors.toSet());
+        final CompletionStage<List<Pair<String, Integer>>> f = counts.grouped(10).runWith(Sink.head(), mat);
+        final Set<Pair<String, Integer>> result = f.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().collect(Collectors.toSet());
         final Set<Pair<String, Integer>> expected = new HashSet<>();
         expected.add(new Pair<>("hello", 2));
         expected.add(new Pair<>("world", 1));

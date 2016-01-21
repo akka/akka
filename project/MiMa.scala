@@ -609,7 +609,11 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.BackoffSupervisor.akka$pattern$BackoffSupervisor$$child"),
 
         // #19487
-        FilterAnyProblem("akka.actor.dungeon.Children")
+        FilterAnyProblem("akka.actor.dungeon.Children"),
+
+        // #19440
+        ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.PipeToSupport.pipeCompletionStage"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.FutureTimeoutSupport.afterCompletionStage")
       )
     )
   }

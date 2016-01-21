@@ -6,6 +6,7 @@ package akka.stream.javadsl;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import akka.NotUsed;
@@ -85,33 +86,20 @@ public class BidiFlowTest extends StreamTest {
                           }
                       }));
 
-  private final BidiFlow<Integer, Long, ByteString, String, Future<Integer>> bidiMat =
+  private final BidiFlow<Integer, Long, ByteString, String, CompletionStage<Integer>> bidiMat =
     BidiFlow.fromGraph(
       GraphDSL.create(
         Sink.<Integer>head(),
-        new Function2<GraphDSL.Builder<Future<Integer>>, SinkShape<Integer>, BidiShape<Integer, Long, ByteString, String>>() {
-          @Override
-          public BidiShape<Integer, Long, ByteString, String> apply(Builder<Future<Integer>> b, SinkShape<Integer> sink)
-            throws Exception {
+        (b, sink) -> {
             b.from(b.add(Source.single(42))).to(sink);
             final FlowShape<Integer, Long> top = b.add(Flow
-              .of(Integer.class).map(new Function<Integer, Long>() {
-                @Override
-                public Long apply(Integer arg) {
-                  return (long) ((int) arg) + 2;
-                }
-              }));
+              .of(Integer.class).map(i -> (long)(i + 2)));
             final FlowShape<ByteString, String> bottom = b.add(Flow
-              .of(ByteString.class).map(new Function<ByteString, String>() {
-                @Override
-                public String apply(ByteString arg) {
-                  return arg.decodeString("UTF-8");
-                }
-              }));
+              .of(ByteString.class).map(bytes -> bytes.decodeString("UTF-8")));
             return new BidiShape<Integer, Long, ByteString, String>(top
               .in(), top.out(), bottom.in(), bottom.out());
           }
-        }));
+        ));
 
   private final String str = "Hello World";
   private final ByteString bytes = ByteString.fromString(str);
@@ -125,14 +113,11 @@ public class BidiFlowTest extends StreamTest {
 
   @Test
   public void mustWorkInIsolation() throws Exception {
-    final Pair<Future<Long>, Future<String>> p =
+    final Pair<CompletionStage<Long>, CompletionStage<String>> p =
       RunnableGraph.fromGraph(GraphDSL
         .create(Sink.<Long> head(), Sink.<String> head(),
-          Keep.<Future<Long>, Future<String>> both(),
-          new Function3<Builder<Pair<Future<Long>, Future<String>>>, SinkShape<Long>, SinkShape<String>, ClosedShape>() {
-            @Override
-            public ClosedShape apply(Builder<Pair<Future<Long>, Future<String>>> b, SinkShape<Long> st,
-                SinkShape<String> sb) throws Exception {
+          Keep.both(),
+          (b, st, sb) -> {
             final BidiShape<Integer, Long, ByteString, String> s =
               b.add(bidi);
               b.from(b.add(Source.single(1))).toInlet(s.in1());
@@ -140,11 +125,10 @@ public class BidiFlowTest extends StreamTest {
               b.from(b.add(Source.single(bytes))).toInlet(s.in2());
               b.from(s.out2()).to(sb);
               return ClosedShape.getInstance();
-            }
           })).run(materializer);
 
-    final Long rt = Await.result(p.first(), oneSec);
-    final String rb = Await.result(p.second(), oneSec);
+    final Long rt = p.first().toCompletableFuture().get(1, TimeUnit.SECONDS);
+    final String rb = p.second().toCompletableFuture().get(1, TimeUnit.SECONDS);
 
     assertEquals((Long) 3L, rt);
     assertEquals(str, rb);
@@ -158,8 +142,8 @@ public class BidiFlowTest extends StreamTest {
             return ByteString.fromString("Hello " + arg);
           }
         }));
-    final Future<List<String>> result = Source.from(list).via(f).grouped(10).runWith(Sink.<List<String>> head(), materializer);
-    assertEquals(Arrays.asList("Hello 3", "Hello 4", "Hello 5"), Await.result(result, oneSec));
+    final CompletionStage<List<String>> result = Source.from(list).via(f).grouped(10).runWith(Sink.<List<String>> head(), materializer);
+    assertEquals(Arrays.asList("Hello 3", "Hello 4", "Hello 5"), result.toCompletableFuture().get(1, TimeUnit.SECONDS));
   }
 
   @Test
@@ -171,8 +155,8 @@ public class BidiFlowTest extends StreamTest {
           }
         }).join(bidi);
     final List<ByteString> inputs = Arrays.asList(ByteString.fromString("1"), ByteString.fromString("2"));
-    final Future<List<Long>> result = Source.from(inputs).via(f).grouped(10).runWith(Sink.<List<Long>> head(), materializer);
-    assertEquals(Arrays.asList(3L, 4L), Await.result(result, oneSec));
+    final CompletionStage<List<Long>> result = Source.from(inputs).via(f).grouped(10).runWith(Sink.<List<Long>> head(), materializer);
+    assertEquals(Arrays.asList(3L, 4L), result.toCompletableFuture().get(1, TimeUnit.SECONDS));
   }
 
   @Test
@@ -183,8 +167,8 @@ public class BidiFlowTest extends StreamTest {
             return arg.toString();
           }
         }));
-    final Future<List<String>> result = Source.from(list).via(f).grouped(10).runWith(Sink.<List<String>> head(), materializer);
-    assertEquals(Arrays.asList("5", "6", "7"), Await.result(result, oneSec));
+    final CompletionStage<List<String>> result = Source.from(list).via(f).grouped(10).runWith(Sink.<List<String>> head(), materializer);
+    assertEquals(Arrays.asList("5", "6", "7"), result.toCompletableFuture().get(1, TimeUnit.SECONDS));
   }
 
   @Test
@@ -195,80 +179,49 @@ public class BidiFlowTest extends StreamTest {
             return arg.toString();
           }
         }).join(inverse.reversed()).join(bidi.reversed());
-    final Future<List<String>> result = Source.from(list).via(f).grouped(10).runWith(Sink.<List<String>> head(), materializer);
-    assertEquals(Arrays.asList("5", "6", "7"), Await.result(result, oneSec));
+    final CompletionStage<List<String>> result = Source.from(list).via(f).grouped(10).runWith(Sink.<List<String>> head(), materializer);
+    assertEquals(Arrays.asList("5", "6", "7"), result.toCompletableFuture().get(1, TimeUnit.SECONDS));
   }
 
   @Test
   public void mustMaterializeToItsValue() throws Exception {
-    final Future<Integer> f = RunnableGraph.fromGraph(
-      GraphDSL.create(bidiMat,
-        new Function2<Builder<Future<Integer> >, BidiShape<Integer, Long, ByteString, String>, ClosedShape>() {
-      @Override
-      public ClosedShape apply(Builder<Future<Integer>> b,
-          BidiShape<Integer, Long, ByteString, String> shape) throws Exception {
-        final FlowShape<String, Integer> left = b.add(Flow.of(String.class).map(
-          new Function<String, Integer>() {
-            @Override
-            public Integer apply(String arg) {
-              return Integer.valueOf(arg);
-            }
-          }));
-        final FlowShape<Long, ByteString> right = b.add(Flow.of(Long.class).map(
-          new Function<Long, ByteString>() {
-            @Override
-            public ByteString apply(Long arg) {
-              return ByteString.fromString("Hello " + arg);
-            }
-          }));
+    final CompletionStage<Integer> f = RunnableGraph.fromGraph(
+      GraphDSL.create(bidiMat, (b, shape) -> {
+        final FlowShape<String, Integer> left = b.add(Flow.of(String.class).map(Integer::valueOf));
+        final FlowShape<Long, ByteString> right = b.add(Flow.of(Long.class).map(s -> ByteString.fromString("Hello " + s)));
         b.from(shape.out2()).via(left).toInlet(shape.in1())
          .from(shape.out1()).via(right).toInlet(shape.in2());
         return ClosedShape.getInstance();
-      }
     })).run(materializer);
-    assertEquals((Integer) 42, Await.result(f, oneSec));
+    assertEquals((Integer) 42, f.toCompletableFuture().get(1, TimeUnit.SECONDS));
   }
 
   @Test
   public void mustCombineMaterializationValues() throws Exception {
-    final Flow<String, Integer, Future<Integer>> left = Flow.fromGraph(GraphDSL.create(
-            Sink.<Integer>head(), new Function2<Builder<Future<Integer>>, SinkShape<Integer>, FlowShape<String, Integer>>() {
-                @Override
-                public FlowShape<String, Integer> apply(Builder<Future<Integer>> b,
-                                                        SinkShape<Integer> sink) throws Exception {
+    final Flow<String, Integer, CompletionStage<Integer>> left = Flow.fromGraph(GraphDSL.create(
+            Sink.<Integer>head(), (b, sink) -> {
                     final UniformFanOutShape<Integer, Integer> bcast = b.add(Broadcast.<Integer>create(2));
                     final UniformFanInShape<Integer, Integer> merge = b.add(Merge.<Integer>create(2));
-                    final FlowShape<String, Integer> flow = b.add(Flow.of(String.class).map(
-                      new Function<String, Integer>() {
-                        @Override
-                        public Integer apply(String arg) {
-                          return Integer.valueOf(arg);
-                        }
-                      }));
+                    final FlowShape<String, Integer> flow = b.add(Flow.of(String.class).map(Integer::valueOf));
                     b.from(bcast).to(sink)
                             .from(b.add(Source.single(1))).viaFanOut(bcast).toFanIn(merge)
                             .from(flow).toFanIn(merge);
                     return new FlowShape<String, Integer>(flow.in(), merge.out());
-                }
             }));
-    final Flow<Long, ByteString, Future<List<Long>>> right = Flow.fromGraph(GraphDSL.create(
-            Sink.<List<Long>>head(), new Function2<Builder<Future<List<Long>>>, SinkShape<List<Long>>, FlowShape<Long, ByteString>>() {
-                @Override
-                public FlowShape<Long, ByteString> apply(Builder<Future<List<Long>>> b,
-                                                         SinkShape<List<Long>> sink) throws Exception {
+    final Flow<Long, ByteString, CompletionStage<List<Long>>> right = Flow.fromGraph(GraphDSL.create(
+            Sink.<List<Long>>head(), (b, sink) -> {
                     final FlowShape<Long, List<Long>> flow = b.add(Flow.of(Long.class).grouped(10));
                     b.from(flow).to(sink);
                     return new FlowShape<Long, ByteString>(flow.in(), b.add(Source.single(ByteString.fromString("10"))).out());
-                }
             }));
-    final Pair<Pair<Future<Integer>, Future<Integer>>, Future<List<Long>>> result =
-        left.joinMat(bidiMat, Keep.<Future<Integer>, Future<Integer>> both()).joinMat(right, Keep.<Pair<Future<Integer>, Future<Integer>>, Future<List<Long>>> both()).run(materializer);
-    final Future<Integer> l = result.first().first();
-    final Future<Integer> m = result.first().second();
-    final Future<List<Long>> r = result.second();
-    assertEquals((Integer) 1, Await.result(l, oneSec));
-    assertEquals((Integer) 42, Await.result(m, oneSec));
-    final Long[] rr = Await.result(r, oneSec).toArray(new Long[2]);
+    final Pair<Pair<CompletionStage<Integer>, CompletionStage<Integer>>, CompletionStage<List<Long>>> result =
+        left.joinMat(bidiMat, Keep.both()).joinMat(right, Keep.both()).run(materializer);
+    final CompletionStage<Integer> l = result.first().first();
+    final CompletionStage<Integer> m = result.first().second();
+    final CompletionStage<List<Long>> r = result.second();
+    assertEquals((Integer) 1, l.toCompletableFuture().get(1, TimeUnit.SECONDS));
+    assertEquals((Integer) 42, m.toCompletableFuture().get(1, TimeUnit.SECONDS));
+    final Long[] rr = r.toCompletableFuture().get(1, TimeUnit.SECONDS).toArray(new Long[2]);
     Arrays.sort(rr);
     assertArrayEquals(new Long[] { 3L, 12L }, rr);
   }

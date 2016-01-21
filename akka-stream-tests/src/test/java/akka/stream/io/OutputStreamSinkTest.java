@@ -16,6 +16,7 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.io.OutputStream;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertTrue;
@@ -32,8 +33,6 @@ public class OutputStreamSinkTest  extends StreamTest {
     @Test
     public void mustSignalFailureViaIoResult() throws Exception {
 
-      final FiniteDuration timeout = FiniteDuration.create(300, TimeUnit.MILLISECONDS);
-
       final OutputStream os = new OutputStream() {
         volatile int left = 3;
         public void write(int data) {
@@ -43,8 +42,8 @@ public class OutputStreamSinkTest  extends StreamTest {
           left -= 1;
         }
       };
-      final Future<IOResult> resultFuture = Source.single(ByteString.fromString("123456")).runWith(StreamConverters.fromOutputStream(() -> os), materializer);
-      final IOResult result = Await.result(resultFuture, timeout);
+      final CompletionStage<IOResult> resultFuture = Source.single(ByteString.fromString("123456")).runWith(StreamConverters.fromOutputStream(() -> os), materializer);
+      final IOResult result = resultFuture.toCompletableFuture().get(300, TimeUnit.MILLISECONDS);
 
       assertFalse(result.wasSuccessful());
       assertTrue(result.getError().getMessage().equals("Can't accept more data."));

@@ -80,7 +80,7 @@ one actor prepare the work, and then have it be materialized at some completely 
 
 After running (materializing) the ``RunnableGraph`` we get a special container object, the ``MaterializedMap``. Both
 sources and sinks are able to put specific objects into this map. Whether they put something in or not is implementation
-dependent. For example a ``FoldSink`` will make a ``Future`` available in this map which will represent the result
+dependent. For example a ``FoldSink`` will make a ``CompletionStage`` available in this map which will represent the result
 of the folding process over the stream.  In general, a stream can expose multiple materialized values,
 but it is quite common to be interested in only the value of the Source or the Sink in the stream. For this reason
 there is a convenience method called ``runWith()`` available for ``Sink``, ``Source`` or ``Flow`` requiring, respectively,
@@ -105,7 +105,7 @@ of the given sink or source.
 
 Since a stream can be materialized multiple times, the ``MaterializedMap`` returned is different for each materialization.
 In the example below we create two running materialized instance of the stream that we described in the ``runnable``
-variable, and both materializations give us a different ``Future`` from the map even though we used the same ``sink``
+variable, and both materializations give us a different ``CompletionStage`` from the map even though we used the same ``sink``
 to refer to the future:
 
 .. includecode:: ../code/docs/stream/FlowDocTest.java#stream-reuse

@@ -19,6 +19,7 @@ import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 public class RecipeToStrict extends RecipeTest {
@@ -45,11 +46,11 @@ public class RecipeToStrict extends RecipeTest {
         final int MAX_ALLOWED_SIZE = 100;
 
         //#draining-to-list
-        final Future<List<String>> strings = myData
+        final CompletionStage<List<String>> strings = myData
           .grouped(MAX_ALLOWED_SIZE).runWith(Sink.head(), mat);
         //#draining-to-list
 
-        Await.result(strings, new FiniteDuration(1, TimeUnit.SECONDS));
+        strings.toCompletableFuture().get(3, TimeUnit.SECONDS);
       }
     };
   }

@@ -60,7 +60,7 @@ In this recipe we will use the ``grouped`` stream operation that groups incoming
 size collections (it can be seen as the almost opposite version of the "Flattening a stream of sequences" recipe
 we showed before). By using a ``grouped(MAX_ALLOWED_SIZE)`` we create a stream of groups
 with maximum size of ``MaxAllowedSeqSize`` and then we take the first element of this stream by attaching a ``Sink.head()``. What we get is a
-:class:`Future` containing a sequence with all the elements of the original up to ``MAX_ALLOWED_SIZE`` size (further
+:class:`CompletionStage` containing a sequence with all the elements of the original up to ``MAX_ALLOWED_SIZE`` size (further
 elements are dropped).
 
 .. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeToStrict.java#draining-to-list

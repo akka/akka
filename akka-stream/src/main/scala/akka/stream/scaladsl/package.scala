@@ -3,6 +3,11 @@
  */
 package akka.stream
 
+import java.util.concurrent.CompletionStage
+import scala.concurrent.Future
+import scala.compat.java8.FutureConverters
+import akka.japi.function
+
 /**
  * Scala API: The flow DSL allows the formulation of stream transformations based on some
  * input. The starting point is called [[Source]] and can be a collection, an iterator,
@@ -49,4 +54,12 @@ package akka.stream
  * is fully started and active.
  */
 package object scaladsl {
+  implicit class SourceToCompletionStage[Out, T](val src: Source[Out, Future[T]]) extends AnyVal {
+    def toCompletionStage(): Source[Out, CompletionStage[T]] =
+      src.mapMaterializedValue(FutureConverters.toJava)
+  }
+  implicit class SinkToCompletionStage[In, T](val sink: Sink[In, Future[T]]) extends AnyVal {
+    def toCompletionStage(): Sink[In, CompletionStage[T]] =
+      sink.mapMaterializedValue(FutureConverters.toJava)
+  }
 }

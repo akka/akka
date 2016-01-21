@@ -18,8 +18,6 @@ import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -89,7 +87,7 @@ public class RecipeDigest extends RecipeTest {
           .transform(() -> digestCalculator("SHA-256"));
         //#calculating-digest2
 
-        ByteString got = Await.result(digest.runWith(Sink.head(), mat), Duration.create(3, TimeUnit.SECONDS));
+        ByteString got = digest.runWith(Sink.head(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
         assertEquals(ByteString.fromInts(
           0x24, 0x8d, 0x6a, 0x61,
           0xd2, 0x06, 0x38, 0xb8,

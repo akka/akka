@@ -18,7 +18,7 @@ the request can either be refused by returning the return value of ``refuseAcces
 with an object that is application specific by returning the return value of ``authenticateAs(T)``.
 
 If the authentication is not very quick in memory, for example calls a separate authentication server
-to verify the token, make sure you do not block the web server thread by executing that in a separate ``Future``
+to verify the token, make sure you do not block the web server thread by executing that in a separate ``CompletionStage``
 and then ``flatMap`` the result into the authentication result.
 
 .. note:: OAuth2 Bearer Token sends the token as clear text and should ONLY EVER be used over

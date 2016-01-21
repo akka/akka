@@ -253,7 +253,7 @@ type is of the nested module (indicated by the color *red* on the diagram):
 .. includecode:: ../code/docs/stream/CompositionDocTest.java#mat-combine-1
 
 Next, we create a composite :class:`Flow` from two smaller components. Here, the second enclosed :class:`Flow` has a
-materialized type of :class:`Future<OutgoingConnection>`, and we propagate this to the parent by using ``Keep.right()``
+materialized type of :class:`CompletionStage<OutgoingConnection>`, and we propagate this to the parent by using ``Keep.right()``
 as the combiner function (indicated by the color *yellow* on the diagram):
 
 .. includecode:: ../code/docs/stream/CompositionDocTest.java#mat-combine-2
@@ -267,7 +267,7 @@ we use ``Keep.both()`` to get a :class:`Pair` of them as the materialized type o
 
 As the last example, we wire together ``nestedSource`` and ``nestedSink`` and we use a custom combiner function to
 create a yet another materialized type of the resulting :class:`RunnableGraph`. This combiner function just ignores
-the :class:`Future<Sink>` part, and wraps the other two values in a custom case class :class:`MyClass`
+the :class:`CompletionStage<Sink>` part, and wraps the other two values in a custom case class :class:`MyClass`
 (indicated by color *purple* on the diagram):
 
 .. includecode:: ../code/docs/stream/CompositionDocTest.java#mat-combine-4a

@@ -7,7 +7,7 @@ import akka.NotUsed;
 import akka.actor.*;
 import akka.dispatch.Mapper;
 import akka.japi.pf.ReceiveBuilder;
-import akka.pattern.Patterns;
+import akka.pattern.PatternsCS;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.stream.testkit.TestSubscriber;
@@ -25,6 +25,7 @@ import scala.runtime.BoxedUnit;
 
 
 import java.util.*;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import static junit.framework.TestCase.assertTrue;
@@ -150,14 +151,9 @@ public class RecipeGlobalRateLimit extends RecipeTest {
 
         return f.mapAsync(parallelism, element -> {
           final Timeout triggerTimeout = new Timeout(maxAllowedWait);
-          final Future<Object> limiterTriggerFuture =
-            Patterns.ask(limiter, Limiter.WANT_TO_PASS, triggerTimeout);
-          return limiterTriggerFuture.map(new Mapper<Object, T>() {
-            @Override
-            public T apply(Object parameter) {
-              return element;
-            }
-          }, system.dispatcher());
+          final CompletionStage<Object> limiterTriggerFuture =
+            PatternsCS.ask(limiter, Limiter.WANT_TO_PASS, triggerTimeout);
+          return limiterTriggerFuture.thenApplyAsync(response -> element, system.dispatcher());
         });
       }
       //#global-limiter-flow
