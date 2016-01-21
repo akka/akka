@@ -135,9 +135,9 @@ class FlowExpandSpec extends AkkaSpec {
       source
         .sendNext(1)
       sink
-        .request(5)
+        .request(4)
         .expectNext(1 -> 0, 1 -> 1, 1 -> 2)
-        .expectNoMsg(300.millis)
+        .expectNoMsg(100.millis)
       source
         .sendNext(2)
         .sendComplete()
