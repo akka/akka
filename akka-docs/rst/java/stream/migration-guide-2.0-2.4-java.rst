@@ -54,7 +54,7 @@ Iterator.
 The most prominent use-case previously was to just repeat the previously received value::
 
     // This no longer works!
-    Flow.of(Integer.class).expand(i -> i)(i -> new Pair<>(i, i)); 
+    Flow.of(Integer.class).expand(i -> i)(i -> new Pair<>(i, i));
 
 In Akka 2.4.x this is simplified to:
 
@@ -73,8 +73,8 @@ In Akka 2.4.x this is formulated like so:
 
 .. includecode:: ../code/docs/stream/MigrationsJava.java#expand-state
 
-Changed Sinks
-=============
+Changed Sources / Sinks
+=======================
 
 Sink.asPublisher is now configured using an enum
 ------------------------------------------------
@@ -85,3 +85,16 @@ In order to not use a meaningless boolean parameter we have changed the signatur
 
 .. includecode:: ../code/docs/stream/MigrationsJava.java#asPublisher
 
+IO Sources / Sinks materialize IOResult
+---------------------------------------
+
+Materialized values of the following sources and sinks:
+
+  * ``FileIO.fromFile``
+  * ``FileIO.toFile``
+  * ``StreamConverters.fromInputStream``
+  * ``StreamConverters.fromOutputStream``
+
+have been changed from ``Long`` to ``akka.stream.io.IOResult``.
+This allows to signal more complicated completion scenarios. For example, on failure it is now possible
+to return the exception and the number of bytes written until that exception occured.

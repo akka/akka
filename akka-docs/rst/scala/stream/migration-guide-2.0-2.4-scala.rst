@@ -71,3 +71,19 @@ In Akka 2.4.x this is formulated like so:
 
 .. includecode:: ../code/docs/stream/MigrationsScala.scala#expand-state
 
+Changed Sources / Sinks
+=======================
+
+IO Sources / Sinks materialize IOResult
+---------------------------------------
+
+Materialized values of the following sources and sinks:
+
+  * ``FileIO.fromFile``
+  * ``FileIO.toFile``
+  * ``StreamConverters.fromInputStream``
+  * ``StreamConverters.fromOutputStream``
+
+have been changed from ``Long`` to ``akka.stream.io.IOResult``.
+This allows to signal more complicated completion scenarios. For example, on failure it is now possible
+to return the exception and the number of bytes written until that exception occured.

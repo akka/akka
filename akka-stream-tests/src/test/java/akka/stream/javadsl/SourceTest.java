@@ -106,7 +106,7 @@ public class SourceTest extends StreamTest {
     probe.expectMsgEquals("a");
     probe.expectMsgEquals("b");
     probe.expectMsgEquals("c");
-    probe.expectMsgEquals("()");
+    probe.expectMsgEquals("Done");
   }
 
   @Ignore("StatefulStage to be converted to GraphStage when Java Api is available (#18817)") @Test
@@ -300,7 +300,7 @@ public class SourceTest extends StreamTest {
       }
     }), materializer);
 
-    probe.expectMsgClass(NotUsed.class);
+    probe.expectMsgClass(Done.class);
   }
 
   @Test

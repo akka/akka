@@ -46,8 +46,8 @@ class FileSourcesBenchmark {
   @Param(Array("2048"))
   val bufSize = 0
 
-  var fileChannelSource: Source[ByteString, Future[Long]] = _
-  var fileInputStreamSource: Source[ByteString, Future[Long]] = _
+  var fileChannelSource: Source[ByteString, Future[IOResult]] = _
+  var fileInputStreamSource: Source[ByteString, Future[IOResult]] = _
   var ioSourceLinesIterator: Source[ByteString, NotUsed] = _
 
   @Setup
