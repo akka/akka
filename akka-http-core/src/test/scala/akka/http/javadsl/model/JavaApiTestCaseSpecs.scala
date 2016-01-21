@@ -10,7 +10,7 @@ import javax.net.ssl.{ SSLParameters, SSLContext }
 import akka.http.javadsl.model.headers.Cookie
 import akka.http.scaladsl.model
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
-import com.typesafe.sslconfig.ssl.ClientAuth
+import akka.stream.io.ClientAuth
 import org.scalatest.{ FreeSpec, MustMatchers }
 
 import scala.collection.immutable

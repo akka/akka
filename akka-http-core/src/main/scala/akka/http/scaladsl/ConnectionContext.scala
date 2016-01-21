@@ -35,8 +35,7 @@ final class HttpsConnectionContext(
   val enabledProtocols: Option[immutable.Seq[String]] = None,
   val clientAuth: Option[ClientAuth] = None,
   val sslParameters: Option[SSLParameters] = None)
-  extends akka.http.javadsl.HttpsConnectionContext
-  with ConnectionContext {
+  extends akka.http.javadsl.HttpsConnectionContext with ConnectionContext {
 
   def firstSession = NegotiateNewSession(enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
 
