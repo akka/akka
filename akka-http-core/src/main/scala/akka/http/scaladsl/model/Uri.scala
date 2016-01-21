@@ -43,11 +43,13 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
   def queryString(charset: Charset = UTF8): Option[String] = rawQueryString.map(s ⇒ decode(s, charset))
 
   /**
+   * INTERNAL API
+   *
    * The effective port of this Uri given the currently set authority and scheme values.
    * If the authority has an explicitly set port (i.e. a non-zero port value) then this port
    * is the effective port. Otherwise the default port for the current scheme is returned.
    */
-  def effectivePort: Int = if (authority.port != 0) authority.port else defaultPorts(scheme)
+  private[akka] def effectivePort: Int = if (authority.port != 0) authority.port else defaultPorts(scheme)
 
   /**
    * Returns a copy of this Uri with the given components.
@@ -592,7 +594,7 @@ object Uri {
     }
   }
 
-  val defaultPorts: Map[String, Int] =
+  private val defaultPorts: Map[String, Int] =
     Map("ftp" -> 21, "ssh" -> 22, "telnet" -> 23, "smtp" -> 25, "domain" -> 53, "tftp" -> 69, "http" -> 80, "ws" -> 80,
       "pop3" -> 110, "nntp" -> 119, "imap" -> 143, "snmp" -> 161, "ldap" -> 389, "https" -> 443, "wss" -> 443, "imaps" -> 993,
       "nfs" -> 2049).withDefaultValue(-1)

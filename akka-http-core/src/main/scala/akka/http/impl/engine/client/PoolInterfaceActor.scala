@@ -64,8 +64,8 @@ private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
     import hcps._
     import setup._
 
-    val connectionFlow = conContext match {
-      case httpsContext: HttpsConnectionContext ⇒ Http().outgoingConnectionTls(host, port, httpsContext, None, settings.connectionSettings, setup.log)
+    val connectionFlow = connectionContext match {
+      case httpsContext: HttpsConnectionContext ⇒ Http().outgoingConnectionHttps(host, port, httpsContext, None, settings.connectionSettings, setup.log)
       case _                                    ⇒ Http().outgoingConnection(host, port, None, settings.connectionSettings, setup.log)
     }
 
@@ -148,7 +148,7 @@ private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
     }
 
   def dispatchRequest(pr: PoolRequest): Unit = {
-    val scheme = Uri.httpScheme(hcps.setup.conContext.isSecure)
+    val scheme = Uri.httpScheme(hcps.setup.connectionContext.isSecure)
     val hostHeader = headers.Host(hcps.host, Uri.normalizePort(hcps.port, scheme))
     val effectiveRequest =
       pr.request

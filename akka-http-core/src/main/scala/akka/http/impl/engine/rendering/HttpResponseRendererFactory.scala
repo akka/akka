@@ -63,10 +63,10 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
 
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) {
-        private[this] var closeMode: CloseMode = DontClose // signals what to do after the current response
-        private[this] def close: Boolean = closeMode != DontClose
-        private[this] def closeIf(cond: Boolean): Unit =
-          if (cond) closeMode = CloseConnection
+        var closeMode: CloseMode = DontClose // signals what to do after the current response
+        def close: Boolean = closeMode != DontClose
+        def closeIf(cond: Boolean): Unit = if (cond) closeMode = CloseConnection
+        var transferring = false
 
         setHandler(in, new InHandler {
           override def onPush(): Unit =
