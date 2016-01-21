@@ -39,7 +39,8 @@ object Merge {
  * '''Cancels when''' downstream cancels
  */
 final class Merge[T] private (val inputPorts: Int, val eagerComplete: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
-  require(inputPorts > 1, "A Merge must have more than 1 input port")
+  // one input might seem counter intuitive but saves us from special handling in other places
+  require(inputPorts >= 1, "A Merge must have one or more input ports")
 
   val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i ⇒ Inlet[T]("Merge.in" + i))
   val out: Outlet[T] = Outlet[T]("Merge.out")
@@ -395,7 +396,8 @@ object Broadcast {
  *
  */
 final class Broadcast[T](private val outputPorts: Int, eagerCancel: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
-  require(outputPorts > 1, "A Broadcast must have more than 1 output ports")
+  // one input might seem counter intuitive but saves us from special handling in other places
+  require(outputPorts >= 1, "A Broadcast must have one or more output ports")
   val in: Inlet[T] = Inlet[T]("Broadast.in")
   val out: immutable.IndexedSeq[Outlet[T]] = Vector.tabulate(outputPorts)(i ⇒ Outlet[T]("Broadcast.out" + i))
   override def initialAttributes = DefaultAttributes.broadcast
