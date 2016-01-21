@@ -59,7 +59,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       probe.expectComplete()
     }
 
-    "work with 1-way merge" in {
+    "work with one-way merge" in {
       val result = Source.fromGraph(GraphDSL.create() { implicit b ⇒
         val merge = b.add(Merge[Int](1))
         val source = b.add(Source(1 to 3))
