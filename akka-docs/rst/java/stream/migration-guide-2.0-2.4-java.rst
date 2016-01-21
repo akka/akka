@@ -73,3 +73,15 @@ In Akka 2.4.x this is formulated like so:
 
 .. includecode:: ../code/docs/stream/MigrationsJava.java#expand-state
 
+Changed Sinks
+=============
+
+Sink.asPublisher is now configured using an enum
+------------------------------------------------
+
+In order to not use a meaningless boolean parameter we have changed the signature to:
+
+.. includecode:: ../code/docs/stream/MigrationsJava.java#asPublisher-import
+
+.. includecode:: ../code/docs/stream/MigrationsJava.java#asPublisher
+
