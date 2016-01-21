@@ -12,8 +12,8 @@ import akka.testkit._
  */
 object Timeouts {
 
-  def publisherShutdownTimeoutMillis: Int = 1000
+  def publisherShutdownTimeoutMillis: Int = 3000
 
-  def defaultTimeoutMillis: Int = 500
+  def defaultTimeoutMillis: Int = 800
 
 }
