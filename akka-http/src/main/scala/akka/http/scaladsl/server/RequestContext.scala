@@ -4,7 +4,7 @@
 
 package akka.http.scaladsl.server
 
-import scala.concurrent.{ Future, ExecutionContext }
+import scala.concurrent.{ Future, ExecutionContextExecutor }
 import akka.stream.Materializer
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
@@ -25,7 +25,7 @@ trait RequestContext {
   /**
    * The default ExecutionContext to be used for scheduling asynchronous logic related to this request.
    */
-  implicit def executionContext: ExecutionContext
+  implicit def executionContext: ExecutionContextExecutor
 
   /**
    * The default Materializer.
@@ -46,7 +46,7 @@ trait RequestContext {
    * Returns a copy of this context with the given fields updated.
    */
   def reconfigure(
-    executionContext: ExecutionContext = executionContext,
+    executionContext: ExecutionContextExecutor = executionContext,
     materializer: Materializer = materializer,
     log: LoggingAdapter = log,
     settings: RoutingSettings = settings): RequestContext
@@ -76,7 +76,7 @@ trait RequestContext {
   /**
    * Returns a copy of this context with the new HttpRequest.
    */
-  def withExecutionContext(ec: ExecutionContext): RequestContext
+  def withExecutionContext(ec: ExecutionContextExecutor): RequestContext
 
   /**
    * Returns a copy of this context with the new HttpRequest.

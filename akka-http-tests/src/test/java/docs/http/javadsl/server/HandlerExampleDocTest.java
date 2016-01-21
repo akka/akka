@@ -13,9 +13,11 @@ import akka.http.javadsl.server.values.Parameters;
 import akka.http.javadsl.server.values.PathMatchers;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
 import org.junit.Test;
-import scala.concurrent.ExecutionContext;
-import scala.concurrent.Future;
 
 public class HandlerExampleDocTest extends JUnitRouteTest {
     @Test
@@ -236,12 +238,12 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
         //#async-example-full
         //#async-service-definition
         class CalculatorService {
-            public Future<Integer> multiply(final int x, final int y, ExecutionContext ec) {
-                return akka.dispatch.Futures.future(() -> x * y, ec);
+            public CompletionStage<Integer> multiply(final int x, final int y) {
+                return CompletableFuture.supplyAsync(() -> x * y);
             }
 
-            public Future<Integer> add(final int x, final int y, ExecutionContext ec) {
-                return akka.dispatch.Futures.future(() -> x + y, ec);
+            public CompletionStage<Integer> add(final int x, final int y) {
+                return CompletableFuture.supplyAsync(() -> x + y);
             }
         }
         //#async-service-definition
@@ -253,15 +255,10 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
             //#async-handler-1
             // would probably be injected or passed at construction time in real code
             CalculatorService calculatorService = new CalculatorService();
-            public Future<RouteResult> multiplyAsync(final RequestContext ctx, int x, int y) {
-                Future<Integer> result = calculatorService.multiply(x, y, ctx.executionContext());
-                Mapper<Integer, RouteResult> func = new Mapper<Integer, RouteResult>() {
-                    @Override
-                    public RouteResult apply(Integer product) {
-                        return ctx.complete("x * y = " + product);
-                    }
-                }; // cannot be written as lambda, unfortunately
-                return result.map(func, ctx.executionContext());
+            public CompletionStage<RouteResult> multiplyAsync(final RequestContext ctx, int x, int y) {
+                CompletionStage<Integer> result = calculatorService.multiply(x, y);
+                return result.thenApplyAsync(product -> ctx.complete("x * y = " + product),
+                    ctx.executionContext());
             }
             Route multiplyAsyncRoute =
                 path("multiply").route(
@@ -271,14 +268,9 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
 
             //#async-handler-2
             public RouteResult addAsync(final RequestContext ctx, int x, int y) {
-                Future<Integer> result = calculatorService.add(x, y, ctx.executionContext());
-                Mapper<Integer, RouteResult> func = new Mapper<Integer, RouteResult>() {
-                    @Override
-                    public RouteResult apply(Integer sum) {
-                        return ctx.complete("x + y = " + sum);
-                    }
-                }; // cannot be written as lambda, unfortunately
-                return ctx.completeWith(result.map(func, ctx.executionContext()));
+                CompletionStage<Integer> result = calculatorService.add(x, y);
+                return ctx.completeWith(result.thenApplyAsync(sum -> ctx.complete("x + y = " + sum),
+                    ctx.executionContext()));
             }
             Route addAsyncRoute =
                 path("add").route(

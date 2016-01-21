@@ -67,7 +67,7 @@ public class CodingDirectivesTest extends JUnitRouteTest {
             .assertHeaderExists(ContentEncoding.create(HttpEncodings.DEFLATE));
 
         ByteString decompressed =
-                Await.result(Coder.Deflate.decode(response.entityBytes(), mat), Duration.apply(3, TimeUnit.SECONDS));
+                Coder.Deflate.decode(response.entityBytes(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
         Assert.assertEquals("tester", decompressed.utf8String());
     }
     @Test
