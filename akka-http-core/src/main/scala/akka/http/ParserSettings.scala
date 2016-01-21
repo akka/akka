@@ -90,6 +90,29 @@ final class ParserSettings(
       includeTlsSessionInfoHeader,
       customMethods,
       customStatusCodes)
+
+  // TODO we should automate generating those
+  override def toString = {
+    getClass.getSimpleName + "(" +
+      maxUriLength + "," +
+      maxMethodLength + "," +
+      maxResponseReasonLength + "," +
+      maxHeaderNameLength + "," +
+      maxHeaderValueLength + "," +
+      maxHeaderCount + "," +
+      maxContentLength + "," +
+      maxChunkExtLength + "," +
+      maxChunkSize + "," +
+      uriParsingMode + "," +
+      cookieParsingMode + "," +
+      illegalHeaderWarnings + "," +
+      errorLoggingVerbosity + "," +
+      headerValueCacheLimits + "," +
+      includeTlsSessionInfoHeader + "," +
+      customMethods + "," +
+      customStatusCodes +
+      ")"
+  }
 }
 
 object ParserSettings extends SettingsCompanion[ParserSettings]("akka.http.parsing") {
@@ -97,7 +120,7 @@ object ParserSettings extends SettingsCompanion[ParserSettings]("akka.http.parsi
     val c = inner.withFallback(root.getConfig(prefix))
     val cacheConfig = c getConfig "header-cache"
 
-    new ParserSettings(
+    ParserSettings(
       c getIntBytes "max-uri-length",
       c getIntBytes "max-method-length",
       c getIntBytes "max-response-reason-length",
@@ -169,5 +192,40 @@ object ParserSettings extends SettingsCompanion[ParserSettings]("akka.http.parsi
 
   implicit def default(implicit refFactory: ActorRefFactory): ParserSettings =
     apply(actorSystem)
+
+  def apply(maxUriLength: Int,
+            maxMethodLength: Int,
+            maxResponseReasonLength: Int,
+            maxHeaderNameLength: Int,
+            maxHeaderValueLength: Int,
+            maxHeaderCount: Int,
+            maxContentLength: Long,
+            maxChunkExtLength: Int,
+            maxChunkSize: Int,
+            uriParsingMode: Uri.ParsingMode,
+            cookieParsingMode: ParserSettings.CookieParsingMode,
+            illegalHeaderWarnings: Boolean,
+            errorLoggingVerbosity: ParserSettings.ErrorLoggingVerbosity,
+            headerValueCacheLimits: Map[String, Int],
+            includeTlsSessionInfoHeader: Boolean,
+            customMethods: String ⇒ Option[HttpMethod],
+            customStatusCodes: Int ⇒ Option[StatusCode]): ParserSettings =
+    new ParserSettings(maxUriLength,
+      maxMethodLength,
+      maxResponseReasonLength,
+      maxHeaderNameLength,
+      maxHeaderValueLength,
+      maxHeaderCount,
+      maxContentLength,
+      maxChunkExtLength,
+      maxChunkSize,
+      uriParsingMode,
+      cookieParsingMode,
+      illegalHeaderWarnings,
+      errorLoggingVerbosity,
+      headerValueCacheLimits,
+      includeTlsSessionInfoHeader,
+      customMethods,
+      customStatusCodes)
 }
 
