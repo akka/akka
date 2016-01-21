@@ -33,6 +33,19 @@ final class RoutingSettings(
       rangeCoalescingThreshold,
       decodeMaxBytesPerChunk,
       fileIODispatcher)
+
+  // TODO we should automate generating those
+  override def toString = {
+    getClass.getSimpleName + "(" +
+      verboseErrorMessages + "," +
+      fileGetConditional + "," +
+      renderVanityFooter + "," +
+      rangeCountLimit + "," +
+      rangeCoalescingThreshold + "," +
+      decodeMaxBytesPerChunk + "," +
+      fileIODispatcher +
+      ")"
+  }
 }
 
 object RoutingSettings extends SettingsCompanion[RoutingSettings]("akka.http.routing") {
@@ -47,4 +60,21 @@ object RoutingSettings extends SettingsCompanion[RoutingSettings]("akka.http.rou
 
   implicit def default(implicit refFactory: ActorRefFactory): RoutingSettings =
     apply(actorSystem)
+
+  def apply(
+    verboseErrorMessages: Boolean,
+    fileGetConditional: Boolean,
+    renderVanityFooter: Boolean,
+    rangeCountLimit: Int,
+    rangeCoalescingThreshold: Long,
+    decodeMaxBytesPerChunk: Int,
+    fileIODispatcher: String): RoutingSettings =
+    new RoutingSettings(
+      verboseErrorMessages,
+      fileGetConditional,
+      renderVanityFooter,
+      rangeCountLimit,
+      rangeCoalescingThreshold,
+      decodeMaxBytesPerChunk,
+      fileIODispatcher)
 }

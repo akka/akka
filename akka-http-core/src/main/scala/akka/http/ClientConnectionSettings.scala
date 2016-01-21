@@ -30,6 +30,35 @@ final class ClientConnectionSettings(
 
   require(connectingTimeout >= Duration.Zero, "connectingTimeout must be >= 0")
   require(requestHeaderSizeHint > 0, "request-size-hint must be > 0")
+
+  def copy(
+    userAgentHeader: Option[`User-Agent`] = userAgentHeader,
+    connectingTimeout: FiniteDuration = connectingTimeout,
+    idleTimeout: Duration = idleTimeout,
+    requestHeaderSizeHint: Int = requestHeaderSizeHint,
+    websocketRandomFactory: () ⇒ Random = websocketRandomFactory,
+    socketOptions: immutable.Traversable[SocketOption] = socketOptions,
+    parserSettings: ParserSettings = parserSettings) =
+    new ClientConnectionSettings(
+      userAgentHeader = userAgentHeader,
+      connectingTimeout = connectingTimeout,
+      idleTimeout = idleTimeout,
+      requestHeaderSizeHint = requestHeaderSizeHint,
+      websocketRandomFactory = websocketRandomFactory,
+      socketOptions = socketOptions,
+      parserSettings = parserSettings)
+
+  override def toString = {
+    getClass.getSimpleName + "(" +
+      userAgentHeader + "," +
+      connectingTimeout + "," +
+      idleTimeout + "," +
+      requestHeaderSizeHint + "," +
+      websocketRandomFactory + "," +
+      socketOptions + "," +
+      parserSettings + "," +
+      ")"
+  }
 }
 
 object ClientConnectionSettings extends SettingsCompanion[ClientConnectionSettings]("akka.http.client") {
@@ -68,4 +97,22 @@ object ClientConnectionSettings extends SettingsCompanion[ClientConnectionSettin
    * Java API
    */
   def create(configOverrides: String): ClientConnectionSettings = ClientConnectionSettings(configOverrides)
+
+  def apply(
+    userAgentHeader: Option[`User-Agent`],
+    connectingTimeout: FiniteDuration,
+    idleTimeout: Duration,
+    requestHeaderSizeHint: Int,
+    websocketRandomFactory: () ⇒ Random,
+    socketOptions: immutable.Traversable[SocketOption],
+    parserSettings: ParserSettings) =
+    new ClientConnectionSettings(
+      userAgentHeader = userAgentHeader,
+      connectingTimeout = connectingTimeout,
+      idleTimeout = idleTimeout,
+      requestHeaderSizeHint = requestHeaderSizeHint,
+      websocketRandomFactory = websocketRandomFactory,
+      socketOptions = socketOptions,
+      parserSettings = parserSettings)
+
 }

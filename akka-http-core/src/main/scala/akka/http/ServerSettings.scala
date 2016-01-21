@@ -42,6 +42,58 @@ final class ServerSettings(
   require(0 < pipeliningLimit && pipeliningLimit <= 1024, "pipelining-limit must be > 0 and <= 1024")
   require(0 < responseHeaderSizeHint, "response-size-hint must be > 0")
   require(0 < backlog, "backlog must be > 0")
+
+  def copy(
+    serverHeader: Option[Server] = serverHeader,
+    timeouts: ServerSettings.Timeouts = timeouts,
+    maxConnections: Int = maxConnections,
+    pipeliningLimit: Int = pipeliningLimit,
+    remoteAddressHeader: Boolean = remoteAddressHeader,
+    rawRequestUriHeader: Boolean = rawRequestUriHeader,
+    transparentHeadRequests: Boolean = transparentHeadRequests,
+    verboseErrorMessages: Boolean = verboseErrorMessages,
+    responseHeaderSizeHint: Int = responseHeaderSizeHint,
+    backlog: Int = backlog,
+    socketOptions: immutable.Traversable[SocketOption] = socketOptions,
+    defaultHostHeader: Host = defaultHostHeader,
+    websocketRandomFactory: () ⇒ Random = websocketRandomFactory,
+    parserSettings: ParserSettings = parserSettings) =
+    new ServerSettings(
+      serverHeader = serverHeader,
+      timeouts = timeouts,
+      maxConnections = maxConnections,
+      pipeliningLimit = pipeliningLimit,
+      remoteAddressHeader = remoteAddressHeader,
+      rawRequestUriHeader = rawRequestUriHeader,
+      transparentHeadRequests = transparentHeadRequests,
+      verboseErrorMessages = verboseErrorMessages,
+      responseHeaderSizeHint = responseHeaderSizeHint,
+      backlog = backlog,
+      socketOptions = socketOptions,
+      defaultHostHeader = defaultHostHeader,
+      websocketRandomFactory = websocketRandomFactory,
+      parserSettings = parserSettings)
+
+  // TODO we should automate generating those
+  override def toString: String = {
+    getClass.getSimpleName + "(" +
+      serverHeader + "," +
+      timeouts + "," +
+      maxConnections + "," +
+      pipeliningLimit + "," +
+      remoteAddressHeader + "," +
+      rawRequestUriHeader + "," +
+      transparentHeadRequests + "," +
+      verboseErrorMessages + "," +
+      responseHeaderSizeHint + "," +
+      backlog + "," +
+      socketOptions + "," +
+      defaultHostHeader + "," +
+      websocketRandomFactory + "," +
+      parserSettings + "," +
+      ")"
+  }
+
 }
 
 object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.server") {
@@ -52,6 +104,23 @@ object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.serve
     require(idleTimeout > Duration.Zero, "idleTimeout must be infinite or > 0")
     require(requestTimeout > Duration.Zero, "requestTimeout must be infinite or > 0")
     require(bindTimeout > Duration.Zero, "bindTimeout must be > 0")
+
+    def copy(
+      idleTimeout: Duration = idleTimeout,
+      requestTimeout: Duration = requestTimeout,
+      bindTimeout: FiniteDuration = bindTimeout) =
+      new Timeouts(
+        idleTimeout,
+        requestTimeout,
+        bindTimeout)
+
+    override def toString = {
+      "Timeouts(" +
+        idleTimeout + "," +
+        requestTimeout + "," +
+        bindTimeout + "," +
+        ")"
+    }
   }
   implicit def timeoutsShortcut(s: ServerSettings): Timeouts = s.timeouts
 
@@ -106,5 +175,37 @@ object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.serve
    * Java API
    */
   def create(configOverrides: String): ServerSettings = ServerSettings(configOverrides)
+
+  def apply(
+    serverHeader: Option[Server],
+    timeouts: ServerSettings.Timeouts,
+    maxConnections: Int,
+    pipeliningLimit: Int,
+    remoteAddressHeader: Boolean,
+    rawRequestUriHeader: Boolean,
+    transparentHeadRequests: Boolean,
+    verboseErrorMessages: Boolean,
+    responseHeaderSizeHint: Int,
+    backlog: Int,
+    socketOptions: immutable.Traversable[SocketOption],
+    defaultHostHeader: Host,
+    websocketRandomFactory: () ⇒ Random,
+    parserSettings: ParserSettings) =
+    new ServerSettings(
+      serverHeader = serverHeader,
+      timeouts = timeouts,
+      maxConnections = maxConnections,
+      pipeliningLimit = pipeliningLimit,
+      remoteAddressHeader = remoteAddressHeader,
+      rawRequestUriHeader = rawRequestUriHeader,
+      transparentHeadRequests = transparentHeadRequests,
+      verboseErrorMessages = verboseErrorMessages,
+      responseHeaderSizeHint = responseHeaderSizeHint,
+      backlog = backlog,
+      socketOptions = socketOptions,
+      defaultHostHeader = defaultHostHeader,
+      websocketRandomFactory = websocketRandomFactory,
+      parserSettings = parserSettings)
+
 }
 

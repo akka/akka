@@ -40,6 +40,33 @@ final class ConnectionPoolSettings(
   require(maxOpenRequests > 0 && (maxOpenRequests & (maxOpenRequests - 1)) == 0, "max-open-requests must be a power of 2 > 0")
   require(pipeliningLimit > 0, "pipelining-limit must be > 0")
   require(idleTimeout >= Duration.Zero, "idle-timeout must be >= 0")
+
+  def copy(
+    maxConnections: Int = maxConnections,
+    maxRetries: Int = maxRetries,
+    maxOpenRequests: Int = maxOpenRequests,
+    pipeliningLimit: Int = pipeliningLimit,
+    idleTimeout: Duration = idleTimeout,
+    connectionSettings: ClientConnectionSettings = connectionSettings) =
+    new ConnectionPoolSettings(
+      maxConnections = maxConnections,
+      maxRetries = maxRetries,
+      maxOpenRequests = maxOpenRequests,
+      pipeliningLimit = pipeliningLimit,
+      idleTimeout = idleTimeout,
+      connectionSettings = connectionSettings)
+
+  // TODO we should automate generating those
+  override def toString = {
+    getClass.getSimpleName + "(" +
+      maxConnections + "," +
+      maxRetries + "," +
+      maxOpenRequests + "," +
+      pipeliningLimit + "," +
+      idleTimeout + "," +
+      connectionSettings +
+      ")"
+  }
 }
 
 object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings]("akka.http.host-connection-pool") {
@@ -76,4 +103,19 @@ object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings](
    * Java API
    */
   def create(configOverrides: String): ConnectionPoolSettings = ConnectionPoolSettings(configOverrides)
+
+  def apply(
+    maxConnections: Int,
+    maxRetries: Int,
+    maxOpenRequests: Int,
+    pipeliningLimit: Int,
+    idleTimeout: Duration,
+    connectionSettings: ClientConnectionSettings) =
+    new ConnectionPoolSettings(
+      maxConnections: Int,
+      maxRetries: Int,
+      maxOpenRequests: Int,
+      pipeliningLimit: Int,
+      idleTimeout: Duration,
+      connectionSettings: ClientConnectionSettings)
 }
