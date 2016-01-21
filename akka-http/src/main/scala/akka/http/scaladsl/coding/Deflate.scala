@@ -5,11 +5,12 @@
 package akka.http.scaladsl.coding
 
 import java.util.zip.{ Inflater, Deflater }
-import akka.stream.stage._
+import akka.stream.Attributes
+import akka.stream.io.ByteStringParser
+import akka.stream.io.ByteStringParser.{ ParseResult, ParseStep }
 import akka.util.{ ByteStringBuilder, ByteString }
 
 import scala.annotation.tailrec
-import akka.http.impl.util._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.HttpEncodings
 
@@ -86,56 +87,49 @@ private[http] object DeflateCompressor {
 }
 
 class DeflateDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends DeflateDecompressorBase(maxBytesPerChunk) {
-  protected def createInflater() = new Inflater()
 
-  def initial: State = StartInflate
-  def afterInflate: State = StartInflate
+  override def createLogic(attr: Attributes) = new DecompressorParsingLogic {
+    override val inflater: Inflater = new Inflater()
 
-  protected def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit = {}
-  protected def onTruncation(ctx: Context[ByteString]): SyncDirective = ctx.finish()
+    override val inflateState = new Inflate(true) {
+      override def onTruncation(): Unit = completeStage()
+    }
+
+    override def afterInflate = inflateState
+    override def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit = {}
+
+    startWith(inflateState)
+  }
 }
 
-abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends ByteStringParserStage[ByteString] {
-  protected def createInflater(): Inflater
-  val inflater = createInflater()
+abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault)
+  extends ByteStringParser[ByteString] {
 
-  protected def afterInflate: State
-  protected def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit
+  abstract class DecompressorParsingLogic extends ParsingLogic {
+    val inflater: Inflater
+    def afterInflate: ParseStep[ByteString]
+    def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit
+    val inflateState: Inflate
 
-  /** Start inflating */
-  case object StartInflate extends IntermediateState {
-    def onPush(data: ByteString, ctx: Context[ByteString]): SyncDirective = {
-      require(inflater.needsInput())
-      inflater.setInput(data.toArray)
+    abstract class Inflate(noPostProcessing: Boolean) extends ParseStep[ByteString] {
+      override def canWorkWithPartialData = true
+      override def parse(reader: ByteStringParser.ByteReader): ParseResult[ByteString] = {
+        inflater.setInput(reader.remainingData.toArray)
 
-      becomeWithRemaining(Inflate()(data), ByteString.empty, ctx)
-    }
-  }
+        val buffer = new Array[Byte](maxBytesPerChunk)
+        val read = inflater.inflate(buffer)
 
-  /** Inflate */
-  case class Inflate()(data: ByteString) extends IntermediateState {
-    override def onPull(ctx: Context[ByteString]): SyncDirective = {
-      val buffer = new Array[Byte](maxBytesPerChunk)
-      val read = inflater.inflate(buffer)
-      if (read > 0) {
-        afterBytesRead(buffer, 0, read)
-        ctx.push(ByteString.fromArray(buffer, 0, read))
-      } else {
-        val remaining = data.takeRight(inflater.getRemaining)
-        val next =
-          if (inflater.finished()) afterInflate
-          else StartInflate
+        reader.skip(reader.remainingSize - inflater.getRemaining)
 
-        becomeWithRemaining(next, remaining, ctx)
+        if (read > 0) {
+          afterBytesRead(buffer, 0, read)
+          val next = if (inflater.finished()) afterInflate else this
+          ParseResult(Some(ByteString.fromArray(buffer, 0, read)), next, noPostProcessing)
+        } else {
+          if (inflater.finished()) ParseResult(None, afterInflate, noPostProcessing)
+          else throw ByteStringParser.NeedMoreData
+        }
       }
     }
-    def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective =
-      throw new IllegalStateException("Don't expect a new Element")
-  }
-
-  def becomeWithRemaining(next: State, remaining: ByteString, ctx: Context[ByteString]) = {
-    become(next)
-    if (remaining.isEmpty) current.onPull(ctx)
-    else current.onPush(remaining, ctx)
   }
 }
