@@ -7,17 +7,20 @@ import java.io.File
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 
+import akka.Done
 import akka.actor.{ Deploy, ActorLogging, DeadLetterSuppression, Props }
 import akka.stream.actor.ActorPublisherMessage
+import akka.stream.io.IOResult
 import akka.util.ByteString
 
 import scala.annotation.tailrec
 import scala.concurrent.Promise
+import scala.util.{ Failure, Success }
 import scala.util.control.NonFatal
 
 /** INTERNAL API */
 private[akka] object FilePublisher {
-  def props(f: File, completionPromise: Promise[Long], chunkSize: Int, initialBuffer: Int, maxBuffer: Int) = {
+  def props(f: File, completionPromise: Promise[IOResult], chunkSize: Int, initialBuffer: Int, maxBuffer: Int) = {
     require(chunkSize > 0, s"chunkSize must be > 0 (was $chunkSize)")
     require(initialBuffer > 0, s"initialBuffer must be > 0 (was $initialBuffer)")
     require(maxBuffer >= initialBuffer, s"maxBuffer must be >= initialBuffer (was $maxBuffer)")
@@ -32,7 +35,7 @@ private[akka] object FilePublisher {
 }
 
 /** INTERNAL API */
-private[akka] final class FilePublisher(f: File, bytesReadPromise: Promise[Long], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
+private[akka] final class FilePublisher(f: File, completionPromise: Promise[IOResult], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
   extends akka.stream.actor.ActorPublisher[ByteString] with ActorLogging {
   import FilePublisher._
 
@@ -101,8 +104,14 @@ private[akka] final class FilePublisher(f: File, bytesReadPromise: Promise[Long]
 
   override def postStop(): Unit = {
     super.postStop()
-    bytesReadPromise.trySuccess(readBytesTotal)
 
-    if (chan ne null) chan.close()
+    try {
+      if (chan ne null) chan.close()
+    } catch {
+      case ex: Exception ⇒
+        completionPromise.success(IOResult(readBytesTotal, Failure(ex)))
+    }
+
+    completionPromise.trySuccess(IOResult(readBytesTotal, Success(Done)))
   }
 }
