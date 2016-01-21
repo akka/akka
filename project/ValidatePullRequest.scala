@@ -65,6 +65,8 @@ object ValidatePullRequest extends AutoPlugin {
   val SourcePullIdJenkinsEnvVarName = "ghprbPullId" // used to obtain branch name in form of "pullreq/17397"
   val sourceBranch = settingKey[String]("Branch containing the changes of this PR")
 
+  val targetBranch = settingKey[String]("Target branch of this PR, defaults to `master`")
+
   // asking github comments if this PR should be PLS BUILD ALL
   val githubEnforcedBuildAll = taskKey[Option[BuildMode]]("Checks via GitHub API if comments included the PLS BUILD ALL keyword")
   val buildAllKeyword = taskKey[Regex]("Magic phrase to be used to trigger building of the entire project instead of analysing dependencies")
@@ -97,11 +99,24 @@ object ValidatePullRequest extends AutoPlugin {
     }
   }
 
+  def localTargetBranch: Option[String] = sys.env.get("PR_TARGET_BRANCH")
+  def jenkinsTargetBranch: Option[String] = sys.env.get("ghprbTargetBranch")
+  def runningOnJenkins: Boolean = jenkinsTargetBranch.isDefined
+  def runningLocally: Boolean = !runningOnJenkins
+
   override lazy val buildSettings = Seq(
     sourceBranch in Global in ValidatePR := {
       sys.env.get(SourceBranchEnvVarName) orElse
         sys.env.get(SourcePullIdJenkinsEnvVarName).map("pullreq/" + _) getOrElse // Set by "GitHub pull request builder plugin"
         "HEAD"
+    },
+
+    targetBranch in Global in ValidatePR := {
+      (localTargetBranch, jenkinsTargetBranch) match {
+        case (Some(local), _)     => local // local override
+        case (None, Some(branch)) => s"origin/$branch" // usually would be "master" or "release-2.3" etc
+        case (None, None)         => "origin/master" // defaulting to diffing with "master"
+      }
     },
 
     buildAllKeyword in Global in ValidatePR := """PLS BUILD ALL""".r,
@@ -134,18 +149,34 @@ object ValidatePullRequest extends AutoPlugin {
 
       val prId = (sourceBranch in ValidatePR).value
 
+      val target = (targetBranch in ValidatePR).value
+
       // TODO could use jgit
       log.info(s"Diffing [$prId] to determine changed modules in PR...")
-      val gitOutput = "git diff HEAD^ --name-only".!!.split("\n")
-
-      val moduleNames =
-        gitOutput
+      val diffOutput = s"git diff $target --name-only".!!.split("\n")
+      val diffedModuleNames =
+        diffOutput
           .map(l ⇒ l.trim.takeWhile(_ != '/'))
           .filter(dir => dir.startsWith("akka-") || dir == "project")
           .toSet
 
-      log.info("Detected changes in directories: " + moduleNames.mkString("[", ", ", "]"))
-      moduleNames
+      val dirtyModuleNames: Set[String] =
+        if (runningOnJenkins) Set.empty
+        else {
+          val statusOutput = s"git status --short".!!.split("\n")
+          val dirtyDirectories = statusOutput
+            .map(l ⇒ l.trim.dropWhile(_ != ' ').drop(1))
+            .map(_.takeWhile(_ != '/'))
+            .filter(dir => dir.startsWith("akka-") || dir == "project")
+            .toSet
+          log.info("Detected uncomitted changes in directories (including in dependency analysis): " + dirtyDirectories.mkString("[", ",", "]"))
+          dirtyDirectories
+        }
+
+
+      val allModuleNames = dirtyModuleNames ++ diffedModuleNames
+      log.info("Detected changes in directories: " + allModuleNames.mkString("[", ", ", "]"))
+      allModuleNames
     }
   )
 
