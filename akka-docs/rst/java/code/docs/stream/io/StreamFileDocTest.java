@@ -11,6 +11,7 @@ import java.io.IOException;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.ActorAttributes;
+import akka.stream.io.IOResult;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.FileIO;
 import docs.stream.SilenceSystemOut;
@@ -58,7 +59,7 @@ public class StreamFileDocTest {
       Sink<ByteString, Future<Done>> printlnSink =
         Sink.foreach(chunk -> System.out.println(chunk.utf8String()));
 
-      Future<Long> bytesWritten =
+      Future<IOResult> ioResult =
         FileIO.fromFile(file)
           .to(printlnSink)
           .run(mat);
@@ -73,7 +74,7 @@ public class StreamFileDocTest {
     final File file = File.createTempFile(getClass().getName(), ".tmp");
 
     try {
-      Sink<ByteString, Future<Long>> byteStringFutureSink =
+      Sink<ByteString, Future<IOResult>> fileSink =
       //#custom-dispatcher-code
       FileIO.toFile(file)
         .withAttributes(ActorAttributes.dispatcher("custom-blocking-io-dispatcher"));
