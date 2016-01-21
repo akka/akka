@@ -326,7 +326,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
                                     pipeliningLimit: Int = 1,
                                     idleTimeout: Duration = 5.seconds,
                                     ccSettings: ClientConnectionSettings = ClientConnectionSettings(system)) = {
-      val settings = ConnectionPoolSettings(maxConnections, maxRetries, maxOpenRequests, pipeliningLimit,
+      val settings = new ConnectionPoolSettings(maxConnections, maxRetries, maxOpenRequests, pipeliningLimit,
         idleTimeout, ClientConnectionSettings(system))
       flowTestBench(Http().cachedHostConnectionPool[T](serverHostName, serverPort, settings))
     }
