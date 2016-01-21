@@ -10,3 +10,5 @@ OSGi.osgi
 Dependencies.osgi
 
 parallelExecution in Test := false
+
+MimaKeys.previousArtifacts := akkaPreviousArtifacts("akka-osgi").value

@@ -521,10 +521,11 @@ object AkkaBuild extends Build {
     if (enableMiMa) {
       val versions = {
         val akka23Versions = Seq("2.3.11", "2.3.12", "2.3.13", "2.3.14")
-        val akka24Versions = Seq("2.4.0")
+        val akka24Versions = Seq("2.4.0", "2.4.1")
         val akka24NewArtifacts = Seq(
           "akka-cluster-sharding",
           "akka-cluster-tools",
+          "akka-cluster-metrics",
           "akka-persistence",
           "akka-distributed-data-experimental",
           "akka-persistence-query-experimental"

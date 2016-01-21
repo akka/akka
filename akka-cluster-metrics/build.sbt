@@ -12,7 +12,7 @@ OSGi.clusterMetrics
 
 Dependencies.clusterMetrics
 
-//MimaKeys.previousArtifacts := akkaPreviousArtifacts("akka-cluster-metrics").value
+MimaKeys.previousArtifacts := akkaPreviousArtifacts("akka-cluster-metrics").value
 
 parallelExecution in Test := false
 
