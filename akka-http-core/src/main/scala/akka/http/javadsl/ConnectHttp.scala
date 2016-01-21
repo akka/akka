@@ -43,7 +43,7 @@ object ConnectHttp {
    * Forces an HTTPS connection to the given host, using the default HTTPS context and default port.
    */
   @throws(classOf[IllegalArgumentException])
-  def toHostHttps(uriHost: Uri): ConnectHttp.UsingHttps = {
+  def toHostHttps(uriHost: Uri): ConnectWithHttps = {
     val s = uriHost.scheme.toLowerCase(Locale.ROOT)
     require(s == "" || s == "https", "toHostHttps used with non https scheme! Was: " + uriHost)
     val httpsHost = uriHost.scheme("https") // for effective port calculation
@@ -52,12 +52,12 @@ object ConnectHttp {
 
   /** Forces an HTTPS connection to the given host, using the default HTTPS context and default port. */
   @throws(classOf[IllegalArgumentException])
-  def toHostHttps(host: String): ConnectHttp.UsingHttps =
+  def toHostHttps(host: String): ConnectWithHttps =
     toHostHttps(Uri.create(host))
 
   /** Forces an HTTPS connection to the given host, using the default HTTPS context and given port. */
   @throws(classOf[IllegalArgumentException])
-  def toHostHttps(host: String, port: Int): ConnectHttp.UsingHttps = {
+  def toHostHttps(host: String, port: Int): ConnectWithHttps = {
     require(port > 0, "port must be > 0")
     toHostHttps(Uri.create(host).port(port).host.address)
   }
@@ -75,14 +75,11 @@ object ConnectHttp {
     else throw new IllegalArgumentException("Scheme is not http/https/ws/wss and no port given!")
   }
 
-  trait UsingHttps extends ConnectHttp {
-    def withCustomHttpsContext(context: HttpsConnectionContext): ConnectHttp.UsingCustomHttps
-  }
+}
 
-  trait UsingCustomHttps extends ConnectHttp {
-    def withDefaultContext: ConnectHttp.UsingHttps
-  }
-
+abstract class ConnectWithHttps extends ConnectHttp {
+  def withCustomHttpsContext(context: HttpsConnectionContext): ConnectWithHttps
+  def withDefaultHttpsContext(): ConnectWithHttps
 }
 
 /** INTERNAL API */
@@ -93,15 +90,16 @@ final class ConnectHttpImpl(val host: String, val port: Int) extends ConnectHttp
 }
 
 final class ConnectHttpsImpl(val host: String, val port: Int, val context: Optional[HttpsConnectionContext] = Optional.empty())
-  extends ConnectHttp with ConnectHttp.UsingHttps with ConnectHttp.UsingCustomHttps {
+  extends ConnectWithHttps {
 
   override def isHttps: Boolean = true
 
-  override def withCustomHttpsContext(context: HttpsConnectionContext): ConnectHttp.UsingCustomHttps =
+  override def withCustomHttpsContext(context: HttpsConnectionContext): ConnectWithHttps =
     new ConnectHttpsImpl(host, port, Optional.of(context))
 
-  override def withDefaultContext: ConnectHttp.UsingHttps =
+  override def withDefaultHttpsContext(): ConnectWithHttps =
     new ConnectHttpsImpl(host, port, Optional.empty())
 
   override def connectionContext: Optional[HttpsConnectionContext] = context
+
 }

@@ -6,11 +6,13 @@ package akka.http.javadsl.client;
 
 import akka.event.LoggingAdapter;
 import akka.http.ConnectionPoolSettings;
-import akka.http.javadsl.ConnectHttp;
-import akka.http.javadsl.ConnectionContext;
-import akka.http.javadsl.Http;
-import akka.http.javadsl.HttpsConnectionContext;
+import akka.http.javadsl.*;
+import akka.http.javadsl.model.HttpRequest;
+import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.japi.Function;
+import akka.stream.javadsl.Flow;
+import scala.concurrent.Future;
 
 import javax.net.ssl.SSLContext;
 
@@ -23,6 +25,8 @@ public class HttpAPIsTest extends JUnitRouteTest {
   public void compileOnly() throws Exception {
     final Http http = Http.get(system());
 
+    final ConnectionContext connectionContext = ConnectionContext.https(SSLContext.getDefault());
+    final HttpConnectionContext httpContext = ConnectionContext.noEncryption();
     final HttpsConnectionContext httpsContext = ConnectionContext.https(SSLContext.getDefault());
 
     String host = "";
@@ -31,20 +35,26 @@ public class HttpAPIsTest extends JUnitRouteTest {
     LoggingAdapter log = null;
 
     http.bind("127.0.0.1", 8080, materializer());
+    http.bind("127.0.0.1", 8080, connectionContext, materializer());
+    http.bind("127.0.0.1", 8080, httpContext, materializer());
     http.bind("127.0.0.1", 8080, httpsContext, materializer());
 
-    http.bindAndHandle(null, "127.0.0.1", 8080, materializer());
-    http.bindAndHandle(null, "127.0.0.1", 8080, httpsContext, materializer());
+    final Flow<HttpRequest, HttpResponse, ?> handler = null;
+    http.bindAndHandle(handler, "127.0.0.1", 8080, materializer());
+    http.bindAndHandle(handler, "127.0.0.1", 8080, httpsContext, materializer());
 
-    http.bindAndHandleAsync(null, "127.0.0.1", 8080, materializer());
-    http.bindAndHandleAsync(null, "127.0.0.1", 8080, httpsContext, materializer());
+    final Function<HttpRequest, Future<HttpResponse>> handler1 = null;
+    http.bindAndHandleAsync(handler1, "127.0.0.1", 8080, materializer());
+    http.bindAndHandleAsync(handler1, "127.0.0.1", 8080, httpsContext, materializer());
 
-    http.bindAndHandleSync(null, "127.0.0.1", 8080, materializer());
-    http.bindAndHandleSync(null, "127.0.0.1", 8080, httpsContext, materializer());
+    final Function<HttpRequest, HttpResponse> handler2 = null;
+    http.bindAndHandleSync(handler2, "127.0.0.1", 8080, materializer());
+    http.bindAndHandleSync(handler2, "127.0.0.1", 8080, httpsContext, materializer());
 
-    http.singleRequest(null, materializer());
-    http.singleRequest(null, httpsContext, materializer());
-    http.singleRequest(null, httpsContext, conSettings, log, materializer());
+    final HttpRequest handler3 = null;
+    http.singleRequest(handler3, materializer());
+    http.singleRequest(handler3, httpsContext, materializer());
+    http.singleRequest(handler3, httpsContext, conSettings, log, materializer());
 
     http.outgoingConnection("akka.io");
     http.outgoingConnection("akka.io:8080");
@@ -57,8 +67,8 @@ public class HttpAPIsTest extends JUnitRouteTest {
     http.outgoingConnection(toHostHttps("akka.io")); // default ssl context (ssl-config)
     http.outgoingConnection(toHostHttps("ssh://akka.io")); // throws, we explicitly require https or ""
     http.outgoingConnection(toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext));
-    http.outgoingConnection(toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext).withDefaultContext());
-    http.outgoingConnection(toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext).withDefaultContext());
+    http.outgoingConnection(toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext).withDefaultHttpsContext());
+    http.outgoingConnection(toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext).withDefaultHttpsContext());
 
     // in future we can add modify(context -> Context) to "keep ssl-config defaults, but tweak them in code)
 
@@ -85,7 +95,7 @@ public class HttpAPIsTest extends JUnitRouteTest {
     http.superPool(conSettings, log, materializer());
     http.superPool(conSettings, httpsContext, log, materializer());
 
-    ConnectHttp.UsingHttps connect = toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext).withDefaultContext();
-    connect.connectionContext().orElse(http.defaultClientHttpsContext()); // usage by us internally
+    final ConnectWithHttps connect = toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext).withDefaultHttpsContext();
+    connect.effectiveConnectionContext(http.defaultClientHttpsContext()); // usage by us internally
   }
 }
