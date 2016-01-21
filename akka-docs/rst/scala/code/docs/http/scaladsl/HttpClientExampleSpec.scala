@@ -5,6 +5,7 @@
 package docs.http.scaladsl
 
 import akka.actor.{ ActorLogging, ActorSystem }
+import akka.stream.{ ActorMaterializerSettings }
 import akka.util.ByteString
 import org.scalatest.{ Matchers, WordSpec }
 
@@ -78,14 +79,16 @@ class HttpClientExampleSpec extends WordSpec with Matchers {
     import akka.actor.Actor
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model._
-    import akka.stream.scaladsl.ImplicitMaterializer
+    import akka.stream.ActorMaterializer
+    import akka.stream.ActorMaterializerSettings
 
     class Myself extends Actor
-      with ImplicitMaterializer
       with ActorLogging {
 
       import akka.pattern.pipe
       import context.dispatcher
+
+      final implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(context.system))
 
       val http = Http(context.system)
 
