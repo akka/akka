@@ -21,6 +21,8 @@ class FormDataSpec extends WordSpec with Matchers with ScalaFutures with BeforeA
 
   val formData = FormData(Map("surname" -> "Smith", "age" -> "42"))
 
+  implicit val patience = PatienceConfig(3.seconds)
+
   "The FormData infrastructure" should {
     "properly round-trip the fields of www-urlencoded forms" in {
       Marshal(formData).to[HttpEntity]
