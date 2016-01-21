@@ -129,7 +129,7 @@ Entity types ``HttpEntityStrict``, ``HttpEntityDefault``, and ``HttpEntityChunke
 which allows to use them for requests and responses. In contrast, ``HttpEntityCloseDelimited`` can only be used for responses.
 
 Streaming entity types (i.e. all but ``HttpEntityStrict``) cannot be shared or serialized. To create a strict, sharable copy of an
-entity or message use ``HttpEntity.toStrict`` or ``HttpMessage.toStrict`` which returns a ``Future`` of the object with
+entity or message use ``HttpEntity.toStrict`` or ``HttpMessage.toStrict`` which returns a ``CompletionStage`` of the object with
 the body data collected into a ``ByteString``.
 
 The class ``HttpEntities`` contains static methods to create entities from common types easily.

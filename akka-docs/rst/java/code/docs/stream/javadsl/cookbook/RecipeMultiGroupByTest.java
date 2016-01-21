@@ -23,6 +23,7 @@ import scala.concurrent.duration.FiniteDuration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.stream.Collectors.toList;
@@ -125,7 +126,7 @@ public class RecipeMultiGroupByTest extends RecipeTest {
           });
         //#multi-groupby
 
-        Future<List<String>> result = multiGroups
+        CompletionStage<List<String>> result = multiGroups
           .grouped(10)
           .mergeSubstreams()
           .map(pair -> {
@@ -135,7 +136,7 @@ public class RecipeMultiGroupByTest extends RecipeTest {
           .grouped(10)
           .runWith(Sink.head(), mat);
 
-        List<String> got = Await.result(result, FiniteDuration.create(3, TimeUnit.SECONDS));
+        List<String> got = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
         assertTrue(got.contains("1[1: a, 1: b, all: c, all: d, 1: e]"));
         assertTrue(got.contains("2[all: c, all: d]"));
       }

@@ -38,7 +38,7 @@ Sometimes your HTTP client needs are very basic. You simply need the HTTP respon
 want to bother with setting up a full-blown streaming infrastructure.
 
 For these cases Akka HTTP offers the ``Http().singleRequest(...)`` method, which simply turns an ``HttpRequest`` instance
-into ``Future<HttpResponse>``. Internally the request is dispatched across the (cached) host connection pool for the
+into ``CompletionStage<HttpResponse>``. Internally the request is dispatched across the (cached) host connection pool for the
 request's effective URI.
 
 Just like in the case of the super-pool flow described above the request must have either an absolute URI or a valid
@@ -48,7 +48,7 @@ Just like in the case of the super-pool flow described above the request must ha
 
 Using the Future-Based API in Actors
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-When using the ``Future`` based API from inside an ``Actor``, all the usual caveats apply to how one should deal
+When using the ``CompletionStage`` based API from inside an ``Actor``, all the usual caveats apply to how one should deal
 with the futures completion. For example you should not access the Actors state from within the Future's callbacks
 (such as ``map``, ``onComplete``, ...) and instead you should use the ``pipe`` pattern to pipe the result back
 to the Actor as a message:

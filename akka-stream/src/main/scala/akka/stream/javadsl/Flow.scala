@@ -13,10 +13,11 @@ import akka.stream.stage.Stage
 import org.reactivestreams.Processor
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
-import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util
 import java.util.Comparator
+import java.util.concurrent.CompletionStage
+import scala.compat.java8.FutureConverters._
 
 object Flow {
 
@@ -322,22 +323,22 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
 
   /**
    * Transform this stream by applying the given function to each of the elements
-   * as they pass through this processing step. The function returns a `Future` and the
+   * as they pass through this processing step. The function returns a `CompletionStage` and the
    * value of that future will be emitted downstreams. As many futures as requested elements by
    * downstream may run in parallel and may complete in any order, but the elements that
    * are emitted downstream are in the same order as received from upstream.
    *
-   * If the function `f` throws an exception or if the `Future` is completed
+   * If the function `f` throws an exception or if the `CompletionStage` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision#stop]]
    * the stream will be completed with failure.
    *
-   * If the function `f` throws an exception or if the `Future` is completed
+   * If the function `f` throws an exception or if the `CompletionStage` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision#resume]] or
    * [[akka.stream.Supervision#restart]] the element is dropped and the stream continues.
    *
    * The function `f` is always invoked on the elements in the order they arrive.
    *
-   * '''Emits when''' the Future returned by the provided function finishes for the next element in sequence
+   * '''Emits when''' the CompletionStage returned by the provided function finishes for the next element in sequence
    *
    * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream
    * backpressures or the first future is not completed
@@ -348,29 +349,29 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * @see [[#mapAsyncUnordered]]
    */
-  def mapAsync[T](parallelism: Int, f: function.Function[Out, Future[T]]): javadsl.Flow[In, T, Mat] =
-    new Flow(delegate.mapAsync(parallelism)(f.apply))
+  def mapAsync[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.mapAsync(parallelism)(x => f(x).toScala))
 
   /**
    * Transform this stream by applying the given function to each of the elements
-   * as they pass through this processing step. The function returns a `Future` and the
+   * as they pass through this processing step. The function returns a `CompletionStage` and the
    * value of that future will be emitted downstreams. As many futures as requested elements by
    * downstream may run in parallel and each processed element will be emitted downstream
    * as soon as it is ready, i.e. it is possible that the elements are not emitted downstream
    * in the same order as received from upstream.
    *
-   * If the function `f` throws an exception or if the `Future` is completed
+   * If the function `f` throws an exception or if the `CompletionStage` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision#stop]]
    * the stream will be completed with failure.
    *
-   * If the function `f` throws an exception or if the `Future` is completed
+   * If the function `f` throws an exception or if the `CompletionStage` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision#resume]] or
    * [[akka.stream.Supervision#restart]] the element is dropped and the stream continues.
    *
    * The function `f` is always invoked on the elements in the order they arrive (even though the result of the futures
    * returned by `f` might be emitted in a different order).
    *
-   * '''Emits when''' any of the Futures returned by the provided function complete
+   * '''Emits when''' any of the CompletionStages returned by the provided function complete
    *
    * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
    *
@@ -380,8 +381,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * @see [[#mapAsync]]
    */
-  def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, Future[T]]): javadsl.Flow[In, T, Mat] =
-    new Flow(delegate.mapAsyncUnordered(parallelism)(f.apply))
+  def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.mapAsyncUnordered(parallelism)(x => f(x).toScala))
 
   /**
    * Only pass on those elements that satisfy the given predicate.
@@ -1386,7 +1387,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   def zipMat[T, M, M2](that: Graph[SourceShape[T], M],
                        matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out @uncheckedVariance Pair T, M2] =
     this.viaMat(Flow.fromGraph(GraphDSL.create(that,
-      new function.Function2[GraphDSL.Builder[M], SourceShape[T], FlowShape[Out, Out @ uncheckedVariance Pair T]] {
+      new function.Function2[GraphDSL.Builder[M], SourceShape[T], FlowShape[Out, Out @uncheckedVariance Pair T]] {
         def apply(b: GraphDSL.Builder[M], s: SourceShape[T]): FlowShape[Out, Out @uncheckedVariance Pair T] = {
           val zip: FanInShape2[Out, T, Out Pair T] = b.add(Zip.create[Out, T])
           b.from(s).toInlet(zip.in1)

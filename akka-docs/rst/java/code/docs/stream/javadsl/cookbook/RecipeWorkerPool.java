@@ -17,6 +17,7 @@ import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertTrue;
@@ -72,9 +73,8 @@ public class RecipeWorkerPool extends RecipeTest {
         Source<Message, NotUsed> processedJobs = data.via(balancer);
         //#worker-pool2
 
-        FiniteDuration timeout = FiniteDuration.create(200, TimeUnit.MILLISECONDS);
-        Future<List<String>> future = processedJobs.map(m -> m.msg).grouped(10).runWith(Sink.head(), mat);
-        List<String> got = Await.result(future, timeout);
+        CompletionStage<List<String>> future = processedJobs.map(m -> m.msg).grouped(10).runWith(Sink.head(), mat);
+        List<String> got = future.toCompletableFuture().get(1, TimeUnit.SECONDS);
         assertTrue(got.contains("1 done"));
         assertTrue(got.contains("2 done"));
         assertTrue(got.contains("3 done"));

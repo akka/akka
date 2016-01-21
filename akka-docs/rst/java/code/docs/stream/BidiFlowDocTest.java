@@ -6,6 +6,7 @@ package docs.stream;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import akka.NotUsed;
@@ -221,16 +222,15 @@ public class BidiFlowDocTest {
             );
     final Flow<Message, Message, NotUsed> flow =
         stack.atop(stack.reversed()).join(pingpong);
-    final Future<List<Message>> result = Source
+    final CompletionStage<List<Message>> result = Source
         .from(Arrays.asList(0, 1, 2))
         .<Message> map(id -> new Ping(id))
         .via(flow)
         .grouped(10)
         .runWith(Sink.<List<Message>> head(), mat);
-    final FiniteDuration oneSec = Duration.create(1, TimeUnit.SECONDS);
     assertArrayEquals(
         new Message[] { new Pong(0), new Pong(1), new Pong(2) },
-        Await.result(result, oneSec).toArray(new Message[0]));
+        result.toCompletableFuture().get(1, TimeUnit.SECONDS).toArray(new Message[0]));
     //#compose
   }
 }

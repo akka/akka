@@ -7,6 +7,7 @@ package docs.stream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
@@ -72,13 +73,12 @@ public class RateTransformationDocTest {
         });
     //#conflate-summarize
 
-    final Future<List<Tuple3<Double, Double, Integer>>> fut = Source.repeat(0).map(i -> r.nextGaussian())
+    final CompletionStage<List<Tuple3<Double, Double, Integer>>> fut = Source.repeat(0).map(i -> r.nextGaussian())
       .via(statsFlow)
       .grouped(10)
       .runWith(Sink.head(), mat);
 
-    final Duration timeout = Duration.create(100, TimeUnit.MILLISECONDS);
-    Await.result(fut, timeout);
+    fut.toCompletableFuture().get(1, TimeUnit.SECONDS);
   }
 
   @Test
@@ -97,12 +97,11 @@ public class RateTransformationDocTest {
       .mapConcat(d -> d);
     //#conflate-sample
 
-    final Future<Double> fut = Source.from(new ArrayList<Double>(Collections.nCopies(1000, 1.0)))
+    final CompletionStage<Double> fut = Source.from(new ArrayList<Double>(Collections.nCopies(1000, 1.0)))
       .via(sampleFlow)
       .runWith(Sink.fold(0.0, (agg, next) -> agg + next), mat);
 
-    final Duration timeout = Duration.create(1, TimeUnit.SECONDS);
-    final Double count = Await.result(fut, timeout);
+    final Double count = fut.toCompletableFuture().get(1, TimeUnit.SECONDS);
   }
 
   @Test
@@ -112,17 +111,16 @@ public class RateTransformationDocTest {
       .expand(in -> Stream.iterate(in, i -> i).iterator());
     //#expand-last
 
-    final Pair<TestPublisher.Probe<Double>, Future<List<Double>>> probeFut = TestSource.<Double> probe(system)
+    final Pair<TestPublisher.Probe<Double>, CompletionStage<List<Double>>> probeFut = TestSource.<Double> probe(system)
       .via(lastFlow)
       .grouped(10)
       .toMat(Sink.head(), Keep.both())
       .run(mat);
 
     final TestPublisher.Probe<Double> probe = probeFut.first();
-    final Future<List<Double>> fut = probeFut.second();
+    final CompletionStage<List<Double>> fut = probeFut.second();
     probe.sendNext(1.0);
-    final Duration timeout = Duration.create(1, TimeUnit.SECONDS);
-    final List<Double> expanded = Await.result(fut, timeout);
+    final List<Double> expanded = fut.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(expanded.size(), 10);
     assertEquals(expanded.stream().mapToDouble(d -> d).sum(), 10, 0.1);
   }

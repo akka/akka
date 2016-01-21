@@ -6,6 +6,8 @@ package docs.stream;
 import static org.junit.Assert.assertEquals;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -55,15 +57,12 @@ public class FlowDocTest {
 
         // returns new Source<Integer>, with `map()` appended
         final Source<Integer, NotUsed> zeroes = source.map(x -> 0);
-        final Sink<Integer, Future<Integer>> fold =
-            Sink.fold(0, (agg, next) -> agg + next);
+        final Sink<Integer, CompletionStage<Integer>> fold =
+            Sink.<Integer, Integer> fold(0, (agg, next) -> agg + next);
         zeroes.runWith(fold, mat); // 0
         //#source-immutable
 
-        int result = Await.result(
-            zeroes.runWith(fold, mat),
-            Duration.create(3, TimeUnit.SECONDS)
-        );
+        int result = zeroes.runWith(fold, mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
         assertEquals(0, result);
     }
 
@@ -73,18 +72,18 @@ public class FlowDocTest {
         final Source<Integer, NotUsed> source =
             Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
         // note that the Future is scala.concurrent.Future
-        final Sink<Integer, Future<Integer>> sink =
-            Sink.fold(0, (aggr, next) -> aggr + next);
+        final Sink<Integer, CompletionStage<Integer>> sink =
+            Sink.<Integer, Integer> fold(0, (aggr, next) -> aggr + next);
 
         // connect the Source to the Sink, obtaining a RunnableFlow
-        final RunnableGraph<Future<Integer>> runnable =
+        final RunnableGraph<CompletionStage<Integer>> runnable =
             source.toMat(sink, Keep.right());
 
         // materialize the flow
-        final Future<Integer> sum = runnable.run(mat);
+        final CompletionStage<Integer> sum = runnable.run(mat);
         //#materialization-in-steps
 
-        int result = Await.result(sum, Duration.create(3, TimeUnit.SECONDS));
+        int result = sum.toCompletableFuture().get(3, TimeUnit.SECONDS);
         assertEquals(55, result);
     }
 
@@ -93,14 +92,14 @@ public class FlowDocTest {
         //#materialization-runWith
         final Source<Integer, NotUsed> source =
             Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
-        final Sink<Integer, Future<Integer>> sink =
-            Sink.fold(0, (aggr, next) -> aggr + next);
+        final Sink<Integer, CompletionStage<Integer>> sink =
+            Sink.<Integer, Integer> fold(0, (aggr, next) -> aggr + next);
 
         // materialize the flow, getting the Sinks materialized value
-        final Future<Integer> sum = source.runWith(sink, mat);
+        final CompletionStage<Integer> sum = source.runWith(sink, mat);
         //#materialization-runWith
 
-        int result = Await.result(sum, Duration.create(3, TimeUnit.SECONDS));
+        int result = sum.toCompletableFuture().get(3, TimeUnit.SECONDS);
         assertEquals(55, result);
     }
 
@@ -108,21 +107,21 @@ public class FlowDocTest {
     public void materializedMapUnique() throws Exception {
         //#stream-reuse
         // connect the Source to the Sink, obtaining a RunnableGraph
-        final Sink<Integer, Future<Integer>> sink =
-          Sink.fold(0, (aggr, next) -> aggr + next);
-        final RunnableGraph<Future<Integer>> runnable =
+        final Sink<Integer, CompletionStage<Integer>> sink =
+          Sink.<Integer, Integer> fold(0, (aggr, next) -> aggr + next);
+        final RunnableGraph<CompletionStage<Integer>> runnable =
             Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).toMat(sink, Keep.right());
 
         // get the materialized value of the FoldSink
-        final Future<Integer> sum1 = runnable.run(mat);
-        final Future<Integer> sum2 = runnable.run(mat);
+        final CompletionStage<Integer> sum1 = runnable.run(mat);
+        final CompletionStage<Integer> sum2 = runnable.run(mat);
 
         // sum1 and sum2 are different Futures!
         //#stream-reuse
 
-        int result1 = Await.result(sum1, Duration.create(3, TimeUnit.SECONDS));
+        int result1 = sum1.toCompletableFuture().get(3, TimeUnit.SECONDS);
         assertEquals(55, result1);
-        int result2 = Await.result(sum2, Duration.create(3, TimeUnit.SECONDS));
+        int result2 = sum2.toCompletableFuture().get(3, TimeUnit.SECONDS);
         assertEquals(55, result2);
     }
 
@@ -222,40 +221,40 @@ public class FlowDocTest {
     //#flow-mat-combine
 
     // An empty source that can be shut down explicitly from the outside
-    Source<Integer, Promise<Optional<Integer>>> source = Source.<Integer>maybe();
+    Source<Integer, CompletableFuture<Optional<Integer>>> source = Source.<Integer>maybe();
 
     // A flow that internally throttles elements to 1/second, and returns a Cancellable
     // which can be used to shut down the stream
     Flow<Integer, Integer, Cancellable> flow = throttler;
 
     // A sink that returns the first element of a stream in the returned Future
-    Sink<Integer, Future<Integer>> sink = Sink.head();
+    Sink<Integer, CompletionStage<Integer>> sink = Sink.head();
 
 
     // By default, the materialized value of the leftmost stage is preserved
-    RunnableGraph<Promise<Optional<Integer>>> r1 = source.via(flow).to(sink);
+    RunnableGraph<CompletableFuture<Optional<Integer>>> r1 = source.via(flow).to(sink);
 
     // Simple selection of materialized values by using Keep.right
     RunnableGraph<Cancellable> r2 = source.viaMat(flow, Keep.right()).to(sink);
-    RunnableGraph<Future<Integer>> r3 = source.via(flow).toMat(sink, Keep.right());
+    RunnableGraph<CompletionStage<Integer>> r3 = source.via(flow).toMat(sink, Keep.right());
 
     // Using runWith will always give the materialized values of the stages added
     // by runWith() itself
-    Future<Integer> r4 = source.via(flow).runWith(sink, mat);
-    Promise<Optional<Integer>> r5 = flow.to(sink).runWith(source, mat);
-    Pair<Promise<Optional<Integer>>, Future<Integer>> r6 = flow.runWith(source, sink, mat);
+    CompletionStage<Integer> r4 = source.via(flow).runWith(sink, mat);
+    CompletableFuture<Optional<Integer>> r5 = flow.to(sink).runWith(source, mat);
+    Pair<CompletableFuture<Optional<Integer>>, CompletionStage<Integer>> r6 = flow.runWith(source, sink, mat);
 
     // Using more complext combinations
-    RunnableGraph<Pair<Promise<Optional<Integer>>, Cancellable>> r7 =
+    RunnableGraph<Pair<CompletableFuture<Optional<Integer>>, Cancellable>> r7 =
     source.viaMat(flow, Keep.both()).to(sink);
 
-    RunnableGraph<Pair<Promise<Optional<Integer>>, Future<Integer>>> r8 =
+    RunnableGraph<Pair<CompletableFuture<Optional<Integer>>, CompletionStage<Integer>>> r8 =
     source.via(flow).toMat(sink, Keep.both());
 
-    RunnableGraph<Pair<Pair<Promise<Optional<Integer>>, Cancellable>, Future<Integer>>> r9 =
+    RunnableGraph<Pair<Pair<CompletableFuture<Optional<Integer>>, Cancellable>, CompletionStage<Integer>>> r9 =
     source.viaMat(flow, Keep.both()).toMat(sink, Keep.both());
 
-    RunnableGraph<Pair<Cancellable, Future<Integer>>> r10 =
+    RunnableGraph<Pair<Cancellable, CompletionStage<Integer>>> r10 =
     source.viaMat(flow, Keep.right()).toMat(sink, Keep.both());
 
     // It is also possible to map over the materialized values. In r9 we had a
@@ -264,9 +263,9 @@ public class FlowDocTest {
 
     RunnableGraph<Cancellable> r11 =
     r9.mapMaterializedValue( (nestedTuple) -> {
-      Promise<Optional<Integer>> p = nestedTuple.first().first();
+      CompletableFuture<Optional<Integer>> p = nestedTuple.first().first();
       Cancellable c = nestedTuple.first().second();
-      Future<Integer> f = nestedTuple.second();
+      CompletionStage<Integer> f = nestedTuple.second();
 
       // Picking the Cancellable, but we could  also construct a domain class here
       return c;

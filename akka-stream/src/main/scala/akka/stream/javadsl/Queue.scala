@@ -1,9 +1,12 @@
 /**
  * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream
+package akka.stream.javadsl
 
-import scala.concurrent.Future
+import akka.Done
+import java.util.concurrent.CompletionStage
+import java.util.Optional
+import akka.stream.QueueOfferResult
 
 /**
  * This trait allows to have the queue as a data source for some stream.
@@ -21,12 +24,12 @@ trait SourceQueue[T] {
    *
    * @param elem element to send to a stream
    */
-  def offer(elem: T): Future[QueueOfferResult]
+  def offer(elem: T): CompletionStage[QueueOfferResult]
 
   /**
    * Method returns future that completes when stream is completed and fails when stream failed
    */
-  def watchCompletion(): Future[Unit]
+  def watchCompletion(): CompletionStage[Done]
 }
 
 /**
@@ -41,35 +44,5 @@ trait SinkQueue[T] {
    * - completes with None in case if stream is completed
    * - completes with `Some(element)` in case next element is available from stream.
    */
-  def pull(): Future[Option[T]]
+  def pull(): CompletionStage[Optional[T]]
 }
-
-sealed abstract class QueueOfferResult
-
-/**
- * Contains types that is used as return types for async callbacks to streams
- */
-object QueueOfferResult {
-
-  /**
-   * Type is used to indicate that stream is successfully enqueued an element
-   */
-  final case object Enqueued extends QueueOfferResult
-
-  /**
-   * Type is used to indicate that stream is dropped an element
-   */
-  final case object Dropped extends QueueOfferResult
-
-  /**
-   * Type is used to indicate that stream is failed before or during call to the stream
-   * @param cause - exception that stream failed with
-   */
-  final case class Failure(cause: Throwable) extends QueueOfferResult
-
-  /**
-   * Type is used to indicate that stream is completed before call
-   */
-  case object QueueClosed extends QueueOfferResult
-}
-

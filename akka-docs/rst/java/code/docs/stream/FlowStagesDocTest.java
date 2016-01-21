@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -154,11 +155,11 @@ public class FlowStagesDocTest {
 
   @Test
   public void demonstrateVariousPushPullStages() throws Exception {
-    final Sink<Integer, Future<List<Integer>>> sink =
+    final Sink<Integer, CompletionStage<List<Integer>>> sink =
         Flow.of(Integer.class).grouped(10).toMat(Sink.head(), Keep.right());
 
     //#stage-chain
-    final RunnableGraph<Future<List<Integer>>> runnable =
+    final RunnableGraph<CompletionStage<List<Integer>>> runnable =
       Source
         .from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
         .transform(() -> new Filter<Integer>(elem -> elem % 2 == 0))
@@ -168,7 +169,7 @@ public class FlowStagesDocTest {
     //#stage-chain
 
     assertEquals(Arrays.asList(1, 1, 2, 2, 3, 3, 4, 4, 5, 5),
-        Await.result(runnable.run(mat), FiniteDuration.create(3, TimeUnit.SECONDS)));
+        runnable.run(mat).toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   //#detached

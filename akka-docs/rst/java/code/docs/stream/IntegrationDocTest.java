@@ -6,8 +6,6 @@ package docs.stream;
 
 import akka.NotUsed;
 import akka.actor.*;
-import akka.dispatch.Futures;
-import akka.dispatch.MessageDispatcher;
 import akka.japi.pf.ReceiveBuilder;
 import akka.stream.*;
 import akka.stream.javadsl.*;
@@ -21,14 +19,15 @@ import docs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.ExecutionContext;
-import scala.concurrent.Future;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
-import static akka.pattern.Patterns.ask;
+import static akka.pattern.PatternsCS.ask;
 import static docs.stream.TwitterStreamQuickstartDocTest.Model.AKKA;
 import static docs.stream.TwitterStreamQuickstartDocTest.Model.tweets;
 import static junit.framework.TestCase.assertTrue;
@@ -64,26 +63,26 @@ public class IntegrationDocTest {
 
   class AddressSystem {
     //#email-address-lookup
-    public Future<Optional<String>> lookupEmail(String handle)
+    public CompletionStage<Optional<String>> lookupEmail(String handle)
     //#email-address-lookup
     {
-      return Futures.successful(Optional.of(handle + "@somewhere.com"));
+      return CompletableFuture.completedFuture(Optional.of(handle + "@somewhere.com"));
     }
 
     //#phone-lookup
-    public Future<Optional<String>> lookupPhoneNumber(String handle)
+    public CompletionStage<Optional<String>> lookupPhoneNumber(String handle)
     //#phone-lookup
     {
-      return Futures.successful(Optional.of("" + handle.hashCode()));
+      return CompletableFuture.completedFuture(Optional.of("" + handle.hashCode()));
     }
   }
 
   class AddressSystem2 {
     //#email-address-lookup2
-    public Future<String> lookupEmail(String handle)
+    public CompletionStage<String> lookupEmail(String handle)
     //#email-address-lookup2
     {
-      return Futures.successful(handle + "@somewhere.com");
+      return CompletableFuture.completedFuture(handle + "@somewhere.com");
     }
   }
 
@@ -177,11 +176,11 @@ public class IntegrationDocTest {
     }
 
     //#email-server-send
-    public Future<Email> send(Email email) {
+    public CompletionStage<Email> send(Email email) {
       // ...
       //#email-server-send
       probe.tell(email.to, ActorRef.noSender());
-      return Futures.successful(email);
+      return CompletableFuture.completedFuture(email);
       //#email-server-send
     }
     //#email-server-send
@@ -258,21 +257,21 @@ public class IntegrationDocTest {
 
   //#sometimes-slow-service
   static class SometimesSlowService {
-    private final ExecutionContext ec;
-
-    public SometimesSlowService(ExecutionContext ec) {
+    private final Executor ec;
+    
+    public SometimesSlowService(Executor ec) {
       this.ec = ec;
     }
-
+    
     private final AtomicInteger runningCount = new AtomicInteger();
 
-    public Future<String> convert(String s) {
+    public CompletionStage<String> convert(String s) {
       System.out.println("running: " + s + "(" + runningCount.incrementAndGet() + ")");
-      return Futures.future(() -> {
+      return CompletableFuture.supplyAsync(() -> {
         if (!s.isEmpty() && Character.isLowerCase(s.charAt(0)))
-          Thread.sleep(500);
+          try { Thread.sleep(500); } catch (InterruptedException e) {}
         else
-          Thread.sleep(20);
+          try { Thread.sleep(20); } catch (InterruptedException e) {}
         System.out.println("completed: " + s + "(" + runningCount.decrementAndGet() + ")");
         return s.toUpperCase();
       }, ec);
@@ -399,15 +398,12 @@ public class IntegrationDocTest {
           .map(o -> o.get());
 
         //#blocking-mapAsync
-        final MessageDispatcher blockingEc = system.dispatchers().lookup("blocking-dispatcher");
+        final Executor blockingEc = system.dispatchers().lookup("blocking-dispatcher");
 
         final RunnableGraph<NotUsed> sendTextMessages =
           phoneNumbers
-            .mapAsync(4, phoneNo  ->
-              Futures.future(() ->
-                smsServer.send(new TextMessage(phoneNo, "I like your tweet")),
-                blockingEc)
-            )
+            .mapAsync(4, phoneNo -> CompletableFuture.supplyAsync(() ->
+              smsServer.send(new TextMessage(phoneNo, "I like your tweet")), blockingEc))
             .to(Sink.ignore());
 
         sendTextMessages.run(mat);
@@ -518,7 +514,7 @@ public class IntegrationDocTest {
 
       {
         //#sometimes-slow-mapAsync
-        final MessageDispatcher blockingEc = system.dispatchers().lookup("blocking-dispatcher");
+        final Executor blockingEc = system.dispatchers().lookup("blocking-dispatcher");
         final SometimesSlowService service = new SometimesSlowService(blockingEc);
 
         final ActorMaterializer mat = ActorMaterializer.create(
@@ -563,7 +559,7 @@ public class IntegrationDocTest {
 
       {
         //#sometimes-slow-mapAsyncUnordered
-        final MessageDispatcher blockingEc = system.dispatchers().lookup("blocking-dispatcher");
+        final Executor blockingEc = system.dispatchers().lookup("blocking-dispatcher");
         final SometimesSlowService service = new SometimesSlowService(blockingEc);
 
         final ActorMaterializer mat = ActorMaterializer.create(

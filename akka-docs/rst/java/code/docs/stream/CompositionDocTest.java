@@ -5,6 +5,8 @@ package docs.stream;
 
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import akka.NotUsed;
 import akka.stream.ClosedShape;
@@ -215,27 +217,23 @@ public class CompositionDocTest {
 
   //#mat-combine-4a
   static class MyClass {
-    private Promise<Optional<Integer>> p;
+    private CompletableFuture<Optional<Integer>> p;
     private OutgoingConnection conn;
 
-    public MyClass(Promise<Optional<Integer>> p, OutgoingConnection conn) {
+    public MyClass(CompletableFuture<Optional<Integer>> p, OutgoingConnection conn) {
       this.p = p;
       this.conn = conn;
     }
 
     public void close() {
-      p.success(Optional.empty());
+      p.complete(Optional.empty());
     }
   }
 
   static class Combiner {
-    static Future<MyClass> f(Promise<Optional<Integer>> p,
-        Pair<Future<OutgoingConnection>, Future<String>> rest) {
-      return rest.first().map(new Mapper<OutgoingConnection, MyClass>() {
-        public MyClass apply(OutgoingConnection c) {
-          return new MyClass(p, c);
-        }
-      }, system.dispatcher());
+    static CompletionStage<MyClass> f(CompletableFuture<Optional<Integer>> p,
+        Pair<CompletionStage<OutgoingConnection>, CompletionStage<String>> rest) {
+      return rest.first().thenApply(c -> new MyClass(p, c));
     }
   }
   //#mat-combine-4a
@@ -244,13 +242,13 @@ public class CompositionDocTest {
   public void materializedValues() throws Exception {
     //#mat-combine-1
     // Materializes to Promise<BoxedUnit>                                     (red)
-    final Source<Integer, Promise<Optional<Integer>>> source = Source.<Integer>maybe();
+    final Source<Integer, CompletableFuture<Optional<Integer>>> source = Source.<Integer>maybe();
 
     // Materializes to BoxedUnit                                              (black)
     final Flow<Integer, Integer, NotUsed> flow1 = Flow.of(Integer.class).take(100);
 
     // Materializes to Promise<Option<>>                                     (red)
-    final Source<Integer, Promise<Optional<Integer>>> nestedSource =
+    final Source<Integer, CompletableFuture<Optional<Integer>>> nestedSource =
       source.viaMat(flow1, Keep.left()).named("nestedSource");
       //#mat-combine-1
 
@@ -260,27 +258,27 @@ public class CompositionDocTest {
       .map(i -> ByteString.fromString(i.toString()));
 
     // Materializes to Future<OutgoingConnection>                             (yellow)
-    final Flow<ByteString, ByteString, Future<OutgoingConnection>> flow3 =
+    final Flow<ByteString, ByteString, CompletionStage<OutgoingConnection>> flow3 =
       Tcp.get(system).outgoingConnection("localhost", 8080);
 
     // Materializes to Future<OutgoingConnection>                             (yellow)
-    final Flow<Integer, ByteString, Future<OutgoingConnection>> nestedFlow =
+    final Flow<Integer, ByteString, CompletionStage<OutgoingConnection>> nestedFlow =
       flow2.viaMat(flow3, Keep.right()).named("nestedFlow");
       //#mat-combine-2
 
     //#mat-combine-3
     // Materializes to Future<String>                                         (green)
-    final Sink<ByteString, Future<String>> sink = Sink
-      .fold("", (acc, i) -> acc + i.utf8String());
+    final Sink<ByteString, CompletionStage<String>> sink =
+        Sink.<String, ByteString> fold("", (acc, i) -> acc + i.utf8String());
 
     // Materializes to Pair<Future<OutgoingConnection>, Future<String>>       (blue)
-    final Sink<Integer, Pair<Future<OutgoingConnection>, Future<String>>> nestedSink =
+    final Sink<Integer, Pair<CompletionStage<OutgoingConnection>, CompletionStage<String>>> nestedSink =
       nestedFlow.toMat(sink, Keep.both());
       //#mat-combine-3
 
     //#mat-combine-4b
     // Materializes to Future<MyClass>                                        (purple)
-    final RunnableGraph<Future<MyClass>> runnableGraph =
+    final RunnableGraph<CompletionStage<MyClass>> runnableGraph =
       nestedSource.toMat(nestedSink, Combiner::f);
     //#mat-combine-4b
   }

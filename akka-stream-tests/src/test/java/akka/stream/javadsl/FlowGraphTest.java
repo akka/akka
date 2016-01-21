@@ -5,7 +5,7 @@ package akka.stream.javadsl;
 
 import akka.NotUsed;
 import akka.japi.Pair;
-import akka.pattern.Patterns;
+import akka.pattern.PatternsCS;
 import akka.japi.tuple.Tuple4;
 import akka.stream.*;
 import akka.stream.javadsl.GraphDSL.Builder;
@@ -23,6 +23,7 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 
 import java.util.*;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 
@@ -83,9 +84,9 @@ public class FlowGraphTest extends StreamTest {
 
     // collecting
     final Publisher<String> pub = source.runWith(publisher, materializer);
-    final Future<List<String>> all = Source.fromPublisher(pub).grouped(100).runWith(Sink.<List<String>>head(), materializer);
+    final CompletionStage<List<String>> all = Source.fromPublisher(pub).grouped(100).runWith(Sink.<List<String>>head(), materializer);
 
-    final List<String> result = Await.result(all, Duration.apply(200, TimeUnit.MILLISECONDS));
+    final List<String> result = all.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
     assertEquals(new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<String>(result));
   }
 
@@ -259,19 +260,16 @@ public class FlowGraphTest extends StreamTest {
       }
     });
 
-    final Future<Integer> future = RunnableGraph.fromGraph(GraphDSL.create(Sink.<Integer>head(),
-      new Function2<Builder<Future<Integer>>, SinkShape<Integer>, ClosedShape>() {
-      @Override
-      public ClosedShape apply(Builder<Future<Integer>> b, SinkShape<Integer> out) throws Exception {
+    final CompletionStage<Integer> future = RunnableGraph.fromGraph(GraphDSL.create(Sink.<Integer>head(),
+      (b, out) -> {
         final FanInShape2<Integer, Integer, Integer> zip = b.add(sumZip);
         b.from(b.add(in1)).toInlet(zip.in0());
         b.from(b.add(in2)).toInlet(zip.in1());
         b.from(zip.out()).to(out);
         return ClosedShape.getInstance();
-      }
     })).run(materializer);
 
-    final Integer result = Await.result(future, Duration.create(300, TimeUnit.MILLISECONDS));
+    final Integer result = future.toCompletableFuture().get(300, TimeUnit.MILLISECONDS);
     assertEquals(11, (int) result);
   }
 
@@ -289,11 +287,8 @@ public class FlowGraphTest extends StreamTest {
               }
             });
 
-    final Future<Integer> future = RunnableGraph.fromGraph(
-      GraphDSL.create(Sink.<Integer>head(),
-        new Function2<Builder<Future<Integer>>, SinkShape<Integer>, ClosedShape>() {
-      @Override
-      public ClosedShape apply(Builder<Future<Integer>> b, SinkShape<Integer> out) throws Exception {
+    final CompletionStage<Integer> future = RunnableGraph.fromGraph(
+      GraphDSL.create(Sink.<Integer>head(), (b, out) -> {
         final FanInShape4<Integer, Integer, Integer, Integer, Integer> zip = b.add(sumZip);
         b.from(b.add(in1)).toInlet(zip.in0());
         b.from(b.add(in2)).toInlet(zip.in1());
@@ -301,10 +296,9 @@ public class FlowGraphTest extends StreamTest {
         b.from(b.add(in4)).toInlet(zip.in3());
         b.from(zip.out()).to(out);
         return ClosedShape.getInstance();
-      }
     })).run(materializer);
 
-    final Integer result = Await.result(future, Duration.create(300, TimeUnit.MILLISECONDS));
+    final Integer result = future.toCompletableFuture().get(300, TimeUnit.MILLISECONDS);
     assertEquals(1111, (int) result);
   }
 
@@ -314,21 +308,14 @@ public class FlowGraphTest extends StreamTest {
     final Source<Integer, NotUsed> in1 = Source.single(1);
     final TestProbe probe = TestProbe.apply(system);
 
-    final Future<Integer> future = RunnableGraph.fromGraph(
-      GraphDSL.create(Sink.<Integer> head(), new Function2<Builder<Future<Integer>>, SinkShape<Integer>, ClosedShape>() {
-      @Override
-      public ClosedShape apply(Builder<Future<Integer>> b, SinkShape<Integer> out) throws Exception {
+    final CompletionStage<Integer> future = RunnableGraph.fromGraph(
+      GraphDSL.create(Sink.<Integer> head(), (b, out) -> {
         b.from(b.add(Source.single(1))).to(out);
-        b.from(b.materializedValue()).to(b.add(Sink.foreach(new Procedure<Future<Integer>>(){
-          public void apply(Future<Integer> mat) throws Exception {
-            Patterns.pipe(mat, system.dispatcher()).to(probe.ref());
-          }
-        })));
+        b.from(b.materializedValue()).to(b.add(Sink.foreach(mat -> PatternsCS.pipe(mat, system.dispatcher()).to(probe.ref()))));
         return ClosedShape.getInstance();
-      }
     })).run(materializer);
 
-    final Integer result = Await.result(future, Duration.create(300, TimeUnit.MILLISECONDS));
+    final Integer result = future.toCompletableFuture().get(300, TimeUnit.MILLISECONDS);
     assertEquals(1, (int) result);
 
     probe.expectMsg(1);

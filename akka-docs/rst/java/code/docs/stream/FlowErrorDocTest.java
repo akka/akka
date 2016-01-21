@@ -6,6 +6,7 @@ package docs.stream;
 import static org.junit.Assert.assertEquals;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import akka.NotUsed;
@@ -49,14 +50,14 @@ public class FlowErrorDocTest {
     final Materializer mat = ActorMaterializer.create(system);
     final Source<Integer, NotUsed> source = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5))
       .map(elem -> 100 / elem);
-    final Sink<Integer, Future<Integer>> fold =
-      Sink.fold(0, (acc, elem) -> acc + elem);
-    final Future<Integer> result = source.runWith(fold, mat);
+    final Sink<Integer, CompletionStage<Integer>> fold =
+      Sink.<Integer, Integer> fold(0, (acc, elem) -> acc + elem);
+    final CompletionStage<Integer> result = source.runWith(fold, mat);
     // division by zero will fail the stream and the
     // result here will be a Future completed with Failure(ArithmeticException)
     //#stop
 
-    Await.result(result, Duration.create(3, TimeUnit.SECONDS));
+    result.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
   @Test
@@ -73,14 +74,14 @@ public class FlowErrorDocTest {
       system);
     final Source<Integer, NotUsed> source = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5))
       .map(elem -> 100 / elem);
-    final Sink<Integer, Future<Integer>> fold =
+    final Sink<Integer, CompletionStage<Integer>> fold =
       Sink.fold(0, (acc, elem) -> acc + elem);
-    final Future<Integer> result = source.runWith(fold, mat);
+    final CompletionStage<Integer> result = source.runWith(fold, mat);
     // the element causing division by zero will be dropped
     // result here will be a Future completed with Success(228)
     //#resume
 
-    assertEquals(Integer.valueOf(228), Await.result(result, Duration.create(3, TimeUnit.SECONDS)));
+    assertEquals(Integer.valueOf(228), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   @Test
@@ -98,14 +99,14 @@ public class FlowErrorDocTest {
         .withAttributes(ActorAttributes.withSupervisionStrategy(decider));
     final Source<Integer, NotUsed> source = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5))
       .via(flow); 
-    final Sink<Integer, Future<Integer>> fold =
-      Sink.fold(0, (acc, elem) -> acc + elem);
-    final Future<Integer> result = source.runWith(fold, mat);
+    final Sink<Integer, CompletionStage<Integer>> fold =
+      Sink.<Integer, Integer> fold(0, (acc, elem) -> acc + elem);
+    final CompletionStage<Integer> result = source.runWith(fold, mat);
     // the elements causing division by zero will be dropped
     // result here will be a Future completed with Success(150)
     //#resume-section
 
-    assertEquals(Integer.valueOf(150), Await.result(result, Duration.create(3, TimeUnit.SECONDS)));
+    assertEquals(Integer.valueOf(150), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   @Test
@@ -126,7 +127,7 @@ public class FlowErrorDocTest {
       .withAttributes(ActorAttributes.withSupervisionStrategy(decider));
     final Source<Integer, NotUsed> source = Source.from(Arrays.asList(1, 3, -1, 5, 7))
       .via(flow);
-    final Future<List<Integer>> result = source.grouped(1000)
+    final CompletionStage<List<Integer>> result = source.grouped(1000)
       .runWith(Sink.<List<Integer>>head(), mat);
     // the negative element cause the scan stage to be restarted,
     // i.e. start from 0 again
@@ -135,7 +136,7 @@ public class FlowErrorDocTest {
     
     assertEquals(
       Arrays.asList(0, 1, 4, 0, 5, 12), 
-      Await.result(result, Duration.create(3, TimeUnit.SECONDS)));
+      result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
 }
