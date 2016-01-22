@@ -81,7 +81,7 @@ public class StreamBuffersRateDocTest {
     final Source<String, Cancellable> tickSource =
         Source.tick(oneSecond.mul(3), oneSecond.mul(3), "tick");
     final Flow<String, Integer, NotUsed> conflate =
-        Flow.of(String.class).conflate(
+        Flow.of(String.class).conflateWithSeed(
             first -> 1, (count, elem) -> count + 1);
 
     RunnableGraph.fromGraph(GraphDSL.create(b -> {

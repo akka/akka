@@ -46,11 +46,11 @@ public class RecipeSimpleDrop extends RecipeTest {
     	@SuppressWarnings("unused")
         //#simple-drop
         final Flow<Message, Message, NotUsed> droppyStream =
-          Flow.of(Message.class).conflate(i -> i, (lastMessage, newMessage) -> newMessage);
+          Flow.of(Message.class).conflate((lastMessage, newMessage) -> newMessage);
         //#simple-drop
     	final TestLatch latch = new TestLatch(2, system);
         final Flow<Message, Message, NotUsed> realDroppyStream =
-                Flow.of(Message.class).conflate(i -> i, (lastMessage, newMessage) -> { latch.countDown(); return newMessage; });
+                Flow.of(Message.class).conflate((lastMessage, newMessage) -> { latch.countDown(); return newMessage; });
 
         final Pair<TestPublisher.Probe<Message>, TestSubscriber.Probe<Message>> pubSub = TestSource
           .<Message> probe(system)

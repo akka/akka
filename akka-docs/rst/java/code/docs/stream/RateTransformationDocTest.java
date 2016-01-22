@@ -60,7 +60,7 @@ public class RateTransformationDocTest {
     //#conflate-summarize
     final Flow<Double, Tuple3<Double, Double, Integer>, NotUsed> statsFlow =
       Flow.of(Double.class)
-        .conflate(elem -> Collections.singletonList(elem), (acc, elem) -> {
+        .conflateWithSeed(elem -> Collections.singletonList(elem), (acc, elem) -> {
           return Stream
             .concat(acc.stream(), Collections.singletonList(elem).stream())
             .collect(Collectors.toList());
@@ -86,7 +86,7 @@ public class RateTransformationDocTest {
     //#conflate-sample
     final Double p = 0.01;
     final Flow<Double, Double, NotUsed> sampleFlow = Flow.of(Double.class)
-      .conflate(elem -> Collections.singletonList(elem), (acc, elem) -> {
+      .conflateWithSeed(elem -> Collections.singletonList(elem), (acc, elem) -> {
         if (r.nextDouble() < p) {
           return Stream
             .concat(acc.stream(), Collections.singletonList(elem).stream())

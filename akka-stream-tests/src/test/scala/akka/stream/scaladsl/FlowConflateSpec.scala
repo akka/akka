@@ -22,7 +22,23 @@ class FlowConflateSpec extends AkkaSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      Source.fromPublisher(publisher).conflate(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).conflateWithSeed(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i).to(Sink.fromSubscriber(subscriber)).run()
+      val sub = subscriber.expectSubscription()
+
+      for (i ← 1 to 100) {
+        sub.request(1)
+        publisher.sendNext(i)
+        subscriber.expectNext(i)
+      }
+
+      sub.cancel()
+    }
+
+    "pass-through elements unchanged when there is no rate difference (simple conflate)" in {
+      val publisher = TestPublisher.probe[Int]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
+
+      Source.fromPublisher(publisher).conflate(_ + _).to(Sink.fromSubscriber(subscriber)).run()
       val sub = subscriber.expectSubscription()
 
       for (i ← 1 to 100) {
@@ -38,7 +54,23 @@ class FlowConflateSpec extends AkkaSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      Source.fromPublisher(publisher).conflate(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).conflateWithSeed(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i).to(Sink.fromSubscriber(subscriber)).run()
+      val sub = subscriber.expectSubscription()
+
+      for (i ← 1 to 100) {
+        publisher.sendNext(i)
+      }
+      subscriber.expectNoMsg(1.second)
+      sub.request(1)
+      subscriber.expectNext(5050)
+      sub.cancel()
+    }
+
+    "conflate elements while downstream is silent (simple conflate)" in {
+      val publisher = TestPublisher.probe[Int]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
+
+      Source.fromPublisher(publisher).conflate(_ + _).to(Sink.fromSubscriber(subscriber)).run()
       val sub = subscriber.expectSubscription()
 
       for (i ← 1 to 100) {
@@ -52,7 +84,15 @@ class FlowConflateSpec extends AkkaSpec {
 
     "work on a variable rate chain" in {
       val future = Source(1 to 1000)
-        .conflate(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i)
+        .conflateWithSeed(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i)
+        .map { i ⇒ if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }
+        .runFold(0)(_ + _)
+      Await.result(future, 10.seconds) should be(500500)
+    }
+
+    "work on a variable rate chain (simple conflate)" in {
+      val future = Source(1 to 1000)
+        .conflate(_ + _)
         .map { i ⇒ if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }
         .runFold(0)(_ + _)
       Await.result(future, 10.seconds) should be(500500)
@@ -62,7 +102,7 @@ class FlowConflateSpec extends AkkaSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      Source.fromPublisher(publisher).conflate(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).conflateWithSeed(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i).to(Sink.fromSubscriber(subscriber)).run()
       val sub = subscriber.expectSubscription()
 
       sub.request(1)
@@ -89,7 +129,7 @@ class FlowConflateSpec extends AkkaSpec {
 
     "work with a buffer and fold" in {
       val future = Source(1 to 50)
-        .conflate(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i)
+        .conflateWithSeed(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i)
         .buffer(50, OverflowStrategy.backpressure)
         .runFold(0)(_ + _)
       Await.result(future, 3.seconds) should be((1 to 50).sum)

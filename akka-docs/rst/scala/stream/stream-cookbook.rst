@@ -213,17 +213,17 @@ Dropping elements
 **Situation:** Given a fast producer and a slow consumer, we want to drop elements if necessary to not slow down
 the producer too much.
 
-This can be solved by using the most versatile rate-transforming operation, ``conflate``. Conflate can be thought as
-a special ``fold`` operation that collapses multiple upstream elements into one aggregate element if needed to keep
+This can be solved by using a versatile rate-transforming operation, ``conflate``. Conflate can be thought as
+a special ``reduce`` operation that collapses multiple upstream elements into one aggregate element if needed to keep
 the speed of the upstream unaffected by the downstream.
 
-When the upstream is faster, the fold process of the ``conflate`` starts. This folding needs a zero element, which
-is given by a ``seed`` function that takes the current element and produces a zero for the folding process. In our
-case this is ``identity`` so our folding state starts form the message itself. The folder function is also
-special: given the aggregate value (the last message) and the new element (the freshest element) our aggregate state
-becomes simply the freshest element. This choice of functions results in a simple dropping operation.
+When the upstream is faster, the reducing process of the ``conflate`` starts. Our reducer function simply takes
+the freshest element. This cin a simple dropping operation.
 
 .. includecode:: ../code/docs/stream/cookbook/RecipeSimpleDrop.scala#simple-drop
+
+There is a more general version of ``conflate`` named ``conflateWithSeed`` that allows to express more complex aggregations, more
+similar to a ``fold``.
 
 Dropping broadcast
 ------------------
@@ -246,7 +246,7 @@ Collecting missed ticks
 **Situation:** Given a regular (stream) source of ticks, instead of trying to backpressure the producer of the ticks
 we want to keep a counter of the missed ticks instead and pass it down when possible.
 
-We will use ``conflate`` to solve the problem. Conflate takes two functions:
+We will use ``conflateWithSeed`` to solve the problem. The seed version of conflate takes two functions:
 
 * A seed function that produces the zero element for the folding process that happens when the upstream is faster than
   the downstream. In our case the seed function is a constant function that returns 0 since there were no missed ticks
