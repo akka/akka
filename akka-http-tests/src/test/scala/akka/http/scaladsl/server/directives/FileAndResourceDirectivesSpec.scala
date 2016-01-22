@@ -229,7 +229,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     val base = new File(getClass.getClassLoader.getResource("").toURI).getPath
     new File(base, "subDirectory/emptySub").mkdir()
     def eraseDateTime(s: String) = s.replaceAll("""\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d""", "xxxx-xx-xx xx:xx:xx")
-    implicit val settings = RoutingSettings.default.copy(renderVanityFooter = false)
+    implicit val settings = RoutingSettingsImpl.default.copy(renderVanityFooter = false)
 
     "properly render a simple directory" in {
       Get() ~> listDirectoryContents(base + "/someDir") ~> check {

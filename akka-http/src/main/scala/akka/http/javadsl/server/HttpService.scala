@@ -7,6 +7,7 @@ package akka.http.javadsl.server
 import akka.actor.ActorSystem
 import akka.http.scaladsl.{ server, Http }
 import akka.http.scaladsl.Http.ServerBinding
+import akka.http.scaladsl.server.RouteResult
 import akka.http.impl.server.RouteImplementation
 import akka.stream.{ ActorMaterializer, Materializer }
 import akka.stream.scaladsl.{ Keep, Sink }
@@ -38,7 +39,7 @@ trait HttpServiceBase {
 
     import system.dispatcher
     val r: server.Route = RouteImplementation(route)
-    Http(system).bind(interface, port).toMat(Sink.foreach(_.handleWith(r)))(Keep.left).run()(materializer).toJava
+    Http(system).bind(interface, port).toMat(Sink.foreach(_.handleWith(RouteResult.route2HandlerFlow(r))))(Keep.left).run()(materializer).toJava
   }
 }
 

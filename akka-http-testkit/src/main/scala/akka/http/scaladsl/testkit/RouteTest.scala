@@ -134,7 +134,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
     }
     implicit def injectIntoRoute(implicit timeout: RouteTestTimeout,
                                  defaultHostInfo: DefaultHostInfo,
-                                 routingSettings: RoutingSettings,
+                                 routingSettings: RoutingSettingsImpl,
                                  executionContext: ExecutionContext,
                                  materializer: Materializer,
                                  routingLog: RoutingLog,

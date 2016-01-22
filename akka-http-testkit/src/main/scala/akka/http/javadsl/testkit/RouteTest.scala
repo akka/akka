@@ -15,7 +15,7 @@ import akka.http.javadsl.server.{ HttpApp, AllDirectives, Route, Directives }
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.impl.server.RouteImplementation
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.server.{ RouteResult, RoutingSettings, Route ⇒ ScalaRoute }
+import akka.http.scaladsl.server.{ RouteResult, RoutingSettingsImpl, Route ⇒ ScalaRoute }
 import akka.actor.ActorSystem
 import akka.event.NoLogging
 import akka.http.impl.util._
@@ -55,7 +55,7 @@ abstract class RouteTest extends AllDirectives {
         securedConnection = defaultHostInfo.isSecuredConnection(),
         defaultHostHeader = defaultHostInfo.getHost().asScala)
 
-    val result = scalaRoute(new server.RequestContextImpl(effectiveRequest, NoLogging, RoutingSettings(system)))
+    val result = scalaRoute(new server.RequestContextImpl(effectiveRequest, NoLogging, RoutingSettingsImpl(system)))
 
     result.awaitResult(awaitDuration) match {
       case RouteResult.Complete(response) ⇒ createTestResponse(response)

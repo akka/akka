@@ -12,7 +12,7 @@ import akka.io.Inet.SocketOption
 import com.typesafe.config.Config
 
 private[http] object SocketOptionSettings {
-  def fromSubConfig(root: Config, c: Config): immutable.Traversable[SocketOption] = {
+  def fromSubConfig(root: Config, c: Config): immutable.Seq[SocketOption] = {
     def so[T](setting: String)(f: (Config, String) ⇒ T)(cons: T ⇒ SocketOption): List[SocketOption] =
       c.getString(setting) match {
         case "undefined" ⇒ Nil

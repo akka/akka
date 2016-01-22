@@ -3,7 +3,7 @@ package akka.http.impl.engine.client
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
-import akka.http.HostConnectionPoolSetup
+import akka.http.impl.settings.HostConnectionPoolSetup
 import akka.actor.{ Deploy, Props, ActorSystem, ActorRef }
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
