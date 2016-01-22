@@ -48,7 +48,7 @@ hiding them behind a *shape* that looks like a :class:`Source`, :class:`Flow`, e
 |
 
 One interesting example above is a :class:`Flow` which is composed of a disconnected :class:`Sink` and :class:`Source`.
-This can be achieved by using the ``wrap()`` constructor method on :class:`Flow` which takes the two parts as
+This can be achieved by using the ``fromSinkAndSource()`` constructor method on :class:`Flow` which takes the two parts as
 parameters.
 
 The example :class:`BidiFlow` demonstrates that internally a module can be of arbitrary complexity, and the exposed
@@ -175,7 +175,7 @@ Since our partial graph has the right shape, it can be already used in the simpl
 .. includecode:: ../code/docs/stream/CompositionDocTest.java#partial-use
 
 It is not possible to use it as a :class:`Flow` yet, though (i.e. we cannot call ``.filter()`` on it), but :class:`Flow`
-has a ``wrap()`` method that just adds the DSL to a :class:`FlowShape`. There are similar methods on :class:`Source`,
+has a ``fromGraph()`` method that just adds the DSL to a :class:`FlowShape`. There are similar methods on :class:`Source`,
 :class:`Sink` and :class:`BidiShape`, so it is easy to get back to the simpler DSL if a graph has the right shape.
 For convenience, it is also possible to skip the partial graph creation, and use one of the convenience creator methods.
 To demonstrate this, we will create the following graph:
