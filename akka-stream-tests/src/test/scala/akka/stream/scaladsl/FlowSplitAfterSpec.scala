@@ -49,9 +49,9 @@ class FlowSplitAfterSpec extends AkkaSpec {
     def cancel(): Unit = subscription.cancel()
   }
 
-  class SubstreamsSupport(splitAfter: Int = 3, elementCount: Int = 6) {
+  class SubstreamsSupport(splitAfter: Int = 3, elementCount: Int = 6, propagateSubstreamCancel: Boolean = false) {
     val source = Source(1 to elementCount)
-    val groupStream = source.splitAfter(_ == splitAfter).lift.runWith(Sink.asPublisher(false))
+    val groupStream = source.splitAfter(propagateSubstreamCancel)(_ == splitAfter).lift.runWith(Sink.asPublisher(false))
     val masterSubscriber = TestSubscriber.manualProbe[Source[Int, _]]()
 
     groupStream.subscribe(masterSubscriber)
@@ -251,6 +251,14 @@ class FlowSplitAfterSpec extends AkkaSpec {
       up.subscribe(flowSubscriber)
       val upsub = up.expectSubscription()
       upsub.expectCancellation()
+    }
+
+    "support eager cancellation of master stream on cancelling substreams" in assertAllStagesStopped {
+      new SubstreamsSupport(splitAfter = 5, elementCount = 8, propagateSubstreamCancel = true) {
+        val s1 = StreamPuppet(expectSubFlow().runWith(Sink.asPublisher(false)))
+        s1.cancel()
+        masterSubscriber.expectComplete()
+      }
     }
 
   }
