@@ -40,6 +40,14 @@ needs to be changed into::
 These changes apply to all the places where streams are used, which means that signatures
 in the persistent query APIs also are affected.
 
+Removed ImplicitMaterializer
+============================
+
+The helper trait :class:`ImplicitMaterializer` has been removed as it was hard to find and the feature was not worth
+the extra trait. Defining an implicit materializer inside an enclosing actor can be done this way::
+
+    final implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(context.system))
+
 Changed Operators
 =================
 
