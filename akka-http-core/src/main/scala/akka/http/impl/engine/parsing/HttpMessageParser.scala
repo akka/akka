@@ -14,7 +14,7 @@ import akka.parboiled2.CharUtils
 import akka.util.ByteString
 import akka.stream.stage._
 import akka.http.impl.model.parser.CharacterClasses
-import akka.http.ParserSettings
+import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.model._
 import headers._
 import HttpProtocols._

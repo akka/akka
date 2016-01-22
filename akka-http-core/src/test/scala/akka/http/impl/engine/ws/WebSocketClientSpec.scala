@@ -12,7 +12,7 @@ import akka.stream.ClosedShape
 
 import scala.concurrent.duration._
 
-import akka.http.ClientConnectionSettings
+import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.{ ProductVersion, `User-Agent` }
 import akka.http.scaladsl.model.ws._
@@ -297,9 +297,8 @@ class WebSocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
 
     val random = new Random(0)
     def settings = ClientConnectionSettings(system)
-      .copy(
-        userAgentHeader = Some(`User-Agent`(List(ProductVersion("akka-http", "test")))),
-        websocketRandomFactory = () ⇒ random)
+      .withUserAgentHeader(Some(`User-Agent`(List(ProductVersion("akka-http", "test")))))
+      .withWebsocketRandomFactory(() ⇒ random)
 
     def targetUri: Uri = "ws://example.org/ws"
 

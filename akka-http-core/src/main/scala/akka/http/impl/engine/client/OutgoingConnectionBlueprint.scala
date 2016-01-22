@@ -5,7 +5,7 @@
 package akka.http.impl.engine.client
 
 import akka.NotUsed
-import akka.stream.impl.fusing.GraphInterpreter
+import akka.http.scaladsl.settings.ClientConnectionSettings
 import language.existentials
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
@@ -14,7 +14,6 @@ import akka.util.ByteString
 import akka.event.LoggingAdapter
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.http.ClientConnectionSettings
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.{ IllegalResponseException, HttpMethod, HttpRequest, HttpResponse }

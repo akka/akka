@@ -4,8 +4,8 @@
 
 package akka.http.impl.model.parser
 
-import akka.http.ParserSettings
-import akka.http.ParserSettings.CookieParsingMode
+import akka.http.scaladsl.settings.ParserSettings
+import akka.http.scaladsl.settings.ParserSettings.CookieParsingMode
 import akka.http.scaladsl.model.headers.HttpCookiePair
 import scala.util.control.NonFatal
 import akka.http.impl.util.SingletonException
@@ -156,7 +156,7 @@ private[http] object HeaderParser {
     "www-authenticate",
     "x-forwarded-for")
 
-  trait Settings {
+  abstract class Settings {
     def uriParsingMode: Uri.ParsingMode
     def cookieParsingMode: ParserSettings.CookieParsingMode
   }

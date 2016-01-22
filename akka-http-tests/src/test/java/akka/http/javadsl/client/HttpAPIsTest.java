@@ -5,11 +5,11 @@
 package akka.http.javadsl.client;
 
 import akka.event.LoggingAdapter;
-import akka.http.ConnectionPoolSettings;
 import akka.http.javadsl.*;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.scaladsl.settings.ConnectionPoolSettings;
 import akka.japi.Function;
 import akka.stream.javadsl.Flow;
 import scala.concurrent.Future;

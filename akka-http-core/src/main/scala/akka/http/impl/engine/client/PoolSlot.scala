@@ -7,10 +7,9 @@ package akka.http.impl.engine.client
 import java.net.InetSocketAddress
 
 import akka.actor._
-import akka.http.ConnectionPoolSettings
+import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.impl.util._
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
-import akka.http.scaladsl.util.FastFuture
 import akka.stream._
 import akka.stream.actor._
 import akka.stream.impl.{ ActorProcessor, ExposedPublisher, SeqActorName, SubscribePending }

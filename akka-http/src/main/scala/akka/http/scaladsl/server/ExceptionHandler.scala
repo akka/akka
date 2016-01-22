@@ -18,7 +18,7 @@ trait ExceptionHandler extends ExceptionHandler.PF {
   /**
    * "Seals" this handler by attaching a default handler as fallback if necessary.
    */
-  def seal(settings: RoutingSettings): ExceptionHandler
+  def seal(settings: RoutingSettingsImpl): ExceptionHandler
 }
 
 object ExceptionHandler {
@@ -32,11 +32,11 @@ object ExceptionHandler {
       def apply(error: Throwable) = pf(error)
       def withFallback(that: ExceptionHandler): ExceptionHandler =
         if (!knownToBeSealed) ExceptionHandler(knownToBeSealed = false)(this orElse that) else this
-      def seal(settings: RoutingSettings): ExceptionHandler =
+      def seal(settings: RoutingSettingsImpl): ExceptionHandler =
         if (!knownToBeSealed) ExceptionHandler(knownToBeSealed = true)(this orElse default(settings)) else this
     }
 
-  def default(settings: RoutingSettings): ExceptionHandler =
+  def default(settings: RoutingSettingsImpl): ExceptionHandler =
     apply(knownToBeSealed = true) {
       case IllegalRequestException(info, status) ⇒ ctx ⇒ {
         ctx.log.warning("Illegal request {}\n\t{}\n\tCompleting with '{}' response",
@@ -53,6 +53,6 @@ object ExceptionHandler {
    * Creates a sealed ExceptionHandler from the given one. Returns the default handler if the given one
    * is `null`.
    */
-  def seal(handler: ExceptionHandler)(implicit settings: RoutingSettings): ExceptionHandler =
+  def seal(handler: ExceptionHandler)(implicit settings: RoutingSettingsImpl): ExceptionHandler =
     if (handler ne null) handler.seal(settings) else ExceptionHandler.default(settings)
 }

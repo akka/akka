@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.server
 
+import akka.http.scaladsl.settings.ParserSettings
 import scala.concurrent.{ Future, ExecutionContext }
 import akka.stream.Materializer
 import akka.event.LoggingAdapter
@@ -40,7 +41,12 @@ trait RequestContext {
   /**
    * The default RoutingSettings to be used for configuring directives.
    */
-  def settings: RoutingSettings
+  def settings: RoutingSettingsImpl
+
+  /**
+   * The default ParserSettings to be used for configuring directives.
+   */
+  def parserSettings: ParserSettings
 
   /**
    * Returns a copy of this context with the given fields updated.
@@ -49,7 +55,7 @@ trait RequestContext {
     executionContext: ExecutionContext = executionContext,
     materializer: Materializer = materializer,
     log: LoggingAdapter = log,
-    settings: RoutingSettings = settings): RequestContext
+    settings: RoutingSettingsImpl = settings): RequestContext
 
   /**
    * Completes the request with the given ToResponseMarshallable.
@@ -91,7 +97,12 @@ trait RequestContext {
   /**
    * Returns a copy of this context with the new RoutingSettings.
    */
-  def withSettings(settings: RoutingSettings): RequestContext
+  def withRoutingSettings(settings: RoutingSettingsImpl): RequestContext
+
+  /**
+   * Returns a copy of this context with the new [[ParserSettings]].
+   */
+  def withParserSettings(settings: ParserSettings): RequestContext
 
   /**
    * Returns a copy of this context with the HttpRequest transformed by the given function.

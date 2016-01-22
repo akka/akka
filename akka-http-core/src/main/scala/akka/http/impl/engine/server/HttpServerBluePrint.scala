@@ -19,7 +19,7 @@ import akka.stream._
 import akka.stream.io._
 import akka.stream.scaladsl._
 import akka.stream.stage._
-import akka.http.ServerSettings
+import akka.http.scaladsl.settings.ServerSettings
 import akka.http.impl.engine.HttpConnectionTimeoutException
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.engine.parsing._
@@ -274,7 +274,7 @@ private[http] object HttpServerBluePrint {
         }
     }
     private def schedule(delay: FiniteDuration, handler: HttpRequest ⇒ HttpResponse): Cancellable =
-      materializer.scheduleOnce(delay, new Runnable { def run() = trigger.invoke(self, handler(request)) })
+      materializer.scheduleOnce(delay, new Runnable { def run() = trigger.invoke((self, handler(request))) })
 
     import akka.http.impl.util.JavaMapping.Implicits._
     /** JAVA API **/

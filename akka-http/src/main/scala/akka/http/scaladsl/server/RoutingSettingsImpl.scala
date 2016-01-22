@@ -8,7 +8,8 @@ import com.typesafe.config.Config
 import akka.actor.ActorRefFactory
 import akka.http.impl.util._
 
-case class RoutingSettings(
+/** INTERNAL API */
+final case class RoutingSettingsImpl(
   verboseErrorMessages: Boolean,
   fileGetConditional: Boolean,
   renderVanityFooter: Boolean,
@@ -17,8 +18,8 @@ case class RoutingSettings(
   decodeMaxBytesPerChunk: Int,
   fileIODispatcher: String)
 
-object RoutingSettings extends SettingsCompanion[RoutingSettings]("akka.http.routing") {
-  def fromSubConfig(root: Config, c: Config) = apply(
+object RoutingSettingsImpl extends SettingsCompanion[RoutingSettingsImpl]("akka.http.routing") {
+  def fromSubConfig(root: Config, c: Config) = new RoutingSettingsImpl(
     c getBoolean "verbose-error-messages",
     c getBoolean "file-get-conditional",
     c getBoolean "render-vanity-footer",
@@ -27,6 +28,4 @@ object RoutingSettings extends SettingsCompanion[RoutingSettings]("akka.http.rou
     c getIntBytes "decode-max-bytes-per-chunk",
     c getString "file-io-dispatcher")
 
-  implicit def default(implicit refFactory: ActorRefFactory): RoutingSettings =
-    apply(actorSystem)
 }

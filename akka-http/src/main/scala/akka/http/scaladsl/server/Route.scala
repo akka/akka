@@ -5,7 +5,9 @@
 package akka.http.scaladsl.server
 
 import akka.NotUsed
-import akka.stream.Materializer
+import akka.actor.ActorSystem
+import akka.http.scaladsl.settings.ParserSettings
+import akka.stream.{ ActorMaterializer, Materializer }
 
 import scala.concurrent.{ ExecutionContext, Future }
 import akka.stream.scaladsl.Flow
@@ -22,7 +24,8 @@ object Route {
   /**
    * "Seals" a route by wrapping it with exception handling and rejection conversion.
    */
-  def seal(route: Route)(implicit routingSettings: RoutingSettings,
+  def seal(route: Route)(implicit routingSettings: RoutingSettingsImpl,
+                         parserSettings: ParserSettings = null,
                          rejectionHandler: RejectionHandler = RejectionHandler.default,
                          exceptionHandler: ExceptionHandler = null): Route = {
     import directives.ExecutionDirectives._
@@ -38,7 +41,8 @@ object Route {
    *
    * This conversion is also implicitly available through [[RouteResult.route2HandlerFlow]].
    */
-  def handlerFlow(route: Route)(implicit routingSettings: RoutingSettings,
+  def handlerFlow(route: Route)(implicit routingSettings: RoutingSettingsImpl,
+                                parserSettings: ParserSettings,
                                 materializer: Materializer,
                                 routingLog: RoutingLog,
                                 executionContext: ExecutionContext = null,
@@ -49,7 +53,8 @@ object Route {
   /**
    * Turns a `Route` into an async handler function.
    */
-  def asyncHandler(route: Route)(implicit routingSettings: RoutingSettings,
+  def asyncHandler(route: Route)(implicit routingSettings: RoutingSettingsImpl,
+                                 parserSettings: ParserSettings,
                                  materializer: Materializer,
                                  routingLog: RoutingLog,
                                  executionContext: ExecutionContext = null,
@@ -59,10 +64,11 @@ object Route {
 
     {
       implicit val executionContext = effectiveEC // overrides parameter
+      val effectiveParserSettings = if (parserSettings ne null) parserSettings else ParserSettings(ActorMaterializer.downcast(materializer).system)
 
       val sealedRoute = seal(route)
       request ⇒
-        sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request), routingSettings)).fast
+        sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request), routingSettings, effectiveParserSettings)).fast
           .map {
             case RouteResult.Complete(response) ⇒ response
             case RouteResult.Rejected(rejected) ⇒ throw new IllegalStateException(s"Unhandled rejections '$rejected', unsealed RejectionHandler?!")
