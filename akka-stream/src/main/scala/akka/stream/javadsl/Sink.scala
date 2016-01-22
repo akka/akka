@@ -30,6 +30,16 @@ object Sink {
     new Sink(scaladsl.Sink.fold[U, In](zero)(f.apply))
 
   /**
+   * A `Sink` that will invoke the given function for every received element, giving it its previous
+   * output (from the second element) and the element as input.
+   * The returned [[scala.concurrent.Future]] will be completed with value of the final
+   * function evaluation when the input stream ends, or completed with `Failure`
+   * if there is a failure signaled in the stream.
+   */
+  def reduce[In](f: function.Function2[In, In, In]): Sink[In, Future[In]] =
+    new Sink(scaladsl.Sink.reduce[In](f.apply))
+
+  /**
    * Helper to create [[Sink]] from `Subscriber`.
    */
   def fromSubscriber[In](subs: Subscriber[In]): Sink[In, NotUsed] =

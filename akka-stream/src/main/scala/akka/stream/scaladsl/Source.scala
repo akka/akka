@@ -102,6 +102,17 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
     runWith(Sink.fold(zero)(f))
 
   /**
+   * Shortcut for running this `Source` with a reduce function.
+   * The given function is invoked for every received element, giving it its previous
+   * output (from the second element) and the element as input.
+   * The returned [[scala.concurrent.Future]] will be completed with value of the final
+   * function evaluation when the input stream ends, or completed with `Failure`
+   * if there is a failure signaled in the stream.
+   */
+  def runReduce[U >: Out](f: (U, U) ⇒ U)(implicit materializer: Materializer): Future[U] =
+    runWith(Sink.reduce(f))
+
+  /**
    * Shortcut for running this `Source` with a foreach procedure. The given procedure is invoked
    * for each received element.
    * The returned [[scala.concurrent.Future]] will be completed with `Success` when reaching the
