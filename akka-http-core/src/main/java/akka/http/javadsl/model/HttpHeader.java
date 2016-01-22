@@ -34,4 +34,14 @@ public abstract class HttpHeader {
      * Returns !is(nameInLowerCase).
      */
     public abstract boolean isNot(String nameInLowerCase);
+
+    /**
+     * Returns true iff the header is to be rendered in requests.
+     */
+    public abstract boolean renderInRequests();
+
+    /**
+     * Returns true iff the header is to be rendered in responses.
+     */
+    public abstract boolean renderInResponses();
 }

@@ -215,6 +215,8 @@ object Credentials {
         new Credentials.Provided(token) {
           def verify(secret: String): Boolean = secret secure_== token
         }
+      case Some(GenericHttpCredentials(scheme, token, params)) ⇒
+        throw new UnsupportedOperationException("cannot verify generic HTTP credentials")
       case None ⇒ Credentials.Missing
     }
   }

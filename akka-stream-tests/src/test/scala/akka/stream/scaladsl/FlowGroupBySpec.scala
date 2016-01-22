@@ -3,6 +3,8 @@
  */
 package akka.stream.scaladsl
 
+import akka.NotUsed
+
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.stream.ActorMaterializer
@@ -211,7 +213,7 @@ class FlowGroupBySpec extends AkkaSpec with ScalaFutures with ConversionCheckedT
         .groupBy(2, elem ⇒ if (elem == 2) throw exc else elem % 2)
         .lift(_ % 2)
         .runWith(Sink.asPublisher(false))
-      val subscriber = TestSubscriber.manualProbe[(Int, Source[Int, Unit])]()
+      val subscriber = TestSubscriber.manualProbe[(Int, Source[Int, NotUsed])]()
       publisher.subscribe(subscriber)
 
       val upstreamSubscription = publisherProbeProbe.expectSubscription()
@@ -242,7 +244,7 @@ class FlowGroupBySpec extends AkkaSpec with ScalaFutures with ConversionCheckedT
         .lift(_ % 2)
         .withAttributes(ActorAttributes.supervisionStrategy(resumingDecider))
         .runWith(Sink.asPublisher(false))
-      val subscriber = TestSubscriber.manualProbe[(Int, Source[Int, Unit])]()
+      val subscriber = TestSubscriber.manualProbe[(Int, Source[Int, NotUsed])]()
       publisher.subscribe(subscriber)
 
       val upstreamSubscription = publisherProbeProbe.expectSubscription()
@@ -279,7 +281,7 @@ class FlowGroupBySpec extends AkkaSpec with ScalaFutures with ConversionCheckedT
 
     "pass along early cancellation" in assertAllStagesStopped {
       val up = TestPublisher.manualProbe[Int]()
-      val down = TestSubscriber.manualProbe[(Int, Source[Int, Unit])]()
+      val down = TestSubscriber.manualProbe[(Int, Source[Int, NotUsed])]()
 
       val flowSubscriber = Source.asSubscriber[Int].groupBy(2, _ % 2).lift(_ % 2).to(Sink.fromSubscriber(down)).run()
 

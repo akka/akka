@@ -3,6 +3,7 @@
  */
 package docs.stream.javadsl.cookbook;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
@@ -14,7 +15,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 
 import java.util.Arrays;
 import java.util.List;
@@ -42,12 +42,12 @@ public class RecipeFlattenList extends RecipeTest {
   public void workWithMapConcat() throws Exception {
     new JavaTestKit(system) {
       {
-        Source<List<Message>, BoxedUnit> someDataSource = Source
+        Source<List<Message>, NotUsed> someDataSource = Source
           .from(Arrays.asList(Arrays.asList(new Message("1")), Arrays.asList(new Message("2"), new Message("3"))));
 
         //#flattening-lists
-        Source<List<Message>, BoxedUnit> myData = someDataSource;
-        Source<Message, BoxedUnit> flattened = myData.mapConcat(i -> i);
+        Source<List<Message>, NotUsed> myData = someDataSource;
+        Source<Message, NotUsed> flattened = myData.mapConcat(i -> i);
         //#flattening-lists
 
         List<Message> got = Await.result(flattened.grouped(10).runWith(Sink.head(), mat),

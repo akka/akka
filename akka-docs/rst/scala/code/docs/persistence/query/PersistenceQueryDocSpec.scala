@@ -4,6 +4,7 @@
 
 package docs.persistence.query
 
+import akka.NotUsed
 import akka.actor._
 import akka.persistence.{ Recovery, PersistentActor }
 import akka.persistence.query._
@@ -53,25 +54,25 @@ object PersistenceQueryDocSpec {
       config.getDuration("refresh-interval", MILLISECONDS).millis
 
     override def eventsByTag(
-      tag: String, offset: Long = 0L): Source[EventEnvelope, Unit] = {
+      tag: String, offset: Long = 0L): Source[EventEnvelope, NotUsed] = {
       val props = MyEventsByTagPublisher.props(tag, offset, refreshInterval)
       Source.actorPublisher[EventEnvelope](props)
-        .mapMaterializedValue(_ ⇒ ())
+        .mapMaterializedValue(_ ⇒ NotUsed)
     }
 
     override def eventsByPersistenceId(
       persistenceId: String, fromSequenceNr: Long = 0L,
-      toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, Unit] = {
+      toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
       // implement in a similar way as eventsByTag
       ???
     }
 
-    override def allPersistenceIds(): Source[String, Unit] = {
+    override def allPersistenceIds(): Source[String, NotUsed] = {
       // implement in a similar way as eventsByTag
       ???
     }
 
-    override def currentPersistenceIds(): Source[String, Unit] = {
+    override def currentPersistenceIds(): Source[String, NotUsed] = {
       // implement in a similar way as eventsByTag
       ???
     }
@@ -95,19 +96,19 @@ object PersistenceQueryDocSpec {
     with akka.persistence.query.javadsl.CurrentPersistenceIdsQuery {
 
     override def eventsByTag(
-      tag: String, offset: Long = 0L): javadsl.Source[EventEnvelope, Unit] =
+      tag: String, offset: Long = 0L): javadsl.Source[EventEnvelope, NotUsed] =
       scaladslReadJournal.eventsByTag(tag, offset).asJava
 
     override def eventsByPersistenceId(
       persistenceId: String, fromSequenceNr: Long = 0L,
-      toSequenceNr: Long = Long.MaxValue): javadsl.Source[EventEnvelope, Unit] =
+      toSequenceNr: Long = Long.MaxValue): javadsl.Source[EventEnvelope, NotUsed] =
       scaladslReadJournal.eventsByPersistenceId(
         persistenceId, fromSequenceNr, toSequenceNr).asJava
 
-    override def allPersistenceIds(): javadsl.Source[String, Unit] =
+    override def allPersistenceIds(): javadsl.Source[String, NotUsed] =
       scaladslReadJournal.allPersistenceIds().asJava
 
-    override def currentPersistenceIds(): javadsl.Source[String, Unit] =
+    override def currentPersistenceIds(): javadsl.Source[String, NotUsed] =
       scaladslReadJournal.currentPersistenceIds().asJava
 
     // possibility to add more plugin specific queries
@@ -201,7 +202,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
         "akka.persistence.query.my-read-journal")
 
     // issue query to journal
-    val source: Source[EventEnvelope, Unit] =
+    val source: Source[EventEnvelope, NotUsed] =
       readJournal.eventsByPersistenceId("user-1337", 0, Long.MaxValue)
 
     // materialize stream, consuming events
@@ -220,7 +221,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
     //#events-by-tag
     // assuming journal is able to work with numeric offsets we can:
 
-    val blueThings: Source[EventEnvelope, Unit] =
+    val blueThings: Source[EventEnvelope, NotUsed] =
       readJournal.eventsByTag("blue")
 
     // find top 10 blue things:

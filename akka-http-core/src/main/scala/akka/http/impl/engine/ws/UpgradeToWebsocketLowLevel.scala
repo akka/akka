@@ -6,7 +6,7 @@ package akka.http.impl.engine.ws
 
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.ws.UpgradeToWebsocket
-import akka.stream.scaladsl.Flow
+import akka.stream.{ Graph, FlowShape }
 
 /**
  * Currently internal API to handle FrameEvents directly.
@@ -24,5 +24,5 @@ private[http] abstract class UpgradeToWebsocketLowLevel extends InternalCustomHe
    *
    * INTERNAL API (for now)
    */
-  private[http] def handleFrames(handlerFlow: Flow[FrameEvent, FrameEvent, Any], subprotocol: Option[String] = None): HttpResponse
+  private[http] def handleFrames(handlerFlow: Graph[FlowShape[FrameEvent, FrameEvent], Any], subprotocol: Option[String] = None): HttpResponse
 }

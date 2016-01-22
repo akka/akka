@@ -4,17 +4,18 @@
 
 package akka.stream.io
 
-import java.io.{FileInputStream, File}
+import java.io.{ FileInputStream, File }
 import java.util.concurrent.TimeUnit
 
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
-import akka.stream.{Attributes, ActorMaterializer}
+import akka.stream.{ Attributes, ActorMaterializer }
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import org.openjdk.jmh.annotations._
 
 import scala.concurrent.duration._
-import scala.concurrent.{Promise, Await, Future}
+import scala.concurrent.{ Promise, Await, Future }
 
 /**
  * Benchmark                         (bufSize)  Mode  Cnt    Score    Error  Units
@@ -45,9 +46,9 @@ class FileSourcesBenchmark {
   @Param(Array("2048"))
   val bufSize = 0
 
-  var fileChannelSource: Source[ByteString, Future[Long]] = _
-  var fileInputStreamSource: Source[ByteString, Future[Long]] = _
-  var ioSourceLinesIterator: Source[ByteString, Unit] = _
+  var fileChannelSource: Source[ByteString, Future[IOResult]] = _
+  var fileInputStreamSource: Source[ByteString, Future[IOResult]] = _
+  var ioSourceLinesIterator: Source[ByteString, NotUsed] = _
 
   @Setup
   def setup() {
@@ -63,8 +64,7 @@ class FileSourcesBenchmark {
 
   @TearDown
   def shutdown() {
-    system.shutdown()
-    system.awaitTermination()
+    Await.result(system.terminate(), Duration.Inf)
   }
 
   @Benchmark
@@ -95,11 +95,10 @@ class FileSourcesBenchmark {
    */
   @Benchmark
   def naive_ioSourceLinesIterator() = {
-    val p = Promise[Unit]()
+    val p = Promise[Done]()
     ioSourceLinesIterator.to(Sink.onComplete(p.complete(_))).run()
 
     Await.result(p.future, 30.seconds)
   }
-
 
 }

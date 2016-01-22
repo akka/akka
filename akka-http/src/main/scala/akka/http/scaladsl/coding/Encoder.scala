@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.coding
 
+import akka.NotUsed
 import akka.http.scaladsl.model._
 import akka.http.impl.util.StreamUtils
 import akka.stream.stage.Stage
@@ -26,7 +27,7 @@ trait Encoder {
 
   def encode(input: ByteString): ByteString = newCompressor.compressAndFinish(input)
 
-  def encoderFlow: Flow[ByteString, ByteString, Unit] = Flow[ByteString].transform(newEncodeTransformer)
+  def encoderFlow: Flow[ByteString, ByteString, NotUsed] = Flow[ByteString].transform(newEncodeTransformer)
 
   def newCompressor: Compressor
 

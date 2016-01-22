@@ -66,6 +66,9 @@ object ActorContextSpec {
   final case class BecomeCareless(replyTo: ActorRef[BecameCareless.type]) extends Command
   case object BecameCareless extends Event
 
+  final case class GetAdapter(replyTo: ActorRef[Adapter]) extends Command
+  final case class Adapter(a: ActorRef[Command]) extends Event
+
   def subject(monitor: ActorRef[GotSignal]): Behavior[Command] =
     FullTotal {
       case Sig(ctx, signal) ⇒
@@ -142,6 +145,9 @@ object ActorContextSpec {
               monitor ! GotSignal(sig)
               Same
           }
+        case GetAdapter(replyTo) ⇒
+          replyTo ! Adapter(ctx.spawnAdapter(identity))
+          Same
       }
     }
 }
@@ -502,6 +508,26 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
         .expectMultipleMessages(500.millis, 2) { (msgs, _) ⇒
           msgs should ===(Scheduled :: Pong2 :: Nil)
         }
+    })
+
+    def `40 must create a working adapter`(): Unit = sync(setup("ctx40") { (ctx, startWith) ⇒
+      startWith.keep { subj ⇒
+        subj ! GetAdapter(ctx.self)
+      }.expectMessage(500.millis) { (msg, subj) ⇒
+        val Adapter(adapter) = msg
+        ctx.watch(adapter)
+        adapter ! Ping(ctx.self)
+        (subj, adapter)
+      }.expectMessage(500.millis) {
+        case (msg, (subj, adapter)) ⇒
+          msg should ===(Pong1)
+          ctx.stop(subj)
+          adapter
+      }.expectMessageKeep(500.millis) { (msg, _) ⇒
+        msg should ===(GotSignal(PostStop))
+      }.expectTermination(500.millis) { (t, adapter) ⇒
+        t.ref should ===(adapter)
+      }
     })
   }
 

@@ -3,6 +3,7 @@
  */
 package docs.stream
 
+import akka.NotUsed
 import akka.stream.scaladsl.{ Keep, Sink, Flow, Source }
 import akka.stream.stage._
 import akka.stream._
@@ -68,10 +69,10 @@ class GraphStageDocSpec extends AkkaSpec {
 
     //#simple-source-usage
     // A GraphStage is a proper Graph, just like what GraphDSL.create would return
-    val sourceGraph: Graph[SourceShape[Int], Unit] = new NumbersSource
+    val sourceGraph: Graph[SourceShape[Int], NotUsed] = new NumbersSource
 
     // Create a Source from the Graph to access the DSL
-    val mySource: Source[Int, Unit] = Source.fromGraph(new NumbersSource)
+    val mySource: Source[Int, NotUsed] = Source.fromGraph(new NumbersSource)
 
     // Returns 55
     val result1: Future[Int] = mySource.take(10).runFold(0)(_ + _)

@@ -5,6 +5,7 @@ package docs.stream.io;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import akka.NotUsed;
 import akka.stream.io.Framing;
 import docs.stream.SilenceSystemOut;
 import java.net.InetSocketAddress;
@@ -14,7 +15,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.Future;
-import scala.runtime.BoxedUnit;
 
 import akka.actor.ActorSystem;
 import akka.stream.*;
@@ -74,7 +74,7 @@ public class StreamTcpDocTest {
       connections.runForeach(connection -> {
         System.out.println("New connection from: " + connection.remoteAddress());
 
-        final Flow<ByteString, ByteString, BoxedUnit> echo = Flow.of(ByteString.class)
+        final Flow<ByteString, ByteString, NotUsed> echo = Flow.of(ByteString.class)
           .via(Framing.delimiter(ByteString.fromString("\n"), 256, false))
           .map(bytes -> bytes.utf8String())
           .map(s -> s + "!!!\n")
@@ -110,9 +110,9 @@ public class StreamTcpDocTest {
       final String welcomeMsg = "Welcome to: " + connection.localAddress() +
           " you are: " + connection.remoteAddress() + "!\n";
 
-      final Source<ByteString, BoxedUnit> welcome =
+      final Source<ByteString, NotUsed> welcome =
           Source.single(ByteString.fromString(welcomeMsg));
-      final Flow<ByteString, ByteString, BoxedUnit> echoFlow =
+      final Flow<ByteString, ByteString, NotUsed> echoFlow =
           Flow.of(ByteString.class)
             .via(Framing.delimiter(ByteString.fromString("\n"), 256, false))
             .map(bytes -> bytes.utf8String())
@@ -126,7 +126,7 @@ public class StreamTcpDocTest {
             .map(s ->  s + "\n")
             .map(s -> ByteString.fromString(s));
 
-      final Flow<ByteString, ByteString, BoxedUnit> serverLogic =
+      final Flow<ByteString, ByteString, NotUsed> serverLogic =
           Flow.fromGraph(GraphDSL.create(builder -> {
             final UniformFanInShape<ByteString, ByteString> concat =
                 builder.add(Concat.create());
@@ -165,7 +165,7 @@ public class StreamTcpDocTest {
         }
       };
 
-      final Flow<ByteString, ByteString, BoxedUnit> repl = Flow.of(ByteString.class)
+      final Flow<ByteString, ByteString, NotUsed> repl = Flow.of(ByteString.class)
         .via(Framing.delimiter(ByteString.fromString("\n"), 256, false))
         .map(bytes -> bytes.utf8String())
         .map(text -> {System.out.println("Server: " + text); return "next";})

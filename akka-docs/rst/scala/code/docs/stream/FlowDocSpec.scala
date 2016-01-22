@@ -3,6 +3,7 @@
  */
 package docs.stream
 
+import akka.NotUsed
 import akka.actor.Cancellable
 import akka.stream.{ ClosedShape, FlowShape }
 import akka.stream.scaladsl._
@@ -134,11 +135,11 @@ class FlowDocSpec extends AkkaSpec {
     source.to(Sink.foreach(println(_)))
 
     // Starting from a Sink
-    val sink: Sink[Int, Unit] = Flow[Int].map(_ * 2).to(Sink.foreach(println(_)))
+    val sink: Sink[Int, NotUsed] = Flow[Int].map(_ * 2).to(Sink.foreach(println(_)))
     Source(1 to 6).to(sink)
 
     // Broadcast to a sink inline
-    val otherSink: Sink[Int, Unit] =
+    val otherSink: Sink[Int, NotUsed] =
       Flow[Int].alsoTo(Sink.foreach(println(_))).to(Sink.ignore)
     Source(1 to 6).to(otherSink)
 

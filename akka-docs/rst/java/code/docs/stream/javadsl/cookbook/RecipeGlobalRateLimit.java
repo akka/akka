@@ -3,6 +3,7 @@
  */
 package docs.stream.javadsl.cookbook;
 
+import akka.NotUsed;
 import akka.actor.*;
 import akka.dispatch.Mapper;
 import akka.japi.pf.ReceiveBuilder;
@@ -21,6 +22,7 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.runtime.BoxedUnit;
+
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -142,9 +144,9 @@ public class RecipeGlobalRateLimit extends RecipeTest {
   public void work() throws Exception {
     new JavaTestKit(system) {
       //#global-limiter-flow
-      public <T> Flow<T, T, BoxedUnit> limitGlobal(ActorRef limiter, FiniteDuration maxAllowedWait) {
+      public <T> Flow<T, T, NotUsed> limitGlobal(ActorRef limiter, FiniteDuration maxAllowedWait) {
         final int parallelism = 4;
-        final Flow<T, T, BoxedUnit> f = Flow.create();
+        final Flow<T, T, NotUsed> f = Flow.create();
 
         return f.mapAsync(parallelism, element -> {
           final Timeout triggerTimeout = new Timeout(maxAllowedWait);

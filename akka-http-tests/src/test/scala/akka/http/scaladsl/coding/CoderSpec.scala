@@ -7,6 +7,8 @@ package akka.http.scaladsl.coding
 import java.io.{ OutputStream, InputStream, ByteArrayInputStream, ByteArrayOutputStream }
 import java.util
 import java.util.zip.DataFormatException
+import akka.NotUsed
+
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -182,7 +184,7 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
     ByteString(output.toByteArray)
   }
 
-  def decodeChunks(input: Source[ByteString, Unit]): ByteString =
+  def decodeChunks(input: Source[ByteString, NotUsed]): ByteString =
     input.via(Coder.decoderFlow).join.awaitResult(3.seconds)
 
   def decodeFromIterator(iterator: () ⇒ Iterator[ByteString]): ByteString =

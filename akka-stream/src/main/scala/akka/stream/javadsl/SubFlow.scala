@@ -3,6 +3,7 @@
  */
 package akka.stream.javadsl
 
+import akka.NotUsed
 import akka.event.LoggingAdapter
 import akka.japi.function
 import akka.stream._
@@ -400,6 +401,22 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
     new SubFlow(delegate.fold(zero)(f.apply))
 
   /**
+   * Similar to `fold` but uses first element as zero element.
+   * Applies the given function towards its current and next value,
+   * yielding the next current value.
+   *
+   * '''Emits when''' upstream completes
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def reduce(f: function.Function2[Out, Out, Out @uncheckedVariance]): SubFlow[In, Out, Mat] =
+    new SubFlow(delegate.reduce(f.apply))
+
+  /**
    * Intersperses stream with provided element, similar to how [[scala.collection.immutable.List.mkString]]
    * injects a separator between a List's elements.
    *
@@ -644,12 +661,70 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * '''Cancels when''' downstream cancels
    *
+   * see also [[SubFlow.batch]] [[SubFlow.batchWeighted]]
+   *
    * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    *
    */
   def conflate[S](seed: function.Function[Out, S], aggregate: function.Function2[S, Out, S]): SubFlow[In, S, Mat] =
     new SubFlow(delegate.conflate(seed.apply)(aggregate.apply))
+
+  /**
+   * Allows a faster upstream to progress independently of a slower subscriber by aggregating elements into batches
+   * until the subscriber is ready to accept them. For example a batch step might store received elements in
+   * an array up to the allowed max limit if the upstream publisher is faster.
+   *
+   * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
+   * duplicate elements.
+   *
+   * '''Emits when''' downstream stops backpressuring and there is an aggregated element available
+   *
+   * '''Backpressures when''' there are `max` batched elements and 1 pending element and downstream backpressures
+   *
+   * '''Completes when''' upstream completes and there is no batched/pending element waiting
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * See also [[SubFlow.conflate]], [[SubFlow.batchWeighted]]
+   *
+   * @param max maximum number of elements to batch before backpressuring upstream (must be positive non-zero)
+   * @param seed Provides the first state for a batched value using the first unconsumed element as a start
+   * @param aggregate Takes the currently batched value and the current pending element to produce a new aggregate
+   */
+  def batch[S](max: Long, seed: function.Function[Out, S], aggregate: function.Function2[S, Out, S]): SubFlow[In, S, Mat] =
+    new SubFlow(delegate.batch(max, seed.apply)(aggregate.apply))
+
+  /**
+   * Allows a faster upstream to progress independently of a slower subscriber by aggregating elements into batches
+   * until the subscriber is ready to accept them. For example a batch step might concatenate `ByteString`
+   * elements up to the allowed max limit if the upstream publisher is faster.
+   *
+   * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
+   * duplicate elements.
+   *
+   * Batching will apply for all elements, even if a single element cost is greater than the total allowed limit.
+   * In this case, previous batched elements will be emitted, then the "heavy" element will be emitted (after
+   * being applied with the `seed` function) without batching further elements with it, and then the rest of the
+   * incoming elements are batched.
+   *
+   * '''Emits when''' downstream stops backpressuring and there is a batched element available
+   *
+   * '''Backpressures when''' there are `max` weighted batched elements + 1 pending element and downstream backpressures
+   *
+   * '''Completes when''' upstream completes and there is no batched/pending element waiting
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * See also [[SubFlow.conflate]], [[SubFlow.batch]]
+   *
+   * @param max maximum weight of elements to batch before backpressuring upstream (must be positive non-zero)
+   * @param costFn a function to compute a single element weight
+   * @param seed Provides the first state for a batched value using the first unconsumed element as a start
+   * @param aggregate Takes the currently batched value and the current pending element to produce a new batch
+   */
+  def batchWeighted[S](max: Long, costFn: function.Function[Out, Long], seed: function.Function[Out, S], aggregate: function.Function2[S, Out, S]): SubFlow[In, S, Mat] =
+    new SubFlow(delegate.batchWeighted(max, costFn.apply, seed.apply)(aggregate.apply))
 
   /**
    * Allows a faster downstream to progress independently of a slower publisher by extrapolating elements from an older
@@ -665,7 +740,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * '''Emits when''' downstream stops backpressuring
    *
-   * '''Backpressures when''' downstream backpressures
+   * '''Backpressures when''' downstream backpressures or iterator runs emtpy
    *
    * '''Completes when''' upstream completes
    *
@@ -675,11 +750,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
    *                    state.
    */
-  def expand[S, U](seed: function.Function[Out, S], extrapolate: function.Function[S, akka.japi.Pair[U, S]]): SubFlow[In, U, Mat] =
-    new SubFlow(delegate.expand(seed(_))(s ⇒ {
-      val p = extrapolate(s)
-      (p.first, p.second)
-    }))
+  def expand[U](extrapolate: function.Function[Out, java.util.Iterator[U]]): SubFlow[In, U, Mat] =
+    new SubFlow(delegate.expand(in ⇒ extrapolate(in).asScala))
 
   /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
@@ -732,7 +804,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * '''Cancels when''' downstream cancels or substream cancels
    */
-  def prefixAndTail(n: Int): SubFlow[In, akka.japi.Pair[java.util.List[Out @uncheckedVariance], javadsl.Source[Out @uncheckedVariance, Unit]], Mat] =
+  def prefixAndTail(n: Int): SubFlow[In, akka.japi.Pair[java.util.List[Out @uncheckedVariance], javadsl.Source[Out @uncheckedVariance, NotUsed]], Mat] =
     new SubFlow(delegate.prefixAndTail(n).map { case (taken, tail) ⇒ akka.japi.Pair(taken.asJava, tail.asJava) })
 
   /**

@@ -1,5 +1,6 @@
 package docs.stream
 
+import akka.NotUsed
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
@@ -57,10 +58,10 @@ class StreamBuffersRateSpec extends AkkaSpec {
 
   "explcit buffers" in {
     trait Job
-    def inboundJobsConnector(): Source[Job, Unit] = Source.empty
+    def inboundJobsConnector(): Source[Job, NotUsed] = Source.empty
     //#explicit-buffers-backpressure
     // Getting a stream of jobs from an imaginary external system as a Source
-    val jobs: Source[Job, Unit] = inboundJobsConnector()
+    val jobs: Source[Job, NotUsed] = inboundJobsConnector()
     jobs.buffer(1000, OverflowStrategy.backpressure)
     //#explicit-buffers-backpressure
 

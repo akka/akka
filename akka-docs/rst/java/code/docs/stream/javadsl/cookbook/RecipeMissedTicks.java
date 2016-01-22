@@ -3,6 +3,7 @@
  */
 package docs.stream.javadsl.cookbook;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
@@ -23,7 +24,6 @@ import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 
 import java.util.concurrent.TimeUnit;
 
@@ -57,11 +57,11 @@ public class RecipeMissedTicks extends RecipeTest {
 
         @SuppressWarnings("unused")
         //#missed-ticks
-        final Flow<Tick, Integer, BoxedUnit> missedTicks =
+        final Flow<Tick, Integer, NotUsed> missedTicks =
           Flow.of(Tick.class).conflate(tick -> 0, (missed, tick) -> missed + 1);
         //#missed-ticks
         final TestLatch latch = new TestLatch(3, system);
-        final Flow<Tick, Integer, BoxedUnit> realMissedTicks =
+        final Flow<Tick, Integer, NotUsed> realMissedTicks =
                 Flow.of(Tick.class).conflate(tick -> 0, (missed, tick) -> { latch.countDown(); return missed + 1; });
 
         Pair<TestPublisher.Probe<Tick>, TestSubscriber.Probe<Integer>> pubSub =

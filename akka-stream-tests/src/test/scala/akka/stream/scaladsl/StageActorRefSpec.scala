@@ -186,23 +186,23 @@ object StageActorRefSpec {
       val p: Promise[Int] = Promise()
 
       val logic = new GraphStageLogic(shape) {
-        implicit def self = stageActorRef // must be a `def`, we want self to be the sender for our replies
+        implicit def self = stageActor.ref // must be a `def`; we want self to be the sender for our replies
         var sum: Int = 0
 
         override def preStart(): Unit = {
           pull(in)
-          probe ! getStageActorRef(behaviour)
+          probe ! getStageActor(behaviour).ref
         }
 
         def behaviour(m: (ActorRef, Any)): Unit = {
           m match {
             case (sender, Add(n))                ⇒ sum += n
             case (sender, PullNow)               ⇒ pull(in)
-            case (sender, CallInitStageActorRef) ⇒ sender ! getStageActorRef(behaviour)
+            case (sender, CallInitStageActorRef) ⇒ sender ! getStageActor(behaviour).ref
             case (sender, BecomeStringEcho) ⇒
-              getStageActorRef({
+              getStageActor {
                 case (theSender, msg) ⇒ theSender ! msg.toString
-              })
+              }
             case (sender, StopNow) ⇒
               p.trySuccess(sum)
               completeStage()

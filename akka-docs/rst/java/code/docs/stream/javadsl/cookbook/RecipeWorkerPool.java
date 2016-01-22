@@ -3,6 +3,7 @@
  */
 package docs.stream.javadsl.cookbook;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.*;
 import akka.stream.javadsl.*;
@@ -13,7 +14,6 @@ import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 
 import java.util.Arrays;
 import java.util.List;
@@ -38,8 +38,8 @@ public class RecipeWorkerPool extends RecipeTest {
   final Materializer mat = ActorMaterializer.create(system);
 
   //#worker-pool
-  public static <In, Out> Flow<In, Out, BoxedUnit> balancer(
-      Flow<In, Out, BoxedUnit> worker, int workerCount) {
+  public static <In, Out> Flow<In, Out, NotUsed> balancer(
+      Flow<In, Out, NotUsed> worker, int workerCount) {
     return Flow.fromGraph(GraphDSL.create(b -> {
         boolean waitForAllDownstreams = true;
         final UniformFanOutShape<In, In> balance =
@@ -60,16 +60,16 @@ public class RecipeWorkerPool extends RecipeTest {
   public void workForVersion1() throws Exception {
     new JavaTestKit(system) {
       {
-        Source<Message, BoxedUnit> data =
+        Source<Message, NotUsed> data =
           Source
             .from(Arrays.asList("1", "2", "3", "4", "5"))
             .map(t -> new Message(t));
 
-        Flow<Message, Message, BoxedUnit> worker = Flow.of(Message.class).map(m -> new Message(m.msg + " done"));
+        Flow<Message, Message, NotUsed> worker = Flow.of(Message.class).map(m -> new Message(m.msg + " done"));
 
         //#worker-pool2
-        Flow<Message, Message, BoxedUnit> balancer = balancer(worker, 3);
-        Source<Message, BoxedUnit> processedJobs = data.via(balancer);
+        Flow<Message, Message, NotUsed> balancer = balancer(worker, 3);
+        Source<Message, NotUsed> processedJobs = data.via(balancer);
         //#worker-pool2
 
         FiniteDuration timeout = FiniteDuration.create(200, TimeUnit.MILLISECONDS);

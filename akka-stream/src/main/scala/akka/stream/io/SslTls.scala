@@ -5,8 +5,9 @@ package akka.stream.io
 
 import java.lang.{ Integer ⇒ jInteger }
 import java.security.Principal
+import java.util.Optional
 
-import akka.japi
+import akka.{ NotUsed, japi }
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
 import akka.util.ByteString
@@ -14,6 +15,7 @@ import javax.net.ssl._
 import scala.annotation.varargs
 import scala.collection.immutable
 import java.security.cert.Certificate
+import scala.compat.java8.OptionConverters
 
 /**
  * Stream cipher support based upon JSSE.
@@ -53,8 +55,8 @@ import java.security.cert.Certificate
  */
 object SslTls {
 
-  type ScalaFlow = scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, Unit]
-  type JavaFlow = javadsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, Unit]
+  type ScalaFlow = scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed]
+  type JavaFlow = javadsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed]
 
   /**
    * Scala API: create a StreamTls [[akka.stream.scaladsl.BidiFlow]]. The
@@ -106,8 +108,8 @@ object SslTls {
    * The SSLEngine may use this information e.g. when an endpoint identification algorithm was
    * configured using [[SSLParameters.setEndpointIdentificationAlgorithm]].
    */
-  def create(sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role, hostInfo: japi.Option[japi.Pair[String, jInteger]], closing: Closing): JavaFlow =
-    new javadsl.BidiFlow(apply(sslContext, firstSession, role, closing, hostInfo.asScala.map(e ⇒ (e.first, e.second))))
+  def create(sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role, hostInfo: Optional[japi.Pair[String, jInteger]], closing: Closing): JavaFlow =
+    new javadsl.BidiFlow(apply(sslContext, firstSession, role, closing, OptionConverters.toScala(hostInfo).map(e ⇒ (e.first, e.second))))
 
   /**
    * INTERNAL API.
@@ -156,13 +158,13 @@ object SslTlsPlacebo {
   // this constructs a session for (invalid) protocol SSL_NULL_WITH_NULL_NULL
   private[akka] val dummySession = SSLContext.getDefault.createSSLEngine.getSession
 
-  val forScala: scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, Unit] =
+  val forScala: scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, NotUsed] =
     scaladsl.BidiFlow.fromGraph(scaladsl.GraphDSL.create() { implicit b ⇒
       val top = b.add(scaladsl.Flow[SslTlsOutbound].collect { case SendBytes(bytes) ⇒ bytes })
       val bottom = b.add(scaladsl.Flow[ByteString].map(SessionBytes(dummySession, _)))
       BidiShape.fromFlows(top, bottom)
     })
-  val forJava: javadsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, Unit] =
+  val forJava: javadsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, NotUsed] =
     new javadsl.BidiFlow(forScala)
 }
 
@@ -380,6 +382,10 @@ sealed trait SslTlsOutbound
  *  - `enabledProtocols` will be passed to `SSLEngine::setEnabledProtocols()`
  *  - `clientAuth` will be passed to `SSLEngine::setWantClientAuth()` or `SSLEngine.setNeedClientAuth()`, respectively
  *  - `sslParameters` will be passed to `SSLEngine::setSSLParameters()`
+ *
+ * Please note that passing `clientAuth = None` means that no change is done
+ * on client authentication requirements while `clientAuth = Some(ClientAuth.None)`
+ * switches off client authentication.
  */
 case class NegotiateNewSession(
   enabledCipherSuites: Option[immutable.Seq[String]],

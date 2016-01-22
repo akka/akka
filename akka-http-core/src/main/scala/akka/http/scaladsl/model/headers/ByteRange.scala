@@ -4,20 +4,20 @@
 
 package akka.http.scaladsl.model.headers
 
-import java.{ lang ⇒ jl }
-import akka.japi.{ Option ⇒ JOption }
+import java.util.OptionalLong
+
 import akka.http.impl.util.{ Rendering, ValueRenderable }
 import akka.http.javadsl.{ model ⇒ jm }
 
 sealed abstract class ByteRange extends jm.headers.ByteRange with ValueRenderable {
   /** Java API */
-  def getSliceFirst: JOption[jl.Long] = JOption.none
+  def getSliceFirst: OptionalLong = OptionalLong.empty
   /** Java API */
-  def getSliceLast: JOption[jl.Long] = JOption.none
+  def getSliceLast: OptionalLong = OptionalLong.empty
   /** Java API */
-  def getOffset: JOption[jl.Long] = JOption.none
+  def getOffset: OptionalLong = OptionalLong.empty
   /** Java API */
-  def getSuffixLength: JOption[jl.Long] = JOption.none
+  def getSuffixLength: OptionalLong = OptionalLong.empty
 
   /** Java API */
   def isSlice: Boolean = false
@@ -41,9 +41,9 @@ object ByteRange {
     /** Java API */
     override def isSlice: Boolean = true
     /** Java API */
-    override def getSliceFirst: JOption[jl.Long] = JOption.some(first)
+    override def getSliceFirst: OptionalLong = OptionalLong.of(first)
     /** Java API */
-    override def getSliceLast: JOption[jl.Long] = JOption.some(last)
+    override def getSliceLast: OptionalLong = OptionalLong.of(last)
   }
 
   final case class FromOffset(offset: Long) extends ByteRange {
@@ -53,7 +53,7 @@ object ByteRange {
     /** Java API */
     override def isFromOffset: Boolean = true
     /** Java API */
-    override def getOffset: JOption[jl.Long] = JOption.some(offset)
+    override def getOffset: OptionalLong = OptionalLong.of(offset)
   }
 
   final case class Suffix(length: Long) extends ByteRange {
@@ -63,6 +63,6 @@ object ByteRange {
     /** Java API */
     override def isSuffix: Boolean = true
     /** Java API */
-    override def getSuffixLength: JOption[jl.Long] = JOption.some(length)
+    override def getSuffixLength: OptionalLong = OptionalLong.of(length)
   }
 }

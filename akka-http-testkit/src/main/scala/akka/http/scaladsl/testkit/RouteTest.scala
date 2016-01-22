@@ -43,7 +43,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
   implicit def executor = system.dispatcher
   implicit val materializer = ActorMaterializer()
 
-  def cleanUp(): Unit = system.shutdown()
+  def cleanUp(): Unit = system.terminate()
 
   private val dynRR = new DynamicVariable[RouteTestResult](null)
   private def result =

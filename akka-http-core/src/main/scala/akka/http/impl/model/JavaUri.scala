@@ -5,12 +5,13 @@
 package akka.http.impl.model
 
 import java.nio.charset.Charset
+import java.util.Optional
 import java.{ lang ⇒ jl }
 import akka.http.scaladsl.model.Uri.ParsingMode
-import akka.japi.Option
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.{ model ⇒ sm }
 import akka.http.impl.util.JavaMapping.Implicits._
+import scala.compat.java8.OptionConverters._
 
 /** INTERNAL API */
 case class JavaUri(uri: sm.Uri) extends jm.Uri {
@@ -36,12 +37,12 @@ case class JavaUri(uri: sm.Uri) extends jm.Uri {
     gatherSegments(uri.path).asJava
   }
 
-  def rawQueryString: Option[String] = uri.rawQueryString
-  def queryString(charset: Charset): Option[String] = uri.queryString(charset)
+  def rawQueryString: Optional[String] = uri.rawQueryString.asJava
+  def queryString(charset: Charset): Optional[String] = uri.queryString(charset).asJava
   def query: jm.Query = uri.query().asJava
   def query(charset: Charset, mode: ParsingMode): jm.Query = uri.query(charset, mode).asJava
 
-  def fragment: Option[String] = uri.fragment
+  def fragment: Optional[String] = uri.fragment.asJava
 
   // Modification methods
 
@@ -69,7 +70,7 @@ case class JavaUri(uri: sm.Uri) extends jm.Uri {
     u.withPath(newPath)
   }
 
-  def fragment(fragment: Option[String]): jm.Uri = t(_.copy(fragment = fragment))
+  def fragment(fragment: Optional[String]): jm.Uri = t(_.copy(fragment = fragment.asScala))
   def fragment(fragment: String): jm.Uri = t(_.withFragment(fragment))
 
   override def toString: String = uri.toString

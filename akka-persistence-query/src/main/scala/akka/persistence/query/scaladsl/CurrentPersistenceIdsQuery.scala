@@ -3,6 +3,7 @@
  */
 package akka.persistence.query.scaladsl
 
+import akka.NotUsed
 import akka.stream.scaladsl.Source
 
 /**
@@ -15,6 +16,6 @@ trait CurrentPersistenceIdsQuery extends ReadJournal {
    * is completed immediately when it reaches the end of the "result set". Persistent
    * actors that are created after the query is completed are not included in the stream.
    */
-  def currentPersistenceIds(): Source[String, Unit]
+  def currentPersistenceIds(): Source[String, NotUsed]
 
 }

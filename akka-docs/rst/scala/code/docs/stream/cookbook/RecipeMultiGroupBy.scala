@@ -1,5 +1,6 @@
 package docs.stream.cookbook
 
+import akka.NotUsed
 import akka.stream.scaladsl.{ Sink, Source }
 
 import scala.collection.immutable
@@ -23,7 +24,7 @@ class RecipeMultiGroupBy extends RecipeSpec {
       //#multi-groupby
       val topicMapper: (Message) => immutable.Seq[Topic] = extractTopics
 
-      val messageAndTopic: Source[(Message, Topic), Unit] = elems.mapConcat { msg: Message =>
+      val messageAndTopic: Source[(Message, Topic), NotUsed] = elems.mapConcat { msg: Message =>
         val topicsForMessage = topicMapper(msg)
         // Create a (Msg, Topic) pair for each of the topics
         // the message belongs to

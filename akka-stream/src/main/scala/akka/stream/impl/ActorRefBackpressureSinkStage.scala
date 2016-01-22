@@ -7,7 +7,7 @@ import java.util
 
 import akka.actor._
 import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Watch }
-import akka.stream.stage.GraphStageLogic.StageActorRef
+import akka.stream.stage.GraphStageLogic.StageActor
 import akka.stream.{ Inlet, SinkShape, ActorMaterializer, Attributes }
 import akka.stream.Attributes.InputBuffer
 import akka.stream.stage._
@@ -28,7 +28,7 @@ private[akka] class ActorRefBackpressureSinkStage[In](ref: ActorRef, onInitMessa
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
-      implicit var self: StageActorRef = _
+      implicit def self: ActorRef = stageActor.ref
 
       val buffer: util.Deque[In] = new util.ArrayDeque[In]()
       var acknowledgementReceived = false
@@ -46,8 +46,7 @@ private[akka] class ActorRefBackpressureSinkStage[In](ref: ActorRef, onInitMessa
 
       override def preStart() = {
         setKeepGoing(true)
-        self = getStageActorRef(receive)
-        self.watch(ref)
+        getStageActor(receive).watch(ref)
         ref ! onInitMessage
         pull(in)
       }

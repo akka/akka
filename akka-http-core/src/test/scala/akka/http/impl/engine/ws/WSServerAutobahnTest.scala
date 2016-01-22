@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.ws
 
+import akka.NotUsed
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -44,9 +46,9 @@ object WSServerAutobahnTest extends App {
       case _       ⇒ throw new Exception("akka.ws-mode MUST be sleep or read.")
     }
   } finally {
-    system.shutdown()
+    system.terminate()
   }
 
-  def echoWebsocketService: Flow[Message, Message, Unit] =
+  def echoWebsocketService: Flow[Message, Message, NotUsed] =
     Flow[Message] // just let message flow directly to the output
 }

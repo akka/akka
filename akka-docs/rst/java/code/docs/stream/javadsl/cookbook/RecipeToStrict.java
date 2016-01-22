@@ -3,6 +3,7 @@
  */
 package docs.stream.javadsl.cookbook;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
@@ -15,7 +16,6 @@ import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 
 import java.util.Arrays;
 import java.util.List;
@@ -41,7 +41,7 @@ public class RecipeToStrict extends RecipeTest {
   public void workWithPrintln() throws Exception {
     new JavaTestKit(system) {
       {
-        final Source<String, BoxedUnit> myData = Source.from(Arrays.asList("1", "2", "3"));
+        final Source<String, NotUsed> myData = Source.from(Arrays.asList("1", "2", "3"));
         final int MAX_ALLOWED_SIZE = 100;
 
         //#draining-to-list

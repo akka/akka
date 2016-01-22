@@ -3,6 +3,8 @@
  */
 package akka.stream.scaladsl
 
+import akka.NotUsed
+
 import scala.util.control.NoStackTrace
 import akka.stream._
 import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
@@ -23,7 +25,7 @@ object One2OneBidiFlow {
    * 3. Backpressures the input side if the maximum number of pending output elements has been reached,
    *    which is given via the ``maxPending`` parameter. You can use -1 to disable this feature.
    */
-  def apply[I, O](maxPending: Int): BidiFlow[I, I, O, O, Unit] =
+  def apply[I, O](maxPending: Int): BidiFlow[I, I, O, O, NotUsed] =
     BidiFlow.fromGraph(new One2OneBidi[I, O](maxPending))
 
   class One2OneBidi[I, O](maxPending: Int) extends GraphStage[BidiShape[I, I, O, O]] {

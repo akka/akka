@@ -3,7 +3,7 @@
  */
 package akka.http.javadsl.model
 
-import akka.japi.Option
+import java.util.Optional
 
 /**
  * Represents an Http content-type. A content-type consists of a media-type and an optional charset.
@@ -41,5 +41,5 @@ trait ContentType {
   /**
    * Returns the charset if this ContentType is non-binary.
    */
-  def getCharsetOption: Option[HttpCharset]
+  def getCharsetOption: Optional[HttpCharset]
 }

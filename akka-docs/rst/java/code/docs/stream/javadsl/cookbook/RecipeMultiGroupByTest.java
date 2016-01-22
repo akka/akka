@@ -3,6 +3,7 @@
  */
 package docs.stream.javadsl.cookbook;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Function;
 import akka.japi.Pair;
@@ -18,7 +19,6 @@ import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -93,14 +93,14 @@ public class RecipeMultiGroupByTest extends RecipeTest {
 
       {
 
-        final Source<Message, BoxedUnit> elems = Source
+        final Source<Message, NotUsed> elems = Source
           .from(Arrays.asList("1: a", "1: b", "all: c", "all: d", "1: e"))
           .map(s -> new Message(s));
 
         //#multi-groupby
         final Function<Message, List<Topic>> topicMapper = m -> extractTopics(m);
 
-        final Source<Pair<Message, Topic>, BoxedUnit> messageAndTopic = elems
+        final Source<Pair<Message, Topic>, NotUsed> messageAndTopic = elems
           .mapConcat((Message msg) -> {
             List<Topic> topicsForMessage = topicMapper.apply(msg);
             // Create a (Msg, Topic) pair for each of the topics
@@ -112,7 +112,7 @@ public class RecipeMultiGroupByTest extends RecipeTest {
               .collect(toList());
         });
 
-        SubSource<Pair<Message, Topic>, BoxedUnit> multiGroups = messageAndTopic
+        SubSource<Pair<Message, Topic>, NotUsed> multiGroups = messageAndTopic
           .groupBy(2, pair -> pair.second())
           .map(pair -> {
             Message message = pair.first();

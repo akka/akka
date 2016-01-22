@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import akka.NotUsed;
 import org.junit.*;
 import static org.junit.Assert.assertEquals;
 
@@ -26,7 +27,6 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
-import scala.runtime.BoxedUnit;
 
 public class StreamTestKitDocTest {
 
@@ -62,7 +62,7 @@ public class StreamTestKitDocTest {
   @Test
   public void groupedPartOfInfiniteStream() throws Exception {
     //#grouped-infinite
-    final Source<Integer, BoxedUnit> sourceUnderTest = Source.repeat(1)
+    final Source<Integer, NotUsed> sourceUnderTest = Source.repeat(1)
       .map(i -> i * 2);
 
     final Future<List<Integer>> future = sourceUnderTest
@@ -77,7 +77,7 @@ public class StreamTestKitDocTest {
   @Test
   public void foldedStream() throws Exception {
     //#folded-stream
-    final Flow<Integer, Integer, BoxedUnit> flowUnderTest = Flow.of(Integer.class)
+    final Flow<Integer, Integer, NotUsed> flowUnderTest = Flow.of(Integer.class)
       .takeWhile(i -> i < 5);
 
     final Future<Integer> future = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6))
@@ -90,7 +90,7 @@ public class StreamTestKitDocTest {
   @Test
   public void pipeToTestProbe() throws Exception {
     //#pipeto-testprobe
-    final Source<List<Integer>, BoxedUnit> sourceUnderTest = Source
+    final Source<List<Integer>, NotUsed> sourceUnderTest = Source
       .from(Arrays.asList(1, 2, 3, 4))
       .grouped(2);
 
@@ -153,7 +153,7 @@ public class StreamTestKitDocTest {
   @Test
   public void testSinkProbe() {
     //#test-sink-probe
-    final Source<Integer, BoxedUnit> sourceUnderTest = Source.from(Arrays.asList(1, 2, 3, 4))
+    final Source<Integer, NotUsed> sourceUnderTest = Source.from(Arrays.asList(1, 2, 3, 4))
       .filter(elem -> elem % 2 == 0)
       .map(elem -> elem * 2);
 
@@ -168,7 +168,7 @@ public class StreamTestKitDocTest {
   @Test
   public void testSourceProbe() {
     //#test-source-probe
-    final Sink<Integer, BoxedUnit> sinkUnderTest = Sink.cancelled();
+    final Sink<Integer, NotUsed> sinkUnderTest = Sink.cancelled();
 
     TestSource.<Integer>probe(system)
       .toMat(sinkUnderTest, Keep.left())
@@ -199,7 +199,7 @@ public class StreamTestKitDocTest {
   @Test
   public void testSourceAndTestSink() throws Exception {
     //#test-source-and-sink
-    final Flow<Integer, Integer, BoxedUnit> flowUnderTest = Flow.of(Integer.class)
+    final Flow<Integer, Integer, NotUsed> flowUnderTest = Flow.of(Integer.class)
       .mapAsyncUnordered(2, sleep -> akka.pattern.Patterns.after(
         Duration.create(10, TimeUnit.MILLISECONDS),
         system.scheduler(),

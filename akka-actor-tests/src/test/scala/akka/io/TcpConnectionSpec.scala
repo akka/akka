@@ -402,7 +402,7 @@ class TcpConnectionSpec extends AkkaSpec("""
 
         connectionHandler.expectMsgType[Received].data.decodeString("ASCII") should ===(vs)
       }
-      finally system.shutdown()
+      finally system.terminate()
     }
 
     "close the connection and reply with `Closed` upon reception of a `Close` command" in

@@ -5,6 +5,7 @@
 package akka.http.scaladsl.model
 
 import java.lang.{ Iterable ⇒ JIterable }
+import java.util.Optional
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, ExecutionContext }
@@ -17,6 +18,8 @@ import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.util.FastFuture._
 import headers._
+
+import scala.compat.java8.OptionConverters._
 
 /**
  * Common base class of HttpRequest and HttpResponse.
@@ -110,11 +113,11 @@ sealed trait HttpMessage extends jm.HttpMessage {
   /** Java API */
   def getHeaders: JIterable[jm.HttpHeader] = (headers: immutable.Seq[jm.HttpHeader]).asJava
   /** Java API */
-  def getHeader[T <: jm.HttpHeader](headerClass: Class[T]): akka.japi.Option[T] = header(ClassTag(headerClass))
+  def getHeader[T <: jm.HttpHeader](headerClass: Class[T]): Optional[T] = header(ClassTag(headerClass)).asJava
   /** Java API */
-  def getHeader(headerName: String): akka.japi.Option[jm.HttpHeader] = {
+  def getHeader(headerName: String): Optional[jm.HttpHeader] = {
     val lowerCased = headerName.toRootLowerCase
-    headers.find(_.is(lowerCased))
+    Util.convertOption(headers.find(_.is(lowerCased))) // Upcast because of invariance
   }
   /** Java API */
   def addHeaders(headers: JIterable[jm.HttpHeader]): Self = mapHeaders(_ ++ headers.asScala.asInstanceOf[Iterable[HttpHeader]])

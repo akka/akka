@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl.testkit
 
+import akka.NotUsed
+
 import scala.concurrent.duration._
 
 import akka.util.ByteString
@@ -24,7 +26,7 @@ import akka.http.scaladsl.model.ws.{ BinaryMessage, TextMessage, Message }
  * Requesting elements is handled automatically.
  */
 trait WSProbe {
-  def flow: Flow[Message, Message, Unit]
+  def flow: Flow[Message, Message, NotUsed]
 
   /**
    * Send the given messages out of the flow.
@@ -96,6 +98,7 @@ trait WSProbe {
 object WSProbe {
   /**
    * Creates a WSProbe to use in tests against websocket handlers.
+   *
    * @param maxChunks The maximum number of chunks to collect for streamed messages.
    * @param maxChunkCollectionMills The maximum time in milliseconds to collect chunks for streamed messages.
    */
@@ -104,7 +107,7 @@ object WSProbe {
       val subscriber = TestSubscriber.probe[Message]()
       val publisher = TestPublisher.probe[Message]()
 
-      def flow: Flow[Message, Message, Unit] = Flow.fromSinkAndSourceMat(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))(Keep.none)
+      def flow: Flow[Message, Message, NotUsed] = Flow.fromSinkAndSourceMat(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))(Keep.none)
 
       def sendMessage(message: Message): Unit = publisher.sendNext(message)
       def sendMessage(text: String): Unit = sendMessage(TextMessage(text))

@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.client
 
+import akka.NotUsed
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
 import akka.stream.ActorMaterializer
@@ -90,7 +91,7 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
   def pipeline(clientContext: HttpsContext, hostname: String): HttpRequest ⇒ Future[HttpResponse] = req ⇒
     Source.single(req).via(pipelineFlow(clientContext, hostname)).runWith(Sink.head)
 
-  def pipelineFlow(clientContext: HttpsContext, hostname: String): Flow[HttpRequest, HttpResponse, Unit] = {
+  def pipelineFlow(clientContext: HttpsContext, hostname: String): Flow[HttpRequest, HttpResponse, NotUsed] = {
     val handler: HttpRequest ⇒ HttpResponse = { req ⇒
       // verify Tls-Session-Info header information
       val name = req.header[`Tls-Session-Info`].flatMap(_.localPrincipal).map(_.getName)

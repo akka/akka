@@ -4,13 +4,14 @@
 
 package docs.http.javadsl;
 
-import akka.japi.Option;
 import akka.util.ByteString;
 import org.junit.Test;
 
 //#import-model
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.model.headers.*;
+
+import java.util.Optional;
 //#import-model
 
 @SuppressWarnings("unused")
@@ -79,12 +80,12 @@ public class ModelDocTest {
     //#headers
 
     // a method that extracts basic HTTP credentials from a request
-	private Option<BasicHttpCredentials> getCredentialsOfRequest(HttpRequest request) {
-        Option<Authorization> auth = request.getHeader(Authorization.class);
-        if (auth.isDefined() && auth.get().credentials() instanceof BasicHttpCredentials)
-            return Option.some((BasicHttpCredentials) auth.get().credentials());
+	private Optional<BasicHttpCredentials> getCredentialsOfRequest(HttpRequest request) {
+        Optional<Authorization> auth = request.getHeader(Authorization.class);
+        if (auth.isPresent() && auth.get().credentials() instanceof BasicHttpCredentials)
+            return Optional.of((BasicHttpCredentials) auth.get().credentials());
         else
-            return Option.none();
+            return Optional.empty();
     }
     //#headers
 }

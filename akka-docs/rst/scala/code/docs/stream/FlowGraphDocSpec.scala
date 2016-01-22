@@ -3,6 +3,7 @@
  */
 package docs.stream
 
+import akka.NotUsed
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
@@ -21,7 +22,7 @@ class FlowGraphDocSpec extends AkkaSpec {
   "build simple graph" in {
     //format: OFF
     //#simple-flow-graph
-    val g = RunnableGraph.fromGraph(GraphDSL.create() { implicit builder: GraphDSL.Builder[Unit] =>
+    val g = RunnableGraph.fromGraph(GraphDSL.create() { implicit builder: GraphDSL.Builder[NotUsed] =>
       import GraphDSL.Implicits._
       val in = Source(1 to 10)
       val out = Sink.ignore
@@ -131,7 +132,7 @@ class FlowGraphDocSpec extends AkkaSpec {
     object PriorityWorkerPool {
       def apply[In, Out](
         worker: Flow[In, Out, Any],
-        workerCount: Int): Graph[PriorityWorkerPoolShape[In, Out], Unit] = {
+        workerCount: Int): Graph[PriorityWorkerPoolShape[In, Out], NotUsed] = {
 
         GraphDSL.create() { implicit b ⇒
           import GraphDSL.Implicits._

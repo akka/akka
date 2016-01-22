@@ -8,7 +8,7 @@ import akka.stream.testkit.AkkaSpec
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 
-class FlowDispatcherSpec extends AkkaSpec("my-dispatcher = ${akka.test.stream-dispatcher}") {
+class FlowDispatcherSpec extends AkkaSpec(s"my-dispatcher = $${akka.test.stream-dispatcher}") {
 
   val defaultSettings = ActorMaterializerSettings(system)
 

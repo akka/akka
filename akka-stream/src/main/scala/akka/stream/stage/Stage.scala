@@ -3,6 +3,7 @@
  */
 package akka.stream.stage
 
+import akka.NotUsed
 import akka.stream._
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -181,7 +182,7 @@ private[stream] object AbstractStage {
   }
 
   class PushPullGraphStage[-In, +Out, Ext](_factory: (Attributes) ⇒ Stage[In, Out], _stageAttributes: Attributes)
-    extends PushPullGraphStageWithMaterializedValue[In, Out, Ext, Unit]((att: Attributes) ⇒ (_factory(att), ()), _stageAttributes)
+    extends PushPullGraphStageWithMaterializedValue[In, Out, Ext, NotUsed]((att: Attributes) ⇒ (_factory(att), NotUsed), _stageAttributes)
 }
 
 abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, Ctx <: Context[Out], LifeCtx <: LifecycleContext] extends Stage[In, Out] {

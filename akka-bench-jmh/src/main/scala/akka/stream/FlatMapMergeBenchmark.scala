@@ -1,15 +1,16 @@
 /**
-  * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
-  */
+ * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ */
 
 package akka.stream
 
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 import scala.concurrent._
-import scala.concurrent.duration.Duration.Inf
+import scala.concurrent.duration._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -24,9 +25,9 @@ class FlatMapMergeBenchmark {
   @Param(Array("0", "1", "10"))
   val NumberOfStreams = 0
 
-  var graph: RunnableGraph[Future[Unit]] = _
+  var graph: RunnableGraph[Future[Done]] = _
 
-  def createSource(count: Int): Graph[SourceShape[Int], Unit] = akka.stream.Fusing.aggressive(Source.repeat(1).take(count))
+  def createSource(count: Int): Graph[SourceShape[Int], NotUsed] = akka.stream.Fusing.aggressive(Source.repeat(1).take(count))
 
   @Setup
   def setup() {
@@ -43,13 +44,12 @@ class FlatMapMergeBenchmark {
 
   @TearDown
   def shutdown() {
-    system.shutdown()
-    system.awaitTermination()
+    Await.result(system.terminate(), 5.seconds)
   }
 
   @Benchmark
   @OperationsPerInvocation(100000) // Note: needs to match NumberOfElements.
   def flat_map_merge_100k_elements() {
-    Await.result(graph.run(), Inf)
+    Await.result(graph.run(), Duration.Inf)
   }
 }

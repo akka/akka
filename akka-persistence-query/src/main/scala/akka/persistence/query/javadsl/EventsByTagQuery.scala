@@ -3,6 +3,7 @@
  */
 package akka.persistence.query.javadsl
 
+import akka.NotUsed
 import akka.stream.javadsl.Source
 import akka.persistence.query.EventEnvelope
 
@@ -34,6 +35,6 @@ trait EventsByTagQuery extends ReadJournal {
    * Corresponding query that is completed when it reaches the end of the currently
    * stored events is provided by [[CurrentEventsByTagQuery#currentEventsByTag]].
    */
-  def eventsByTag(tag: String, offset: Long): Source[EventEnvelope, Unit]
+  def eventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed]
 
 }

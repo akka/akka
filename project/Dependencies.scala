@@ -156,10 +156,11 @@ object Dependencies {
   // akka stream & http
 
   lazy val httpCore = l ++= Seq(
+    java8Compat,
     Test.sprayJson, // for WS Autobahn test metadata
     Test.junitIntf, Test.junit, Test.scalatest.value)
 
-  lazy val http = l ++= Seq()
+  lazy val http = l ++= Seq(java8Compat)
 
   // special, since it also includes a compiler plugin
   lazy val parsing = Seq(
@@ -191,7 +192,7 @@ object Dependencies {
 
   lazy val streamTestkit = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.junit)
 
-  lazy val streamTests = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.junit, Test.junitIntf, Test.commonsIo)
+  lazy val streamTests = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.junit, Test.commonsIo)
 
   lazy val streamTestsTck = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.junit, Test.reactiveStreamsTck)
 

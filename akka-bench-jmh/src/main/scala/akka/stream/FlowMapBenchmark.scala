@@ -5,6 +5,7 @@
 package akka.stream
 
 import java.util.concurrent.TimeUnit
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
@@ -13,6 +14,8 @@ import scala.concurrent.Lock
 import scala.util.Success
 import akka.stream.impl.fusing.GraphStages
 import org.reactivestreams._
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -57,7 +60,7 @@ class FlowMapBenchmark {
   final val successFailure = Success(new Exception)
 
   // safe to be benchmark scoped because the flows we construct in this bench are stateless
-  var flow: Source[Int, Unit] = _
+  var flow: Source[Int, NotUsed] = _
 
   @Param(Array("8", "32", "128"))
   val initialInputBufferSize = 0
@@ -109,8 +112,7 @@ class FlowMapBenchmark {
 
   @TearDown
   def shutdown() {
-    system.shutdown()
-    system.awaitTermination()
+    Await.result(system.terminate(), 5.seconds)
   }
 
   @Benchmark
@@ -131,6 +133,5 @@ class FlowMapBenchmark {
       f = f.via(flow)
     f
   }
-
 
 }

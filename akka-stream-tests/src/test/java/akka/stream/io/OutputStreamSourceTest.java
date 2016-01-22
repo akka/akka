@@ -3,26 +3,25 @@
  */
 package akka.stream.io;
 
-import akka.actor.ActorRef;
-import akka.japi.Pair;
-import akka.japi.function.Procedure;
-import akka.stream.StreamTest;
-import akka.stream.javadsl.*;
-import akka.stream.testkit.AkkaSpec;
-import akka.stream.testkit.Utils;
-import akka.testkit.JavaTestKit;
-import akka.util.ByteString;
-import com.typesafe.config.ConfigFactory;
-import org.junit.ClassRule;
-import org.junit.Test;
-import scala.concurrent.Future;
-import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
+import static org.junit.Assert.assertEquals;
 
 import java.io.OutputStream;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.ClassRule;
+import org.junit.Test;
+
+import akka.actor.ActorRef;
+import akka.japi.function.Procedure;
+import akka.stream.StreamTest;
+import akka.stream.javadsl.AkkaJUnitActorSystemResource;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+import akka.stream.javadsl.StreamConverters;
+import akka.stream.testkit.Utils;
+import akka.testkit.JavaTestKit;
+import akka.util.ByteString;
+import scala.concurrent.duration.FiniteDuration;
 
 public class OutputStreamSourceTest extends StreamTest {
     public OutputStreamSourceTest() {
@@ -39,6 +38,7 @@ public class OutputStreamSourceTest extends StreamTest {
 
         final Source<ByteString, OutputStream> source = StreamConverters.asOutputStream(timeout);
         final OutputStream s = source.to(Sink.foreach(new Procedure<ByteString>() {
+            private static final long serialVersionUID = 1L;
             public void apply(ByteString elem) {
                 probe.getRef().tell(elem, ActorRef.noSender());
             }

@@ -4,13 +4,13 @@
 
 package akka.http.javadsl.server.values
 
+import java.util.Optional
 import java.util.regex.Pattern
 import java.{ lang ⇒ jl, util ⇒ ju }
 
 import akka.http.impl.server.PathMatcherImpl
 import akka.http.javadsl.server.RequestVal
 import akka.http.scaladsl.server.{ PathMatcher0, PathMatcher1, PathMatchers ⇒ ScalaPathMatchers, PathMatcher ⇒ ScalaPathMatcher }
-import akka.japi.Option
 import akka.japi.function.Function
 
 import scala.collection.JavaConverters._
@@ -26,7 +26,7 @@ import scala.util.matching.Regex
  * "consumes" a part of the path which is recorded in [[RequestContext.unmatchedPath]].
  */
 trait PathMatcher[T] extends RequestVal[T] {
-  def optional: PathMatcher[Option[T]]
+  def optional: PathMatcher[Optional[T]]
 }
 
 /**

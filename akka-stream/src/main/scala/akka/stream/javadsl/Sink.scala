@@ -3,18 +3,17 @@
  */
 package akka.stream.javadsl
 
-import java.io.{ InputStream, OutputStream, File }
+import java.util.Optional
 
+import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Props }
 import akka.dispatch.ExecutionContexts
 import akka.japi.function
-import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout
 import akka.stream.{ javadsl, scaladsl, _ }
-import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Subscriber }
 
-import scala.concurrent.duration.FiniteDuration
+import scala.compat.java8.OptionConverters._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
@@ -31,21 +30,31 @@ object Sink {
     new Sink(scaladsl.Sink.fold[U, In](zero)(f.apply))
 
   /**
+   * A `Sink` that will invoke the given function for every received element, giving it its previous
+   * output (from the second element) and the element as input.
+   * The returned [[scala.concurrent.Future]] will be completed with value of the final
+   * function evaluation when the input stream ends, or completed with `Failure`
+   * if there is a failure signaled in the stream.
+   */
+  def reduce[In](f: function.Function2[In, In, In]): Sink[In, Future[In]] =
+    new Sink(scaladsl.Sink.reduce[In](f.apply))
+
+  /**
    * Helper to create [[Sink]] from `Subscriber`.
    */
-  def fromSubscriber[In](subs: Subscriber[In]): Sink[In, Unit] =
+  def fromSubscriber[In](subs: Subscriber[In]): Sink[In, NotUsed] =
     new Sink(scaladsl.Sink.fromSubscriber(subs))
 
   /**
    * A `Sink` that immediately cancels its upstream after materialization.
    */
-  def cancelled[T](): Sink[T, Unit] =
+  def cancelled[T](): Sink[T, NotUsed] =
     new Sink(scaladsl.Sink.cancelled)
 
   /**
    * A `Sink` that will consume the stream and discard the elements.
    */
-  def ignore[T](): Sink[T, Future[Unit]] =
+  def ignore[T](): Sink[T, Future[Done]] =
     new Sink(scaladsl.Sink.ignore)
 
   /**
@@ -59,8 +68,8 @@ object Sink {
    * If `fanout` is `false` then the materialized `Publisher` will only support a single `Subscriber` and
    * reject any additional `Subscriber`s.
    */
-  def asPublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
-    new Sink(scaladsl.Sink.asPublisher(fanout))
+  def asPublisher[T](fanout: AsPublisher): Sink[T, Publisher[T]] =
+    new Sink(scaladsl.Sink.asPublisher(fanout == AsPublisher.WITH_FANOUT))
 
   /**
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized
@@ -68,7 +77,7 @@ object Sink {
    * normal end of the stream, or completed with `Failure` if there is a failure is signaled in
    * the stream..
    */
-  def foreach[T](f: function.Procedure[T]): Sink[T, Future[Unit]] =
+  def foreach[T](f: function.Procedure[T]): Sink[T, Future[Done]] =
     new Sink(scaladsl.Sink.foreach(f.apply))
 
   /**
@@ -82,7 +91,7 @@ object Sink {
    * [[akka.stream.Supervision.Resume]] or [[akka.stream.Supervision.Restart]] the
    * element is dropped and the stream continues.
    */
-  def foreachParallel[T](parallel: Int)(f: function.Procedure[T])(ec: ExecutionContext): Sink[T, Future[Unit]] =
+  def foreachParallel[T](parallel: Int)(f: function.Procedure[T])(ec: ExecutionContext): Sink[T, Future[Done]] =
     new Sink(scaladsl.Sink.foreachParallel(parallel)(f.apply)(ec))
 
   /**
@@ -90,7 +99,7 @@ object Sink {
    * completion, apply the provided function with [[scala.util.Success]]
    * or [[scala.util.Failure]].
    */
-  def onComplete[In](callback: function.Procedure[Try[Unit]]): Sink[In, Unit] =
+  def onComplete[In](callback: function.Procedure[Try[Done]]): Sink[In, NotUsed] =
     new Sink(scaladsl.Sink.onComplete[In](x ⇒ callback.apply(x)))
 
   /**
@@ -105,14 +114,14 @@ object Sink {
 
   /**
    * A `Sink` that materializes into a `Future` of the optional first value received.
-   * If the stream completes before signaling at least a single element, the value of the Future will be an empty [[akka.japi.Option]].
+   * If the stream completes before signaling at least a single element, the value of the Future will be an empty [[java.util.Optional]].
    * If the stream signals an error errors before signaling at least a single element, the Future will be failed with the streams exception.
    *
    * See also [[head]].
    */
-  def headOption[In](): Sink[In, Future[akka.japi.Option[In]]] =
+  def headOption[In](): Sink[In, Future[Optional[In]]] =
     new Sink(scaladsl.Sink.headOption[In].mapMaterializedValue(
-      _.map(akka.japi.Option.fromScalaOption)(ExecutionContexts.sameThreadExecutionContext)))
+      _.map(_.asJava)(ExecutionContexts.sameThreadExecutionContext)))
 
   /**
    * A `Sink` that materializes into a `Future` of the last value received.
@@ -126,20 +135,22 @@ object Sink {
 
   /**
    * A `Sink` that materializes into a `Future` of the optional last value received.
-   * If the stream completes before signaling at least a single element, the value of the Future will be an empty [[akka.japi.Option]].
+   * If the stream completes before signaling at least a single element, the value of the Future will be an empty [[java.util.Optional]].
    * If the stream signals an error errors before signaling at least a single element, the Future will be failed with the streams exception.
    *
    * See also [[head]].
    */
-  def lastOption[In](): Sink[In, Future[akka.japi.Option[In]]] =
+  def lastOption[In](): Sink[In, Future[Optional[In]]] =
     new Sink(scaladsl.Sink.lastOption[In].mapMaterializedValue(
-      _.map(akka.japi.Option.fromScalaOption)(ExecutionContexts.sameThreadExecutionContext)))
+      _.map(_.asJava)(ExecutionContexts.sameThreadExecutionContext)))
 
   /**
    * A `Sink` that keeps on collecting incoming elements until upstream terminates.
    * As upstream may be unbounded, `Flow[T].take` or the stricter `Flow[T].limit` (and their variants)
    * may be used to ensure boundedness.
    * Materializes into a `Future` of `Seq[T]` containing all the collected elements.
+   * `List` is limited to `Integer.MAX_VALUE` elements, this Sink will cancel the stream
+   * after having received that many elements.
    *
    * See also [[Flow.limit]], [[Flow.limitWeighted]], [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
    */
@@ -164,7 +175,7 @@ object Sink {
    * limiting stage in front of this `Sink`.
    *
    */
-  def actorRef[In](ref: ActorRef, onCompleteMessage: Any): Sink[In, Unit] =
+  def actorRef[In](ref: ActorRef, onCompleteMessage: Any): Sink[In, NotUsed] =
     new Sink(scaladsl.Sink.actorRef[In](ref, onCompleteMessage))
 
   /**
@@ -181,7 +192,7 @@ object Sink {
    * message will be sent to the destination actor.
    */
   def actorRefWithAck[In](ref: ActorRef, onInitMessage: Any, ackMessage: Any, onCompleteMessage: Any,
-                          onFailureMessage: function.Function[Throwable, Any]): Sink[In, Unit] =
+                          onFailureMessage: function.Function[Throwable, Any]): Sink[In, NotUsed] =
     new Sink(scaladsl.Sink.actorRefWithAck[In](ref, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage.apply))
 
   /**
@@ -205,7 +216,7 @@ object Sink {
   /**
    * Combine several sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink`.
    */
-  def combine[T, U](output1: Sink[U, _], output2: Sink[U, _], rest: java.util.List[Sink[U, _]], strategy: function.Function[java.lang.Integer, Graph[UniformFanOutShape[T, U], Unit]]): Sink[T, Unit] = {
+  def combine[T, U](output1: Sink[U, _], output2: Sink[U, _], rest: java.util.List[Sink[U, _]], strategy: function.Function[java.lang.Integer, Graph[UniformFanOutShape[T, U], NotUsed]]): Sink[T, NotUsed] = {
     import scala.collection.JavaConverters._
     val seq = if (rest != null) rest.asScala.map(_.asScala) else Seq()
     new Sink(scaladsl.Sink.combine(output1.asScala, output2.asScala, seq: _*)(num ⇒ strategy.apply(num)))

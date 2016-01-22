@@ -558,7 +558,7 @@ public class JavaTestKit {
       this(clazz, max, Duration.Inf(), messages);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("all")
     public ReceiveWhile(Class<T> clazz, Duration max, Duration idle, int messages) {
       results = p.receiveWhile(max, idle, messages, new CachingPartialFunction<Object, T>() {
         public T match(Object msg) throws Exception {

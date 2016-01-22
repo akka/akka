@@ -451,9 +451,8 @@ class InterpreterSupervisionSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(Cancel))
     }
 
-    "fail when Expand `seed` throws" in new OneBoundedSetup[Int](Seq(Expand(
-      (in: Int) ⇒ if (in == 2) throw TE else in,
-      (agg: Int) ⇒ (agg, -math.abs(agg))))) {
+    "fail when Expand `seed` throws" in new OneBoundedSetup[Int](
+      new Expand((in: Int) ⇒ if (in == 2) throw TE else Iterator(in) ++ Iterator.continually(-math.abs(in)))) {
 
       lastEvents() should be(Set(RequestOne))
 
@@ -473,9 +472,8 @@ class InterpreterSupervisionSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnError(TE), Cancel))
     }
 
-    "fail when Expand `extrapolate` throws" in new OneBoundedSetup[Int](Seq(Expand(
-      (in: Int) ⇒ in,
-      (agg: Int) ⇒ if (agg == 2) throw TE else (agg, -math.abs(agg))))) {
+    "fail when Expand `extrapolate` throws" in new OneBoundedSetup[Int](
+      new Expand((in: Int) ⇒ if (in == 2) Iterator.continually(throw TE) else Iterator(in) ++ Iterator.continually(-math.abs(in)))) {
 
       lastEvents() should be(Set(RequestOne))
 

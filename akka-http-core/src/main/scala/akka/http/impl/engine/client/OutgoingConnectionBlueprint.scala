@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.client
 
+import akka.NotUsed
 import akka.stream.impl.fusing.GraphInterpreter
 import language.existentials
 import scala.annotation.tailrec
@@ -60,7 +61,7 @@ private[http] object OutgoingConnectionBlueprint {
 
     val requestRendererFactory = new HttpRequestRendererFactory(userAgentHeader, requestHeaderSizeHint, log)
 
-    val requestRendering: Flow[HttpRequest, ByteString, Unit] = Flow[HttpRequest]
+    val requestRendering: Flow[HttpRequest, ByteString, NotUsed] = Flow[HttpRequest]
       .map(RequestRenderingContext(_, hostHeader))
       .via(Flow[RequestRenderingContext].flatMapConcat(requestRendererFactory.renderToSource).named("renderer"))
 
@@ -167,7 +168,6 @@ private[http] object OutgoingConnectionBlueprint {
       // each connection uses a single (private) response parser instance for all its responses
       // which builds a cache of all header instances seen on that connection
       val parser = rootParser.createShallowCopy()
-      var methodBypassCompleted = false
       var waitingForMethod = true
 
       setHandler(methodBypassInput, new InHandler {
@@ -179,7 +179,6 @@ private[http] object OutgoingConnectionBlueprint {
         }
         override def onUpstreamFinish(): Unit =
           if (waitingForMethod) completeStage()
-          else methodBypassCompleted = true
       })
 
       setHandler(dataInput, new InHandler {
@@ -201,17 +200,16 @@ private[http] object OutgoingConnectionBlueprint {
 
       setHandler(out, eagerTerminateOutput)
 
-      val getNextMethod = () ⇒
-        if (methodBypassCompleted) completeStage()
-        else {
-          pull(methodBypassInput)
-          waitingForMethod = true
-        }
+      val getNextMethod = () ⇒ {
+        waitingForMethod = true
+        if (isClosed(methodBypassInput)) completeStage()
+        else pull(methodBypassInput)
+      }
 
       val getNextData = () ⇒ {
         waitingForMethod = false
-        if (!isClosed(dataInput)) pull(dataInput)
-        else completeStage()
+        if (isClosed(dataInput)) completeStage()
+        else pull(dataInput)
       }
 
       @tailrec def drainParser(current: ResponseOutput, b: ListBuffer[ResponseOutput] = ListBuffer.empty): Unit = {
@@ -219,13 +217,10 @@ private[http] object OutgoingConnectionBlueprint {
           if (output.nonEmpty) emit(out, output, andThen)
           else andThen()
         current match {
-          case NeedNextRequestMethod ⇒
-            e(b.result(), getNextMethod)
-          case StreamEnd ⇒
-            e(b.result(), () ⇒ completeStage())
-          case NeedMoreData ⇒
-            e(b.result(), getNextData)
-          case x ⇒ drainParser(parser.onPull(), b += x)
+          case NeedNextRequestMethod ⇒ e(b.result(), getNextMethod)
+          case StreamEnd             ⇒ e(b.result(), () ⇒ completeStage())
+          case NeedMoreData          ⇒ e(b.result(), getNextData)
+          case x                     ⇒ drainParser(parser.onPull(), b += x)
         }
       }
 

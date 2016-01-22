@@ -5,13 +5,11 @@ package docs.stream;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import akka.NotUsed;
 import akka.japi.Pair;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -22,7 +20,6 @@ import scala.concurrent.Future;
 import scala.concurrent.Promise;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 import scala.Option;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
@@ -51,13 +48,13 @@ public class FlowDocTest {
     @Test
     public void sourceIsImmutable() throws Exception {
         //#source-immutable
-        final Source<Integer, BoxedUnit> source =
+        final Source<Integer, NotUsed> source =
             Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
         source.map(x -> 0); // has no effect on source, since it's immutable
         source.runWith(Sink.fold(0, (agg, next) -> agg + next), mat); // 55
 
         // returns new Source<Integer>, with `map()` appended
-        final Source<Integer, BoxedUnit> zeroes = source.map(x -> 0);
+        final Source<Integer, NotUsed> zeroes = source.map(x -> 0);
         final Sink<Integer, Future<Integer>> fold =
             Sink.fold(0, (agg, next) -> agg + next);
         zeroes.runWith(fold, mat); // 0
@@ -73,7 +70,7 @@ public class FlowDocTest {
     @Test
     public void materializationInSteps() throws Exception {
         //#materialization-in-steps
-        final Source<Integer, BoxedUnit> source =
+        final Source<Integer, NotUsed> source =
             Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
         // note that the Future is scala.concurrent.Future
         final Sink<Integer, Future<Integer>> sink =
@@ -94,7 +91,7 @@ public class FlowDocTest {
     @Test
     public void materializationRunWith() throws Exception {
         //#materialization-runWith
-        final Source<Integer, BoxedUnit> source =
+        final Source<Integer, NotUsed> source =
             Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
         final Sink<Integer, Future<Integer>> sink =
             Sink.fold(0, (aggr, next) -> aggr + next);
@@ -198,12 +195,12 @@ public class FlowDocTest {
         .to(Sink.foreach(System.out::println));
 
       // Starting from a Source
-      final Source<Integer, BoxedUnit> source = Source.from(Arrays.asList(1, 2, 3, 4))
+      final Source<Integer, NotUsed> source = Source.from(Arrays.asList(1, 2, 3, 4))
           .map(elem -> elem * 2);
       source.to(Sink.foreach(System.out::println));
 
       // Starting from a Sink
-      final Sink<Integer, BoxedUnit> sink = Flow.of(Integer.class)
+      final Sink<Integer, NotUsed> sink = Flow.of(Integer.class)
           .map(elem -> elem * 2).to(Sink.foreach(System.out::println));
       Source.from(Arrays.asList(1, 2, 3, 4)).to(sink);
       //#flow-connecting
@@ -225,7 +222,7 @@ public class FlowDocTest {
     //#flow-mat-combine
 
     // An empty source that can be shut down explicitly from the outside
-    Source<Integer, Promise<Option<Integer>>> source = Source.<Integer>maybe();
+    Source<Integer, Promise<Optional<Integer>>> source = Source.<Integer>maybe();
 
     // A flow that internally throttles elements to 1/second, and returns a Cancellable
     // which can be used to shut down the stream
@@ -236,7 +233,7 @@ public class FlowDocTest {
 
 
     // By default, the materialized value of the leftmost stage is preserved
-    RunnableGraph<Promise<Option<Integer>>> r1 = source.via(flow).to(sink);
+    RunnableGraph<Promise<Optional<Integer>>> r1 = source.via(flow).to(sink);
 
     // Simple selection of materialized values by using Keep.right
     RunnableGraph<Cancellable> r2 = source.viaMat(flow, Keep.right()).to(sink);
@@ -245,17 +242,17 @@ public class FlowDocTest {
     // Using runWith will always give the materialized values of the stages added
     // by runWith() itself
     Future<Integer> r4 = source.via(flow).runWith(sink, mat);
-    Promise<Option<Integer>> r5 = flow.to(sink).runWith(source, mat);
-    Pair<Promise<Option<Integer>>, Future<Integer>> r6 = flow.runWith(source, sink, mat);
+    Promise<Optional<Integer>> r5 = flow.to(sink).runWith(source, mat);
+    Pair<Promise<Optional<Integer>>, Future<Integer>> r6 = flow.runWith(source, sink, mat);
 
     // Using more complext combinations
-    RunnableGraph<Pair<Promise<Option<Integer>>, Cancellable>> r7 =
+    RunnableGraph<Pair<Promise<Optional<Integer>>, Cancellable>> r7 =
     source.viaMat(flow, Keep.both()).to(sink);
 
-    RunnableGraph<Pair<Promise<Option<Integer>>, Future<Integer>>> r8 =
+    RunnableGraph<Pair<Promise<Optional<Integer>>, Future<Integer>>> r8 =
     source.via(flow).toMat(sink, Keep.both());
 
-    RunnableGraph<Pair<Pair<Promise<Option<Integer>>, Cancellable>, Future<Integer>>> r9 =
+    RunnableGraph<Pair<Pair<Promise<Optional<Integer>>, Cancellable>, Future<Integer>>> r9 =
     source.viaMat(flow, Keep.both()).toMat(sink, Keep.both());
 
     RunnableGraph<Pair<Cancellable, Future<Integer>>> r10 =
@@ -267,7 +264,7 @@ public class FlowDocTest {
 
     RunnableGraph<Cancellable> r11 =
     r9.mapMaterializedValue( (nestedTuple) -> {
-      Promise<Option<Integer>> p = nestedTuple.first().first();
+      Promise<Optional<Integer>> p = nestedTuple.first().first();
       Cancellable c = nestedTuple.first().second();
       Future<Integer> f = nestedTuple.second();
 
@@ -279,9 +276,9 @@ public class FlowDocTest {
 
   public void fusingAndAsync() {
     //#explicit-fusing
-    Flow<Integer, Integer, BoxedUnit> flow =
+    Flow<Integer, Integer, NotUsed> flow =
         Flow.of(Integer.class).map(x -> x * 2).filter(x -> x > 500);
-    Graph<FlowShape<Integer, Integer>, BoxedUnit> fused =
+    Graph<FlowShape<Integer, Integer>, NotUsed> fused =
         akka.stream.Fusing.aggressive(flow);
     
     Source.fromIterator(() -> Stream.iterate(0, x -> x + 1).iterator())

@@ -3,6 +3,7 @@
  */
 package docs.stream
 
+import akka.NotUsed
 import akka.stream._
 import akka.stream.scaladsl.Tcp.OutgoingConnection
 import akka.stream.scaladsl._
@@ -181,7 +182,7 @@ class CompositionDocSpec extends AkkaSpec {
     val source: Source[Int, Promise[Option[Int]]] = Source.maybe[Int]
 
     // Materializes to Unit                                                   (black)
-    val flow1: Flow[Int, Int, Unit] = Flow[Int].take(100)
+    val flow1: Flow[Int, Int, NotUsed] = Flow[Int].take(100)
 
     // Materializes to Promise[Int]                                          (red)
     val nestedSource: Source[Int, Promise[Option[Int]]] =
@@ -190,7 +191,7 @@ class CompositionDocSpec extends AkkaSpec {
 
     //#mat-combine-2
     // Materializes to Unit                                                   (orange)
-    val flow2: Flow[Int, ByteString, Unit] = Flow[Int].map { i => ByteString(i.toString) }
+    val flow2: Flow[Int, ByteString, NotUsed] = Flow[Int].map { i => ByteString(i.toString) }
 
     // Materializes to Future[OutgoingConnection]                             (yellow)
     val flow3: Flow[ByteString, ByteString, Future[OutgoingConnection]] =

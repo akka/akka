@@ -11,7 +11,6 @@ import akka.http.javadsl.server.RequestVal;
 import akka.http.javadsl.server.RouteResult;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
-import akka.japi.Option;
 import org.junit.Test;
 
 import java.util.*;
@@ -31,7 +30,7 @@ public class ParametersTest extends JUnitRouteTest {
     static Parameter<Long> hexLongParam = Parameters.hexLongValue("hexLongParam");
 
     static RequestVal<String> nameWithDefault = Parameters.stringValue("nameWithDefault").withDefault("John Doe");
-    static RequestVal<Option<Integer>> optionalIntParam = Parameters.intValue("optionalIntParam").optional();
+    static RequestVal<Optional<Integer>> optionalIntParam = Parameters.intValue("optionalIntParam").optional();
 
     static RequestVal<Map<String, String>> paramMap = Parameters.asMap();
     static RequestVal<Map<String, Collection<String>>> paramMultiMap = Parameters.asMultiMap();

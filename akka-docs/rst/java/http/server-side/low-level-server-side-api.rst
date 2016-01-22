@@ -160,7 +160,7 @@ to "run" the HTTP layer (and, potentially, higher-layers) against data that do n
 some other source. Potential scenarios where this might be useful include tests, debugging or low-level event-sourcing
 (e.g by replaying network traffic).
 
-On the server-side the stand-alone HTTP layer forms a ``BidiFlow<HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, BoxedUnit>``,
+On the server-side the stand-alone HTTP layer forms a ``BidiFlow<HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed>``,
 that is a stage that "upgrades" a potentially encrypted raw connection to the HTTP level.
 
 You create an instance of the layer by calling one of the two overloads of the ``Http.get(system).serverLayer`` method,

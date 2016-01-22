@@ -45,7 +45,7 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
 
   class Subject extends Actor {
     def receive = {
-      case "shutdown" ⇒ context.system.shutdown()
+      case "shutdown" ⇒ context.system.terminate()
       case "identify" ⇒ sender() ! (AddressUidExtension(context.system).addressUid, self)
     }
   }
@@ -121,7 +121,7 @@ abstract class RemoteRestartedQuarantinedSpec
 
         enterBarrier("still-quarantined")
 
-        system.awaitTermination(10.seconds)
+        Await.result(system.whenTerminated, 10.seconds)
 
         val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
                     akka.remote.retry-gate-closed-for = 0.5 s

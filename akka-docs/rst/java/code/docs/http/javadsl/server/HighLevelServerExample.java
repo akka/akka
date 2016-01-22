@@ -22,7 +22,7 @@ public class HighLevelServerExample extends HttpApp {
         new HighLevelServerExample().bindRoute("localhost", 8080, system);
         System.out.println("Type RETURN to exit");
         System.in.read();
-        system.shutdown();
+        system.terminate();
     }
 
     // A RequestVal is a type-safe representation of some aspect of the request.

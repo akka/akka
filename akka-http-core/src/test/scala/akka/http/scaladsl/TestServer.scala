@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl
 
+import akka.NotUsed
+
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import akka.actor.ActorSystem
@@ -46,7 +48,7 @@ object TestServer extends App {
     println("Press RETURN to stop...")
     Console.readLine()
   } finally {
-    system.shutdown()
+    system.terminate()
   }
 
   ////////////// helpers //////////////
@@ -64,10 +66,10 @@ object TestServer extends App {
          |  </body>
          |</html>""".stripMargin))
 
-  def echoWebsocketService: Flow[Message, Message, Unit] =
+  def echoWebsocketService: Flow[Message, Message, NotUsed] =
     Flow[Message] // just let message flow directly to the output
 
-  def greeterWebsocketService: Flow[Message, Message, Unit] =
+  def greeterWebsocketService: Flow[Message, Message, NotUsed] =
     Flow[Message]
       .collect {
         case TextMessage.Strict(name) ⇒ TextMessage(s"Hello '$name'")

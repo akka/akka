@@ -12,6 +12,7 @@ import scala.util.Failure
 import scala.util.control.NoStackTrace
 import akka.stream._
 import akka.stream.testkit._
+import akka.NotUsed
 
 class SourceSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
 
@@ -271,7 +272,7 @@ class SourceSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
   "A Source" must {
     "suitably override attribute handling methods" in {
       import Attributes._
-      val s: Source[Int, Unit] = Source.single(42).withAttributes(asyncBoundary).addAttributes(none).named("")
+      val s: Source[Int, NotUsed] = Source.single(42).withAttributes(asyncBoundary).addAttributes(none).named("")
     }
   }
 

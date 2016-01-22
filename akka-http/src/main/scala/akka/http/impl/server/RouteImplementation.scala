@@ -47,8 +47,8 @@ private[http] object ExtractionMap {
       def addAll(values: Map[RequestVal[_], Any]): ExtractionMap =
         ExtractionMap(map ++ values)
 
-      // CustomHeader methods
-      override def suppressRendering: Boolean = true
+      def renderInRequests = false
+      def renderInResponses = false
       def name(): String = "ExtractedValues"
       def value(): String = "<empty>"
     }

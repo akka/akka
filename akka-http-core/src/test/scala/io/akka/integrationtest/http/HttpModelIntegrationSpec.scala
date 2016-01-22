@@ -40,7 +40,7 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 
   implicit val materializer = ActorMaterializer()
 

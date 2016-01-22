@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl
 
+import akka.NotUsed
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ ActorAttributes, ActorMaterializer, ActorMaterializerSettings, Supervision }
 import akka.stream.testkit.AkkaSpec
@@ -22,7 +23,7 @@ class FlowScanSpec extends AkkaSpec {
 
   "A Scan" must {
 
-    def scan(s: Source[Int, Unit], duration: Duration = 5.seconds): immutable.Seq[Int] =
+    def scan(s: Source[Int, NotUsed], duration: Duration = 5.seconds): immutable.Seq[Int] =
       Await.result(s.scan(0)(_ + _).runFold(immutable.Seq.empty[Int])(_ :+ _), duration)
 
     "Scan" in assertAllStagesStopped {

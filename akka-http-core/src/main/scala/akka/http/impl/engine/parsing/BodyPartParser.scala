@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.parsing
 
+import akka.NotUsed
 import akka.http.ParserSettings
 import akka.stream.impl.fusing.GraphInterpreter
 import scala.annotation.tailrec
@@ -146,7 +147,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
         else if (doubleDash(input, ix)) terminate()
         else fail("Illegal multipart boundary in message content")
 
-      case HttpHeaderParser.EmptyHeader ⇒ parseEntity(headers.toList, contentType)(input, lineEnd)
+      case EmptyHeader ⇒ parseEntity(headers.toList, contentType)(input, lineEnd)
 
       case h: `Content-Type` ⇒
         if (cth.isEmpty) parseHeaderLines(input, lineEnd, headers, headerCount + 1, Some(h))
@@ -261,6 +262,8 @@ private[http] object BodyPartParser {
   val boundaryChar = CharPredicate.Digit ++ CharPredicate.Alpha ++ "'()+_,-./:=? "
 
   private object BoundaryHeader extends HttpHeader {
+    def renderInRequests = false
+    def renderInResponses = false
     def name = ""
     def lowercaseName = ""
     def value = ""
@@ -270,7 +273,7 @@ private[http] object BodyPartParser {
 
   sealed trait Output
   sealed trait PartStart extends Output
-  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Source[Output, Unit] ⇒ BodyPartEntity) extends PartStart
+  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Source[Output, NotUsed] ⇒ BodyPartEntity) extends PartStart
   final case class EntityPart(data: ByteString) extends Output
   final case class ParseError(info: ErrorInfo) extends PartStart
 

@@ -4,6 +4,7 @@
 
 package docs.stream;
 
+import akka.NotUsed;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
@@ -25,7 +26,6 @@ import org.reactivestreams.Processor;
 //#imports
 import org.reactivestreams.Subscription;
 
-import scala.runtime.BoxedUnit;
 
 import java.lang.Exception;
 
@@ -55,7 +55,7 @@ public class ReactiveStreamsDocTest {
     static class Data {
 
       static //#authors
-      final Flow<Tweet, Author, BoxedUnit> authors = Flow.of(Tweet.class)
+      final Flow<Tweet, Author, NotUsed> authors = Flow.of(Tweet.class)
         .filter(t -> t.hashtags().contains(AKKA))
         .map(t -> t.author);
 
@@ -83,7 +83,7 @@ public class ReactiveStreamsDocTest {
   final Fixture.RS rs = new Fixture.RS() {
     @Override
     public Publisher<Tweet> tweets() {
-      return TwitterStreamQuickstartDocTest.Model.tweets.runWith(Sink.asPublisher(false), mat);
+      return TwitterStreamQuickstartDocTest.Model.tweets.runWith(Sink.asPublisher(AsPublisher.WITHOUT_FANOUT), mat);
     }
 
     /**
@@ -177,7 +177,9 @@ public class ReactiveStreamsDocTest {
       {
         //#source-publisher
         final Publisher<Author> authorPublisher =
-          Source.fromPublisher(rs.tweets()).via(authors).runWith(Sink.asPublisher(false), mat);
+          Source.fromPublisher(rs.tweets())
+            .via(authors)
+            .runWith(Sink.asPublisher(AsPublisher.WITHOUT_FANOUT), mat);
 
         authorPublisher.subscribe(rs.storage());
         //#source-publisher
@@ -197,7 +199,7 @@ public class ReactiveStreamsDocTest {
         final Publisher<Author> authorPublisher =
           Source.fromPublisher(rs.tweets())
             .via(authors)
-            .runWith(Sink.asPublisher(true), mat);
+            .runWith(Sink.asPublisher(AsPublisher.WITH_FANOUT), mat);
 
         authorPublisher.subscribe(rs.storage());
         authorPublisher.subscribe(rs.alert());
@@ -243,7 +245,7 @@ public class ReactiveStreamsDocTest {
                   }
                 };
 
-        final Flow<Integer, Integer, BoxedUnit> flow = Flow.fromProcessor(factory);
+        final Flow<Integer, Integer, NotUsed> flow = Flow.fromProcessor(factory);
 
         //#use-processor
       }

@@ -2,6 +2,7 @@ package docs.stream.cookbook
 
 import java.security.MessageDigest
 
+import akka.NotUsed
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
 
@@ -41,7 +42,7 @@ class RecipeDigest extends RecipeSpec {
         }
       }
 
-      val digest: Source[ByteString, Unit] = data.transform(() => digestCalculator("SHA-256"))
+      val digest: Source[ByteString, NotUsed] = data.transform(() => digestCalculator("SHA-256"))
       //#calculating-digest
 
       Await.result(digest.runWith(Sink.head), 3.seconds) should be(

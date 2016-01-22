@@ -4,6 +4,9 @@
 package akka.stream.javadsl
 
 import java.lang.{ Iterable ⇒ JIterable }
+import java.util.Optional
+import akka.NotUsed
+
 import scala.collection.immutable
 import scala.concurrent.duration._
 import java.net.InetSocketAddress
@@ -18,6 +21,8 @@ import akka.stream.scaladsl
 import akka.util.ByteString
 import akka.japi.Util.immutableSeq
 import akka.io.Inet.SocketOption
+
+import scala.compat.java8.OptionConverters._
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
@@ -66,7 +71,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
      * A flow representing the client on the other side of the connection.
      * This flow can be materialized only once.
      */
-    def flow: Flow[ByteString, ByteString, Unit] = new Flow(delegate.flow)
+    def flow: Flow[ByteString, ByteString, NotUsed] = new Flow(delegate.flow)
   }
 
   /**
@@ -158,12 +163,12 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *                  independently whether the server is still attempting to write.
    */
   def outgoingConnection(remoteAddress: InetSocketAddress,
-                         localAddress: Option[InetSocketAddress],
+                         localAddress: Optional[InetSocketAddress],
                          options: JIterable[SocketOption],
                          halfClose: Boolean,
                          connectTimeout: Duration,
                          idleTimeout: Duration): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
-    Flow.fromGraph(delegate.outgoingConnection(remoteAddress, localAddress, immutableSeq(options), halfClose, connectTimeout, idleTimeout)
+    Flow.fromGraph(delegate.outgoingConnection(remoteAddress, localAddress.asScala, immutableSeq(options), halfClose, connectTimeout, idleTimeout)
       .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec)))
 
   /**

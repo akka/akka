@@ -3,6 +3,7 @@
  */
 package docs.stream.javadsl.cookbook;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
@@ -16,7 +17,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +40,7 @@ public class RecipeParseLines extends RecipeTest {
 
   @Test
   public void parseLines() throws Exception {
-    final Source<ByteString, BoxedUnit> rawData = Source.from(Arrays.asList(
+    final Source<ByteString, NotUsed> rawData = Source.from(Arrays.asList(
       ByteString.fromString("Hello World"),
       ByteString.fromString("\r"),
       ByteString.fromString("!\r"),
@@ -48,7 +48,7 @@ public class RecipeParseLines extends RecipeTest {
       ByteString.fromString("\r\n\r\n")));
 
     //#parse-lines
-    final Source<String, BoxedUnit> lines = rawData
+    final Source<String, NotUsed> lines = rawData
       .via(Framing.delimiter(ByteString.fromString("\r\n"), 100, true))
       .map(b -> b.utf8String());
     //#parse-lines

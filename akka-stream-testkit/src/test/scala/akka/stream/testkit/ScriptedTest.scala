@@ -3,6 +3,7 @@
  */
 package akka.stream.testkit
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.testkit.TestPublisher._
 import akka.stream.testkit.TestSubscriber._
@@ -87,7 +88,7 @@ trait ScriptedTest extends Matchers {
   }
 
   class ScriptRunner[In, Out, M](
-    op: Flow[In, In, Unit] ⇒ Flow[In, Out, M],
+    op: Flow[In, In, NotUsed] ⇒ Flow[In, Out, M],
     settings: ActorMaterializerSettings,
     script: Script[In, Out],
     maximumOverrun: Int,
@@ -197,7 +198,7 @@ trait ScriptedTest extends Matchers {
   }
 
   def runScript[In, Out, M](script: Script[In, Out], settings: ActorMaterializerSettings, maximumOverrun: Int = 3, maximumRequest: Int = 3, maximumBuffer: Int = 3)(
-    op: Flow[In, In, Unit] ⇒ Flow[In, Out, M])(implicit system: ActorSystem): Unit = {
+    op: Flow[In, In, NotUsed] ⇒ Flow[In, Out, M])(implicit system: ActorSystem): Unit = {
     new ScriptRunner(op, settings, script, maximumOverrun, maximumRequest, maximumBuffer).run()
   }
 

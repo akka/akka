@@ -3,6 +3,7 @@
  */
 package docs.stream.javadsl.cookbook;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
@@ -19,7 +20,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
-import scala.runtime.BoxedUnit;
 
 import java.util.concurrent.TimeUnit;
 
@@ -45,11 +45,11 @@ public class RecipeSimpleDrop extends RecipeTest {
       {
     	@SuppressWarnings("unused")
         //#simple-drop
-        final Flow<Message, Message, BoxedUnit> droppyStream =
+        final Flow<Message, Message, NotUsed> droppyStream =
           Flow.of(Message.class).conflate(i -> i, (lastMessage, newMessage) -> newMessage);
         //#simple-drop
     	final TestLatch latch = new TestLatch(2, system);
-        final Flow<Message, Message, BoxedUnit> realDroppyStream =
+        final Flow<Message, Message, NotUsed> realDroppyStream =
                 Flow.of(Message.class).conflate(i -> i, (lastMessage, newMessage) -> { latch.countDown(); return newMessage; });
 
         final Pair<TestPublisher.Probe<Message>, TestSubscriber.Probe<Message>> pubSub = TestSource

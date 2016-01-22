@@ -5,9 +5,12 @@
 package akka.stream
 
 import java.util.concurrent.TimeUnit
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import org.openjdk.jmh.annotations._
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object MaterializationBenchmark {
 
@@ -38,7 +41,7 @@ object MaterializationBenchmark {
     })
 
   val graphWithNestedImportsBuilder = (numOfNestedGraphs: Int) => {
-    var flow: Graph[FlowShape[Unit, Unit], Unit] = Flow[Unit].map(identity)
+    var flow: Graph[FlowShape[Unit, Unit], NotUsed] = Flow[Unit].map(identity)
     for (_ <- 1 to numOfNestedGraphs) {
       flow = GraphDSL.create(flow) { b ⇒
         flow ⇒
@@ -50,22 +53,23 @@ object MaterializationBenchmark {
       flow ⇒
         import GraphDSL.Implicits._
         Source.single(()) ~> flow ~> Sink.ignore
-      ClosedShape
+        ClosedShape
     })
   }
 
   val graphWithImportedFlowBuilder = (numOfFlows: Int) =>
-    RunnableGraph.fromGraph(GraphDSL.create(Source.single(())) { implicit b ⇒ source ⇒
-      import GraphDSL.Implicits._
-      val flow = Flow[Unit].map(identity)
-      var out: Outlet[Unit] = source.out
-      for (i <- 0 until numOfFlows) {
-        val flowShape = b.add(flow)
-        out ~> flowShape
-        out = flowShape.outlet
-      }
-      out ~> Sink.ignore
-      ClosedShape
+    RunnableGraph.fromGraph(GraphDSL.create(Source.single(())) { implicit b ⇒
+      source ⇒
+        import GraphDSL.Implicits._
+        val flow = Flow[Unit].map(identity)
+        var out: Outlet[Unit] = source.out
+        for (i <- 0 until numOfFlows) {
+          val flowShape = b.add(flow)
+          out ~> flowShape
+          out = flowShape.outlet
+        }
+        out ~> Sink.ignore
+        ClosedShape
     })
 }
 
@@ -78,10 +82,10 @@ class MaterializationBenchmark {
   implicit val system = ActorSystem("MaterializationBenchmark")
   implicit val materializer = ActorMaterializer()
 
-  var flowWithMap: RunnableGraph[Unit] = _
-  var graphWithJunctions: RunnableGraph[Unit] = _
-  var graphWithNestedImports: RunnableGraph[Unit] = _
-  var graphWithImportedFlow: RunnableGraph[Unit] = _
+  var flowWithMap: RunnableGraph[NotUsed] = _
+  var graphWithJunctions: RunnableGraph[NotUsed] = _
+  var graphWithNestedImports: RunnableGraph[NotUsed] = _
+  var graphWithImportedFlow: RunnableGraph[NotUsed] = _
 
   @Param(Array("1", "10", "100", "1000"))
   val complexity = 0
@@ -96,8 +100,7 @@ class MaterializationBenchmark {
 
   @TearDown
   def shutdown() {
-    system.shutdown()
-    system.awaitTermination()
+    Await.result(system.terminate(), 5.seconds)
   }
 
   @Benchmark

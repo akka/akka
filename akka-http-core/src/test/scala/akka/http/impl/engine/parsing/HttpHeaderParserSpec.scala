@@ -108,7 +108,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
     }
 
     "retrieve the EmptyHeader" in new TestSetup() {
-      parseAndCache("\r\n")() shouldEqual HttpHeaderParser.EmptyHeader
+      parseAndCache("\r\n")() shouldEqual EmptyHeader
     }
 
     "retrieve a cached header with an exact header name match" in new TestSetup() {
@@ -228,7 +228,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
     }
   }
 
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 
   def check(pair: (String, String)) = {
     val (expected, actual) = pair

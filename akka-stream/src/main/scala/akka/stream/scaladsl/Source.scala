@@ -4,6 +4,7 @@
 package akka.stream.scaladsl
 
 import java.io.{ OutputStream, InputStream, File }
+import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.{ DefaultAttributes, StageModule }
@@ -101,13 +102,25 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
     runWith(Sink.fold(zero)(f))
 
   /**
+   * Shortcut for running this `Source` with a reduce function.
+   * The given function is invoked for every received element, giving it its previous
+   * output (from the second element) and the element as input.
+   * The returned [[scala.concurrent.Future]] will be completed with value of the final
+   * function evaluation when the input stream ends, or completed with `Failure`
+   * if there is a failure signaled in the stream.
+   */
+  def runReduce[U >: Out](f: (U, U) ⇒ U)(implicit materializer: Materializer): Future[U] =
+    runWith(Sink.reduce(f))
+
+  /**
    * Shortcut for running this `Source` with a foreach procedure. The given procedure is invoked
    * for each received element.
    * The returned [[scala.concurrent.Future]] will be completed with `Success` when reaching the
    * normal end of the stream, or completed with `Failure` if there is a failure signaled in
    * the stream.
    */
-  def runForeach(f: Out ⇒ Unit)(implicit materializer: Materializer): Future[Unit] = runWith(Sink.foreach(f))
+  // FIXME: Out => Unit should stay, right??
+  def runForeach(f: Out ⇒ Unit)(implicit materializer: Materializer): Future[Done] = runWith(Sink.foreach(f))
 
   /**
    * Change the attributes of this [[Source]] to the given ones and seal the list
@@ -138,7 +151,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
   /**
    * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
    */
-  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], Unit]): Source[U, Unit] =
+  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
     Source.fromGraph(GraphDSL.create() { implicit b ⇒
       import GraphDSL.Implicits._
       val c = b.add(strategy(rest.size + 2))
@@ -167,7 +180,7 @@ object Source {
    * that mediate the flow of elements downstream and the propagation of
    * back-pressure upstream.
    */
-  def fromPublisher[T](publisher: Publisher[T]): Source[T, Unit] =
+  def fromPublisher[T](publisher: Publisher[T]): Source[T, NotUsed] =
     new Source(new PublisherSource(publisher, DefaultAttributes.publisherSource, shape("PublisherSource")))
 
   /**
@@ -180,7 +193,7 @@ object Source {
    * Elements are pulled out of the iterator in accordance with the demand coming
    * from the downstream transformation steps.
    */
-  def fromIterator[T](f: () ⇒ Iterator[T]): Source[T, Unit] =
+  def fromIterator[T](f: () ⇒ Iterator[T]): Source[T, NotUsed] =
     apply(new immutable.Iterable[T] {
       override def iterator: Iterator[T] = f()
       override def toString: String = "() => Iterator"
@@ -205,7 +218,7 @@ object Source {
    * stream will see an individual flow of elements (always starting from the
    * beginning) regardless of when they subscribed.
    */
-  def apply[T](iterable: immutable.Iterable[T]): Source[T, Unit] =
+  def apply[T](iterable: immutable.Iterable[T]): Source[T, NotUsed] =
     single(iterable).mapConcat(ConstantFun.scalaIdentityFunction).withAttributes(DefaultAttributes.iterableSource)
 
   /**
@@ -214,7 +227,7 @@ object Source {
    * may happen before or after materializing the `Flow`.
    * The stream terminates with a failure if the `Future` is completed with a failure.
    */
-  def fromFuture[T](future: Future[T]): Source[T, Unit] =
+  def fromFuture[T](future: Future[T]): Source[T, NotUsed] =
     fromGraph(new FutureSource(future))
 
   /**
@@ -225,19 +238,19 @@ object Source {
    * receive new tick elements as soon as it has requested more elements.
    */
   def tick[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T): Source[T, Cancellable] =
-    fromGraph(new TickSource[T](initialDelay, interval, tick).withAttributes(DefaultAttributes.tickSource))
+    fromGraph(new TickSource[T](initialDelay, interval, tick))
 
   /**
    * Create a `Source` with one element.
    * Every connected `Sink` of this stream will see an individual stream consisting of one element.
    */
-  def single[T](element: T): Source[T, Unit] =
-    fromGraph(new GraphStages.SingleSource(element).withAttributes(DefaultAttributes.singleSource))
+  def single[T](element: T): Source[T, NotUsed] =
+    fromGraph(new GraphStages.SingleSource(element))
 
   /**
    * Create a `Source` that will continually emit the given element.
    */
-  def repeat[T](element: T): Source[T, Unit] = {
+  def repeat[T](element: T): Source[T, NotUsed] = {
     val next = Some((element, element))
     unfold(element)(_ ⇒ next).withAttributes(DefaultAttributes.repeat)
   }
@@ -255,7 +268,7 @@ object Source {
    *   }
    * }}}
    */
-  def unfold[S, E](s: S)(f: S ⇒ Option[(S, E)]): Source[E, Unit] =
+  def unfold[S, E](s: S)(f: S ⇒ Option[(S, E)]): Source[E, NotUsed] =
     Source.fromGraph(new Unfold(s, f))
 
   /**
@@ -273,14 +286,14 @@ object Source {
    *   }
    * }}}
    */
-  def unfoldAsync[S, E](s: S)(f: S ⇒ Future[Option[(S, E)]]): Source[E, Unit] =
+  def unfoldAsync[S, E](s: S)(f: S ⇒ Future[Option[(S, E)]]): Source[E, NotUsed] =
     Source.fromGraph(new UnfoldAsync(s, f))
 
   /**
    * A `Source` with no elements, i.e. an empty stream that is completed immediately for every connected `Sink`.
    */
-  def empty[T]: Source[T, Unit] = _empty
-  private[this] val _empty: Source[Nothing, Unit] =
+  def empty[T]: Source[T, NotUsed] = _empty
+  private[this] val _empty: Source[Nothing, NotUsed] =
     new Source(
       new PublisherSource[Nothing](
         EmptyPublisher,
@@ -304,7 +317,7 @@ object Source {
   /**
    * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
    */
-  def failed[T](cause: Throwable): Source[T, Unit] =
+  def failed[T](cause: Throwable): Source[T, NotUsed] =
     new Source(
       new PublisherSource(
         ErrorPublisher(cause, "FailedSource")[T],
@@ -359,14 +372,14 @@ object Source {
    */
   def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] = {
     require(bufferSize >= 0, "bufferSize must be greater than or equal to 0")
-    require(overflowStrategy != OverflowStrategy.Backpressure, "Backpressure overflowStrategy not supported")
+    require(overflowStrategy != OverflowStrategies.Backpressure, "Backpressure overflowStrategy not supported")
     new Source(new ActorRefSource(bufferSize, overflowStrategy, DefaultAttributes.actorRefSource, shape("ActorRefSource")))
   }
 
   /**
    * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
    */
-  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], Unit]): Source[U, Unit] =
+  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
     Source.fromGraph(GraphDSL.create() { implicit b ⇒
       import GraphDSL.Implicits._
       val c = b.add(strategy(rest.size + 2))
@@ -385,29 +398,33 @@ object Source {
   /**
    * Creates a `Source` that is materialized as an [[akka.stream.SourceQueue]].
    * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
-   * otherwise they will be buffered until request for demand is received.
+   * otherwise they will be buffered until request for demand is received. Elements in the buffer will be discarded
+   * if downstream is terminated.
    *
    * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements if
    * there is no space available in the buffer.
    *
    * Acknowledgement mechanism is available.
-   * [[akka.stream.SourceQueue.offer]] returns ``Future[Boolean]`` which completes with true
-   * if element was added to buffer or sent downstream. It completes
-   * with false if element was dropped.
+   * [[akka.stream.SourceQueue.offer]] returns ``Future[StreamCallbackStatus[Boolean]]`` which completes with `Success(true)`
+   * if element was added to buffer or sent downstream. It completes with `Success(false)` if element was dropped. Can also complete
+   * with [[akka.stream.StreamCallbackStatus.Failure]] - when stream failed or [[akka.stream.StreamCallbackStatus.StreamCompleted]]
+   * when downstream is completed.
    *
-   * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete `offer():Future` until buffer is full.
+   * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete last `offer():Future`
+   * call when buffer is full.
    *
-   * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped
-   * if there is no demand from downstream. When `bufferSize` is 0 the `overflowStrategy` does
-   * not matter.
+   * You can watch accessibility of stream with [[akka.stream.SourceQueue.watchCompletion]].
+   * It returns future that completes with success when stream is completed or fail when stream is failed.
    *
-   * @param bufferSize The size of the buffer in element count
+   * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait for downstream demand.
+   * When `bufferSize` is 0 the `overflowStrategy` does not matter.
+   *
+   * SourceQueue that current source is materialized to is for single thread usage only.
+   *
+   * @param bufferSize size of buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
-   * @param timeout Timeout for ``SourceQueue.offer(T):Future[Boolean]``
    */
-  def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy, timeout: FiniteDuration = 5.seconds): Source[T, SourceQueue[T]] = {
-    require(bufferSize >= 0, "bufferSize must be greater than or equal to 0")
-    new Source(new AcknowledgeSource(bufferSize, overflowStrategy, DefaultAttributes.acknowledgeSource, shape("AcknowledgeSource")))
-  }
+  def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, SourceQueue[T]] =
+    Source.fromGraph(new QueueSource(bufferSize, overflowStrategy).withAttributes(DefaultAttributes.queueSource))
 
 }

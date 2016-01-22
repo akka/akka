@@ -7,6 +7,7 @@ import java.io.{ InputStream, OutputStream }
 
 import akka.japi.function
 import akka.stream.{ scaladsl, javadsl, ActorAttributes }
+import akka.stream.io.IOResult
 import akka.util.ByteString
 
 import scala.concurrent.Future
@@ -19,15 +20,16 @@ object StreamConverters {
   /**
    * Sink which writes incoming [[ByteString]]s to an [[OutputStream]] created by the given function.
    *
-   * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
+   * Materializes a [[Future]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
+   * and a possible exception if IO operation was not completed successfully.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
    * @param f A Creator which creates an OutputStream to write to
    */
-  def fromOutputStream(f: function.Creator[OutputStream]): javadsl.Sink[ByteString, Future[java.lang.Long]] =
-    new Sink(scaladsl.StreamConverters.fromOutputStream(() ⇒ f.create())).asInstanceOf[javadsl.Sink[ByteString, Future[java.lang.Long]]]
+  def fromOutputStream(f: function.Creator[OutputStream]): javadsl.Sink[ByteString, Future[IOResult]] =
+    new Sink(scaladsl.StreamConverters.fromOutputStream(() ⇒ f.create())).asInstanceOf[javadsl.Sink[ByteString, Future[IOResult]]]
 
   /**
    * Creates a Sink which when materialized will return an [[java.io.InputStream]] which it is possible
@@ -67,8 +69,8 @@ object StreamConverters {
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
    */
-  def fromInputStream(in: function.Creator[InputStream], chunkSize: Int): javadsl.Source[ByteString, Future[java.lang.Long]] =
-    new Source(scaladsl.StreamConverters.fromInputStream(() ⇒ in.create(), chunkSize)).asInstanceOf[Source[ByteString, Future[java.lang.Long]]]
+  def fromInputStream(in: function.Creator[InputStream], chunkSize: Int): javadsl.Source[ByteString, Future[IOResult]] =
+    new Source(scaladsl.StreamConverters.fromInputStream(() ⇒ in.create(), chunkSize)).asInstanceOf[Source[ByteString, Future[IOResult]]]
 
   /**
    * Creates a Source from an [[java.io.InputStream]] created by the given function.
@@ -78,9 +80,10 @@ object StreamConverters {
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
-   * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
+   * It materializes a [[Future]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
+   * and a possible exception if IO operation was not completed successfully.
    */
-  def fromInputStream(in: function.Creator[InputStream]): javadsl.Source[ByteString, Future[java.lang.Long]] = fromInputStream(in, 8192)
+  def fromInputStream(in: function.Creator[InputStream]): javadsl.Source[ByteString, Future[IOResult]] = fromInputStream(in, 8192)
 
   /**
    * Creates a Source which when materialized will return an [[java.io.OutputStream]] which it is possible

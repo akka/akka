@@ -9,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 
+import akka.NotUsed;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
@@ -62,7 +63,7 @@ public class WebsocketCoreExample {
             System.out.println("Press ENTER to stop.");
             new BufferedReader(new InputStreamReader(System.in)).readLine();
         } finally {
-            system.shutdown();
+            system.terminate();
         }
     }
 
@@ -71,7 +72,7 @@ public class WebsocketCoreExample {
      * A handler that treats incoming messages as a name,
      * and responds with a greeting to that name
      */
-    public static Flow<Message, Message, BoxedUnit> greeter() {
+    public static Flow<Message, Message, NotUsed> greeter() {
         return
             Flow.<Message>create()
                 .collect(new JavaPartialFunction<Message, Message>() {

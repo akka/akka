@@ -6,11 +6,12 @@ package akka.http.javadsl.model;
 
 import akka.http.impl.util.Util;
 import akka.http.scaladsl.model.HttpEntity$;
-import akka.japi.Option;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import scala.concurrent.Future;
+
+import java.util.OptionalLong;
 
 /**
  * Represents the entity of an Http message. An entity consists of the content-type of the data
@@ -77,7 +78,7 @@ public interface HttpEntity {
     /**
      * Returns Some(contentLength) if the length is defined and none otherwise.
      */
-    Option<Long> getContentLengthOption();
+    OptionalLong getContentLengthOption();
 
     /**
      * Returns a stream of data bytes this entity consists of.

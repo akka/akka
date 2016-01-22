@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.server
 
+import akka.NotUsed
 import akka.stream.Materializer
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -42,7 +43,7 @@ object Route {
                                 routingLog: RoutingLog,
                                 executionContext: ExecutionContext = null,
                                 rejectionHandler: RejectionHandler = RejectionHandler.default,
-                                exceptionHandler: ExceptionHandler = null): Flow[HttpRequest, HttpResponse, Unit] =
+                                exceptionHandler: ExceptionHandler = null): Flow[HttpRequest, HttpResponse, NotUsed] =
     Flow[HttpRequest].mapAsync(1)(asyncHandler(route))
 
   /**

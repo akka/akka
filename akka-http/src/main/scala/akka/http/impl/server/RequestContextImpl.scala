@@ -40,7 +40,7 @@ private[http] final case class RequestContextImpl(underlying: ScalaRequestContex
     case MarshallerImpl(m) ⇒
       implicit val marshaller = m(underlying.executionContext)
       underlying.complete(value)
-    case _ ⇒ throw new IllegalArgumentException("Unsupported marshaller: $marshaller")
+    case _ ⇒ throw new IllegalArgumentException(s"Unsupported marshaller: $marshaller")
   }
   def complete(response: jm.HttpResponse): RouteResult = underlying.complete(response.asScala)
 

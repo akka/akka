@@ -44,6 +44,7 @@ public class ActorPublisherTest extends StreamTest {
     final Publisher<Integer> publisher = UntypedActorPublisher.create(ref);
     Source.fromPublisher(publisher)
       .runForeach(new akka.japi.function.Procedure<Integer>() {
+        private static final long serialVersionUID = 1L;
         @Override
         public void apply(Integer elem) throws Exception {
           probe.getRef().tell(elem, ActorRef.noSender());

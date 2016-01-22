@@ -29,9 +29,8 @@ public class CodingDirectivesTest extends JUnitRouteTest {
     }
 
     @AfterClass
-    public static void tearDown() {
-        system.shutdown();
-        system.awaitTermination();
+    public static void tearDown() throws Exception {
+        Await.result(system.terminate(), Duration.Inf());
         system = null;
     }
 

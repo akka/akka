@@ -1,5 +1,6 @@
 package docs.stream.cookbook
 
+import akka.NotUsed
 import akka.stream.{ Graph, FlowShape, Inlet, Outlet, Attributes, OverflowStrategy }
 import akka.stream.scaladsl._
 import scala.concurrent.{ Await, Future }
@@ -17,13 +18,13 @@ class RecipeReduceByKey extends RecipeSpec {
       def words = Source(List("hello", "world", "and", "hello", "universe", "akka") ++ List.fill(1000)("rocks!"))
 
       //#word-count
-      val counts: Source[(String, Int), Unit] = words
+      val counts: Source[(String, Int), NotUsed] = words
         // split the words into separate streams first
         .groupBy(MaximumDistinctWords, identity)
+        //transform each element to pair with number of words in it
+        .map(_ -> 1)
         // add counting logic to the streams
-        .fold(("", 0)) {
-          case ((_, count), word) => (word, count + 1)
-        }
+        .reduce((l, r) => (l._1, l._2 + r._2))
         // get a stream of word counts
         .mergeSubstreams
       //#word-count
@@ -45,26 +46,19 @@ class RecipeReduceByKey extends RecipeSpec {
       def reduceByKey[In, K, Out](
         maximumGroupSize: Int,
         groupKey: (In) => K,
-        foldZero: (K) => Out)(fold: (Out, In) => Out): Flow[In, (K, Out), Unit] = {
+        map: (In) => Out)(reduce: (Out, Out) => Out): Flow[In, (K, Out), NotUsed] = {
 
         Flow[In]
-          .groupBy(maximumGroupSize, groupKey)
-          .fold(Option.empty[(K, Out)]) {
-            case (None, elem) =>
-              val key = groupKey(elem)
-              Some((key, fold(foldZero(key), elem)))
-            case (Some((key, out)), elem) =>
-              Some((key, fold(out, elem)))
-          }
-          .map(_.get)
+          .groupBy[K](maximumGroupSize, groupKey)
+          .map(e => groupKey(e) -> map(e))
+          .reduce((l, r) => l._1 -> reduce(l._2, r._2))
           .mergeSubstreams
       }
 
-      val wordCounts = words.via(reduceByKey(
-        MaximumDistinctWords,
-        groupKey = (word: String) => word,
-        foldZero = (key: String) => 0)(fold = (count: Int, elem: String) => count + 1))
-
+      val wordCounts = words.via(
+        reduceByKey(MaximumDistinctWords,
+          groupKey = (word: String) => word,
+          map = (word: String) => 1)((left: Int, right: Int) => left + right))
       //#reduce-by-key-general
 
       Await.result(wordCounts.grouped(10).runWith(Sink.head), 3.seconds).toSet should be(Set(

@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.parsing
 
+import akka.NotUsed
+
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -433,7 +435,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 
   private class Test {
     def awaitAtMost: FiniteDuration = 250.millis
@@ -521,5 +523,5 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     def prep(response: String) = response.stripMarginWithNewline("\r\n")
   }
 
-  def source[T](elems: T*): Source[T, Unit] = Source(elems.toList)
+  def source[T](elems: T*): Source[T, NotUsed] = Source(elems.toList)
 }

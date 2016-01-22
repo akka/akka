@@ -7,15 +7,18 @@ import java.io.File
 import java.nio.channels.FileChannel
 import java.util.Collections
 
+import akka.Done
 import akka.actor.{ Deploy, ActorLogging, Props }
+import akka.stream.io.IOResult
 import akka.stream.actor.{ ActorSubscriberMessage, WatermarkRequestStrategy }
 import akka.util.ByteString
 
 import scala.concurrent.Promise
+import scala.util.{ Failure, Success }
 
 /** INTERNAL API */
 private[akka] object FileSubscriber {
-  def props(f: File, completionPromise: Promise[Long], bufSize: Int, append: Boolean) = {
+  def props(f: File, completionPromise: Promise[IOResult], bufSize: Int, append: Boolean) = {
     require(bufSize > 0, "buffer size must be > 0")
     Props(classOf[FileSubscriber], f, completionPromise, bufSize, append).withDeploy(Deploy.local)
   }
@@ -26,7 +29,7 @@ private[akka] object FileSubscriber {
 }
 
 /** INTERNAL API */
-private[akka] class FileSubscriber(f: File, bytesWrittenPromise: Promise[Long], bufSize: Int, append: Boolean)
+private[akka] class FileSubscriber(f: File, completionPromise: Promise[IOResult], bufSize: Int, append: Boolean)
   extends akka.stream.actor.ActorSubscriber
   with ActorLogging {
 
@@ -43,7 +46,7 @@ private[akka] class FileSubscriber(f: File, bytesWrittenPromise: Promise[Long], 
     super.preStart()
   } catch {
     case ex: Exception ⇒
-      bytesWrittenPromise.failure(ex)
+      completionPromise.success(IOResult(bytesWritten, Failure(ex)))
       cancel()
   }
 
@@ -53,12 +56,13 @@ private[akka] class FileSubscriber(f: File, bytesWrittenPromise: Promise[Long], 
         bytesWritten += chan.write(bytes.asByteBuffer)
       } catch {
         case ex: Exception ⇒
-          bytesWrittenPromise.failure(ex)
+          completionPromise.success(IOResult(bytesWritten, Failure(ex)))
           cancel()
       }
 
-    case ActorSubscriberMessage.OnError(cause) ⇒
-      log.error(cause, "Tearing down FileSink({}) due to upstream error", f.getAbsolutePath)
+    case ActorSubscriberMessage.OnError(ex) ⇒
+      log.error(ex, "Tearing down FileSink({}) due to upstream error", f.getAbsolutePath)
+      completionPromise.success(IOResult(bytesWritten, Failure(ex)))
       context.stop(self)
 
     case ActorSubscriberMessage.OnComplete ⇒
@@ -66,15 +70,20 @@ private[akka] class FileSubscriber(f: File, bytesWrittenPromise: Promise[Long], 
         chan.force(true)
       } catch {
         case ex: Exception ⇒
-          bytesWrittenPromise.failure(ex)
+          completionPromise.success(IOResult(bytesWritten, Failure(ex)))
       }
       context.stop(self)
   }
 
   override def postStop(): Unit = {
-    bytesWrittenPromise.trySuccess(bytesWritten)
+    try {
+      if (chan ne null) chan.close()
+    } catch {
+      case ex: Exception ⇒
+        completionPromise.success(IOResult(bytesWritten, Failure(ex)))
+    }
 
-    if (chan ne null) chan.close()
+    completionPromise.trySuccess(IOResult(bytesWritten, Success(Done)))
     super.postStop()
   }
 }

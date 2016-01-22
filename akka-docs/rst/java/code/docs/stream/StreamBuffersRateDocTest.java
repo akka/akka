@@ -6,12 +6,12 @@ package docs.stream;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+import akka.NotUsed;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import akka.stream.*;
@@ -60,11 +60,11 @@ public class StreamBuffersRateDocTest {
     //#materializer-buffer
 
     //#section-buffer
-    final Flow<Integer, Integer, BoxedUnit> flow1 =
+    final Flow<Integer, Integer, NotUsed> flow1 =
       Flow.of(Integer.class)
       .map(elem -> elem * 2) // the buffer size of this map is 1
       .withAttributes(Attributes.inputBuffer(1, 1));
-    final Flow<Integer, Integer, BoxedUnit> flow2 =
+    final Flow<Integer, Integer, NotUsed> flow2 =
       flow1.via(
         Flow.of(Integer.class)
         .map(elem -> elem / 2)); // the buffer size of this map is the default
@@ -80,7 +80,7 @@ public class StreamBuffersRateDocTest {
         Source.tick(oneSecond, oneSecond, "message!");
     final Source<String, Cancellable> tickSource =
         Source.tick(oneSecond.mul(3), oneSecond.mul(3), "tick");
-    final Flow<String, Integer, BoxedUnit> conflate =
+    final Flow<String, Integer, NotUsed> conflate =
         Flow.of(String.class).conflate(
             first -> 1, (count, elem) -> count + 1);
 
@@ -97,10 +97,10 @@ public class StreamBuffersRateDocTest {
 
   @Test
   public void demonstrateExplicitBuffers() {
-    final Source<Job, BoxedUnit> inboundJobsConnector = Source.empty();
+    final Source<Job, NotUsed> inboundJobsConnector = Source.empty();
     //#explicit-buffers-backpressure
     // Getting a stream of jobs from an imaginary external system as a Source
-    final Source<Job, BoxedUnit> jobs = inboundJobsConnector;
+    final Source<Job, NotUsed> jobs = inboundJobsConnector;
     jobs.buffer(1000, OverflowStrategy.backpressure());
     //#explicit-buffers-backpressure
 

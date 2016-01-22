@@ -29,11 +29,11 @@ public class HighLevelServerBindFailureExample {
             @Override
             public void onFailure(Throwable failure) throws Throwable {
                 System.err.println("Something very bad happened! " + failure.getMessage());
-                system.shutdown();
+                system.terminate();
             }
         }, system.dispatcher());
 
-        system.shutdown();
+        system.terminate();
     }
 }
 //#binding-failure-high-level-example

@@ -5,13 +5,15 @@
 package akka.http.scaladsl.model
 
 import java.io.File
+import java.util.Optional
+import akka.http.impl.util.Util
+
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.Future
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.util.{ Failure, Success, Try }
-import akka.japi.{ Option ⇒ JOption }
 import akka.event.{ NoLogging, LoggingAdapter }
 import akka.stream.impl.ConstantFun
 import akka.stream.Materializer
@@ -22,6 +24,8 @@ import akka.http.scaladsl.model.headers._
 import akka.http.impl.engine.rendering.BodyPartRenderer
 import akka.http.javadsl.{ model ⇒ jm }
 import FastFuture._
+
+import scala.compat.java8.OptionConverters._
 
 /**
  * The model of multipart content for media-types `multipart/\*` (general multipart content),
@@ -157,14 +161,13 @@ object Multipart {
     def getHeaders: java.lang.Iterable[jm.HttpHeader] = (headers: immutable.Seq[jm.HttpHeader]).asJava
 
     /** Java API */
-    def getContentDispositionHeader: JOption[jm.headers.ContentDisposition] =
-      JOption.fromScalaOption(contentDispositionHeader)
+    def getContentDispositionHeader: Optional[jm.headers.ContentDisposition] = Util.convertOption(contentDispositionHeader)
 
     /** Java API */
     def getDispositionParams: java.util.Map[String, String] = dispositionParams.asJava
 
     /** Java API */
-    def getDispositionType: JOption[jm.headers.ContentDispositionType] = JOption.fromScalaOption(dispositionType)
+    def getDispositionType: Optional[jm.headers.ContentDispositionType] = Util.convertOption(dispositionType)
 
     /** Java API */
     def toStrict(timeoutMillis: Long, materializer: Materializer): Future[_ <: jm.Multipart.BodyPart.Strict] =
@@ -409,7 +412,7 @@ object Multipart {
         (additionalHeaders: immutable.Seq[jm.HttpHeader]).asJava
 
       /** Java API */
-      def getFilename: JOption[String] = JOption.fromScalaOption(filename)
+      def getFilename: Optional[String] = filename.asJava
 
       /** Java API */
       override def toStrict(timeoutMillis: Long, materializer: Materializer): Future[jm.Multipart.FormData.BodyPart.Strict] =

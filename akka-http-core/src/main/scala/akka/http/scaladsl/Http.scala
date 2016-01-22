@@ -6,7 +6,7 @@ package akka.http.scaladsl
 
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
-import java.util.{ Collection ⇒ JCollection }
+import java.util.{ Collection ⇒ JCollection, Optional }
 import javax.net.ssl._
 
 import akka.actor._
@@ -21,7 +21,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ WebsocketUpgradeResponse, WebsocketRequest, Message }
 import akka.http.scaladsl.util.FastFuture
-import akka.japi
+import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.io._
 import akka.stream.scaladsl._
@@ -34,6 +34,8 @@ import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future, Promise, TimeoutException }
 import scala.util.Try
 import scala.util.control.NonFatal
+
+import scala.compat.java8.OptionConverters._
 
 class HttpExt(private val config: Config)(implicit val system: ActorSystem) extends akka.actor.Extension
   with DefaultSSLContextCreation {
@@ -399,7 +401,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    */
   def superPool[T](settings: ConnectionPoolSettings = ConnectionPoolSettings(system),
                    httpsContext: Option[HttpsContext] = None,
-                   log: LoggingAdapter = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), Unit] =
+                   log: LoggingAdapter = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
     clientFlow[T](settings) { request ⇒ request -> cachedGateway(request, settings, httpsContext, log) }
 
   /**
@@ -559,7 +561,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
       .mapMaterializedValue(_ ⇒ HostConnectionPool(hcps)(gatewayFuture))
 
   private def clientFlow[T](settings: ConnectionPoolSettings)(f: HttpRequest ⇒ (HttpRequest, Future[PoolGateway]))(
-    implicit system: ActorSystem, fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), Unit] = {
+    implicit system: ActorSystem, fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] = {
     // a connection pool can never have more than pipeliningLimit * maxConnections requests in flight at any point
     val parallelism = settings.pipeliningLimit * settings.maxConnections
     Flow[(HttpRequest, T)].mapAsyncUnordered(parallelism) {
@@ -600,7 +602,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
    *                +------+
    * }}}
    */
-  type ServerLayer = BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, Unit]
+  type ServerLayer = BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed]
   //#
 
   //#client-layer
@@ -616,7 +618,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
    *                +------+
    * }}}
    */
-  type ClientLayer = BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, Unit]
+  type ClientLayer = BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, NotUsed]
   //#
 
   /**
@@ -656,7 +658,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   final case class IncomingConnection(
     localAddress: InetSocketAddress,
     remoteAddress: InetSocketAddress,
-    flow: Flow[HttpResponse, HttpRequest, Unit]) {
+    flow: Flow[HttpResponse, HttpRequest, NotUsed]) {
 
     /**
      * Handles the connection with the given flow, which is materialized exactly once
@@ -710,6 +712,12 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 import scala.collection.JavaConverters._
 
 //# https-context-impl
+/**
+ * TLS configuration for an HTTPS server binding or client connection.
+ * For the sslContext please refer to the com.typeasfe.ssl-config library.
+ * The remaining four parameters configure the initial session that will
+ * be negotiated, see [[akka.stream.io.NegotiateNewSession]] for details.
+ */
 final case class HttpsContext(sslContext: SSLContext,
                               enabledCipherSuites: Option[immutable.Seq[String]] = None,
                               enabledProtocols: Option[immutable.Seq[String]] = None,
@@ -723,16 +731,16 @@ final case class HttpsContext(sslContext: SSLContext,
   override def getSslContext: SSLContext = sslContext
 
   /** Java API */
-  override def getEnabledCipherSuites: japi.Option[JCollection[String]] = enabledCipherSuites.map(_.asJavaCollection)
+  override def getEnabledCipherSuites: Optional[JCollection[String]] = enabledCipherSuites.map(_.asJavaCollection).asJava
 
   /** Java API */
-  override def getEnabledProtocols: japi.Option[JCollection[String]] = enabledProtocols.map(_.asJavaCollection)
+  override def getEnabledProtocols: Optional[JCollection[String]] = enabledProtocols.map(_.asJavaCollection).asJava
 
   /** Java API */
-  override def getClientAuth: japi.Option[ClientAuth] = clientAuth
+  override def getClientAuth: Optional[ClientAuth] = clientAuth.asJava
 
   /** Java API */
-  override def getSslParameters: japi.Option[SSLParameters] = sslParameters
+  override def getSslParameters: Optional[SSLParameters] = sslParameters.asJava
 }
 
 trait DefaultSSLContextCreation {

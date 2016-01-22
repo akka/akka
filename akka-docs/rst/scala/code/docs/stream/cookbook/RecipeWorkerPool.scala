@@ -1,5 +1,6 @@
 package docs.stream.cookbook
 
+import akka.NotUsed
 import akka.stream.FlowShape
 import akka.stream.scaladsl._
 import akka.testkit.TestProbe
@@ -18,7 +19,7 @@ class RecipeWorkerPool extends RecipeSpec {
       val worker = Flow[String].map(_ + " done")
 
       //#worker-pool
-      def balancer[In, Out](worker: Flow[In, Out, Any], workerCount: Int): Flow[In, Out, Unit] = {
+      def balancer[In, Out](worker: Flow[In, Out, Any], workerCount: Int): Flow[In, Out, NotUsed] = {
         import GraphDSL.Implicits._
 
         Flow.fromGraph(GraphDSL.create() { implicit b =>
@@ -35,7 +36,7 @@ class RecipeWorkerPool extends RecipeSpec {
         })
       }
 
-      val processedJobs: Source[Result, Unit] = myJobs.via(balancer(worker, 3))
+      val processedJobs: Source[Result, NotUsed] = myJobs.via(balancer(worker, 3))
       //#worker-pool
 
       Await.result(processedJobs.grouped(10).runWith(Sink.head), 3.seconds).toSet should be(Set(

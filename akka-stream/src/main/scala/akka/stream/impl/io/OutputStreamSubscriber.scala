@@ -5,15 +5,18 @@ package akka.stream.impl.io
 
 import java.io.OutputStream
 
+import akka.Done
 import akka.actor.{ Deploy, ActorLogging, Props }
 import akka.stream.actor.{ ActorSubscriberMessage, WatermarkRequestStrategy }
+import akka.stream.io.IOResult
 import akka.util.ByteString
 
 import scala.concurrent.Promise
+import scala.util.{ Failure, Success }
 
 /** INTERNAL API */
 private[akka] object OutputStreamSubscriber {
-  def props(os: OutputStream, completionPromise: Promise[Long], bufSize: Int) = {
+  def props(os: OutputStream, completionPromise: Promise[IOResult], bufSize: Int) = {
     require(bufSize > 0, "buffer size must be > 0")
     Props(classOf[OutputStreamSubscriber], os, completionPromise, bufSize).withDeploy(Deploy.local)
   }
@@ -21,7 +24,7 @@ private[akka] object OutputStreamSubscriber {
 }
 
 /** INTERNAL API */
-private[akka] class OutputStreamSubscriber(os: OutputStream, bytesWrittenPromise: Promise[Long], bufSize: Int)
+private[akka] class OutputStreamSubscriber(os: OutputStream, completionPromise: Promise[IOResult], bufSize: Int)
   extends akka.stream.actor.ActorSubscriber
   with ActorLogging {
 
@@ -37,12 +40,13 @@ private[akka] class OutputStreamSubscriber(os: OutputStream, bytesWrittenPromise
         bytesWritten += bytes.length
       } catch {
         case ex: Exception ⇒
-          bytesWrittenPromise.failure(ex)
+          completionPromise.success(IOResult(bytesWritten, Failure(ex)))
           cancel()
       }
 
-    case ActorSubscriberMessage.OnError(cause) ⇒
-      log.error(cause, "Tearing down OutputStreamSink due to upstream error, wrote bytes: {}", bytesWritten)
+    case ActorSubscriberMessage.OnError(ex) ⇒
+      log.error(ex, "Tearing down OutputStreamSink due to upstream error, wrote bytes: {}", bytesWritten)
+      completionPromise.success(IOResult(bytesWritten, Failure(ex)))
       context.stop(self)
 
     case ActorSubscriberMessage.OnComplete ⇒
@@ -51,9 +55,14 @@ private[akka] class OutputStreamSubscriber(os: OutputStream, bytesWrittenPromise
   }
 
   override def postStop(): Unit = {
-    bytesWrittenPromise.trySuccess(bytesWritten)
+    try {
+      if (os ne null) os.close()
+    } catch {
+      case ex: Exception ⇒
+        completionPromise.success(IOResult(bytesWritten, Failure(ex)))
+    }
 
-    if (os ne null) os.close()
+    completionPromise.trySuccess(IOResult(bytesWritten, Success(Done)))
     super.postStop()
   }
 }

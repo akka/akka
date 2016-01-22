@@ -340,7 +340,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * The supplied thunk will be run, once, when current cluster member is `Removed`.
    * If the cluster has already been shutdown the thunk will run on the caller thread immediately.
-   * Typically used together `cluster.leave(cluster.selfAddress)` and then `system.shutdown()`.
+   * Typically used together `cluster.leave(cluster.selfAddress)` and then `system.terminate()`.
    */
   def registerOnMemberRemoved[T](code: ⇒ T): Unit =
     registerOnMemberRemoved(new Runnable { override def run(): Unit = code })
@@ -348,7 +348,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * Java API: The supplied thunk will be run, once, when current cluster member is `Removed`.
    * If the cluster has already been shutdown the thunk will run on the caller thread immediately.
-   * Typically used together `cluster.leave(cluster.selfAddress)` and then `system.shutdown()`.
+   * Typically used together `cluster.leave(cluster.selfAddress)` and then `system.terminate()`.
    */
   def registerOnMemberRemoved(callback: Runnable): Unit = {
     if (_isTerminated.get())
