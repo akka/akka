@@ -1,21 +1,373 @@
 .. _stages-overview:
 
-###############################################
 Overview of built-in stages and their semantics
-###############################################
+===============================================
 
-All stages by default backpressure if the computation they encapsulate is not fast enough to keep up with the rate of
+
+Source stages
+-------------
+These built-in sources are available from `akka.stream.scaladsl.Source` and `akka.stream.javadsl.Source`
+
+
+
+fromIterator
+^^^^^^^^^^^^
+Streams the values from an iterator, requesting the next value when there is demand. If the iterator
+performs blocking operations, make sure to run it on a separate dispatcher.
+
+*emits* when the next value returned from the iterator
+*completes* when the iterator reaches it's end
+
+single
+^^^^^^
+Streams a single object
+
+*emits* the value once
+*completes* when the single value has been emitted
+
+repeat
+^^^^^^
+Streams a single object repeatedly
+
+*emits* the same value repeatedly when there is demand
+*completes* never
+
+tick
+^^^^
+A periodical repeated stream of an arbitrary object. Delay of first tick is specified
+separately from interval of the following ticks.
+
+*emits* periodically, if there is downstream backpressure ticks are skipped
+*completes* never
+
+fromFuture
+^^^^^^^^^^
+The value of the future is sent when the future completes and there is demand.
+If the future fails the stream is failed with that exception.
+
+*emits* the future completes
+*completes* after the future has completed
+
+unfold
+^^^^^^
+Streams the result of a function as long as it returns a ``Some`` or non-empty ``Optional``, the value inside the optional
+consists of a tuple (or ``Pair``) where the first value is a state passed back into the next call to the function allowing
+to pass a state. The first invocation of the provided fold function will receive the ``zero`` state.
+
+Can be used to implement many stateful sources without having to touch the more low level ``GraphStage`` API.
+
+*emits* when there is demand and the unfold function over the previous state returns non empty value
+*completes* when the unfold function returns an empty value
+
+unfoldAsync
+^^^^^^^^^^^
+Just like ``unfold`` but the fold function returns a ``Future`` or ``CompletionStage`` which will cause the source to
+complete or emit when it completes.
+
+Can be used to implement many stateful sources without having to touch the more low level ``GraphStage`` API.
+
+*emits* when there is demand and unfold state returned future completes with some value
+*completes* when the future returned by the unfold function completes with an empty value
+
+empty
+^^^^^
+A source that completes right away without ever emitting any elements. Useful when you have to provide a source to
+an API but there are no elements to emit.
+
+*emits* never
+*completes* directly
+
+maybe
+^^^^^
+A source that will either emit one value if the ``Option`` or ``Optional`` contains a value, or complete directly
+if the optional value is empty.
+
+*emits* when the returned promise is completed with some value
+*completes* after emitting some value, or directly if the promise is completed with no value
+
+failed
+^^^^^^
+A source that fails with a user specified exception
+
+*emits* never
+*completes* fails the stream directly with the given exception
+
+actorPublisher
+^^^^^^^^^^^^^^
+Wraps an actor extending ``ActorPublisher`` as a source
+
+*emits* depends on the actor implementation
+*completes* when the actor stops (TODO double check)
+
+actorRef
+^^^^^^^^
+Materializes into an ``ActorRef``, sending messages to the actor will emit them on the stream. The actor contains
+a buffer but since communication is one way, there is no back pressure. Handling overflow is done by either dropping
+elements or failing the stream, the strategy is chosen by the user.
+
+*emits* when there is demand and there are messages in the buffer or a message is sent to the actorref
+*completes* When the actorref is sent ``akka.actor.Status.Success`` or ``PoisonPill``
+
+combine
+^^^^^^^
+Combines several sources, using a given strategy such as merge or concat, into one source.
+
+*emits* when there is demand, but depending on the strategy
+*completes*
+
+queue
+^^^^^
+Materializes into a ``SourceQueue`` onto which elements can be pushed for emitting from the source. The queue contains
+a buffer, if elements are pushed onto the queue faster than the source is consumed the overflow will be handled with
+a strategy specified by the user. Functionality for tracking when an element has been emitted is available through
+``SourceQueue.offer``.
+
+*emits* when there is demand and the queue contains elements
+*completes* when downstream completes
+
+asSubscriber
+^^^^^^^^^^^^
+Integration with Reactive Streams, materializes into a ``org.reactivestreams.Subscriber``.
+
+
+fromPublisher
+^^^^^^^^^^^^^
+Integration with Reactive Streams, subscribes to a ``org.reactivestreams.Publisher``.
+
+
+
+
+
+Sink stages
+-----------
+These built-in sinks are available from ``akka.stream.scaladsl.Sink`` and ``akka.stream.javadsl.Sink``:
+
+
+head
+^^^^
+Materializes into a ``Future`` or ``CompletionStage`` which completes with the first value arriving,
+after this the stream is canceled. If no element is emitted, the future is be failed.
+
+*cancels* after receiving one element
+*backpressures* never
+
+headOption
+^^^^^^^^^^
+Materializes into a ``Future[Option[T]]`` or ``CompletionStage<Optional<T>>`` which completes with the first value
+arriving wrapped in the optional, or an empty optional if the stream completes without any elements emitted.
+
+*cancels* after receiving one element
+*backpressures* never
+
+last
+^^^^
+Materializes into a ``Future`` or ``CompletionStage`` which will complete with the last value emitted when the stream
+completes. If the stream completes with no elements the future is failed.
+
+*cancels* never
+*backpressures* never
+
+lastOption
+^^^^^^^^^^
+Materializes into a ``Future[Option[T]]`` or ``CompletionStage<Optional<T>>`` which completes with the last value
+emitted wrapped in an optional when the stream completes. if the stream completes with no elements the future is
+completed with an empty optional.
+
+*cancels* never
+*backpressures* never
+
+ignore
+^^^^^^
+Keeps consuming elements but discards them
+
+*cancels* never
+*backpressures* never
+
+cancelled
+^^^^^^^^^
+Immediately cancels the stream
+
+*cancels* immediately
+
+seq_
+^^^^
+TODO three letter header not allowed
+
+Collects values emitted from the stream into a collection, the collection is available through a ``Future`` or
+``CompletionStage`` which completes when the stream completes. Note that the collection is bounded to ``Int.MaxValue``,
+if more element are emitted the sink will cancel the stream
+
+*cancels* If too many values are collected
+
+foreach
+^^^^^^^
+Invokes a given procedure for each element received. Note that it is not safe to mutate shared state from the procedure.
+
+The sink materializes into a  ``Future[Option[Done]]`` or ``CompletionStage<Optional<Done>>`` which completes when the
+stream completes, or fails if the stream fails.
+
+Note that it is not safe to mutate state from the procedure.
+
+*cancels* never
+*backpressures* when the previous procedure invocation has not yet completed
+
+
+foreachParallel
+^^^^^^^^^^^^^^^
+Like ``foreach`` but allows up to ``parallellism`` procedure calls to happen in parallel.
+
+*cancels* never
+*backpressures* when the previous parallel procedure invocations has not yet completed
+
+
+onComplete
+^^^^^^^^^^
+A sink that calls a callback when the stream has completed or failed.
+
+*cancels* never
+*backpressures* never
+
+
+fold
+^^^^
+Fold over emitted element with a function, where each invocation will get the new element and the result from the
+previous fold invocation. The first invocation will be provided the ``zero`` value.
+
+Materializes into a future that will complete with the last state when the stream has completed.
+
+This stage allows combining values into a result without a global mutable state by instead passing the state along
+between invocations.
+
+*cancels* never
+*backpressures* when the previous fold function invocation has not yet completed
+
+reduce
+^^^^^^
+Applies a reduction function on the incoming elements and passes the result to the next invocation. The first invocation
+receives the two first elements of the flow.
+
+Materializes into a future that will be completed by the last result of the reduction function.
+
+*cancels* never
+*backpressures* when the previous reduction function invocation has not yet completed
+
+
+combine
+^^^^^^^
+Combines several sinks into one using a user specified strategy
+
+*cancels* depends on the strategy
+*backpressures* depends on the strategy
+
+
+actorRef
+^^^^^^^^
+Sends the elements from the stream to an ``ActorRef``. No backpressure so care must be taken to not overflow the inbox.
+
+*cancels* when the actor terminates
+*backpressures* never
+
+
+actorRefWithAck
+^^^^^^^^^^^^^^^
+Sends the elements from the stream to an ``ActorRef`` which must then acknowledge reception after completing a message,
+to provide back pressure onto the sink.
+
+*cancels* when the actor terminates
+*backpressures* when the actor acknowledgement has not arrived
+
+
+actorSubscriber
+^^^^^^^^^^^^^^^
+Creates an actor from a ``Props`` upon materialization, where the actor implements ``ActorSubscriber``.
+
+Materializes into an ``ActorRef`` to the created actor.
+
+*cancels* when the actor terminates
+*backpressures* depends on the actor implementation
+
+
+asPublisher
+^^^^^^^^^^^
+Integration with Reactive Streams, materializes into a ``org.reactivestreams.Publisher``.
+
+
+fromSubscriber
+^^^^^^^^^^^^^^
+Integration with Reactive Streams, wraps a ``org.reactivestreams.Subscriber`` as a sink
+
+
+
+
+Additional Sink and Source converters
+-------------------------------------
+Sources and sinks for integrating with ``java.io.InputStream`` and ``java.io.OutputStream`` can be found on
+``StreamConverters``. As they are blocking APIs the implementations of these stages are run on a separate
+dispatcher configured through the ``akka.stream.blocking-io-dispatcher``.
+
+fromOutputStream
+^^^^^^^^^^^^^^^^
+Creates a sink that wraps an ``OutputStream``. Takes a function that produces an ``OutputStream``, when the sink is
+materialized the function will be called and bytes sent to the sink will be written to the returned ``OutputStream``.
+
+Materializes into a ``Future`` or ``CompletionStage`` which will complete with a ``IOResult`` when the stream
+completes.
+
+Note that a flow can be materialized multiple times, so the function producing the ``OutputStream`` must be able
+to handle multiple invocations.
+
+asInputStream
+^^^^^^^^^^^^^
+Creates a sink which materializes into an ``InputStream`` that can be read to trigger demand through the sink.
+Bytes emitted through the stream will be available for reading through the ``InputStream``
+
+fromInputStream
+^^^^^^^^^^^^^^^
+Creates a source that wraps an ``InputStream``. Takes a function that produces an ``InputStream``, when the source is
+materialized the function will be called and bytes from the ``InputStream`` will be emitted into the stream.
+
+Materializes into a ``Future`` or ``CompletionStage`` which will complete with a ``IOResult`` when the stream
+completes.
+
+Note that a flow can be materialized multiple times, so the function producing the ``InputStream`` must be able
+to handle multiple invocations.
+
+asOutputStream
+^^^^^^^^^^^^^^
+Creates a source that materializes into an ``OutputStream``. When bytes are written to the ``OutputStream`` they
+are emitted from the source
+
+
+
+File IO Sinks and Sources
+-------------------------
+Sources and sinks for reading and writing files can be found on ``FileIO``.
+
+fromFile
+^^^^^^^^
+Emits the contents of a file, as ``ByteString`` s, materializes into a ``Future`` or ``CompletionStage`` which will be completed with
+a ``IOResult`` upon reaching the end of the file or if there is a failure.
+
+toFile
+^^^^^^
+Creates a sink which will write incoming ``ByteString`` s to a given file.
+
+
+
+Flow stages
+-----------
+
+All flows by default backpressure if the computation they encapsulate is not fast enough to keep up with the rate of
 incoming elements from the preceding stage. There are differences though how the different stages handle when some of
-their downstream stages backpressure them. This table provides a summary of all built-in stages and their semantics.
+their downstream stages backpressure them.
 
-All stages stop and propagate the failure downstream as soon as any of their upstreams emit a failure unless supervision
-is used. This happens to ensure reliable teardown of streams and cleanup when failures happen. Failures are meant to
+Most stages stop and propagate the failure downstream as soon as any of their upstreams emit a failure.
+This happens to ensure reliable teardown of streams and cleanup when failures happen. Failures are meant to
 be to model unrecoverable conditions, therefore they are always eagerly propagated.
 For in-band error handling of normal errors (dropping elements if a map fails for example) you should use the
 supervision support, or explicitly wrap your element types in a proper container that can express error or success
 states (for example ``Try`` in Scala).
 
-Custom components are not covered by this table since their semantics are defined by the user.
 
 Simple processing stages
 ^^^^^^^^^^^^^^^^^^^^^^^^
