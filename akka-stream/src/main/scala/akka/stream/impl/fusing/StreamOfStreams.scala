@@ -214,14 +214,17 @@ object Split {
   /** Splits after the current element. The current element will be the last element in the current substream. */
   case object SplitAfter extends SplitDecision
 
-  def when[T](p: T ⇒ Boolean): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] = new Split(Split.SplitBefore, p)
-  def after[T](p: T ⇒ Boolean): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] = new Split(Split.SplitAfter, p)
+  def when[T](p: T ⇒ Boolean, propagateSubstreamCancel: Boolean = false): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] =
+    new Split(Split.SplitBefore, p, propagateSubstreamCancel)
+
+  def after[T](p: T ⇒ Boolean, propagateSubstreamCancel: Boolean = false): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] =
+    new Split(Split.SplitAfter, p, propagateSubstreamCancel)
 }
 
 /**
  * INERNAL API
  */
-final class Split[T](decision: Split.SplitDecision, p: T ⇒ Boolean) extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
+final class Split[T](decision: Split.SplitDecision, p: T ⇒ Boolean, propagateSubstreamCancel: Boolean) extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
   val in: Inlet[T] = Inlet("Split.in")
   val out: Outlet[Source[T, NotUsed]] = Outlet("Split.out")
   override val shape: FlowShape[T, Source[T, NotUsed]] = FlowShape(in, out)
@@ -329,8 +332,9 @@ final class Split[T](decision: Split.SplitDecision, p: T ⇒ Boolean) extends Gr
 
       override def onDownstreamFinish(): Unit = {
         substreamCancelled = true
-        if (isClosed(in)) completeStage()
-        else {
+        if (isClosed(in) || propagateSubstreamCancel) {
+          completeStage()
+        } else {
           // Start draining
           if (!hasBeenPulled(in)) pull(in)
         }
