@@ -23,7 +23,7 @@ import akka.stream.io.{ SslTlsPlacebo, SessionBytes }
 import org.scalatest.matchers.Matcher
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 
-import akka.http.ParserSettings
+import akka.http.scaladsl.settings.ParserSettings
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpEntity._

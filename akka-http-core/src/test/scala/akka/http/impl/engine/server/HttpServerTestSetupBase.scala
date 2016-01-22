@@ -6,6 +6,7 @@ package akka.http.impl.engine.server
 
 import java.net.InetSocketAddress
 import akka.http.impl.engine.ws.ByteStringSinkProbe
+import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.io.{ SendBytes, SslTlsOutbound, SessionBytes }
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorSystem
@@ -15,7 +16,6 @@ import akka.stream.{ ClosedShape, Materializer }
 import akka.stream.scaladsl._
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.http.impl.util._
-import akka.http.ServerSettings
 import akka.http.scaladsl.model.headers.{ ProductVersion, Server }
 import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
 import akka.stream.OverflowStrategy
@@ -28,7 +28,7 @@ abstract class HttpServerTestSetupBase {
   val responses = TestPublisher.probe[HttpResponse]()
 
   def settings = ServerSettings(system)
-    .copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
+    .withServerHeader(Some(Server(List(ProductVersion("akka-http", "test")))))
   def remoteAddress: Option[InetSocketAddress] = None
 
   val (netIn, netOut) = {

@@ -18,7 +18,7 @@ import akka.stream.actor.ActorPublisherMessage._
 import akka.stream.actor.ActorSubscriberMessage._
 import akka.stream.impl.{ SeqActorName, FixedSizeBuffer }
 import akka.stream.scaladsl.{ Keep, Flow, Sink, Source }
-import akka.http.HostConnectionPoolSetup
+import akka.http.impl.settings.HostConnectionPoolSetup
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.{ ConnectionContext, HttpsConnectionContext, Http }
 import PoolFlow._

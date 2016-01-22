@@ -6,7 +6,7 @@ package akka.http.impl.engine.parsing
 
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
 import scala.annotation.tailrec
-import akka.http.ParserSettings
+import akka.http.scaladsl.settings.ParserSettings
 import akka.util.ByteString
 import akka.http.impl.engine.ws.Handshake
 import akka.http.impl.model.parser.CharacterClasses
