@@ -6,7 +6,7 @@ package akka.http.impl.engine.client
 
 import java.net.InetSocketAddress
 
-import akka.stream.OverflowStrategy.Fail.BufferOverflowException
+import akka.stream.BufferOverflowException
 
 import scala.annotation.tailrec
 import scala.concurrent.Promise

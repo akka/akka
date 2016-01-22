@@ -3,23 +3,21 @@
  */
 package akka.stream.stage
 
-import java.util
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicReference }
 import akka.NotUsed
+import java.util.concurrent.locks.ReentrantLock
 import akka.actor._
 import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Unwatch, Watch }
 import akka.event.LoggingAdapter
 import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
-import akka.stream.impl.fusing.{ GraphInterpreter, GraphModule, GraphStageModule, SubSource, SubSink }
+import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSource, SubSink }
 import akka.stream.impl.{ ReactiveStreamsCompliance, SeqActorName }
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
-import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.actor.ActorSubscriberMessage
 import akka.stream.actor.ActorPublisherMessage
 
@@ -1273,3 +1271,55 @@ abstract class AbstractOutHandler extends OutHandler
  * (completing when upstream completes, failing when upstream fails, completing when downstream cancels).
  */
 abstract class AbstractInOutHandler extends InHandler with OutHandler
+
+/**
+ * INTERNAL API
+ * This trait wraps callback for `GraphStage` stage instances and handle gracefully cases when stage is
+ * not yet initialized or already finished.
+ *
+ * While `GraphStage` has not initialized it adds all requests to list.
+ * As soon as `GraphStage` is started it stops collecting requests (pointing to real callback
+ * function) and run all the callbacks from the list
+ *
+ * Supposed to be used by GraphStages that share call back to outer world
+ */
+private[akka] trait CallbackWrapper[T] extends AsyncCallback[T] {
+  private trait CallbackState
+  private case class NotInitialized(list: List[T]) extends CallbackState
+  private case class Initialized(f: T ⇒ Unit) extends CallbackState
+  private case class Stopped(f: T ⇒ Unit) extends CallbackState
+
+  /*
+   * To preserve message order when switching between not initialized / initialized states
+   * lock is used. Case is similar to RepointableActorRef
+   */
+  private[this] final val lock = new ReentrantLock
+
+  private[this] val callbackState = new AtomicReference[CallbackState](NotInitialized(Nil))
+
+  def stopCallback(f: T ⇒ Unit): Unit = locked {
+    callbackState.set(Stopped(f))
+  }
+
+  def initCallback(f: T ⇒ Unit): Unit = locked {
+    val list = (callbackState.getAndSet(Initialized(f)): @unchecked) match {
+      case NotInitialized(l) ⇒ l
+    }
+    list.reverse.foreach(f)
+  }
+
+  override def invoke(arg: T): Unit = locked {
+    callbackState.get() match {
+      case Initialized(cb)          ⇒ cb(arg)
+      case list @ NotInitialized(l) ⇒ callbackState.compareAndSet(list, NotInitialized(arg :: l))
+      case Stopped(cb) ⇒
+        lock.unlock()
+        cb(arg)
+    }
+  }
+
+  private[this] def locked(body: ⇒ Unit): Unit = {
+    lock.lock()
+    try body finally if (lock.isLocked) lock.unlock()
+  }
+}

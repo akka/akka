@@ -5,7 +5,7 @@ package akka.stream.scaladsl
 
 import akka.actor.Status
 import akka.pattern.pipe
-import akka.stream.ActorMaterializer
+import akka.stream.{ OverflowStrategy, ActorMaterializer }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.{ AkkaSpec, _ }
 
@@ -95,6 +95,21 @@ class QueueSinkSpec extends AkkaSpec {
       expectMsg(Some(1))
       sub.sendComplete()
       queue.pull()
+    }
+
+    "fail pull future when stream is completed" in assertAllStagesStopped {
+      val probe = TestPublisher.manualProbe[Int]()
+      val queue = Source.fromPublisher(probe).runWith(Sink.queue())
+      val sub = probe.expectSubscription()
+
+      queue.pull().pipeTo(testActor)
+      sub.sendNext(1)
+      expectMsg(Some(1))
+
+      sub.sendComplete()
+      Await.result(queue.pull(), noMsgTimeout) should be(None)
+
+      queue.pull().onFailure { case e ⇒ e.isInstanceOf[IllegalStateException] should ===(true) }
     }
 
   }
