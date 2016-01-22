@@ -20,7 +20,7 @@ Custom components are not covered by this table since their semantics are define
 Simple processing stages
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-These stages are all expressible as a ``PushPullStage``. These stages can transform the rate of incoming elements
+These stages are all expressible as a ``GraphStage``. These stages can transform the rate of incoming elements
 since there are stages that emit multiple elements for a single input (e.g. `mapConcat') or consume
 multiple elements before emitting one output (e.g. ``filter``). However, these rate transformations are data-driven, i.e. it is
 the incoming elements that define how the rate is affected. This is in contrast with :ref:`detached-stages-overview`
@@ -122,7 +122,7 @@ a single output combining the elements from all of the inputs in different ways.
 Stage                  Emits when                                                                                                                  Backpressures when                                                                                                              Completes when
 =====================  =========================================================================================================================   ==============================================================================================================================  =====================================================================================
 merge                  one of the inputs has an element available                                                                                  downstream backpressures                                                                                                        all upstreams complete (*)
-mergeSorted            all of the inputs have an element available                                                                                 downstream backpressures                                                                                                        all upstreams complete    
+mergeSorted            all of the inputs have an element available                                                                                 downstream backpressures                                                                                                        all upstreams complete
 mergePreferred         one of the inputs has an element available, preferring a defined input if multiple have elements available                  downstream backpressures                                                                                                        all upstreams complete (*)
 zip                    all of the inputs have an element available                                                                                 downstream backpressures                                                                                                        any upstream completes
 zipWith                all of the inputs have an element available                                                                                 downstream backpressures                                                                                                        any upstream completes
