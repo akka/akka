@@ -1201,21 +1201,21 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Completes when''' upstream completes
    *
-   * '''Cancels when''' downstream cancels and substreams cancel if propagateSubstreamCancel=false, downstream
-   * cancels or any substream cancels if propagateSubstreamCancel=true
+   * '''Cancels when''' downstream cancels and substreams cancel on `SubstreamCancelStrategy.drain`, downstream
+   * cancels or any substream cancels on `SubstreamCancelStrategy.propagate`
    *
    * See also [[FlowOps.splitAfter]].
    */
-  def splitWhen(propagateSubstreamCancel: Boolean)(p: Out ⇒ Boolean): SubFlow[Out, Mat, Repr, Closed] = {
+  def splitWhen(substreamCancelStrategy: SubstreamCancelStrategy)(p: Out ⇒ Boolean): SubFlow[Out, Mat, Repr, Closed] = {
     val merge = new SubFlowImpl.MergeBack[Out, Repr] {
       override def apply[T](flow: Flow[Out, T, NotUsed], breadth: Int): Repr[T] =
-        via(Split.when(p, propagateSubstreamCancel))
+        via(Split.when(p, substreamCancelStrategy))
           .map(_.via(flow))
           .via(new FlattenMerge(breadth))
     }
 
     val finish: (Sink[Out, NotUsed]) ⇒ Closed = s ⇒
-      via(Split.when(p, propagateSubstreamCancel))
+      via(Split.when(p, substreamCancelStrategy))
         .to(Sink.foreach(_.runWith(s)(GraphInterpreter.currentInterpreter.materializer)))
 
     new SubFlowImpl(Flow[Out], merge, finish)
@@ -1229,7 +1229,7 @@ trait FlowOps[+Out, +Mat] {
    * @see [[#splitWhen]]
    */
   def splitWhen(p: Out ⇒ Boolean): SubFlow[Out, Mat, Repr, Closed] =
-    splitWhen(propagateSubstreamCancel = false)(p)
+    splitWhen(SubstreamCancelStrategy.drain)(p)
 
   /**
    * This operation applies the given predicate to all incoming elements and
@@ -1271,20 +1271,20 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Completes when''' upstream completes
    *
-   * '''Cancels when''' downstream cancels and substreams cancel if propagateSubstreamCancel=false, downstream
-   * cancels or any substream cancels if propagateSubstreamCancel=true
+   * '''Cancels when''' downstream cancels and substreams cancel on `SubstreamCancelStrategy.drain`, downstream
+   * cancels or any substream cancels on `SubstreamCancelStrategy.propagate`
    *
    * See also [[FlowOps.splitWhen]].
    */
-  def splitAfter(propagateSubstreamCancel: Boolean)(p: Out ⇒ Boolean): SubFlow[Out, Mat, Repr, Closed] = {
+  def splitAfter(substreamCancelStrategy: SubstreamCancelStrategy)(p: Out ⇒ Boolean): SubFlow[Out, Mat, Repr, Closed] = {
     val merge = new SubFlowImpl.MergeBack[Out, Repr] {
       override def apply[T](flow: Flow[Out, T, NotUsed], breadth: Int): Repr[T] =
-        via(Split.after(p, propagateSubstreamCancel))
+        via(Split.after(p, substreamCancelStrategy))
           .map(_.via(flow))
           .via(new FlattenMerge(breadth))
     }
     val finish: (Sink[Out, NotUsed]) ⇒ Closed = s ⇒
-      via(Split.after(p, propagateSubstreamCancel))
+      via(Split.after(p, substreamCancelStrategy))
         .to(Sink.foreach(_.runWith(s)(GraphInterpreter.currentInterpreter.materializer)))
     new SubFlowImpl(Flow[Out], merge, finish)
   }
@@ -1297,7 +1297,7 @@ trait FlowOps[+Out, +Mat] {
    * @see [[#splitAfter]]
    */
   def splitAfter(p: Out ⇒ Boolean): SubFlow[Out, Mat, Repr, Closed] =
-    splitAfter(propagateSubstreamCancel = false)(p)
+    splitAfter(SubstreamCancelStrategy.drain)(p)
 
   /**
    * Transform each input element into a `Source` of output elements that is
