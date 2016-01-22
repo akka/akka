@@ -231,6 +231,16 @@ object Sink {
     Flow[T].fold(zero)(f).toMat(Sink.head)(Keep.right).named("foldSink")
 
   /**
+   * A `Sink` that will invoke the given function for every received element, giving it its previous
+   * output (from the second element) and the element as input.
+   * The returned [[scala.concurrent.Future]] will be completed with value of the final
+   * function evaluation when the input stream ends, or completed with `Failure`
+   * if there is a failure signaled in the stream.
+   */
+  def reduce[T](f: (T, T) ⇒ T): Sink[T, Future[T]] =
+    Flow[T].reduce(f).toMat(Sink.head)(Keep.right).named("reduceSink")
+
+  /**
    * A `Sink` that when the flow is completed, either through a failure or normal
    * completion, apply the provided function with [[scala.util.Success]]
    * or [[scala.util.Failure]].
