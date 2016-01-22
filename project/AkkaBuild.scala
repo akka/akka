@@ -56,7 +56,7 @@ object AkkaBuild extends Build {
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel,
       cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
       slf4j, agent, persistence, persistenceQuery, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit, benchJmh, typed, protobuf,
-      stream, streamTestkit, streamTests, streamTestsTck,
+      stream, streamTestkit, streamTests, streamTestsTck, parsing,
       httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests, httpTestkit
     )
   )
@@ -69,7 +69,7 @@ object AkkaBuild extends Build {
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel,
       cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
       slf4j, persistence, persistenceQuery, persistenceTck, kernel, osgi, contrib, multiNodeTestkit, benchJmh, typed, protobuf,
-      stream, streamTestkit, streamTests, streamTestsTck,
+      stream, streamTestkit, streamTests, streamTestsTck, parsing,
       httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests, httpTestkit
     )
   ).disablePlugins(ValidatePullRequest)
