@@ -30,7 +30,7 @@ private[http] class HeaderParser(val input: ParserInput, settings: HeaderParser.
   with LinkHeader
   with SimpleHeaders
   with StringBuilding
-  with WebsocketHeaders {
+  with WebSocketHeaders {
   import CharacterClasses._
 
   // http://www.rfc-editor.org/errata_search.php?rfc=7230 errata id 4189

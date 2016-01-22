@@ -401,23 +401,23 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     }
     "Sec-WebSocket-Extensions" in {
       "Sec-WebSocket-Extensions: abc" =!=
-        `Sec-WebSocket-Extensions`(Vector(WebsocketExtension("abc")))
+        `Sec-WebSocket-Extensions`(Vector(WebSocketExtension("abc")))
       "Sec-WebSocket-Extensions: abc, def" =!=
-        `Sec-WebSocket-Extensions`(Vector(WebsocketExtension("abc"), WebsocketExtension("def")))
+        `Sec-WebSocket-Extensions`(Vector(WebSocketExtension("abc"), WebSocketExtension("def")))
       "Sec-WebSocket-Extensions: abc; param=2; use_y, def" =!=
-        `Sec-WebSocket-Extensions`(Vector(WebsocketExtension("abc", Map("param" -> "2", "use_y" -> "")), WebsocketExtension("def")))
+        `Sec-WebSocket-Extensions`(Vector(WebSocketExtension("abc", Map("param" -> "2", "use_y" -> "")), WebSocketExtension("def")))
       "Sec-WebSocket-Extensions: abc; param=\",xyz\", def" =!=
-        `Sec-WebSocket-Extensions`(Vector(WebsocketExtension("abc", Map("param" -> ",xyz")), WebsocketExtension("def")))
+        `Sec-WebSocket-Extensions`(Vector(WebSocketExtension("abc", Map("param" -> ",xyz")), WebSocketExtension("def")))
 
       // real examples from https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-19
       "Sec-WebSocket-Extensions: permessage-deflate" =!=
-        `Sec-WebSocket-Extensions`(Vector(WebsocketExtension("permessage-deflate")))
+        `Sec-WebSocket-Extensions`(Vector(WebSocketExtension("permessage-deflate")))
       "Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits; server_max_window_bits=10" =!=
-        `Sec-WebSocket-Extensions`(Vector(WebsocketExtension("permessage-deflate", Map("client_max_window_bits" -> "", "server_max_window_bits" -> "10"))))
+        `Sec-WebSocket-Extensions`(Vector(WebSocketExtension("permessage-deflate", Map("client_max_window_bits" -> "", "server_max_window_bits" -> "10"))))
       "Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits; server_max_window_bits=10, permessage-deflate; client_max_window_bits" =!=
         `Sec-WebSocket-Extensions`(Vector(
-          WebsocketExtension("permessage-deflate", Map("client_max_window_bits" -> "", "server_max_window_bits" -> "10")),
-          WebsocketExtension("permessage-deflate", Map("client_max_window_bits" -> ""))))
+          WebSocketExtension("permessage-deflate", Map("client_max_window_bits" -> "", "server_max_window_bits" -> "10")),
+          WebSocketExtension("permessage-deflate", Map("client_max_window_bits" -> ""))))
     }
     "Sec-WebSocket-Key" in {
       "Sec-WebSocket-Key: c2Zxb3JpbmgyMzA5dGpoMDIzOWdlcm5vZ2luCg==" =!= `Sec-WebSocket-Key`("c2Zxb3JpbmgyMzA5dGpoMDIzOWdlcm5vZ2luCg==")

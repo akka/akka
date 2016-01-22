@@ -10,7 +10,7 @@ import akka.stream.io.ByteStringParser
 import akka.stream.Attributes
 
 /**
- * Streaming parser for the Websocket framing protocol as defined in RFC6455
+ * Streaming parser for the WebSocket framing protocol as defined in RFC6455
  *
  * http://tools.ietf.org/html/rfc6455
  *

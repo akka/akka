@@ -9,6 +9,7 @@ object Dependencies {
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
   lazy val scalaStmVersion = settingKey[String]("The version of ScalaSTM to use.")
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
+  val junitVersion = "4.12"
 
   val Versions = Seq(
     crossScalaVersions := Seq("2.11.7"), //"2.12.0-M2"
@@ -45,7 +46,7 @@ object Dependencies {
     val reactiveStreams = "org.reactivestreams"       % "reactive-streams"             % "1.0.0" // CC0
 
     // ssl-config
-    val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % "0.1.0" // ApacheV2
+    val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % "0.1.1" // ApacheV2
 
     // For akka-http spray-json support
     val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.2"       // ApacheV2
@@ -54,7 +55,7 @@ object Dependencies {
     val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % "2.4.3"       // ApacheV2
 
     // For akka-http-testkit-java
-    val junit       = "junit"                         % "junit"                        % "4.11"        // Common Public License 1.0
+    val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
 
     // For Java 8 Conversions
     val java8Compat = "org.scala-lang.modules"       %% "scala-java8-compat"           % "0.7.0"       // Scala License
@@ -68,7 +69,7 @@ object Dependencies {
       val commonsMath  = "org.apache.commons"          % "commons-math"                 % "2.2"              % "test" // ApacheV2
       val commonsIo    = "commons-io"                  % "commons-io"                   % "2.4"              % "test" // ApacheV2
       val commonsCodec = "commons-codec"               % "commons-codec"                % "1.10"             % "test" // ApacheV2
-      val junit        = "junit"                       % "junit"                        % "4.12"             % "test" // Common Public License 1.0
+      val junit        = "junit"                       % "junit"                        % junitVersion       % "test" // Common Public License 1.0
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.1.3"            % "test" // EPL 1.0 / LGPL 2.1
       val mockito      = "org.mockito"                 % "mockito-all"                  % "1.10.19"          % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst

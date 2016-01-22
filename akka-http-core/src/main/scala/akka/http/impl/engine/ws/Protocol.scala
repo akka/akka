@@ -5,7 +5,7 @@
 package akka.http.impl.engine.ws
 
 /**
- * Contains Websocket protocol constants
+ * Contains WebSocket protocol constants
  *
  * INTERNAL API
  */

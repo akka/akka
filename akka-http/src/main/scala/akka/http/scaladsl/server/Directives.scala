@@ -29,6 +29,6 @@ trait Directives extends RouteConcatenation
   with RouteDirectives
   with SchemeDirectives
   with SecurityDirectives
-  with WebsocketDirectives
+  with WebSocketDirectives
 
 object Directives extends Directives

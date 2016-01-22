@@ -166,13 +166,13 @@ case class MissingCookieRejection(cookieName: String) extends Rejection
 /**
  * Rejection created when a websocket request was expected but none was found.
  */
-case object ExpectedWebsocketRequestRejection extends Rejection
+case object ExpectedWebSocketRequestRejection extends Rejection
 
 /**
  * Rejection created when a websocket request was not handled because none of the given subprotocols
  * was supported.
  */
-case class UnsupportedWebsocketSubprotocolRejection(supportedProtocol: String) extends Rejection
+case class UnsupportedWebSocketSubprotocolRejection(supportedProtocol: String) extends Rejection
 
 /**
  * Rejection created by the `validation` directive as well as for `IllegalArgumentExceptions`

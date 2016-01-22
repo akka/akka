@@ -9,7 +9,7 @@ import akka.stream.javadsl.Source
 import akka.util.ByteString
 
 /**
- * Represents a Websocket message. A message can either be a binary message or a text message.
+ * Represents a WebSocket message. A message can either be a binary message or a text message.
  */
 sealed abstract class Message {
   /**
@@ -39,7 +39,7 @@ object Message {
 }
 
 /**
- * Represents a Websocket text message. A text message can either be strict in which case
+ * Represents a WebSocket text message. A text message can either be strict in which case
  * the complete data is already available or it can be streamed in which case [[getStreamedText]]
  * will return a Source streaming the data as it comes in.
  */

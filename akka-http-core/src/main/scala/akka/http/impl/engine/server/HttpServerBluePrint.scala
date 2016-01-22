@@ -491,11 +491,11 @@ private[http] object HttpServerBluePrint {
         override def onPush(): Unit =
           grab(fromHttp) match {
             case HttpData(b) ⇒ push(toNet, b)
-            case SwitchToWebsocket(bytes, handlerFlow) ⇒
+            case SwitchToWebSocket(bytes, handlerFlow) ⇒
               push(toNet, bytes)
               complete(toHttp)
               cancel(fromHttp)
-              switchToWebsocket(handlerFlow)
+              switchToWebSocket(handlerFlow)
           }
         override def onUpstreamFinish(): Unit = complete(toNet)
         override def onUpstreamFailure(ex: Throwable): Unit = fail(toNet, ex)
@@ -536,13 +536,13 @@ private[http] object HttpServerBluePrint {
       }
 
       /*
-       * Websocket support
+       * WebSocket support
        */
-      def switchToWebsocket(handlerFlow: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]]): Unit = {
+      def switchToWebSocket(handlerFlow: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]]): Unit = {
         val frameHandler = handlerFlow match {
           case Left(frameHandler) ⇒ frameHandler
           case Right(messageHandler) ⇒
-            Websocket.stack(serverSide = true, maskingRandomFactory = settings.websocketRandomFactory, log = log).join(messageHandler)
+            WebSocket.stack(serverSide = true, maskingRandomFactory = settings.websocketRandomFactory, log = log).join(messageHandler)
         }
 
         val sinkIn = new SubSinkInlet[ByteString]("FrameSink")
@@ -560,7 +560,7 @@ private[http] object HttpServerBluePrint {
               sinkIn.cancel()
             }
           })
-          Websocket.framing.join(frameHandler).runWith(Source.empty, sinkIn.sink)(subFusingMaterializer)
+          WebSocket.framing.join(frameHandler).runWith(Source.empty, sinkIn.sink)(subFusingMaterializer)
         } else {
           val sourceOut = new SubSourceOutlet[ByteString]("FrameSource")
 
@@ -596,7 +596,7 @@ private[http] object HttpServerBluePrint {
             override def onDownstreamFinish(): Unit = cancel(fromNet)
           })
 
-          Websocket.framing.join(frameHandler).runWith(sourceOut.source, sinkIn.sink)(subFusingMaterializer)
+          WebSocket.framing.join(frameHandler).runWith(sourceOut.source, sinkIn.sink)(subFusingMaterializer)
         }
       }
     }

@@ -12,9 +12,9 @@ import akka.stream._
 import akka.stream.impl.StreamLayout.Module
 import akka.util.ByteString
 import javax.net.ssl._
+
 import scala.annotation.varargs
 import scala.collection.immutable
-import java.security.cert.Certificate
 import scala.compat.java8.OptionConverters
 
 /**
@@ -149,7 +149,7 @@ object SslTls {
 }
 
 /**
- * This object holds simple wrapping [[BidiFlow]] implementations that can
+ * This object holds simple wrapping [[akka.stream.scaladsl.BidiFlow]] implementations that can
  * be used instead of [[SslTls]] when no encryption is desired. The flows will
  * just adapt the message protocol by wrapping into [[SessionBytes]] and
  * unwrapping [[SendBytes]].
@@ -422,6 +422,7 @@ object NegotiateNewSession extends NegotiateNewSession(None, None, None, None) {
    * settings unchanged).
    */
   def withDefaults = this
+
 }
 
 /**
@@ -437,8 +438,7 @@ case class SendBytes(bytes: ByteString) extends SslTlsOutbound
  * and verifies them if provided, and `None` disables peer certificate
  * verification.
  *
- * See the documentation for `SSLEngine::setWantClientAuth` for more
- * information.
+ * See the documentation for `SSLEngine::setWantClientAuth` for more information.
  */
 sealed abstract class ClientAuth
 object ClientAuth {
