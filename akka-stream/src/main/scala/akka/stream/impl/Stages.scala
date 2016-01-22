@@ -88,7 +88,7 @@ private[stream] object Stages {
     val subscriberSource = name("subscriberSource")
     val actorPublisherSource = name("actorPublisherSource")
     val actorRefSource = name("actorRefSource")
-    val acknowledgeSource = name("acknowledgeSource")
+    val queueSource = name("queueSource")
     val inputStreamSource = name("inputStreamSource") and IODispatcher
     val outputStreamSource = name("outputStreamSource") and IODispatcher
     val fileSource = name("fileSource") and IODispatcher
