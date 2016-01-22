@@ -95,3 +95,18 @@ Materialized values of the following sources and sinks:
 have been changed from ``Long`` to ``akka.stream.io.IOResult``.
 This allows to signal more complicated completion scenarios. For example, on failure it is now possible
 to return the exception and the number of bytes written until that exception occured.
+
+PushStage, PushPullStage and DetachedStage have been deprecated in favor of GraphStage
+======================================================================================
+
+The :class:`PushStage` :class:`PushPullStage` and :class:`DetachedStage` classes have been deprecated and
+should be replaced by :class:`GraphStage` (:ref:`graphstage-scala`) which is now a single powerful API
+for custom stream processing.
+
+Update procedure
+----------------
+
+Please consult the :class:`GraphStage` documentation (:ref:`graphstage-scala`) and the `previous migration guide`_
+on migrating from :class:`AsyncStage` to :class:`GraphStage`.
+
+.. _`previous migration guide`: http://doc.akka.io/docs/akka-stream-and-http-experimental/2.0.2/scala/migration-guide-1.0-2.x-scala.html#AsyncStage_has_been_replaced_by_GraphStage
