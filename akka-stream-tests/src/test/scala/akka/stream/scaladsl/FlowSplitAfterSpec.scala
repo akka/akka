@@ -4,9 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
-import akka.stream.ActorAttributes
+import akka.stream._
 import akka.stream.Supervision.resumingDecider
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.TestPublisher
@@ -49,9 +47,13 @@ class FlowSplitAfterSpec extends AkkaSpec {
     def cancel(): Unit = subscription.cancel()
   }
 
-  class SubstreamsSupport(splitAfter: Int = 3, elementCount: Int = 6, propagateSubstreamCancel: Boolean = false) {
+  class SubstreamsSupport(
+    splitAfter: Int = 3,
+    elementCount: Int = 6,
+    substreamCancelStrategy: SubstreamCancelStrategy = SubstreamCancelStrategy.drain) {
+
     val source = Source(1 to elementCount)
-    val groupStream = source.splitAfter(propagateSubstreamCancel)(_ == splitAfter).lift.runWith(Sink.asPublisher(false))
+    val groupStream = source.splitAfter(substreamCancelStrategy)(_ == splitAfter).lift.runWith(Sink.asPublisher(false))
     val masterSubscriber = TestSubscriber.manualProbe[Source[Int, _]]()
 
     groupStream.subscribe(masterSubscriber)
@@ -254,7 +256,7 @@ class FlowSplitAfterSpec extends AkkaSpec {
     }
 
     "support eager cancellation of master stream on cancelling substreams" in assertAllStagesStopped {
-      new SubstreamsSupport(splitAfter = 5, elementCount = 8, propagateSubstreamCancel = true) {
+      new SubstreamsSupport(splitAfter = 5, elementCount = 8, SubstreamCancelStrategy.propagate) {
         val s1 = StreamPuppet(expectSubFlow().runWith(Sink.asPublisher(false)))
         s1.cancel()
         masterSubscriber.expectComplete()

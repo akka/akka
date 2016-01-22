@@ -214,20 +214,25 @@ object Split {
   /** Splits after the current element. The current element will be the last element in the current substream. */
   case object SplitAfter extends SplitDecision
 
-  def when[T](p: T ⇒ Boolean, propagateSubstreamCancel: Boolean = false): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] =
-    new Split(Split.SplitBefore, p, propagateSubstreamCancel)
+  def when[T](p: T ⇒ Boolean, substreamCancelStrategy: SubstreamCancelStrategy): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] =
+    new Split(Split.SplitBefore, p, substreamCancelStrategy)
 
-  def after[T](p: T ⇒ Boolean, propagateSubstreamCancel: Boolean = false): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] =
-    new Split(Split.SplitAfter, p, propagateSubstreamCancel)
+  def after[T](p: T ⇒ Boolean, substreamCancelStrategy: SubstreamCancelStrategy): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] =
+    new Split(Split.SplitAfter, p, substreamCancelStrategy)
 }
 
 /**
  * INERNAL API
  */
-final class Split[T](decision: Split.SplitDecision, p: T ⇒ Boolean, propagateSubstreamCancel: Boolean) extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
+final class Split[T](decision: Split.SplitDecision, p: T ⇒ Boolean, substreamCancelStrategy: SubstreamCancelStrategy) extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
   val in: Inlet[T] = Inlet("Split.in")
   val out: Outlet[Source[T, NotUsed]] = Outlet("Split.out")
   override val shape: FlowShape[T, Source[T, NotUsed]] = FlowShape(in, out)
+
+  private val propagateSubstreamCancel = substreamCancelStrategy match {
+    case SubstreamCancelStrategies.Propagate ⇒ true
+    case SubstreamCancelStrategies.Drain     ⇒ false
+  }
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     import Split._
