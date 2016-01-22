@@ -7,7 +7,7 @@ package akka.http.impl.engine.client
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import org.scalatest.Inside
-import akka.http.ClientConnectionSettings
+import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.io.{ SessionBytes, SslTlsOutbound, SendBytes }
 import akka.util.ByteString
 import akka.event.NoLogging
@@ -521,9 +521,9 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
 
     def settings = {
       val s = ClientConnectionSettings(system)
-        .copy(userAgentHeader = Some(`User-Agent`(List(ProductVersion("akka-http", "test")))))
+        .withUserAgentHeader(Some(`User-Agent`(List(ProductVersion("akka-http", "test")))))
       if (maxResponseContentLength < 0) s
-      else s.copy(parserSettings = s.parserSettings.copy(maxContentLength = maxResponseContentLength))
+      else s.withParserSettings(s.parserSettings.withMaxContentLength(maxResponseContentLength))
     }
 
     val (netOut, netIn) = {

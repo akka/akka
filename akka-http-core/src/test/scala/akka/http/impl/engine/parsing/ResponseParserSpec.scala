@@ -5,7 +5,7 @@
 package akka.http.impl.engine.parsing
 
 import akka.NotUsed
-import akka.http.ParserSettings
+import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.io.{ SslTlsPlacebo, SessionBytes }
 import com.typesafe.config.{ ConfigFactory, Config }

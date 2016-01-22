@@ -5,7 +5,7 @@
 package akka.http.impl.engine
 
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
-import akka.http.ParserSettings
+import akka.http.scaladsl.settings.ParserSettings
 
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter

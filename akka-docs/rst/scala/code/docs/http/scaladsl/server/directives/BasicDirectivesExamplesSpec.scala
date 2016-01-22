@@ -183,7 +183,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
   }
   "withSettings-0" in compileOnlySpec {
     //#withSettings-0
-    val special = RoutingSettings(system).copy(fileIODispatcher = "special-io-dispatcher")
+    val special = RoutingSettingsImpl(system).copy(fileIODispatcher = "special-io-dispatcher")
 
     def sample() =
       path("sample") {
@@ -687,7 +687,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
   "extractSettings-examples" in {
     //#extractSettings-examples
     val route =
-      extractSettings { settings: RoutingSettings =>
+      extractSettings { settings: RoutingSettingsImpl =>
         complete(s"RoutingSettings.renderVanityFooter = ${settings.renderVanityFooter}")
       }
 
@@ -705,7 +705,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
 
     val route =
       tunedSettings {
-        extractSettings { settings: RoutingSettings =>
+        extractSettings { settings: RoutingSettingsImpl =>
           complete(s"RoutingSettings.fileGetConditional = ${settings.fileGetConditional}")
         }
       }

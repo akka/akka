@@ -15,10 +15,12 @@ import akka.http.impl.engine.HttpConnectionTimeoutException
 import akka.http.impl.engine.client._
 import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebSocketClientBlueprint
+import akka.http.impl.settings.{ ConnectionPoolSetup, HostConnectionPoolSetup }
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgradeResponse }
+import akka.http.scaladsl.settings.{ ServerSettings, ClientConnectionSettings, ConnectionPoolSettings }
 import akka.http.scaladsl.util.FastFuture
 import akka.NotUsed
 import akka.stream.Materializer
@@ -68,7 +70,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * which is 80 for HTTP and 443 for HTTPS.
    *
    * To configure additional settings for a server started using this method,
-   * use the `akka.http.server` config section or pass in a [[ServerSettings]] explicitly.
+   * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
    */
   def bind(interface: String, port: Int = DefaultPortForProtocol,
            connectionContext: ConnectionContext = defaultServerHttpContext,
@@ -297,6 +299,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   }
 
   /**
+   * INTERNAL API
+   *
    * Starts a new connection pool to the given host and configuration and returns a [[Flow]] which dispatches
    * the requests from all its materializations across this pool.
    * While the started host connection pool internally shuts itself down automatically after the configured idle
@@ -310,7 +314,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
    * object of type `T` from the application which is emitted together with the corresponding response.
    */
-  private def newHostConnectionPool[T](setup: HostConnectionPoolSetup)(
+  private[akka] def newHostConnectionPool[T](setup: HostConnectionPoolSetup)(
     implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
     val gatewayFuture = FastFuture.successful(new PoolGateway(setup, Promise()))
     gatewayClientFlow(setup, gatewayFuture)

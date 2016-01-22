@@ -5,7 +5,7 @@
 package akka.http.scaladsl.server
 package directives
 
-import akka.http.ParserSettings
+import akka.http.scaladsl.settings.ParserSettings
 
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
@@ -166,21 +166,21 @@ trait BasicDirectives {
     BasicDirectives._extractLog
 
   /**
-   * Runs its inner route with the given alternative [[RoutingSettings]].
+   * Runs its inner route with the given alternative [[RoutingSettingsImpl]].
    */
-  def withSettings(settings: RoutingSettings): Directive0 =
+  def withSettings(settings: RoutingSettingsImpl): Directive0 =
     mapRequestContext(_ withRoutingSettings settings)
 
   /**
    * Runs the inner route with settings mapped by the given function.
    */
-  def mapSettings(f: RoutingSettings ⇒ RoutingSettings): Directive0 =
+  def mapSettings(f: RoutingSettingsImpl ⇒ RoutingSettingsImpl): Directive0 =
     mapRequestContext(ctx ⇒ ctx.withRoutingSettings(f(ctx.settings)))
 
   /**
-   * Extracts the [[RoutingSettings]] from the [[RequestContext]].
+   * Extracts the [[RoutingSettingsImpl]] from the [[RequestContext]].
    */
-  def extractSettings: Directive1[RoutingSettings] =
+  def extractSettings: Directive1[RoutingSettingsImpl] =
     BasicDirectives._extractSettings
 
   /**
@@ -202,7 +202,7 @@ object BasicDirectives extends BasicDirectives {
   private val _extractExecutionContext: Directive1[ExecutionContext] = extract(_.executionContext)
   private val _extractMaterializer: Directive1[Materializer] = extract(_.materializer)
   private val _extractLog: Directive1[LoggingAdapter] = extract(_.log)
-  private val _extractSettings: Directive1[RoutingSettings] = extract(_.settings)
+  private val _extractSettings: Directive1[RoutingSettingsImpl] = extract(_.settings)
   private val _extractParserSettings: Directive1[ParserSettings] = extract(_.parserSettings)
   private val _extractRequestContext: Directive1[RequestContext] = extract(conforms)
 }

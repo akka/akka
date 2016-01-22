@@ -6,7 +6,7 @@ package akka.http.scaladsl.server
 package directives
 
 import akka.actor.ActorSystem
-import akka.http.ParserSettings
+import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.model.Multipart
 import akka.http.scaladsl.model.Multipart.ByteRanges
 
