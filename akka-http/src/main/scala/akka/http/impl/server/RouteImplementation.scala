@@ -8,7 +8,6 @@ import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.server.values.{ PathMatcher, BasicCredentials, OAuth2Credentials }
 import akka.http.scaladsl.model.StatusCodes.Redirection
 import akka.http.scaladsl.server.util.TupleOps.Join
-
 import scala.language.implicitConversions
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -98,7 +97,7 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
                 }
             }
 
-          authenticator.authenticate(javaCreds).toScala.map(_.asScala)(sameThreadExecutionContext)
+          authenticator.authenticate(javaCreds).toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
         }).flatMap { user ⇒
           addExtraction(authenticator.asInstanceOf[RequestVal[Any]], user)
         }

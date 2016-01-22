@@ -138,11 +138,11 @@ Server-Side HTTPS Support
 
 Akka HTTP supports TLS encryption on the server-side as well as on the :ref:`client-side <clientSideHTTPS-java>`.
 
-The central vehicle for configuring encryption is the ``HttpsContext``, which can be created using
-the static method ``HttpsContext.create`` which is defined like this:
+The central vehicle for configuring encryption is the ``HttpsConnectionContext``, which can be created using
+the static method ``ConnectionContext.https`` which is defined like this:
 
-.. includecode:: /../../akka-http-core/src/main/java/akka/http/javadsl/HttpsContext.java
-   :include: http-context-creation
+.. includecode:: /../../akka-http-core/src/main/scala/akka/http/javadsl/ConnectionContext.scala
+   :include: https-context-creation
 
 On the server-side the ``bind``, and ``bindAndHandleXXX`` methods of the `akka.http.javadsl.Http`_ extension define an
 optional ``httpsContext`` parameter, which can receive the HTTPS configuration in the form of an ``HttpsContext``
