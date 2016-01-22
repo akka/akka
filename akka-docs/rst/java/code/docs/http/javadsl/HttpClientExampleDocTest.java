@@ -6,6 +6,7 @@ package docs.http.javadsl;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorSystem;
+import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.HostConnectionPool;
 import akka.japi.Pair;
 
@@ -20,6 +21,7 @@ import akka.http.javadsl.model.*;
 import akka.http.javadsl.Http;
 import scala.util.Try;
 
+import static akka.http.javadsl.ConnectHttp.toHost;
 import static akka.pattern.Patterns.*;
 
 @SuppressWarnings("unused")
@@ -33,7 +35,7 @@ public class HttpClientExampleDocTest {
         final ActorMaterializer materializer = ActorMaterializer.create(system);
 
         final Flow<HttpRequest, HttpResponse, Future<OutgoingConnection>> connectionFlow =
-                Http.get(system).outgoingConnection("akka.io", 80);
+                Http.get(system).outgoingConnection(toHost("akka.io", 80));
         final Future<HttpResponse> responseFuture =
                 Source.single(HttpRequest.create("/"))
                         .via(connectionFlow)
@@ -52,7 +54,7 @@ public class HttpClientExampleDocTest {
       Pair<HttpRequest, Integer>,
       Pair<Try<HttpResponse>, Integer>,
       HostConnectionPool> poolClientFlow =
-      Http.get(system).<Integer>cachedHostConnectionPool("akka.io", 80, materializer);
+      Http.get(system).<Integer>cachedHostConnectionPool(toHost("akka.io", 80), materializer);
 
     // construct a pool client flow with context type `Integer`
 

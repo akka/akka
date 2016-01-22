@@ -11,7 +11,7 @@ import scala.concurrent.duration.FiniteDuration
 import akka.stream.stage._
 import akka.http.impl.util.Timestamp
 import akka.http.impl.engine.ws.FrameHandler._
-import Websocket.Tick
+import WebSocket.Tick
 import akka.http.impl.engine.ws.FrameHandler.UserHandlerErredOut
 
 /**
@@ -46,7 +46,7 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
         become(new WaitingForPeerCloseFrame())
         ctx.push(FrameEvent.closeFrame(Protocol.CloseCodes.Regular))
       case UserHandlerErredOut(e) ⇒
-        log.error(e, s"Websocket handler failed with ${e.getMessage}")
+        log.error(e, s"WebSocket handler failed with ${e.getMessage}")
         become(new WaitingForPeerCloseFrame())
         ctx.push(FrameEvent.closeFrame(Protocol.CloseCodes.UnexpectedCondition, "internal error"))
       case Tick ⇒ ctx.pull() // ignore
@@ -65,7 +65,7 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
     def onPush(elem: AnyRef, ctx: Context[FrameStart]): SyncDirective = elem match {
       case UserHandlerCompleted ⇒ sendOutLastFrame(ctx)
       case UserHandlerErredOut(e) ⇒
-        log.error(e, s"Websocket handler failed while waiting for handler completion with ${e.getMessage}")
+        log.error(e, s"WebSocket handler failed while waiting for handler completion with ${e.getMessage}")
         sendOutLastFrame(ctx)
       case start: FrameStart ⇒ ctx.push(start)
       case _                 ⇒ ctx.pull() // ignore

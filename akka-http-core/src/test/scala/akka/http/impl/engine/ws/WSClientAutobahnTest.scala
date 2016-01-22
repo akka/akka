@@ -167,7 +167,7 @@ object WSClientAutobahnTest extends App {
   system.scheduler.scheduleOnce(60.seconds)(system.terminate())
 
   def runWs[T](uri: Uri, clientFlow: Flow[Message, Message, T]): T =
-    Http().singleWebsocketRequest(uri, clientFlow)._2
+    Http().singleWebSocketRequest(uri, clientFlow)._2
 
   def completionSignal[T]: Flow[T, T, Future[Unit]] =
     Flow[T].transformMaterializing { () ⇒
@@ -193,8 +193,8 @@ object WSClientAutobahnTest extends App {
     }
 
   /**
-   * The autobahn tests define a weird API where every request must be a Websocket request and
-   * they will send a single websocket message with the result. Websocket everywhere? Strange,
+   * The autobahn tests define a weird API where every request must be a WebSocket request and
+   * they will send a single websocket message with the result. WebSocket everywhere? Strange,
    * but somewhat consistent.
    */
   def runToSingleText(uri: Uri): Future[String] = {

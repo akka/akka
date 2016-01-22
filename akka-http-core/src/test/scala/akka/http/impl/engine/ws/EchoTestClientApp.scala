@@ -54,7 +54,7 @@ object EchoTestClientApp extends App {
 
   def echoClient = Flow.fromSinkAndSourceMat(sink, source)(Keep.left)
 
-  val (upgrade, res) = Http().singleWebsocketRequest("wss://echo.websocket.org", echoClient)
+  val (upgrade, res) = Http().singleWebSocketRequest("wss://echo.websocket.org", echoClient)
   res onComplete {
     case Success(res) ⇒
       println("Run successful. Got these elements:")

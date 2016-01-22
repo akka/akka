@@ -18,7 +18,7 @@ import Protocol.Opcode
 class FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
   import BitBuilder._
 
-  "The Websocket parser/renderer round-trip should work for" - {
+  "The WebSocket parser/renderer round-trip should work for" - {
     "the frame header" - {
       "interpret flags correctly" - {
         "FIN" in {

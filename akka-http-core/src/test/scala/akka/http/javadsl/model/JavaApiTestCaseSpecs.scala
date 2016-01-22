@@ -61,7 +61,7 @@ class JavaApiTestCaseSpecs extends FreeSpec with MustMatchers {
       Uri.create("/order").query(JavaApiTestCases.addSessionId(orderId)) must be(Uri.create("/order?orderId=123&session=abcdefghijkl"))
     }
     "create HttpsContext" in {
-      akka.http.javadsl.HttpsContext.create(SSLContext.getDefault,
+      akka.http.javadsl.ConnectionContext.https(SSLContext.getDefault,
         Optional.empty[java.util.Collection[String]],
         Optional.empty[java.util.Collection[String]],
         Optional.empty[ClientAuth],

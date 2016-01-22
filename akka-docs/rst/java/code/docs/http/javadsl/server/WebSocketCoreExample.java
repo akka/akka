@@ -30,15 +30,15 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
-import akka.http.javadsl.model.ws.Websocket;
+import akka.http.javadsl.model.ws.WebSocket;
 
-public class WebsocketCoreExample {
+public class WebSocketCoreExample {
     //#websocket-handling
     public static HttpResponse handleRequest(HttpRequest request) {
         System.out.println("Handling request to " + request.getUri());
 
         if (request.getUri().path().equals("/greeter"))
-            return Websocket.handleWebsocketRequestWith(request, greeter());
+            return WebSocket.handleWebSocketRequestWith(request, greeter());
         else
             return HttpResponse.create().withStatus(404);
     }

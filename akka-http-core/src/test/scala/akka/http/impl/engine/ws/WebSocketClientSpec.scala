@@ -7,7 +7,7 @@ package akka.http.impl.engine.ws
 import java.util.Random
 
 import akka.NotUsed
-import akka.http.scaladsl.model.ws.{ InvalidUpgradeResponse, WebsocketUpgradeResponse }
+import akka.http.scaladsl.model.ws.{ InvalidUpgradeResponse, WebSocketUpgradeResponse }
 import akka.stream.ClosedShape
 
 import scala.concurrent.duration._
@@ -25,8 +25,8 @@ import org.scalatest.{ Matchers, FreeSpec }
 
 import akka.http.impl.util._
 
-class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSpec {
-  "The client-side Websocket implementation should" - {
+class WebSocketClientSpec extends FreeSpec with Matchers with WithMaterializerSpec {
+  "The client-side WebSocket implementation should" - {
     "establish a websocket connection when the user requests it" in new EstablishedConnectionSetup with ClientEchoes
     "establish connection with case insensitive header values" in new TestSetup with ClientEchoes {
       expectWireData(UpgradeRequestBytes)
@@ -54,7 +54,7 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
             |""")
 
         expectNetworkAbort()
-        expectInvalidUpgradeResponseCause("Websocket server at ws://example.org/ws returned unexpected status code: 404 Not Found")
+        expectInvalidUpgradeResponseCause("WebSocket server at ws://example.org/ws returned unexpected status code: 404 Not Found")
       }
       "missing Sec-WebSocket-Accept hash" in new TestSetup with ClientEchoes {
         expectWireData(UpgradeRequestBytes)
@@ -69,7 +69,7 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
             |""")
 
         expectNetworkAbort()
-        expectInvalidUpgradeResponseCause("Websocket server at ws://example.org/ws returned response that was missing required `Sec-WebSocket-Accept` header.")
+        expectInvalidUpgradeResponseCause("WebSocket server at ws://example.org/ws returned response that was missing required `Sec-WebSocket-Accept` header.")
       }
       "wrong Sec-WebSocket-Accept hash" in new TestSetup with ClientEchoes {
         expectWireData(UpgradeRequestBytes)
@@ -85,7 +85,7 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
             |""")
 
         expectNetworkAbort()
-        expectInvalidUpgradeResponseCause("Websocket server at ws://example.org/ws returned response with invalid `Sec-WebSocket-Accept` header.")
+        expectInvalidUpgradeResponseCause("WebSocket server at ws://example.org/ws returned response with invalid `Sec-WebSocket-Accept` header.")
       }
       "missing `Upgrade` header" in new TestSetup with ClientEchoes {
         expectWireData(UpgradeRequestBytes)
@@ -100,7 +100,7 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
             |""")
 
         expectNetworkAbort()
-        expectInvalidUpgradeResponseCause("Websocket server at ws://example.org/ws returned response that was missing required `Upgrade` header.")
+        expectInvalidUpgradeResponseCause("WebSocket server at ws://example.org/ws returned response that was missing required `Upgrade` header.")
       }
       "missing `Connection: upgrade` header" in new TestSetup with ClientEchoes {
         expectWireData(UpgradeRequestBytes)
@@ -115,7 +115,7 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
             |""")
 
         expectNetworkAbort()
-        expectInvalidUpgradeResponseCause("Websocket server at ws://example.org/ws returned response that was missing required `Connection` header.")
+        expectInvalidUpgradeResponseCause("WebSocket server at ws://example.org/ws returned response that was missing required `Connection` header.")
       }
     }
 
@@ -227,7 +227,7 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
 
           expectNetworkAbort()
           expectInvalidUpgradeResponseCause(
-            "Websocket server at ws://example.org/ws returned response that indicated that the given subprotocol was not supported. (client supported: v2, server supported: None)")
+            "WebSocket server at ws://example.org/ws returned response that indicated that the given subprotocol was not supported. (client supported: v2, server supported: None)")
         }
         "if different protocol was selected" in new TestSetup with ClientProbes {
           override protected def requestedSubProtocol: Option[String] = Some("v2")
@@ -256,7 +256,7 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
 
           expectNetworkAbort()
           expectInvalidUpgradeResponseCause(
-            "Websocket server at ws://example.org/ws returned response that indicated that the given subprotocol was not supported. (client supported: v2, server supported: Some(v3))")
+            "WebSocket server at ws://example.org/ws returned response that indicated that the given subprotocol was not supported. (client supported: v2, server supported: Some(v3))")
         }
       }
     }
@@ -303,9 +303,9 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
 
     def targetUri: Uri = "ws://example.org/ws"
 
-    def clientLayer: Http.WebsocketClientLayer =
-      Http(system).websocketClientLayer(
-        WebsocketRequest(targetUri, subprotocol = requestedSubProtocol),
+    def clientLayer: Http.WebSocketClientLayer =
+      Http(system).webSocketClientLayer(
+        WebSocketRequest(targetUri, subprotocol = requestedSubProtocol),
         settings = settings)
 
     val (netOut, netIn, response) = {
@@ -352,7 +352,7 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
     def expectNetworkAbort(): Unit = netOut.expectError()
     def closeNetworkInput(): Unit = netIn.sendComplete()
 
-    def expectResponse(response: WebsocketUpgradeResponse): Unit =
+    def expectResponse(response: WebSocketUpgradeResponse): Unit =
       expectInvalidUpgradeResponse() shouldEqual response
     def expectInvalidUpgradeResponseCause(expected: String): Unit =
       expectInvalidUpgradeResponse().cause shouldEqual expected

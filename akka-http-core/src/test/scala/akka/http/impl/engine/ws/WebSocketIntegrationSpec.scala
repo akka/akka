@@ -25,27 +25,27 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.stream.testkit.scaladsl.TestSink
 import scala.concurrent.Future
 
-class WebsocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.fuzzing-mode=off")
+class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.fuzzing-mode=off")
   with ScalaFutures with ConversionCheckedTripleEquals with Eventually {
 
   implicit val patience = PatienceConfig(3.seconds)
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
 
-  "A Websocket server" must {
+  "A WebSocket server" must {
 
     "not reset the connection when no data are flowing" in Utils.assertAllStagesStopped {
       val source = TestPublisher.probe[Message]()
       val bindingFuture = Http().bindAndHandleSync({
         case HttpRequest(_, _, headers, _, _) ⇒
-          val upgrade = headers.collectFirst { case u: UpgradeToWebsocket ⇒ u }.get
+          val upgrade = headers.collectFirst { case u: UpgradeToWebSocket ⇒ u }.get
           upgrade.handleMessages(Flow.fromSinkAndSource(Sink.ignore, Source.fromPublisher(source)), None)
       }, interface = "localhost", port = 0)
       val binding = Await.result(bindingFuture, 3.seconds)
       val myPort = binding.localAddress.getPort
 
-      val (response, sink) = Http().singleWebsocketRequest(
-        WebsocketRequest("ws://127.0.0.1:" + myPort),
+      val (response, sink) = Http().singleWebSocketRequest(
+        WebSocketRequest("ws://127.0.0.1:" + myPort),
         Flow.fromSinkAndSourceMat(TestSink.probe[Message], Source.empty)(Keep.left))
 
       response.futureValue.response.status.isSuccess should ===(true)
@@ -67,7 +67,7 @@ class WebsocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
       val source = TestPublisher.probe[Message]()
       val bindingFuture = Http().bindAndHandleSync({
         case HttpRequest(_, _, headers, _, _) ⇒
-          val upgrade = headers.collectFirst { case u: UpgradeToWebsocket ⇒ u }.get
+          val upgrade = headers.collectFirst { case u: UpgradeToWebSocket ⇒ u }.get
           upgrade.handleMessages(Flow.fromSinkAndSource(Sink.ignore, Source.fromPublisher(source)), None)
       }, interface = "localhost", port = 0)
       val binding = Await.result(bindingFuture, 3.seconds)
@@ -76,7 +76,7 @@ class WebsocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
       val ((response, breaker), sink) =
         Source.empty
           .viaMat {
-            Http().websocketClientLayer(WebsocketRequest("ws://localhost:" + myPort))
+            Http().webSocketClientLayer(WebSocketRequest("ws://localhost:" + myPort))
               .atop(SslTlsPlacebo.forScala)
               .joinMat(Flow.fromGraph(GraphStages.breaker[ByteString]).via(
                 Tcp().outgoingConnection(new InetSocketAddress("localhost", myPort), halfClose = true)))(Keep.both)
@@ -105,15 +105,15 @@ class WebsocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
 
       val bindingFuture = Http().bindAndHandleSync({
         case HttpRequest(_, _, headers, _, _) ⇒
-          val upgrade = headers.collectFirst { case u: UpgradeToWebsocket ⇒ u }.get
+          val upgrade = headers.collectFirst { case u: UpgradeToWebSocket ⇒ u }.get
           upgrade.handleMessages(Flow.apply, None)
       }, interface = "localhost", port = 0)
       val binding = Await.result(bindingFuture, 3.seconds)
       val myPort = binding.localAddress.getPort
 
       val N = 100
-      val (response, count) = Http().singleWebsocketRequest(
-        WebsocketRequest("ws://127.0.0.1:" + myPort),
+      val (response, count) = Http().singleWebSocketRequest(
+        WebSocketRequest("ws://127.0.0.1:" + myPort),
         Flow.fromSinkAndSourceMat(
           Sink.fold(0)((n, _: Message) ⇒ n + 1),
           Source.repeat(TextMessage("hello")).take(N))(Keep.left))
@@ -143,7 +143,7 @@ class WebsocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
 
       val bindingFuture = Http().bindAndHandleSync({
         case HttpRequest(_, _, headers, _, _) ⇒
-          val upgrade = headers.collectFirst { case u: UpgradeToWebsocket ⇒ u }.get
+          val upgrade = headers.collectFirst { case u: UpgradeToWebSocket ⇒ u }.get
           upgrade.handleMessages(handler, None)
       }, interface = "localhost", port = 0)
       val binding = Await.result(bindingFuture, 3.seconds)
@@ -153,7 +153,7 @@ class WebsocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
       val (breaker, completion) =
         Source.maybe
           .viaMat {
-            Http().websocketClientLayer(WebsocketRequest("ws://localhost:" + myPort))
+            Http().webSocketClientLayer(WebSocketRequest("ws://localhost:" + myPort))
               .atop(SslTlsPlacebo.forScala)
               // the resource leak of #19398 existed only for severed websocket connections
               .atopMat(GraphStages.bidiBreaker[ByteString, ByteString])(Keep.right)

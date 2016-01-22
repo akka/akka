@@ -14,10 +14,10 @@ import akka.http.impl.util._
 
 import akka.http.impl.engine.server.HttpServerTestSetupBase
 
-class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSpec { spec ⇒
+class WebSocketServerSpec extends FreeSpec with Matchers with WithMaterializerSpec { spec ⇒
   import WSTestUtils._
 
-  "The server-side Websocket integration should" - {
+  "The server-side WebSocket integration should" - {
     "establish a websocket connection when the user requests it" - {
       "when user handler instantly tries to send messages" in Utils.assertAllStagesStopped {
         new TestSetup {
@@ -33,7 +33,7 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
               |""")
 
           val request = expectRequest()
-          val upgrade = request.header[UpgradeToWebsocket]
+          val upgrade = request.header[UpgradeToWebSocket]
           upgrade.isDefined shouldBe true
 
           val source =
@@ -79,7 +79,7 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
               |""")
 
           val request = expectRequest()
-          val upgrade = request.header[UpgradeToWebsocket]
+          val upgrade = request.header[UpgradeToWebSocket]
           upgrade.isDefined shouldBe true
 
           val response = upgrade.get.handleMessages(Flow[Message]) // simple echoing
@@ -115,7 +115,7 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
       }
     }
     "prevent the selection of an unavailable subprotocol" in pending
-    "reject invalid Websocket handshakes" - {
+    "reject invalid WebSocket handshakes" - {
       "missing `Upgrade: websocket` header" in pending
       "missing `Connection: upgrade` header" in pending
       "missing `Sec-WebSocket-Key header" in pending

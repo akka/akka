@@ -9,7 +9,7 @@ import akka.util.ByteString
 
 //#message-model
 /**
- * The ADT for Websocket messages. A message can either be a binary or a text message.
+ * The ADT for WebSocket messages. A message can either be a binary or a text message.
  */
 sealed trait Message
 
