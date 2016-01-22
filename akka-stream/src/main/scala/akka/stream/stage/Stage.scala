@@ -29,6 +29,7 @@ import scala.util.control.NonFatal
  * @see [[akka.stream.scaladsl.Flow#transform]]
  * @see [[akka.stream.javadsl.Flow#transform]]
  */
+@deprecated("Please use GraphStage instead.", "2.4.2")
 sealed trait Stage[-In, +Out]
 
 /**
@@ -185,6 +186,7 @@ private[stream] object AbstractStage {
     extends PushPullGraphStageWithMaterializedValue[In, Out, Ext, NotUsed]((att: Attributes) ⇒ (_factory(att), NotUsed), _stageAttributes)
 }
 
+@deprecated("Please use GraphStage instead.", "2.4.2")
 abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, Ctx <: Context[Out], LifeCtx <: LifecycleContext] extends Stage[In, Out] {
 
   /**
@@ -331,11 +333,13 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
  * @see [[StatefulStage]]
  * @see [[PushStage]]
  */
+@deprecated("Please use GraphStage instead.", "2.4.2")
 abstract class PushPullStage[In, Out] extends AbstractStage[In, Out, SyncDirective, SyncDirective, Context[Out], LifecycleContext]
 
 /**
  * `PushStage` is a [[PushPullStage]] that always perform transitive pull by calling `ctx.pull` from `onPull`.
  */
+@deprecated("Please use GraphStage instead.", "2.4.2")
 abstract class PushStage[In, Out] extends PushPullStage[In, Out] {
   /**
    * Always pulls from upstream.
@@ -365,6 +369,7 @@ abstract class PushStage[In, Out] extends PushPullStage[In, Out] {
  *
  * @see [[PushPullStage]]
  */
+@deprecated("Please use GraphStage instead.", "2.4.2")
 abstract class DetachedStage[In, Out]
   extends AbstractStage[In, Out, UpstreamDirective, DownstreamDirective, DetachedContext[Out], LifecycleContext] {
   private[stream] override def isDetached = true
