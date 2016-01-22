@@ -4,7 +4,7 @@
 
 package akka.http.javadsl
 
-import akka.http.HostConnectionPoolSetup
+import akka.http.impl.settings.HostConnectionPoolSetup
 
 trait HostConnectionPool {
   def setup: HostConnectionPoolSetup

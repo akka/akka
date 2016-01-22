@@ -5,7 +5,7 @@
 package akka.http.impl.engine.client
 
 import akka.actor.ActorSystem
-import akka.http.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
 import akka.stream.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 

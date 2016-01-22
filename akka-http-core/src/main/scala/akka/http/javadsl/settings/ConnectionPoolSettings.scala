@@ -1,0 +1,36 @@
+/**
+ * Copyright (C) 2016 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.http.javadsl.settings
+
+import akka.http.impl.settings.ConnectionPoolSettingsImpl
+import com.typesafe.config.Config
+
+import scala.concurrent.duration.Duration
+import akka.http.impl.util.JavaMapping.Implicits._
+
+abstract class ConnectionPoolSettings {
+  def getMaxConnections: Int
+  def getMaxRetries: Int
+  def getMaxOpenRequests: Int
+  def getPipeliningLimit: Int
+  def getIdleTimeout: Duration
+  def getConnectionSettings: ClientConnectionSettings
+
+  // ---
+
+  def withMaxConnections(n: Int): ConnectionPoolSettings = self.copy(maxConnections = n)
+  def withMaxRetries(n: Int): ConnectionPoolSettings = self.copy(maxRetries = n)
+  def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copy(maxOpenRequests = newValue)
+  def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
+  def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
+  def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue.asScala)
+
+  /** INTERNAL API */
+  protected def self = this.asInstanceOf[ConnectionPoolSettingsImpl]
+}
+
+object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] {
+  override def create(config: Config): ConnectionPoolSettings = ConnectionPoolSettingsImpl(config)
+  override def create(configOverrides: String): ConnectionPoolSettings = ConnectionPoolSettingsImpl(configOverrides)
+}
