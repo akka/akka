@@ -92,6 +92,18 @@ In Akka 2.4.x this is formulated like so:
 
 .. includecode:: ../code/docs/stream/MigrationsJava.java#expand-state
 
+``conflate`` has been renamed to ``conflateWithSeed()``
+-------------------------------------------------------
+
+The new ``conflate`` operator is a special case of the original behavior (renamed to ``conflateWithSeed``) that does not
+change the type of the stream. The usage of the new operator is as simple as::
+
+   Flow.of(Integer.class).conflate((a, b) -> a + b) // Add numbers while downstream is not ready
+
+Which is the same as using ``conflateWithSeed`` with an identity function::
+
+   Flow.of(Integer.class).conflateWithSeed(x -> x, (a, b) -> a + b) // Add numbers while downstream is not ready
+
 Changed Sources / Sinks
 =======================
 

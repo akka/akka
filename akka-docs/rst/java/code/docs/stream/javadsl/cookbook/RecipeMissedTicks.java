@@ -58,11 +58,11 @@ public class RecipeMissedTicks extends RecipeTest {
         @SuppressWarnings("unused")
         //#missed-ticks
         final Flow<Tick, Integer, NotUsed> missedTicks =
-          Flow.of(Tick.class).conflate(tick -> 0, (missed, tick) -> missed + 1);
+          Flow.of(Tick.class).conflateWithSeed(tick -> 0, (missed, tick) -> missed + 1);
         //#missed-ticks
         final TestLatch latch = new TestLatch(3, system);
         final Flow<Tick, Integer, NotUsed> realMissedTicks =
-                Flow.of(Tick.class).conflate(tick -> 0, (missed, tick) -> { latch.countDown(); return missed + 1; });
+                Flow.of(Tick.class).conflateWithSeed(tick -> 0, (missed, tick) -> { latch.countDown(); return missed + 1; });
 
         Pair<TestPublisher.Probe<Tick>, TestSubscriber.Probe<Integer>> pubSub =
         		tickStream.via(realMissedTicks).toMat(sink, Keep.both()).run(mat);

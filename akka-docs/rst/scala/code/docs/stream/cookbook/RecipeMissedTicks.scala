@@ -21,12 +21,12 @@ class RecipeMissedTicks extends RecipeSpec {
 
       //#missed-ticks
       val missedTicks: Flow[Tick, Int, NotUsed] =
-        Flow[Tick].conflate(seed = (_) => 0)(
+        Flow[Tick].conflateWithSeed(seed = (_) => 0)(
           (missedTicks, tick) => missedTicks + 1)
       //#missed-ticks
       val latch = TestLatch(3)
       val realMissedTicks: Flow[Tick, Int, NotUsed] =
-        Flow[Tick].conflate(seed = (_) => 0)(
+        Flow[Tick].conflateWithSeed(seed = (_) => 0)(
           (missedTicks, tick) => { latch.countDown(); missedTicks + 1 })
 
       tickStream.via(realMissedTicks).to(sink).run()
