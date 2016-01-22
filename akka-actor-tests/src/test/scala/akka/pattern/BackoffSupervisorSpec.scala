@@ -133,8 +133,11 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender {
           watch(c1)
           c1 ! "boom"
           expectTerminated(c1)
-          supervisor ! BackoffSupervisor.GetRestartCount
-          expectMsg(BackoffSupervisor.RestartCount(1))
+
+          awaitAssert {
+            supervisor ! BackoffSupervisor.GetRestartCount
+            expectMsg(BackoffSupervisor.RestartCount(1))
+          }
 
           awaitAssert {
             supervisor ! BackoffSupervisor.GetCurrentChild
