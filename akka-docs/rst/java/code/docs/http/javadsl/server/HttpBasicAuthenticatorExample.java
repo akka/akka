@@ -3,6 +3,7 @@
  */
 package docs.http.javadsl.server;
 
+import java.util.Optional;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.Host;
 import akka.http.javadsl.server.Handler1;
