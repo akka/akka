@@ -46,7 +46,7 @@ private[akka] class FileSubscriber(f: File, completionPromise: Promise[IOResult]
     super.preStart()
   } catch {
     case ex: Exception ⇒
-      completionPromise.success(IOResult(bytesWritten, Failure(ex)))
+      closeAndComplete(IOResult(bytesWritten, Failure(ex)))
       cancel()
   }
 
@@ -56,13 +56,13 @@ private[akka] class FileSubscriber(f: File, completionPromise: Promise[IOResult]
         bytesWritten += chan.write(bytes.asByteBuffer)
       } catch {
         case ex: Exception ⇒
-          completionPromise.success(IOResult(bytesWritten, Failure(ex)))
+          closeAndComplete(IOResult(bytesWritten, Failure(ex)))
           cancel()
       }
 
     case ActorSubscriberMessage.OnError(ex) ⇒
       log.error(ex, "Tearing down FileSink({}) due to upstream error", f.getAbsolutePath)
-      completionPromise.success(IOResult(bytesWritten, Failure(ex)))
+      closeAndComplete(IOResult(bytesWritten, Failure(ex)))
       context.stop(self)
 
     case ActorSubscriberMessage.OnComplete ⇒
@@ -70,20 +70,26 @@ private[akka] class FileSubscriber(f: File, completionPromise: Promise[IOResult]
         chan.force(true)
       } catch {
         case ex: Exception ⇒
-          completionPromise.success(IOResult(bytesWritten, Failure(ex)))
+          closeAndComplete(IOResult(bytesWritten, Failure(ex)))
       }
       context.stop(self)
   }
 
   override def postStop(): Unit = {
+    closeAndComplete(IOResult(bytesWritten, Success(Done)))
+    super.postStop()
+  }
+
+  private def closeAndComplete(result: IOResult): Unit = {
     try {
+      // close the channel/file before completing the promise, allowing the
+      // file to be deleted, which would not work (on some systems) if the
+      // file is still open for writing
       if (chan ne null) chan.close()
+      completionPromise.trySuccess(result)
     } catch {
       case ex: Exception ⇒
-        completionPromise.success(IOResult(bytesWritten, Failure(ex)))
+        completionPromise.trySuccess(IOResult(bytesWritten, Failure(ex)))
     }
-
-    completionPromise.trySuccess(IOResult(bytesWritten, Success(Done)))
-    super.postStop()
   }
 }
