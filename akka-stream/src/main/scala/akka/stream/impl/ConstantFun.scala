@@ -24,4 +24,6 @@ private[akka] object ConstantFun {
   val zeroLong = (_: Any) ⇒ 0L
 
   val oneLong = (_: Any) ⇒ 1L
+
+  val oneInt = (_: Any) ⇒ 1
 }
