@@ -3,6 +3,7 @@
  */
 package docs.http.javadsl.server;
 
+import java.util.Optional;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.Host;
 import akka.http.javadsl.model.headers.OAuth2BearerToken;
@@ -31,7 +32,7 @@ public class OAuth2AuthenticatorExample extends JUnitRouteTest {
             private final String hardcodedToken = "token";
 
             @Override
-            public Future<Option<String>> authenticate(OAuth2Credentials credentials) {
+            public Future<Optional<String>> authenticate(OAuth2Credentials credentials) {
                 // this is where your actual authentication logic would go, looking up the user
                 // based on the token or something in that direction
                 if (credentials.available() && // no anonymous access

@@ -3,6 +3,7 @@
  */
 package docs.http.javadsl.server;
 
+import java.util.Optional;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.Host;
 import akka.http.javadsl.server.Handler1;
@@ -27,7 +28,7 @@ public class HttpBasicAuthenticatorExample extends JUnitRouteTest {
 
             private final String hardcodedPassword = "correcthorsebatterystaple";
 
-            public Future<Option<String>> authenticate(BasicCredentials credentials) {
+            public Future<Optional<String>> authenticate(BasicCredentials credentials) {
                 // this is where your actual authentication logic would go
                 if (credentials.available() && // no anonymous access
                     credentials.verify(hardcodedPassword)) {

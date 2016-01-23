@@ -8,10 +8,6 @@ import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.server.values.{ PathMatcher, BasicCredentials, OAuth2Credentials }
 import akka.http.scaladsl.model.StatusCodes.Redirection
 import akka.http.scaladsl.server.util.TupleOps.Join
-
-import scala.language.implicitConversions
-import scala.annotation.tailrec
-import scala.collection.immutable
 import akka.http.javadsl.model.ContentType
 import akka.http.scaladsl.server.directives.{ Credentials, ContentTypeResolver }
 import akka.http.scaladsl.server.directives.FileAndResourceDirectives.DirectoryRenderer
@@ -22,6 +18,11 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.scaladsl.server
 import akka.http.javadsl.server._
 import RouteStructure._
+
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.compat.java8.OptionConverters._
+import scala.language.implicitConversions
 
 /**
  * INTERNAL API
@@ -94,7 +95,7 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
                 }
             }
 
-          authenticator.authenticate(javaCreds)
+          authenticator.authenticate(javaCreds).map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
         }).flatMap { user ⇒
           addExtraction(authenticator.asInstanceOf[RequestVal[Any]], user)
         }
@@ -117,7 +118,7 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
                 }
             }
 
-          authenticator.authenticate(javaCreds)
+          authenticator.authenticate(javaCreds).map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
         }).flatMap { user ⇒
           addExtraction(authenticator.asInstanceOf[RequestVal[Any]], user)
         }

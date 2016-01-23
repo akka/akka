@@ -4,6 +4,8 @@
 
 package akka.http.impl.server
 
+import java.util.Optional
+
 import akka.http.javadsl.model.HttpHeader
 import akka.http.javadsl.server.RequestVal
 import akka.http.javadsl.server.values.Header
@@ -12,6 +14,7 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives._
 import akka.http.scaladsl.server.directives.RouteDirectives._
 
+import scala.compat.java8.OptionConverters._
 import scala.reflect.ClassTag
 
 /**
@@ -38,9 +41,9 @@ private[http] object HeaderImpl {
           def directive: Directive1[U] = instanceDirective
         }
 
-      def optionalInstance(): RequestVal[Option[U]] =
-        new StandaloneExtractionImpl[Option[U]] {
-          def directive: Directive1[Option[U]] = optionalDirective(uClassTag)
+      def optionalInstance(): RequestVal[Optional[U]] =
+        new StandaloneExtractionImpl[Optional[U]] {
+          def directive: Directive1[Optional[U]] = optionalDirective(uClassTag).map(_.asJava)
         }
 
       def value(): RequestVal[String] =
@@ -48,9 +51,9 @@ private[http] object HeaderImpl {
           def directive: Directive1[String] = instanceDirective.map(_.value)
         }
 
-      def optionalValue(): RequestVal[Option[String]] =
-        new StandaloneExtractionImpl[Option[String]] {
-          def directive: Directive1[Option[String]] = optionalDirective(uClassTag).map(_.map(_.value))
+      def optionalValue(): RequestVal[Optional[String]] =
+        new StandaloneExtractionImpl[Optional[String]] {
+          def directive: Directive1[Optional[String]] = optionalDirective(uClassTag).map(_.map(_.value).asJava)
         }
     }.asInstanceOf[Header[T]] // undeclared covariance
   }
