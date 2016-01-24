@@ -23,6 +23,8 @@ import scala.collection.immutable
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.concurrent.{ Future, Promise }
 import akka.stream.impl.fusing.Buffer
+import java.util.concurrent.CompletionStage
+import scala.compat.java8.FutureConverters._
 
 /**
  * A `Source` is a set of stream processing steps that has one open output. It can comprise
@@ -229,6 +231,15 @@ object Source {
    */
   def fromFuture[T](future: Future[T]): Source[T, NotUsed] =
     fromGraph(new FutureSource(future))
+
+  /**
+   * Start a new `Source` from the given `Future`. The stream will consist of
+   * one element when the `Future` is completed with a successful value, which
+   * may happen before or after materializing the `Flow`.
+   * The stream terminates with a failure if the `Future` is completed with a failure.
+   */
+  def fromCompletionStage[T](future: CompletionStage[T]): Source[T, NotUsed] =
+    fromGraph(new FutureSource(future.toScala))
 
   /**
    * Elements are emitted periodically with the specified interval.

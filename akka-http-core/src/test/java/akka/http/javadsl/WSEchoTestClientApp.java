@@ -17,12 +17,13 @@ import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 public class WSEchoTestClientApp {
     private static final Function<Message, String> messageStringifier = new Function<Message, String>() {
@@ -57,23 +58,23 @@ public class WSEchoTestClientApp {
                         TextMessage.create("ghi")
                 )).concat(Source.fromFuture(delayedCompletion).drop(1));
 
-            Sink<Message, Future<List<String>>> echoSink =
+            Sink<Message, CompletionStage<List<String>>> echoSink =
                 Flow.of(Message.class)
                     .map(messageStringifier)
                     .grouped(1000)
-                    .toMat(Sink.<List<String>>head(), Keep.<NotUsed, Future<List<String>>>right());
+                    .toMat(Sink.<List<String>>head(), Keep.right());
 
-            Flow<Message, Message, Future<List<String>>> echoClient =
-                Flow.fromSinkAndSourceMat(echoSink, echoSource, Keep.<Future<List<String>>, NotUsed>left());
+            Flow<Message, Message, CompletionStage<List<String>>> echoClient =
+                Flow.fromSinkAndSourceMat(echoSink, echoSource, Keep.left());
 
-            Future<List<String>> result =
+            CompletionStage<List<String>> result =
                 Http.get(system).singleWebSocketRequest(
                     WebSocketRequest.create("ws://echo.websocket.org"),
                     echoClient,
                     materializer
                 ).second();
 
-            List<String> messages = Await.result(result, FiniteDuration.apply(10, "second"));
+            List<String> messages = result.toCompletableFuture().get(10, TimeUnit.SECONDS);
             System.out.println("Collected " + messages.size() + " messages:");
             for (String msg: messages)
                 System.out.println(msg);

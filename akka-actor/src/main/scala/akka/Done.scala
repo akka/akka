@@ -14,6 +14,5 @@ case object Done extends Done {
   /**
    * Java API: the singleton instance
    */
-  def getInstance() = this
+  def getInstance(): Done = this
 }
-

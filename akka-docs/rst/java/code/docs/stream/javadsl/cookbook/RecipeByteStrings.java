@@ -20,12 +20,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.Tuple2;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -97,9 +95,9 @@ public class RecipeByteStrings extends RecipeTest {
           rawBytes.transform(() -> new Chunker(CHUNK_LIMIT));
         //#bytestring-chunker2
 
-        Future<List<ByteString>> chunksFuture = chunksStream.grouped(10).runWith(Sink.head(), mat);
+        CompletionStage<List<ByteString>> chunksFuture = chunksStream.grouped(10).runWith(Sink.head(), mat);
 
-        List<ByteString> chunks = Await.result(chunksFuture, FiniteDuration.create(3, TimeUnit.SECONDS));
+        List<ByteString> chunks = chunksFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
         for (ByteString chunk : chunks) {
           assertTrue(chunk.size() <= 2);
@@ -159,9 +157,7 @@ public class RecipeByteStrings extends RecipeTest {
           ByteString.fromArray(new byte[] { 4, 5, 6 }),
           ByteString.fromArray(new byte[] { 7, 8, 9, 10 })));
 
-        FiniteDuration threeSeconds = FiniteDuration.create(3, TimeUnit.SECONDS);
-
-        List<ByteString> got = Await.result(bytes1.via(limiter).grouped(10).runWith(Sink.head(), mat), threeSeconds);
+        List<ByteString> got = bytes1.via(limiter).grouped(10).runWith(Sink.head(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
         ByteString acc = ByteString.empty();
         for (ByteString b : got) {
           acc = acc.concat(b);
@@ -170,7 +166,7 @@ public class RecipeByteStrings extends RecipeTest {
 
         boolean thrown = false;
         try {
-          Await.result(bytes2.via(limiter).grouped(10).runWith(Sink.head(), mat), threeSeconds);
+          bytes2.via(limiter).grouped(10).runWith(Sink.head(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
         } catch (IllegalStateException ex) {
           thrown = true;
         }
@@ -194,8 +190,7 @@ public class RecipeByteStrings extends RecipeTest {
         Source<ByteString, NotUsed> compacted = rawBytes.map(bs -> bs.compact());
         //#compacting-bytestrings
 
-        FiniteDuration timeout = FiniteDuration.create(3, TimeUnit.SECONDS);
-        List<ByteString> got = Await.result(compacted.grouped(10).runWith(Sink.head(), mat), timeout);
+        List<ByteString> got = compacted.grouped(10).runWith(Sink.head(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
 
         for (ByteString byteString : got) {
           assertTrue(byteString.isCompact());

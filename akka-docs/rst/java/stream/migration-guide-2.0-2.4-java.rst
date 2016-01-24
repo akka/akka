@@ -7,6 +7,25 @@ Migration Guide 2.0.x to 2.4.x
 General notes
 =============
 
+Java DSL now uses Java 8 types: CompletionStage and Optional
+------------------------------------------------------------
+
+In order to provide a top-notch Java API we switched from Scala’s Future and Akka’s
+``akka.japi.Option`` interim solutions to the JDK’s own types for deferred computation
+and optional results. This has been done throughout Streams & HTTP, most notably changing most
+materialized types, but also the signature of the ``mapAsync`` combinator and the
+asynchronous route result combinators in the HTTP DSL.
+
+The ``akka.pattern`` package has been updated with a new set of implementations within
+the ``PatternCS`` class that provide the ability to interact between Actors and Futures
+(or streams) for ``CompletionStage``.
+
+Should you have the need to use Scala Futures with these new Java APIs please use
+the ``scala-java8-compat`` library that comes as a dependency of Akka. For more
+information see `the documentation``_.
+
+.. _`the documentation`:: https://github.com/scala/scala-java8-compat
+
 akka.Done and akka.NotUsed replacing Unit and BoxedUnit
 -------------------------------------------------------
 

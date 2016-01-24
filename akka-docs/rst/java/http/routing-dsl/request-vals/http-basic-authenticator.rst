@@ -12,7 +12,7 @@ Http basic auth allows for protection of one or more routes with a username and 
 To use it you subclass ``HttpBasicAuthenticator`` and provide your authentication logic.
 There are two factory methods to create the authentication results to return from the authentication logic:
 ``authenticateAs(T)`` and ``refuseAccess()``. If the authentication is not very quick in memory, for example
-calls a database, make sure you do not block the web server thread by executing that in a separate ``Future``
+calls a database, make sure you do not block the web server thread by executing that in a separate ``CompletionStage``
 and then ``flatMap`` the result into the authentication result.
 
 When you use the authenticator in your routes you must reference the concrete authenticator twice,

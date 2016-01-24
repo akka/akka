@@ -7,6 +7,10 @@ import akka.stream.OverflowStrategies._
 import akka.stream._
 import akka.stream.stage._
 import scala.concurrent.{ Future, Promise }
+import akka.stream.scaladsl.SourceQueue
+import akka.Done
+import java.util.concurrent.CompletionStage
+import scala.compat.java8.FutureConverters._
 
 /**
  * INTERNAL API
@@ -16,7 +20,7 @@ private[akka] class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStr
 
   val out = Outlet[T]("queueSource.out")
   override val shape: SourceShape[T] = SourceShape.of(out)
-  val completion = Promise[Unit]
+  val completion = Promise[Done]
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val stageLogic = new GraphStageLogic(shape) with CallbackWrapper[(T, Offered)] {
@@ -88,7 +92,7 @@ private[akka] class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStr
               pendingOffer = None
             case None ⇒ // do nothing
           }
-          completion.success(())
+          completion.success(Done)
           completeStage()
         }
 
@@ -125,3 +129,7 @@ private[akka] class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStr
   }
 }
 
+private[akka] final class SourceQueueAdapter[T](delegate: SourceQueue[T]) extends akka.stream.javadsl.SourceQueue[T] {
+  def offer(elem: T): CompletionStage[QueueOfferResult] = delegate.offer(elem).toJava
+  def watchCompletion(): CompletionStage[Done] = delegate.watchCompletion().toJava
+}

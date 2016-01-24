@@ -30,13 +30,10 @@ import akka.stream.stage.PushStage;
 import akka.stream.stage.SyncDirective;
 import akka.stream.stage.TerminationDirective;
 import akka.util.ByteString;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("unused")
@@ -47,20 +44,17 @@ public class HttpServerExampleDocTest {
         ActorSystem system = ActorSystem.create();
         Materializer materializer = ActorMaterializer.create(system);
 
-        Source<IncomingConnection, Future<ServerBinding>> serverSource =
+        Source<IncomingConnection, CompletionStage<ServerBinding>> serverSource =
             Http.get(system).bind("localhost", 8080, materializer);
 
-        Future<ServerBinding> serverBindingFuture =
-            serverSource.to(Sink.foreach(
-                new Procedure<IncomingConnection>() {
-                    @Override
-                    public void apply(IncomingConnection connection) throws Exception {
-                        System.out.println("Accepted new connection from " + connection.remoteAddress());
-                        // ... and then actually handle the connection
-                    }
-                })).run(materializer);
+        CompletionStage<ServerBinding> serverBindingFuture =
+            serverSource.to(Sink.foreach(connection -> {
+                System.out.println("Accepted new connection from " + connection.remoteAddress());
+                // ... and then actually handle the connection
+              }
+            )).run(materializer);
         //#binding-example
-        Await.result(serverBindingFuture, new FiniteDuration(3, TimeUnit.SECONDS));
+        serverBindingFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
     }
 
     public static void bindingFailureExample() throws Exception {
@@ -68,27 +62,21 @@ public class HttpServerExampleDocTest {
         ActorSystem system = ActorSystem.create();
         Materializer materializer = ActorMaterializer.create(system);
 
-        Source<IncomingConnection, Future<ServerBinding>> serverSource =
+        Source<IncomingConnection, CompletionStage<ServerBinding>> serverSource =
             Http.get(system).bind("localhost", 80, materializer);
 
-        Future<ServerBinding> serverBindingFuture =
-            serverSource.to(Sink.foreach(
-                new Procedure<IncomingConnection>() {
-                    @Override
-                    public void apply(IncomingConnection connection) throws Exception {
-                        System.out.println("Accepted new connection from " + connection.remoteAddress());
-                        // ... and then actually handle the connection
-                    }
-                })).run(materializer);
+        CompletionStage<ServerBinding> serverBindingFuture =
+            serverSource.to(Sink.foreach(connection -> {
+                System.out.println("Accepted new connection from " + connection.remoteAddress());
+                // ... and then actually handle the connection
+              }
+            )).run(materializer);
 
-        serverBindingFuture.onFailure(new OnFailure() {
-            @Override
-            public void onFailure(Throwable failure) throws Throwable {
+        serverBindingFuture.whenCompleteAsync((binding, failure) -> {
                 // possibly report the failure somewhere...
-            }
         }, system.dispatcher());
         //#binding-failure-handling
-        Await.result(serverBindingFuture, new FiniteDuration(3, TimeUnit.SECONDS));
+        serverBindingFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
     }
 
     public static void connectionSourceFailureExample() throws Exception {
@@ -96,7 +84,7 @@ public class HttpServerExampleDocTest {
         ActorSystem system = ActorSystem.create();
         Materializer materializer = ActorMaterializer.create(system);
 
-        Source<IncomingConnection, Future<ServerBinding>> serverSource =
+        Source<IncomingConnection, CompletionStage<ServerBinding>> serverSource =
             Http.get(system).bind("localhost", 8080, materializer);
 
         Flow<IncomingConnection, IncomingConnection, NotUsed> failureDetection =
@@ -114,19 +102,16 @@ public class HttpServerExampleDocTest {
                     }
                 });
 
-        Future<ServerBinding> serverBindingFuture =
+        CompletionStage<ServerBinding> serverBindingFuture =
                 serverSource
                         .via(failureDetection) // feed signals through our custom stage
-                        .to(Sink.foreach(
-                                new Procedure<IncomingConnection>() {
-                                    @Override
-                                    public void apply(IncomingConnection connection) throws Exception {
-                                        System.out.println("Accepted new connection from " + connection.remoteAddress());
-                                        // ... and then actually handle the connection
-                                    }
-                                })).run(materializer);
+                        .to(Sink.foreach(connection -> {
+                          System.out.println("Accepted new connection from " + connection.remoteAddress());
+                          // ... and then actually handle the connection
+                        }))
+                        .run(materializer);
         //#incoming-connections-source-failure-handling
-        Await.result(serverBindingFuture, new FiniteDuration(3, TimeUnit.SECONDS));
+        serverBindingFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
     }
 
     public static void connectionStreamFailureExample() throws Exception {
@@ -134,7 +119,7 @@ public class HttpServerExampleDocTest {
         ActorSystem system = ActorSystem.create();
         Materializer materializer = ActorMaterializer.create(system);
 
-        Source<IncomingConnection, Future<ServerBinding>> serverSource =
+        Source<IncomingConnection, CompletionStage<ServerBinding>> serverSource =
             Http.get(system).bind("localhost", 8080, materializer);
 
         Flow<HttpRequest, HttpRequest, NotUsed> failureDetection =
@@ -163,14 +148,14 @@ public class HttpServerExampleDocTest {
                         .withEntity(entity);
                     });
 
-        Future<ServerBinding> serverBindingFuture =
-            serverSource.to(Sink.foreach(con -> {
-                        System.out.println("Accepted new connection from " + con.remoteAddress());
-                        con.handleWith(httpEcho, materializer);
+        CompletionStage<ServerBinding> serverBindingFuture =
+            serverSource.to(Sink.foreach(conn -> {
+                        System.out.println("Accepted new connection from " + conn.remoteAddress());
+                        conn.handleWith(httpEcho, materializer);
                     }
                 )).run(materializer);
         //#connection-stream-failure-handling
-        Await.result(serverBindingFuture, new FiniteDuration(3, TimeUnit.SECONDS));
+        serverBindingFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
     }
 
     public static void fullServerExample() throws Exception {
@@ -181,7 +166,7 @@ public class HttpServerExampleDocTest {
             //#full-server-example
             final Materializer materializer = ActorMaterializer.create(system);
 
-            Source<IncomingConnection, Future<ServerBinding>> serverSource =
+            Source<IncomingConnection, CompletionStage<ServerBinding>> serverSource =
                     Http.get(system).bind("localhost", 8080, materializer);
 
             //#request-handler
@@ -219,21 +204,17 @@ public class HttpServerExampleDocTest {
                 };
             //#request-handler
 
-            Future<ServerBinding> serverBindingFuture =
-                serverSource.to(Sink.foreach(
-                    new Procedure<IncomingConnection>() {
-                        @Override
-                        public void apply(IncomingConnection connection) throws Exception {
-                            System.out.println("Accepted new connection from " + connection.remoteAddress());
+            CompletionStage<ServerBinding> serverBindingFuture =
+                serverSource.to(Sink.foreach(connection -> {
+                          System.out.println("Accepted new connection from " + connection.remoteAddress());
 
-                            connection.handleWithSyncHandler(requestHandler, materializer);
-                            // this is equivalent to
-                            //connection.handleWith(Flow.of(HttpRequest.class).map(requestHandler), materializer);
-                        }
+                          connection.handleWithSyncHandler(requestHandler, materializer);
+                          // this is equivalent to
+                          //connection.handleWith(Flow.of(HttpRequest.class).map(requestHandler), materializer);
                     })).run(materializer);
             //#full-server-example
 
-            Await.result(serverBindingFuture, new FiniteDuration(1, TimeUnit.SECONDS)); // will throw if binding fails
+            serverBindingFuture.toCompletableFuture().get(1, TimeUnit.SECONDS); // will throw if binding fails
             System.out.println("Press ENTER to stop.");
             new BufferedReader(new InputStreamReader(System.in)).readLine();
         } finally {

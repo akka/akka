@@ -105,9 +105,9 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
 
     def sample() =
       path("sample") {
-        extractExecutionContext { implicit ec =>
+        extractExecutionContext { implicit executor =>
           complete {
-            Future(s"Run on ${ec.##}!") // uses the `ec` ExecutionContext
+            Future(s"Run on ${executor.##}!") // uses the `executor` ExecutionContext
           }
         }
       }
@@ -132,9 +132,9 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     //#extractExecutionContext-0
     def sample() =
       path("sample") {
-        extractExecutionContext { implicit ec =>
+        extractExecutionContext { implicit executor =>
           complete {
-            Future(s"Run on ${ec.##}!") // uses the `ec` ExecutionContext
+            Future(s"Run on ${executor.##}!") // uses the `executor` ExecutionContext
           }
         }
       }

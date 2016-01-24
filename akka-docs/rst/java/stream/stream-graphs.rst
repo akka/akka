@@ -222,7 +222,7 @@ times to acquire the necessary number of outlets.
 .. includecode:: ../code/docs/stream/FlowGraphDocTest.java#flow-graph-matvalue
 
 Be careful not to introduce a cycle where the materialized value actually contributes to the materialized value.
-The following example demonstrates a case where the materialized ``Future`` of a fold is fed back to the fold itself.
+The following example demonstrates a case where the materialized ``CompletionStage`` of a fold is fed back to the fold itself.
 
 .. includecode:: ../code/docs/stream/FlowGraphDocTest.java#flow-graph-matvalue-cycle
 

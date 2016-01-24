@@ -25,11 +25,16 @@ import akka.http.impl.util.StreamUtils
 import akka.http.impl.util.JavaMapping.Implicits._
 
 import scala.compat.java8.OptionConverters._
+import scala.compat.java8.FutureConverters._
+import java.util.concurrent.CompletionStage
 
 /**
  * Models the entity (aka "body" or "content) of an HTTP message.
  */
 sealed trait HttpEntity extends jm.HttpEntity {
+  import language.implicitConversions
+  private implicit def completionStageCovariant[T, U >: T](in: CompletionStage[T]): CompletionStage[U] = in.asInstanceOf[CompletionStage[U]]
+
   /**
    * Determines whether this entity is known to be empty.
    */
@@ -96,8 +101,8 @@ sealed trait HttpEntity extends jm.HttpEntity {
   override def isChunked: Boolean = false
 
   /** Java API */
-  override def toStrict(timeoutMillis: Long, materializer: Materializer): Future[jm.HttpEntity.Strict] =
-    toStrict(timeoutMillis.millis)(materializer)
+  override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.HttpEntity.Strict] =
+    toStrict(timeoutMillis.millis)(materializer).toJava
 }
 
 /* An entity that can be used for body parts */

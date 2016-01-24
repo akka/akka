@@ -23,6 +23,10 @@ import akka.http.scaladsl.server
 import akka.http.javadsl.server._
 import RouteStructure._
 
+import scala.compat.java8.FutureConverters._
+import scala.compat.java8.OptionConverters._
+import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+
 /**
  * INTERNAL API
  */
@@ -94,7 +98,7 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
                 }
             }
 
-          authenticator.authenticate(javaCreds)
+          authenticator.authenticate(javaCreds).toScala.map(_.asScala)(sameThreadExecutionContext)
         }).flatMap { user ⇒
           addExtraction(authenticator.asInstanceOf[RequestVal[Any]], user)
         }
@@ -117,7 +121,7 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
                 }
             }
 
-          authenticator.authenticate(javaCreds)
+          authenticator.authenticate(javaCreds).toScala.map(_.asScala)(sameThreadExecutionContext)
         }).flatMap { user ⇒
           addExtraction(authenticator.asInstanceOf[RequestVal[Any]], user)
         }

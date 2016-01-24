@@ -11,9 +11,9 @@ import akka.stream.stage.OutHandler
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.{ AkkaSpec, TestSubscriber }
 import akka.testkit.TestProbe
-
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, _ }
+import akka.Done
 
 class QueueSourceSpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer()
@@ -70,7 +70,7 @@ class QueueSourceSpec extends AkkaSpec {
       expectNoMsg(pause)
 
       sub.cancel()
-      expectMsg(())
+      expectMsg(Done)
     }
 
     "buffer when needed" in {
@@ -123,7 +123,7 @@ class QueueSourceSpec extends AkkaSpec {
 
       sub.cancel()
 
-      expectMsgAllOf(QueueOfferResult.QueueClosed, ())
+      expectMsgAllOf(QueueOfferResult.QueueClosed, Done)
     }
 
     "fail stream on buffer overflow in fail mode" in assertAllStagesStopped {
@@ -218,7 +218,7 @@ class QueueSourceSpec extends AkkaSpec {
       val sub = s.expectSubscription
       queue.watchCompletion().pipeTo(testActor)
       sub.cancel()
-      expectMsg(())
+      expectMsg(Done)
 
       queue.offer(1).onFailure { case e ⇒ e.isInstanceOf[IllegalStateException] should ===(true) }
     }
