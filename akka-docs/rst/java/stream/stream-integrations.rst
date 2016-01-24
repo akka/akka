@@ -169,7 +169,7 @@ Finally, sending the emails:
 .. includecode:: ../code/docs/stream/IntegrationDocTest.java#send-emails
 
 ``mapAsync`` is applying the given function that is calling out to the external service to
-each of the elements as they pass through this processing step. The function returns a :class:`Future`
+each of the elements as they pass through this processing step. The function returns a :class:`CompletionStage`
 and the value of that future will be emitted downstreams. The number of Futures
 that shall run in parallel is given as the first argument to ``mapAsync``.
 These Futures may complete in any order, but the elements that are emitted
@@ -190,8 +190,8 @@ is not important and then we can use the more efficient ``mapAsyncUnordered``:
 
 .. includecode:: ../code/docs/stream/IntegrationDocTest.java#external-service-mapAsyncUnordered
 
-In the above example the services conveniently returned a :class:`Future` of the result.
-If that is not the case you need to wrap the call in a :class:`Future`. If the service call
+In the above example the services conveniently returned a :class:`CompletionStage` of the result.
+If that is not the case you need to wrap the call in a :class:`CompletionStage`. If the service call
 involves blocking you must also make sure that you run it on a dedicated execution context, to
 avoid starvation and disturbance of other tasks in the system.
 
@@ -215,7 +215,7 @@ external service, you can use ``ask``:
 .. includecode:: ../code/docs/stream/IntegrationDocTest.java#save-tweets
 
 Note that if the ``ask`` is not completed within the given timeout the stream is completed with failure.
-If that is not desired outcome you can use ``recover`` on the ``ask`` :class:`Future`.
+If that is not desired outcome you can use ``recover`` on the ``ask`` :class:`CompletionStage`.
 
 Illustrating ordering and parallelism
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

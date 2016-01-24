@@ -19,6 +19,8 @@ import javax.net.ssl.SSLContext;
 import static akka.http.javadsl.ConnectHttp.*;
 import static akka.http.javadsl.ConnectHttp.toHostHttps;
 
+import java.util.concurrent.CompletionStage;
+
 @SuppressWarnings("ConstantConditions")
 public class HttpAPIsTest extends JUnitRouteTest {
 
@@ -43,7 +45,7 @@ public class HttpAPIsTest extends JUnitRouteTest {
     http.bindAndHandle(handler, "127.0.0.1", 8080, materializer());
     http.bindAndHandle(handler, "127.0.0.1", 8080, httpsContext, materializer());
 
-    final Function<HttpRequest, Future<HttpResponse>> handler1 = null;
+    final Function<HttpRequest, CompletionStage<HttpResponse>> handler1 = null;
     http.bindAndHandleAsync(handler1, "127.0.0.1", 8080, materializer());
     http.bindAndHandleAsync(handler1, "127.0.0.1", 8080, httpsContext, materializer());
 

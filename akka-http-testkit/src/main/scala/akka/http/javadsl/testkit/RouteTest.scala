@@ -5,7 +5,7 @@
 package akka.http.javadsl.testkit
 
 import scala.annotation.varargs
-import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import akka.stream.Materializer
 import akka.http.scaladsl.server
@@ -31,7 +31,7 @@ import akka.http.impl.util._
 abstract class RouteTest extends AllDirectives {
   implicit def system: ActorSystem
   implicit def materializer: Materializer
-  implicit def executionContext: ExecutionContext = system.dispatcher
+  implicit def executionContext: ExecutionContextExecutor = system.dispatcher
 
   protected def awaitDuration: FiniteDuration = 500.millis
 

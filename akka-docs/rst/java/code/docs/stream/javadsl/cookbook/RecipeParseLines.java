@@ -15,8 +15,6 @@ import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.Await;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -53,7 +51,7 @@ public class RecipeParseLines extends RecipeTest {
       .map(b -> b.utf8String());
     //#parse-lines
 
-    Await.result(lines.grouped(10).runWith(Sink.head(), mat), new FiniteDuration(1, TimeUnit.SECONDS));
+    lines.grouped(10).runWith(Sink.head(), mat).toCompletableFuture().get(1, TimeUnit.SECONDS);
   }
 
 }

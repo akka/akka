@@ -13,10 +13,11 @@ import akka.stream.stage.Stage
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.annotation.unchecked.uncheckedVariance
-import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util
 import java.util.Comparator
+import java.util.concurrent.CompletionStage
+import scala.compat.java8.FutureConverters._
 
 /**
  * A “stream of streams” sub-flow of data elements, e.g. produced by `groupBy`.
@@ -162,66 +163,66 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
 
   /**
    * Transform this stream by applying the given function to each of the elements
-   * as they pass through this processing step. The function returns a `Future` and the
-   * value of that future will be emitted downstreams. As many futures as requested elements by
+   * as they pass through this processing step. The function returns a `CompletionStage` and the
+   * value of that future will be emitted downstreams. As many CompletionStages as requested elements by
    * downstream may run in parallel and may complete in any order, but the elements that
    * are emitted downstream are in the same order as received from upstream.
    *
-   * If the function `f` throws an exception or if the `Future` is completed
+   * If the function `f` throws an exception or if the `CompletionStage` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision#stop]]
    * the stream will be completed with failure.
    *
-   * If the function `f` throws an exception or if the `Future` is completed
+   * If the function `f` throws an exception or if the `CompletionStage` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision#resume]] or
    * [[akka.stream.Supervision#restart]] the element is dropped and the stream continues.
    *
    * The function `f` is always invoked on the elements in the order they arrive.
    *
-   * '''Emits when''' the Future returned by the provided function finishes for the next element in sequence
+   * '''Emits when''' the CompletionStage returned by the provided function finishes for the next element in sequence
    *
-   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream
-   * backpressures or the first future is not completed
+   * '''Backpressures when''' the number of CompletionStages reaches the configured parallelism and the downstream
+   * backpressures or the first CompletionStage is not completed
    *
-   * '''Completes when''' upstream completes and all futures has been completed and all elements has been emitted
+   * '''Completes when''' upstream completes and all CompletionStages has been completed and all elements has been emitted
    *
    * '''Cancels when''' downstream cancels
    *
    * @see [[#mapAsyncUnordered]]
    */
-  def mapAsync[T](parallelism: Int, f: function.Function[Out, Future[T]]): SubSource[T, Mat] =
-    new SubSource(delegate.mapAsync(parallelism)(f.apply))
+  def mapAsync[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): SubSource[T, Mat] =
+    new SubSource(delegate.mapAsync(parallelism)(x => f(x).toScala))
 
   /**
    * Transform this stream by applying the given function to each of the elements
-   * as they pass through this processing step. The function returns a `Future` and the
-   * value of that future will be emitted downstreams. As many futures as requested elements by
+   * as they pass through this processing step. The function returns a `CompletionStage` and the
+   * value of that future will be emitted downstreams. As many CompletionStages as requested elements by
    * downstream may run in parallel and each processed element will be emitted downstream
    * as soon as it is ready, i.e. it is possible that the elements are not emitted downstream
    * in the same order as received from upstream.
    *
-   * If the function `f` throws an exception or if the `Future` is completed
+   * If the function `f` throws an exception or if the `CompletionStage` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision#stop]]
    * the stream will be completed with failure.
    *
-   * If the function `f` throws an exception or if the `Future` is completed
+   * If the function `f` throws an exception or if the `CompletionStage` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision#resume]] or
    * [[akka.stream.Supervision#restart]] the element is dropped and the stream continues.
    *
    * The function `f` is always invoked on the elements in the order they arrive (even though the result of the futures
    * returned by `f` might be emitted in a different order).
    *
-   * '''Emits when''' any of the Futures returned by the provided function complete
+   * '''Emits when''' any of the CompletionStage returned by the provided function complete
    *
-   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
+   * '''Backpressures when''' the number of CompletionStage reaches the configured parallelism and the downstream backpressures
    *
-   * '''Completes when''' upstream completes and all futures has been completed and all elements has been emitted
+   * '''Completes when''' upstream completes and all CompletionStage has been completed and all elements has been emitted
    *
    * '''Cancels when''' downstream cancels
    *
    * @see [[#mapAsync]]
    */
-  def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, Future[T]]): SubSource[T, Mat] =
-    new SubSource(delegate.mapAsyncUnordered(parallelism)(f.apply))
+  def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): SubSource[T, Mat] =
+    new SubSource(delegate.mapAsyncUnordered(parallelism)(x => f(x).toScala))
 
   /**
    * Only pass on those elements that satisfy the given predicate.

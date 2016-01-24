@@ -95,7 +95,7 @@ Requests are handled by calling one of the ``handleWithXXX`` methods with a hand
 
 - a ``Flow<HttpRequest, HttpResponse, ?>`` for ``handleWith``,
 - a function ``Function<HttpRequest, HttpResponse>`` for ``handleWithSyncHandler``,
-- a function ``Function<HttpRequest, Future<HttpResponse>>`` for ``handleWithAsyncHandler``.
+- a function ``Function<HttpRequest, CompletionStage<HttpResponse>>`` for ``handleWithAsyncHandler``.
 
 Here is a complete example:
 
@@ -192,7 +192,7 @@ Bind failures
 
 The first type of failure is when the server is unable to bind to the given port. For example when the port
 is already taken by another application, or if the port is privileged (i.e. only usable by ``root``).
-In this case the "binding future" will fail immediatly, and we can react to if by listening on the Future's completion:
+In this case the "binding future" will fail immediatly, and we can react to if by listening on the CompletionStage’s completion:
 
 .. includecode:: ../../code/docs/http/javadsl/server/HttpServerExampleDocTest.java
   :include: binding-failure-handling

@@ -52,32 +52,19 @@ public class RouteDirectivesTest extends JUnitRouteTest {
                     .withoutSizeLimit()
                     .getDataBytes()
                     .runWith(Sink.<ByteString>head(), ctx.materializer())
-                    .map(new Mapper<ByteString, RouteResult>() {
-                      @Override
-                      public RouteResult apply(ByteString s) {
-                        return ctx.complete(s.utf8String());
-                      }
-                    }, ctx.executionContext()));
+                    .thenApplyAsync(s -> ctx.complete(s.utf8String()), ctx.executionContext()));
               }
             })),
         path("limit-5")
           .route(
-            handleWith(new Function<RequestContext, RouteResult>() {
-              @Override
-              public RouteResult apply(final RequestContext ctx) throws Exception {
+            handleWith(ctx -> {
                 final RequestEntity entity = ctx.request().entity();
                 return ctx.completeWith(
                   entity
                     .withSizeLimit(5)
                     .getDataBytes()
                     .runWith(Sink.<ByteString>head(), ctx.materializer())
-                    .map(new Mapper<ByteString, RouteResult>() {
-                      @Override
-                      public RouteResult apply(ByteString s) {
-                        return ctx.complete(s.utf8String());
-                      }
-                    }, ctx.executionContext()));
-              }
+                    .thenApplyAsync(s -> ctx.complete(s.utf8String()), ctx.executionContext()));
             }))
       );
 

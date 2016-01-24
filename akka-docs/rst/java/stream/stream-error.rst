@@ -67,7 +67,7 @@ Assume that we can lookup their email address using:
 
 .. includecode:: ../code/docs/stream/IntegrationDocTest.java#email-address-lookup2
 
-The ``Future`` is completed with ``Failure`` if the email is not found.
+The ``CompletionStage`` is completed normally if the email is not found.
 
 Transforming the stream of authors to a stream of email addresses by using the ``lookupEmail``
 service can be done with ``mapAsync`` and we use ``Supervision.getResumingDecider`` to drop
@@ -76,4 +76,4 @@ unknown email addresses:
 .. includecode:: ../code/docs/stream/IntegrationDocTest.java#email-addresses-mapAsync-supervision
 
 If we would not use ``Resume`` the default stopping strategy would complete the stream
-with failure on the first ``Future`` that was completed with ``Failure``.
+with failure on the first ``CompletionStage`` that was completed exceptionally.

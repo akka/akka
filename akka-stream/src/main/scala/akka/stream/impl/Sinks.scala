@@ -4,7 +4,6 @@
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicReference
-
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Props }
 import akka.stream.Attributes.InputBuffer
@@ -12,11 +11,15 @@ import akka.stream._
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.stage._
 import org.reactivestreams.{ Publisher, Subscriber }
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.{ Future, Promise }
 import scala.language.postfixOps
 import scala.util.{ Failure, Success, Try }
+import akka.stream.scaladsl.SinkQueue
+import java.util.concurrent.CompletionStage
+import scala.compat.java8.FutureConverters._
+import scala.compat.java8.OptionConverters._
+import java.util.Optional
 
 /**
  * INTERNAL API
@@ -315,4 +318,9 @@ private[akka] class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkS
       }
     })
   }
+}
+
+private[akka] final class SinkQueueAdapter[T](delegate: SinkQueue[T]) extends akka.stream.javadsl.SinkQueue[T] {
+  import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ same }
+  def pull(): CompletionStage[Optional[T]] = delegate.pull().map(_.asJava)(same).toJava
 }

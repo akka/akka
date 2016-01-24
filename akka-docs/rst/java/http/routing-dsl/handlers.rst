@@ -104,8 +104,8 @@ Deferring Result Creation
 Sometimes a handler cannot directly complete the request but needs to do some processing asynchronously. In this case
 the completion of a request needs to be deferred until the result has been generated. This is supported by the routing
 DSL in two ways: either you can use one of the ``handleWithAsyncN`` methods passing an ``AsyncHandlerN`` which
-returns a ``Future<RouteResult>``, i.e. an eventual ``RouteResult``, or you can also use a regular handler as shown
-above and use ``RequestContext.completeWith`` for completion which takes an ``Future<RouteResult>`` as an argument.
+returns a ``CompletionStage<RouteResult>``, i.e. an eventual ``RouteResult``, or you can also use a regular handler as shown
+above and use ``RequestContext.completeWith`` for completion which takes an ``CompletionStage<RouteResult>`` as an argument.
 
 This is demonstrated in the following example. Consider a asynchronous service defined like this
 (making use of Java 8 lambdas):
@@ -117,16 +117,17 @@ Here the calculator runs the actual calculation in the background and only event
 service should provide a front-end to that service without having to block while waiting for the results. As explained
 above this can be done in two ways.
 
-First, you can use ``handleWithAsyncN`` to be able to return a ``Future<RouteResult>``:
+First, you can use ``handleWithAsyncN`` to be able to return a ``CompletionStage<RouteResult>``:
 
 .. includecode:: /../../akka-http-tests/src/test/java/docs/http/javadsl/server/HandlerExampleDocTest.java
   :include: async-handler-1
 
-The handler invokes the service and then maps the calculation result to a ``RouteResult`` using ``Future.map`` and
-returns the resulting ``Future<RouteResult>``.
+The handler invokes the service and then maps the calculation result to a ``RouteResult`` using ``CompletionStage.thenApplyAsync`` and
+returns the resulting ``CompletionStage<RouteResult>``. Note that you should always explicitly provide an executor that designates
+where the future transformation task is executed, using the JDK’s global ForkJoinPool is not recommended.
 
 Otherwise, you can also still use ``handleWithN`` and use ``RequestContext.completeWith`` to "convert" a
-``Future<RouteResult>`` into a ``RouteResult`` as shown here:
+``CompletionStage<RouteResult>`` into a ``RouteResult`` as shown here:
 
 .. includecode:: /../../akka-http-tests/src/test/java/docs/http/javadsl/server/HandlerExampleDocTest.java
   :include: async-handler-2

@@ -26,6 +26,8 @@ import scala.concurrent.duration.FiniteDuration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -199,14 +201,14 @@ public class TwitterStreamQuickstartDocTest {
   }
 
   static class Example2 {
-    public void run(final Materializer mat) throws TimeoutException, InterruptedException {
+    public void run(final Materializer mat) throws TimeoutException, InterruptedException, ExecutionException {
       //#backpressure-by-readline
-      final Future<?> completion =
+      final CompletionStage<Done> completion =
         Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
           .map(i -> { System.out.println("map => " + i); return i; })
           .runForeach(i -> System.console().readLine("Element = %s continue reading? [press enter]\n", i), mat);
 
-      Await.ready(completion, FiniteDuration.create(1, TimeUnit.MINUTES));
+      completion.toCompletableFuture().get(1, TimeUnit.SECONDS);
       //#backpressure-by-readline
     }
   }
@@ -276,8 +278,8 @@ public class TwitterStreamQuickstartDocTest {
 
   @Test
   public void demonstrateBroadcast() {
-    final Sink<Author, Future<Done>> writeAuthors = Sink.ignore();
-    final Sink<Hashtag, Future<Done>> writeHashtags = Sink.ignore();
+    final Sink<Author, CompletionStage<Done>> writeAuthors = Sink.ignore();
+    final Sink<Hashtag, CompletionStage<Done>> writeHashtags = Sink.ignore();
 
     //#flow-graph-broadcast
     RunnableGraph.fromGraph(GraphDSL.create(b -> {
@@ -317,24 +319,21 @@ public class TwitterStreamQuickstartDocTest {
   @Test
   public void demonstrateCountOnFiniteStream() {
     //#tweets-fold-count
-    final Sink<Integer, Future<Integer>> sumSink =
+    final Sink<Integer, CompletionStage<Integer>> sumSink =
       Sink.<Integer, Integer>fold(0, (acc, elem) -> acc + elem);
 
-    final RunnableGraph<Future<Integer>> counter =
+    final RunnableGraph<CompletionStage<Integer>> counter =
         tweets.map(t -> 1).toMat(sumSink, Keep.right());
 
-    final Future<Integer> sum = counter.run(mat);
+    final CompletionStage<Integer> sum = counter.run(mat);
 
-    sum.foreach(new Foreach<Integer>() {
-      public void each(Integer c) {
-        System.out.println("Total tweets processed: " + c);
-      }
-    }, system.dispatcher());
+    sum.thenAcceptAsync(c -> System.out.println("Total tweets processed: " + c),
+        system.dispatcher());
     //#tweets-fold-count
 
     new Object() {
       //#tweets-fold-count-oneline
-      final Future<Integer> sum = tweets.map(t -> 1).runWith(sumSink, mat);
+      final CompletionStage<Integer> sum = tweets.map(t -> 1).runWith(sumSink, mat);
       //#tweets-fold-count-oneline
     };
   }
@@ -344,18 +343,18 @@ public class TwitterStreamQuickstartDocTest {
     final Source<Tweet, NotUsed> tweetsInMinuteFromNow = tweets; // not really in second, just acting as if
 
     //#tweets-runnable-flow-materialized-twice
-    final Sink<Integer, Future<Integer>> sumSink =
+    final Sink<Integer, CompletionStage<Integer>> sumSink =
       Sink.<Integer, Integer>fold(0, (acc, elem) -> acc + elem);
-    final RunnableGraph<Future<Integer>> counterRunnableGraph =
+    final RunnableGraph<CompletionStage<Integer>> counterRunnableGraph =
       tweetsInMinuteFromNow
         .filter(t -> t.hashtags().contains(AKKA))
         .map(t -> 1)
         .toMat(sumSink, Keep.right());
 
     // materialize the stream once in the morning
-    final Future<Integer> morningTweetsCount = counterRunnableGraph.run(mat);
+    final CompletionStage<Integer> morningTweetsCount = counterRunnableGraph.run(mat);
     // and once in the evening, reusing the blueprint
-    final Future<Integer> eveningTweetsCount = counterRunnableGraph.run(mat);
+    final CompletionStage<Integer> eveningTweetsCount = counterRunnableGraph.run(mat);
     //#tweets-runnable-flow-materialized-twice
 
   }

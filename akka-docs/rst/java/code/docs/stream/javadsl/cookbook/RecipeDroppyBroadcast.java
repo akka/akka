@@ -16,6 +16,7 @@ import scala.concurrent.Future;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 public class RecipeDroppyBroadcast extends RecipeTest {
   static ActorSystem system;
@@ -38,7 +39,7 @@ public class RecipeDroppyBroadcast extends RecipeTest {
     new JavaTestKit(system) {
       //#droppy-bcast
       // Makes a sink drop elements if too slow
-      public <T> Sink<T, Future<Done>> droppySink(Sink<T, Future<Done>> sink, int size) {
+      public <T> Sink<T, CompletionStage<Done>> droppySink(Sink<T, CompletionStage<Done>> sink, int size) {
         return Flow.<T> create()
           .buffer(size, OverflowStrategy.dropHead())
           .toMat(sink, Keep.right());
@@ -51,9 +52,9 @@ public class RecipeDroppyBroadcast extends RecipeTest {
           nums.add(i + 1);
         }
 
-        final Sink<Integer, Future<Done>> mySink1 = Sink.ignore();
-        final Sink<Integer, Future<Done>> mySink2 = Sink.ignore();
-        final Sink<Integer, Future<Done>> mySink3 = Sink.ignore();
+        final Sink<Integer, CompletionStage<Done>> mySink1 = Sink.ignore();
+        final Sink<Integer, CompletionStage<Done>> mySink2 = Sink.ignore();
+        final Sink<Integer, CompletionStage<Done>> mySink3 = Sink.ignore();
 
         final Source<Integer, NotUsed> myData = Source.from(nums);
 

@@ -13,6 +13,10 @@ import akka.http.javadsl.server.values.BasicCredentials;
 import akka.http.javadsl.server.values.HttpBasicAuthenticator;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.scaladsl.model.headers.Authorization;
+
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+
 import org.junit.Test;
 import scala.Option;
 import scala.concurrent.Future;
@@ -27,7 +31,7 @@ public class HttpBasicAuthenticatorExample extends JUnitRouteTest {
 
             private final String hardcodedPassword = "correcthorsebatterystaple";
 
-            public Future<Option<String>> authenticate(BasicCredentials credentials) {
+            public CompletionStage<Optional<String>> authenticate(BasicCredentials credentials) {
                 // this is where your actual authentication logic would go
                 if (credentials.available() && // no anonymous access
                     credentials.verify(hardcodedPassword)) {

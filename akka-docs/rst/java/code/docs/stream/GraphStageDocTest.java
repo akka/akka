@@ -31,6 +31,9 @@ import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
@@ -101,14 +104,14 @@ public class GraphStageDocTest {
     Source<Integer, NotUsed> mySource = Source.fromGraph(sourceGraph);
 
     // Returns 55
-    Future<Integer> result1 = mySource.take(10).runFold(0, (sum, next) -> sum + next, mat);
+    CompletionStage<Integer> result1 = mySource.take(10).runFold(0, (sum, next) -> sum + next, mat);
 
     // The source is reusable. This returns 5050
-    Future<Integer> result2 = mySource.take(100).runFold(0, (sum, next) -> sum + next, mat);
+    CompletionStage<Integer> result2 = mySource.take(100).runFold(0, (sum, next) -> sum + next, mat);
     //#simple-source-usage
 
-    assertEquals(Await.result(result1, Duration.create(3, "seconds")), (Integer) 55);
-    assertEquals(Await.result(result2, Duration.create(3, "seconds")), (Integer) 5050);
+    assertEquals(result1.toCompletableFuture().get(3, TimeUnit.SECONDS), (Integer) 55);
+    assertEquals(result2.toCompletableFuture().get(3, TimeUnit.SECONDS), (Integer) 5050);
   }
 
 
@@ -169,12 +172,12 @@ public class GraphStageDocTest {
         }
       }));
 
-    Future<Integer> result =
+    CompletionStage<Integer> result =
       Source.from(Arrays.asList("one", "two", "three"))
         .via(stringLength)
         .runFold(0, (sum, n) -> sum + n, mat);
 
-    assertEquals(new Integer(11), Await.result(result, Duration.create(3, "seconds")));
+    assertEquals(new Integer(11), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   //#many-to-one
@@ -231,12 +234,12 @@ public class GraphStageDocTest {
     Graph<FlowShape<Integer, Integer>, NotUsed> evenFilter =
       Flow.fromGraph(new Filter<Integer>(n -> n % 2 == 0));
 
-    Future<Integer> result =
+    CompletionStage<Integer> result =
       Source.from(Arrays.asList(1, 2, 3, 4, 5, 6))
         .via(evenFilter)
         .runFold(0, (elem, sum) -> sum + elem, mat);
 
-    assertEquals(new Integer(12), Await.result(result, Duration.create(3, "seconds")));
+    assertEquals(new Integer(12), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   //#one-to-many
@@ -300,12 +303,12 @@ public class GraphStageDocTest {
     Graph<FlowShape<Integer, Integer>, NotUsed> duplicator =
             Flow.fromGraph(new Duplicator<Integer>());
 
-    Future<Integer> result =
+    CompletionStage<Integer> result =
       Source.from(Arrays.asList(1, 2, 3))
         .via(duplicator)
         .runFold(0, (n, sum) -> n + sum, mat);
 
-    assertEquals(new Integer(12), Await.result(result, Duration.create(3, "seconds")));
+    assertEquals(new Integer(12), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
 
   }
 
@@ -357,20 +360,20 @@ public class GraphStageDocTest {
     Graph<FlowShape<Integer, Integer>, NotUsed> duplicator =
             Flow.fromGraph(new Duplicator2<Integer>());
 
-    Future<Integer> result =
+    CompletionStage<Integer> result =
             Source.from(Arrays.asList(1, 2, 3))
                     .via(duplicator)
                     .runFold(0, (n, sum) -> n + sum, mat);
 
-    assertEquals(new Integer(12), Await.result(result, Duration.create(3, "seconds")));
+    assertEquals(new Integer(12), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   @Test
   public void demonstrateChainingOfGraphStages() throws Exception {
-    Graph<SinkShape<Integer>, Future<String>> sink = Sink.fold("", (acc, n) -> acc + n.toString());
+    Graph<SinkShape<Integer>, CompletionStage<String>> sink = Sink.fold("", (acc, n) -> acc + n.toString());
 
     //#graph-stage-chain
-    Future<String> resultFuture = Source.from(Arrays.asList(1,2,3,4,5))
+    CompletionStage<String> resultFuture = Source.from(Arrays.asList(1,2,3,4,5))
             .via(new Filter<Integer>((n) -> n % 2 == 0))
             .via(new Duplicator<Integer>())
             .via(new Map<Integer, Integer>((n) -> n / 2))
@@ -378,7 +381,7 @@ public class GraphStageDocTest {
 
     //#graph-stage-chain
 
-    assertEquals("1122", Await.result(resultFuture, Duration.create(3, "seconds")));
+    assertEquals("1122", resultFuture.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
 
@@ -386,9 +389,9 @@ public class GraphStageDocTest {
   // will close upstream when the future completes
   public class KillSwitch<A> extends GraphStage<FlowShape<A, A>> {
 
-    private final Future<Done> switchF;
+    private final CompletionStage<Done> switchF;
 
-    public KillSwitch(Future<Done> switchF) {
+    public KillSwitch(CompletionStage<Done> switchF) {
       this.switchF = switchF;
     }
 
@@ -430,12 +433,7 @@ public class GraphStageDocTest {
           });
 
           ExecutionContext ec = system.dispatcher();
-          switchF.onSuccess(new OnSuccess<Done>() {
-            @Override
-            public void onSuccess(Done result) throws Throwable {
-              callback.invoke(Done.getInstance());
-            }
-          }, ec);
+          switchF.thenAccept(callback::invoke);
         }
       };
     }
@@ -446,29 +444,23 @@ public class GraphStageDocTest {
   public void demonstrateAnAsynchronousSideChannel() throws Exception{
 
     // tests:
-    Promise<Done> switchF = Futures.promise();
+    CompletableFuture<Done> switchF = new CompletableFuture<>();
     Graph<FlowShape<Integer, Integer>, NotUsed> killSwitch =
-      Flow.fromGraph(new KillSwitch<>(switchF.future()));
+      Flow.fromGraph(new KillSwitch<>(switchF));
 
     ExecutionContext ec = system.dispatcher();
 
-    // TODO this is probably racey, is there a way to make sure it happens after?
-    Future<Integer> valueAfterKill = switchF.future().flatMap(new Mapper<Done, Future<Integer>>() {
-      @Override
-      public Future<Integer> apply(Done parameter) {
-        return Futures.successful(4);
-      }
-    }, ec);
+    CompletionStage<Integer> valueAfterKill = switchF.thenApply(in -> 4);
 
 
-    Future<Integer> result =
-      Source.from(Arrays.asList(1, 2, 3)).concat(Source.fromFuture(valueAfterKill))
+    CompletionStage<Integer> result =
+      Source.from(Arrays.asList(1, 2, 3)).concat(Source.fromCompletionStage(valueAfterKill))
         .via(killSwitch)
         .runFold(0, (n, sum) -> n + sum, mat);
 
-    switchF.success(Done.getInstance());
+    switchF.complete(Done.getInstance());
 
-    assertEquals(new Integer(6), Await.result(result, Duration.create(3, "seconds")));
+    assertEquals(new Integer(6), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
 
@@ -531,18 +523,18 @@ public class GraphStageDocTest {
 
   public void demonstrateAGraphStageWithATimer() throws Exception {
     // tests:
-    Future<Integer> result =
+    CompletionStage<Integer> result =
       Source.from(Arrays.asList(1, 2, 3))
         .via(new TimedGate<>(Duration.create(2, "seconds")))
         .takeWithin(Duration.create(250, "millis"))
         .runFold(0, (n, sum) -> n + sum, mat);
 
-    assertEquals(new Integer(1), Await.result(result, Duration.create(3, "seconds")));
+    assertEquals(new Integer(1), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
 
   //#materialized
-  public class FirstValue<A> extends GraphStageWithMaterializedValue<FlowShape<A, A>, Future<A>> {
+  public class FirstValue<A> extends GraphStageWithMaterializedValue<FlowShape<A, A>, CompletionStage<A>> {
 
     public final Inlet<A> in = Inlet.create("FirstValue.in");
     public final Outlet<A> out = Outlet.create("FirstValue.out");
@@ -554,7 +546,7 @@ public class GraphStageDocTest {
     }
 
     @Override
-    public Tuple2<GraphStageLogic, Future<A>> createLogicAndMaterializedValue(Attributes inheritedAttributes) {
+    public Tuple2<GraphStageLogic, CompletionStage<A>> createLogicAndMaterializedValue(Attributes inheritedAttributes) {
       Promise<A> promise = Futures.promise();
 
       GraphStageLogic logic = new GraphStageLogic(shape) {
@@ -592,13 +584,13 @@ public class GraphStageDocTest {
 
   public void demonstrateACustomMaterializedValue() throws Exception {
     // tests:
-    RunnableGraph<Future<Integer>> flow = Source.from(Arrays.asList(1, 2, 3))
+    RunnableGraph<CompletionStage<Integer>> flow = Source.from(Arrays.asList(1, 2, 3))
       .viaMat(new FirstValue(), Keep.right())
       .to(Sink.ignore());
 
-    Future<Integer> result = flow.run(mat);
+    CompletionStage<Integer> result = flow.run(mat);
 
-    assertEquals(new Integer(1), Await.result(result, Duration.create(3, "seconds")));
+    assertEquals(new Integer(1), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
 
@@ -685,11 +677,11 @@ public class GraphStageDocTest {
 
   public void demonstrateADetachedGraphStage() throws Exception {
     // tests:
-    Future<Integer> result1 = Source.from(Arrays.asList(1, 2, 3))
+    CompletionStage<Integer> result1 = Source.from(Arrays.asList(1, 2, 3))
       .via(new TwoBuffer<>())
       .runFold(0, (acc, n) -> acc + n, mat);
 
-    assertEquals(new Integer(6), Await.result(result1, Duration.create(3, "seconds")));
+    assertEquals(new Integer(6), result1.toCompletableFuture().get(3, TimeUnit.SECONDS));
 
     TestSubscriber.ManualProbe<Integer> subscriber = TestSubscriber.manualProbe(system);
     TestPublisher.Probe<Integer> publisher = TestPublisher.probe(0, system);

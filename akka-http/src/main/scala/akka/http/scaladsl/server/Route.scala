@@ -7,7 +7,7 @@ package akka.http.scaladsl.server
 import akka.NotUsed
 import akka.stream.Materializer
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ ExecutionContextExecutor, Future }
 import akka.stream.scaladsl.Flow
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.util.FastFuture._
@@ -41,7 +41,7 @@ object Route {
   def handlerFlow(route: Route)(implicit routingSettings: RoutingSettings,
                                 materializer: Materializer,
                                 routingLog: RoutingLog,
-                                executionContext: ExecutionContext = null,
+                                executionContext: ExecutionContextExecutor = null,
                                 rejectionHandler: RejectionHandler = RejectionHandler.default,
                                 exceptionHandler: ExceptionHandler = null): Flow[HttpRequest, HttpResponse, NotUsed] =
     Flow[HttpRequest].mapAsync(1)(asyncHandler(route))
@@ -52,7 +52,7 @@ object Route {
   def asyncHandler(route: Route)(implicit routingSettings: RoutingSettings,
                                  materializer: Materializer,
                                  routingLog: RoutingLog,
-                                 executionContext: ExecutionContext = null,
+                                 executionContext: ExecutionContextExecutor = null,
                                  rejectionHandler: RejectionHandler = RejectionHandler.default,
                                  exceptionHandler: ExceptionHandler = null): HttpRequest ⇒ Future[HttpResponse] = {
     val effectiveEC = if (executionContext ne null) executionContext else materializer.executionContext

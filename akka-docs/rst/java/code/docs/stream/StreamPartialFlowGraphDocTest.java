@@ -6,6 +6,7 @@ package docs.stream;
 import static org.junit.Assert.assertEquals;
 
 import java.util.*;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import akka.Done;
@@ -58,10 +59,10 @@ public class StreamPartialFlowGraphDocTest {
               new Inlet[] {zip1.in0(), zip1.in1(), zip2.in1()});
         });
 
-    final Sink<Integer, Future<Integer>> resultSink = Sink.<Integer>head();
+    final Sink<Integer, CompletionStage<Integer>> resultSink = Sink.<Integer>head();
 
-    final RunnableGraph<Future<Integer>> g =
-      RunnableGraph.<Future<Integer>>fromGraph(
+    final RunnableGraph<CompletionStage<Integer>> g =
+      RunnableGraph.<CompletionStage<Integer>>fromGraph(
         GraphDSL.create(resultSink, (builder, sink) -> {
           // import the partial flow graph explicitly
           final UniformFanInShape<Integer, Integer> pm = builder.add(pickMaxOfThree);
@@ -73,9 +74,9 @@ public class StreamPartialFlowGraphDocTest {
           return ClosedShape.getInstance();
         }));
     
-    final Future<Integer> max = g.run(mat);
+    final CompletionStage<Integer> max = g.run(mat);
     //#simple-partial-flow-graph
-    assertEquals(Integer.valueOf(3), Await.result(max, Duration.create(3, TimeUnit.SECONDS)));
+    assertEquals(Integer.valueOf(3), max.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
     //#source-from-partial-flow-graph
@@ -110,10 +111,10 @@ public class StreamPartialFlowGraphDocTest {
           return SourceShape.of(zip.out());
         }));
     
-    final Future<Pair<Integer, Integer>> firstPair = 
+    final CompletionStage<Pair<Integer, Integer>> firstPair = 
         pairs.runWith(Sink.<Pair<Integer, Integer>>head(), mat);
     //#source-from-partial-flow-graph
-    assertEquals(new Pair<>(0, 1), Await.result(firstPair, Duration.create(3, TimeUnit.SECONDS)));
+    assertEquals(new Pair<>(0, 1), firstPair.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
   
   @Test
@@ -132,12 +133,12 @@ public class StreamPartialFlowGraphDocTest {
         }));
     
     //#flow-from-partial-flow-graph
-    final Future<Pair<Integer, String>> matSink =
+    final CompletionStage<Pair<Integer, String>> matSink =
     //#flow-from-partial-flow-graph
     Source.single(1).via(pairs).runWith(Sink.<Pair<Integer, String>>head(), mat);
     //#flow-from-partial-flow-graph
 
-    assertEquals(new Pair<>(1, "1"), Await.result(matSink, Duration.create(3, TimeUnit.SECONDS)));
+    assertEquals(new Pair<>(1, "1"), matSink.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
 
@@ -150,12 +151,12 @@ public class StreamPartialFlowGraphDocTest {
     final Source<Integer, NotUsed> sources = Source.combine(source1, source2, new ArrayList<>(),
             i -> Merge.<Integer>create(i));
     //#source-combine
-    final Future<Integer> result=
+    final CompletionStage<Integer> result=
     //#source-combine
     sources.runWith(Sink.<Integer, Integer>fold(0, (a,b) -> a + b), mat);
     //#source-combine
 
-    assertEquals(Integer.valueOf(3), Await.result(result, Duration.create(3, TimeUnit.SECONDS)));
+    assertEquals(Integer.valueOf(3), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   @Test
@@ -165,7 +166,7 @@ public class StreamPartialFlowGraphDocTest {
 
     //#sink-combine
     Sink<Integer, NotUsed> sendRemotely = Sink.actorRef(actorRef, "Done");
-    Sink<Integer, Future<Done>> localProcessing = Sink.<Integer>foreach(a -> { /*do something useful*/ } );
+    Sink<Integer, CompletionStage<Done>> localProcessing = Sink.<Integer>foreach(a -> { /*do something useful*/ } );
     Sink<Integer, NotUsed> sinks = Sink.combine(sendRemotely,localProcessing, new ArrayList<>(), a -> Broadcast.create(a));
 
     Source.<Integer>from(Arrays.asList(new Integer[]{0, 1, 2})).runWith(sinks, mat);

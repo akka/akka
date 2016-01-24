@@ -4,7 +4,7 @@
 
 package docs.persistence;
 
-import static akka.pattern.Patterns.ask;
+import static akka.pattern.PatternsCS.ask;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Iterator;
@@ -42,6 +42,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 public class PersistenceQueryDocTest {
@@ -343,7 +344,7 @@ public class PersistenceQueryDocTest {
 
   //#projection-into-different-store-simple-classes
   class ExampleStore {
-    Future<Void> save(Object any) {
+    CompletionStage<Void> save(Object any) {
       // ...
       //#projection-into-different-store-simple-classes
       return null;
@@ -379,13 +380,13 @@ public class PersistenceQueryDocTest {
       this.name = name;
     }
 
-    public Future<Long> saveProgress(long offset) {
+    public CompletionStage<Long> saveProgress(long offset) {
       // ...
       //#projection-into-different-store
       return null;
       //#projection-into-different-store
     }
-    public Future<Long> latestOffset() {
+    public CompletionStage<Long> latestOffset() {
       // ...
       //#projection-into-different-store
       return null;
@@ -412,17 +413,13 @@ public class PersistenceQueryDocTest {
     final Props writerProps = Props.create(TheOneWhoWritesToQueryJournal.class, "bid");
     final ActorRef writer = system.actorOf(writerProps, "bid-projection-writer");
 
-    long startFromOffset = Await.result(bidProjection.latestOffset(), timeout.duration());
+    long startFromOffset = bidProjection.latestOffset().toCompletableFuture().get(3, TimeUnit.SECONDS);
 
     readJournal
       .eventsByTag("bid", startFromOffset)
-      .<Long>mapAsync(8, envelope -> {
-        final Future<Object> f = ask(writer, envelope.event(), timeout);
-        return f.<Long>map(new Mapper<Object, Long>() {
-          @Override public Long apply(Object in) {
-            return envelope.offset();
-          }
-        }, system.dispatcher());
+      .mapAsync(8, envelope -> {
+        final CompletionStage<Object> f = ask(writer, envelope.event(), timeout);
+        return f.thenApplyAsync(in -> envelope.offset(), system.dispatcher());
       })
       .mapAsync(1, offset -> bidProjection.saveProgress(offset))
       .runWith(Sink.ignore(), mat);

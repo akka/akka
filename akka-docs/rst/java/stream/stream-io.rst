@@ -16,7 +16,7 @@ Streaming TCP
 
 Accepting connections: Echo Server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-In order to implement a simple EchoServer we ``bind`` to a given address, which returns a ``Source<IncomingConnection, Future<ServerBinding>>``,
+In order to implement a simple EchoServer we ``bind`` to a given address, which returns a ``Source<IncomingConnection, CompletionStage<ServerBinding>>``,
 which will emit an :class:`IncomingConnection` element for each new connection that the Server should handle:
 
 .. includecode:: ../code/docs/stream/io/StreamTcpDocTest.java#echo-server-simple-bind

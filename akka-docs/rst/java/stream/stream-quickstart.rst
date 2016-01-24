@@ -163,21 +163,21 @@ First, let's write such an element counter using ``Flow.of(Class)`` and ``Sink.f
 
 First we prepare a reusable ``Flow`` that will change each incoming tweet into an integer of value ``1``. We'll use this in
 order to combine those with a ``Sink.fold`` that will sum all ``Integer`` elements of the stream and make its result available as
-a ``Future<Integer>``. Next we connect the ``tweets`` stream to ``count`` with ``via``. Finally we connect the Flow to the previously
+a ``CompletionStage<Integer>``. Next we connect the ``tweets`` stream to ``count`` with ``via``. Finally we connect the Flow to the previously
 prepared Sink using ``toMat``.
 
 Remember those mysterious ``Mat`` type parameters on ``Source<Out, Mat>``, ``Flow<In, Out, Mat>`` and ``Sink<In, Mat>``?
 They represent the type of values these processing parts return when materialized. When you chain these together,
 you can explicitly combine their materialized values: in our example we used the ``Keep.right`` predefined function,
 which tells the implementation to only care about the materialized type of the stage currently appended to the right.
-The materialized type of ``sumSink`` is ``Future<Integer>`` and because of using ``Keep.right``, the resulting :class:`RunnableGraph`
-has also a type parameter of ``Future<Integer>``.
+The materialized type of ``sumSink`` is ``CompletionStage<Integer>`` and because of using ``Keep.right``, the resulting :class:`RunnableGraph`
+has also a type parameter of ``CompletionStage<Integer>``.
 
 This step does *not* yet materialize the
 processing pipeline, it merely prepares the description of the Flow, which is now connected to a Sink, and therefore can
-be ``run()``, as indicated by its type: ``RunnableGraph<Future<Integer>>``. Next we call ``run()`` which uses the :class:`ActorMaterializer`
+be ``run()``, as indicated by its type: ``RunnableGraph<CompletionStage<Integer>>``. Next we call ``run()`` which uses the :class:`ActorMaterializer`
 to materialize and run the Flow. The value returned by calling ``run()`` on a ``RunnableGraph<T>`` is of type ``T``.
-In our case this type is ``Future<Integer>`` which, when completed, will contain the total length of our tweets stream.
+In our case this type is ``CompletionStage<Integer>`` which, when completed, will contain the total length of our tweets stream.
 In case of the stream failing, this future would complete with a Failure.
 
 A :class:`RunnableGraph` may be reused

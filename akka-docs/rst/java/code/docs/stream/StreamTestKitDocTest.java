@@ -6,6 +6,9 @@ package docs.stream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import akka.NotUsed;
@@ -13,7 +16,6 @@ import org.junit.*;
 import static org.junit.Assert.assertEquals;
 
 import akka.actor.*;
-import akka.dispatch.Futures;
 import akka.testkit.*;
 import akka.japi.Pair;
 import akka.stream.*;
@@ -23,7 +25,6 @@ import akka.stream.testkit.javadsl.*;
 import akka.testkit.TestProbe;
 import scala.util.*;
 import scala.concurrent.Await;
-import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -48,13 +49,13 @@ public class StreamTestKitDocTest {
   @Test
   public void strictCollection() throws Exception {
     //#strict-collection
-    final Sink<Integer, Future<Integer>> sinkUnderTest = Flow.of(Integer.class)
+    final Sink<Integer, CompletionStage<Integer>> sinkUnderTest = Flow.of(Integer.class)
       .map(i -> i * 2)
       .toMat(Sink.fold(0, (agg, next) -> agg + next), Keep.right());
 
-    final Future<Integer> future = Source.from(Arrays.asList(1, 2, 3, 4))
+    final CompletionStage<Integer> future = Source.from(Arrays.asList(1, 2, 3, 4))
       .runWith(sinkUnderTest, mat);
-    final Integer result = Await.result(future, Duration.create(1, TimeUnit.SECONDS));
+    final Integer result = future.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assert(result == 20);
     //#strict-collection
   }
@@ -65,11 +66,10 @@ public class StreamTestKitDocTest {
     final Source<Integer, NotUsed> sourceUnderTest = Source.repeat(1)
       .map(i -> i * 2);
 
-    final Future<List<Integer>> future = sourceUnderTest
+    final CompletionStage<List<Integer>> future = sourceUnderTest
       .grouped(10)
       .runWith(Sink.head(), mat);
-    final List<Integer> result =
-      Await.result(future, Duration.create(1, TimeUnit.SECONDS));
+    final List<Integer> result = future.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(result, Collections.nCopies(10, 2));
     //#grouped-infinite
   }
@@ -80,9 +80,9 @@ public class StreamTestKitDocTest {
     final Flow<Integer, Integer, NotUsed> flowUnderTest = Flow.of(Integer.class)
       .takeWhile(i -> i < 5);
 
-    final Future<Integer> future = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6))
+    final CompletionStage<Integer> future = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6))
       .via(flowUnderTest).runWith(Sink.fold(0, (agg, next) -> agg + next), mat);
-    final Integer result = Await.result(future, Duration.create(1, TimeUnit.SECONDS));
+    final Integer result = future.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assert(result == 10);
     //#folded-stream
   }
@@ -95,10 +95,10 @@ public class StreamTestKitDocTest {
       .grouped(2);
 
     final TestProbe probe = new TestProbe(system);
-    final Future<List<List<Integer>>> future = sourceUnderTest
+    final CompletionStage<List<List<Integer>>> future = sourceUnderTest
       .grouped(2)
       .runWith(Sink.head(), mat);
-    akka.pattern.Patterns.pipe(future, system.dispatcher()).to(probe.ref());
+    akka.pattern.PatternsCS.pipe(future, system.dispatcher()).to(probe.ref());
     probe.expectMsg(Duration.create(1, TimeUnit.SECONDS),
       Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4))
     );
@@ -129,23 +129,23 @@ public class StreamTestKitDocTest {
   @Test
   public void sourceActorRef() throws Exception {
     //#source-actorref
-    final Sink<Integer, Future<String>> sinkUnderTest = Flow.of(Integer.class)
+    final Sink<Integer, CompletionStage<String>> sinkUnderTest = Flow.of(Integer.class)
       .map(i -> i.toString())
       .toMat(Sink.fold("", (agg, next) -> agg + next), Keep.right());
 
-    final Pair<ActorRef, Future<String>> refAndFuture =
+    final Pair<ActorRef, CompletionStage<String>> refAndCompletionStage =
       Source.<Integer>actorRef(8, OverflowStrategy.fail())
         .toMat(sinkUnderTest, Keep.both())
         .run(mat);
-    final ActorRef ref = refAndFuture.first();
-    final Future<String> future = refAndFuture.second();
+    final ActorRef ref = refAndCompletionStage.first();
+    final CompletionStage<String> future = refAndCompletionStage.second();
 
     ref.tell(1, ActorRef.noSender());
     ref.tell(2, ActorRef.noSender());
     ref.tell(3, ActorRef.noSender());
     ref.tell(new akka.actor.Status.Success("done"), ActorRef.noSender());
 
-    final String result = Await.result(future, Duration.create(1, TimeUnit.SECONDS));
+    final String result = future.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(result, "123");
     //#source-actorref
   }
@@ -180,19 +180,23 @@ public class StreamTestKitDocTest {
   @Test
   public void injectingFailure() throws Exception {
     //#injecting-failure
-    final Sink<Integer, Future<Integer>> sinkUnderTest = Sink.head();
+    final Sink<Integer, CompletionStage<Integer>> sinkUnderTest = Sink.head();
 
-    final Pair<TestPublisher.Probe<Integer>, Future<Integer>> probeAndFuture =
+    final Pair<TestPublisher.Probe<Integer>, CompletionStage<Integer>> probeAndCompletionStage =
       TestSource.<Integer>probe(system)
         .toMat(sinkUnderTest, Keep.both())
         .run(mat);
-    final TestPublisher.Probe<Integer> probe = probeAndFuture.first();
-    final Future<Integer> future = probeAndFuture.second();
+    final TestPublisher.Probe<Integer> probe = probeAndCompletionStage.first();
+    final CompletionStage<Integer> future = probeAndCompletionStage.second();
     probe.sendError(new Exception("boom"));
 
-    Await.ready(future, Duration.create(1, TimeUnit.SECONDS));
-    final Throwable exception = ((Failure)future.value().get()).exception();
-    assertEquals(exception.getMessage(), "boom");
+    try {
+      future.toCompletableFuture().get(1, TimeUnit.SECONDS);
+      assert false;
+    } catch (ExecutionException ee) {
+      final Throwable exception = ee.getCause();
+      assertEquals(exception.getMessage(), "boom");
+    }
     //#injecting-failure
   }
 
@@ -200,11 +204,11 @@ public class StreamTestKitDocTest {
   public void testSourceAndTestSink() throws Exception {
     //#test-source-and-sink
     final Flow<Integer, Integer, NotUsed> flowUnderTest = Flow.of(Integer.class)
-      .mapAsyncUnordered(2, sleep -> akka.pattern.Patterns.after(
+      .mapAsyncUnordered(2, sleep -> akka.pattern.PatternsCS.after(
         Duration.create(10, TimeUnit.MILLISECONDS),
         system.scheduler(),
         system.dispatcher(),
-        Futures.successful(sleep)
+        CompletableFuture.completedFuture(sleep)
       ));
 
     final Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Integer>> pubAndSub =

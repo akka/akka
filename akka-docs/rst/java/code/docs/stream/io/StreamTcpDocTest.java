@@ -3,6 +3,7 @@
  */
 package docs.stream.io;
 
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import akka.NotUsed;
@@ -60,14 +61,14 @@ public class StreamTcpDocTest {
     {
       //#echo-server-simple-bind
       // IncomingConnection and ServerBinding imported from Tcp
-      final Source<IncomingConnection, Future<ServerBinding>> connections =
+      final Source<IncomingConnection, CompletionStage<ServerBinding>> connections =
           Tcp.get(system).bind("127.0.0.1", 8889);
       //#echo-server-simple-bind
     }
     {
 
       final InetSocketAddress localhost = SocketUtils.temporaryServerAddress();
-      final Source<IncomingConnection, Future<ServerBinding>> connections =
+      final Source<IncomingConnection, CompletionStage<ServerBinding>> connections =
         Tcp.get(system).bind(localhost.getHostName(), localhost.getPort()); // TODO getHostString in Java7
 
       //#echo-server-simple-handle
@@ -93,7 +94,7 @@ public class StreamTcpDocTest {
 
     final TestProbe serverProbe = new TestProbe(system);
 
-    final Source<IncomingConnection,Future<ServerBinding>> connections =
+    final Source<IncomingConnection,CompletionStage<ServerBinding>> connections =
         Tcp.get(system).bind(localhost.getHostName(), localhost.getPort()); // TODO getHostString in Java7
     //#welcome-banner-chat-server
     connections.runForeach(connection -> {
@@ -146,14 +147,14 @@ public class StreamTcpDocTest {
 
     {
     //#repl-client
-      final Flow<ByteString, ByteString, Future<OutgoingConnection>> connection =
+      final Flow<ByteString, ByteString, CompletionStage<OutgoingConnection>> connection =
           Tcp.get(system).outgoingConnection("127.0.0.1", 8889);
       //#repl-client
     }
 
     {
-      final Flow<ByteString, ByteString, Future<OutgoingConnection>> connection =
-          Tcp.get(system).outgoingConnection(localhost.getHostName(), localhost.getPort()); // TODO getHostString in Java7
+      final Flow<ByteString, ByteString, CompletionStage<OutgoingConnection>> connection =
+          Tcp.get(system).outgoingConnection(localhost.getHostString(), localhost.getPort());
       //#repl-client
 
       final PushStage<String, ByteString> replParser = new PushStage<String, ByteString>() {

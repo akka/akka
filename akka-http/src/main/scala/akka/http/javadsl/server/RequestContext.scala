@@ -4,9 +4,10 @@
 
 package akka.http.javadsl.server
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.ExecutionContextExecutor
 import akka.http.javadsl.model._
 import akka.stream.Materializer
+import java.util.concurrent.CompletionStage
 
 /**
  * The RequestContext represents the state of the request while it is routed through
@@ -24,7 +25,7 @@ trait RequestContext {
   def unmatchedPath: String
 
   /** Returns the ExecutionContext of this RequestContext */
-  def executionContext(): ExecutionContext
+  def executionContext(): ExecutionContextExecutor
 
   /** Returns the Materializer of this RequestContext */
   def materializer(): Materializer
@@ -63,7 +64,7 @@ trait RequestContext {
   /**
    * Defers completion of the request
    */
-  def completeWith(futureResult: Future[RouteResult]): RouteResult
+  def completeWith(futureResult: CompletionStage[RouteResult]): RouteResult
 
   /**
    * Explicitly rejects the request as not found. Other route alternatives

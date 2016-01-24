@@ -274,7 +274,7 @@ private[http] object HttpServerBluePrint {
         }
     }
     private def schedule(delay: FiniteDuration, handler: HttpRequest ⇒ HttpResponse): Cancellable =
-      materializer.scheduleOnce(delay, new Runnable { def run() = trigger.invoke(self, handler(request)) })
+      materializer.scheduleOnce(delay, new Runnable { def run() = trigger.invoke((self, handler(request))) })
 
     import akka.http.impl.util.JavaMapping.Implicits._
     /** JAVA API **/

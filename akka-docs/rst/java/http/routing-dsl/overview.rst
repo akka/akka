@@ -88,7 +88,7 @@ Bind failures
 ^^^^^^^^^^^^^
 For example the server might be unable to bind to the given port. For example when the port
 is already taken by another application, or if the port is privileged (i.e. only usable by ``root``).
-In this case the "binding future" will fail immediatly, and we can react to if by listening on the Future's completion:
+In this case the "binding future" will fail immediatly, and we can react to if by listening on the CompletionStage's completion:
 
 .. includecode:: ../../code/docs/http/javadsl/server/HighLevelServerBindFailureExample.java
   :include: binding-failure-high-level-example
