@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2013-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2013-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package docs.duration;
