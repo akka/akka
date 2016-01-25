@@ -9,6 +9,13 @@ package akka.http.javadsl.model;
  * and static constructors to create custom ones.
  */
 public abstract class HttpMethod {
+
+    /**
+     * Returns the name of the method, always equal to [[value]].
+     */
+    public final String name() {
+        return value();
+    }
     /**
      * Returns the name of the method.
      */

@@ -17,7 +17,7 @@ import akka.stream.BidiShape
 import akka.stream.io.{ SessionBytes, SendBytes, SslTlsInbound }
 import akka.stream.scaladsl._
 
-import akka.http.ClientConnectionSettings
+import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpResponse, HttpMethods }
 import akka.http.scaladsl.model.headers.Host

@@ -5,6 +5,7 @@
 package akka.http.scaladsl.server
 
 import scala.util.control.NonFatal
+import akka.http.scaladsl.settings.RoutingSettings
 import akka.http.scaladsl.model._
 import StatusCodes._
 

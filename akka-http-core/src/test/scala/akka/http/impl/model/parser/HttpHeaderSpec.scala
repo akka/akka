@@ -4,7 +4,7 @@
 
 package akka.http.impl.model.parser
 
-import akka.http.ParserSettings.CookieParsingMode
+import akka.http.scaladsl.settings.ParserSettings.CookieParsingMode
 import akka.http.impl.model.parser.HeaderParser.Settings
 import org.scalatest.{ Matchers, FreeSpec }
 import org.scalatest.matchers.{ Matcher, MatchResult }

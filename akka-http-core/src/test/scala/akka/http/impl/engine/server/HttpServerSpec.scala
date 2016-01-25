@@ -5,7 +5,7 @@
 package akka.http.impl.engine.server
 
 import java.net.{ InetAddress, InetSocketAddress }
-import akka.http.ServerSettings
+import akka.http.scaladsl.settings.ServerSettings
 import scala.reflect.ClassTag
 import scala.util.Random
 import scala.annotation.tailrec
@@ -366,7 +366,7 @@ class HttpServerSpec extends AkkaSpec(
     }
 
     "translate HEAD request to GET request when transparent-head-requests are enabled" in new TestSetup {
-      override def settings = ServerSettings(system).copy(transparentHeadRequests = true)
+      override def settings = ServerSettings(system).withTransparentHeadRequests(true)
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
@@ -375,7 +375,7 @@ class HttpServerSpec extends AkkaSpec(
     }
 
     "keep HEAD request when transparent-head-requests are disabled" in new TestSetup {
-      override def settings = ServerSettings(system).copy(transparentHeadRequests = false)
+      override def settings = ServerSettings(system).withTransparentHeadRequests(false)
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
@@ -662,7 +662,7 @@ class HttpServerSpec extends AkkaSpec(
 
       expectRequest() shouldEqual HttpRequest(uri = "http://example.com/abc", protocol = HttpProtocols.`HTTP/1.0`)
 
-      override def settings: ServerSettings = super.settings.copy(defaultHostHeader = Host("example.com"))
+      override def settings: ServerSettings = super.settings.withDefaultHostHeader(Host("example.com"))
     }
 
     "fail an HTTP/1.0 request with 400 if no default-host-header is set" in new TestSetup {
@@ -690,7 +690,7 @@ class HttpServerSpec extends AkkaSpec(
         Some(new InetSocketAddress(theAddress, 8080))
 
       override def settings: ServerSettings =
-        super.settings.copy(remoteAddressHeader = true)
+        super.settings.withRemoteAddressHeader(true)
 
       send("""GET / HTTP/1.1
              |Host: example.com
@@ -987,13 +987,13 @@ class HttpServerSpec extends AkkaSpec(
     override def settings = {
       val s = super.settings
       if (maxContentLength < 0) s
-      else s.copy(parserSettings = s.parserSettings.copy(maxContentLength = maxContentLength))
+      else s.withParserSettings(s.parserSettings.withMaxContentLength(maxContentLength))
     }
   }
   class RequestTimeoutTestSetup(requestTimeout: Duration) extends TestSetup {
     override def settings = {
       val s = super.settings
-      s.copy(timeouts = s.timeouts.copy(requestTimeout = requestTimeout))
+      s.withTimeouts(s.timeouts.withRequestTimeout(requestTimeout))
     }
   }
 }

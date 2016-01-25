@@ -1,24 +1,24 @@
 /*
- * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.scaladsl.server
+package akka.http.impl.settings
 
-import com.typesafe.config.Config
-import akka.actor.ActorRefFactory
 import akka.http.impl.util._
+import com.typesafe.config.Config
 
-case class RoutingSettings(
+/** INTERNAL API */
+final case class RoutingSettingsImpl(
   verboseErrorMessages: Boolean,
   fileGetConditional: Boolean,
   renderVanityFooter: Boolean,
   rangeCountLimit: Int,
   rangeCoalescingThreshold: Long,
   decodeMaxBytesPerChunk: Int,
-  fileIODispatcher: String)
+  fileIODispatcher: String) extends akka.http.scaladsl.settings.RoutingSettings
 
-object RoutingSettings extends SettingsCompanion[RoutingSettings]("akka.http.routing") {
-  def fromSubConfig(root: Config, c: Config) = apply(
+object RoutingSettingsImpl extends SettingsCompanion[RoutingSettingsImpl]("akka.http.routing") {
+  def fromSubConfig(root: Config, c: Config) = new RoutingSettingsImpl(
     c getBoolean "verbose-error-messages",
     c getBoolean "file-get-conditional",
     c getBoolean "render-vanity-footer",
@@ -27,6 +27,4 @@ object RoutingSettings extends SettingsCompanion[RoutingSettings]("akka.http.rou
     c getIntBytes "decode-max-bytes-per-chunk",
     c getString "file-io-dispatcher")
 
-  implicit def default(implicit refFactory: ActorRefFactory): RoutingSettings =
-    apply(actorSystem)
 }
