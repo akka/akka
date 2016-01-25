@@ -1,7 +1,7 @@
 /*
  * jQuery UI Effects Highlight @VERSION
  *
- * Copyright (c) 2008 Aaron Eisenberger (aaronchi@gmail.com)
+ * Copyright (C) 2008-2016 Aaron Eisenberger (aaronchi@gmail.com)
  * Dual licensed under the MIT (MIT-LICENSE.txt)
  * and GPL (GPL-LICENSE.txt) licenses.
  * 
