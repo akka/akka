@@ -4,7 +4,7 @@
 
 package akka.http.impl.engine.rendering
 
-import akka.http.ClientConnectionSettings
+import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.model.RequestEntityAcceptance._
 
 import scala.annotation.tailrec

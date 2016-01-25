@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.testkit
 
+import akka.http.scaladsl.settings.RoutingSettings
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Await, Future }

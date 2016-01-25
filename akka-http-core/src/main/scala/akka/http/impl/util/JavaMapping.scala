@@ -16,6 +16,7 @@ import akka.{ NotUsed, japi }
 import akka.http.impl.model.{ JavaQuery, JavaUri }
 import akka.http.javadsl.{ model ⇒ jm, HttpConnectionContext, ConnectionContext, HttpsConnectionContext }
 import akka.http.scaladsl.{ model ⇒ sm }
+import akka.http.javadsl.{ settings ⇒ js }
 
 import scala.compat.java8.OptionConverters._
 
@@ -168,6 +169,14 @@ private[http] object JavaMapping {
   implicit object HttpConnectionContext extends Inherited[HttpConnectionContext, akka.http.scaladsl.HttpConnectionContext]
   implicit object HttpsConnectionContext extends Inherited[HttpsConnectionContext, akka.http.scaladsl.HttpsConnectionContext]
 
+  implicit object ClientConnectionSettings extends Inherited[js.ClientConnectionSettings, akka.http.scaladsl.settings.ClientConnectionSettings]
+  implicit object ConnectionPoolSettings extends Inherited[js.ConnectionPoolSettings, akka.http.scaladsl.settings.ConnectionPoolSettings]
+  implicit object ParserSettings extends Inherited[js.ParserSettings, akka.http.scaladsl.settings.ParserSettings]
+  implicit object CookieParsingMode extends Inherited[js.ParserSettings.CookieParsingMode, akka.http.scaladsl.settings.ParserSettings.CookieParsingMode]
+  implicit object ErrorLoggingVerbosity extends Inherited[js.ParserSettings.ErrorLoggingVerbosity, akka.http.scaladsl.settings.ParserSettings.ErrorLoggingVerbosity]
+  implicit object ServerSettings extends Inherited[js.ServerSettings, akka.http.scaladsl.settings.ServerSettings]
+  implicit object ServerSettingsT extends Inherited[js.ServerSettings.Timeouts, akka.http.scaladsl.settings.ServerSettings.Timeouts]
+
   implicit object DateTime extends Inherited[jm.DateTime, akka.http.scaladsl.model.DateTime]
 
   implicit object ContentType extends Inherited[jm.ContentType, sm.ContentType]
@@ -198,9 +207,10 @@ private[http] object JavaMapping {
   implicit object TransferEncoding extends Inherited[jm.TransferEncoding, sm.TransferEncoding]
 
   implicit object HostHeader extends Inherited[jm.headers.Host, sm.headers.Host]
-
+  implicit object Server extends Inherited[jm.headers.Server, sm.headers.Server]
   implicit object ByteRange extends Inherited[jm.headers.ByteRange, sm.headers.ByteRange]
   implicit object CacheDirective extends Inherited[jm.headers.CacheDirective, sm.headers.CacheDirective]
+  implicit object UserAgent extends Inherited[jm.headers.UserAgent, sm.headers.`User-Agent`]
   implicit object ContentDispositionType extends Inherited[jm.headers.ContentDispositionType, sm.headers.ContentDispositionType]
   implicit object EntityTag extends Inherited[jm.headers.EntityTag, sm.headers.EntityTag]
   implicit object EntityTagRange extends Inherited[jm.headers.EntityTagRange, sm.headers.EntityTagRange]
@@ -228,6 +238,7 @@ private[http] object JavaMapping {
     def toScala(javaObject: J): Uri.S = cast[JavaUri](javaObject).uri
     def toJava(scalaObject: S): Uri.J = JavaUri(scalaObject)
   }
+  implicit object UriParsingMode extends Inherited[jm.Uri.ParsingMode, akka.http.scaladsl.model.Uri.ParsingMode]
 
   implicit object Query extends JavaMapping[jm.Query, sm.Uri.Query] {
     def toScala(javaObject: J): Query.S = cast[JavaQuery](javaObject).query

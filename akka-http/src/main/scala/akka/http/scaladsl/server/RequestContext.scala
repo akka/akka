@@ -9,6 +9,7 @@ import akka.stream.Materializer
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.settings.{ RoutingSettings, ParserSettings }
 
 /**
  * Immutable object encapsulating the context of an [[akka.http.scaladsl.model.HttpRequest]]
@@ -41,6 +42,11 @@ trait RequestContext {
    * The default RoutingSettings to be used for configuring directives.
    */
   def settings: RoutingSettings
+
+  /**
+   * The default ParserSettings to be used for configuring directives.
+   */
+  def parserSettings: ParserSettings
 
   /**
    * Returns a copy of this context with the given fields updated.
@@ -91,7 +97,12 @@ trait RequestContext {
   /**
    * Returns a copy of this context with the new RoutingSettings.
    */
-  def withSettings(settings: RoutingSettings): RequestContext
+  def withRoutingSettings(settings: RoutingSettings): RequestContext
+
+  /**
+   * Returns a copy of this context with the new [[ParserSettings]].
+   */
+  def withParserSettings(settings: ParserSettings): RequestContext
 
   /**
    * Returns a copy of this context with the HttpRequest transformed by the given function.

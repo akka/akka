@@ -5,6 +5,7 @@
 package akka.http.impl.server
 
 import akka.http.javadsl.model.ContentType
+import akka.http.javadsl.settings.{ RoutingSettings, ParserSettings }
 import akka.http.scaladsl.model.HttpEntity
 import akka.stream.Materializer
 import scala.concurrent.{ ExecutionContextExecutor, Future }
@@ -52,4 +53,7 @@ private[http] final case class RequestContextImpl(underlying: ScalaRequestContex
 
   def executionContext(): ExecutionContextExecutor = underlying.executionContext
   def materializer(): Materializer = underlying.materializer
+
+  override def settings: RoutingSettings = underlying.settings
+  override def parserSettings: ParserSettings = underlying.parserSettings
 }

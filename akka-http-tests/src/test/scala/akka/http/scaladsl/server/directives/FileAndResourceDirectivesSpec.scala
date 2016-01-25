@@ -6,6 +6,9 @@ package akka.http.scaladsl.server
 package directives
 
 import java.io.File
+
+import akka.http.scaladsl.settings.RoutingSettings
+
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Properties
@@ -229,7 +232,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     val base = new File(getClass.getClassLoader.getResource("").toURI).getPath
     new File(base, "subDirectory/emptySub").mkdir()
     def eraseDateTime(s: String) = s.replaceAll("""\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d""", "xxxx-xx-xx xx:xx:xx")
-    implicit val settings = RoutingSettings.default.copy(renderVanityFooter = false)
+    implicit val settings = RoutingSettings.default.withRenderVanityFooter(false)
 
     "properly render a simple directory" in {
       Get() ~> listDirectoryContents(base + "/someDir") ~> check {
