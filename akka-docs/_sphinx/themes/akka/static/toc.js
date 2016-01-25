@@ -3,7 +3,7 @@
  * jQuery TOC Plugin v1.1.3
  * http://code.google.com/p/samaxesjs/
  *
- * Copyright (c) 2011 samaxes.com
+ * Copyright (C) 2011-2016 samaxes.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
