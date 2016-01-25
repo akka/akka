@@ -280,8 +280,7 @@ object Flow {
   }
 
   /**
-   * Helper to create `Flow` without a [[Source]] or a [[Sink]].
-   * Example usage: `Flow[Int]`
+   * Returns a `Flow` which outputs all its inputs.
    */
   def apply[T]: Flow[T, T, NotUsed] = identity.asInstanceOf[Flow[T, T, NotUsed]]
 
@@ -297,16 +296,21 @@ object Flow {
     }
 
   /**
-   * Helper to create `Flow` from a `Sink`and a `Source`.
+   * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
+   * will be sent to the Sink and the Flow's output will come from the Source.
    */
   def fromSinkAndSource[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, NotUsed] =
     fromSinkAndSourceMat(sink, source)(Keep.none)
 
   /**
-   * Helper to create `Flow` from a `Sink`and a `Source`.
-   */
-  def fromSinkAndSourceMat[I, O, M1, M2, M](sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2])(f: (M1, M2) ⇒ M): Flow[I, O, M] =
-    fromGraph(GraphDSL.create(sink, source)(f) { implicit b ⇒ (in, out) ⇒ FlowShape(in.in, out.out) })
+    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
+    * will be sent to the Sink and the Flow's output will come from the Source.
+    *
+    * The `combine` function is used to compose the materialized values of the `sink` and `source`
+    * into the materialized value of the resulting [[Flow]].
+    */
+  def fromSinkAndSourceMat[I, O, M1, M2, M](sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2])(combine: (M1, M2) ⇒ M): Flow[I, O, M] =
+    fromGraph(GraphDSL.create(sink, source)(combine) { implicit b ⇒ (in, out) ⇒ FlowShape(in.in, out.out) })
 }
 
 object RunnableGraph {
