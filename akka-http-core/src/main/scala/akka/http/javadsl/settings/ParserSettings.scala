@@ -16,7 +16,10 @@ import scala.compat.java8.OptionConverters
 import akka.http.javadsl.model.{ HttpMethod, StatusCode, Uri }
 import com.typesafe.config.Config
 
-abstract class ParserSettings extends BodyPartParser.Settings {
+/**
+ * Public API but not intended for subclassing
+ */
+abstract class ParserSettings private[akka] () extends BodyPartParser.Settings { self: ParserSettingsImpl ⇒
   def getMaxUriLength: Int
   def getMaxMethodLength: Int
   def getMaxResponseReasonLength: Int
@@ -56,17 +59,17 @@ abstract class ParserSettings extends BodyPartParser.Settings {
 
   // special ---
 
+  @varargs
   def withCustomMethods(methods: HttpMethod*): ParserSettings = {
     val map = methods.map(m ⇒ m.name -> m.asScala).toMap
     self.copy(customMethods = map.get)
   }
+  @varargs
   def withCustomStatusCodes(codes: StatusCode*): ParserSettings = {
     val map = codes.map(c ⇒ c.intValue -> c.asScala).toMap
     self.copy(customStatusCodes = map.get)
   }
 
-  /** INTERNAL API */
-  protected def self = this.asInstanceOf[ParserSettingsImpl]
 }
 
 object ParserSettings extends SettingsCompanion[ParserSettings] {

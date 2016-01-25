@@ -5,8 +5,7 @@
 package akka.http.scaladsl.server
 
 import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.http.scaladsl.settings.ParserSettings
+import akka.http.scaladsl.settings.{ RoutingSettings, ParserSettings }
 import akka.stream.{ ActorMaterializer, Materializer }
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
@@ -24,7 +23,7 @@ object Route {
   /**
    * "Seals" a route by wrapping it with exception handling and rejection conversion.
    */
-  def seal(route: Route)(implicit routingSettings: RoutingSettingsImpl,
+  def seal(route: Route)(implicit routingSettings: RoutingSettings,
                          parserSettings: ParserSettings = null,
                          rejectionHandler: RejectionHandler = RejectionHandler.default,
                          exceptionHandler: ExceptionHandler = null): Route = {
@@ -41,7 +40,7 @@ object Route {
    *
    * This conversion is also implicitly available through [[RouteResult.route2HandlerFlow]].
    */
-  def handlerFlow(route: Route)(implicit routingSettings: RoutingSettingsImpl,
+  def handlerFlow(route: Route)(implicit routingSettings: RoutingSettings,
                                 parserSettings: ParserSettings,
                                 materializer: Materializer,
                                 routingLog: RoutingLog,
@@ -53,7 +52,7 @@ object Route {
   /**
    * Turns a `Route` into an async handler function.
    */
-  def asyncHandler(route: Route)(implicit routingSettings: RoutingSettingsImpl,
+  def asyncHandler(route: Route)(implicit routingSettings: RoutingSettings,
                                  parserSettings: ParserSettings,
                                  materializer: Materializer,
                                  routingLog: RoutingLog,

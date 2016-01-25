@@ -20,7 +20,10 @@ import scala.compat.java8.OptionConverters
 import scala.concurrent.duration.{ FiniteDuration, Duration }
 import scala.language.implicitConversions
 
-abstract class ServerSettings extends akka.http.javadsl.settings.ServerSettings {
+/**
+ * Public API but not intended for subclassing
+ */
+abstract class ServerSettings private[akka] () extends akka.http.javadsl.settings.ServerSettings { self: ServerSettingsImpl ⇒
   def serverHeader: Option[Server]
   def timeouts: ServerSettings.Timeouts
   def maxConnections: Int

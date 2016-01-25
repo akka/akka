@@ -132,3 +132,15 @@ Please consult the :class:`GraphStage` documentation (:ref:`graphstage-java`) an
 on migrating from :class:`AsyncStage` to :class:`GraphStage`.
 
 .. _`previous migration guide`: http://doc.akka.io/docs/akka-stream-and-http-experimental/2.0.2/java/migration-guide-1.0-2.x-java.html#AsyncStage_has_been_replaced_by_GraphStage
+
+
+Changes in Akka HTTP
+====================
+
+Routing settings parameter name
+-------------------------------
+
+``RoutingSettings`` were previously the only setting available on ``RequestContext``,
+and were accessible via ``settings``. We now made it possible to configure the parsers
+settings as well, so ``RoutingSettings`` is now ``routingSettings`` and ``ParserSettings`` is
+now accessible via ``parserSettings``.

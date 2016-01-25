@@ -15,7 +15,10 @@ import scala.compat.java8.OptionConverters._
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
-abstract class ServerSettings {
+/**
+ * Public API but not intended for subclassing
+ */
+abstract class ServerSettings { self: ServerSettingsImpl ⇒
   def getServerHeader: Optional[Server]
   def getTimeouts: ServerSettings.Timeouts
   def getMaxConnections: Int
@@ -48,8 +51,6 @@ abstract class ServerSettings {
   def withParserSettings(newValue: ParserSettings): ServerSettings = self.copy(parserSettings = newValue.asScala)
   def withWebsocketRandomFactory(newValue: java.util.function.Supplier[Random]): ServerSettings = self.copy(websocketRandomFactory = () ⇒ newValue.get())
 
-  /** INTERNAL API */
-  protected def self = this.asInstanceOf[ServerSettingsImpl]
 }
 
 object ServerSettings {

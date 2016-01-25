@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.testkit
 
+import akka.http.scaladsl.settings.RoutingSettings
+
 import scala.annotation.varargs
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
@@ -15,14 +17,14 @@ import akka.http.javadsl.server.{ HttpApp, AllDirectives, Route, Directives }
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.impl.server.RouteImplementation
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.server.{ RouteResult, RoutingSettingsImpl, Route ⇒ ScalaRoute }
+import akka.http.scaladsl.server.{ RouteResult, Route ⇒ ScalaRoute }
 import akka.actor.ActorSystem
 import akka.event.NoLogging
 import akka.http.impl.util._
 
 /**
  * A base class to create route tests for testing libraries. An implementation needs to provide
- * code to provide and shutdown an [[ActorSystem]], [[Materializer]], and [[ExecutionContext]].
+ * code to provide and shutdown an [[ActorSystem]], [[Materializer]], and [[ExecutionContextExecutor]].
  * Also an implementation should provide instances of [[TestResponse]] to define the assertion
  * facilities of the testing library.
  *
@@ -55,7 +57,7 @@ abstract class RouteTest extends AllDirectives {
         securedConnection = defaultHostInfo.isSecuredConnection(),
         defaultHostHeader = defaultHostInfo.getHost().asScala)
 
-    val result = scalaRoute(new server.RequestContextImpl(effectiveRequest, NoLogging, RoutingSettingsImpl(system)))
+    val result = scalaRoute(new server.RequestContextImpl(effectiveRequest, NoLogging, RoutingSettings(system)))
 
     result.awaitResult(awaitDuration) match {
       case RouteResult.Complete(response) ⇒ createTestResponse(response)
