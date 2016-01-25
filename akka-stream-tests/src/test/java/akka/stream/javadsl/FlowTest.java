@@ -488,6 +488,16 @@ public class FlowTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseWatchTermination() throws Exception {
+    final List<String> input = Arrays.asList("A", "B", "C");
+    Future<Done> future = Source.from(input)
+            .watchTermination(Keep.<NotUsed, Future<Done>>right())
+            .to(Sink.ignore()).run(materializer);
+
+    assertEquals(Done.getInstance(), Await.result(future, FiniteDuration.create(3, TimeUnit.SECONDS)));
+  }
+
+  @Test
   public void mustBeAbleToUseConflate() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
