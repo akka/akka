@@ -3,8 +3,8 @@
  */
 package akka.stream.impl.fusing
 
-import java.util.concurrent.atomic.AtomicBoolean
 import akka.Done
+import java.util.concurrent.atomic.AtomicBoolean
 import akka.actor.Cancellable
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
@@ -224,6 +224,45 @@ object GraphStages {
       override def isCancelled: Boolean = cancelled.get()
     }
   }
+
+  private object TerminationWatcher extends GraphStageWithMaterializedValue[FlowShape[Any, Any], Future[Done]] {
+    val in = Inlet[Any]("terminationWatcher.in")
+    val out = Outlet[Any]("terminationWatcher.out")
+    override val shape = FlowShape(in, out)
+    override def initialAttributes: Attributes = DefaultAttributes.terminationWatcher
+
+    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
+      val finishPromise = Promise[Done]()
+
+      (new GraphStageLogic(shape) {
+        setHandler(in, new InHandler {
+          override def onPush(): Unit = push(out, grab(in))
+
+          override def onUpstreamFinish(): Unit = {
+            finishPromise.success(Done)
+            completeStage()
+          }
+
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            finishPromise.failure(ex)
+            failStage(ex)
+          }
+        })
+        setHandler(out, new OutHandler {
+          override def onPull(): Unit = pull(in)
+          override def onDownstreamFinish(): Unit = {
+            finishPromise.success(Done)
+            completeStage()
+          }
+        })
+      }, finishPromise.future)
+    }
+
+    override def toString = "TerminationWatcher"
+  }
+
+  def terminationWatcher[T]: GraphStageWithMaterializedValue[FlowShape[T, T], Future[Done]] =
+    TerminationWatcher.asInstanceOf[GraphStageWithMaterializedValue[FlowShape[T, T], Future[Done]]]
 
   final class TickSource[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T)
     extends GraphStageWithMaterializedValue[SourceShape[T], Cancellable] {

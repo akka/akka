@@ -149,6 +149,19 @@ broadcast              all of the outputs stops backpressuring and there is an i
 balance                any of the outputs stops backpressuring; emits the element to the first available output                                    all of the outputs backpressure                                                                                                 upstream completes
 =====================  =========================================================================================================================   ==============================================================================================================================  =====================================================================================
 
+Watching status stages
+^^^^^^^^^^^^^^^^^^^^^^
+
+Materializes to a Future that will be completed with Done or failed depending whether the upstream of the stage has been completed or failed.
+The stage otherwise passes through elements unchanged.
+
+=====================  ========================================================================   ==========================================================  =====================================================================================
+Stage                  Emits when                                                                 Backpressures when                                          Completes when
+=====================  ========================================================================   ==========================================================  =====================================================================================
+watchTermination       input has an element available                                             output backpressures                                        upstream completes
+=====================  ========================================================================   ==========================================================  =====================================================================================
+
+
 .. [1] If a Future fails, the stream also fails (unless a different supervision strategy is applied)
 .. [2] Except if the encapsulated computation is not fast enough
 .. [3] Until the end of stream it is not possible to know whether new substreams will be needed or not
