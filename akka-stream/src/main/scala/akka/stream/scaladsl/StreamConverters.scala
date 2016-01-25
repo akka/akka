@@ -61,9 +61,10 @@ object StreamConverters {
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
+   * If `autoFlush` is true the OutputStream will be flushed whenever a byte array is written, defaults to false.
    */
-  def fromOutputStream(out: () ⇒ OutputStream): Sink[ByteString, Future[IOResult]] =
-    new Sink(new OutputStreamSink(out, DefaultAttributes.outputStreamSink, sinkShape("OutputStreamSink")))
+  def fromOutputStream(out: () ⇒ OutputStream, autoFlush: Boolean = false): Sink[ByteString, Future[IOResult]] =
+    new Sink(new OutputStreamSink(out, DefaultAttributes.outputStreamSink, sinkShape("OutputStreamSink"), autoFlush))
 
   /**
    * Creates a Sink which when materialized will return an [[InputStream]] which it is possible
