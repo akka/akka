@@ -5,7 +5,7 @@
 package akka.http.impl.engine.parsing
 
 import scala.annotation.tailrec
-import akka.http.ParserSettings
+import akka.http.scaladsl.settings.ParserSettings
 import akka.http.impl.model.parser.CharacterClasses
 import akka.util.ByteString
 import akka.http.scaladsl.model._

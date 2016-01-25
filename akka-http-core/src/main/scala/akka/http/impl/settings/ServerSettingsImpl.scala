@@ -1,20 +1,21 @@
 /**
- * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http
+package akka.http.impl.settings
 
 import java.util.Random
 
 import akka.http.impl.engine.ws.Randoms
+import akka.http.scaladsl.settings.{ ServerSettings, ParserSettings }
 import com.typesafe.config.Config
 
 import scala.language.implicitConversions
 import scala.collection.immutable
 import scala.concurrent.duration._
 
+import akka.http.javadsl.{ settings ⇒ js }
 import akka.ConfigurationException
-import akka.actor.{ ActorSystem, ActorRefFactory }
 import akka.io.Inet.SocketOption
 
 import akka.http.impl.util._
@@ -22,7 +23,8 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers.{ Host, Server }
 
-final case class ServerSettings(
+/** INTERNAL API */
+private[akka] final case class ServerSettingsImpl(
   serverHeader: Option[Server],
   timeouts: ServerSettings.Timeouts,
   maxConnections: Int,
@@ -33,30 +35,34 @@ final case class ServerSettings(
   verboseErrorMessages: Boolean,
   responseHeaderSizeHint: Int,
   backlog: Int,
-  socketOptions: immutable.Traversable[SocketOption],
+  socketOptions: immutable.Seq[SocketOption],
   defaultHostHeader: Host,
   websocketRandomFactory: () ⇒ Random,
-  parserSettings: ParserSettings) {
+  parserSettings: ParserSettings) extends ServerSettings {
 
   require(0 < maxConnections, "max-connections must be > 0")
   require(0 < pipeliningLimit && pipeliningLimit <= 1024, "pipelining-limit must be > 0 and <= 1024")
   require(0 < responseHeaderSizeHint, "response-size-hint must be > 0")
   require(0 < backlog, "backlog must be > 0")
+
 }
 
-object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.server") {
-  final case class Timeouts(idleTimeout: Duration,
-                            requestTimeout: Duration,
-                            bindTimeout: FiniteDuration) {
+object ServerSettingsImpl extends SettingsCompanion[ServerSettingsImpl]("akka.http.server") {
+  implicit def timeoutsShortcut(s: js.ServerSettings): js.ServerSettings.Timeouts = s.getTimeouts
+
+  /** INTERNAL API */
+  final case class Timeouts(
+    idleTimeout: Duration,
+    requestTimeout: Duration,
+    bindTimeout: FiniteDuration) extends ServerSettings.Timeouts {
     require(idleTimeout > Duration.Zero, "idleTimeout must be infinite or > 0")
     require(requestTimeout > Duration.Zero, "requestTimeout must be infinite or > 0")
     require(bindTimeout > Duration.Zero, "bindTimeout must be > 0")
   }
-  implicit def timeoutsShortcut(s: ServerSettings): Timeouts = s.timeouts
 
-  def fromSubConfig(root: Config, c: Config) = apply(
+  def fromSubConfig(root: Config, c: Config) = new ServerSettingsImpl(
     c.getString("server-header").toOption.map(Server(_)),
-    Timeouts(
+    new Timeouts(
       c getPotentiallyInfiniteDuration "idle-timeout",
       c getPotentiallyInfiniteDuration "request-timeout",
       c getFiniteDuration "bind-timeout"),
@@ -77,33 +83,9 @@ object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.serve
           throw new ConfigurationException(info.formatPretty)
       },
     Randoms.SecureRandomInstances, // can currently only be overridden from code
-    ParserSettings.fromSubConfig(root, c.getConfig("parsing")))
+    ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")))
 
-  def apply(optionalSettings: Option[ServerSettings])(implicit actorRefFactory: ActorRefFactory): ServerSettings =
-    optionalSettings getOrElse apply(actorSystem)
+  //  def apply(optionalSettings: Option[ServerSettings])(implicit actorRefFactory: ActorRefFactory): ServerSettings =
+  //    optionalSettings getOrElse apply(actorSystem)
 
-  /**
-   * Creates an instance of ServerSettings using the configuration provided by the given
-   * ActorSystem.
-   *
-   * Java API
-   */
-  def create(system: ActorSystem): ServerSettings = ServerSettings(system)
-
-  /**
-   * Creates an instance of ServerSettings using the given Config.
-   *
-   * Java API
-   */
-  def create(config: Config): ServerSettings = ServerSettings(config)
-
-  /**
-   * Create an instance of ServerSettings using the given String of config overrides to override
-   * settings set in the class loader of this class (i.e. by application.conf or reference.conf files in
-   * the class loader of this class).
-   *
-   * Java API
-   */
-  def create(configOverrides: String): ServerSettings = ServerSettings(configOverrides)
 }
-

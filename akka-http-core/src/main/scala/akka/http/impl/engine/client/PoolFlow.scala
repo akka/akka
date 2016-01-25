@@ -6,7 +6,7 @@ package akka.http.impl.engine.client
 
 import java.net.InetSocketAddress
 import akka.NotUsed
-import akka.http.ConnectionPoolSettings
+import akka.http.scaladsl.settings.ConnectionPoolSettings
 
 import scala.concurrent.{ Promise, Future }
 import scala.util.Try

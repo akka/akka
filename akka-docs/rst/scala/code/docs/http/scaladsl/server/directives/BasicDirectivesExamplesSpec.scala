@@ -12,6 +12,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Server, RawHeader }
 import akka.http.scaladsl.server.RouteResult.{ Complete, Rejected }
 import akka.http.scaladsl.server._
+import akka.http.scaladsl.settings.RoutingSettings
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ FileIO, Sink, Source }
 import akka.util.ByteString
@@ -183,7 +184,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
   }
   "withSettings-0" in compileOnlySpec {
     //#withSettings-0
-    val special = RoutingSettings(system).copy(fileIODispatcher = "special-io-dispatcher")
+    val special = RoutingSettings(system).withFileIODispatcher("special-io-dispatcher")
 
     def sample() =
       path("sample") {
@@ -700,7 +701,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
   "mapSettings-examples" in {
     //#mapSettings-examples
     val tunedSettings = mapSettings { settings =>
-      settings.copy(fileGetConditional = false)
+      settings.withFileGetConditional(false)
     }
 
     val route =

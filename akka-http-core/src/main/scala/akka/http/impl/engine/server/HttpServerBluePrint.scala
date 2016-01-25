@@ -19,7 +19,7 @@ import akka.stream._
 import akka.stream.io._
 import akka.stream.scaladsl._
 import akka.stream.stage._
-import akka.http.ServerSettings
+import akka.http.scaladsl.settings.ServerSettings
 import akka.http.impl.engine.HttpConnectionTimeoutException
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.engine.parsing._

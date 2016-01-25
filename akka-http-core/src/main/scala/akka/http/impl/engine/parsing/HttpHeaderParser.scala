@@ -408,7 +408,7 @@ private[engine] final class HttpHeaderParser private (
 private[http] object HttpHeaderParser {
   import SpecializedHeaderValueParsers._
 
-  trait Settings extends HeaderParser.Settings {
+  abstract class Settings extends HeaderParser.Settings {
     def maxHeaderNameLength: Int
     def maxHeaderValueLength: Int
     def headerValueCacheLimit(headerName: String): Int
