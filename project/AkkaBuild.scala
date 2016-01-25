@@ -201,7 +201,7 @@ object AkkaBuild extends Build {
   )
 
   lazy val httpCore = Project(
-    id = "akka-http-core-experimental",
+    id = "akka-http-core",
     base = file("akka-http-core"),
     dependencies = Seq(stream, parsing, streamTestkit % "test->test")
   )
@@ -210,12 +210,6 @@ object AkkaBuild extends Build {
     id = "akka-http-experimental",
     base = file("akka-http"),
     dependencies = Seq(httpCore)
-  )
-
-  lazy val streamTestkit = Project(
-    id = "akka-stream-testkit",
-    base = file("akka-stream-testkit"), // TODO that persistence dependency
-    dependencies = Seq(stream, persistence % "compile;provided->provided;test->test", testkit % "compile;test->test")
   )
 
   lazy val httpTestkit = Project(
@@ -266,14 +260,20 @@ object AkkaBuild extends Build {
     )
 
   lazy val parsing = Project(
-    id = "akka-parsing-experimental",
+    id = "akka-parsing",
     base = file("akka-parsing")
   )
 
   lazy val stream = Project(
-    id = "akka-stream-experimental",
+    id = "akka-stream",
     base = file("akka-stream"),
     dependencies = Seq(actor)
+  )
+
+  lazy val streamTestkit = Project(
+    id = "akka-stream-testkit",
+    base = file("akka-stream-testkit"), // TODO that persistence dependency
+    dependencies = Seq(stream, persistence % "compile;provided->provided;test->test", testkit % "compile;test->test")
   )
 
   lazy val streamTests = Project(
