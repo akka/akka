@@ -23,14 +23,14 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
   /**
    * * Represents a successful TCP server binding.
    */
-  case class ServerBinding(localAddress: InetSocketAddress)(private val unbindAction: () ⇒ Future[Unit]) {
+  final case class ServerBinding(localAddress: InetSocketAddress)(private val unbindAction: () ⇒ Future[Unit]) {
     def unbind(): Future[Unit] = unbindAction()
   }
 
   /**
    * Represents an accepted incoming TCP connection.
    */
-  case class IncomingConnection(
+  final case class IncomingConnection(
     localAddress: InetSocketAddress,
     remoteAddress: InetSocketAddress,
     flow: Flow[ByteString, ByteString, NotUsed]) {
@@ -49,7 +49,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
   /**
    * Represents a prospective outgoing TCP connection.
    */
-  case class OutgoingConnection(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress)
+  final case class OutgoingConnection(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress)
 
   def apply()(implicit system: ActorSystem): Tcp = super.apply(system)
 
@@ -60,7 +60,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
   def createExtension(system: ExtendedActorSystem): Tcp = new Tcp(system)
 }
 
-class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
+final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   import Tcp._
 
   // TODO maybe this should be a new setting, like `akka.stream.tcp.bind.timeout` / `shutdown-timeout` instead?
