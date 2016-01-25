@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.ws
@@ -17,7 +17,7 @@ import scala.util.Try
  *
  * which is licensed under this license:
  *
- * Copyright (c) 2008-2010 Bjoern Hoehrmann <bjoern@hoehrmann.de>
+ * Copyright (C) 2008-2016 Bjoern Hoehrmann <bjoern@hoehrmann.de>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
