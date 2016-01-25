@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.testkit
 
+import akka.http.scaladsl.settings.RoutingSettings
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Await, Future }
@@ -134,7 +135,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
     }
     implicit def injectIntoRoute(implicit timeout: RouteTestTimeout,
                                  defaultHostInfo: DefaultHostInfo,
-                                 routingSettings: RoutingSettingsImpl,
+                                 routingSettings: RoutingSettings,
                                  executionContext: ExecutionContext,
                                  materializer: Materializer,
                                  routingLog: RoutingLog,

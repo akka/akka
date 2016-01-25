@@ -9,7 +9,10 @@ import com.typesafe.config.Config
 import scala.concurrent.duration.Duration
 import akka.http.impl.util.JavaMapping.Implicits._
 
-abstract class ConnectionPoolSettings {
+/**
+ * Public API but not intended for subclassing
+ */
+abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSettingsImpl ⇒
   def getMaxConnections: Int
   def getMaxRetries: Int
   def getMaxOpenRequests: Int
@@ -25,9 +28,6 @@ abstract class ConnectionPoolSettings {
   def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
   def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue.asScala)
-
-  /** INTERNAL API */
-  protected def self = this.asInstanceOf[ConnectionPoolSettingsImpl]
 }
 
 object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] {

@@ -2,11 +2,10 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.scaladsl.server
+package akka.http.impl.settings
 
-import com.typesafe.config.Config
-import akka.actor.ActorRefFactory
 import akka.http.impl.util._
+import com.typesafe.config.Config
 
 /** INTERNAL API */
 final case class RoutingSettingsImpl(
@@ -16,7 +15,7 @@ final case class RoutingSettingsImpl(
   rangeCountLimit: Int,
   rangeCoalescingThreshold: Long,
   decodeMaxBytesPerChunk: Int,
-  fileIODispatcher: String)
+  fileIODispatcher: String) extends akka.http.scaladsl.settings.RoutingSettings
 
 object RoutingSettingsImpl extends SettingsCompanion[RoutingSettingsImpl]("akka.http.routing") {
   def fromSubConfig(root: Config, c: Config) = new RoutingSettingsImpl(

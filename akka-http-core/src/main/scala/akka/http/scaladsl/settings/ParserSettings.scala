@@ -19,7 +19,10 @@ import scala.annotation.varargs
 import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters
 
-abstract class ParserSettings extends akka.http.javadsl.settings.ParserSettings {
+/**
+ * Public API but not intended for subclassing
+ */
+abstract class ParserSettings private[akka] () extends akka.http.javadsl.settings.ParserSettings { self: ParserSettingsImpl ⇒
   def maxUriLength: Int
   def maxMethodLength: Int
   def maxResponseReasonLength: Int

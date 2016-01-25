@@ -6,6 +6,7 @@ package akka.http.javadsl.server
 
 import scala.concurrent.ExecutionContextExecutor
 import akka.http.javadsl.model._
+import akka.http.javadsl.settings.{ RoutingSettings, ParserSettings }
 import akka.stream.Materializer
 import java.util.concurrent.CompletionStage
 
@@ -29,6 +30,16 @@ trait RequestContext {
 
   /** Returns the Materializer of this RequestContext */
   def materializer(): Materializer
+
+  /**
+   * The default RoutingSettings to be used for configuring directives.
+   */
+  def settings: RoutingSettings
+
+  /**
+   * The default ParserSettings to be used for configuring directives.
+   */
+  def parserSettings: ParserSettings
 
   /**
    * Completes the request with a value of type T and marshals it using the given
