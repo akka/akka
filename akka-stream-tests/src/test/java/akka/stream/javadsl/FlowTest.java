@@ -490,11 +490,11 @@ public class FlowTest extends StreamTest {
   @Test
   public void mustBeAbleToUseWatchTermination() throws Exception {
     final List<String> input = Arrays.asList("A", "B", "C");
-    Future<Done> future = Source.from(input)
-            .watchTermination(Keep.<NotUsed, Future<Done>>right())
+    CompletionStage<Done> future = Source.from(input)
+            .watchTermination(Keep.right())
             .to(Sink.ignore()).run(materializer);
 
-    assertEquals(Done.getInstance(), Await.result(future, FiniteDuration.create(3, TimeUnit.SECONDS)));
+    assertEquals(Done.getInstance(), future.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   @Test
