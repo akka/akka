@@ -18,6 +18,7 @@ trait ConnectionContext extends akka.http.javadsl.ConnectionContext {
 }
 
 object ConnectionContext {
+  //#https-context-creation
   def https(sslContext: SSLContext,
             enabledCipherSuites: Option[immutable.Seq[String]] = None,
             enabledProtocols: Option[immutable.Seq[String]] = None,
@@ -25,6 +26,7 @@ object ConnectionContext {
             sslParameters: Option[SSLParameters] = None) = {
     new HttpsConnectionContext(sslContext, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
   }
+  //#https-context-creation
 
   def noEncryption() = HttpConnectionContext
 }
