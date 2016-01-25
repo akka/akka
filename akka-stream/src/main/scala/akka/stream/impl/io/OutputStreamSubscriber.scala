@@ -16,15 +16,15 @@ import scala.util.{ Failure, Success }
 
 /** INTERNAL API */
 private[akka] object OutputStreamSubscriber {
-  def props(os: OutputStream, completionPromise: Promise[IOResult], bufSize: Int) = {
+  def props(os: OutputStream, completionPromise: Promise[IOResult], bufSize: Int, autoFlush: Boolean) = {
     require(bufSize > 0, "buffer size must be > 0")
-    Props(classOf[OutputStreamSubscriber], os, completionPromise, bufSize).withDeploy(Deploy.local)
+    Props(classOf[OutputStreamSubscriber], os, completionPromise, bufSize, autoFlush).withDeploy(Deploy.local)
   }
 
 }
 
 /** INTERNAL API */
-private[akka] class OutputStreamSubscriber(os: OutputStream, completionPromise: Promise[IOResult], bufSize: Int)
+private[akka] class OutputStreamSubscriber(os: OutputStream, completionPromise: Promise[IOResult], bufSize: Int, autoFlush: Boolean)
   extends akka.stream.actor.ActorSubscriber
   with ActorLogging {
 
@@ -38,6 +38,7 @@ private[akka] class OutputStreamSubscriber(os: OutputStream, completionPromise: 
         // blocking write
         os.write(bytes.toArray)
         bytesWritten += bytes.length
+        if (autoFlush) os.flush()
       } catch {
         case ex: Exception ⇒
           completionPromise.success(IOResult(bytesWritten, Failure(ex)))

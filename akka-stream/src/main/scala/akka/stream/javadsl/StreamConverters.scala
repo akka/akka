@@ -24,10 +24,26 @@ object StreamConverters {
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
+   * This method uses no auto flush for the [[java.io.OutputStream]] @see [[#fromOutputStream(function.Creator, Boolean)]] if you want to override it.
+   *
    * @param f A Creator which creates an OutputStream to write to
    */
-  def fromOutputStream(f: function.Creator[OutputStream]): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
-    new Sink(scaladsl.StreamConverters.fromOutputStream(() ⇒ f.create()).toCompletionStage())
+  def fromOutputStream(f: function.Creator[OutputStream]): javadsl.Sink[ByteString, CompletionStage[IOResult]] = fromOutputStream(f, autoFlush = false)
+
+  /**
+   * Sink which writes incoming [[ByteString]]s to an [[OutputStream]] created by the given function.
+   *
+   * Materializes a [[CompletionStage]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
+   * and a possible exception if IO operation was not completed successfully.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * @param f A Creator which creates an OutputStream to write to
+   * @param autoFlush If true the OutputStream will be flushed whenever a byte array is written
+   */
+  def fromOutputStream(f: function.Creator[OutputStream], autoFlush: Boolean): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
+    new Sink(scaladsl.StreamConverters.fromOutputStream(() ⇒ f.create(), autoFlush).toCompletionStage())
 
   /**
    * Creates a Sink which when materialized will return an [[java.io.InputStream]] which it is possible
