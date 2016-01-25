@@ -15,7 +15,10 @@ import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
-abstract class ClientConnectionSettings {
+/**
+ * Public API but not intended for subclassing
+ */
+abstract class ClientConnectionSettings private[akka] () { self: ClientConnectionSettingsImpl ⇒
   def getUserAgentHeader: Optional[UserAgent]
   def getConnectingTimeout: FiniteDuration
   def getIdleTimeout: Duration
@@ -34,8 +37,6 @@ abstract class ClientConnectionSettings {
   def withSocketOptions(newValue: java.lang.Iterable[SocketOption]): ClientConnectionSettings = self.copy(socketOptions = newValue.asScala.toList)
   def withParserSettings(newValue: ParserSettings): ClientConnectionSettings = self.copy(parserSettings = newValue.asScala)
 
-  /** INTERNAL API: safe by construction */
-  protected val self = this.asInstanceOf[ClientConnectionSettingsImpl]
 }
 
 object ClientConnectionSettings extends SettingsCompanion[ClientConnectionSettings] {

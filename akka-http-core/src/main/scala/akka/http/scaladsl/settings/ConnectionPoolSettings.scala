@@ -3,14 +3,16 @@
  */
 package akka.http.scaladsl.settings
 
-import akka.actor.ActorSystem
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
 import akka.http.javadsl.{ settings ⇒ js }
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
 
-abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings {
+/**
+ * Public API but not intended for subclassing
+ */
+abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: ConnectionPoolSettingsImpl ⇒
   def maxConnections: Int
   def maxRetries: Int
   def maxOpenRequests: Int

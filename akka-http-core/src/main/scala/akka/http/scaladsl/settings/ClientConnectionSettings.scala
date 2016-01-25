@@ -20,7 +20,10 @@ import scala.compat.java8.OptionConverters
 import scala.concurrent.duration.{ FiniteDuration, Duration }
 import scala.collection.JavaConverters._
 
-abstract class ClientConnectionSettings extends akka.http.javadsl.settings.ClientConnectionSettings {
+/**
+ * Public API but not intended for subclassing
+ */
+abstract class ClientConnectionSettings private[akka] () extends akka.http.javadsl.settings.ClientConnectionSettings { self: ClientConnectionSettingsImpl ⇒
   def userAgentHeader: Option[`User-Agent`]
   def connectingTimeout: FiniteDuration
   def idleTimeout: Duration

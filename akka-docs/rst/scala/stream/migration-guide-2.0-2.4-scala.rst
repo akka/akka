@@ -87,7 +87,7 @@ Routing settings parameter name
 
 ``RoutingSettings`` were previously the only setting available on ``RequestContext``,
 and were accessible via ``settings``. We now made it possible to configure the parsers
-settings as well, so ``RoutingSettings`` is now ``routingSettings`` and ``ParserSetttings`` is
+settings as well, so ``RoutingSettings`` is now ``routingSettings`` and ``ParserSettings`` is
 now accessible via ``parserSettings``.
 
 Changed Sources / Sinks
