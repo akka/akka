@@ -1738,8 +1738,8 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * from downstream. It fails with the same error when received error message from
    * downstream.
    */
-  def watchTermination[M]()(matF: function.Function2[Mat, Future[Done], M]): javadsl.Source[Out, M] =
-    new Source(delegate.watchTermination()(combinerToScala(matF)))
+  def watchTermination[M]()(matF: function.Function2[Mat, CompletionStage[Done], M]): javadsl.Source[Out, M] =
+    new Source(delegate.watchTermination()((left, right) => matF(left, right.toJava)))
 
   /**
    * Delays the initial element by the specified duration.
