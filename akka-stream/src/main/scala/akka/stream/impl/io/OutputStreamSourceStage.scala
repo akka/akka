@@ -18,7 +18,7 @@ import scala.concurrent.{ Await, Future, Promise }
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
-private[akka] object OutputStreamSourceStage {
+private[stream] object OutputStreamSourceStage {
   sealed trait AdapterToStageMessage
   case object Flush extends AdapterToStageMessage
   case object Close extends AdapterToStageMessage
@@ -32,7 +32,7 @@ private[akka] object OutputStreamSourceStage {
   }
 }
 
-private[akka] class OutputStreamSourceStage(writeTimeout: FiniteDuration) extends GraphStageWithMaterializedValue[SourceShape[ByteString], OutputStream] {
+final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration) extends GraphStageWithMaterializedValue[SourceShape[ByteString], OutputStream] {
   val out = Outlet[ByteString]("OutputStreamSource.out")
   override val shape: SourceShape[ByteString] = SourceShape.of(out)
 
