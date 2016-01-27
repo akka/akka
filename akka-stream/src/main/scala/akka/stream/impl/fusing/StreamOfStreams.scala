@@ -514,7 +514,7 @@ final class SubSource[T](name: String, private[fusing] val externalCallback: Asy
       val ourOwnCallback = getAsyncCallback[ActorSubscriberMessage] {
         case OnComplete   ⇒ completeStage()
         case OnError(ex)  ⇒ failStage(ex)
-        case OnNext(elem) ⇒ push(out, elem.asInstanceOf[T])
+        case OnNext(elem) ⇒ emit(out, elem.asInstanceOf[T])
       }
       setCB(ourOwnCallback)
     }
