@@ -100,6 +100,33 @@ public class FlowTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseStatefullMaponcat() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final java.lang.Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5);
+    final Source<Integer, NotUsed> ints = Source.from(input);
+    final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class).statefulMapConcat(
+            new Creator<Function<Integer, Iterable<Integer>>>() {
+              public Function<Integer, Iterable<Integer>> create() {
+                int[] state = new int[1];
+                state[0] = 0;
+                return new Function<Integer, Iterable<Integer>>() {
+                  public List<Integer> apply(Integer elem) {
+                    List<Integer> list = new ArrayList<>(Collections.nCopies(state[0], elem));
+                    state[0] = elem;
+                    return list;
+                  }
+                };
+              }
+            });
+
+    ints.via(flow)
+            .runFold("", (acc, elem) -> acc + elem, materializer)
+            .thenAccept(elem -> probe.getRef().tell(elem, ActorRef.noSender()));
+
+    probe.expectMsgEquals("2334445555");
+  }
+
+  @Test
   public void mustBeAbleToUseIntersperse() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final Source<String, NotUsed> source = Source.from(Arrays.asList("0", "1", "2", "3"));

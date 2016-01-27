@@ -430,6 +430,7 @@ trait FlowOps[+Out, +Mat] {
     * RecoverWith allows to switch to alternative Source on flow failure. It will stay in effect after
     * a failure has been recovered so that each time there is a failure it is fed into the `pf` and a new
     * Source may be materialized.
+    *
     * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
     * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
     *
@@ -479,7 +480,32 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def mapConcat[T](f: Out ⇒ immutable.Iterable[T]): Repr[T] = andThen(MapConcat(f))
+  def mapConcat[T](f: Out ⇒ immutable.Iterable[T]): Repr[T] = statefulMapConcat(() => f)
+
+  /**
+    * Transform each input element into an `Iterable` of output elements that is
+    * then flattened into the output stream. The transformation is meant to be stateful,
+    * which is enabled by creating the transformation function anew for every materialization —
+    * the returned function will typically close over mutable objects to store state between
+    * invocations. For the stateless variant see [[FlowOps.mapConcat]].
+    *
+    * The returned `Iterable` MUST NOT contain `null` values,
+    * as they are illegal as stream elements - according to the Reactive Streams specification.
+    *
+    * '''Emits when''' the mapping function returns an element or there are still remaining elements
+    * from the previously calculated collection
+    *
+    * '''Backpressures when''' downstream backpressures or there are still remaining elements from the
+    * previously calculated collection
+    *
+    * '''Completes when''' upstream completes and all remaining elements has been emitted
+    *
+    * '''Cancels when''' downstream cancels
+    *
+    * See also [[FlowOps.mapConcat]]
+    */
+  def statefulMapConcat[T](f: () ⇒ Out ⇒ immutable.Iterable[T]): Repr[T] =
+    via(new StatefulMapConcat(f))
 
   /**
    * Transform this stream by applying the given function to each of the elements
