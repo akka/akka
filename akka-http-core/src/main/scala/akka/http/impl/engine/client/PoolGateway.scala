@@ -1,6 +1,8 @@
 package akka.http.impl.engine.client
 
 import java.util.concurrent.atomic.AtomicReference
+import akka.Done
+
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import akka.http.impl.settings.HostConnectionPoolSetup
@@ -13,9 +15,9 @@ private object PoolGateway {
 
   sealed trait State
   final case class Running(interfaceActorRef: ActorRef,
-                           shutdownStartedPromise: Promise[Unit],
-                           shutdownCompletedPromise: Promise[Unit]) extends State
-  final case class IsShutdown(shutdownCompleted: Future[Unit]) extends State
+                           shutdownStartedPromise: Promise[Done],
+                           shutdownCompletedPromise: Promise[Done]) extends State
+  final case class IsShutdown(shutdownCompleted: Future[Done]) extends State
   final case class NewIncarnation(gatewayFuture: Future[PoolGateway]) extends State
 }
 
@@ -33,13 +35,13 @@ private object PoolGateway {
  * get reused will automatically forward requests directed at them to the latest pool incarnation from the cache.
  */
 private[http] class PoolGateway(hcps: HostConnectionPoolSetup,
-                                _shutdownStartedPromise: Promise[Unit])( // constructor arg only
+                                _shutdownStartedPromise: Promise[Done])( // constructor arg only
                                   implicit system: ActorSystem, fm: Materializer) {
   import PoolGateway._
   import fm.executionContext
 
   private val state = {
-    val shutdownCompletedPromise = Promise[Unit]()
+    val shutdownCompletedPromise = Promise[Done]()
     val props = Props(new PoolInterfaceActor(hcps, shutdownCompletedPromise, this)).withDeploy(Deploy.local)
     val ref = system.actorOf(props, PoolInterfaceActor.name.next())
     new AtomicReference[State](Running(ref, _shutdownStartedPromise, shutdownCompletedPromise))
@@ -70,11 +72,11 @@ private[http] class PoolGateway(hcps: HostConnectionPoolSetup,
     }
 
   // triggers a shutdown of the current pool, even if it is already a later incarnation
-  @tailrec final def shutdown(): Future[Unit] =
+  @tailrec final def shutdown(): Future[Done] =
     state.get match {
       case x @ Running(ref, shutdownStartedPromise, shutdownCompletedPromise) ⇒
         if (state.compareAndSet(x, IsShutdown(shutdownCompletedPromise.future))) {
-          shutdownStartedPromise.success(()) // trigger cache removal
+          shutdownStartedPromise.success(Done) // trigger cache removal
           ref ! PoolInterfaceActor.Shutdown
           shutdownCompletedPromise.future
         } else shutdown() // CAS loop (not a spinlock)
