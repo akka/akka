@@ -1,0 +1,104 @@
+/*
+ * Copyright (C) 2016 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.http.impl.engine.server
+
+import akka.http.impl.engine.parsing.ParserOutput
+import akka.http.impl.engine.parsing.ParserOutput.{ StrictEntityCreator, EntityStreamError, EntityChunk, StreamedEntityCreator }
+import akka.http.impl.engine.server.HttpServerBluePrint.PrepareRequests
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.settings.ServerSettings
+import akka.stream.{ Attributes, ActorMaterializer }
+import akka.stream.scaladsl.{ Sink, Source, Flow }
+import akka.stream.testkit.{ TestSubscriber, TestPublisher }
+import akka.testkit.AkkaSpec
+import akka.util.ByteString
+import org.scalatest.{ Matchers, WordSpec }
+import scala.concurrent.duration._
+
+class PrepareRequestsSpec extends AkkaSpec {
+
+  "The PrepareRequest stage" should {
+
+    "not fail when there is demand from both streamed entity consumption and regular flow" in {
+      implicit val materializer = ActorMaterializer()
+      // covers bug #19623 where a reply before the streamed
+      // body has been consumed causes pull/push twice
+      val inProbe = TestPublisher.manualProbe[ParserOutput.RequestOutput]()
+      val upstreamProbe = TestSubscriber.manualProbe[HttpRequest]()
+
+      val stage = Flow.fromGraph(new PrepareRequests(ServerSettings(system)))
+
+      Source.fromPublisher(inProbe)
+        .via(stage)
+        .to(Sink.fromSubscriber(upstreamProbe))
+        .withAttributes(Attributes.inputBuffer(1, 1))
+        .run()
+
+      val upstreamSub = upstreamProbe.expectSubscription()
+      val inSub = inProbe.expectSubscription()
+
+      // let request with streamed entity through
+      upstreamSub.request(1)
+      inSub.expectRequest(1)
+      inSub.sendNext(ParserOutput.RequestStart(
+        HttpMethods.GET,
+        Uri("http://example.com/"),
+        HttpProtocols.`HTTP/1.1`,
+        List(),
+        StreamedEntityCreator[ParserOutput, RequestEntity] { entityChunks ⇒
+          val chunks = entityChunks.collect {
+            case EntityChunk(chunk)      ⇒ chunk
+            case EntityStreamError(info) ⇒ throw EntityStreamException(info)
+          }
+          HttpEntity.Chunked(ContentTypes.`application/octet-stream`, HttpEntity.limitableChunkSource(chunks))
+        },
+        true,
+        false))
+
+      val request = upstreamProbe.expectNext()
+
+      // and subscribe to it's streamed entity
+      val entityProbe = TestSubscriber.manualProbe[ByteString]()
+      request.entity.dataBytes.to(Sink.fromSubscriber(entityProbe))
+        .withAttributes(Attributes.inputBuffer(1, 1))
+        .run()
+
+      val entitySub = entityProbe.expectSubscription()
+
+      // the bug happens when both the client has signalled demand
+      // and the the streamed entity has
+      upstreamSub.request(1)
+      entitySub.request(1)
+
+      // then comes the next chunk from the actual request
+      inSub.expectRequest(1)
+
+      // bug would fail stream here with exception
+      upstreamProbe.expectNoMsg(100.millis)
+
+      inSub.sendNext(ParserOutput.EntityChunk(HttpEntity.ChunkStreamPart(ByteString("abc"))))
+      entityProbe.expectNext()
+      entitySub.request(1)
+      inSub.sendNext(ParserOutput.MessageEnd)
+      entityProbe.expectComplete()
+
+      // the rest of the test covers the saved pull
+      // that should go downstream when the streamed entity
+      // has reached it's end
+      inSub.expectRequest(1)
+      inSub.sendNext(ParserOutput.RequestStart(
+        HttpMethods.GET,
+        Uri("http://example.com/"),
+        HttpProtocols.`HTTP/1.1`,
+        List(),
+        StrictEntityCreator(HttpEntity.Strict(ContentTypes.`application/octet-stream`, ByteString("body"))),
+        true,
+        false))
+
+      upstreamProbe.expectNext()
+
+    }
+  }
+
+}
