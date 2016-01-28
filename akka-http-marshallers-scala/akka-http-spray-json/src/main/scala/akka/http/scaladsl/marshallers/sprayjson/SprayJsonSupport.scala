@@ -8,7 +8,6 @@ import scala.language.implicitConversions
 import akka.http.scaladsl.marshalling.{ ToEntityMarshaller, Marshaller }
 import akka.http.scaladsl.unmarshalling.{ FromEntityUnmarshaller, Unmarshaller }
 import akka.http.scaladsl.model.{ MediaTypes, HttpCharsets }
-import akka.http.scaladsl.model.MediaTypes.`application/json`
 import spray.json._
 
 /**
@@ -20,7 +19,7 @@ trait SprayJsonSupport {
   implicit def sprayJsonUnmarshaller[T](implicit reader: RootJsonReader[T]): FromEntityUnmarshaller[T] =
     sprayJsValueUnmarshaller.map(jsonReader[T].read)
   implicit def sprayJsValueUnmarshaller: FromEntityUnmarshaller[JsValue] =
-    Unmarshaller.byteStringUnmarshaller.forContentTypes(`application/json`).mapWithCharset { (data, charset) ⇒
+    Unmarshaller.byteStringUnmarshaller.forContentTypes(MediaTypes.`application/json`).mapWithCharset { (data, charset) ⇒
       val input =
         if (charset == HttpCharsets.`UTF-8`) ParserInput(data.toArray)
         else ParserInput(data.decodeString(charset.nioCharset.name)) // FIXME: identify charset by instance, not by name!
