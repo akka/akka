@@ -89,6 +89,12 @@ private[http] object HttpServerBluePrint {
       case _                 ⇒ BidiFlow.identity
     }
 
+  /**
+   * Two state stage, either transforms an incoming RequestOutput into a HttpRequest with strict entity and then pushes
+   * that (the "idle" inHandler) or creates a HttpRequest with a streamed entity and switch to a state which will push
+   * incoming chunks into the streaming entity until end of request is reached (the StreamedEntityCreator case in create
+   * entity).
+   */
   final class PrepareRequests(settings: ServerSettings) extends GraphStage[FlowShape[RequestOutput, HttpRequest]] {
     val in = Inlet[RequestOutput]("RequestStartThenRunIgnore.in")
     val out = Outlet[HttpRequest]("RequestStartThenRunIgnore.out")
@@ -96,6 +102,7 @@ private[http] object HttpServerBluePrint {
 
     override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) {
       val remoteAddress = inheritedAttributes.get[HttpAttributes.RemoteAddress].flatMap(_.address)
+      var upstreamPullWaiting = false
 
       val idle = new InHandler {
         def onPush(): Unit = grab(in) match {
@@ -112,31 +119,59 @@ private[http] object HttpServerBluePrint {
             throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
         }
       }
-      setHandler(in, idle)
+
+      setIdleHandlers()
+
+      def setIdleHandlers() {
+        setHandler(in, idle)
+        setHandler(out, new OutHandler {
+          override def onPull(): Unit = {
+            pull(in)
+          }
+        })
+        if (upstreamPullWaiting) {
+          upstreamPullWaiting = false
+          pull(in)
+        }
+      }
+
 
       def createEntity(creator: EntityCreator[RequestOutput, RequestEntity]): RequestEntity =
         creator match {
           case StrictEntityCreator(entity) ⇒ entity
-          case StreamedEntityCreator(creator) ⇒
-            val entitySource = new SubSourceOutlet[RequestOutput]("EntitySource")
-            entitySource.setHandler(new OutHandler {
-              def onPull(): Unit = pull(in)
-            })
-            setHandler(in, new InHandler {
-              def onPush(): Unit = grab(in) match {
-                case MessageEnd ⇒
-                  entitySource.complete()
-                  setHandler(in, idle)
-                case x ⇒ entitySource.push(x)
-              }
-              override def onUpstreamFinish(): Unit = completeStage()
-            })
-            creator(Source.fromGraph(entitySource.source))
+          case StreamedEntityCreator(creator) ⇒ streamRequestEntity(creator)
         }
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = pull(in)
-      })
+      def streamRequestEntity(creator: (Source[ParserOutput.RequestOutput, NotUsed]) => RequestEntity): RequestEntity = {
+        // stream the request entity until we reach the end of it
+        val entitySource = new SubSourceOutlet[RequestOutput]("EntitySource")
+        entitySource.setHandler(new OutHandler {
+          def onPull(): Unit = {
+            pull(in)
+          }
+        })
+        setHandler(in, new InHandler {
+          def onPush(): Unit = {
+            grab(in) match {
+              case MessageEnd ⇒
+                entitySource.complete()
+                setIdleHandlers()
+
+              case x ⇒ entitySource.push(x)
+            }
+          }
+          override def onUpstreamFinish(): Unit = completeStage()
+        })
+        setHandler(out, new OutHandler {
+          override def onPull(): Unit = {
+            // remember this until we are done with the entity
+            // so we can pass it downstream at that point
+            upstreamPullWaiting = true
+          }
+        })
+        creator(Source.fromGraph(entitySource.source))
+      }
+
     }
   }
 
