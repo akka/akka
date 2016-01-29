@@ -266,8 +266,14 @@ private[stream] object TcpConnectionStage {
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
-        if (connection != null) connection ! Abort
-        else failStage(ex)
+        if (connection != null) {
+          if (interpreter.log.isDebugEnabled) {
+            interpreter.log.debug("Aborting tcp connection because of upstream failure: {}\n{}",
+              ex.getMessage,
+              ex.getStackTrace.mkString("\n"))
+          }
+          connection ! Abort
+        } else failStage(ex)
       }
     })
 
