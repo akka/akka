@@ -252,7 +252,7 @@ class ActorGraphInterpreterSpec extends AkkaSpec {
         }
       }
 
-      EventFilter[IllegalArgumentException](message = "Error after stage was closed.", occurrences = 1).intercept {
+      EventFilter[IllegalArgumentException](pattern = "Error in stage.*", occurrences = 1).intercept {
         Await.result(Source.fromGraph(failyStage).runWith(Sink.ignore), 3.seconds)
       }
 
