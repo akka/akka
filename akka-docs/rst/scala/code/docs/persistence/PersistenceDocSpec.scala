@@ -392,7 +392,6 @@ object PersistenceDocSpec {
     // order of received messages:
     // a
     //   # b arrives at mailbox, stashing;        internal-stash = [b]
-    //   # PoisonPill arrives at mailbox, stashing; internal-stash = [b, Shutdown]
     // PoisonPill is an AutoReceivedMessage, is handled automatically
     // !! stop !!
     // Actor is stopped without handling `b` nor the `a` handler!
