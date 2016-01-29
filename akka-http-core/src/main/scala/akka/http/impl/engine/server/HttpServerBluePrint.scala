@@ -100,38 +100,42 @@ private[http] object HttpServerBluePrint {
     val out = Outlet[HttpRequest]("RequestStartThenRunIgnore.out")
     override val shape: FlowShape[RequestOutput, HttpRequest] = FlowShape.of(in, out)
 
-    override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) {
+    override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
       val remoteAddress = inheritedAttributes.get[HttpAttributes.RemoteAddress].flatMap(_.address)
-      var upstreamPullWaiting = false
+      var downstreamPullWaiting = false
+      var completionDeferred = false
 
-      val idle = new InHandler {
-        def onPush(): Unit = grab(in) match {
-          case RequestStart(method, uri, protocol, hdrs, entityCreator, _, _) ⇒
-            val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
-            val effectiveHeaders =
-              if (settings.remoteAddressHeader && remoteAddress.isDefined)
-                headers.`Remote-Address`(RemoteAddress(remoteAddress.get)) +: hdrs
-              else hdrs
+      // optimization: to avoid allocations the "idle" case in and out handlers are put directly on the GraphStageLogic itself
+      override def onPull(): Unit = {
+        pull(in)
+      }
 
-            val entity = createEntity(entityCreator) withSizeLimit settings.parserSettings.maxContentLength
-            push(out, HttpRequest(effectiveMethod, uri, effectiveHeaders, entity, protocol))
-          case other ⇒
-            throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
-        }
+      override def onPush(): Unit = grab(in) match {
+        case RequestStart(method, uri, protocol, hdrs, entityCreator, _, _) ⇒
+          val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
+          val effectiveHeaders =
+            if (settings.remoteAddressHeader && remoteAddress.isDefined)
+              headers.`Remote-Address`(RemoteAddress(remoteAddress.get)) +: hdrs
+            else hdrs
+
+          val entity = createEntity(entityCreator) withSizeLimit settings.parserSettings.maxContentLength
+          push(out, HttpRequest(effectiveMethod, uri, effectiveHeaders, entity, protocol))
+        case other ⇒
+          throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
       }
 
       setIdleHandlers()
 
       def setIdleHandlers() {
-        setHandler(in, idle)
-        setHandler(out, new OutHandler {
-          override def onPull(): Unit = {
+        if (completionDeferred) {
+          completeStage()
+        } else {
+          setHandler(in, this)
+          setHandler(out, this)
+          if (downstreamPullWaiting) {
+            downstreamPullWaiting = false
             pull(in)
           }
-        })
-        if (upstreamPullWaiting) {
-          upstreamPullWaiting = false
-          pull(in)
         }
       }
 
@@ -143,13 +147,13 @@ private[http] object HttpServerBluePrint {
         }
 
       def streamRequestEntity(creator: (Source[ParserOutput.RequestOutput, NotUsed]) => RequestEntity): RequestEntity = {
-        // stream the request entity until we reach the end of it
+        // stream incoming chunks into the request entity until we reach the end of it
+        // and then toggle back to "idle"
+
         val entitySource = new SubSourceOutlet[RequestOutput]("EntitySource")
-        entitySource.setHandler(new OutHandler {
-          def onPull(): Unit = {
-            pull(in)
-          }
-        })
+        // optimization: re-use the idle outHandler
+        entitySource.setHandler(this)
+
         setHandler(in, new InHandler {
           def onPush(): Unit = {
             grab(in) match {
@@ -160,13 +164,26 @@ private[http] object HttpServerBluePrint {
               case x ⇒ entitySource.push(x)
             }
           }
-          override def onUpstreamFinish(): Unit = completeStage()
+          override def onUpstreamFinish(): Unit = {
+            entitySource.complete()
+            completeStage()
+          }
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            entitySource.fail(ex)
+            failStage(ex)
+          }
         })
         setHandler(out, new OutHandler {
           override def onPull(): Unit = {
-            // remember this until we are done with the entity
-            // so we can pass it downstream at that point
-            upstreamPullWaiting = true
+            // remember this until we are done with the chunked entity
+            // so can pull downstream then
+            downstreamPullWaiting = true
+          }
+          override def onDownstreamFinish(): Unit = {
+            // downstream signalled not wanting any more requests
+            // we should keep processing the entity stream and then
+            // when it completes complete the stage
+            completionDeferred = true
           }
         })
         creator(Source.fromGraph(entitySource.source))
