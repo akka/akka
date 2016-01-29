@@ -183,7 +183,7 @@ final case class `Accept-Ranges`(rangeUnits: immutable.Seq[RangeUnit]) extends j
 // http://www.w3.org/TR/cors/#access-control-allow-credentials-response-header
 object `Access-Control-Allow-Credentials` extends ModeledCompanion[`Access-Control-Allow-Credentials`]
 final case class `Access-Control-Allow-Credentials`(allow: Boolean)
-  extends jm.headers.AccessControlAllowCredentials with RequestHeader {
+  extends jm.headers.AccessControlAllowCredentials with ResponseHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ allow.toString
   protected def companion = `Access-Control-Allow-Credentials`
 }
@@ -194,7 +194,7 @@ object `Access-Control-Allow-Headers` extends ModeledCompanion[`Access-Control-A
   implicit val headersRenderer = Renderer.defaultSeqRenderer[String] // cache
 }
 final case class `Access-Control-Allow-Headers`(headers: immutable.Seq[String])
-  extends jm.headers.AccessControlAllowHeaders with RequestHeader {
+  extends jm.headers.AccessControlAllowHeaders with ResponseHeader {
   import `Access-Control-Allow-Headers`.headersRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ headers
   protected def companion = `Access-Control-Allow-Headers`
@@ -209,7 +209,7 @@ object `Access-Control-Allow-Methods` extends ModeledCompanion[`Access-Control-A
   implicit val methodsRenderer = Renderer.defaultSeqRenderer[HttpMethod] // cache
 }
 final case class `Access-Control-Allow-Methods`(methods: immutable.Seq[HttpMethod])
-  extends jm.headers.AccessControlAllowMethods with RequestHeader {
+  extends jm.headers.AccessControlAllowMethods with ResponseHeader {
   import `Access-Control-Allow-Methods`.methodsRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ methods
   protected def companion = `Access-Control-Allow-Methods`
@@ -234,7 +234,7 @@ object `Access-Control-Allow-Origin` extends ModeledCompanion[`Access-Control-Al
   def forRange(range: HttpOriginRange) = new `Access-Control-Allow-Origin`(range)
 }
 final case class `Access-Control-Allow-Origin` private (range: HttpOriginRange)
-  extends jm.headers.AccessControlAllowOrigin with RequestHeader {
+  extends jm.headers.AccessControlAllowOrigin with ResponseHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ range
   protected def companion = `Access-Control-Allow-Origin`
 }
@@ -245,7 +245,7 @@ object `Access-Control-Expose-Headers` extends ModeledCompanion[`Access-Control-
   implicit val headersRenderer = Renderer.defaultSeqRenderer[String] // cache
 }
 final case class `Access-Control-Expose-Headers`(headers: immutable.Seq[String])
-  extends jm.headers.AccessControlExposeHeaders with RequestHeader {
+  extends jm.headers.AccessControlExposeHeaders with ResponseHeader {
   import `Access-Control-Expose-Headers`.headersRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ headers
   protected def companion = `Access-Control-Expose-Headers`
@@ -257,7 +257,7 @@ final case class `Access-Control-Expose-Headers`(headers: immutable.Seq[String])
 // http://www.w3.org/TR/cors/#access-control-max-age-response-header
 object `Access-Control-Max-Age` extends ModeledCompanion[`Access-Control-Max-Age`]
 final case class `Access-Control-Max-Age`(deltaSeconds: Long) extends jm.headers.AccessControlMaxAge
-  with RequestHeader {
+  with ResponseHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ deltaSeconds
   protected def companion = `Access-Control-Max-Age`
 }
@@ -911,4 +911,3 @@ final case class `X-Forwarded-For`(addresses: immutable.Seq[RemoteAddress]) exte
   /** Java API */
   def getAddresses: Iterable[jm.RemoteAddress] = addresses.asJava
 }
-
