@@ -1,12 +1,12 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.model
 
 import language.implicitConversions
 import akka.http.impl.util._
-import akka.japi.{ Option ⇒ JOption }
+import java.util.Optional
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
 
@@ -49,7 +49,7 @@ sealed trait ContentType extends jm.ContentType with ValueRenderable {
   private[http] def render[R <: Rendering](r: R): r.type = r ~~ mediaType
 
   /** Java API */
-  def getCharsetOption: JOption[jm.HttpCharset] = charsetOption.asJava
+  def getCharsetOption: Optional[jm.HttpCharset] = charsetOption.asJava
 }
 
 object ContentType {

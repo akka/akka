@@ -1,11 +1,12 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.model;
 
-import akka.japi.Option;
 import akka.http.impl.util.Util;
+
+import java.util.Optional;
 
 /**
  * Immutable, fast and efficient Date + Time implementation without any dependencies.
@@ -101,7 +102,7 @@ public abstract class DateTime {
      * Returns a new DateTime instance parsed from IsoDateTimeString as Some(dateTime). Returns None if
      * parsing has failed.
      */
-    public static Option<DateTime> fromIsoDateTimeString(String isoDateTimeString) {
+    public static Optional<DateTime> fromIsoDateTimeString(String isoDateTimeString) {
         return Util.<DateTime, akka.http.scaladsl.model.DateTime>convertOption(akka.http.scaladsl.model.DateTime.fromIsoDateTimeString(isoDateTimeString));
     }
 

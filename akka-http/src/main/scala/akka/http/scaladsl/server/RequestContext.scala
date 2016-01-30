@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.server
 
-import scala.concurrent.{ Future, ExecutionContext }
+import scala.concurrent.{ Future, ExecutionContextExecutor }
 import akka.stream.Materializer
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.settings.{ RoutingSettings, ParserSettings }
 
 /**
  * Immutable object encapsulating the context of an [[akka.http.scaladsl.model.HttpRequest]]
@@ -25,7 +26,7 @@ trait RequestContext {
   /**
    * The default ExecutionContext to be used for scheduling asynchronous logic related to this request.
    */
-  implicit def executionContext: ExecutionContext
+  implicit def executionContext: ExecutionContextExecutor
 
   /**
    * The default Materializer.
@@ -43,10 +44,15 @@ trait RequestContext {
   def settings: RoutingSettings
 
   /**
+   * The default ParserSettings to be used for configuring directives.
+   */
+  def parserSettings: ParserSettings
+
+  /**
    * Returns a copy of this context with the given fields updated.
    */
   def reconfigure(
-    executionContext: ExecutionContext = executionContext,
+    executionContext: ExecutionContextExecutor = executionContext,
     materializer: Materializer = materializer,
     log: LoggingAdapter = log,
     settings: RoutingSettings = settings): RequestContext
@@ -76,7 +82,7 @@ trait RequestContext {
   /**
    * Returns a copy of this context with the new HttpRequest.
    */
-  def withExecutionContext(ec: ExecutionContext): RequestContext
+  def withExecutionContext(ec: ExecutionContextExecutor): RequestContext
 
   /**
    * Returns a copy of this context with the new HttpRequest.
@@ -91,7 +97,12 @@ trait RequestContext {
   /**
    * Returns a copy of this context with the new RoutingSettings.
    */
-  def withSettings(settings: RoutingSettings): RequestContext
+  def withRoutingSettings(settings: RoutingSettings): RequestContext
+
+  /**
+   * Returns a copy of this context with the new [[ParserSettings]].
+   */
+  def withParserSettings(settings: ParserSettings): RequestContext
 
   /**
    * Returns a copy of this context with the HttpRequest transformed by the given function.

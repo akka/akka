@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.client
@@ -7,10 +7,9 @@ package akka.http.impl.engine.client
 import java.net.InetSocketAddress
 
 import akka.actor._
-import akka.http.ConnectionPoolSettings
+import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.impl.util._
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
-import akka.http.scaladsl.util.FastFuture
 import akka.stream._
 import akka.stream.actor._
 import akka.stream.impl.{ ActorProcessor, ExposedPublisher, SeqActorName, SubscribePending }
@@ -163,18 +162,7 @@ private object PoolSlot {
       case FromConnection(OnNext(response: HttpResponse)) ⇒
         val requestContext = inflightRequests.head
         inflightRequests = inflightRequests.tail
-        val (entity, whenCompleted) = response.entity match {
-          case x: HttpEntity.Strict ⇒ x -> FastFuture.successful(())
-          case x: HttpEntity.Default ⇒
-            val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
-            x.copy(data = newData) -> whenCompleted
-          case x: HttpEntity.CloseDelimited ⇒
-            val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
-            x.copy(data = newData) -> whenCompleted
-          case x: HttpEntity.Chunked ⇒
-            val (newChunks, whenCompleted) = StreamUtils.captureTermination(x.chunks)
-            x.copy(chunks = newChunks) -> whenCompleted
-        }
+        val (entity, whenCompleted) = HttpEntity.captureTermination(response.entity)
         val delivery = ResponseDelivery(ResponseContext(requestContext, Success(response withEntity entity)))
         import fm.executionContext
         val requestCompleted = SlotEvent.RequestCompletedFuture(whenCompleted.map(_ ⇒ SlotEvent.RequestCompleted(slotIx)))

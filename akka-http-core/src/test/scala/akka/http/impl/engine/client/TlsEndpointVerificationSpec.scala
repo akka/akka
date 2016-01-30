@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.client
 
+import akka.NotUsed
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
 import akka.stream.ActorMaterializer
@@ -11,7 +12,7 @@ import akka.stream.io._
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 import akka.http.impl.util._
-import akka.http.scaladsl.{ HttpsContext, Http }
+import akka.http.scaladsl.{ ConnectionContext, Http }
 import akka.http.scaladsl.model.{ StatusCodes, HttpResponse, HttpRequest }
 import akka.http.scaladsl.model.headers.{ Host, `Tls-Session-Info` }
 import org.scalatest.time.{ Span, Seconds }
@@ -69,19 +70,14 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
         val ex = intercept[Exception] {
           Http().singleRequest(req).futureValue
         }
-        if (Java6Compat.isJava6) {
-          // our manual verification
-          ex.getMessage should include("Hostname verification failed")
-        } else {
-          // JDK built-in verification
-          val expectedMsg = "No subject alternative DNS name matching www.howsmyssl.com found"
+        // JDK built-in verification
+        val expectedMsg = "No subject alternative DNS name matching www.howsmyssl.com found"
 
-          var e: Throwable = ex
-          while (e.getCause != null) e = e.getCause
+        var e: Throwable = ex
+        while (e.getCause != null) e = e.getCause
 
-          info("TLS failure cause: " + e.getMessage)
-          e.getMessage should include(expectedMsg)
-        }
+        info("TLS failure cause: " + e.getMessage)
+        e.getMessage should include(expectedMsg)
       }
 
       "pass hostname verification on https://www.playframework.com/" in {
@@ -92,10 +88,10 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
     }
   }
 
-  def pipeline(clientContext: HttpsContext, hostname: String): HttpRequest ⇒ Future[HttpResponse] = req ⇒
+  def pipeline(clientContext: ConnectionContext, hostname: String): HttpRequest ⇒ Future[HttpResponse] = req ⇒
     Source.single(req).via(pipelineFlow(clientContext, hostname)).runWith(Sink.head)
 
-  def pipelineFlow(clientContext: HttpsContext, hostname: String): Flow[HttpRequest, HttpResponse, Unit] = {
+  def pipelineFlow(clientContext: ConnectionContext, hostname: String): Flow[HttpRequest, HttpResponse, NotUsed] = {
     val handler: HttpRequest ⇒ HttpResponse = { req ⇒
       // verify Tls-Session-Info header information
       val name = req.header[`Tls-Session-Info`].flatMap(_.localPrincipal).map(_.getName)
@@ -103,8 +99,8 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
       else HttpResponse(StatusCodes.BadRequest, entity = "Tls-Session-Info header verification failed")
     }
 
-    val serverSideTls = Http().sslTlsStage(Some(ExampleHttpContexts.exampleServerContext), Server)
-    val clientSideTls = Http().sslTlsStage(Some(clientContext), Client, Some(hostname -> 8080))
+    val serverSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleServerContext, Server)
+    val clientSideTls = Http().sslTlsStage(clientContext, Client, Some(hostname -> 8080))
 
     val server =
       Http().serverLayer()

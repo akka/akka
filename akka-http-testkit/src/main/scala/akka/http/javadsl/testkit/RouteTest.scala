@@ -1,11 +1,13 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.testkit
 
+import akka.http.scaladsl.settings.RoutingSettings
+
 import scala.annotation.varargs
-import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import akka.stream.Materializer
 import akka.http.scaladsl.server
@@ -15,14 +17,14 @@ import akka.http.javadsl.server.{ HttpApp, AllDirectives, Route, Directives }
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.impl.server.RouteImplementation
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.server.{ RouteResult, RoutingSettings, Route ⇒ ScalaRoute }
+import akka.http.scaladsl.server.{ RouteResult, Route ⇒ ScalaRoute }
 import akka.actor.ActorSystem
 import akka.event.NoLogging
 import akka.http.impl.util._
 
 /**
  * A base class to create route tests for testing libraries. An implementation needs to provide
- * code to provide and shutdown an [[ActorSystem]], [[Materializer]], and [[ExecutionContext]].
+ * code to provide and shutdown an [[ActorSystem]], [[Materializer]], and [[ExecutionContextExecutor]].
  * Also an implementation should provide instances of [[TestResponse]] to define the assertion
  * facilities of the testing library.
  *
@@ -31,7 +33,7 @@ import akka.http.impl.util._
 abstract class RouteTest extends AllDirectives {
   implicit def system: ActorSystem
   implicit def materializer: Materializer
-  implicit def executionContext: ExecutionContext = system.dispatcher
+  implicit def executionContext: ExecutionContextExecutor = system.dispatcher
 
   protected def awaitDuration: FiniteDuration = 500.millis
 

@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.model
 
 import java.util.concurrent.TimeoutException
+import akka.NotUsed
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.concurrent.{ Promise, Await }
 import scala.concurrent.duration._
@@ -32,7 +33,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
 
   implicit val materializer = ActorMaterializer()
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 
   "HttpEntity" - {
     "support dataBytes" - {
@@ -176,7 +177,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
         strict.toString + " == " + expectedRendering)
     }
 
-  def duplicateBytesTransformer(): Flow[ByteString, ByteString, Unit] =
+  def duplicateBytesTransformer(): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].transform(() ⇒ StreamUtils.byteStringTransformer(doubleChars, () ⇒ trailer))
 
   def trailer: ByteString = ByteString("--dup")

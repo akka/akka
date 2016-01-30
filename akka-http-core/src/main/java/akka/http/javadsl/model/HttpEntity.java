@@ -1,16 +1,17 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.model;
 
 import akka.http.impl.util.Util;
 import akka.http.scaladsl.model.HttpEntity$;
-import akka.japi.Option;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
-import scala.concurrent.Future;
+
+import java.util.OptionalLong;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Represents the entity of an Http message. An entity consists of the content-type of the data
@@ -77,7 +78,7 @@ public interface HttpEntity {
     /**
      * Returns Some(contentLength) if the length is defined and none otherwise.
      */
-    Option<Long> getContentLengthOption();
+    OptionalLong getContentLengthOption();
 
     /**
      * Returns a stream of data bytes this entity consists of.
@@ -132,7 +133,7 @@ public interface HttpEntity {
      * Use getDataBytes and stream processing instead if the expected data is big or
      * is likely to take a long time.
      */
-    Future<HttpEntity.Strict> toStrict(long timeoutMillis, Materializer materializer);
+    CompletionStage<HttpEntity.Strict> toStrict(long timeoutMillis, Materializer materializer);
 
     /**
      * The entity type which consists of a predefined fixed ByteString of data.

@@ -3,7 +3,7 @@
  */
 package akka.http.javadsl.server
 
-import scala.concurrent.Future
+import java.util.concurrent.CompletionStage
 
 [..21#/**
  * A route Handler that handles a request (that is encapsulated in a [[RequestContext]])
@@ -21,7 +21,7 @@ trait Handler1[[#T1#]] extends akka.japi.function.Function2[RequestContext, [#T1
 }
 /**
  * A route Handler that handles a request (that is encapsulated in a [[RequestContext]])
- * and returns a [[scala.concurrent.Future]] of [[RouteResult]] with the response (or the rejection).
+ * and returns a [[java.util.concurrent.CompletionStage]] of [[RouteResult]] with the response (or the rejection).
  *
  * A route `Handler1` is a convenience class that extends Function of arity `N+1`,
  * since it needs to pass along the [[RequestContext]] as well, yet for readability
@@ -30,8 +30,8 @@ trait Handler1[[#T1#]] extends akka.japi.function.Function2[RequestContext, [#T1
  * Use the methods in [[RequestContext]] to create a [[RouteResult]].
  * A handler MUST NOT return `null` as the result.
  */
-trait AsyncHandler1[[#T1#]] extends akka.japi.function.Function2[RequestContext, [#T1#], Future[RouteResult]] {
-  override def apply(ctx: RequestContext, [#t1: T1#]): Future[RouteResult]
+trait AsyncHandler1[[#T1#]] extends akka.japi.function.Function2[RequestContext, [#T1#], CompletionStage[RouteResult]] {
+  override def apply(ctx: RequestContext, [#t1: T1#]): CompletionStage[RouteResult]
 }#
 
 ]

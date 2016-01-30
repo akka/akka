@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.ws
 
+import akka.NotUsed
 import akka.util.ByteString
 import akka.stream.scaladsl.{ Source, Flow }
 
@@ -16,12 +17,12 @@ import akka.http.scaladsl.model.ws._
  * INTERNAL API
  */
 private[http] object MessageToFrameRenderer {
-  def create(serverSide: Boolean): Flow[Message, FrameStart, Unit] = {
+  def create(serverSide: Boolean): Flow[Message, FrameStart, NotUsed] = {
     def strictFrames(opcode: Opcode, data: ByteString): Source[FrameStart, _] =
       // FIXME: fragment?
       Source.single(FrameEvent.fullFrame(opcode, None, data, fin = true))
 
-    def streamedFrames[M](opcode: Opcode, data: Source[ByteString, M]): Source[FrameStart, Unit] =
+    def streamedFrames[M](opcode: Opcode, data: Source[ByteString, M]): Source[FrameStart, NotUsed] =
       Source.single(FrameEvent.empty(opcode, fin = false)) ++
         data.map(FrameEvent.fullFrame(Opcode.Continuation, None, _, fin = false)) ++
         Source.single(FrameEvent.emptyLastContinuationFrame)

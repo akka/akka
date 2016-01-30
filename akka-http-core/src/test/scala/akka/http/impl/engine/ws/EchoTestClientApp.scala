@@ -1,8 +1,10 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.ws
+
+import akka.NotUsed
 
 import scala.concurrent.duration._
 
@@ -24,10 +26,10 @@ object EchoTestClientApp extends App {
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
 
-  def delayedCompletion(delay: FiniteDuration): Source[Nothing, Unit] =
+  def delayedCompletion(delay: FiniteDuration): Source[Nothing, NotUsed] =
     Source.single(1)
       .mapAsync(1)(_ ⇒ akka.pattern.after(delay, system.scheduler)(Future(1)))
-      .drop(1).asInstanceOf[Source[Nothing, Unit]]
+      .drop(1).asInstanceOf[Source[Nothing, NotUsed]]
 
   def messages: List[Message] =
     List(
@@ -36,7 +38,7 @@ object EchoTestClientApp extends App {
       TextMessage("Test 2"),
       BinaryMessage(ByteString("def")))
 
-  def source: Source[Message, Unit] =
+  def source: Source[Message, NotUsed] =
     Source(messages) ++ delayedCompletion(1.second) // otherwise, we may start closing too soon
 
   def sink: Sink[Message, Future[Seq[String]]] =
@@ -52,17 +54,17 @@ object EchoTestClientApp extends App {
 
   def echoClient = Flow.fromSinkAndSourceMat(sink, source)(Keep.left)
 
-  val (upgrade, res) = Http().singleWebsocketRequest("wss://echo.websocket.org", echoClient)
+  val (upgrade, res) = Http().singleWebSocketRequest("wss://echo.websocket.org", echoClient)
   res onComplete {
     case Success(res) ⇒
       println("Run successful. Got these elements:")
       res.foreach(println)
-      system.shutdown()
+      system.terminate()
     case Failure(e) ⇒
       println("Run failed.")
       e.printStackTrace()
-      system.shutdown()
+      system.terminate()
   }
 
-  system.scheduler.scheduleOnce(10.seconds)(system.shutdown())
+  system.scheduler.scheduleOnce(10.seconds)(system.terminate())
 }

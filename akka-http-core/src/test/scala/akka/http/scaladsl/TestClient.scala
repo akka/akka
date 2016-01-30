@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl
@@ -28,12 +28,12 @@ object TestClient extends App {
   fetchServerVersion1()
 
   //  Console.readLine()
-  //  system.shutdown()
+  //  system.terminate()
 
   def fetchServerVersion1(): Unit = {
     println(s"Fetching HTTPS server version of host `$host` via a direct low-level connection ...")
 
-    val connection = Http().outgoingConnectionTls(host)
+    val connection = Http().outgoingConnectionHttps(host)
     val result = Source.single(HttpRequest()).via(connection).runWith(Sink.head)
     result.map(_.header[headers.Server]) onComplete {
       case Success(res) ⇒
@@ -62,5 +62,5 @@ object TestClient extends App {
     }
   }
 
-  def shutdown(): Unit = system.shutdown()
+  def shutdown(): Unit = system.terminate()
 }

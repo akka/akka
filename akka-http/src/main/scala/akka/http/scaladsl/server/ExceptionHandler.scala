@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.server
 
 import scala.util.control.NonFatal
+import akka.http.scaladsl.settings.RoutingSettings
 import akka.http.scaladsl.model._
 import StatusCodes._
 

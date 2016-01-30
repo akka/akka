@@ -1,21 +1,23 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.model
 
+import java.util.{ OptionalLong, Optional }
 import java.{ lang ⇒ jl }
 import akka.http.impl.util.{ Rendering, ValueRenderable }
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
+import scala.compat.java8.OptionConverters._
 
 sealed trait ContentRange extends jm.ContentRange with ValueRenderable {
   // default implementations to override
   def isSatisfiable: Boolean = false
   def isOther: Boolean = false
-  def getSatisfiableFirst: akka.japi.Option[jl.Long] = akka.japi.Option.none
-  def getSatisfiableLast: akka.japi.Option[jl.Long] = akka.japi.Option.none
-  def getOtherValue: akka.japi.Option[String] = akka.japi.Option.none
+  def getSatisfiableFirst: OptionalLong = OptionalLong.empty()
+  def getSatisfiableLast: OptionalLong = OptionalLong.empty()
+  def getOtherValue: Optional[String] = Optional.empty()
 }
 
 sealed trait ByteContentRange extends ContentRange {
@@ -24,7 +26,7 @@ sealed trait ByteContentRange extends ContentRange {
   /** Java API */
   def isByteContentRange: Boolean = true
   /** Java API */
-  def getInstanceLength: akka.japi.Option[jl.Long] = instanceLength.asJava
+  def getInstanceLength: OptionalLong = instanceLength.asPrimitive
 }
 
 // http://tools.ietf.org/html/rfc7233#section-4.2
@@ -48,9 +50,9 @@ object ContentRange {
     /** Java API */
     override def isSatisfiable: Boolean = true
     /** Java API */
-    override def getSatisfiableFirst: akka.japi.Option[jl.Long] = akka.japi.Option.some(first)
+    override def getSatisfiableFirst: OptionalLong = OptionalLong.of(first)
     /** Java API */
-    override def getSatisfiableLast: akka.japi.Option[jl.Long] = akka.japi.Option.some(last)
+    override def getSatisfiableLast: OptionalLong = OptionalLong.of(last)
   }
 
   /**
@@ -70,8 +72,8 @@ object ContentRange {
     /** Java API */
     def isByteContentRange = false
     /** Java API */
-    def getInstanceLength: akka.japi.Option[jl.Long] = akka.japi.Option.none
+    def getInstanceLength: OptionalLong = OptionalLong.empty()
     /** Java API */
-    override def getOtherValue: akka.japi.Option[String] = akka.japi.Option.some(value)
+    override def getOtherValue: Optional[String] = Optional.of(value)
   }
 }

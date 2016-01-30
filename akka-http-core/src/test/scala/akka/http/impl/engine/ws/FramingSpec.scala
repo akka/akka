@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.ws
@@ -18,7 +18,7 @@ import Protocol.Opcode
 class FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
   import BitBuilder._
 
-  "The Websocket parser/renderer round-trip should work for" - {
+  "The WebSocket parser/renderer round-trip should work for" - {
     "the frame header" - {
       "interpret flags correctly" - {
         "FIN" in {

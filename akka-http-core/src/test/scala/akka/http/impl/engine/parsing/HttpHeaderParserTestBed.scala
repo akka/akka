@@ -1,7 +1,7 @@
 package akka.http.impl.engine.parsing
 
 import akka.actor.ActorSystem
-import akka.http.ParserSettings
+import akka.http.scaladsl.settings.ParserSettings
 import com.typesafe.config.{ ConfigFactory, Config }
 
 object HttpHeaderParserTestBed extends App {
@@ -30,5 +30,5 @@ object HttpHeaderParserTestBed extends App {
      """.stripMargin.replace("%TRIE%", parser.formatTrie)
   }
 
-  system.shutdown()
+  system.terminate()
 }

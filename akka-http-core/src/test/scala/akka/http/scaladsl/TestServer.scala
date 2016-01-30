@@ -1,8 +1,10 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl
+
+import akka.NotUsed
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -25,17 +27,17 @@ object TestServer extends App {
 
   try {
     val binding = Http().bindAndHandleSync({
-      case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) if req.header[UpgradeToWebsocket].isDefined ⇒
-        req.header[UpgradeToWebsocket] match {
-          case Some(upgrade) ⇒ upgrade.handleMessages(echoWebsocketService) // needed for running the autobahn test suite
+      case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) if req.header[UpgradeToWebSocket].isDefined ⇒
+        req.header[UpgradeToWebSocket] match {
+          case Some(upgrade) ⇒ upgrade.handleMessages(echoWebSocketService) // needed for running the autobahn test suite
           case None          ⇒ HttpResponse(400, entity = "Not a valid websocket request!")
         }
       case HttpRequest(GET, Uri.Path("/"), _, _, _)      ⇒ index
       case HttpRequest(GET, Uri.Path("/ping"), _, _, _)  ⇒ HttpResponse(entity = "PONG!")
       case HttpRequest(GET, Uri.Path("/crash"), _, _, _) ⇒ sys.error("BOOM!")
       case req @ HttpRequest(GET, Uri.Path("/ws-greeter"), _, _, _) ⇒
-        req.header[UpgradeToWebsocket] match {
-          case Some(upgrade) ⇒ upgrade.handleMessages(greeterWebsocketService)
+        req.header[UpgradeToWebSocket] match {
+          case Some(upgrade) ⇒ upgrade.handleMessages(greeterWebSocketService)
           case None          ⇒ HttpResponse(400, entity = "Not a valid websocket request!")
         }
       case _: HttpRequest ⇒ HttpResponse(404, entity = "Unknown resource!")
@@ -46,7 +48,7 @@ object TestServer extends App {
     println("Press RETURN to stop...")
     Console.readLine()
   } finally {
-    system.shutdown()
+    system.terminate()
   }
 
   ////////////// helpers //////////////
@@ -64,10 +66,10 @@ object TestServer extends App {
          |  </body>
          |</html>""".stripMargin))
 
-  def echoWebsocketService: Flow[Message, Message, Unit] =
+  def echoWebSocketService: Flow[Message, Message, NotUsed] =
     Flow[Message] // just let message flow directly to the output
 
-  def greeterWebsocketService: Flow[Message, Message, Unit] =
+  def greeterWebSocketService: Flow[Message, Message, NotUsed] =
     Flow[Message]
       .collect {
         case TextMessage.Strict(name) ⇒ TextMessage(s"Hello '$name'")

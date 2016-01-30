@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -11,8 +11,8 @@ import scala.annotation.tailrec
 import akka.parboiled2.CharUtils
 import akka.util.ByteString
 import akka.http.impl.util._
-import akka.http.scaladsl.model.{ IllegalHeaderException, StatusCodes, HttpHeader, ErrorInfo, Uri }
-import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model.{ IllegalHeaderException, StatusCodes, HttpHeader, ErrorInfo }
+import akka.http.scaladsl.model.headers.{ EmptyHeader, RawHeader }
 import akka.http.impl.model.parser.HeaderParser
 import akka.http.impl.model.parser.CharacterClasses._
 
@@ -408,18 +408,10 @@ private[engine] final class HttpHeaderParser private (
 private[http] object HttpHeaderParser {
   import SpecializedHeaderValueParsers._
 
-  trait Settings extends HeaderParser.Settings {
+  abstract class Settings extends HeaderParser.Settings {
     def maxHeaderNameLength: Int
     def maxHeaderValueLength: Int
     def headerValueCacheLimit(headerName: String): Int
-  }
-
-  object EmptyHeader extends HttpHeader {
-    def name = ""
-    def lowercaseName = ""
-    def value = ""
-    def render[R <: Rendering](r: R): r.type = r
-    override def toString = "EmptyHeader"
   }
 
   private def predefinedHeaders = Seq(

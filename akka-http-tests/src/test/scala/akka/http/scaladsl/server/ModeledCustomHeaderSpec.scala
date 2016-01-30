@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.server
@@ -14,22 +14,30 @@ object ModeledCustomHeaderSpec {
 
   //#modeled-api-key-custom-header
   object ApiTokenHeader extends ModeledCustomHeaderCompanion[ApiTokenHeader] {
+    def renderInRequests = false
+    def renderInResponses = false
     override val name = "apiKey"
     override def parse(value: String) = Try(new ApiTokenHeader(value))
   }
   final class ApiTokenHeader(token: String) extends ModeledCustomHeader[ApiTokenHeader] {
+    def renderInRequests = false
+    def renderInResponses = false
     override val companion = ApiTokenHeader
     override def value: String = token
   }
   //#modeled-api-key-custom-header
 
   object DifferentHeader extends ModeledCustomHeaderCompanion[DifferentHeader] {
+    def renderInRequests = false
+    def renderInResponses = false
     override val name = "different"
     override def parse(value: String) =
       if (value contains " ") Failure(new Exception("Contains illegal whitespace!"))
       else Success(new DifferentHeader(value))
   }
   final class DifferentHeader(token: String) extends ModeledCustomHeader[DifferentHeader] {
+    def renderInRequests = false
+    def renderInResponses = false
     override val companion = DifferentHeader
     override def value = token
   }

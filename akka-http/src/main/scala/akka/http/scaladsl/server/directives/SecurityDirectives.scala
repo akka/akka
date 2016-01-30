@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.server
@@ -215,6 +215,8 @@ object Credentials {
         new Credentials.Provided(token) {
           def verify(secret: String): Boolean = secret secure_== token
         }
+      case Some(GenericHttpCredentials(scheme, token, params)) ⇒
+        throw new UnsupportedOperationException("cannot verify generic HTTP credentials")
       case None ⇒ Credentials.Missing
     }
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.server.values;
@@ -10,11 +10,10 @@ import akka.http.javadsl.model.MediaTypes;
 import akka.http.javadsl.server.RequestVal;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
-import akka.japi.Option;
+import akka.japi.Pair;
 import org.junit.Test;
 
-import java.util.AbstractMap;
-import java.util.Map;
+import java.util.Optional;
 
 public class FormFieldsTest extends JUnitRouteTest {
     static FormField<String> stringParam = FormFields.stringValue("stringParam");
@@ -31,22 +30,23 @@ public class FormFieldsTest extends JUnitRouteTest {
     static FormField<Long> hexLongParam = FormFields.hexLongValue("hexLongParam");
 
     static RequestVal<String> nameWithDefault = FormFields.stringValue("nameWithDefault").withDefault("John Doe");
-    static RequestVal<Option<Integer>> optionalIntParam = FormFields.intValue("optionalIntParam").optional();
+    static RequestVal<Optional<Integer>> optionalIntParam = FormFields.intValue("optionalIntParam").optional();
 
-    private Map.Entry<String, String> entry(String name, String value) {
-        return new AbstractMap.SimpleImmutableEntry<String, String>(name, value);
+    private Pair<String, String> param(String name, String value) {
+        return Pair.create(name, value);
     }
-    private HttpRequest urlEncodedRequest(Map.Entry<String, String>... entries) {
+    @SafeVarargs
+    final private HttpRequest urlEncodedRequest(Pair<String, String>... params) {
         StringBuilder sb = new StringBuilder();
         boolean next = false;
-        for (Map.Entry<String, String> entry: entries) {
+        for (Pair<String, String> param: params) {
             if (next) {
                 sb.append('&');
-                next = true;
             }
-            sb.append(entry.getKey());
+            next = true;
+            sb.append(param.first());
             sb.append('=');
-            sb.append(entry.getValue());
+            sb.append(param.second());
         }
 
         return
@@ -54,7 +54,7 @@ public class FormFieldsTest extends JUnitRouteTest {
                 .withEntity(MediaTypes.APPLICATION_X_WWW_FORM_URLENCODED.toContentType(HttpCharsets.UTF_8), sb.toString());
     }
     private HttpRequest singleParameterUrlEncodedRequest(String name, String value) {
-        return urlEncodedRequest(entry(name, value));
+        return urlEncodedRequest(param(name, value));
     }
 
     @Test

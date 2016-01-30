@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.server
@@ -95,8 +95,7 @@ class DontLeakActorsOnFailingConnectionSpecs extends WordSpecLike with Matchers 
   }
 
   override def afterAll = {
-    system.shutdown()
-    system.awaitTermination(3.seconds)
+    Await.result(system.terminate(), 3.seconds)
   }
 
 }

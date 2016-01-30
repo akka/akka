@@ -1,8 +1,10 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.parsing
+
+import akka.NotUsed
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -21,7 +23,7 @@ import akka.stream.io.{ SslTlsPlacebo, SessionBytes }
 import org.scalatest.matchers.Matcher
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 
-import akka.http.ParserSettings
+import akka.http.scaladsl.settings.ParserSettings
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpEntity._
@@ -433,7 +435,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 
   private class Test {
     def awaitAtMost: FiniteDuration = 250.millis
@@ -521,5 +523,5 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     def prep(response: String) = response.stripMarginWithNewline("\r\n")
   }
 
-  def source[T](elems: T*): Source[T, Unit] = Source(elems.toList)
+  def source[T](elems: T*): Source[T, NotUsed] = Source(elems.toList)
 }

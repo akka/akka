@@ -1,13 +1,13 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.model;
 
 import akka.http.impl.util.Util;
 import akka.http.scaladsl.model.MediaTypes$;
-import akka.japi.Option;
-import scala.collection.immutable.List;
+
+import java.util.Optional;
 
 /**
  * Contains the set of predefined media-types.
@@ -197,7 +197,7 @@ public abstract class MediaTypes {
     /**
      * Looks up a media-type with the given main-type and sub-type.
      */
-    public static Option<MediaType> lookup(String mainType, String subType) {
+    public static Optional<MediaType> lookup(String mainType, String subType) {
         return Util.<scala.Tuple2<String, String>, MediaType, akka.http.scaladsl.model.MediaType>lookupInRegistry(MediaTypes$.MODULE$, new scala.Tuple2<String, String>(mainType, subType));
     }
 }
