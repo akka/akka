@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.model.headers
@@ -7,11 +7,12 @@ package akka.http.scaladsl.model.headers
 import akka.http.impl.model.parser.CharacterClasses
 import akka.http.javadsl.model.headers
 import akka.parboiled2.CharPredicate
-import akka.japi.{ Option ⇒ JOption }
+import java.util.{ Optional, OptionalLong }
 import akka.http.scaladsl.model.DateTime
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
+import scala.compat.java8.OptionConverters._
 
 // see http://tools.ietf.org/html/rfc6265
 // sealed abstract to prevent generation of default apply method in companion
@@ -59,7 +60,7 @@ final case class HttpCookie(
   httpOnly: Boolean = false,
   extension: Option[String] = None) extends jm.headers.HttpCookie with ToStringRenderable {
 
-  /** Returns the name/value pair for this cookie, to be used in [[Cookiie]] headers. */
+  /** Returns the name/value pair for this cookie, to be used in [[Cookie]] headers. */
   def pair: HttpCookiePair = HttpCookiePair(name, value)
 
   // TODO: suppress running these requires for cookies created from our header parser
@@ -84,15 +85,15 @@ final case class HttpCookie(
   }
 
   /** Java API */
-  def getExtension: JOption[String] = extension.asJava
+  def getExtension: Optional[String] = extension.asJava
   /** Java API */
-  def getPath: JOption[String] = path.asJava
+  def getPath: Optional[String] = path.asJava
   /** Java API */
-  def getDomain: JOption[String] = domain.asJava
+  def getDomain: Optional[String] = domain.asJava
   /** Java API */
-  def getMaxAge: JOption[java.lang.Long] = maxAge.asJava
+  def getMaxAge: OptionalLong = maxAge.asPrimitive
   /** Java API */
-  def getExpires: JOption[jm.DateTime] = expires.asJava
+  def getExpires: Optional[jm.DateTime] = expires.map(_.asJava).asJava
   /** Java API */
   def withExpires(dateTime: jm.DateTime): headers.HttpCookie = copy(expires = Some(dateTime.asScala))
   /** Java API */

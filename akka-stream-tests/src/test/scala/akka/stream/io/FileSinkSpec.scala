@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.io
 
@@ -9,10 +9,9 @@ import akka.actor.ActorSystem
 import akka.stream.impl.ActorMaterializerImpl
 import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
-import akka.stream.scaladsl.{ FileIO, Sink, Source }
+import akka.stream.scaladsl.{ FileIO, Source }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.StreamTestKit
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.ActorAttributes
@@ -47,8 +46,8 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
         val completion = Source(TestByteStrings)
           .runWith(FileIO.toFile(f))
 
-        val size = Await.result(completion, 3.seconds)
-        size should equal(6006)
+        val result = Await.result(completion, 3.seconds)
+        result.count should equal(6006)
         checkFileContents(f, TestLines.mkString(""))
       }
     }
@@ -65,9 +64,9 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
         val lastWrite = List("x" * 100)
         val completion2 = write(lastWrite)
-        val written2 = Await.result(completion2, 3.seconds)
+        val result = Await.result(completion2, 3.seconds)
 
-        written2 should ===(lastWrite.flatten.length)
+        result.count should ===(lastWrite.flatten.length)
         checkFileContents(f, lastWrite.mkString("") + TestLines.mkString("").drop(100))
       }
     }
@@ -80,13 +79,13 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
             .runWith(FileIO.toFile(f, append = true))
 
         val completion1 = write()
-        val written1 = Await.result(completion1, 3.seconds)
+        val result1 = Await.result(completion1, 3.seconds)
 
         val lastWrite = List("x" * 100)
         val completion2 = write(lastWrite)
-        val written2 = Await.result(completion2, 3.seconds)
+        val result2 = Await.result(completion2, 3.seconds)
 
-        f.length() should ===(written1 + written2)
+        f.length() should ===(result1.count + result2.count)
         checkFileContents(f, TestLines.mkString("") + lastWrite.mkString("") + "\n")
       }
     }

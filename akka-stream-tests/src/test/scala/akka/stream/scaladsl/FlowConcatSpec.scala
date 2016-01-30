@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
@@ -10,6 +10,7 @@ import org.reactivestreams.Publisher
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Promise }
+import akka.NotUsed
 
 class FlowConcatSpec extends BaseTwoStreamsSetup {
 
@@ -97,7 +98,7 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
       subscriber.expectSubscription().request(5)
 
       val errorSignalled = (1 to 4).foldLeft(false)((errorSignalled, e) ⇒
-        if (!errorSignalled) subscriber.expectNextOrError(1, TestException).isLeft else true)
+        if (!errorSignalled) subscriber.expectNextOrError(e, TestException).isLeft else true)
       if (!errorSignalled) subscriber.expectSubscriptionAndError(TestException)
     }
 
@@ -111,7 +112,7 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
       subscriber.expectSubscription().request(5)
 
       val errorSignalled = (1 to 4).foldLeft(false)((errorSignalled, e) ⇒
-        if (!errorSignalled) subscriber.expectNextOrError(1, TestException).isLeft else true)
+        if (!errorSignalled) subscriber.expectNextOrError(e, TestException).isLeft else true)
       if (!errorSignalled) subscriber.expectSubscriptionAndError(TestException)
     }
 
@@ -133,21 +134,22 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
 
       val runnable = testSource.toMat(Sink.ignore)(Keep.left)
       val (m1, m2) = runnable.run()
-      m1.isInstanceOf[Unit] should be(true)
-      m2.isInstanceOf[Unit] should be(true)
+      m1.isInstanceOf[NotUsed] should be(true)
+      m2.isInstanceOf[NotUsed] should be(true)
 
       runnable.mapMaterializedValue((_) ⇒ "boo").run() should be("boo")
     }
 
     "work with Flow DSL" in {
-      val testFlow = Flow[Int].concatMat(Source(6 to 10))(Keep.both).grouped(1000)
+      val testFlow: Flow[Int, Seq[Int], (NotUsed, NotUsed)] = Flow[Int].concatMat(Source(6 to 10))(Keep.both).grouped(1000)
       Await.result(Source(1 to 5).viaMat(testFlow)(Keep.both).runWith(Sink.head), 3.seconds) should ===(1 to 10)
 
       val runnable = Source(1 to 5).viaMat(testFlow)(Keep.both).to(Sink.ignore)
-      val (m1, (m2, m3)) = runnable.run()
-      m1.isInstanceOf[Unit] should be(true)
-      m2.isInstanceOf[Unit] should be(true)
-      m3.isInstanceOf[Unit] should be(true)
+      val x = runnable.run()
+      val (m1, (m2, m3)) = x
+      m1.isInstanceOf[NotUsed] should be(true)
+      m2.isInstanceOf[NotUsed] should be(true)
+      m3.isInstanceOf[NotUsed] should be(true)
 
       runnable.mapMaterializedValue((_) ⇒ "boo").run() should be("boo")
     }
@@ -158,9 +160,9 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
 
       val sink = testFlow.concatMat(Source(1 to 5))(Keep.both).to(Sink.ignore).mapMaterializedValue[String] {
         case ((m1, m2), m3) ⇒
-          m1.isInstanceOf[Unit] should be(true)
-          m2.isInstanceOf[Unit] should be(true)
-          m3.isInstanceOf[Unit] should be(true)
+          m1.isInstanceOf[NotUsed] should be(true)
+          m2.isInstanceOf[NotUsed] should be(true)
+          m3.isInstanceOf[NotUsed] should be(true)
           "boo"
       }
       Source(10 to 15).runWith(sink) should be("boo")

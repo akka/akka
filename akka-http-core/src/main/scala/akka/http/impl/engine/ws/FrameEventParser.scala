@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.ws
@@ -10,7 +10,7 @@ import akka.stream.io.ByteStringParser
 import akka.stream.Attributes
 
 /**
- * Streaming parser for the Websocket framing protocol as defined in RFC6455
+ * Streaming parser for the WebSocket framing protocol as defined in RFC6455
  *
  * http://tools.ietf.org/html/rfc6455
  *
@@ -46,7 +46,7 @@ private[http] object FrameEventParser extends ByteStringParser[FrameEvent] {
     }
 
     object ReadFrameHeader extends Step {
-      override def parse(reader: ByteReader): (FrameEvent, Step) = {
+      override def parse(reader: ByteReader): ParseResult[FrameEvent] = {
         import Protocol._
 
         val flagsAndOp = reader.readByte()
@@ -83,23 +83,25 @@ private[http] object FrameEventParser extends ByteStringParser[FrameEvent] {
 
         val takeNow = (header.length min reader.remainingSize).toInt
         val thisFrameData = reader.take(takeNow)
+        val noMoreData = thisFrameData.length == length
 
         val nextState =
-          if (thisFrameData.length == length) ReadFrameHeader
+          if (noMoreData) ReadFrameHeader
           else new ReadData(length - thisFrameData.length)
 
-        (FrameStart(header, thisFrameData.compact), nextState)
+        ParseResult(Some(FrameStart(header, thisFrameData.compact)), nextState, true)
       }
     }
 
     class ReadData(_remaining: Long) extends Step {
+      override def canWorkWithPartialData = true
       var remaining = _remaining
-      override def parse(reader: ByteReader): (FrameEvent, Step) =
+      override def parse(reader: ByteReader): ParseResult[FrameEvent] =
         if (reader.remainingSize < remaining) {
           remaining -= reader.remainingSize
-          (FrameData(reader.takeAll(), lastPart = false), this)
+          ParseResult(Some(FrameData(reader.takeAll(), lastPart = false)), this, true)
         } else {
-          (FrameData(reader.take(remaining.toInt), lastPart = true), ReadFrameHeader)
+          ParseResult(Some(FrameData(reader.take(remaining.toInt), lastPart = true)), ReadFrameHeader, true)
         }
     }
   }

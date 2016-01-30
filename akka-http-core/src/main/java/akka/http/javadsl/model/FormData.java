@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.model;
@@ -40,6 +40,7 @@ public final class FormData {
   /**
    * Creates the FormData from the given parameters.
    */
+  @SafeVarargs
   public static FormData create(Pair<String, String>... params) {
     return new FormData(Query.create(params));
   }

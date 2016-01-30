@@ -1,12 +1,13 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.model;
 
 import akka.http.impl.util.Util;
 import akka.http.scaladsl.model.HttpCharsets$;
-import akka.japi.Option;
+
+import java.util.Optional;
 
 /**
  * Contains a set of predefined charsets.
@@ -31,7 +32,7 @@ public final class HttpCharsets {
     /**
      * Returns Some(charset) if the charset with the given name was found and None otherwise.
      */
-    public static Option<HttpCharset> lookup(String name) {
+    public static Optional<HttpCharset> lookup(String name) {
         return Util.<HttpCharset, akka.http.scaladsl.model.HttpCharset>lookupInRegistry(HttpCharsets$.MODULE$, name);
     }
 }

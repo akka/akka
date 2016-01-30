@@ -1,16 +1,15 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.javadsl
 
 import java.io.{ InputStream, OutputStream }
-
 import akka.japi.function
 import akka.stream.{ scaladsl, javadsl, ActorAttributes }
+import akka.stream.io.IOResult
 import akka.util.ByteString
-
-import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import java.util.concurrent.CompletionStage
 
 /**
  * Converters for interacting with the blocking `java.io` streams APIs
@@ -19,15 +18,32 @@ object StreamConverters {
   /**
    * Sink which writes incoming [[ByteString]]s to an [[OutputStream]] created by the given function.
    *
-   * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
+   * Materializes a [[CompletionStage]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
+   * and a possible exception if IO operation was not completed successfully.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * This method uses no auto flush for the [[java.io.OutputStream]] @see [[#fromOutputStream(function.Creator, Boolean)]] if you want to override it.
+   *
+   * @param f A Creator which creates an OutputStream to write to
+   */
+  def fromOutputStream(f: function.Creator[OutputStream]): javadsl.Sink[ByteString, CompletionStage[IOResult]] = fromOutputStream(f, autoFlush = false)
+
+  /**
+   * Sink which writes incoming [[ByteString]]s to an [[OutputStream]] created by the given function.
+   *
+   * Materializes a [[CompletionStage]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
+   * and a possible exception if IO operation was not completed successfully.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
    * @param f A Creator which creates an OutputStream to write to
+   * @param autoFlush If true the OutputStream will be flushed whenever a byte array is written
    */
-  def fromOutputStream(f: function.Creator[OutputStream]): javadsl.Sink[ByteString, Future[java.lang.Long]] =
-    new Sink(scaladsl.StreamConverters.fromOutputStream(() ⇒ f.create())).asInstanceOf[javadsl.Sink[ByteString, Future[java.lang.Long]]]
+  def fromOutputStream(f: function.Creator[OutputStream], autoFlush: Boolean): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
+    new Sink(scaladsl.StreamConverters.fromOutputStream(() ⇒ f.create(), autoFlush).toCompletionStage())
 
   /**
    * Creates a Sink which when materialized will return an [[java.io.InputStream]] which it is possible
@@ -65,10 +81,10 @@ object StreamConverters {
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
-   * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
+   * It materializes a [[CompletionStage]] containing the number of bytes read from the source file upon completion.
    */
-  def fromInputStream(in: function.Creator[InputStream], chunkSize: Int): javadsl.Source[ByteString, Future[java.lang.Long]] =
-    new Source(scaladsl.StreamConverters.fromInputStream(() ⇒ in.create(), chunkSize)).asInstanceOf[Source[ByteString, Future[java.lang.Long]]]
+  def fromInputStream(in: function.Creator[InputStream], chunkSize: Int): javadsl.Source[ByteString, CompletionStage[IOResult]] =
+    new Source(scaladsl.StreamConverters.fromInputStream(() ⇒ in.create(), chunkSize).toCompletionStage())
 
   /**
    * Creates a Source from an [[java.io.InputStream]] created by the given function.
@@ -78,9 +94,10 @@ object StreamConverters {
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
-   * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
+   * It materializes a [[CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
+   * and a possible exception if IO operation was not completed successfully.
    */
-  def fromInputStream(in: function.Creator[InputStream]): javadsl.Source[ByteString, Future[java.lang.Long]] = fromInputStream(in, 8192)
+  def fromInputStream(in: function.Creator[InputStream]): javadsl.Source[ByteString, CompletionStage[IOResult]] = fromInputStream(in, 8192)
 
   /**
    * Creates a Source which when materialized will return an [[java.io.OutputStream]] which it is possible

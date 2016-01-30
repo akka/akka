@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.server
 
-import scala.concurrent.Future
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http.ServerBinding
+import java.util.concurrent.CompletionStage
 
 /**
  * A convenience class to derive from to get everything from HttpService and Directives into scope.
@@ -22,6 +22,6 @@ abstract class HttpApp
    * Starts an HTTP server on the given interface and port. Creates the route by calling the
    * user-implemented [[createRoute]] method and uses the route to handle requests of the server.
    */
-  def bindRoute(interface: String, port: Int, system: ActorSystem): Future[ServerBinding] =
+  def bindRoute(interface: String, port: Int, system: ActorSystem): CompletionStage[ServerBinding] =
     bindRoute(interface, port, createRoute(), system)
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.server
@@ -9,7 +9,7 @@ import scala.collection.immutable
 import scala.annotation.varargs
 import akka.http.javadsl.model.HttpMethods
 
-abstract class AllDirectives extends WebsocketDirectives
+abstract class AllDirectives extends WebSocketDirectives
 
 /**
  *

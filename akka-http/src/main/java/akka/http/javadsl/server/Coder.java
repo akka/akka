@@ -1,15 +1,17 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.server;
+
+import java.util.concurrent.CompletionStage;
 
 import akka.http.scaladsl.coding.Deflate$;
 import akka.http.scaladsl.coding.Gzip$;
 import akka.http.scaladsl.coding.NoCoding$;
 import akka.stream.Materializer;
 import akka.util.ByteString;
-import scala.concurrent.Future;
+import scala.compat.java8.FutureConverters;
 
 /**
  * A coder is an implementation of the predefined encoders/decoders defined for HTTP.
@@ -26,8 +28,8 @@ public enum Coder {
     public ByteString encode(ByteString input) {
         return underlying.encode(input);
     }
-    public Future<ByteString> decode(ByteString input, Materializer mat) {
-        return underlying.decode(input, mat);
+    public CompletionStage<ByteString> decode(ByteString input, Materializer mat) {
+        return FutureConverters.toJava(underlying.decode(input, mat));
     }
     public akka.http.scaladsl.coding.Coder _underlyingScalaCoder() {
         return underlying;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.unmarshalling
@@ -298,7 +298,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
     }
   }
 
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 
   def haveParts[T <: Multipart](parts: Multipart.BodyPart.Strict*): Matcher[Future[T]] =
     equal(parts).matcher[Seq[Multipart.BodyPart.Strict]] compose { x ⇒

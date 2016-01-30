@@ -1,8 +1,9 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
+import akka.NotUsed
 import akka.stream.testkit.AkkaSpec
 import akka.stream.ActorMaterializer
 import scala.concurrent._
@@ -97,7 +98,7 @@ class FlowFlattenMergeSpec extends AkkaSpec with ScalaFutures with ConversionChe
     "cancel substreams when failing from main stream" in {
       val p1, p2 = TestPublisher.probe[Int]()
       val ex = new Exception("buh")
-      val p = Promise[Source[Int, Unit]]
+      val p = Promise[Source[Int, NotUsed]]
       (Source(List(Source.fromPublisher(p1), Source.fromPublisher(p2))) ++ Source.fromFuture(p.future))
         .flatMapMerge(5, identity)
         .runWith(Sink.head)

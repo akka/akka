@@ -1,21 +1,25 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicReference
-
+import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Props }
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.stage.{ AsyncCallback, GraphStageLogic, GraphStageWithMaterializedValue, InHandler }
+import akka.stream.stage._
 import org.reactivestreams.{ Publisher, Subscriber }
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.{ Future, Promise }
 import scala.language.postfixOps
 import scala.util.{ Failure, Success, Try }
+import akka.stream.scaladsl.SinkQueue
+import java.util.concurrent.CompletionStage
+import scala.compat.java8.FutureConverters._
+import scala.compat.java8.OptionConverters._
+import java.util.Optional
 
 /**
  * INTERNAL API
@@ -93,15 +97,15 @@ private[akka] final class FanoutPublisherSink[In](
  * Attaches a subscriber to this stream which will just discard all received
  * elements.
  */
-private[akka] final class SinkholeSink(val attributes: Attributes, shape: SinkShape[Any]) extends SinkModule[Any, Future[Unit]](shape) {
+private[akka] final class SinkholeSink(val attributes: Attributes, shape: SinkShape[Any]) extends SinkModule[Any, Future[Done]](shape) {
 
   override def create(context: MaterializationContext) = {
     val effectiveSettings = ActorMaterializer.downcast(context.materializer).effectiveSettings(context.effectiveAttributes)
-    val p = Promise[Unit]()
+    val p = Promise[Done]()
     (new SinkholeSubscriber[Any](p), p.future)
   }
 
-  override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, Future[Unit]] = new SinkholeSink(attributes, shape)
+  override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, Future[Done]] = new SinkholeSink(attributes, shape)
   override def withAttributes(attr: Attributes): Module = new SinkholeSink(attr, amendShape(attr))
   override def toString: String = "SinkholeSink"
 }
@@ -110,11 +114,11 @@ private[akka] final class SinkholeSink(val attributes: Attributes, shape: SinkSh
  * INTERNAL API
  * Attaches a subscriber to this stream.
  */
-private[akka] final class SubscriberSink[In](subscriber: Subscriber[In], val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, Unit](shape) {
+private[akka] final class SubscriberSink[In](subscriber: Subscriber[In], val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
 
-  override def create(context: MaterializationContext) = (subscriber, ())
+  override def create(context: MaterializationContext) = (subscriber, NotUsed)
 
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Unit] = new SubscriberSink[In](subscriber, attributes, shape)
+  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, NotUsed] = new SubscriberSink[In](subscriber, attributes, shape)
   override def withAttributes(attr: Attributes): Module = new SubscriberSink[In](subscriber, attr, amendShape(attr))
   override def toString: String = "SubscriberSink"
 }
@@ -123,9 +127,9 @@ private[akka] final class SubscriberSink[In](subscriber: Subscriber[In], val att
  * INTERNAL API
  * A sink that immediately cancels its upstream upon materialization.
  */
-private[akka] final class CancelSink(val attributes: Attributes, shape: SinkShape[Any]) extends SinkModule[Any, Unit](shape) {
-  override def create(context: MaterializationContext): (Subscriber[Any], Unit) = (new CancellingSubscriber[Any], ())
-  override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, Unit] = new CancelSink(attributes, shape)
+private[akka] final class CancelSink(val attributes: Attributes, shape: SinkShape[Any]) extends SinkModule[Any, NotUsed](shape) {
+  override def create(context: MaterializationContext): (Subscriber[Any], NotUsed) = (new CancellingSubscriber[Any], NotUsed)
+  override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, NotUsed] = new CancelSink(attributes, shape)
   override def withAttributes(attr: Attributes): Module = new CancelSink(attr, amendShape(attr))
   override def toString: String = "CancelSink"
 }
@@ -152,17 +156,17 @@ private[akka] final class ActorSubscriberSink[In](props: Props, val attributes: 
  */
 private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any,
                                            val attributes: Attributes,
-                                           shape: SinkShape[In]) extends SinkModule[In, Unit](shape) {
+                                           shape: SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
 
   override def create(context: MaterializationContext) = {
     val actorMaterializer = ActorMaterializer.downcast(context.materializer)
     val effectiveSettings = actorMaterializer.effectiveSettings(context.effectiveAttributes)
     val subscriberRef = actorMaterializer.actorOf(context,
       ActorRefSinkActor.props(ref, effectiveSettings.maxInputBufferSize, onCompleteMessage))
-    (akka.stream.actor.ActorSubscriber[In](subscriberRef), ())
+    (akka.stream.actor.ActorSubscriber[In](subscriberRef), NotUsed)
   }
 
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Unit] =
+  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, NotUsed] =
     new ActorRefSink[In](ref, onCompleteMessage, attributes, shape)
   override def withAttributes(attr: Attributes): Module =
     new ActorRefSink[In](ref, onCompleteMessage, attr, amendShape(attr))
@@ -242,11 +246,7 @@ private[akka] final class HeadOptionStage[T] extends GraphStageWithMaterializedV
  * INTERNAL API
  */
 private[akka] class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkShape[T], SinkQueue[T]] {
-  trait RequestElementCallback[E] {
-    val requestElement = new AtomicReference[AnyRef](Nil)
-  }
-
-  type Requested[E] = Promise[Option[T]]
+  type Requested[E] = Promise[Option[E]]
 
   val in = Inlet[T]("queueSink.in")
   override val shape: SinkShape[T] = SinkShape.of(in)
@@ -260,14 +260,16 @@ private[akka] class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkS
     val buffer = FixedSizeBuffer[Received[T]](maxBuffer + 1)
     var currentRequest: Option[Requested[T]] = None
 
-    val stageLogic = new GraphStageLogic(shape) with RequestElementCallback[Requested[T]] {
+    val stageLogic = new GraphStageLogic(shape) with CallbackWrapper[Requested[T]] {
 
       override def preStart(): Unit = {
         setKeepGoing(true)
-        val list = requestElement.getAndSet(callback.invoke _).asInstanceOf[List[Requested[T]]]
-        list.reverse.foreach(callback.invoke)
+        initCallback(callback.invoke)
         pull(in)
       }
+
+      override def postStop(): Unit = stopCallback(promise ⇒
+        promise.failure(new IllegalStateException("Stream is terminated. QueueSink is detached")))
 
       private val callback: AsyncCallback[Requested[T]] =
         getAsyncCallback(promise ⇒ currentRequest match {
@@ -310,19 +312,15 @@ private[akka] class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkS
 
     (stageLogic, new SinkQueue[T] {
       override def pull(): Future[Option[T]] = {
-        val ref = stageLogic.requestElement
         val p = Promise[Option[T]]
-        ref.get() match {
-          case l: List[_] ⇒
-            if (!ref.compareAndSet(l, p :: l))
-              ref.get() match {
-                case _: List[_]         ⇒ throw new IllegalStateException("Concurrent call of SinkQueue.pull() is detected")
-                case f: Function1[_, _] ⇒ f.asInstanceOf[Requested[T] ⇒ Unit](p)
-              }
-          case f: Function1[_, _] ⇒ f.asInstanceOf[Requested[T] ⇒ Unit](p)
-        }
+        stageLogic.invoke(p)
         p.future
       }
     })
   }
+}
+
+private[akka] final class SinkQueueAdapter[T](delegate: SinkQueue[T]) extends akka.stream.javadsl.SinkQueue[T] {
+  import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ same }
+  def pull(): CompletionStage[Optional[T]] = delegate.pull().map(_.asJava)(same).toJava
 }

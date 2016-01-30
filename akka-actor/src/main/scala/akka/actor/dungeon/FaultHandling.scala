@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor.dungeon
@@ -211,6 +211,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     catch handleNonFatalOrInterruptedException { e ⇒ publish(Error(e, self.path.toString, clazz(a), e.getMessage)) }
     finally try dispatcher.detach(this)
     finally try parent.sendSystemMessage(DeathWatchNotification(self, existenceConfirmed = true, addressTerminated = false))
+    finally try stopFunctionRefs()
     finally try tellWatchersWeDied()
     finally try unwatchWatchedActors(a) // stay here as we expect an emergency stop from handleInvokeFailure
     finally {

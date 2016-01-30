@@ -1,20 +1,18 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.coding
 
-import java.lang.reflect.{ Method, InvocationTargetException }
 import java.util.zip.{ Inflater, Deflater }
-import akka.stream.stage._
+import akka.stream.Attributes
+import akka.stream.io.ByteStringParser
+import akka.stream.io.ByteStringParser.{ ParseResult, ParseStep }
 import akka.util.{ ByteStringBuilder, ByteString }
 
 import scala.annotation.tailrec
-import akka.http.impl.util._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.HttpEncodings
-
-import scala.util.control.NonFatal
 
 class Deflate(val messageFilter: HttpMessage ⇒ Boolean) extends Coder with StreamDecoder {
   val encoding = HttpEncodings.deflate
@@ -47,7 +45,10 @@ class DeflateCompressor extends Compressor {
     deflater.setInput(input.toArray)
     drainDeflater(deflater, buffer)
   }
-  protected def flushWithBuffer(buffer: Array[Byte]): ByteString = DeflateCompressor.flush(deflater, buffer)
+  protected def flushWithBuffer(buffer: Array[Byte]): ByteString = {
+    val written = deflater.deflate(buffer, 0, buffer.length, Deflater.SYNC_FLUSH)
+    ByteString.fromArray(buffer, 0, written)
+  }
   protected def finishWithBuffer(buffer: Array[Byte]): ByteString = {
     deflater.finish()
     val res = drainDeflater(deflater, buffer)
@@ -72,40 +73,6 @@ class DeflateCompressor extends Compressor {
 private[http] object DeflateCompressor {
   val MinBufferSize = 1024
 
-  // TODO: remove reflective call once Java 6 support is dropped
-  /**
-   * Compatibility mode: reflectively call deflate(..., flushMode) if available or use a hack otherwise
-   */
-  private[this] val flushImplementation: (Deflater, Array[Byte]) ⇒ ByteString = {
-    def flushHack(deflater: Deflater, buffer: Array[Byte]): ByteString = {
-      // hack: change compression mode to provoke flushing
-      deflater.deflate(EmptyByteArray, 0, 0)
-      deflater.setLevel(Deflater.NO_COMPRESSION)
-      val res1 = drainDeflater(deflater, buffer)
-      deflater.setLevel(Deflater.BEST_COMPRESSION)
-      val res2 = drainDeflater(deflater, buffer)
-      res1 ++ res2
-    }
-    def reflectiveDeflateWithSyncMode(method: Method, syncFlushConstant: Int)(deflater: Deflater, buffer: Array[Byte]): ByteString =
-      try {
-        val written = method.invoke(deflater, buffer, 0: java.lang.Integer, buffer.length: java.lang.Integer, syncFlushConstant: java.lang.Integer).asInstanceOf[Int]
-        ByteString.fromArray(buffer, 0, written)
-      } catch {
-        case t: InvocationTargetException ⇒ throw t.getTargetException
-      }
-
-    try {
-      val deflateWithFlush = classOf[Deflater].getMethod("deflate", classOf[Array[Byte]], classOf[Int], classOf[Int], classOf[Int])
-      require(deflateWithFlush.getReturnType == classOf[Int])
-      val flushModeSync = classOf[Deflater].getField("SYNC_FLUSH").get(null).asInstanceOf[Int]
-      reflectiveDeflateWithSyncMode(deflateWithFlush, flushModeSync)
-    } catch {
-      case NonFatal(e) ⇒ flushHack
-    }
-  }
-
-  def flush(deflater: Deflater, buffer: Array[Byte]): ByteString = flushImplementation(deflater, buffer)
-
   @tailrec
   def drainDeflater(deflater: Deflater, buffer: Array[Byte], result: ByteStringBuilder = new ByteStringBuilder()): ByteString = {
     val len = deflater.deflate(buffer)
@@ -120,56 +87,49 @@ private[http] object DeflateCompressor {
 }
 
 class DeflateDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends DeflateDecompressorBase(maxBytesPerChunk) {
-  protected def createInflater() = new Inflater()
 
-  def initial: State = StartInflate
-  def afterInflate: State = StartInflate
+  override def createLogic(attr: Attributes) = new DecompressorParsingLogic {
+    override val inflater: Inflater = new Inflater()
 
-  protected def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit = {}
-  protected def onTruncation(ctx: Context[ByteString]): SyncDirective = ctx.finish()
+    override val inflateState = new Inflate(true) {
+      override def onTruncation(): Unit = completeStage()
+    }
+
+    override def afterInflate = inflateState
+    override def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit = {}
+
+    startWith(inflateState)
+  }
 }
 
-abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends ByteStringParserStage[ByteString] {
-  protected def createInflater(): Inflater
-  val inflater = createInflater()
+abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault)
+  extends ByteStringParser[ByteString] {
 
-  protected def afterInflate: State
-  protected def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit
+  abstract class DecompressorParsingLogic extends ParsingLogic {
+    val inflater: Inflater
+    def afterInflate: ParseStep[ByteString]
+    def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit
+    val inflateState: Inflate
 
-  /** Start inflating */
-  case object StartInflate extends IntermediateState {
-    def onPush(data: ByteString, ctx: Context[ByteString]): SyncDirective = {
-      require(inflater.needsInput())
-      inflater.setInput(data.toArray)
+    abstract class Inflate(noPostProcessing: Boolean) extends ParseStep[ByteString] {
+      override def canWorkWithPartialData = true
+      override def parse(reader: ByteStringParser.ByteReader): ParseResult[ByteString] = {
+        inflater.setInput(reader.remainingData.toArray)
 
-      becomeWithRemaining(Inflate()(data), ByteString.empty, ctx)
-    }
-  }
+        val buffer = new Array[Byte](maxBytesPerChunk)
+        val read = inflater.inflate(buffer)
 
-  /** Inflate */
-  case class Inflate()(data: ByteString) extends IntermediateState {
-    override def onPull(ctx: Context[ByteString]): SyncDirective = {
-      val buffer = new Array[Byte](maxBytesPerChunk)
-      val read = inflater.inflate(buffer)
-      if (read > 0) {
-        afterBytesRead(buffer, 0, read)
-        ctx.push(ByteString.fromArray(buffer, 0, read))
-      } else {
-        val remaining = data.takeRight(inflater.getRemaining)
-        val next =
-          if (inflater.finished()) afterInflate
-          else StartInflate
+        reader.skip(reader.remainingSize - inflater.getRemaining)
 
-        becomeWithRemaining(next, remaining, ctx)
+        if (read > 0) {
+          afterBytesRead(buffer, 0, read)
+          val next = if (inflater.finished()) afterInflate else this
+          ParseResult(Some(ByteString.fromArray(buffer, 0, read)), next, noPostProcessing)
+        } else {
+          if (inflater.finished()) ParseResult(None, afterInflate, noPostProcessing)
+          else throw ByteStringParser.NeedMoreData
+        }
       }
     }
-    def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective =
-      throw new IllegalStateException("Don't expect a new Element")
-  }
-
-  def becomeWithRemaining(next: State, remaining: ByteString, ctx: Context[ByteString]) = {
-    become(next)
-    if (remaining.isEmpty) current.onPull(ctx)
-    else current.onPush(remaining, ctx)
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl.fusing
 
@@ -269,12 +269,12 @@ private[stream] object ActorGraphInterpreter {
       }
 
     def exposedPublisher(publisher: ActorPublisher[Any]): Unit = {
+      exposedPublisher = publisher
       upstreamFailed match {
         case _: Some[_] ⇒
           publisher.shutdown(upstreamFailed)
         case _ ⇒
           if (upstreamCompleted) publisher.shutdown(None)
-          else exposedPublisher = publisher
       }
     }
 
@@ -532,7 +532,9 @@ private[stream] class ActorGraphInterpreter(_initial: GraphInterpreterShell) ext
         if (shell.isInitialized) {
           // yes, this steals another shell’s Resume, but that’s okay because extra ones will just not do anything
           finishShellRegistration()
-        } else tryInit(shell)
+        } else if (!tryInit(shell)) {
+          if (activeInterpreters.isEmpty) finishShellRegistration()
+        }
     }
 
   override def preStart(): Unit = {
@@ -564,5 +566,9 @@ private[stream] class ActorGraphInterpreter(_initial: GraphInterpreterShell) ext
       }
   }
 
-  override def postStop(): Unit = activeInterpreters.foreach(_.tryAbort(AbruptTerminationException(self)))
+  override def postStop(): Unit = {
+    val ex = AbruptTerminationException(self)
+    activeInterpreters.foreach(_.tryAbort(ex))
+    newShells.foreach(s ⇒ if (tryInit(s)) s.tryAbort(ex))
+  }
 }

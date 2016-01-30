@@ -1,18 +1,20 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.server
 
 import akka.http.javadsl.model.ContentType
+import akka.http.javadsl.settings.{ RoutingSettings, ParserSettings }
 import akka.http.scaladsl.model.HttpEntity
 import akka.stream.Materializer
-
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ ExecutionContextExecutor, Future }
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.scaladsl.server.{ RequestContext ⇒ ScalaRequestContext }
 import akka.http.javadsl.server._
+import java.util.concurrent.CompletionStage
+import scala.compat.java8.FutureConverters._
 
 /**
  * INTERNAL API
@@ -28,6 +30,7 @@ private[http] final case class RequestContextImpl(underlying: ScalaRequestContex
     futureResult.flatMap {
       case r: RouteResultImpl ⇒ r.underlying
     }(executionContext())
+  def completeWith(futureResult: CompletionStage[RouteResult]): RouteResult = completeWith(futureResult.toScala)
   def complete(text: String): RouteResult = underlying.complete(text)
   def complete(contentType: ContentType.NonBinary, text: String): RouteResult =
     underlying.complete(HttpEntity(contentType.asScala, text))
@@ -40,7 +43,7 @@ private[http] final case class RequestContextImpl(underlying: ScalaRequestContex
     case MarshallerImpl(m) ⇒
       implicit val marshaller = m(underlying.executionContext)
       underlying.complete(value)
-    case _ ⇒ throw new IllegalArgumentException("Unsupported marshaller: $marshaller")
+    case _ ⇒ throw new IllegalArgumentException(s"Unsupported marshaller: $marshaller")
   }
   def complete(response: jm.HttpResponse): RouteResult = underlying.complete(response.asScala)
 
@@ -48,6 +51,9 @@ private[http] final case class RequestContextImpl(underlying: ScalaRequestContex
 
   def reject(customRejection: CustomRejection): RouteResult = underlying.reject(CustomRejectionWrapper(customRejection))
 
-  def executionContext(): ExecutionContext = underlying.executionContext
+  def executionContext(): ExecutionContextExecutor = underlying.executionContext
   def materializer(): Materializer = underlying.materializer
+
+  override def settings: RoutingSettings = underlying.settings
+  override def parserSettings: ParserSettings = underlying.parserSettings
 }

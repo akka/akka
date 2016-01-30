@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.server
 
-import scala.concurrent.{ Future, ExecutionContext }
-import akka.stream.Materializer
+import scala.concurrent.{ Future, ExecutionContextExecutor }
+import akka.stream.{ ActorMaterializer, Materializer }
 import akka.event.LoggingAdapter
+import akka.http.scaladsl.settings.{ RoutingSettings, ParserSettings }
 import akka.http.scaladsl.marshalling.{ Marshal, ToResponseMarshallable }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture
@@ -18,16 +19,20 @@ import akka.http.scaladsl.util.FastFuture._
 private[http] class RequestContextImpl(
   val request: HttpRequest,
   val unmatchedPath: Uri.Path,
-  val executionContext: ExecutionContext,
+  val executionContext: ExecutionContextExecutor,
   val materializer: Materializer,
   val log: LoggingAdapter,
-  val settings: RoutingSettings) extends RequestContext {
+  val settings: RoutingSettings,
+  val parserSettings: ParserSettings) extends RequestContext {
 
-  def this(request: HttpRequest, log: LoggingAdapter, settings: RoutingSettings)(implicit ec: ExecutionContext, materializer: Materializer) =
-    this(request, request.uri.path, ec, materializer, log, settings)
+  def this(request: HttpRequest, log: LoggingAdapter, settings: RoutingSettings, parserSettings: ParserSettings)(implicit ec: ExecutionContextExecutor, materializer: Materializer) =
+    this(request, request.uri.path, ec, materializer, log, settings, parserSettings)
 
-  def reconfigure(executionContext: ExecutionContext, materializer: Materializer, log: LoggingAdapter, settings: RoutingSettings): RequestContext =
-    copy(executionContext = executionContext, materializer = materializer, log = log, settings = settings)
+  def this(request: HttpRequest, log: LoggingAdapter, settings: RoutingSettings)(implicit ec: ExecutionContextExecutor, materializer: Materializer) =
+    this(request, request.uri.path, ec, materializer, log, settings, ParserSettings(ActorMaterializer.downcast(materializer).system))
+
+  def reconfigure(executionContext: ExecutionContextExecutor, materializer: Materializer, log: LoggingAdapter, settings: RoutingSettings): RequestContext =
+    copy(executionContext = executionContext, materializer = materializer, log = log, routingSettings = settings)
 
   override def complete(trm: ToResponseMarshallable): Future[RouteResult] =
     trm(request)(executionContext)
@@ -47,7 +52,7 @@ private[http] class RequestContextImpl(
   override def withRequest(request: HttpRequest): RequestContext =
     if (request != this.request) copy(request = request) else this
 
-  override def withExecutionContext(executionContext: ExecutionContext): RequestContext =
+  override def withExecutionContext(executionContext: ExecutionContextExecutor): RequestContext =
     if (executionContext != this.executionContext) copy(executionContext = executionContext) else this
 
   override def withMaterializer(materializer: Materializer): RequestContext =
@@ -56,8 +61,11 @@ private[http] class RequestContextImpl(
   override def withLog(log: LoggingAdapter): RequestContext =
     if (log != this.log) copy(log = log) else this
 
-  override def withSettings(settings: RoutingSettings): RequestContext =
-    if (settings != this.settings) copy(settings = settings) else this
+  override def withRoutingSettings(routingSettings: RoutingSettings): RequestContext =
+    if (routingSettings != this.settings) copy(routingSettings = routingSettings) else this
+
+  override def withParserSettings(parserSettings: ParserSettings): RequestContext =
+    if (parserSettings != this.parserSettings) copy(parserSettings = parserSettings) else this
 
   override def mapRequest(f: HttpRequest ⇒ HttpRequest): RequestContext =
     copy(request = f(request))
@@ -83,9 +91,10 @@ private[http] class RequestContextImpl(
 
   private def copy(request: HttpRequest = request,
                    unmatchedPath: Uri.Path = unmatchedPath,
-                   executionContext: ExecutionContext = executionContext,
+                   executionContext: ExecutionContextExecutor = executionContext,
                    materializer: Materializer = materializer,
                    log: LoggingAdapter = log,
-                   settings: RoutingSettings = settings) =
-    new RequestContextImpl(request, unmatchedPath, executionContext, materializer, log, settings)
+                   routingSettings: RoutingSettings = settings,
+                   parserSettings: ParserSettings = parserSettings) =
+    new RequestContextImpl(request, unmatchedPath, executionContext, materializer, log, routingSettings, parserSettings)
 }

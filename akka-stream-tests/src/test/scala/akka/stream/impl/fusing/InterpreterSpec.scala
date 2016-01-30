@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl.fusing
 
@@ -273,9 +273,7 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(Cancel))
     }
 
-    "implement expand" in new OneBoundedSetup[Int](Seq(Expand(
-      (in: Int) ⇒ in,
-      (agg: Int) ⇒ (agg, agg)))) {
+    "implement expand" in new OneBoundedSetup[Int](new Expand(Iterator.continually(_: Int))) {
 
       lastEvents() should be(Set(RequestOne))
 
@@ -339,13 +337,9 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
 
     }
 
-    "work with expand-expand" in new OneBoundedSetup[Int](Seq(
-      Expand(
-        (in: Int) ⇒ in,
-        (agg: Int) ⇒ (agg, agg + 1)),
-      Expand(
-        (in: Int) ⇒ in,
-        (agg: Int) ⇒ (agg, agg + 1)))) {
+    "work with expand-expand" in new OneBoundedSetup[Int](
+      new Expand(Iterator.from),
+      new Expand(Iterator.from)) {
 
       lastEvents() should be(Set(RequestOne))
 
@@ -376,14 +370,12 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnComplete, OnNext(12)))
     }
 
-    "implement conflate-expand" in new OneBoundedSetup[Int](Seq(
+    "implement conflate-expand" in new OneBoundedSetup[Int](
       Conflate(
         (in: Int) ⇒ in,
         (agg: Int, x: Int) ⇒ agg + x,
-        stoppingDecider),
-      Expand(
-        (in: Int) ⇒ in,
-        (agg: Int) ⇒ (agg, agg)))) {
+        stoppingDecider).toGS,
+      new Expand(Iterator.continually(_: Int))) {
 
       lastEvents() should be(Set(RequestOne))
 

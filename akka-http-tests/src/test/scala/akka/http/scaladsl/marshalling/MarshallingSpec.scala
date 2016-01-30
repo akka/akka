@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.marshalling
@@ -140,7 +140,7 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
     }
   }
 
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 
   protected class FixedRandom extends java.util.Random {
     override def nextBytes(array: Array[Byte]): Unit = "my-stable-boundary".getBytes("UTF-8").copyToArray(array)

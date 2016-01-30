@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.ws
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit.TestSubscriber
@@ -13,7 +14,7 @@ import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
 
 trait ByteStringSinkProbe {
-  def sink: Sink[ByteString, Unit]
+  def sink: Sink[ByteString, NotUsed]
 
   def expectBytes(length: Int): ByteString
   def expectBytes(expected: ByteString): Unit
@@ -35,7 +36,7 @@ object ByteStringSinkProbe {
   def apply()(implicit system: ActorSystem): ByteStringSinkProbe =
     new ByteStringSinkProbe {
       val probe = TestSubscriber.probe[ByteString]()
-      val sink: Sink[ByteString, Unit] = Sink.fromSubscriber(probe)
+      val sink: Sink[ByteString, NotUsed] = Sink.fromSubscriber(probe)
 
       def expectNoBytes(): Unit = {
         probe.ensureSubscription()

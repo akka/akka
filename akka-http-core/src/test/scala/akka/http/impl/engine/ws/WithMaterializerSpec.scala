@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.ws
@@ -16,5 +16,5 @@ trait WithMaterializerSpec extends BeforeAndAfterAll { _: Suite ⇒
   implicit lazy val system = ActorSystem(getClass.getSimpleName, testConf)
 
   implicit lazy val materializer = ActorMaterializer()
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 }

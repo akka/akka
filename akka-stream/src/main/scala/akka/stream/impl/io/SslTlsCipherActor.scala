@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl.io
 
@@ -14,7 +14,7 @@ import akka.stream.impl.FanIn.InputBunch
 import akka.stream.impl.FanOut.OutputBunch
 import akka.stream.impl._
 import akka.util.ByteString
-import com.typesafe.sslconfig.akka.{ AkkaSSLConfig, SSLEngineConfigurator }
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import scala.annotation.tailrec
 import akka.stream.io._
 
@@ -158,16 +158,15 @@ private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings,
   applySessionParameters(firstSession)
 
   def applySessionParameters(params: NegotiateNewSession): Unit = {
-    import params._
-    enabledCipherSuites foreach (cs ⇒ engine.setEnabledCipherSuites(cs.toArray))
-    enabledProtocols foreach (p ⇒ engine.setEnabledProtocols(p.toArray))
-    clientAuth match {
+    params.enabledCipherSuites foreach (cs ⇒ engine.setEnabledCipherSuites(cs.toArray))
+    params.enabledProtocols foreach (p ⇒ engine.setEnabledProtocols(p.toArray))
+    params.clientAuth match {
       case Some(ClientAuth.None) ⇒ engine.setNeedClientAuth(false)
       case Some(ClientAuth.Want) ⇒ engine.setWantClientAuth(true)
       case Some(ClientAuth.Need) ⇒ engine.setNeedClientAuth(true)
-      case None                  ⇒ // do nothing
+      case _                     ⇒ // do nothing
     }
-    sslParameters foreach (p ⇒ engine.setSSLParameters(p))
+    params.sslParameters foreach (p ⇒ engine.setSSLParameters(p))
 
     engine.beginHandshake()
     lastHandshakeStatus = engine.getHandshakeStatus

@@ -1,7 +1,9 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.persistence.query.journal.leveldb.javadsl
+
+import akka.NotUsed
 
 import scala.concurrent.duration._
 
@@ -52,7 +54,7 @@ class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.lev
    * The stream is completed with failure if there is a failure in executing the query in the
    * backend journal.
    */
-  override def allPersistenceIds(): Source[String, Unit] =
+  override def allPersistenceIds(): Source[String, NotUsed] =
     scaladslReadJournal.allPersistenceIds().asJava
 
   /**
@@ -60,7 +62,7 @@ class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.lev
    * is completed immediately when it reaches the end of the "result set". Persistent
    * actors that are created after the query is completed are not included in the stream.
    */
-  override def currentPersistenceIds(): Source[String, Unit] =
+  override def currentPersistenceIds(): Source[String, NotUsed] =
     scaladslReadJournal.currentPersistenceIds().asJava
 
   /**
@@ -90,7 +92,7 @@ class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.lev
    * backend journal.
    */
   override def eventsByPersistenceId(persistenceId: String, fromSequenceNr: Long,
-                                     toSequenceNr: Long): Source[EventEnvelope, Unit] =
+                                     toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
     scaladslReadJournal.eventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr).asJava
 
   /**
@@ -99,7 +101,7 @@ class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.lev
    * stored after the query is completed are not included in the event stream.
    */
   override def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long,
-                                            toSequenceNr: Long): Source[EventEnvelope, Unit] =
+                                            toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
     scaladslReadJournal.currentEventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr).asJava
 
   /**
@@ -137,7 +139,7 @@ class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.lev
    * The stream is completed with failure if there is a failure in executing the query in the
    * backend journal.
    */
-  override def eventsByTag(tag: String, offset: Long): Source[EventEnvelope, Unit] =
+  override def eventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
     scaladslReadJournal.eventsByTag(tag, offset).asJava
 
   /**
@@ -145,7 +147,7 @@ class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.lev
    * is completed immediately when it reaches the end of the "result set". Events that are
    * stored after the query is completed are not included in the event stream.
    */
-  override def currentEventsByTag(tag: String, offset: Long): Source[EventEnvelope, Unit] =
+  override def currentEventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
     scaladslReadJournal.currentEventsByTag(tag, offset).asJava
 }
 

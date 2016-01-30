@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package io.akka.integrationtest.http
@@ -40,7 +40,7 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 
   implicit val materializer = ActorMaterializer()
 

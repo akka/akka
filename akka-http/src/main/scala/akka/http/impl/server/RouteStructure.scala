@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.server
@@ -84,7 +84,7 @@ private[http] object RouteStructure {
 
   case class RangeSupport()(val innerRoute: Route, val moreInnerRoutes: immutable.Seq[Route]) extends DirectiveRoute
 
-  case class HandleWebsocketMessages(handler: Flow[Message, Message, Any]) extends Route
+  case class HandleWebSocketMessages(handler: Flow[Message, Message, Any]) extends Route
 
   case class SetCookie(cookie: HttpCookie)(val innerRoute: Route, val moreInnerRoutes: immutable.Seq[Route]) extends DirectiveRoute
   case class DeleteCookie(name: String, domain: Option[String], path: Option[String])(val innerRoute: Route, val moreInnerRoutes: immutable.Seq[Route]) extends DirectiveRoute

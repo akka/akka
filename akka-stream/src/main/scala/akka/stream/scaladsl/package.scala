@@ -1,7 +1,12 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream
+
+import java.util.concurrent.CompletionStage
+import scala.concurrent.Future
+import scala.compat.java8.FutureConverters
+import akka.japi.function
 
 /**
  * Scala API: The flow DSL allows the formulation of stream transformations based on some
@@ -47,9 +52,14 @@ package akka.stream
  * by those methods that materialize the Flow into a series of
  * [[org.reactivestreams.Processor]] instances. The returned reactive stream
  * is fully started and active.
- *
- * Use [[ImplicitMaterializer]] to define an implicit [[akka.stream.Materializer]]
- * inside an [[akka.actor.Actor]].
  */
 package object scaladsl {
+  implicit class SourceToCompletionStage[Out, T](val src: Source[Out, Future[T]]) extends AnyVal {
+    def toCompletionStage(): Source[Out, CompletionStage[T]] =
+      src.mapMaterializedValue(FutureConverters.toJava)
+  }
+  implicit class SinkToCompletionStage[In, T](val sink: Sink[In, Future[T]]) extends AnyVal {
+    def toCompletionStage(): Sink[In, CompletionStage[T]] =
+      sink.mapMaterializedValue(FutureConverters.toJava)
+  }
 }

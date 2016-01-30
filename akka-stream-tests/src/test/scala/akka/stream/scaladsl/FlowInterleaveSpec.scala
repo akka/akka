@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
@@ -112,8 +112,9 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
       val subscriber2 = setup(nonemptyPublisher(1 to 4), failedPublisher)
       val subscription2 = subscriber2.expectSubscription()
       subscription2.request(4)
-      subscriber2.expectError(TestException)
-
+      subscriber2.expectNextOrError(1, TestException).isLeft ||
+        subscriber2.expectNextOrError(2, TestException).isLeft ||
+        { subscriber2.expectError(TestException); true }
     }
 
     "work with one delayed failed and one nonempty publisher" in {

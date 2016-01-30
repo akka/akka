@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.coding
@@ -9,6 +9,7 @@ import org.scalatest.{ Suite, BeforeAndAfterAll, Matchers }
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
+import scala.concurrent.Await
 
 trait CodecSpecSupport extends Matchers with BeforeAndAfterAll { self: Suite ⇒
 
@@ -73,7 +74,6 @@ est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscin
   implicit val materializer = ActorMaterializer()
 
   override def afterAll() = {
-    system.shutdown()
-    system.awaitTermination(10.seconds)
+    Await.result(system.terminate(), 10.seconds)
   }
 }

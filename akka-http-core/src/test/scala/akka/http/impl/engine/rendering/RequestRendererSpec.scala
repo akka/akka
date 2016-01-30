@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.rendering
@@ -66,11 +66,11 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
       "POST request, a few headers (incl. a custom Host header) and no body" in new TestSetup() {
         HttpRequest(POST, "/abc/xyz", List(
           RawHeader("X-Fancy", "naa"),
-          Age(0),
+          Link(Uri("http://akka.io"), LinkParams.first),
           Host("spray.io", 9999))) should renderTo {
           """POST /abc/xyz HTTP/1.1
             |X-Fancy: naa
-            |Age: 0
+            |Link: <http://akka.io>; rel=first
             |Host: spray.io:9999
             |User-Agent: akka-http/1.0.0
             |Content-Length: 0
@@ -262,8 +262,10 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
       }
     }
     "render a CustomHeader header" - {
-      "if suppressRendering = false" in new TestSetup(None) {
+      "if renderInRequests = true" in new TestSetup(None) {
         case class MyHeader(number: Int) extends CustomHeader {
+          def renderInRequests = true
+          def renderInResponses = false
           def name: String = "X-My-Header"
           def value: String = s"No$number"
         }
@@ -275,10 +277,10 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
             |"""
         }
       }
-      "not if suppressRendering = true" in new TestSetup(None) {
+      "not if renderInRequests = false" in new TestSetup(None) {
         case class MyInternalHeader(number: Int) extends CustomHeader {
-          override def suppressRendering: Boolean = true
-
+          def renderInRequests = false
+          def renderInResponses = false
           def name: String = "X-My-Internal-Header"
           def value: String = s"No$number"
         }
@@ -314,7 +316,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
     }
   }
 
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 
   class TestSetup(val userAgent: Option[`User-Agent`] = Some(`User-Agent`("akka-http/1.0.0")),
                   serverAddress: InetSocketAddress = new InetSocketAddress("test.com", 8080))

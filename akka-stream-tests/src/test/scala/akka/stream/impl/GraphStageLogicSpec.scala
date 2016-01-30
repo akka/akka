@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl
 
@@ -13,9 +13,10 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.impl.fusing._
 import akka.stream.impl.fusing.GraphInterpreter._
 import org.scalactic.ConversionCheckedTripleEquals
+import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.duration.Duration
 
-class GraphStageLogicSpec extends AkkaSpec with GraphInterpreterSpecKit with ConversionCheckedTripleEquals {
+class GraphStageLogicSpec extends AkkaSpec with GraphInterpreterSpecKit with ConversionCheckedTripleEquals with ScalaFutures {
 
   implicit val materializer = ActorMaterializer()
 
@@ -67,6 +68,18 @@ class GraphStageLogicSpec extends AkkaSpec with GraphInterpreterSpecKit with Con
     }
   }
 
+  object emitEmptyIterable extends GraphStage[SourceShape[Int]] {
+    val out = Outlet[Int]("out")
+    override val shape = SourceShape(out)
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = emitMultiple(out, Iterator.empty, () ⇒ emit(out, 42, () ⇒ completeStage()))
+      })
+
+    }
+  }
+
   "A GraphStageLogic" must {
 
     "emit all things before completing" in assertAllStagesStopped {
@@ -94,6 +107,12 @@ class GraphStageLogicSpec extends AkkaSpec with GraphInterpreterSpecKit with Con
         .request(9)
         .expectNextN(1 to 8)
         .expectComplete()
+    }
+
+    "emit properly after empty iterable" in assertAllStagesStopped {
+
+      Source.fromGraph(emitEmptyIterable).runWith(Sink.seq).futureValue should ===(List(42))
+
     }
 
     "invoke lifecycle hooks in the right order" in assertAllStagesStopped {

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.contrib.throttle;
@@ -10,7 +10,6 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 import scala.concurrent.duration.Duration;
 import com.typesafe.config.ConfigFactory;
-import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;

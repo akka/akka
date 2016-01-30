@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.client
@@ -11,16 +11,19 @@ import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 import akka.http.scaladsl.{ Http, TestUtils }
 import akka.http.scaladsl.model._
+import akka.stream.testkit.Utils
+import org.scalatest.concurrent.ScalaFutures
 
-class HighLevelOutgoingConnectionSpec extends AkkaSpec {
+class HighLevelOutgoingConnectionSpec extends AkkaSpec with ScalaFutures {
   implicit val materializer = ActorMaterializer()
+  implicit val patience = PatienceConfig(1.second)
 
   "The connection-level client implementation" should {
 
-    "be able to handle 100 pipelined requests across one connection" in {
+    "be able to handle 100 pipelined requests across one connection" in Utils.assertAllStagesStopped {
       val (_, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
 
-      Http().bindAndHandleSync(r ⇒ HttpResponse(entity = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse),
+      val binding = Http().bindAndHandleSync(r ⇒ HttpResponse(entity = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse),
         serverHostName, serverPort)
 
       val N = 100
@@ -32,13 +35,14 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
         .map { r ⇒ val s = r.data.utf8String; log.debug(s); s.toInt }
         .runFold(0)(_ + _)
 
-      Await.result(result, 10.seconds) shouldEqual N * (N + 1) / 2
+      result.futureValue(PatienceConfig(10.seconds)) shouldEqual N * (N + 1) / 2
+      binding.futureValue.unbind()
     }
 
-    "be able to handle 100 pipelined requests across 4 connections (client-flow is reusable)" in {
+    "be able to handle 100 pipelined requests across 4 connections (client-flow is reusable)" in Utils.assertAllStagesStopped {
       val (_, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
 
-      Http().bindAndHandleSync(r ⇒ HttpResponse(entity = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse),
+      val binding = Http().bindAndHandleSync(r ⇒ HttpResponse(entity = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse),
         serverHostName, serverPort)
 
       val connFlow = Http().outgoingConnection(serverHostName, serverPort)
@@ -64,12 +68,14 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
         .map { r ⇒ val s = r.data.utf8String; log.debug(s); s.toInt }
         .runFold(0)(_ + _)
 
-      Await.result(result, 10.seconds) shouldEqual C * N * (N + 1) / 2
+      result.futureValue(PatienceConfig(10.seconds)) shouldEqual C * N * (N + 1) / 2
+      binding.futureValue.unbind()
     }
 
-    "catch response stream truncation" in {
+    "catch response stream truncation" in Utils.assertAllStagesStopped {
       val (_, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
-      Http().bindAndHandleSync({
+
+      val binding = Http().bindAndHandleSync({
         case HttpRequest(_, Uri.Path("/b"), _, _, _) ⇒ HttpResponse(headers = List(headers.Connection("close")))
         case _                                       ⇒ HttpResponse()
       }, serverHostName, serverPort)
@@ -81,6 +87,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
         .runWith(Sink.head)
 
       a[One2OneBidiFlow.OutputTruncationException.type] should be thrownBy Await.result(x, 1.second)
+      binding.futureValue.unbind()
     }
   }
 }

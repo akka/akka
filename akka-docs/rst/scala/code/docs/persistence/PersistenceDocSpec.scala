@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package docs.persistence
@@ -392,7 +392,6 @@ object PersistenceDocSpec {
     // order of received messages:
     // a
     //   # b arrives at mailbox, stashing;        internal-stash = [b]
-    //   # PoisonPill arrives at mailbox, stashing; internal-stash = [b, Shutdown]
     // PoisonPill is an AutoReceivedMessage, is handled automatically
     // !! stop !!
     // Actor is stopped without handling `b` nor the `a` handler!

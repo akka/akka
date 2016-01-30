@@ -1,49 +1,52 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl.io
 
-import java.io.{ File, RandomAccessFile }
+import java.io.File
 import java.nio.channels.FileChannel
+import java.util.Collections
 
+import akka.Done
 import akka.actor.{ Deploy, ActorLogging, Props }
+import akka.stream.io.IOResult
 import akka.stream.actor.{ ActorSubscriberMessage, WatermarkRequestStrategy }
 import akka.util.ByteString
 
 import scala.concurrent.Promise
+import scala.util.{ Failure, Success }
 
 /** INTERNAL API */
 private[akka] object FileSubscriber {
-  def props(f: File, completionPromise: Promise[Long], bufSize: Int, append: Boolean) = {
+  def props(f: File, completionPromise: Promise[IOResult], bufSize: Int, append: Boolean) = {
     require(bufSize > 0, "buffer size must be > 0")
     Props(classOf[FileSubscriber], f, completionPromise, bufSize, append).withDeploy(Deploy.local)
   }
 
+  import java.nio.file.StandardOpenOption._
+  val Write = Collections.singleton(WRITE)
+  val Append = Collections.singleton(APPEND)
 }
 
 /** INTERNAL API */
-private[akka] class FileSubscriber(f: File, bytesWrittenPromise: Promise[Long], bufSize: Int, append: Boolean)
+private[akka] class FileSubscriber(f: File, completionPromise: Promise[IOResult], bufSize: Int, append: Boolean)
   extends akka.stream.actor.ActorSubscriber
   with ActorLogging {
 
   override protected val requestStrategy = WatermarkRequestStrategy(highWatermark = bufSize)
 
-  private var raf: RandomAccessFile = _
   private var chan: FileChannel = _
 
   private var bytesWritten: Long = 0
 
   override def preStart(): Unit = try {
-    raf = new RandomAccessFile(f, "rw") // best way to express this in JDK6, OpenOption are available since JDK7
-    chan = raf.getChannel
-
-    // manually supporting appending to files - in Java 7 we could use OpenModes: FileChannel.open(f, openOptions.asJava)
-    if (append) chan.position(chan.size())
+    val openOptions = if (append) FileSubscriber.Append else FileSubscriber.Write
+    chan = FileChannel.open(f.toPath, openOptions)
 
     super.preStart()
   } catch {
     case ex: Exception ⇒
-      bytesWrittenPromise.failure(ex)
+      completionPromise.success(IOResult(bytesWritten, Failure(ex)))
       cancel()
   }
 
@@ -53,12 +56,13 @@ private[akka] class FileSubscriber(f: File, bytesWrittenPromise: Promise[Long], 
         bytesWritten += chan.write(bytes.asByteBuffer)
       } catch {
         case ex: Exception ⇒
-          bytesWrittenPromise.failure(ex)
+          completionPromise.success(IOResult(bytesWritten, Failure(ex)))
           cancel()
       }
 
-    case ActorSubscriberMessage.OnError(cause) ⇒
-      log.error(cause, "Tearing down FileSink({}) due to upstream error", f.getAbsolutePath)
+    case ActorSubscriberMessage.OnError(ex) ⇒
+      log.error(ex, "Tearing down FileSink({}) due to upstream error", f.getAbsolutePath)
+      completionPromise.success(IOResult(bytesWritten, Failure(ex)))
       context.stop(self)
 
     case ActorSubscriberMessage.OnComplete ⇒
@@ -66,16 +70,20 @@ private[akka] class FileSubscriber(f: File, bytesWrittenPromise: Promise[Long], 
         chan.force(true)
       } catch {
         case ex: Exception ⇒
-          bytesWrittenPromise.failure(ex)
+          completionPromise.success(IOResult(bytesWritten, Failure(ex)))
       }
       context.stop(self)
   }
 
   override def postStop(): Unit = {
-    bytesWrittenPromise.trySuccess(bytesWritten)
+    try {
+      if (chan ne null) chan.close()
+    } catch {
+      case ex: Exception ⇒
+        completionPromise.success(IOResult(bytesWritten, Failure(ex)))
+    }
 
-    if (chan ne null) chan.close()
-    if (raf ne null) raf.close()
+    completionPromise.trySuccess(IOResult(bytesWritten, Success(Done)))
     super.postStop()
   }
 }

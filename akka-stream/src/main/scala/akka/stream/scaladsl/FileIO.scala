@@ -1,11 +1,12 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
 import java.io.{ OutputStream, InputStream, File }
 
 import akka.stream.ActorAttributes
+import akka.stream.io.IOResult
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io._
 import akka.util.ByteString
@@ -29,24 +30,26 @@ object FileIO {
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
-   * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
+   * It materializes a [[Future]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
+   * and a possible exception if IO operation was not completed successfully.
    *
    * @param f the File to read from
    * @param chunkSize the size of each read operation, defaults to 8192
    */
-  def fromFile(f: File, chunkSize: Int = 8192): Source[ByteString, Future[Long]] =
+  def fromFile(f: File, chunkSize: Int = 8192): Source[ByteString, Future[IOResult]] =
     new Source(new FileSource(f, chunkSize, DefaultAttributes.fileSource, sourceShape("FileSource")))
 
   /**
    * Creates a Sink which writes incoming [[ByteString]] elements to the given file and either overwrites
    * or appends to it.
    *
-   * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
+   * Materializes a [[Future]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
+   * and a possible exception if IO operation was not completed successfully.
    *
    * This source is backed by an Actor which will use the dedicated `akka.stream.blocking-io-dispatcher`,
    * unless configured otherwise by using [[ActorAttributes]].
    */
-  def toFile(f: File, append: Boolean = false): Sink[ByteString, Future[Long]] =
+  def toFile(f: File, append: Boolean = false): Sink[ByteString, Future[IOResult]] =
     new Sink(new FileSink(f, append, DefaultAttributes.fileSink, sinkShape("FileSink")))
 
 }

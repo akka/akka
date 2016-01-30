@@ -1,8 +1,9 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.io
 
+import akka.NotUsed
 import akka.actor.{ ActorSystem, Kill }
 import akka.io.Tcp._
 import akka.stream.scaladsl.Tcp.IncomingConnection
@@ -342,7 +343,7 @@ class TcpSpec extends AkkaSpec("akka.stream.materializer.subscription-timeout.ti
 
     "properly full-close if requested" in assertAllStagesStopped {
       val serverAddress = temporaryServerAddress()
-      val writeButIgnoreRead: Flow[ByteString, ByteString, Unit] =
+      val writeButIgnoreRead: Flow[ByteString, ByteString, NotUsed] =
         Flow.fromSinkAndSourceMat(Sink.ignore, Source.single(ByteString("Early response")))(Keep.right)
 
       val binding =
@@ -391,7 +392,7 @@ class TcpSpec extends AkkaSpec("akka.stream.materializer.subscription-timeout.ti
       val result = Source.maybe[ByteString].via(Tcp(system2).outgoingConnection(serverAddress)).runFold(0)(_ + _.size)(mat2)
 
       // Getting rid of existing connection actors by using a blunt instrument
-      system2.actorSelection(akka.io.Tcp(system2).getManager.path / "selectors" / "$a" / "*") ! Kill
+      system2.actorSelection(akka.io.Tcp(system2).getManager.path / "selectors" / s"$$a" / "*") ! Kill
 
       a[StreamTcpException] should be thrownBy
         Await.result(result, 3.seconds)

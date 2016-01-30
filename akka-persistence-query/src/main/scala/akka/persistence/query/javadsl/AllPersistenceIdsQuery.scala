@@ -1,8 +1,9 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.persistence.query.javadsl
 
+import akka.NotUsed
 import akka.stream.javadsl.Source
 
 /**
@@ -19,6 +20,6 @@ trait AllPersistenceIdsQuery extends ReadJournal {
    * Corresponding query that is completed when it reaches the end of the currently
    * currently used `persistenceIds` is provided by [[CurrentPersistenceIdsQuery#currentPersistenceIds]].
    */
-  def allPersistenceIds(): Source[String, Unit]
+  def allPersistenceIds(): Source[String, NotUsed]
 
 }

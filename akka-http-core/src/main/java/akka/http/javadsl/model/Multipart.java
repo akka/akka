@@ -1,15 +1,16 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.model;
 
 import java.util.Map;
-import scala.concurrent.Future;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+
 import akka.http.javadsl.model.headers.ContentDisposition;
 import akka.http.javadsl.model.headers.ContentDispositionType;
 import akka.http.javadsl.model.headers.RangeUnit;
-import akka.japi.Option;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Source;
 
@@ -30,9 +31,9 @@ public interface Multipart {
     /**
      * Converts this content into its strict counterpart.
      * The given `timeout` denotes the max time that an individual part must be read in.
-     * The Future is failed with an TimeoutException if one part isn't read completely after the given timeout.
+     * The CompletionStage is failed with an TimeoutException if one part isn't read completely after the given timeout.
      */
-    Future<? extends Multipart.Strict> toStrict(long timeoutMillis, Materializer materializer);
+    CompletionStage<? extends Multipart.Strict> toStrict(long timeoutMillis, Materializer materializer);
 
     /**
      * Creates an entity from this multipart object.
@@ -52,13 +53,13 @@ public interface Multipart {
 
         Iterable<HttpHeader> getHeaders();
 
-        Option<ContentDisposition> getContentDispositionHeader();
+        Optional<ContentDisposition> getContentDispositionHeader();
 
         Map<String, String> getDispositionParams();
 
-        Option<ContentDispositionType> getDispositionType();
+        Optional<ContentDispositionType> getDispositionType();
 
-        Future<? extends Multipart.BodyPart.Strict> toStrict(long timeoutMillis, Materializer materializer);
+        CompletionStage<? extends Multipart.BodyPart.Strict> toStrict(long timeoutMillis, Materializer materializer);
 
         interface Strict extends Multipart.BodyPart {
             HttpEntity.Strict getEntity();
@@ -71,7 +72,7 @@ public interface Multipart {
     interface General extends Multipart {
         Source<? extends Multipart.General.BodyPart, Object> getParts();
 
-        Future<Multipart.General.Strict> toStrict(long timeoutMillis, Materializer materializer);
+        CompletionStage<Multipart.General.Strict> toStrict(long timeoutMillis, Materializer materializer);
 
         interface Strict extends Multipart.General, Multipart.Strict {
             Source<Multipart.General.BodyPart.Strict, Object> getParts();
@@ -80,7 +81,7 @@ public interface Multipart {
         }
 
         interface BodyPart extends Multipart.BodyPart {
-            Future<Multipart.General.BodyPart.Strict> toStrict(long timeoutMillis, Materializer materializer);
+            CompletionStage<Multipart.General.BodyPart.Strict> toStrict(long timeoutMillis, Materializer materializer);
 
             interface Strict extends Multipart.General.BodyPart, Multipart.BodyPart.Strict {
             }
@@ -94,7 +95,7 @@ public interface Multipart {
     interface FormData extends Multipart {
         Source<? extends Multipart.FormData.BodyPart, Object> getParts();
 
-        Future<Multipart.FormData.Strict> toStrict(long timeoutMillis, Materializer materializer);
+        CompletionStage<Multipart.FormData.Strict> toStrict(long timeoutMillis, Materializer materializer);
 
         interface Strict extends Multipart.FormData, Multipart.Strict {
             Source<Multipart.FormData.BodyPart.Strict, Object> getParts();
@@ -106,9 +107,9 @@ public interface Multipart {
             String getName();
             Map<String, String> getAdditionalDispositionParams();
             Iterable<HttpHeader> getAdditionalHeaders();
-            Option<String> getFilename();
+            Optional<String> getFilename();
 
-            Future<Multipart.FormData.BodyPart.Strict> toStrict(long timeoutMillis, Materializer materializer);
+            CompletionStage<Multipart.FormData.BodyPart.Strict> toStrict(long timeoutMillis, Materializer materializer);
 
             interface Strict extends Multipart.FormData.BodyPart, Multipart.BodyPart.Strict {
             }
@@ -122,7 +123,7 @@ public interface Multipart {
     interface ByteRanges extends Multipart {
         Source<? extends Multipart.ByteRanges.BodyPart, Object> getParts();
 
-        Future<Multipart.ByteRanges.Strict> toStrict(long timeoutMillis, Materializer materializer);
+        CompletionStage<Multipart.ByteRanges.Strict> toStrict(long timeoutMillis, Materializer materializer);
 
         interface Strict extends Multipart.ByteRanges, Multipart.Strict {
             Source<Multipart.ByteRanges.BodyPart.Strict, Object> getParts();
@@ -136,7 +137,7 @@ public interface Multipart {
             Iterable<HttpHeader> getAdditionalHeaders();
             akka.http.javadsl.model.headers.ContentRange getContentRangeHeader();
 
-            Future<Multipart.ByteRanges.BodyPart.Strict> toStrict(long timeoutMillis, Materializer materializer);
+            CompletionStage<Multipart.ByteRanges.BodyPart.Strict> toStrict(long timeoutMillis, Materializer materializer);
 
             interface Strict extends Multipart.ByteRanges.BodyPart, Multipart.BodyPart.Strict {
             }

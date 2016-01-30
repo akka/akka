@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.ws
 
+import akka.NotUsed
 import akka.stream.scaladsl.Flow
 import akka.stream.stage.{ SyncDirective, Context, StatefulStage }
 import akka.util.ByteString
@@ -19,7 +20,7 @@ import scala.util.control.NonFatal
  */
 private[http] object FrameHandler {
 
-  def create(server: Boolean): Flow[FrameEventOrError, Output, Unit] =
+  def create(server: Boolean): Flow[FrameEventOrError, Output, NotUsed] =
     Flow[FrameEventOrError].transform(() ⇒ new HandlerStage(server))
 
   private class HandlerStage(server: Boolean) extends StatefulStage[FrameEventOrError, Output] {

@@ -1,23 +1,26 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl.io
 
-import java.io.{ File, RandomAccessFile }
+import java.io.File
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 
+import akka.Done
 import akka.actor.{ Deploy, ActorLogging, DeadLetterSuppression, Props }
 import akka.stream.actor.ActorPublisherMessage
+import akka.stream.io.IOResult
 import akka.util.ByteString
 
 import scala.annotation.tailrec
 import scala.concurrent.Promise
+import scala.util.{ Failure, Success }
 import scala.util.control.NonFatal
 
 /** INTERNAL API */
 private[akka] object FilePublisher {
-  def props(f: File, completionPromise: Promise[Long], chunkSize: Int, initialBuffer: Int, maxBuffer: Int) = {
+  def props(f: File, completionPromise: Promise[IOResult], chunkSize: Int, initialBuffer: Int, maxBuffer: Int) = {
     require(chunkSize > 0, s"chunkSize must be > 0 (was $chunkSize)")
     require(initialBuffer > 0, s"initialBuffer must be > 0 (was $initialBuffer)")
     require(maxBuffer >= initialBuffer, s"maxBuffer must be >= initialBuffer (was $maxBuffer)")
@@ -26,12 +29,13 @@ private[akka] object FilePublisher {
       .withDeploy(Deploy.local)
   }
 
-  private final case object Continue extends DeadLetterSuppression
+  private case object Continue extends DeadLetterSuppression
 
+  val Read = java.util.Collections.singleton(java.nio.file.StandardOpenOption.READ)
 }
 
 /** INTERNAL API */
-private[akka] final class FilePublisher(f: File, bytesReadPromise: Promise[Long], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
+private[akka] final class FilePublisher(f: File, completionPromise: Promise[IOResult], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
   extends akka.stream.actor.ActorPublisher[ByteString] with ActorLogging {
   import FilePublisher._
 
@@ -41,13 +45,11 @@ private[akka] final class FilePublisher(f: File, bytesReadPromise: Promise[Long]
   var readBytesTotal = 0L
   var availableChunks: Vector[ByteString] = Vector.empty // TODO possibly resign read-ahead-ing and make fusable as Stage
 
-  private var raf: RandomAccessFile = _
   private var chan: FileChannel = _
 
   override def preStart() = {
     try {
-      raf = new RandomAccessFile(f, "r") // best way to express this in JDK6, OpenOption are available since JDK7
-      chan = raf.getChannel
+      chan = FileChannel.open(f.toPath, FilePublisher.Read)
     } catch {
       case ex: Exception ⇒
         onErrorThenStop(ex)
@@ -80,7 +82,7 @@ private[akka] final class FilePublisher(f: File, bytesReadPromise: Promise[Long]
     }
 
   /** BLOCKING I/O READ */
-  @tailrec final def readAhead(maxChunks: Int, chunks: Vector[ByteString]): Vector[ByteString] =
+  @tailrec def readAhead(maxChunks: Int, chunks: Vector[ByteString]): Vector[ByteString] =
     if (chunks.size <= maxChunks && isActive) {
       (try chan.read(buf) catch { case NonFatal(ex) ⇒ onErrorThenStop(ex); Int.MinValue }) match {
         case -1 ⇒ // EOF
@@ -98,13 +100,18 @@ private[akka] final class FilePublisher(f: File, bytesReadPromise: Promise[Long]
       }
     } else chunks
 
-  private final def eofEncountered: Boolean = eofReachedAtOffset != Long.MinValue
+  private def eofEncountered: Boolean = eofReachedAtOffset != Long.MinValue
 
   override def postStop(): Unit = {
     super.postStop()
-    bytesReadPromise.trySuccess(readBytesTotal)
 
-    try if (chan ne null) chan.close()
-    finally if (raf ne null) raf.close()
+    try {
+      if (chan ne null) chan.close()
+    } catch {
+      case ex: Exception ⇒
+        completionPromise.success(IOResult(readBytesTotal, Failure(ex)))
+    }
+
+    completionPromise.trySuccess(IOResult(readBytesTotal, Success(Done)))
   }
 }

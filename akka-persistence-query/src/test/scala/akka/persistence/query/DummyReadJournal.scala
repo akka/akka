@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.persistence.query
 
+import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.runtime.BoxedUnit
@@ -13,7 +14,7 @@ import scala.runtime.BoxedUnit
  * Emits infinite stream of strings (representing queried for events).
  */
 class DummyReadJournal extends scaladsl.ReadJournal with scaladsl.AllPersistenceIdsQuery {
-  override def allPersistenceIds(): Source[String, Unit] =
+  override def allPersistenceIds(): Source[String, NotUsed] =
     Source.fromIterator(() ⇒ Iterator.from(0)).map(_.toString)
 }
 
@@ -22,7 +23,7 @@ object DummyReadJournal {
 }
 
 class DummyReadJournalForJava(readJournal: DummyReadJournal) extends javadsl.ReadJournal with javadsl.AllPersistenceIdsQuery {
-  override def allPersistenceIds(): akka.stream.javadsl.Source[String, Unit] =
+  override def allPersistenceIds(): akka.stream.javadsl.Source[String, NotUsed] =
     readJournal.allPersistenceIds().asJava
 }
 

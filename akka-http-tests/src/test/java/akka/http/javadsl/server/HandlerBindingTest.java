@@ -1,149 +1,83 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.server;
 
-import org.junit.Test;
-
 import akka.http.scaladsl.model.HttpRequest;
+import org.junit.Test;
 import akka.http.javadsl.testkit.*;
 import akka.http.javadsl.server.values.*;
 
 public class HandlerBindingTest extends JUnitRouteTest {
+    Parameter<Integer> aParam = Parameters.intValue("a");
+    Parameter<Integer> bParam = Parameters.intValue("b");
+    Parameter<Integer> cParam = Parameters.intValue("c");
+    Parameter<Integer> dParam = Parameters.intValue("d");
+    
     @Test
     public void testHandlerWithoutExtractions() {
-        Route route = handleWith(
-                new Handler() {
-                    @Override
-                    public RouteResult apply(RequestContext ctx) {
-                        return ctx.complete("Ok");
-                    }
-                }
-        );
-        runRoute(route, HttpRequest.GET("/"))
-            .assertEntity("Ok");
-    }
-    @Test
-    public void testHandlerWithSomeExtractions() {
-        final Parameter<Integer> a = Parameters.intValue("a");
-        final Parameter<Integer> b = Parameters.intValue("b");
-
-        Route route = handleWith(
-                new Handler() {
-                    @Override
-                    public RouteResult apply(RequestContext ctx) {
-                        return ctx.complete("Ok a:" + a.get(ctx) + " b:" + b.get(ctx));
-                    }
-                }, a, b
-        );
-        runRoute(route, HttpRequest.GET("?a=23&b=42"))
-            .assertEntity("Ok a:23 b:42");
-    }
-    @Test
-    public void testHandlerIfExtractionFails() {
-        final Parameter<Integer> a = Parameters.intValue("a");
-
-        Route route = handleWith(
-                new Handler() {
-                    @Override
-                    public RouteResult apply(RequestContext ctx) {
-                        return ctx.complete("Ok " + a.get(ctx));
-                    }
-                }, a
-        );
-        runRoute(route, HttpRequest.GET("/"))
-            .assertStatusCode(404)
-            .assertEntity("Request is missing required query parameter 'a'");
+        Route route = handleWith(ctx -> ctx.complete("Ok"));
+        TestResponse response = runRoute(route, HttpRequest.GET("/"));
+        response.assertEntity("Ok");
     }
     @Test
     public void testHandler1() {
-        final Parameter<Integer> a = Parameters.intValue("a");
-
-        Route route = handleWith1(a,
-                new Handler1<Integer>() {
-                    @Override
-                    public RouteResult apply(RequestContext ctx, Integer a) {
-                        return ctx.complete("Ok " + a);
-                    }
-                }
-        );
-        runRoute(route, HttpRequest.GET("?a=23"))
-            .assertStatusCode(200)
-            .assertEntity("Ok 23");
+        Route route = handleWith1(aParam, (ctx, a) -> ctx.complete("Ok " + a));
+        TestResponse response = runRoute(route, HttpRequest.GET("?a=23"));
+        response.assertStatusCode(200);
+        response.assertEntity("Ok 23");
     }
     @Test
     public void testHandler2() {
-        Route route = handleWith2(
-                Parameters.intValue("a"),
-                Parameters.intValue("b"),
-                new Handler2<Integer, Integer>() {
-                    @Override
-                    public RouteResult apply(RequestContext ctx, Integer a, Integer b) {
-                        return ctx.complete("Sum: " + (a + b));
-                    }
-                }
-        );
-        runRoute(route, HttpRequest.GET("?a=23&b=42"))
-            .assertStatusCode(200)
-            .assertEntity("Sum: 65");
+        Route route =
+            handleWith2(
+                aParam,
+                bParam,
+                (ctx, a, b) -> ctx.complete("Sum: " + (a + b)));
+        TestResponse response = runRoute(route, HttpRequest.GET("?a=23&b=42"));
+        response.assertStatusCode(200);
+        response.assertEntity("Sum: 65");
     }
     @Test
     public void testHandler3() {
-        Route route = handleWith3(
-                Parameters.intValue("a"),
-                Parameters.intValue("b"),
-                Parameters.intValue("c"),
-                new Handler3<Integer, Integer, Integer>() {
-                    @Override
-                    public RouteResult apply(RequestContext ctx, Integer a, Integer b, Integer c) {
-                        return ctx.complete("Sum: " + (a + b + c));
-                    }
-                }
-        );
+        Route route =
+            handleWith3(
+                    aParam,
+                    bParam,
+                    cParam,
+                    (ctx, a, b, c) -> ctx.complete("Sum: " + (a + b + c)));
         TestResponse response = runRoute(route, HttpRequest.GET("?a=23&b=42&c=30"));
         response.assertStatusCode(200);
         response.assertEntity("Sum: 95");
     }
     @Test
     public void testHandler4() {
-        Route route = handleWith4(
-                Parameters.intValue("a"),
-                Parameters.intValue("b"),
-                Parameters.intValue("c"),
-                Parameters.intValue("d"),
-                new Handler4<Integer, Integer, Integer, Integer>() {
-                    @Override
-                    public RouteResult apply(RequestContext ctx, Integer a, Integer b, Integer c, Integer d) {
-                        return ctx.complete("Sum: " + (a + b + c + d));
-                    }
-                }
-        );
-        runRoute(route, HttpRequest.GET("?a=23&b=42&c=30&d=45"))
-            .assertStatusCode(200)
-            .assertEntity("Sum: 140");
+        Route route =
+            handleWith4(
+                    aParam,
+                    bParam,
+                    cParam,
+                    dParam,
+                    (ctx, a, b, c, d) -> ctx.complete("Sum: " + (a + b + c + d)));
+        TestResponse response = runRoute(route, HttpRequest.GET("?a=23&b=42&c=30&d=45"));
+        response.assertStatusCode(200);
+        response.assertEntity("Sum: 140");
+    }
+    public RouteResult sum(RequestContext ctx, int a, int b, int c, int d) {
+        return ctx.complete("Sum: "+(a + b + c + d));
     }
     @Test
-    public void testReflectiveInstanceHandler() {
-        class Test {
-            public RouteResult negate(RequestContext ctx, int a) {
-                return ctx.complete("Negated: " + (- a));
-            }
-        }
-        Route route = handleReflectively(new Test(), "negate", Parameters.intValue("a"));
-        runRoute(route, HttpRequest.GET("?a=23"))
-            .assertStatusCode(200)
-            .assertEntity("Negated: -23");
-    }
-
-    public static RouteResult squared(RequestContext ctx, int a) {
-        return ctx.complete("Squared: " + (a * a));
-    }
-    @Test
-    public void testStaticReflectiveHandler() {
-        Route route = handleReflectively(HandlerBindingTest.class, "squared", Parameters.intValue("a"));
-        runRoute(route, HttpRequest.GET("?a=23"))
-            .assertStatusCode(200)
-            .assertEntity("Squared: 529");
+    public void testHandler4MethodRef() {
+        Route route =
+                handleWith4(
+                        aParam,
+                        bParam,
+                        cParam,
+                        dParam,
+                        this::sum);
+        TestResponse response = runRoute(route, HttpRequest.GET("?a=23&b=42&c=30&d=45"));
+        response.assertStatusCode(200);
+        response.assertEntity("Sum: 140");
     }
 }

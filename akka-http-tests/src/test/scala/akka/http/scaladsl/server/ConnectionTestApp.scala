@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.server
@@ -92,7 +92,7 @@ object ConnectionTestApp {
     readLine()
     println("===================== \n\n" + system.asInstanceOf[ActorSystemImpl].printTree + "\n\n========================")
     readLine()
-    system.shutdown()
+    system.terminate()
   }
 
 }

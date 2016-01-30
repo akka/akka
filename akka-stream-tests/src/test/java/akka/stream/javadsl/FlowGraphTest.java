@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.javadsl;
 
+import akka.NotUsed;
 import akka.japi.Pair;
-import akka.pattern.Patterns;
+import akka.pattern.PatternsCS;
 import akka.japi.tuple.Tuple4;
 import akka.stream.*;
 import akka.stream.javadsl.GraphDSL.Builder;
@@ -20,8 +21,9 @@ import org.reactivestreams.Publisher;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import scala.runtime.BoxedUnit;
+
 import java.util.*;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 
@@ -56,23 +58,23 @@ public class FlowGraphTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseMerge() throws Exception {
-    final Flow<String, String, BoxedUnit> f1 =
+    final Flow<String, String, NotUsed> f1 =
         Flow.of(String.class).transform(FlowGraphTest.this.<String> op()).named("f1");
-    final Flow<String, String, BoxedUnit> f2 =
+    final Flow<String, String, NotUsed> f2 =
         Flow.of(String.class).transform(FlowGraphTest.this.<String> op()).named("f2");
     @SuppressWarnings("unused")
-    final Flow<String, String, BoxedUnit> f3 =
+    final Flow<String, String, NotUsed> f3 =
         Flow.of(String.class).transform(FlowGraphTest.this.<String> op()).named("f3");
 
-    final Source<String, BoxedUnit> in1 = Source.from(Arrays.asList("a", "b", "c"));
-    final Source<String, BoxedUnit> in2 = Source.from(Arrays.asList("d", "e", "f"));
+    final Source<String, NotUsed> in1 = Source.from(Arrays.asList("a", "b", "c"));
+    final Source<String, NotUsed> in2 = Source.from(Arrays.asList("d", "e", "f"));
 
-    final Sink<String, Publisher<String>> publisher = Sink.asPublisher(false);
+    final Sink<String, Publisher<String>> publisher = Sink.asPublisher(AsPublisher.WITHOUT_FANOUT);
 
-    final Source<String, BoxedUnit> source = Source.fromGraph(
-            GraphDSL.create(new Function<GraphDSL.Builder<BoxedUnit>, SourceShape<String>>() {
+    final Source<String, NotUsed> source = Source.fromGraph(
+            GraphDSL.create(new Function<GraphDSL.Builder<NotUsed>, SourceShape<String>>() {
               @Override
-              public SourceShape<String> apply(Builder<BoxedUnit> b) throws Exception {
+              public SourceShape<String> apply(Builder<NotUsed> b) throws Exception {
                 final UniformFanInShape<String, String> merge = b.add(Merge.<String>create(2));
                 b.from(b.add(in1)).via(b.add(f1)).toInlet(merge.in(0));
                 b.from(b.add(in2)).via(b.add(f2)).toInlet(merge.in(1));
@@ -82,9 +84,9 @@ public class FlowGraphTest extends StreamTest {
 
     // collecting
     final Publisher<String> pub = source.runWith(publisher, materializer);
-    final Future<List<String>> all = Source.fromPublisher(pub).grouped(100).runWith(Sink.<List<String>>head(), materializer);
+    final CompletionStage<List<String>> all = Source.fromPublisher(pub).grouped(100).runWith(Sink.<List<String>>head(), materializer);
 
-    final List<String> result = Await.result(all, Duration.apply(200, TimeUnit.MILLISECONDS));
+    final List<String> result = all.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
     assertEquals(new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<String>(result));
   }
 
@@ -95,13 +97,13 @@ public class FlowGraphTest extends StreamTest {
     final Iterable<Integer> input2 = Arrays.asList(1, 2, 3);
 
     RunnableGraph.fromGraph( GraphDSL.create(
-      new Function<Builder<BoxedUnit>,ClosedShape>() {
+      new Function<Builder<NotUsed>,ClosedShape>() {
         @Override
-        public ClosedShape apply(final Builder<BoxedUnit> b) throws Exception {
-          final Source<String, BoxedUnit> in1 = Source.from(input1);
-          final Source<Integer, BoxedUnit> in2 = Source.from(input2);
+        public ClosedShape apply(final Builder<NotUsed> b) throws Exception {
+          final Source<String, NotUsed> in1 = Source.from(input1);
+          final Source<Integer, NotUsed> in2 = Source.from(input2);
           final FanInShape2<String, Integer, Pair<String,Integer>> zip = b.add(Zip.<String, Integer>create());
-          final Sink<Pair<String, Integer>, BoxedUnit> out = createSink(probe);
+          final Sink<Pair<String, Integer>, NotUsed> out = createSink(probe);
 
           b.from(b.add(in1)).toInlet(zip.in0());
           b.from(b.add(in2)).toInlet(zip.in1());
@@ -130,9 +132,9 @@ public class FlowGraphTest extends StreamTest {
     final Iterable<Integer> expected2 = Arrays.asList(1, 2, 3);
 
     RunnableGraph.fromGraph(GraphDSL.create(
-        new Function<Builder<BoxedUnit>, ClosedShape>() {
+        new Function<Builder<NotUsed>, ClosedShape>() {
           @Override
-          public ClosedShape apply(final Builder<BoxedUnit> b) throws Exception {
+          public ClosedShape apply(final Builder<NotUsed> b) throws Exception {
             final SourceShape<Pair<String, Integer>> in = b.add(Source.from(input));
             final FanOutShape2<Pair<String, Integer>, String, Integer> unzip = b.add(Unzip.<String, Integer>create());
 
@@ -152,7 +154,7 @@ public class FlowGraphTest extends StreamTest {
     assertEquals(expected2, output2);
   }
 
-  private static <T> Sink<T, BoxedUnit> createSink(final JavaTestKit probe){
+  private static <T> Sink<T, NotUsed> createSink(final JavaTestKit probe){
     return Sink.actorRef(probe.getRef(), "onComplete");
   }
 
@@ -162,10 +164,10 @@ public class FlowGraphTest extends StreamTest {
     final JavaTestKit probe2 = new JavaTestKit(system);
 
     RunnableGraph.fromGraph(GraphDSL.create(
-      new Function<Builder<BoxedUnit>, ClosedShape>() {
+      new Function<Builder<NotUsed>, ClosedShape>() {
         @Override
-        public ClosedShape apply(final Builder<BoxedUnit> b) throws Exception {
-          final Source<Integer, BoxedUnit> in = Source.single(1);
+        public ClosedShape apply(final Builder<NotUsed> b) throws Exception {
+          final Source<Integer, NotUsed> in = Source.single(1);
 
           final FanOutShape2<Integer, String, Integer> unzip = b.add(UnzipWith.create(
               new Function<Integer, Pair<String, Integer>>() {
@@ -205,10 +207,10 @@ public class FlowGraphTest extends StreamTest {
     final JavaTestKit probe4 = new JavaTestKit(system);
 
     RunnableGraph.fromGraph(GraphDSL.create(
-      new Function<Builder<BoxedUnit>, ClosedShape>() {
+      new Function<Builder<NotUsed>, ClosedShape>() {
         @Override
-        public ClosedShape apply(final Builder<BoxedUnit> b) throws Exception {
-          final Source<Integer, BoxedUnit> in = Source.single(1);
+        public ClosedShape apply(final Builder<NotUsed> b) throws Exception {
+          final Source<Integer, NotUsed> in = Source.single(1);
 
           final FanOutShape4<Integer, String, Integer, String, Integer> unzip = b.add(UnzipWith.create4(
               new Function<Integer, Tuple4<String, Integer, String, Integer>>() {
@@ -248,51 +250,45 @@ public class FlowGraphTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseZipWith() throws Exception {
-    final Source<Integer, BoxedUnit> in1 = Source.single(1);
-    final Source<Integer, BoxedUnit> in2 = Source.single(10);
+    final Source<Integer, NotUsed> in1 = Source.single(1);
+    final Source<Integer, NotUsed> in2 = Source.single(10);
 
-    final Graph<FanInShape2<Integer, Integer, Integer>, BoxedUnit> sumZip = ZipWith.create(
+    final Graph<FanInShape2<Integer, Integer, Integer>, NotUsed> sumZip = ZipWith.create(
       new Function2<Integer, Integer, Integer>() {
         @Override public Integer apply(Integer l, Integer r) throws Exception {
           return l + r;
       }
     });
 
-    final Future<Integer> future = RunnableGraph.fromGraph(GraphDSL.create(Sink.<Integer>head(),
-      new Function2<Builder<Future<Integer>>, SinkShape<Integer>, ClosedShape>() {
-      @Override
-      public ClosedShape apply(Builder<Future<Integer>> b, SinkShape<Integer> out) throws Exception {
+    final CompletionStage<Integer> future = RunnableGraph.fromGraph(GraphDSL.create(Sink.<Integer>head(),
+      (b, out) -> {
         final FanInShape2<Integer, Integer, Integer> zip = b.add(sumZip);
         b.from(b.add(in1)).toInlet(zip.in0());
         b.from(b.add(in2)).toInlet(zip.in1());
         b.from(zip.out()).to(out);
         return ClosedShape.getInstance();
-      }
     })).run(materializer);
 
-    final Integer result = Await.result(future, Duration.create(300, TimeUnit.MILLISECONDS));
+    final Integer result = future.toCompletableFuture().get(300, TimeUnit.MILLISECONDS);
     assertEquals(11, (int) result);
   }
 
   @Test
      public void mustBeAbleToUseZip4With() throws Exception {
-    final Source<Integer, BoxedUnit> in1 = Source.single(1);
-    final Source<Integer, BoxedUnit> in2 = Source.single(10);
-    final Source<Integer, BoxedUnit> in3 = Source.single(100);
-    final Source<Integer, BoxedUnit> in4 = Source.single(1000);
+    final Source<Integer, NotUsed> in1 = Source.single(1);
+    final Source<Integer, NotUsed> in2 = Source.single(10);
+    final Source<Integer, NotUsed> in3 = Source.single(100);
+    final Source<Integer, NotUsed> in4 = Source.single(1000);
 
-    final Graph<FanInShape4<Integer, Integer, Integer, Integer, Integer>, BoxedUnit> sumZip = ZipWith.create4(
+    final Graph<FanInShape4<Integer, Integer, Integer, Integer, Integer>, NotUsed> sumZip = ZipWith.create4(
             new Function4<Integer, Integer, Integer, Integer, Integer>() {
               @Override public Integer apply(Integer i1, Integer i2, Integer i3, Integer i4) throws Exception {
                 return i1 + i2 + i3 + i4;
               }
             });
 
-    final Future<Integer> future = RunnableGraph.fromGraph(
-      GraphDSL.create(Sink.<Integer>head(),
-        new Function2<Builder<Future<Integer>>, SinkShape<Integer>, ClosedShape>() {
-      @Override
-      public ClosedShape apply(Builder<Future<Integer>> b, SinkShape<Integer> out) throws Exception {
+    final CompletionStage<Integer> future = RunnableGraph.fromGraph(
+      GraphDSL.create(Sink.<Integer>head(), (b, out) -> {
         final FanInShape4<Integer, Integer, Integer, Integer, Integer> zip = b.add(sumZip);
         b.from(b.add(in1)).toInlet(zip.in0());
         b.from(b.add(in2)).toInlet(zip.in1());
@@ -300,34 +296,26 @@ public class FlowGraphTest extends StreamTest {
         b.from(b.add(in4)).toInlet(zip.in3());
         b.from(zip.out()).to(out);
         return ClosedShape.getInstance();
-      }
     })).run(materializer);
 
-    final Integer result = Await.result(future, Duration.create(300, TimeUnit.MILLISECONDS));
+    final Integer result = future.toCompletableFuture().get(300, TimeUnit.MILLISECONDS);
     assertEquals(1111, (int) result);
   }
 
   @Test
   public void mustBeAbleToUseMatValue() throws Exception {
     @SuppressWarnings("unused")
-    final Source<Integer, BoxedUnit> in1 = Source.single(1);
+    final Source<Integer, NotUsed> in1 = Source.single(1);
     final TestProbe probe = TestProbe.apply(system);
 
-    final Future<Integer> future = RunnableGraph.fromGraph(
-      GraphDSL.create(Sink.<Integer> head(), new Function2<Builder<Future<Integer>>, SinkShape<Integer>, ClosedShape>() {
-      @Override
-      public ClosedShape apply(Builder<Future<Integer>> b, SinkShape<Integer> out) throws Exception {
+    final CompletionStage<Integer> future = RunnableGraph.fromGraph(
+      GraphDSL.create(Sink.<Integer> head(), (b, out) -> {
         b.from(b.add(Source.single(1))).to(out);
-        b.from(b.materializedValue()).to(b.add(Sink.foreach(new Procedure<Future<Integer>>(){
-          public void apply(Future<Integer> mat) throws Exception {
-            Patterns.pipe(mat, system.dispatcher()).to(probe.ref());
-          }
-        })));
+        b.from(b.materializedValue()).to(b.add(Sink.foreach(mat -> PatternsCS.pipe(mat, system.dispatcher()).to(probe.ref()))));
         return ClosedShape.getInstance();
-      }
     })).run(materializer);
 
-    final Integer result = Await.result(future, Duration.create(300, TimeUnit.MILLISECONDS));
+    final Integer result = future.toCompletableFuture().get(300, TimeUnit.MILLISECONDS);
     assertEquals(1, (int) result);
 
     probe.expectMsg(1);

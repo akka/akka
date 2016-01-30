@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl.fusing
 
@@ -504,6 +504,7 @@ private[stream] object Fusing {
     private def removeMapping[T](orig: T, map: ju.Map[T, List[T]]): T =
       map.remove(orig) match {
         case null     ⇒ null.asInstanceOf[T]
+        case Nil      ⇒ throw new IllegalStateException("mappings corrupted")
         case x :: Nil ⇒ x
         case x :: xs ⇒
           map.put(orig, xs)

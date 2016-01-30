@@ -1,21 +1,22 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl
 
+import akka.NotUsed
 import akka.stream._
 import akka.stream.scaladsl._
 import language.higherKinds
 
 object SubFlowImpl {
   trait MergeBack[In, F[+_]] {
-    def apply[T](f: Flow[In, T, Unit], breadth: Int): F[T]
+    def apply[T](f: Flow[In, T, NotUsed], breadth: Int): F[T]
   }
 }
 
-class SubFlowImpl[In, Out, Mat, F[+_], C](val subFlow: Flow[In, Out, Unit],
+class SubFlowImpl[In, Out, Mat, F[+_], C](val subFlow: Flow[In, Out, NotUsed],
                                           mergeBackFunction: SubFlowImpl.MergeBack[In, F],
-                                          finishFunction: Sink[In, Unit] ⇒ C)
+                                          finishFunction: Sink[In, NotUsed] ⇒ C)
   extends SubFlow[Out, Mat, F, C] {
 
   override def deprecatedAndThen[U](op: Stages.StageModule): SubFlow[U, Mat, F, C] =

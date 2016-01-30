@@ -1,12 +1,12 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.client
 
 import java.net.InetSocketAddress
 
-import akka.stream.OverflowStrategy.Fail.BufferOverflowException
+import akka.stream.BufferOverflowException
 
 import scala.annotation.tailrec
 import scala.concurrent.Promise
@@ -18,9 +18,9 @@ import akka.stream.actor.ActorPublisherMessage._
 import akka.stream.actor.ActorSubscriberMessage._
 import akka.stream.impl.{ SeqActorName, FixedSizeBuffer }
 import akka.stream.scaladsl.{ Keep, Flow, Sink, Source }
-import akka.http.HostConnectionPoolSetup
+import akka.http.impl.settings.HostConnectionPoolSetup
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.Http
+import akka.http.scaladsl.{ ConnectionContext, HttpsConnectionContext, Http }
 import PoolFlow._
 
 private object PoolInterfaceActor {
@@ -64,9 +64,10 @@ private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
     import hcps._
     import setup._
 
-    val connectionFlow =
-      if (httpsContext.isEmpty) Http().outgoingConnection(host, port, None, settings.connectionSettings, setup.log)
-      else Http().outgoingConnectionTls(host, port, None, settings.connectionSettings, httpsContext, setup.log)
+    val connectionFlow = connectionContext match {
+      case httpsContext: HttpsConnectionContext ⇒ Http().outgoingConnectionHttps(host, port, httpsContext, None, settings.connectionSettings, setup.log)
+      case _                                    ⇒ Http().outgoingConnection(host, port, None, settings.connectionSettings, setup.log)
+    }
 
     val poolFlow = PoolFlow(
       Flow[HttpRequest].viaMat(connectionFlow)(Keep.right),
@@ -147,7 +148,7 @@ private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
     }
 
   def dispatchRequest(pr: PoolRequest): Unit = {
-    val scheme = Uri.httpScheme(hcps.setup.httpsContext.isDefined)
+    val scheme = Uri.httpScheme(hcps.setup.connectionContext.isSecure)
     val hostHeader = headers.Host(hcps.host, Uri.normalizePort(hcps.port, scheme))
     val effectiveRequest =
       pr.request

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster.pubsub
@@ -10,19 +10,7 @@ import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
 import java.net.URLEncoder
 import java.net.URLDecoder
-import akka.actor.Actor
-import akka.actor.ActorContext
-import akka.actor.ActorLogging
-import akka.actor.ActorPath
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.Address
-import akka.actor.ExtendedActorSystem
-import akka.actor.Extension
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
-import akka.actor.Props
-import akka.actor.Terminated
+import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.cluster.Member
@@ -38,10 +26,7 @@ import akka.routing.ConsistentHashingRoutingLogic
 import akka.routing.BroadcastRoutingLogic
 import scala.collection.immutable.TreeMap
 import com.typesafe.config.Config
-import akka.actor.NoSerializationVerificationNeeded
-import akka.actor.Deploy
 import akka.dispatch.Dispatchers
-import akka.actor.DeadLetterSuppression
 
 object DistributedPubSubSettings {
   /**
@@ -251,12 +236,48 @@ object DistributedPubSubMediator {
     @SerialVersionUID(1L)
     final case class SendToOneSubscriber(msg: Any)
 
+    /**
+     * Messages used to encode protocol to make sure that we do not send Subscribe/Unsubscribe message to
+     * child (mediator -&gt; topic, topic -&gt; group) during a period of transition. Protects from situations like:
+     *
+     * Sending Subscribe/Unsubscribe message to child actor after child has been terminated
+     * but Terminate message did not yet arrive to parent.
+     *
+     * Sending Subscribe/Unsubscribe message to child actor that has Prune message queued and pruneDeadline set.
+     *
+     * In both of those situation parent actor still thinks that child actor is alive and forwards messages to it resulting in lost ACKs.
+     */
+    trait ChildActorTerminationProtocol
+
+    /**
+     * Passivate-like message sent from child to parent, used to signal that sender has no subscribers and no child actors.
+     */
+    case object NoMoreSubscribers extends ChildActorTerminationProtocol
+
+    /**
+     * Sent from parent to child actor to signalize that messages are being buffered. When received by child actor
+     * if no [[Subscribe]] message has been received after sending [[NoMoreSubscribers]] message child actor will stop itself.
+     */
+    case object TerminateRequest extends ChildActorTerminationProtocol
+
+    /**
+     * Sent from child to parent actor as response to [[TerminateRequest]] in case [[Subscribe]] message arrived
+     * after sending [[NoMoreSubscribers]] but before receiving [[TerminateRequest]].
+     *
+     * When received by the parent buffered messages will be forwarded to child actor for processing.
+     */
+    case object NewSubscriberArrived extends ChildActorTerminationProtocol
+
     @SerialVersionUID(1L)
     final case class MediatorRouterEnvelope(msg: Any) extends RouterEnvelope {
       override def message = msg
     }
 
     def encName(s: String) = URLEncoder.encode(s, "utf-8")
+
+    def mkKey(ref: ActorRef): String = mkKey(ref.path)
+
+    def mkKey(path: ActorPath): String = path.toStringWithoutAddress
 
     trait TopicLike extends Actor {
       import context.dispatcher
@@ -286,7 +307,15 @@ object DistributedPubSubMediator {
         case Terminated(ref) ⇒
           remove(ref)
         case Prune ⇒
-          for (d ← pruneDeadline if d.isOverdue) context stop self
+          for (d ← pruneDeadline if d.isOverdue) {
+            pruneDeadline = None
+            context.parent ! NoMoreSubscribers
+          }
+        case TerminateRequest ⇒
+          if (subscribers.isEmpty && context.children.isEmpty)
+            context stop self
+          else
+            context.parent ! NewSubscriberArrived
         case msg ⇒
           subscribers foreach { _ forward msg }
       }
@@ -303,28 +332,46 @@ object DistributedPubSubMediator {
       }
     }
 
-    class Topic(val emptyTimeToLive: FiniteDuration, routingLogic: RoutingLogic) extends TopicLike {
+    class Topic(val emptyTimeToLive: FiniteDuration, routingLogic: RoutingLogic) extends TopicLike with PerGroupingBuffer {
       def business = {
         case msg @ Subscribe(_, Some(group), _) ⇒
           val encGroup = encName(group)
-          context.child(encGroup) match {
-            case Some(g) ⇒ g forward msg
-            case None ⇒
-              val g = context.actorOf(Props(classOf[Group], emptyTimeToLive, routingLogic), name = encGroup)
-              g forward msg
-              context watch g
-              context.parent ! RegisterTopic(g)
+          bufferOr(mkKey(self.path / encGroup), msg, sender()) {
+            context.child(encGroup) match {
+              case Some(g) ⇒ g forward msg
+              case None    ⇒ newGroupActor(encGroup) forward msg
+            }
           }
           pruneDeadline = None
         case msg @ Unsubscribe(_, Some(group), _) ⇒
-          context.child(encName(group)) match {
-            case Some(g) ⇒ g forward msg
-            case None    ⇒ // no such group here
+          val encGroup = encName(group)
+          bufferOr(mkKey(self.path / encGroup), msg, sender()) {
+            context.child(encGroup) match {
+              case Some(g) ⇒ g forward msg
+              case None    ⇒ // no such group here
+            }
           }
         case msg: Subscribed ⇒
           context.parent forward msg
         case msg: Unsubscribed ⇒
           context.parent forward msg
+        case NoMoreSubscribers ⇒
+          val key = mkKey(sender())
+          initializeGrouping(key)
+          sender() ! TerminateRequest
+        case NewSubscriberArrived ⇒
+          val key = mkKey(sender())
+          forwardMessages(key, sender())
+        case Terminated(ref) ⇒
+          val key = mkKey(ref)
+          recreateAndForwardMessagesIfNeeded(key, newGroupActor(ref.path.name))
+      }
+
+      def newGroupActor(encGroup: String): ActorRef = {
+        val g = context.actorOf(Props(classOf[Group], emptyTimeToLive, routingLogic), name = encGroup)
+        context watch g
+        context.parent ! RegisterTopic(g)
+        g
       }
     }
 
@@ -424,7 +471,7 @@ trait DistributedPubSubMessage extends Serializable
  * [[DistributedPubSubMediator.SubscribeAck]] and [[DistributedPubSubMediator.UnsubscribeAck]]
  * replies.
  */
-class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Actor with ActorLogging {
+class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Actor with ActorLogging with PerGroupingBuffer {
 
   import DistributedPubSubMediator._
   import DistributedPubSubMediator.Internal._
@@ -521,17 +568,27 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
 
     case msg @ Subscribe(topic, _, _) ⇒
       // each topic is managed by a child actor with the same name as the topic
+
       val encTopic = encName(topic)
-      context.child(encTopic) match {
-        case Some(t) ⇒ t forward msg
-        case None ⇒
-          val t = context.actorOf(Props(classOf[Topic], removedTimeToLive, routingLogic), name = encTopic)
-          t forward msg
-          registerTopic(t)
+
+      bufferOr(mkKey(self.path / encTopic), msg, sender()) {
+        context.child(encTopic) match {
+          case Some(t) ⇒ t forward msg
+          case None    ⇒ newTopicActor(encTopic) forward msg
+        }
       }
 
     case msg @ RegisterTopic(t) ⇒
       registerTopic(t)
+
+    case NoMoreSubscribers ⇒
+      val key = mkKey(sender())
+      initializeGrouping(key)
+      sender() ! TerminateRequest
+
+    case NewSubscriberArrived ⇒
+      val key = mkKey(sender())
+      forwardMessages(key, sender())
 
     case GetTopics ⇒ {
       sender ! CurrentTopics(getCurrentTopics())
@@ -541,9 +598,12 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
       ref ! ack
 
     case msg @ Unsubscribe(topic, _, _) ⇒
-      context.child(encName(topic)) match {
-        case Some(t) ⇒ t forward msg
-        case None    ⇒ // no such topic here
+      val encTopic = encName(topic)
+      bufferOr(mkKey(self.path / encTopic), msg, sender()) {
+        context.child(encTopic) match {
+          case Some(t) ⇒ t forward msg
+          case None    ⇒ // no such topic here
+        }
       }
 
     case msg @ Unsubscribed(ack, ref) ⇒
@@ -585,6 +645,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
           put(key, None)
         case _ ⇒
       }
+      recreateAndForwardMessagesIfNeeded(key, newTopicActor(a.path.name))
 
     case state: CurrentClusterState ⇒
       nodes = state.members.collect {
@@ -669,9 +730,9 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
     context.watch(ref)
   }
 
-  def mkKey(ref: ActorRef): String = mkKey(ref.path)
+  def mkKey(ref: ActorRef): String = Internal.mkKey(ref)
 
-  def mkKey(path: ActorPath): String = path.toStringWithoutAddress
+  def mkKey(path: ActorPath): String = Internal.mkKey(path)
 
   def myVersions: Map[Address, Long] = registry.map { case (owner, bucket) ⇒ (owner -> bucket.version) }
 
@@ -723,6 +784,12 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
         if (oldRemoved.nonEmpty)
           registry += owner -> bucket.copy(content = bucket.content -- oldRemoved)
     }
+  }
+
+  def newTopicActor(encTopic: String): ActorRef = {
+    val t = context.actorOf(Props(classOf[Topic], removedTimeToLive, routingLogic), name = encTopic)
+    registerTopic(t)
+    t
   }
 }
 

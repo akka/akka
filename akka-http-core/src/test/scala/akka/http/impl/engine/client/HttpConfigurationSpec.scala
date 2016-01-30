@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.client
 
 import akka.actor.ActorSystem
-import akka.http.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
 import akka.stream.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 
@@ -135,7 +135,7 @@ class HttpConfigurationSpec extends AkkaSpec {
     val config = ConfigFactory.parseString(overrides).withFallback(ConfigFactory.load())
     // we go via ActorSystem in order to hit the settings caching infrastructure
     val sys = ActorSystem("config-testing", config)
-    try block(sys) finally sys.shutdown()
+    try block(sys) finally sys.terminate()
   }
 
 }

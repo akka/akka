@@ -1,18 +1,20 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
+import akka.actor.Status.Failure
 import akka.stream.testkit.Utils._
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 import org.scalacheck.Gen
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import akka.pattern.pipe
 
 import scala.concurrent.Await
 
-class FlowSlidingSpec extends AkkaSpec with GeneratorDrivenPropertyChecks {
+class FlowSlidingSpec extends AkkaSpec with GeneratorDrivenPropertyChecks with ScalaFutures {
   import system.dispatcher
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
@@ -26,7 +28,7 @@ class FlowSlidingSpec extends AkkaSpec with GeneratorDrivenPropertyChecks {
         case (len, win, step) ⇒
           val af = Source.fromIterator(() ⇒ Iterator.from(0).take(len)).sliding(win, step).runFold(Seq.empty[Seq[Int]])(_ :+ _)
           val cf = Source.fromIterator(() ⇒ Iterator.from(0).take(len).sliding(win, step)).runFold(Seq.empty[Seq[Int]])(_ :+ _)
-          Await.result(af, remaining) should be(Await.result(cf, remaining))
+          af.futureValue should be(cf.futureValue)
       }
 
     "behave just like collections sliding with step < window" in assertAllStagesStopped {

@@ -1,8 +1,10 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.model
+
+import java.util.OptionalLong
 
 import language.implicitConversions
 import java.io.File
@@ -15,16 +17,24 @@ import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream._
-import akka.{ japi, stream }
+import akka.{ NotUsed, japi, stream }
 import akka.http.scaladsl.model.ContentType.{ NonBinary, Binary }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.impl.util.StreamUtils
 import akka.http.impl.util.JavaMapping.Implicits._
+
+import scala.compat.java8.OptionConverters._
+import scala.compat.java8.FutureConverters._
+import java.util.concurrent.CompletionStage
 
 /**
  * Models the entity (aka "body" or "content) of an HTTP message.
  */
 sealed trait HttpEntity extends jm.HttpEntity {
+  import language.implicitConversions
+  private implicit def completionStageCovariant[T, U >: T](in: CompletionStage[T]): CompletionStage[U] = in.asInstanceOf[CompletionStage[U]]
+
   /**
    * Determines whether this entity is known to be empty.
    */
@@ -82,8 +92,7 @@ sealed trait HttpEntity extends jm.HttpEntity {
     stream.javadsl.Source.fromGraph(dataBytes.asInstanceOf[Source[ByteString, AnyRef]])
 
   /** Java API */
-  override def getContentLengthOption: japi.Option[JLong] =
-    japi.Option.fromScalaOption(contentLengthOption.asInstanceOf[Option[JLong]]) // Scala autoboxing
+  override def getContentLengthOption: OptionalLong = contentLengthOption.asPrimitive
 
   // default implementations, should be overridden
   override def isCloseDelimited: Boolean = false
@@ -92,8 +101,8 @@ sealed trait HttpEntity extends jm.HttpEntity {
   override def isChunked: Boolean = false
 
   /** Java API */
-  override def toStrict(timeoutMillis: Long, materializer: Materializer): Future[jm.HttpEntity.Strict] =
-    toStrict(timeoutMillis.millis)(materializer)
+  override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.HttpEntity.Strict] =
+    toStrict(timeoutMillis.millis)(materializer).toJava
 }
 
 /* An entity that can be used for body parts */
@@ -204,7 +213,7 @@ object HttpEntity {
 
     override def isKnownEmpty: Boolean = data.isEmpty
 
-    override def dataBytes: Source[ByteString, Unit] = Source(data :: Nil)
+    override def dataBytes: Source[ByteString, NotUsed] = Source(data :: Nil)
 
     override def toStrict(timeout: FiniteDuration)(implicit fm: Materializer) =
       FastFuture.successful(this)
@@ -500,4 +509,24 @@ object HttpEntity {
   private object SizeLimit {
     val Disabled = -1 // any negative value will do
   }
+
+  /**
+   * INTERNAL API
+   */
+  private[http] def captureTermination[T <: HttpEntity](entity: T): (T, Future[Unit]) =
+    entity match {
+      case x: HttpEntity.Strict ⇒ x.asInstanceOf[T] -> FastFuture.successful(())
+      case x: HttpEntity.Default ⇒
+        val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
+        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
+      case x: HttpEntity.Chunked ⇒
+        val (newChunks, whenCompleted) = StreamUtils.captureTermination(x.chunks)
+        x.copy(chunks = newChunks).asInstanceOf[T] -> whenCompleted
+      case x: HttpEntity.CloseDelimited ⇒
+        val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
+        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
+      case x: HttpEntity.IndefiniteLength ⇒
+        val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
+        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
+    }
 }

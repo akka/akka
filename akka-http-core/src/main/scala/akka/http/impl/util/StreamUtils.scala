@@ -1,14 +1,16 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.util
 
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 
+import akka.NotUsed
 import akka.http.scaladsl.model.RequestEntity
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ PublisherSink, SinkModule, SourceModule }
 import akka.stream.scaladsl._
 import akka.stream.stage._
@@ -51,7 +53,7 @@ private[http] object StreamUtils {
   def failedPublisher[T](ex: Throwable): Publisher[T] =
     impl.ErrorPublisher(ex, "failed").asInstanceOf[Publisher[T]]
 
-  def mapErrorTransformer(f: Throwable ⇒ Throwable): Flow[ByteString, ByteString, Unit] = {
+  def mapErrorTransformer(f: Throwable ⇒ Throwable): Flow[ByteString, ByteString, NotUsed] = {
     val transformer = new PushStage[ByteString, ByteString] {
       override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective =
         ctx.push(element)
@@ -79,7 +81,7 @@ private[http] object StreamUtils {
     source.transform(() ⇒ transformer) -> promise.future
   }
 
-  def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString, Unit] = {
+  def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString, NotUsed] = {
     val transformer = new StatefulStage[ByteString, ByteString] {
 
       def skipping = new State {
@@ -113,41 +115,47 @@ private[http] object StreamUtils {
     Flow[ByteString].transform(() ⇒ transformer).named("sliceBytes")
   }
 
-  def limitByteChunksStage(maxBytesPerChunk: Int): PushPullStage[ByteString, ByteString] =
-    new StatefulStage[ByteString, ByteString] {
-      def initial = WaitingForData
+  def limitByteChunksStage(maxBytesPerChunk: Int): GraphStage[FlowShape[ByteString, ByteString]] =
+    new SimpleLinearGraphStage[ByteString] {
+      override def initialAttributes = Attributes.name("limitByteChunksStage")
+      var remaining = ByteString.empty
 
-      case object WaitingForData extends State {
-        def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective =
-          if (elem.size <= maxBytesPerChunk) ctx.push(elem)
-          else {
-            become(DeliveringData(elem.drop(maxBytesPerChunk)))
-            ctx.push(elem.take(maxBytesPerChunk))
-          }
-      }
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
 
-      case class DeliveringData(remaining: ByteString) extends State {
-        def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective =
-          throw new IllegalStateException("Not expecting data")
-
-        override def onPull(ctx: Context[ByteString]): SyncDirective = {
+        def splitAndPush(elem: ByteString): Unit = {
           val toPush = remaining.take(maxBytesPerChunk)
           val toKeep = remaining.drop(maxBytesPerChunk)
+          push(out, toPush)
+          remaining = toKeep
+        }
+        setHandlers(in, out, WaitingForData)
 
-          become {
-            if (toKeep.isEmpty) WaitingForData
-            else DeliveringData(toKeep)
+        case object WaitingForData extends InHandler with OutHandler {
+          override def onPush(): Unit = {
+            val elem = grab(in)
+            if (elem.size <= maxBytesPerChunk) push(out, elem)
+            else {
+              splitAndPush(elem)
+              setHandlers(in, out, DeliveringData)
+            }
           }
-          if (ctx.isFinishing) ctx.pushAndFinish(toPush)
-          else ctx.push(toPush)
+          override def onPull(): Unit = pull(in)
         }
-      }
 
-      override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective =
-        current match {
-          case WaitingForData    ⇒ ctx.finish()
-          case _: DeliveringData ⇒ ctx.absorbTermination()
+        case object DeliveringData extends InHandler() with OutHandler {
+          var finishing = false
+          override def onPush(): Unit = throw new IllegalStateException("Not expecting data")
+          override def onPull(): Unit = {
+            splitAndPush(remaining)
+            if (remaining.isEmpty) {
+              if (finishing) completeStage() else setHandlers(in, out, WaitingForData)
+            }
+          }
+          override def onUpstreamFinish(): Unit = if (remaining.isEmpty) completeStage() else finishing = true
         }
+
+        override def toString = "limitByteChunksStage"
+      }
     }
 
   def mapEntityError(f: Throwable ⇒ Throwable): RequestEntity ⇒ RequestEntity =
@@ -289,7 +297,7 @@ private[http] object StreamUtils {
    * Similar to Source.maybe but doesn't rely on materialization. Can only be used once.
    */
   trait OneTimeValve {
-    def source[T]: Source[T, Unit]
+    def source[T]: Source[T, NotUsed]
     def open(): Unit
   }
   object OneTimeValve {
@@ -297,7 +305,7 @@ private[http] object StreamUtils {
       val promise = Promise[Unit]()
       val _source = Source.fromFuture(promise.future).drop(1) // we are only interested in the completion event
 
-      def source[T]: Source[T, Unit] = _source.asInstanceOf[Source[T, Unit]] // safe, because source won't generate any elements
+      def source[T]: Source[T, NotUsed] = _source.asInstanceOf[Source[T, NotUsed]] // safe, because source won't generate any elements
       def open(): Unit = promise.success(())
     }
   }

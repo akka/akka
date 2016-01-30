@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.ws
@@ -12,7 +12,7 @@ private[http] sealed trait FrameEventOrError
 private[http] final case class FrameError(p: ProtocolException) extends FrameEventOrError
 
 /**
- * The low-level Websocket framing model.
+ * The low-level WebSocket framing model.
  *
  * INTERNAL API
  */

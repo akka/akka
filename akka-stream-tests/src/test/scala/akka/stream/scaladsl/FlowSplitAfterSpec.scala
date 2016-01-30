@@ -1,8 +1,9 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
+import akka.NotUsed
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.ActorAttributes
@@ -163,7 +164,7 @@ class FlowSplitAfterSpec extends AkkaSpec {
         .splitAfter(elem ⇒ if (elem == 3) throw exc else elem % 3 == 0)
         .lift
         .runWith(Sink.asPublisher(false))
-      val subscriber = TestSubscriber.manualProbe[Source[Int, Unit]]()
+      val subscriber = TestSubscriber.manualProbe[Source[Int, NotUsed]]()
       publisher.subscribe(subscriber)
 
       val upstreamSubscription = publisherProbeProbe.expectSubscription()
@@ -199,7 +200,7 @@ class FlowSplitAfterSpec extends AkkaSpec {
         .lift
         .withAttributes(ActorAttributes.supervisionStrategy(resumingDecider))
         .runWith(Sink.asPublisher(false))
-      val subscriber = TestSubscriber.manualProbe[Source[Int, Unit]]()
+      val subscriber = TestSubscriber.manualProbe[Source[Int, NotUsed]]()
       publisher.subscribe(subscriber)
 
       val upstreamSubscription = publisherProbeProbe.expectSubscription()
@@ -241,7 +242,7 @@ class FlowSplitAfterSpec extends AkkaSpec {
 
     "pass along early cancellation" in assertAllStagesStopped {
       val up = TestPublisher.manualProbe[Int]()
-      val down = TestSubscriber.manualProbe[Source[Int, Unit]]()
+      val down = TestSubscriber.manualProbe[Source[Int, NotUsed]]()
 
       val flowSubscriber = Source.asSubscriber[Int].splitAfter(_ % 3 == 0).lift.to(Sink.fromSubscriber(down)).run()
 

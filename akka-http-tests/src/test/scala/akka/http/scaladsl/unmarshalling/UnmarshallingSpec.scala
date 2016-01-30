@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.unmarshalling
@@ -23,5 +23,5 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
       Unmarshal(HttpEntity("árvíztűrő ütvefúrógép")).to[Array[Char]] should evaluateTo("árvíztűrő ütvefúrógép".toCharArray)
     }
   }
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 }

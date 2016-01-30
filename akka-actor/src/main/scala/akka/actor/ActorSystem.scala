@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -491,7 +491,7 @@ abstract class ExtendedActorSystem extends ActorSystem {
 
   /**
    * Create an actor in the "/system" namespace. This actor will be shut down
-   * during system shutdown only after all user actors have terminated.
+   * during system.terminate only after all user actors have terminated.
    */
   def systemActorOf(props: Props, name: String): ActorRef
 

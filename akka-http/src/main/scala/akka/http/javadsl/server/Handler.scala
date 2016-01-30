@@ -1,9 +1,9 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.http.javadsl.server
 
-import scala.concurrent.Future
+import java.util.concurrent.CompletionStage
 
 /**
  * A route Handler that handles a request (that is encapsulated in a [[RequestContext]])
@@ -22,12 +22,11 @@ trait Handler extends akka.japi.function.Function[RequestContext, RouteResult] {
 
 /**
  * A route Handler that handles a request (that is encapsulated in a [[RequestContext]])
- * and returns a [[scala.concurrent.Future]] of [[RouteResult]] with the response (or the rejection).
+ * and returns a [[java.util.concurrent.CompletionStage]] of [[RouteResult]] with the response (or the rejection).
  *
  * Use the methods in [[RequestContext]] to create a [[RouteResult]].
  * A handler MUST NOT return `null` as the result.
  */
-trait AsyncHandler extends akka.japi.function.Function[RequestContext, Future[RouteResult]] {
-  override def apply(ctx: RequestContext): Future[RouteResult]
+trait AsyncHandler extends akka.japi.function.Function[RequestContext, CompletionStage[RouteResult]] {
+  override def apply(ctx: RequestContext): CompletionStage[RouteResult]
 }
-

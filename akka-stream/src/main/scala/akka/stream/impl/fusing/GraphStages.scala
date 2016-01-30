@@ -1,13 +1,15 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl.fusing
 
+import akka.Done
 import java.util.concurrent.atomic.AtomicBoolean
 import akka.actor.Cancellable
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.stream._
+import akka.stream.scaladsl._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
 import scala.concurrent.{ Future, Promise }
@@ -41,14 +43,14 @@ object GraphStages {
   /**
    * INERNAL API
    */
-  private[stream] abstract class SimpleLinearGraphStage[T] extends GraphStage[FlowShape[T, T]] {
+  private[akka] abstract class SimpleLinearGraphStage[T] extends GraphStage[FlowShape[T, T]] {
     val in = Inlet[T](Logging.simpleName(this) + ".in")
     val out = Outlet[T](Logging.simpleName(this) + ".out")
     override val shape = FlowShape(in, out)
   }
 
   object Identity extends SimpleLinearGraphStage[Any] {
-    override def initialAttributes = Attributes.name("identityOp")
+    override def initialAttributes = DefaultAttributes.identityOp
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
       setHandler(in, new InHandler {
@@ -65,14 +67,16 @@ object GraphStages {
 
   def identity[T] = Identity.asInstanceOf[SimpleLinearGraphStage[T]]
 
-  private class Detacher[T] extends GraphStage[FlowShape[T, T]] {
-    val in = Inlet[T]("in")
-    val out = Outlet[T]("out")
-    override def initialAttributes = Attributes.name("Detacher")
+  /**
+   * INERNAL API
+   */
+  private[stream] final class Detacher[T] extends GraphStage[FlowShape[T, T]] {
+    val in = Inlet[T]("Detacher.in")
+    val out = Outlet[T]("Detacher.out")
+    override def initialAttributes = DefaultAttributes.detacher
     override val shape = FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-      var initialized = false
 
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
@@ -105,14 +109,115 @@ object GraphStages {
   private val _detacher = new Detacher[Any]
   def detacher[T]: GraphStage[FlowShape[T, T]] = _detacher.asInstanceOf[GraphStage[FlowShape[T, T]]]
 
+  final class Breaker(callback: Breaker.Operation ⇒ Unit) {
+    import Breaker._
+    def complete(): Unit = callback(Complete)
+    def cancel(): Unit = callback(Cancel)
+    def fail(ex: Throwable): Unit = callback(Fail(ex))
+    def completeAndCancel(): Unit = callback(CompleteAndCancel)
+    def failAndCancel(ex: Throwable): Unit = callback(FailAndCancel(ex))
+  }
+
+  object Breaker extends GraphStageWithMaterializedValue[FlowShape[Any, Any], Future[Breaker]] {
+    sealed trait Operation
+    case object Complete extends Operation
+    case object Cancel extends Operation
+    case class Fail(ex: Throwable) extends Operation
+    case object CompleteAndCancel extends Operation
+    case class FailAndCancel(ex: Throwable) extends Operation
+
+    override val initialAttributes = Attributes.name("breaker")
+    override val shape = FlowShape(Inlet[Any]("breaker.in"), Outlet[Any]("breaker.out"))
+
+    override def createLogicAndMaterializedValue(attr: Attributes) = {
+      val promise = Promise[Breaker]
+
+      val logic = new GraphStageLogic(shape) {
+
+        passAlong(shape.in, shape.out)
+        setHandler(shape.out, eagerTerminateOutput)
+
+        override def preStart(): Unit = {
+          pull(shape.in)
+          promise.success(new Breaker(getAsyncCallback[Operation] {
+            case Complete          ⇒ complete(shape.out)
+            case Cancel            ⇒ cancel(shape.in)
+            case Fail(ex)          ⇒ fail(shape.out, ex)
+            case CompleteAndCancel ⇒ completeStage()
+            case FailAndCancel(ex) ⇒ failStage(ex)
+          }.invoke))
+        }
+      }
+
+      (logic, promise.future)
+    }
+  }
+
+  def breaker[T]: Graph[FlowShape[T, T], Future[Breaker]] = Breaker.asInstanceOf[Graph[FlowShape[T, T], Future[Breaker]]]
+
+  object BidiBreaker extends GraphStageWithMaterializedValue[BidiShape[Any, Any, Any, Any], Future[Breaker]] {
+    import Breaker._
+
+    override val initialAttributes = Attributes.name("breaker")
+    override val shape = BidiShape(
+      Inlet[Any]("breaker.in1"), Outlet[Any]("breaker.out1"),
+      Inlet[Any]("breaker.in2"), Outlet[Any]("breaker.out2"))
+
+    override def createLogicAndMaterializedValue(attr: Attributes) = {
+      val promise = Promise[Breaker]
+
+      val logic = new GraphStageLogic(shape) {
+
+        setHandler(shape.in1, new InHandler {
+          override def onPush(): Unit = push(shape.out1, grab(shape.in1))
+          override def onUpstreamFinish(): Unit = complete(shape.out1)
+          override def onUpstreamFailure(ex: Throwable): Unit = fail(shape.out1, ex)
+        })
+        setHandler(shape.in2, new InHandler {
+          override def onPush(): Unit = push(shape.out2, grab(shape.in2))
+          override def onUpstreamFinish(): Unit = complete(shape.out2)
+          override def onUpstreamFailure(ex: Throwable): Unit = fail(shape.out2, ex)
+        })
+        setHandler(shape.out1, new OutHandler {
+          override def onPull(): Unit = pull(shape.in1)
+          override def onDownstreamFinish(): Unit = cancel(shape.in1)
+        })
+        setHandler(shape.out2, new OutHandler {
+          override def onPull(): Unit = pull(shape.in2)
+          override def onDownstreamFinish(): Unit = cancel(shape.in2)
+        })
+
+        override def preStart(): Unit = {
+          promise.success(new Breaker(getAsyncCallback[Operation] {
+            case Complete ⇒
+              complete(shape.out1)
+              complete(shape.out2)
+            case Cancel ⇒
+              cancel(shape.in1)
+              cancel(shape.in2)
+            case Fail(ex) ⇒
+              fail(shape.out1, ex)
+              fail(shape.out2, ex)
+            case CompleteAndCancel ⇒ completeStage()
+            case FailAndCancel(ex) ⇒ failStage(ex)
+          }.invoke))
+        }
+      }
+
+      (logic, promise.future)
+    }
+  }
+
+  def bidiBreaker[T1, T2]: Graph[BidiShape[T1, T1, T2, T2], Future[Breaker]] = BidiBreaker.asInstanceOf[Graph[BidiShape[T1, T1, T2, T2], Future[Breaker]]]
+
   private object TickSource {
     class TickSourceCancellable(cancelled: AtomicBoolean) extends Cancellable {
-      private val cancelPromise = Promise[Unit]()
+      private val cancelPromise = Promise[Done]()
 
-      def cancelFuture: Future[Unit] = cancelPromise.future
+      def cancelFuture: Future[Done] = cancelPromise.future
 
       override def cancel(): Boolean = {
-        if (!isCancelled) cancelPromise.trySuccess(())
+        if (!isCancelled) cancelPromise.trySuccess(Done)
         true
       }
 
@@ -120,13 +225,50 @@ object GraphStages {
     }
   }
 
-  class TickSource[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T)
+  private object TerminationWatcher extends GraphStageWithMaterializedValue[FlowShape[Any, Any], Future[Done]] {
+    val in = Inlet[Any]("terminationWatcher.in")
+    val out = Outlet[Any]("terminationWatcher.out")
+    override val shape = FlowShape(in, out)
+    override def initialAttributes: Attributes = DefaultAttributes.terminationWatcher
+
+    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
+      val finishPromise = Promise[Done]()
+
+      (new GraphStageLogic(shape) {
+        setHandler(in, new InHandler {
+          override def onPush(): Unit = push(out, grab(in))
+
+          override def onUpstreamFinish(): Unit = {
+            finishPromise.success(Done)
+            completeStage()
+          }
+
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            finishPromise.failure(ex)
+            failStage(ex)
+          }
+        })
+        setHandler(out, new OutHandler {
+          override def onPull(): Unit = pull(in)
+          override def onDownstreamFinish(): Unit = {
+            finishPromise.success(Done)
+            completeStage()
+          }
+        })
+      }, finishPromise.future)
+    }
+
+    override def toString = "TerminationWatcher"
+  }
+
+  def terminationWatcher[T]: GraphStageWithMaterializedValue[FlowShape[T, T], Future[Done]] =
+    TerminationWatcher.asInstanceOf[GraphStageWithMaterializedValue[FlowShape[T, T], Future[Done]]]
+
+  final class TickSource[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T)
     extends GraphStageWithMaterializedValue[SourceShape[T], Cancellable] {
-
-    val out = Outlet[T]("TimerSource.out")
-    override def initialAttributes = Attributes.name("TickSource")
-    override val shape = SourceShape(out)
-
+    override val shape = SourceShape(Outlet[T]("TickSource.out"))
+    val out = shape.out
+    override def initialAttributes: Attributes = DefaultAttributes.tickSource
     override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Cancellable) = {
       import TickSource._
 
@@ -144,9 +286,7 @@ object GraphStages {
           cancellable.cancelFuture.onComplete(_ ⇒ callback.invoke(()))(interpreter.materializer.executionContext)
         }
 
-        setHandler(out, new OutHandler {
-          override def onPull() = () // Do nothing
-        })
+        setHandler(out, eagerTerminateOutput)
 
         override protected def onTimer(timerKey: Any) =
           if (isAvailable(out)) push(out, tick)
@@ -165,9 +305,9 @@ object GraphStages {
    *
    * This source is not reusable, it is only created internally.
    */
-  private[stream] class MaterializedValueSource[T](val computation: MaterializedValueNode, val out: Outlet[T]) extends GraphStage[SourceShape[T]] {
+  private[stream] final class MaterializedValueSource[T](val computation: MaterializedValueNode, val out: Outlet[T]) extends GraphStage[SourceShape[T]] {
     def this(computation: MaterializedValueNode) = this(computation, Outlet[T]("matValue"))
-    override def initialAttributes: Attributes = Attributes.name("matValueSource")
+    override def initialAttributes: Attributes = DefaultAttributes.materializedValueSource
     override val shape = SourceShape(out)
 
     private val promise = Promise[T]
@@ -183,10 +323,11 @@ object GraphStages {
       }
     }
 
-    override def toString: String = s"MatValSrc($computation)"
+    override def toString: String = s"MaterializedValueSource($computation)"
   }
 
-  private[stream] class SingleSource[T](val elem: T) extends GraphStage[SourceShape[T]] {
+  private[stream] final class SingleSource[T](val elem: T) extends GraphStage[SourceShape[T]] {
+    override def initialAttributes: Attributes = DefaultAttributes.singleSource
     ReactiveStreamsCompliance.requireNonNullElement(elem)
     val out = Outlet[T]("single.out")
     val shape = SourceShape(out)
@@ -220,4 +361,27 @@ object GraphStages {
     }
     override def toString: String = "FutureSource"
   }
+
+  /**
+   * INTERNAL API.
+   *
+   * Fusing graphs that have cycles involving FanIn stages might lead to deadlocks if
+   * demand is not carefully managed.
+   *
+   * This means that FanIn stages need to early pull every relevant input on startup.
+   * This can either be implemented inside the stage itself, or this method can be used,
+   * which adds a detacher stage to every input.
+   */
+  private[stream] def withDetachedInputs[T](stage: GraphStage[UniformFanInShape[T, T]]) =
+    GraphDSL.create() { implicit builder ⇒
+      import GraphDSL.Implicits._
+      val concat = builder.add(stage)
+      val ds = concat.inSeq.map { inlet ⇒
+        val detacher = builder.add(GraphStages.detacher[T])
+        detacher ~> inlet
+        detacher.in
+      }
+      UniformFanInShape(concat.out, ds: _*)
+    }
+
 }

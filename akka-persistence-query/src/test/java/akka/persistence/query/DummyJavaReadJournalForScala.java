@@ -1,11 +1,10 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.persistence.query;
 
-import scala.runtime.BoxedUnit;
-
+import akka.NotUsed;
 
 /**
  * Use for tests only!
@@ -23,7 +22,7 @@ public class DummyJavaReadJournalForScala implements akka.persistence.query.scal
   }
 
   @Override
-  public akka.stream.scaladsl.Source<String, BoxedUnit> allPersistenceIds() {
+  public akka.stream.scaladsl.Source<String, NotUsed> allPersistenceIds() {
     return readJournal.allPersistenceIds().asScala();
   }
 

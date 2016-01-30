@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.server.values;
 
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+
 import org.junit.Test;
-import scala.Option;
-import scala.concurrent.Future;
 
 import akka.http.javadsl.server.*;
 import akka.http.javadsl.model.HttpRequest;
@@ -17,7 +18,7 @@ public class HttpBasicAuthenticationTest extends JUnitRouteTest {
     HttpBasicAuthenticator<String> authenticatedUser =
         new HttpBasicAuthenticator<String>("test-realm") {
             @Override
-            public Future<Option<String>> authenticate(BasicCredentials credentials) {
+            public CompletionStage<Optional<String>> authenticate(BasicCredentials credentials) {
                 if (credentials.available() && // no anonymous access
                         credentials.identifier().equals("sina") &&
                         credentials.verify("1234"))
@@ -29,7 +30,7 @@ public class HttpBasicAuthenticationTest extends JUnitRouteTest {
     OAuth2Authenticator<String> authenticatedToken =
         new OAuth2Authenticator<String>("test-realm") {
             @Override
-            public Future<Option<String>> authenticate(OAuth2Credentials credentials) {
+            public CompletionStage<Optional<String>> authenticate(OAuth2Credentials credentials) {
                 if (credentials.available() && // no anonymous access
                         credentials.identifier().equals("myToken") &&
                         credentials.verify("myToken"))

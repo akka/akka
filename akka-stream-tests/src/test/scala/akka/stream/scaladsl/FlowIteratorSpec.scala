@@ -1,7 +1,9 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
+
+import akka.NotUsed
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -15,13 +17,13 @@ import org.reactivestreams.Subscriber
 
 class FlowIteratorSpec extends AbstractFlowIteratorSpec {
   override def testName = "A Flow based on an iterator producing function"
-  override def createSource(elements: Int): Source[Int, Unit] =
+  override def createSource(elements: Int): Source[Int, NotUsed] =
     Source.fromIterator(() ⇒ (1 to elements).iterator)
 }
 
 class FlowIterableSpec extends AbstractFlowIteratorSpec {
   override def testName = "A Flow based on an iterable"
-  override def createSource(elements: Int): Source[Int, Unit] =
+  override def createSource(elements: Int): Source[Int, NotUsed] =
     Source(1 to elements)
 
   implicit def mmaterializer = super.materializer
@@ -80,7 +82,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
 
   def testName: String
 
-  def createSource(elements: Int): Source[Int, Unit]
+  def createSource(elements: Int): Source[Int, NotUsed]
 
   testName must {
     "produce elements" in assertAllStagesStopped {

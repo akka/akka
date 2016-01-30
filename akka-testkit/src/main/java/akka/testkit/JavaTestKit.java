@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit;
 
@@ -558,7 +558,7 @@ public class JavaTestKit {
       this(clazz, max, Duration.Inf(), messages);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("all")
     public ReceiveWhile(Class<T> clazz, Duration max, Duration idle, int messages) {
       results = p.receiveWhile(max, idle, messages, new CachingPartialFunction<Object, T>() {
         public T match(Object msg) throws Exception {

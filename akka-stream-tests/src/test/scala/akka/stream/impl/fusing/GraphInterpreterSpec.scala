@@ -1,8 +1,9 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl.fusing
 
+import akka.NotUsed
 import akka.stream.{ OverflowStrategy, Attributes }
 import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.testkit.AkkaSpec
@@ -121,10 +122,7 @@ class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should ===(Set.empty)
 
       source2.onNext("Meaning of life")
-      lastEvents() should ===(Set(OnNext(sink, (42, "Meaning of life"))))
-
-      sink.requestOne()
-      lastEvents() should ===(Set(RequestOne(source1), RequestOne(source2)))
+      lastEvents() should ===(Set(OnNext(sink, (42, "Meaning of life")), RequestOne(source1), RequestOne(source2)))
     }
 
     "implement Broadcast" in new TestSetup {
@@ -169,13 +167,11 @@ class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should ===(Set(RequestOne(source)))
 
       source.onNext(1)
-      lastEvents() should ===(Set(OnNext(sink, (1, 1))))
+      lastEvents() should ===(Set(OnNext(sink, (1, 1)), RequestOne(source)))
 
       sink.requestOne()
-      lastEvents() should ===(Set(RequestOne(source)))
-
       source.onNext(2)
-      lastEvents() should ===(Set(OnNext(sink, (2, 2))))
+      lastEvents() should ===(Set(OnNext(sink, (2, 2)), RequestOne(source)))
 
     }
 
@@ -198,16 +194,15 @@ class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should ===(Set.empty)
 
       sink1.requestOne()
-      lastEvents() should ===(Set.empty)
+      lastEvents() should ===(Set(RequestOne(source1), RequestOne(source2)))
 
       sink2.requestOne()
-      lastEvents() should ===(Set(RequestOne(source1), RequestOne(source2)))
 
       source1.onNext(1)
       lastEvents() should ===(Set.empty)
 
       source2.onNext(2)
-      lastEvents() should ===(Set(OnNext(sink1, (1, 2)), OnNext(sink2, (1, 2))))
+      lastEvents() should ===(Set(OnNext(sink1, (1, 2)), OnNext(sink2, (1, 2)), RequestOne(source1), RequestOne(source2)))
 
     }
 
@@ -346,7 +341,7 @@ class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
     "implement buffer" in new TestSetup {
       val source = new UpstreamProbe[String]("source")
       val sink = new DownstreamProbe[String]("sink")
-      val buffer = new PushPullGraphStage[String, String, Unit](
+      val buffer = new PushPullGraphStage[String, String, NotUsed](
         (_) ⇒ new Buffer[String](2, OverflowStrategy.backpressure),
         Attributes.none)
 

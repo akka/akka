@@ -1,12 +1,13 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.model;
 
 import akka.http.impl.util.Util;
-import akka.japi.Option;
 import akka.http.scaladsl.model.HttpMethods$;
+
+import java.util.Optional;
 
 /**
  * Contains static constants for predefined method types.
@@ -34,7 +35,7 @@ public final class HttpMethods {
     /**
      * Looks up a predefined HTTP method with the given name.
      */
-    public static Option<HttpMethod> lookup(String name) {
+    public static Optional<HttpMethod> lookup(String name) {
         return Util.<HttpMethod, akka.http.scaladsl.model.HttpMethod>lookupInRegistry(HttpMethods$.MODULE$, name);
     }
 }

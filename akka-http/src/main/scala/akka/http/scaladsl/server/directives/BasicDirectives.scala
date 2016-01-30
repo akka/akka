@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.server
 package directives
 
-import scala.concurrent.{ Future, ExecutionContext }
+import scala.concurrent.{ Future, ExecutionContextExecutor }
 import scala.collection.immutable
 import akka.event.LoggingAdapter
 import akka.stream.Materializer
+import akka.http.scaladsl.settings.{ RoutingSettings, ParserSettings }
 import akka.http.scaladsl.server.util.Tuple
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model._
@@ -130,15 +131,15 @@ trait BasicDirectives {
   def extractUri: Directive1[Uri] = BasicDirectives._extractUri
 
   /**
-   * Runs its inner route with the given alternative [[ExecutionContext]].
+   * Runs its inner route with the given alternative [[ExecutionContextExecutor]].
    */
-  def withExecutionContext(ec: ExecutionContext): Directive0 =
+  def withExecutionContext(ec: ExecutionContextExecutor): Directive0 =
     mapRequestContext(_ withExecutionContext ec)
 
   /**
-   * Extracts the [[ExecutionContext]] from the [[RequestContext]].
+   * Extracts the [[ExecutionContextExecutor]] from the [[RequestContext]].
    */
-  def extractExecutionContext: Directive1[ExecutionContext] = BasicDirectives._extractExecutionContext
+  def extractExecutionContext: Directive1[ExecutionContextExecutor] = BasicDirectives._extractExecutionContext
 
   /**
    * Runs its inner route with the given alternative [[Materializer]].
@@ -167,19 +168,25 @@ trait BasicDirectives {
    * Runs its inner route with the given alternative [[RoutingSettings]].
    */
   def withSettings(settings: RoutingSettings): Directive0 =
-    mapRequestContext(_ withSettings settings)
+    mapRequestContext(_ withRoutingSettings settings)
 
   /**
    * Runs the inner route with settings mapped by the given function.
    */
   def mapSettings(f: RoutingSettings ⇒ RoutingSettings): Directive0 =
-    mapRequestContext(ctx ⇒ ctx.withSettings(f(ctx.settings)))
+    mapRequestContext(ctx ⇒ ctx.withRoutingSettings(f(ctx.settings)))
 
   /**
    * Extracts the [[RoutingSettings]] from the [[RequestContext]].
    */
   def extractSettings: Directive1[RoutingSettings] =
     BasicDirectives._extractSettings
+
+  /**
+   * Extracts the [[akka.http.scaladsl.settings.ParserSettings]] from the [[RequestContext]].
+   */
+  def extractParserSettings: Directive1[ParserSettings] =
+    BasicDirectives._extractParserSettings
 
   /**
    * Extracts the [[RequestContext]] itself.
@@ -191,9 +198,10 @@ object BasicDirectives extends BasicDirectives {
   private val _extractUnmatchedPath: Directive1[Uri.Path] = extract(_.unmatchedPath)
   private val _extractRequest: Directive1[HttpRequest] = extract(_.request)
   private val _extractUri: Directive1[Uri] = extract(_.request.uri)
-  private val _extractExecutionContext: Directive1[ExecutionContext] = extract(_.executionContext)
+  private val _extractExecutionContext: Directive1[ExecutionContextExecutor] = extract(_.executionContext)
   private val _extractMaterializer: Directive1[Materializer] = extract(_.materializer)
   private val _extractLog: Directive1[LoggingAdapter] = extract(_.log)
   private val _extractSettings: Directive1[RoutingSettings] = extract(_.settings)
+  private val _extractParserSettings: Directive1[ParserSettings] = extract(_.parserSettings)
   private val _extractRequestContext: Directive1[RequestContext] = extract(conforms)
 }

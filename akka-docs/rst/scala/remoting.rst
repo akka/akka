@@ -480,8 +480,8 @@ There are lots of configuration properties that are related to remoting in Akka.
 
 .. _remote-configuration-nat:
 
-Remote configuration for NAT and Docker
----------------------------------------
+Akka behind NAT or in a Docker container
+----------------------------------------
 
 In setups involving Network Address Translation (NAT), Load Balancers or Docker
 containers the hostname and port pair that akka binds to will be different than the "logical"

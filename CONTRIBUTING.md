@@ -18,9 +18,9 @@ These guidelines mainly apply to Typesafe’s “mature” projects - not necess
 
 Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
 
-* `master` – development branch of Akka 2.4.x
+* `master` – active development branch of Akka 2.4.x
 * `release-2.3` – maintanance branch of Akka 2.3.x
-* `release 2.3-dev` – development branch of Akka Streams and HTTP (only)
+* similarily `release-2.#` branches contain legacy versions of Akka
 
 ## General Workflow
 
@@ -51,6 +51,31 @@ This is the process for committing code into master. There are of course excepti
     Please mark these pull requests with `(for validation)` in the title to make the purpose clear in the pull request list.
 
 9. Once everything is said and done, associate the ticket with the “earliest” release milestone (i.e. if back-ported so that it will be in release x.y.z, find the relevant milestone for that release) and close it.
+
+## The `validatePullRequest` task
+
+The Akka build includes a special task called `validatePullRequest` which investigates the changes made as well as dirty
+(uncommitted changes) in your local working directory and figures out which projects are impacted by those changes,
+then running tests only on those projects.
+
+For example changing something in `akka-http-core` would cause tests to be run in all projects which depend on it
+(e.g. `akka-http-core-tests`, `akka-http-marshallers-*`, `akka-docs` etc.).
+
+To use the task simply type, and the output should include entries like shown below:
+
+```
+> validatePullRequest
+[info] Diffing [HEAD] to determine changed modules in PR...
+[info] Detected uncomitted changes in directories (including in dependency analysis): [akka-protobuf,project]
+[info] Detected changes in directories: [akka-docs, project, akka-http-tests, akka-protobuf, akka-http-testkit, akka-http, akka-http-core, akka-stream]
+```
+
+By default changes are diffed with the `master` branch when working locally, if you want to validate against a different
+target PR branch you can do so by setting the PR_TARGET_BRANCH environment variable for SBT:
+
+```
+PR_TARGET_BRANCH=origin/example sbt validatePullRequest
+```
 
 ## Pull Request Requirements
 

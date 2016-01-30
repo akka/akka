@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.testkit
 
+import akka.http.scaladsl.settings.RoutingSettings
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Await, Future }
@@ -43,7 +44,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
   implicit def executor = system.dispatcher
   implicit val materializer = ActorMaterializer()
 
-  def cleanUp(): Unit = system.shutdown()
+  def cleanUp(): Unit = system.terminate()
 
   private val dynRR = new DynamicVariable[RouteTestResult](null)
   private def result =
@@ -90,18 +91,18 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
     if (r.size == 1) r.head else failTest("Expected a single rejection but got %s (%s)".format(r.size, r))
   }
 
-  def isWebsocketUpgrade: Boolean =
-    status == StatusCodes.SwitchingProtocols && header[Upgrade].exists(_.hasWebsocket)
+  def isWebSocketUpgrade: Boolean =
+    status == StatusCodes.SwitchingProtocols && header[Upgrade].exists(_.hasWebSocket)
 
   /**
-   * Asserts that the received response is a Websocket upgrade response and the extracts
+   * Asserts that the received response is a WebSocket upgrade response and the extracts
    * the chosen subprotocol and passes it to the handler.
    */
-  def expectWebsocketUpgradeWithProtocol(body: String ⇒ Unit): Unit = {
-    if (!isWebsocketUpgrade) failTest("Response was no Websocket Upgrade response")
+  def expectWebSocketUpgradeWithProtocol(body: String ⇒ Unit): Unit = {
+    if (!isWebSocketUpgrade) failTest("Response was no WebSocket Upgrade response")
     header[`Sec-WebSocket-Protocol`] match {
       case Some(`Sec-WebSocket-Protocol`(Seq(protocol))) ⇒ body(protocol)
-      case _ ⇒ failTest("No Websocket protocol found in response.")
+      case _ ⇒ failTest("No WebSocket protocol found in response.")
     }
   }
 

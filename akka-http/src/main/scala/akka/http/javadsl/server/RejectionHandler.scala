@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.server
@@ -157,13 +157,13 @@ abstract class RejectionHandler {
   /**
    * Callback called to handle rejection created when a websocket request was expected but none was found.
    */
-  def handleExpectedWebsocketRequestRejection(ctx: RequestContext): RouteResult = passRejection()
+  def handleExpectedWebSocketRequestRejection(ctx: RequestContext): RouteResult = passRejection()
 
   /**
    * Callback called to handle rejection created when a websocket request was not handled because none
    * of the given subprotocols was supported.
    */
-  def handleUnsupportedWebsocketSubprotocolRejection(ctx: RequestContext, supportedProtocol: String): RouteResult = passRejection()
+  def handleUnsupportedWebSocketSubprotocolRejection(ctx: RequestContext, supportedProtocol: String): RouteResult = passRejection()
 
   /**
    * Callback called to handle rejection created by the `validation` directive as well as for `IllegalArgumentExceptions`

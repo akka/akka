@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.client
@@ -8,6 +8,8 @@ import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.{ SocketChannel, ServerSocketChannel }
 import java.util.concurrent.atomic.AtomicInteger
+import akka.http.impl.settings.ConnectionPoolSettingsImpl
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
@@ -15,7 +17,7 @@ import scala.util.{ Failure, Success, Try }
 import akka.util.ByteString
 import akka.http.scaladsl.{ TestUtils, Http }
 import akka.http.impl.util.{ SingletonException, StreamUtils }
-import akka.http.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
 import akka.stream.io.{ SessionBytes, SendBytes, SslTlsOutbound }
 import akka.stream.{ BidiShape, ActorMaterializer }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber, AkkaSpec }
@@ -128,7 +130,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
     }
 
     "be able to handle 500 pipelined requests against the test server" in new TestSetup {
-      val settings = ConnectionPoolSettings(system).copy(maxConnections = 4, pipeliningLimit = 2)
+      val settings = ConnectionPoolSettings(system).withMaxConnections(4).withPipeliningLimit(2)
       val poolFlow = Http().cachedHostConnectionPool[Int](serverHostName, serverPort, settings = settings)
 
       val N = 500
@@ -229,7 +231,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
   }
 
   "The single-request client infrastructure" should {
-    class LocalTestSetup extends TestSetup(ServerSettings(system).copy(rawRequestUriHeader = true), autoAccept = true)
+    class LocalTestSetup extends TestSetup(ServerSettings(system).withRawRequestUriHeader(true), autoAccept = true)
 
     "transform absolute request URIs into relative URIs plus host header" in new LocalTestSetup {
       val request = HttpRequest(uri = s"http://$serverHostName:$serverPort/abc?query#fragment")
@@ -303,8 +305,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
           .transform(StreamUtils.recover { case NoErrorComplete ⇒ ByteString.empty }),
         Flow[ByteString].map(SessionBytes(null, _)))
       val sink = if (autoAccept) Sink.foreach[Http.IncomingConnection](handleConnection) else Sink.fromSubscriber(incomingConnections)
-      // TODO getHostString in Java7
-      Tcp().bind(serverEndpoint.getHostName, serverEndpoint.getPort, idleTimeout = serverSettings.timeouts.idleTimeout)
+      Tcp().bind(serverEndpoint.getHostString, serverEndpoint.getPort, idleTimeout = serverSettings.timeouts.idleTimeout)
         .map { c ⇒
           val layer = Http().serverLayer(serverSettings, log = log)
           Http.IncomingConnection(c.localAddress, c.remoteAddress, layer atop rawBytesInjection join c.flow)
@@ -327,7 +328,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
                                     pipeliningLimit: Int = 1,
                                     idleTimeout: Duration = 5.seconds,
                                     ccSettings: ClientConnectionSettings = ClientConnectionSettings(system)) = {
-      val settings = ConnectionPoolSettings(maxConnections, maxRetries, maxOpenRequests, pipeliningLimit,
+      val settings = new ConnectionPoolSettingsImpl(maxConnections, maxRetries, maxOpenRequests, pipeliningLimit,
         idleTimeout, ClientConnectionSettings(system))
       flowTestBench(Http().cachedHostConnectionPool[T](serverHostName, serverPort, settings))
     }
@@ -338,9 +339,9 @@ class ConnectionPoolSpec extends AkkaSpec("""
                      pipeliningLimit: Int = 1,
                      idleTimeout: Duration = 5.seconds,
                      ccSettings: ClientConnectionSettings = ClientConnectionSettings(system)) = {
-      val settings = ConnectionPoolSettings(maxConnections, maxRetries, maxOpenRequests, pipeliningLimit,
+      val settings = new ConnectionPoolSettingsImpl(maxConnections, maxRetries, maxOpenRequests, pipeliningLimit,
         idleTimeout, ClientConnectionSettings(system))
-      flowTestBench(Http().superPool[T](settings))
+      flowTestBench(Http().superPool[T](settings = settings))
     }
 
     def flowTestBench[T, Mat](poolFlow: Flow[(HttpRequest, T), (Try[HttpResponse], T), Mat]) = {
@@ -356,6 +357,8 @@ class ConnectionPoolSpec extends AkkaSpec("""
   }
 
   case class ConnNrHeader(nr: Int) extends CustomHeader {
+    def renderInRequests = false
+    def renderInResponses = true
     def name = "Conn-Nr"
     def value = nr.toString
   }

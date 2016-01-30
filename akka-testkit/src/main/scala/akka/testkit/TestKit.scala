@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
@@ -712,7 +712,7 @@ trait TestKitBase {
  *     }
  *
  *   } finally {
- *     system.shutdown()
+ *     system.terminate()
  *   }
  * }
  * }}}

@@ -1,11 +1,10 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.parsing
 
-import akka.http.ParserSettings
-import akka.stream.impl.fusing.GraphInterpreter
+import akka.NotUsed
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.parboiled2.CharPredicate
@@ -26,7 +25,7 @@ import akka.stream.impl.fusing.SubSource
 private[http] final class BodyPartParser(defaultContentType: ContentType,
                                          boundary: String,
                                          log: LoggingAdapter,
-                                         settings: BodyPartParser.Settings = BodyPartParser.defaultSettings)
+                                         settings: BodyPartParser.Settings)
   extends PushPullStage[ByteString, BodyPartParser.Output] {
   import BodyPartParser._
   import settings._
@@ -146,7 +145,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
         else if (doubleDash(input, ix)) terminate()
         else fail("Illegal multipart boundary in message content")
 
-      case HttpHeaderParser.EmptyHeader ⇒ parseEntity(headers.toList, contentType)(input, lineEnd)
+      case EmptyHeader ⇒ parseEntity(headers.toList, contentType)(input, lineEnd)
 
       case h: `Content-Type` ⇒
         if (cth.isEmpty) parseHeaderLines(input, lineEnd, headers, headerCount + 1, Some(h))
@@ -261,6 +260,8 @@ private[http] object BodyPartParser {
   val boundaryChar = CharPredicate.Digit ++ CharPredicate.Alpha ++ "'()+_,-./:=? "
 
   private object BoundaryHeader extends HttpHeader {
+    def renderInRequests = false
+    def renderInResponses = false
     def name = ""
     def lowercaseName = ""
     def value = ""
@@ -270,32 +271,13 @@ private[http] object BodyPartParser {
 
   sealed trait Output
   sealed trait PartStart extends Output
-  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Source[Output, Unit] ⇒ BodyPartEntity) extends PartStart
+  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Source[Output, NotUsed] ⇒ BodyPartEntity) extends PartStart
   final case class EntityPart(data: ByteString) extends Output
   final case class ParseError(info: ErrorInfo) extends PartStart
 
-  final case class Settings(
-    maxHeaderNameLength: Int,
-    maxHeaderValueLength: Int,
-    maxHeaderCount: Int,
-    illegalHeaderWarnings: Boolean,
-    headerValueCacheLimit: Int,
-    uriParsingMode: Uri.ParsingMode,
-    cookieParsingMode: ParserSettings.CookieParsingMode) extends HttpHeaderParser.Settings {
-    require(maxHeaderNameLength > 0, "maxHeaderNameLength must be > 0")
-    require(maxHeaderValueLength > 0, "maxHeaderValueLength must be > 0")
-    require(maxHeaderCount > 0, "maxHeaderCount must be > 0")
-    require(headerValueCacheLimit >= 0, "headerValueCacheLimit must be >= 0")
-    def headerValueCacheLimit(headerName: String) = headerValueCacheLimit
+  abstract class Settings extends HttpHeaderParser.Settings {
+    def maxHeaderCount: Int
+    def illegalHeaderWarnings: Boolean
+    def defaultHeaderValueCacheLimit: Int
   }
-
-  // TODO: load from config
-  val defaultSettings = Settings(
-    maxHeaderNameLength = 64,
-    maxHeaderValueLength = 8192,
-    maxHeaderCount = 64,
-    illegalHeaderWarnings = true,
-    headerValueCacheLimit = 8,
-    uriParsingMode = Uri.ParsingMode.Relaxed,
-    cookieParsingMode = ParserSettings.CookieParsingMode.RFC6265)
 }
