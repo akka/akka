@@ -1,33 +1,37 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.server
 
 import java.net.InetSocketAddress
-import java.util.Random
-import akka.stream.impl.fusing.GraphInterpreter
+import java.util.concurrent.atomic.AtomicReference
+import scala.concurrent.{ Promise, Future }
+import scala.concurrent.duration.{ Deadline, FiniteDuration, Duration }
 import scala.collection.immutable
-import org.reactivestreams.{ Publisher, Subscriber }
 import scala.util.control.NonFatal
+import akka.NotUsed
+import akka.actor.Cancellable
+import akka.japi.Function
 import akka.event.LoggingAdapter
-import akka.http.ServerSettings
+import akka.util.ByteString
+import akka.stream._
+import akka.stream.io._
+import akka.stream.scaladsl._
+import akka.stream.stage._
+import akka.http.scaladsl.settings.ServerSettings
 import akka.http.impl.engine.HttpConnectionTimeoutException
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.engine.parsing._
 import akka.http.impl.engine.rendering.{ HttpResponseRendererFactory, ResponseRenderingContext, ResponseRenderingOutput }
 import akka.http.impl.engine.ws._
 import akka.http.impl.util._
-import akka.http.scaladsl.Http
+import akka.http.scaladsl.util.FastFuture.EnhancedFuture
+import akka.http.scaladsl.{ TimeoutAccess, Http }
+import akka.http.scaladsl.model.headers.`Timeout-Access`
+import akka.http.javadsl.model
 import akka.http.scaladsl.model._
-import akka.stream._
-import akka.stream.impl.ConstantFun
-import akka.stream.io._
-import akka.stream.scaladsl._
-import akka.stream.stage._
-import akka.util.ByteString
 import akka.http.scaladsl.model.ws.Message
-import akka.stream.impl.fusing.SubSource
 
 /**
  * INTERNAL API
@@ -54,6 +58,7 @@ private[http] object HttpServerBluePrint {
   def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter): Http.ServerLayer = {
     val theStack =
       userHandlerGuard(settings.pipeliningLimit) atop
+        requestTimeoutSupport(settings.timeouts.requestTimeout) atop
         requestPreparation(settings) atop
         controller(settings, log) atop
         parsingRendering(settings, log) atop
@@ -63,20 +68,26 @@ private[http] object HttpServerBluePrint {
     theStack.withAttributes(HttpAttributes.remoteAddress(remoteAddress))
   }
 
-  val tlsSupport: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, SessionBytes, Unit] =
+  val tlsSupport: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, SessionBytes, NotUsed] =
     BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect { case x: SessionBytes ⇒ x })
 
-  def websocketSupport(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes, Unit] =
+  def websocketSupport(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes, NotUsed] =
     BidiFlow.fromGraph(new ProtocolSwitchStage(settings, log))
 
-  def parsingRendering(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, SessionBytes, RequestOutput, Unit] =
+  def parsingRendering(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, SessionBytes, RequestOutput, NotUsed] =
     BidiFlow.fromFlows(rendering(settings, log), parsing(settings, log))
 
-  def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, Unit] =
+  def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, NotUsed] =
     BidiFlow.fromGraph(new ControllerStage(settings, log)).reversed
 
-  def requestPreparation(settings: ServerSettings): BidiFlow[HttpResponse, HttpResponse, RequestOutput, HttpRequest, Unit] =
+  def requestPreparation(settings: ServerSettings): BidiFlow[HttpResponse, HttpResponse, RequestOutput, HttpRequest, NotUsed] =
     BidiFlow.fromFlows(Flow[HttpResponse], new PrepareRequests(settings))
+
+  def requestTimeoutSupport(timeout: Duration): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] =
+    timeout match {
+      case x: FiniteDuration ⇒ BidiFlow.fromGraph(new RequestTimeoutSupport(x)).reversed
+      case _                 ⇒ BidiFlow.identity
+    }
 
   final class PrepareRequests(settings: ServerSettings) extends GraphStage[FlowShape[RequestOutput, HttpRequest]] {
     val in = Inlet[RequestOutput]("RequestStartThenRunIgnore.in")
@@ -97,6 +108,8 @@ private[http] object HttpServerBluePrint {
 
             val entity = createEntity(entityCreator) withSizeLimit settings.parserSettings.maxContentLength
             push(out, HttpRequest(effectiveMethod, uri, effectiveHeaders, entity, protocol))
+          case other ⇒
+            throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
         }
       }
       setHandler(in, idle)
@@ -127,7 +140,7 @@ private[http] object HttpServerBluePrint {
     }
   }
 
-  def parsing(settings: ServerSettings, log: LoggingAdapter): Flow[SessionBytes, RequestOutput, Unit] = {
+  def parsing(settings: ServerSettings, log: LoggingAdapter): Flow[SessionBytes, RequestOutput, NotUsed] = {
     import settings._
 
     // the initial header parser we initially use for every connection,
@@ -157,7 +170,7 @@ private[http] object HttpServerBluePrint {
       .map(establishAbsoluteUri)
   }
 
-  def rendering(settings: ServerSettings, log: LoggingAdapter): Flow[ResponseRenderingContext, ResponseRenderingOutput, Unit] = {
+  def rendering(settings: ServerSettings, log: LoggingAdapter): Flow[ResponseRenderingContext, ResponseRenderingOutput, NotUsed] = {
     import settings._
 
     val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log)
@@ -171,6 +184,104 @@ private[http] object HttpServerBluePrint {
     Flow[ResponseRenderingContext]
       .via(responseRendererFactory.renderer.named("renderer"))
       .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorHandling(errorHandler)).named("errorLogger"))
+  }
+
+  class RequestTimeoutSupport(initialTimeout: FiniteDuration)
+    extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
+    private val requestIn = Inlet[HttpRequest]("requestIn")
+    private val requestOut = Outlet[HttpRequest]("requestOut")
+    private val responseIn = Inlet[HttpResponse]("responseIn")
+    private val responseOut = Outlet[HttpResponse]("responseOut")
+
+    override def initialAttributes = Attributes.name("RequestTimeoutSupport")
+
+    val shape = new BidiShape(requestIn, requestOut, responseIn, responseOut)
+
+    def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
+      var openTimeouts = immutable.Queue[TimeoutAccessImpl]()
+      setHandler(requestIn, new InHandler {
+        def onPush(): Unit = {
+          val request = grab(requestIn)
+          val (entity, requestEnd) = HttpEntity.captureTermination(request.entity)
+          val access = new TimeoutAccessImpl(request, initialTimeout, requestEnd,
+            getAsyncCallback(emitTimeoutResponse), interpreter.materializer)
+          openTimeouts = openTimeouts.enqueue(access)
+          push(requestOut, request.copy(headers = request.headers :+ `Timeout-Access`(access), entity = entity))
+        }
+        override def onUpstreamFinish() = complete(requestOut)
+        override def onUpstreamFailure(ex: Throwable) = fail(requestOut, ex)
+        def emitTimeoutResponse(response: (TimeoutAccess, HttpResponse)) =
+          if (openTimeouts.head eq response._1) {
+            emit(responseOut, response._2, () ⇒ complete(responseOut))
+          } // else the application response arrived after we scheduled the timeout response, which is close but ok
+      })
+      // TODO: provide and use default impl for simply connecting an input and an output port as we do here
+      setHandler(requestOut, new OutHandler {
+        def onPull(): Unit = pull(requestIn)
+        override def onDownstreamFinish() = cancel(requestIn)
+      })
+      setHandler(responseIn, new InHandler {
+        def onPush(): Unit = {
+          openTimeouts.head.clear()
+          openTimeouts = openTimeouts.tail
+          push(responseOut, grab(responseIn))
+        }
+        override def onUpstreamFinish() = complete(responseOut)
+        override def onUpstreamFailure(ex: Throwable) = fail(responseOut, ex)
+      })
+      setHandler(responseOut, new OutHandler {
+        def onPull(): Unit = pull(responseIn)
+        override def onDownstreamFinish() = cancel(responseIn)
+      })
+    }
+  }
+
+  private class TimeoutSetup(val timeoutBase: Deadline,
+                             val scheduledTask: Cancellable,
+                             val timeout: Duration,
+                             val handler: HttpRequest ⇒ HttpResponse)
+
+  private class TimeoutAccessImpl(request: HttpRequest, initialTimeout: FiniteDuration, requestEnd: Future[Unit],
+                                  trigger: AsyncCallback[(TimeoutAccess, HttpResponse)], materializer: Materializer)
+    extends AtomicReference[Future[TimeoutSetup]] with TimeoutAccess with (HttpRequest ⇒ HttpResponse) { self ⇒
+    import materializer.executionContext
+
+    set {
+      requestEnd.fast.map(_ ⇒ new TimeoutSetup(Deadline.now, schedule(initialTimeout, this), initialTimeout, this))
+    }
+
+    override def apply(request: HttpRequest) = HttpResponse(StatusCodes.ServiceUnavailable, entity = "The server was not able " +
+      "to produce a timely response to your request.\r\nPlease try again in a short while!")
+
+    def clear(): Unit = // best effort timeout cancellation
+      get.fast.foreach(setup ⇒ if (setup.scheduledTask ne null) setup.scheduledTask.cancel())
+
+    override def updateTimeout(timeout: Duration): Unit = update(timeout, null: HttpRequest ⇒ HttpResponse)
+    override def updateHandler(handler: HttpRequest ⇒ HttpResponse): Unit = update(null, handler)
+    override def update(timeout: Duration, handler: HttpRequest ⇒ HttpResponse): Unit = {
+      val promise = Promise[TimeoutSetup]()
+      for (old ← getAndSet(promise.future).fast)
+        promise.success {
+          if ((old.scheduledTask eq null) || old.scheduledTask.cancel()) {
+            val newHandler = if (handler eq null) old.handler else handler
+            val newTimeout = if (timeout eq null) old.timeout else timeout
+            val newScheduling = newTimeout match {
+              case x: FiniteDuration ⇒ schedule(old.timeoutBase + x - Deadline.now, newHandler)
+              case _                 ⇒ null // don't schedule a new timeout
+            }
+            new TimeoutSetup(old.timeoutBase, newScheduling, newTimeout, newHandler)
+          } else old // too late, the previously set timeout cannot be cancelled anymore
+        }
+    }
+    private def schedule(delay: FiniteDuration, handler: HttpRequest ⇒ HttpResponse): Cancellable =
+      materializer.scheduleOnce(delay, new Runnable { def run() = trigger.invoke((self, handler(request))) })
+
+    import akka.http.impl.util.JavaMapping.Implicits._
+    /** JAVA API **/
+    def update(timeout: Duration, handler: Function[model.HttpRequest, model.HttpResponse]): Unit =
+      update(timeout, handler(_: HttpRequest).asScala)
+    def updateHandler(handler: Function[model.HttpRequest, model.HttpResponse]): Unit =
+      updateHandler(handler(_: HttpRequest).asScala)
   }
 
   class ControllerStage(settings: ServerSettings, log: LoggingAdapter)
@@ -330,7 +441,7 @@ private[http] object HttpServerBluePrint {
 
       def with100ContinueTrigger[T <: ParserOutput](createEntity: EntityCreator[T, RequestEntity]) =
         StreamedEntityCreator {
-          createEntity.compose[Source[T, Unit]] {
+          createEntity.compose[Source[T, NotUsed]] {
             _.via(Flow[T].transform(() ⇒ new PushPullStage[T, T] {
               private var oneHundredContinueSent = false
               def onPush(elem: T, ctx: Context[T]) = ctx.push(elem)
@@ -352,7 +463,7 @@ private[http] object HttpServerBluePrint {
    *  - produces exactly one response per request
    *  - has not more than `pipeliningLimit` responses outstanding
    */
-  def userHandlerGuard(pipeliningLimit: Int): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, Unit] =
+  def userHandlerGuard(pipeliningLimit: Int): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] =
     One2OneBidiFlow[HttpRequest, HttpResponse](pipeliningLimit).reversed
 
   private class ProtocolSwitchStage(settings: ServerSettings, log: LoggingAdapter)
@@ -371,31 +482,37 @@ private[http] object HttpServerBluePrint {
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
       import akka.http.impl.engine.rendering.ResponseRenderingOutput._
 
+      /*
+       * These handlers are in charge until a switch command comes in, then they
+       * are replaced.
+       */
+
       setHandler(fromHttp, new InHandler {
         override def onPush(): Unit =
           grab(fromHttp) match {
             case HttpData(b) ⇒ push(toNet, b)
-            case SwitchToWebsocket(bytes, handlerFlow) ⇒
+            case SwitchToWebSocket(bytes, handlerFlow) ⇒
               push(toNet, bytes)
               complete(toHttp)
               cancel(fromHttp)
-              switchToWebsocket(handlerFlow)
+              switchToWebSocket(handlerFlow)
           }
+        override def onUpstreamFinish(): Unit = complete(toNet)
+        override def onUpstreamFailure(ex: Throwable): Unit = fail(toNet, ex)
       })
       setHandler(toNet, new OutHandler {
         override def onPull(): Unit = pull(fromHttp)
+        override def onDownstreamFinish(): Unit = completeStage()
       })
 
       setHandler(fromNet, new InHandler {
-        def onPush(): Unit = push(toHttp, grab(fromNet))
-
-        // propagate error but don't close stage yet to prevent fromHttp/fromWs being cancelled
-        // too eagerly
+        override def onPush(): Unit = push(toHttp, grab(fromNet))
+        override def onUpstreamFinish(): Unit = complete(toHttp)
         override def onUpstreamFailure(ex: Throwable): Unit = fail(toHttp, ex)
       })
       setHandler(toHttp, new OutHandler {
         override def onPull(): Unit = pull(fromNet)
-        override def onDownstreamFinish(): Unit = ()
+        override def onDownstreamFinish(): Unit = cancel(fromNet)
       })
 
       private var activeTimers = 0
@@ -419,44 +536,68 @@ private[http] object HttpServerBluePrint {
       }
 
       /*
-       * Websocket support
+       * WebSocket support
        */
-      def switchToWebsocket(handlerFlow: Either[Flow[FrameEvent, FrameEvent, Any], Flow[Message, Message, Any]]): Unit = {
+      def switchToWebSocket(handlerFlow: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]]): Unit = {
         val frameHandler = handlerFlow match {
           case Left(frameHandler) ⇒ frameHandler
           case Right(messageHandler) ⇒
-            Websocket.stack(serverSide = true, maskingRandomFactory = settings.websocketRandomFactory, log = log).join(messageHandler)
+            WebSocket.stack(serverSide = true, maskingRandomFactory = settings.websocketRandomFactory, log = log).join(messageHandler)
         }
+
         val sinkIn = new SubSinkInlet[ByteString]("FrameSink")
-        val sourceOut = new SubSourceOutlet[ByteString]("FrameSource")
-
-        val timeoutKey = SubscriptionTimeout(() ⇒ {
-          sourceOut.timeout(timeout)
-          if (sourceOut.isClosed) completeStage()
-        })
-        addTimeout(timeoutKey)
-
         sinkIn.setHandler(new InHandler {
           override def onPush(): Unit = push(toNet, sinkIn.grab())
-        })
-        setHandler(toNet, new OutHandler {
-          override def onPull(): Unit = sinkIn.pull()
-        })
-
-        setHandler(fromNet, new InHandler {
-          override def onPush(): Unit = sourceOut.push(grab(fromNet).bytes)
-        })
-        sourceOut.setHandler(new OutHandler {
-          override def onPull(): Unit = {
-            if (!hasBeenPulled(fromNet)) pull(fromNet)
-            cancelTimeout(timeoutKey)
-            sourceOut.setHandler(new OutHandler {
-              override def onPull(): Unit = if (!hasBeenPulled(fromNet)) pull(fromNet)
-            })
-          }
+          override def onUpstreamFinish(): Unit = complete(toNet)
+          override def onUpstreamFailure(ex: Throwable): Unit = fail(toNet, ex)
         })
 
-        Websocket.framing.join(frameHandler).runWith(sourceOut.source, sinkIn.sink)(subFusingMaterializer)
+        if (isClosed(fromNet)) {
+          setHandler(toNet, new OutHandler {
+            override def onPull(): Unit = sinkIn.pull()
+            override def onDownstreamFinish(): Unit = {
+              completeStage()
+              sinkIn.cancel()
+            }
+          })
+          WebSocket.framing.join(frameHandler).runWith(Source.empty, sinkIn.sink)(subFusingMaterializer)
+        } else {
+          val sourceOut = new SubSourceOutlet[ByteString]("FrameSource")
+
+          val timeoutKey = SubscriptionTimeout(() ⇒ {
+            sourceOut.timeout(timeout)
+            if (sourceOut.isClosed) completeStage()
+          })
+          addTimeout(timeoutKey)
+
+          setHandler(toNet, new OutHandler {
+            override def onPull(): Unit = sinkIn.pull()
+            override def onDownstreamFinish(): Unit = {
+              completeStage()
+              sinkIn.cancel()
+              sourceOut.complete()
+            }
+          })
+
+          setHandler(fromNet, new InHandler {
+            override def onPush(): Unit = sourceOut.push(grab(fromNet).bytes)
+            override def onUpstreamFinish(): Unit = sourceOut.complete()
+            override def onUpstreamFailure(ex: Throwable): Unit = sourceOut.fail(ex)
+          })
+          sourceOut.setHandler(new OutHandler {
+            override def onPull(): Unit = {
+              if (!hasBeenPulled(fromNet)) pull(fromNet)
+              cancelTimeout(timeoutKey)
+              sourceOut.setHandler(new OutHandler {
+                override def onPull(): Unit = if (!hasBeenPulled(fromNet)) pull(fromNet)
+                override def onDownstreamFinish(): Unit = cancel(fromNet)
+              })
+            }
+            override def onDownstreamFinish(): Unit = cancel(fromNet)
+          })
+
+          WebSocket.framing.join(frameHandler).runWith(sourceOut.source, sinkIn.sink)(subFusingMaterializer)
+        }
       }
     }
   }

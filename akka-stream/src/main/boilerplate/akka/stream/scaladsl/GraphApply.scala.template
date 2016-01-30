@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl
 
+import akka.NotUsed
 import akka.stream.impl.StreamLayout
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.{ Graph, Attributes, Shape }
@@ -11,7 +12,7 @@ trait GraphApply {
   /**
    * Creates a new [[Graph]] by passing a [[GraphDSL.Builder]] to the given create function.
    */
-  def create[S <: Shape]()(buildBlock: GraphDSL.Builder[Unit] ⇒ S): Graph[S, Unit] = {
+  def create[S <: Shape]()(buildBlock: GraphDSL.Builder[NotUsed] ⇒ S): Graph[S, NotUsed] = {
     val builder = new GraphDSL.Builder
     val s = buildBlock(builder)
     val mod = builder.module.nest().replaceShape(s)

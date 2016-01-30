@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -150,7 +150,10 @@ private[akka] class RepointableActorRef(
           lookup.getChildByName(childName) match {
             case Some(crs: ChildRestartStats) if uid == ActorCell.undefinedUid || uid == crs.uid ⇒
               crs.child.asInstanceOf[InternalActorRef].getChild(name)
-            case _ ⇒ Nobody
+            case _ ⇒ lookup match {
+              case ac: ActorCell ⇒ ac.getFunctionRefOrNobody(childName, uid)
+              case _             ⇒ Nobody
+            }
           }
       }
     } else this

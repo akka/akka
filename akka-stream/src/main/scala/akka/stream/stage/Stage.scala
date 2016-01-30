@@ -1,8 +1,9 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.stage
 
+import akka.NotUsed
 import akka.stream._
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -28,6 +29,7 @@ import scala.util.control.NonFatal
  * @see [[akka.stream.scaladsl.Flow#transform]]
  * @see [[akka.stream.javadsl.Flow#transform]]
  */
+@deprecated("Please use GraphStage instead.", "2.4.2")
 sealed trait Stage[-In, +Out]
 
 /**
@@ -181,9 +183,10 @@ private[stream] object AbstractStage {
   }
 
   class PushPullGraphStage[-In, +Out, Ext](_factory: (Attributes) ⇒ Stage[In, Out], _stageAttributes: Attributes)
-    extends PushPullGraphStageWithMaterializedValue[In, Out, Ext, Unit]((att: Attributes) ⇒ (_factory(att), ()), _stageAttributes)
+    extends PushPullGraphStageWithMaterializedValue[In, Out, Ext, NotUsed]((att: Attributes) ⇒ (_factory(att), NotUsed), _stageAttributes)
 }
 
+@deprecated("Please use GraphStage instead.", "2.4.2")
 abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, Ctx <: Context[Out], LifeCtx <: LifecycleContext] extends Stage[In, Out] {
 
   /**
@@ -330,11 +333,13 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
  * @see [[StatefulStage]]
  * @see [[PushStage]]
  */
+@deprecated("Please use GraphStage instead.", "2.4.2")
 abstract class PushPullStage[In, Out] extends AbstractStage[In, Out, SyncDirective, SyncDirective, Context[Out], LifecycleContext]
 
 /**
  * `PushStage` is a [[PushPullStage]] that always perform transitive pull by calling `ctx.pull` from `onPull`.
  */
+@deprecated("Please use GraphStage instead.", "2.4.2")
 abstract class PushStage[In, Out] extends PushPullStage[In, Out] {
   /**
    * Always pulls from upstream.
@@ -364,6 +369,7 @@ abstract class PushStage[In, Out] extends PushPullStage[In, Out] {
  *
  * @see [[PushPullStage]]
  */
+@deprecated("Please use GraphStage instead.", "2.4.2")
 abstract class DetachedStage[In, Out]
   extends AbstractStage[In, Out, UpstreamDirective, DownstreamDirective, DetachedContext[Out], LifecycleContext] {
   private[stream] override def isDetached = true

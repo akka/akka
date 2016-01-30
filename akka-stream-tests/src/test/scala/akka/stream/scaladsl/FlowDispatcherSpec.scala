@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
@@ -8,7 +8,7 @@ import akka.stream.testkit.AkkaSpec
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 
-class FlowDispatcherSpec extends AkkaSpec("my-dispatcher = ${akka.test.stream-dispatcher}") {
+class FlowDispatcherSpec extends AkkaSpec(s"my-dispatcher = $${akka.test.stream-dispatcher}") {
 
   val defaultSettings = ActorMaterializerSettings(system)
 

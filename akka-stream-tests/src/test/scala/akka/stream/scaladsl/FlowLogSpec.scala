@@ -1,8 +1,9 @@
 /**
- * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
+import akka.NotUsed
 import akka.event.{ DummyClassForStringSources, Logging }
 import akka.stream.ActorAttributes._
 import akka.stream.Attributes.LogLevels
@@ -64,7 +65,7 @@ class FlowLogSpec extends AkkaSpec("akka.loglevel = DEBUG") with ScriptedTest {
       "debug each element" in {
         val log = Logging(system, "com.example.ImportantLogger")
 
-        val debugging: javadsl.Flow[Integer, Integer, Unit] = javadsl.Flow.of(classOf[Integer])
+        val debugging: javadsl.Flow[Integer, Integer, NotUsed] = javadsl.Flow.of(classOf[Integer])
           .log("log-1")
           .log("log-2", new akka.japi.function.Function[Integer, Integer] { def apply(i: Integer) = i })
           .log("log-3", new akka.japi.function.Function[Integer, Integer] { def apply(i: Integer) = i }, log)

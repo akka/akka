@@ -4,7 +4,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.Future
 
-import akka.stream.{ ClosedShape, ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.{ SourceShape, ClosedShape, ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._
@@ -108,6 +108,18 @@ class GraphBalanceSpec extends AkkaSpec {
       s2.expectNext(3)
       s1.expectComplete()
       s2.expectComplete()
+    }
+
+    "work with one-way merge" in {
+      val result = Source.fromGraph(GraphDSL.create() { implicit b ⇒
+        val balance = b.add(Balance[Int](1))
+        val source = b.add(Source(1 to 3))
+
+        source ~> balance.in
+        SourceShape(balance.out(0))
+      }).runFold(Seq[Int]())(_ :+ _)
+
+      Await.result(result, 3.seconds) should ===(Seq(1, 2, 3))
     }
 
     "work with 5-way balance" in {

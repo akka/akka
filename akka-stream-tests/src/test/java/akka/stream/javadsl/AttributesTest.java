@@ -1,17 +1,29 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.javadsl;
 
 import static org.junit.Assert.assertEquals;
+
 import java.util.Arrays;
 import java.util.Collections;
 
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import akka.stream.Attributes;
+import akka.stream.StreamTest;
+import akka.stream.testkit.AkkaSpec;
 
-public class AttributesTest {
+public class AttributesTest extends StreamTest {
+
+  public AttributesTest() {
+    super(actorSystemResource);
+  }
+
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("AttributesTest",
+    AkkaSpec.testConf());
 
   final Attributes attributes =
       Attributes.name("a")

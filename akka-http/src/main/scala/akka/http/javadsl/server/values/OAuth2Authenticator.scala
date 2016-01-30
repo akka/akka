@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.server.values
 
 import akka.http.impl.server.{ ExtractionImplBase, RouteStructure }
 import akka.http.javadsl.server.{ AbstractDirective, RequestVal, Route }
-import akka.http.scaladsl.util.FastFuture
-
-import scala.concurrent.Future
 import scala.reflect.ClassTag
+import java.util.concurrent.CompletionStage
+import java.util.Optional
+import java.util.concurrent.CompletableFuture
 
 /**
  * Represents existing or missing OAuth 2 authentication credentials.
@@ -38,18 +38,18 @@ trait OAuth2Credentials {
  */
 abstract class OAuth2Authenticator[T](val realm: String) extends AbstractDirective with ExtractionImplBase[T] with RequestVal[T] {
   protected[http] implicit def classTag: ClassTag[T] = reflect.classTag[AnyRef].asInstanceOf[ClassTag[T]]
-  def authenticate(credentials: OAuth2Credentials): Future[Option[T]]
+  def authenticate(credentials: OAuth2Credentials): CompletionStage[Optional[T]]
 
   /**
    * Creates a return value for use in [[authenticate]] that successfully authenticates the requests and provides
    * the given user.
    */
-  def authenticateAs(user: T): Future[Option[T]] = FastFuture.successful(Some(user))
+  def authenticateAs(user: T): CompletionStage[Optional[T]] = CompletableFuture.completedFuture(Optional.of(user))
 
   /**
    * Refuses access for this user.
    */
-  def refuseAccess(): Future[Option[T]] = FastFuture.successful(None)
+  def refuseAccess(): CompletionStage[Optional[T]] = CompletableFuture.completedFuture(Optional.empty())
 
   /**
    * INTERNAL API

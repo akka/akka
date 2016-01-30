@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.testkit
 
@@ -22,7 +22,7 @@ class StreamTestKitSpec extends AkkaSpec {
     }
 
     "#toStrict with failing source" in {
-      val msg = intercept[AssertionError] {
+      val error = intercept[AssertionError] {
         Source.fromIterator(() ⇒ new Iterator[Int] {
           var i = 0
           override def hasNext: Boolean = true
@@ -35,10 +35,10 @@ class StreamTestKitSpec extends AkkaSpec {
           }
         }).runWith(TestSink.probe)
           .toStrict(300.millis)
-      }.getMessage
+      }
 
-      msg should include("Boom!")
-      msg should include("List(1, 2)")
+      error.getCause.getMessage should include("Boom!")
+      error.getMessage should include("List(1, 2)")
     }
 
     "#toStrict when subscription was already obtained" in {

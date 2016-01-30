@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.server
@@ -61,10 +61,10 @@ private[http] class RejectionHandlerWrapper(javaHandler: server.RejectionHandler
           handleAuthorizationFailedRejection(ctx)
         case MissingCookieRejection(cookieName) ⇒
           handleMissingCookieRejection(ctx, cookieName)
-        case ExpectedWebsocketRequestRejection ⇒
-          handleExpectedWebsocketRequestRejection(ctx)
-        case UnsupportedWebsocketSubprotocolRejection(supportedProtocol) ⇒
-          handleUnsupportedWebsocketSubprotocolRejection(ctx, supportedProtocol)
+        case ExpectedWebSocketRequestRejection ⇒
+          handleExpectedWebSocketRequestRejection(ctx)
+        case UnsupportedWebSocketSubprotocolRejection(supportedProtocol) ⇒
+          handleUnsupportedWebSocketSubprotocolRejection(ctx, supportedProtocol)
         case ValidationRejection(message, cause) ⇒
           handleValidationRejection(ctx, message, cause.orNull)
 

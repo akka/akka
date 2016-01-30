@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.testkit
@@ -10,8 +10,8 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.stream.{ Materializer, ActorMaterializer }
 import org.junit.rules.ExternalResource
 import org.junit.{ Assert, Rule }
-
 import scala.concurrent.duration._
+import scala.concurrent.Await
 
 /**
  * A RouteTest that uses JUnit assertions. ActorSystem and Materializer are provided as an [[ExternalResource]]
@@ -66,8 +66,7 @@ class ActorSystemResource extends ExternalResource {
     _materializer = createMaterializer(_system)
   }
   override def after(): Unit = {
-    _system.shutdown()
-    _system.awaitTermination(5.seconds)
+    Await.result(_system.terminate(), 5.seconds)
     _system = null
     _materializer = null
   }

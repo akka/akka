@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.util
@@ -9,12 +9,15 @@ import java.security.{ SecureRandom, KeyStore }
 import java.security.cert.{ CertificateFactory, Certificate }
 import javax.net.ssl.{ SSLParameters, SSLContext, TrustManagerFactory, KeyManagerFactory }
 
-import akka.http.scaladsl.HttpsContext
+import akka.http.scaladsl.HttpsConnectionContext
 
 /**
  * These are HTTPS example configurations that take key material from the resources/key folder.
  */
 object ExampleHttpContexts {
+
+  // TODO show example how to obtain pre-configured context from ssl-config
+
   val exampleServerContext = {
     // never put passwords into code!
     val password = "abcdef".toCharArray
@@ -28,8 +31,9 @@ object ExampleHttpContexts {
     val context = SSLContext.getInstance("TLS")
     context.init(keyManagerFactory.getKeyManagers, null, new SecureRandom)
 
-    HttpsContext(context)
+    new HttpsConnectionContext(context)
   }
+
   val exampleClientContext = {
     val certStore = KeyStore.getInstance(KeyStore.getDefaultType)
     certStore.load(null, null)
@@ -43,8 +47,8 @@ object ExampleHttpContexts {
     context.init(null, certManagerFactory.getTrustManagers, new SecureRandom)
 
     val params = new SSLParameters()
-    Java6Compat.trySetEndpointIdentificationAlgorithm(params, "https")
-    HttpsContext(context, sslParameters = Some(params))
+    params.setEndpointIdentificationAlgorithm("https")
+    new HttpsConnectionContext(context, sslParameters = Some(params))
   }
 
   def resourceStream(resourceName: String): InputStream = {

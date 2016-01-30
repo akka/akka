@@ -1,13 +1,14 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.javadsl
 
 import java.lang.{ Iterable ⇒ JIterable }
+import java.util.Optional
+import akka.NotUsed
 import scala.collection.immutable
 import scala.concurrent.duration._
 import java.net.InetSocketAddress
-import scala.concurrent.Future
 import scala.util.control.NoStackTrace
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
@@ -18,6 +19,9 @@ import akka.stream.scaladsl
 import akka.util.ByteString
 import akka.japi.Util.immutableSeq
 import akka.io.Inet.SocketOption
+import scala.compat.java8.OptionConverters._
+import scala.compat.java8.FutureConverters._
+import java.util.concurrent.CompletionStage
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
@@ -34,9 +38,9 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
      * Asynchronously triggers the unbinding of the port that was bound by the materialization of the `connections`
      * [[Source]].
      *
-     * The produced [[scala.concurrent.Future]] is fulfilled when the unbinding has been completed.
+     * The produced [[java.util.concurrent.CompletionStage]] is fulfilled when the unbinding has been completed.
      */
-    def unbind(): Future[Unit] = delegate.unbind()
+    def unbind(): CompletionStage[Unit] = delegate.unbind().toJava
   }
 
   /**
@@ -66,7 +70,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
      * A flow representing the client on the other side of the connection.
      * This flow can be materialized only once.
      */
-    def flow: Flow[ByteString, ByteString, Unit] = new Flow(delegate.flow)
+    def flow: Flow[ByteString, ByteString, NotUsed] = new Flow(delegate.flow)
   }
 
   /**
@@ -123,10 +127,10 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
            backlog: Int,
            options: JIterable[SocketOption],
            halfClose: Boolean,
-           idleTimeout: Duration): Source[IncomingConnection, Future[ServerBinding]] =
+           idleTimeout: Duration): Source[IncomingConnection, CompletionStage[ServerBinding]] =
     Source.fromGraph(delegate.bind(interface, port, backlog, immutableSeq(options), halfClose, idleTimeout)
       .map(new IncomingConnection(_))
-      .mapMaterializedValue(_.map(new ServerBinding(_))(ec)))
+      .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
 
   /**
    * Creates a [[Tcp.ServerBinding]] without specifying options.
@@ -136,10 +140,10 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * [[akka.stream.scaladsl.RunnableGraph]] the server is not immediately available. Only after the materialized future
    * completes is the server ready to accept client connections.
    */
-  def bind(interface: String, port: Int): Source[IncomingConnection, Future[ServerBinding]] =
+  def bind(interface: String, port: Int): Source[IncomingConnection, CompletionStage[ServerBinding]] =
     Source.fromGraph(delegate.bind(interface, port)
       .map(new IncomingConnection(_))
-      .mapMaterializedValue(_.map(new ServerBinding(_))(ec)))
+      .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
@@ -158,20 +162,20 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *                  independently whether the server is still attempting to write.
    */
   def outgoingConnection(remoteAddress: InetSocketAddress,
-                         localAddress: Option[InetSocketAddress],
+                         localAddress: Optional[InetSocketAddress],
                          options: JIterable[SocketOption],
                          halfClose: Boolean,
                          connectTimeout: Duration,
-                         idleTimeout: Duration): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
-    Flow.fromGraph(delegate.outgoingConnection(remoteAddress, localAddress, immutableSeq(options), halfClose, connectTimeout, idleTimeout)
-      .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec)))
+                         idleTimeout: Duration): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
+    Flow.fromGraph(delegate.outgoingConnection(remoteAddress, localAddress.asScala, immutableSeq(options), halfClose, connectTimeout, idleTimeout)
+      .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] without specifying options.
    * It represents a prospective TCP client connection to the given endpoint.
    */
-  def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
+  def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
     Flow.fromGraph(delegate.outgoingConnection(new InetSocketAddress(host, port))
-      .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec)))
+      .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
 
 }

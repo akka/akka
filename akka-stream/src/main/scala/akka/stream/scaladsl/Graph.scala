@@ -1,17 +1,19 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
-import akka.stream.impl.Stages.{ StageModule, SymbolicStage }
-import akka.stream.impl._
-import akka.stream.impl.StreamLayout._
+import akka.NotUsed
 import akka.stream._
+import akka.stream.impl._
+import akka.stream.impl.fusing.GraphStages
+import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
+import akka.stream.impl.Stages.{ DefaultAttributes, StageModule, SymbolicStage }
+import akka.stream.impl.StreamLayout._
 import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import scala.collection.immutable
-import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
 
 object Merge {
   /**
@@ -37,11 +39,12 @@ object Merge {
  * '''Cancels when''' downstream cancels
  */
 final class Merge[T] private (val inputPorts: Int, val eagerComplete: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
-  require(inputPorts > 1, "A Merge must have more than 1 input port")
+  // one input might seem counter intuitive but saves us from special handling in other places
+  require(inputPorts >= 1, "A Merge must have one or more input ports")
 
   val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i ⇒ Inlet[T]("Merge.in" + i))
   val out: Outlet[T] = Outlet[T]("Merge.out")
-  override def initialAttributes = Attributes.name("Merge")
+  override def initialAttributes = DefaultAttributes.merge
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
@@ -144,7 +147,7 @@ object MergePreferred {
 final class MergePreferred[T] private (val secondaryPorts: Int, val eagerComplete: Boolean) extends GraphStage[MergePreferred.MergePreferredShape[T]] {
   require(secondaryPorts >= 1, "A MergePreferred must have more than 0 secondary input ports")
 
-  override def initialAttributes = Attributes.name("MergePreferred")
+  override def initialAttributes = DefaultAttributes.mergePreferred
   override val shape: MergePreferred.MergePreferredShape[T] =
     new MergePreferred.MergePreferredShape(secondaryPorts, "MergePreferred")
 
@@ -159,16 +162,12 @@ final class MergePreferred[T] private (val secondaryPorts: Int, val eagerComplet
       if (eagerComplete || openInputs == 0) completeStage()
     }
 
-    setHandler(out, new OutHandler {
-      private var first = true
-      override def onPull(): Unit = {
-        if (first) {
-          first = false
-          tryPull(preferred)
-          shape.inSeq.foreach(tryPull)
-        }
-      }
-    })
+    override def preStart(): Unit = {
+      tryPull(preferred)
+      shape.inSeq.foreach(tryPull)
+    }
+
+    setHandler(out, eagerTerminateOutput)
 
     val pullMe = Array.tabulate(secondaryPorts)(i ⇒ {
       val port = in(i)
@@ -240,8 +239,8 @@ object Interleave {
    * @param segmentSize number of elements to send downstream before switching to next input port
    * @param eagerClose if true, interleave completes upstream if any of its upstream completes.
    */
-  def apply[T](inputPorts: Int, segmentSize: Int, eagerClose: Boolean = false): Interleave[T] =
-    new Interleave(inputPorts, segmentSize, eagerClose)
+  def apply[T](inputPorts: Int, segmentSize: Int, eagerClose: Boolean = false): Graph[UniformFanInShape[T, T], NotUsed] =
+    GraphStages.withDetachedInputs(new Interleave[T](inputPorts, segmentSize, eagerClose))
 }
 
 /**
@@ -397,10 +396,11 @@ object Broadcast {
  *
  */
 final class Broadcast[T](private val outputPorts: Int, eagerCancel: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
-  require(outputPorts > 1, "A Broadcast must have more than 1 output ports")
+  // one output might seem counter intuitive but saves us from special handling in other places
+  require(outputPorts >= 1, "A Broadcast must have one or more output ports")
   val in: Inlet[T] = Inlet[T]("Broadast.in")
   val out: immutable.IndexedSeq[Outlet[T]] = Vector.tabulate(outputPorts)(i ⇒ Outlet[T]("Broadcast.out" + i))
-  override def initialAttributes = Attributes.name("Broadcast")
+  override def initialAttributes = DefaultAttributes.broadcast
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape(in, out: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
@@ -467,6 +467,109 @@ final class Broadcast[T](private val outputPorts: Int, eagerCancel: Boolean) ext
 
 }
 
+object Partition {
+
+  /**
+   * Create a new `Partition` stage with the specified input type.
+   *
+   * @param outputPorts number of output ports
+   * @param partitioner function deciding which output each element will be targeted
+   */
+  def apply[T](outputPorts: Int, partitioner: T ⇒ Int): Partition[T] = new Partition(outputPorts, partitioner)
+}
+
+/**
+ * Fan-out the stream to several streams. emitting an incoming upstream element to one downstream consumer according
+ * to the partitioner function applied to the element
+ *
+ * '''Emits when''' emits when an element is available from the input and the chosen output has demand
+ *
+ * '''Backpressures when''' the currently chosen output back-pressures
+ *
+ * '''Completes when''' upstream completes and no output is pending
+ *
+ * '''Cancels when'''
+ *   when all downstreams cancel
+ */
+
+final class Partition[T](outputPorts: Int, partitioner: T ⇒ Int) extends GraphStage[UniformFanOutShape[T, T]] {
+
+  val in: Inlet[T] = Inlet[T]("Partition.in")
+  val out: Seq[Outlet[T]] = Seq.tabulate(outputPorts)(i ⇒ Outlet[T]("Partition.out" + i))
+  override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+    private var outPendingElem: Any = null
+    private var outPendingIdx: Int = _
+    private var downstreamRunning = outputPorts
+
+    setHandler(in, new InHandler {
+      override def onPush() = {
+        val elem = grab(in)
+        val idx = partitioner(elem)
+        if (idx < 0 || idx >= outputPorts)
+          failStage(new IndexOutOfBoundsException(s"partitioner must return an index in the range [0,${outputPorts - 1}]. returned: [$idx] for input [$elem]."))
+        else if (!isClosed(out(idx))) {
+          if (isAvailable(out(idx))) {
+            push(out(idx), elem)
+            if (out.exists(isAvailable(_)))
+              pull(in)
+          } else {
+            outPendingElem = elem
+            outPendingIdx = idx
+          }
+
+        } else if (out.exists(isAvailable(_)))
+          pull(in)
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        if (outPendingElem == null)
+          completeStage()
+      }
+    })
+
+    out.zipWithIndex.foreach {
+      case (o, idx) ⇒
+        setHandler(o, new OutHandler {
+          override def onPull() = {
+
+            if (outPendingElem != null) {
+              val elem = outPendingElem.asInstanceOf[T]
+              if (idx == outPendingIdx) {
+                push(o, elem)
+                outPendingElem = null
+                if (!isClosed(in)) {
+                  if (!hasBeenPulled(in)) {
+                    pull(in)
+                  }
+                } else
+                  completeStage()
+              }
+            } else if (!hasBeenPulled(in))
+              pull(in)
+          }
+
+          override def onDownstreamFinish(): Unit = {
+            downstreamRunning -= 1
+            if (downstreamRunning == 0)
+              completeStage()
+            else if (outPendingElem != null) {
+              if (idx == outPendingIdx) {
+                outPendingElem = null
+                if (!hasBeenPulled(in))
+                  pull(in)
+              }
+            }
+          }
+        })
+    }
+  }
+
+  override def toString = s"Partition($outputPorts)"
+
+}
+
 object Balance {
   /**
    * Create a new `Balance` with the specified number of output ports.
@@ -496,10 +599,11 @@ object Balance {
  * '''Cancels when''' all downstreams cancel
  */
 final class Balance[T](val outputPorts: Int, waitForAllDownstreams: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
-  require(outputPorts > 1, "A Balance must have more than 1 output ports")
+  // one output might seem counter intuitive but saves us from special handling in other places
+  require(outputPorts >= 1, "A Balance must have one or more output ports")
   val in: Inlet[T] = Inlet[T]("Balance.in")
   val out: immutable.IndexedSeq[Outlet[T]] = Vector.tabulate(outputPorts)(i ⇒ Outlet[T]("Balance.out" + i))
-  override def initialAttributes = Attributes.name("Balance")
+  override def initialAttributes = DefaultAttributes.balance
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
@@ -644,7 +748,8 @@ object Concat {
   /**
    * Create a new `Concat`.
    */
-  def apply[T](inputPorts: Int = 2): Concat[T] = new Concat(inputPorts)
+  def apply[T](inputPorts: Int = 2): Graph[UniformFanInShape[T, T], NotUsed] =
+    GraphStages.withDetachedInputs(new Concat[T](inputPorts))
 }
 
 /**
@@ -666,7 +771,7 @@ final class Concat[T](inputPorts: Int) extends GraphStage[UniformFanInShape[T, T
   require(inputPorts > 1, "A Concat must have more than 1 input ports")
   val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i ⇒ Inlet[T]("Concat.in" + i))
   val out: Outlet[T] = Outlet[T]("Concat.out")
-  override def initialAttributes = Attributes.name("Concat")
+  override def initialAttributes = DefaultAttributes.concat
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
   override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) {
@@ -893,7 +998,7 @@ object GraphDSL extends GraphApply {
 
     // Although Mat is always Unit, it cannot be removed as a type parameter, otherwise the "override type"
     // won't work below
-    trait PortOps[+Out] extends FlowOps[Out, Unit] with CombinerBase[Out] {
+    trait PortOps[+Out] extends FlowOps[Out, NotUsed] with CombinerBase[Out] {
       override type Repr[+O] = PortOps[O]
       override type Closed = Unit
       def outlet: Outlet[Out @uncheckedVariance]
@@ -921,8 +1026,9 @@ object GraphDSL extends GraphApply {
         new PortOpsImpl(op.shape.out.asInstanceOf[Outlet[U]], b)
       }
 
-      def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Closed =
+      def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Closed = {
         super.~>(sink)(b)
+      }
     }
 
     private class DisabledPortOps[Out](msg: String) extends PortOpsImpl[Out](null, null) {

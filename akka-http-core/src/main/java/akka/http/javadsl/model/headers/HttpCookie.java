@@ -1,25 +1,28 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.model.headers;
 
 import akka.http.javadsl.model.DateTime;
 import akka.http.impl.util.Util;
-import akka.japi.Option;
+import scala.compat.java8.OptionConverters;
+
+import java.util.Optional;
+import java.util.OptionalLong;
 
 public abstract class HttpCookie {
     public abstract String name();
     public abstract String value();
     public abstract HttpCookiePair pair();
 
-    public abstract Option<DateTime> getExpires();
-    public abstract Option<Long> getMaxAge();
-    public abstract Option<String> getDomain();
-    public abstract Option<String> getPath();
+    public abstract Optional<DateTime> getExpires();
+    public abstract OptionalLong getMaxAge();
+    public abstract Optional<String> getDomain();
+    public abstract Optional<String> getPath();
     public abstract boolean secure();
     public abstract boolean httpOnly();
-    public abstract Option<String> getExtension();
+    public abstract Optional<String> getExtension();
 
     public static HttpCookie create(String name, String value) {
         return new akka.http.scaladsl.model.headers.HttpCookie(
@@ -28,11 +31,11 @@ public abstract class HttpCookie {
                 false, false,
                 Util.<String>scalaNone());
     }
-    public static HttpCookie create(String name, String value, Option<String> domain, Option<String> path) {
+    public static HttpCookie create(String name, String value, Optional<String> domain, Optional<String> path) {
         return new akka.http.scaladsl.model.headers.HttpCookie(
                 name, value,
                 Util.<akka.http.scaladsl.model.DateTime>scalaNone(), Util.scalaNone(),
-                domain.asScala(), path.asScala(),
+                OptionConverters.toScala(domain), OptionConverters.toScala(path),
                 false, false,
                 Util.<String>scalaNone());
     }
@@ -40,22 +43,22 @@ public abstract class HttpCookie {
     public static HttpCookie create(
         String name,
         String value,
-        Option<DateTime> expires,
-        Option<Long> maxAge,
-        Option<String> domain,
-        Option<String> path,
+        Optional<DateTime> expires,
+        OptionalLong maxAge,
+        Optional<String> domain,
+        Optional<String> path,
         boolean secure,
         boolean httpOnly,
-        Option<String> extension) {
+        Optional<String> extension) {
         return new akka.http.scaladsl.model.headers.HttpCookie(
                 name, value,
-                Util.<DateTime, akka.http.scaladsl.model.DateTime>convertOptionToScala(expires),
-                ((Option<Object>) (Object) maxAge).asScala(),
-                domain.asScala(),
-                path.asScala(),
+                Util.<DateTime, akka.http.scaladsl.model.DateTime>convertOptionalToScala(expires),
+                OptionConverters.toScala(maxAge),
+                OptionConverters.toScala(domain),
+                OptionConverters.toScala(path),
                 secure,
                 httpOnly,
-                extension.asScala());
+                OptionConverters.toScala(extension));
     }
 
     /**

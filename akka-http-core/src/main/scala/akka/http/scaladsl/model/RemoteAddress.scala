@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.model
 
 import java.net.{ InetSocketAddress, UnknownHostException, InetAddress }
+import java.util.Optional
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
@@ -15,7 +16,7 @@ sealed abstract class RemoteAddress extends jm.RemoteAddress with ValueRenderabl
   def isUnknown: Boolean
 
   /** Java API */
-  def getAddress: akka.japi.Option[InetAddress] = toOption.asJava
+  def getAddress: Optional[InetAddress] = toOption.asJava
 
   /** Java API */
   def getPort: Int = toIP.flatMap(_.port).getOrElse(0)

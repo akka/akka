@@ -1,16 +1,19 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl
 
 import java.net.InetSocketAddress
-import akka.japi.function.Function;
-import scala.concurrent.Future
+import akka.NotUsed
+import akka.japi.function.Function
 import akka.stream.Materializer
 import akka.stream.javadsl.Flow
 import akka.http.javadsl.model._
 import akka.http.scaladsl.{ model ⇒ sm }
+import java.util.concurrent.CompletionStage
+import scala.concurrent.Future
+import scala.compat.java8.FutureConverters._
 
 /**
  * Represents one accepted incoming HTTP connection.
@@ -31,7 +34,7 @@ class IncomingConnection private[http] (delegate: akka.http.scaladsl.Http.Incomi
    *
    * Use `Flow.join` or one of the handleXXX methods to consume handle requests on this connection.
    */
-  def flow: Flow[HttpResponse, HttpRequest, Unit] = Flow.fromGraph(delegate.flow).asInstanceOf[Flow[HttpResponse, HttpRequest, Unit]]
+  def flow: Flow[HttpResponse, HttpRequest, NotUsed] = Flow.fromGraph(delegate.flow).asInstanceOf[Flow[HttpResponse, HttpRequest, NotUsed]]
 
   /**
    * Handles the connection with the given flow, which is materialized exactly once
@@ -49,12 +52,12 @@ class IncomingConnection private[http] (delegate: akka.http.scaladsl.Http.Incomi
   /**
    * Handles the connection with the given handler function.
    */
-  def handleWithAsyncHandler(handler: Function[HttpRequest, Future[HttpResponse]], materializer: Materializer): Unit =
-    delegate.handleWithAsyncHandler(handler.apply(_).asInstanceOf[Future[sm.HttpResponse]])(materializer)
+  def handleWithAsyncHandler(handler: Function[HttpRequest, CompletionStage[HttpResponse]], materializer: Materializer): Unit =
+    delegate.handleWithAsyncHandler(handler.apply(_).toScala.asInstanceOf[Future[sm.HttpResponse]])(materializer)
 
   /**
    * Handles the connection with the given handler function.
    */
-  def handleWithAsyncHandler(handler: Function[HttpRequest, Future[HttpResponse]], parallelism: Int, materializer: Materializer): Unit =
-    delegate.handleWithAsyncHandler(handler.apply(_).asInstanceOf[Future[sm.HttpResponse]], parallelism)(materializer)
+  def handleWithAsyncHandler(handler: Function[HttpRequest, CompletionStage[HttpResponse]], parallelism: Int, materializer: Materializer): Unit =
+    delegate.handleWithAsyncHandler(handler.apply(_).toScala.asInstanceOf[Future[sm.HttpResponse]], parallelism)(materializer)
 }

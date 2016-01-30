@@ -1,11 +1,12 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.client
 
 import java.net.InetSocketAddress
-import akka.http.ConnectionPoolSettings
+import akka.NotUsed
+import akka.http.scaladsl.settings.ConnectionPoolSettings
 
 import scala.concurrent.{ Promise, Future }
 import scala.util.Try
@@ -69,7 +70,7 @@ private object PoolFlow {
   */
   def apply(connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
             remoteAddress: InetSocketAddress, settings: ConnectionPoolSettings, log: LoggingAdapter)(
-              implicit system: ActorSystem, fm: Materializer): Flow[RequestContext, ResponseContext, Unit] =
+              implicit system: ActorSystem, fm: Materializer): Flow[RequestContext, ResponseContext, NotUsed] =
     Flow.fromGraph(GraphDSL.create[FlowShape[RequestContext, ResponseContext]]() { implicit b ⇒
       import settings._
       import GraphDSL.Implicits._

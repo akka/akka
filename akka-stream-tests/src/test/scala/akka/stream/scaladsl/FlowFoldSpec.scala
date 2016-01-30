@@ -1,7 +1,9 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
+
+import akka.NotUsed
 
 import scala.concurrent.Await
 import scala.util.control.NoStackTrace
@@ -44,7 +46,7 @@ class FlowFoldSpec extends AkkaSpec {
 
     "propagate an error" in assertAllStagesStopped {
       val error = new Exception with NoStackTrace
-      val future = inputSource.map(x ⇒ if (x > 50) throw error else x).runFold(())(Keep.none)
+      val future = inputSource.map(x ⇒ if (x > 50) throw error else x).runFold[NotUsed](NotUsed)(Keep.none)
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
     }
 

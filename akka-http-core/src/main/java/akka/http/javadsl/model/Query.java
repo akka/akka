@@ -1,12 +1,11 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.model;
 
 import akka.http.impl.model.JavaQuery;
 import akka.http.scaladsl.model.*;
-import akka.japi.Option;
 import akka.japi.Pair;
 import akka.parboiled2.CharPredicate;
 import akka.parboiled2.ParserInput$;
@@ -14,12 +13,13 @@ import akka.parboiled2.ParserInput$;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public abstract class Query {
     /**
      * Returns the value of the first parameter with the given key if it exists.
      */
-    public abstract Option<String> get(String key);
+    public abstract Optional<String> get(String key);
 
     /**
      * Returns the value of the first parameter with the given key or the provided default value.
@@ -94,6 +94,7 @@ public abstract class Query {
     /**
      * Returns a Query from the given parameters.
      */
+    @SafeVarargs
     public static Query create(Pair<String, String>... params) {
         return new JavaQuery(UriJavaAccessor.queryApply(params));
     }

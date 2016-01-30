@@ -1,13 +1,12 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.persistence.query;
 
-import scala.runtime.BoxedUnit;
-
 import java.util.Iterator;
 
+import akka.NotUsed;
 import akka.persistence.query.javadsl.AllPersistenceIdsQuery;
 import akka.persistence.query.javadsl.ReadJournal;
 import akka.stream.javadsl.Source;
@@ -21,7 +20,7 @@ public class DummyJavaReadJournal implements ReadJournal, AllPersistenceIdsQuery
 
 
   @Override
-  public Source<String, BoxedUnit> allPersistenceIds() {
+  public Source<String, NotUsed> allPersistenceIds() {
     return Source.fromIterator(() -> new Iterator<String>() {
       private int i = 0;
       @Override public boolean hasNext() { return true; }

@@ -1,8 +1,9 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
+import akka.NotUsed
 import org.reactivestreams.Publisher
 
 import scala.collection.immutable.Seq
@@ -111,19 +112,19 @@ class FlowCompileSpec extends AkkaSpec {
 
   "FlowOps" should {
     "be extensible" in {
-      val f: FlowOps[Int, Unit] { type Closed = Sink[Int, Unit] } = Flow[Int]
+      val f: FlowOps[Int, NotUsed] { type Closed = Sink[Int, NotUsed] } = Flow[Int]
       val fm = f.map(identity)
-      val f2: FlowOps[Int, Unit] = fm
-      val s: Sink[Int, Unit] = fm.to(Sink.ignore)
+      val f2: FlowOps[Int, NotUsed] = fm
+      val s: Sink[Int, NotUsed] = fm.to(Sink.ignore)
     }
 
     "be extensible (with MaterializedValue)" in {
-      val f: FlowOpsMat[Int, Unit] { type ClosedMat[+M] = Sink[Int, M] } = Flow[Int]
+      val f: FlowOpsMat[Int, NotUsed] { type ClosedMat[+M] = Sink[Int, M] } = Flow[Int]
       val fm = f.map(identity).concatMat(Source.empty)(Keep.both)
       // this asserts only the FlowOpsMat part of the signature, but fm also carries the
       // CloseMat type without which `.to(sink)` does not work
-      val f2: FlowOpsMat[Int, (Unit, Unit)] = fm
-      val s: Sink[Int, (Unit, Unit)] = fm.to(Sink.ignore)
+      val f2: FlowOpsMat[Int, (NotUsed, NotUsed)] = fm
+      val s: Sink[Int, (NotUsed, NotUsed)] = fm.to(Sink.ignore)
     }
   }
 }

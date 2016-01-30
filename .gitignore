@@ -41,6 +41,7 @@ _dump
 _mb
 activemq-data
 akka-contrib/rst_preprocessed/
+akka-docs-dev/rst_preprocessed/
 akka-docs/_build/
 akka-docs/exts/
 akka-docs/rst_preprocessed/

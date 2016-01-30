@@ -1,14 +1,16 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.model
 
-import javax.net.ssl.SSLContext
+import java.util.Optional
+import javax.net.ssl.{ SSLParameters, SSLContext }
 
 import akka.http.javadsl.model.headers.Cookie
 import akka.http.scaladsl.model
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
+import akka.stream.io.ClientAuth
 import org.scalatest.{ FreeSpec, MustMatchers }
 
 import scala.collection.immutable
@@ -59,12 +61,11 @@ class JavaApiTestCaseSpecs extends FreeSpec with MustMatchers {
       Uri.create("/order").query(JavaApiTestCases.addSessionId(orderId)) must be(Uri.create("/order?orderId=123&session=abcdefghijkl"))
     }
     "create HttpsContext" in {
-      import akka.japi.{ Option ⇒ JOption }
-      akka.http.javadsl.HttpsContext.create(SSLContext.getDefault,
-        JOption.none,
-        JOption.none,
-        JOption.none,
-        JOption.none) mustNot be(null)
+      akka.http.javadsl.ConnectionContext.https(SSLContext.getDefault,
+        Optional.empty[java.util.Collection[String]],
+        Optional.empty[java.util.Collection[String]],
+        Optional.empty[ClientAuth],
+        Optional.empty[SSLParameters]) mustNot be(null)
     }
   }
 }

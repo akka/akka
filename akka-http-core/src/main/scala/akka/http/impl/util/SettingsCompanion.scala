@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.util
@@ -10,7 +10,7 @@ import com.typesafe.config.ConfigFactory._
 import scala.util.control.NonFatal
 import scala.collection.immutable.ListMap
 import scala.collection.JavaConverters._
-import akka.actor.ActorSystem
+import akka.actor.{ ActorRefFactory, ActorSystem }
 
 /**
  * INTERNAL API
@@ -18,6 +18,9 @@ import akka.actor.ActorSystem
 private[http] abstract class SettingsCompanion[T](protected val prefix: String) {
   private final val MaxCached = 8
   private[this] var cache = ListMap.empty[ActorSystem, T]
+
+  implicit def default(implicit refFactory: ActorRefFactory): T =
+    apply(actorSystem)
 
   def apply(system: ActorSystem): T =
     // we use and update the cache without any synchronization,
@@ -49,7 +52,7 @@ private[http] abstract class SettingsCompanion[T](protected val prefix: String) 
 private[http] object SettingsCompanion {
   lazy val configAdditions: Config = {
     val localHostName =
-      try new InetSocketAddress(InetAddress.getLocalHost, 80).getHostStringJava6Compatible
+      try new InetSocketAddress(InetAddress.getLocalHost, 80).getHostString
       catch { case NonFatal(_) ⇒ "" }
     ConfigFactory.parseMap(Map("akka.http.hostname" -> localHostName).asJava)
   }

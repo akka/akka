@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl
 
@@ -20,6 +20,9 @@ private[stream] class Throttle[T](cost: Int,
                                   costCalculation: (T) ⇒ Int,
                                   mode: ThrottleMode)
   extends SimpleLinearGraphStage[T] {
+  require(cost > 0, "cost must be > 0")
+  require(per.toMillis > 0, "per time must be > 0")
+  require(!(mode == ThrottleMode.Enforcing && maximumBurst < 0), "maximumBurst must be > 0 in Enforcing mode")
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     var willStop = false

@@ -1,11 +1,11 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.model.parser
 
-import akka.http.ParserSettings
-import akka.http.ParserSettings.CookieParsingMode
+import akka.http.scaladsl.settings.ParserSettings
+import akka.http.scaladsl.settings.ParserSettings.CookieParsingMode
 import akka.http.scaladsl.model.headers.HttpCookiePair
 import scala.util.control.NonFatal
 import akka.http.impl.util.SingletonException
@@ -30,7 +30,7 @@ private[http] class HeaderParser(val input: ParserInput, settings: HeaderParser.
   with LinkHeader
   with SimpleHeaders
   with StringBuilding
-  with WebsocketHeaders {
+  with WebSocketHeaders {
   import CharacterClasses._
 
   // http://www.rfc-editor.org/errata_search.php?rfc=7230 errata id 4189
@@ -156,7 +156,7 @@ private[http] object HeaderParser {
     "www-authenticate",
     "x-forwarded-for")
 
-  trait Settings {
+  abstract class Settings {
     def uriParsingMode: Uri.ParsingMode
     def cookieParsingMode: ParserSettings.CookieParsingMode
   }

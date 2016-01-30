@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.server.values
 
 import java.util.AbstractMap.SimpleEntry
-import java.util.{ Collection ⇒ JCollection, Map ⇒ JMap }
+import java.util.{ Collection ⇒ JCollection, Map ⇒ JMap, Optional }
 import java.{ lang ⇒ jl }
 
 import akka.http.impl.server.{ ParameterImpl, StandaloneExtractionImpl, Util }
@@ -13,7 +13,6 @@ import akka.http.javadsl.server.RequestVal
 import akka.http.scaladsl.server.directives.ParameterDirectives
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.japi.function.Function
-import akka.japi.{ Option ⇒ JOption }
 
 import scala.reflect.ClassTag
 
@@ -21,7 +20,7 @@ import scala.reflect.ClassTag
  * A RequestVal representing a query parameter of type T.
  */
 trait Parameter[T] extends RequestVal[T] {
-  def optional: RequestVal[JOption[T]]
+  def optional: RequestVal[Optional[T]]
   def withDefault(defaultValue: T): RequestVal[T]
 }
 

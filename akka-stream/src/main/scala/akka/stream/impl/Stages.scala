@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl
 
@@ -25,14 +25,17 @@ private[stream] object Stages {
     val IODispatcher = ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
 
     val fused = name("fused")
+    val materializedValueSource = name("matValueSource")
     val map = name("map")
     val log = name("log")
     val filter = name("filter")
+    val filterNot = name("filterNot")
     val collect = name("collect")
     val recover = name("recover")
     val mapAsync = name("mapAsync")
     val mapAsyncUnordered = name("mapAsyncUnordered")
     val grouped = name("grouped")
+    val groupedWithin = name("groupedWithin")
     val limit = name("limit")
     val limitWeighted = name("limitWeighted")
     val sliding = name("sliding")
@@ -42,11 +45,15 @@ private[stream] object Stages {
     val dropWhile = name("dropWhile")
     val scan = name("scan")
     val fold = name("fold")
+    val reduce = name("reduce")
     val intersperse = name("intersperse")
     val buffer = name("buffer")
     val conflate = name("conflate")
+    val batch = name("batch")
+    val batchWeighted = name("batchWeighted")
     val expand = name("expand")
     val mapConcat = name("mapConcat")
+    val detacher = name("detacher")
     val groupBy = name("groupBy")
     val prefixAndTail = name("prefixAndTail")
     val split = name("split")
@@ -57,6 +64,7 @@ private[stream] object Stages {
 
     val merge = name("merge")
     val mergePreferred = name("mergePreferred")
+    val flattenMerge = name("flattenMerge")
     val broadcast = name("broadcast")
     val balance = name("balance")
     val zip = name("zip")
@@ -65,7 +73,9 @@ private[stream] object Stages {
     val repeat = name("repeat")
     val unfold = name("unfold")
     val unfoldAsync = name("unfoldAsync")
-    val unfoldInf = name("unfoldInf")
+    val delay = name("delay") and inputBuffer(16, 16)
+
+    val terminationWatcher = name("terminationWatcher")
 
     val publisherSource = name("publisherSource")
     val iterableSource = name("iterableSource")
@@ -80,7 +90,7 @@ private[stream] object Stages {
     val subscriberSource = name("subscriberSource")
     val actorPublisherSource = name("actorPublisherSource")
     val actorRefSource = name("actorRefSource")
-    val acknowledgeSource = name("acknowledgeSource")
+    val queueSource = name("queueSource")
     val inputStreamSource = name("inputStreamSource") and IODispatcher
     val outputStreamSource = name("outputStreamSource") and IODispatcher
     val fileSource = name("fileSource") and IODispatcher
@@ -197,10 +207,6 @@ private[stream] object Stages {
 
   final case class Conflate[In, Out](seed: In ⇒ Out, aggregate: (Out, In) ⇒ Out, attributes: Attributes = conflate) extends SymbolicStage[In, Out] {
     override def create(attr: Attributes): Stage[In, Out] = fusing.Conflate(seed, aggregate, supervision(attr))
-  }
-
-  final case class Expand[In, Out, Seed](seed: In ⇒ Seed, extrapolate: Seed ⇒ (Out, Seed), attributes: Attributes = expand) extends SymbolicStage[In, Out] {
-    override def create(attr: Attributes): Stage[In, Out] = fusing.Expand(seed, extrapolate)
   }
 
   final case class MapConcat[In, Out](f: In ⇒ immutable.Iterable[Out], attributes: Attributes = mapConcat) extends SymbolicStage[In, Out] {

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.event
 
@@ -66,7 +66,8 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
           })
         }))
         a ! "hallo"
-        expectMsg(1 second, Logging.Debug("funky", classOf[DummyClassForStringSources], "received unhandled message hallo"))
+        expectMsg(1 second, Logging.Debug("funky", classOf[DummyClassForStringSources],
+          "received unhandled message hallo from " + system.deadLetters))
         expectMsgType[UnhandledMessage](1 second)
       }
     }
@@ -91,7 +92,8 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
         val name = actor.path.toString
         actor ! "buh"
         within(1 second) {
-          expectMsg(Logging.Debug(actor.path.toString, actor.underlyingActor.getClass, "received handled message buh"))
+          expectMsg(Logging.Debug(actor.path.toString, actor.underlyingActor.getClass,
+            "received handled message buh from " + self))
           expectMsg("x")
         }
 
@@ -116,7 +118,8 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
         })
         actor ! "buh"
         within(1 second) {
-          expectMsg(Logging.Debug(actor.path.toString, actor.underlyingActor.getClass, "received handled message buh"))
+          expectMsg(Logging.Debug(actor.path.toString, actor.underlyingActor.getClass,
+            "received handled message buh from " + self))
           expectMsg("x")
         }
       }

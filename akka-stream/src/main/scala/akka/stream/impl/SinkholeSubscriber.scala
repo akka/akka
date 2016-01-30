@@ -1,9 +1,11 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicReference
+import akka.Done
+
 import scala.concurrent.Promise
 import org.reactivestreams.{ Subscriber, Subscription }
 
@@ -11,7 +13,7 @@ import org.reactivestreams.{ Subscriber, Subscription }
  * INTERNAL API
  */
 
-private[akka] final class SinkholeSubscriber[T](whenComplete: Promise[Unit]) extends Subscriber[T] {
+private[akka] final class SinkholeSubscriber[T](whenComplete: Promise[Done]) extends Subscriber[T] {
   private[this] var running: Boolean = false
 
   override def onSubscribe(sub: Subscription): Unit = {
@@ -28,7 +30,7 @@ private[akka] final class SinkholeSubscriber[T](whenComplete: Promise[Unit]) ext
     whenComplete.tryFailure(cause)
   }
 
-  override def onComplete(): Unit = whenComplete.trySuccess(())
+  override def onComplete(): Unit = whenComplete.trySuccess(Done)
 
   override def onNext(element: T): Unit = ReactiveStreamsCompliance.requireNonNullElement(element)
 }

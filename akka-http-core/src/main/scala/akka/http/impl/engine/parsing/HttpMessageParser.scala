@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -14,7 +14,7 @@ import akka.parboiled2.CharUtils
 import akka.util.ByteString
 import akka.stream.stage._
 import akka.http.impl.model.parser.CharacterClasses
-import akka.http.ParserSettings
+import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.model._
 import headers._
 import HttpProtocols._
@@ -136,7 +136,7 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
       resultHeader match {
         case null ⇒ continue(input, lineStart)(parseHeaderLinesAux(headers, headerCount, ch, clh, cth, teh, e100c, hh))
 
-        case HttpHeaderParser.EmptyHeader ⇒
+        case EmptyHeader ⇒
           val close = HttpMessage.connectionCloseExpected(protocol, ch)
           setCompletionHandling(CompletionIsEntityStreamError)
           parseEntity(headers.toList, protocol, input, lineEnd, clh, cth, teh, e100c, hh, close)
@@ -206,7 +206,7 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
         catch { case e: ParsingException ⇒ errorInfo = e.info; 0 }
       if (errorInfo eq null) {
         headerParser.resultHeader match {
-          case HttpHeaderParser.EmptyHeader ⇒
+          case EmptyHeader ⇒
             val lastChunk =
               if (extension.isEmpty && headers.isEmpty) HttpEntity.LastChunk else HttpEntity.LastChunk(extension, headers)
             emit(EntityChunk(lastChunk))

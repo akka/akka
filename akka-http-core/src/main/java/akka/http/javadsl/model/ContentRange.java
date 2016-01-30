@@ -1,23 +1,26 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.model;
 
 import akka.http.scaladsl.model.ContentRange$;
-import akka.japi.Option;
+
+import java.util.Optional;
+import java.util.OptionalLong;
+import scala.compat.java8.OptionConverters;
 
 public abstract class ContentRange {
     public abstract boolean isByteContentRange();
     public abstract boolean isSatisfiable();
     public abstract boolean isOther();
 
-    public abstract Option<Long> getSatisfiableFirst();
-    public abstract Option<Long> getSatisfiableLast();
+    public abstract OptionalLong getSatisfiableFirst();
+    public abstract OptionalLong getSatisfiableLast();
 
-    public abstract Option<String> getOtherValue();
+    public abstract Optional<String> getOtherValue();
 
-    public abstract Option<Long> getInstanceLength();
+    public abstract OptionalLong getInstanceLength();
 
     public static ContentRange create(long first, long last) {
         return ContentRange$.MODULE$.apply(first, last);
@@ -26,8 +29,8 @@ public abstract class ContentRange {
         return ContentRange$.MODULE$.apply(first, last, instanceLength);
     }
     @SuppressWarnings("unchecked")
-    public static ContentRange create(long first, long last, Option<Long> instanceLength) {
-        return ContentRange$.MODULE$.apply(first, last, ((Option<Object>) (Object) instanceLength).asScala());
+    public static ContentRange create(long first, long last, OptionalLong instanceLength) {
+        return ContentRange$.MODULE$.apply(first, last, OptionConverters.toScala(instanceLength));
     }
     public static ContentRange createUnsatisfiable(long length) {
         return new akka.http.scaladsl.model.ContentRange.Unsatisfiable(length);

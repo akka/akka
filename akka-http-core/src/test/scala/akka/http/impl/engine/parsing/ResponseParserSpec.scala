@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.parsing
 
-import akka.http.ParserSettings
+import akka.NotUsed
+import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.io.{ SslTlsPlacebo, SessionBytes }
 import com.typesafe.config.{ ConfigFactory, Config }
@@ -239,7 +240,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 
   private class Test {
     var closeAfterResponseCompletion = Seq.empty[Boolean]
@@ -289,7 +290,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           }.map(strictEqualify)
         }
 
-    def rawParse(requestMethod: HttpMethod, input: String*): Source[Either[ResponseOutput, HttpResponse], Unit] =
+    def rawParse(requestMethod: HttpMethod, input: String*): Source[Either[ResponseOutput, HttpResponse], NotUsed] =
       Source(input.toList)
         .map(bytes ⇒ SessionBytes(SslTlsPlacebo.dummySession, ByteString(bytes)))
         .transform(() ⇒ newParserStage(requestMethod)).named("parser")
@@ -328,6 +329,6 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
     def prep(response: String) = response.stripMarginWithNewline("\r\n")
 
-    def source[T](elems: T*): Source[T, Unit] = Source(elems.toList)
+    def source[T](elems: T*): Source[T, NotUsed] = Source(elems.toList)
   }
 }

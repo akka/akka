@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.server
 
 import java.net.{ InetAddress, InetSocketAddress }
-import akka.http.ServerSettings
+import akka.http.scaladsl.settings.ServerSettings
 import scala.reflect.ClassTag
 import scala.util.Random
 import scala.annotation.tailrec
@@ -22,7 +22,10 @@ import HttpEntity._
 import MediaTypes._
 import HttpMethods._
 
-class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside { spec ⇒
+class HttpServerSpec extends AkkaSpec(
+  """akka.loggers = []
+     akka.loglevel = OFF
+     akka.http.server.request-timeout = infinite""") with Inside { spec ⇒
   implicit val materializer = ActorMaterializer()
 
   "The server implementation" should {
@@ -363,7 +366,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
     }
 
     "translate HEAD request to GET request when transparent-head-requests are enabled" in new TestSetup {
-      override def settings = ServerSettings(system).copy(transparentHeadRequests = true)
+      override def settings = ServerSettings(system).withTransparentHeadRequests(true)
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
@@ -372,7 +375,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
     }
 
     "keep HEAD request when transparent-head-requests are disabled" in new TestSetup {
-      override def settings = ServerSettings(system).copy(transparentHeadRequests = false)
+      override def settings = ServerSettings(system).withTransparentHeadRequests(false)
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
@@ -659,7 +662,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
 
       expectRequest() shouldEqual HttpRequest(uri = "http://example.com/abc", protocol = HttpProtocols.`HTTP/1.0`)
 
-      override def settings: ServerSettings = super.settings.copy(defaultHostHeader = Host("example.com"))
+      override def settings: ServerSettings = super.settings.withDefaultHostHeader(Host("example.com"))
     }
 
     "fail an HTTP/1.0 request with 400 if no default-host-header is set" in new TestSetup {
@@ -687,7 +690,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
         Some(new InetSocketAddress(theAddress, 8080))
 
       override def settings: ServerSettings =
-        super.settings.copy(remoteAddressHeader = true)
+        super.settings.withRemoteAddressHeader(true)
 
       send("""GET / HTTP/1.1
              |Host: example.com
@@ -696,6 +699,82 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
 
       val request = expectRequest()
       request.headers should contain(`Remote-Address`(RemoteAddress(theAddress, Some(8080))))
+    }
+
+    "support request timeouts" which {
+
+      "are defined via the config" in new RequestTimeoutTestSetup(10.millis) {
+        send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
+        expectRequest().header[`Timeout-Access`] shouldBe defined
+        expectResponseWithWipedDate(
+          """HTTP/1.1 503 Service Unavailable
+            |Server: akka-http/test
+            |Date: XXXX
+            |Content-Type: text/plain; charset=UTF-8
+            |Content-Length: 105
+            |
+            |The server was not able to produce a timely response to your request.
+            |Please try again in a short while!""")
+      }
+
+      "are programmatically increased (not expiring)" in new RequestTimeoutTestSetup(10.millis) {
+        send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
+        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(50.millis))
+        netOut.expectNoBytes(30.millis)
+        responses.sendNext(HttpResponse())
+        expectResponseWithWipedDate(
+          """HTTP/1.1 200 OK
+            |Server: akka-http/test
+            |Date: XXXX
+            |Content-Length: 0
+            |
+            |""")
+      }
+
+      "are programmatically increased (expiring)" in new RequestTimeoutTestSetup(10.millis) {
+        send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
+        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(50.millis))
+        netOut.expectNoBytes(30.millis)
+        expectResponseWithWipedDate(
+          """HTTP/1.1 503 Service Unavailable
+            |Server: akka-http/test
+            |Date: XXXX
+            |Content-Type: text/plain; charset=UTF-8
+            |Content-Length: 105
+            |
+            |The server was not able to produce a timely response to your request.
+            |Please try again in a short while!""")
+      }
+
+      "are programmatically decreased" in new RequestTimeoutTestSetup(50.millis) {
+        send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
+        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(10.millis))
+        val mark = System.nanoTime()
+        expectResponseWithWipedDate(
+          """HTTP/1.1 503 Service Unavailable
+            |Server: akka-http/test
+            |Date: XXXX
+            |Content-Type: text/plain; charset=UTF-8
+            |Content-Length: 105
+            |
+            |The server was not able to produce a timely response to your request.
+            |Please try again in a short while!""")
+        (System.nanoTime() - mark) should be < (40 * 1000000L)
+      }
+
+      "have a programmatically set timeout handler" in new RequestTimeoutTestSetup(10.millis) {
+        send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
+        val timeoutResponse = HttpResponse(StatusCodes.InternalServerError, entity = "OOPS!")
+        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateHandler(_ ⇒ timeoutResponse))
+        expectResponseWithWipedDate(
+          """HTTP/1.1 500 Internal Server Error
+            |Server: akka-http/test
+            |Date: XXXX
+            |Content-Type: text/plain; charset=UTF-8
+            |Content-Length: 5
+            |
+            |OOPS!""")
+      }
     }
 
     "add `Connection: close` to early responses" in new TestSetup {
@@ -723,8 +802,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       netOut.expectComplete()
     }
 
-    def isDefinedVia = afterWord("is defined via")
-    "support request length verification" which isDefinedVia {
+    "support request length verification" which afterWord("is defined via") {
 
       class LengthVerificationTest(maxContentLength: Int) extends TestSetup(maxContentLength) {
         val entityBase = "0123456789ABCD"
@@ -909,7 +987,13 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
     override def settings = {
       val s = super.settings
       if (maxContentLength < 0) s
-      else s.copy(parserSettings = s.parserSettings.copy(maxContentLength = maxContentLength))
+      else s.withParserSettings(s.parserSettings.withMaxContentLength(maxContentLength))
+    }
+  }
+  class RequestTimeoutTestSetup(requestTimeout: Duration) extends TestSetup {
+    override def settings = {
+      val s = super.settings
+      s.withTimeouts(s.timeouts.withRequestTimeout(requestTimeout))
     }
   }
 }

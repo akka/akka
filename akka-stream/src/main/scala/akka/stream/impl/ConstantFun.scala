@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl
 
@@ -20,4 +20,8 @@ private[akka] object ConstantFun {
   def javaIdentityFunction[T]: JFun[T, T] = JavaIdentityFunction.asInstanceOf[JFun[T, T]]
 
   def scalaIdentityFunction[T]: T ⇒ T = conforms
+
+  val zeroLong = (_: Any) ⇒ 0L
+
+  val oneLong = (_: Any) ⇒ 1L
 }

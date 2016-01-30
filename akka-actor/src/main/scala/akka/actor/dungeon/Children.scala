@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor.dungeon
@@ -11,6 +11,10 @@ import akka.actor._
 import akka.serialization.SerializationExtension
 import akka.util.{ Unsafe, Helpers }
 import akka.serialization.SerializerWithStringManifest
+
+private[akka] object Children {
+  val GetNobody = () ⇒ Nobody
+}
 
 private[akka] trait Children { this: ActorCell ⇒
 
@@ -41,14 +45,63 @@ private[akka] trait Children { this: ActorCell ⇒
   private[akka] def attachChild(props: Props, name: String, systemService: Boolean): ActorRef =
     makeChild(this, props, checkName(name), async = true, systemService = systemService)
 
-  @volatile private var _nextNameDoNotCallMeDirectly = 0L
-  final protected def randomName(): String = {
-    @tailrec def inc(): Long = {
-      val current = Unsafe.instance.getLongVolatile(this, AbstractActorCell.nextNameOffset)
-      if (Unsafe.instance.compareAndSwapLong(this, AbstractActorCell.nextNameOffset, current, current + 1)) current
-      else inc()
+  @volatile private var _functionRefsDoNotCallMeDirectly = Map.empty[String, FunctionRef]
+  private def functionRefs: Map[String, FunctionRef] =
+    Unsafe.instance.getObjectVolatile(this, AbstractActorCell.functionRefsOffset).asInstanceOf[Map[String, FunctionRef]]
+
+  private[akka] def getFunctionRefOrNobody(name: String, uid: Int = ActorCell.undefinedUid): InternalActorRef =
+    functionRefs.getOrElse(name, Children.GetNobody()) match {
+      case f: FunctionRef ⇒
+        if (uid == ActorCell.undefinedUid || f.path.uid == uid) f else Nobody
+      case other ⇒
+        other
     }
-    Helpers.base64(inc())
+
+  private[akka] def addFunctionRef(f: (ActorRef, Any) ⇒ Unit): FunctionRef = {
+    val childPath = new ChildActorPath(self.path, randomName(new java.lang.StringBuilder("$$")), ActorCell.newUid())
+    val ref = new FunctionRef(childPath, provider, system.eventStream, f)
+
+    @tailrec def rec(): Unit = {
+      val old = functionRefs
+      val added = old.updated(childPath.name, ref)
+      if (!Unsafe.instance.compareAndSwapObject(this, AbstractActorCell.functionRefsOffset, old, added)) rec()
+    }
+    rec()
+
+    ref
+  }
+
+  private[akka] def removeFunctionRef(ref: FunctionRef): Boolean = {
+    require(ref.path.parent eq self.path, "trying to remove FunctionRef from wrong ActorCell")
+    val name = ref.path.name
+    @tailrec def rec(): Boolean = {
+      val old = functionRefs
+      if (!old.contains(name)) false
+      else {
+        val removed = old - name
+        if (!Unsafe.instance.compareAndSwapObject(this, AbstractActorCell.functionRefsOffset, old, removed)) rec()
+        else {
+          ref.stop()
+          true
+        }
+      }
+    }
+    rec()
+  }
+
+  protected def stopFunctionRefs(): Unit = {
+    val refs = Unsafe.instance.getAndSetObject(this, AbstractActorCell.functionRefsOffset, Map.empty).asInstanceOf[Map[String, FunctionRef]]
+    refs.valuesIterator.foreach(_.stop())
+  }
+
+  @volatile private var _nextNameDoNotCallMeDirectly = 0L
+  final protected def randomName(sb: java.lang.StringBuilder): String = {
+    val num = Unsafe.instance.getAndAddLong(this, AbstractActorCell.nextNameOffset, 1)
+    Helpers.base64(num, sb)
+  }
+  final protected def randomName(): String = {
+    val num = Unsafe.instance.getAndAddLong(this, AbstractActorCell.nextNameOffset, 1)
+    Helpers.base64(num)
   }
 
   final def stop(actor: ActorRef): Unit = {
@@ -140,14 +193,14 @@ private[akka] trait Children { this: ActorCell ⇒
       // optimization for the non-uid case
       getChildByName(name) match {
         case Some(crs: ChildRestartStats) ⇒ crs.child.asInstanceOf[InternalActorRef]
-        case _                            ⇒ Nobody
+        case _                            ⇒ getFunctionRefOrNobody(name)
       }
     } else {
       val (childName, uid) = ActorCell.splitNameAndUid(name)
       getChildByName(childName) match {
         case Some(crs: ChildRestartStats) if uid == ActorCell.undefinedUid || uid == crs.uid ⇒
           crs.child.asInstanceOf[InternalActorRef]
-        case _ ⇒ Nobody
+        case _ ⇒ getFunctionRefOrNobody(childName, uid)
       }
     }
 

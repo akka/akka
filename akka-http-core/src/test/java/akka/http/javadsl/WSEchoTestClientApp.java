@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.dispatch.Futures;
 import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
-import akka.http.javadsl.model.ws.WebsocketRequest;
+import akka.http.javadsl.model.ws.WebSocketRequest;
 import akka.japi.function.Function;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
@@ -16,16 +17,17 @@ import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 public class WSEchoTestClientApp {
     private static final Function<Message, String> messageStringifier = new Function<Message, String>() {
+        private static final long serialVersionUID = 1L;
         @Override
         public String apply(Message msg) throws Exception {
             if (msg.isText() && msg.asTextMessage().isStrict())
@@ -49,35 +51,35 @@ public class WSEchoTestClientApp {
                         system.dispatcher(),
                         ignoredMessage);
 
-            Source<Message, BoxedUnit> echoSource =
+            Source<Message, NotUsed> echoSource =
                 Source.from(Arrays.<Message>asList(
                         TextMessage.create("abc"),
                         TextMessage.create("def"),
                         TextMessage.create("ghi")
                 )).concat(Source.fromFuture(delayedCompletion).drop(1));
 
-            Sink<Message, Future<List<String>>> echoSink =
+            Sink<Message, CompletionStage<List<String>>> echoSink =
                 Flow.of(Message.class)
                     .map(messageStringifier)
                     .grouped(1000)
-                    .toMat(Sink.<List<String>>head(), Keep.<BoxedUnit, Future<List<String>>>right());
+                    .toMat(Sink.<List<String>>head(), Keep.right());
 
-            Flow<Message, Message, Future<List<String>>> echoClient =
-                Flow.fromSinkAndSourceMat(echoSink, echoSource, Keep.<Future<List<String>>, BoxedUnit>left());
+            Flow<Message, Message, CompletionStage<List<String>>> echoClient =
+                Flow.fromSinkAndSourceMat(echoSink, echoSource, Keep.left());
 
-            Future<List<String>> result =
-                Http.get(system).singleWebsocketRequest(
-                    WebsocketRequest.create("ws://echo.websocket.org"),
+            CompletionStage<List<String>> result =
+                Http.get(system).singleWebSocketRequest(
+                    WebSocketRequest.create("ws://echo.websocket.org"),
                     echoClient,
                     materializer
                 ).second();
 
-            List<String> messages = Await.result(result, FiniteDuration.apply(10, "second"));
+            List<String> messages = result.toCompletableFuture().get(10, TimeUnit.SECONDS);
             System.out.println("Collected " + messages.size() + " messages:");
             for (String msg: messages)
                 System.out.println(msg);
         } finally {
-            system.shutdown();
+            system.terminate();
         }
     }
 }

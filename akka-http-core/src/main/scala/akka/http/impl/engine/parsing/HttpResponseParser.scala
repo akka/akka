@@ -1,11 +1,11 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.parsing
 
 import scala.annotation.tailrec
-import akka.http.ParserSettings
+import akka.http.scaladsl.settings.ParserSettings
 import akka.http.impl.model.parser.CharacterClasses
 import akka.util.ByteString
 import akka.http.scaladsl.model._

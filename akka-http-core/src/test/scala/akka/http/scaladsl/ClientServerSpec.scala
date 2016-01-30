@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl
@@ -7,6 +7,8 @@ package akka.http.scaladsl
 import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.{ BindException, Socket }
 import java.util.concurrent.TimeoutException
+import akka.http.scaladsl.settings.{ ConnectionPoolSettings, ClientConnectionSettings, ServerSettings }
+
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
@@ -18,7 +20,6 @@ import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
-import akka.http.{ ConnectionPoolSettings, ClientConnectionSettings, ServerSettings }
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.stream.{ ActorMaterializer, BindFailedException, StreamTcpException }
@@ -35,7 +36,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     akka.stdout-loglevel = ERROR
     windows-connection-abort-workaround-enabled = auto
     akka.log-dead-letters = OFF
-  """)
+    akka.http.server.request-timeout = infinite""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
@@ -114,7 +115,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
     "prevent more than the configured number of max-connections with bindAndHandle" in {
       val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
-      val settings = ServerSettings(system).copy(maxConnections = 1)
+      val settings = ServerSettings(system).withMaxConnections(1)
 
       val receivedSlow = Promise[Long]()
       val receivedFast = Promise[Long]()
@@ -155,7 +156,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     "timeouts" should {
       def bindServer(hostname: String, port: Int, serverTimeout: FiniteDuration): (Promise[Long], ServerBinding) = {
         val s = ServerSettings(system)
-        val settings = s.copy(timeouts = s.timeouts.copy(idleTimeout = serverTimeout))
+        val settings = s.withTimeouts(s.timeouts.withIdleTimeout(serverTimeout))
 
         val receivedRequest = Promise[Long]()
 
@@ -204,7 +205,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
           val cs = ClientConnectionSettings(system)
           val clientTimeout = 345.millis
-          val clientSettings = cs.copy(idleTimeout = clientTimeout)
+          val clientSettings = cs.withIdleTimeout(clientTimeout)
 
           val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
           val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
@@ -237,7 +238,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
           val cs = ConnectionPoolSettings(system)
           val clientTimeout = 345.millis
-          val clientPoolSettings = cs.copy(idleTimeout = clientTimeout)
+          val clientPoolSettings = cs.withIdleTimeout(clientTimeout)
 
           val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
           val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
@@ -272,7 +273,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
           val cs = ConnectionPoolSettings(system)
           val clientTimeout = 345.millis
-          val clientPoolSettings = cs.copy(idleTimeout = clientTimeout)
+          val clientPoolSettings = cs.withIdleTimeout(clientTimeout)
 
           val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
           val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
@@ -449,7 +450,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
   }
 
   override def afterAll() = {
-    system.shutdown()
+    system.terminate()
     system2.shutdown()
   }
 

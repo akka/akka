@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
@@ -129,9 +129,6 @@ class GraphZipSpec extends TwoStreamsSetup {
 
       downstream.requestNext((1, "A"))
       downstream.expectComplete()
-
-      upstream1.expectNoMsg(500.millis)
-      upstream2.expectNoMsg(500.millis)
     }
 
     "complete if one side complete before requested with elements pending" in {
@@ -159,9 +156,6 @@ class GraphZipSpec extends TwoStreamsSetup {
 
       downstream.requestNext((1, "A"))
       downstream.expectComplete()
-
-      upstream1.expectNoMsg(500.millis)
-      upstream2.expectNoMsg(500.millis)
     }
 
     "complete if one side complete before requested with elements pending 2" in {
@@ -190,9 +184,6 @@ class GraphZipSpec extends TwoStreamsSetup {
       upstream2.sendComplete()
       downstream.requestNext((1, "A"))
       downstream.expectComplete()
-
-      upstream1.expectNoMsg(500.millis)
-      upstream2.expectNoMsg(500.millis)
     }
 
     commonTests()

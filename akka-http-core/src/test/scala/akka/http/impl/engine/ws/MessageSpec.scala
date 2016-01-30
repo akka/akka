@@ -1,8 +1,10 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.ws
+
+import akka.NotUsed
 
 import scala.concurrent.duration._
 import scala.util.Random
@@ -24,7 +26,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
     0 // but don't finish it
     )
 
-  "The Websocket implementation should" - {
+  "The WebSocket implementation should" - {
     "collect messages from frames" - {
       "for binary messages" - {
         "for an empty message" in new ClientTestSetup {
@@ -854,7 +856,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
     val messageIn = TestSubscriber.probe[Message]
     val messageOut = TestPublisher.probe[Message]()
 
-    val messageHandler: Flow[Message, Message, Unit] =
+    val messageHandler: Flow[Message, Message, NotUsed] =
       Flow.fromSinkAndSource(
         Flow[Message].buffer(1, OverflowStrategy.backpressure).to(Sink.fromSubscriber(messageIn)), // alternatively need to request(1) before expectComplete
         Source.fromPublisher(messageOut))
@@ -862,7 +864,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
     Source.fromPublisher(netIn)
       .via(printEvent("netIn"))
       .via(FrameEventParser)
-      .via(Websocket
+      .via(WebSocket
         .stack(serverSide, maskingRandomFactory = Randoms.SecureRandomInstances, closeTimeout = closeTimeout, log = system.log)
         .join(messageHandler))
       .via(printEvent("frameRendererIn"))
@@ -971,7 +973,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
   }
 
   val trace = false // set to `true` for debugging purposes
-  def printEvent[T](marker: String): Flow[T, T, Unit] =
+  def printEvent[T](marker: String): Flow[T, T, NotUsed] =
     if (trace) akka.http.impl.util.printEvent(marker)
     else Flow[T]
 }

@@ -1,14 +1,16 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
 import akka.event.LoggingAdapter
 import akka.stream.Attributes._
 import akka.stream._
+import akka.Done
 import akka.stream.impl.Stages.{ DirectProcessor, StageModule }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.stream.impl._
+import akka.stream.impl.fusing.GraphStages.TerminationWatcher
 import akka.stream.impl.fusing._
 import akka.stream.stage.AbstractStage.{ PushPullGraphStage, PushPullGraphStageWithMaterializedValue }
 import akka.stream.stage._
@@ -19,6 +21,8 @@ import scala.concurrent.Future
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.language.higherKinds
 import akka.stream.impl.fusing.FlattenMerge
+
+import akka.NotUsed
 
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
@@ -41,7 +45,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
   override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Flow[In, T, Mat3] =
     if (this.isIdentity) {
       Flow.fromGraph(flow.asInstanceOf[Graph[FlowShape[In, T], Mat2]])
-        .mapMaterializedValue(combine(().asInstanceOf[Mat], _))
+        .mapMaterializedValue(combine(NotUsed.asInstanceOf[Mat], _))
     } else {
       val flowCopy = flow.module.carbonCopy
       new Flow(
@@ -259,13 +263,13 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
 }
 
 object Flow {
-  private[this] val identity: Flow[Any, Any, Unit] = new Flow[Any, Any, Unit](GraphStages.Identity.module)
+  private[this] val identity: Flow[Any, Any, NotUsed] = new Flow[Any, Any, NotUsed](GraphStages.Identity.module)
 
   /**
    * Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]]
    */
-  def fromProcessor[I, O](processorFactory: () ⇒ Processor[I, O]): Flow[I, O, Unit] = {
-    fromProcessorMat(() ⇒ (processorFactory(), ()))
+  def fromProcessor[I, O](processorFactory: () ⇒ Processor[I, O]): Flow[I, O, NotUsed] = {
+    fromProcessorMat(() ⇒ (processorFactory(), NotUsed))
   }
 
   /**
@@ -279,7 +283,7 @@ object Flow {
    * Helper to create `Flow` without a [[Source]] or a [[Sink]].
    * Example usage: `Flow[Int]`
    */
-  def apply[T]: Flow[T, T, Unit] = identity.asInstanceOf[Flow[T, T, Unit]]
+  def apply[T]: Flow[T, T, NotUsed] = identity.asInstanceOf[Flow[T, T, NotUsed]]
 
   /**
    * A graph with the shape of a flow logically is a flow, this method makes
@@ -295,7 +299,7 @@ object Flow {
   /**
    * Helper to create `Flow` from a `Sink`and a `Source`.
    */
-  def fromSinkAndSource[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, Unit] =
+  def fromSinkAndSource[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, NotUsed] =
     fromSinkAndSourceMat(sink, source)(Keep.none)
 
   /**
@@ -534,7 +538,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def filterNot(p: Out ⇒ Boolean): Repr[Out] =
-    via(Flow[Out].filter(!p(_)).withAttributes(name("filterNot")))
+    via(Flow[Out].filter(!p(_)).withAttributes(DefaultAttributes.filterNot))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
@@ -704,8 +708,27 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
+   *
+   * See also [[FlowOps.scan]]
    */
   def fold[T](zero: T)(f: (T, Out) ⇒ T): Repr[T] = andThen(Fold(zero, f))
+
+  /**
+   * Similar to `fold` but uses first element as zero element.
+   * Applies the given function towards its current and next value,
+   * yielding the next current value.
+   *
+   * '''Emits when''' upstream completes
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * See also [[FlowOps.fold]]
+   */
+  def reduce[T >: Out](f: (T, T) ⇒ T): Repr[T] = via(new Reduce[T](f))
 
   /**
    * Intersperses stream with provided element, similar to how [[scala.collection.immutable.List.mkString]]
@@ -738,12 +761,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def intersperse[T >: Out](start: T, inject: T, end: T): Repr[T] = {
-    ReactiveStreamsCompliance.requireNonNullElement(start)
-    ReactiveStreamsCompliance.requireNonNullElement(inject)
-    ReactiveStreamsCompliance.requireNonNullElement(end)
+  def intersperse[T >: Out](start: T, inject: T, end: T): Repr[T] =
     via(Intersperse(Some(start), inject, Some(end)))
-  }
 
   /**
    * Intersperses stream with provided element, similar to how [[scala.collection.immutable.List.mkString]]
@@ -767,10 +786,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def intersperse[T >: Out](inject: T): Repr[T] = {
-    ReactiveStreamsCompliance.requireNonNullElement(inject)
+  def intersperse[T >: Out](inject: T): Repr[T] =
     via(Intersperse(None, inject, None))
-  }
 
   /**
    * Chunk up this stream into groups of elements received within a time window,
@@ -790,11 +807,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream completes
    */
-  def groupedWithin(n: Int, d: FiniteDuration): Repr[immutable.Seq[Out]] = {
-    require(n > 0, "n must be greater than 0")
-    require(d > Duration.Zero)
-    via(new GroupedWithin[Out](n, d).withAttributes(name("groupedWithin")))
-  }
+  def groupedWithin(n: Int, d: FiniteDuration): Repr[immutable.Seq[Out]] =
+    via(new GroupedWithin[Out](n, d))
 
   /**
    * Shifts elements emission in time by a specified amount. It allows to store elements
@@ -822,7 +836,7 @@ trait FlowOps[+Out, +Mat] {
    * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   def delay(of: FiniteDuration, strategy: DelayOverflowStrategy = DelayOverflowStrategy.dropTail): Repr[Out] =
-    via(new Delay[Out](of, strategy).withAttributes(name("delay")))
+    via(new Delay[Out](of, strategy))
 
   /**
    * Discard the given number of elements at the beginning of the stream.
@@ -850,7 +864,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def dropWithin(d: FiniteDuration): Repr[Out] =
-    via(new DropWithin[Out](d).withAttributes(name("dropWithin")))
+    via(new DropWithin[Out](d))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after the given
@@ -890,7 +904,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels or timer fires
    */
-  def takeWithin(d: FiniteDuration): Repr[Out] = via(new TakeWithin[Out](d).withAttributes(name("takeWithin")))
+  def takeWithin(d: FiniteDuration): Repr[Out] = via(new TakeWithin[Out](d))
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by conflating elements into a summary
@@ -911,9 +925,67 @@ trait FlowOps[+Out, +Mat] {
    * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    *
-   * See also [[FlowOps.limit]], [[FlowOps.limitWeighted]]
+   * See also [[FlowOps.limit]], [[FlowOps.limitWeighted]] [[FlowOps.batch]] [[FlowOps.batchWeighted]]
    */
   def conflate[S](seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S] = andThen(Conflate(seed, aggregate))
+  //FIXME: conflate can be expressed as a batch
+  //via(Batch(1L, ConstantFun.zeroLong, seed, aggregate).withAttributes(DefaultAttributes.conflate))
+
+  /**
+   * Allows a faster upstream to progress independently of a slower subscriber by aggregating elements into batches
+   * until the subscriber is ready to accept them. For example a batch step might store received elements in
+   * an array up to the allowed max limit if the upstream publisher is faster.
+   *
+   * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
+   * duplicate elements.
+   *
+   * '''Emits when''' downstream stops backpressuring and there is an aggregated element available
+   *
+   * '''Backpressures when''' there are `max` batched elements and 1 pending element and downstream backpressures
+   *
+   * '''Completes when''' upstream completes and there is no batched/pending element waiting
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * See also [[FlowOps.conflate]], [[FlowOps.batchWeighted]]
+   *
+   * @param max maximum number of elements to batch before backpressuring upstream (must be positive non-zero)
+   * @param seed Provides the first state for a batched value using the first unconsumed element as a start
+   * @param aggregate Takes the currently batched value and the current pending element to produce a new aggregate
+   */
+  def batch[S](max: Long, seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S] =
+    via(Batch(max, ConstantFun.oneLong, seed, aggregate).withAttributes(DefaultAttributes.batch))
+
+  /**
+   * Allows a faster upstream to progress independently of a slower subscriber by aggregating elements into batches
+   * until the subscriber is ready to accept them. For example a batch step might concatenate `ByteString`
+   * elements up to the allowed max limit if the upstream publisher is faster.
+   *
+   * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
+   * duplicate elements.
+   *
+   * Batching will apply for all elements, even if a single element cost is greater than the total allowed limit.
+   * In this case, previous batched elements will be emitted, then the "heavy" element will be emitted (after
+   * being applied with the `seed` function) without batching further elements with it, and then the rest of the
+   * incoming elements are batched.
+   *
+   * '''Emits when''' downstream stops backpressuring and there is a batched element available
+   *
+   * '''Backpressures when''' there are `max` weighted batched elements + 1 pending element and downstream backpressures
+   *
+   * '''Completes when''' upstream completes and there is no batched/pending element waiting
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * See also [[FlowOps.conflate]], [[FlowOps.batch]]
+   *
+   * @param max maximum weight of elements to batch before backpressuring upstream (must be positive non-zero)
+   * @param costFn a function to compute a single element weight
+   * @param seed Provides the first state for a batched value using the first unconsumed element as a start
+   * @param aggregate Takes the currently batched value and the current pending element to produce a new batch
+   */
+  def batchWeighted[S](max: Long, costFn: Out ⇒ Long, seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S] =
+    via(Batch(max, costFn, seed, aggregate).withAttributes(DefaultAttributes.batchWeighted))
 
   /**
    * Allows a faster downstream to progress independently of a slower publisher by extrapolating elements from an older
@@ -929,7 +1001,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Emits when''' downstream stops backpressuring
    *
-   * '''Backpressures when''' downstream backpressures
+   * '''Backpressures when''' downstream backpressures or iterator runs emtpy
    *
    * '''Completes when''' upstream completes
    *
@@ -939,7 +1011,7 @@ trait FlowOps[+Out, +Mat] {
    * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
    *                    state.
    */
-  def expand[S, U](seed: Out ⇒ S)(extrapolate: S ⇒ (U, S)): Repr[U] = andThen(Expand(seed, extrapolate))
+  def expand[U](extrapolate: Out ⇒ Iterator[U]): Repr[U] = via(new Expand(extrapolate))
 
   /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
@@ -991,7 +1063,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels or substream cancels
    */
-  def prefixAndTail[U >: Out](n: Int): Repr[(immutable.Seq[Out], Source[U, Unit])] =
+  def prefixAndTail[U >: Out](n: Int): Repr[(immutable.Seq[Out], Source[U, NotUsed])] =
     via(new PrefixAndTail[Out](n))
 
   /**
@@ -1036,13 +1108,13 @@ trait FlowOps[+Out, +Mat] {
   def groupBy[K](maxSubstreams: Int, f: Out ⇒ K): SubFlow[Out, Mat, Repr, Closed] = {
     implicit def mat = GraphInterpreter.currentInterpreter.materializer
     val merge = new SubFlowImpl.MergeBack[Out, Repr] {
-      override def apply[T](flow: Flow[Out, T, Unit], breadth: Int): Repr[T] =
-        deprecatedAndThen[Source[Out, Unit]](GroupBy(maxSubstreams, f.asInstanceOf[Any ⇒ Any]))
+      override def apply[T](flow: Flow[Out, T, NotUsed], breadth: Int): Repr[T] =
+        deprecatedAndThen[Source[Out, NotUsed]](GroupBy(maxSubstreams, f.asInstanceOf[Any ⇒ Any]))
           .map(_.via(flow))
           .via(new FlattenMerge(breadth))
     }
-    val finish: (Sink[Out, Unit]) ⇒ Closed = s ⇒
-      deprecatedAndThen[Source[Out, Unit]](GroupBy(maxSubstreams, f.asInstanceOf[Any ⇒ Any]))
+    val finish: (Sink[Out, NotUsed]) ⇒ Closed = s ⇒
+      deprecatedAndThen[Source[Out, NotUsed]](GroupBy(maxSubstreams, f.asInstanceOf[Any ⇒ Any]))
         .to(Sink.foreach(_.runWith(s)))
     new SubFlowImpl(Flow[Out], merge, finish)
   }
@@ -1102,12 +1174,12 @@ trait FlowOps[+Out, +Mat] {
    */
   def splitWhen(p: Out ⇒ Boolean): SubFlow[Out, Mat, Repr, Closed] = {
     val merge = new SubFlowImpl.MergeBack[Out, Repr] {
-      override def apply[T](flow: Flow[Out, T, Unit], breadth: Int): Repr[T] =
+      override def apply[T](flow: Flow[Out, T, NotUsed], breadth: Int): Repr[T] =
         via(Split.when(p))
           .map(_.via(flow))
           .via(new FlattenMerge(breadth))
     }
-    val finish: (Sink[Out, Unit]) ⇒ Closed = s ⇒
+    val finish: (Sink[Out, NotUsed]) ⇒ Closed = s ⇒
       via(Split.when(p))
         .to(Sink.foreach(_.runWith(s)(GraphInterpreter.currentInterpreter.materializer)))
     new SubFlowImpl(Flow[Out], merge, finish)
@@ -1159,12 +1231,12 @@ trait FlowOps[+Out, +Mat] {
    */
   def splitAfter(p: Out ⇒ Boolean): SubFlow[Out, Mat, Repr, Closed] = {
     val merge = new SubFlowImpl.MergeBack[Out, Repr] {
-      override def apply[T](flow: Flow[Out, T, Unit], breadth: Int): Repr[T] =
+      override def apply[T](flow: Flow[Out, T, NotUsed], breadth: Int): Repr[T] =
         via(Split.after(p))
           .map(_.via(flow))
           .via(new FlattenMerge(breadth))
     }
-    val finish: (Sink[Out, Unit]) ⇒ Closed = s ⇒
+    val finish: (Sink[Out, NotUsed]) ⇒ Closed = s ⇒
       via(Split.after(p))
         .to(Sink.foreach(_.runWith(s)(GraphInterpreter.currentInterpreter.materializer)))
     new SubFlowImpl(Flow[Out], merge, finish)
@@ -1285,13 +1357,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def throttle(elements: Int, per: FiniteDuration, maximumBurst: Int,
-               mode: ThrottleMode): Repr[Out] = {
-    require(elements > 0, "elements must be > 0")
-    require(per.toMillis > 0, "per time must be > 0")
-    require(!(mode == ThrottleMode.Enforcing && maximumBurst < 0), "maximumBurst must be > 0 in Enforcing mode")
-    via(new Throttle(elements, per, maximumBurst, _ ⇒ 1, mode))
-  }
+  def throttle(elements: Int, per: FiniteDuration, maximumBurst: Int, mode: ThrottleMode): Repr[Out] =
+    throttle(elements, per, maximumBurst, _ ⇒ 1, mode)
 
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
@@ -1320,11 +1387,8 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def throttle(cost: Int, per: FiniteDuration, maximumBurst: Int,
-               costCalculation: (Out) ⇒ Int, mode: ThrottleMode): Repr[Out] = {
-    require(per.toMillis > 0, "per time must be > 0")
-    require(!(mode == ThrottleMode.Enforcing && maximumBurst < 0), "maximumBurst must be > 0 in Enforcing mode")
+               costCalculation: (Out) ⇒ Int, mode: ThrottleMode): Repr[Out] =
     via(new Throttle(cost, per, maximumBurst, costCalculation, mode))
-  }
 
   /**
    * Detaches upstream demand from downstream demand without detaching the
@@ -1790,9 +1854,18 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
     viaMat(alsoToGraph(that))(matF)
 
   /**
+   * Materializes to `Future[Done]` that completes on getting termination message.
+   * The Future completes with success when received complete message from upstream or cancel
+   * from downstream. It fails with the same error when received error message from
+   * downstream.
+   */
+  def watchTermination[Mat2]()(matF: (Mat, Future[Done]) ⇒ Mat2): ReprMat[Out, Mat2] =
+    viaMat(GraphStages.terminationWatcher)(matF)
+
+  /**
    * INTERNAL API.
    */
   private[akka] def transformMaterializing[T, M](mkStageAndMaterialized: () ⇒ (Stage[Out, T], M)): ReprMat[T, M] =
-    viaMat(new PushPullGraphStageWithMaterializedValue[Out, T, Unit, M]((attr) ⇒ mkStageAndMaterialized(), Attributes.none))(Keep.right)
+    viaMat(new PushPullGraphStageWithMaterializedValue[Out, T, NotUsed, M]((attr) ⇒ mkStageAndMaterialized(), Attributes.none))(Keep.right)
 
 }

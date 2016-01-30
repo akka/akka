@@ -1,9 +1,11 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
+import akka.NotUsed
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalactic.ConversionCheckedTripleEquals
@@ -16,7 +18,7 @@ class One2OneBidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
 
   "A One2OneBidiFlow" must {
 
-    def test(flow: Flow[Int, Int, Unit]) =
+    def test(flow: Flow[Int, Int, NotUsed]) =
       Source(List(1, 2, 3)).via(flow).grouped(10).runWith(Sink.head)
 
     "be fully transparent for valid one-to-one streams" in {

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.testkit
 
@@ -38,8 +38,8 @@ class TestPublisherSubscriberSpec extends AkkaSpec {
 
       upstreamSubscription.sendComplete()
       downstream.expectEventPF {
-        case c @ OnComplete ⇒
-        case _              ⇒ fail()
+        case OnComplete ⇒
+        case _          ⇒ fail()
       }
     }
 

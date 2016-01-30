@@ -1,8 +1,9 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
+import akka.NotUsed
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.Utils._
 import org.scalactic.ConversionCheckedTripleEquals
@@ -113,7 +114,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
 
     "suitably override attribute handling methods" in {
       import Attributes._
-      val b: BidiFlow[Int, Long, ByteString, String, Unit] = bidi.withAttributes(name("")).addAttributes(asyncBoundary).named("")
+      val b: BidiFlow[Int, Long, ByteString, String, NotUsed] = bidi.withAttributes(name("")).addAttributes(asyncBoundary).named("")
     }
 
   }

@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.coding
 
 import akka.http.scaladsl.model._
 import akka.http.impl.util.StreamUtils
-import akka.stream.stage.Stage
+import akka.stream.FlowShape
+import akka.stream.stage.{ GraphStage, Stage }
 import akka.util.ByteString
 import headers.HttpEncodings
 
@@ -25,7 +26,7 @@ object NoCoding extends Coder with StreamDecoder {
 
   def newCompressor = NoCodingCompressor
 
-  def newDecompressorStage(maxBytesPerChunk: Int): () ⇒ Stage[ByteString, ByteString] =
+  def newDecompressorStage(maxBytesPerChunk: Int): () ⇒ GraphStage[FlowShape[ByteString, ByteString]] =
     () ⇒ StreamUtils.limitByteChunksStage(maxBytesPerChunk)
 }
 

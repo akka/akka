@@ -1,17 +1,18 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.model
 
 import java.io.File
+import java.util.Optional
+import akka.http.impl.util.Util
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.Future
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.util.{ Failure, Success, Try }
-import akka.japi.{ Option ⇒ JOption }
 import akka.event.{ NoLogging, LoggingAdapter }
 import akka.stream.impl.ConstantFun
 import akka.stream.Materializer
@@ -22,6 +23,9 @@ import akka.http.scaladsl.model.headers._
 import akka.http.impl.engine.rendering.BodyPartRenderer
 import akka.http.javadsl.{ model ⇒ jm }
 import FastFuture._
+import scala.compat.java8.OptionConverters._
+import scala.compat.java8.FutureConverters._
+import java.util.concurrent.CompletionStage
 
 /**
  * The model of multipart content for media-types `multipart/\*` (general multipart content),
@@ -70,8 +74,8 @@ sealed trait Multipart extends jm.Multipart {
     JSource.fromGraph(parts.asInstanceOf[Source[Multipart.BodyPart, AnyRef]])
 
   /** Java API */
-  def toStrict(timeoutMillis: Long, materializer: Materializer): Future[_ <: jm.Multipart.Strict] =
-    toStrict(FiniteDuration(timeoutMillis, concurrent.duration.MILLISECONDS))(materializer)
+  def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[_ <: jm.Multipart.Strict] =
+    toStrict(FiniteDuration(timeoutMillis, concurrent.duration.MILLISECONDS))(materializer).toJava
 
   /** Java API */
   def toEntity(charset: jm.HttpCharset, boundary: String): jm.RequestEntity =
@@ -157,18 +161,17 @@ object Multipart {
     def getHeaders: java.lang.Iterable[jm.HttpHeader] = (headers: immutable.Seq[jm.HttpHeader]).asJava
 
     /** Java API */
-    def getContentDispositionHeader: JOption[jm.headers.ContentDisposition] =
-      JOption.fromScalaOption(contentDispositionHeader)
+    def getContentDispositionHeader: Optional[jm.headers.ContentDisposition] = Util.convertOption(contentDispositionHeader)
 
     /** Java API */
     def getDispositionParams: java.util.Map[String, String] = dispositionParams.asJava
 
     /** Java API */
-    def getDispositionType: JOption[jm.headers.ContentDispositionType] = JOption.fromScalaOption(dispositionType)
+    def getDispositionType: Optional[jm.headers.ContentDispositionType] = Util.convertOption(dispositionType)
 
     /** Java API */
-    def toStrict(timeoutMillis: Long, materializer: Materializer): Future[_ <: jm.Multipart.BodyPart.Strict] =
-      toStrict(FiniteDuration(timeoutMillis, concurrent.duration.MILLISECONDS))(materializer)
+    def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[_ <: jm.Multipart.BodyPart.Strict] =
+      toStrict(FiniteDuration(timeoutMillis, concurrent.duration.MILLISECONDS))(materializer).toJava
   }
 
   object BodyPart {
@@ -208,8 +211,8 @@ object Multipart {
       super.getParts.asInstanceOf[JSource[_ <: jm.Multipart.General.BodyPart, AnyRef]]
 
     /** Java API */
-    override def toStrict(timeoutMillis: Long, materializer: Materializer): Future[jm.Multipart.General.Strict] =
-      super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.General.Strict]]
+    override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.Multipart.General.Strict] =
+      super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.General.Strict]].toJava
   }
   object General {
     def apply(mediaType: MediaType.Multipart, parts: BodyPart.Strict*): Strict = Strict(mediaType, parts.toVector)
@@ -254,8 +257,8 @@ object Multipart {
       def toByteRangesBodyPart: Try[Multipart.ByteRanges.BodyPart]
 
       /** Java API */
-      override def toStrict(timeoutMillis: Long, materializer: Materializer): Future[jm.Multipart.General.BodyPart.Strict] =
-        super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.General.BodyPart.Strict]]
+      override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.Multipart.General.BodyPart.Strict] =
+        super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.General.BodyPart.Strict]].toJava
 
       private[BodyPart] def tryCreateFormDataBodyPart[T](f: (String, Map[String, String], immutable.Seq[HttpHeader]) ⇒ T): Try[T] = {
         val params = dispositionParams
@@ -319,8 +322,8 @@ object Multipart {
       super.getParts.asInstanceOf[JSource[_ <: jm.Multipart.FormData.BodyPart, AnyRef]]
 
     /** Java API */
-    override def toStrict(timeoutMillis: Long, materializer: Materializer): Future[jm.Multipart.FormData.Strict] =
-      super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.FormData.Strict]]
+    override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.Multipart.FormData.Strict] =
+      super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.FormData.Strict]].toJava
   }
   object FormData {
     def apply(parts: Multipart.FormData.BodyPart.Strict*): Multipart.FormData.Strict = Strict(parts.toVector)
@@ -409,11 +412,11 @@ object Multipart {
         (additionalHeaders: immutable.Seq[jm.HttpHeader]).asJava
 
       /** Java API */
-      def getFilename: JOption[String] = JOption.fromScalaOption(filename)
+      def getFilename: Optional[String] = filename.asJava
 
       /** Java API */
-      override def toStrict(timeoutMillis: Long, materializer: Materializer): Future[jm.Multipart.FormData.BodyPart.Strict] =
-        super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.FormData.BodyPart.Strict]]
+      override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.Multipart.FormData.BodyPart.Strict] =
+        super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.FormData.BodyPart.Strict]].toJava
     }
     object BodyPart {
       def apply(_name: String, _entity: BodyPartEntity,
@@ -467,8 +470,8 @@ object Multipart {
       super.getParts.asInstanceOf[JSource[_ <: jm.Multipart.ByteRanges.BodyPart, AnyRef]]
 
     /** Java API */
-    override def toStrict(timeoutMillis: Long, materializer: Materializer): Future[jm.Multipart.ByteRanges.Strict] =
-      super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.ByteRanges.Strict]]
+    override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.Multipart.ByteRanges.Strict] =
+      super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.ByteRanges.Strict]].toJava
   }
   object ByteRanges {
     def apply(parts: Multipart.ByteRanges.BodyPart.Strict*): Strict = Strict(parts.toVector)
@@ -542,8 +545,8 @@ object Multipart {
       def getContentRangeHeader: jm.headers.ContentRange = contentRangeHeader
 
       /** Java API */
-      override def toStrict(timeoutMillis: Long, materializer: Materializer): Future[jm.Multipart.ByteRanges.BodyPart.Strict] =
-        super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.ByteRanges.BodyPart.Strict]]
+      override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.Multipart.ByteRanges.BodyPart.Strict] =
+        super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.ByteRanges.BodyPart.Strict]].toJava
     }
     object BodyPart {
       def apply(_contentRange: ContentRange, _entity: BodyPartEntity, _rangeUnit: RangeUnit = RangeUnits.Bytes,

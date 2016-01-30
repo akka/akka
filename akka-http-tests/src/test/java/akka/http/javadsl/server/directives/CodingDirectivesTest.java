@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.server.directives;
@@ -29,9 +29,8 @@ public class CodingDirectivesTest extends JUnitRouteTest {
     }
 
     @AfterClass
-    public static void tearDown() {
-        system.shutdown();
-        system.awaitTermination();
+    public static void tearDown() throws Exception {
+        Await.result(system.terminate(), Duration.Inf());
         system = null;
     }
 
@@ -68,7 +67,7 @@ public class CodingDirectivesTest extends JUnitRouteTest {
             .assertHeaderExists(ContentEncoding.create(HttpEncodings.DEFLATE));
 
         ByteString decompressed =
-                Await.result(Coder.Deflate.decode(response.entityBytes(), mat), Duration.apply(3, TimeUnit.SECONDS));
+                Coder.Deflate.decode(response.entityBytes(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
         Assert.assertEquals("tester", decompressed.utf8String());
     }
     @Test

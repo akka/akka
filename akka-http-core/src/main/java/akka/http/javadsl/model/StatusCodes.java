@@ -1,12 +1,13 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.model;
 
 import akka.http.impl.util.Util;
 import akka.http.scaladsl.model.StatusCodes$;
-import akka.japi.Option;
+
+import java.util.Optional;
 
 /**
  * Contains the set of predefined status-codes along with static methods to access and create custom
@@ -109,7 +110,7 @@ public final class StatusCodes {
     /**
      * Looks up a status-code by numeric code and returns Some(code). Returns None otherwise.
      */
-    public static Option<StatusCode> lookup(int intValue) {
+    public static Optional<StatusCode> lookup(int intValue) {
         return Util.<StatusCode, akka.http.scaladsl.model.StatusCode>lookupInRegistry(StatusCodes$.MODULE$, intValue);
     }
 }

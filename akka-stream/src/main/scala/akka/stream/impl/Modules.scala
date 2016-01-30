@@ -1,20 +1,16 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl
 
-import java.util.concurrent.atomic.AtomicInteger
-
+import akka.NotUsed
 import akka.actor._
 import akka.stream._
-import akka.stream.impl.AcknowledgePublisher.{ Ok, Rejected }
 import akka.stream.impl.StreamLayout.Module
-import akka.util.Timeout
 import org.reactivestreams._
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.concurrent.duration.{ FiniteDuration, _ }
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.Promise
 import scala.language.postfixOps
 
 /**
@@ -67,10 +63,10 @@ private[akka] final class SubscriberSource[Out](val attributes: Attributes, shap
  * that mediate the flow of elements downstream and the propagation of
  * back-pressure upstream.
  */
-private[akka] final class PublisherSource[Out](p: Publisher[Out], val attributes: Attributes, shape: SourceShape[Out]) extends SourceModule[Out, Unit](shape) {
-  override def create(context: MaterializationContext) = (p, ())
+private[akka] final class PublisherSource[Out](p: Publisher[Out], val attributes: Attributes, shape: SourceShape[Out]) extends SourceModule[Out, NotUsed](shape) {
+  override def create(context: MaterializationContext) = (p, NotUsed)
 
-  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Unit] = new PublisherSource[Out](p, attributes, shape)
+  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, NotUsed] = new PublisherSource[Out](p, attributes, shape)
   override def withAttributes(attr: Attributes): Module = new PublisherSource[Out](p, attr, amendShape(attr))
 }
 
@@ -120,33 +116,4 @@ private[akka] final class ActorRefSource[Out](
     new ActorRefSource[Out](bufferSize, overflowStrategy, attributes, shape)
   override def withAttributes(attr: Attributes): Module =
     new ActorRefSource(bufferSize, overflowStrategy, attr, amendShape(attr))
-}
-
-/**
- * INTERNAL API
- */
-private[akka] final class AcknowledgeSource[Out](bufferSize: Int, overflowStrategy: OverflowStrategy,
-                                                 val attributes: Attributes, shape: SourceShape[Out],
-                                                 timeout: FiniteDuration = 5 seconds)
-  extends SourceModule[Out, SourceQueue[Out]](shape) {
-
-  override def create(context: MaterializationContext) = {
-    import akka.pattern.ask
-    val ref = ActorMaterializer.downcast(context.materializer).actorOf(context,
-      AcknowledgePublisher.props(bufferSize, overflowStrategy))
-    implicit val t = Timeout(timeout)
-
-    (akka.stream.actor.ActorPublisher[Out](ref), new SourceQueue[Out] {
-      implicit val ctx = context.materializer.executionContext
-      override def offer(out: Out): Future[Boolean] = (ref ? out).map {
-        case Ok()       ⇒ true
-        case Rejected() ⇒ false
-      }
-    })
-  }
-
-  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, SourceQueue[Out]] =
-    new AcknowledgeSource[Out](bufferSize, overflowStrategy, attributes, shape, timeout)
-  override def withAttributes(attr: Attributes): Module =
-    new AcknowledgeSource(bufferSize, overflowStrategy, attr, amendShape(attr), timeout)
 }

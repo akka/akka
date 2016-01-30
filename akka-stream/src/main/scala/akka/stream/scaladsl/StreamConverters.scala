@@ -1,11 +1,12 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
 import java.io.{ OutputStream, InputStream }
 
 import akka.stream.ActorAttributes
+import akka.stream.io.IOResult
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.{ InputStreamSinkStage, OutputStreamSink, OutputStreamSourceStage, InputStreamSource }
 import akka.util.ByteString
@@ -29,12 +30,13 @@ object StreamConverters {
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
-   * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
+   * It materializes a [[Future]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
+   * and a possible exception if IO operation was not completed successfully.
    *
    * @param in a function which creates the InputStream to read from
    * @param chunkSize the size of each read operation, defaults to 8192
    */
-  def fromInputStream(in: () ⇒ InputStream, chunkSize: Int = 8192): Source[ByteString, Future[Long]] =
+  def fromInputStream(in: () ⇒ InputStream, chunkSize: Int = 8192): Source[ByteString, Future[IOResult]] =
     new Source(new InputStreamSource(in, chunkSize, DefaultAttributes.inputStreamSource, sourceShape("InputStreamSource")))
 
   /**
@@ -54,13 +56,15 @@ object StreamConverters {
   /**
    * Creates a Sink which writes incoming [[ByteString]]s to an [[OutputStream]] created by the given function.
    *
-   * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
+   * Materializes a [[Future]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
+   * and a possible exception if IO operation was not completed successfully.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
+   * If `autoFlush` is true the OutputStream will be flushed whenever a byte array is written, defaults to false.
    */
-  def fromOutputStream(out: () ⇒ OutputStream): Sink[ByteString, Future[Long]] =
-    new Sink(new OutputStreamSink(out, DefaultAttributes.outputStreamSink, sinkShape("OutputStreamSink")))
+  def fromOutputStream(out: () ⇒ OutputStream, autoFlush: Boolean = false): Sink[ByteString, Future[IOResult]] =
+    new Sink(new OutputStreamSink(out, DefaultAttributes.outputStreamSink, sinkShape("OutputStreamSink"), autoFlush))
 
   /**
    * Creates a Sink which when materialized will return an [[InputStream]] which it is possible

@@ -1,8 +1,10 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.model
+
+import java.util.Optional
 
 import akka.japi.Pair
 
@@ -53,10 +55,10 @@ class JavaApiSpec extends FreeSpec with MustMatchers {
       }
       "access single parameter" in {
         val query = Uri.create("/abc?name=blub").query()
-        query.get("name") must be(akka.japi.Option.some("blub"))
-        query.get("age") must be(akka.japi.Option.none)
+        query.get("name") must be(Optional.of("blub"))
+        query.get("age") must be(Optional.empty())
 
-        Uri.create("/abc?name=blub&name=blib").query.get("name") must be(akka.japi.Option.some("blub"))
+        Uri.create("/abc?name=blub&name=blib").query.get("name") must be(Optional.of("blub"))
       }
     }
   }

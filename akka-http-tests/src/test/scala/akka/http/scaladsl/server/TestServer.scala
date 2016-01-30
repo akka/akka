@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.server
@@ -51,7 +51,7 @@ object TestServer extends App {
   println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
   Console.readLine()
 
-  bindingFuture.flatMap(_.unbind()).onComplete(_ ⇒ system.shutdown())
+  bindingFuture.flatMap(_.unbind()).onComplete(_ ⇒ system.terminate())
 
   lazy val index =
     <html>

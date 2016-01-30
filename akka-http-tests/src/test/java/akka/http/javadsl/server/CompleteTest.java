@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.server;
 
 import org.junit.Test;
 
-import java.util.concurrent.Callable;
-import akka.dispatch.Futures;
+import java.util.concurrent.CompletableFuture;
+
 import akka.http.javadsl.testkit.*;
 
 import akka.http.javadsl.marshallers.jackson.Jackson;
@@ -52,13 +52,10 @@ public class CompleteTest extends JUnitRouteTest {
         Handler2<Integer, Integer> slowCalc = new Handler2<Integer, Integer>() {
             @Override
             public RouteResult apply(final RequestContext ctx, final Integer x, final Integer y) {
-                return ctx.completeWith(Futures.future(new Callable<RouteResult>() {
-                    @Override
-                    public RouteResult call() throws Exception {
-                        int result = x + y;
-                        return ctx.complete(String.format("%d + %d = %d",x, y, result));
-                    }
-                }, executionContext()));
+                return ctx.completeWith(CompletableFuture.supplyAsync(() -> {
+                  int result = x + y;
+                  return ctx.complete(String.format("%d + %d = %d",x, y, result));
+                }, ctx.executionContext()));
             }
         };
 

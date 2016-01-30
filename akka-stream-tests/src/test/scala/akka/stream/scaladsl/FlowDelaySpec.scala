@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
@@ -7,7 +7,7 @@ import akka.stream.Attributes._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{ AkkaSpec, TestPublisher, TestSubscriber }
-import akka.stream.{ DelayOverflowStrategy, ActorMaterializer }
+import akka.stream.{ BufferOverflowException, DelayOverflowStrategy, ActorMaterializer }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -103,7 +103,7 @@ class FlowDelaySpec extends AkkaSpec {
         .withAttributes(inputBuffer(16, 16))
         .runWith(TestSink.probe[Int])
         .request(100)
-        .expectError(new DelayOverflowStrategy.Fail.BufferOverflowException("Buffer overflow for delay combinator (max capacity was: 16)!"))
+        .expectError(new BufferOverflowException("Buffer overflow for delay combinator (max capacity was: 16)!"))
 
     }
 

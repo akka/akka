@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.server
@@ -8,7 +8,6 @@ import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.server.values.{ PathMatcher, BasicCredentials, OAuth2Credentials }
 import akka.http.scaladsl.model.StatusCodes.Redirection
 import akka.http.scaladsl.server.util.TupleOps.Join
-
 import scala.language.implicitConversions
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -22,6 +21,10 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.scaladsl.server
 import akka.http.javadsl.server._
 import RouteStructure._
+
+import scala.compat.java8.FutureConverters._
+import scala.compat.java8.OptionConverters._
+import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 
 /**
  * INTERNAL API
@@ -47,8 +50,8 @@ private[http] object ExtractionMap {
       def addAll(values: Map[RequestVal[_], Any]): ExtractionMap =
         ExtractionMap(map ++ values)
 
-      // CustomHeader methods
-      override def suppressRendering: Boolean = true
+      def renderInRequests = false
+      def renderInResponses = false
       def name(): String = "ExtractedValues"
       def value(): String = "<empty>"
     }
@@ -94,7 +97,7 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
                 }
             }
 
-          authenticator.authenticate(javaCreds)
+          authenticator.authenticate(javaCreds).toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
         }).flatMap { user ⇒
           addExtraction(authenticator.asInstanceOf[RequestVal[Any]], user)
         }
@@ -117,7 +120,7 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
                 }
             }
 
-          authenticator.authenticate(javaCreds)
+          authenticator.authenticate(javaCreds).toScala.map(_.asScala)(sameThreadExecutionContext)
         }).flatMap { user ⇒
           addExtraction(authenticator.asInstanceOf[RequestVal[Any]], user)
         }
@@ -158,7 +161,7 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
           def resolve(fileName: String): ContentType = ContentTypeResolver.Default(fileName)
         }))
 
-      case HandleWebsocketMessages(handler) ⇒ handleWebsocketMessages(JavaMapping.toScala(handler))
+      case HandleWebSocketMessages(handler) ⇒ handleWebSocketMessages(JavaMapping.toScala(handler))
       case Redirect(uri, code)              ⇒ redirect(uri.asScala, code.asScala.asInstanceOf[Redirection]) // guarded by require in Redirect
 
       case dyn: DynamicDirectiveRoute1[t1Type] ⇒

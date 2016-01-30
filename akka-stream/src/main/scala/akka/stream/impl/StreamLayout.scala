@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl
 
 import java.util.concurrent.atomic.{ AtomicInteger, AtomicReference }
 import java.{ util ⇒ ju }
+import akka.NotUsed
 import akka.stream.impl.MaterializerSession.MaterializationPanic
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
@@ -676,7 +677,7 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
       case Atomic(m)          ⇒ matVal.get(m)
       case Combine(f, d1, d2) ⇒ f(resolveMaterialized(d1, matVal, indent + "  "), resolveMaterialized(d2, matVal, indent + "  "))
       case Transform(f, d)    ⇒ f(resolveMaterialized(d, matVal, indent + "  "))
-      case Ignore             ⇒ ()
+      case Ignore             ⇒ NotUsed
     }
     if (MaterializerSession.Debug) println(indent + s"result = $ret")
     matValSrc.remove(matNode) match {

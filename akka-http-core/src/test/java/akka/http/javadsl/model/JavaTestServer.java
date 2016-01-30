@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.javadsl.model;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
 import akka.japi.Function;
 import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
-import akka.http.javadsl.model.ws.Websocket;
+import akka.http.javadsl.model.ws.WebSocket;
 import akka.japi.JavaPartialFunction;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
@@ -19,10 +20,10 @@ import akka.stream.javadsl.Source;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.BoxedUnit;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 public class JavaTestServer {
@@ -32,34 +33,34 @@ public class JavaTestServer {
         try {
             final Materializer materializer = ActorMaterializer.create(system);
 
-            Future<ServerBinding> serverBindingFuture =
+            CompletionStage<ServerBinding> serverBindingFuture =
                     Http.get(system).bindAndHandleSync(
                             new Function<HttpRequest, HttpResponse>() {
                                 public HttpResponse apply(HttpRequest request) throws Exception {
                                     System.out.println("Handling request to " + request.getUri());
 
                                     if (request.getUri().path().equals("/"))
-                                        return Websocket.handleWebsocketRequestWith(request, echoMessages());
+                                        return WebSocket.handleWebSocketRequestWith(request, echoMessages());
                                     else if (request.getUri().path().equals("/greeter"))
-                                        return Websocket.handleWebsocketRequestWith(request, greeter());
+                                        return WebSocket.handleWebSocketRequestWith(request, greeter());
                                     else
                                         return JavaApiTestCases.handleRequest(request);
                                 }
                             }, "localhost", 8080, materializer);
 
-            Await.result(serverBindingFuture, new FiniteDuration(1, TimeUnit.SECONDS)); // will throw if binding fails
+            serverBindingFuture.toCompletableFuture().get(1, TimeUnit.SECONDS); // will throw if binding fails
             System.out.println("Press ENTER to stop.");
             new BufferedReader(new InputStreamReader(System.in)).readLine();
         } finally {
-            system.shutdown();
+            system.terminate();
         }
     }
 
-    public static Flow<Message, Message, BoxedUnit> echoMessages() {
+    public static Flow<Message, Message, NotUsed> echoMessages() {
         return Flow.create(); // the identity operation
     }
 
-    public static Flow<Message, Message, BoxedUnit> greeter() {
+    public static Flow<Message, Message, NotUsed> greeter() {
         return
             Flow.<Message>create()
                 .collect(new JavaPartialFunction<Message, Message>() {

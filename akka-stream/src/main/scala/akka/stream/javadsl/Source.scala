@@ -1,17 +1,18 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.javadsl
 
 import java.io.{ OutputStream, InputStream, File }
 import java.util
-
+import java.util.Optional
+import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
 import akka.stream.Attributes._
 import akka.stream._
-import akka.stream.impl.fusing.Delay
+import akka.stream.impl.fusing.{ GraphStages, Delay }
 import akka.stream.impl.{ ConstantFun, StreamLayout }
 import akka.stream.stage.Stage
 import akka.util.ByteString
@@ -23,30 +24,43 @@ import scala.collection.immutable.Range.Inclusive
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.language.{ higherKinds, implicitConversions }
+import scala.compat.java8.OptionConverters._
+import java.util.concurrent.CompletionStage
+import java.util.concurrent.CompletableFuture
+import scala.compat.java8.FutureConverters._
+import akka.stream.impl.SourceQueueAdapter
 
 /** Java API */
 object Source {
-  private[this] val _empty = new Source[Any, Unit](scaladsl.Source.empty)
+  private[this] val _empty = new Source[Any, NotUsed](scaladsl.Source.empty)
 
   /**
    * Create a `Source` with no elements, i.e. an empty stream that is completed immediately
    * for every connected `Sink`.
    */
-  def empty[O](): Source[O, Unit] = _empty.asInstanceOf[Source[O, Unit]]
+  def empty[O](): Source[O, NotUsed] = _empty.asInstanceOf[Source[O, NotUsed]]
 
   /**
-   * Create a `Source` which materializes a [[scala.concurrent.Promise]] which controls what element
+   * Create a `Source` which materializes a [[java.util.concurrent.CompletableFuture]] which controls what element
    * will be emitted by the Source.
-   * If the materialized promise is completed with a Some, that value will be produced downstream,
+   * If the materialized promise is completed with a filled Optional, that value will be produced downstream,
    * followed by completion.
-   * If the materialized promise is completed with a None, no value will be produced downstream and completion will
+   * If the materialized promise is completed with an empty Optional, no value will be produced downstream and completion will
    * be signalled immediately.
    * If the materialized promise is completed with a failure, then the returned source will terminate with that error.
    * If the downstream of this source cancels before the promise has been completed, then the promise will be completed
-   * with None.
+   * with an empty Optional.
    */
-  def maybe[T]: Source[T, Promise[Option[T]]] =
-    new Source(scaladsl.Source.maybe[T])
+  def maybe[T]: Source[T, CompletableFuture[Optional[T]]] = {
+    new Source(scaladsl.Source.maybe[T].mapMaterializedValue { scalaOptionPromise: Promise[Option[T]] ⇒
+      val javaOptionPromise = new CompletableFuture[Optional[T]]()
+      scalaOptionPromise.completeWith(
+        javaOptionPromise.toScala
+          .map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext))
+
+      javaOptionPromise
+    })
+  }
 
   /**
    * Helper to create [[Source]] from `Publisher`.
@@ -56,7 +70,7 @@ object Source {
    * that mediate the flow of elements downstream and the propagation of
    * back-pressure upstream.
    */
-  def fromPublisher[O](publisher: Publisher[O]): javadsl.Source[O, Unit] =
+  def fromPublisher[O](publisher: Publisher[O]): javadsl.Source[O, NotUsed] =
     new Source(scaladsl.Source.fromPublisher(publisher))
 
   /**
@@ -77,7 +91,7 @@ object Source {
    * in accordance with the demand coming from the downstream transformation
    * steps.
    */
-  def fromIterator[O](f: function.Creator[java.util.Iterator[O]]): javadsl.Source[O, Unit] =
+  def fromIterator[O](f: function.Creator[java.util.Iterator[O]]): javadsl.Source[O, NotUsed] =
     new Source(scaladsl.Source.fromIterator(() ⇒ f.create().asScala))
 
   /**
@@ -100,7 +114,7 @@ object Source {
    * being used as a `Source`. Otherwise the stream may fail with
    * `ConcurrentModificationException` or other more subtle errors may occur.
    */
-  def from[O](iterable: java.lang.Iterable[O]): javadsl.Source[O, Unit] = {
+  def from[O](iterable: java.lang.Iterable[O]): javadsl.Source[O, NotUsed] = {
     // this adapter is not immutable if the the underlying java.lang.Iterable is modified
     // but there is not anything we can do to prevent that from happening.
     // ConcurrentModificationException will be thrown in some cases.
@@ -121,7 +135,7 @@ object Source {
    *
    * @see [[scala.collection.immutable.Range.inclusive(Int, Int)]]
    */
-  def range(start: Int, end: Int): javadsl.Source[Integer, Unit] = range(start, end, 1)
+  def range(start: Int, end: Int): javadsl.Source[Integer, NotUsed] = range(start, end, 1)
 
   /**
    * Creates [[Source]] that represents integer values in range ''[start;end]'', with the given step.
@@ -131,7 +145,7 @@ object Source {
    *
    * @see [[scala.collection.immutable.Range.inclusive(Int, Int, Int)]]
    */
-  def range(start: Int, end: Int, step: Int): javadsl.Source[Integer, Unit] =
+  def range(start: Int, end: Int, step: Int): javadsl.Source[Integer, NotUsed] =
     fromIterator[Integer](new function.Creator[util.Iterator[Integer]]() {
       def create(): util.Iterator[Integer] =
         new Inclusive(start, end, step) {
@@ -145,8 +159,17 @@ object Source {
    * may happen before or after materializing the `Flow`.
    * The stream terminates with a failure if the `Future` is completed with a failure.
    */
-  def fromFuture[O](future: Future[O]): javadsl.Source[O, Unit] =
+  def fromFuture[O](future: Future[O]): javadsl.Source[O, NotUsed] =
     new Source(scaladsl.Source.fromFuture(future))
+
+  /**
+   * Start a new `Source` from the given `CompletionStage`. The stream will consist of
+   * one element when the `CompletionStage` is completed with a successful value, which
+   * may happen before or after materializing the `Flow`.
+   * The stream terminates with a failure if the `CompletionStage` is completed with a failure.
+   */
+  def fromCompletionStage[O](future: CompletionStage[O]): javadsl.Source[O, NotUsed] =
+    new Source(scaladsl.Source.fromCompletionStage(future))
 
   /**
    * Elements are emitted periodically with the specified interval.
@@ -162,39 +185,34 @@ object Source {
    * Create a `Source` with one element.
    * Every connected `Sink` of this stream will see an individual stream consisting of one element.
    */
-  def single[T](element: T): Source[T, Unit] =
+  def single[T](element: T): Source[T, NotUsed] =
     new Source(scaladsl.Source.single(element))
 
   /**
    * Create a `Source` that will continually emit the given element.
    */
-  def repeat[T](element: T): Source[T, Unit] =
+  def repeat[T](element: T): Source[T, NotUsed] =
     new Source(scaladsl.Source.repeat(element))
 
   /**
    * Create a `Source` that will unfold a value of type `S` into
    * a pair of the next state `S` and output elements of type `E`.
    */
-  def unfold[S, E](s: S, f: function.Function[S, Option[(S, E)]]): Source[E, Unit] =
-    new Source(scaladsl.Source.unfold(s)((s: S) ⇒ f.apply(s)))
+  def unfold[S, E](s: S, f: function.Function[S, Optional[(S, E)]]): Source[E, NotUsed] =
+    new Source(scaladsl.Source.unfold(s)((s: S) ⇒ f.apply(s).asScala))
 
   /**
    * Same as [[unfold]], but uses an async function to generate the next state-element tuple.
    */
-  def unfoldAsync[S, E](s: S, f: function.Function[S, Future[Option[(S, E)]]]): Source[E, Unit] =
-    new Source(scaladsl.Source.unfoldAsync(s)((s: S) ⇒ f.apply(s)))
-
-  /**
-   * Simpler [[unfold]], for infinite sequences.
-   */
-  def unfoldInf[S, E](s: S, f: function.Function[S, (S, E)]): Source[E, Unit] = {
-    new Source(scaladsl.Source.unfoldInf(s)((s: S) ⇒ f.apply(s)))
-  }
+  def unfoldAsync[S, E](s: S, f: function.Function[S, CompletionStage[Optional[(S, E)]]]): Source[E, NotUsed] =
+    new Source(
+      scaladsl.Source.unfoldAsync(s)(
+        (s: S) ⇒ f.apply(s).toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)))
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` failure to every connected `Sink`.
    */
-  def failed[T](cause: Throwable): Source[T, Unit] =
+  def failed[T](cause: Throwable): Source[T, NotUsed] =
     new Source(scaladsl.Source.failed(cause))
 
   /**
@@ -255,8 +273,8 @@ object Source {
   /**
    * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
    */
-  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: java.util.List[Source[T, _]],
-                    strategy: function.Function[java.lang.Integer, _ <: Graph[UniformFanInShape[T, U], Unit]]): Source[U, Unit] = {
+  def combine[T, U](first: Source[T, _ <: Any], second: Source[T, _ <: Any], rest: java.util.List[Source[T, _ <: Any]],
+                    strategy: function.Function[java.lang.Integer, _ <: Graph[UniformFanInShape[T, U], NotUsed]]): Source[U, NotUsed] = {
     import scala.collection.JavaConverters._
     val seq = if (rest != null) rest.asScala.map(_.asScala) else Seq()
     new Source(scaladsl.Source.combine(first.asScala, second.asScala, seq: _*)(num ⇒ strategy.apply(num)))
@@ -265,28 +283,34 @@ object Source {
   /**
    * Creates a `Source` that is materialized as an [[akka.stream.SourceQueue]].
    * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
-   * otherwise they will be buffered until request for demand is received.
+   * otherwise they will be buffered until request for demand is received. Elements in the buffer will be discarded
+   * if downstream is terminated.
    *
    * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements if
    * there is no space available in the buffer.
    *
    * Acknowledgement mechanism is available.
-   * [[akka.stream.SourceQueue.offer]] returns ``Future[Boolean]`` which completes with true
-   * if element was added to buffer or sent downstream. It completes
-   * with false if element was dropped.
+   * [[akka.stream.SourceQueue.offer]] returns `CompletionStage<StreamCallbackStatus<Boolean>>` which completes with `Success(true)`
+   * if element was added to buffer or sent downstream. It completes with `Success(false)` if element was dropped. Can also complete
+   * with [[akka.stream.StreamCallbackStatus.Failure]] - when stream failed or [[akka.stream.StreamCallbackStatus.StreamCompleted]]
+   * when downstream is completed.
    *
-   * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete `offer():Future` until buffer is full.
+   * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete last `offer():CompletionStage`
+   * call when buffer is full.
    *
-   * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped
-   * if there is no demand from downstream. When `bufferSize` is 0 the `overflowStrategy` does
-   * not matter.
+   * You can watch accessibility of stream with [[akka.stream.SourceQueue.watchCompletion]].
+   * It returns future that completes with success when stream is completed or fail when stream is failed.
    *
-   * @param bufferSize The size of the buffer in element count
+   * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait for downstream demand.
+   * When `bufferSize` is 0 the `overflowStrategy` does not matter.
+   *
+   * SourceQueue that current source is materialized to is for single thread usage only.
+   *
+   * @param bufferSize size of buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
-   * @param timeout Timeout for ``SourceQueue.offer(T):Future[Boolean]``
    */
-  def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy, timeout: FiniteDuration): Source[T, SourceQueue[T]] =
-    new Source(scaladsl.Source.queue(bufferSize, overflowStrategy, timeout))
+  def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, SourceQueue[T]] =
+    new Source(scaladsl.Source.queue[T](bufferSize, overflowStrategy).mapMaterializedValue(new SourceQueueAdapter(_)))
 
 }
 
@@ -443,12 +467,23 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * Shortcut for running this `Source` with a fold function.
    * The given function is invoked for every received element, giving it its previous
    * output (or the given `zero` value) and the element as input.
-   * The returned [[scala.concurrent.Future]] will be completed with value of the final
+   * The returned [[java.util.concurrent.CompletionStage]] will be completed with value of the final
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure is signaled in the stream.
    */
-  def runFold[U](zero: U, f: function.Function2[U, Out, U], materializer: Materializer): Future[U] =
+  def runFold[U](zero: U, f: function.Function2[U, Out, U], materializer: Materializer): CompletionStage[U] =
     runWith(Sink.fold(zero, f), materializer)
+
+  /**
+   * Shortcut for running this `Source` with a reduce function.
+   * The given function is invoked for every received element, giving it its previous
+   * output (from the second ones) an the element as input.
+   * The returned [[java.util.concurrent.CompletionStage]] will be completed with value of the final
+   * function evaluation when the input stream ends, or completed with `Failure`
+   * if there is a failure is signaled in the stream.
+   */
+  def runReduce[U >: Out](f: function.Function2[U, U, U], materializer: Materializer): CompletionStage[U] =
+    runWith(Sink.reduce(f), materializer)
 
   /**
    * Concatenate this [[Source]] with the given one, meaning that once current
@@ -668,7 +703,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    */
   def zipMat[T, M, M2](that: Graph[SourceShape[T], M],
                        matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] =
-    this.viaMat(Flow.create[Out].zipMat(that, Keep.right[Unit, M]), matF)
+    this.viaMat(Flow.create[Out].zipMat(that, Keep.right[NotUsed, M]), matF)
 
   /**
    * Put together the elements of current [[Source]] and the given one
@@ -700,11 +735,11 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
   /**
    * Shortcut for running this `Source` with a foreach procedure. The given procedure is invoked
    * for each received element.
-   * The returned [[scala.concurrent.Future]] will be completed with `Success` when reaching the
-   * normal end of the stream, or completed with `Failure` if there is a failure is signaled in
+   * The returned [[java.util.concurrent.CompletionStage]] will be completed normally when reaching the
+   * normal end of the stream, or completed exceptionally if there is a failure is signaled in
    * the stream.
    */
-  def runForeach(f: function.Procedure[Out], materializer: Materializer): Future[Unit] =
+  def runForeach(f: function.Procedure[Out], materializer: Materializer): CompletionStage[Done] =
     runWith(Sink.foreach(f), materializer)
 
   // COMMON OPS //
@@ -766,66 +801,66 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
 
   /**
    * Transform this stream by applying the given function to each of the elements
-   * as they pass through this processing step. The function returns a `Future` and the
-   * value of that future will be emitted downstreams. As many futures as requested elements by
+   * as they pass through this processing step. The function returns a `CompletionStage` and the
+   * value of that future will be emitted downstreams. As many CompletionStages as requested elements by
    * downstream may run in parallel and may complete in any order, but the elements that
    * are emitted downstream are in the same order as received from upstream.
    *
-   * If the function `f` throws an exception or if the `Future` is completed
+   * If the function `f` throws an exception or if the `CompletionStage` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision#stop]]
    * the stream will be completed with failure.
    *
-   * If the function `f` throws an exception or if the `Future` is completed
+   * If the function `f` throws an exception or if the `CompletionStage` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision#resume]] or
    * [[akka.stream.Supervision#restart]] the element is dropped and the stream continues.
    *
    * The function `f` is always invoked on the elements in the order they arrive.
    *
-   * '''Emits when''' the Future returned by the provided function finishes for the next element in sequence
+   * '''Emits when''' the CompletionStage returned by the provided function finishes for the next element in sequence
    *
-   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream
-   * backpressures or the first future is not completed
+   * '''Backpressures when''' the number of CompletionStages reaches the configured parallelism and the downstream
+   * backpressures or the first CompletionStage is not completed
    *
-   * '''Completes when''' upstream completes and all futures has been completed and all elements has been emitted
+   * '''Completes when''' upstream completes and all CompletionStages has been completed and all elements has been emitted
    *
    * '''Cancels when''' downstream cancels
    *
    * @see [[#mapAsyncUnordered]]
    */
-  def mapAsync[T](parallelism: Int, f: function.Function[Out, Future[T]]): javadsl.Source[T, Mat] =
-    new Source(delegate.mapAsync(parallelism)(f.apply))
+  def mapAsync[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): javadsl.Source[T, Mat] =
+    new Source(delegate.mapAsync(parallelism)(x => f(x).toScala))
 
   /**
    * Transform this stream by applying the given function to each of the elements
-   * as they pass through this processing step. The function returns a `Future` and the
-   * value of that future will be emitted downstreams. As many futures as requested elements by
+   * as they pass through this processing step. The function returns a `CompletionStage` and the
+   * value of that future will be emitted downstreams. As many CompletionStages as requested elements by
    * downstream may run in parallel and each processed element will be emitted downstream
    * as soon as it is ready, i.e. it is possible that the elements are not emitted downstream
    * in the same order as received from upstream.
    *
-   * If the function `f` throws an exception or if the `Future` is completed
+   * If the function `f` throws an exception or if the `CompletionStage` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision#stop]]
    * the stream will be completed with failure.
    *
-   * If the function `f` throws an exception or if the `Future` is completed
+   * If the function `f` throws an exception or if the `CompletionStage` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision#resume]] or
    * [[akka.stream.Supervision#restart]] the element is dropped and the stream continues.
    *
-   * The function `f` is always invoked on the elements in the order they arrive (even though the result of the futures
+   * The function `f` is always invoked on the elements in the order they arrive (even though the result of the CompletionStages
    * returned by `f` might be emitted in a different order).
    *
-   * '''Emits when''' any of the Futures returned by the provided function complete
+   * '''Emits when''' any of the CompletionStages returned by the provided function complete
    *
-   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
+   * '''Backpressures when''' the number of CompletionStages reaches the configured parallelism and the downstream backpressures
    *
-   * '''Completes when''' upstream completes and all futures has been completed and all elements has been emitted
+   * '''Completes when''' upstream completes and all CompletionStages has been completed and all elements has been emitted
    *
    * '''Cancels when''' downstream cancels
    *
    * @see [[#mapAsync]]
    */
-  def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, Future[T]]): javadsl.Source[T, Mat] =
-    new Source(delegate.mapAsyncUnordered(parallelism)(f.apply))
+  def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): javadsl.Source[T, Mat] =
+    new Source(delegate.mapAsyncUnordered(parallelism)(x => f(x).toScala))
 
   /**
    * Only pass on those elements that satisfy the given predicate.
@@ -998,6 +1033,22 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    */
   def fold[T](zero: T)(f: function.Function2[T, Out, T]): javadsl.Source[T, Mat] =
     new Source(delegate.fold(zero)(f.apply))
+
+  /**
+   * Similar to `fold` but uses first element as zero element.
+   * Applies the given function towards its current and next value,
+   * yielding the next current value.
+   *
+   * '''Emits when''' upstream completes
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def reduce(f: function.Function2[Out, Out, Out @uncheckedVariance]): javadsl.Source[Out, Mat] =
+    new Source(delegate.reduce(f.apply))
 
   /**
    * Intersperses stream with provided element, similar to how [[scala.collection.immutable.List.mkString]]
@@ -1226,11 +1277,69 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * '''Cancels when''' downstream cancels
    *
+   * see also [[Source.batch]] [[Source.batchWeighted]]
+   *
    * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    */
   def conflate[S](seed: function.Function[Out, S], aggregate: function.Function2[S, Out, S]): javadsl.Source[S, Mat] =
     new Source(delegate.conflate(seed.apply)(aggregate.apply))
+
+  /**
+   * Allows a faster upstream to progress independently of a slower subscriber by aggregating elements into batches
+   * until the subscriber is ready to accept them. For example a batch step might store received elements in
+   * an array up to the allowed max limit if the upstream publisher is faster.
+   *
+   * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
+   * duplicate elements.
+   *
+   * '''Emits when''' downstream stops backpressuring and there is an aggregated element available
+   *
+   * '''Backpressures when''' there are `max` batched elements and 1 pending element and downstream backpressures
+   *
+   * '''Completes when''' upstream completes and there is no batched/pending element waiting
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * See also [[Source.conflate]], [[Source.batchWeighted]]
+   *
+   * @param max maximum number of elements to batch before backpressuring upstream (must be positive non-zero)
+   * @param seed Provides the first state for a batched value using the first unconsumed element as a start
+   * @param aggregate Takes the currently batched value and the current pending element to produce a new aggregate
+   */
+  def batch[S](max: Long, seed: function.Function[Out, S], aggregate: function.Function2[S, Out, S]): javadsl.Source[S, Mat] =
+    new Source(delegate.batch(max, seed.apply)(aggregate.apply))
+
+  /**
+   * Allows a faster upstream to progress independently of a slower subscriber by aggregating elements into batches
+   * until the subscriber is ready to accept them. For example a batch step might concatenate `ByteString`
+   * elements up to the allowed max limit if the upstream publisher is faster.
+   *
+   * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
+   * duplicate elements.
+   *
+   * Batching will apply for all elements, even if a single element cost is greater than the total allowed limit.
+   * In this case, previous batched elements will be emitted, then the "heavy" element will be emitted (after
+   * being applied with the `seed` function) without batching further elements with it, and then the rest of the
+   * incoming elements are batched.
+   *
+   * '''Emits when''' downstream stops backpressuring and there is a batched element available
+   *
+   * '''Backpressures when''' there are `max` weighted batched elements + 1 pending element and downstream backpressures
+   *
+   * '''Completes when''' upstream completes and there is no batched/pending element waiting
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * See also [[Source.conflate]], [[Source.batch]]
+   *
+   * @param max maximum weight of elements to batch before backpressuring upstream (must be positive non-zero)
+   * @param costFn a function to compute a single element weight
+   * @param seed Provides the first state for a batched value using the first unconsumed element as a start
+   * @param aggregate Takes the currently batched value and the current pending element to produce a new batch
+   */
+  def batchWeighted[S](max: Long, costFn: function.Function[Out, Long], seed: function.Function[Out, S], aggregate: function.Function2[S, Out, S]): javadsl.Source[S, Mat] =
+    new Source(delegate.batchWeighted(max, costFn.apply, seed.apply)(aggregate.apply))
 
   /**
    * Allows a faster downstream to progress independently of a slower publisher by extrapolating elements from an older
@@ -1246,7 +1355,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * '''Emits when''' downstream stops backpressuring
    *
-   * '''Backpressures when''' downstream backpressures
+   * '''Backpressures when''' downstream backpressures or iterator runs emtpy
    *
    * '''Completes when''' upstream completes
    *
@@ -1256,11 +1365,8 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
    *                    state.
    */
-  def expand[S, U](seed: function.Function[Out, S], extrapolate: function.Function[S, akka.japi.Pair[U, S]]): javadsl.Source[U, Mat] =
-    new Source(delegate.expand(seed(_))(s ⇒ {
-      val p = extrapolate(s)
-      (p.first, p.second)
-    }))
+  def expand[U](extrapolate: function.Function[Out, java.util.Iterator[U]]): javadsl.Source[U, Mat] =
+    new Source(delegate.expand(in ⇒ extrapolate(in).asScala))
 
   /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
@@ -1313,7 +1419,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * '''Cancels when''' downstream cancels or substream cancels
    */
-  def prefixAndTail(n: Int): javadsl.Source[akka.japi.Pair[java.util.List[Out @uncheckedVariance], javadsl.Source[Out @uncheckedVariance, Unit]], Mat] =
+  def prefixAndTail(n: Int): javadsl.Source[akka.japi.Pair[java.util.List[Out @uncheckedVariance], javadsl.Source[Out @uncheckedVariance, NotUsed]], Mat] =
     new Source(delegate.prefixAndTail(n).map { case (taken, tail) ⇒ akka.japi.Pair(taken.asJava, tail.asJava) })
 
   /**
@@ -1625,6 +1731,15 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * '''Cancels when''' downstream cancels
    */
   def detach: javadsl.Source[Out, Mat] = new Source(delegate.detach)
+
+  /**
+   * Materializes to `Future[Done]` that completes on getting termination message.
+   * The Future completes with success when received complete message from upstream or cancel
+   * from downstream. It fails with the same error when received error message from
+   * downstream.
+   */
+  def watchTermination[M]()(matF: function.Function2[Mat, CompletionStage[Done], M]): javadsl.Source[Out, M] =
+    new Source(delegate.watchTermination()((left, right) => matF(left, right.toJava)))
 
   /**
    * Delays the initial element by the specified duration.

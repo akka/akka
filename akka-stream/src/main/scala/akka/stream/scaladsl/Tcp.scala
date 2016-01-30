@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
 import java.net.InetSocketAddress
 
+import akka.NotUsed
 import akka.actor._
 import akka.io.Inet.SocketOption
 import akka.io.{ IO, Tcp ⇒ IoTcp }
@@ -32,7 +33,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
   case class IncomingConnection(
     localAddress: InetSocketAddress,
     remoteAddress: InetSocketAddress,
-    flow: Flow[ByteString, ByteString, Unit]) {
+    flow: Flow[ByteString, ByteString, NotUsed]) {
 
     /**
      * Handles the connection using the given flow, which is materialized exactly once and the respective

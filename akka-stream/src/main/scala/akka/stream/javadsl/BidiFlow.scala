@@ -1,14 +1,21 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.javadsl
 
+import akka.NotUsed
 import akka.japi.function
 import akka.stream._
 
 import scala.concurrent.duration.FiniteDuration
 
 object BidiFlow {
+
+  private[this] val _identity: BidiFlow[Object, Object, Object, Object, NotUsed] =
+    BidiFlow.fromFlows(Flow.of(classOf[Object]), Flow.of(classOf[Object]))
+
+  def identity[A, B]: BidiFlow[A, A, B, B, NotUsed] = _identity.asInstanceOf[BidiFlow[A, A, B, B, NotUsed]]
+
   /**
    * A graph with the shape of a BidiFlow logically is a BidiFlow, this method makes
    * it so also in type.
@@ -46,7 +53,7 @@ object BidiFlow {
   }
 
   /**
-   * Wraps two Flows to create a ''BidiFlow''. The materialized value of the resulting BidiFlow is Unit.
+   * Wraps two Flows to create a ''BidiFlow''. The materialized value of the resulting BidiFlow is NotUsed.
    *
    * {{{
    *     +----------------------------+
@@ -65,14 +72,14 @@ object BidiFlow {
    */
   def fromFlows[I1, O1, I2, O2, M1, M2](
     flow1: Graph[FlowShape[I1, O1], M1],
-    flow2: Graph[FlowShape[I2, O2], M2]): BidiFlow[I1, O1, I2, O2, Unit] =
+    flow2: Graph[FlowShape[I2, O2], M2]): BidiFlow[I1, O1, I2, O2, NotUsed] =
     new BidiFlow(scaladsl.BidiFlow.fromFlows(flow1, flow2))
 
   /**
    * Create a BidiFlow where the top and bottom flows are just one simple mapping
    * stage each, expressed by the two functions.
    */
-  def fromFunctions[I1, O1, I2, O2](top: function.Function[I1, O1], bottom: function.Function[I2, O2]): BidiFlow[I1, O1, I2, O2, Unit] =
+  def fromFunctions[I1, O1, I2, O2](top: function.Function[I1, O1], bottom: function.Function[I2, O2]): BidiFlow[I1, O1, I2, O2, NotUsed] =
     new BidiFlow(scaladsl.BidiFlow.fromFunctions(top.apply _, bottom.apply _))
 
   /**
@@ -84,7 +91,7 @@ object BidiFlow {
    * every second in one direction, but no elements are flowing in the other direction. I.e. this stage considers
    * the *joint* frequencies of the elements in both directions.
    */
-  def bidirectionalIdleTimeout[I, O](timeout: FiniteDuration): BidiFlow[I, I, O, O, Unit] =
+  def bidirectionalIdleTimeout[I, O](timeout: FiniteDuration): BidiFlow[I, I, O, O, NotUsed] =
     new BidiFlow(scaladsl.BidiFlow.bidirectionalIdleTimeout(timeout))
 }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.testkit
 
@@ -123,7 +123,7 @@ object TestPublisher {
       probe.receiveWhile(max, idle, messages)(f.asInstanceOf[PartialFunction[AnyRef, T]])
 
     def expectEventPF[T](f: PartialFunction[PublisherEvent, T]): T =
-      probe.expectMsgPF[T](probe.remaining)(f.asInstanceOf[PartialFunction[Any, T]])
+      probe.expectMsgPF[T]()(f.asInstanceOf[PartialFunction[Any, T]])
 
     def getPublisher: Publisher[I] = this
   }
@@ -183,7 +183,7 @@ object TestSubscriber {
   trait SubscriberEvent extends DeadLetterSuppression with NoSerializationVerificationNeeded
   final case class OnSubscribe(subscription: Subscription) extends SubscriberEvent
   final case class OnNext[I](element: I) extends SubscriberEvent
-  final case object OnComplete extends SubscriberEvent
+  case object OnComplete extends SubscriberEvent
   final case class OnError(cause: Throwable) extends SubscriberEvent {
     override def toString: String = {
       val str = new StringWriter
@@ -251,9 +251,13 @@ object TestSubscriber {
     /**
      * Expect and return a stream element.
      */
-    def expectNext(): I = probe.receiveOne(probe.remaining) match {
-      case OnNext(elem) ⇒ elem.asInstanceOf[I]
-      case other        ⇒ throw new AssertionError("expected OnNext, found " + other)
+    def expectNext(): I = {
+      val t = probe.remainingOr(probe.testKitSettings.SingleExpectDefaultTimeout.dilated)
+      probe.receiveOne(t) match {
+        case null         ⇒ throw new AssertionError(s"Expected OnNext(_), yet no element signaled during $t")
+        case OnNext(elem) ⇒ elem.asInstanceOf[I]
+        case other        ⇒ throw new AssertionError("expected OnNext, found " + other)
+      }
     }
 
     /**
@@ -393,7 +397,7 @@ object TestSubscriber {
      * See also [[#expectSubscriptionAndComplete(Throwable, Boolean)]] if no demand should be signalled.
      */
     def expectSubscriptionAndError(cause: Throwable): Self =
-      expectSubscriptionAndError(cause, true)
+      expectSubscriptionAndError(cause, signalDemand = true)
 
     /**
      * Fluent DSL
@@ -522,7 +526,7 @@ object TestSubscriber {
     }
 
     def expectEventPF[T](f: PartialFunction[SubscriberEvent, T]): T =
-      probe.expectMsgPF[T](probe.remaining)(f.asInstanceOf[PartialFunction[Any, T]])
+      probe.expectMsgPF[T]()(f.asInstanceOf[PartialFunction[Any, T]])
 
     /**
      * Receive messages for a given duration or until one does not match a given partial function.
@@ -551,8 +555,7 @@ object TestSubscriber {
       @tailrec def drain(): immutable.Seq[I] =
         self.expectEvent(deadline.timeLeft) match {
           case OnError(ex) ⇒
-            // TODO once on JDK7+ this could be made an AssertionError, since it can carry ex in its cause param
-            throw new AssertionError(s"toStrict received OnError(${ex.getMessage}) while draining stream! Accumulated elements: ${b.result()}")
+            throw new AssertionError(s"toStrict received OnError while draining stream! Accumulated elements: ${b.result()}", ex)
           case OnComplete ⇒
             b.result()
           case OnNext(i: I @unchecked) ⇒

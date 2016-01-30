@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
@@ -12,6 +12,7 @@ import scala.util.Failure
 import scala.util.control.NoStackTrace
 import akka.stream._
 import akka.stream.testkit._
+import akka.NotUsed
 
 class SourceSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
 
@@ -252,7 +253,7 @@ class SourceSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
     }
 
     "generate an unbounded fibonacci sequence" in {
-      Source.unfoldInf((0, 1))({ case (a, b) ⇒ (b, a + b) → a })
+      Source.unfold((0, 1))({ case (a, b) ⇒ Some((b, a + b) → a) })
         .take(36)
         .runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }
         .futureValue should ===(expected)
@@ -271,7 +272,7 @@ class SourceSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
   "A Source" must {
     "suitably override attribute handling methods" in {
       import Attributes._
-      val s: Source[Int, Unit] = Source.single(42).withAttributes(asyncBoundary).addAttributes(none).named("")
+      val s: Source[Int, NotUsed] = Source.single(42).withAttributes(asyncBoundary).addAttributes(none).named("")
     }
   }
 

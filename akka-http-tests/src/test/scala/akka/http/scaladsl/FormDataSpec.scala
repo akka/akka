@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl
@@ -12,6 +12,7 @@ import akka.stream.ActorMaterializer
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
+import scala.concurrent.Await
 
 class FormDataSpec extends WordSpec with Matchers with ScalaFutures with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName)
@@ -19,6 +20,8 @@ class FormDataSpec extends WordSpec with Matchers with ScalaFutures with BeforeA
   import system.dispatcher
 
   val formData = FormData(Map("surname" -> "Smith", "age" -> "42"))
+
+  implicit val patience = PatienceConfig(3.seconds)
 
   "The FormData infrastructure" should {
     "properly round-trip the fields of www-urlencoded forms" in {
@@ -36,7 +39,6 @@ class FormDataSpec extends WordSpec with Matchers with ScalaFutures with BeforeA
   }
 
   override def afterAll() = {
-    system.shutdown()
-    system.awaitTermination(10.seconds)
+    Await.result(system.terminate(), 10.seconds)
   }
 }

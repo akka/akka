@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl.server
@@ -29,6 +29,6 @@ trait Directives extends RouteConcatenation
   with RouteDirectives
   with SchemeDirectives
   with SecurityDirectives
-  with WebsocketDirectives
+  with WebSocketDirectives
 
 object Directives extends Directives

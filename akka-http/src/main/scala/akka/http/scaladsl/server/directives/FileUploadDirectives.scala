@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.http.scaladsl.server.directives
 
@@ -76,7 +76,6 @@ trait FileUploadDirectives {
       case Some(tuple) ⇒ provide(tuple)
       case None        ⇒ reject(MissingFormFieldRejection(fieldName))
     }
-
 }
 
 object FileUploadDirectives extends FileUploadDirectives

@@ -1,11 +1,11 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.impl.engine.parsing
 
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
-import akka.http.ParserSettings
+import akka.http.scaladsl.settings.ParserSettings
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.annotation.tailrec
 import scala.util.Random
@@ -108,7 +108,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
     }
 
     "retrieve the EmptyHeader" in new TestSetup() {
-      parseAndCache("\r\n")() shouldEqual HttpHeaderParser.EmptyHeader
+      parseAndCache("\r\n")() shouldEqual EmptyHeader
     }
 
     "retrieve a cached header with an exact header name match" in new TestSetup() {
@@ -228,7 +228,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
     }
   }
 
-  override def afterAll() = system.shutdown()
+  override def afterAll() = system.terminate()
 
   def check(pair: (String, String)) = {
     val (expected, actual) = pair

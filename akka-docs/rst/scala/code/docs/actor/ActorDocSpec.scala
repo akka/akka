@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.actor
 
@@ -24,6 +24,7 @@ import scala.concurrent.Await
 //#my-actor
 class MyActor extends Actor {
   val log = Logging(context.system, this)
+
   def receive = {
     case "test" => log.info("received test")
     case _      => log.info("received unknown message")
@@ -54,6 +55,7 @@ class DemoActorWrapper extends Actor {
   object DemoActor {
     /**
      * Create Props for an actor of this type.
+     *
      * @param magicNumber The magic number to be passed to this actor’s constructor.
      * @return a Props for creating this actor, which can then be further configured
      *         (e.g. calling `.withDispatcher()` on it)
@@ -257,7 +259,10 @@ final case class Give(thing: Any)
 
 //#receive-orElse
 
-class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
+class ActorDocSpec extends AkkaSpec("""
+  akka.loglevel = INFO
+  akka.loggers = []
+  """) {
 
   "import context" in {
     new AnyRef {
