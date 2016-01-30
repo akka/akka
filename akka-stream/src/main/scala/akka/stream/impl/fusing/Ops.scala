@@ -6,10 +6,10 @@ package akka.stream.impl.fusing
 import akka.event.Logging.LogLevel
 import akka.event.{ LogSource, Logging, LoggingAdapter }
 import akka.stream.Attributes.{ InputBuffer, LogLevels }
-import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.OverflowStrategies._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ Buffer ⇒ BufferImpl, ReactiveStreamsCompliance }
+import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
 import scala.annotation.tailrec
@@ -1118,4 +1118,54 @@ private[stream] final class Reduce[T](f: (T, T) ⇒ T) extends SimpleLinearGraph
     })
   }
   override def toString = "Reduce"
+}
+
+/**
+ * INTERNAL API
+ */
+private[stream] final class RecoverWith[T, M](pf: PartialFunction[Throwable, Graph[SourceShape[T], M]]) extends SimpleLinearGraphStage[T] {
+  override def initialAttributes = DefaultAttributes.recoverWith
+
+  override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
+    setHandler(in, new InHandler {
+      override def onPush(): Unit = push(out, grab(in))
+      override def onUpstreamFailure(ex: Throwable) = onFailure(ex)
+    })
+
+    setHandler(out, new OutHandler {
+      override def onPull(): Unit = pull(in)
+    })
+
+    def onFailure(ex: Throwable) = if (pf.isDefinedAt(ex)) switchTo(pf(ex)) else failStage(ex)
+
+    def switchTo(source: Graph[SourceShape[T], M]): Unit = {
+      val sinkIn = new SubSinkInlet[T]("RecoverWithSink")
+      sinkIn.setHandler(new InHandler {
+        override def onPush(): Unit =
+          if (isAvailable(out)) {
+            push(out, sinkIn.grab())
+            sinkIn.pull()
+          }
+        override def onUpstreamFinish(): Unit = if (!sinkIn.isAvailable) completeStage()
+        override def onUpstreamFailure(ex: Throwable) = onFailure(ex)
+      })
+
+      def pushOut(): Unit = {
+        push(out, sinkIn.grab())
+        if (!sinkIn.isClosed) sinkIn.pull()
+        else completeStage()
+      }
+
+      val outHandler = new OutHandler {
+        override def onPull(): Unit = if (sinkIn.isAvailable) pushOut()
+        override def onDownstreamFinish(): Unit = sinkIn.cancel()
+      }
+
+      Source.fromGraph(source).runWith(sinkIn.sink)(interpreter.subFusingMaterializer)
+      setHandler(out, outHandler)
+      sinkIn.pull()
+    }
+  }
+
+  override def toString: String = "RecoverWith"
 }

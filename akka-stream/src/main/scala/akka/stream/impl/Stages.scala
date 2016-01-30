@@ -65,6 +65,7 @@ private[stream] object Stages {
     val merge = name("merge")
     val mergePreferred = name("mergePreferred")
     val flattenMerge = name("flattenMerge")
+    val recoverWith = name("recoverWith")
     val broadcast = name("broadcast")
     val balance = name("balance")
     val zip = name("zip")

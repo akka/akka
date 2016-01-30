@@ -569,6 +569,16 @@ Allow sending of one last element downstream when a failure has happened upstrea
 
 *completes* when upstream completes or upstream failed with exception pf can handle
 
+recoverWith
+^^^^^^^^^^^
+Allow switching to alternative Source when a failure has happened upstream.
+
+*emits* the element is available from the upstream or upstream is failed and pf returns alternative Source
+
+*backpressures* downstream backpressures, after failure happened it backprssures to alternative Source
+
+*completes* upstream completes or upstream failed with exception pf can handle
+
 detach
 ^^^^^^
 Detach upstream demand from downstream demand without detaching the stream rates.

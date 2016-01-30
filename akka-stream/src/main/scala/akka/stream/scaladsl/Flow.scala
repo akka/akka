@@ -421,6 +421,26 @@ trait FlowOps[+Out, +Mat] {
   def recover[T >: Out](pf: PartialFunction[Throwable, T]): Repr[T] = andThen(Recover(pf))
 
   /**
+    * RecoverWith allows to switch to alternative Source on flow failure. It will stay in effect after
+    * a failure has been recovered so that each time there is a failure it is fed into the `pf` and a new
+    * Source may be materialized.
+    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+    *
+    * '''Emits when''' element is available from the upstream or upstream is failed and element is available
+    * from alternative Source
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+    *
+    * '''Cancels when''' downstream cancels
+    *
+    */
+  def recoverWith[T >: Out](pf: PartialFunction[Throwable, Graph[SourceShape[T], NotUsed]]): Repr[T] =
+    via(new RecoverWith(pf))
+
+  /**
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step.
    *
