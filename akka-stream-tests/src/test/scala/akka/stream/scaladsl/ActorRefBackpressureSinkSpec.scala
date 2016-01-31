@@ -8,6 +8,9 @@ import akka.stream.ActorMaterializer
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
+import org.scalatest.concurrent.ScalaFutures
+import org.scalactic.ConversionCheckedTripleEquals
+import scala.concurrent.duration._
 
 object ActorRefBackpressureSinkSpec {
   val initMessage = "start"
@@ -43,9 +46,10 @@ object ActorRefBackpressureSinkSpec {
 
 }
 
-class ActorRefBackpressureSinkSpec extends AkkaSpec {
+class ActorRefBackpressureSinkSpec extends AkkaSpec with ScalaFutures with ConversionCheckedTripleEquals {
   import ActorRefBackpressureSinkSpec._
   implicit val mat = ActorMaterializer()
+  implicit val patience = PatienceConfig(2.second)
 
   def createActor[T](c: Class[T]) =
     system.actorOf(Props(c, testActor).withDispatcher("akka.test.stream-dispatcher"))
@@ -106,6 +110,30 @@ class ActorRefBackpressureSinkSpec extends AkkaSpec {
       expectMsg(2)
       fw ! TriggerAckMessage
       expectMsg(3)
+
+      expectMsg(completeMessage)
+    }
+
+    "keep on sending even after the buffer has been full" in assertAllStagesStopped {
+      val fw = createActor(classOf[Fw2])
+      val probe = TestSubscriber.probe[Int]()
+
+      Source(1 to 20)
+        .alsoTo(Sink.fromSubscriber(probe))
+        .runWith(Sink.actorRefWithAck(fw, initMessage, ackMessage, completeMessage))
+
+      probe.ensureSubscription()
+      probe.request(Long.MaxValue)
+
+      expectMsg(initMessage)
+      fw ! TriggerAckMessage
+      for (i ← 1 to 20) {
+        expectMsg(i)
+        fw ! TriggerAckMessage
+      }
+
+      probe.expectNextN(1 to 20)
+      probe.expectComplete()
 
       expectMsg(completeMessage)
     }
