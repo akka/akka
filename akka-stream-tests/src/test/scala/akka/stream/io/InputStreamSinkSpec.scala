@@ -50,6 +50,12 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
   def expectSuccess[T](f: Future[T], value: T) =
     Await.result(f, timeout) should be(value)
 
+  private[this] def readN(is: InputStream, n: Int): (Int, ByteString) = {
+    val buf = new Array[Byte](n)
+    val r = is.read(buf)
+    (r, ByteString.fromArray(buf, 0, r))
+  }
+
   object InputStreamSinkTestMessages {
     case object Push extends NoSerializationVerificationNeeded
     case object Finish extends NoSerializationVerificationNeeded
@@ -287,6 +293,14 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
       } finally shutdown(sys)
     }
 
+    "work when more bytes pulled from InputStream than available" in assertAllStagesStopped {
+      val inputStream = Source.single(byteString).runWith(StreamConverters.asInputStream())
+
+      readN(inputStream, byteString.size * 2) should ===((byteString.size, byteString))
+      inputStream.read() should ===(-1)
+
+      inputStream.close()
+    }
   }
 
 }
