@@ -165,7 +165,7 @@ private[http] object JavaMapping {
     def toScala(javaObject: J): S = cast[S](javaObject)
   }
 
-  implicit object ConnectionContext extends Inherited[ConnectionContext, akka.http.scaladsl.HttpConnectionContext]
+  implicit object ConnectionContext extends Inherited[ConnectionContext, akka.http.scaladsl.ConnectionContext]
   implicit object HttpConnectionContext extends Inherited[HttpConnectionContext, akka.http.scaladsl.HttpConnectionContext]
   implicit object HttpsConnectionContext extends Inherited[HttpsConnectionContext, akka.http.scaladsl.HttpsConnectionContext]
 
