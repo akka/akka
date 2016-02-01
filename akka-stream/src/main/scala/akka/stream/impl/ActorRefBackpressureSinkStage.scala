@@ -52,10 +52,9 @@ private[akka] class ActorRefBackpressureSinkStage[In](ref: ActorRef, onInitMessa
       }
 
       private def sendData(): Unit = {
-        if (!buffer.isEmpty) {
-          ref ! buffer.poll()
-          acknowledgementReceived = false
-        }
+        if (buffer.size() == maxBuffer) tryPull(in)
+        ref ! buffer.poll()
+        acknowledgementReceived = false
         if (buffer.isEmpty && completeReceived) finish()
       }
 
