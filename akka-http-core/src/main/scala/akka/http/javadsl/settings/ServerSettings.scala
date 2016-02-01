@@ -10,6 +10,7 @@ import akka.http.javadsl.model.headers.Host
 import akka.http.javadsl.model.headers.Server
 import akka.io.Inet.SocketOption
 import akka.http.impl.util.JavaMapping.Implicits._
+import com.typesafe.config.Config
 import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters._
 
@@ -53,7 +54,7 @@ abstract class ServerSettings { self: ServerSettingsImpl ⇒
 
 }
 
-object ServerSettings {
+object ServerSettings extends SettingsCompanion[ServerSettings] {
   trait Timeouts {
     def idleTimeout: Duration
     def requestTimeout: Duration
@@ -67,4 +68,7 @@ object ServerSettings {
     /** INTERNAL API */
     protected def self = this.asInstanceOf[ServerSettingsImpl.Timeouts]
   }
+
+  override def create(config: Config): ServerSettings = ServerSettingsImpl(config)
+  override def create(configOverrides: String): ServerSettings = ServerSettingsImpl(configOverrides)
 }

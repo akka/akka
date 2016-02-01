@@ -6,7 +6,6 @@ package akka.http.javadsl
 
 import java.net.InetSocketAddress
 import java.util.Optional
-import akka.http.impl.settings.HostConnectionPoolSetup
 import akka.http.impl.util.JavaMapping
 import akka.http.impl.util.JavaMapping.HttpsConnectionContext
 import akka.http.javadsl.model.ws._
@@ -379,7 +378,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * object of type `T` from the application which is emitted together with the corresponding response.
    */
   def newHostConnectionPool[T](to: ConnectHttp, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
-    adaptTupleFlow(delegate.newHostConnectionPool[T](to.host, to.port)(materializer))
+    adaptTupleFlow(delegate.newHostConnectionPool[T](to.host, to.port)(materializer).mapMaterializedValue(_.toJava))
 
   /**
    * Same as [[newHostConnectionPool]] but with HTTPS encryption.
@@ -391,8 +390,12 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
                                log: LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow {
       to.effectiveConnectionContext(defaultClientHttpsContext) match {
-        case https: HttpsConnectionContext ⇒ delegate.newHostConnectionPoolHttps[T](to.host, to.port, https.asScala, settings.asScala, log)(materializer)
-        case _                             ⇒ delegate.newHostConnectionPool[T](to.host, to.port, settings.asScala, log)(materializer)
+        case https: HttpsConnectionContext ⇒
+          delegate.newHostConnectionPoolHttps[T](to.host, to.port, https.asScala, settings.asScala, log)(materializer)
+            .mapMaterializedValue(_.toJava)
+        case _                             ⇒
+          delegate.newHostConnectionPool[T](to.host, to.port, settings.asScala, log)(materializer)
+            .mapMaterializedValue(_.toJava)
       }
     }
 
@@ -434,7 +437,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * object of type `T` from the application which is emitted together with the corresponding response.
    */
   def cachedHostConnectionPool[T](to: ConnectHttp, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
-    adaptTupleFlow(delegate.cachedHostConnectionPool[T](to.host, to.port)(materializer))
+    adaptTupleFlow(delegate.cachedHostConnectionPool[T](to.host, to.port)(materializer).mapMaterializedValue(_.toJava))
 
   /**
    * Same as [[cachedHostConnectionPool]] but with HTTPS encryption.
@@ -444,7 +447,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   def cachedHostConnectionPool[T](to: ConnectHttp,
                                   settings: ConnectionPoolSettings,
                                   log: LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
-    adaptTupleFlow(delegate.cachedHostConnectionPoolHttps[T](to.host, to.port, to.effectiveConnectionContext(defaultClientHttpsContext).asScala, settings.asScala, log)(materializer))
+    adaptTupleFlow(delegate.cachedHostConnectionPoolHttps[T](to.host, to.port, to.effectiveConnectionContext(defaultClientHttpsContext).asScala, settings.asScala, log)(materializer)
+      .mapMaterializedValue(_.toJava))
 
   /**
    * Creates a new "super connection pool flow", which routes incoming requests to a (cached) host connection pool
@@ -657,6 +661,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Gets the default
+ *
    * @return
    */
   def defaultServerHttpContext: ConnectionContext =
