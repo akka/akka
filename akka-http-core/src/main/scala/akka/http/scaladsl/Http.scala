@@ -5,7 +5,7 @@
 package akka.http.scaladsl
 
 import java.net.InetSocketAddress
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.{ CompletionStage, ConcurrentHashMap }
 import javax.net.ssl._
 
 import akka.actor._
@@ -22,7 +22,7 @@ import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgradeResponse }
 import akka.http.scaladsl.settings.{ ServerSettings, ClientConnectionSettings, ConnectionPoolSettings }
 import akka.http.scaladsl.util.FastFuture
-import akka.NotUsed
+import akka.{ Done, NotUsed }
 import akka.stream.Materializer
 import akka.stream.io._
 import akka.stream.scaladsl._
@@ -31,9 +31,10 @@ import com.typesafe.sslconfig.akka._
 import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
 import com.typesafe.sslconfig.ssl.ConfigSSLContextBuilder
 
-import scala.concurrent.{ ExecutionContext, Future, Promise, TimeoutException }
+import scala.concurrent._
 import scala.util.Try
 import scala.util.control.NonFatal
+import scala.compat.java8.FutureConverters._
 
 class HttpExt(private val config: Config)(implicit val system: ActorSystem) extends akka.actor.Extension
   with DefaultSSLContextCreation {
@@ -562,7 +563,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     val gatewayPromise = Promise[PoolGateway]()
     hostPoolCache.putIfAbsent(setup, gatewayPromise.future) match {
       case null ⇒ // only one thread can get here at a time
-        val whenShuttingDown = Promise[Unit]()
+        val whenShuttingDown = Promise[Done]()
         val gateway =
           try new PoolGateway(setup, whenShuttingDown)
           catch {
@@ -712,14 +713,19 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
    * Represents a connection pool to a specific target host and pool configuration.
    */
   final case class HostConnectionPool(setup: HostConnectionPoolSetup)(
-    private[http] val gatewayFuture: Future[PoolGateway]) extends javadsl.HostConnectionPool { // enable test access
+    private[http] val gatewayFuture: Future[PoolGateway]) { // enable test access
 
     /**
      * Asynchronously triggers the shutdown of the host connection pool.
      *
      * The produced [[Future]] is fulfilled when the shutdown has been completed.
      */
-    def shutdown()(implicit ec: ExecutionContext): Future[Unit] = gatewayFuture.flatMap(_.shutdown())
+    def shutdown()(implicit ec: ExecutionContextExecutor): Future[Done] = gatewayFuture.flatMap(_.shutdown())
+
+    private[http] def toJava = new akka.http.javadsl.HostConnectionPool {
+      override def setup = HostConnectionPool.this.setup
+      override def shutdown(executor: ExecutionContextExecutor): CompletionStage[Done] = HostConnectionPool.this.shutdown()(executor).toJava
+    }
   }
 
   //////////////////// EXTENSION SETUP ///////////////////

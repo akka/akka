@@ -6,6 +6,7 @@ package akka.http.impl.engine.client
 
 import java.net.InetSocketAddress
 
+import akka.Done
 import akka.stream.BufferOverflowException
 
 import scala.annotation.tailrec
@@ -46,7 +47,7 @@ private object PoolInterfaceActor {
  *   (ActorPublisher) and response sink (ActorSubscriber).
  */
 private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
-                                 shutdownCompletedPromise: Promise[Unit],
+                                 shutdownCompletedPromise: Promise[Done],
                                  gateway: PoolGateway)(implicit fm: Materializer)
   extends ActorSubscriber with ActorPublisher[RequestContext] with ActorLogging {
   import PoolInterfaceActor._
@@ -99,7 +100,7 @@ private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
 
     case OnComplete ⇒ // the pool shut down
       log.debug("Host connection pool to {}:{} has completed orderly shutdown", hcps.host, hcps.port)
-      shutdownCompletedPromise.success(())
+      shutdownCompletedPromise.success(Done)
       self ! PoisonPill // give potentially queued requests another chance to be forwarded back to the gateway
 
     case OnError(e) ⇒ // the pool shut down
