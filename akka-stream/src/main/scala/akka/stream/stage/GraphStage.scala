@@ -132,14 +132,14 @@ object GraphStageLogic {
                          initialReceive: StageActorRef.Receive) {
 
     private val callback = getAsyncCallback(internalReceive)
+    private def cell = materializer.supervisor match {
+      case ref: LocalActorRef                        ⇒ ref.underlying
+      case ref: RepointableActorRef if ref.isStarted ⇒ ref.underlying.asInstanceOf[ActorCell]
+      case unknown ⇒
+        throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${unknown.getClass.getName}]")
+    }
 
     private val functionRef: FunctionRef = {
-      val cell = materializer.supervisor match {
-        case ref: LocalActorRef                        ⇒ ref.underlying
-        case ref: RepointableActorRef if ref.isStarted ⇒ ref.underlying.asInstanceOf[ActorCell]
-        case unknown ⇒
-          throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${unknown.getClass.getName}]")
-      }
       cell.addFunctionRef {
         case (_, m @ (PoisonPill | Kill)) ⇒
           materializer.logger.warning("{} message sent to StageActor({}) will be ignored, since it is not a real Actor." +
@@ -178,7 +178,7 @@ object GraphStageLogic {
       behaviour = receive
     }
 
-    def stop(): Unit = functionRef.stop()
+    def stop(): Unit = cell.removeFunctionRef(functionRef)
 
     def watch(actorRef: ActorRef): Unit = functionRef.watch(actorRef)
 
