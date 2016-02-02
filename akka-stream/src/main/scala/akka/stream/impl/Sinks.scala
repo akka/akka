@@ -277,7 +277,10 @@ private[akka] class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkS
             promise.failure(new IllegalStateException("You have to wait for previous future to be resolved to send another request"))
           case None ⇒
             if (buffer.isEmpty) currentRequest = Some(promise)
-            else sendDownstream(promise)
+            else {
+              if (buffer.used == maxBuffer - 1) tryPull(in)
+              sendDownstream(promise)
+            }
         })
 
       def sendDownstream(promise: Requested[T]): Unit = {
