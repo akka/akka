@@ -77,9 +77,7 @@ final class FlattenMerge[T, M](breadth: Int) extends GraphStage[FlowShape[Graph[
             q.enqueue(sinkIn)
           }
         }
-        override def onUpstreamFinish(): Unit = {
-          if (!sinkIn.isAvailable) removeSource(sinkIn)
-        }
+        override def onUpstreamFinish(): Unit = if (!sinkIn.isAvailable) removeSource(sinkIn)
       })
       sinkIn.pull()
       sources += sinkIn
@@ -93,9 +91,8 @@ final class FlattenMerge[T, M](breadth: Int) extends GraphStage[FlowShape[Graph[
       if (activeSources == 0 && isClosed(in)) completeStage()
     }
 
-    override def postStop(): Unit = {
-      sources.foreach(_.cancel())
-    }
+    override def postStop(): Unit = sources.foreach(_.cancel())
+
   }
 
   override def toString: String = s"FlattenMerge($breadth)"

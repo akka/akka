@@ -11,7 +11,8 @@ import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSource, SubSink }
-import akka.stream.impl.{ ReactiveStreamsCompliance}
+import akka.stream.impl.ReactiveStreamsCompliance
+import scala.collection.mutable.ArrayBuffer
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.actor.ActorSubscriberMessage

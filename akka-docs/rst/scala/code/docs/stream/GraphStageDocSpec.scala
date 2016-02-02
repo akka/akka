@@ -272,7 +272,6 @@ class GraphStageDocSpec extends AkkaSpec {
 
   "Demonstrate an asynchronous side channel" in {
     import system.dispatcher
-
     //#async-side-channel
     // will close upstream in all materializations of the graph stage instance
     // when the future completes

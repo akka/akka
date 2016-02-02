@@ -448,7 +448,6 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustWorkFromFuture() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
     final Iterable<String> input = Arrays.asList("A", "B", "C");
     CompletionStage<String> future1 = Source.from(input).runWith(Sink.<String>head(), materializer);
     CompletionStage<String> future2 = Source.fromCompletionStage(future1).runWith(Sink.<String>head(), materializer);

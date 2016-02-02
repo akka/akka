@@ -74,7 +74,7 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
         val (inHandlers, outHandlers, logics) =
           assembly.materialize(Attributes.none, assembly.stages.map(_.module), new java.util.HashMap, _ ⇒ ())
         _interpreter = new GraphInterpreter(assembly, NoMaterializer, logger, inHandlers, outHandlers, logics,
-          (_, _, _) ⇒ (), fuzzingMode = false)
+          (_, _, _) ⇒ (), fuzzingMode = false, null)
 
         for ((upstream, i) ← upstreams.zipWithIndex) {
           _interpreter.attachUpstreamBoundary(i, upstream._1)
@@ -92,7 +92,7 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
       val (inHandlers, outHandlers, logics) =
         assembly.materialize(Attributes.none, assembly.stages.map(_.module), new java.util.HashMap, _ ⇒ ())
       _interpreter = new GraphInterpreter(assembly, NoMaterializer, logger, inHandlers, outHandlers, logics,
-        (_, _, _) ⇒ (), fuzzingMode = false)
+        (_, _, _) ⇒ (), fuzzingMode = false, null)
     }
 
     def builder(stages: GraphStageWithMaterializedValue[_ <: Shape, _]*): AssemblyBuilder = new AssemblyBuilder(stages)
