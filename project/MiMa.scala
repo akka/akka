@@ -646,6 +646,10 @@ object MiMa extends AutoPlugin {
       ),
       "2.4.2" -> Seq(
         FilterAnyProblemStartingWith("akka.stream.impl.VirtualProcessor"),
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.fusing.GraphInterpreter.execute"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreter.this"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreterShell.init"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreterShell.receive"),
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$Drop"),
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.MaterializerSession.assignPort"),
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$Drop$"),

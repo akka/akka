@@ -56,7 +56,7 @@ class ScheduleBenchmark {
   var promise: Promise[Any] = _
 
   @Setup(Level.Iteration)
-  def setup():Unit =  {
+  def setup():Unit = {
     winner = (to * ratio + 1).toInt
     promise = Promise[Any]()
   }

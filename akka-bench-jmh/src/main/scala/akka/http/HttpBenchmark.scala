@@ -53,7 +53,7 @@ class HttpBenchmark {
   }
 
   @TearDown
-  def shutdown():Unit ={
+  def shutdown():Unit = {
     Await.ready(Http().shutdownAllConnectionPools(), 1.second)
     binding.unbind()
     Await.result(system.terminate(), 5.seconds)

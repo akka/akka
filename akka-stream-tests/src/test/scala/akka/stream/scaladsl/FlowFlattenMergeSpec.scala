@@ -5,7 +5,7 @@ package akka.stream.scaladsl
 
 import akka.NotUsed
 import akka.testkit.AkkaSpec
-import akka.stream.ActorMaterializer
+import akka.stream.{ ActorMaterializerSettings, ActorMaterializer }
 import scala.concurrent._
 import scala.concurrent.duration._
 import org.scalatest.concurrent.ScalaFutures
@@ -122,23 +122,22 @@ class FlowFlattenMergeSpec extends AkkaSpec {
     }
 
     "cancel substreams when failing map function" in {
-      val p1, p2 = TestPublisher.probe[Int]()
+      val settings = ActorMaterializerSettings(system).withSyncProcessingLimit(1).withInputBuffer(1, 1)
+      val mat = ActorMaterializer(settings)
+      val p = TestPublisher.probe[Int]()
       val ex = new Exception("buh")
       val latch = TestLatch()
       Source(1 to 3)
         .flatMapMerge(10, {
-          case 1 ⇒ Source.fromPublisher(p1)
-          case 2 ⇒ Source.fromPublisher(p2)
-          case 3 ⇒
+          case 1 ⇒ Source.fromPublisher(p)
+          case 2 ⇒
             Await.ready(latch, 3.seconds)
             throw ex
         })
-        .runWith(Sink.head)
-      p1.expectRequest()
-      p2.expectRequest()
+        .runWith(Sink.head)(mat)
+      p.expectRequest()
       latch.countDown()
-      p1.expectCancellation()
-      p2.expectCancellation()
+      p.expectCancellation()
     }
 
     "cancel substreams when being cancelled" in {

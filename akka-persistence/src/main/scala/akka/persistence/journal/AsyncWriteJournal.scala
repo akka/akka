@@ -212,7 +212,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
    * `Future.successful(Nil)` for the happy path, i.e. when no messages are rejected.
    *
    * Calls to this method are serialized by the enclosing journal actor. If you spawn
-   * work in asyncronous tasks it is alright that they complete the futures in any order,
+   * work in asynchronous tasks it is alright that they complete the futures in any order,
    * but the actual writes for a specific persistenceId should be serialized to avoid
    * issues such as events of a later write are visible to consumers (query side, or replay)
    * before the events of an earlier write are visible.
