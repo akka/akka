@@ -178,9 +178,9 @@ object Member {
 /**
  * Defines the current status of a cluster member node
  *
- * Can be one of: Joining, Up, Leaving, Exiting and Down.
+ * Can be one of: Joining, WeaklyUp, Up, Leaving, Exiting and Down and Removed.
  */
-abstract class MemberStatus
+sealed abstract class MemberStatus
 
 object MemberStatus {
   @SerialVersionUID(1L) case object Joining extends MemberStatus
