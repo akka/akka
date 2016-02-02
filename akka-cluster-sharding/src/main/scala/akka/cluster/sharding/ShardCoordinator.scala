@@ -554,9 +554,10 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
       }).map { allRegionStats ⇒
         ShardRegion.ClusterShardingStats(allRegionStats.map {
           case (region, stats) ⇒
+            val regionAddress = region.path.address
             val address: Address =
-              if (region == self) Cluster(context.system).selfAddress
-              else region.path.address
+              if (regionAddress.hasLocalScope && regionAddress.system == cluster.selfAddress.system) cluster.selfAddress
+              else regionAddress
 
             address -> stats
         }.toMap)
