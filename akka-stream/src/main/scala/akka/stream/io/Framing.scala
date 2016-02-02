@@ -18,8 +18,7 @@ object Framing {
    * Creates a Flow that handles decoding a stream of unstructured byte chunks into a stream of frames where the
    * incoming chunk stream uses a specific byte-sequence to mark frame boundaries.
    *
-   * The decoded frames will include the separator sequence. If this is not desired, this Flow can be augmented with a
-   * simple ''map'' operation that removes this separator.
+   * The decoded frames will not include the separator sequence.
    *
    * If there are buffered bytes (an incomplete frame) when the input stream finishes and ''allowTruncation'' is set to
    * false then this Flow will fail the stream reporting a truncated frame.
