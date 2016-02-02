@@ -8,14 +8,16 @@ import akka.pattern.pipe
 import akka.stream.{ OverflowStrategy, ActorMaterializer }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.{ AkkaSpec, _ }
+import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-class QueueSinkSpec extends AkkaSpec {
+class QueueSinkSpec extends AkkaSpec with ScalaFutures {
   implicit val ec = system.dispatcher
   implicit val materializer = ActorMaterializer()
+  implicit val patience = PatienceConfig(2.second)
 
   val ex = new RuntimeException("ex") with NoStackTrace
 
@@ -110,6 +112,21 @@ class QueueSinkSpec extends AkkaSpec {
       Await.result(queue.pull(), noMsgTimeout) should be(None)
 
       queue.pull().onFailure { case e ⇒ e.isInstanceOf[IllegalStateException] should ===(true) }
+    }
+
+    "keep on sending even after the buffer has been full" in assertAllStagesStopped {
+      val (probe, queue) = Source(1 to 20)
+        .alsoToMat(Flow[Int].take(15).watchTermination()(Keep.right).to(Sink.ignore))(Keep.right)
+        .toMat(Sink.queue())(Keep.both)
+        .run()
+      probe.futureValue should ===(akka.Done)
+      for (i ← 1 to 20) {
+        queue.pull() pipeTo testActor
+        expectMsg(Some(i))
+      }
+      queue.pull() pipeTo testActor
+      expectMsg(None)
+
     }
 
   }
