@@ -9,13 +9,10 @@ import java.util.function.Function
 
 import akka.http.impl.settings.ParserSettingsImpl
 import akka.http.impl.util._
-import akka.http.scaladsl.model.HttpMethod
-import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.{ HttpMethod, StatusCode, Uri }
 import akka.http.scaladsl.{ settings ⇒ js }
 import com.typesafe.config.Config
 
-import scala.annotation.varargs
 import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters
 

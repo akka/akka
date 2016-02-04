@@ -8,7 +8,7 @@ import java.util.function.Supplier
 
 import akka.http.impl.settings.ServerSettingsImpl
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.javadsl.{ model ⇒ jm, settings ⇒ js }
+import akka.http.javadsl.{ settings ⇒ js }
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.headers.Server
 import akka.io.Inet.SocketOption

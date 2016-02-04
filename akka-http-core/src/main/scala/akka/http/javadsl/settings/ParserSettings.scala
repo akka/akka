@@ -11,7 +11,6 @@ import java.{ util ⇒ ju }
 import akka.http.impl.util.JavaMapping.Implicits._
 import scala.annotation.varargs
 import scala.collection.JavaConverters._
-import scala.compat.java8.OptionConverters
 
 import akka.http.javadsl.model.{ HttpMethod, StatusCode, Uri }
 import com.typesafe.config.Config

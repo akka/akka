@@ -17,7 +17,6 @@ import akka.stream.stage._
 import akka.util.ByteString
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 
-import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 
 /**
