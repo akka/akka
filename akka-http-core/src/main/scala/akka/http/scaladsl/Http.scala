@@ -10,7 +10,6 @@ import javax.net.ssl._
 
 import akka.actor._
 import akka.event.{ Logging, LoggingAdapter }
-import akka.http._
 import akka.http.impl.engine.HttpConnectionTimeoutException
 import akka.http.impl.engine.client._
 import akka.http.impl.engine.server._

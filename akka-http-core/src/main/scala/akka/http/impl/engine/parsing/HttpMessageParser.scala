@@ -6,7 +6,7 @@ package akka.http.impl.engine.parsing
 
 import javax.net.ssl.SSLSession
 
-import akka.stream.io.{ SessionBytes, SslTlsInbound }
+import akka.stream.io.SessionBytes
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
