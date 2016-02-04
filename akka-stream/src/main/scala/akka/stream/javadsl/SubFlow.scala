@@ -651,6 +651,9 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * until the subscriber is ready to accept them. For example a conflate step might average incoming numbers if the
    * upstream publisher is faster.
    *
+   * This version of conflate allows to derive a seed from the first element and change the aggregated type to be
+   * different than the input type. See [[Flow.conflate]] for a simpler version that does not change types.
+   *
    * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
    *
@@ -662,14 +665,41 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * '''Cancels when''' downstream cancels
    *
-   * see also [[SubFlow.batch]] [[SubFlow.batchWeighted]]
+   * see also [[SubFlow.conflate]] [[SubFlow.batch]] [[SubFlow.batchWeighted]]
    *
    * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    *
    */
-  def conflate[S](seed: function.Function[Out, S], aggregate: function.Function2[S, Out, S]): SubFlow[In, S, Mat] =
-    new SubFlow(delegate.conflate(seed.apply)(aggregate.apply))
+  def conflateWithSeed[S](seed: function.Function[Out, S], aggregate: function.Function2[S, Out, S]): SubFlow[In, S, Mat] =
+    new SubFlow(delegate.conflateWithSeed(seed.apply)(aggregate.apply))
+
+  /**
+   * Allows a faster upstream to progress independently of a slower subscriber by conflating elements into a summary
+   * until the subscriber is ready to accept them. For example a conflate step might average incoming numbers if the
+   * upstream publisher is faster.
+   *
+   * This version of conflate does not change the output type of the stream. See [[SubFlow.conflateWithSeed]] for a
+   * more flexible version that can take a seed function and transform elements while rolling up.
+   *
+   * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
+   * duplicate elements.
+   *
+   * '''Emits when''' downstream stops backpressuring and there is a conflated element available
+   *
+   * '''Backpressures when''' never
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * see also [[SubFlow.conflateWithSeed]] [[SubFlow.batch]] [[SubFlow.batchWeighted]]
+   *
+   * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
+   *
+   */
+  def conflate[O2 >: Out](aggregate: function.Function2[O2, O2, O2]): SubFlow[In, O2, Mat] =
+    new SubFlow(delegate.conflate(aggregate.apply))
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by aggregating elements into batches

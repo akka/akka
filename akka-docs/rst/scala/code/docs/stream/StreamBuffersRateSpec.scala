@@ -48,7 +48,7 @@ class StreamBuffersRateSpec extends AkkaSpec {
       Source.tick(initialDelay = 3.second, interval = 3.second, Tick()) ~> zipper.in0
 
       Source.tick(initialDelay = 1.second, interval = 1.second, "message!")
-        .conflate(seed = (_) => 1)((count, _) => count + 1) ~> zipper.in1
+        .conflateWithSeed(seed = (_) => 1)((count, _) => count + 1) ~> zipper.in1
 
       zipper.out ~> Sink.foreach(println)
       ClosedShape

@@ -915,6 +915,9 @@ trait FlowOps[+Out, +Mat] {
    * until the subscriber is ready to accept them. For example a conflate step might average incoming numbers if the
    * upstream publisher is faster.
    *
+   * This version of conflate allows to derive a seed from the first element and change the aggregated type to be
+   * different than the input type. See [[FlowOps.conflate]] for a simpler version that does not change types.
+   *
    * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
    *
@@ -929,11 +932,38 @@ trait FlowOps[+Out, +Mat] {
    * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    *
-   * See also [[FlowOps.limit]], [[FlowOps.limitWeighted]] [[FlowOps.batch]] [[FlowOps.batchWeighted]]
+   * See also [[FlowOps.conflate]], [[FlowOps.limit]], [[FlowOps.limitWeighted]] [[FlowOps.batch]] [[FlowOps.batchWeighted]]
    */
-  def conflate[S](seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S] = andThen(Conflate(seed, aggregate))
+  def conflateWithSeed[S](seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S] = andThen(Conflate(seed, aggregate))
   //FIXME: conflate can be expressed as a batch
   //via(Batch(1L, ConstantFun.zeroLong, seed, aggregate).withAttributes(DefaultAttributes.conflate))
+
+
+
+  /**
+   * Allows a faster upstream to progress independently of a slower subscriber by conflating elements into a summary
+   * until the subscriber is ready to accept them. For example a conflate step might average incoming numbers if the
+   * upstream publisher is faster.
+   *
+   * This version of conflate does not change the output type of the stream. See [[FlowOps.conflateWithSeed]] for a
+   * more flexible version that can take a seed function and transform elements while rolling up.
+   *
+   * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
+   * duplicate elements.
+   *
+   * '''Emits when''' downstream stops backpressuring and there is a conflated element available
+   *
+   * '''Backpressures when''' never
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
+   *
+   * See also [[FlowOps.conflate]], [[FlowOps.limit]], [[FlowOps.limitWeighted]] [[FlowOps.batch]] [[FlowOps.batchWeighted]]
+   */
+  def conflate[O2 >: Out](aggregate: (O2, O2) => O2): Repr[O2] = conflateWithSeed[O2](ConstantFun.scalaIdentityFunction)(aggregate)
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by aggregating elements into batches
@@ -951,7 +981,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    *
-   * See also [[FlowOps.conflate]], [[FlowOps.batchWeighted]]
+   * See also [[FlowOps.conflateWithSeed]], [[FlowOps.batchWeighted]]
    *
    * @param max maximum number of elements to batch before backpressuring upstream (must be positive non-zero)
    * @param seed Provides the first state for a batched value using the first unconsumed element as a start
@@ -981,7 +1011,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    *
-   * See also [[FlowOps.conflate]], [[FlowOps.batch]]
+   * See also [[FlowOps.conflateWithSeed]], [[FlowOps.batch]]
    *
    * @param max maximum weight of elements to batch before backpressuring upstream (must be positive non-zero)
    * @param costFn a function to compute a single element weight
