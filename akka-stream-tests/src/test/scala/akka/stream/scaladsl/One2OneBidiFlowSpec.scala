@@ -36,6 +36,11 @@ class One2OneBidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
       a[One2OneBidiFlow.OutputTruncationException.type] should be thrownBy Await.result(test(f), 1.second)
     }
 
+    "trigger an `OutputTruncationException` if the wrapped stream cancels early" in {
+      val f = One2OneBidiFlow[Int, Int](-1) join Flow[Int].take(2)
+      a[One2OneBidiFlow.OutputTruncationException.type] should be thrownBy Await.result(test(f), 1.second)
+    }
+
     "trigger an `UnexpectedOutputException` if the wrapped stream produces out-of-order elements" in new Test() {
       inIn.sendNext(1)
       inOut.requestNext() should ===(1)
