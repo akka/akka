@@ -192,7 +192,7 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) with MayVe
   "A Journal optionally" may {
 
     optional(flag = supportsRejectingNonSerializableObjects) {
-      "reject non-serializable events" in {
+      "reject non-serializable events" in EventFilter[java.io.NotSerializableException]().intercept {
         // there is no chance that a journal could create a data representation for type of event
         val notSerializableEvent = new Object {
           override def toString = "not serializable"
