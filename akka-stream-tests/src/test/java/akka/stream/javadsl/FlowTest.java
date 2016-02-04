@@ -501,7 +501,7 @@ public class FlowTest extends StreamTest {
   public void mustBeAbleToUseConflate() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
-    final Flow<String, String, NotUsed> flow = Flow.of(String.class).conflate(new Function<String, String>() {
+    final Flow<String, String, NotUsed> flow = Flow.of(String.class).conflateWithSeed(new Function<String, String>() {
       @Override
       public String apply(String s) throws Exception {
         return s;
@@ -515,6 +515,12 @@ public class FlowTest extends StreamTest {
     CompletionStage<String> future = Source.from(input).via(flow).runFold("", (aggr, in) -> aggr + in, materializer);
     String result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals("ABC", result);
+
+    final Flow<String, String, NotUsed> flow2 = Flow.of(String.class).conflate((a, b) -> a + b);
+
+    CompletionStage<String> future2 = Source.from(input).via(flow2).runFold("", (a, b) -> a + b, materializer);
+    String result2 = future2.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertEquals("ABC", result2);
   }
 
   @Test

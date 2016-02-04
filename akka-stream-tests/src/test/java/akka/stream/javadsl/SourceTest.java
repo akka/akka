@@ -292,7 +292,7 @@ public class SourceTest extends StreamTest {
     Source.from(input)
       .<String> map(in -> { throw new RuntimeException("simulated err"); })
       .runWith(Sink.<String>head(), materializer)
-      .whenComplete((s, ex) -> { 
+      .whenComplete((s, ex) -> {
         if (ex == null) {
           probe.getRef().tell("done", ActorRef.noSender());
         } else {
@@ -393,10 +393,17 @@ public class SourceTest extends StreamTest {
     final JavaTestKit probe = new JavaTestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
     CompletionStage<String> future = Source.from(input)
-        .conflate(s -> s, (aggr, in) -> aggr + in)
+        .conflateWithSeed(s -> s, (aggr, in) -> aggr + in)
         .runFold("", (aggr, in) -> aggr + in, materializer);
     String result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals("ABC", result);
+
+
+    final Flow<String, String, NotUsed> flow2 = Flow.of(String.class).conflate((a, b) -> a + b);
+
+    CompletionStage<String> future2 = Source.from(input).conflate((String a, String b) -> a + b).runFold("", (a, b) -> a + b, materializer);
+    String result2 = future2.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertEquals("ABC", result2);
   }
 
   @Test
