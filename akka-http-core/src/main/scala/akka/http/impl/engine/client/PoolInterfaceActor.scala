@@ -13,7 +13,7 @@ import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
 import akka.actor._
-import akka.stream.{ ActorAttributes, Materializer }
+import akka.stream.Materializer
 import akka.stream.actor.{ ActorPublisher, ActorSubscriber, ZeroRequestStrategy }
 import akka.stream.actor.ActorPublisherMessage._
 import akka.stream.actor.ActorSubscriberMessage._
@@ -21,7 +21,7 @@ import akka.stream.impl.{ SeqActorName, FixedSizeBuffer }
 import akka.stream.scaladsl.{ Keep, Flow, Sink, Source }
 import akka.http.impl.settings.HostConnectionPoolSetup
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.{ ConnectionContext, HttpsConnectionContext, Http }
+import akka.http.scaladsl.{ HttpsConnectionContext, Http }
 import PoolFlow._
 
 private object PoolInterfaceActor {

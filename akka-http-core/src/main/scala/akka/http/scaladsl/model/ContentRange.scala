@@ -8,7 +8,6 @@ import java.util.{ OptionalLong, Optional }
 import java.{ lang ⇒ jl }
 import akka.http.impl.util.{ Rendering, ValueRenderable }
 import akka.http.javadsl.{ model ⇒ jm }
-import akka.http.impl.util.JavaMapping.Implicits._
 import scala.compat.java8.OptionConverters._
 
 sealed trait ContentRange extends jm.ContentRange with ValueRenderable {

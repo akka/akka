@@ -7,7 +7,6 @@ package akka.http.scaladsl.model
 import java.io.File
 import java.util.Optional
 import akka.http.impl.util.Util
-import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.Future
 import scala.collection.immutable
