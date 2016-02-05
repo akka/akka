@@ -104,10 +104,21 @@ private[http] object HttpServerBluePrint {
       val remoteAddress = inheritedAttributes.get[HttpAttributes.RemoteAddress].flatMap(_.address)
       var downstreamPullWaiting = false
       var completionDeferred = false
+      var entitySource: SubSourceOutlet[RequestOutput] = _
 
       // optimization: to avoid allocations the "idle" case in and out handlers are put directly on the GraphStageLogic itself
       override def onPull(): Unit = {
         pull(in)
+      }
+
+      // optimization: this callback is used to handle entity substream cancellation to avoid allocating a dedicated handler
+      override def onDownstreamFinish(): Unit = {
+        if (entitySource ne null) {
+          // application layer has cancelled or only partially consumed response entity:
+          // connection will be closed
+          entitySource.complete()
+          completeStage()
+        }
       }
 
       override def onPush(): Unit = grab(in) match {
@@ -126,7 +137,7 @@ private[http] object HttpServerBluePrint {
 
       setIdleHandlers()
 
-      def setIdleHandlers() {
+      def setIdleHandlers(): Unit = {
         if (completionDeferred) {
           completeStage()
         } else {
@@ -150,15 +161,17 @@ private[http] object HttpServerBluePrint {
         // stream incoming chunks into the request entity until we reach the end of it
         // and then toggle back to "idle"
 
-        val entitySource = new SubSourceOutlet[RequestOutput]("EntitySource")
+        entitySource = new SubSourceOutlet[RequestOutput]("EntitySource")
         // optimization: re-use the idle outHandler
         entitySource.setHandler(this)
 
-        setHandler(in, new InHandler {
+        // optimization: handlers are combined to reduce allocations
+        val chunkedRequestHandler = new InHandler with OutHandler {
           def onPush(): Unit = {
             grab(in) match {
               case MessageEnd ⇒
                 entitySource.complete()
+                entitySource = null
                 setIdleHandlers()
 
               case x ⇒ entitySource.push(x)
@@ -172,8 +185,6 @@ private[http] object HttpServerBluePrint {
             entitySource.fail(ex)
             failStage(ex)
           }
-        })
-        setHandler(out, new OutHandler {
           override def onPull(): Unit = {
             // remember this until we are done with the chunked entity
             // so can pull downstream then
@@ -185,7 +196,10 @@ private[http] object HttpServerBluePrint {
             // when it completes complete the stage
             completionDeferred = true
           }
-        })
+        }
+
+        setHandler(in, chunkedRequestHandler)
+        setHandler(out, chunkedRequestHandler)
         creator(Source.fromGraph(entitySource.source))
       }
 
