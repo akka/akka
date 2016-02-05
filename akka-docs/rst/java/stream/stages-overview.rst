@@ -1,4 +1,4 @@
-.. _stages-overview:
+.. _stages-overview_java:
 
 Overview of built-in stages and their semantics
 ===============================================
@@ -6,19 +6,30 @@ Overview of built-in stages and their semantics
 
 Source stages
 -------------
-These built-in sources are available from `akka.stream.scaladsl.Source` and `akka.stream.javadsl.Source`
+These built-in sources are available from ``akka.stream.javadsl.Source``:
 
 
 
 fromIterator
 ^^^^^^^^^^^^
-Stream the values from an iterator, requesting the next value when there is demand.
+Stream the values from an ``Iterator``, requesting the next value when there is demand. The iterator will be created anew on
+each materialization of the source which is the reason the factory takes a ``Creator`` rather than an ``Iterator`` directly.
 
 If the iterator perform blocking operations, make sure to run it on a separate dispatcher.
 
-*emits* when the next value returned from the iterator
+*emits* the next value returned from the iterator
 
-*completes* when the iterator reaches it's end
+*completes* when the iterator reaches its end
+
+from
+^^^^
+Stream the values of an ``Iterable``. Make sure the ``Iterable`` is immutable or at least not modified after being used
+as a source.
+
+*emits* the next value of the iterable
+
+*completes* after the last element of the iterable has been emitted
+
 
 single
 ^^^^^^
@@ -45,9 +56,19 @@ separately from interval of the following ticks.
 
 *completes* never
 
+fromCompletionStage
+^^^^^^^^^^^^^^^^^^^
+Send the single value of the ``CompletionStage`` when it completes and there is demand.
+If the ``CompletionStage`` fails the stream is failed with that exception.
+
+*emits* when the ``CompletionStage`` completes
+
+*completes* after the ``CompletionStage`` has completed or when it fails
+
+
 fromFuture
 ^^^^^^^^^^
-Send the single value of the ``Future`` when it completes and there is demand.
+Send the single value of the Scala ``Future`` when it completes and there is demand.
 If the future fails the stream is failed with that exception.
 
 *emits* the future completes
@@ -56,8 +77,8 @@ If the future fails the stream is failed with that exception.
 
 unfold
 ^^^^^^
-Stream the result of a function as long as it returns a ``Some`` or non-empty ``Optional``, the value inside the optional
-consists of a tuple (or ``Pair``) where the first value is a state passed back into the next call to the function allowing
+Stream the result of a function as long as it returns a ``Optional``, the value inside the optional
+consists of a pair where the first value is a state passed back into the next call to the function allowing
 to pass a state. The first invocation of the provided fold function will receive the ``zero`` state.
 
 Can be used to implement many stateful sources without having to touch the more low level ``GraphStage`` API.
@@ -68,14 +89,14 @@ Can be used to implement many stateful sources without having to touch the more 
 
 unfoldAsync
 ^^^^^^^^^^^
-Just like ``unfold`` but the fold function returns a ``Future`` or ``CompletionStage`` which will cause the source to
+Just like ``unfold`` but the fold function returns a ``CompletionStage`` which will cause the source to
 complete or emit when it completes.
 
 Can be used to implement many stateful sources without having to touch the more low level ``GraphStage`` API.
 
-*emits* when there is demand and unfold state returned future completes with some value
+*emits* when there is demand and unfold state returned CompletionStage completes with some value
 
-*completes* when the future returned by the unfold function completes with an empty value
+*completes* when the CompletionStage returned by the unfold function completes with an empty value
 
 empty
 ^^^^^
@@ -88,8 +109,9 @@ an API but there are no elements to emit.
 
 maybe
 ^^^^^
-Either emit one value if the ``Option`` or ``Optional`` contains a value, or complete directly
-if the optional value is empty.
+Materialize a ``CompletionStage`` that can be completed with an ``Optional``.
+If it is completed with a value it will be eimitted from the source if it is an empty ``Optional`` it will
+complete directly.
 
 *emits* when the returned promise is completed with some value
 
@@ -119,7 +141,7 @@ elements or failing the stream, the strategy is chosen by the user.
 
 *emits* when there is demand and there are messages in the buffer or a message is sent to the actorref
 
-*completes* when the actorref is sent ``akka.actor.Status.Success`` or ``PoisonPill``
+*completes* when the ``ActorRef`` is sent ``akka.actor.Status.Success`` or ``PoisonPill``
 
 combine
 ^^^^^^^
@@ -128,6 +150,15 @@ Combine several sources, using a given strategy such as merge or concat, into on
 *emits* when there is demand, but depending on the strategy
 
 *completes* when all sources has completed
+
+
+range
+^^^^^
+Emit each integer in a range, with an option to take bigger steps than 1.
+
+*emits* when there is demand, the next value
+
+*completes* when the end of the range has been reached
 
 queue
 ^^^^^
@@ -154,13 +185,13 @@ Integration with Reactive Streams, subscribes to a ``org.reactivestreams.Publish
 
 Sink stages
 -----------
-These built-in sinks are available from ``akka.stream.scaladsl.Sink`` and ``akka.stream.javadsl.Sink``:
+These built-in sinks are available from ``akka.stream.javadsl.Sink``:
 
 
 head
 ^^^^
-Materializes into a ``Future`` or ``CompletionStage`` which completes with the first value arriving,
-after this the stream is canceled. If no element is emitted, the future is be failed.
+Materializes into a ``CompletionStage`` which completes with the first value arriving,
+after this the stream is canceled. If no element is emitted, the CompletionStage is be failed.
 
 *cancels* after receiving one element
 
@@ -168,8 +199,8 @@ after this the stream is canceled. If no element is emitted, the future is be fa
 
 headOption
 ^^^^^^^^^^
-Materializes into a ``Future[Option[T]]`` or ``CompletionStage<Optional<T>>`` which completes with the first value
-arriving wrapped in the optional, or an empty optional if the stream completes without any elements emitted.
+Materializes into a ``CompletionStage<Optional<T>>`` which completes with the first value arriving wrapped in optional,
+or an empty optional if the stream completes without any elements emitted.
 
 *cancels* after receiving one element
 
@@ -177,8 +208,8 @@ arriving wrapped in the optional, or an empty optional if the stream completes w
 
 last
 ^^^^
-Materializes into a ``Future`` which will complete with the last value emitted when the stream
-completes. If the stream completes with no elements the future is failed.
+Materializes into a ``CompletionStage`` which will complete with the last value emitted when the stream
+completes. If the stream completes with no elements the CompletionStage is failed.
 
 *cancels* never
 
@@ -186,8 +217,8 @@ completes. If the stream completes with no elements the future is failed.
 
 lastOption
 ^^^^^^^^^^
-Materialize a ``Future[Option[T]]`` which completes with the last value
-emitted wrapped in an optional when the stream completes. if the stream completes with no elements the future is
+Materialize a ``CompletionStage<Optional<T>>`` which completes with the last value
+emitted wrapped in an optional when the stream completes. if the stream completes with no elements the ``CompletionStage`` is
 completed with an empty optional.
 
 *cancels* never
@@ -211,8 +242,8 @@ Immediately cancel the stream
 
 seq
 ^^^
-Collect values emitted from the stream into a collection, the collection is available through a ``Future`` or
-which completes when the stream completes. Note that the collection is bounded to ``Int.MaxValue``,
+Collect values emitted from the stream into a collection, the collection is available through a ``CompletionStage`` or
+which completes when the stream completes. Note that the collection is bounded to ``Integer.MAX_VALUE``,
 if more element are emitted the sink will cancel the stream
 
 *cancels* If too many values are collected
@@ -221,7 +252,7 @@ foreach
 ^^^^^^^
 Invoke a given procedure for each element received. Note that it is not safe to mutate shared state from the procedure.
 
-The sink materializes into a  ``Future[Option[Done]]`` or ``CompletionStage<Optional<Done>>`` which completes when the
+The sink materializes into a ``CompletionStage<Optional<Done>>`` which completes when the
 stream completes, or fails if the stream fails.
 
 Note that it is not safe to mutate state from the procedure.
@@ -254,7 +285,7 @@ fold
 Fold over emitted element with a function, where each invocation will get the new element and the result from the
 previous fold invocation. The first invocation will be provided the ``zero`` value.
 
-Materializes into a future that will complete with the last state when the stream has completed.
+Materializes into a CompletionStage that will complete with the last state when the stream has completed.
 
 This stage allows combining values into a result without a global mutable state by instead passing the state along
 between invocations.
@@ -268,7 +299,7 @@ reduce
 Apply a reduction function on the incoming elements and pass the result to the next invocation. The first invocation
 receives the two first elements of the flow.
 
-Materializes into a future that will be completed by the last result of the reduction function.
+Materializes into a CompletionStage that will be completed by the last result of the reduction function.
 
 *cancels* never
 
@@ -338,7 +369,7 @@ fromOutputStream
 Create a sink that wraps an ``OutputStream``. Takes a function that produces an ``OutputStream``, when the sink is
 materialized the function will be called and bytes sent to the sink will be written to the returned ``OutputStream``.
 
-Materializes into a ``Future`` or ``CompletionStage`` which will complete with a ``IOResult`` when the stream
+Materializes into a ``CompletionStage`` which will complete with a ``IOResult`` when the stream
 completes.
 
 Note that a flow can be materialized multiple times, so the function producing the ``OutputStream`` must be able
@@ -354,7 +385,7 @@ fromInputStream
 Create a source that wraps an ``InputStream``. Takes a function that produces an ``InputStream``, when the source is
 materialized the function will be called and bytes from the ``InputStream`` will be emitted into the stream.
 
-Materializes into a ``Future`` or ``CompletionStage`` which will complete with a ``IOResult`` when the stream
+Materializes into a ``CompletionStage`` which will complete with a ``IOResult`` when the stream
 completes.
 
 Note that a flow can be materialized multiple times, so the function producing the ``InputStream`` must be able
@@ -373,7 +404,7 @@ Sources and sinks for reading and writing files can be found on ``FileIO``.
 
 fromFile
 ^^^^^^^^
-Emit the contents of a file, as ``ByteString`` s, materializes into a ``Future`` or ``CompletionStage`` which will be completed with
+Emit the contents of a file, as ``ByteString`` s, materializes into a ``CompletionStage`` which will be completed with
 a ``IOResult`` upon reaching the end of the file or if there is a failure.
 
 toFile
@@ -394,7 +425,7 @@ This happens to ensure reliable teardown of streams and cleanup when failures ha
 be to model unrecoverable conditions, therefore they are always eagerly propagated.
 For in-band error handling of normal errors (dropping elements if a map fails for example) you should use the
 supervision support, or explicitly wrap your element types in a proper container that can express error or success
-states (for example ``Try`` in Scala).
+states.
 
 
 Simple processing stages
@@ -559,40 +590,52 @@ Detach upstream demand from downstream demand without detaching the stream rates
 
 *completes* when upstream completes
 
+throttle
+^^^^^^^^
+Limit the throughput to a specific number of elements per time unit, or a specific total cost per time unit, where
+a function has to be provided to calculate the individual cost of each element.
+
+*emits* when upstream emits an element and configured time per each element elapsed
+
+*backpressures* when downstream backpressures
+
+*completes* when upstream completes
+
+
 
 Asynchronous processing stages
 ------------------------------
 
 These stages encapsulate an asynchronous computation, properly handling backpressure while taking care of the asynchronous
-operation at the same time (usually handling the completion of a Future).
+operation at the same time (usually handling the completion of a CompletionStage).
 
 
 mapAsync
 ^^^^^^^^
-Pass incoming elements to a function that return a ``Future`` result. When the future arrives the result is passed
+Pass incoming elements to a function that return a ``CompletionStage`` result. When the CompletionStage arrives the result is passed
 downstream. Up to ``n`` elements can be processed concurrently, but regardless of their completion time the incoming
 order will be kept when results complete. For use cases where order does not mather ``mapAsyncUnordered`` can be used.
 
-If a Future fails, the stream also fails (unless a different supervision strategy is applied)
+If a ``CompletionStage`` fails, the stream also fails (unless a different supervision strategy is applied)
 
-*emits* when the Future returned by the provided function finishes for the next element in sequence
+*emits* when the CompletionStage returned by the provided function finishes for the next element in sequence
 
-*backpressures* when the number of futures reaches the configured parallelism and the downstream backpressures
+*backpressures* when the number of ``CompletionStage`` s reaches the configured parallelism and the downstream backpressures
 
-*completes* when upstream completes and all futures has been completed and all elements has been emitted
+*completes* when upstream completes and all ``CompletionStage`` s has been completed and all elements has been emitted
 
 mapAsyncUnordered
 ^^^^^^^^^^^^^^^^^
-Like ``mapAsync`` but ``Future`` results are passed downstream as they arrive regardless of the order of the elements
+Like ``mapAsync`` but ``CompletionStage`` results are passed downstream as they arrive regardless of the order of the elements
 that triggered them.
 
-If a Future fails, the stream also fails (unless a different supervision strategy is applied)
+If a CompletionStage fails, the stream also fails (unless a different supervision strategy is applied)
 
-*emits* any of the Futures returned by the provided function complete
+*emits* any of the ``CompletionStage` s returned by the provided function complete
 
-*backpressures* when the number of futures reaches the configured parallelism and the downstream backpressures
+*backpressures* when the number of ``CompletionStage`` s reaches the configured parallelism and the downstream backpressures
 
-*completes* upstream completes and all futures has been completed  and all elements has been emitted
+*completes* upstream completes and all CompletionStages has been completed  and all elements has been emitted
 
 
 Timer driven stages
@@ -631,6 +674,27 @@ whichever happens first.
 *backpressures* when the group has been assembled (the duration elapsed) and downstream backpressures
 
 *completes* when upstream completes
+
+initialDelay
+^^^^^^^^^^^^
+Delay the initial element by a user specified duration from stream materialization.
+
+*emits* upstream emits an element if the initial delay already elapsed
+
+*backpressures* downstream backpressures or initial delay not yet elapsed
+
+*completes* when upstream completes
+
+
+delay
+^^^^^
+Delay every element passed through with a specific duration.
+
+*emits* there is a pending element in the buffer and configured time for this element elapsed
+
+*backpressures* differs, depends on ``OverflowStrategy`` set
+
+*completes* when upstream completes and buffered elements has been drained
 
 
 .. _detached-stages-overview:
@@ -726,10 +790,10 @@ buffer (Drop)
 Allow for a temporarily faster upstream events by buffering ``size`` elements. When the buffer is full elements are
 dropped according to the specified ``OverflowStrategy``:
 
-* ``dropHead`` drops the oldest element in the buffer to make space for the new element
-* ``dropTail`` drops the youngest element in the buffer to make space for the new element
-* ``dropBuffer`` drops the entire buffer and buffers the new element
-* ``dropNew`` drops the new element
+* ``dropHead()`` drops the oldest element in the buffer to make space for the new element
+* ``dropTail()`` drops the youngest element in the buffer to make space for the new element
+* ``dropBuffer()`` drops the entire buffer and buffers the new element
+* ``dropNew()`` drops the new element
 
 *emits* when downstream stops backpressuring and there is a pending element in the buffer
 
@@ -859,7 +923,7 @@ Merge multiple sources. Prefer one source if all sources has elements ready.
 
 zip
 ^^^
-Combines elements from each of multiple sources into tuples and passes the tuples downstream.
+Combines elements from each of multiple sources into `Pair` s and passes the pairs downstream.
 
 *emits* when all of the inputs have an element available
 
@@ -963,7 +1027,7 @@ Watching status stages
 
 watchTermination
 ^^^^^^^^^^^^^^^^
-Materializes to a ``Future`` that will be completed with Done or failed depending whether the upstream of the stage has been completed or failed.
+Materializes to a ``CompletionStage`` that will be completed with Done or failed depending whether the upstream of the stage has been completed or failed.
 The stage otherwise passes through elements unchanged.
 
 *emits* when input has an element available
