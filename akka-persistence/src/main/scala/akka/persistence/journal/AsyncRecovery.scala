@@ -26,6 +26,8 @@ trait AsyncRecovery {
    *
    * The `toSequenceNr` is the lowest of what was returned by [[#asyncReadHighestSequenceNr]]
    * and what the user specified as recovery [[akka.persistence.Recovery]] parameter.
+   * This does imply that this call is always preceded by reading the highest sequence
+   * number for the given `persistenceId`.
    *
    * This call is NOT protected with a circuit-breaker because it may take long time
    * to replay all events. The plugin implementation itself must protect against
@@ -54,6 +56,10 @@ trait AsyncRecovery {
    * Journal must maintain the highest sequence number and never decrease it.
    *
    * This call is protected with a circuit-breaker.
+   *
+   * Please also note that requests for the highest sequence number may be made concurrently
+   * to writes executing for the same `persistenceId`, in particular it is possible that
+   * a restarting actor tries to recover before its outstanding writes have completed.
    *
    * @param persistenceId persistent actor id.
    * @param fromSequenceNr hint where to start searching for the highest sequence

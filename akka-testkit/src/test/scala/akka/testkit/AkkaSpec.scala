@@ -15,7 +15,7 @@ import scala.concurrent.Future
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.dispatch.Dispatchers
 import akka.testkit.TestEvent._
-import org.scalautils.ConversionCheckedTripleEquals
+import org.scalactic.ConversionCheckedTripleEquals
 
 object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""
