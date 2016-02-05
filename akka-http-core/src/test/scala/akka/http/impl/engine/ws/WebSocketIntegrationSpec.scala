@@ -24,6 +24,7 @@ import akka.util.ByteString
 import akka.http.scaladsl.model.StatusCodes
 import akka.stream.testkit.scaladsl.TestSink
 import scala.concurrent.Future
+import akka.testkit.EventFilter
 
 class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.fuzzing-mode=off")
   with ScalaFutures with ConversionCheckedTripleEquals with Eventually {
@@ -112,13 +113,16 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
       val myPort = binding.localAddress.getPort
 
       val N = 100
-      val (response, count) = Http().singleWebSocketRequest(
-        WebSocketRequest("ws://127.0.0.1:" + myPort),
-        Flow.fromSinkAndSourceMat(
-          Sink.fold(0)((n, _: Message) ⇒ n + 1),
-          Source.repeat(TextMessage("hello")).take(N))(Keep.left))
 
-      count.futureValue should ===(N)
+      EventFilter.warning(pattern = "HTTP header .* is not allowed in responses", occurrences = 0) intercept {
+        val (response, count) = Http().singleWebSocketRequest(
+          WebSocketRequest("ws://127.0.0.1:" + myPort),
+          Flow.fromSinkAndSourceMat(
+            Sink.fold(0)((n, _: Message) ⇒ n + 1),
+            Source.repeat(TextMessage("hello")).take(N))(Keep.left))
+        count.futureValue should ===(N)
+      }
+
       binding.unbind()
     }
 
