@@ -970,7 +970,7 @@ trait FlowOps[+Out, +Mat] {
    * until the subscriber is ready to accept them. For example a batch step might store received elements in
    * an array up to the allowed max limit if the upstream publisher is faster.
    *
-   * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
+   * This only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
    *
    * '''Emits when''' downstream stops backpressuring and there is an aggregated element available
