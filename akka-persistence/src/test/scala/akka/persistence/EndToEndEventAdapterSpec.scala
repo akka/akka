@@ -8,7 +8,7 @@ import java.io.File
 import akka.actor._
 import akka.persistence.EndToEndEventAdapterSpec.NewA
 import akka.persistence.journal.{ EventSeq, EventAdapter }
-import akka.testkit.{ ImplicitSender, WatchedByCoroner, AkkaSpec, TestProbe }
+import akka.testkit.{ ImplicitSender, WatchedByCoroner, AkkaSpec, TestProbe, EventFilter }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.apache.commons.io.FileUtils
 import org.scalatest.{ WordSpecLike, Matchers, BeforeAndAfterAll }
@@ -127,6 +127,7 @@ abstract class EndToEndEventAdapterSpec(journalName: String, journalConfig: Conf
     |    }
     |  }
     |}
+    |akka.loggers = ["akka.testkit.TestEventListener"]
     """.stripMargin)
 
   val newAdaptersConfig = ConfigFactory.parseString(
@@ -226,11 +227,13 @@ abstract class EndToEndEventAdapterSpec(journalName: String, journalConfig: Conf
         .withoutPath(s"$journalPath.event-adapters.a")
         .withoutPath(s"""$journalPath.event-adapter-bindings."${classOf[EndToEndEventAdapterSpec].getCanonicalName}$$A"""")
 
-      intercept[IllegalArgumentException] {
-        withActorSystem("MissingAdapterSystem", journalConfig.withFallback(missingAdapterConfig)) { implicit system2 ⇒
-          Persistence(system2).adaptersFor(s"akka.persistence.journal.$journalName").get(classOf[String])
+      withActorSystem("MissingAdapterSystem", journalConfig.withFallback(missingAdapterConfig)) { implicit system2 ⇒
+        EventFilter[ActorInitializationException](occurrences = 1, pattern = ".*undefined event-adapter.*") intercept {
+          intercept[IllegalArgumentException] {
+            Persistence(system2).adaptersFor(s"akka.persistence.journal.$journalName").get(classOf[String])
+          }.getMessage should include("was bound to undefined event-adapter: a (bindings: [a, b], known adapters: b)")
         }
-      }.getMessage should include("was bound to undefined event-adapter: a (bindings: [a, b], known adapters: b)")
+      }
     }
   }
 }
