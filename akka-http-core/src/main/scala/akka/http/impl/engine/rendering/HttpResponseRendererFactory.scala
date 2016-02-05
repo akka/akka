@@ -162,8 +162,8 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
                   render(x)
                   renderHeaders(tail, alwaysClose, connHeader, serverSeen = true, transferEncodingSeen, dateSeen)
 
-                case x: CustomHeader if x.renderInResponses ⇒
-                  render(x)
+                case x: CustomHeader ⇒
+                  if (x.renderInResponses) render(x)
                   renderHeaders(tail, alwaysClose, connHeader, serverSeen, transferEncodingSeen, dateSeen)
 
                 case x: RawHeader if (x is "content-type") || (x is "content-length") || (x is "transfer-encoding") ||
