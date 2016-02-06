@@ -46,8 +46,16 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) with MayVe
     super.beforeEach()
     senderProbe = TestProbe()
     receiverProbe = TestProbe()
+    preparePersistenceId(pid)
     writeMessages(1, 5, pid, senderProbe.ref, writerUuid)
   }
+
+  /**
+   * Overridable hook that is called before populating the journal for the next
+   * test case. `pid` is the `persistenceId` that will be used in the test.
+   * This method may be needed to clean pre-existing events from the log.
+   */
+  def preparePersistenceId(pid: String): Unit = ()
 
   /**
    * Implementation may override and return false if it does not
