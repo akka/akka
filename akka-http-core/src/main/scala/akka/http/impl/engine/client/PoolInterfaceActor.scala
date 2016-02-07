@@ -17,7 +17,7 @@ import akka.stream.{ ActorAttributes, Materializer }
 import akka.stream.actor.{ ActorPublisher, ActorSubscriber, ZeroRequestStrategy }
 import akka.stream.actor.ActorPublisherMessage._
 import akka.stream.actor.ActorSubscriberMessage._
-import akka.stream.impl.{ SeqActorName, FixedSizeBuffer }
+import akka.stream.impl.{ SeqActorName, Buffer }
 import akka.stream.scaladsl.{ Keep, Flow, Sink, Source }
 import akka.http.impl.settings.HostConnectionPoolSetup
 import akka.http.scaladsl.model._
@@ -52,7 +52,7 @@ private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
   extends ActorSubscriber with ActorPublisher[RequestContext] with ActorLogging {
   import PoolInterfaceActor._
 
-  private[this] val inputBuffer = FixedSizeBuffer[PoolRequest](hcps.setup.settings.maxOpenRequests)
+  private[this] val inputBuffer = Buffer[PoolRequest](hcps.setup.settings.maxOpenRequests, fm)
   private[this] var activeIdleTimeout: Option[Cancellable] = None
 
   log.debug("(Re-)starting host connection pool to {}:{}", hcps.host, hcps.port)
@@ -119,7 +119,7 @@ private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
         // if we can't dispatch right now we buffer and dispatch when demand from the pool arrives
         if (inputBuffer.isFull) {
           x.responsePromise.failure(
-            new BufferOverflowException(s"Exceeded configured max-open-requests value of [${inputBuffer.size}]"))
+            new BufferOverflowException(s"Exceeded configured max-open-requests value of [${inputBuffer.capacity}]"))
         } else inputBuffer.enqueue(x)
       } else dispatchRequest(x) // if we can dispatch right now, do it
       request(1) // for every incoming request we demand one response from the pool
