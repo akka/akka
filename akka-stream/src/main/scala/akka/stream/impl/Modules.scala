@@ -107,8 +107,8 @@ private[akka] final class ActorRefSource[Out](
   extends SourceModule[Out, ActorRef](shape) {
 
   override def create(context: MaterializationContext) = {
-    val ref = ActorMaterializer.downcast(context.materializer).actorOf(context,
-      ActorRefSourceActor.props(bufferSize, overflowStrategy))
+    val mat = ActorMaterializer.downcast(context.materializer)
+    val ref = mat.actorOf(context, ActorRefSourceActor.props(bufferSize, overflowStrategy, mat.settings))
     (akka.stream.actor.ActorPublisher[Out](ref), ref)
   }
 
