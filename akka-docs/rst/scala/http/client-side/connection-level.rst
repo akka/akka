@@ -64,6 +64,8 @@ as a more general purpose streaming infrastructure feature.
 However, akka-stream should soon provide such a feature.
 
 
+.. _http-client-layer:
+
 Stand-Alone HTTP Layer Usage
 ----------------------------
 

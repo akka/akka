@@ -13,9 +13,6 @@ import akka.util.ByteString
  */
 sealed trait Message
 
-/**
- * A binary
- */
 sealed trait TextMessage extends Message {
   /**
    * The contents of this message as a stream.
