@@ -19,7 +19,7 @@ Streams
    stream-io
    stream-parallelism
    stream-testkit
-   ../../general/stream/stages-overview
+   stages-overview
    stream-cookbook
    ../../general/stream/stream-configuration
    migration-guide-1.0-2.x-java
