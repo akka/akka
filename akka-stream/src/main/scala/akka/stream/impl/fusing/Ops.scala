@@ -445,7 +445,7 @@ private[akka] final case class Batch[In, Out](max: Long, costFn: In ⇒ Long, se
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
 
-    val decider = inheritedAttributes.getAttribute(classOf[SupervisionStrategy]).map(_.decider).getOrElse(Supervision.stoppingDecider)
+    val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
     private var agg: Out = null.asInstanceOf[Out]
     private var left: Long = max
@@ -635,7 +635,7 @@ private[akka] final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Fut
     override def toString = s"MapAsync.Logic(buffer=$buffer)"
 
     //FIXME Put Supervision.stoppingDecider as a SupervisionStrategy on DefaultAttributes.mapAsync?
-    val decider = inheritedAttributes.getAttribute(classOf[SupervisionStrategy]).map(_.decider).getOrElse(Supervision.stoppingDecider)
+    val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
     val buffer = new BoundedBuffer[Holder[Try[Out]]](parallelism)
     def todo = buffer.used
@@ -713,7 +713,7 @@ private[akka] final case class MapAsyncUnordered[In, Out](parallelism: Int, f: I
     override def toString = s"MapAsyncUnordered.Logic(inFlight=$inFlight, buffer=$buffer)"
 
     val decider =
-      inheritedAttributes.getAttribute(classOf[SupervisionStrategy])
+      inheritedAttributes.get[SupervisionStrategy]
         .map(_.decider).getOrElse(Supervision.stoppingDecider)
 
     var inFlight = 0
@@ -951,7 +951,7 @@ private[stream] final class Delay[T](d: FiniteDuration, strategy: DelayOverflowS
   override def initialAttributes: Attributes = DefaultAttributes.delay
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     val size =
-      inheritedAttributes.getAttribute(classOf[InputBuffer]) match {
+      inheritedAttributes.get[InputBuffer] match {
         case None                        ⇒ throw new IllegalStateException(s"Couldn't find InputBuffer Attribute for $this")
         case Some(InputBuffer(min, max)) ⇒ max
       }
