@@ -7,6 +7,7 @@ package akka.http.scaladsl.marshalling
 import java.nio.CharBuffer
 
 import akka.http.scaladsl.model.MediaTypes._
+import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model._
 import akka.util.ByteString
 
@@ -34,6 +35,11 @@ trait PredefinedToEntityMarshallers extends MultipartMarshallers {
       byteBuffer.get(array)
       HttpEntity(contentType, array)
     } else HttpEntity.Empty
+
+  implicit val DoneMarshaller: ToEntityMarshaller[akka.Done] =
+    Marshaller.withFixedContentType(`text/plain(UTF-8)`) { done ⇒
+      HttpEntity(`text/plain(UTF-8)`, "")
+    }
 
   implicit val StringMarshaller: ToEntityMarshaller[String] = stringMarshaller(`text/plain`)
   def stringMarshaller(mediaType: MediaType.WithOpenCharset): ToEntityMarshaller[String] =

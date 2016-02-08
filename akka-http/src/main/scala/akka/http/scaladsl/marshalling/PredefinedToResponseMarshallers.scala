@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl.marshalling
 
+import akka.stream.impl.ConstantFun
+
 import scala.collection.immutable
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.scaladsl.model.MediaTypes._
@@ -18,7 +20,7 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
                                   implicit m: ToEntityMarshaller[T]): ToResponseMarshaller[T] =
     fromStatusCodeAndHeadersAndValue compose (t ⇒ (status, headers, t))
 
-  implicit val fromResponse: TRM[HttpResponse] = Marshaller.opaque(conforms)
+  implicit val fromResponse: TRM[HttpResponse] = Marshaller.opaque(ConstantFun.scalaIdentityFunction)
 
   implicit val fromStatusCode: TRM[StatusCode] =
     Marshaller.withOpenCharset(`text/plain`) { (status, charset) ⇒
