@@ -12,7 +12,7 @@ import akka.stream.{ Graph, FlowShape, javadsl, scaladsl }
 
 import scala.collection.immutable
 import scala.reflect.ClassTag
-import akka.{ NotUsed, japi }
+import akka.NotUsed
 import akka.http.impl.model.{ JavaQuery, JavaUri }
 import akka.http.javadsl.{ model ⇒ jm, HttpConnectionContext, ConnectionContext, HttpsConnectionContext }
 import akka.http.scaladsl.{ model ⇒ sm }

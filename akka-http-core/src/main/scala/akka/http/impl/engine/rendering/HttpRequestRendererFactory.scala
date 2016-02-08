@@ -11,7 +11,6 @@ import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.util.ByteString
 import akka.stream.scaladsl.Source
-import akka.stream.stage._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
 import RenderSupport._
