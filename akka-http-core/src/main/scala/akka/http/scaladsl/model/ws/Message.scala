@@ -13,6 +13,11 @@ import akka.util.ByteString
  */
 sealed trait Message
 
+/**
+ * Represents a WebSocket text message. A text message can either be a [[TextMessage.Strict]] in which case
+ * the complete data is already available or it can be [[TextMessage.Streamed]] in which case [[textStream]]
+ * will return a Source streaming the data as it comes in.
+ */
 sealed trait TextMessage extends Message {
   /**
    * The contents of this message as a stream.
@@ -34,6 +39,12 @@ object TextMessage {
   }
   final private case class Streamed(textStream: Source[String, _]) extends TextMessage
 }
+
+/**
+ * Represents a WebSocket binary message. A binary message can either be [[BinaryMessage.Strict]] in which case
+ * the complete data is already available or it can be [[BinaryMessage.Streamed]] in which case [[dataStream]]
+ * will return a Source streaming the data as it comes in.
+ */
 //#message-model
 sealed trait BinaryMessage extends Message {
   /**
