@@ -222,7 +222,14 @@ object FileAndResourceDirectives extends FileAndResourceDirectives {
             ResourceFile(url, entry.getSize, entry.getTime)
           }
         } finally jar.close()
-      case _ ⇒ None
+      case _ ⇒
+        val conn = url.openConnection()
+        try {
+          conn.setUseCaches(false) // otherwise the JDK will keep the connection open when we close!
+          val len = conn.getContentLength
+          val lm = conn.getLastModified
+          Some(ResourceFile(url, len, lm))
+        } finally conn.getInputStream.close()
     }
   }
   case class ResourceFile(url: URL, length: Long, lastModified: Long)
