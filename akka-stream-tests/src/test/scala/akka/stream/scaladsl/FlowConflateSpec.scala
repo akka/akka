@@ -3,10 +3,15 @@
  */
 package akka.stream.scaladsl
 
+import akka.stream.ActorAttributes.supervisionStrategy
+import akka.stream.Attributes.inputBuffer
+import akka.stream.Supervision.{ resumingDecider, restartingDecider }
+import akka.stream.testkit.Utils.TE
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import akka.stream.{ OverflowStrategy, ActorMaterializer, ActorMaterializerSettings }
+import akka.stream._
 import akka.stream.testkit._
 
 class FlowConflateSpec extends AkkaSpec {
@@ -133,6 +138,103 @@ class FlowConflateSpec extends AkkaSpec {
         .buffer(50, OverflowStrategy.backpressure)
         .runFold(0)(_ + _)
       Await.result(future, 3.seconds) should be((1 to 50).sum)
+    }
+
+    "restart when `seed` throws and a restartingDecider is used" in {
+      val sourceProbe = TestPublisher.probe[Int]()
+      val sinkProbe = TestSubscriber.probe[Int]()
+
+      val future = Source.fromPublisher(sourceProbe)
+        .conflateWithSeed(seed = i ⇒
+          if (i % 2 == 0) throw TE("I hate even seed numbers") else i)(aggregate = (sum, i) ⇒ sum + i)
+        .withAttributes(supervisionStrategy(restartingDecider))
+        .to(Sink.fromSubscriber(sinkProbe))
+        .withAttributes(inputBuffer(initial = 1, max = 1))
+        .run()
+
+      val sub = sourceProbe.expectSubscription()
+      val sinkSub = sinkProbe.expectSubscription()
+      // push the first value
+      sub.expectRequest(1)
+      sub.sendNext(1)
+
+      // and consume it, so that the next element
+      // will trigger seed
+      sinkSub.request(1)
+      sinkProbe.expectNext(1)
+
+      sub.expectRequest(1)
+      sub.sendNext(2)
+      sub.expectRequest(1)
+      sub.sendNext(3)
+
+      // now we should have lost the 2 and the accumulated state
+      sinkSub.request(1)
+      sinkProbe.expectNext(3)
+    }
+
+    "restart when `aggregate` throws and a restartingDecider is used" in {
+      val conflate = Flow[String]
+        .conflateWithSeed(seed = i ⇒ i)((state, elem) ⇒
+          if (elem == "two") throw TE("two is a three letter word")
+          else state + elem)
+        .withAttributes(supervisionStrategy(restartingDecider))
+
+      val sourceProbe = TestPublisher.probe[String]()
+      val sinkProbe = TestSubscriber.probe[String]()
+
+      Source.fromPublisher(sourceProbe)
+        .via(conflate)
+        .to(Sink.fromSubscriber(sinkProbe))
+        .withAttributes(inputBuffer(initial = 4, max = 4))
+        .run()
+
+      val sub = sourceProbe.expectSubscription()
+      sub.expectRequest(4)
+      sub.sendNext("one")
+      sub.sendNext("two")
+      sub.sendNext("three")
+      sub.sendComplete()
+
+      // "one" should be lost
+      sinkProbe.requestNext() shouldEqual ("three")
+
+    }
+
+    "resume when `aggregate` throws and a resumingDecider is used" in {
+
+      val sourceProbe = TestPublisher.probe[Int]()
+      val sinkProbe = TestSubscriber.probe[Vector[Int]]()
+
+      val future = Source.fromPublisher(sourceProbe)
+        .conflateWithSeed(seed = i ⇒ Vector(i))((state, elem) ⇒
+          if (elem == 2) throw TE("three is a four letter word") else state :+ elem)
+        .withAttributes(supervisionStrategy(resumingDecider))
+        .to(Sink.fromSubscriber(sinkProbe))
+        .withAttributes(inputBuffer(initial = 1, max = 1))
+        .run()
+
+      val sub = sourceProbe.expectSubscription()
+      val sinkSub = sinkProbe.expectSubscription()
+      // push the first three values, the third will trigger
+      // the exception
+      sub.expectRequest(1)
+      sub.sendNext(1)
+
+      // causing the 1 to get thrown away
+      sub.expectRequest(1)
+      sub.sendNext(2)
+
+      sub.expectRequest(1)
+      sub.sendNext(3)
+
+      sub.expectRequest(1)
+      sub.sendNext(4)
+
+      // and consume it, so that the next element
+      // will trigger seed
+      sinkSub.request(1)
+      sinkProbe.expectNext(Vector(1, 3, 4))
     }
 
   }
