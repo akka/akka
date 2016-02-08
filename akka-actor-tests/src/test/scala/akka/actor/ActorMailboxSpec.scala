@@ -64,6 +64,17 @@ object ActorMailboxSpec {
       mailbox-type = "akka.dispatch.BoundedMailbox"
     }
 
+    bounded-control-aware-mailbox {
+      mailbox-capacity = 1000
+      mailbox-push-timeout-time = 10s
+      mailbox-type = "akka.dispatch.BoundedControlAwareMailbox"
+    }
+
+    unbounded-control-aware-mailbox {
+      mailbox-type = "akka.dispatch.UnboundedControlAwareMailbox"
+    }
+
+
     mc-bounded-mailbox {
       mailbox-capacity = 1000
       mailbox-push-timeout-time = 10s
@@ -77,10 +88,20 @@ object ActorMailboxSpec {
       }
       /default-override-from-trait {
       }
+      /default-override-from-trait-bounded-control-aware {
+      }
+      /default-override-from-trait-unbounded-control-aware {
+      }
       /default-override-from-stash {
       }
       /default-bounded {
         mailbox = bounded-mailbox
+      }
+      /default-bounded-control-aware {
+        mailbox = bounded-control-aware-mailbox
+      }
+      /default-unbounded-control-aware {
+        mailbox = unbounded-control-aware-mailbox
       }
       /default-bounded-mailbox-with-zero-pushtimeout {
         mailbox = bounded-mailbox-with-zero-pushtimeout
@@ -154,20 +175,37 @@ object ActorMailboxSpec {
 
   class BoundedQueueReportingActor extends QueueReportingActor with RequiresMessageQueue[BoundedMessageQueueSemantics]
 
+  class BoundedControlAwareQueueReportingActor extends QueueReportingActor
+    with RequiresMessageQueue[BoundedControlAwareMessageQueueSemantics]
+
+  class UnboundedControlAwareQueueReportingActor extends QueueReportingActor
+    with RequiresMessageQueue[UnboundedControlAwareMessageQueueSemantics]
+
   class StashQueueReportingActor extends QueueReportingActor with Stash
 
   class StashQueueReportingActorWithParams(i: Int, s: String) extends StashQueueReportingActor
 
   val UnboundedMailboxTypes = Seq(classOf[UnboundedMessageQueueSemantics])
   val BoundedMailboxTypes = Seq(classOf[BoundedMessageQueueSemantics])
+
   val UnboundedDeqMailboxTypes = Seq(
     classOf[DequeBasedMessageQueueSemantics],
     classOf[UnboundedMessageQueueSemantics],
     classOf[UnboundedDequeBasedMessageQueueSemantics])
+
   val BoundedDeqMailboxTypes = Seq(
     classOf[DequeBasedMessageQueueSemantics],
     classOf[BoundedMessageQueueSemantics],
     classOf[BoundedDequeBasedMessageQueueSemantics])
+
+  val BoundedControlAwareMailboxTypes = Seq(
+    classOf[BoundedMessageQueueSemantics],
+    classOf[ControlAwareMessageQueueSemantics],
+    classOf[BoundedControlAwareMessageQueueSemantics])
+  val UnboundedControlAwareMailboxTypes = Seq(
+    classOf[UnboundedMessageQueueSemantics],
+    classOf[ControlAwareMessageQueueSemantics],
+    classOf[UnboundedControlAwareMessageQueueSemantics])
 
   trait MCBoundedMessageQueueSemantics extends MessageQueue with MultipleConsumerSemantics
   final case class MCBoundedMailbox(val capacity: Int, val pushTimeOut: FiniteDuration)
@@ -230,6 +268,24 @@ class ActorMailboxSpec(conf: Config) extends AkkaSpec(conf) with DefaultTimeout 
 
     "get an unbounded deque message queue when it's configured as mailbox" in {
       checkMailboxQueue(Props[QueueReportingActor], "default-unbounded-deque", UnboundedDeqMailboxTypes)
+    }
+
+    "get a bounded control aware message queue when it's configured as mailbox" in {
+      checkMailboxQueue(Props[QueueReportingActor], "default-bounded-control-aware", BoundedControlAwareMailboxTypes)
+    }
+
+    "get an unbounded control aware message queue when it's configured as mailbox" in {
+      checkMailboxQueue(Props[QueueReportingActor], "default-unbounded-control-aware", UnboundedControlAwareMailboxTypes)
+    }
+
+    "get an bounded control aware message queue when it's only configured with RequiresMailbox" in {
+      checkMailboxQueue(Props[BoundedControlAwareQueueReportingActor],
+        "default-override-from-trait-bounded-control-aware", BoundedControlAwareMailboxTypes)
+    }
+
+    "get an unbounded control aware message queue when it's only configured with RequiresMailbox" in {
+      checkMailboxQueue(Props[UnboundedControlAwareQueueReportingActor],
+        "default-override-from-trait-unbounded-control-aware", UnboundedControlAwareMailboxTypes)
     }
 
     "fail to create actor when an unbounded dequeu message queue is configured as mailbox overriding RequestMailbox" in {
