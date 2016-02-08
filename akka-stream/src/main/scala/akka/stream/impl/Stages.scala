@@ -205,10 +205,6 @@ private[stream] object Stages {
     override def create(attr: Attributes): Stage[T, T] = fusing.Buffer(size, overflowStrategy)
   }
 
-  final case class Conflate[In, Out](seed: In ⇒ Out, aggregate: (Out, In) ⇒ Out, attributes: Attributes = conflate) extends SymbolicStage[In, Out] {
-    override def create(attr: Attributes): Stage[In, Out] = fusing.Conflate(seed, aggregate, supervision(attr))
-  }
-
   final case class MapConcat[In, Out](f: In ⇒ immutable.Iterable[Out], attributes: Attributes = mapConcat) extends SymbolicStage[In, Out] {
     override def create(attr: Attributes): Stage[In, Out] = fusing.MapConcat(f, supervision(attr))
   }

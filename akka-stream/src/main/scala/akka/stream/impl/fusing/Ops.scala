@@ -435,50 +435,6 @@ private[akka] final case class Completed[T]() extends PushPullStage[T, T] {
 /**
  * INTERNAL API
  */
-private[akka] final case class Conflate[In, Out](seed: In ⇒ Out, aggregate: (Out, In) ⇒ Out,
-                                                 decider: Supervision.Decider) extends DetachedStage[In, Out] {
-  private var agg: Any = null
-
-  override def onPush(elem: In, ctx: DetachedContext[Out]): UpstreamDirective = {
-    agg =
-      if (agg == null) seed(elem)
-      else aggregate(agg.asInstanceOf[Out], elem)
-
-    if (!ctx.isHoldingDownstream) ctx.pull()
-    else {
-      val result = agg.asInstanceOf[Out]
-      agg = null
-      ctx.pushAndPull(result)
-    }
-  }
-
-  override def onPull(ctx: DetachedContext[Out]): DownstreamDirective = {
-    if (ctx.isFinishing) {
-      if (agg == null) ctx.finish()
-      else {
-        val result = agg.asInstanceOf[Out]
-        agg = null
-        ctx.pushAndFinish(result)
-      }
-    } else if (agg == null) ctx.holdDownstream()
-    else {
-      val result = agg.asInstanceOf[Out]
-      if (result == null) throw new NullPointerException
-      agg = null
-      ctx.push(result)
-    }
-  }
-
-  override def onUpstreamFinish(ctx: DetachedContext[Out]): TerminationDirective = ctx.absorbTermination()
-
-  override def decide(t: Throwable): Supervision.Directive = decider(t)
-
-  override def restart(): Conflate[In, Out] = copy()
-}
-
-/**
- * INTERNAL API
- */
 private[akka] final case class Batch[In, Out](max: Long, costFn: In ⇒ Long, seed: In ⇒ Out, aggregate: (Out, In) ⇒ Out)
   extends GraphStage[FlowShape[In, Out]] {
 
@@ -488,6 +444,9 @@ private[akka] final case class Batch[In, Out](max: Long, costFn: In ⇒ Long, se
   override val shape: FlowShape[In, Out] = FlowShape.of(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+
+    val decider = inheritedAttributes.getAttribute(classOf[SupervisionStrategy]).map(_.decider).getOrElse(Supervision.stoppingDecider)
+
     private var agg: Out = null.asInstanceOf[Out]
     private var left: Long = max
     private var pending: In = null.asInstanceOf[In]
@@ -496,10 +455,18 @@ private[akka] final case class Batch[In, Out](max: Long, costFn: In ⇒ Long, se
       push(out, agg)
       left = max
       if (pending != null) {
-        val elem = pending
-        agg = seed(elem)
-        left -= costFn(elem)
-        pending = null.asInstanceOf[In]
+        try {
+          agg = seed(pending)
+          left -= costFn(pending)
+          pending = null.asInstanceOf[In]
+        } catch {
+          case NonFatal(ex) ⇒ decider(ex) match {
+            case Supervision.Stop    ⇒ failStage(ex)
+            case Supervision.Restart ⇒ restartState()
+            case Supervision.Resume ⇒
+              pending = null.asInstanceOf[In]
+          }
+        }
       } else {
         agg = null.asInstanceOf[Out]
       }
@@ -512,14 +479,33 @@ private[akka] final case class Batch[In, Out](max: Long, costFn: In ⇒ Long, se
       override def onPush(): Unit = {
         val elem = grab(in)
         val cost = costFn(elem)
+
         if (agg == null) {
-          left -= cost
-          agg = seed(elem)
+          try {
+            agg = seed(elem)
+            left -= cost
+          } catch {
+            case NonFatal(ex) ⇒ decider(ex) match {
+              case Supervision.Stop ⇒ failStage(ex)
+              case Supervision.Restart ⇒
+                restartState()
+              case Supervision.Resume ⇒
+            }
+          }
         } else if (left < cost) {
           pending = elem
         } else {
-          left -= cost
-          agg = aggregate(agg, elem)
+          try {
+            agg = aggregate(agg, elem)
+            left -= cost
+          } catch {
+            case NonFatal(ex) ⇒ decider(ex) match {
+              case Supervision.Stop ⇒ failStage(ex)
+              case Supervision.Restart ⇒
+                restartState()
+              case Supervision.Resume ⇒
+            }
+          }
         }
 
         if (isAvailable(out)) flush()
@@ -541,15 +527,32 @@ private[akka] final case class Batch[In, Out](max: Long, costFn: In ⇒ Long, se
           push(out, agg)
           if (pending == null) completeStage()
           else {
-            agg = seed(pending)
+            try {
+              agg = seed(pending)
+            } catch {
+              case NonFatal(ex) ⇒ decider(ex) match {
+                case Supervision.Stop   ⇒ failStage(ex)
+                case Supervision.Resume ⇒
+                case Supervision.Restart ⇒
+                  restartState()
+                  if (!hasBeenPulled(in)) pull(in)
+              }
+            }
             pending = null.asInstanceOf[In]
           }
         } else {
           flush()
           if (!hasBeenPulled(in)) pull(in)
         }
+
       }
     })
+
+    private def restartState(): Unit = {
+      agg = null.asInstanceOf[Out]
+      left = max
+      pending = null.asInstanceOf[In]
+    }
   }
 }
 

@@ -3,6 +3,7 @@
  */
 package akka.stream.impl.fusing
 
+import akka.stream.impl.ConstantFun
 import akka.stream.stage._
 import akka.stream.testkit.AkkaSpec
 import akka.testkit.EventFilter
@@ -241,10 +242,11 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnNext(Vector(3)), OnComplete))
     }
 
-    "implement conflate" in new OneBoundedSetup[Int](Seq(Conflate(
+    "implement batch (conflate)" in new OneBoundedSetup[Int](Batch(
+      1L,
+      ConstantFun.zeroLong,
       (in: Int) ⇒ in,
-      (agg: Int, x: Int) ⇒ agg + x,
-      stoppingDecider))) {
+      (agg: Int, x: Int) ⇒ agg + x)) {
 
       lastEvents() should be(Set(RequestOne))
 
@@ -299,15 +301,17 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnComplete))
     }
 
-    "work with conflate-conflate" in new OneBoundedSetup[Int](Seq(
-      Conflate(
+    "work with batch-batch (conflate-conflate)" in new OneBoundedSetup[Int](
+      Batch(
+        1L,
+        ConstantFun.zeroLong,
         (in: Int) ⇒ in,
-        (agg: Int, x: Int) ⇒ agg + x,
-        stoppingDecider),
-      Conflate(
+        (agg: Int, x: Int) ⇒ agg + x),
+      Batch(
+        1L,
+        ConstantFun.zeroLong,
         (in: Int) ⇒ in,
-        (agg: Int, x: Int) ⇒ agg + x,
-        stoppingDecider))) {
+        (agg: Int, x: Int) ⇒ agg + x)) {
 
       lastEvents() should be(Set(RequestOne))
 
@@ -370,11 +374,12 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnComplete, OnNext(12)))
     }
 
-    "implement conflate-expand" in new OneBoundedSetup[Int](
-      Conflate(
+    "implement batch-expand (conflate-expand)" in new OneBoundedSetup[Int](
+      Batch(
+        1L,
+        ConstantFun.zeroLong,
         (in: Int) ⇒ in,
-        (agg: Int, x: Int) ⇒ agg + x,
-        stoppingDecider).toGS,
+        (agg: Int, x: Int) ⇒ agg + x),
       new Expand(Iterator.continually(_: Int))) {
 
       lastEvents() should be(Set(RequestOne))
@@ -404,12 +409,13 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(Cancel))
     }
 
-    "implement doubler-conflate" in new OneBoundedSetup[Int](Seq(
-      Doubler(),
-      Conflate(
+    "implement doubler-conflate (doubler-batch)" in new OneBoundedSetup[Int](
+      Doubler().toGS,
+      Batch(
+        1L,
+        ConstantFun.zeroLong,
         (in: Int) ⇒ in,
-        (agg: Int, x: Int) ⇒ agg + x,
-        stoppingDecider))) {
+        (agg: Int, x: Int) ⇒ agg + x)) {
       lastEvents() should be(Set(RequestOne))
 
       upstream.onNext(1)
