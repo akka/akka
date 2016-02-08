@@ -156,8 +156,12 @@ object ValidatePullRequest extends AutoPlugin {
       val diffOutput = s"git diff $target --name-only".!!.split("\n")
       val diffedModuleNames =
         diffOutput
-          .map(l ⇒ l.trim.takeWhile(_ != '/'))
-          .filter(dir => dir.startsWith("akka-") || dir == "project")
+          .map(l => l.trim)
+          .filter(l =>
+            l.startsWith("akka-") ||
+            (l.startsWith("project") && l != "project/MiMa.scala")
+          )
+          .map(l ⇒ l.takeWhile(_ != '/'))
           .toSet
 
       val dirtyModuleNames: Set[String] =
