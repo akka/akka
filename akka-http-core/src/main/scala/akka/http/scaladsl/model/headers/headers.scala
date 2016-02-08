@@ -171,7 +171,7 @@ object `Accept-Ranges` extends ModeledCompanion[`Accept-Ranges`] {
   implicit val rangeUnitsRenderer = Renderer.defaultSeqRenderer[RangeUnit] // cache
 }
 final case class `Accept-Ranges`(rangeUnits: immutable.Seq[RangeUnit]) extends jm.headers.AcceptRanges
-  with RequestHeader {
+  with ResponseHeader {
   import `Accept-Ranges`.rangeUnitsRenderer
   def renderValue[R <: Rendering](r: R): r.type = if (rangeUnits.isEmpty) r ~~ "none" else r ~~ rangeUnits
   protected def companion = `Accept-Ranges`
@@ -400,7 +400,7 @@ object `Content-Range` extends ModeledCompanion[`Content-Range`] {
   def apply(byteContentRange: ByteContentRange): `Content-Range` = apply(RangeUnits.Bytes, byteContentRange)
 }
 final case class `Content-Range`(rangeUnit: RangeUnit, contentRange: ContentRange) extends jm.headers.ContentRange
-  with RequestResponseHeader {
+  with ResponseHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ rangeUnit ~~ ' ' ~~ contentRange
   protected def companion = `Content-Range`
 }
