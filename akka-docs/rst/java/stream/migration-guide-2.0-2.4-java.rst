@@ -22,9 +22,9 @@ the ``PatternCS`` class that provide the ability to interact between Actors and 
 
 Should you have the need to use Scala Futures with these new Java APIs please use
 the ``scala-java8-compat`` library that comes as a dependency of Akka. For more
-information see `the documentation``_.
+information see `the documentation`__.
 
-.. _`the documentation`:: https://github.com/scala/scala-java8-compat
+__ https://github.com/scala/scala-java8-compat
 
 akka.Done and akka.NotUsed replacing Unit and BoxedUnit
 -------------------------------------------------------
