@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.http.scaladsl.settings
 
 import akka.actor.{ ActorRefFactory, ActorSystem }
