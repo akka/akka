@@ -3,12 +3,15 @@
  */
 package akka.stream
 
+import java.util.Optional
+
 import akka.event.Logging
 import scala.annotation.tailrec
 import scala.reflect.{ classTag, ClassTag }
 import akka.japi.function
 import akka.stream.impl.StreamLayout._
 import java.net.URLEncoder
+import scala.compat.java8.OptionConverters._
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
@@ -48,32 +51,30 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * If no such attribute exists the `default` value is returned.
    */
   def getAttribute[T <: Attribute](c: Class[T], default: T): T =
-    getAttribute(c) match {
-      case Some(a) ⇒ a
-      case None    ⇒ default
-    }
+    getAttribute(c).orElse(default)
 
   /**
    * Java API: Get the first (least specific) attribute of a given `Class` or subclass thereof.
    * If no such attribute exists the `default` value is returned.
    */
   def getFirstAttribute[T <: Attribute](c: Class[T], default: T): T =
-    getFirstAttribute(c) match {
-      case Some(a) ⇒ a
-      case None    ⇒ default
-    }
+    getFirstAttribute(c).orElse(default)
 
   /**
    * Java API: Get the last (most specific) attribute of a given `Class` or subclass thereof.
    */
-  def getAttribute[T <: Attribute](c: Class[T]): Option[T] =
-    Option(attributeList.foldLeft(null.asInstanceOf[T])((acc, attr) ⇒ if (c.isInstance(attr)) c.cast(attr) else acc))
+  def getAttribute[T <: Attribute](c: Class[T]): Optional[T] =
+    Optional.ofNullable(attributeList.foldLeft(
+      null.asInstanceOf[T]
+    )(
+      (acc, attr) ⇒ if (c.isInstance(attr)) c.cast(attr) else acc)
+    )
 
   /**
    * Java API: Get the first (least specific) attribute of a given `Class` or subclass thereof.
    */
-  def getFirstAttribute[T <: Attribute](c: Class[T]): Option[T] =
-    attributeList.find(c isInstance _).map(c cast _)
+  def getFirstAttribute[T <: Attribute](c: Class[T]): Optional[T] =
+    attributeList.collectFirst { case attr if c.isInstance(attr) => c cast attr }.asJava
 
   /**
    * Scala API: get all attributes of a given type (or subtypes thereof).
@@ -81,7 +82,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   def filtered[T <: Attribute: ClassTag]: List[T] = {
     val c = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
     attributeList.collect {
-      case a if c.isAssignableFrom(a.getClass) ⇒ c.cast(a)
+      case attr if c.isAssignableFrom(attr.getClass) ⇒ c.cast(attr)
     }
   }
 
@@ -102,14 +103,18 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   /**
    * Scala API: Get the last (most specific) attribute of a given type parameter T `Class` or subclass thereof.
    */
-  def get[T <: Attribute: ClassTag]: Option[T] =
-    getAttribute(classTag[T].runtimeClass.asInstanceOf[Class[T]])
+  def get[T <: Attribute: ClassTag]: Option[T] = {
+    val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
+    attributeList.reverseIterator.collectFirst[T] { case attr if c.isInstance(attr) => c.cast(attr) }
+  }
 
   /**
    * Scala API: Get the first (least specific) attribute of a given type parameter T `Class` or subclass thereof.
    */
-  def getFirst[T <: Attribute: ClassTag]: Option[T] =
-    getFirstAttribute(classTag[T].runtimeClass.asInstanceOf[Class[T]])
+  def getFirst[T <: Attribute: ClassTag]: Option[T] = {
+    val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
+    attributeList.collectFirst { case attr if c.isInstance(attr) => c.cast(attr) }
+  }
 
   /**
    * Test whether the given attribute is contained within this attributes list.

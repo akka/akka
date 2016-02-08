@@ -60,6 +60,17 @@ class AttributesSpec extends AkkaSpec with ScalaFutures {
         attributes.get[Name] should contain(Name("attributesSink"))
       }
     }
+
+    val attributes = Attributes.name("a") and Attributes.name("b") and Attributes.inputBuffer(1, 2)
+
+    "give access to first attribute" in {
+      attributes.getFirst[Name] should ===(Some(Attributes.Name("a")))
+    }
+
+    "give access to attribute byt type" in {
+      attributes.get[Name] should ===(Some(Attributes.Name("b")))
+    }
+
   }
 
 }
