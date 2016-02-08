@@ -96,6 +96,11 @@ object TextMessage {
   }
 }
 
+/**
+ * Represents a WebSocket binary message. A binary message can either be strict in which case
+ * the complete data is already available or it can be streamed in which case [[getStreamedData]]
+ * will return a Source streaming the data as it comes in.
+ */
 abstract class BinaryMessage extends Message {
   /**
    * Returns a source of the binary message data.
