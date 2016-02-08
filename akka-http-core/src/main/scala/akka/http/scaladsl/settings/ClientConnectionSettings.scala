@@ -7,7 +7,6 @@ import java.lang.Iterable
 import java.util.{ Optional, Random }
 import java.util.function.Supplier
 
-import akka.actor.ActorSystem
 import akka.http.impl.settings.ClientConnectionSettingsImpl
 import akka.http.javadsl.model.headers.UserAgent
 import akka.http.javadsl.{ settings ⇒ js }

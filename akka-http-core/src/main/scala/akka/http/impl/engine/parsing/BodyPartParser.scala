@@ -8,7 +8,7 @@ import akka.NotUsed
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.parboiled2.CharPredicate
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.util.ByteString
 import akka.http.scaladsl.model._

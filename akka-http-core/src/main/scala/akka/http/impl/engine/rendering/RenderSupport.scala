@@ -12,7 +12,6 @@ import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
-import org.reactivestreams.Subscriber
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 
 /**

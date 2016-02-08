@@ -6,8 +6,7 @@ package akka.http.impl.engine.parsing
 
 import akka.NotUsed
 import akka.http.scaladsl.model._
-import akka.stream.impl.fusing.GraphInterpreter
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.stream.impl.fusing.SubSource
 
