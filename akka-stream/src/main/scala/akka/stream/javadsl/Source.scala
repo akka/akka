@@ -102,7 +102,7 @@ object Source {
    * data.add(1);
    * data.add(2);
    * data.add(3);
-   * Source.fom(data);
+   * Source.from(data);
    * }}}
    *
    * Starts a new `Source` from the given `Iterable`. This is like starting from an
