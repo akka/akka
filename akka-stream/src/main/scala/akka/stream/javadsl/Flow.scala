@@ -314,7 +314,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * '''Backpressures when''' downstream backpressures or there are still remaining elements from the
    * previously calculated collection
    *
-   * '''Completes when''' upstream completes and all remaining elements has been emitted
+   * '''Completes when''' upstream completes and all remaining elements have been emitted
    *
    * '''Cancels when''' downstream cancels
    */
@@ -343,7 +343,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream
    * backpressures or the first future is not completed
    *
-   * '''Completes when''' upstream completes and all futures has been completed and all elements has been emitted
+   * '''Completes when''' upstream completes and all futures have been completed and all elements have been emitted
    *
    * '''Cancels when''' downstream cancels
    *
@@ -375,7 +375,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
    *
-   * '''Completes when''' upstream completes and all futures has been completed and all elements has been emitted
+   * '''Completes when''' upstream completes and all futures have been completed and all elements have been emitted
    *
    * '''Cancels when''' downstream cancels
    *
@@ -670,7 +670,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *  * DropHead, DropTail, DropBuffer - never backpressures
    *  * Fail - fails the stream if buffer gets full
    *
-   * '''Completes when''' upstream completes and buffered elements has been drained
+   * '''Completes when''' upstream completes and buffered elements have been drained
    *
    * '''Cancels when''' downstream cancels
    *
@@ -954,7 +954,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *  * DropHead, DropTail, DropBuffer - never backpressures
    *  * Fail - fails the stream if buffer gets full
    *
-   * '''Completes when''' upstream completes and buffered elements has been drained
+   * '''Completes when''' upstream completes and buffered elements have been drained
    *
    * '''Cancels when''' downstream cancels
    *
@@ -979,7 +979,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * of an empty collection and a stream containing the whole upstream unchanged.
    *
    * In case of an upstream error, depending on the current state
-   *  - the master stream signals the error if less than `n` elements has been seen, and therefore the substream
+   *  - the master stream signals the error if less than `n` elements have been seen, and therefore the substream
    *    has not yet been emitted
    *  - the tail substream signals the error after the prefix and tail has been emitted by the main stream
    *    (at that point the main stream has already completed)
@@ -989,7 +989,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * '''Backpressures when''' downstream backpressures or substream backpressures
    *
-   * '''Completes when''' prefix elements has been consumed and substream has been consumed
+   * '''Completes when''' prefix elements have been consumed and substream has been consumed
    *
    * '''Cancels when''' downstream cancels or substream cancels
    */
@@ -1398,7 +1398,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   /**
    * Combine the elements of current [[Flow]] and the given [[Source]] into a stream of tuples.
    *
-   * '''Emits when''' all of the inputs has an element available
+   * '''Emits when''' all of the inputs have an element available
    *
    * '''Backpressures when''' downstream backpressures
    *
@@ -1429,7 +1429,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * Put together the elements of current [[Flow]] and the given [[Source]]
    * into a stream of combined elements using a combiner function.
    *
-   * '''Emits when''' all of the inputs has an element available
+   * '''Emits when''' all of the inputs have an element available
    *
    * '''Backpressures when''' downstream backpressures
    *
