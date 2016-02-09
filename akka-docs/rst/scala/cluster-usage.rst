@@ -1,9 +1,9 @@
 
 .. _cluster_usage_scala:
 
-#######################
- Cluster Usage
-#######################
+#############
+Cluster Usage
+#############
 
 For introduction to the Akka Cluster concepts please see :ref:`cluster`.
 
@@ -22,7 +22,7 @@ It joins the cluster and an actor subscribes to cluster membership events and lo
 
 The ``application.conf`` configuration looks like this:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/resources/application.conf
+.. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/resources/application.conf#snippet
 
 To enable cluster capabilities in your Akka project you should, at a minimum, add the :ref:`remoting-scala`
 settings, but with ``akka.cluster.ClusterActorRefProvider``.
