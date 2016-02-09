@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.http.impl.engine.client
 
 import java.util.concurrent.atomic.AtomicReference
