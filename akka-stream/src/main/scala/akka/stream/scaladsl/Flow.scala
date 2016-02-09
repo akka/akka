@@ -448,7 +448,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Backpressures when''' downstream backpressures or there are still remaining elements from the
    * previously calculated collection
    *
-   * '''Completes when''' upstream completes and all remaining elements has been emitted
+   * '''Completes when''' upstream completes and all remaining elements have been emitted
    *
    * '''Cancels when''' downstream cancels
    *
@@ -478,7 +478,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream
    * backpressures or the first future is not completed
    *
-   * '''Completes when''' upstream completes and all futures has been completed and all elements has been emitted
+   * '''Completes when''' upstream completes and all futures have been completed and all elements have been emitted
    *
    * '''Cancels when''' downstream cancels
    *
@@ -509,7 +509,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
    *
-   * '''Completes when''' upstream completes and all futures has been completed and all elements has been emitted
+   * '''Completes when''' upstream completes and all futures have been completed and all elements have been emitted
    *
    * '''Cancels when''' downstream cancels
    *
@@ -600,7 +600,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * `n` must be positive, otherwise IllegalArgumentException is thrown.
    *
-   * '''Emits when''' the specified number of elements has been accumulated or upstream completed
+   * '''Emits when''' the specified number of elements have been accumulated or upstream completed
    *
    * '''Backpressures when''' a group has been assembled and downstream backpressures
    *
@@ -832,7 +832,7 @@ trait FlowOps[+Out, +Mat] {
    *  * DropHead, DropTail, DropBuffer - never backpressures
    *  * Fail - fails the stream if buffer gets full
    *
-   * '''Completes when''' upstream completes and buffered elements has been drained
+   * '''Completes when''' upstream completes and buffered elements have been drained
    *
    * '''Cancels when''' downstream cancels
    *
@@ -1058,7 +1058,7 @@ trait FlowOps[+Out, +Mat] {
    *  * DropHead, DropTail, DropBuffer - never backpressures
    *  * Fail - fails the stream if buffer gets full
    *
-   * '''Completes when''' upstream completes and buffered elements has been drained
+   * '''Completes when''' upstream completes and buffered elements have been drained
    *
    * '''Cancels when''' downstream cancels
    *
@@ -1092,7 +1092,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Backpressures when''' downstream backpressures or substream backpressures
    *
-   * '''Completes when''' prefix elements has been consumed and substream has been consumed
+   * '''Completes when''' prefix elements have been consumed and substream has been consumed
    *
    * '''Cancels when''' downstream cancels or substream cancels
    */
@@ -1473,7 +1473,7 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
    *
-   * '''Emits when''' all of the inputs has an element available
+   * '''Emits when''' all of the inputs have an element available
    *
    * '''Backpressures when''' downstream backpressures
    *
@@ -1495,7 +1495,7 @@ trait FlowOps[+Out, +Mat] {
    * Put together the elements of current flow and the given [[Source]]
    * into a stream of combined elements using a combiner function.
    *
-   * '''Emits when''' all of the inputs has an element available
+   * '''Emits when''' all of the inputs have an element available
    *
    * '''Backpressures when''' downstream backpressures
    *
