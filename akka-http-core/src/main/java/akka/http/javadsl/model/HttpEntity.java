@@ -4,6 +4,7 @@
 
 package akka.http.javadsl.model;
 
+import akka.NotUsed;
 import akka.http.impl.util.Util;
 import akka.http.scaladsl.model.HttpEntity$;
 import akka.stream.Materializer;
@@ -83,7 +84,7 @@ public interface HttpEntity {
     /**
      * Returns a stream of data bytes this entity consists of.
      */
-    Source<ByteString, Object> getDataBytes();
+    Source<ByteString, NotUsed> getDataBytes();
 
     /**
      * Apply the given size limit to this entity by returning a new entity instance which automatically verifies that the
