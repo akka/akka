@@ -452,8 +452,10 @@ private[akka] final case class Batch[In, Out](max: Long, costFn: In ⇒ Long, se
     private var pending: In = null.asInstanceOf[In]
 
     private def flush(): Unit = {
-      push(out, agg)
-      left = max
+      if (agg != null) {
+        push(out, agg)
+        left = max
+      }
       if (pending != null) {
         try {
           agg = seed(pending)
