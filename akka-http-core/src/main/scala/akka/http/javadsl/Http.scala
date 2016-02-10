@@ -90,6 +90,27 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * fail, unless the first materialization has already been unbound. Unbinding can be triggered via the materialized
    * [[ServerBinding]].
    */
+  def bind(connect: ConnectHttp, materializer: Materializer): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
+    val connectionContext =
+      if (connect.connectionContext.isPresent) connect.connectionContext.get()
+      else defaultServerHttpContext
+
+    new Source(delegate.bind(connect.host, connect.port, connectionContext.asScala)(materializer)
+      .map(new IncomingConnection(_))
+      .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
+  }
+
+
+  /**
+   * Creates a [[Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
+   * on the given `endpoint`.
+   * If the given port is 0 the resulting source can be materialized several times. Each materialization will
+   * then be assigned a new local port by the operating system, which can then be retrieved by the materialized
+   * [[ServerBinding]].
+   * If the given port is non-zero subsequent materialization attempts of the produced source will immediately
+   * fail, unless the first materialization has already been unbound. Unbinding can be triggered via the materialized
+   * [[ServerBinding]].
+   */
   def bind(interface: String, port: Int, materializer: Materializer): Source[IncomingConnection, CompletionStage[ServerBinding]] =
     new Source(delegate.bind(interface, port)(materializer)
       .map(new IncomingConnection(_))
@@ -326,7 +347,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   def outgoingConnection(to: ConnectHttp): Flow[HttpRequest, HttpResponse, CompletionStage[OutgoingConnection]] =
     adaptOutgoingFlow {
-      if (to.isHttps) delegate.outgoingConnectionHttps(to.host, to.port, to.effectiveConnectionContext(defaultClientHttpsContext).asScala)
+      if (to.isHttps) delegate.outgoingConnectionHttps(to.host, to.port, to.effectiveHttpsConnectionContext(defaultClientHttpsContext).asScala)
       else delegate.outgoingConnection(to.host, to.port)
     }
 
@@ -389,7 +410,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
                                settings: ConnectionPoolSettings,
                                log: LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow {
-      to.effectiveConnectionContext(defaultClientHttpsContext) match {
+      to.effectiveHttpsConnectionContext(defaultClientHttpsContext) match {
         case https: HttpsConnectionContext ⇒
           delegate.newHostConnectionPoolHttps[T](to.host, to.port, https.asScala, settings.asScala, log)(materializer)
             .mapMaterializedValue(_.toJava)
@@ -447,7 +468,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   def cachedHostConnectionPool[T](to: ConnectHttp,
                                   settings: ConnectionPoolSettings,
                                   log: LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
-    adaptTupleFlow(delegate.cachedHostConnectionPoolHttps[T](to.host, to.port, to.effectiveConnectionContext(defaultClientHttpsContext).asScala, settings.asScala, log)(materializer)
+    adaptTupleFlow(delegate.cachedHostConnectionPoolHttps[T](to.host, to.port, to.effectiveHttpsConnectionContext(defaultClientHttpsContext).asScala, settings.asScala, log)(materializer)
       .mapMaterializedValue(_.toJava))
 
   /**
