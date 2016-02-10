@@ -80,7 +80,7 @@ public class GraphStageDocTest {
         {
           setHandler(out, new AbstractOutHandler() {
             @Override
-            public void onPull() {
+            public void onPull() throws Exception {
               push(out, counter);
               counter += 1;
             }
@@ -140,17 +140,13 @@ public class GraphStageDocTest {
         {
           setHandler(in, new AbstractInHandler() {
             @Override
-            public void onPush() {
-              try {
-                push(out, f.apply(grab(in)));
-              } catch (Exception ex) {
-                failStage(ex);
-              }
+            public void onPush() throws Exception {
+              push(out, f.apply(grab(in)));
             }
           });
           setHandler(out, new AbstractOutHandler() {
             @Override
-            public void onPull() {
+            public void onPull() throws Exception {
               pull(in);
             }
           });
@@ -217,7 +213,7 @@ public class GraphStageDocTest {
 
           setHandler(out, new AbstractOutHandler() {
             @Override
-            public void onPull() {
+            public void onPull() throws Exception {
               pull(in);
             }
           });
@@ -282,7 +278,7 @@ public class GraphStageDocTest {
 
           setHandler(out, new AbstractOutHandler() {
             @Override
-            public void onPull() {
+            public void onPull() throws Exception {
               if (lastElem.isDefined()) {
                 push(out, lastElem.get());
                 lastElem = Option.none();
@@ -342,7 +338,7 @@ public class GraphStageDocTest {
 
           setHandler(out, new AbstractOutHandler() {
             @Override
-            public void onPull() {
+            public void onPull() throws Exception {
               pull(in);
             }
           });
@@ -417,7 +413,7 @@ public class GraphStageDocTest {
           });
           setHandler(out, new AbstractOutHandler() {
             @Override
-            public void onPull() {
+            public void onPull() throws Exception {
               pull(in);
             }
           });
@@ -492,7 +488,7 @@ public class GraphStageDocTest {
         {
           setHandler(in, new AbstractInHandler() {
             @Override
-            public void onPush() {
+            public void onPush() throws Exception {
               A elem = grab(in);
               if (open) pull(in);
               else {
@@ -504,7 +500,7 @@ public class GraphStageDocTest {
           });
           setHandler(out, new AbstractOutHandler() {
             @Override
-            public void onPull() {
+            public void onPull() throws Exception {
               pull(in);
             }
           });
@@ -570,7 +566,7 @@ public class GraphStageDocTest {
 
           setHandler(out, new AbstractOutHandler() {
             @Override
-            public void onPull() {
+            public void onPull() throws Exception {
               pull(in);
             }
           });
@@ -655,7 +651,7 @@ public class GraphStageDocTest {
 
           setHandler(out, new AbstractOutHandler() {
             @Override
-            public void onPull() {
+            public void onPull() throws Exception {
               if (buffer.isEmpty()) {
                 downstreamWaiting = true;
               } else {
