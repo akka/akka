@@ -22,7 +22,9 @@ object One2OneBidiFlow {
    *    consumed the respective input element.
    * 2. triggers an `OutputTruncationException` if the inner flow completes before having produced an output element
    *    for every input element.
-   * 3. Backpressures the input side if the maximum number of pending output elements has been reached,
+   * 3. triggers an `OutputTruncationException` if the inner flow cancels its inputs before the upstream completes its
+   *    stream of inputs.
+   * 4. Backpressures the input side if the maximum number of pending output elements has been reached,
    *    which is given via the ``maxPending`` parameter. You can use -1 to disable this feature.
    */
   def apply[I, O](maxPending: Int): BidiFlow[I, I, O, O, NotUsed] =
@@ -43,6 +45,11 @@ object One2OneBidiFlow {
       private var pending = 0
       private var pullSuppressed = false
 
+      // If the inner flow cancelled the upstream before the upstream finished, we still want to treat it as a truncation
+      // since upstream elements might possibly been lost/ignored (although we don't know for sure, since there is a
+      // race with the upstream completion and downstream cancellattion)
+      private var innerFlowCancelled = false
+
       setHandler(inIn, new InHandler {
         override def onPush(): Unit = {
           pending += 1
@@ -55,7 +62,10 @@ object One2OneBidiFlow {
         override def onPull(): Unit =
           if (pending < maxPending || maxPending == -1) pull(inIn)
           else pullSuppressed = true
-        override def onDownstreamFinish(): Unit = cancel(inIn)
+        override def onDownstreamFinish(): Unit = {
+          if (!isClosed(inIn)) innerFlowCancelled = true
+          cancel(inIn)
+        }
       })
 
       setHandler(outIn, new InHandler {
@@ -71,7 +81,7 @@ object One2OneBidiFlow {
           } else throw new UnexpectedOutputException(element)
         }
         override def onUpstreamFinish(): Unit =
-          if (pending == 0) complete(outOut)
+          if (pending == 0 && !innerFlowCancelled) complete(outOut)
           else throw OutputTruncationException
       })
 
