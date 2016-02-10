@@ -51,6 +51,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   private val writerUuid = UUID.randomUUID.toString
 
   private var journalBatch = Vector.empty[PersistentEnvelope]
+  // no longer used, but kept for binary compatibility
   private val maxMessageBatchSize = extension.journalConfigFor(journalPluginId).getInt("max-message-batch-size")
   private var writeInProgress = false
   private var sequenceNr: Long = 0L
@@ -232,11 +233,12 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
     sequenceNr
   }
 
-  private def flushJournalBatch(): Unit = {
-    journal ! WriteMessages(journalBatch, self, instanceId)
-    journalBatch = Vector.empty
-    writeInProgress = true
-  }
+  private def flushJournalBatch(): Unit =
+    if (!writeInProgress) {
+      journal ! WriteMessages(journalBatch, self, instanceId)
+      journalBatch = Vector.empty
+      writeInProgress = true
+    }
 
   private def log: LoggingAdapter = Logging(context.system, this)
 
@@ -291,7 +293,8 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   def persist[A](event: A)(handler: A ⇒ Unit): Unit = {
     pendingStashingPersistInvocations += 1
     pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
-    eventBatch = AtomicWrite(PersistentRepr(event, sender = sender())) :: eventBatch
+    eventBatch ::= AtomicWrite(PersistentRepr(event, persistenceId = persistenceId,
+      sequenceNr = nextSequenceNr(), writerUuid = writerUuid, sender = sender()))
   }
 
   /**
@@ -308,7 +311,8 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
         pendingStashingPersistInvocations += 1
         pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
       }
-      eventBatch = AtomicWrite(events.map(PersistentRepr.apply(_, sender = sender()))) :: eventBatch
+      eventBatch ::= AtomicWrite(events.map(PersistentRepr.apply(_, persistenceId = persistenceId,
+        sequenceNr = nextSequenceNr(), writerUuid = writerUuid, sender = sender())))
     }
   }
 
@@ -341,7 +345,8 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    */
   def persistAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
     pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
-    eventBatch = AtomicWrite(PersistentRepr(event, sender = sender())) :: eventBatch
+    eventBatch ::= AtomicWrite(PersistentRepr(event, persistenceId = persistenceId,
+      sequenceNr = nextSequenceNr(), writerUuid = writerUuid, sender = sender()))
   }
 
   /**
@@ -357,7 +362,8 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
       events.foreach { event ⇒
         pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
       }
-      eventBatch = AtomicWrite(events.map(PersistentRepr.apply(_, sender = sender()))) :: eventBatch
+      eventBatch ::= AtomicWrite(events.map(PersistentRepr(_, persistenceId = persistenceId,
+        sequenceNr = nextSequenceNr(), writerUuid = writerUuid, sender = sender())))
     }
 
   @deprecated("use persistAllAsync instead", "2.4")
@@ -501,42 +507,17 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   }
 
   private def flushBatch() {
-    def addToBatch(p: PersistentEnvelope): Unit = p match {
-      case a: AtomicWrite ⇒
-        journalBatch :+= a.copy(payload =
-          a.payload.map(_.update(persistenceId = persistenceId, sequenceNr = nextSequenceNr(), writerUuid = writerUuid)))
-      case r: PersistentEnvelope ⇒
-        journalBatch :+= r
+    if (eventBatch.nonEmpty) {
+      journalBatch ++= eventBatch.reverse
+      eventBatch = Nil
     }
 
-    def maxBatchSizeReached: Boolean =
-      journalBatch.size >= maxMessageBatchSize
-
-    // When using only `persistAsync` and `defer` max throughput is increased by using
-    // batching, but when using `persist` we want to use one atomic WriteMessages
-    // for the emitted events.
-    // Flush previously collected events, if any, separately from the `persist` batch
-    if (pendingStashingPersistInvocations > 0 && journalBatch.nonEmpty)
-      flushJournalBatch()
-
-    eventBatch.reverse.foreach { p ⇒
-      addToBatch(p)
-      if (!writeInProgress || maxBatchSizeReached) flushJournalBatch()
-    }
-
-    eventBatch = Nil
+    if (journalBatch.nonEmpty) flushJournalBatch()
   }
 
-  private def peekApplyHandler(payload: Any): Unit = {
-    val batchSizeBeforeApply = eventBatch.size
+  private def peekApplyHandler(payload: Any): Unit =
     try pendingInvocations.peek().handler(payload)
-    finally {
-      val batchSizeAfterApply = eventBatch.size
-
-      if (batchSizeAfterApply > batchSizeBeforeApply)
-        flushBatch()
-    }
-  }
+    finally flushBatch()
 
   /**
    * Common receive handler for processingCommands and persistingEvents
@@ -573,14 +554,16 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
         // while message is in flight, in that case we ignore the call to the handler
         if (id == instanceId) {
           try {
-            pendingInvocations.peek().handler(l)
+            peekApplyHandler(l)
             onWriteMessageComplete(err = false)
           } catch { case NonFatal(e) ⇒ onWriteMessageComplete(err = true); throw e }
         }
       case WriteMessagesSuccessful ⇒
-        if (journalBatch.isEmpty) writeInProgress = false else flushJournalBatch()
+        writeInProgress = false
+        if (journalBatch.nonEmpty) flushJournalBatch()
 
       case WriteMessagesFailed(_) ⇒
+        writeInProgress = false
         () // it will be stopped by the first WriteMessageFailure message
     }
 
