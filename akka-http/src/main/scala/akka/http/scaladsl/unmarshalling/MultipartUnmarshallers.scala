@@ -44,7 +44,7 @@ trait MultipartUnmarshallers {
   implicit def multipartFormDataUnmarshaller(implicit log: LoggingAdapter = NoLogging, parserSettings: ParserSettings = null): FromEntityUnmarshaller[Multipart.FormData] =
     multipartUnmarshaller[Multipart.FormData, Multipart.FormData.BodyPart, Multipart.FormData.BodyPart.Strict](
       mediaRange = `multipart/form-data`,
-      defaultContentType = ContentTypes.`application/octet-stream`,
+      defaultContentType = ContentTypes.`text/plain(UTF-8)`,
       createBodyPart = (entity, headers) ⇒ Multipart.General.BodyPart(entity, headers).toFormDataBodyPart.get,
       createStreamed = (_, parts) ⇒ Multipart.FormData(parts),
       createStrictBodyPart = (entity, headers) ⇒ Multipart.General.BodyPart.Strict(entity, headers).toFormDataBodyPart.get,
