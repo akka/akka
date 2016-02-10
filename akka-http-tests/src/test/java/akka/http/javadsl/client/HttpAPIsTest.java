@@ -12,7 +12,6 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.scaladsl.settings.ConnectionPoolSettings;
 import akka.japi.Function;
 import akka.stream.javadsl.Flow;
-import scala.concurrent.Future;
 
 import javax.net.ssl.SSLContext;
 
@@ -24,6 +23,7 @@ import java.util.concurrent.CompletionStage;
 @SuppressWarnings("ConstantConditions")
 public class HttpAPIsTest extends JUnitRouteTest {
 
+  @SuppressWarnings("unused")
   public void compileOnly() throws Exception {
     final Http http = Http.get(system());
 
@@ -98,6 +98,23 @@ public class HttpAPIsTest extends JUnitRouteTest {
     http.superPool(conSettings, httpsContext, log, materializer());
 
     final ConnectWithHttps connect = toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext).withDefaultHttpsContext();
-    connect.effectiveConnectionContext(http.defaultClientHttpsContext()); // usage by us internally
+    connect.effectiveHttpsConnectionContext(http.defaultClientHttpsContext()); // usage by us internally
+  }
+
+  @SuppressWarnings("unused")
+  public void compileOnlyBinding() throws Exception {
+    final Http http = Http.get(system());
+    final HttpsConnectionContext httpsConnectionContext = null;
+
+    http.bind(toHost("127.0.0.1"), materializer()); // 80
+    http.bind(toHost("127.0.0.1", 8080), materializer()); // 8080
+
+    http.bind(toHost("https://127.0.0.1"), materializer()); // HTTPS 443
+    http.bind(toHost("https://127.0.0.1", 9090), materializer()); // HTTPS 9090
+
+    http.bind(toHostHttps("127.0.0.1"), materializer()); // HTTPS 443
+    http.bind(toHostHttps("127.0.0.1").withCustomHttpsContext(httpsConnectionContext), materializer()); // custom HTTPS 443
+
+    http.bind(toHostHttps("http://127.0.0.1"), materializer()); // throws
   }
 }
