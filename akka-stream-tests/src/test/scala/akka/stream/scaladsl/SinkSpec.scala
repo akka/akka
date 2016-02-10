@@ -6,13 +6,18 @@ package akka.stream.scaladsl
 import akka.stream._
 import akka.stream.testkit.TestPublisher.ManualProbe
 import akka.stream.testkit._
-import scala.concurrent.Future
+import org.scalactic.ConversionCheckedTripleEquals
+import org.scalatest.concurrent.ScalaFutures
 
-class SinkSpec extends AkkaSpec {
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
+class SinkSpec extends AkkaSpec with ConversionCheckedTripleEquals with ScalaFutures {
 
   import GraphDSL.Implicits._
 
   implicit val materializer = ActorMaterializer()
+  implicit val patience = PatienceConfig(2.seconds)
 
   "A Sink" must {
 
@@ -123,6 +128,10 @@ class SinkSpec extends AkkaSpec {
     "suitably override attribute handling methods" in {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].withAttributes(asyncBoundary).addAttributes(none).named("")
+    }
+
+    "support contramap" in {
+      Source(0 to 9).toMat(Sink.seq.contramap(_ + 1))(Keep.right).run().futureValue should ===(1 to 10)
     }
   }
 

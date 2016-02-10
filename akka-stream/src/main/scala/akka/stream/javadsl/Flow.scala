@@ -35,6 +35,13 @@ object Flow {
       (javaPair.first, javaPair.second)
     })
 
+  /**
+   * Creates a [Flow] which will use the given function to transform its inputs to outputs. It is equivalent
+   * to `Flow.create[T].map(f)`
+   */
+  def fromFunction[I, O](f: function.Function[I, O]): javadsl.Flow[I, O, NotUsed] =
+    Flow.create[I]().map(f)
+
   /** Create a `Flow` which can process elements of type `T`. */
   def of[T](clazz: Class[T]): javadsl.Flow[T, T, NotUsed] = create[T]()
 
