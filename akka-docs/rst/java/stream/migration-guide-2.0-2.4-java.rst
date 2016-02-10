@@ -156,3 +156,17 @@ Routing settings parameter name
 and were accessible via ``settings``. We now made it possible to configure the parsers
 settings as well, so ``RoutingSettings`` is now ``routingSettings`` and ``ParserSettings`` is
 now accessible via ``parserSettings``.
+
+Client / server behaviour on cancelled entity
+---------------------------------------------
+
+Previously if request or response were cancelled or consumed only partially
+(e.g. by using ``take`` combinator) the remaining data was silently drained to prevent stalling
+the connection, since there could still be more requests / responses incoming. Now the default
+behaviour is to close the connection in order to prevent using excessive resource usage in case
+of huge entities.
+
+The old behaviour can be achieved by explicitly draining the entity:
+
+   response.entity().getDataBytes().runWith(Sink.ignore())
+
