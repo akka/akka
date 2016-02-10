@@ -217,8 +217,11 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
                               log: LoggingAdapter = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
     _outgoingConnection(host, port, localAddress, settings, connectionContext, log)
 
-  private def _outgoingConnection(host: String, port: Int, localAddress: Option[InetSocketAddress],
-                                  settings: ClientConnectionSettings, connectionContext: ConnectionContext,
+  private def _outgoingConnection(host: String,
+                                  port: Int,
+                                  localAddress: Option[InetSocketAddress],
+                                  settings: ClientConnectionSettings,
+                                  connectionContext: ConnectionContext,
                                   log: LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
     val hostHeader = if (port == connectionContext.defaultPort) Host(host) else Host(host, port)
     val layer = clientLayer(hostHeader, settings, log)

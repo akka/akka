@@ -132,6 +132,10 @@ connection. An often times more convenient alternative is to explicitly add a ``
 ``HttpResponse``. This response will then be the last one on the connection and the server will actively close the
 connection when it has been sent out.
 
+Connection will also be closed if request entity has been cancelled (e.g. by attaching it to ``Sink.cancelled``)
+or consumed only partially (e.g. by using ``take`` combinator). In order to prevent this behaviour entity should be
+explicitly drained by attaching it to ``Sink.ignore``.
+
 
 .. _serverSideHTTPS:
 
