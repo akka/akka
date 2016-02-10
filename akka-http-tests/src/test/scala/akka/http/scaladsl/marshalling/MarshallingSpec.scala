@@ -27,6 +27,9 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
     "StringMarshaller should marshal strings to `text/plain` content in UTF-8" in {
       marshal("Ha“llo") shouldEqual HttpEntity("Ha“llo")
     }
+    "DoneMarshaller should enable marshalling of akka.Done" in {
+      marshal(akka.Done) shouldEqual HttpEntity("")
+    }
     "CharArrayMarshaller should marshal char arrays to `text/plain` content in UTF-8" in {
       marshal("Ha“llo".toCharArray) shouldEqual HttpEntity("Ha“llo")
     }
