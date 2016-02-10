@@ -24,6 +24,8 @@ import akka.japi.function.Function2;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 
+import static org.junit.Assert.*;
+
 public class SinkTest extends StreamTest {
   public SinkTest() {
     super(actorSystemResource);
@@ -91,6 +93,14 @@ public class SinkTest extends StreamTest {
 
     probe1.expectMsgEquals("done1");
     probe2.expectMsgEquals("done2");
+  }
+
+  @Test
+  public void mustBeAbleToUseContramap() throws Exception {
+    List<Integer> out = Source.range(0, 2).toMat(Sink.<Integer>seq().contramap(x -> x + 1), Keep.right())
+      .run(materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    assertEquals(Arrays.asList(1, 2, 3), out);
   }
 
   public void mustSuitablyOverrideAttributeHandlingMethods() {
