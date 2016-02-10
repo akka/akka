@@ -7,6 +7,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Optional;
 
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -45,6 +46,34 @@ public class AttributesTest extends StreamTest {
     assertEquals(
       new Attributes.Name("b"),
       attributes.getAttribute(Attributes.Name.class, new Attributes.Name("default")));
+  }
+
+  @Test
+  public void mustGetMissingAttributeByClass() {
+    assertEquals(
+        Optional.empty(),
+        attributes.getAttribute(Attributes.LogLevels.class));
+  }
+
+  @Test
+  public void mustGetPossiblyMissingAttributeByClass() {
+    assertEquals(
+        Optional.of(new Attributes.Name("b")),
+        attributes.getAttribute(Attributes.Name.class));
+  }
+
+  @Test
+  public void mustGetPossiblyMissingFirstAttributeByClass() {
+    assertEquals(
+        Optional.of(new Attributes.Name("a")),
+        attributes.getFirstAttribute(Attributes.Name.class));
+  }
+
+  @Test
+  public void mustGetMissingFirstAttributeByClass() {
+    assertEquals(
+        Optional.empty(),
+        attributes.getFirstAttribute(Attributes.LogLevels.class));
   }
 
 }
