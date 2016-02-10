@@ -272,7 +272,7 @@ class SourceSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
   "A Source" must {
     "suitably override attribute handling methods" in {
       import Attributes._
-      val s: Source[Int, NotUsed] = Source.single(42).withAttributes(asyncBoundary).addAttributes(none).named("")
+      val s: Source[Int, NotUsed] = Source.single(42).async.addAttributes(none).named("")
     }
   }
 

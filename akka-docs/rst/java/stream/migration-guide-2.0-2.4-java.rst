@@ -104,6 +104,21 @@ Which is the same as using ``conflateWithSeed`` with an identity function::
 
    Flow.of(Integer.class).conflateWithSeed(x -> x, (a, b) -> a + b) // Add numbers while downstream is not ready
 
+
+``viaAsync`` and ``viaAsyncMat`` has been replaced with ``async()``
+-------------------------------------------------------------------
+``async()`` is available from ``Sink``, ``Source``, ``Flow`` and the sub flows. It provides a shortcut for
+setting the attribute ``Attributes.asyncBoundary`` on a flow. The existing methods ``Flow.viaAsync`` and
+``Flow.viaAsyncMat`` has been removed to make marking out asynchronous boundaries more consistent::
+
+    // This no longer works
+    source.viaAsync(flow)
+
+In Akka 2.4.x this will instead look lile this:
+
+.. includecode:: ../code/docs/stream/MigrationsJava.java#async
+
+
 Changed Sources / Sinks
 =======================
 

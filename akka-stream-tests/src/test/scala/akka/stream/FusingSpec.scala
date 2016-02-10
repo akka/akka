@@ -95,7 +95,7 @@ class FusingSpec extends AkkaSpec with ScalaFutures with ConversionCheckedTriple
   "SubFusingActorMaterializer" must {
 
     "work with asynchronous boundaries in the subflows" in {
-      val async = Flow[Int].map(_ * 2).withAttributes(Attributes.asyncBoundary)
+      val async = Flow[Int].map(_ * 2).async
       Source(0 to 9)
         .map(_ * 10)
         .flatMapMerge(5, i ⇒ Source(i to (i + 9)).via(async))
@@ -110,7 +110,7 @@ class FusingSpec extends AkkaSpec with ScalaFutures with ConversionCheckedTriple
         val bus = GraphInterpreter.currentInterpreter.log.asInstanceOf[BusLogging]
         bus.logSource
       }
-      val async = Flow[Int].map(x ⇒ { testActor ! ref; x }).withAttributes(Attributes.asyncBoundary)
+      val async = Flow[Int].map(x ⇒ { testActor ! ref; x }).async
       Source(0 to 9)
         .map(x ⇒ { testActor ! ref; x })
         .flatMapMerge(5, i ⇒ Source.single(i).via(async))
@@ -132,7 +132,7 @@ class FusingSpec extends AkkaSpec with ScalaFutures with ConversionCheckedTriple
       val flow = Flow[Int].map(x ⇒ { testActor ! ref; x })
       Source(0 to 9)
         .map(x ⇒ { testActor ! ref; x })
-        .flatMapMerge(5, i ⇒ Source.single(i).viaAsync(flow))
+        .flatMapMerge(5, i ⇒ Source.single(i).via(flow.async))
         .grouped(1000)
         .runWith(Sink.head)
         .futureValue
