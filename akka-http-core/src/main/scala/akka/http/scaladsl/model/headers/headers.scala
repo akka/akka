@@ -910,3 +910,10 @@ final case class `X-Forwarded-For`(addresses: immutable.Seq[RemoteAddress]) exte
   /** Java API */
   def getAddresses: Iterable[jm.RemoteAddress] = addresses.asJava
 }
+
+object `X-Real-Ip` extends ModeledCompanion[`X-Real-Ip`]   
+final case class `X-Real-Ip`(address:RemoteAddress) extends jm.headers.XRealIp 
+  with RequestHeader {
+  def renderValue[R <: Rendering](r: R): r.type = r ~~ address
+  protected def companion = `X-Real-Ip`  
+}

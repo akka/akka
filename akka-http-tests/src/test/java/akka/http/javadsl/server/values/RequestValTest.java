@@ -13,8 +13,11 @@ import akka.http.javadsl.server.RequestVals;
 import akka.http.javadsl.server.Unmarshallers;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
+
 import org.junit.Test;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.regex.Pattern;
 
 public class RequestValTest extends JUnitRouteTest {
@@ -62,16 +65,16 @@ public class RequestValTest extends JUnitRouteTest {
     }
 
     @Test
-    public void testClientIpExtraction() {
+    public void testClientIpExtraction() throws UnknownHostException{
         TestRoute route = testRoute(completeWithValueToString(RequestVals.clientIP()));
 
         route
-            .run(HttpRequest.create().addHeader(XForwardedFor.create(RemoteAddress.create("127.0.0.2"))))
+            .run(HttpRequest.create().addHeader(XForwardedFor.create(RemoteAddress.create(InetAddress.getByName("127.0.0.2")))))
             .assertStatusCode(200)
             .assertEntity("127.0.0.2");
 
         route
-            .run(HttpRequest.create().addHeader(akka.http.javadsl.model.headers.RemoteAddress.create(RemoteAddress.create("127.0.0.3"))))
+            .run(HttpRequest.create().addHeader(akka.http.javadsl.model.headers.RemoteAddress.create(RemoteAddress.create(InetAddress.getByName("127.0.0.3")))))
             .assertStatusCode(200)
             .assertEntity("127.0.0.3");
 
