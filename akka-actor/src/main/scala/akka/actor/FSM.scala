@@ -115,6 +115,13 @@ object FSM {
   }
 
   /**
+   * Convenience Unicode alias for the (S, S) pair to ->
+   */
+  object → {
+    def unapply[S](in: (S, S)) = Some(in)
+  }
+
+  /**
    * Log Entry of the [[akka.actor.LoggingFSM]], can be obtained by calling `getLog`.
    */
   final case class LogEntry[S, D](stateName: S, stateData: D, event: Any)
@@ -320,6 +327,11 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * reminder what the new state is.
    */
   val -> = FSM.->
+
+  /**
+   * Unicode alias for ->, matches a (S, S) pair
+   */
+  val → = FSM.->
 
   /**
    * This case object is received in case of a state timeout.

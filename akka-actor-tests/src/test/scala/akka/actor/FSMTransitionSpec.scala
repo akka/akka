@@ -51,7 +51,8 @@ object FSMTransitionSpec {
     }
     onTransition {
       case 0 -> 1 ⇒ target ! ((stateData, nextStateData))
-      case 1 -> 1 ⇒ target ! ((stateData, nextStateData))
+      // Verify the unicode alias of -> works correctly in onTransition
+      case 1 → 1  ⇒ target ! ((stateData, nextStateData))
     }
   }
 
