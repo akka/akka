@@ -60,7 +60,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
     {
       case WriteMessages(messages, persistentActor, actorInstanceId) ⇒
         val cctr = resequencerCounter
-        resequencerCounter += messages.foldLeft(0)((acc, m) ⇒ acc + m.size) + 1
+        resequencerCounter += messages.foldLeft(1)((acc, m) ⇒ acc + m.size)
 
         val atomicWriteCount = messages.count(_.isInstanceOf[AtomicWrite])
         val prepared = Try(preparePersistentBatch(messages))
@@ -215,11 +215,20 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
    * work in asyncronous tasks it is alright that they complete the futures in any order,
    * but the actual writes for a specific persistenceId should be serialized to avoid
    * issues such as events of a later write are visible to consumers (query side, or replay)
-   * before the events of an earlier write are visible. This can also be done with
-   * consistent hashing if it is too fine grained to do it on the persistenceId level.
-   * Normally a `PersistentActor` will only have one outstanding write request to the journal but
-   * it may emit several write requests when `persistAsync` is used and the max batch size
-   * is reached.
+   * before the events of an earlier write are visible.
+   * A PersistentActor will not send a new WriteMessages request before the previous one
+   * has been completed.
+   *
+   * Please note that the `sender` field of the contained PersistentRepr objects has been
+   * nulled out (i.e. set to `ActorRef.noSender`) in order to not use space in the journal
+   * for a sender reference that will likely be obsolete during replay.
+   *
+   * Please also note that requests for the highest sequence number may be made concurrently
+   * to this call executing for the same `persistenceId`, in particular it is possible that
+   * a restarting actor tries to recover before its outstanding writes have completed. In
+   * the latter case it is highly desirable to defer reading the highest sequence number
+   * until all outstanding writes have completed, otherwise the PersistentActor may reuse
+   * sequence numbers.
    *
    * This call is protected with a circuit-breaker.
    */
