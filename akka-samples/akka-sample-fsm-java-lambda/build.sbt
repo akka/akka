@@ -1,4 +1,4 @@
-name := "akka-docs-java-lambda"
+name := "akka-sample-fsm-java-lambda"
 
 version := "2.4-SNAPSHOT"
 
