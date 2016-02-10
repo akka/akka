@@ -31,8 +31,8 @@ class PrepareRequestsSpec extends AkkaSpec {
         }
         HttpEntity.Chunked(ContentTypes.`application/octet-stream`, HttpEntity.limitableChunkSource(chunks))
       },
-      true,
-      false)
+      expect100Continue = true,
+      closeRequested = false)
 
   val chunkPart =
     ParserOutput.EntityChunk(HttpEntity.ChunkStreamPart(ByteString("abc")))
@@ -202,6 +202,44 @@ class PrepareRequestsSpec extends AkkaSpec {
       entityProbe.expectComplete()
       upstreamProbe.expectComplete()
 
+    }
+
+    "cancel the stage when the entity stream is canceled" in {
+      implicit val materializer = ActorMaterializer()
+
+      val inProbe = TestPublisher.manualProbe[ParserOutput.RequestOutput]()
+      val upstreamProbe = TestSubscriber.manualProbe[HttpRequest]()
+
+      val stage = Flow.fromGraph(new PrepareRequests(ServerSettings(system)))
+
+      Source.fromPublisher(inProbe)
+        .via(stage)
+        .to(Sink.fromSubscriber(upstreamProbe))
+        .withAttributes(Attributes.inputBuffer(1, 1))
+        .run()
+
+      val upstreamSub = upstreamProbe.expectSubscription()
+      val inSub = inProbe.expectSubscription()
+
+      // let request with streamed entity through
+      upstreamSub.request(1)
+      inSub.expectRequest(1)
+      inSub.sendNext(chunkedStart)
+
+      val request = upstreamProbe.expectNext()
+
+      // and subscribe to it's streamed entity
+      val entityProbe = TestSubscriber.manualProbe[ByteString]()
+      request.entity.dataBytes.to(Sink.fromSubscriber(entityProbe))
+        .withAttributes(Attributes.inputBuffer(1, 1))
+        .run()
+
+      val entitySub = entityProbe.expectSubscription()
+
+      // user logic cancels entity stream
+      entitySub.cancel()
+
+      inSub.expectCancellation()
     }
   }
 
