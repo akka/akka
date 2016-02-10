@@ -149,7 +149,7 @@ object DistributedPubSubMediator {
   object Unsubscribe {
     def apply(topic: String, ref: ActorRef) = new Unsubscribe(topic, ref)
   }
-  @SerialVersionUID(1L) final case class SubscribeAck(subscribe: Subscribe)
+  @SerialVersionUID(1L) final case class SubscribeAck(subscribe: Subscribe) extends DeadLetterSuppression
   @SerialVersionUID(1L) final case class UnsubscribeAck(unsubscribe: Unsubscribe)
   @SerialVersionUID(1L) final case class Publish(topic: String, msg: Any, sendOneMessageToEachGroup: Boolean) extends DistributedPubSubMessage {
     def this(topic: String, msg: Any) = this(topic, msg, sendOneMessageToEachGroup = false)
