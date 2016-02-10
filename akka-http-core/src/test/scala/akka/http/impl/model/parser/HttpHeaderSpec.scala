@@ -581,6 +581,40 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
           "1.2.3.4, akka.io\n          ^")
     }
 
+    "X-Real-Ip" in {
+      "X-Real-Ip: 1.2.3.4" =!= `X-Real-Ip`(remoteAddress("1.2.3.4"))
+      "X-Real-Ip: 2001:db8:cafe:0:0:0:0:17" =!= `X-Real-Ip`(remoteAddress("2001:db8:cafe:0:0:0:0:17"))
+      "X-Real-Ip: 1234:5678:9abc:def1:2345:6789:abcd:ef00" =!= `X-Real-Ip`(remoteAddress("1234:5678:9abc:def1:2345:6789:abcd:ef00"))
+      "X-Real-Ip: 1234:567:9a:d:2:67:abc:ef00" =!= `X-Real-Ip`(remoteAddress("1234:567:9a:d:2:67:abc:ef00"))
+      "X-Real-Ip: 2001:db8:85a3::8a2e:370:7334" =!=> "2001:db8:85a3:0:0:8a2e:370:7334"
+      "X-Real-Ip: 1:2:3:4:5:6:7:8" =!= `X-Real-Ip`(remoteAddress("1:2:3:4:5:6:7:8"))
+      "X-Real-Ip: ::2:3:4:5:6:7:8" =!=> "0:2:3:4:5:6:7:8"
+      "X-Real-Ip: ::3:4:5:6:7:8" =!=> "0:0:3:4:5:6:7:8"
+      "X-Real-Ip: ::4:5:6:7:8" =!=> "0:0:0:4:5:6:7:8"
+      "X-Real-Ip: ::5:6:7:8" =!=> "0:0:0:0:5:6:7:8"
+      "X-Real-Ip: ::6:7:8" =!=> "0:0:0:0:0:6:7:8"
+      "X-Real-Ip: ::7:8" =!=> "0:0:0:0:0:0:7:8"
+      "X-Real-Ip: ::8" =!=> "0:0:0:0:0:0:0:8"
+      "X-Real-Ip: 1:2:3:4:5:6:7::" =!=> "1:2:3:4:5:6:7:0"
+      "X-Real-Ip: 1:2:3:4:5:6::" =!=> "1:2:3:4:5:6:0:0"
+      "X-Real-Ip: 1:2:3:4:5::" =!=> "1:2:3:4:5:0:0:0"
+      "X-Real-Ip: 1:2:3:4::" =!=> "1:2:3:4:0:0:0:0"
+      "X-Real-Ip: 1:2:3::" =!=> "1:2:3:0:0:0:0:0"
+      "X-Real-Ip: 1:2::" =!=> "1:2:0:0:0:0:0:0"
+      "X-Real-Ip: 1::" =!=> "1:0:0:0:0:0:0:0"
+      "X-Real-Ip: 1::3:4:5:6:7:8" =!=> "1:0:3:4:5:6:7:8"
+      "X-Real-Ip: 1:2::4:5:6:7:8" =!=> "1:2:0:4:5:6:7:8"
+      "X-Real-Ip: 1:2:3::5:6:7:8" =!=> "1:2:3:0:5:6:7:8"
+      "X-Real-Ip: 1:2:3:4::6:7:8" =!=> "1:2:3:4:0:6:7:8"
+      "X-Real-Ip: 1:2:3:4:5::7:8" =!=> "1:2:3:4:5:0:7:8"
+      "X-Real-Ip: 1:2:3:4:5:6::8" =!=> "1:2:3:4:5:6:0:8"
+      "X-Real-Ip: ::" =!=> "0:0:0:0:0:0:0:0"
+      "X-Real-Ip: akka.io" =!=
+        ErrorInfo(
+          "Illegal HTTP header 'X-Real-Ip': Invalid input 'k', expected HEXDIG, h8, ':', ch16o or cc (line 1, column 2)",
+          "akka.io\n ^")
+    }
+
     "RawHeader" in {
       "X-Space-Ranger: no, this rock!" =!= RawHeader("X-Space-Ranger", "no, this rock!")
     }
