@@ -88,7 +88,7 @@ object Backoff {
    * delayed e.g. in order to give an external resource time to recover before the
    * child actor tries contacting it again (after being restarted).
    *
-   * Specifically this pattern is useful for for persistent actors,
+   * Specifically this pattern is useful for persistent actors,
    * which are stopped in case of persistence failures.
    * Just restarting them immediately would probably fail again (since the data
    * store is probably unavailable). It is better to try again after a delay.
