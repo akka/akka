@@ -7,6 +7,7 @@ package akka.http.impl.engine.client
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import org.scalatest.Inside
+import org.scalatest.concurrent.ScalaFutures
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.io.{ SessionBytes, SslTlsOutbound, SendBytes }
 import akka.util.ByteString
@@ -136,6 +137,76 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         responses.expectComplete()
       }
     }
+
+    "close the connection if response entity stream has been cancelled" in new TestSetup {
+      // two requests are sent in order to make sure that connection
+      // isn't immediately closed after the first one by the server
+      requestsSub.sendNext(HttpRequest())
+      requestsSub.sendNext(HttpRequest())
+      requestsSub.sendComplete()
+
+      expectWireData(
+        """GET / HTTP/1.1
+          |Host: example.com
+          |User-Agent: akka-http/test
+          |
+          |""")
+
+      // two chunks sent by server
+      sendWireData(
+        """HTTP/1.1 200 OK
+          |Transfer-Encoding: chunked
+          |
+          |6
+          |abcdef
+          |6
+          |abcdef
+          |0
+          |
+          |""")
+
+      inside(expectResponse()) {
+        case HttpResponse(StatusCodes.OK, _, HttpEntity.Chunked(_, data), _) =>
+          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
+          // but only one consumed by server
+          data.take(1).to(Sink.fromSubscriber(dataProbe)).run()
+          val sub = dataProbe.expectSubscription()
+          sub.request(1)
+          dataProbe.expectNext(Chunk(ByteString("abcdef")))
+          dataProbe.expectComplete()
+          // connection is closed once requested elements are consumed
+          netInSub.expectCancellation()
+      }
+    }
+
+    "proceed to next response once previous response's entity has been drained" in new TestSetup with ScalaFutures {
+      def twice(action: => Unit): Unit = { action; action }
+
+      twice {
+        requestsSub.sendNext(HttpRequest())
+
+        expectWireData(
+          """GET / HTTP/1.1
+            |Host: example.com
+            |User-Agent: akka-http/test
+            |
+            |""")
+
+        sendWireData(
+          """HTTP/1.1 200 OK
+            |Transfer-Encoding: chunked
+            |
+            |6
+            |abcdef
+            |0
+            |
+            |""")
+
+        val whenComplete = expectResponse().entity.dataBytes.runWith(Sink.ignore)
+        whenComplete.futureValue should be (akka.Done)
+      }
+    }
+
 
     "handle several requests on one persistent connection" which {
       "has a first response that was chunked" in new TestSetup {

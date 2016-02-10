@@ -55,6 +55,10 @@ The connection can also be closed by the server.
 An application can actively trigger the closing of the connection by completing the request stream. In this case the
 underlying TCP connection will be closed when the last pending response has been received.
 
+The connection will also be closed if the response entity is cancelled (e.g. by attaching it to ``Sink.cancelled``)
+or consumed only partially (e.g. by using ``take`` combinator). In order to prevent this behaviour the entity should be
+explicitly drained by attaching it to ``Sink.ignore``.
+
 
 Timeouts
 --------
