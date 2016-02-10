@@ -135,7 +135,6 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "parse and cache an X-Real-Ip with a hostname as it's value as a RawHeader" in new TestSetup() {
       parseAndCache("X-Real-Ip: akka.io\r\nx")() shouldEqual RawHeader("x-real-ip", "akka.io")
     }
-
     "parse and cache a raw header" in new TestSetup(primed = false) {
       insert("hello: bob", 'Hello)
       val (ixA, headerA) = parseLine("Fancy-Pants: foo\r\nx")
