@@ -716,4 +716,16 @@ public class SourceTest extends StreamTest {
     final Source<Integer, NotUsed> f =
         Source.single(42).withAttributes(Attributes.name("")).addAttributes(Attributes.asyncBoundary()).named("");
   }
+
+  @Test
+  public void mustBeAbleToUseThrottle() throws Exception {
+    Integer result =
+        Source.from(Arrays.asList(0, 1, 2))
+            .throttle(10, FiniteDuration.create(1, TimeUnit.SECONDS), 10, ThrottleMode.shaping())
+            .throttle(10, FiniteDuration.create(1, TimeUnit.SECONDS), 10, ThrottleMode.enforcing())
+            .runWith(Sink.head(), materializer)
+            .toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    assertEquals((Object) 0, result);
+  }
 }
