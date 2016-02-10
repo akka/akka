@@ -6,7 +6,7 @@ package akka.http.scaladsl.model.headers
 
 import akka.http.impl.util._
 import org.scalatest._
-
+import java.net.InetAddress
 import akka.http.scaladsl.model._
 
 class HeaderSpec extends FreeSpec with Matchers {
@@ -99,7 +99,8 @@ class HeaderSpec extends FreeSpec with Matchers {
         `Transfer-Encoding`(TransferEncodings.chunked),
         Upgrade(Vector(UpgradeProtocol("HTTP", Some("2.0")))),
         `User-Agent`("Akka HTTP Client 2.4"),
-        `X-Forwarded-For`(RemoteAddress("192.168.0.1")))
+        `X-Forwarded-For`(RemoteAddress(InetAddress.getByName("192.168.0.1"))),
+        `X-Real-Ip`(RemoteAddress(InetAddress.getByName("192.168.1.1"))))
 
       requestHeaders.foreach { header ⇒
         header shouldBe 'renderInRequests
