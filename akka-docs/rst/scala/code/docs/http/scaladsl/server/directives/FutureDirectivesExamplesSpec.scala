@@ -5,6 +5,7 @@
 package docs.http.scaladsl.server.directives
 
 import java.util.concurrent.TimeUnit
+import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import docs.http.scaladsl.server.RoutingSpec
 
 import scala.concurrent.Future
