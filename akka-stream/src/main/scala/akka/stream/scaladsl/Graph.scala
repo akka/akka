@@ -10,10 +10,12 @@ import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
 import akka.stream.impl.Stages.{ DefaultAttributes, StageModule, SymbolicStage }
 import akka.stream.impl.StreamLayout._
+import akka.stream.scaladsl.Partition.PartitionOutOfBoundsException
 import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.util.control.NoStackTrace
 
 object Merge {
   /**
@@ -469,6 +471,8 @@ final class Broadcast[T](private val outputPorts: Int, eagerCancel: Boolean) ext
 
 object Partition {
 
+  case class PartitionOutOfBoundsException(msg:String) extends RuntimeException(msg) with NoStackTrace
+
   /**
    * Create a new `Partition` stage with the specified input type.
    *
@@ -508,7 +512,7 @@ final class Partition[T](outputPorts: Int, partitioner: T ⇒ Int) extends Graph
         val elem = grab(in)
         val idx = partitioner(elem)
         if (idx < 0 || idx >= outputPorts)
-          failStage(new IndexOutOfBoundsException(s"partitioner must return an index in the range [0,${outputPorts - 1}]. returned: [$idx] for input [$elem]."))
+          failStage(PartitionOutOfBoundsException(s"partitioner must return an index in the range [0,${outputPorts - 1}]. returned: [$idx] for input [${elem.getClass.getName}]."))
         else if (!isClosed(out(idx))) {
           if (isAvailable(out(idx))) {
             push(out(idx), elem)
