@@ -146,3 +146,12 @@ Please consult the :class:`GraphStage` documentation (:ref:`graphstage-scala`) a
 on migrating from :class:`AsyncStage` to :class:`GraphStage`.
 
 .. _`previous migration guide`: http://doc.akka.io/docs/akka-stream-and-http-experimental/2.0.2/scala/migration-guide-1.0-2.x-scala.html#AsyncStage_has_been_replaced_by_GraphStage
+
+Websocket now consistently named WebSocket
+------------------------------------------
+
+Previously we had a mix of methods and classes called ``websocket`` or ``Websocket``, which was in contradiction with
+how the word is spelled in the spec and some other places of Akka HTTP.
+
+Methods and classes using the word WebSocket now consistently use it as ``WebSocket``, so updating is as simple as
+find-and-replacing the lower-case ``s`` to an upper-case ``S`` wherever the word WebSocket appeared.
