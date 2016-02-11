@@ -46,9 +46,16 @@ private[akka] final case class ParserSettingsImpl(
 
   override def headerValueCacheLimit(headerName: String): Int =
     headerValueCacheLimits.getOrElse(headerName, defaultHeaderValueCacheLimit)
+
+  override def productPrefix = "ParserSettings"
 }
 
 object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.http.parsing") {
+
+  // for equality
+  private[this] val noCustomMethods: String ⇒ Option[HttpMethod] = _ ⇒ None
+  private[this] val noCustomStatusCodes: Int ⇒ Option[StatusCode] = _ ⇒ None
+
   def fromSubConfig(root: Config, inner: Config) = {
     val c = inner.withFallback(root.getConfig(prefix))
     val cacheConfig = c getConfig "header-cache"
@@ -69,8 +76,8 @@ object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.ht
       ErrorLoggingVerbosity(c getString "error-logging-verbosity"),
       cacheConfig.entrySet.asScala.map(kvp ⇒ kvp.getKey -> cacheConfig.getInt(kvp.getKey))(collection.breakOut),
       c getBoolean "tls-session-info-header",
-      _ ⇒ None,
-      _ ⇒ None)
+      noCustomMethods,
+      noCustomStatusCodes)
   }
 
 }
