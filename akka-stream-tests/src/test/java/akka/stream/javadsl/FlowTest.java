@@ -629,6 +629,42 @@ public class FlowTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToRecoverWithSource() throws Exception {
+    final TestPublisher.ManualProbe<Integer> publisherProbe = TestPublisher.manualProbe(true,system);
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Iterable<Integer> recover = Arrays.asList(55, 0);
+
+    final Source<Integer, NotUsed> source = Source.fromPublisher(publisherProbe);
+    final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class).map(
+            new Function<Integer, Integer>() {
+              public Integer apply(Integer elem) {
+                if (elem == 2) throw new RuntimeException("ex");
+                else return elem;
+              }
+            })
+            .recoverWith(new JavaPartialFunction<Throwable, Source<Integer, NotUsed>>() {
+              public Source<Integer, NotUsed> apply(Throwable elem, boolean isCheck) {
+                if (isCheck) return null;
+                return Source.from(recover);
+              }
+            });
+
+    final CompletionStage<Done> future =
+            source.via(flow).runWith(Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
+
+    final PublisherProbeSubscription<Integer> s = publisherProbe.expectSubscription();
+
+    s.sendNext(0);
+    probe.expectMsgEquals(0);
+    s.sendNext(1);
+    probe.expectMsgEquals(1);
+    s.sendNext(2);
+    probe.expectMsgEquals(55);
+    probe.expectMsgEquals(0);
+    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+  }
+
+  @Test
   public void mustBeAbleToMaterializeIdentityWithJavaFlow() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
