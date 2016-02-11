@@ -50,8 +50,7 @@ public class RecipeParseLines extends RecipeTest {
       .via(Framing.delimiter(ByteString.fromString("\r\n"), 100, true))
       .map(b -> b.utf8String());
     //#parse-lines
-
-    lines.grouped(10).runWith(Sink.head(), mat).toCompletableFuture().get(1, TimeUnit.SECONDS);
+    lines.limit(10).runWith(Sink.seq(), mat).toCompletableFuture().get(1, TimeUnit.SECONDS);
   }
 
 }

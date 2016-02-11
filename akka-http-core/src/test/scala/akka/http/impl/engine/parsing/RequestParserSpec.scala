@@ -252,7 +252,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         val parser = newParser
         val result = multiParse(newParser)(Seq(prep(start + manyChunks)))
         val HttpEntity.Chunked(_, chunks) = result.head.right.get.req.entity
-        val strictChunks = chunks.grouped(100000).runWith(Sink.head).awaitResult(awaitAtMost)
+        val strictChunks = chunks.limit(100000).runWith(Sink.seq).awaitResult(awaitAtMost)
         strictChunks.size shouldEqual numChunks
       }
     }
@@ -322,7 +322,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       "too-large chunk size" in new Test {
         Seq(start,
           """1a2b3c4d5e
-             |""") should generalMultiParseTo(Right(baseRequest),
+            |""") should generalMultiParseTo(Right(baseRequest),
             Left(EntityStreamError(ErrorInfo("HTTP chunk size exceeds the configured limit of 1048576 bytes"))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
@@ -360,10 +360,10 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
       "two Content-Length headers" in new Test {
         """GET / HTTP/1.1
-            |Content-Length: 3
-            |Content-Length: 4
-            |
-            |foo""" should parseToError(BadRequest,
+          |Content-Length: 3
+          |Content-Length: 4
+          |
+          |foo""" should parseToError(BadRequest,
           ErrorInfo("HTTP message must not contain more than one Content-Length header"))
       }
 
@@ -374,63 +374,63 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
       "HTTP version 1.2" in new Test {
         """GET / HTTP/1.2
-              |""" should parseToError(HTTPVersionNotSupported,
+          |""" should parseToError(HTTPVersionNotSupported,
           ErrorInfo("The server does not support the HTTP protocol version used in the request."))
       }
 
       "with an illegal char in a header name" in new Test {
         """GET / HTTP/1.1
-            |User@Agent: curl/7.19.7""" should parseToError(BadRequest, ErrorInfo("Illegal character '@' in header name"))
+          |User@Agent: curl/7.19.7""" should parseToError(BadRequest, ErrorInfo("Illegal character '@' in header name"))
       }
 
       "with a too-long header name" in new Test {
         """|GET / HTTP/1.1
-            |UserxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxAgent: curl/7.19.7""" should parseToError(
+          |UserxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxAgent: curl/7.19.7""" should parseToError(
           BadRequest, ErrorInfo("HTTP header name exceeds the configured limit of 64 characters"))
       }
 
       "with a too-long header-value" in new Test {
         """|GET / HTTP/1.1
-            |Fancy: 123456789012345678901234567890123""" should parseToError(BadRequest,
+          |Fancy: 123456789012345678901234567890123""" should parseToError(BadRequest,
           ErrorInfo("HTTP header value exceeds the configured limit of 32 characters"))
       }
 
       "with an invalid Content-Length header value" in new Test {
         """GET / HTTP/1.0
-            |Content-Length: 1.5
-            |
-            |abc""" should parseToError(BadRequest, ErrorInfo("Illegal `Content-Length` header value"))
+          |Content-Length: 1.5
+          |
+          |abc""" should parseToError(BadRequest, ErrorInfo("Illegal `Content-Length` header value"))
       }
 
       "with Content-Length > Long.MaxSize" in new Test {
         // content-length = (Long.MaxValue + 1) * 10, which is 0 when calculated overflow
         """PUT /resource/yes HTTP/1.1
-            |Content-length: 92233720368547758080
-            |Host: x
-            |
-            |""" should parseToError(400: StatusCode, ErrorInfo("`Content-Length` header value must not exceed 63-bit integer range"))
+          |Content-length: 92233720368547758080
+          |Host: x
+          |
+          |""" should parseToError(400: StatusCode, ErrorInfo("`Content-Length` header value must not exceed 63-bit integer range"))
       }
 
       "with an illegal entity using CONNECT" in new Test {
         """CONNECT /resource/yes HTTP/1.1
-            |Transfer-Encoding: chunked
-            |Host: x
-            |
-            |""" should parseToError(422: StatusCode, ErrorInfo("CONNECT requests must not have an entity"))
+          |Transfer-Encoding: chunked
+          |Host: x
+          |
+          |""" should parseToError(422: StatusCode, ErrorInfo("CONNECT requests must not have an entity"))
       }
       "with an illegal entity using HEAD" in new Test {
         """HEAD /resource/yes HTTP/1.1
-            |Content-length: 3
-            |Host: x
-            |
-            |foo""" should parseToError(422: StatusCode, ErrorInfo("HEAD requests must not have an entity"))
+          |Content-length: 3
+          |Host: x
+          |
+          |foo""" should parseToError(422: StatusCode, ErrorInfo("HEAD requests must not have an entity"))
       }
       "with an illegal entity using TRACE" in new Test {
         """TRACE /resource/yes HTTP/1.1
-            |Transfer-Encoding: chunked
-            |Host: x
-            |
-            |""" should parseToError(422: StatusCode, ErrorInfo("TRACE requests must not have an entity"))
+          |Transfer-Encoding: chunked
+          |Host: x
+          |
+          |""" should parseToError(422: StatusCode, ErrorInfo("TRACE requests must not have an entity"))
       }
     }
   }
@@ -504,7 +504,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           }
         }
         .map(strictEqualify)
-        .grouped(100000).runWith(Sink.head)
+        .limit(100000).runWith(Sink.seq)
         .awaitResult(awaitAtMost)
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
@@ -517,7 +517,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
     private def compactEntityChunks(data: Source[ChunkStreamPart, Any]): Future[Seq[ChunkStreamPart]] =
-      data.grouped(100000).runWith(Sink.head)
+      data.limit(100000).runWith(Sink.seq)
         .fast.recover { case _: NoSuchElementException ⇒ Nil }
 
     def prep(response: String) = response.stripMarginWithNewline("\r\n")

@@ -57,26 +57,26 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
 
     "work as a Flow that is open on the left" in {
       val f = bidi.join(Flow[Long].map(x ⇒ ByteString(s"Hello $x")))
-      val result = Source(List(1, 2, 3)).via(f).grouped(10).runWith(Sink.head)
+      val result = Source(List(1, 2, 3)).via(f).limit(10).runWith(Sink.seq)
       Await.result(result, 1.second) should ===(Seq("Hello 3", "Hello 4", "Hello 5"))
     }
 
     "work as a Flow that is open on the right" in {
       val f = Flow[String].map(Integer.valueOf(_).toInt).join(bidi)
-      val result = Source(List(ByteString("1"), ByteString("2"))).via(f).grouped(10).runWith(Sink.head)
+      val result = Source(List(ByteString("1"), ByteString("2"))).via(f).limit(10).runWith(Sink.seq)
       Await.result(result, 1.second) should ===(Seq(3L, 4L))
     }
 
     "work when atop its inverse" in {
       val f = bidi.atop(inverse).join(Flow[Int].map(_.toString))
-      val result = Source(List(1, 2, 3)).via(f).grouped(10).runWith(Sink.head)
+      val result = Source(List(1, 2, 3)).via(f).limit(10).runWith(Sink.seq)
       Await.result(result, 1.second) should ===(Seq("5", "6", "7"))
     }
 
     "work when reversed" in {
       // just reversed from the case above; observe that Flow inverts itself automatically by being on the left side
       val f = Flow[Int].map(_.toString).join(inverse.reversed).join(bidi.reversed)
-      val result = Source(List(1, 2, 3)).via(f).grouped(10).runWith(Sink.head)
+      val result = Source(List(1, 2, 3)).via(f).limit(10).runWith(Sink.seq)
       Await.result(result, 1.second) should ===(Seq("5", "6", "7"))
     }
 

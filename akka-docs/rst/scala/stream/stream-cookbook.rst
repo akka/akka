@@ -54,16 +54,20 @@ collection itself, so we can just call ``mapConcat(identity)``.
 Draining a stream to a strict collection
 ----------------------------------------
 
-**Situation:** A finite sequence of elements is given as a stream, but a Scala collection is needed instead.
+**Situation:** A possibly unbounded sequence of elements is given as a stream, which needs to be collected into a Scala collection while ensuring boundedness
 
-In this recipe we will use the ``grouped`` stream operation that groups incoming elements into a stream of limited
-size collections (it can be seen as the almost opposite version of the "Flattening a stream of sequences" recipe
-we showed before). By using a ``grouped(MaxAllowedSeqSize)`` we create a stream of groups
-with maximum size of ``MaxAllowedSeqSize`` and then we take the first element of this stream by attaching a ``Sink.head``. What we get is a
-:class:`Future` containing a sequence with all the elements of the original up to ``MaxAllowedSeqSize`` size (further
-elements are dropped).
+A common situation when working with streams is one where we need to collect incoming elements into a Scala collection.
+This operation is supported via ``Sink.seq`` which materializes into a ``Future[Seq[T]]``.
 
-.. includecode:: ../code/docs/stream/cookbook/RecipeToStrict.scala#draining-to-seq
+The function ``limit`` or ``take`` should always be used in conjunction in order to guarantee stream boundedness, thus preventing the program from running out of memory.
+
+For example, this is best avoided:
+
+.. includecode:: code/docs/stream/cookbook/RecipeSeq.scala#draining-to-seq-unsafe
+
+Rather, use ``limit`` or ``take`` to ensure that the resulting ``Seq`` will contain only up to ``max`` elements:
+
+.. includecode:: code/docs/stream/cookbook/RecipeSeq.scala#draining-to-seq-safe
 
 Calculating the digest of a ByteString stream
 ---------------------------------------------

@@ -142,7 +142,8 @@ public class BidiFlowTest extends StreamTest {
             return ByteString.fromString("Hello " + arg);
           }
         }));
-    final CompletionStage<List<String>> result = Source.from(list).via(f).grouped(10).runWith(Sink.<List<String>> head(), materializer);
+
+    final CompletionStage<List<String>> result = Source.from(list).via(f).limit(10).runWith(Sink.<String>seq(), materializer);
     assertEquals(Arrays.asList("Hello 3", "Hello 4", "Hello 5"), result.toCompletableFuture().get(1, TimeUnit.SECONDS));
   }
 
@@ -155,7 +156,7 @@ public class BidiFlowTest extends StreamTest {
           }
         }).join(bidi);
     final List<ByteString> inputs = Arrays.asList(ByteString.fromString("1"), ByteString.fromString("2"));
-    final CompletionStage<List<Long>> result = Source.from(inputs).via(f).grouped(10).runWith(Sink.<List<Long>> head(), materializer);
+    final CompletionStage<List<Long>> result = Source.from(inputs).via(f).limit(10).runWith(Sink.<Long>seq(), materializer);
     assertEquals(Arrays.asList(3L, 4L), result.toCompletableFuture().get(1, TimeUnit.SECONDS));
   }
 
@@ -167,7 +168,7 @@ public class BidiFlowTest extends StreamTest {
             return arg.toString();
           }
         }));
-    final CompletionStage<List<String>> result = Source.from(list).via(f).grouped(10).runWith(Sink.<List<String>> head(), materializer);
+    final CompletionStage<List<String>> result = Source.from(list).via(f).limit(10).runWith(Sink.<String>seq(), materializer);
     assertEquals(Arrays.asList("5", "6", "7"), result.toCompletableFuture().get(1, TimeUnit.SECONDS));
   }
 
@@ -179,7 +180,7 @@ public class BidiFlowTest extends StreamTest {
             return arg.toString();
           }
         }).join(inverse.reversed()).join(bidi.reversed());
-    final CompletionStage<List<String>> result = Source.from(list).via(f).grouped(10).runWith(Sink.<List<String>> head(), materializer);
+    final CompletionStage<List<String>> result = Source.from(list).via(f).limit(10).runWith(Sink.<String>seq(), materializer);
     assertEquals(Arrays.asList("5", "6", "7"), result.toCompletableFuture().get(1, TimeUnit.SECONDS));
   }
 

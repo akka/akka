@@ -48,7 +48,7 @@ public class RecipeFlattenList extends RecipeTest {
         Source<Message, NotUsed> flattened = myData.mapConcat(i -> i);
         //#flattening-lists
 
-        List<Message> got = flattened.grouped(10).runWith(Sink.head(), mat).toCompletableFuture().get(1, TimeUnit.SECONDS);
+        List<Message> got = flattened.limit(10).runWith(Sink.seq(), mat).toCompletableFuture().get(1, TimeUnit.SECONDS);
         assertEquals(got.get(0), new Message("1"));
         assertEquals(got.get(1), new Message("2"));
         assertEquals(got.get(2), new Message("3"));
