@@ -212,6 +212,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
       msgs.head.open()
 
       router.sendToAll()
+      Thread.sleep(1) // wait for routees to update their mail boxes
       resizer.reportMessageCount(router.routees, router.msgs.size)
       resizer.performanceLog.get(2) should not be empty
     }
