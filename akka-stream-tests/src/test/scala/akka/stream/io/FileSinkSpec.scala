@@ -76,7 +76,7 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
         def write(lines: List[String] = TestLines) =
           Source(lines)
             .map(ByteString(_))
-            .runWith(FileIO.toFile(f, append = true))
+            .runWith(FileIO.toFile(f, FileIO.Append))
 
         val completion1 = write()
         val result1 = Await.result(completion1, 3.seconds)
