@@ -21,7 +21,7 @@ import akka.stream.impl.MultiStreamOutputProcessor.SubstreamSubscriptionTimeout
 import scala.annotation.tailrec
 import akka.stream.impl.PublisherSource
 import akka.stream.impl.CancellingSubscriber
-import akka.stream.impl.BoundedBuffer
+import akka.stream.impl.{ Buffer ⇒ BufferImpl }
 
 /**
  * INTERNAL API
@@ -38,7 +38,9 @@ final class FlattenMerge[T, M](breadth: Int) extends GraphStage[FlowShape[Graph[
     var sources = Set.empty[SubSinkInlet[T]]
     def activeSources = sources.size
 
-    val q = new BoundedBuffer[SubSinkInlet[T]](breadth)
+    var q: BufferImpl[SubSinkInlet[T]] = _
+
+    override def preStart(): Unit = q = BufferImpl(breadth, materializer)
 
     def pushOut(): Unit = {
       val src = q.dequeue()

@@ -4,6 +4,7 @@
 package akka.stream.impl
 
 import akka.stream.testkit.AkkaSpec
+import akka.stream.ActorMaterializerSettings
 
 class FixedBufferSpec extends AkkaSpec {
 
@@ -92,6 +93,31 @@ class FixedBufferSpec extends AkkaSpec {
       }
 
     }
+  }
+
+  "Buffer factory" must {
+    val default = ActorMaterializerSettings(system)
+
+    "default to one billion for maxFixedBufferSize" in {
+      default.maxFixedBufferSize should ===(1000000000)
+    }
+
+    "produce BoundedBuffers when capacity > max-fixed-buffer-size" in {
+      Buffer(Int.MaxValue, default) shouldBe a[BoundedBuffer[_]]
+    }
+
+    "produce FixedSizeBuffers when capacity < max-fixed-buffer-size" in {
+      Buffer(1000, default) shouldBe a[FixedSizeBuffer.ModuloFixedSizeBuffer[_]]
+      Buffer(1024, default) shouldBe a[FixedSizeBuffer.PowerOfTwoFixedSizeBuffer[_]]
+    }
+
+    "produce FixedSizeBuffers when max-fixed-buffer-size < BoundedBufferSize" in {
+      val settings = default.withMaxFixedBufferSize(9)
+      Buffer(5, default) shouldBe a[FixedSizeBuffer.ModuloFixedSizeBuffer[_]]
+      Buffer(10, default) shouldBe a[FixedSizeBuffer.ModuloFixedSizeBuffer[_]]
+      Buffer(16, default) shouldBe a[FixedSizeBuffer.PowerOfTwoFixedSizeBuffer[_]]
+    }
+
   }
 
 }
