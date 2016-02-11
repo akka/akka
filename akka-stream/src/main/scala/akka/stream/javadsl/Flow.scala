@@ -3,6 +3,7 @@
  */
 package akka.stream.javadsl
 
+import akka.stream.impl.fusing.RecoverWith
 import akka.{ NotUsed, Done }
 import akka.event.LoggingAdapter
 import akka.japi.{ function, Pair }
@@ -766,6 +767,26 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    */
   def recover[T >: Out](pf: PartialFunction[Throwable, T]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.recover(pf))
+
+  /**
+    * RecoverWith allows to switch to alternative Source on flow failure. It will stay in effect after
+    * a failure has been recovered so that each time there is a failure it is fed into the `pf` and a new
+    * Source may be materialized.
+    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+    *
+    * '''Emits when''' element is available from the upstream or upstream is failed and element is available
+    * from alternative Source
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+    *
+    * '''Cancels when''' downstream cancels
+    *
+    */
+  def recoverWith[T >: Out](pf: PartialFunction[Throwable, _ <: Graph[SourceShape[T], NotUsed]]): javadsl.Flow[In, T, Mat @uncheckedVariance] =
+    new Flow(delegate.recoverWith(pf))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after the given

@@ -3,9 +3,10 @@
  */
 package akka.stream.scaladsl
 
+import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.{ AkkaSpec, TestSubscriber }
+import akka.stream.testkit.AkkaSpec
 
 import scala.util.control.NoStackTrace
 
@@ -19,56 +20,40 @@ class FlowRecoverSpec extends AkkaSpec {
 
   "A Recover" must {
     "recover when there is a handler" in assertAllStagesStopped {
-      val subscriber = TestSubscriber.probe[Int]()
-
       Source(1 to 4).map { a ⇒ if (a == 3) throw ex else a }
         .recover { case t: Throwable ⇒ 0 }
-        .runWith(Sink.fromSubscriber(subscriber))
-
-      subscriber.requestNext(1)
-      subscriber.requestNext(2)
-
-      subscriber.request(1)
-      subscriber.expectNext(0)
-
-      subscriber.request(1)
-      subscriber.expectComplete()
+        .runWith(TestSink.probe[Int])
+        .requestNext(1)
+        .requestNext(2)
+        .requestNext(0)
+        .request(1)
+        .expectComplete()
     }
 
     "failed stream if handler is not for such exception type" in assertAllStagesStopped {
-      val subscriber = TestSubscriber.probe[Int]()
-
       Source(1 to 3).map { a ⇒ if (a == 2) throw ex else a }
         .recover { case t: IndexOutOfBoundsException ⇒ 0 }
-        .runWith(Sink.fromSubscriber(subscriber))
-
-      subscriber.requestNext(1)
-      subscriber.request(1)
-      subscriber.expectError(ex)
+        .runWith(TestSink.probe[Int])
+        .requestNext(1)
+        .request(1)
+        .expectError(ex)
     }
 
     "not influence stream when there is no exceptions" in assertAllStagesStopped {
-      val subscriber = TestSubscriber.probe[Int]()
-
-      val k = Source(1 to 3).map(identity)
+      Source(1 to 3).map(identity)
         .recover { case t: Throwable ⇒ 0 }
-        .runWith(Sink.fromSubscriber(subscriber))
-
-      subscriber.requestNext(1)
-      subscriber.requestNext(2)
-      subscriber.requestNext(3)
-      subscriber.expectComplete()
+        .runWith(TestSink.probe[Int])
+        .request(3)
+        .expectNextN(1 to 3)
+        .expectComplete()
     }
 
     "finish stream if it's empty" in assertAllStagesStopped {
-      val subscriber = TestSubscriber.probe[Int]()
       Source.empty.map(identity)
         .recover { case t: Throwable ⇒ 0 }
-        .runWith(Sink.fromSubscriber(subscriber))
-
-      subscriber.request(1)
-      subscriber.expectComplete()
-
+        .runWith(TestSink.probe[Int])
+        .request(1)
+        .expectComplete()
     }
   }
 }
