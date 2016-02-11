@@ -1,4 +1,4 @@
-name := "akka-supervision-java-lambda"
+name := "akka-sample-supervision-java-lambda"
 
 version := "2.4-SNAPSHOT"
 
