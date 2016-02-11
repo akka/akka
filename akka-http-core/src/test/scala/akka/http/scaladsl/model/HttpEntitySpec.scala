@@ -155,7 +155,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
 
   def collectBytesTo(bytes: ByteString*): Matcher[HttpEntity] =
     equal(bytes.toVector).matcher[Seq[ByteString]].compose { entity ⇒
-      val future = entity.dataBytes.grouped(1000).runWith(Sink.head)
+      val future = entity.dataBytes.limit(1000).runWith(Sink.seq)
       Await.result(future, 250.millis)
     }
 

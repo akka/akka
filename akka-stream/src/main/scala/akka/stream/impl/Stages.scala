@@ -101,6 +101,7 @@ private[stream] object Stages {
     val headOptionSink = name("headOptionSink") and inputBuffer(initial = 1, max = 1)
     val lastSink = name("lastSink")
     val lastOptionSink = name("lastOptionSink")
+    val seqSink = name("seqSink")
     val publisherSink = name("publisherSink")
     val fanoutPublisherSink = name("fanoutPublisherSink")
     val ignoreSink = name("ignoreSink")

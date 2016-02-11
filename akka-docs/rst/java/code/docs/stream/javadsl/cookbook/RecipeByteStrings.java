@@ -95,7 +95,7 @@ public class RecipeByteStrings extends RecipeTest {
           rawBytes.transform(() -> new Chunker(CHUNK_LIMIT));
         //#bytestring-chunker2
 
-        CompletionStage<List<ByteString>> chunksFuture = chunksStream.grouped(10).runWith(Sink.head(), mat);
+        CompletionStage<List<ByteString>> chunksFuture = chunksStream.limit(10).runWith(Sink.seq(), mat);
 
         List<ByteString> chunks = chunksFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
@@ -157,7 +157,7 @@ public class RecipeByteStrings extends RecipeTest {
           ByteString.fromArray(new byte[] { 4, 5, 6 }),
           ByteString.fromArray(new byte[] { 7, 8, 9, 10 })));
 
-        List<ByteString> got = bytes1.via(limiter).grouped(10).runWith(Sink.head(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
+        List<ByteString> got = bytes1.via(limiter).limit(10).runWith(Sink.seq(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
         ByteString acc = ByteString.empty();
         for (ByteString b : got) {
           acc = acc.concat(b);
@@ -166,7 +166,7 @@ public class RecipeByteStrings extends RecipeTest {
 
         boolean thrown = false;
         try {
-          bytes2.via(limiter).grouped(10).runWith(Sink.head(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
+          bytes2.via(limiter).limit(10).runWith(Sink.seq(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
         } catch (IllegalStateException ex) {
           thrown = true;
         }
@@ -190,7 +190,7 @@ public class RecipeByteStrings extends RecipeTest {
         Source<ByteString, NotUsed> compacted = rawBytes.map(bs -> bs.compact());
         //#compacting-bytestrings
 
-        List<ByteString> got = compacted.grouped(10).runWith(Sink.head(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
+        List<ByteString> got = compacted.limit(10).runWith(Sink.seq(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
 
         for (ByteString byteString : got) {
           assertTrue(byteString.isCompact());

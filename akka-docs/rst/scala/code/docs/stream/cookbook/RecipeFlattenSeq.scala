@@ -20,7 +20,7 @@ class RecipeFlattenSeq extends RecipeSpec {
       val flattened: Source[Message, NotUsed] = myData.mapConcat(identity)
       //#flattening-seqs
 
-      Await.result(flattened.grouped(8).runWith(Sink.head), 3.seconds) should be(List("1", "2", "3", "4", "5", "6", "7"))
+      Await.result(flattened.limit(8).runWith(Sink.seq), 3.seconds) should be(List("1", "2", "3", "4", "5", "6", "7"))
 
     }
 
