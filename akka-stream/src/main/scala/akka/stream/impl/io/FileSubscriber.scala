@@ -6,7 +6,6 @@ package akka.stream.impl.io
 import java.io.File
 import java.nio.channels.FileChannel
 import java.nio.file.StandardOpenOption
-import java.util
 
 import akka.Done
 import akka.actor.{ Deploy, ActorLogging, Props }
@@ -14,19 +13,20 @@ import akka.stream.io.IOResult
 import akka.stream.actor.{ ActorSubscriberMessage, WatermarkRequestStrategy }
 import akka.util.ByteString
 
+import scala.collection.JavaConverters._
 import scala.concurrent.Promise
 import scala.util.{ Failure, Success }
 
 /** INTERNAL API */
 private[akka] object FileSubscriber {
-  def props(f: File, completionPromise: Promise[IOResult], bufSize: Int, openOptions: util.Set[StandardOpenOption]) = {
+  def props(f: File, completionPromise: Promise[IOResult], bufSize: Int, openOptions: Set[StandardOpenOption]) = {
     require(bufSize > 0, "buffer size must be > 0")
     Props(classOf[FileSubscriber], f, completionPromise, bufSize, openOptions).withDeploy(Deploy.local)
   }
 }
 
 /** INTERNAL API */
-private[akka] class FileSubscriber(f: File, completionPromise: Promise[IOResult], bufSize: Int, openOptions: util.Set[StandardOpenOption])
+private[akka] class FileSubscriber(f: File, completionPromise: Promise[IOResult], bufSize: Int, openOptions: Set[StandardOpenOption])
   extends akka.stream.actor.ActorSubscriber
   with ActorLogging {
 
@@ -37,7 +37,7 @@ private[akka] class FileSubscriber(f: File, completionPromise: Promise[IOResult]
   private var bytesWritten: Long = 0
 
   override def preStart(): Unit = try {
-    chan = FileChannel.open(f.toPath, openOptions)
+    chan = FileChannel.open(f.toPath, openOptions.asJava)
 
     super.preStart()
   } catch {

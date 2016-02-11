@@ -13,7 +13,7 @@ import akka.stream.impl.io._
 import akka.stream.io.IOResult
 import akka.util.ByteString
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.concurrent.Future
 
 /**
@@ -55,10 +55,9 @@ object FileIO {
     new Sink(new FileSink(f, options, DefaultAttributes.fileSink, sinkShape("FileSink")))
 
   def toFile(f: File, options: util.Set[StandardOpenOption]): Sink[ByteString, Future[IOResult]] =
-    new Sink(new FileSink(f, options, DefaultAttributes.fileSink, sinkShape("FileSink")))
+    new Sink(new FileSink(f, options.asScala.toSet, DefaultAttributes.fileSink, sinkShape("FileSink")))
 
   import java.nio.file.StandardOpenOption._
 
-  val Write = Set(WRITE, CREATE)
-  val Append = Set(APPEND)
+  private[akka] val Write = Set(WRITE, CREATE)
 }

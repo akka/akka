@@ -5,7 +5,6 @@ package akka.stream.impl.io
 
 import java.io.{ File, OutputStream }
 import java.nio.file.StandardOpenOption
-import java.util
 import akka.stream.io.IOResult
 import akka.stream.impl.SinkModule
 import akka.stream.impl.StreamLayout.Module
@@ -20,7 +19,7 @@ import scala.concurrent.{ Future, Promise }
  * Creates simple synchronous (Java 6 compatible) Sink which writes all incoming elements to the given file
  * (creating it before hand if necessary).
  */
-private[akka] final class FileSink(f: File, val options: util.Set[StandardOpenOption], val attributes: Attributes, shape: SinkShape[ByteString])
+private[akka] final class FileSink(f: File, options: Set[StandardOpenOption], val attributes: Attributes, shape: SinkShape[ByteString])
   extends SinkModule[ByteString, Future[IOResult]](shape) {
 
   override def create(context: MaterializationContext) = {

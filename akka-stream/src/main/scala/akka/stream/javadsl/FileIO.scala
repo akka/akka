@@ -11,7 +11,7 @@ import akka.stream.io.IOResult
 import akka.util.ByteString
 import java.util.concurrent.CompletionStage
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 /**
  * Factories to create sinks and sources from files
@@ -46,7 +46,7 @@ object FileIO {
    * @param f The file to write to
    * @param options File open options
    */
-  def toFile(f: File, options: util.Set[StandardOpenOption] = scaladsl.FileIO.Write): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
+  def toFile(f: File, options: util.Set[StandardOpenOption] = new util.HashSet(scaladsl.FileIO.Write.asJava)): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
     new Sink(scaladsl.FileIO.toFile(f, options).toCompletionStage())
 
   /**
