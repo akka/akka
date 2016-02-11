@@ -1211,16 +1211,19 @@ trait InHandler {
    * Called when the input port has a new element available. The actual element can be retrieved via the
    * [[GraphStageLogic.grab()]] method.
    */
+  @throws(classOf[Exception])
   def onPush(): Unit
 
   /**
    * Called when the input port is finished. After this callback no other callbacks will be called for this port.
    */
+  @throws(classOf[Exception])
   def onUpstreamFinish(): Unit = GraphInterpreter.currentInterpreter.activeStage.completeStage()
 
   /**
    * Called when the input port has failed. After this callback no other callbacks will be called for this port.
    */
+  @throws(classOf[Exception])
   def onUpstreamFailure(ex: Throwable): Unit = GraphInterpreter.currentInterpreter.activeStage.failStage(ex)
 }
 
@@ -1232,12 +1235,14 @@ trait OutHandler {
    * Called when the output port has received a pull, and therefore ready to emit an element, i.e. [[GraphStageLogic.push()]]
    * is now allowed to be called on this port.
    */
+  @throws(classOf[Exception])
   def onPull(): Unit
 
   /**
    * Called when the output port will no longer accept any new elements. After this callback no other callbacks will
    * be called for this port.
    */
+  @throws(classOf[Exception])
   def onDownstreamFinish(): Unit = {
     GraphInterpreter
       .currentInterpreter
