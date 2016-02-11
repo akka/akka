@@ -45,6 +45,7 @@ private[akka] final case class ServerSettingsImpl(
   require(0 < responseHeaderSizeHint, "response-size-hint must be > 0")
   require(0 < backlog, "backlog must be > 0")
 
+  override def productPrefix = "ServerSettings"
 }
 
 object ServerSettingsImpl extends SettingsCompanion[ServerSettingsImpl]("akka.http.server") {
