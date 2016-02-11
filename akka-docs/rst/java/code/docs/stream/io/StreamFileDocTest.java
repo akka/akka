@@ -13,6 +13,7 @@ import akka.stream.ActorAttributes;
 import akka.stream.io.IOResult;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.FileIO;
+import docs.AbstractJavaTest;
 import docs.stream.SilenceSystemOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -23,22 +24,25 @@ import akka.stream.*;
 import akka.testkit.JavaTestKit;
 import akka.util.ByteString;
 
-public class StreamFileDocTest {
+public class StreamFileDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
+
+  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("StreamFileDocTest");
+    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
+    mat = null;
   }
 
-  final Materializer mat = ActorMaterializer.create(system);
 
   final SilenceSystemOut.System System = SilenceSystemOut.get();
 

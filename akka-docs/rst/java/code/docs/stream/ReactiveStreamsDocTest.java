@@ -13,10 +13,12 @@ import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
+import docs.AbstractJavaTest;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Author;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
 
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 //#imports
@@ -32,23 +34,29 @@ import java.lang.Exception;
 import static docs.stream.ReactiveStreamsDocTest.Fixture.Data.authors;
 import static docs.stream.TwitterStreamQuickstartDocTest.Model.AKKA;
 
-public class ReactiveStreamsDocTest {
+public class ReactiveStreamsDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
+  static Materializer mat;
+  static TestProbe storageProbe;
+  static TestProbe alertProbe;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("ReactiveStreamsDocTest");
+    mat = ActorMaterializer.create(system);
+    storageProbe = new TestProbe(system);
+    alertProbe = new TestProbe(system);
   }
 
   @AfterClass
   public static void tearDown() {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
+    mat = null;
+    storageProbe = null;
+    alertProbe = null;
   }
-
-  final Materializer mat = ActorMaterializer.create(system);
-
 
   static class Fixture {
     // below class additionally helps with aligning code includes nicely
@@ -76,9 +84,6 @@ public class ReactiveStreamsDocTest {
       //#author-alert-subscriber
     }
   }
-
-  final TestProbe storageProbe = TestProbe.apply(system);
-  final TestProbe alertProbe = TestProbe.apply(system);
 
   final Fixture.RS rs = new Fixture.RS() {
     @Override

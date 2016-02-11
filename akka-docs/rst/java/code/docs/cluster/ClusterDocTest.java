@@ -4,6 +4,7 @@
 package docs.cluster;
 
 import com.typesafe.config.ConfigFactory;
+import docs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -13,7 +14,7 @@ import akka.cluster.Cluster;
 import akka.testkit.JavaTestKit;
 
 
-public class ClusterDocTest {
+public class ClusterDocTest extends AbstractJavaTest {
   
   static ActorSystem system;
   

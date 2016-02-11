@@ -19,6 +19,7 @@ import akka.event.Logging.Debug;
 
 //#imports-listener
 
+import docs.AbstractJavaTest;
 import org.junit.Test;
 import akka.testkit.JavaTestKit;
 import scala.Option;
@@ -35,7 +36,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 //#imports-deadletter
 
-public class LoggingDocTest {
+public class LoggingDocTest extends AbstractJavaTest {
 
   @Test
   public void useLoggingActor() {
@@ -79,7 +80,7 @@ public class LoggingDocTest {
     }
   }
 
-  class Listener extends UntypedActor {
+  static class Listener extends UntypedActor {
     @Override
     public void onReceive(Object message) throws Exception {
       if (message instanceof Jazz) {

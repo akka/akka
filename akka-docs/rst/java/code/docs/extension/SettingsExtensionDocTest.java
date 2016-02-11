@@ -9,6 +9,7 @@ import akka.actor.AbstractExtensionId;
 import akka.actor.ExtensionIdProvider;
 import akka.actor.ActorSystem;
 import akka.actor.ExtendedActorSystem;
+import docs.AbstractJavaTest;
 import scala.concurrent.duration.Duration;
 import com.typesafe.config.Config;
 import java.util.concurrent.TimeUnit;
@@ -18,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 import akka.actor.UntypedActor;
 import org.junit.Test;
 
-public class SettingsExtensionDocTest {
+public class SettingsExtensionDocTest extends AbstractJavaTest {
 
   static
   //#extension

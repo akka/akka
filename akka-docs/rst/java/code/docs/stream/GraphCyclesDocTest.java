@@ -3,6 +3,7 @@ package docs.stream;
 import java.util.Arrays;
 
 import akka.NotUsed;
+import docs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -14,23 +15,23 @@ import akka.stream.scaladsl.MergePreferred.MergePreferredShape;
 import akka.testkit.JavaTestKit;
 
 
-public class GraphCyclesDocTest {
+public class GraphCyclesDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
-
+  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("GraphCyclesDocTest");
+    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
+    mat = null;
   }
-
-  final Materializer mat = ActorMaterializer.create(system);
 
   final static SilenceSystemOut.System System = SilenceSystemOut.get();
 

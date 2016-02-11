@@ -9,6 +9,7 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.io.Udp;
 import akka.testkit.JavaTestKit;
+import docs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -19,6 +20,9 @@ import java.net.NetworkInterface;
 import java.util.Enumeration;
 import java.util.Random;
 
+// not part of the test suite because we have not figured out
+// a way to find an interface that is sure to work on all platforms
+// to listen for udp on
 public class JavaUdpMulticastTest {
 
     static ActorSystem system;

@@ -11,7 +11,6 @@ import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Sink }
-import akka.stream.stage.{ Context, PushStage }
 import akka.testkit.TestActors
 import org.scalatest.{ Matchers, WordSpec }
 import scala.language.postfixOps
@@ -107,17 +106,9 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
     val failureMonitor: ActorRef = system.actorOf(MyExampleMonitoringActor.props)
 
     val reactToTopLevelFailures = Flow[IncomingConnection]
-      .transform { () =>
-        new PushStage[IncomingConnection, IncomingConnection] {
-          override def onPush(elem: IncomingConnection, ctx: Context[IncomingConnection]) =
-            ctx.push(elem)
-
-          override def onUpstreamFailure(cause: Throwable, ctx: Context[IncomingConnection]) = {
-            failureMonitor ! cause
-            super.onUpstreamFailure(cause, ctx)
-          }
-        }
-      }
+      .watchTermination()((_, termination) => termination.onFailure {
+        case cause => failureMonitor ! cause
+      })
 
     serverSource
       .via(reactToTopLevelFailures)
@@ -134,16 +125,10 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
     val serverSource = Http().bind(host, port)
 
     val reactToConnectionFailure = Flow[HttpRequest]
-      .transform { () =>
-        new PushStage[HttpRequest, HttpRequest] {
-          override def onPush(elem: HttpRequest, ctx: Context[HttpRequest]) =
-            ctx.push(elem)
-
-          override def onUpstreamFailure(cause: Throwable, ctx: Context[HttpRequest]) = {
-            // handle the failure somehow
-            super.onUpstreamFailure(cause, ctx)
-          }
-        }
+      .recover[HttpRequest] {
+        case ex =>
+          // handle the failure somehow
+          throw ex
       }
 
     val httpEcho = Flow[HttpRequest]

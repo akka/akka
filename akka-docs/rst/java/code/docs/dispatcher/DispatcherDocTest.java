@@ -7,6 +7,7 @@ import akka.dispatch.ControlMessage;
 import akka.dispatch.RequiresMessageQueue;
 import akka.testkit.AkkaSpec;
 import com.typesafe.config.ConfigFactory;
+import docs.AbstractJavaTest;
 import docs.actor.MyBoundedUntypedActor;
 import docs.actor.MyUntypedActor;
 import org.junit.ClassRule;
@@ -36,7 +37,7 @@ import com.typesafe.config.Config;
 
 //#imports-required-mailbox
 
-public class DispatcherDocTest {
+public class DispatcherDocTest extends AbstractJavaTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

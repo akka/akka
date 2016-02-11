@@ -5,20 +5,17 @@ package docs.stream.javadsl.cookbook;
 
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
+import akka.stream.*;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.stream.stage.DetachedContext;
-import akka.stream.stage.DetachedStage;
-import akka.stream.stage.DownstreamDirective;
-import akka.stream.stage.UpstreamDirective;
+import akka.stream.stage.*;
 import akka.stream.testkit.TestPublisher;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.stream.testkit.javadsl.TestSource;
 import akka.testkit.JavaTestKit;
+import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -28,64 +25,112 @@ import java.util.concurrent.TimeUnit;
 
 public class RecipeHold extends RecipeTest {
   static ActorSystem system;
+  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
-    system = ActorSystem.create("RecipeMultiGroupBy");
+    system = ActorSystem.create("RecipeHold");
+    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
+    mat = null;
   }
 
-  final Materializer mat = ActorMaterializer.create(system);
-
   //#hold-version-1
-  class HoldWithInitial<T> extends DetachedStage<T, T> {
-    private T currentValue;
+  class HoldWithInitial<T> extends GraphStage<FlowShape<T, T>> {
+
+    public Inlet<T> in = Inlet.<T>create("HoldWithInitial.in");
+    public Outlet<T> out = Outlet.<T>create("HoldWithInitial.out");
+    private FlowShape<T, T> shape = FlowShape.of(in, out);
+
+    private final T initial;
 
     public HoldWithInitial(T initial) {
-      currentValue = initial;
+      this.initial = initial;
     }
 
     @Override
-    public UpstreamDirective onPush(T elem, DetachedContext<T> ctx) {
-      currentValue = elem;
-      return ctx.pull();
+    public FlowShape<T, T> shape() {
+      return shape;
     }
 
     @Override
-    public DownstreamDirective onPull(DetachedContext<T> ctx) {
-      return ctx.push(currentValue);
+    public GraphStageLogic createLogic(Attributes inheritedAttributes) {
+      return new GraphStageLogic(shape) {
+        private T currentValue = initial;
+
+        {
+          setHandler(in, new AbstractInHandler() {
+            @Override
+            public void onPush() throws Exception {
+              currentValue = grab(in);
+              pull(in);
+            }
+          });
+          setHandler(out, new AbstractOutHandler() {
+            @Override
+            public void onPull() throws Exception {
+              push(out, currentValue);
+            }
+          });
+        }
+
+        @Override
+        public void preStart() {
+          pull(in);
+        }
+      };
     }
   }
   //#hold-version-1
 
   //#hold-version-2
-  class HoldWithWait<T> extends DetachedStage<T, T> {
-    private T currentValue = null;
-    private boolean waitingFirstValue = true;
+  class HoldWithWait<T> extends GraphStage<FlowShape<T, T>> {
+    public Inlet<T> in = Inlet.<T>create("HoldWithInitial.in");
+    public Outlet<T> out = Outlet.<T>create("HoldWithInitial.out");
+    private FlowShape<T, T> shape = FlowShape.of(in, out);
 
     @Override
-    public UpstreamDirective onPush(T elem, DetachedContext<T> ctx) {
-      currentValue = elem;
-      waitingFirstValue = false;
-      if (ctx.isHoldingDownstream()) {
-        return ctx.pushAndPull(currentValue);
-      } else {
-        return ctx.pull();
-      }
+    public FlowShape<T, T> shape() {
+      return shape;
     }
 
     @Override
-    public DownstreamDirective onPull(DetachedContext<T> ctx) {
-      if (waitingFirstValue) {
-        return ctx.holdDownstream();
-      } else {
-        return ctx.push(currentValue);
-      }
+    public GraphStageLogic createLogic(Attributes inheritedAttributes) {
+      return new GraphStageLogic(shape) {
+        private T currentValue = null;
+        private boolean waitingFirstValue = true;
+
+        {
+          setHandler(in, new AbstractInHandler() {
+            @Override
+            public void onPush() throws Exception {
+              currentValue = grab(in);
+              if (waitingFirstValue) {
+                waitingFirstValue = false;
+                if (isAvailable(out)) push(out, currentValue);
+              }
+              pull(in);
+            }
+          });
+          setHandler(out, new AbstractOutHandler() {
+            @Override
+            public void onPull() throws Exception {
+              if (!waitingFirstValue) push(out, currentValue);
+            }
+          });
+        }
+
+        @Override
+        public void preStart() {
+          pull(in);
+        }
+
+      };
     }
   }
   //#hold-version-2
@@ -98,7 +143,7 @@ public class RecipeHold extends RecipeTest {
         final Sink<Integer, TestSubscriber.Probe<Integer>> sink = TestSink.probe(system);
 
         Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Integer>> pubSub =
-          source.transform(() -> new HoldWithInitial<>(0)).toMat(sink, Keep.both()).run(mat);
+          source.via(new HoldWithInitial<>(0)).toMat(sink, Keep.both()).run(mat);
         TestPublisher.Probe<Integer> pub = pubSub.first();
         TestSubscriber.Probe<Integer> sub = pubSub.second();
 
@@ -126,7 +171,7 @@ public class RecipeHold extends RecipeTest {
         final Sink<Integer, TestSubscriber.Probe<Integer>> sink = TestSink.probe(system);
 
         Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Integer>> pubSub =
-          source.transform(() -> new HoldWithWait<>()).toMat(sink, Keep.both()).run(mat);
+          source.via(new HoldWithWait<>()).toMat(sink, Keep.both()).run(mat);
         TestPublisher.Probe<Integer> pub = pubSub.first();
         TestSubscriber.Probe<Integer> sub = pubSub.second();
 
