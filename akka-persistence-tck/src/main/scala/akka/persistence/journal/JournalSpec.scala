@@ -124,12 +124,12 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) with MayVe
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay messages using a lower and upper sequence number bound" in {
-      journal ! ReplayMessages(2, 4, Long.MaxValue, pid, receiverProbe.ref)
-      2 to 4 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
+      journal ! ReplayMessages(2, 3, Long.MaxValue, pid, receiverProbe.ref)
+      2 to 3 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay messages using a lower and upper sequence number bound and a count limit" in {
-      journal ! ReplayMessages(2, 4, 2, pid, receiverProbe.ref)
+      journal ! ReplayMessages(2, 5, 2, pid, receiverProbe.ref)
       2 to 3 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
