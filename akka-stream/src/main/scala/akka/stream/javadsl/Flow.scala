@@ -127,47 +127,6 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.viaMat(flow)(combinerToScala(combine)))
 
   /**
-   * Transform this [[Flow]] by appending the given processing steps, ensuring
-   * that an `asyncBoundary` attribute is set around those steps.
-   * {{{
-   *     +----------------------------+
-   *     | Resulting Flow             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | this | ~Out~> | flow | ~~> T
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
-   * }}}
-   * The materialized value of the combined [[Flow]] will be the materialized
-   * value of the current flow (ignoring the other Flow’s value), use
-   * `viaMat` if a different strategy is needed.
-   */
-  def viaAsync[T, M](flow: Graph[FlowShape[Out, T], M]): javadsl.Flow[In, T, Mat] =
-    new Flow(delegate.viaAsync(flow))
-
-  /**
-   * Transform this [[Flow]] by appending the given processing steps, ensuring
-   * that an `asyncBoundary` attribute is set around those steps.
-   * {{{
-   *     +----------------------------+
-   *     | Resulting Flow             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | this | ~Out~> | flow | ~~> T
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
-   * }}}
-   * The `combine` function is used to compose the materialized values of this flow and that
-   * flow into the materialized value of the resulting Flow.
-   */
-  def viaAsyncMat[T, M, M2](flow: Graph[FlowShape[Out, T], M], combine: function.Function2[Mat, M, M2]): javadsl.Flow[In, T, M2] =
-    new Flow(delegate.viaAsyncMat(flow)(combinerToScala(combine)))
-
-  /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
    * {{{
    *     +----------------------------+
@@ -1684,6 +1643,12 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    */
   override def named(name: String): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.named(name))
+
+  /**
+   * Put an asynchronous boundary around this `Flow`
+   */
+  override def async: javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.async)
 
   /**
    * Logs elements flowing through the stream as well as completion and erroring.

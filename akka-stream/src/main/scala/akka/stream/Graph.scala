@@ -26,5 +26,10 @@ trait Graph[+S <: Shape, +M] {
 
   def named(name: String): Graph[S, M] = withAttributes(Attributes.name(name))
 
+  /**
+   * Put an asynchronous boundary around this `Graph`
+   */
+  def async: Graph[S, M] = addAttributes(Attributes.asyncBoundary)
+
   def addAttributes(attr: Attributes): Graph[S, M] = withAttributes(module.attributes and attr)
 }

@@ -306,4 +306,11 @@ final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[Sink
    */
   override def named(name: String): javadsl.Sink[In, Mat] =
     new Sink(delegate.named(name))
+
+  /**
+   * Put an asynchronous boundary around this `Sink`
+   */
+  override def async: javadsl.Sink[In, Mat] =
+    new Sink(delegate.async)
+
 }

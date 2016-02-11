@@ -5,6 +5,7 @@ package docs.stream;
 
 import java.util.stream.Stream;
 
+import akka.NotUsed;
 import akka.japi.Pair;
 import akka.stream.javadsl.*;
 //#asPublisher-import
@@ -27,6 +28,11 @@ public class MigrationsJava {
     Sink.asPublisher(WITH_FANOUT);    // instead of Sink.asPublisher(true)
     Sink.asPublisher(WITHOUT_FANOUT); // instead of Sink.asPublisher(false)
     //#asPublisher
+
+    //#async
+    Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class).map(n -> n + 1);
+    Source.range(1, 10).via(flow.async());
+    //#async
   }
 
 }

@@ -152,7 +152,10 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
    * Add a ``name`` attribute to this Flow.
    */
   override def named(name: String): BidiFlow[I1, O1, I2, O2, Mat] =
-    withAttributes(Attributes.name(name))
+    addAttributes(Attributes.name(name))
+
+  override def async: BidiFlow[I1, O1, I2, O2, Mat] =
+    addAttributes(Attributes.asyncBoundary)
 }
 
 object BidiFlow {

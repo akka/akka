@@ -127,7 +127,7 @@ class SinkSpec extends AkkaSpec with ConversionCheckedTripleEquals with ScalaFut
 
     "suitably override attribute handling methods" in {
       import Attributes._
-      val s: Sink[Int, Future[Int]] = Sink.head[Int].withAttributes(asyncBoundary).addAttributes(none).named("")
+      val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none).named("")
     }
 
     "support contramap" in {

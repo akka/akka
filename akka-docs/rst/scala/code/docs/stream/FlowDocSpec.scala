@@ -237,11 +237,8 @@ class FlowDocSpec extends AkkaSpec {
 
   "defining asynchronous boundaries" in {
     //#flow-async
-    import akka.stream.Attributes.asyncBoundary
-
     Source(List(1, 2, 3))
-      .map(_ + 1)
-      .withAttributes(asyncBoundary)
+      .map(_ + 1).async
       .map(_ * 2)
       .to(Sink.ignore)
     //#flow-async
