@@ -46,7 +46,6 @@ class HttpClientExampleSpec extends WordSpec with Matchers {
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-
     // construct a pool client flow with context type `Int`
     val poolClientFlow = Http().cachedHostConnectionPool[Int]("akka.io")
     val responseFuture: Future[(Try[HttpResponse], Int)] =
