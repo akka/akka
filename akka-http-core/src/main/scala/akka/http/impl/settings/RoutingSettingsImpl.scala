@@ -15,7 +15,10 @@ final case class RoutingSettingsImpl(
   rangeCountLimit: Int,
   rangeCoalescingThreshold: Long,
   decodeMaxBytesPerChunk: Int,
-  fileIODispatcher: String) extends akka.http.scaladsl.settings.RoutingSettings
+  fileIODispatcher: String) extends akka.http.scaladsl.settings.RoutingSettings {
+
+  override def productPrefix = "RoutingSettings"
+}
 
 object RoutingSettingsImpl extends SettingsCompanion[RoutingSettingsImpl]("akka.http.routing") {
   def fromSubConfig(root: Config, c: Config) = new RoutingSettingsImpl(
