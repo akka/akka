@@ -3,12 +3,16 @@
  */
 package akka.stream.javadsl
 
-import java.io.{ InputStream, OutputStream, File }
-import akka.japi.function
+import java.io.File
+import java.nio.file.StandardOpenOption
+import java.nio.file.StandardOpenOption._
+import java.util
 import akka.stream.{ scaladsl, javadsl, ActorAttributes }
 import akka.stream.io.IOResult
 import akka.util.ByteString
 import java.util.concurrent.CompletionStage
+
+import scala.collection.JavaConverters._
 
 /**
  * Factories to create sinks and sources from files
@@ -17,8 +21,7 @@ object FileIO {
 
   /**
    * Creates a Sink that writes incoming [[ByteString]] elements to the given file.
-   * Overwrites existing files, if you want to append to an existing file use [[#file(File, Boolean)]] and
-   * pass in `true` as the Boolean argument.
+   * Overwrites existing files, if you want to append to an existing file use [[#file(File, util.Set[StandardOpenOption])]].
    *
    * Materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
    * and a possible exception if IO operation was not completed successfully.
@@ -28,11 +31,11 @@ object FileIO {
    *
    * @param f The file to write to
    */
-  def toFile(f: File): javadsl.Sink[ByteString, CompletionStage[IOResult]] = toFile(f, append = false)
+  def toFile(f: File): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
+    new Sink(scaladsl.FileIO.toFile(f).toCompletionStage())
 
   /**
-   * Creates a Sink that writes incoming [[ByteString]] elements to the given file and either overwrites
-   * or appends to it.
+   * Creates a Sink that writes incoming [[ByteString]] elements to the given file
    *
    * Materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
    * and a possible exception if IO operation was not completed successfully.
@@ -41,10 +44,10 @@ object FileIO {
    * set it for a given Source by using [[ActorAttributes]].
    *
    * @param f The file to write to
-   * @param append Whether or not the file should be overwritten or appended to
+   * @param options File open options
    */
-  def toFile(f: File, append: Boolean): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
-    new Sink(scaladsl.FileIO.toFile(f, append).toCompletionStage())
+  def toFile(f: File, options: util.Set[StandardOpenOption]): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
+    new Sink(scaladsl.FileIO.toFile(f, options.asScala.toSet).toCompletionStage())
 
   /**
    * Creates a Source from a Files contents.
