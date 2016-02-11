@@ -6,6 +6,8 @@ package akka.http.scaladsl.model
 
 import java.util.OptionalLong
 
+import akka.stream.impl.ConstantFun
+
 import language.implicitConversions
 import java.io.File
 import java.lang.{ Iterable ⇒ JIterable, Long ⇒ JLong }
@@ -58,7 +60,7 @@ sealed trait HttpEntity extends jm.HttpEntity {
   /**
    * A stream of the data of this entity.
    */
-  def dataBytes: Source[ByteString, Any]
+  def dataBytes: Source[ByteString, NotUsed]
 
   /**
    * Collects all possible parts and returns a potentially future Strict entity for easier processing.
@@ -88,8 +90,8 @@ sealed trait HttpEntity extends jm.HttpEntity {
   override def getContentType: jm.ContentType = contentType
 
   /** Java API */
-  override def getDataBytes: stream.javadsl.Source[ByteString, AnyRef] =
-    stream.javadsl.Source.fromGraph(dataBytes.asInstanceOf[Source[ByteString, AnyRef]])
+  override def getDataBytes: stream.javadsl.Source[ByteString, NotUsed] =
+    stream.javadsl.Source.fromGraph(dataBytes)
 
   /** Java API */
   override def getContentLengthOption: OptionalLong = contentLengthOption.asPrimitive
@@ -272,7 +274,7 @@ object HttpEntity {
     def isKnownEmpty = false
     override def isDefault: Boolean = true
 
-    def dataBytes: Source[ByteString, Any] = data
+    def dataBytes: Source[ByteString, NotUsed] = data.mapMaterializedValue(ConstantFun.anyToNotUsed)
 
     override def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): HttpEntity.Chunked =
       HttpEntity.Chunked.fromData(contentType, data via transformer)
@@ -306,7 +308,7 @@ object HttpEntity {
     def data: Source[ByteString, Any]
     override def contentLengthOption: Option[Long] = None
     override def isKnownEmpty = data eq Source.empty
-    override def dataBytes: Source[ByteString, Any] = data
+    override def dataBytes: Source[ByteString, NotUsed] = data.mapMaterializedValue(ConstantFun.anyToNotUsed)
 
     override def withSizeLimit(maxBytes: Long): Self =
       withData(data withAttributes Attributes(SizeLimit(maxBytes)))
@@ -366,7 +368,8 @@ object HttpEntity {
 
     override def isChunked: Boolean = true
 
-    override def dataBytes: Source[ByteString, Any] = chunks.map(_.data).filter(_.nonEmpty)
+    override def dataBytes: Source[ByteString, NotUsed] =
+      chunks.map(_.data).filter(_.nonEmpty).mapMaterializedValue(ConstantFun.anyToNotUsed)
 
     override def withSizeLimit(maxBytes: Long): HttpEntity.Chunked =
       copy(chunks = chunks withAttributes Attributes(SizeLimit(maxBytes)))

@@ -3,6 +3,7 @@
  */
 package akka.stream.impl
 
+import akka.NotUsed
 import akka.japi.function.{ Function ⇒ JFun, Function2 ⇒ JFun2 }
 import akka.japi.{ Pair ⇒ JPair }
 
@@ -24,4 +25,6 @@ private[akka] object ConstantFun {
   val zeroLong = (_: Any) ⇒ 0L
 
   val oneLong = (_: Any) ⇒ 1L
+
+  val anyToNotUsed = (_: Any) ⇒ NotUsed
 }
