@@ -277,13 +277,13 @@ object AkkaBuild extends Build {
   )
 
   lazy val streamTests = Project(
-    id = "akka-stream-tests-experimental",
+    id = "akka-stream-tests",
     base = file("akka-stream-tests"),
     dependencies = Seq(streamTestkit % "test->test", stream)
   )
 
   lazy val streamTestsTck = Project(
-    id = "akka-stream-tests-tck-experimental",
+    id = "akka-stream-tests-tck",
     base = file("akka-stream-tests-tck"),
     dependencies = Seq(streamTestkit % "test->test", stream)
   )
