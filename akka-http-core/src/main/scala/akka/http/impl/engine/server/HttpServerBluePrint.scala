@@ -96,8 +96,8 @@ private[http] object HttpServerBluePrint {
    * entity).
    */
   final class PrepareRequests(settings: ServerSettings) extends GraphStage[FlowShape[RequestOutput, HttpRequest]] {
-    val in = Inlet[RequestOutput]("RequestStartThenRunIgnore.in")
-    val out = Outlet[HttpRequest]("RequestStartThenRunIgnore.out")
+    val in = Inlet[RequestOutput]("PrepareRequests.in")
+    val out = Outlet[HttpRequest]("PrepareRequests.out")
     override val shape: FlowShape[RequestOutput, HttpRequest] = FlowShape.of(in, out)
 
     override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
