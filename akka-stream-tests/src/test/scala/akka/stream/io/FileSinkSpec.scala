@@ -4,6 +4,7 @@
 package akka.stream.io
 
 import java.io.File
+import java.nio.file.StandardOpenOption
 
 import akka.actor.ActorSystem
 import akka.stream.impl.ActorMaterializerImpl
@@ -52,6 +53,17 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
       }
     }
 
+    "create new file if not exists" in assertAllStagesStopped {
+      targetFile({ f ⇒
+        val completion = Source(TestByteStrings)
+          .runWith(FileIO.toFile(f))
+
+        val result = Await.result(completion, 3.seconds)
+        result.count should equal(6006)
+        checkFileContents(f, TestLines.mkString(""))
+      }, create = false)
+    }
+
     "by default write into existing file" in assertAllStagesStopped {
       targetFile { f ⇒
         def write(lines: List[String]) =
@@ -76,7 +88,7 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
         def write(lines: List[String] = TestLines) =
           Source(lines)
             .map(ByteString(_))
-            .runWith(FileIO.toFile(f, append = true))
+            .runWith(FileIO.toFile(f, Set(StandardOpenOption.APPEND)))
 
         val completion1 = write()
         val result1 = Await.result(completion1, 3.seconds)
@@ -129,8 +141,9 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   }
 
-  private def targetFile(block: File ⇒ Unit) {
+  private def targetFile(block: File ⇒ Unit, create: Boolean = true) {
     val targetFile = File.createTempFile("synchronous-file-sink", ".tmp")
+    if (!create) targetFile.delete()
     try block(targetFile) finally targetFile.delete()
   }
 
