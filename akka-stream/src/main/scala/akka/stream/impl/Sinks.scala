@@ -252,17 +252,17 @@ private[akka] class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkS
   override val shape: SinkShape[T] = SinkShape.of(in)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    type Received[E] = Try[Option[E]]
-
-    val maxBuffer = module.attributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
-    require(maxBuffer > 0, "Buffer size must be greater than 0")
-
-    val buffer = FixedSizeBuffer[Received[T]](maxBuffer + 1)
-    var currentRequest: Option[Requested[T]] = None
-
     val stageLogic = new GraphStageLogic(shape) with CallbackWrapper[Requested[T]] {
+      type Received[E] = Try[Option[E]]
+
+      val maxBuffer = module.attributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+      require(maxBuffer > 0, "Buffer size must be greater than 0")
+
+      var buffer: Buffer[Received[T]] = _
+      var currentRequest: Option[Requested[T]] = None
 
       override def preStart(): Unit = {
+        buffer = Buffer(maxBuffer + 1, materializer)
         setKeepGoing(true)
         initCallback(callback.invoke)
         pull(in)

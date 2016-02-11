@@ -8,27 +8,29 @@ import akka.actor.Props
 import akka.actor.Status
 import akka.stream.OverflowStrategies._
 import akka.stream.{ BufferOverflowException, OverflowStrategy, OverflowStrategies }
+import akka.stream.ActorMaterializerSettings
 
 /**
  * INTERNAL API
  */
 private[akka] object ActorRefSourceActor {
-  def props(bufferSize: Int, overflowStrategy: OverflowStrategy) = {
+  def props(bufferSize: Int, overflowStrategy: OverflowStrategy, settings: ActorMaterializerSettings) = {
     require(overflowStrategy != OverflowStrategies.Backpressure, "Backpressure overflowStrategy not supported")
-    Props(new ActorRefSourceActor(bufferSize, overflowStrategy))
+    val maxFixedBufferSize = settings.maxFixedBufferSize
+    Props(new ActorRefSourceActor(bufferSize, overflowStrategy, maxFixedBufferSize))
   }
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class ActorRefSourceActor(bufferSize: Int, overflowStrategy: OverflowStrategy)
+private[akka] class ActorRefSourceActor(bufferSize: Int, overflowStrategy: OverflowStrategy, maxFixedBufferSize: Int)
   extends akka.stream.actor.ActorPublisher[Any] with ActorLogging {
   import akka.stream.actor.ActorPublisherMessage._
   import akka.stream.OverflowStrategy._
 
   // when bufferSize is 0 there the buffer is not used
-  protected val buffer = if (bufferSize == 0) null else FixedSizeBuffer[Any](bufferSize)
+  protected val buffer = if (bufferSize == 0) null else Buffer[Any](bufferSize, maxFixedBufferSize)
 
   def receive = ({
     case Cancel ⇒

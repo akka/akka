@@ -208,10 +208,11 @@ object ActorMaterializerSettings {
     debugLogging: Boolean,
     outputBurstLimit: Int,
     fuzzingMode: Boolean,
-    autoFusing: Boolean) =
+    autoFusing: Boolean,
+    maxFixedBufferSize: Int) =
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing)
+      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize)
 
   /**
    * Create [[ActorMaterializerSettings]] from the settings of an [[akka.actor.ActorSystem]] (Scala).
@@ -232,7 +233,8 @@ object ActorMaterializerSettings {
       debugLogging = config.getBoolean("debug-logging"),
       outputBurstLimit = config.getInt("output-burst-limit"),
       fuzzingMode = config.getBoolean("debug.fuzzing-mode"),
-      autoFusing = config.getBoolean("auto-fusing"))
+      autoFusing = config.getBoolean("auto-fusing"),
+      maxFixedBufferSize = config.getInt("max-fixed-buffer-size"))
 
   /**
    * Create [[ActorMaterializerSettings]] from individual settings (Java).
@@ -246,10 +248,11 @@ object ActorMaterializerSettings {
     debugLogging: Boolean,
     outputBurstLimit: Int,
     fuzzingMode: Boolean,
-    autoFusing: Boolean) =
+    autoFusing: Boolean,
+    maxFixedBufferSize: Int) =
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing)
+      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize)
 
   /**
    * Create [[ActorMaterializerSettings]] from the settings of an [[akka.actor.ActorSystem]] (Java).
@@ -278,7 +281,8 @@ final class ActorMaterializerSettings(
   val debugLogging: Boolean,
   val outputBurstLimit: Int,
   val fuzzingMode: Boolean,
-  val autoFusing: Boolean) {
+  val autoFusing: Boolean,
+  val maxFixedBufferSize: Int) {
 
   require(initialInputBufferSize > 0, "initialInputBufferSize must be > 0")
 
@@ -294,10 +298,11 @@ final class ActorMaterializerSettings(
     debugLogging: Boolean = this.debugLogging,
     outputBurstLimit: Int = this.outputBurstLimit,
     fuzzingMode: Boolean = this.fuzzingMode,
-    autoFusing: Boolean = this.autoFusing) =
+    autoFusing: Boolean = this.autoFusing,
+    maxFixedBufferSize: Int = this.maxFixedBufferSize) =
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing)
+      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize)
 
   /**
    * Each asynchronous piece of a materialized stream topology is executed by one Actor
@@ -376,6 +381,15 @@ final class ActorMaterializerSettings(
   def withAutoFusing(enable: Boolean): ActorMaterializerSettings =
     if (enable == this.autoFusing) this
     else copy(autoFusing = enable)
+
+  /**
+   * Configure the maximum buffer size for which a FixedSizeBuffer will be preallocated.
+   * This defaults to a large value because it is usually better to fail early when
+   * system memory is not sufficient to hold the buffer.
+   */
+  def withMaxFixedBufferSize(size: Int): ActorMaterializerSettings =
+    if (size == this.maxFixedBufferSize) this
+    else copy(maxFixedBufferSize = size)
 
   /**
    * Leaked publishers and subscribers are cleaned up when they are not used within a given
