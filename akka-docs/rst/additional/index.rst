@@ -8,4 +8,3 @@ Additional Information
    books
    language-bindings
    osgi
-   http
