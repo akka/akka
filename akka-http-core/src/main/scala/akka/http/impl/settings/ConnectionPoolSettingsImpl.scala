@@ -26,6 +26,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   require(pipeliningLimit > 0, "pipelining-limit must be > 0")
   require(idleTimeout >= Duration.Zero, "idle-timeout must be >= 0")
 
+  override def productPrefix = "ConnectionPoolSettings"
 }
 
 object ConnectionPoolSettingsImpl extends SettingsCompanion[ConnectionPoolSettingsImpl]("akka.http.host-connection-pool") {
