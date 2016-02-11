@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 
 import akka.NotUsed;
 import akka.japi.Pair;
+import docs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,22 +31,23 @@ import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
 
-public class FlowDocTest {
+public class FlowDocTest extends AbstractJavaTest {
 
-    private static ActorSystem system;
+  static ActorSystem system;
+  static Materializer mat;
 
-    @BeforeClass
-    public static void setup() {
-        system = ActorSystem.create("FlowDocTest");
-    }
+  @BeforeClass
+  public static void setup() {
+    system = ActorSystem.create("FlowDocTest");
+    mat = ActorMaterializer.create(system);
+  }
 
-    @AfterClass
-    public static void tearDown() {
-        JavaTestKit.shutdownActorSystem(system);
-        system = null;
-    }
-
-    final Materializer mat = ActorMaterializer.create(system);
+  @AfterClass
+  public static void tearDown() {
+    JavaTestKit.shutdownActorSystem(system);
+    system = null;
+    mat = null;
+  }
 
     @Test
     public void sourceIsImmutable() throws Exception {

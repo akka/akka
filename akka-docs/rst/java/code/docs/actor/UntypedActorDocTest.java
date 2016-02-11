@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 import akka.testkit.AkkaJUnitActorSystemResource;
 
+import docs.AbstractJavaTest;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -83,7 +84,7 @@ import akka.testkit.JavaTestKit;
 import akka.util.Timeout;
 //#import-ask
 
-public class UntypedActorDocTest {
+public class UntypedActorDocTest extends AbstractJavaTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

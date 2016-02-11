@@ -5,6 +5,7 @@ package docs.actor;
 
 //#imports1
 import akka.actor.Props;
+import docs.AbstractJavaTest;
 import scala.concurrent.duration.Duration;
 import java.util.concurrent.TimeUnit;
 //#imports1
@@ -20,7 +21,7 @@ import akka.testkit.AkkaSpec;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import org.junit.*;
 
-public class SchedulerDocTest {
+public class SchedulerDocTest extends AbstractJavaTest {
 
   @Rule
   public AkkaJUnitActorSystemResource actorSystemResource =

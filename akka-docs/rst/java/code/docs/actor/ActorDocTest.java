@@ -11,6 +11,8 @@ import akka.testkit.EventFilter;
 import akka.testkit.TestEvent;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import docs.AbstractJavaTest;
+import org.scalatest.junit.JUnitSuite;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 import static docs.actor.Messages.Swap.Swap;
@@ -44,7 +46,7 @@ import scala.concurrent.Future;
 import static akka.pattern.Patterns.gracefulStop;
 //#import-graceFulStop
 
-public class ActorDocTest {
+public class ActorDocTest extends AbstractJavaTest {
 
   public static Config config = ConfigFactory.parseString(
     "akka {\n" +
@@ -323,7 +325,7 @@ public class ActorDocTest {
     //#system-actorOf
     // ActorSystem is a heavy object: create only one per application
     final ActorSystem system = ActorSystem.create("MySystem", config);
-    final ActorRef myActor = system.actorOf(Props.create(MyActor.class), "myactor");
+    final ActorRef myActor = system.actorOf(Props.create(FirstActor.class), "myactor");
     //#system-actorOf
     try {
       new JavaTestKit(system) {

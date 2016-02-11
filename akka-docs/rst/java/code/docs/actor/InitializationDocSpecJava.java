@@ -7,11 +7,12 @@ import akka.actor.*;
 import akka.japi.Procedure;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.JavaTestKit;
+import docs.AbstractJavaTest;
 import org.junit.ClassRule;
 import org.junit.Test;
 import scala.Option;
 
-public class InitializationDocSpecJava {
+public class InitializationDocSpecJava extends AbstractJavaTest {
 
   static public class PreStartInitExample extends UntypedActor {
 

@@ -8,6 +8,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.testkit.JavaTestKit;
+import docs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -20,7 +21,7 @@ import static docs.actorlambda.fsm.Events.SetTarget;
 import static docs.actorlambda.fsm.Events.Flush.Flush;
 
 //#test-code
-public class BuncherTest {
+public class BuncherTest extends AbstractJavaTest {
 
   static ActorSystem system;
 

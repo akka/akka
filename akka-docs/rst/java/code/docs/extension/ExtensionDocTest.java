@@ -9,9 +9,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 //#imports
 
+import docs.AbstractJavaTest;
 import org.junit.Test;
 
-public class ExtensionDocTest {
+public class ExtensionDocTest extends AbstractJavaTest {
 
   static
   //#extension

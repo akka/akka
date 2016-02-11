@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import akka.NotUsed;
+import docs.AbstractJavaTest;
 import org.junit.*;
 import static org.junit.Assert.assertEquals;
 
@@ -29,22 +30,23 @@ import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
 
-public class StreamTestKitDocTest {
+public class StreamTestKitDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
+  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("StreamTestKitDocTest");
+    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
+    mat = null;
   }
-
-  final Materializer mat = ActorMaterializer.create(system);
 
   @Test
   public void strictCollection() throws Exception {

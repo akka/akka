@@ -5,6 +5,7 @@ package docs.jrouting;
 
 import akka.testkit.AkkaJUnitActorSystemResource;
 
+import docs.AbstractJavaTest;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -66,7 +67,7 @@ import akka.routing.TailChoppingPool;
 
 //#imports2
 
-public class RouterDocTest {
+public class RouterDocTest extends AbstractJavaTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

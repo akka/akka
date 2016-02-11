@@ -10,6 +10,7 @@ import java.util.concurrent.CompletionStage;
 
 import akka.NotUsed;
 import akka.stream.ClosedShape;
+import docs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -26,22 +27,23 @@ import scala.concurrent.*;
 
 import scala.Option;
 
-public class CompositionDocTest {
+public class CompositionDocTest extends AbstractJavaTest {
 
-  private static ActorSystem system;
+  static ActorSystem system;
+  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
-    system = ActorSystem.create("FlowDocTest");
+    system = ActorSystem.create("CompositionDocTest");
+    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
+    mat = null;
   }
-
-  final Materializer mat = ActorMaterializer.create(system);
 
   @Test
   public void nonNestedFlow() throws Exception {

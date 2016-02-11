@@ -5,6 +5,7 @@ package docs.future;
 
 //#imports1
 import akka.dispatch.*;
+import docs.AbstractJavaTest;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
 import scala.concurrent.Await;
@@ -66,7 +67,7 @@ import akka.pattern.Patterns;
 
 import static org.junit.Assert.*;
 
-public class FutureDocTest {
+public class FutureDocTest extends AbstractJavaTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

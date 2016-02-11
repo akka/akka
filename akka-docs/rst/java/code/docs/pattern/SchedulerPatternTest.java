@@ -8,13 +8,14 @@ import akka.actor.*;
 import akka.testkit.*;
 import akka.testkit.TestEvent.Mute;
 import akka.testkit.TestEvent.UnMute;
+import docs.AbstractJavaTest;
 import org.junit.*;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-public class SchedulerPatternTest {
+public class SchedulerPatternTest extends AbstractJavaTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

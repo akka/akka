@@ -8,7 +8,10 @@ import java.util.Arrays;
 import java.util.Set;
 import java.math.BigInteger;
 import java.util.Optional;
+
+import akka.actor.*;
 import com.typesafe.config.ConfigFactory;
+import docs.AbstractJavaTest;
 import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -20,9 +23,6 @@ import org.junit.BeforeClass;
 import scala.concurrent.duration.FiniteDuration;
 import java.util.concurrent.ThreadLocalRandom;
 
-import akka.actor.Actor;
-import akka.actor.ActorLogging;
-import akka.actor.ActorSystem;
 import akka.cluster.Cluster;
 import akka.cluster.ddata.*;
 import akka.japi.pf.ReceiveBuilder;
@@ -33,26 +33,16 @@ import akka.testkit.AkkaSpec;
 import akka.testkit.ImplicitSender;
 import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
-import akka.actor.ActorRef;
 import akka.serialization.SerializationExtension;
 
-public class DistributedDataDocTest {
+public class DistributedDataDocTest extends AbstractJavaTest {
   
   static ActorSystem system;
   
   void receive(PartialFunction<Object, BoxedUnit> pf) {
   }
-  
-  JavaTestKit probe = new JavaTestKit(system);
-  
-  ActorRef self() {
-    return probe.getRef();
-  }
-  
-  ActorRef sender() {
-    return probe.getRef();
-  }
-  
+
+
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("DistributedDataDocTest", 
@@ -67,180 +57,189 @@ public class DistributedDataDocTest {
 
   @Test
   public void demonstrateUpdate() {
-    probe = new JavaTestKit(system);
+    new JavaTestKit(system) {
+      {
+        //#update
+        final Cluster node = Cluster.get(system);
+        final ActorRef replicator = DistributedData.get(system).replicator();
 
-    //#update
-    final Cluster node = Cluster.get(system);
-    final ActorRef replicator = DistributedData.get(system).replicator();
+        final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
+        final Key<GSet<String>> set1Key = GSetKey.create("set1");
+        final Key<ORSet<String>> set2Key = ORSetKey.create("set2");
+        final Key<Flag> activeFlagKey = FlagKey.create("active");
 
-    final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
-    final Key<GSet<String>> set1Key = GSetKey.create("set1");
-    final Key<ORSet<String>> set2Key = ORSetKey.create("set2");
-    final Key<Flag> activeFlagKey = FlagKey.create("active");
-    
-    replicator.tell(new Replicator.Update<PNCounter>(counter1Key, PNCounter.create(), 
-        Replicator.writeLocal(), curr -> curr.increment(node, 1)), self());
+        replicator.tell(new Replicator.Update<PNCounter>(counter1Key, PNCounter.create(),
+            Replicator.writeLocal(), curr -> curr.increment(node, 1)), getTestActor());
 
-    final WriteConsistency writeTo3 = new WriteTo(3, Duration.create(1, SECONDS));
-    replicator.tell(new Replicator.Update<GSet<String>>(set1Key, GSet.create(),
-        writeTo3, curr -> curr.add("hello")), self());
+        final WriteConsistency writeTo3 = new WriteTo(3, Duration.create(1, SECONDS));
+        replicator.tell(new Replicator.Update<GSet<String>>(set1Key, GSet.create(),
+            writeTo3, curr -> curr.add("hello")), getTestActor());
 
-    final WriteConsistency writeMajority = 
-        new WriteMajority(Duration.create(5, SECONDS));
-    replicator.tell(new Replicator.Update<ORSet<String>>(set2Key, ORSet.create(), 
-        writeMajority, curr -> curr.add(node, "hello")), self());
+        final WriteConsistency writeMajority =
+            new WriteMajority(Duration.create(5, SECONDS));
+        replicator.tell(new Replicator.Update<ORSet<String>>(set2Key, ORSet.create(),
+            writeMajority, curr -> curr.add(node, "hello")), getTestActor());
 
-    final WriteConsistency writeAll = new WriteAll(Duration.create(5, SECONDS));
-    replicator.tell(new Replicator.Update<Flag>(activeFlagKey, Flag.create(), 
-        writeAll, curr -> curr.switchOn()), self());
-    //#update
+        final WriteConsistency writeAll = new WriteAll(Duration.create(5, SECONDS));
+        replicator.tell(new Replicator.Update<Flag>(activeFlagKey, Flag.create(),
+            writeAll, curr -> curr.switchOn()), getTestActor());
+        //#update
 
-    probe.expectMsgClass(UpdateSuccess.class);
-    //#update-response1
-    receive(ReceiveBuilder.
-      match(UpdateSuccess.class, a -> a.key().equals(counter1Key), a -> {
-        // ok
-      }).build());
-    //#update-response1
+        expectMsgClass(UpdateSuccess.class);
+        //#update-response1
+        receive(ReceiveBuilder.
+            match(UpdateSuccess.class, a -> a.key().equals(counter1Key), a -> {
+              // ok
+            }).build());
+        //#update-response1
 
-    //#update-response2
-    receive(ReceiveBuilder.
-      match(UpdateSuccess.class, a -> a.key().equals(set1Key), a -> {
-        // ok
-      }).
-      match(UpdateTimeout.class, a -> a.key().equals(set1Key), a -> {
-        // write to 3 nodes failed within 1.second
-      }).build());
-    //#update-response2
+        //#update-response2
+        receive(ReceiveBuilder.
+            match(UpdateSuccess.class, a -> a.key().equals(set1Key), a -> {
+              // ok
+            }).
+            match(UpdateTimeout.class, a -> a.key().equals(set1Key), a -> {
+              // write to 3 nodes failed within 1.second
+            }).build());
+        //#update-response2
+      }};
   }
 
   @Test
   public void demonstrateUpdateWithRequestContext() {
-    probe = new JavaTestKit(system);
+    new JavaTestKit(system) {
+      {
 
-    //#update-request-context
-    final Cluster node = Cluster.get(system);
-    final ActorRef replicator = DistributedData.get(system).replicator();
+        //#update-request-context
+        final Cluster node = Cluster.get(system);
+        final ActorRef replicator = DistributedData.get(system).replicator();
 
-    final WriteConsistency writeTwo = new WriteTo(2, Duration.create(3, SECONDS));
-    final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
-    
-    receive(ReceiveBuilder.
-      match(String.class, a -> a.equals("increment"), a -> {
-        // incoming command to increase the counter
-        Optional<Object> reqContext = Optional.of(sender());
-        Replicator.Update<PNCounter> upd = new Replicator.Update<PNCounter>(counter1Key, 
-            PNCounter.create(), writeTwo, reqContext, curr -> curr.increment(node, 1));
-        replicator.tell(upd, self());
-      }).
-      
-      match(UpdateSuccess.class, a -> a.key().equals(counter1Key), a -> {
-        ActorRef replyTo = (ActorRef) a.getRequest().get();
-        replyTo.tell("ack", self());
-      }).
-      
-      match(UpdateTimeout.class, a -> a.key().equals(counter1Key), a -> {
-        ActorRef replyTo = (ActorRef) a.getRequest().get();
-        replyTo.tell("nack", self());
-      }).build());
+        final WriteConsistency writeTwo = new WriteTo(2, Duration.create(3, SECONDS));
+        final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
 
-    //#update-request-context
+        receive(ReceiveBuilder.
+            match(String.class, a -> a.equals("increment"), a -> {
+              // incoming command to increase the counter
+              Optional<Object> reqContext = Optional.of(getRef());
+              Replicator.Update<PNCounter> upd = new Replicator.Update<PNCounter>(counter1Key,
+                  PNCounter.create(), writeTwo, reqContext, curr -> curr.increment(node, 1));
+              replicator.tell(upd, getTestActor());
+            }).
+
+            match(UpdateSuccess.class, a -> a.key().equals(counter1Key), a -> {
+              ActorRef replyTo = (ActorRef) a.getRequest().get();
+              replyTo.tell("ack", getTestActor());
+            }).
+
+            match(UpdateTimeout.class, a -> a.key().equals(counter1Key), a -> {
+              ActorRef replyTo = (ActorRef) a.getRequest().get();
+              replyTo.tell("nack", getTestActor());
+            }).build());
+
+        //#update-request-context
+      }
+    };
   }
 
   @SuppressWarnings({ "unused", "unchecked" })
   @Test
   public void demonstrateGet() {
-    probe = new JavaTestKit(system);
+    new JavaTestKit(system) {
+      {
 
-    //#get
-    final ActorRef replicator = DistributedData.get(system).replicator();
-    final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
-    final Key<GSet<String>> set1Key = GSetKey.create("set1");
-    final Key<ORSet<String>> set2Key = ORSetKey.create("set2");
-    final Key<Flag> activeFlagKey = FlagKey.create("active");
+        //#get
+        final ActorRef replicator = DistributedData.get(system).replicator();
+        final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
+        final Key<GSet<String>> set1Key = GSetKey.create("set1");
+        final Key<ORSet<String>> set2Key = ORSetKey.create("set2");
+        final Key<Flag> activeFlagKey = FlagKey.create("active");
 
-    replicator.tell(new Replicator.Get<PNCounter>(counter1Key, 
-        Replicator.readLocal()), self());
+        replicator.tell(new Replicator.Get<PNCounter>(counter1Key,
+            Replicator.readLocal()), getTestActor());
 
-    final ReadConsistency readFrom3 = new ReadFrom(3, Duration.create(1, SECONDS));
-    replicator.tell(new Replicator.Get<GSet<String>>(set1Key, 
-        readFrom3), self());
+        final ReadConsistency readFrom3 = new ReadFrom(3, Duration.create(1, SECONDS));
+        replicator.tell(new Replicator.Get<GSet<String>>(set1Key,
+            readFrom3), getTestActor());
 
-    final ReadConsistency readMajority = new ReadMajority(Duration.create(5, SECONDS));
-    replicator.tell(new Replicator.Get<ORSet<String>>(set2Key, 
-        readMajority), self());
+        final ReadConsistency readMajority = new ReadMajority(Duration.create(5, SECONDS));
+        replicator.tell(new Replicator.Get<ORSet<String>>(set2Key,
+            readMajority), getTestActor());
 
-    final ReadConsistency readAll = new ReadAll(Duration.create(5, SECONDS));
-    replicator.tell(new Replicator.Get<Flag>(activeFlagKey, 
-        readAll), self());
-    //#get
+        final ReadConsistency readAll = new ReadAll(Duration.create(5, SECONDS));
+        replicator.tell(new Replicator.Get<Flag>(activeFlagKey,
+            readAll), getTestActor());
+        //#get
 
-    //#get-response1
-    receive(ReceiveBuilder.
-      match(GetSuccess.class, a -> a.key().equals(counter1Key), a -> {
-        GetSuccess<PNCounter> g = a;
-        BigInteger value = g.dataValue().getValue();
-      }).
-      match(NotFound.class, a -> a.key().equals(counter1Key), a -> {
-        // key counter1 does not exist
-      }).build());
-    //#get-response1
+        //#get-response1
+        receive(ReceiveBuilder.
+            match(GetSuccess.class, a -> a.key().equals(counter1Key), a -> {
+              GetSuccess<PNCounter> g = a;
+              BigInteger value = g.dataValue().getValue();
+            }).
+            match(NotFound.class, a -> a.key().equals(counter1Key), a -> {
+              // key counter1 does not exist
+            }).build());
+        //#get-response1
 
-    //#get-response2
-    receive(ReceiveBuilder.
-      match(GetSuccess.class, a -> a.key().equals(set1Key), a -> {
-        GetSuccess<GSet<String>> g = a;
-        Set<String> value = g.dataValue().getElements();
-      }).
-      match(GetFailure.class, a -> a.key().equals(set1Key), a -> {
-        // read from 3 nodes failed within 1.second
-      }).
-      match(NotFound.class, a -> a.key().equals(set1Key), a -> {
-        // key set1 does not exist
-      }).build());
-    //#get-response2
-  
+        //#get-response2
+        receive(ReceiveBuilder.
+            match(GetSuccess.class, a -> a.key().equals(set1Key), a -> {
+              GetSuccess<GSet<String>> g = a;
+              Set<String> value = g.dataValue().getElements();
+            }).
+            match(GetFailure.class, a -> a.key().equals(set1Key), a -> {
+              // read from 3 nodes failed within 1.second
+            }).
+            match(NotFound.class, a -> a.key().equals(set1Key), a -> {
+              // key set1 does not exist
+            }).build());
+        //#get-response2
+      }
+    };
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void demonstrateGetWithRequestContext() {
-    probe = new JavaTestKit(system);
+    new JavaTestKit(system) {
+      {
 
-    //#get-request-context
-    final ActorRef replicator = DistributedData.get(system).replicator();
-    final ReadConsistency readTwo = new ReadFrom(2, Duration.create(3, SECONDS));
-    final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
+        //#get-request-context
+        final ActorRef replicator = DistributedData.get(system).replicator();
+        final ReadConsistency readTwo = new ReadFrom(2, Duration.create(3, SECONDS));
+        final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
 
-    receive(ReceiveBuilder.
-      match(String.class, a -> a.equals("get-count"), a -> {
-        // incoming request to retrieve current value of the counter
-        Optional<Object> reqContext = Optional.of(sender());
-        replicator.tell(new Replicator.Get<PNCounter>(counter1Key, 
-            readTwo), self());
-      }).
-      
-      match(GetSuccess.class, a -> a.key().equals(counter1Key), a -> {
-        ActorRef replyTo = (ActorRef) a.getRequest().get();
-        GetSuccess<PNCounter> g = a;
-        long value = g.dataValue().getValue().longValue();
-        replyTo.tell(value, self());
-      }).
-      
-      match(GetFailure.class, a -> a.key().equals(counter1Key), a -> {
-        ActorRef replyTo = (ActorRef) a.getRequest().get();
-        replyTo.tell(-1L, self());
-      }).
-      
-      match(NotFound.class, a -> a.key().equals(counter1Key), a -> {
-        ActorRef replyTo = (ActorRef) a.getRequest().get();
-        replyTo.tell(0L, self());
-      }).build());
-    //#get-request-context
+        receive(ReceiveBuilder.
+            match(String.class, a -> a.equals("get-count"), a -> {
+              // incoming request to retrieve current value of the counter
+              Optional<Object> reqContext = Optional.of(getTestActor());
+              replicator.tell(new Replicator.Get<PNCounter>(counter1Key,
+                  readTwo), getTestActor());
+            }).
+
+            match(GetSuccess.class, a -> a.key().equals(counter1Key), a -> {
+              ActorRef replyTo = (ActorRef) a.getRequest().get();
+              GetSuccess<PNCounter> g = a;
+              long value = g.dataValue().getValue().longValue();
+              replyTo.tell(value, getTestActor());
+            }).
+
+            match(GetFailure.class, a -> a.key().equals(counter1Key), a -> {
+              ActorRef replyTo = (ActorRef) a.getRequest().get();
+              replyTo.tell(-1L, getTestActor());
+            }).
+
+            match(NotFound.class, a -> a.key().equals(counter1Key), a -> {
+              ActorRef replyTo = (ActorRef) a.getRequest().get();
+              replyTo.tell(0L, getTestActor());
+            }).build());
+        //#get-request-context
+      }
+    };
   }
 
   @SuppressWarnings("unchecked")
-  abstract class MyActor {
+  abstract class MyActor extends AbstractActor {
     //#subscribe
     final ActorRef replicator = DistributedData.get(system).replicator();
     final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
@@ -270,21 +269,22 @@ public class DistributedDataDocTest {
 
   @Test
   public void demonstrateDelete() {
-    probe = new JavaTestKit(system);
+    new JavaTestKit(system) {
+      {
+        //#delete
+        final ActorRef replicator = DistributedData.get(system).replicator();
+        final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
+        final Key<ORSet<String>> set2Key = ORSetKey.create("set2");
 
-    //#delete
-    final ActorRef replicator = DistributedData.get(system).replicator();
-    final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
-    final Key<ORSet<String>> set2Key = ORSetKey.create("set2");
+        replicator.tell(new Delete<PNCounter>(counter1Key,
+            Replicator.writeLocal()), getTestActor());
 
-    replicator.tell(new Delete<PNCounter>(counter1Key, 
-        Replicator.writeLocal()), self());
-
-    final WriteConsistency writeMajority = 
-        new WriteMajority(Duration.create(5, SECONDS));
-    replicator.tell(new Delete<PNCounter>(counter1Key, 
-        writeMajority), self());
-    //#delete
+        final WriteConsistency writeMajority =
+            new WriteMajority(Duration.create(5, SECONDS));
+        replicator.tell(new Delete<PNCounter>(counter1Key,
+            writeMajority), getTestActor());
+        //#delete
+      }};
   }
 
   public void demonstratePNCounter() {

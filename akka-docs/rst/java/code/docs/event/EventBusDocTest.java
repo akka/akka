@@ -7,6 +7,7 @@ import akka.event.japi.EventBus;
 
 import java.util.concurrent.TimeUnit;
 
+import docs.AbstractJavaTest;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -43,7 +44,7 @@ import akka.event.japi.ManagedActorEventBus;
 
 //#actor-bus
 
-public class EventBusDocTest {
+public class EventBusDocTest extends AbstractJavaTest {
   
   public static class Event {}
   public static class Subscriber {}

@@ -7,9 +7,11 @@ import static org.junit.Assert.assertEquals;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import akka.NotUsed;
+import docs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -29,7 +31,7 @@ import akka.stream.javadsl.Source;
 import akka.japi.function.Function;
 import akka.testkit.JavaTestKit;
 
-public class FlowErrorDocTest {
+public class FlowErrorDocTest extends AbstractJavaTest {
 
   private static ActorSystem system;
 
@@ -44,7 +46,7 @@ public class FlowErrorDocTest {
       system = null;
   }
   
-  @Test(expected = ArithmeticException.class)
+  @Test(expected = ExecutionException.class)
   public void demonstrateFailStream() throws Exception {
     //#stop
     final Materializer mat = ActorMaterializer.create(system);

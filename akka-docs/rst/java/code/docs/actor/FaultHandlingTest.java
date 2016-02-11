@@ -16,6 +16,7 @@ import akka.actor.OneForOneStrategy;
 import akka.actor.Props;
 import akka.actor.Terminated;
 import akka.actor.UntypedActor;
+import docs.AbstractJavaTest;
 import scala.collection.immutable.Seq;
 import scala.concurrent.Await;
 import static akka.pattern.Patterns.ask;
@@ -37,7 +38,7 @@ import org.junit.BeforeClass;
 import org.junit.AfterClass;
 
 //#testkit
-public class FaultHandlingTest {
+public class FaultHandlingTest extends AbstractJavaTest {
   //#testkit
   static
   //#supervisor
