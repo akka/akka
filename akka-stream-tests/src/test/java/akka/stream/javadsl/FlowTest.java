@@ -803,6 +803,15 @@ public class FlowTest extends StreamTest {
     assertEquals((Object) 0, result);
   }
 
+  @Test
+  public void shouldBePossibleToCreateFromFunction() throws Exception {
+    List<Integer> out = Source.range(0, 2).via(Flow.fromFunction((Integer x) -> x + 1))
+      .runWith(Sink.seq(), materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    assertEquals(Arrays.asList(1, 2, 3), out);
+
+  }
+
   public void mustSuitablyOverrideAttributeHandlingMethods() {
     @SuppressWarnings("unused")
     final Flow<Integer, Integer, NotUsed> f =

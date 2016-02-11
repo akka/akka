@@ -19,6 +19,7 @@ import akka.testkit.TestEvent.{ Mute, UnMute }
 import akka.testkit.{ EventFilter, TestDuration }
 import com.typesafe.config.ConfigFactory
 import org.reactivestreams.{ Publisher, Subscriber }
+import org.scalatest.concurrent.ScalaFutures
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -32,7 +33,8 @@ object FlowSpec {
 
 }
 
-class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
+class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO"))
+  with ScalaFutures {
   import FlowSpec._
 
   val settings = ActorMaterializerSettings(system)
@@ -533,6 +535,10 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
         // IllegalStateException shut down
         downstream2.expectSubscriptionAndError().isInstanceOf[IllegalStateException] should be(true)
       }
+    }
+
+    "should be created from a function easily" in {
+      Source(0 to 9).via(Flow.fromFunction(_ + 1)).runWith(Sink.seq).futureValue should ===(1 to 10)
     }
   }
 
