@@ -9,7 +9,6 @@ import akka.stream.stage._
 import akka.stream._
 
 import scala.concurrent.duration.{ FiniteDuration, _ }
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -26,10 +25,10 @@ private[stream] class Throttle[T](cost: Int,
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     var willStop = false
-    var lastTokens: Long = 0
-    var previousTime: Long = 0
+    var lastTokens: Long = maximumBurst
+    var previousTime: Long = now()
 
-    val speed = ((cost.toDouble / per.toMillis) * 1024 * 1024).toLong
+    val speed = ((cost.toDouble / per.toNanos) * 1073741824).toLong
     val timerName: String = "ThrottleTimer"
 
     var currentElement: Option[T] = None
@@ -42,21 +41,29 @@ private[stream] class Throttle[T](cost: Int,
         else completeStage()
 
       override def onPush(): Unit = {
-        val timeElapsed = now() - previousTime
-        val currentTokens = Math.min(timeElapsed * speed + lastTokens, scaledMaximumBurst)
         val elem = grab(in)
         val elementCost = scale(costCalculation(elem))
-        if (currentTokens < elementCost)
-          mode match {
-            case Shaping ⇒
-              currentElement = Some(elem)
-              scheduleOnce(timerName, ((elementCost - currentTokens) / speed).millis)
-            case Enforcing ⇒ failStage(new RateExceededException("Maximum throttle throughput exceeded"))
-          }
-        else {
-          lastTokens = currentTokens - elementCost
-          previousTime = now()
+
+        if (lastTokens >= elementCost) {
+          lastTokens -= elementCost
           push(out, elem)
+        } else {
+          val currentTime = now()
+          val currentTokens = Math.min((currentTime - previousTime) * speed + lastTokens, scaledMaximumBurst)
+          if (currentTokens < elementCost)
+            mode match {
+              case Shaping ⇒
+                currentElement = Some(elem)
+                val waitTime = (elementCost - currentTokens) / speed
+                previousTime = currentTime + waitTime
+                scheduleOnce(timerName, waitTime.nanos)
+              case Enforcing ⇒ failStage(new RateExceededException("Maximum throttle throughput exceeded"))
+            }
+          else {
+            lastTokens = currentTokens - elementCost
+            previousTime = currentTime
+            push(out, elem)
+          }
         }
       }
     })
@@ -64,7 +71,6 @@ private[stream] class Throttle[T](cost: Int,
     override protected def onTimer(key: Any): Unit = {
       push(out, currentElement.get)
       currentElement = None
-      previousTime = now()
       lastTokens = 0
       if (willStop) completeStage()
     }
@@ -75,9 +81,9 @@ private[stream] class Throttle[T](cost: Int,
 
     override def preStart(): Unit = previousTime = now()
 
-    private def now(): Long = System.currentTimeMillis()
+    private def now(): Long = System.nanoTime()
 
-    private def scale(e: Int): Long = e.toLong << 20
+    private def scale(e: Int): Long = e.toLong << 30
   }
 
   override def toString = "Throttle"
