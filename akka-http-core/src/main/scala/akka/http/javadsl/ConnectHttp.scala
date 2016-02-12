@@ -15,7 +15,7 @@ abstract class ConnectHttp {
   def isHttps: Boolean
   def connectionContext: Optional[HttpsConnectionContext]
 
-  final def effectiveConnectionContext(fallbackContext: HttpsConnectionContext): HttpsConnectionContext =
+  final def effectiveHttpsConnectionContext(fallbackContext: HttpsConnectionContext): HttpsConnectionContext =
     connectionContext.orElse(fallbackContext)
 }
 
