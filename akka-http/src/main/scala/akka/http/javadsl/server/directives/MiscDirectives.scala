@@ -15,7 +15,7 @@ import akka.japi.function.{ Function2, Function }
 abstract class MiscDirectives extends MethodDirectives {
   /**
    * Returns a Route which checks the given condition on the request context before running its inner Route.
-   * If the condition fails the  route is rejected with a [[spray.routing.ValidationRejection]].
+   * If the condition fails the  route is rejected with a [[akka.http.scaladsl.server.ValidationRejection]].
    */
   @varargs
   def validate(check: Function[RequestContext, JBoolean], errorMsg: String, innerRoute: Route, moreInnerRoutes: Route*): Route =
@@ -23,7 +23,7 @@ abstract class MiscDirectives extends MethodDirectives {
 
   /**
    * Returns a Route which checks the given condition before running its inner Route. If the condition fails the
-   * route is rejected with a [[spray.routing.ValidationRejection]].
+   * route is rejected with a [[akka.http.scaladsl.server.ValidationRejection]].
    */
   @varargs
   def validate[T](value: RequestVal[T], check: Function[T, JBoolean], errorMsg: String, innerRoute: Route, moreInnerRoutes: Route*): Route =
@@ -33,7 +33,7 @@ abstract class MiscDirectives extends MethodDirectives {
 
   /**
    * Returns a Route which checks the given condition before running its inner Route. If the condition fails the
-   * route is rejected with a [[spray.routing.ValidationRejection]].
+   * route is rejected with a [[akka.http.scaladsl.server.ValidationRejection]].
    */
   @varargs
   def validate[T1, T2](value1: RequestVal[T1],
