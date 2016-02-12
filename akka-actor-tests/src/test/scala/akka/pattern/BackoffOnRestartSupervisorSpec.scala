@@ -4,9 +4,10 @@
 
 package akka.pattern
 
-import akka.testkit.AkkaSpec
-import akka.testkit.TestProbe
-import akka.testkit.filterException
+import java.util.concurrent.{ TimeUnit, CountDownLatch }
+
+import akka.pattern.TestActor.NormalException
+import akka.testkit.{ ImplicitSender, AkkaSpec, TestProbe, filterException }
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import akka.actor._
@@ -45,7 +46,7 @@ class TestParentActor(probe: ActorRef, supervisorProps: Props) extends Actor {
   }
 }
 
-class BackoffOnRestartSupervisorSpec extends AkkaSpec {
+class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
 
   def supervisorProps(probeRef: ActorRef) = {
     val options = Backoff.onFailure(TestActor.props(probeRef), "someChildName", 200 millis, 10 seconds, 0.0)
@@ -117,6 +118,58 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec {
     "forward messages from the child to the parent of the supervisor" in new Setup2 {
       child ! (("TO_PARENT", "TEST_MESSAGE"))
       probe.expectMsg("TEST_MESSAGE")
+    }
+
+    class SlowlyFailingActor(latch: CountDownLatch) extends Actor {
+      def receive = {
+        case "THROW" ⇒
+          sender ! "THROWN"
+          throw new NormalException
+        case "PING" ⇒
+          sender ! "PONG"
+      }
+
+      override def postStop(): Unit = {
+        latch.await(3, TimeUnit.SECONDS)
+      }
+    }
+
+    "accept commands while child is terminating" in {
+      val postStopLatch = new CountDownLatch(1)
+      val options = Backoff.onFailure(Props(new SlowlyFailingActor(postStopLatch)), "someChildName", 1 nanos, 1 nanos, 0.0)
+        .withSupervisorStrategy(OneForOneStrategy(loggingEnabled = false) {
+          case _: TestActor.StoppingException ⇒ SupervisorStrategy.Stop
+        })
+      val supervisor = system.actorOf(BackoffSupervisor.props(options))
+
+      supervisor ! BackoffSupervisor.GetCurrentChild
+      // new instance
+      val Some(child) = expectMsgType[BackoffSupervisor.CurrentChild].ref
+
+      child ! "PING"
+      expectMsg("PONG")
+
+      supervisor ! "THROW"
+      expectMsg("THROWN")
+
+      child ! "PING"
+      expectNoMsg(100.millis) // Child is in limbo due to latch in postStop. There is no Terminated message yet
+
+      supervisor ! BackoffSupervisor.GetCurrentChild
+      expectMsgType[BackoffSupervisor.CurrentChild].ref should ===(Some(child))
+
+      supervisor ! BackoffSupervisor.GetRestartCount
+      expectMsg(BackoffSupervisor.RestartCount(0))
+
+      postStopLatch.countDown()
+
+      // New child is ready
+      awaitAssert {
+        supervisor ! BackoffSupervisor.GetCurrentChild
+        // new instance
+        expectMsgType[BackoffSupervisor.CurrentChild].ref.get should !==(child)
+      }
+
     }
   }
 }
