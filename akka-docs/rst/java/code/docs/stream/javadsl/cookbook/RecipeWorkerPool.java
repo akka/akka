@@ -73,7 +73,8 @@ public class RecipeWorkerPool extends RecipeTest {
         Source<Message, NotUsed> processedJobs = data.via(balancer);
         //#worker-pool2
 
-        CompletionStage<List<String>> future = processedJobs.map(m -> m.msg).grouped(10).runWith(Sink.head(), mat);
+        FiniteDuration timeout = FiniteDuration.create(200, TimeUnit.MILLISECONDS);
+        CompletionStage<List<String>> future = processedJobs.map(m -> m.msg).limit(10).runWith(Sink.seq(), mat);
         List<String> got = future.toCompletableFuture().get(1, TimeUnit.SECONDS);
         assertTrue(got.contains("1 done"));
         assertTrue(got.contains("2 done"));

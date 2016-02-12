@@ -39,7 +39,7 @@ class RecipeWorkerPool extends RecipeSpec {
       val processedJobs: Source[Result, NotUsed] = myJobs.via(balancer(worker, 3))
       //#worker-pool
 
-      Await.result(processedJobs.grouped(10).runWith(Sink.head), 3.seconds).toSet should be(Set(
+      Await.result(processedJobs.limit(10).runWith(Sink.seq), 3.seconds).toSet should be(Set(
         "1 done", "2 done", "3 done", "4 done", "5 done"))
 
     }

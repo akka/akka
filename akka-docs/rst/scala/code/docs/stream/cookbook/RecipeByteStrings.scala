@@ -48,7 +48,7 @@ class RecipeByteStrings extends RecipeSpec {
       val chunksStream = rawBytes.transform(() => new Chunker(ChunkLimit))
       //#bytestring-chunker
 
-      val chunksFuture = chunksStream.grouped(10).runWith(Sink.head)
+      val chunksFuture = chunksStream.limit(10).runWith(Sink.seq)
 
       val chunks = Await.result(chunksFuture, 3.seconds)
 
@@ -77,11 +77,11 @@ class RecipeByteStrings extends RecipeSpec {
       val bytes1 = Source(List(ByteString(1, 2), ByteString(3), ByteString(4, 5, 6), ByteString(7, 8, 9)))
       val bytes2 = Source(List(ByteString(1, 2), ByteString(3), ByteString(4, 5, 6), ByteString(7, 8, 9, 10)))
 
-      Await.result(bytes1.via(limiter).grouped(10).runWith(Sink.head), 3.seconds)
+      Await.result(bytes1.via(limiter).limit(10).runWith(Sink.seq), 3.seconds)
         .fold(ByteString())(_ ++ _) should be(ByteString(1, 2, 3, 4, 5, 6, 7, 8, 9))
 
       an[IllegalStateException] must be thrownBy {
-        Await.result(bytes2.via(limiter).grouped(10).runWith(Sink.head), 3.seconds)
+        Await.result(bytes2.via(limiter).limit(10).runWith(Sink.seq), 3.seconds)
       }
     }
 
@@ -93,7 +93,7 @@ class RecipeByteStrings extends RecipeSpec {
       val compacted: Source[ByteString, NotUsed] = data.map(_.compact)
       //#compacting-bytestrings
 
-      Await.result(compacted.grouped(10).runWith(Sink.head), 3.seconds).forall(_.isCompact) should be(true)
+      Await.result(compacted.limit(10).runWith(Sink.seq), 3.seconds).forall(_.isCompact) should be(true)
     }
 
   }

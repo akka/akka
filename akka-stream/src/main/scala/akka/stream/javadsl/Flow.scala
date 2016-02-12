@@ -461,6 +461,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * '''Completes when''' the defined number of elements has been taken or upstream completes
    *
+   * '''Errors when''' the total number of incoming element exceeds max
+   *
    * '''Cancels when''' the defined number of elements has been taken or downstream cancels
    *
    * See also [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
@@ -485,6 +487,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * '''Backpressures when''' downstream backpressures
    *
    * '''Completes when''' the defined number of elements has been taken or upstream completes
+   *
+   * '''Errors when''' when the accumulated cost exceeds max
    *
    * '''Cancels when''' the defined number of elements has been taken or downstream cancels
    *

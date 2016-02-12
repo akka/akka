@@ -8,10 +8,12 @@ import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Props }
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.stage._
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
 import scala.language.postfixOps
 import scala.util.{ Failure, Success, Try }
@@ -240,6 +242,44 @@ private[akka] final class HeadOptionStage[T] extends GraphStageWithMaterializedV
   }
 
   override def toString: String = "HeadOptionStage"
+}
+
+private[akka] final class SeqStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[immutable.Seq[T]]] {
+  val in = Inlet[T]("seq.in")
+
+  override val shape: SinkShape[T] = SinkShape.of(in)
+
+  override protected def initialAttributes: Attributes = DefaultAttributes.seqSink
+
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+    val p: Promise[immutable.Seq[T]] = Promise()
+    val logic = new GraphStageLogic(shape) {
+      val buf = Vector.newBuilder[T]
+
+      override def preStart(): Unit = pull(in)
+
+      setHandler(in, new InHandler {
+
+        override def onPush(): Unit = {
+          buf += grab(in)
+          pull(in)
+        }
+
+        override def onUpstreamFinish(): Unit = {
+          val result = buf.result()
+          p.trySuccess(result)
+          completeStage()
+        }
+
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          p.tryFailure(ex)
+          failStage(ex)
+        }
+      })
+    }
+
+    (logic, p.future)
+  }
 }
 
 /**
