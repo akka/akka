@@ -289,6 +289,36 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.mapConcat { elem ⇒ Util.immutableSeq(f(elem)) })
 
   /**
+    * Transform each input element into an `Iterable` of output elements that is
+    * then flattened into the output stream. The transformation is meant to be stateful,
+    * which is enabled by creating the transformation function anew for every materialization —
+    * the returned function will typically close over mutable objects to store state between
+    * invocations. For the stateless variant see [[#mapConcat]].
+    *
+    * Make sure that the `Iterable` is immutable or at least not modified after
+    * being used as an output sequence. Otherwise the stream may fail with
+    * `ConcurrentModificationException` or other more subtle errors may occur.
+    *
+    * The returned `Iterable` MUST NOT contain `null` values,
+    * as they are illegal as stream elements - according to the Reactive Streams specification.
+    *
+    * '''Emits when''' the mapping function returns an element or there are still remaining elements
+    * from the previously calculated collection
+    *
+    * '''Backpressures when''' downstream backpressures or there are still remaining elements from the
+    * previously calculated collection
+    *
+    * '''Completes when''' upstream completes and all remaining elements has been emitted
+    *
+    * '''Cancels when''' downstream cancels
+    */
+  def statefulMapConcat[T](f: function.Creator[function.Function[Out, java.lang.Iterable[T]]]):javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.statefulMapConcat{ () ⇒ {
+      val fun = f.create()
+      elem ⇒ Util.immutableSeq(fun(elem))
+    }})
+
+  /**
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step. The function returns a `CompletionStage` and the
    * value of that future will be emitted downstreams. As many futures as requested elements by
@@ -731,6 +761,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     * RecoverWith allows to switch to alternative Source on flow failure. It will stay in effect after
     * a failure has been recovered so that each time there is a failure it is fed into the `pf` and a new
     * Source may be materialized.
+    *
     * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
     * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
     *

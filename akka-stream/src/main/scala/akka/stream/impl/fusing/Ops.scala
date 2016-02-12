@@ -21,6 +21,7 @@ import scala.util.{ Failure, Success, Try }
 import akka.stream.ActorAttributes.SupervisionStrategy
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import akka.stream.impl.Stages.DefaultAttributes
+import akka.NotUsed
 
 /**
  * INTERNAL API
@@ -119,39 +120,6 @@ private[akka] final case class Recover[T](pf: PartialFunction[Throwable, T]) ext
     }
   }
 
-}
-
-/**
- * INTERNAL API
- */
-private[akka] final case class MapConcat[In, Out](f: In ⇒ immutable.Iterable[Out], decider: Supervision.Decider) extends PushPullStage[In, Out] {
-  private var currentIterator: Iterator[Out] = Iterator.empty
-
-  override def onPush(elem: In, ctx: Context[Out]): SyncDirective = {
-    currentIterator = f(elem).iterator
-    if (!currentIterator.hasNext) ctx.pull()
-    else ctx.push(currentIterator.next())
-  }
-
-  override def onPull(ctx: Context[Out]): SyncDirective =
-    if (ctx.isFinishing) {
-      if (currentIterator.hasNext) {
-        val elem = currentIterator.next()
-        if (currentIterator.hasNext) ctx.push(elem)
-        else ctx.pushAndFinish(elem)
-      } else ctx.finish()
-    } else {
-      if (currentIterator.hasNext) ctx.push(currentIterator.next())
-      else ctx.pull()
-    }
-
-  override def onUpstreamFinish(ctx: Context[Out]): TerminationDirective =
-    if (currentIterator.hasNext) ctx.absorbTermination()
-    else ctx.finish()
-
-  override def decide(t: Throwable): Supervision.Directive = decider(t)
-
-  override def restart(): MapConcat[In, Out] = copy()
 }
 
 /**
@@ -1168,4 +1136,56 @@ private[stream] final class RecoverWith[T, M](pf: PartialFunction[Throwable, Gra
   }
 
   override def toString: String = "RecoverWith"
+}
+
+/**
+ * INTERNAL API
+ */
+private[stream] final class StatefulMapConcat[In, Out](f: () ⇒ In ⇒ immutable.Iterable[Out]) extends GraphStage[FlowShape[In, Out]] {
+  val in = Inlet[In]("StatefulMapConcat.in")
+  val out = Outlet[Out]("StatefulMapConcat.out")
+  override val shape = FlowShape(in, out)
+  override def initialAttributes: Attributes = DefaultAttributes.statefulMapConcat
+
+  def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
+    val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+    var currentIterator: Iterator[Out] = _
+    var plainFun = f()
+    def hasNext = if (currentIterator != null) currentIterator.hasNext else false
+    setHandlers(in, out, this)
+
+    def pushPull(): Unit =
+      if (hasNext) {
+        push(out, currentIterator.next())
+        if (!hasNext && isClosed(in)) completeStage()
+      } else if (!isClosed(in))
+        pull(in)
+      else completeStage()
+
+    def onFinish(): Unit = if (!hasNext) completeStage()
+
+    override def onPush(): Unit =
+      try {
+        currentIterator = plainFun(grab(in)).iterator
+        pushPull()
+      } catch {
+        case NonFatal(ex) ⇒ decider(ex) match {
+          case Supervision.Stop   ⇒ failStage(ex)
+          case Supervision.Resume ⇒ if (!hasBeenPulled(in)) pull(in)
+          case Supervision.Restart ⇒
+            restartState()
+            if (!hasBeenPulled(in)) pull(in)
+        }
+      }
+
+    override def onUpstreamFinish(): Unit = onFinish()
+    override def onPull(): Unit = pushPull()
+
+    private def restartState(): Unit = {
+      plainFun = f()
+      currentIterator = null
+    }
+  }
+  override def toString = "StatefulMapConcat"
+
 }
