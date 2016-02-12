@@ -52,7 +52,7 @@ private[stream] object Stages {
     val batch = name("batch")
     val batchWeighted = name("batchWeighted")
     val expand = name("expand")
-    val mapConcat = name("mapConcat")
+    val statefulMapConcat = name("statefulMapConcat")
     val detacher = name("detacher")
     val groupBy = name("groupBy")
     val prefixAndTail = name("prefixAndTail")
@@ -204,10 +204,6 @@ private[stream] object Stages {
   final case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy, attributes: Attributes = buffer) extends SymbolicStage[T, T] {
     require(size > 0, s"Buffer size must be larger than zero but was [$size]")
     override def create(attr: Attributes): Stage[T, T] = fusing.Buffer(size, overflowStrategy)
-  }
-
-  final case class MapConcat[In, Out](f: In ⇒ immutable.Iterable[Out], attributes: Attributes = mapConcat) extends SymbolicStage[In, Out] {
-    override def create(attr: Attributes): Stage[In, Out] = fusing.MapConcat(f, supervision(attr))
   }
 
   // FIXME: These are not yet proper stages, therefore they use the deprecated StageModule infrastructure
