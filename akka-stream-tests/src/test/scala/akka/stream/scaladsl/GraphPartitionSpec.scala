@@ -7,10 +7,11 @@ import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ OverflowStrategy, ActorMaterializer, ActorMaterializerSettings, ClosedShape }
 import akka.stream.testkit.Utils._
+import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class GraphPartitionSpec extends AkkaSpec {
+class GraphPartitionSpec extends AkkaSpec with ScalaFutures {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
@@ -21,34 +22,25 @@ class GraphPartitionSpec extends AkkaSpec {
     import GraphDSL.Implicits._
 
     "partition to three subscribers" in assertAllStagesStopped {
-      val c1 = TestSubscriber.probe[Int]()
-      val c2 = TestSubscriber.probe[Int]()
-      val c3 = TestSubscriber.probe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        val partition = b.add(Partition[Int](3, {
-          case g if (g > 3)  ⇒ 0
-          case l if (l < 3)  ⇒ 1
-          case e if (e == 3) ⇒ 2
-        }))
-        Source(List(1, 2, 3, 4, 5)) ~> partition.in
-        partition.out(0) ~> Sink.fromSubscriber(c1)
-        partition.out(1) ~> Sink.fromSubscriber(c2)
-        partition.out(2) ~> Sink.fromSubscriber(c3)
-        ClosedShape
+      val (s1, s2, s3) = RunnableGraph.fromGraph(GraphDSL.create(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) { implicit b ⇒
+        (sink1, sink2, sink3) ⇒
+          val partition = b.add(Partition[Int](3, {
+            case g if (g > 3)  ⇒ 0
+            case l if (l < 3)  ⇒ 1
+            case e if (e == 3) ⇒ 2
+          }))
+          Source(List(1, 2, 3, 4, 5)) ~> partition.in
+          partition.out(0) ~> sink1.in
+          partition.out(1) ~> sink2.in
+          partition.out(2) ~> sink3.in
+          ClosedShape
       }).run()
 
-      c2.request(2)
-      c1.request(2)
-      c3.request(1)
-      c2.expectNext(1)
-      c2.expectNext(2)
-      c3.expectNext(3)
-      c1.expectNext(4)
-      c1.expectNext(5)
-      c1.expectComplete()
-      c2.expectComplete()
-      c3.expectComplete()
+      s1.futureValue.toSet should ===(Set(4, 5))
+      s2.futureValue.toSet should ===(Set(1, 2))
+      s3.futureValue.toSet should ===(Set(3))
+
     }
 
     "complete stage after upstream completes" in assertAllStagesStopped {
@@ -169,6 +161,22 @@ class GraphPartitionSpec extends AkkaSpec {
       c2.expectNext(6)
       c1.expectComplete()
       c2.expectComplete()
+    }
+
+    "must fail stage if partitioner outcome is out of bound" in assertAllStagesStopped {
+
+      val c1 = TestSubscriber.probe[Int]()
+
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+        val partition = b.add(Partition[Int](2, { case l if l < 0 ⇒ -1; case _ ⇒ 0 }))
+        Source(List(-3)) ~> partition.in
+        partition.out(0) ~> Sink.fromSubscriber(c1)
+        partition.out(1) ~> Sink.ignore
+        ClosedShape
+      }).run()
+
+      c1.request(1)
+      c1.expectError(Partition.PartitionOutOfBoundsException("partitioner must return an index in the range [0,1]. returned: [-1] for input [java.lang.Integer]."))
     }
 
   }
