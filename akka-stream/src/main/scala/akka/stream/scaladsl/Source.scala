@@ -132,7 +132,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * only to the contained processing stages).
    */
   override def withAttributes(attr: Attributes): Repr[Out] =
-    new Source(module.withAttributes(attr).nest())
+    new Source(module.withAttributes(attr))
 
   /**
    * Add the given attributes to this Source. Further calls to `withAttributes`

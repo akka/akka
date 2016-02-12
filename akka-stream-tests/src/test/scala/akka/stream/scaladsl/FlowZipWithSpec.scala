@@ -6,6 +6,7 @@ package akka.stream.scaladsl
 import akka.stream.testkit.{ BaseTwoStreamsSetup, TestSubscriber }
 import org.reactivestreams.Publisher
 import scala.concurrent.duration._
+import akka.testkit.EventFilter
 
 class FlowZipWithSpec extends BaseTwoStreamsSetup {
 
@@ -46,7 +47,9 @@ class FlowZipWithSpec extends BaseTwoStreamsSetup {
       probe.expectNext(1 / -2)
       probe.expectNext(2 / -1)
 
-      subscription.request(2)
+      EventFilter[ArithmeticException](occurrences = 1).intercept {
+        subscription.request(2)
+      }
       probe.expectError() match {
         case a: java.lang.ArithmeticException ⇒ a.getMessage should be("/ by zero")
       }

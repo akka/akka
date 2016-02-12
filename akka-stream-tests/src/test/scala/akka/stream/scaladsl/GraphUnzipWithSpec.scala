@@ -8,9 +8,9 @@ import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import org.reactivestreams.Publisher
-
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+import akka.testkit.EventFilter
 
 class GraphUnzipWithSpec extends AkkaSpec {
 
@@ -174,7 +174,9 @@ class GraphUnzipWithSpec extends AkkaSpec {
       leftProbe.expectNext(1 / -1)
       rightProbe.expectNext("1/-1")
 
-      requestFromBoth()
+      EventFilter[ArithmeticException](occurrences = 1).intercept {
+        requestFromBoth()
+      }
 
       leftProbe.expectError() match {
         case a: java.lang.ArithmeticException ⇒ a.getMessage should be("/ by zero")

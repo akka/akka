@@ -9,7 +9,7 @@ import java.util.Optional
 
 import akka.{ NotUsed, japi }
 import akka.stream._
-import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl.StreamLayout.{ Module, CompositeModule }
 import akka.util.ByteString
 import javax.net.ssl._
 
@@ -128,7 +128,7 @@ object SslTls {
 
     override def replaceShape(s: Shape) =
       if (s == shape) this
-      else if (shape.hasSamePortsAs(s)) copy(shape = s)
+      else if (shape.hasSamePortsAs(s)) CompositeModule(this, s)
       else throw new IllegalArgumentException("trying to replace shape with different ports")
   }
 
