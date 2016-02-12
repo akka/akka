@@ -5,7 +5,7 @@ package akka.stream.scaladsl
 
 import java.io.File
 import java.nio.file.StandardOpenOption
-import java.util
+import java.nio.file.StandardOpenOption._
 
 import akka.stream.ActorAttributes
 import akka.stream.impl.Stages.DefaultAttributes
@@ -13,7 +13,6 @@ import akka.stream.impl.io._
 import akka.stream.io.IOResult
 import akka.util.ByteString
 
-import scala.collection.JavaConverters._
 import scala.concurrent.Future
 
 /**
@@ -51,13 +50,6 @@ object FileIO {
    * This source is backed by an Actor which will use the dedicated `akka.stream.blocking-io-dispatcher`,
    * unless configured otherwise by using [[ActorAttributes]].
    */
-  def toFile(f: File, options: Set[StandardOpenOption] = Write): Sink[ByteString, Future[IOResult]] =
+  def toFile(f: File, options: Set[StandardOpenOption] = Set(WRITE, CREATE)): Sink[ByteString, Future[IOResult]] =
     new Sink(new FileSink(f, options, DefaultAttributes.fileSink, sinkShape("FileSink")))
-
-  def toFile(f: File, options: util.Set[StandardOpenOption]): Sink[ByteString, Future[IOResult]] =
-    new Sink(new FileSink(f, options.asScala.toSet, DefaultAttributes.fileSink, sinkShape("FileSink")))
-
-  import java.nio.file.StandardOpenOption._
-
-  private[akka] val Write = Set(WRITE, CREATE)
 }

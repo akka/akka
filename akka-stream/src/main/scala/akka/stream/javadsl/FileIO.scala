@@ -5,6 +5,7 @@ package akka.stream.javadsl
 
 import java.io.File
 import java.nio.file.StandardOpenOption
+import java.nio.file.StandardOpenOption._
 import java.util
 import akka.stream.{ scaladsl, javadsl, ActorAttributes }
 import akka.stream.io.IOResult
@@ -46,8 +47,8 @@ object FileIO {
    * @param f The file to write to
    * @param options File open options
    */
-  def toFile(f: File, options: util.Set[StandardOpenOption] = new util.HashSet(scaladsl.FileIO.Write.asJava)): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
-    new Sink(scaladsl.FileIO.toFile(f, options).toCompletionStage())
+  def toFile(f: File, options: util.Set[StandardOpenOption] = new util.HashSet(util.Arrays.asList(WRITE, CREATE))): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
+    new Sink(scaladsl.FileIO.toFile(f, options.asScala.toSet).toCompletionStage())
 
   /**
    * Creates a Source from a Files contents.
