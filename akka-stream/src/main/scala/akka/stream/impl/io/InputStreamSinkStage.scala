@@ -13,7 +13,7 @@ import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.{ Inlet, SinkShape, Attributes }
 
-private[akka] object InputStreamSinkStage {
+private[stream] object InputStreamSinkStage {
 
   sealed trait AdapterToStageMessage
   case object ReadElementAcknowledgement extends AdapterToStageMessage
@@ -33,7 +33,7 @@ private[akka] object InputStreamSinkStage {
 /**
  * INTERNAL API
  */
-private[akka] class InputStreamSinkStage(readTimeout: FiniteDuration) extends GraphStageWithMaterializedValue[SinkShape[ByteString], InputStream] {
+final private[stream] class InputStreamSinkStage(readTimeout: FiniteDuration) extends GraphStageWithMaterializedValue[SinkShape[ByteString], InputStream] {
 
   val in = Inlet[ByteString]("InputStreamSink.in")
   override val shape: SinkShape[ByteString] = SinkShape.of(in)

@@ -15,7 +15,7 @@ import scala.compat.java8.FutureConverters._
 /**
  * INTERNAL API
  */
-private[akka] class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStrategy) extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueue[T]] {
+final private[stream] class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStrategy) extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueue[T]] {
   type Offered = Promise[QueueOfferResult]
 
   val out = Outlet[T]("queueSource.out")

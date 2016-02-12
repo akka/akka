@@ -285,7 +285,7 @@ private[akka] final class SeqStage[T] extends GraphStageWithMaterializedValue[Si
 /**
  * INTERNAL API
  */
-private[akka] class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkShape[T], SinkQueue[T]] {
+final private[stream] class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkShape[T], SinkQueue[T]] {
   type Requested[E] = Promise[Option[E]]
 
   val in = Inlet[T]("queueSink.in")
