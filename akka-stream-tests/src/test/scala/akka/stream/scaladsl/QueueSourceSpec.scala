@@ -9,7 +9,7 @@ import akka.stream._
 import akka.stream.impl.QueueSource
 import akka.stream.stage.OutHandler
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.{ AkkaSpec, TestSubscriber }
+import akka.stream.testkit._
 import akka.testkit.TestProbe
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, _ }
@@ -23,35 +23,6 @@ class QueueSourceSpec extends AkkaSpec {
   def assertSuccess(f: Future[QueueOfferResult]): Unit = {
     f pipeTo testActor
     expectMsg(QueueOfferResult.Enqueued)
-  }
-
-  object SourceTestMessages {
-    case object Pull extends NoSerializationVerificationNeeded
-    case object Finish extends NoSerializationVerificationNeeded
-  }
-
-  def testSource(maxBuffer: Int, overflowStrategy: OverflowStrategy, probe: TestProbe): Source[Int, SourceQueue[Int]] = {
-    class QueueSourceTestStage(maxBuffer: Int, overflowStrategy: OverflowStrategy)
-      extends QueueSource[Int](maxBuffer, overflowStrategy) {
-
-      override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-        val (logic, inputStream) = super.createLogicAndMaterializedValue(inheritedAttributes)
-        val outHandler = logic.handlers(out.id).asInstanceOf[OutHandler]
-        logic.handlers(out.id) = new OutHandler {
-          override def onPull(): Unit = {
-            probe.ref ! SourceTestMessages.Pull
-            outHandler.onPull()
-          }
-          override def onDownstreamFinish(): Unit = {
-            probe.ref ! SourceTestMessages.Finish
-            outHandler.onDownstreamFinish()
-          }
-
-        }
-        (logic, inputStream)
-      }
-    }
-    Source.fromGraph(new QueueSourceTestStage(maxBuffer, overflowStrategy))
   }
 
   "A QueueSourceSpec" must {
@@ -139,11 +110,12 @@ class QueueSourceSpec extends AkkaSpec {
     "remember pull from downstream to send offered element immediately" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
       val probe = TestProbe()
-      val queue = testSource(1, OverflowStrategy.dropHead, probe).to(Sink.fromSubscriber(s)).run()
+      val queue = TestSourceStage(new QueueSource[Int](1, OverflowStrategy.dropHead), probe)
+        .to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
 
       sub.request(1)
-      probe.expectMsg(SourceTestMessages.Pull)
+      probe.expectMsg(GraphStageMessages.Pull)
       assertSuccess(queue.offer(1))
       s.expectNext(1)
       sub.cancel()
