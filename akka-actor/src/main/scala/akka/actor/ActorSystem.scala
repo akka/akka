@@ -25,7 +25,7 @@ import java.util.Locale
 
 object ActorSystem {
 
-  val Version: String = "2.4-SNAPSHOT"
+  val Version: String = akka.Version.current // generated file
 
   val EnvHome: Option[String] = System.getenv("AKKA_HOME") match {
     case null | "" | "." ⇒ None
