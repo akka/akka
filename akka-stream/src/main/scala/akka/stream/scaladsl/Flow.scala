@@ -1432,7 +1432,7 @@ trait FlowOps[+Out, +Mat] {
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
    * to allow some burstyness. Whenever stream wants to send an element, it takes as many
    * tokens from the bucket as number of elements. If there isn't any, throttle waits until the
-   * bucket accumulates enough tokens.
+   * bucket accumulates enough tokens. Bucket is full when stream just materialized and started.
    *
    * Parameter `mode` manages behaviour when upstream is faster than throttle rate:
    *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
@@ -1448,7 +1448,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def throttle(elements: Int, per: FiniteDuration, maximumBurst: Int, mode: ThrottleMode): Repr[Out] =
-    throttle(elements, per, maximumBurst, _ ⇒ 1, mode)
+    throttle(elements, per, maximumBurst, ConstantFun.oneInt, mode)
 
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
