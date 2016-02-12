@@ -23,6 +23,11 @@ class MigrationsScala extends AkkaSpec {
           })
         })
         //#expand-state
+
+        //#async
+        val flow = Flow[Int].map(_ + 1)
+        Source(1 to 10).via(flow.async)
+        //#async
       }
     }
   }

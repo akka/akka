@@ -245,8 +245,9 @@ The first point can be countered by pre-fusing and then reusing a stream bluepri
 .. includecode:: ../code/docs/stream/FlowDocSpec.scala#explicit-fusing
 
 In order to balance the effects of the second and third bullet points you will have to insert asynchronous
-boundaries manually into your flows and graphs by way of adding ``Attributes.asyncBoundary`` to pieces that
-shall communicate with the rest of the graph in an asynchronous fashion.
+boundaries manually into your flows and graphs by way of adding ``Attributes.asyncBoundary`` using the method
+``async`` on ``Source``, ``Sink`` and ``Flow`` to pieces that shall communicate with the rest of the graph in an
+asynchronous fashion.
 
 .. includecode:: ../code/docs/stream/FlowDocSpec.scala#flow-async
 

@@ -25,10 +25,9 @@ import scala.util.Try
 private[akka] final case class GraphStageModule(shape: Shape,
                                                 attributes: Attributes,
                                                 stage: GraphStageWithMaterializedValue[Shape, Any]) extends Module {
-  def carbonCopy: Module = replaceShape(shape.deepCopy())
+  def carbonCopy: Module = CopiedModule(shape.deepCopy(), Attributes.none, this)
 
-  def replaceShape(s: Shape): Module =
-    CopiedModule(s, Attributes.none, this)
+  def replaceShape(s: Shape): Module = CompositeModule(this, s)
 
   def subModules: Set[Module] = Set.empty
 

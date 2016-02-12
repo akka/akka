@@ -36,7 +36,7 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
   private val _logger = Logging.getLogger(system, this)
   override def logger = _logger
 
-  if (settings.fuzzingMode) {
+  if (settings.fuzzingMode && !system.settings.config.hasPath("akka.stream.secret-test-fuzzing-warning-disable")) {
     _logger.warning("Fuzzing mode is enabled on this system. If you see this warning on your production system then " +
       "set akka.stream.materializer.debug.fuzzing-mode to off.")
   }

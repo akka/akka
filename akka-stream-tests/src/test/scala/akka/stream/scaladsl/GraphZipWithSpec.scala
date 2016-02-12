@@ -3,6 +3,7 @@ package akka.stream.scaladsl
 import akka.stream.testkit._
 import scala.concurrent.duration._
 import akka.stream._
+import akka.testkit.EventFilter
 
 class GraphZipWithSpec extends TwoStreamsSetup {
   import GraphDSL.Implicits._
@@ -65,7 +66,9 @@ class GraphZipWithSpec extends TwoStreamsSetup {
       probe.expectNext(1 / -2)
       probe.expectNext(2 / -1)
 
-      subscription.request(2)
+      EventFilter[ArithmeticException](occurrences = 1).intercept {
+        subscription.request(2)
+      }
       probe.expectError() match {
         case a: java.lang.ArithmeticException ⇒ a.getMessage should be("/ by zero")
       }

@@ -13,6 +13,7 @@ import scala.util.control.NoStackTrace
 import akka.stream._
 import akka.stream.testkit._
 import akka.NotUsed
+import akka.testkit.EventFilter
 
 class SourceSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
 
@@ -235,13 +236,14 @@ class SourceSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
 
     "terminate with a failure if there is an exception thrown" in {
       val t = new RuntimeException("expected")
-      whenReady(
-        Source.unfold((0, 1)) {
-          case (a, _) if a > 10000000 ⇒ throw t
-          case (a, b)                 ⇒ Some((b, a + b) → a)
-        }.runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }.failed) {
-          _ should be theSameInstanceAs (t)
-        }
+      EventFilter[RuntimeException](message = "expected", occurrences = 1) intercept
+        whenReady(
+          Source.unfold((0, 1)) {
+            case (a, _) if a > 10000000 ⇒ throw t
+            case (a, b)                 ⇒ Some((b, a + b) → a)
+          }.runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }.failed) {
+            _ should be theSameInstanceAs (t)
+          }
     }
 
     "generate a finite fibonacci sequence asynchronously" in {
@@ -272,7 +274,7 @@ class SourceSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
   "A Source" must {
     "suitably override attribute handling methods" in {
       import Attributes._
-      val s: Source[Int, NotUsed] = Source.single(42).withAttributes(asyncBoundary).addAttributes(none).named("")
+      val s: Source[Int, NotUsed] = Source.single(42).async.addAttributes(none).named("")
     }
   }
 

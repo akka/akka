@@ -132,7 +132,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * only to the contained processing stages).
    */
   override def withAttributes(attr: Attributes): Repr[Out] =
-    new Source(module.withAttributes(attr).nest())
+    new Source(module.withAttributes(attr))
 
   /**
    * Add the given attributes to this Source. Further calls to `withAttributes`
@@ -145,7 +145,12 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
   /**
    * Add a ``name`` attribute to this Flow.
    */
-  override def named(name: String): Repr[Out] = withAttributes(Attributes.name(name))
+  override def named(name: String): Repr[Out] = addAttributes(Attributes.name(name))
+
+  /**
+   * Put an asynchronous boundary around this `Source`
+   */
+  override def async: Repr[Out] = addAttributes(Attributes.asyncBoundary)
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
   def asJava: javadsl.Source[Out, Mat] = new javadsl.Source(this)

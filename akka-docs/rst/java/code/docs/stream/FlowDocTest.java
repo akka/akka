@@ -287,8 +287,7 @@ public class FlowDocTest {
     
     //#flow-async
     Source.range(1, 3)
-        .map(x -> x + 1)
-        .withAttributes(Attributes.asyncBoundary())
+        .map(x -> x + 1).async()
         .map(x -> x * 2)
         .to(Sink.ignore());
     //#flow-async

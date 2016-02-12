@@ -28,7 +28,7 @@ import akka.NotUsed
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
  */
 final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
-  extends FlowOpsMat[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
+    extends FlowOpsMat[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
 
   override val shape: FlowShape[In, Out] = module.shape.asInstanceOf[FlowShape[In, Out]]
 
@@ -214,7 +214,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    */
   override def withAttributes(attr: Attributes): Repr[Out] =
     if (isIdentity) this
-    else new Flow(module.withAttributes(attr).nest())
+    else new Flow(module.withAttributes(attr))
 
   /**
    * Add the given attributes to this Flow. Further calls to `withAttributes`
@@ -227,7 +227,12 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
   /**
    * Add a ``name`` attribute to this Flow.
    */
-  override def named(name: String): Repr[Out] = withAttributes(Attributes.name(name))
+  override def named(name: String): Repr[Out] = addAttributes(Attributes.name(name))
+
+  /**
+   * Put an asynchronous boundary around this `Flow`
+   */
+  override def async: Repr[Out] = addAttributes(Attributes.asyncBoundary)
 
   /**
    * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it. The returned tuple contains
@@ -309,12 +314,12 @@ object Flow {
     fromSinkAndSourceMat(sink, source)(Keep.none)
 
   /**
-    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
-    * will be sent to the Sink and the Flow's output will come from the Source.
-    *
-    * The `combine` function is used to compose the materialized values of the `sink` and `source`
-    * into the materialized value of the resulting [[Flow]].
-    */
+   * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
+   * will be sent to the Sink and the Flow's output will come from the Source.
+   *
+   * The `combine` function is used to compose the materialized values of the `sink` and `source`
+   * into the materialized value of the resulting [[Flow]].
+   */
   def fromSinkAndSourceMat[I, O, M1, M2, M](sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2])(combine: (M1, M2) ⇒ M): Flow[I, O, M] =
     fromGraph(GraphDSL.create(sink, source)(combine) { implicit b ⇒ (in, out) ⇒ FlowShape(in.in, out.out) })
 }
@@ -349,7 +354,7 @@ final case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Mo
   def run()(implicit materializer: Materializer): Mat = materializer.materialize(this)
 
   override def withAttributes(attr: Attributes): RunnableGraph[Mat] =
-    new RunnableGraph(module.withAttributes(attr).nest())
+    new RunnableGraph(module.withAttributes(attr))
 
   override def named(name: String): RunnableGraph[Mat] = withAttributes(Attributes.name(name))
 }
@@ -389,26 +394,6 @@ trait FlowOps[+Out, +Mat] {
    * [[Flow#viaMat viaMat]] if a different strategy is needed.
    */
   def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T]
-
-  /**
-   * Transform this [[Flow]] by appending the given processing steps, ensuring
-   * that an `asyncBoundary` attribute is set around those steps.
-   * {{{
-   *     +----------------------------+
-   *     | Resulting Flow             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | this | ~Out~> | flow | ~~> T
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
-   * }}}
-   * The materialized value of the combined [[Flow]] will be the materialized
-   * value of the current flow (ignoring the other Flow’s value), use
-   * [[Flow#viaMat viaMat]] if a different strategy is needed.
-   */
-  def viaAsync[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] = via(flow.addAttributes(Attributes.asyncBoundary))
 
   /**
    * Recover allows to send last element on failure and gracefully complete the stream
@@ -962,8 +947,6 @@ trait FlowOps[+Out, +Mat] {
    */
   def conflateWithSeed[S](seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S] =
     via(Batch(1L, ConstantFun.zeroLong, seed, aggregate).withAttributes(DefaultAttributes.conflate))
-
-
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by conflating elements into a summary
@@ -1763,6 +1746,8 @@ trait FlowOps[+Out, +Mat] {
 
   def named(name: String): Repr[Out]
 
+  def async: Repr[Out]
+
   /** INTERNAL API */
   private[scaladsl] def andThen[T](op: SymbolicStage[Out, T]): Repr[T] =
     via(SymbolicGraphStage(op))
@@ -1806,26 +1791,6 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * flow into the materialized value of the resulting Flow.
    */
   def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): ReprMat[T, Mat3]
-
-  /**
-   * Transform this [[Flow]] by appending the given processing steps, ensuring
-   * that an `asyncBoundary` attribute is set around those steps.
-   * {{{
-   *     +----------------------------+
-   *     | Resulting Flow             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | this | ~Out~> | flow | ~~> T
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
-   * }}}
-   * The `combine` function is used to compose the materialized values of this flow and that
-   * flow into the materialized value of the resulting Flow.
-   */
-  def viaAsyncMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): ReprMat[T, Mat3] =
-    viaMat(flow.addAttributes(Attributes.asyncBoundary))(combine)
 
   /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.

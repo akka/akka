@@ -116,12 +116,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
   /**
    * Turn this BidiFlow around by 180 degrees, logically flipping it upside down in a protocol stack.
    */
-  def reversed: BidiFlow[I2, O2, I1, O1, Mat] = {
-    BidiFlow.fromGraph(GraphDSL.create(this) { implicit b ⇒
-      reversed ⇒
-        BidiShape(reversed.in2, reversed.out2, reversed.in1, reversed.out1)
-    })
-  }
+  def reversed: BidiFlow[I2, O2, I1, O1, Mat] = new BidiFlow(module.replaceShape(BidiShape(shape.in2, shape.out2, shape.in1, shape.out1)))
 
   /**
    * Transform only the materialized value of this BidiFlow, leaving all other properties as they were.
@@ -137,7 +132,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
    * only to the contained processing stages).
    */
   override def withAttributes(attr: Attributes): BidiFlow[I1, O1, I2, O2, Mat] =
-    new BidiFlow(module.withAttributes(attr).nest())
+    new BidiFlow(module.withAttributes(attr))
 
   /**
    * Add the given attributes to this Source. Further calls to `withAttributes`
@@ -152,7 +147,10 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
    * Add a ``name`` attribute to this Flow.
    */
   override def named(name: String): BidiFlow[I1, O1, I2, O2, Mat] =
-    withAttributes(Attributes.name(name))
+    addAttributes(Attributes.name(name))
+
+  override def async: BidiFlow[I1, O1, I2, O2, Mat] =
+    addAttributes(Attributes.asyncBoundary)
 }
 
 object BidiFlow {
