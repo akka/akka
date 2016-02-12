@@ -8,7 +8,7 @@ import akka.actor._
 import akka.event.Logging
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance._
-import akka.stream.impl.StreamLayout.{ CopiedModule, Module }
+import akka.stream.impl.StreamLayout.{ CompositeModule, CopiedModule, Module }
 import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic, GraphAssembly }
 import akka.stream.impl.{ ActorPublisher, ReactiveStreamsCompliance }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
@@ -29,13 +29,9 @@ private[stream] case class GraphModule(assembly: GraphAssembly, shape: Shape, at
   override def subModules: Set[Module] = Set.empty
   override def withAttributes(newAttr: Attributes): Module = copy(attributes = newAttr)
 
-  override final def carbonCopy: Module = {
-    val newShape = shape.deepCopy()
-    replaceShape(newShape)
-  }
+  override final def carbonCopy: Module = CopiedModule(shape.deepCopy(), Attributes.none, this)
 
-  override final def replaceShape(newShape: Shape): Module =
-    CopiedModule(newShape, attributes, copyOf = this)
+  override final def replaceShape(newShape: Shape): Module = CompositeModule(this, newShape)
 
   override def toString: String = s"GraphModule\n  ${assembly.toString.replace("\n", "\n  ")}\n  shape=$shape, attributes=$attributes"
 }

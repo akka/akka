@@ -28,7 +28,7 @@ import akka.NotUsed
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
  */
 final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
-  extends FlowOpsMat[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
+    extends FlowOpsMat[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
 
   override val shape: FlowShape[In, Out] = module.shape.asInstanceOf[FlowShape[In, Out]]
 
@@ -314,12 +314,12 @@ object Flow {
     fromSinkAndSourceMat(sink, source)(Keep.none)
 
   /**
-    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
-    * will be sent to the Sink and the Flow's output will come from the Source.
-    *
-    * The `combine` function is used to compose the materialized values of the `sink` and `source`
-    * into the materialized value of the resulting [[Flow]].
-    */
+   * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
+   * will be sent to the Sink and the Flow's output will come from the Source.
+   *
+   * The `combine` function is used to compose the materialized values of the `sink` and `source`
+   * into the materialized value of the resulting [[Flow]].
+   */
   def fromSinkAndSourceMat[I, O, M1, M2, M](sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2])(combine: (M1, M2) ⇒ M): Flow[I, O, M] =
     fromGraph(GraphDSL.create(sink, source)(combine) { implicit b ⇒ (in, out) ⇒ FlowShape(in.in, out.out) })
 }
@@ -354,7 +354,7 @@ final case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Mo
   def run()(implicit materializer: Materializer): Mat = materializer.materialize(this)
 
   override def withAttributes(attr: Attributes): RunnableGraph[Mat] =
-    new RunnableGraph(module.withAttributes(attr).nest())
+    new RunnableGraph(module.withAttributes(attr))
 
   override def named(name: String): RunnableGraph[Mat] = withAttributes(Attributes.name(name))
 }
@@ -927,8 +927,6 @@ trait FlowOps[+Out, +Mat] {
    */
   def conflateWithSeed[S](seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S] =
     via(Batch(1L, ConstantFun.zeroLong, seed, aggregate).withAttributes(DefaultAttributes.conflate))
-
-
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by conflating elements into a summary

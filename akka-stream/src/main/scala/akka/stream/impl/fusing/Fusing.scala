@@ -246,7 +246,7 @@ private[stream] object Fusing {
                       struct: BuildStructuralInfo,
                       openGroup: ju.Set[Module],
                       indent: Int): List[(Module, MaterializedValueNode)] = {
-    def log(msg: String): Unit = println(indent + msg)
+    def log(msg: String): Unit = println("  " * indent + msg)
     val async = m match {
       case _: GraphStageModule ⇒ m.attributes.contains(AsyncBoundary)
       case _: GraphModule      ⇒ m.attributes.contains(AsyncBoundary)
@@ -275,7 +275,7 @@ private[stream] object Fusing {
            *  - we need to register the contained modules but take care to not include the internal
            *    wirings into the final result, see also `struct.removeInternalWires()`
            */
-          if (Debug) log(s"graph module ${m.toString.replace("\n", "\n" + indent)}")
+          if (Debug) log(s"graph module ${m.toString.replace("\n", "\n" + "  " * indent)}")
 
           // storing the old Shape in arrays for in-place updating as we clone the contained GraphStages
           val oldIns = oldShape.inlets.toArray
@@ -356,7 +356,7 @@ private[stream] object Fusing {
             subMatBuilder ++= res
           }
           val subMat = subMatBuilder.result()
-          if (Debug) log(subMat.map(p ⇒ s"${p._1.getClass.getName}[${p._1.hashCode}] -> ${p._2}").mkString("subMat\n  " + indent, "\n  " + indent, ""))
+          if (Debug) log(subMat.map(p ⇒ s"${p._1.getClass.getName}[${p._1.hashCode}] -> ${p._2}").mkString("subMat\n  " + "  " * indent, "\n  " + "  " * indent, ""))
           // we need to remove all wirings that this module copied from nested modules so that we
           // don’t do wirings twice
           val oldDownstreams = m match {

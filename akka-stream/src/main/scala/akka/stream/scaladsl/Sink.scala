@@ -58,7 +58,7 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
    * only to the contained processing stages).
    */
   override def withAttributes(attr: Attributes): Sink[In, Mat] =
-    new Sink(module.withAttributes(attr).nest())
+    new Sink(module.withAttributes(attr))
 
   /**
    * Add the given attributes to this Source. Further calls to `withAttributes`
