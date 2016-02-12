@@ -82,6 +82,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     val tlsStage = sslTlsStage(connectionContext, Server)
     val connections: Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
       Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
+
     connections.map {
       case Tcp.IncomingConnection(localAddress, remoteAddress, flow) ⇒
         val layer = serverLayer(settings, Some(remoteAddress), log)
@@ -173,19 +174,19 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   /**
    * Constructs a [[ServerLayer]] stage using the configured default [[ServerSettings]],
    * configured using the `akka.http.server` config section.
-   *
-   * The returned [[BidiFlow]] can only be materialized once.
    */
-  def serverLayer()(implicit mat: Materializer): ServerLayer = serverLayer(ServerSettings(system))
+  val serverLayer: ServerLayer = serverLayer(ServerSettings(system))
 
   /**
-   * Constructs a [[ServerLayer]] stage using the given [[ServerSettings]]. The returned [[BidiFlow]] isn't reusable and
-   * can only be materialized once. The `remoteAddress`, if provided, will be added as a header to each [[HttpRequest]]
+   * Constructs a [[ServerLayer]] stage using the given [[ServerSettings]].
+   * The `remoteAddress`, if provided, will be added as a header to each [[HttpRequest]]
    * this layer produces if the `akka.http.server.remote-address-header` configuration option is enabled.
+   *
+   *
    */
   def serverLayer(settings: ServerSettings,
                   remoteAddress: Option[InetSocketAddress] = None,
-                  log: LoggingAdapter = system.log)(implicit mat: Materializer): ServerLayer =
+                  log: LoggingAdapter = system.log): ServerLayer =
     HttpServerBluePrint(settings, remoteAddress, log)
 
   // ** CLIENT ** //
