@@ -665,7 +665,6 @@ class HttpServerSpec extends AkkaSpec(
 
       val HttpRequest(POST, _, _, entity, _) = expectRequest()
       responses.sendNext(HttpResponse(entity = entity))
-      responses.sendComplete()
 
       expectResponseWithWipedDate(
         """HTTP/1.1 200 OK
@@ -689,6 +688,7 @@ class HttpServerSpec extends AkkaSpec(
       rec(100000)
 
       netIn.sendComplete()
+      responses.sendComplete()
       requests.request(1)
       requests.expectComplete()
       netOut.expectComplete()

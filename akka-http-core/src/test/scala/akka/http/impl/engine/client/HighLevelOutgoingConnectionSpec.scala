@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.client
 
+import akka.http.impl.util.One2OneBidiFlow
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.stream.{ ActorMaterializerSettings, FlowShape, ActorMaterializer }
