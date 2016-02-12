@@ -1,18 +1,24 @@
 /**
  * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream.scaladsl
+package akka.http.impl.util
 
 import akka.NotUsed
+import akka.stream.scaladsl.BidiFlow
 
 import scala.util.control.NoStackTrace
 import akka.stream._
 import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
 
-object One2OneBidiFlow {
+/**
+ * INTERNAL API
+ */
+private[http] object One2OneBidiFlow {
 
   case class UnexpectedOutputException(element: Any) extends RuntimeException(element.toString) with NoStackTrace
-  case object OutputTruncationException extends RuntimeException with NoStackTrace
+  case object OutputTruncationException
+    extends RuntimeException("Inner stream finished before inputs completed. Outputs might have been truncated.")
+    with NoStackTrace
 
   /**
    * Creates a generic ``BidiFlow`` which verifies that another flow produces exactly one output element per
@@ -80,9 +86,10 @@ object One2OneBidiFlow {
             }
           } else throw new UnexpectedOutputException(element)
         }
-        override def onUpstreamFinish(): Unit =
-          if (pending == 0 && !innerFlowCancelled) complete(outOut)
+        override def onUpstreamFinish(): Unit = {
+          if (pending == 0 && isClosed(inIn) && !innerFlowCancelled) complete(outOut)
           else throw OutputTruncationException
+        }
       })
 
       setHandler(outOut, new OutHandler {
