@@ -21,8 +21,13 @@ import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgradeResponse }
 import akka.http.scaladsl.settings.{ ServerSettings, ClientConnectionSettings, ConnectionPoolSettings }
 import akka.http.scaladsl.util.FastFuture
+import akka.stream.impl.HotPatch
+import akka.stream.impl.fusing.{ GraphStages, GraphStageModule }
+import akka.stream.impl.fusing.GraphStages._
+import akka.stream.impl.io.IncomingConnectionStage
+import akka.util.ByteString
 import akka.{ Done, NotUsed }
-import akka.stream.Materializer
+import akka.stream.{ FlowShape, Fusing, BidiShape, Materializer }
 import akka.stream.io._
 import akka.stream.scaladsl._
 import com.typesafe.config.Config
@@ -53,6 +58,29 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   private[this] final val DefaultPortForProtocol = -1 // any negative value
 
+  def prefusedConfiguredLayer(settings: ServerSettings, connectionContext: ConnectionContext, log: LoggingAdapter): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
+
+    val httpLayer = serverLayer(settings, None, log)
+    val tlsStage = sslTlsStage(connectionContext, Server)
+
+    BidiFlow.fromGraph(Fusing.aggressive(GraphDSL.create() { implicit b ⇒
+      import GraphDSL.Implicits._
+      val http = b.add(httpLayer)
+      val tls = b.add(tlsStage)
+
+      val timeouts = b.add(Flow[ByteString].recover {
+        case t: TimeoutException ⇒ throw new HttpConnectionTimeoutException(t.getMessage)
+      })
+
+      tls.out2 ~> http.in2
+      tls.in1 <~ http.out1
+
+      tls.out1 ~> timeouts.in
+
+      BidiShape(http.in1, timeouts.out, tls.in2, http.out2)
+    }))
+  }
+
   /**
    * Creates a [[Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
    * on the given `endpoint`.
@@ -79,14 +107,19 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
            settings: ServerSettings = ServerSettings(system),
            log: LoggingAdapter = system.log)(implicit fm: Materializer): Source[IncomingConnection, Future[ServerBinding]] = {
     val effectivePort = if (port >= 0) port else connectionContext.defaultPort
-    val tlsStage = sslTlsStage(connectionContext, Server)
+
     val connections: Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
       Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
+
+    val fullLayer = prefusedConfiguredLayer(settings, connectionContext, log)
+
     connections.map {
       case Tcp.IncomingConnection(localAddress, remoteAddress, flow) ⇒
-        val layer = serverLayer(settings, Some(remoteAddress), log)
-        val flowWithTimeoutRecovered = flow.recover { case t: TimeoutException ⇒ throw new HttpConnectionTimeoutException(t.getMessage) }
-        IncomingConnection(localAddress, remoteAddress, layer atop tlsStage join flowWithTimeoutRecovered)
+
+        IncomingConnection(
+          localAddress,
+          remoteAddress,
+          (fullLayer join flow).addAttributes(HttpAttributes.remoteAddress(Some(remoteAddress))))
     }.mapMaterializedValue {
       _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(fm.executionContext)
     }
@@ -107,30 +140,46 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
                     connectionContext: ConnectionContext = defaultServerHttpContext,
                     settings: ServerSettings = ServerSettings(system),
                     log: LoggingAdapter = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
-    def handleOneConnection(incomingConnection: IncomingConnection): Future[Unit] =
-      try
-        incomingConnection.flow
-          .viaMat(StreamUtils.identityFinishReporter)(Keep.right)
-          .joinMat(handler)(Keep.left)
-          .run()
-      catch {
-        case NonFatal(e) ⇒
-          log.error(e, "Could not materialize handling flow for {}", incomingConnection)
-          throw e
-      }
+    val effectivePort = if (port >= 0) port else connectionContext.defaultPort
 
-    bind(interface, port, connectionContext, settings, log)
-      .mapAsyncUnordered(settings.maxConnections) { connection ⇒
-        handleOneConnection(connection).recoverWith {
-          // Ignore incoming errors from the connection as they will cancel the binding.
-          // As far as it is known currently, these errors can only happen if a TCP error bubbles up
-          // from the TCP layer through the HTTP layer to the Http.IncomingConnection.flow.
-          // See https://github.com/akka/akka/issues/17992
-          case NonFatal(_) ⇒ Future.successful(())
-        }(fm.executionContext)
-      }
-      .to(Sink.ignore)
-      .run()
+    /* This section contains an optimization that allows fusing the whole handler + HTTP + TCP upfront.
+     * To make this happen, certain sins have been committed here.
+     *
+     * 1. There is a HotPatch stage that represents the TCP stage to be plugged in. It is fed via an attribue with
+     *    the actual logic before materialization. Hence fusing can happen ahead of connections.
+     * 2. Since what TCP emits are two stages (the conncection stage and a detacher) we need to rip it apart and get only
+     *    the TCP stage. We need to manually replace the detacher in our fused graph.
+     *
+     * We are evil.
+     */
+
+    val fullLayer = StreamUtils.identityFinishReporter
+      .via(handler)
+      .join(prefusedConfiguredLayer(settings, connectionContext, log))
+
+    val tcpHotPatch = new HotPatch[ByteString, ByteString]
+
+    // Need to put the detacher there because we rip the TCP stage out from the original Flow.
+    val tcpConnectionTemplate = Flow.fromGraph(GraphStages.detacher[ByteString]).via(tcpHotPatch)
+
+    val fullyFused = RunnableGraph.fromGraph(
+      Fusing.aggressive(tcpConnectionTemplate.joinMat(fullLayer)(Keep.right)))
+
+    val connections: Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
+      Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
+
+    connections.mapAsyncUnordered(settings.maxConnections) {
+      case Tcp.IncomingConnection(localAddress, remoteAddress, flow) ⇒
+        val tcpStage = flow.module.subModules.collectFirst {
+          case GraphStageModule(_, _, stage: IncomingConnectionStage) ⇒ stage
+        }.get
+
+        fullyFused.withAttributes(
+          HotPatch.patch(tcpHotPatch, tcpStage) and HttpAttributes.remoteAddress(Some(remoteAddress)))
+          .run()
+    }.mapMaterializedValue {
+      _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(fm.executionContext)
+    }.to(Sink.ignore).run()
   }
 
   /**
@@ -173,19 +222,19 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   /**
    * Constructs a [[ServerLayer]] stage using the configured default [[ServerSettings]],
    * configured using the `akka.http.server` config section.
-   *
-   * The returned [[BidiFlow]] can only be materialized once.
    */
-  def serverLayer()(implicit mat: Materializer): ServerLayer = serverLayer(ServerSettings(system))
+  val serverLayer: ServerLayer = serverLayer(ServerSettings(system))
 
   /**
-   * Constructs a [[ServerLayer]] stage using the given [[ServerSettings]]. The returned [[BidiFlow]] isn't reusable and
-   * can only be materialized once. The `remoteAddress`, if provided, will be added as a header to each [[HttpRequest]]
+   * Constructs a [[ServerLayer]] stage using the given [[ServerSettings]].
+   * The `remoteAddress`, if provided, will be added as a header to each [[HttpRequest]]
    * this layer produces if the `akka.http.server.remote-address-header` configuration option is enabled.
+   *
+   *
    */
   def serverLayer(settings: ServerSettings,
                   remoteAddress: Option[InetSocketAddress] = None,
-                  log: LoggingAdapter = system.log)(implicit mat: Materializer): ServerLayer =
+                  log: LoggingAdapter = system.log): ServerLayer =
     HttpServerBluePrint(settings, remoteAddress, log)
 
   // ** CLIENT ** //

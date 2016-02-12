@@ -164,6 +164,13 @@ on migrating from :class:`AsyncStage` to :class:`GraphStage`.
 Changes in Akka HTTP
 ====================
 
+ServerLayer no longer needs a `Materializer` as argument and it is fully reusable
+---------------------------------------------------------------------------------
+
+Users who have accessed the HTTP functionality by explicitly creating a :class:`BidiStage` using one of the
+`serverLayer` methods no longer need to provide a :class:`Materializer` as an additional argument. At the
+same time, the returned :class:`BidiStage` is fully reusable and can be materialized any number of times.
+
 Routing settings parameter name
 -------------------------------
 

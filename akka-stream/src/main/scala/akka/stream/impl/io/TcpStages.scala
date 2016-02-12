@@ -97,12 +97,8 @@ private[stream] class ConnectionSourceStage(val tcpManager: ActorRef,
         connectionFlowsAwaitingInitialization.incrementAndGet()
 
         val tcpFlow =
-          Flow.fromGraph(new IncomingConnectionStage(connection, connected.remoteAddress, halfClose))
+          Flow.fromGraph(new IncomingConnectionStage(connection, connected.remoteAddress, halfClose, connectionFlowsAwaitingInitialization))
             .via(detacher[ByteString]) // must read ahead for proper completions
-            .mapMaterializedValue { m ⇒
-              connectionFlowsAwaitingInitialization.decrementAndGet()
-              m
-            }
 
         // FIXME: Previous code was wrong, must add new tests
         val handler = idleTimeout match {
@@ -289,7 +285,11 @@ private[stream] object TcpConnectionStage {
 /**
  * INTERNAL API
  */
-private[stream] class IncomingConnectionStage(connection: ActorRef, remoteAddress: InetSocketAddress, halfClose: Boolean)
+private[akka] class IncomingConnectionStage(
+  connection: ActorRef,
+  remoteAddress: InetSocketAddress,
+  halfClose: Boolean,
+  connectionFlowsAwaitingInitialization: AtomicLong)
   extends GraphStage[FlowShape[ByteString, ByteString]] {
   import TcpConnectionStage._
 
@@ -301,6 +301,7 @@ private[stream] class IncomingConnectionStage(connection: ActorRef, remoteAddres
   val shape: FlowShape[ByteString, ByteString] = FlowShape(bytesIn, bytesOut)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
+    connectionFlowsAwaitingInitialization.decrementAndGet()
     if (hasBeenCreated.get) throw new IllegalStateException("Cannot materialize an incoming connection Flow twice.")
     hasBeenCreated.set(true)
 

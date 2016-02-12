@@ -45,40 +45,35 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   private lazy val delegate = akka.http.scaladsl.Http(system)
 
   /**
-   * Constructs a server layer stage using the configured default [[akka.http.javadsl.settings.ServerSettings]]. The returned [[BidiFlow]] isn't
-   * reusable and can only be materialized once.
+   * Constructs a server layer stage using the configured default [[akka.http.javadsl.settings.ServerSettings]].
    */
-  def serverLayer(materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    adaptServerLayer(delegate.serverLayer()(materializer))
+  def serverLayer(): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
+    adaptServerLayer(delegate.serverLayer)
 
   /**
-   * Constructs a server layer stage using the given [[akka.http.javadsl.settings.ServerSettings]]. The returned [[BidiFlow]] isn't reusable and
-   * can only be materialized once.
+   * Constructs a server layer stage using the given [[akka.http.javadsl.settings.ServerSettings]].
+   */
+  def serverLayer(settings: ServerSettings): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
+    adaptServerLayer(delegate.serverLayer(settings.asScala))
+
+  /**
+   * Constructs a server layer stage using the given [[akka.http.javadsl.settings.ServerSettings]].
+   * The `remoteAddress`, if provided, will be added as a header to each [[HttpRequest
+   * this layer produces if the `akka.http.server.remote-address-header` configuration option is enabled.
    */
   def serverLayer(settings: ServerSettings,
-                  materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    adaptServerLayer(delegate.serverLayer(settings.asScala)(materializer))
+                  remoteAddress: Optional[InetSocketAddress]): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
+    adaptServerLayer(delegate.serverLayer(settings.asScala, remoteAddress.asScala))
 
   /**
-   * Constructs a server layer stage using the given [[akka.http.javadsl.settings.ServerSettings]]. The returned [[BidiFlow]] isn't reusable and
-   * can only be materialized once. The `remoteAddress`, if provided, will be added as a header to each [[HttpRequest]]
+   * Constructs a server layer stage using the given [[ServerSettings]].
+   *  The remoteAddress, if provided, will be added as a header to each [[HttpRequest]]
    * this layer produces if the `akka.http.server.remote-address-header` configuration option is enabled.
    */
   def serverLayer(settings: ServerSettings,
                   remoteAddress: Optional[InetSocketAddress],
-                  materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    adaptServerLayer(delegate.serverLayer(settings.asScala, remoteAddress.asScala)(materializer))
-
-  /**
-   * Constructs a server layer stage using the given [[ServerSettings]]. The returned [[BidiFlow]] isn't reusable and
-   * can only be materialized once. The remoteAddress, if provided, will be added as a header to each [[HttpRequest]]
-   * this layer produces if the `akka.http.server.remote-address-header` configuration option is enabled.
-   */
-  def serverLayer(settings: ServerSettings,
-                  remoteAddress: Optional[InetSocketAddress],
-                  log: LoggingAdapter,
-                  materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    adaptServerLayer(delegate.serverLayer(settings.asScala, remoteAddress.asScala, log)(materializer))
+                  log: LoggingAdapter): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
+    adaptServerLayer(delegate.serverLayer(settings.asScala, remoteAddress.asScala, log))
 
   /**
    * Creates a [[Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding

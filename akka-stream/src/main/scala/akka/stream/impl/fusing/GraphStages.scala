@@ -37,7 +37,7 @@ private[akka] final case class GraphStageModule(shape: Shape,
 /**
  * INTERNAL API
  */
-object GraphStages {
+private[akka] object GraphStages {
 
   /**
    * INERNAL API

@@ -27,7 +27,7 @@ import akka.NotUsed
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
  */
-final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
+final class Flow[-In, +Out, +Mat](private[akka] override val module: Module)
     extends FlowOpsMat[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
 
   override val shape: FlowShape[In, Out] = module.shape.asInstanceOf[FlowShape[In, Out]]

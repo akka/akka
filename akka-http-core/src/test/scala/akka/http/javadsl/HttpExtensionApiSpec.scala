@@ -220,16 +220,16 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
       // TODO actually cover these with runtime tests, compile only for now
       pending
 
-      http.serverLayer(materializer)
+      http.serverLayer()
 
       val serverSettings = ServerSettings.create(system)
-      http.serverLayer(serverSettings, materializer)
+      http.serverLayer(serverSettings)
 
       val remoteAddress = Optional.empty[InetSocketAddress]()
-      http.serverLayer(serverSettings, remoteAddress, materializer)
+      http.serverLayer(serverSettings, remoteAddress)
 
       val loggingAdapter = NoLogging
-      http.serverLayer(serverSettings, remoteAddress, loggingAdapter, materializer)
+      http.serverLayer(serverSettings, remoteAddress, loggingAdapter)
     }
 
     "create a cached connection pool (with a ConnectToHttp and a materializer)" in {
