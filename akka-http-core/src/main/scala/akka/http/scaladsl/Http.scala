@@ -21,9 +21,13 @@ import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgradeResponse }
 import akka.http.scaladsl.settings.{ ServerSettings, ClientConnectionSettings, ConnectionPoolSettings }
 import akka.http.scaladsl.util.FastFuture
+import akka.stream.impl.HotPatch
+import akka.stream.impl.fusing.{ GraphStages, GraphStageModule }
+import akka.stream.impl.fusing.GraphStages._
+import akka.stream.impl.io.IncomingConnectionStage
 import akka.util.ByteString
 import akka.{ Done, NotUsed }
-import akka.stream.{ Fusing, BidiShape, Materializer }
+import akka.stream.{ FlowShape, Fusing, BidiShape, Materializer }
 import akka.stream.io._
 import akka.stream.scaladsl._
 import com.typesafe.config.Config
@@ -112,7 +116,10 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     connections.map {
       case Tcp.IncomingConnection(localAddress, remoteAddress, flow) ⇒
 
-        IncomingConnection(localAddress, remoteAddress, fullLayer join flow)
+        IncomingConnection(
+          localAddress,
+          remoteAddress,
+          (fullLayer join flow).addAttributes(HttpAttributes.remoteAddress(Some(remoteAddress))))
     }.mapMaterializedValue {
       _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(fm.executionContext)
     }
@@ -135,15 +142,41 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
                     log: LoggingAdapter = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
     val effectivePort = if (port >= 0) port else connectionContext.defaultPort
 
-    val fullLayer = Flow.fromGraph(Fusing.aggressive(
-      StreamUtils.identityFinishReporter.via(handler) join prefusedConfiguredLayer(settings, connectionContext, log)))
+    /* This section contains an optimization that allows fusing the whole handler + HTTP + TCP upfront.
+     * To make this happen, certain sins have been committed here.
+     *
+     * 1. There is a HotPatch stage that represents the TCP stage to be plugged in. It is fed via an attribue with
+     *    the actual logic before materialization. Hence fusing can happen ahead of connections.
+     * 2. Since what TCP emits are two stages (the conncection stage and a detacher) we need to rip it apart and get only
+     *    the TCP stage. We need to manually replace the detacher in our fused graph.
+     *
+     * We are evil.
+     */
+
+    val fullLayer = StreamUtils.identityFinishReporter
+      .via(handler)
+      .join(prefusedConfiguredLayer(settings, connectionContext, log))
+
+    val tcpHotPatch = new HotPatch[ByteString, ByteString]
+
+    // Need to put the detacher there because we rip the TCP stage out from the original Flow.
+    val tcpConnectionTemplate = Flow.fromGraph(GraphStages.detacher[ByteString]).via(tcpHotPatch)
+
+    val fullyFused = RunnableGraph.fromGraph(
+      Fusing.aggressive(tcpConnectionTemplate.joinMat(fullLayer)(Keep.right)))
 
     val connections: Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
       Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
 
     connections.mapAsyncUnordered(settings.maxConnections) {
       case Tcp.IncomingConnection(localAddress, remoteAddress, flow) ⇒
-        fullLayer.joinMat(flow)(Keep.left).run()
+        val tcpStage = flow.module.subModules.collectFirst {
+          case GraphStageModule(_, _, stage: IncomingConnectionStage) ⇒ stage
+        }.get
+
+        fullyFused.withAttributes(
+          HotPatch.patch(tcpHotPatch, tcpStage) and HttpAttributes.remoteAddress(Some(remoteAddress)))
+          .run()
     }.mapMaterializedValue {
       _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(fm.executionContext)
     }.to(Sink.ignore).run()
