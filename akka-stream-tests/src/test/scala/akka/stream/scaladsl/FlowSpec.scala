@@ -314,12 +314,12 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       val identity1 = Flow[Int].toProcessor
       val identity2 = Flow.fromProcessor(() ⇒ identity1.run())
       Await.result(
-        Source(1 to 10).via(identity2).grouped(100).runWith(Sink.head),
+        Source(1 to 10).via(identity2).limit(100).runWith(Sink.seq),
         3.seconds) should ===(1 to 10)
 
       // Reusable:
       Await.result(
-        Source(1 to 10).via(identity2).grouped(100).runWith(Sink.head),
+        Source(1 to 10).via(identity2).limit(100).runWith(Sink.seq),
         3.seconds) should ===(1 to 10)
     }
   }

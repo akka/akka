@@ -86,12 +86,12 @@ class FramingSpec extends AkkaSpec {
     "Respect maximum line settings" in {
       // The buffer will contain more than 1 bytes, but the individual frames are less
       Await.result(
-        Source.single(ByteString("a\nb\nc\nd\n")).via(simpleLines("\n", 1)).grouped(100).runWith(Sink.head),
+        Source.single(ByteString("a\nb\nc\nd\n")).via(simpleLines("\n", 1)).limit(100).runWith(Sink.seq),
         3.seconds) should ===(List("a", "b", "c", "d"))
 
       an[FramingException] should be thrownBy {
         Await.result(
-          Source.single(ByteString("ab\n")).via(simpleLines("\n", 1)).grouped(100).runWith(Sink.head),
+          Source.single(ByteString("ab\n")).via(simpleLines("\n", 1)).limit(100).runWith(Sink.seq),
           3.seconds)
       }
     }
@@ -225,7 +225,7 @@ class FramingSpec extends AkkaSpec {
 
       val testMessages = List.fill(100)(referenceChunk.take(Random.nextInt(1024)))
       Await.result(
-        Source(testMessages).via(codecFlow).grouped(1000).runWith(Sink.head),
+        Source(testMessages).via(codecFlow).limit(1000).runWith(Sink.seq),
         3.seconds) should ===(testMessages)
     }
 

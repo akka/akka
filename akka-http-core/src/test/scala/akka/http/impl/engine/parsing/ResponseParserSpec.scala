@@ -306,7 +306,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         }.concatSubstreams
 
     def collectBlocking[T](source: Source[T, Any]): Seq[T] =
-      Await.result(source.grouped(100000).runWith(Sink.head), 500.millis)
+      Await.result(source.limit(100000).runWith(Sink.seq), 500.millis)
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
 
@@ -323,7 +323,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
     private def compactEntityChunks(data: Source[ChunkStreamPart, Any]): Future[Source[ChunkStreamPart, Any]] =
-      data.grouped(100000).runWith(Sink.head)
+      data.limit(100000).runWith(Sink.seq)
         .fast.map(source(_: _*))
         .fast.recover { case _: NoSuchElementException ⇒ source() }
 

@@ -5,7 +5,8 @@ package akka.stream.scaladsl
 
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit.AkkaSpec
-import scala.concurrent.Await
+import scala.collection.immutable
+import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 
 class SeqSinkSpec extends AkkaSpec {
@@ -18,16 +19,16 @@ class SeqSinkSpec extends AkkaSpec {
   "Sink.toSeq" must {
     "return a Seq[T] from a Source" in {
       val input = (1 to 6)
-      val future = Source(input).runWith(Sink.seq)
-      val result = Await.result(future, 300.millis)
+      val future: Future[immutable.Seq[Int]] = Source(input).runWith(Sink.seq)
+      val result: immutable.Seq[Int] = Await.result(future, 300.millis)
       result should be(input.toSeq)
     }
 
     "return an empty Seq[T] from an empty Source" in {
-      val input: Seq[Int] = Seq.empty
-      val future = Source.fromIterator(() ⇒ input.iterator).runWith(Sink.seq)
-      val result = Await.result(future, 300.millis)
-      result should be(Seq.empty: Seq[Int])
+      val input: immutable.Seq[Int] = Nil
+      val future: Future[immutable.Seq[Int]] = Source.fromIterator(() ⇒ input.iterator).runWith(Sink.seq)
+      val result: immutable.Seq[Int] = Await.result(future, 300.millis)
+      result should be(input)
     }
   }
 }
