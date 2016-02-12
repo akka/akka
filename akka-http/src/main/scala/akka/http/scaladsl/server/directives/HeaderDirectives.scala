@@ -17,7 +17,7 @@ trait HeaderDirectives {
   /**
    * Extracts an HTTP header value using the given function. If the function result is undefined for all headers the
    * request is rejected with an empty rejection set. If the given function throws an exception the request is rejected
-   * with a [[spray.routing.MalformedHeaderRejection]].
+   * with a [[akka.http.scaladsl.server.MalformedHeaderRejection]].
    */
   def headerValue[T](f: HttpHeader ⇒ Option[T]): Directive1[T] = {
     val protectedF: HttpHeader ⇒ Option[Either[Rejection, T]] = header ⇒
@@ -41,20 +41,20 @@ trait HeaderDirectives {
 
   /**
    * Extracts the value of the first HTTP request header with the given name.
-   * If no header with a matching name is found the request is rejected with a [[spray.routing.MissingHeaderRejection]].
+   * If no header with a matching name is found the request is rejected with a [[akka.http.scaladsl.server.MissingHeaderRejection]].
    */
   def headerValueByName(headerName: Symbol): Directive1[String] = headerValueByName(headerName.name)
 
   /**
    * Extracts the value of the HTTP request header with the given name.
-   * If no header with a matching name is found the request is rejected with a [[spray.routing.MissingHeaderRejection]].
+   * If no header with a matching name is found the request is rejected with a [[akka.http.scaladsl.server.MissingHeaderRejection]].
    */
   def headerValueByName(headerName: String): Directive1[String] =
     headerValue(optionalValue(headerName.toLowerCase)) | reject(MissingHeaderRejection(headerName))
 
   /**
    * Extracts the first HTTP request header of the given type.
-   * If no header with a matching type is found the request is rejected with a [[spray.routing.MissingHeaderRejection]].
+   * If no header with a matching type is found the request is rejected with a [[akka.http.scaladsl.server.MissingHeaderRejection]].
    */
   def headerValueByType[T <: HttpHeader](magnet: ClassMagnet[T]): Directive1[T] =
     headerValuePF(magnet.extractPF) | reject(MissingHeaderRejection(magnet.runtimeClass.getSimpleName))
@@ -63,7 +63,7 @@ trait HeaderDirectives {
   /**
    * Extracts an optional HTTP header value using the given function.
    * If the given function throws an exception the request is rejected
-   * with a [[spray.routing.MalformedHeaderRejection]].
+   * with a [[akka.http.scaladsl.server.MalformedHeaderRejection]].
    */
   def optionalHeaderValue[T](f: HttpHeader ⇒ Option[T]): Directive1[Option[T]] =
     headerValue(f).map(Some(_): Option[T]).recoverPF {
@@ -74,7 +74,7 @@ trait HeaderDirectives {
   /**
    * Extracts an optional HTTP header value using the given partial function.
    * If the given function throws an exception the request is rejected
-   * with a [[spray.routing.MalformedHeaderRejection]].
+   * with a [[akka.http.scaladsl.server.MalformedHeaderRejection]].
    */
   def optionalHeaderValuePF[T](pf: PartialFunction[HttpHeader, T]): Directive1[Option[T]] =
     optionalHeaderValue(pf.lift)
