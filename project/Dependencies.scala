@@ -32,7 +32,7 @@ object Dependencies {
     val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1" // Scala License
     val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
 
-    val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.12"       // MIT
+    val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.16"       // MIT
 
         // mirrored in OSGi sample
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
@@ -89,8 +89,8 @@ object Dependencies {
       val metricsAll      = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
 
       // sigar logging
-      val slf4jJul      = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.12"    % "test"    // MIT
-      val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % "1.7.12"    % "test"    // MIT
+      val slf4jJul      = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.16"    % "test"    // MIT
+      val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % "1.7.16"    % "test"    // MIT
 
       lazy val sprayJson = Compile.sprayJson % "test"
 
