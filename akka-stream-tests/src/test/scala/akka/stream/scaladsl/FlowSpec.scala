@@ -596,7 +596,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     "suitably override attribute handling methods" in {
       import Attributes._
-      val f: Flow[Int, Int, NotUsed] = Flow[Int].withAttributes(asyncBoundary).addAttributes(none).named("")
+      val f: Flow[Int, Int, NotUsed] = Flow[Int].async.addAttributes(none).named("")
     }
   }
 

@@ -58,7 +58,7 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
    * only to the contained processing stages).
    */
   override def withAttributes(attr: Attributes): Sink[In, Mat] =
-    new Sink(module.withAttributes(attr).nest())
+    new Sink(module.withAttributes(attr))
 
   /**
    * Add the given attributes to this Source. Further calls to `withAttributes`
@@ -72,7 +72,12 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
   /**
    * Add a ``name`` attribute to this Flow.
    */
-  override def named(name: String): Sink[In, Mat] = withAttributes(Attributes.name(name))
+  override def named(name: String): Sink[In, Mat] = addAttributes(Attributes.name(name))
+
+  /**
+   * Put an asynchronous boundary around this `Sink`
+   */
+  override def async: Sink[In, Mat] = addAttributes(Attributes.asyncBoundary)
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
   def asJava: javadsl.Sink[In, Mat] = new javadsl.Sink(this)

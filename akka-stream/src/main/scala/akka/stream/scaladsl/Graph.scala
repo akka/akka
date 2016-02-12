@@ -1011,14 +1011,14 @@ object GraphDSL extends GraphApply {
     private class PortOpsImpl[+Out](override val outlet: Outlet[Out @uncheckedVariance], b: Builder[_])
       extends PortOps[Out] {
 
-      override def withAttributes(attr: Attributes): Repr[Out] =
-        throw new UnsupportedOperationException("Cannot set attributes on chained ops from a junction output port")
+      override def withAttributes(attr: Attributes): Repr[Out] = throw settingAttrNotSupported
+      override def addAttributes(attr: Attributes): Repr[Out] = throw settingAttrNotSupported
+      override def named(name: String): Repr[Out] = throw settingAttrNotSupported
+      override def async: Repr[Out] = throw settingAttrNotSupported
 
-      override def addAttributes(attr: Attributes): Repr[Out] =
-        throw new UnsupportedOperationException("Cannot set attributes on chained ops from a junction output port")
+      private def settingAttrNotSupported =
+        new UnsupportedOperationException("Cannot set attributes on chained ops from a junction output port")
 
-      override def named(name: String): Repr[Out] =
-        throw new UnsupportedOperationException("Cannot set attributes on chained ops from a junction output port")
 
       override def importAndGetPort(b: Builder[_]): Outlet[Out @uncheckedVariance] = outlet
 

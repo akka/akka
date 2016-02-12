@@ -511,7 +511,9 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
 
-      upstream.onComplete()
+      EventFilter[IllegalArgumentException](pattern = ".*Cannot pull closed port.*", occurrences = 1).intercept {
+        upstream.onComplete()
+      }
       val ev = lastEvents()
       ev.nonEmpty should be(true)
       ev.forall {

@@ -4,7 +4,6 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-
 import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.stream.ActorMaterializer
@@ -14,6 +13,7 @@ import akka.stream.testkit.Utils._
 import org.reactivestreams.Subscription
 import akka.testkit.TestProbe
 import org.reactivestreams.Subscriber
+import akka.testkit.EventFilter
 
 class FlowIteratorSpec extends AbstractFlowIteratorSpec {
   override def testName = "A Flow based on an iterator producing function"
@@ -40,7 +40,9 @@ class FlowIterableSpec extends AbstractFlowIteratorSpec {
     sub.request(1)
     c.expectNext(1)
     c.expectNoMsg(100.millis)
-    sub.request(2)
+    EventFilter[IllegalStateException](message = "not two", occurrences = 1).intercept {
+      sub.request(2)
+    }
     c.expectError().getMessage should be("not two")
     sub.request(2)
     c.expectNoMsg(100.millis)
