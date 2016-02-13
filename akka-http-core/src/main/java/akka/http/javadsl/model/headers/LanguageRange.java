@@ -5,11 +5,11 @@
 package akka.http.javadsl.model.headers;
 
 public interface LanguageRange {
-    public abstract String primaryTag();
-    public abstract float qValue();
-    public abstract boolean matches(Language language);
-    public abstract Iterable<String> getSubTags();
-    public abstract LanguageRange withQValue(float qValue);
+    String primaryTag();
+    float qValue();
+    boolean matches(Language language);
+    Iterable<String> getSubTags();
+    LanguageRange withQValue(float qValue);
 
-    public static final LanguageRange ALL = akka.http.scaladsl.model.headers.LanguageRange.$times$.MODULE$;
+    LanguageRange ALL = akka.http.scaladsl.model.headers.LanguageRange.$times$.MODULE$;
 }
