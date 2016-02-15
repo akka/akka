@@ -21,8 +21,7 @@ object FileIO {
 
   /**
    * Creates a Sink that writes incoming [[ByteString]] elements to the given file.
-   * Overwrites existing files, if you want to append to an existing file use [[#file(File, Boolean)]] and
-   * pass in `true` as the Boolean argument.
+   * Overwrites existing files, if you want to append to an existing file use [[#file(File, util.Set[StandardOpenOption])]].
    *
    * Materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
    * and a possible exception if IO operation was not completed successfully.
@@ -32,11 +31,11 @@ object FileIO {
    *
    * @param f The file to write to
    */
-  def toFile(f: File): javadsl.Sink[ByteString, CompletionStage[IOResult]] = toFile(f)
+  def toFile(f: File): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
+    toFile(f, util.EnumSet.of(WRITE, CREATE))
 
   /**
-   * Creates a Sink that writes incoming [[ByteString]] elements to the given file and either overwrites
-   * or appends to it.
+   * Creates a Sink that writes incoming [[ByteString]] elements to the given file
    *
    * Materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
    * and a possible exception if IO operation was not completed successfully.
@@ -47,7 +46,7 @@ object FileIO {
    * @param f The file to write to
    * @param options File open options
    */
-  def toFile(f: File, options: util.Set[StandardOpenOption] = new util.HashSet(util.Arrays.asList(WRITE, CREATE))): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
+  def toFile(f: File, options: util.Set[StandardOpenOption]): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
     new Sink(scaladsl.FileIO.toFile(f, options.asScala.toSet).toCompletionStage())
 
   /**

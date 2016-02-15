@@ -41,14 +41,16 @@ object FileIO {
     new Source(new FileSource(f, chunkSize, DefaultAttributes.fileSource, sourceShape("FileSource")))
 
   /**
-   * Creates a Sink which writes incoming [[ByteString]] elements to the given file and either overwrites
-   * or appends to it.
+   * Creates a Sink which writes incoming [[ByteString]] elements to the given file. Overwrites existing files by default.
    *
    * Materializes a [[Future]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
    * and a possible exception if IO operation was not completed successfully.
    *
    * This source is backed by an Actor which will use the dedicated `akka.stream.blocking-io-dispatcher`,
    * unless configured otherwise by using [[ActorAttributes]].
+   *
+   * @param f the File to write to
+   * @param options File open options, defaults to Set(WRITE, CREATE)
    */
   def toFile(f: File, options: Set[StandardOpenOption] = Set(WRITE, CREATE)): Sink[ByteString, Future[IOResult]] =
     new Sink(new FileSink(f, options, DefaultAttributes.fileSink, sinkShape("FileSink")))
