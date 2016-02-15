@@ -45,9 +45,6 @@ object RemoteAddress {
     def isUnknown = false
   }
 
-  def apply(s: String): RemoteAddress =
-    try IP(InetAddress.getByName(s)) catch { case _: UnknownHostException ⇒ Unknown }
-
   def apply(a: InetAddress, port: Option[Int] = None): IP = IP(a, port)
 
   def apply(a: InetSocketAddress): IP = IP(a.getAddress, Some(a.getPort))
