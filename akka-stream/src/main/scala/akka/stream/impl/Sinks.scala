@@ -289,13 +289,14 @@ final private[stream] class QueueSink[T]() extends GraphStageWithMaterializedVal
   type Requested[E] = Promise[Option[E]]
 
   val in = Inlet[T]("queueSink.in")
+  override def initialAttributes = DefaultAttributes.queueSink
   override val shape: SinkShape[T] = SinkShape.of(in)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val stageLogic = new GraphStageLogic(shape) with CallbackWrapper[Requested[T]] {
       type Received[E] = Try[Option[E]]
 
-      val maxBuffer = module.attributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+      val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
       require(maxBuffer > 0, "Buffer size must be greater than 0")
 
       var buffer: Buffer[Received[T]] = _
