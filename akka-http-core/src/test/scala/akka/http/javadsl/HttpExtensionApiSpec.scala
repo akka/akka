@@ -9,6 +9,7 @@ import java.util.concurrent.{ CompletionStage, TimeUnit, CompletableFuture }
 
 import akka.NotUsed
 import akka.http.impl.util.JavaMapping.HttpsConnectionContext
+import akka.http.javadsl.ConnectHttp._
 import akka.http.javadsl.model.ws._
 import akka.http.javadsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
 import akka.japi.Pair
@@ -72,7 +73,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "properly bind a server (with three parameters)" in {
       val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
       val probe = TestSubscriber.manualProbe[IncomingConnection]()
-      val binding = http.bind(host, port, materializer)
+      val binding = http.bind(toHost(host, port), materializer)
         .toMat(Sink.fromSubscriber(probe), Keep.left)
         .run(materializer)
       val sub = probe.expectSubscription()
@@ -83,7 +84,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "properly bind a server (with four parameters)" in {
       val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
       val probe = TestSubscriber.manualProbe[IncomingConnection]()
-      val binding = http.bind(host, port, connectionContext, materializer)
+      val binding = http.bind(toHost(host, port), materializer)
         .toMat(Sink.fromSubscriber(probe), Keep.left)
         .run(materializer)
       val sub = probe.expectSubscription()
@@ -94,7 +95,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "properly bind a server (with five parameters)" in {
       val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
       val probe = TestSubscriber.manualProbe[IncomingConnection]()
-      val binding = http.bind(host, port, connectionContext, serverSettings, materializer)
+      val binding = http.bind(toHost(host, port), serverSettings, materializer)
         .toMat(Sink.fromSubscriber(probe), Keep.left)
         .run(materializer)
       val sub = probe.expectSubscription()
@@ -105,7 +106,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "properly bind a server (with six parameters)" in {
       val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
       val probe = TestSubscriber.manualProbe[IncomingConnection]()
-      val binding = http.bind(host, port, connectionContext, serverSettings, loggingAdapter, materializer)
+      val binding = http.bind(toHost(host, port), serverSettings, loggingAdapter, materializer)
         .toMat(Sink.fromSubscriber(probe), Keep.left)
         .run(materializer)
       val sub = probe.expectSubscription()
@@ -119,9 +120,9 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
       val flow: Flow[HttpRequest, HttpResponse, NotUsed] = akka.stream.scaladsl.Flow[HttpRequest]
         .map(req ⇒ HttpResponse.create())
         .asJava
-      val binding = http.bindAndHandle(flow, host, port, materializer)
+      val binding = http.bindAndHandle(flow, toHost(host, port), materializer)
 
-      val (_, completion) = http.outgoingConnection(ConnectHttp.toHost(host, port))
+      val (_, completion) = http.outgoingConnection(toHost(host, port))
         .runWith(Source.single(HttpRequest.create("/abc")), Sink.head(), materializer).toScala
 
       waitFor(completion)
@@ -133,9 +134,9 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
       val flow: Flow[HttpRequest, HttpResponse, NotUsed] = akka.stream.scaladsl.Flow[HttpRequest]
         .map(req ⇒ HttpResponse.create())
         .asJava
-      val binding = http.bindAndHandle(flow, host, port, connectionContext, materializer)
+      val binding = http.bindAndHandle(flow, toHost(host, port), materializer)
 
-      val (_, completion) = http.outgoingConnection(ConnectHttp.toHost(host, port))
+      val (_, completion) = http.outgoingConnection(toHost(host, port))
         .runWith(Source.single(HttpRequest.create("/abc")), Sink.head(), materializer).toScala
 
       waitFor(completion)
@@ -147,9 +148,9 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
       val flow: Flow[HttpRequest, HttpResponse, NotUsed] = akka.stream.scaladsl.Flow[HttpRequest]
         .map(req ⇒ HttpResponse.create())
         .asJava
-      val binding = http.bindAndHandle(flow, host, port, serverSettings, connectionContext, loggingAdapter, materializer)
+      val binding = http.bindAndHandle(flow, toHost(host, port), serverSettings, loggingAdapter, materializer)
 
-      val (_, completion) = http.outgoingConnection(ConnectHttp.toHost(host, port))
+      val (_, completion) = http.outgoingConnection(toHost(host, port))
         .runWith(Source.single(HttpRequest.create("/abc")), Sink.head(), materializer).toScala
 
       waitFor(completion)
@@ -158,7 +159,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
     "properly bind and handle a server with a synchronous function (with four parameters)" in {
       val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
-      val binding = http.bindAndHandleSync(httpSuccessFunction, host, port, materializer)
+      val binding = http.bindAndHandleSync(httpSuccessFunction, toHost(host, port), materializer)
 
       val response = http.singleRequest(HttpRequest.create(s"http://$host:$port/").withMethod(HttpMethods.GET), materializer)
 
@@ -168,7 +169,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
     "properly bind and handle a server with a synchronous function (with five parameters)" in {
       val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
-      val binding = http.bindAndHandleSync(httpSuccessFunction, host, port, connectionContext, materializer)
+      val binding = http.bindAndHandleSync(httpSuccessFunction, toHost(host, port), materializer)
 
       val response = http.singleRequest(HttpRequest.create(s"http://$host:$port/").withMethod(HttpMethods.GET), materializer)
 
@@ -178,7 +179,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
     "properly bind and handle a server with a synchronous (with seven parameters)" in {
       val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
-      val binding = http.bindAndHandleSync(httpSuccessFunction, host, port, serverSettings, connectionContext, loggingAdapter, materializer)
+      val binding = http.bindAndHandleSync(httpSuccessFunction, toHost(host, port), serverSettings, loggingAdapter, materializer)
 
       val response = http.singleRequest(HttpRequest.create(s"http://$host:$port/").withMethod(HttpMethods.GET), materializer)
 
@@ -188,7 +189,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
     "properly bind and handle a server with an asynchronous function (with four parameters)" in {
       val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
-      val binding = http.bindAndHandleAsync(asyncHttpSuccessFunction, host, port, materializer)
+      val binding = http.bindAndHandleAsync(asyncHttpSuccessFunction, toHost(host, port), materializer)
 
       val response = http.singleRequest(HttpRequest.create(s"http://$host:$port/").withMethod(HttpMethods.GET), materializer)
 
@@ -198,7 +199,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
     "properly bind and handle a server with an asynchronous function (with five parameters)" in {
       val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
-      val binding = http.bindAndHandleAsync(asyncHttpSuccessFunction, host, port, connectionContext, materializer)
+      val binding = http.bindAndHandleAsync(asyncHttpSuccessFunction, toHost(host, port), materializer)
 
       val response = http.singleRequest(HttpRequest.create(s"http://$host:$port/").withMethod(HttpMethods.GET), materializer)
 
@@ -208,7 +209,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
     "properly bind and handle a server with an asynchronous function (with eight parameters)" in {
       val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
-      val binding = http.bindAndHandleAsync(asyncHttpSuccessFunction, host, port, serverSettings, connectionContext, 1, loggingAdapter, materializer)
+      val binding = http.bindAndHandleAsync(asyncHttpSuccessFunction, toHost(host, port), serverSettings, 1, loggingAdapter, materializer)
 
       val response = http.singleRequest(HttpRequest.create(s"http://$host:$port/").withMethod(HttpMethods.GET), materializer)
 
@@ -236,7 +237,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
       val (host, port, binding) = runServer()
 
       val poolFlow: Flow[Pair[HttpRequest, NotUsed], Pair[Try[HttpResponse], NotUsed], HostConnectionPool] =
-        http.cachedHostConnectionPool[NotUsed](ConnectHttp.toHost(host, port), materializer)
+        http.cachedHostConnectionPool[NotUsed](toHost(host, port), materializer)
 
       val pair: Pair[HostConnectionPool, CompletionStage[Pair[Try[HttpResponse], NotUsed]]] =
         Source.single(new Pair(HttpRequest.GET(s"http://$host:$port/"), NotUsed.getInstance()))
@@ -256,7 +257,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
       val (host, port, binding) = runServer()
 
       val poolFlow: Flow[Pair[HttpRequest, NotUsed], Pair[Try[HttpResponse], NotUsed], HostConnectionPool] =
-        http.cachedHostConnectionPool[NotUsed](ConnectHttp.toHost(host, port), poolSettings, loggingAdapter, materializer)
+        http.cachedHostConnectionPool[NotUsed](toHost(host, port), poolSettings, loggingAdapter, materializer)
 
       val pair: Pair[HostConnectionPool, CompletionStage[Pair[Try[HttpResponse], NotUsed]]] =
         Source.single(new Pair(HttpRequest.GET(s"http://$host:$port/"), NotUsed.getInstance()))
@@ -291,7 +292,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "create a host connection pool (with a ConnectHttp and a Materializer)" in {
       val (host, port, binding) = runServer()
 
-      val poolFlow = http.newHostConnectionPool[NotUsed](ConnectHttp.toHost(host, port), materializer)
+      val poolFlow = http.newHostConnectionPool[NotUsed](toHost(host, port), materializer)
 
       val pair: Pair[HostConnectionPool, CompletionStage[Pair[Try[HttpResponse], NotUsed]]] =
         Source.single(new Pair(get(host, port), NotUsed.getInstance()))
@@ -311,7 +312,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
       pending
       val (host, port, binding) = runServer()
 
-      val poolFlow = http.newHostConnectionPool[NotUsed](ConnectHttp.toHost(host, port), poolSettings, loggingAdapter, materializer)
+      val poolFlow = http.newHostConnectionPool[NotUsed](toHost(host, port), poolSettings, loggingAdapter, materializer)
 
       val pair: Pair[HostConnectionPool, CompletionStage[Pair[Try[HttpResponse], NotUsed]]] =
         Source.single(new Pair(get(host, port), NotUsed.getInstance()))
@@ -369,7 +370,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
     "create an outgoing connection (with a ConnectHttp)" in {
       val (host, port, binding) = runServer()
-      val flow = http.outgoingConnection(ConnectHttp.toHost(host, port))
+      val flow = http.outgoingConnection(toHost(host, port))
 
       val response = Source.single(get(host, port))
         .via(flow)
@@ -382,10 +383,9 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
     "create an outgoing connection (with 6 parameters)" in {
       val (host, port, binding) = runServer()
+      println("host = " + host)
       val flow = http.outgoingConnection(
-        host,
-        port,
-        connectionContext,
+        toHost(host, port),
         Optional.empty(),
         ClientConnectionSettings.create(system),
         NoLogging)
@@ -455,7 +455,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
   def runServer(): (Host, Port, ServerBinding) = {
     val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
-    val server = http.bindAndHandleSync(httpSuccessFunction, host, port, materializer)
+    val server = http.bindAndHandleSync(httpSuccessFunction, toHost(host, port), materializer)
 
     (host, port, waitFor(server))
   }
@@ -467,7 +467,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
       override def apply(request: HttpRequest): HttpResponse = {
         WebSocket.handleWebSocketRequestWith(request, Flow.create[Message]())
       }
-    }, host, port, materializer)
+    }, toHost(host, port), materializer)
 
     (host, port, waitFor(server))
   }
