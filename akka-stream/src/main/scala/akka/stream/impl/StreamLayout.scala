@@ -362,12 +362,12 @@ object StreamLayout {
   }
 
   final case class CompositeModule(
-      override val subModules: Set[Module],
-      override val shape: Shape,
-      override val downstreams: Map[OutPort, InPort],
-      override val upstreams: Map[InPort, OutPort],
-      override val materializedValueComputation: MaterializedValueNode,
-      override val attributes: Attributes) extends Module {
+    override val subModules: Set[Module],
+    override val shape: Shape,
+    override val downstreams: Map[OutPort, InPort],
+    override val upstreams: Map[InPort, OutPort],
+    override val materializedValueComputation: MaterializedValueNode,
+    override val attributes: Attributes) extends Module {
 
     override def replaceShape(s: Shape): Module = {
       shape.requireSamePortsAs(s)
@@ -392,13 +392,13 @@ object StreamLayout {
   }
 
   final case class FusedModule(
-      override val subModules: Set[Module],
-      override val shape: Shape,
-      override val downstreams: Map[OutPort, InPort],
-      override val upstreams: Map[InPort, OutPort],
-      override val materializedValueComputation: MaterializedValueNode,
-      override val attributes: Attributes,
-      info: Fusing.StructuralInfo) extends Module {
+    override val subModules: Set[Module],
+    override val shape: Shape,
+    override val downstreams: Map[OutPort, InPort],
+    override val upstreams: Map[InPort, OutPort],
+    override val materializedValueComputation: MaterializedValueNode,
+    override val attributes: Attributes,
+    info: Fusing.StructuralInfo) extends Module {
 
     override def isFused: Boolean = true
 
