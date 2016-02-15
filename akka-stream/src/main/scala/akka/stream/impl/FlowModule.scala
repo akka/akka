@@ -11,8 +11,8 @@ import akka.stream.impl.StreamLayout.Module
  */
 private[stream] trait FlowModule[In, Out, Mat] extends StreamLayout.Module {
   override def replaceShape(s: Shape) =
-    if (s == shape) this
-    else throw new UnsupportedOperationException("cannot replace the shape of a FlowModule")
+    if (s != shape) throw new UnsupportedOperationException("cannot replace the shape of a FlowModule")
+    else this
 
   val inPort = Inlet[In]("Flow.in")
   val outPort = Outlet[Out]("Flow.out")

@@ -31,8 +31,8 @@ private[akka] abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) exte
   def create(context: MaterializationContext): (Subscriber[In] @uncheckedVariance, Mat)
 
   override def replaceShape(s: Shape): Module =
-    if (s == shape) this
-    else throw new UnsupportedOperationException("cannot replace the shape of a Sink, you need to wrap it in a Graph for that")
+    if (s != shape) throw new UnsupportedOperationException("cannot replace the shape of a Sink, you need to wrap it in a Graph for that")
+    else this
 
   // This is okay since we the only caller of this method is right below.
   protected def newInstance(s: SinkShape[In] @uncheckedVariance): SinkModule[In, Mat]
