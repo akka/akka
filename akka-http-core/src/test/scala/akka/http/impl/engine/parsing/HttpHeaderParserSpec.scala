@@ -128,6 +128,13 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       parseAndCache("Origin: localhost:8080\r\nx")() shouldEqual RawHeader("origin", "localhost:8080")
     }
 
+    "parse and cache an X-Forwarded-For with a hostname in it as a RawHeader" in new TestSetup() {
+      parseAndCache("X-Forwarded-For: 1.2.3.4, akka.io\r\nx")() shouldEqual RawHeader("x-forwarded-for", "1.2.3.4, akka.io")
+    }
+
+    "parse and cache an X-Real-Ip with a hostname as it's value as a RawHeader" in new TestSetup() {
+      parseAndCache("X-Real-Ip: akka.io\r\nx")() shouldEqual RawHeader("x-real-ip", "akka.io")
+    }
     "parse and cache a raw header" in new TestSetup(primed = false) {
       insert("hello: bob", 'Hello)
       val (ixA, headerA) = parseLine("Fancy-Pants: foo\r\nx")

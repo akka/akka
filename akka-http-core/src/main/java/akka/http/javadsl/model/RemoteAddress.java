@@ -26,9 +26,6 @@ public abstract class RemoteAddress {
     public static RemoteAddress create(InetSocketAddress address) {
         return akka.http.scaladsl.model.RemoteAddress.apply(address);
     }
-    public static RemoteAddress create(String address) {
-        return akka.http.scaladsl.model.RemoteAddress.apply(address);
-    }
     public static RemoteAddress create(byte[] address) {
         return akka.http.scaladsl.model.RemoteAddress.apply(address);
     }

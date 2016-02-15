@@ -17,6 +17,7 @@ import MediaRanges._
 import HttpCharsets._
 import HttpEncodings._
 import HttpMethods._
+import java.net.InetAddress
 
 class HttpHeaderSpec extends FreeSpec with Matchers {
   val `application/vnd.spray` = MediaType.applicationBinary("vnd.spray", MediaType.Compressible)
@@ -545,14 +546,14 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     }
 
     "X-Forwarded-For" in {
-      "X-Forwarded-For: 1.2.3.4" =!= `X-Forwarded-For`("1.2.3.4")
-      "X-Forwarded-For: 234.123.5.6, 8.8.8.8" =!= `X-Forwarded-For`("234.123.5.6", "8.8.8.8")
-      "X-Forwarded-For: 1.2.3.4, unknown" =!= `X-Forwarded-For`(RemoteAddress("1.2.3.4"), RemoteAddress.Unknown)
-      "X-Forwarded-For: 192.0.2.43, 2001:db8:cafe:0:0:0:0:17" =!= `X-Forwarded-For`("192.0.2.43", "2001:db8:cafe::17")
-      "X-Forwarded-For: 1234:5678:9abc:def1:2345:6789:abcd:ef00" =!= `X-Forwarded-For`("1234:5678:9abc:def1:2345:6789:abcd:ef00")
-      "X-Forwarded-For: 1234:567:9a:d:2:67:abc:ef00" =!= `X-Forwarded-For`("1234:567:9a:d:2:67:abc:ef00")
+      "X-Forwarded-For: 1.2.3.4" =!= `X-Forwarded-For`(remoteAddress("1.2.3.4"))
+      "X-Forwarded-For: 234.123.5.6, 8.8.8.8" =!= `X-Forwarded-For`(remoteAddress("234.123.5.6"), remoteAddress("8.8.8.8"))
+      "X-Forwarded-For: 1.2.3.4, unknown" =!= `X-Forwarded-For`(remoteAddress("1.2.3.4"), RemoteAddress.Unknown)
+      "X-Forwarded-For: 192.0.2.43, 2001:db8:cafe:0:0:0:0:17" =!= `X-Forwarded-For`(remoteAddress("192.0.2.43"), remoteAddress("2001:db8:cafe::17"))
+      "X-Forwarded-For: 1234:5678:9abc:def1:2345:6789:abcd:ef00" =!= `X-Forwarded-For`(remoteAddress("1234:5678:9abc:def1:2345:6789:abcd:ef00"))
+      "X-Forwarded-For: 1234:567:9a:d:2:67:abc:ef00" =!= `X-Forwarded-For`(remoteAddress("1234:567:9a:d:2:67:abc:ef00"))
       "X-Forwarded-For: 2001:db8:85a3::8a2e:370:7334" =!=> "2001:db8:85a3:0:0:8a2e:370:7334"
-      "X-Forwarded-For: 1:2:3:4:5:6:7:8" =!= `X-Forwarded-For`("1:2:3:4:5:6:7:8")
+      "X-Forwarded-For: 1:2:3:4:5:6:7:8" =!= `X-Forwarded-For`(remoteAddress("1:2:3:4:5:6:7:8"))
       "X-Forwarded-For: ::2:3:4:5:6:7:8" =!=> "0:2:3:4:5:6:7:8"
       "X-Forwarded-For: ::3:4:5:6:7:8" =!=> "0:0:3:4:5:6:7:8"
       "X-Forwarded-For: ::4:5:6:7:8" =!=> "0:0:0:4:5:6:7:8"
@@ -574,6 +575,44 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "X-Forwarded-For: 1:2:3:4:5::7:8" =!=> "1:2:3:4:5:0:7:8"
       "X-Forwarded-For: 1:2:3:4:5:6::8" =!=> "1:2:3:4:5:6:0:8"
       "X-Forwarded-For: ::" =!=> "0:0:0:0:0:0:0:0"
+      "X-Forwarded-For: 1.2.3.4, akka.io" =!=
+        ErrorInfo(
+          "Illegal HTTP header 'X-Forwarded-For': Invalid input 'k', expected HEXDIG, h8, ':', ch16o or cc (line 1, column 11)",
+          "1.2.3.4, akka.io\n          ^")
+    }
+
+    "X-Real-Ip" in {
+      "X-Real-Ip: 1.2.3.4" =!= `X-Real-Ip`(remoteAddress("1.2.3.4"))
+      "X-Real-Ip: 2001:db8:cafe:0:0:0:0:17" =!= `X-Real-Ip`(remoteAddress("2001:db8:cafe:0:0:0:0:17"))
+      "X-Real-Ip: 1234:5678:9abc:def1:2345:6789:abcd:ef00" =!= `X-Real-Ip`(remoteAddress("1234:5678:9abc:def1:2345:6789:abcd:ef00"))
+      "X-Real-Ip: 1234:567:9a:d:2:67:abc:ef00" =!= `X-Real-Ip`(remoteAddress("1234:567:9a:d:2:67:abc:ef00"))
+      "X-Real-Ip: 2001:db8:85a3::8a2e:370:7334" =!=> "2001:db8:85a3:0:0:8a2e:370:7334"
+      "X-Real-Ip: 1:2:3:4:5:6:7:8" =!= `X-Real-Ip`(remoteAddress("1:2:3:4:5:6:7:8"))
+      "X-Real-Ip: ::2:3:4:5:6:7:8" =!=> "0:2:3:4:5:6:7:8"
+      "X-Real-Ip: ::3:4:5:6:7:8" =!=> "0:0:3:4:5:6:7:8"
+      "X-Real-Ip: ::4:5:6:7:8" =!=> "0:0:0:4:5:6:7:8"
+      "X-Real-Ip: ::5:6:7:8" =!=> "0:0:0:0:5:6:7:8"
+      "X-Real-Ip: ::6:7:8" =!=> "0:0:0:0:0:6:7:8"
+      "X-Real-Ip: ::7:8" =!=> "0:0:0:0:0:0:7:8"
+      "X-Real-Ip: ::8" =!=> "0:0:0:0:0:0:0:8"
+      "X-Real-Ip: 1:2:3:4:5:6:7::" =!=> "1:2:3:4:5:6:7:0"
+      "X-Real-Ip: 1:2:3:4:5:6::" =!=> "1:2:3:4:5:6:0:0"
+      "X-Real-Ip: 1:2:3:4:5::" =!=> "1:2:3:4:5:0:0:0"
+      "X-Real-Ip: 1:2:3:4::" =!=> "1:2:3:4:0:0:0:0"
+      "X-Real-Ip: 1:2:3::" =!=> "1:2:3:0:0:0:0:0"
+      "X-Real-Ip: 1:2::" =!=> "1:2:0:0:0:0:0:0"
+      "X-Real-Ip: 1::" =!=> "1:0:0:0:0:0:0:0"
+      "X-Real-Ip: 1::3:4:5:6:7:8" =!=> "1:0:3:4:5:6:7:8"
+      "X-Real-Ip: 1:2::4:5:6:7:8" =!=> "1:2:0:4:5:6:7:8"
+      "X-Real-Ip: 1:2:3::5:6:7:8" =!=> "1:2:3:0:5:6:7:8"
+      "X-Real-Ip: 1:2:3:4::6:7:8" =!=> "1:2:3:4:0:6:7:8"
+      "X-Real-Ip: 1:2:3:4:5::7:8" =!=> "1:2:3:4:5:0:7:8"
+      "X-Real-Ip: 1:2:3:4:5:6::8" =!=> "1:2:3:4:5:6:0:8"
+      "X-Real-Ip: ::" =!=> "0:0:0:0:0:0:0:0"
+      "X-Real-Ip: akka.io" =!=
+        ErrorInfo(
+          "Illegal HTTP header 'X-Real-Ip': Invalid input 'k', expected HEXDIG, h8, ':', ch16o or cc (line 1, column 2)",
+          "akka.io\n ^")
     }
 
     "RawHeader" in {
@@ -663,4 +702,6 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         val info = result.errors.head
         fail(s"Input `${header.header}` failed to parse:\n${info.summary}\n${info.detail}")
     }
+
+  def remoteAddress(ip: String) = RemoteAddress(InetAddress.getByName(ip))
 }
