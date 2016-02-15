@@ -838,7 +838,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * @see [[#mapAsyncUnordered]]
    */
   def mapAsync[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): javadsl.Source[T, Mat] =
-    new Source(delegate.mapAsync(parallelism)(x => f(x).toScala))
+    new Source(delegate.mapAsync(parallelism)(x ⇒ f(x).toScala))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -870,7 +870,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * @see [[#mapAsync]]
    */
   def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): javadsl.Source[T, Mat] =
-    new Source(delegate.mapAsyncUnordered(parallelism)(x => f(x).toScala))
+    new Source(delegate.mapAsyncUnordered(parallelism)(x ⇒ f(x).toScala))
 
   /**
    * Only pass on those elements that satisfy the given predicate.
@@ -1777,7 +1777,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * downstream.
    */
   def watchTermination[M]()(matF: function.Function2[Mat, CompletionStage[Done], M]): javadsl.Source[Out, M] =
-    new Source(delegate.watchTermination()((left, right) => matF(left, right.toJava)))
+    new Source(delegate.watchTermination()((left, right) ⇒ matF(left, right.toJava)))
 
   /**
    * Delays the initial element by the specified duration.

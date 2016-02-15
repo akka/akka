@@ -36,22 +36,22 @@ public class HttpAPIsTest extends JUnitRouteTest {
     ConnectionPoolSettings conSettings = null;
     LoggingAdapter log = null;
 
-    http.bind("127.0.0.1", 8080, materializer());
-    http.bind("127.0.0.1", 8080, connectionContext, materializer());
-    http.bind("127.0.0.1", 8080, httpContext, materializer());
-    http.bind("127.0.0.1", 8080, httpsContext, materializer());
+    http.bind(toHost("127.0.0.1", 8080), materializer());
+    http.bind(toHost("127.0.0.1", 8080), materializer());
+    http.bind(toHostHttps("127.0.0.1", 8080), materializer());
 
     final Flow<HttpRequest, HttpResponse, ?> handler = null;
-    http.bindAndHandle(handler, "127.0.0.1", 8080, materializer());
-    http.bindAndHandle(handler, "127.0.0.1", 8080, httpsContext, materializer());
+    http.bindAndHandle(handler, toHost("127.0.0.1", 8080), materializer());
+    http.bindAndHandle(handler, toHost("127.0.0.1", 8080), materializer());
+    http.bindAndHandle(handler, toHostHttps("127.0.0.1", 8080).withCustomHttpsContext(httpsContext), materializer());
 
     final Function<HttpRequest, CompletionStage<HttpResponse>> handler1 = null;
-    http.bindAndHandleAsync(handler1, "127.0.0.1", 8080, materializer());
-    http.bindAndHandleAsync(handler1, "127.0.0.1", 8080, httpsContext, materializer());
+    http.bindAndHandleAsync(handler1, toHost("127.0.0.1", 8080), materializer());
+    http.bindAndHandleAsync(handler1, toHostHttps("127.0.0.1", 8080), materializer());
 
     final Function<HttpRequest, HttpResponse> handler2 = null;
-    http.bindAndHandleSync(handler2, "127.0.0.1", 8080, materializer());
-    http.bindAndHandleSync(handler2, "127.0.0.1", 8080, httpsContext, materializer());
+    http.bindAndHandleSync(handler2, toHost("127.0.0.1", 8080), materializer());
+    http.bindAndHandleSync(handler2, toHostHttps("127.0.0.1", 8080), materializer());
 
     final HttpRequest handler3 = null;
     http.singleRequest(handler3, materializer());

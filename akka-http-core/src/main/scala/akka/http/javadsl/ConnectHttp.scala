@@ -17,6 +17,12 @@ abstract class ConnectHttp {
 
   final def effectiveHttpsConnectionContext(fallbackContext: HttpsConnectionContext): HttpsConnectionContext =
     connectionContext.orElse(fallbackContext)
+
+  final def effectiveConnectionContext(fallbackContext: ConnectionContext): ConnectionContext =
+    if (connectionContext.isPresent) connectionContext.get()
+    else fallbackContext
+
+  override def toString = s"ConnectHttp($host,$port,$isHttps,$connectionContext)"
 }
 
 object ConnectHttp {
@@ -35,7 +41,8 @@ object ConnectHttp {
 
   def toHost(host: String, port: Int): ConnectHttp = {
     require(port > 0, "port must be > 0")
-    toHost(Uri.create(host).port(port))
+    val start = if (host.startsWith("http://") || host.startsWith("https://")) host else s"http://$host"
+    toHost(Uri.create(start).port(port))
   }
 
   /**
@@ -59,7 +66,8 @@ object ConnectHttp {
   @throws(classOf[IllegalArgumentException])
   def toHostHttps(host: String, port: Int): ConnectWithHttps = {
     require(port > 0, "port must be > 0")
-    toHostHttps(Uri.create(host).port(port).host.address)
+    val start = if (host.startsWith("https://")) host else s"https://$host"
+    toHostHttps(Uri.create(s"$start").port(port))
   }
 
   private def effectivePort(uri: Uri): Int = {

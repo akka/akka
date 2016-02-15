@@ -170,3 +170,22 @@ how the word is spelled in the spec and some other places of Akka HTTP.
 
 Methods and classes using the word WebSocket now consistently use it as ``WebSocket``, so updating is as simple as
 find-and-replacing the lower-case ``s`` to an upper-case ``S`` wherever the word WebSocket appeared.
+
+Java DSL for Http binding and connections changed
+-------------------------------------------------
+
+In order to minimise the number of needed overloads for each method defined on the ``Http`` extension
+a new mini-DSL has been introduced for connecting to hosts given a hostname, port and optional ``ConnectionContext``.
+
+The availability of the connection context (if it's set to ``HttpsConnectionContext``) makes the server be bound
+as an HTTPS server, and for outgoing connections those settings are used instead of the default ones if provided.
+
+Was::
+
+    http.cachedHostConnectionPool(toHost("akka.io"), materializer());
+    http.cachedHostConnectionPool("akka.io", 80, httpsConnectionContext, materializer()); // does not work anymore
+
+Replace with::
+
+    http.cachedHostConnectionPool(toHostHttps("akka.io", 8081), materializer());
+    http.cachedHostConnectionPool(toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext), materializer());

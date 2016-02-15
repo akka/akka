@@ -6,9 +6,9 @@ package akka.http.javadsl.model;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
-import akka.japi.Function;
 import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
 import akka.http.javadsl.model.ws.WebSocket;
@@ -17,9 +17,6 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -35,18 +32,16 @@ public class JavaTestServer {
 
             CompletionStage<ServerBinding> serverBindingFuture =
                     Http.get(system).bindAndHandleSync(
-                            new Function<HttpRequest, HttpResponse>() {
-                                public HttpResponse apply(HttpRequest request) throws Exception {
-                                    System.out.println("Handling request to " + request.getUri());
+                      request -> {
+                          System.out.println("Handling request to " + request.getUri());
 
-                                    if (request.getUri().path().equals("/"))
-                                        return WebSocket.handleWebSocketRequestWith(request, echoMessages());
-                                    else if (request.getUri().path().equals("/greeter"))
-                                        return WebSocket.handleWebSocketRequestWith(request, greeter());
-                                    else
-                                        return JavaApiTestCases.handleRequest(request);
-                                }
-                            }, "localhost", 8080, materializer);
+                          if (request.getUri().path().equals("/"))
+                              return WebSocket.handleWebSocketRequestWith(request, echoMessages());
+                          else if (request.getUri().path().equals("/greeter"))
+                              return WebSocket.handleWebSocketRequestWith(request, greeter());
+                          else
+                              return JavaApiTestCases.handleRequest(request);
+                      }, ConnectHttp.toHost("localhost", 8080), materializer);
 
             serverBindingFuture.toCompletableFuture().get(1, TimeUnit.SECONDS); // will throw if binding fails
             System.out.println("Press ENTER to stop.");
