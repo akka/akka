@@ -32,7 +32,7 @@ object FileIO {
    * @param f The file to write to
    */
   def toFile(f: File): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
-    toFile(f, util.EnumSet.of(WRITE, CREATE))
+    new Sink(scaladsl.FileIO.toFile(f).toCompletionStage())
 
   /**
    * Creates a Sink that writes incoming [[ByteString]] elements to the given file
