@@ -86,7 +86,7 @@ public class GraphDSLTest extends StreamTest {
     final Publisher<String> pub = source.runWith(publisher, materializer);
     final CompletionStage<List<String>> all = Source.fromPublisher(pub).limit(100).runWith(Sink.<String>seq(), materializer);
 
-    final List<String> result = all.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    final List<String> result = all.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<String>(result));
   }
 
@@ -189,7 +189,7 @@ public class GraphDSLTest extends StreamTest {
       }
     )).run(materializer);
 
-    Duration d = Duration.create(300, TimeUnit.MILLISECONDS);
+    Duration d = Duration.create(3, TimeUnit.SECONDS);
 
     Object output1 = probe1.receiveOne(d);
     Object output2 = probe2.receiveOne(d);
@@ -235,7 +235,7 @@ public class GraphDSLTest extends StreamTest {
         }
       })).run(materializer);
 
-    Duration d = Duration.create(300, TimeUnit.MILLISECONDS);
+    Duration d = Duration.create(3, TimeUnit.SECONDS);
 
     Object output1 = probe1.receiveOne(d);
     Object output2 = probe2.receiveOne(d);
@@ -269,7 +269,59 @@ public class GraphDSLTest extends StreamTest {
         return ClosedShape.getInstance();
     })).run(materializer);
 
-    final Integer result = future.toCompletableFuture().get(300, TimeUnit.MILLISECONDS);
+    final Integer result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertEquals(11, (int) result);
+  }
+
+  @Test
+  public void mustBeAbleToUseZipN() throws Exception {
+    final Source<Integer, NotUsed> in1 = Source.single(1);
+    final Source<Integer, NotUsed> in2 = Source.single(10);
+
+    final Graph<UniformFanInShape<Integer, List<Integer>>, NotUsed> sumZip = ZipN.create(2);
+
+    final CompletionStage<List<Integer>> future = RunnableGraph.fromGraph(GraphDSL.create(Sink.<List<Integer>>head(),
+      (b, out) -> {
+        final UniformFanInShape<Integer, List<Integer>> zip = b.add(sumZip);
+        b.from(b.add(in1)).toInlet(zip.in(0));
+        b.from(b.add(in2)).toInlet(zip.in(1));
+        b.from(zip.out()).to(out);
+        return ClosedShape.getInstance();
+    })).run(materializer);
+
+    final List<Integer> result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    assertEquals(Arrays.asList(1, 10), result);
+  }
+
+  @Test
+  public void mustBeAbleToUseZipWithN() throws Exception {
+    final Source<Integer, NotUsed> in1 = Source.single(1);
+    final Source<Integer, NotUsed> in2 = Source.single(10);
+
+    final Graph<UniformFanInShape<Integer, Integer>, NotUsed> sumZip = ZipWithN.create(
+      new Function<List<Integer>, Integer>() {
+        @Override public Integer apply(List<Integer> list) throws Exception {
+          Integer sum = 0;
+
+          for(Integer i : list) {
+            sum += i;
+          }
+
+          return sum;
+        }
+    }, 2);
+
+    final CompletionStage<Integer> future = RunnableGraph.fromGraph(GraphDSL.create(Sink.<Integer>head(),
+      (b, out) -> {
+        final UniformFanInShape<Integer, Integer> zip = b.add(sumZip);
+        b.from(b.add(in1)).toInlet(zip.in(0));
+        b.from(b.add(in2)).toInlet(zip.in(1));
+        b.from(zip.out()).to(out);
+        return ClosedShape.getInstance();
+    })).run(materializer);
+
+    final Integer result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(11, (int) result);
   }
 
@@ -298,7 +350,7 @@ public class GraphDSLTest extends StreamTest {
         return ClosedShape.getInstance();
     })).run(materializer);
 
-    final Integer result = future.toCompletableFuture().get(300, TimeUnit.MILLISECONDS);
+    final Integer result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(1111, (int) result);
   }
 
@@ -315,7 +367,7 @@ public class GraphDSLTest extends StreamTest {
         return ClosedShape.getInstance();
     })).run(materializer);
 
-    final Integer result = future.toCompletableFuture().get(300, TimeUnit.MILLISECONDS);
+    final Integer result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(1, (int) result);
 
     probe.expectMsg(1);

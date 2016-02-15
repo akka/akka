@@ -272,9 +272,24 @@ object Source {
    */
   def combine[T, U](first: Source[T, _ <: Any], second: Source[T, _ <: Any], rest: java.util.List[Source[T, _ <: Any]],
                     strategy: function.Function[java.lang.Integer, _ <: Graph[UniformFanInShape[T, U], NotUsed]]): Source[U, NotUsed] = {
-    import scala.collection.JavaConverters._
-    val seq = if (rest != null) rest.asScala.map(_.asScala) else Seq()
+    val seq = if (rest != null) Util.immutableSeq(rest).map(_.asScala) else immutable.Seq()
     new Source(scaladsl.Source.combine(first.asScala, second.asScala, seq: _*)(num ⇒ strategy.apply(num)))
+  }
+
+  /**
+   * Combine the elements of multiple streams into a stream of lists.
+   */
+  def zipN[T](sources: java.util.List[Source[T, _ <: Any]]): Source[java.util.List[T], NotUsed] = {
+    val seq = if (sources != null) Util.immutableSeq(sources).map(_.asScala) else immutable.Seq()
+    new Source(scaladsl.Source.zipN(seq).map(_.asJava))
+  }
+
+  /*
+   * Combine the elements of multiple streams into a stream of lists using a combiner function.
+   */
+  def zipWithN[T, O](zipper: function.Function[java.util.List[T], O], sources: java.util.List[Source[T, _ <: Any]]): Source[O, NotUsed] = {
+    val seq = if (sources != null) Util.immutableSeq(sources).map(_.asScala) else immutable.Seq()
+    new Source(scaladsl.Source.zipWithN[T, O](seq => zipper.apply(seq.asJava))(seq))
   }
 
   /**
