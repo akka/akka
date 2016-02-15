@@ -37,12 +37,7 @@ object RenegotiatingHttpsTestServer extends App {
           case Some(infoHeader) if infoHeader.peerPrincipal.isDefined ⇒
             responseForPrincipal(infoHeader.peerPrincipal.get)
           case _ ⇒
-            HttpResponse(headers = RequestClientCertificate { info ⇒
-              info.peerPrincipal match {
-                case Some(p) ⇒ responseForPrincipal(p)
-                case None    ⇒ HttpResponse(StatusCodes.Unauthorized, entity = "401 Requested peer certificate but didn't get any")
-              }
-            } :: Nil)
+            HttpResponse(headers = RequestClientCertificate(req) :: Nil)
         }
       case HttpRequest(GET, Uri.Path("/ping"), _, _, _) ⇒
         println("Got ping")

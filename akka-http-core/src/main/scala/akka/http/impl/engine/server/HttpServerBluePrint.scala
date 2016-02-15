@@ -369,71 +369,87 @@ private[http] object HttpServerBluePrint {
       var pullSuppressed = false
       var messageEndPending = false
 
-      setHandler(requestParsingIn, new InHandler {
-        def onPush(): Unit =
-          grab(requestParsingIn) match {
-            case r: RequestStart ⇒
-              openRequests = openRequests.enqueue(r)
-              messageEndPending = r.createEntity.isInstanceOf[StreamedEntityCreator[_, _]]
-              val rs = if (r.expect100Continue) {
-                oneHundredContinueResponsePending = true
-                r.copy(createEntity = with100ContinueTrigger(r.createEntity))
-              } else r
-              push(requestPrepOut, rs)
-            case MessageEnd ⇒
-              messageEndPending = false
-              push(requestPrepOut, MessageEnd)
-            case MessageStartError(status, info) ⇒ finishWithIllegalRequestError(status, info)
-            case NewTlsSession(session) ⇒
-              if (newSessionHandler ne null) {
-                onGetNewResponse(newSessionHandler(`Tls-Session-Info`(session)))
-                newSessionHandler = null
-              }
-              if (!hasBeenPulled(requestParsingIn)) pull(requestParsingIn)
-            case x ⇒ push(requestPrepOut, x)
-          }
-        override def onUpstreamFinish() =
-          if (openRequests.isEmpty) completeStage()
-          else complete(requestPrepOut)
-      })
+      def normalState(): Unit = {
+        setHandler(requestParsingIn, new InHandler {
+          def onPush(): Unit =
+            grab(requestParsingIn) match {
+              case r: RequestStart ⇒
+                openRequests = openRequests.enqueue(r)
+                messageEndPending = r.createEntity.isInstanceOf[StreamedEntityCreator[_, _]]
+                val rs = if (r.expect100Continue) {
+                  oneHundredContinueResponsePending = true
+                  r.copy(createEntity = with100ContinueTrigger(r.createEntity))
+                } else r
+                push(requestPrepOut, rs)
+              case MessageEnd ⇒
+                messageEndPending = false
+                push(requestPrepOut, MessageEnd)
+              case MessageStartError(status, info) ⇒ finishWithIllegalRequestError(status, info)
+              case _: NewTlsSession => pull(requestParsingIn) // ignore
+              case x ⇒ push(requestPrepOut, x)
+            }
 
+          override def onUpstreamFinish() =
+            if (openRequests.isEmpty) completeStage()
+            else complete(requestPrepOut)
+        })
+      }
       setHandler(requestPrepOut, new OutHandler {
         def onPull(): Unit =
           if (oneHundredContinueResponsePending) pullSuppressed = true
           else if (!hasBeenPulled(requestParsingIn)) pull(requestParsingIn)
+
         override def onDownstreamFinish() = cancel(requestParsingIn)
       })
+      def waitForRenegotiation(newRequest: HttpRequest): Unit = {
+        if (!hasBeenPulled(requestParsingIn)) pull(requestParsingIn)
 
-      var newSessionHandler: `Tls-Session-Info` ⇒ HttpResponse = null
-
-      def onGetNewResponse(response: HttpResponse): Unit = {
-        val requestStart = openRequests.head
-        openRequests = openRequests.tail
-        val isEarlyResponse = messageEndPending && openRequests.isEmpty
-        if (isEarlyResponse && response.status.isSuccess)
-          log.warning(
-            """Sending 2xx response before end of request was received...
-              |Note that the connection will be closed after this response. Also, many clients will not read early responses!
-              |Consider waiting for the request end before dispatching this response!""".stripMargin)
-        val close = requestStart.closeRequested ||
-          requestStart.expect100Continue && oneHundredContinueResponsePending ||
-          isClosed(requestParsingIn) && openRequests.isEmpty ||
-          isEarlyResponse
-        emit(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
-          pullHttpResponseIn)
-        if (close) complete(responseCtxOut)
+        setHandler(requestParsingIn, new InHandler {
+          def onPush(): Unit = grab(requestParsingIn) match {
+            case NewTlsSession(session) ⇒
+              val sessionInfoHeader = `Tls-Session-Info`(session)
+              val headers = sessionInfoHeader :: newRequest.headers.filterNot(_.isInstanceOf[`Tls-Session-Info`]).toList
+              val creator = StrictEntityCreator(newRequest.entity.asInstanceOf[HttpEntity.Strict])
+              val start = RequestStart(newRequest.method, newRequest.uri, newRequest.protocol, headers, creator, false, false)
+              openRequests = openRequests.enqueue(start)
+              pull(httpResponseIn)
+              emit(requestPrepOut, start, {() => normalState(); pull(requestParsingIn)})
+          }
+        })
       }
+
+      normalState()
 
       setHandler(httpResponseIn, new InHandler {
         def onPush(): Unit = {
           val response = grab(httpResponseIn)
 
-          response.header[RequestClientCertificate] match {
+          response.header[RequestClientCertificate] match { // FIXME: make sure the request was read completely
             case Some(header) ⇒
-              newSessionHandler = header.responseGenerator
-              if (!hasBeenPulled(requestParsingIn)) pull(requestParsingIn)
+              // discard original request
+              openRequests = openRequests.tail
+              val isEarlyResponse = messageEndPending && openRequests.isEmpty
+              require(!isEarlyResponse, "The request entity must be fully read before issueing a RequestClientCertificate response")
+
               emit(responseCtxOut, ResponseRenderingOutput.RequestClientAuth)
-            case None ⇒ onGetNewResponse(response)
+              waitForRenegotiation(header.request)
+            case None ⇒
+              val requestStart = openRequests.head
+              openRequests = openRequests.tail
+              val isEarlyResponse = messageEndPending && openRequests.isEmpty
+              if (isEarlyResponse && response.status.isSuccess)
+                log.warning(
+                  """Sending 2xx response before end of request was received...
+                    |Note that the connection will be closed after this response. Also, many clients will not read early responses!
+                    |Consider waiting for the request end before dispatching this response!""".stripMargin)
+
+              val close = requestStart.closeRequested ||
+                requestStart.expect100Continue && oneHundredContinueResponsePending ||
+                isClosed(requestParsingIn) && openRequests.isEmpty ||
+                isEarlyResponse
+              emit(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
+                pullHttpResponseIn)
+              if (close) complete(responseCtxOut)
           }
         }
         override def onUpstreamFinish() =
