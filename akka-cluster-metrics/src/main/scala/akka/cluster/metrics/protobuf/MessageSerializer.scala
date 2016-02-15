@@ -42,8 +42,8 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
   def compress(msg: MessageLite): Array[Byte] = {
     val bos = new ByteArrayOutputStream(BufferSize)
     val zip = new GZIPOutputStream(bos)
-    msg.writeTo(zip)
-    zip.close()
+    try msg.writeTo(zip)
+    finally zip.close()
     bos.toByteArray
   }
 
@@ -59,7 +59,8 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
         readChunk()
     }
 
-    readChunk()
+    try readChunk()
+    finally in.close()
     out.toByteArray
   }
 
