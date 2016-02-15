@@ -51,7 +51,7 @@ object StreamConverters {
    * @param writeTimeout the max time the write operation on the materialized OutputStream should block, defaults to 5 seconds
    */
   def asOutputStream(writeTimeout: FiniteDuration = 5.seconds): Source[ByteString, OutputStream] =
-    Source.fromGraph(new OutputStreamSourceStage(writeTimeout)).withAttributes(DefaultAttributes.outputStreamSource)
+    Source.fromGraph(new OutputStreamSourceStage(writeTimeout))
 
   /**
    * Creates a Sink which writes incoming [[ByteString]]s to an [[OutputStream]] created by the given function.
@@ -78,6 +78,6 @@ object StreamConverters {
    * @param readTimeout the max time the read operation on the materialized InputStream should block
    */
   def asInputStream(readTimeout: FiniteDuration = 5.seconds): Sink[ByteString, InputStream] =
-    Sink.fromGraph(new InputStreamSinkStage(readTimeout)).withAttributes(DefaultAttributes.inputStreamSink)
+    Sink.fromGraph(new InputStreamSinkStage(readTimeout))
 
 }
