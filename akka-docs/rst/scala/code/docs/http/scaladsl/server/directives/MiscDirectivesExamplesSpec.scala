@@ -8,6 +8,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import headers._
 import docs.http.scaladsl.server.RoutingSpec
+import java.net.InetAddress
 
 class MiscDirectivesExamplesSpec extends RoutingSpec {
 
@@ -17,7 +18,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
     }
 
     // tests:
-    Get("/").withHeaders(`Remote-Address`(RemoteAddress("192.168.3.12"))) ~> route ~> check {
+    Get("/").withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("192.168.3.12")))) ~> route ~> check {
       responseAs[String] shouldEqual "Client's ip is 192.168.3.12"
     }
   }
