@@ -471,7 +471,7 @@ final class Broadcast[T](private val outputPorts: Int, eagerCancel: Boolean) ext
 
 object Partition {
 
-  case class PartitionOutOfBoundsException(msg:String) extends RuntimeException(msg) with NoStackTrace
+  case class PartitionOutOfBoundsException(msg: String) extends IndexOutOfBoundsException(msg) with NoStackTrace
 
   /**
    * Create a new `Partition` stage with the specified input type.
@@ -1009,7 +1009,7 @@ object GraphDSL extends GraphApply {
     }
 
     private class PortOpsImpl[+Out](override val outlet: Outlet[Out @uncheckedVariance], b: Builder[_])
-      extends PortOps[Out] {
+        extends PortOps[Out] {
 
       override def withAttributes(attr: Attributes): Repr[Out] = throw settingAttrNotSupported
       override def addAttributes(attr: Attributes): Repr[Out] = throw settingAttrNotSupported
@@ -1018,7 +1018,6 @@ object GraphDSL extends GraphApply {
 
       private def settingAttrNotSupported =
         new UnsupportedOperationException("Cannot set attributes on chained ops from a junction output port")
-
 
       override def importAndGetPort(b: Builder[_]): Outlet[Out @uncheckedVariance] = outlet
 
