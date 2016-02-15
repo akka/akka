@@ -81,8 +81,8 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
   private def compress(msg: MessageLite): Array[Byte] = {
     val bos = new ByteArrayOutputStream(BufferSize)
     val zip = new GZIPOutputStream(bos)
-    msg.writeTo(zip)
-    zip.close()
+    try msg.writeTo(zip)
+    finally zip.close()
     bos.toByteArray
   }
 
@@ -98,7 +98,8 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
         readChunk()
     }
 
-    readChunk()
+    try readChunk()
+    finally in.close()
     out.toByteArray
   }
 
