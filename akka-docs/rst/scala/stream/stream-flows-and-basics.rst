@@ -38,7 +38,7 @@ Processing Stage
   The common name for all building blocks that build up a Graph.
   Examples of a processing stage would be  operations like ``map()``, ``filter()``, stages added by ``transform()`` like
   :class:`PushStage`, :class:`PushPullStage`, :class:`StatefulStage` and graph junctions like ``Merge`` or ``Broadcast``.
-  For the full list of built-in processing stages see :ref:`stages-overview`
+  For the full list of built-in processing stages see :ref:`stages-overview_scala`
 
 When we talk about *asynchronous, non-blocking backpressure* we mean that the processing stages available in Akka
 Streams will not use blocking calls but asynchronous message passing to exchange messages between each other, and they
