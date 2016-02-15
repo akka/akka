@@ -16,7 +16,7 @@ This part also serves as supplementary material for the main body of documentati
 open while reading the manual and look for examples demonstrating various streaming concepts
 as they appear in the main body of documentation.
 
-If you need a quick reference of the available processing stages used in the recipes see :ref:`stages-overview`.
+If you need a quick reference of the available processing stages used in the recipes see :ref:`stages-overview_java`.
 
 Working with Flows
 ==================
@@ -63,11 +63,11 @@ The function ``limit`` or ``take`` should always be used in conjunction in order
 
 For example, this is best avoided:
 
-.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/cookbook/RecipeSeq.java#draining-to-list-unsafe
+.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeSeq.java#draining-to-list-unsafe
 
 Rather, use ``limit`` or ``take`` to ensure that the resulting ``List`` will contain only up to ``MAX_ALLOWED_SIZE`` elements:
 
-.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/cookbook/RecipeSeq.java#draining-to-list-safe
+.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeSeq.java#draining-to-list-safe
 
 Calculating the digest of a ByteString stream
 ---------------------------------------------

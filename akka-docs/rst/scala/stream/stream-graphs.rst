@@ -24,7 +24,7 @@ Graphs are built from simple Flows which serve as the linear connections within 
 which serve as fan-in and fan-out points for Flows. Thanks to the junctions having meaningful types based on their behaviour
 and making them explicit elements these elements should be rather straightforward to use.
 
-Akka Streams currently provide these junctions (for a detailed list see :ref:`stages-overview`):
+Akka Streams currently provide these junctions (for a detailed list see :ref:`stages-overview_scala`):
 
 * **Fan-out**
 
