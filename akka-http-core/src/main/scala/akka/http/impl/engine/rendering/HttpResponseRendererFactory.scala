@@ -54,12 +54,12 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
   // split out so we can stabilize by overriding in tests
   protected def currentTimeMillis(): Long = System.currentTimeMillis()
 
-  def renderer: Flow[ResponseRenderingContext, ResponseRenderingOutput, NotUsed] = Flow.fromGraph(HttpResponseRenderer)
+  def renderer: Flow[ResponseRenderingInput, ResponseRenderingOutput, NotUsed] = Flow.fromGraph(HttpResponseRenderer)
 
-  object HttpResponseRenderer extends GraphStage[FlowShape[ResponseRenderingContext, ResponseRenderingOutput]] {
-    val in = Inlet[ResponseRenderingContext]("in")
+  object HttpResponseRenderer extends GraphStage[FlowShape[ResponseRenderingInput, ResponseRenderingOutput]] {
+    val in = Inlet[ResponseRenderingInput]("in")
     val out = Outlet[ResponseRenderingOutput]("out")
-    val shape: FlowShape[ResponseRenderingContext, ResponseRenderingOutput] = FlowShape(in, out)
+    val shape: FlowShape[ResponseRenderingInput, ResponseRenderingOutput] = FlowShape(in, out)
 
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) {
@@ -70,11 +70,15 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
 
         setHandler(in, new InHandler {
           override def onPush(): Unit =
-            render(grab(in)) match {
-              case Strict(outElement) ⇒
-                push(out, outElement)
-                if (close) completeStage()
-              case Streamed(outStream) ⇒ transfer(outStream)
+            grab(in) match {
+              case ResponseRenderingOutput.RequestClientAuth ⇒ push(out, ResponseRenderingOutput.RequestClientAuth)
+              case ctx: ResponseRenderingContext ⇒
+                render(ctx) match {
+                  case Strict(outElement) ⇒
+                    push(out, outElement)
+                    if (close) completeStage()
+                  case Streamed(outStream) ⇒ transfer(outStream)
+                }
             }
 
           override def onUpstreamFinish(): Unit =
@@ -271,14 +275,15 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
   case class SwitchToWebSocket(handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]]) extends CloseMode
 }
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
+private[http] trait ResponseRenderingInput
+
+/** INTERNAL API */
 private[http] final case class ResponseRenderingContext(
   response: HttpResponse,
   requestMethod: HttpMethod = HttpMethods.GET,
   requestProtocol: HttpProtocol = HttpProtocols.`HTTP/1.1`,
-  closeRequested: Boolean = false)
+  closeRequested: Boolean = false) extends ResponseRenderingInput
 
 /** INTERNAL API */
 private[http] sealed trait ResponseRenderingOutput
@@ -286,4 +291,5 @@ private[http] sealed trait ResponseRenderingOutput
 private[http] object ResponseRenderingOutput {
   private[http] case class HttpData(bytes: ByteString) extends ResponseRenderingOutput
   private[http] case class SwitchToWebSocket(httpResponseBytes: ByteString, handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]]) extends ResponseRenderingOutput
+  private[http] case object RequestClientAuth extends ResponseRenderingOutput with ResponseRenderingInput
 }

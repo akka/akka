@@ -6,6 +6,7 @@ package akka.http.impl.engine.server
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
+
 import scala.concurrent.{ Promise, Future }
 import scala.concurrent.duration.{ Deadline, FiniteDuration, Duration }
 import scala.collection.immutable
@@ -23,12 +24,12 @@ import akka.http.scaladsl.settings.ServerSettings
 import akka.http.impl.engine.HttpConnectionTimeoutException
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.engine.parsing._
-import akka.http.impl.engine.rendering.{ HttpResponseRendererFactory, ResponseRenderingContext, ResponseRenderingOutput }
+import akka.http.impl.engine.rendering.{ ResponseRenderingInput, HttpResponseRendererFactory, ResponseRenderingContext, ResponseRenderingOutput }
 import akka.http.impl.engine.ws._
 import akka.http.impl.util._
 import akka.http.scaladsl.util.FastFuture.EnhancedFuture
 import akka.http.scaladsl.{ TimeoutAccess, Http }
-import akka.http.scaladsl.model.headers.`Timeout-Access`
+import akka.http.scaladsl.model.headers.{`Timeout-Access`, `Tls-Session-Info`, RequestClientCertificate}
 import akka.http.javadsl.model
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.Message
@@ -68,16 +69,16 @@ private[http] object HttpServerBluePrint {
     theStack.withAttributes(HttpAttributes.remoteAddress(remoteAddress))
   }
 
-  val tlsSupport: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, SessionBytes, NotUsed] =
-    BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect { case x: SessionBytes ⇒ x })
+  val tlsSupport: BidiFlow[SslTlsOutbound, SslTlsOutbound, SslTlsInbound, SessionBytes, NotUsed] =
+    BidiFlow.fromFlows(Flow[SslTlsOutbound], Flow[SslTlsInbound].collect { case x: SessionBytes ⇒ x })
 
-  def websocketSupport(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes, NotUsed] =
+  def websocketSupport(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingOutput, SslTlsOutbound, SessionBytes, SessionBytes, NotUsed] =
     BidiFlow.fromGraph(new ProtocolSwitchStage(settings, log))
 
-  def parsingRendering(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, SessionBytes, RequestOutput, NotUsed] =
+  def parsingRendering(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingInput, ResponseRenderingOutput, SessionBytes, RequestOutput, NotUsed] =
     BidiFlow.fromFlows(rendering(settings, log), parsing(settings, log))
 
-  def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, NotUsed] =
+  def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingInput, RequestOutput, RequestOutput, NotUsed] =
     BidiFlow.fromGraph(new ControllerStage(settings, log)).reversed
 
   def requestPreparation(settings: ServerSettings): BidiFlow[HttpResponse, HttpResponse, RequestOutput, HttpRequest, NotUsed] =
@@ -236,7 +237,7 @@ private[http] object HttpServerBluePrint {
       .map(establishAbsoluteUri)
   }
 
-  def rendering(settings: ServerSettings, log: LoggingAdapter): Flow[ResponseRenderingContext, ResponseRenderingOutput, NotUsed] = {
+  def rendering(settings: ServerSettings, log: LoggingAdapter): Flow[ResponseRenderingInput, ResponseRenderingOutput, NotUsed] = {
     import settings._
 
     val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log)
@@ -247,7 +248,7 @@ private[http] object HttpServerBluePrint {
       case t                                       ⇒ log.error(t, "Outgoing response stream error")
     }
 
-    Flow[ResponseRenderingContext]
+    Flow[ResponseRenderingInput]
       .via(responseRendererFactory.renderer.named("renderer"))
       .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorHandling(errorHandler)).named("errorLogger"))
   }
@@ -351,11 +352,11 @@ private[http] object HttpServerBluePrint {
   }
 
   class ControllerStage(settings: ServerSettings, log: LoggingAdapter)
-    extends GraphStage[BidiShape[RequestOutput, RequestOutput, HttpResponse, ResponseRenderingContext]] {
+    extends GraphStage[BidiShape[RequestOutput, RequestOutput, HttpResponse, ResponseRenderingInput]] {
     private val requestParsingIn = Inlet[RequestOutput]("requestParsingIn")
     private val requestPrepOut = Outlet[RequestOutput]("requestPrepOut")
     private val httpResponseIn = Inlet[HttpResponse]("httpResponseIn")
-    private val responseCtxOut = Outlet[ResponseRenderingContext]("responseCtxOut")
+    private val responseCtxOut = Outlet[ResponseRenderingInput]("responseCtxOut")
 
     override def initialAttributes = Attributes.name("ControllerStage")
 
@@ -383,7 +384,13 @@ private[http] object HttpServerBluePrint {
               messageEndPending = false
               push(requestPrepOut, MessageEnd)
             case MessageStartError(status, info) ⇒ finishWithIllegalRequestError(status, info)
-            case x                               ⇒ push(requestPrepOut, x)
+            case NewTlsSession(session) ⇒
+              if (newSessionHandler ne null) {
+                onGetNewResponse(newSessionHandler(`Tls-Session-Info`(session)))
+                newSessionHandler = null
+              }
+              if (!hasBeenPulled(requestParsingIn)) pull(requestParsingIn)
+            case x ⇒ push(requestPrepOut, x)
           }
         override def onUpstreamFinish() =
           if (openRequests.isEmpty) completeStage()
@@ -393,28 +400,41 @@ private[http] object HttpServerBluePrint {
       setHandler(requestPrepOut, new OutHandler {
         def onPull(): Unit =
           if (oneHundredContinueResponsePending) pullSuppressed = true
-          else pull(requestParsingIn)
+          else if (!hasBeenPulled(requestParsingIn)) pull(requestParsingIn)
         override def onDownstreamFinish() = cancel(requestParsingIn)
       })
+
+      var newSessionHandler: `Tls-Session-Info` ⇒ HttpResponse = null
+
+      def onGetNewResponse(response: HttpResponse): Unit = {
+        val requestStart = openRequests.head
+        openRequests = openRequests.tail
+        val isEarlyResponse = messageEndPending && openRequests.isEmpty
+        if (isEarlyResponse && response.status.isSuccess)
+          log.warning(
+            """Sending 2xx response before end of request was received...
+              |Note that the connection will be closed after this response. Also, many clients will not read early responses!
+              |Consider waiting for the request end before dispatching this response!""".stripMargin)
+        val close = requestStart.closeRequested ||
+          requestStart.expect100Continue && oneHundredContinueResponsePending ||
+          isClosed(requestParsingIn) && openRequests.isEmpty ||
+          isEarlyResponse
+        emit(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
+          pullHttpResponseIn)
+        if (close) complete(responseCtxOut)
+      }
 
       setHandler(httpResponseIn, new InHandler {
         def onPush(): Unit = {
           val response = grab(httpResponseIn)
-          val requestStart = openRequests.head
-          openRequests = openRequests.tail
-          val isEarlyResponse = messageEndPending && openRequests.isEmpty
-          if (isEarlyResponse && response.status.isSuccess)
-            log.warning(
-              """Sending 2xx response before end of request was received...
-                |Note that the connection will be closed after this response. Also, many clients will not read early responses!
-                |Consider waiting for the request end before dispatching this response!""".stripMargin)
-          val close = requestStart.closeRequested ||
-            requestStart.expect100Continue && oneHundredContinueResponsePending ||
-            isClosed(requestParsingIn) && openRequests.isEmpty ||
-            isEarlyResponse
-          emit(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
-            pullHttpResponseIn)
-          if (close) complete(responseCtxOut)
+
+          response.header[RequestClientCertificate] match {
+            case Some(header) ⇒
+              newSessionHandler = header.responseGenerator
+              if (!hasBeenPulled(requestParsingIn)) pull(requestParsingIn)
+              emit(responseCtxOut, ResponseRenderingOutput.RequestClientAuth)
+            case None ⇒ onGetNewResponse(response)
+          }
         }
         override def onUpstreamFinish() =
           if (openRequests.isEmpty && isClosed(requestParsingIn)) completeStage()
@@ -533,10 +553,10 @@ private[http] object HttpServerBluePrint {
     One2OneBidiFlow[HttpRequest, HttpResponse](pipeliningLimit).reversed
 
   private class ProtocolSwitchStage(settings: ServerSettings, log: LoggingAdapter)
-    extends GraphStage[BidiShape[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes]] {
+    extends GraphStage[BidiShape[ResponseRenderingOutput, SslTlsOutbound, SessionBytes, SessionBytes]] {
 
     private val fromNet = Inlet[SessionBytes]("fromNet")
-    private val toNet = Outlet[ByteString]("toNet")
+    private val toNet = Outlet[SslTlsOutbound]("toNet")
 
     private val toHttp = Outlet[SessionBytes]("toHttp")
     private val fromHttp = Inlet[ResponseRenderingOutput]("fromHttp")
@@ -556,12 +576,14 @@ private[http] object HttpServerBluePrint {
       setHandler(fromHttp, new InHandler {
         override def onPush(): Unit =
           grab(fromHttp) match {
-            case HttpData(b) ⇒ push(toNet, b)
+            case HttpData(b) ⇒ push(toNet, SendBytes(b))
             case SwitchToWebSocket(bytes, handlerFlow) ⇒
-              push(toNet, bytes)
+              push(toNet, SendBytes(bytes))
               complete(toHttp)
               cancel(fromHttp)
               switchToWebSocket(handlerFlow)
+            case RequestClientAuth ⇒
+              push(toNet, NegotiateNewSession(None, None, clientAuth = Some(ClientAuth.Want), None))
           }
         override def onUpstreamFinish(): Unit = complete(toNet)
         override def onUpstreamFailure(ex: Throwable): Unit = fail(toNet, ex)
@@ -613,7 +635,7 @@ private[http] object HttpServerBluePrint {
 
         val sinkIn = new SubSinkInlet[ByteString]("FrameSink")
         sinkIn.setHandler(new InHandler {
-          override def onPush(): Unit = push(toNet, sinkIn.grab())
+          override def onPush(): Unit = push(toNet, SendBytes(sinkIn.grab()))
           override def onUpstreamFinish(): Unit = complete(toNet)
           override def onUpstreamFailure(ex: Throwable): Unit = fail(toNet, ex)
         })

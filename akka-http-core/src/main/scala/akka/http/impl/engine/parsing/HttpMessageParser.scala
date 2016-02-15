@@ -61,7 +61,9 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
       lastSession = input.session
       tlsSessionInfoHeader = `Tls-Session-Info`(input.session)
     }
-    parseBytes(input.bytes)
+
+    if (input.bytes.nonEmpty) parseBytes(input.bytes)
+    else NewTlsSession(input.session)
   }
   final def parseBytes(input: ByteString): Output = {
     @tailrec def run(next: ByteString ⇒ StateResult): StateResult =

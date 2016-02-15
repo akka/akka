@@ -170,6 +170,7 @@ private[http] object OutgoingConnectionBlueprint {
         case MessageStartError(_, info) ⇒
           throw IllegalResponseException(info)
 
+        case _: NewTlsSession ⇒ pull(in) // ignore
         case other ⇒
           throw new IllegalStateException(s"ResponseStart expected but $other received.")
       }
