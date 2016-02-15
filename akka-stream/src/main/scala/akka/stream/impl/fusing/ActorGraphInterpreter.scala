@@ -31,7 +31,9 @@ private[stream] case class GraphModule(assembly: GraphAssembly, shape: Shape, at
 
   override final def carbonCopy: Module = CopiedModule(shape.deepCopy(), Attributes.none, this)
 
-  override final def replaceShape(newShape: Shape): Module = CompositeModule(this, newShape)
+  override final def replaceShape(newShape: Shape): Module =
+    if (newShape != shape) CompositeModule(this, newShape)
+    else this
 
   override def toString: String = s"GraphModule\n  ${assembly.toString.replace("\n", "\n  ")}\n  shape=$shape, attributes=$attributes"
 }
