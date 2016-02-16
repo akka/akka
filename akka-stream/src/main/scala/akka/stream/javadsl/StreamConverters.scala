@@ -26,6 +26,9 @@ object StreamConverters {
    *
    * This method uses no auto flush for the [[java.io.OutputStream]] @see [[#fromOutputStream(function.Creator, Boolean)]] if you want to override it.
    *
+   * The [[OutputStream]] will be closed when the stream flowing into this [[Sink]] is completed. The [[Sink]]
+   * will cancel the stream when the [[OutputStream]] is no longer writable.
+   *
    * @param f A Creator which creates an OutputStream to write to
    */
   def fromOutputStream(f: function.Creator[OutputStream]): javadsl.Sink[ByteString, CompletionStage[IOResult]] = fromOutputStream(f, autoFlush = false)
@@ -38,6 +41,9 @@ object StreamConverters {
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
+   *
+   * The [[OutputStream]] will be closed when the stream flowing into this [[Sink]] is completed. The [[Sink]]
+   * will cancel the stream when the [[OutputStream]] is no longer writable.
    *
    * @param f A Creator which creates an OutputStream to write to
    * @param autoFlush If true the OutputStream will be flushed whenever a byte array is written
@@ -56,6 +62,9 @@ object StreamConverters {
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
+   *
+   * The [[InputStream]] will be closed when the stream flowing into this [[Sink]] completes, and
+   * closing the [[InputStream]] will cancel this [[Sink]].
    */
   def asInputStream(): Sink[ByteString, InputStream] = new Sink(scaladsl.StreamConverters.asInputStream())
 
@@ -67,6 +76,9 @@ object StreamConverters {
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
+   *
+   * The [[InputStream]] will be closed when the stream flowing into this [[Sink]] completes, and
+   * closing the [[InputStream]] will cancel this [[Sink]].
    *
    * @param readTimeout the max time the read operation on the materialized InputStream should block
    */
@@ -82,6 +94,8 @@ object StreamConverters {
    * set it for a given Source by using [[ActorAttributes]].
    *
    * It materializes a [[CompletionStage]] containing the number of bytes read from the source file upon completion.
+   *
+   * The created [[InputStream]] will be closed when the [[Source]] is cancelled.
    */
   def fromInputStream(in: function.Creator[InputStream], chunkSize: Int): javadsl.Source[ByteString, CompletionStage[IOResult]] =
     new Source(scaladsl.StreamConverters.fromInputStream(() ⇒ in.create(), chunkSize).toCompletionStage())
@@ -96,6 +110,8 @@ object StreamConverters {
    *
    * It materializes a [[CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
    * and a possible exception if IO operation was not completed successfully.
+   *
+   * The created [[InputStream]] will be closed when the [[Source]] is cancelled.
    */
   def fromInputStream(in: function.Creator[InputStream]): javadsl.Source[ByteString, CompletionStage[IOResult]] = fromInputStream(in, 8192)
 
@@ -107,6 +123,9 @@ object StreamConverters {
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
+   *
+   * The created [[OutputStream]] will be closed when the [[Source]] is cancelled, and closing the [[OutputStream]]
+   * will complete this [[Source]].
    *
    * @param writeTimeout the max time the write operation on the materialized OutputStream should block
    */
@@ -122,6 +141,9 @@ object StreamConverters {
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
+   *
+   * The created [[OutputStream]] will be closed when the [[Source]] is cancelled, and closing the [[OutputStream]]
+   * will complete this [[Source]].
    */
   def asOutputStream(): javadsl.Source[ByteString, OutputStream] =
     new Source(scaladsl.StreamConverters.asOutputStream())
