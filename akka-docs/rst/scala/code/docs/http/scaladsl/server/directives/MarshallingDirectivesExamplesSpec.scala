@@ -8,7 +8,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import docs.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model._
-import spray.json.DefaultJsonProtocol
+import spray.json.{ JsValue, DefaultJsonProtocol }
 
 //# person-case-class
 case class Person(name: String, favoriteNumber: Int)
@@ -34,6 +34,22 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
     Post("/", HttpEntity(`application/json`, """{ "name": "Jane", "favoriteNumber" : 42 }""")) ~>
       route ~> check {
         responseAs[String] shouldEqual "Person: Jane - favorite number: 42"
+      }
+  }
+
+  "example-entity-with-raw-json" in {
+    import PersonJsonSupport._
+
+    val route = post {
+      entity(as[JsValue]) { json =>
+        complete(s"Person: ${json.asJsObject.fields("name")} - favorite number: ${json.asJsObject.fields("favoriteNumber")}")
+      }
+    }
+
+    // tests:
+    Post("/", HttpEntity(`application/json`, """{ "name": "Jane", "favoriteNumber" : 42 }""")) ~>
+      route ~> check {
+        responseAs[String] shouldEqual """Person: "Jane" - favorite number: 42"""
       }
   }
 
