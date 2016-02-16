@@ -5,10 +5,14 @@
 package akka.http.impl.engine.parsing
 
 import akka.NotUsed
-import akka.http.scaladsl.model._
-import akka.stream.scaladsl.Source
 import akka.util.ByteString
+
+import akka.stream.scaladsl.Source
 import akka.stream.impl.fusing.SubSource
+
+import akka.http.scaladsl.model._
+
+import javax.net.ssl.SSLSession
 
 /**
  * INTERNAL API
@@ -60,6 +64,8 @@ private[http] object ParserOutput {
   case object NeedNextRequestMethod extends ResponseOutput
 
   final case class RemainingBytes(bytes: ByteString) extends ResponseOutput
+
+  final case class NewTlsSession(session: SSLSession) extends MessageOutput
 
   //////////////////////////////////////
 

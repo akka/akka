@@ -432,6 +432,7 @@ private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings,
         currentSession = session
         corkUser = false
     }
+    outputBunch.enqueue(UserOut, SessionBytes(currentSession, ByteString.empty))
   }
 
   override def receive = inputBunch.subreceive.orElse[Any, Unit](outputBunch.subreceive)

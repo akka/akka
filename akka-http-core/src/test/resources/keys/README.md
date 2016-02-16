@@ -50,6 +50,17 @@ cat server.crt rootCA.crt > chain.pem
 openssl pkcs12 -export -name servercrt -in chain.pem -inkey server.key -out server.p12
 ```
 
+# Creating a client key
+# see https://gist.github.com/mtigas/952344
+
+openssl genrsa -des3 -out client.key 4096
+openssl req -new -key client.key -out client.csr
+# sign with our own certificate
+openssl x509 -req -days 3650 -in client.csr -CA rootCA.crt -CAkey rootCA.key -set_serial 01 -out client.crt
+
+# convert to pkcs
+openssl pkcs12 -export -clcerts -in client.crt -inkey client.key -out client.p12
+
 # For investigating remote certs use:
 
 ```
