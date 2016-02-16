@@ -60,7 +60,7 @@ The websocket request may also include additional headers, like in this example,
 
 webSocketClientFlow
 -------------------
-``webSocketClientFlow`` takes a request, and returns a ``Flow<Message, Message, Future<WebSocketUpgradeResponse>>``.
+``webSocketClientFlow`` takes a request, and returns a ``Flow<Message, Message, CompletionStage<WebSocketUpgradeResponse>>``.
 
 The future that is materialized from the flow will succeed when the WebSocket connection has been established or
 the server returned a regular HTTP response, or fail if the connection fails with an exception.
