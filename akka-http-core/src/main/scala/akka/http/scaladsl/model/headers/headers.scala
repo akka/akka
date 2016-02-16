@@ -9,12 +9,13 @@ import java.net.InetSocketAddress
 import java.security.MessageDigest
 import java.util
 import javax.net.ssl.SSLSession
+import akka.stream.scaladsl.ScalaSessionAPI
+
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success, Try }
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.parboiled2.util.Base64
-import akka.stream.io.ScalaSessionAPI
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.model._

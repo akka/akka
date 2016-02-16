@@ -9,28 +9,28 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus._
 import javax.net.ssl.SSLEngineResult.Status._
 import javax.net.ssl._
 import akka.actor._
-import akka.stream.{ ConnectionException, ActorMaterializerSettings }
+import akka.stream._
 import akka.stream.impl.FanIn.InputBunch
 import akka.stream.impl.FanOut.OutputBunch
 import akka.stream.impl._
 import akka.util.ByteString
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import scala.annotation.tailrec
-import akka.stream.io._
+import akka.stream.TLSProtocol._
 
 /**
  * INTERNAL API.
  */
-private[akka] object SslTlsCipherActor {
+private[akka] object TLSActor {
 
   def props(settings: ActorMaterializerSettings,
             sslContext: SSLContext,
             firstSession: NegotiateNewSession,
-            role: Role,
-            closing: Closing,
+            role: TLSRole,
+            closing: TLSClosing,
             hostInfo: Option[(String, Int)],
             tracing: Boolean = false): Props =
-    Props(new SslTlsCipherActor(settings, sslContext, firstSession, role, closing, hostInfo, tracing)).withDeploy(Deploy.local)
+    Props(new TLSActor(settings, sslContext, firstSession, role, closing, hostInfo, tracing)).withDeploy(Deploy.local)
 
   final val TransportIn = 0
   final val TransportOut = 0
@@ -42,13 +42,13 @@ private[akka] object SslTlsCipherActor {
 /**
  * INTERNAL API.
  */
-private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings,
-                                      sslContext: SSLContext,
-                                      firstSession: NegotiateNewSession, role: Role, closing: Closing,
-                                      hostInfo: Option[(String, Int)], tracing: Boolean)
+private[akka] class TLSActor(settings: ActorMaterializerSettings,
+                             sslContext: SSLContext,
+                             firstSession: NegotiateNewSession, role: TLSRole, closing: TLSClosing,
+                             hostInfo: Option[(String, Int)], tracing: Boolean)
   extends Actor with ActorLogging with Pump {
 
-  import SslTlsCipherActor._
+  import TLSActor._
 
   protected val outputBunch = new OutputBunch(outputCount = 2, self, this)
   outputBunch.markAllOutputs()
@@ -161,10 +161,10 @@ private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings,
     params.enabledCipherSuites foreach (cs ⇒ engine.setEnabledCipherSuites(cs.toArray))
     params.enabledProtocols foreach (p ⇒ engine.setEnabledProtocols(p.toArray))
     params.clientAuth match {
-      case Some(ClientAuth.None) ⇒ engine.setNeedClientAuth(false)
-      case Some(ClientAuth.Want) ⇒ engine.setWantClientAuth(true)
-      case Some(ClientAuth.Need) ⇒ engine.setNeedClientAuth(true)
-      case _                     ⇒ // do nothing
+      case Some(TLSClientAuth.None) ⇒ engine.setNeedClientAuth(false)
+      case Some(TLSClientAuth.Want) ⇒ engine.setWantClientAuth(true)
+      case Some(TLSClientAuth.Need) ⇒ engine.setNeedClientAuth(true)
+      case _                        ⇒ // do nothing
     }
     params.sslParameters foreach (p ⇒ engine.setSSLParameters(p))
 

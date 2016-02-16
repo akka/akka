@@ -190,6 +190,13 @@ Replace with::
     http.cachedHostConnectionPool(toHostHttps("akka.io", 8081), materializer());
     http.cachedHostConnectionPool(toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext), materializer());
 
+SslTls has been renamed to TLS and moved
+----------------------------------------
+
+The DSL to access a TLS (or SSL) :class:`BidiFlow` have now split between the ``javadsl`` and ``scaladsl`` packages and
+have been renamed to :class:`TLS`. Common option types (closing modes, authentication modes, etc.) have been moved to
+the top level ``stream`` package, and the common message types are accessible in the class :class:`akka.stream.TLSProtocol`
+
 Framing moved to akka.stream.[javadsl/scaladsl]
 -----------------------------------------------
 

@@ -22,8 +22,8 @@ import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgrade
 import akka.http.scaladsl.settings.{ ServerSettings, ClientConnectionSettings, ConnectionPoolSettings }
 import akka.http.scaladsl.util.FastFuture
 import akka.{ Done, NotUsed }
-import akka.stream.Materializer
-import akka.stream.io._
+import akka.stream._
+import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 import com.typesafe.config.Config
 import com.typesafe.sslconfig.akka._
@@ -608,10 +608,10 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   }
 
   /** Creates real or placebo SslTls stage based on if ConnectionContext is HTTPS or not. */
-  private[http] def sslTlsStage(connectionContext: ConnectionContext, role: Role, hostInfo: Option[(String, Int)] = None) =
+  private[http] def sslTlsStage(connectionContext: ConnectionContext, role: TLSRole, hostInfo: Option[(String, Int)] = None) =
     connectionContext match {
-      case hctx: HttpsConnectionContext ⇒ SslTls(hctx.sslContext, hctx.firstSession, role, hostInfo = hostInfo)
-      case other                        ⇒ SslTlsPlacebo.forScala // if it's not HTTPS, we don't enable SSL/TLS
+      case hctx: HttpsConnectionContext ⇒ TLS(hctx.sslContext, hctx.firstSession, role, hostInfo = hostInfo)
+      case other                        ⇒ TLSPlacebo() // if it's not HTTPS, we don't enable SSL/TLS
     }
 }
 
@@ -746,7 +746,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
  * TLS configuration for an HTTPS server binding or client connection.
  * For the sslContext please refer to the com.typeasfe.ssl-config library.
  * The remaining four parameters configure the initial session that will
- * be negotiated, see [[akka.stream.io.NegotiateNewSession]] for details.
+ * be negotiated, see [[NegotiateNewSession]] for details.
  */
 trait DefaultSSLContextCreation {
 
@@ -786,9 +786,9 @@ trait DefaultSSLContextCreation {
     import com.typesafe.sslconfig.ssl.{ ClientAuth ⇒ SslClientAuth }
     val clientAuth = config.sslParametersConfig.clientAuth match {
       case SslClientAuth.Default ⇒ None
-      case SslClientAuth.Want    ⇒ Some(ClientAuth.Want)
-      case SslClientAuth.Need    ⇒ Some(ClientAuth.Need)
-      case SslClientAuth.None    ⇒ Some(ClientAuth.None)
+      case SslClientAuth.Want    ⇒ Some(TLSClientAuth.Want)
+      case SslClientAuth.Need    ⇒ Some(TLSClientAuth.Need)
+      case SslClientAuth.None    ⇒ Some(TLSClientAuth.None)
     }
     // hostname!
     defaultParams.setEndpointIdentificationAlgorithm("https")

@@ -6,8 +6,8 @@ package akka.http.scaladsl.coding
 
 import java.util.zip.{ Inflater, Deflater }
 import akka.stream.Attributes
-import akka.stream.io.ByteStringParser
-import akka.stream.io.ByteStringParser.{ ParseResult, ParseStep }
+import akka.stream.impl.io.ByteStringParser
+import ByteStringParser.{ ParseResult, ParseStep }
 import akka.util.{ ByteStringBuilder, ByteString }
 
 import scala.annotation.tailrec

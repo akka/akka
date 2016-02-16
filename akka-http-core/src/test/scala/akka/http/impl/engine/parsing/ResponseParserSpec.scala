@@ -7,7 +7,7 @@ package akka.http.impl.engine.parsing
 import akka.NotUsed
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.io.{ SslTlsPlacebo, SessionBytes }
+import akka.stream.TLSProtocol._
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
@@ -292,7 +292,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
     def rawParse(requestMethod: HttpMethod, input: String*): Source[Either[ResponseOutput, HttpResponse], NotUsed] =
       Source(input.toList)
-        .map(bytes ⇒ SessionBytes(SslTlsPlacebo.dummySession, ByteString(bytes)))
+        .map(bytes ⇒ SessionBytes(TLSPlacebo.dummySession, ByteString(bytes)))
         .transform(() ⇒ newParserStage(requestMethod)).named("parser")
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
         .prefixAndTail(1)
