@@ -6,6 +6,7 @@ package docs.actor.fsm;
 
 import akka.actor.*;
 import akka.testkit.JavaTestKit;
+import docs.AbstractJavaTest;
 import org.hamcrest.CoreMatchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -18,7 +19,7 @@ import static docs.actor.fsm.FSMDocTest.StateType.*;
 import static docs.actor.fsm.FSMDocTest.Messages.*;
 import static java.util.concurrent.TimeUnit.*;
 
-public class FSMDocTest {
+public class FSMDocTest extends AbstractJavaTest {
   static ActorSystem system;
 
   @BeforeClass

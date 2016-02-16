@@ -20,8 +20,9 @@ import akka.actor.Props;
 import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
 import akka.testkit.AkkaSpec;
+import docs.AbstractJavaTest;
 
-public class FSMDocTest {
+public class FSMDocTest extends AbstractJavaTest {
 
   static
   //#data

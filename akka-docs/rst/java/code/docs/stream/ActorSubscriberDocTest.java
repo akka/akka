@@ -22,6 +22,7 @@ import akka.stream.actor.RequestStrategy;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
+import docs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,23 +31,23 @@ import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
-public class ActorSubscriberDocTest {
+public class ActorSubscriberDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
-  
+  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("ActorSubscriberDocTest");
+    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
+    mat = null;
   }
-  
-  final Materializer mat = ActorMaterializer.create(system);
   
     //#worker-pool
     public static class WorkerPoolProtocol {

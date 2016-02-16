@@ -3,6 +3,8 @@
  */
 package akka.routing
 
+import akka.util.Collections.EmptyImmutableSeq
+
 import scala.collection.immutable
 import akka.ConfigurationException
 import akka.actor.Actor
@@ -40,6 +42,7 @@ trait RouterConfig extends Serializable {
 
   /**
    * Create the actual router, responsible for routing messages to routees.
+ *
    * @param system the ActorSystem this router belongs to
    */
   def createRouter(system: ActorSystem): Router
@@ -132,7 +135,11 @@ abstract class GroupBase extends Group {
   def getPaths: java.lang.Iterable[String] = null
 
   @deprecated("Use paths with ActorSystem parameter instead", "2.4")
-  override final def paths: immutable.Iterable[String] = immutableSeq(getPaths)
+  override final def paths: immutable.Iterable[String] = {
+    val tmp = getPaths
+    if (tmp != null) immutableSeq(tmp)
+    else null
+  }
 
   def getPaths(system: ActorSystem): java.lang.Iterable[String]
 

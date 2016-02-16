@@ -1,6 +1,8 @@
 package docs.stream.javadsl.cookbook;
 
-public class RecipeTest {
+import docs.AbstractJavaTest;
+
+public abstract class RecipeTest extends AbstractJavaTest {
   final class Message {
     public final String msg;
 

@@ -14,6 +14,7 @@ import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 import akka.NotUsed;
+import docs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -36,22 +37,23 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.util.Random;
 
-public class RateTransformationDocTest {
+public class RateTransformationDocTest extends AbstractJavaTest {
 
-  private static ActorSystem system;
+  static ActorSystem system;
+  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RateTransformationDocTest");
+    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
+    mat = null;
   }
-
-  final Materializer mat = ActorMaterializer.create(system);
 
   final Random r = new Random();
 

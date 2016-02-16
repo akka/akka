@@ -7,6 +7,7 @@ package docs.stream;
 import static org.junit.Assert.assertEquals;
 
 import akka.NotUsed;
+import docs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -15,22 +16,23 @@ import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
 
-public class FlowParallelismDocTest {
+public class FlowParallelismDocTest extends AbstractJavaTest {
 
-  private static ActorSystem system;
+  static ActorSystem system;
+  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
-    system = ActorSystem.create("FlowDocTest");
+    system = ActorSystem.create("FlowParallellismDocTest");
+    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
+    mat = null;
   }
-
-  final Materializer mat = ActorMaterializer.create(system);
 
   static class ScoopOfBatter {}
   static class HalfCookedPancake {}

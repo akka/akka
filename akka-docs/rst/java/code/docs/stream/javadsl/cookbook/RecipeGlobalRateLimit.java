@@ -32,19 +32,20 @@ import static junit.framework.TestCase.assertTrue;
 
 public class RecipeGlobalRateLimit extends RecipeTest {
   static ActorSystem system;
+  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RecipeGlobalRateLimit");
+    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
+    mat = null;
   }
-
-  final Materializer mat = ActorMaterializer.create(system);
 
   static
   //#global-limiter-actor

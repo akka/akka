@@ -1,6 +1,7 @@
 package docs.stream.cookbook
 
 import akka.NotUsed
+import akka.stream.{ Attributes, Outlet, Inlet, FlowShape }
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.util.ByteString
 
@@ -18,34 +19,49 @@ class RecipeByteStrings extends RecipeSpec {
       //#bytestring-chunker
       import akka.stream.stage._
 
-      class Chunker(val chunkSize: Int) extends PushPullStage[ByteString, ByteString] {
-        private var buffer = ByteString.empty
+      class Chunker(val chunkSize: Int) extends GraphStage[FlowShape[ByteString, ByteString]] {
+        val in = Inlet[ByteString]("Chunker.in")
+        val out = Outlet[ByteString]("Chunker.out")
+        override val shape = FlowShape.of(in, out)
 
-        override def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective = {
-          buffer ++= elem
-          emitChunkOrPull(ctx)
-        }
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+          private var buffer = ByteString.empty
 
-        override def onPull(ctx: Context[ByteString]): SyncDirective = emitChunkOrPull(ctx)
+          setHandler(out, new OutHandler {
+            override def onPull(): Unit = {
+              if (isClosed(in)) emitChunk()
+              else pull(in)
+            }
+          })
+          setHandler(in, new InHandler {
+            override def onPush(): Unit = {
+              val elem = grab(in)
+              buffer ++= elem
+              emitChunk()
+            }
 
-        override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective =
-          if (buffer.nonEmpty) ctx.absorbTermination()
-          else ctx.finish()
+            override def onUpstreamFinish(): Unit = {
+              if (buffer.isEmpty) completeStage()
+              // elements left in buffer, keep accepting downstream pulls
+              // and push from buffer until buffer is emitted
+            }
+          })
 
-        private def emitChunkOrPull(ctx: Context[ByteString]): SyncDirective = {
-          if (buffer.isEmpty) {
-            if (ctx.isFinishing) ctx.finish()
-            else ctx.pull()
-          } else {
-            val (emit, nextBuffer) = buffer.splitAt(chunkSize)
-            buffer = nextBuffer
-            ctx.push(emit)
+          private def emitChunk(): Unit = {
+            if (buffer.isEmpty) {
+              if (isClosed(in)) completeStage()
+              else pull(in)
+            } else {
+              val (chunk, nextBuffer) = buffer.splitAt(chunkSize)
+              buffer = nextBuffer
+              push(out, chunk)
+            }
           }
-        }
 
+        }
       }
 
-      val chunksStream = rawBytes.transform(() => new Chunker(ChunkLimit))
+      val chunksStream = rawBytes.via(new Chunker(ChunkLimit))
       //#bytestring-chunker
 
       val chunksFuture = chunksStream.limit(10).runWith(Sink.seq)
@@ -61,17 +77,31 @@ class RecipeByteStrings extends RecipeSpec {
 
       //#bytes-limiter
       import akka.stream.stage._
-      class ByteLimiter(val maximumBytes: Long) extends PushStage[ByteString, ByteString] {
-        private var count = 0
+      class ByteLimiter(val maximumBytes: Long) extends GraphStage[FlowShape[ByteString, ByteString]] {
+        val in = Inlet[ByteString]("ByteLimiter.in")
+        val out = Outlet[ByteString]("ByteLimiter.out")
+        override val shape = FlowShape.of(in, out)
 
-        override def onPush(chunk: ByteString, ctx: Context[ByteString]): SyncDirective = {
-          count += chunk.size
-          if (count > maximumBytes) ctx.fail(new IllegalStateException("Too much bytes"))
-          else ctx.push(chunk)
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+          private var count = 0
+
+          setHandlers(in, out, new InHandler with OutHandler {
+
+            override def onPull(): Unit = {
+              pull(in)
+            }
+
+            override def onPush(): Unit = {
+              val chunk = grab(in)
+              count += chunk.size
+              if (count > maximumBytes) failStage(new IllegalStateException("Too much bytes"))
+              else push(out, chunk)
+            }
+          })
         }
       }
 
-      val limiter = Flow[ByteString].transform(() => new ByteLimiter(SizeLimit))
+      val limiter = Flow[ByteString].via(new ByteLimiter(SizeLimit))
       //#bytes-limiter
 
       val bytes1 = Source(List(ByteString(1, 2), ByteString(3), ByteString(4, 5, 6), ByteString(7, 8, 9)))

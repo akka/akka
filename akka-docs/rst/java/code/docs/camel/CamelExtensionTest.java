@@ -4,11 +4,12 @@ import akka.actor.ActorSystem;
 import akka.camel.Camel;
 import akka.camel.CamelExtension;
 import akka.testkit.JavaTestKit;
+import docs.AbstractJavaTest;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.junit.Test;
 
-public class CamelExtensionTest {
+public class CamelExtensionTest extends AbstractJavaTest {
   @Test
   public void getCamelExtension() {
     //#CamelExtension
