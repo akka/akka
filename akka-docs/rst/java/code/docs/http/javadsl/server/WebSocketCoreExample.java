@@ -11,6 +11,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import akka.NotUsed;
+import akka.http.javadsl.ConnectHttp;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
@@ -57,7 +58,7 @@ public class WebSocketCoreExample {
                         public HttpResponse apply(HttpRequest request) throws Exception {
                             return handleRequest(request);
                         }
-                    }, "localhost", 8080, materializer);
+                    }, ConnectHttp.toHost("localhost", 8080), materializer);
 
             // will throw if binding fails
             serverBindingFuture.toCompletableFuture().get(1, TimeUnit.SECONDS);
