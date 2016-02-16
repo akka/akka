@@ -9,6 +9,7 @@ import java.util.function.Consumer
 import akka.actor._
 import akka.event.{ Logging, LoggingAdapter }
 import akka.persistence.journal.{ EventAdapters, IdentityEventAdapters }
+import akka.util.Collections.EmptyImmutableSeq
 import akka.util.Helpers.ConfigOps
 import com.typesafe.config.Config
 import scala.annotation.tailrec
@@ -108,6 +109,15 @@ trait PersistenceRecovery {
   //#persistence-recovery
 }
 
+trait PersistenceStash extends Stash with StashFactory {
+  /**
+   * The returned [[StashOverflowStrategy]] object determines how to handle the message failed to stash
+   * when the internal Stash capacity exceeded.
+   */
+  def internalStashOverflowStrategy: StashOverflowStrategy =
+    Persistence(context.system).defaultInternalStashOverflowStrategy
+}
+
 /**
  * Persistence extension provider.
  */
@@ -129,7 +139,6 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
 
   private def log: LoggingAdapter = Logging(system, getClass.getName)
 
-  private val DefaultPluginDispatcherId = "akka.persistence.dispatchers.default-plugin-dispatcher"
   private val NoSnapshotStorePluginId = "akka.persistence.no-snapshot-store"
 
   private val config = system.settings.config.getConfig("akka.persistence")
@@ -153,16 +162,19 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
     } else configPath
   }
 
+  // Lazy, so user is not forced to configure defaults when she is not using them.
+  lazy val defaultInternalStashOverflowStrategy: StashOverflowStrategy =
+    system.dynamicAccess.createInstanceFor[StashOverflowStrategyConfigurator](config.getString(
+      "internal-stash-overflow-strategy"), EmptyImmutableSeq)
+      .map(_.create(system.settings.config)).get
+
   val settings = new PersistenceSettings(config)
 
   /** Check for default or missing identity. */
   private def isEmpty(text: String) = text == null || text.length == 0
 
   /** Discovered persistence journal and snapshot store plugins. */
-  private val journalPluginExtensionId = new AtomicReference[Map[String, ExtensionId[PluginHolder]]](Map.empty)
-
-  /** Discovered persistence snapshot store plugins. */
-  private val snapshotPluginExtensionId = new AtomicReference[Map[String, ExtensionId[PluginHolder]]](Map.empty)
+  private val pluginExtensionId = new AtomicReference[Map[String, ExtensionId[PluginHolder]]](Map.empty)
 
   private val journalFallbackConfigPath = "akka.persistence.journal-plugin-fallback"
   private val snapshotStoreFallbackConfigPath = "akka.persistence.snapshot-store-plugin-fallback"
@@ -195,7 +207,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * Looks up [[akka.persistence.journal.EventAdapters]] by journal plugin's ActorRef.
    */
   private[akka] final def adaptersFor(journalPluginActor: ActorRef): EventAdapters = {
-    journalPluginExtensionId.get().values collectFirst {
+    pluginExtensionId.get().values collectFirst {
       case ext if ext(system).actor == journalPluginActor ⇒ ext(system).adapters
     } match {
       case Some(adapters) ⇒ adapters
@@ -219,7 +231,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * Looks up the plugin config by plugin's ActorRef.
    */
   private[akka] final def configFor(journalPluginActor: ActorRef): Config =
-    journalPluginExtensionId.get().values.collectFirst {
+    pluginExtensionId.get().values.collectFirst {
       case ext if ext(system).actor == journalPluginActor ⇒ ext(system).config
     } match {
       case Some(conf) ⇒ conf
@@ -252,13 +264,13 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   }
 
   @tailrec private def pluginHolderFor(configPath: String, fallbackPath: String): PluginHolder = {
-    val extensionIdMap = journalPluginExtensionId.get
+    val extensionIdMap = pluginExtensionId.get
     extensionIdMap.get(configPath) match {
       case Some(extensionId) ⇒
         extensionId(system)
       case None ⇒
         val extensionId = new PluginHolderExtensionId(configPath, fallbackPath)
-        journalPluginExtensionId.compareAndSet(extensionIdMap, extensionIdMap.updated(configPath, extensionId))
+        pluginExtensionId.compareAndSet(extensionIdMap, extensionIdMap.updated(configPath, extensionId))
         pluginHolderFor(configPath, fallbackPath) // Recursive invocation.
     }
   }
