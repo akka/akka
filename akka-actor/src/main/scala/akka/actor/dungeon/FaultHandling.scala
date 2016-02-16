@@ -183,6 +183,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
         case _                                ⇒ { setFailed(self); Set.empty }
       }
       suspendChildren(exceptFor = skip ++ childrenNotToSuspend)
+      system.instrumentation.eventActorFailure(self, t)
       t match {
         // tell supervisor
         case _: InterruptedException ⇒
@@ -215,6 +216,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     finally try tellWatchersWeDied()
     finally try unwatchWatchedActors(a) // stay here as we expect an emergency stop from handleInvokeFailure
     finally {
+      system.instrumentation.actorStopped(self)
       if (system.settings.DebugLifecycle)
         publish(Debug(self.path.toString, clazz(a), "stopped"))
 

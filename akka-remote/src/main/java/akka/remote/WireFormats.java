@@ -2968,6 +2968,26 @@ public final class WireFormats {
      * <code>optional bytes messageManifest = 3;</code>
      */
     akka.protobuf.ByteString getMessageManifest();
+
+    // optional int32 instrumentationId = 4;
+    /**
+     * <code>optional int32 instrumentationId = 4;</code>
+     */
+    boolean hasInstrumentationId();
+    /**
+     * <code>optional int32 instrumentationId = 4;</code>
+     */
+    int getInstrumentationId();
+
+    // optional bytes context = 5;
+    /**
+     * <code>optional bytes context = 5;</code>
+     */
+    boolean hasContext();
+    /**
+     * <code>optional bytes context = 5;</code>
+     */
+    akka.protobuf.ByteString getContext();
   }
   /**
    * Protobuf type {@code SerializedMessage}
@@ -3038,6 +3058,16 @@ public final class WireFormats {
             case 26: {
               bitField0_ |= 0x00000004;
               messageManifest_ = input.readBytes();
+              break;
+            }
+            case 32: {
+              bitField0_ |= 0x00000008;
+              instrumentationId_ = input.readInt32();
+              break;
+            }
+            case 42: {
+              bitField0_ |= 0x00000010;
+              context_ = input.readBytes();
               break;
             }
           }
@@ -3128,10 +3158,44 @@ public final class WireFormats {
       return messageManifest_;
     }
 
+    // optional int32 instrumentationId = 4;
+    public static final int INSTRUMENTATIONID_FIELD_NUMBER = 4;
+    private int instrumentationId_;
+    /**
+     * <code>optional int32 instrumentationId = 4;</code>
+     */
+    public boolean hasInstrumentationId() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    /**
+     * <code>optional int32 instrumentationId = 4;</code>
+     */
+    public int getInstrumentationId() {
+      return instrumentationId_;
+    }
+
+    // optional bytes context = 5;
+    public static final int CONTEXT_FIELD_NUMBER = 5;
+    private akka.protobuf.ByteString context_;
+    /**
+     * <code>optional bytes context = 5;</code>
+     */
+    public boolean hasContext() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    /**
+     * <code>optional bytes context = 5;</code>
+     */
+    public akka.protobuf.ByteString getContext() {
+      return context_;
+    }
+
     private void initFields() {
       message_ = akka.protobuf.ByteString.EMPTY;
       serializerId_ = 0;
       messageManifest_ = akka.protobuf.ByteString.EMPTY;
+      instrumentationId_ = 0;
+      context_ = akka.protobuf.ByteString.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -3162,6 +3226,12 @@ public final class WireFormats {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeBytes(3, messageManifest_);
       }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeInt32(4, instrumentationId_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeBytes(5, context_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -3182,6 +3252,14 @@ public final class WireFormats {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += akka.protobuf.CodedOutputStream
           .computeBytesSize(3, messageManifest_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeInt32Size(4, instrumentationId_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeBytesSize(5, context_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -3310,6 +3388,10 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000002);
         messageManifest_ = akka.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000004);
+        instrumentationId_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000008);
+        context_ = akka.protobuf.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -3350,6 +3432,14 @@ public final class WireFormats {
           to_bitField0_ |= 0x00000004;
         }
         result.messageManifest_ = messageManifest_;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.instrumentationId_ = instrumentationId_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.context_ = context_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -3374,6 +3464,12 @@ public final class WireFormats {
         }
         if (other.hasMessageManifest()) {
           setMessageManifest(other.getMessageManifest());
+        }
+        if (other.hasInstrumentationId()) {
+          setInstrumentationId(other.getInstrumentationId());
+        }
+        if (other.hasContext()) {
+          setContext(other.getContext());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -3511,6 +3607,75 @@ public final class WireFormats {
       public Builder clearMessageManifest() {
         bitField0_ = (bitField0_ & ~0x00000004);
         messageManifest_ = getDefaultInstance().getMessageManifest();
+        onChanged();
+        return this;
+      }
+
+      // optional int32 instrumentationId = 4;
+      private int instrumentationId_ ;
+      /**
+       * <code>optional int32 instrumentationId = 4;</code>
+       */
+      public boolean hasInstrumentationId() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      /**
+       * <code>optional int32 instrumentationId = 4;</code>
+       */
+      public int getInstrumentationId() {
+        return instrumentationId_;
+      }
+      /**
+       * <code>optional int32 instrumentationId = 4;</code>
+       */
+      public Builder setInstrumentationId(int value) {
+        bitField0_ |= 0x00000008;
+        instrumentationId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 instrumentationId = 4;</code>
+       */
+      public Builder clearInstrumentationId() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        instrumentationId_ = 0;
+        onChanged();
+        return this;
+      }
+
+      // optional bytes context = 5;
+      private akka.protobuf.ByteString context_ = akka.protobuf.ByteString.EMPTY;
+      /**
+       * <code>optional bytes context = 5;</code>
+       */
+      public boolean hasContext() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>optional bytes context = 5;</code>
+       */
+      public akka.protobuf.ByteString getContext() {
+        return context_;
+      }
+      /**
+       * <code>optional bytes context = 5;</code>
+       */
+      public Builder setContext(akka.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
+        context_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bytes context = 5;</code>
+       */
+      public Builder clearContext() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        context_ = getDefaultInstance().getContext();
         onChanged();
         return this;
       }
@@ -9553,29 +9718,30 @@ public final class WireFormats {
       "essage\022\035\n\006sender\030\004 \001(\0132\r.ActorRefData\022\013\n" +
       "\003seq\030\005 \001(\006\";\n\023AcknowledgementInfo\022\025\n\rcum" +
       "ulativeAck\030\001 \002(\006\022\r\n\005nacks\030\002 \003(\006\"\034\n\014Actor" +
-      "RefData\022\014\n\004path\030\001 \002(\t\"S\n\021SerializedMessa" +
+      "RefData\022\014\n\004path\030\001 \002(\t\"\177\n\021SerializedMessa" +
       "ge\022\017\n\007message\030\001 \002(\014\022\024\n\014serializerId\030\002 \002(",
-      "\005\022\027\n\017messageManifest\030\003 \001(\014\"~\n\023DaemonMsgC" +
-      "reateData\022\031\n\005props\030\001 \002(\0132\n.PropsData\022\033\n\006" +
-      "deploy\030\002 \002(\0132\013.DeployData\022\014\n\004path\030\003 \002(\t\022" +
-      "!\n\nsupervisor\030\004 \002(\0132\r.ActorRefData\"V\n\tPr" +
-      "opsData\022\033\n\006deploy\030\002 \002(\0132\013.DeployData\022\r\n\005" +
-      "clazz\030\003 \002(\t\022\014\n\004args\030\004 \003(\014\022\017\n\007classes\030\005 \003" +
-      "(\t\"c\n\nDeployData\022\014\n\004path\030\001 \002(\t\022\016\n\006config" +
-      "\030\002 \001(\014\022\024\n\014routerConfig\030\003 \001(\014\022\r\n\005scope\030\004 " +
-      "\001(\014\022\022\n\ndispatcher\030\005 \001(\t\"P\n\023AkkaProtocolM" +
-      "essage\022\017\n\007payload\030\001 \001(\014\022(\n\013instruction\030\002",
-      " \001(\0132\023.AkkaControlMessage\"b\n\022AkkaControl" +
-      "Message\022!\n\013commandType\030\001 \002(\0162\014.CommandTy" +
-      "pe\022)\n\rhandshakeInfo\030\002 \001(\0132\022.AkkaHandshak" +
-      "eInfo\"N\n\021AkkaHandshakeInfo\022\034\n\006origin\030\001 \002" +
-      "(\0132\014.AddressData\022\013\n\003uid\030\002 \002(\006\022\016\n\006cookie\030" +
-      "\003 \001(\t\"O\n\013AddressData\022\016\n\006system\030\001 \002(\t\022\020\n\010" +
-      "hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010protocol" +
-      "\030\004 \001(\t*{\n\013CommandType\022\r\n\tASSOCIATE\020\001\022\020\n\014" +
-      "DISASSOCIATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032DISASSO" +
-      "CIATE_SHUTTING_DOWN\020\004\022\034\n\030DISASSOCIATE_QU",
-      "ARANTINED\020\005B\017\n\013akka.remoteH\001"
+      "\005\022\027\n\017messageManifest\030\003 \001(\014\022\031\n\021instrument" +
+      "ationId\030\004 \001(\005\022\017\n\007context\030\005 \001(\014\"~\n\023Daemon" +
+      "MsgCreateData\022\031\n\005props\030\001 \002(\0132\n.PropsData" +
+      "\022\033\n\006deploy\030\002 \002(\0132\013.DeployData\022\014\n\004path\030\003 " +
+      "\002(\t\022!\n\nsupervisor\030\004 \002(\0132\r.ActorRefData\"V" +
+      "\n\tPropsData\022\033\n\006deploy\030\002 \002(\0132\013.DeployData" +
+      "\022\r\n\005clazz\030\003 \002(\t\022\014\n\004args\030\004 \003(\014\022\017\n\007classes" +
+      "\030\005 \003(\t\"c\n\nDeployData\022\014\n\004path\030\001 \002(\t\022\016\n\006co" +
+      "nfig\030\002 \001(\014\022\024\n\014routerConfig\030\003 \001(\014\022\r\n\005scop" +
+      "e\030\004 \001(\014\022\022\n\ndispatcher\030\005 \001(\t\"P\n\023AkkaProto",
+      "colMessage\022\017\n\007payload\030\001 \001(\014\022(\n\013instructi" +
+      "on\030\002 \001(\0132\023.AkkaControlMessage\"b\n\022AkkaCon" +
+      "trolMessage\022!\n\013commandType\030\001 \002(\0162\014.Comma" +
+      "ndType\022)\n\rhandshakeInfo\030\002 \001(\0132\022.AkkaHand" +
+      "shakeInfo\"N\n\021AkkaHandshakeInfo\022\034\n\006origin" +
+      "\030\001 \002(\0132\014.AddressData\022\013\n\003uid\030\002 \002(\006\022\016\n\006coo" +
+      "kie\030\003 \001(\t\"O\n\013AddressData\022\016\n\006system\030\001 \002(\t" +
+      "\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010prot" +
+      "ocol\030\004 \001(\t*{\n\013CommandType\022\r\n\tASSOCIATE\020\001" +
+      "\022\020\n\014DISASSOCIATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032DIS",
+      "ASSOCIATE_SHUTTING_DOWN\020\004\022\034\n\030DISASSOCIAT" +
+      "E_QUARANTINED\020\005B\017\n\013akka.remoteH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -9611,7 +9777,7 @@ public final class WireFormats {
           internal_static_SerializedMessage_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_SerializedMessage_descriptor,
-              new java.lang.String[] { "Message", "SerializerId", "MessageManifest", });
+              new java.lang.String[] { "Message", "SerializerId", "MessageManifest", "InstrumentationId", "Context", });
           internal_static_DaemonMsgCreateData_descriptor =
             getDescriptor().getMessageTypes().get(5);
           internal_static_DaemonMsgCreateData_fieldAccessorTable = new

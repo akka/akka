@@ -45,6 +45,8 @@ message SerializedMessage {
   required bytes message = 1;
   required int32 serializerId = 2;
   optional bytes messageManifest = 3;
+  optional int32 instrumentationId = 4;
+  optional bytes context = 5;
 }
 
 /**

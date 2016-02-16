@@ -292,7 +292,7 @@ private[akka] trait Cell {
    * Is only allowed to throw Fatal Throwables.
    */
   final def sendMessage(message: Any, sender: ActorRef): Unit =
-    sendMessage(Envelope(message, sender, system))
+    sendMessage(Envelope(message, sender, systemImpl, systemImpl.instrumentation.actorTold(self, message, sender)))
 
   /**
    * Enqueue a message to be sent to the actor; may or may not actually
@@ -490,14 +490,18 @@ private[akka] class ActorCell(
       currentMessage = messageHandle
       if (influenceReceiveTimeout)
         cancelReceiveTimeout()
+      val context = Envelope.getContext(messageHandle)
+      val localContext = systemImpl.instrumentation.actorReceived(self, messageHandle.message, messageHandle.sender, context)
       messageHandle.message match {
         case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
         case msg                      ⇒ receiveMessage(msg)
       }
+      systemImpl.instrumentation.actorCompleted(self, messageHandle.message, messageHandle.sender, localContext)
       currentMessage = null // reset current message after successful invocation
     } catch handleNonFatalOrInterruptedException { e ⇒
       handleInvokeFailure(Nil, e)
     } finally {
+      systemImpl.instrumentation.clearContext()
       if (influenceReceiveTimeout)
         checkReceiveTimeout // Reschedule receive timeout
     }
@@ -590,6 +594,7 @@ private[akka] class ActorCell(
       created.aroundPreStart()
       checkReceiveTimeout
       if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
+      system.instrumentation.actorStarted(self)
     } catch {
       case e: InterruptedException ⇒
         clearOutActorIfNonNull()

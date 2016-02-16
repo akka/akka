@@ -273,6 +273,10 @@ private[akka] abstract class ActorRefWithCell extends InternalActorRef { this: A
   def underlying: Cell
   def children: immutable.Iterable[ActorRef]
   def getSingleChild(name: String): InternalActorRef
+  // Instrumentation metadata in RP only! Allows for fast access to metadata.
+  // Verified with JOL to use "wasted" 4 bytes with standard Java 8
+  // options on x86_64 (Compressed OOPs are enabled by default)
+  var metadata: AnyRef = _
 }
 
 /**
@@ -321,6 +325,7 @@ private[akka] class LocalActorRef private[akka] (
    * object from another thread as soon as we run init.
    */
   private val actorCell: ActorCell = newActorCell(_system, this, _props, _dispatcher, _supervisor)
+  _system.instrumentation.actorCreated(this) // tell the instrumentation before the actor is started
   actorCell.init(sendSupervise = true, _mailboxType)
 
   protected def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, dispatcher: MessageDispatcher, supervisor: InternalActorRef): ActorCell =
