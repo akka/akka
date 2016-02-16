@@ -77,6 +77,7 @@ private[akka] class RepointableActorRef(
     underlying match {
       case null ⇒
         swapCell(new UnstartedCell(system, this, props, supervisor))
+        system.instrumentation.actorCreated(this) // tell the instrumentation before the actor is started
         swapLookup(underlying)
         supervisor.sendSystemMessage(Supervise(this, async))
         if (!async) point()

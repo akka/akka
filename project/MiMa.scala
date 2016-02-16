@@ -608,6 +608,18 @@ object MiMa extends AutoPlugin {
         // #19440
         ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.PipeToSupport.pipeCompletionStage"),
         ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.FutureTimeoutSupport.afterCompletionStage")
+
+        ,
+        // ExtendedActorSystem has grown two new methods for instrumentation
+        ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ExtendedActorSystem.instrumentation"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ExtendedActorSystem.hasInstrumentation")
+
+        ,
+        // Instrumentation context added to remote messages
+        ProblemFilters.exclude[MissingMethodProblem]("akka.remote.WireFormats#SerializedMessageOrBuilder.getContext"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.remote.WireFormats#SerializedMessageOrBuilder.hasContext"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.remote.WireFormats#SerializedMessageOrBuilder.getInstrumentationId"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.remote.WireFormats#SerializedMessageOrBuilder.hasInstrumentationId")
       )
     )
   }

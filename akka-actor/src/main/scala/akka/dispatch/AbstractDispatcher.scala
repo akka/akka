@@ -11,6 +11,7 @@ import akka.actor._
 import akka.dispatch.sysmsg._
 import akka.event.EventStream
 import akka.event.Logging.{ Debug, Error, LogEventException }
+import akka.instrument.ActorInstrumentation
 import akka.util.{ Index, Unsafe }
 import com.typesafe.config.Config
 import scala.annotation.tailrec
@@ -19,13 +20,24 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.forkjoin.{ ForkJoinPool, ForkJoinTask }
 import scala.util.control.NonFatal
 
-final case class Envelope private (val message: Any, val sender: ActorRef)
+case class Envelope protected (val message: Any, val sender: ActorRef)
 
 object Envelope {
-  def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope = {
+  def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope =
+    apply(message, sender, system, ActorInstrumentation.EmptyContext)
+
+  def apply(message: Any, sender: ActorRef, system: ActorSystem, context: AnyRef): Envelope = {
     if (message == null) throw new InvalidMessageException("Message is null")
-    new Envelope(message, if (sender ne Actor.noSender) sender else system.deadLetters)
+    val sndr = if (sender ne Actor.noSender) sender else system.deadLetters
+    if (context eq ActorInstrumentation.EmptyContext) Envelope(message, sndr) else new InstrumentedEnvelope(message, sndr, context)
   }
+
+  def getContext(envelope: Envelope): AnyRef = envelope match {
+    case e: InstrumentedEnvelope ⇒ e.context
+    case _                       ⇒ ActorInstrumentation.EmptyContext
+  }
+
+  private final class InstrumentedEnvelope(_message: Any, _sender: ActorRef, @transient val context: AnyRef) extends Envelope(_message, _sender)
 }
 
 final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cleanup: () ⇒ Unit) extends Batchable {
