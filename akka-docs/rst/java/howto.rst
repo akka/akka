@@ -57,7 +57,7 @@ This method starts a temporary actor to forward the message and collect the resu
 In case of errors within the asked actor the default supervision handling will take over.
 The caller of Patterns.ask() will *not* be notified.
 
-If that caller is interested in such an exception, he must make sure that the asked actor replies with Status.Failure(Throwable).
+If that caller is interested in such an exception, they must make sure that the asked actor replies with Status.Failure(Throwable).
 Behind the asked actor a complex actor hierarchy might be spawned to accomplish asynchronous work.
 Then supervision is the established way to control error handling.
 
@@ -65,7 +65,8 @@ Unfortunately the asked actor must know about supervision and must catch the exc
 Such an actor is unlikely to be reused in a different actor hierarchy and contains crippled try/catch blocks.
 
 This pattern provides a way to encapsulate supervision and error propagation to the temporary actor.
-Finally the promise returned by Patterns.ask() is fulfilled as a failure, including the exception.
+Finally the promise returned by Patterns.ask() is fulfilled as a failure, including the exception
+(see also :ref:`actor-java-lambda` for Java compatibility).
 
 Let's have a look at the example code:
 

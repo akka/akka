@@ -364,10 +364,16 @@ completes.
 Note that a flow can be materialized multiple times, so the function producing the ``OutputStream`` must be able
 to handle multiple invocations.
 
+The ``OutputStream`` will be closed when the stream that flows into the ``Sink`` is completed, and the ``Sink``
+will cancel its inflow when the ``OutputStream`` is no longer writable.
+
 asInputStream
 ^^^^^^^^^^^^^
 Create a sink which materializes into an ``InputStream`` that can be read to trigger demand through the sink.
 Bytes emitted through the stream will be available for reading through the ``InputStream``
+
+The ``InputStream`` will be ended when the stream flowing into this ``Sink`` completes, and the closing the
+``InputStream`` will cancel the inflow of this ``Sink``.
 
 fromInputStream
 ^^^^^^^^^^^^^^^
@@ -380,12 +386,16 @@ completes.
 Note that a flow can be materialized multiple times, so the function producing the ``InputStream`` must be able
 to handle multiple invocations.
 
+The ``InputStream`` will be closed when the ``Source`` is canceled from its downstream, and reaching the end of the
+``InputStream`` will complete the ``Source``.
+
 asOutputStream
 ^^^^^^^^^^^^^^
 Create a source that materializes into an ``OutputStream``. When bytes are written to the ``OutputStream`` they
 are emitted from the source
 
-
+The ``OutputStream`` will no longer be writable when the ``Source`` has been canceled from its downstream, and
+closing the ``OutputStream`` will complete the ``Source``.
 
 File IO Sinks and Sources
 -------------------------

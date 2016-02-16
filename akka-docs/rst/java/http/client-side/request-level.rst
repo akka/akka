@@ -49,7 +49,7 @@ Just like in the case of the super-pool flow described above the request must ha
 Using the Future-Based API in Actors
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 When using the ``CompletionStage`` based API from inside an ``Actor``, all the usual caveats apply to how one should deal
-with the futures completion. For example you should not access the Actors state from within the Future's callbacks
+with the futures completion. For example you should not access the Actors state from within the CompletionStage's callbacks
 (such as ``map``, ``onComplete``, ...) and instead you should use the ``pipe`` pattern to pipe the result back
 to the Actor as a message:
 
