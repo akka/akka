@@ -35,7 +35,13 @@ As you see, in itself the :class:`GraphStage` only defines the ports of this sta
 It also has a user implemented method called ``createLogic``. If you recall, stages are reusable in multiple
 materializations, each resulting in a different executing entity. In the case of :class:`GraphStage` the actual running
 logic is modeled as an instance of a :class:`GraphStageLogic` which will be created by the materializer by calling
-the ``createLogic`` method.
+the ``createLogic`` method. In other words, all we need to do is to create a suitable logic that will emit the
+numbers we want.
+
+.. note::
+
+   It is very important to keep the GraphStage object itself immutable and reusable. All mutable state needs to be
+   confined to the GraphStageLogic that is created for every materialization.
 
 In order to emit from a :class:`Source` in a backpressured stream one needs first to have demand from downstream.
 To receive the necessary events one needs to register a subclass of :class:`AbstractOutHandler` with the output port

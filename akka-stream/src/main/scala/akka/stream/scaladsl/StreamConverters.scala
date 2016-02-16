@@ -33,6 +33,8 @@ object StreamConverters {
    * It materializes a [[Future]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
    * and a possible exception if IO operation was not completed successfully.
    *
+   * The created [[InputStream]] will be closed when the [[Source]] is cancelled.
+   *
    * @param in a function which creates the InputStream to read from
    * @param chunkSize the size of each read operation, defaults to 8192
    */
@@ -48,6 +50,9 @@ object StreamConverters {
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
+   * The created [[OutputStream]] will be closed when the [[Source]] is cancelled, and closing the [[OutputStream]]
+   * will complete this [[Source]].
+   *
    * @param writeTimeout the max time the write operation on the materialized OutputStream should block, defaults to 5 seconds
    */
   def asOutputStream(writeTimeout: FiniteDuration = 5.seconds): Source[ByteString, OutputStream] =
@@ -62,6 +67,9 @@ object StreamConverters {
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    * If `autoFlush` is true the OutputStream will be flushed whenever a byte array is written, defaults to false.
+   *
+   * The [[OutputStream]] will be closed when the stream flowing into this [[Sink]] is completed. The [[Sink]]
+   * will cancel the stream when the [[OutputStream]] is no longer writable.
    */
   def fromOutputStream(out: () ⇒ OutputStream, autoFlush: Boolean = false): Sink[ByteString, Future[IOResult]] =
     new Sink(new OutputStreamSink(out, DefaultAttributes.outputStreamSink, sinkShape("OutputStreamSink"), autoFlush))
@@ -74,6 +82,9 @@ object StreamConverters {
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
+   *
+   * The [[InputStream]] will be closed when the stream flowing into this [[Sink]] completes, and
+   * closing the [[InputStream]] will cancel this [[Sink]].
    *
    * @param readTimeout the max time the read operation on the materialized InputStream should block
    */

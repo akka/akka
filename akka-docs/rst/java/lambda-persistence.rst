@@ -327,15 +327,13 @@ command, i.e. ``onPersistRejected`` is called with an exception (typically ``Uns
 Batch writes
 ------------
 
-In order to optimize throughput, a persistent actor internally batches events to be stored under high load before
-writing them to the journal (as a single batch). The batch size dynamically grows from 1 under low and moderate loads
-to a configurable maximum size (default is ``200``) under high load. When using ``persistAsync`` this increases
-the maximum throughput dramatically.
-
-.. includecode:: ../scala/code/docs/persistence/PersistencePluginDocSpec.scala#max-message-batch-size
-
-A new batch write is triggered by a persistent actor as soon as a batch reaches the maximum size or if the journal completed
-writing the previous batch. Batch writes are never timer-based which keeps latencies at a minimum.
+In order to optimize throughput when using ``persistAsync``, a persistent actor
+internally batches events to be stored under high load before writing them to
+the journal (as a single batch). The batch size is dynamically determined by
+how many events are emitted during the time of a journal round-trip: after
+sending a batch to the journal no further batch can be sent before confirmation
+has been received that the previous batch has been written. Batch writes are never
+timer-based which keeps latencies at a minimum.
 
 Message deletion
 ----------------
