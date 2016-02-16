@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package docs.persistence.query
 
+import akka.NotUsed
 import akka.actor._
 import akka.persistence.{ Recovery, PersistentActor }
 import akka.persistence.query._
 import akka.stream.{ FlowShape, ActorMaterializer }
-import akka.stream.scaladsl.FlowGraph
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.javadsl
 import akka.testkit.AkkaSpec
@@ -54,25 +54,25 @@ object PersistenceQueryDocSpec {
       config.getDuration("refresh-interval", MILLISECONDS).millis
 
     override def eventsByTag(
-      tag: String, offset: Long = 0L): Source[EventEnvelope, Unit] = {
+      tag: String, offset: Long = 0L): Source[EventEnvelope, NotUsed] = {
       val props = MyEventsByTagPublisher.props(tag, offset, refreshInterval)
       Source.actorPublisher[EventEnvelope](props)
-        .mapMaterializedValue(_ ⇒ ())
+        .mapMaterializedValue(_ ⇒ NotUsed)
     }
 
     override def eventsByPersistenceId(
       persistenceId: String, fromSequenceNr: Long = 0L,
-      toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, Unit] = {
+      toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
       // implement in a similar way as eventsByTag
       ???
     }
 
-    override def allPersistenceIds(): Source[String, Unit] = {
+    override def allPersistenceIds(): Source[String, NotUsed] = {
       // implement in a similar way as eventsByTag
       ???
     }
 
-    override def currentPersistenceIds(): Source[String, Unit] = {
+    override def currentPersistenceIds(): Source[String, NotUsed] = {
       // implement in a similar way as eventsByTag
       ???
     }
@@ -96,19 +96,19 @@ object PersistenceQueryDocSpec {
     with akka.persistence.query.javadsl.CurrentPersistenceIdsQuery {
 
     override def eventsByTag(
-      tag: String, offset: Long = 0L): javadsl.Source[EventEnvelope, Unit] =
+      tag: String, offset: Long = 0L): javadsl.Source[EventEnvelope, NotUsed] =
       scaladslReadJournal.eventsByTag(tag, offset).asJava
 
     override def eventsByPersistenceId(
       persistenceId: String, fromSequenceNr: Long = 0L,
-      toSequenceNr: Long = Long.MaxValue): javadsl.Source[EventEnvelope, Unit] =
+      toSequenceNr: Long = Long.MaxValue): javadsl.Source[EventEnvelope, NotUsed] =
       scaladslReadJournal.eventsByPersistenceId(
         persistenceId, fromSequenceNr, toSequenceNr).asJava
 
-    override def allPersistenceIds(): javadsl.Source[String, Unit] =
+    override def allPersistenceIds(): javadsl.Source[String, NotUsed] =
       scaladslReadJournal.allPersistenceIds().asJava
 
-    override def currentPersistenceIds(): javadsl.Source[String, Unit] =
+    override def currentPersistenceIds(): javadsl.Source[String, NotUsed] =
       scaladslReadJournal.currentPersistenceIds().asJava
 
     // possibility to add more plugin specific queries
@@ -153,7 +153,7 @@ object PersistenceQueryDocSpec {
       .map(envelope => envelope.event)
       .map(convertToReadSideTypes) // convert to datatype
       .grouped(20) // batch inserts into groups of 20
-      .runWith(Sink(dbBatchWriter)) // write batches to read-side database
+      .runWith(Sink.fromSubscriber(dbBatchWriter)) // write batches to read-side database
     //#projection-into-different-store-rs
   }
 
@@ -202,7 +202,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
         "akka.persistence.query.my-read-journal")
 
     // issue query to journal
-    val source: Source[EventEnvelope, Unit] =
+    val source: Source[EventEnvelope, NotUsed] =
       readJournal.eventsByPersistenceId("user-1337", 0, Long.MaxValue)
 
     // materialize stream, consuming events
@@ -221,7 +221,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
     //#events-by-tag
     // assuming journal is able to work with numeric offsets we can:
 
-    val blueThings: Source[EventEnvelope, Unit] =
+    val blueThings: Source[EventEnvelope, NotUsed] =
       readJournal.eventsByTag("blue")
 
     // find top 10 blue things:

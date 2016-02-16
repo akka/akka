@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.pattern
 
@@ -36,21 +36,24 @@ private class BackoffOnRestartSupervisor(
 
         // Whatever the final Directive is, we will translate all Restarts
         // to our own Restarts, which involves stopping the child.
-        // directive match {
         case Restart ⇒
           val childRef = sender()
-          become({
-            case Terminated(`childRef`) ⇒
-              unbecome()
-              child = None
-              val restartDelay = BackoffSupervisor.calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
-              context.system.scheduler.scheduleOnce(restartDelay, self, BackoffSupervisor.StartChild)
-              restartCount += 1
-            case _ ⇒ // ignore
-          }, discardOld = false)
+          become(waitChildTerminatedBeforeBackoff(childRef) orElse handleBackoff)
           Stop
+
         case other ⇒ other
       }
+  }
+
+  def waitChildTerminatedBeforeBackoff(childRef: ActorRef): Receive = {
+    case Terminated(`childRef`) ⇒
+      become(receive)
+      child = None
+      val restartDelay = BackoffSupervisor.calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
+      context.system.scheduler.scheduleOnce(restartDelay, self, BackoffSupervisor.StartChild)
+      restartCount += 1
+
+    case StartChild ⇒ // Ignore it, we will schedule a new one once current child terminated.
   }
 
   def onTerminated: Receive = {

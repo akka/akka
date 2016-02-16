@@ -18,9 +18,9 @@ These guidelines mainly apply to Typesafe’s “mature” projects - not necess
 
 Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
 
-* `master` – development branch of Akka 2.4.x
+* `master` – active development branch of Akka 2.4.x
 * `release-2.3` – maintanance branch of Akka 2.3.x
-* `release 2.3-dev` – development branch of Akka Streams and HTTP (only)
+* similarily `release-2.#` branches contain legacy versions of Akka
 
 ## General Workflow
 
@@ -52,6 +52,31 @@ This is the process for committing code into master. There are of course excepti
 
 9. Once everything is said and done, associate the ticket with the “earliest” release milestone (i.e. if back-ported so that it will be in release x.y.z, find the relevant milestone for that release) and close it.
 
+## The `validatePullRequest` task
+
+The Akka build includes a special task called `validatePullRequest` which investigates the changes made as well as dirty
+(uncommitted changes) in your local working directory and figures out which projects are impacted by those changes,
+then running tests only on those projects.
+
+For example changing something in `akka-http-core` would cause tests to be run in all projects which depend on it
+(e.g. `akka-http-core-tests`, `akka-http-marshallers-*`, `akka-docs` etc.).
+
+To use the task simply type, and the output should include entries like shown below:
+
+```
+> validatePullRequest
+[info] Diffing [HEAD] to determine changed modules in PR...
+[info] Detected uncomitted changes in directories (including in dependency analysis): [akka-protobuf,project]
+[info] Detected changes in directories: [akka-docs, project, akka-http-tests, akka-protobuf, akka-http-testkit, akka-http, akka-http-core, akka-stream]
+```
+
+By default changes are diffed with the `master` branch when working locally, if you want to validate against a different
+target PR branch you can do so by setting the PR_TARGET_BRANCH environment variable for SBT:
+
+```
+PR_TARGET_BRANCH=origin/example sbt validatePullRequest
+```
+
 ## Pull Request Requirements
 
 For a Pull Request to be considered at all it has to meet these requirements:
@@ -71,7 +96,7 @@ For a Pull Request to be considered at all it has to meet these requirements:
 
     Other guidelines to follow for copyright notices:
 
-    - Use a form of ``Copyright (C) 2011-2015 Typesafe Inc. <http://www.typesafe.com>``, where the start year is when the project or file was first created and the end year is the last time the project or file was modified.
+    - Use a form of ``Copyright (C) 2011-2016 Typesafe Inc. <http://www.typesafe.com>``, where the start year is when the project or file was first created and the end year is the last time the project or file was modified.
     - Never delete or change existing copyright notices, just add additional info.  
     - Do not use ``@author`` tags since it does not encourage [Collective Code Ownership](http://www.extremeprogramming.org/rules/collective.html). However, each project should make sure that the contributors gets the credit they deserve—in a text file or page on the project website and in the release notes etc.
 
@@ -128,14 +153,9 @@ Follow these guidelines when creating public commits and writing commit messages
 
 1. If your work spans multiple local commits (for example; if you do safe point commits while working in a feature branch or work in a branch for a long time doing merges/rebases etc.) then please do not commit it all but rewrite the history by squashing the commits into a single big commit which you write a good commit message for (like discussed in the following sections). For more info read this article: [Git Workflow](http://sandofsky.com/blog/git-workflow.html). Every commit should be able to be used in isolation, cherry picked etc.
 
-2. First line should be a descriptive sentence what the commit is doing. It should be possible to fully understand what the commit does—but not necessarily how it does it—by just reading this single line. We follow the “imperative present tense” style for commit messages ([more info here](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html)).
+2. First line should be a descriptive sentence what the commit is doing, including the ticket number. It should be possible to fully understand what the commit does—but not necessarily how it does it—by just reading this single line. We follow the “imperative present tense” style for commit messages ([more info here](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html)).
 
-   It is **not ok** to only list the ticket number, type "minor fix" or similar. In order to help with automatic filtering of the commit history (generating ChangeLogs, writing the migration guide, code archaeology) we use the following encoding:
-   * the first character is either '!' (for breaking API changes), '+' (for non-breaking API additions) or '=' (for API-neutral commits)
-   * then follows a comma-separated list of module abbreviations, formed by using the first three letters of the module name (the “akka-” prefix being stripped off), e.g. `act`, `clu`, `doc`; it is intentional that `akka-actor-tests` receives the same abbreviation as `akka-actor`. For commits modifying the project itself (sbt files or anything in `project/`) please use `pro`.
-   * then follows a space character, a hash sign '#' and the ticket number
-   * the rest of the line (usually there are 64 characters left) makes up the textual summary
-
+   It is **not ok** to only list the ticket number, type "minor fix" or similar.
    If the commit is a small fix, then you are done. If not, go to 3.
 
 3. Following the single line description should be a blank line followed by an enumerated list with the details of the commit.
@@ -145,7 +165,7 @@ Follow these guidelines when creating public commits and writing commit messages
 
 Example:
 
-    +act #2731 Adding monadic API to Future
+    enable Travis CI #1
 
     * Details 1
     * Details 2
@@ -154,14 +174,14 @@ Example:
 ## How To Enforce These Guidelines?
 
 ### Make Use of Pull Request Validator
-Akka uses [Jenkins GitHub pull request builder plugin](https://wiki.jenkins-ci.org/display/JENKINS/GitHub+pull+request+builder+plugin) 
+Akka uses [Jenkins GitHub pull request builder plugin](https://wiki.jenkins-ci.org/display/JENKINS/GitHub+pull+request+builder+plugin)
 that automatically merges the code, builds it, runs the tests and comments on the Pull Request in GitHub.
 
 Upon a submission of a Pull Request the Github pull request builder plugin will post a following comment:
 
     Can one of the repo owners verify this patch?
 
-This requires a member from a core team to start Pull Request validation process by posting comment consisting only of `OK TO TEST`. 
+This requires a member from a core team to start Pull Request validation process by posting comment consisting only of `OK TO TEST`.
 From now on, whenever new commits are pushed to the Pull Request, a validation job will be automaticaly started and the results of the validation posted to the Pull Request.
 
 A Pull Request validation job can be started manually by posting `PLS BUILD` comment on the Pull Request.
@@ -169,10 +189,10 @@ A Pull Request validation job can be started manually by posting `PLS BUILD` com
 In order to speed up PR validation times, the Akka build contains a special sbt task called `validatePullRequest`,
 which is smart enough to figure out which projects should be built if a PR only has changes in some parts of the project.
 For example, if your PR only touches `akka-persistence`, no `akka-remote` tests need to be run, however the task
-will validate all projects that depend on `akka-persistence` (including samples). 
+will validate all projects that depend on `akka-persistence` (including samples).
 Also, tests tagged as `PerformanceTest` and the likes of it are excluded from PR validation.
 
-In order to force the `validatePullRequest` task to build the entire project, regardless of dependency analysis of a PRs 
+In order to force the `validatePullRequest` task to build the entire project, regardless of dependency analysis of a PRs
 changes one can use the special `PLS BUILD ALL` command (typed in a comment on github, on the Pull Request), which will cause
 the validator to test all projects.
 

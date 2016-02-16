@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
@@ -15,7 +15,7 @@ import scala.concurrent.Future
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.dispatch.Dispatchers
 import akka.testkit.TestEvent._
-import org.scalautils.ConversionCheckedTripleEquals
+import org.scalactic.ConversionCheckedTripleEquals
 
 object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""

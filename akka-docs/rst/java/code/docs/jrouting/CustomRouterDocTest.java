@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.jrouting;
 
@@ -10,6 +10,7 @@ import akka.routing.RoutingLogic;
 import akka.routing.SeveralRoutees;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
+import docs.AbstractJavaTest;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -36,7 +37,7 @@ import java.util.List;
 //#imports1
 
 
-public class CustomRouterDocTest {
+public class CustomRouterDocTest extends AbstractJavaTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

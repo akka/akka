@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package docs.actor;
@@ -7,6 +7,7 @@ package docs.actor;
 import java.util.concurrent.TimeUnit;
 
 import akka.testkit.AkkaJUnitActorSystemResource;
+import docs.AbstractJavaTest;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -19,7 +20,7 @@ import akka.actor.Terminated;
 import akka.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 
-public class InboxDocTest {
+public class InboxDocTest extends AbstractJavaTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

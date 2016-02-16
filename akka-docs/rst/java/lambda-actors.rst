@@ -473,9 +473,10 @@ of that reply is guaranteed, it still is a normal message.
 .. includecode:: code/docs/actorlambda/ActorDocTest.java#identify
 
 You can also acquire an :class:`ActorRef` for an :class:`ActorSelection` with
-the ``resolveOne`` method of the :class:`ActorSelection`. It returns a ``Future``
-of the matching :class:`ActorRef` if such an actor exists. It is completed with
-failure [[akka.actor.ActorNotFound]] if no such actor exists or the identification
+the ``resolveOne`` method of the :class:`ActorSelection`. It returns a
+``Future`` of the matching :class:`ActorRef` if such an actor exists (see also
+:ref:`actor-java-lambda` for Java compatibility). It is completed with failure
+[[akka.actor.ActorNotFound]] if no such actor exists or the identification
 didn't complete within the supplied `timeout`.
 
 Remote actor addresses may also be looked up, if :ref:`remoting <remoting-java>` is enabled:

@@ -1,30 +1,16 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster.singleton;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
 import akka.actor.ActorSystem;
 import akka.actor.ActorRef;
-import akka.actor.ActorSelection;
 import akka.actor.Props;
-import akka.actor.UntypedActor;
-import akka.cluster.Cluster;
-import akka.cluster.Member;
-import akka.cluster.ClusterEvent.CurrentClusterState;
-import akka.cluster.ClusterEvent.MemberEvent;
-import akka.cluster.ClusterEvent.MemberUp;
-import akka.cluster.ClusterEvent.MemberRemoved;
-import akka.cluster.MemberStatus;
 
 public class ClusterSingletonManagerTest {
 
+  @SuppressWarnings("null")
   public void demo() {
     final ActorSystem system = null;
     final ActorRef queue = null;

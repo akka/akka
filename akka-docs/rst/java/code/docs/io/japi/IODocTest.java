@@ -1,11 +1,12 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package docs.io.japi;
 
 
 import akka.testkit.AkkaJUnitActorSystemResource;
+import docs.AbstractJavaTest;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -29,7 +30,7 @@ import akka.util.ByteString;
 import akka.testkit.JavaTestKit;
 import akka.testkit.AkkaSpec;
 
-public class IODocTest {
+public class IODocTest extends AbstractJavaTest {
 
   static
   //#server

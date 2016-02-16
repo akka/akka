@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.actor;
 
@@ -20,8 +20,9 @@ import akka.actor.Props;
 import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
 import akka.testkit.AkkaSpec;
+import docs.AbstractJavaTest;
 
-public class FSMDocTest {
+public class FSMDocTest extends AbstractJavaTest {
 
   static
   //#data

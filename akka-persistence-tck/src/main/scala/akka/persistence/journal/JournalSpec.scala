@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.persistence.journal
 
@@ -46,8 +46,16 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) with MayVe
     super.beforeEach()
     senderProbe = TestProbe()
     receiverProbe = TestProbe()
+    preparePersistenceId(pid)
     writeMessages(1, 5, pid, senderProbe.ref, writerUuid)
   }
+
+  /**
+   * Overridable hook that is called before populating the journal for the next
+   * test case. `pid` is the `persistenceId` that will be used in the test.
+   * This method may be needed to clean pre-existing events from the log.
+   */
+  def preparePersistenceId(pid: String): Unit = ()
 
   /**
    * Implementation may override and return false if it does not
@@ -116,12 +124,12 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) with MayVe
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay messages using a lower and upper sequence number bound" in {
-      journal ! ReplayMessages(2, 4, Long.MaxValue, pid, receiverProbe.ref)
-      2 to 4 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
+      journal ! ReplayMessages(2, 3, Long.MaxValue, pid, receiverProbe.ref)
+      2 to 3 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay messages using a lower and upper sequence number bound and a count limit" in {
-      journal ! ReplayMessages(2, 4, 2, pid, receiverProbe.ref)
+      journal ! ReplayMessages(2, 5, 2, pid, receiverProbe.ref)
       2 to 3 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
@@ -192,7 +200,7 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) with MayVe
   "A Journal optionally" may {
 
     optional(flag = supportsRejectingNonSerializableObjects) {
-      "reject non-serializable events" in {
+      "reject non-serializable events" in EventFilter[java.io.NotSerializableException]().intercept {
         // there is no chance that a journal could create a data representation for type of event
         val notSerializableEvent = new Object {
           override def toString = "not serializable"

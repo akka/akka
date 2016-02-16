@@ -1,8 +1,9 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.persistence.query.scaladsl
 
+import akka.NotUsed
 import akka.stream.scaladsl.Source
 import akka.persistence.query.EventEnvelope
 
@@ -18,6 +19,6 @@ trait CurrentEventsByPersistenceIdQuery extends ReadJournal {
    * not included in the event stream.
    */
   def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long,
-                                   toSequenceNr: Long): Source[EventEnvelope, Unit]
+                                   toSequenceNr: Long): Source[EventEnvelope, NotUsed]
 
 }

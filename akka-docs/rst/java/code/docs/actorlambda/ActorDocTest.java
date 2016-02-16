@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package docs.actorlambda;
@@ -11,6 +11,7 @@ import akka.testkit.EventFilter;
 import akka.testkit.TestEvent;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import docs.AbstractJavaTest;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 import static docs.actorlambda.Messages.Swap.Swap;
@@ -45,7 +46,7 @@ import scala.concurrent.Future;
 import static akka.pattern.Patterns.gracefulStop;
 //#import-graceFulStop
 
-public class ActorDocTest {
+public class ActorDocTest extends AbstractJavaTest {
 
   public static Config config = ConfigFactory.parseString(
     "akka {\n" +

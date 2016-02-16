@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.persistence.journal
 
@@ -30,6 +30,13 @@ private[akka] object ReplayFilter {
     Props(new ReplayFilter(persistentActor, mode, windowSize, maxOldWriters, debugEnabled))
   }
 
+  // for binary compatibility
+  def props(
+    persistentActor: ActorRef,
+    mode: Mode,
+    windowSize: Int,
+    maxOldWriters: Int): Props = props(persistentActor, mode, windowSize, maxOldWriters, debugEnabled = false)
+
   sealed trait Mode
   case object Fail extends Mode
   case object Warn extends Mode
@@ -45,6 +52,10 @@ private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.M
   extends Actor with ActorLogging {
   import JournalProtocol._
   import ReplayFilter.{ Warn, Fail, RepairByDiscardOld, Disabled }
+
+  // for binary compatibility
+  def this(persistentActor: ActorRef, mode: ReplayFilter.Mode,
+           windowSize: Int, maxOldWriters: Int) = this(persistentActor, mode, windowSize, maxOldWriters, debugEnabled = false)
 
   val buffer = new LinkedList[ReplayedMessage]()
   val oldWriters = LinkedHashSet.empty[String]

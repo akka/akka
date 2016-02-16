@@ -17,7 +17,7 @@ object OSGi {
     OsgiKeys.exportPackage := Seq("akka*"),
     OsgiKeys.privatePackage := Seq("akka.osgi.impl"),
     //akka-actor packages are not imported, as contained in the CP
-    OsgiKeys.importPackage := (osgiOptionalImports map optionalResolution) ++ Seq("!sun.misc", scalaVersion(scalaImport).value, configImport(), "*"),
+    OsgiKeys.importPackage := (osgiOptionalImports map optionalResolution) ++ Seq("!sun.misc", scalaJava8CompatImport(), scalaVersion(scalaImport).value, configImport(), "*"),
     // dynamicImportPackage needed for loading classes defined in configuration
     OsgiKeys.dynamicImportPackage := Seq("*")
   )
@@ -43,6 +43,33 @@ object OSGi {
   val protobuf = exports(Seq("akka.protobuf.*"))
 
   val remote = exports(Seq("akka.remote.*"))
+
+  val parsing = exports(Seq("akka.parboiled2.*", "akka.shapeless.*"),
+    imports = Seq(optionalResolution("scala.quasiquotes")))
+
+  val httpCore = exports(Seq("akka.http.*"), imports = Seq(scalaJava8CompatImport()))
+
+  val http = exports(Seq("akka.http.impl.server",
+    "akka.http.scaladsl.server.*", "akka.http.javadsl.server.*",
+    "akka.http.scaladsl.client", "akka.http.scaladsl.coding", "akka.http.scaladsl.common",
+    "akka.http.scaladsl.marshalling", "akka.http.scaladsl.unmarshalling"),
+    imports = Seq(
+      scalaJava8CompatImport(),
+      akkaImport("akka.stream.*"),
+      akkaImport("akka.parboiled2.*"))
+  )
+
+  val httpTestkit = exports(Seq("akka.http.scaladsl.testkit.*", "akka.http.javadsl.testkit.*"))
+
+  val httpSprayJson = exports(Seq("akka.http.scaladsl.marshallers.sprayjson"))
+
+  val httpXml = exports(Seq("akka.http.scaladsl.marshallers.xml"))
+
+  val httpJackson = exports(Seq("akka.http.javadsl.marshallers.jackson"))
+
+  val stream = exports(Seq("akka.stream.*"), imports = Seq(scalaJava8CompatImport()))
+
+  val streamTestkit = exports(Seq("akka.stream.testkit.*"))
 
   val slf4j = exports(Seq("akka.event.slf4j.*"))
 
@@ -72,6 +99,7 @@ object OSGi {
     val ScalaVersion(epoch, major) = version
     versionedImport(packageName, s"$epoch.$major", s"$epoch.${major.toInt+1}")
   }
+  def scalaJava8CompatImport(packageName: String = "scala.compat.java8.*") = versionedImport(packageName, "0.7.0", "1.0.0")
   def kamonImport(packageName: String = "kamon.sigar.*") = optionalResolution(versionedImport(packageName, "1.6.5", "1.6.6"))
   def sigarImport(packageName: String = "org.hyperic.*") = optionalResolution(versionedImport(packageName, "1.6.5", "1.6.6"))
   def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)

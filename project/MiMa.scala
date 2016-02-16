@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka
 
@@ -571,29 +571,26 @@ object MiMa extends AutoPlugin {
       "2.3.14" -> bcIssuesBetween23and24,
       "2.4.0" -> Seq(
         FilterAnyProblem("akka.remote.transport.ProtocolStateActor"),
-        FilterAnyProblem("akka.persistence.journal.inmem.InmemJournal"),
-        FilterAnyProblem("akka.persistence.journal.inmem.InmemStore"),
 
         //#18353 Changes to methods and fields private to remoting actors
         ProblemFilters.exclude[MissingMethodProblem]("akka.remote.EndpointManager.retryGateEnabled"),
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.EndpointManager.pruneTimerCancellable"),
-        
+
         // #18722 internal changes to actor
         FilterAnyProblem("akka.cluster.sharding.DDataShardCoordinator"),
 
         // #18328 optimize VersionVector for size 1
-        FilterAnyProblem("akka.cluster.ddata.VersionVector"),
+        FilterAnyProblem("akka.cluster.ddata.VersionVector")
+      ),
+      "2.4.1" -> Seq(
+        // #19008
+        FilterAnyProblem("akka.persistence.journal.inmem.InmemJournal"),
+        FilterAnyProblem("akka.persistence.journal.inmem.InmemStore"),
 
         // #19133 change in internal actor
         ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.gated"),
 
-        // debug logging in ReplayFilter, change of internal actor
-        ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.ReplayFilter.this"),
-        ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.AsyncWriteJournal.akka$persistence$journal$AsyncWriteJournal$_setter_$akka$persistence$journal$AsyncWriteJournal$$replayDebugEnabled_="),
-        ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.AsyncWriteJournal.akka$persistence$journal$AsyncWriteJournal$$replayDebugEnabled"),
-        ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.ReplayFilter.props"),
-
-        // report invalid association events #18758
+        // #18758 report invalid association events
         ProblemFilters.exclude[MissingTypesProblem]("akka.remote.InvalidAssociation$"),
         ProblemFilters.exclude[MissingMethodProblem]("akka.remote.InvalidAssociation.apply"),
         ProblemFilters.exclude[MissingMethodProblem]("akka.remote.InvalidAssociation.copy"),
@@ -603,7 +600,14 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.BackoffSupervisor.akka$pattern$BackoffSupervisor$$child_="),
         ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.BackoffSupervisor.akka$pattern$BackoffSupervisor$$restartCount"),
         ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.BackoffSupervisor.akka$pattern$BackoffSupervisor$$restartCount_="),
-        ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.BackoffSupervisor.akka$pattern$BackoffSupervisor$$child")
+        ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.BackoffSupervisor.akka$pattern$BackoffSupervisor$$child"),
+
+        // #19487
+        FilterAnyProblem("akka.actor.dungeon.Children"),
+
+        // #19440
+        ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.PipeToSupport.pipeCompletionStage"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.FutureTimeoutSupport.afterCompletionStage")
       )
     )
   }

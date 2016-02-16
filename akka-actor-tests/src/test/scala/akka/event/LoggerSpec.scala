@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.event
 
@@ -170,7 +170,7 @@ class LoggerSpec extends WordSpec with Matchers {
       out.size should be > (0)
     }
 
-    "drain logger queue on system shutdown" in {
+    "drain logger queue on system.terminate" in {
       val out = new java.io.ByteArrayOutputStream()
       Console.withOut(out) {
         val sys = ActorSystem("defaultLogger", slowConfig)

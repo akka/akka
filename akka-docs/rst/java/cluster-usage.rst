@@ -1,9 +1,9 @@
 
 .. _cluster_usage_java:
 
-######################
- Cluster Usage
-######################
+#############
+Cluster Usage
+#############
 
 For introduction to the Akka Cluster concepts please see :ref:`cluster`.
 
@@ -28,15 +28,15 @@ It joins the cluster and an actor subscribes to cluster membership events and lo
 
 The ``application.conf`` configuration looks like this:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/resources/application.conf
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/resources/application.conf#snippet
 
 To enable cluster capabilities in your Akka project you should, at a minimum, add the :ref:`remoting-java`
 settings, but with ``akka.cluster.ClusterActorRefProvider``.
 The ``akka.cluster.seed-nodes`` should normally also be added to your ``application.conf`` file.
 
 .. note::
-  If you are using Docker or the nodes for some other reason have separate internal and external ip addresses
-  you must configure remoting according to :ref:`remote-configuration-nat-java`
+  If you are running Akka in a Docker container or the nodes for some other reason have separate internal and
+  external ip addresses you must configure remoting according to :ref:`remote-configuration-nat-java`
 
 The seed nodes are configured contact points for initial, automatic, join of the cluster.
 

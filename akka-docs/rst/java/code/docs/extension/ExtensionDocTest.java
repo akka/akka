@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.extension;
 
@@ -9,9 +9,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 //#imports
 
+import docs.AbstractJavaTest;
 import org.junit.Test;
 
-public class ExtensionDocTest {
+public class ExtensionDocTest extends AbstractJavaTest {
 
   static
   //#extension

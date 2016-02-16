@@ -9,6 +9,7 @@ package docs.camel;
     import akka.testkit.JavaTestKit;
     import akka.testkit.TestKit;
     import akka.util.Timeout;
+    import docs.AbstractJavaTest;
     import scala.concurrent.Future;
     import scala.concurrent.duration.Duration;
     import static java.util.concurrent.TimeUnit.SECONDS;
@@ -16,7 +17,7 @@ package docs.camel;
 
 import org.junit.Test;
 
-public class ActivationTestBase {
+public class ActivationTestBase extends AbstractJavaTest {
 
   @SuppressWarnings("unused")
   @Test

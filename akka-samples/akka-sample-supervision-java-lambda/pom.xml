@@ -9,9 +9,9 @@
   </properties>
 
   <groupId>sample</groupId>
-  <artifactId>akka-supervision-java-lambda</artifactId>
+  <artifactId>akka-sample-supervision-java-lambda</artifactId>
   <packaging>jar</packaging>
-  <version>1.0</version>
+  <version>2.4-SNAPSHOT</version>
 
   <dependencies>
     <dependency>

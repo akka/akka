@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.jrouting;
 
 import akka.testkit.AkkaJUnitActorSystemResource;
 
+import docs.AbstractJavaTest;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -30,7 +31,7 @@ import akka.routing.ConsistentHashingRouter.ConsistentHashMapper;
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope;
 //#imports2
 
-public class ConsistentHashingRouterDocTest {
+public class ConsistentHashingRouterDocTest extends AbstractJavaTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

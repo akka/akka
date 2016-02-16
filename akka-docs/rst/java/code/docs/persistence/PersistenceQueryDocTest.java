@@ -1,13 +1,15 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package docs.persistence;
 
-import static akka.pattern.Patterns.ask;
+import static akka.pattern.PatternsCS.ask;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Iterator;
+
+import akka.NotUsed;
 import com.typesafe.config.Config;
 
 import akka.actor.*;
@@ -40,6 +42,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 public class PersistenceQueryDocTest {
@@ -113,27 +116,27 @@ public class PersistenceQueryDocTest {
     }
 
     @Override
-    public Source<EventEnvelope, BoxedUnit> eventsByTag(String tag, long offset) {
+    public Source<EventEnvelope, NotUsed> eventsByTag(String tag, long offset) {
       final Props props = MyEventsByTagPublisher.props(tag, offset, refreshInterval);
       return Source.<EventEnvelope>actorPublisher(props).
-          mapMaterializedValue(m -> BoxedUnit.UNIT);
+          mapMaterializedValue(m -> NotUsed.getInstance());
     }
 
     @Override
-    public Source<EventEnvelope, BoxedUnit> eventsByPersistenceId(String persistenceId,
+    public Source<EventEnvelope, NotUsed> eventsByPersistenceId(String persistenceId,
         long fromSequenceNr, long toSequenceNr) {
       // implement in a similar way as eventsByTag
       throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Source<String, BoxedUnit> allPersistenceIds() {
+    public Source<String, NotUsed> allPersistenceIds() {
       // implement in a similar way as eventsByTag
       throw new UnsupportedOperationException("Not implemented yet");
     }
     
     @Override
-    public Source<String, BoxedUnit> currentPersistenceIds() {
+    public Source<String, NotUsed> currentPersistenceIds() {
       // implement in a similar way as eventsByTag
       throw new UnsupportedOperationException("Not implemented yet");
     }
@@ -166,25 +169,25 @@ public class PersistenceQueryDocTest {
     }
 
     @Override
-    public akka.stream.scaladsl.Source<EventEnvelope, BoxedUnit> eventsByTag(
+    public akka.stream.scaladsl.Source<EventEnvelope, NotUsed> eventsByTag(
         String tag, long offset) {
       return javadslReadJournal.eventsByTag(tag, offset).asScala();
     }
 
     @Override
-    public akka.stream.scaladsl.Source<EventEnvelope, BoxedUnit> eventsByPersistenceId(
+    public akka.stream.scaladsl.Source<EventEnvelope, NotUsed> eventsByPersistenceId(
         String persistenceId, long fromSequenceNr, long toSequenceNr) {
       return javadslReadJournal.eventsByPersistenceId(persistenceId, fromSequenceNr, 
           toSequenceNr).asScala();
     }
 
     @Override
-    public akka.stream.scaladsl.Source<String, BoxedUnit> allPersistenceIds() {
+    public akka.stream.scaladsl.Source<String, NotUsed> allPersistenceIds() {
       return javadslReadJournal.allPersistenceIds().asScala();
     }
     
     @Override
-    public akka.stream.scaladsl.Source<String, BoxedUnit> currentPersistenceIds() {
+    public akka.stream.scaladsl.Source<String, NotUsed> currentPersistenceIds() {
       return javadslReadJournal.currentPersistenceIds().asScala();
     }
     
@@ -209,7 +212,7 @@ public class PersistenceQueryDocTest {
           "akka.persistence.query.my-read-journal");
 
     // issue query to journal
-    Source<EventEnvelope, BoxedUnit> source =
+    Source<EventEnvelope, NotUsed> source =
       readJournal.eventsByPersistenceId("user-1337", 0, Long.MAX_VALUE);
 
     // materialize stream, consuming events
@@ -262,7 +265,7 @@ public class PersistenceQueryDocTest {
 
     //#events-by-tag
     // assuming journal is able to work with numeric offsets we can:
-    final Source<EventEnvelope, BoxedUnit> blueThings =
+    final Source<EventEnvelope, NotUsed> blueThings =
       readJournal.eventsByTag("blue", 0L);
 
     // find top 10 blue things:
@@ -276,7 +279,7 @@ public class PersistenceQueryDocTest {
         }, mat);
 
     // start another query, from the known offset
-    Source<EventEnvelope, BoxedUnit> blue = readJournal.eventsByTag("blue", 10);
+    Source<EventEnvelope, NotUsed> blue = readJournal.eventsByTag("blue", 10);
     //#events-by-tag
   }
 
@@ -335,13 +338,13 @@ public class PersistenceQueryDocTest {
       .eventsByPersistenceId("user-1337", 0L, Long.MAX_VALUE)
       .map(envelope -> envelope.event())
       .grouped(20) // batch inserts into groups of 20
-      .runWith(Sink.create(dbBatchWriter), mat); // write batches to read-side database
+      .runWith(Sink.fromSubscriber(dbBatchWriter), mat); // write batches to read-side database
     //#projection-into-different-store-rs
   }
 
   //#projection-into-different-store-simple-classes
   class ExampleStore {
-    Future<Void> save(Object any) {
+    CompletionStage<Void> save(Object any) {
       // ...
       //#projection-into-different-store-simple-classes
       return null;
@@ -377,13 +380,13 @@ public class PersistenceQueryDocTest {
       this.name = name;
     }
 
-    public Future<Long> saveProgress(long offset) {
+    public CompletionStage<Long> saveProgress(long offset) {
       // ...
       //#projection-into-different-store
       return null;
       //#projection-into-different-store
     }
-    public Future<Long> latestOffset() {
+    public CompletionStage<Long> latestOffset() {
       // ...
       //#projection-into-different-store
       return null;
@@ -410,17 +413,13 @@ public class PersistenceQueryDocTest {
     final Props writerProps = Props.create(TheOneWhoWritesToQueryJournal.class, "bid");
     final ActorRef writer = system.actorOf(writerProps, "bid-projection-writer");
 
-    long startFromOffset = Await.result(bidProjection.latestOffset(), timeout.duration());
+    long startFromOffset = bidProjection.latestOffset().toCompletableFuture().get(3, TimeUnit.SECONDS);
 
     readJournal
       .eventsByTag("bid", startFromOffset)
-      .<Long>mapAsync(8, envelope -> {
-        final Future<Object> f = ask(writer, envelope.event(), timeout);
-        return f.<Long>map(new Mapper<Object, Long>() {
-          @Override public Long apply(Object in) {
-            return envelope.offset();
-          }
-        }, system.dispatcher());
+      .mapAsync(8, envelope -> {
+        final CompletionStage<Object> f = ask(writer, envelope.event(), timeout);
+        return f.thenApplyAsync(in -> envelope.offset(), system.dispatcher());
       })
       .mapAsync(1, offset -> bidProjection.saveProgress(offset))
       .runWith(Sink.ignore(), mat);

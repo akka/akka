@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.persistence.query.journal.leveldb
 
@@ -45,10 +45,12 @@ class AllPersistenceIdsSpec extends AkkaSpec(AllPersistenceIdsSpec.config)
       expectMsg("c1-done")
 
       val src = queries.currentPersistenceIds()
-      src.runWith(TestSink.probe[String])
-        .request(5)
-        .expectNextUnordered("a", "b", "c")
-        .expectComplete()
+      val probe = src.runWith(TestSink.probe[String])
+      probe.within(10.seconds) {
+        probe.request(5)
+          .expectNextUnordered("a", "b", "c")
+          .expectComplete()
+      }
     }
 
     "find new persistenceIds" in {
@@ -58,19 +60,21 @@ class AllPersistenceIdsSpec extends AkkaSpec(AllPersistenceIdsSpec.config)
 
       val src = queries.allPersistenceIds()
       val probe = src.runWith(TestSink.probe[String])
-        .request(5)
-        .expectNextUnorderedN(List("a", "b", "c", "d"))
+      probe.within(10.seconds) {
+        probe.request(5)
+          .expectNextUnorderedN(List("a", "b", "c", "d"))
 
-      system.actorOf(TestActor.props("e")) ! "e1"
-      probe.expectNext("e")
+        system.actorOf(TestActor.props("e")) ! "e1"
+        probe.expectNext("e")
 
-      val more = (1 to 100).map("f" + _)
-      more.foreach { p ⇒
-        system.actorOf(TestActor.props(p)) ! p
+        val more = (1 to 100).map("f" + _)
+        more.foreach { p ⇒
+          system.actorOf(TestActor.props(p)) ! p
+        }
+
+        probe.request(100)
+        probe.expectNextUnorderedN(more)
       }
-
-      probe.request(100)
-      probe.expectNextUnorderedN(more)
 
     }
   }

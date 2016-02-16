@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster.ddata.protobuf
 
@@ -56,8 +56,8 @@ trait SerializationSupport {
   def compress(msg: MessageLite): Array[Byte] = {
     val bos = new ByteArrayOutputStream(BufferSize)
     val zip = new GZIPOutputStream(bos)
-    msg.writeTo(zip)
-    zip.close()
+    try msg.writeTo(zip)
+    finally zip.close()
     bos.toByteArray
   }
 
@@ -73,7 +73,8 @@ trait SerializationSupport {
         readChunk()
     }
 
-    readChunk()
+    try readChunk()
+    finally in.close()
     out.toByteArray
   }
 

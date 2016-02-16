@@ -40,6 +40,7 @@ _dump
 _mb
 activemq-data
 akka-contrib/rst_preprocessed/
+akka-docs-dev/rst_preprocessed/
 akka-docs/_build/
 akka-docs/exts/
 akka-docs/rst_preprocessed/
@@ -78,6 +79,10 @@ worker*.log
 *-shim.sbt
 test-output
 akka-diagnostics/
+
+# test output of QuickStart guide
+factorials.txt
+factorial2.txt
 
 # Default sigar library extract location.
 native/

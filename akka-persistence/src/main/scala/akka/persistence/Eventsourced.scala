@@ -1,18 +1,18 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.persistence
 
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.UUID
+
 import scala.collection.immutable
 import scala.util.control.NonFatal
-import akka.actor.Stash
-import akka.actor.StashFactory
+import akka.actor.DeadLetter
+import akka.actor.StashOverflowException
 import akka.event.Logging
 import akka.event.LoggingAdapter
-import akka.actor.ActorRef
-import java.util.UUID
 
 /**
  * INTERNAL API
@@ -37,7 +37,7 @@ private[persistence] object Eventsourced {
  * Scala API and implementation details of [[PersistentActor]], [[AbstractPersistentActor]] and
  * [[UntypedPersistentActor]].
  */
-private[persistence] trait Eventsourced extends Snapshotter with Stash with StashFactory with PersistenceIdentity with PersistenceRecovery {
+private[persistence] trait Eventsourced extends Snapshotter with PersistenceStash with PersistenceIdentity with PersistenceRecovery {
   import JournalProtocol._
   import SnapshotProtocol.LoadSnapshotResult
   import Eventsourced._
@@ -51,6 +51,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   private val writerUuid = UUID.randomUUID.toString
 
   private var journalBatch = Vector.empty[PersistentEnvelope]
+  // no longer used, but kept for binary compatibility
   private val maxMessageBatchSize = extension.journalConfigFor(journalPluginId).getInt("max-message-batch-size")
   private var writeInProgress = false
   private var sequenceNr: Long = 0L
@@ -148,6 +149,20 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
       event.getClass.getName, seqNr, persistenceId, cause.getMessage)
   }
 
+  private def stashInternally(currMsg: Any): Unit =
+    try internalStash.stash() catch {
+      case e: StashOverflowException ⇒
+        internalStashOverflowStrategy match {
+          case DiscardToDeadLetterStrategy ⇒
+            val snd = sender()
+            context.system.deadLetters.tell(DeadLetter(currMsg, snd, self), snd)
+          case ReplyToStrategy(response) ⇒
+            sender() ! response
+          case ThrowOverflowExceptionStrategy ⇒
+            throw e
+        }
+    }
+
   private def startRecovery(recovery: Recovery): Unit = {
     changeState(recoveryStarted(recovery.replayMax))
     loadSnapshot(snapshotterId, recovery.fromSnapshot, recovery.toSequenceNr)
@@ -232,11 +247,12 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
     sequenceNr
   }
 
-  private def flushJournalBatch(): Unit = {
-    journal ! WriteMessages(journalBatch, self, instanceId)
-    journalBatch = Vector.empty
-    writeInProgress = true
-  }
+  private def flushJournalBatch(): Unit =
+    if (!writeInProgress) {
+      journal ! WriteMessages(journalBatch, self, instanceId)
+      journalBatch = Vector.empty
+      writeInProgress = true
+    }
 
   private def log: LoggingAdapter = Logging(context.system, this)
 
@@ -291,7 +307,8 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   def persist[A](event: A)(handler: A ⇒ Unit): Unit = {
     pendingStashingPersistInvocations += 1
     pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
-    eventBatch = AtomicWrite(PersistentRepr(event, sender = sender())) :: eventBatch
+    eventBatch ::= AtomicWrite(PersistentRepr(event, persistenceId = persistenceId,
+      sequenceNr = nextSequenceNr(), writerUuid = writerUuid, sender = sender()))
   }
 
   /**
@@ -308,7 +325,8 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
         pendingStashingPersistInvocations += 1
         pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
       }
-      eventBatch = AtomicWrite(events.map(PersistentRepr.apply(_, sender = sender()))) :: eventBatch
+      eventBatch ::= AtomicWrite(events.map(PersistentRepr.apply(_, persistenceId = persistenceId,
+        sequenceNr = nextSequenceNr(), writerUuid = writerUuid, sender = sender())))
     }
   }
 
@@ -341,7 +359,8 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    */
   def persistAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
     pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
-    eventBatch = AtomicWrite(PersistentRepr(event, sender = sender())) :: eventBatch
+    eventBatch ::= AtomicWrite(PersistentRepr(event, persistenceId = persistenceId,
+      sequenceNr = nextSequenceNr(), writerUuid = writerUuid, sender = sender()))
   }
 
   /**
@@ -357,7 +376,8 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
       events.foreach { event ⇒
         pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
       }
-      eventBatch = AtomicWrite(events.map(PersistentRepr.apply(_, sender = sender()))) :: eventBatch
+      eventBatch ::= AtomicWrite(events.map(PersistentRepr(_, persistenceId = persistenceId,
+        sequenceNr = nextSequenceNr(), writerUuid = writerUuid, sender = sender())))
     }
 
   @deprecated("use persistAllAsync instead", "2.4")
@@ -459,7 +479,8 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
         }
         changeState(recovering(recoveryBehavior))
         journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
-      case other ⇒ internalStash.stash()
+      case other ⇒
+        stashInternally(other)
     }
   }
 
@@ -474,7 +495,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    * All incoming messages are stashed.
    */
   private def recovering(recoveryBehavior: Receive) = new State {
-    override def toString: String = s"replay started"
+    override def toString: String = "replay started"
     override def recoveryRunning: Boolean = true
 
     override def stateReceive(receive: Receive, message: Any) = message match {
@@ -496,47 +517,22 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
       case ReplayMessagesFailure(cause) ⇒
         try onRecoveryFailure(cause, event = None) finally context.stop(self)
       case other ⇒
-        internalStash.stash()
+        stashInternally(other)
     }
   }
 
   private def flushBatch() {
-    def addToBatch(p: PersistentEnvelope): Unit = p match {
-      case a: AtomicWrite ⇒
-        journalBatch :+= a.copy(payload =
-          a.payload.map(_.update(persistenceId = persistenceId, sequenceNr = nextSequenceNr(), writerUuid = writerUuid)))
-      case r: PersistentEnvelope ⇒
-        journalBatch :+= r
+    if (eventBatch.nonEmpty) {
+      journalBatch ++= eventBatch.reverse
+      eventBatch = Nil
     }
 
-    def maxBatchSizeReached: Boolean =
-      journalBatch.size >= maxMessageBatchSize
-
-    // When using only `persistAsync` and `defer` max throughput is increased by using
-    // batching, but when using `persist` we want to use one atomic WriteMessages
-    // for the emitted events.
-    // Flush previously collected events, if any, separately from the `persist` batch
-    if (pendingStashingPersistInvocations > 0 && journalBatch.nonEmpty)
-      flushJournalBatch()
-
-    eventBatch.reverse.foreach { p ⇒
-      addToBatch(p)
-      if (!writeInProgress || maxBatchSizeReached) flushJournalBatch()
-    }
-
-    eventBatch = Nil
+    if (journalBatch.nonEmpty) flushJournalBatch()
   }
 
-  private def peekApplyHandler(payload: Any): Unit = {
-    val batchSizeBeforeApply = eventBatch.size
+  private def peekApplyHandler(payload: Any): Unit =
     try pendingInvocations.peek().handler(payload)
-    finally {
-      val batchSizeAfterApply = eventBatch.size
-
-      if (batchSizeAfterApply > batchSizeBeforeApply)
-        flushBatch()
-    }
-  }
+    finally flushBatch()
 
   /**
    * Common receive handler for processingCommands and persistingEvents
@@ -573,14 +569,16 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
         // while message is in flight, in that case we ignore the call to the handler
         if (id == instanceId) {
           try {
-            pendingInvocations.peek().handler(l)
+            peekApplyHandler(l)
             onWriteMessageComplete(err = false)
           } catch { case NonFatal(e) ⇒ onWriteMessageComplete(err = true); throw e }
         }
       case WriteMessagesSuccessful ⇒
-        if (journalBatch.isEmpty) writeInProgress = false else flushJournalBatch()
+        writeInProgress = false
+        if (journalBatch.nonEmpty) flushJournalBatch()
 
       case WriteMessagesFailed(_) ⇒
+        writeInProgress = false
         () // it will be stopped by the first WriteMessageFailure message
     }
 
@@ -626,7 +624,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
 
     override def stateReceive(receive: Receive, message: Any) =
       if (common.isDefinedAt(message)) common(message)
-      else internalStash.stash()
+      else stashInternally(message)
 
     override def onWriteMessageComplete(err: Boolean): Unit = {
       pendingInvocations.pop() match {

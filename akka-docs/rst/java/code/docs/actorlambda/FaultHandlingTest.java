@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.actorlambda;
 
@@ -14,6 +14,7 @@ import akka.japi.pf.DeciderBuilder;
 import akka.japi.pf.ReceiveBuilder;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import docs.AbstractJavaTest;
 import scala.PartialFunction;
 import scala.concurrent.Await;
 import static akka.pattern.Patterns.ask;
@@ -35,7 +36,7 @@ import org.junit.AfterClass;
 import scala.runtime.BoxedUnit;
 
 //#testkit
-public class FaultHandlingTest {
+public class FaultHandlingTest extends AbstractJavaTest {
 //#testkit
 
   public static Config config = ConfigFactory.parseString(

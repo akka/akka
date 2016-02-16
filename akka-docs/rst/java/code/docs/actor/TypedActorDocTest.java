@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.actor;
 
@@ -10,6 +10,7 @@ import akka.actor.*;
 import akka.japi.*;
 import akka.dispatch.Futures;
 
+import docs.AbstractJavaTest;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
@@ -25,7 +26,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 //#imports
-public class TypedActorDocTest {
+public class TypedActorDocTest extends AbstractJavaTest {
     Object someReference = null;
     ActorSystem system = null;
 

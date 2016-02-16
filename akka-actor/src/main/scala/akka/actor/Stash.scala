@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
@@ -7,6 +7,8 @@ import scala.collection.immutable
 
 import akka.AkkaException
 import akka.dispatch.{ UnboundedDequeBasedMessageQueueSemantics, RequiresMessageQueue, Envelope, DequeBasedMessageQueueSemantics, Mailboxes }
+
+import scala.util.control.NoStackTrace
 
 /**
  *  The `Stash` trait enables an actor to temporarily stash away messages that can not or
@@ -156,7 +158,7 @@ private[akka] trait StashSupport {
     if (theStash.nonEmpty && (currMsg eq theStash.last))
       throw new IllegalStateException("Can't stash the same message " + currMsg + " more than once")
     if (capacity <= 0 || theStash.size < capacity) theStash :+= currMsg
-    else throw new StashOverflowException("Couldn't enqueue message " + currMsg + " to stash of " + self)
+    else throw new StashOverflowException("Couldn't enqueue message " + currMsg.getClass.getName + " to stash of " + self)
   }
 
   /**
@@ -246,4 +248,4 @@ private[akka] trait StashSupport {
 /**
  * Is thrown when the size of the Stash exceeds the capacity of the Stash
  */
-class StashOverflowException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
+class StashOverflowException(message: String, cause: Throwable = null) extends AkkaException(message, cause) with NoStackTrace

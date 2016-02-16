@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.pattern
@@ -133,8 +133,11 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender {
           watch(c1)
           c1 ! "boom"
           expectTerminated(c1)
-          supervisor ! BackoffSupervisor.GetRestartCount
-          expectMsg(BackoffSupervisor.RestartCount(1))
+
+          awaitAssert {
+            supervisor ! BackoffSupervisor.GetRestartCount
+            expectMsg(BackoffSupervisor.RestartCount(1))
+          }
 
           awaitAssert {
             supervisor ! BackoffSupervisor.GetCurrentChild

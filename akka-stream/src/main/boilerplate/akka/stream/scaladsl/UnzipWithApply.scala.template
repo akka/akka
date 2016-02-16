@@ -1,0 +1,91 @@
+/**
+ * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.stream.scaladsl
+
+import akka.stream._
+import akka.stream.impl.StreamLayout
+import akka.stream.stage._
+
+object UnzipWithApply {
+  import scala.language.implicitConversions
+
+  abstract trait UnzipWithCreator[In, Out, T] {
+    def create(unzipper: Function1[In, Out]): T
+  }
+
+  [2..20#trait UnzipWithCreator1[In, [#A1#]] extends UnzipWithCreator[In, Tuple1[[#A1#]], UnzipWith1[In, [#A1#]]] {
+    override def create(unzipper: In ⇒ ([#A1#])): UnzipWith1[In, [#A1#]] = {
+      new UnzipWith1(unzipper)
+    }
+  }
+
+  implicit object UnzipWithCreatorObject1 extends UnzipWithCreator1[Any, [#Any#]]#
+
+  ]
+}
+
+trait UnzipWithApply {
+  import UnzipWithApply._
+
+
+  [2..20#/**
+   * Create a new `UnzipWith` specialized for 1 outputs.
+   *
+   * @param unzipper unzipping-function from the input value to 1 output values
+   */
+   def apply[In, [#A1#]](unzipper: In ⇒ Tuple1[[#A1#]])(implicit creator: UnzipWithCreator1[Any, [#Any#]]): UnzipWith1[In, [#A1#]] = {
+     creator.asInstanceOf[UnzipWithCreator1[In, [#A1#]]].create(unzipper)
+   }#
+
+  ]
+}
+
+[2..20#/** `UnzipWith` specialized for 1 outputs */
+class UnzipWith1[In, [#A1#]](unzipper: In ⇒ ([#A1#])) extends GraphStage[FanOutShape1[In, [#A1#]]] {
+  override def initialAttributes = Attributes.name("UnzipWith1")
+  override val shape: FanOutShape1[In, [#A1#]] = new FanOutShape1[In, [#A1#]]("UnzipWith1")
+  def in: Inlet[In] = shape.in
+
+  [#def out0: Outlet[A1] = shape.out0#
+  ]
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+    var pendingCount = 1
+    var downstreamRunning = 1
+
+    [#var pending0 = true#
+    ]
+
+    setHandler(in, new InHandler {
+      override def onPush() = {
+        val elem = unzipper(grab(in))
+        [#if (!isClosed(out0)) push(out0, elem._1)#
+        ]
+        pendingCount = downstreamRunning
+      }
+    })
+
+    [#setHandler(out0, new OutHandler {
+      override def onPull() = {
+        pendingCount -= ##1
+        if (pendingCount == ##0) pull(in)
+      }
+
+      override def onDownstreamFinish(): Unit = {
+        downstreamRunning -= ##1
+        if (downstreamRunning == ##0) completeStage()
+        else {
+          if (pending0) pendingCount -= ##1
+          if (pendingCount == ##0) pull(in)
+        }
+      }
+    })#
+    ]
+
+  }
+
+  override def toString = "UnzipWith1"
+}
+#
+]

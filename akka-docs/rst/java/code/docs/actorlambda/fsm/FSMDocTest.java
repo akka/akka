@@ -1,11 +1,12 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package docs.actorlambda.fsm;
 
 import akka.actor.*;
 import akka.testkit.JavaTestKit;
+import docs.AbstractJavaTest;
 import org.hamcrest.CoreMatchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -18,7 +19,7 @@ import static docs.actorlambda.fsm.FSMDocTest.StateType.*;
 import static docs.actorlambda.fsm.FSMDocTest.Messages.*;
 import static java.util.concurrent.TimeUnit.*;
 
-public class FSMDocTest {
+public class FSMDocTest extends AbstractJavaTest {
   static ActorSystem system;
 
   @BeforeClass

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster.sharding
 
@@ -133,6 +133,7 @@ abstract class ClusterShardingGetStatsSpec extends MultiNodeSpec(ClusterSharding
           val shardStats = probe.expectMsgType[ShardRegion.ClusterShardingStats]
           shardStats.regions.size shouldEqual 3
           shardStats.regions.values.map(_.stats.size).sum shouldEqual 0
+          shardStats.regions.keys.forall(_.hasGlobalScope) should be(true)
         }
       }
 
@@ -169,6 +170,7 @@ abstract class ClusterShardingGetStatsSpec extends MultiNodeSpec(ClusterSharding
           val regions = probe.expectMsgType[ShardRegion.ClusterShardingStats].regions
           regions.size shouldEqual 3
           regions.values.flatMap(_.stats.values).sum shouldEqual 4
+          regions.keys.forall(_.hasGlobalScope) should be(true)
         }
       }
 

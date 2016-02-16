@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster.sharding
 
@@ -554,9 +554,10 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
       }).map { allRegionStats ⇒
         ShardRegion.ClusterShardingStats(allRegionStats.map {
           case (region, stats) ⇒
+            val regionAddress = region.path.address
             val address: Address =
-              if (region == self) Cluster(context.system).selfAddress
-              else region.path.address
+              if (regionAddress.hasLocalScope && regionAddress.system == cluster.selfAddress.system) cluster.selfAddress
+              else regionAddress
 
             address -> stats
         }.toMap)
