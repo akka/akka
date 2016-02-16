@@ -7,6 +7,7 @@ import java.util
 
 import akka.actor._
 import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Watch }
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage.GraphStageLogic.StageActor
 import akka.stream.{ Inlet, SinkShape, ActorMaterializer, Attributes }
 import akka.stream.Attributes.InputBuffer
@@ -21,14 +22,15 @@ private[akka] class ActorRefBackpressureSinkStage[In](ref: ActorRef, onInitMessa
                                                       onFailureMessage: (Throwable) ⇒ Any)
   extends GraphStage[SinkShape[In]] {
   val in: Inlet[In] = Inlet[In]("ActorRefBackpressureSink.in")
+  override def initialAttributes = DefaultAttributes.actorRefWithAck
   override val shape: SinkShape[In] = SinkShape(in)
-
-  val maxBuffer = module.attributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
-  require(maxBuffer > 0, "Buffer size must be greater than 0")
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
       implicit def self: ActorRef = stageActor.ref
+
+      val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+      require(maxBuffer > 0, "Buffer size must be greater than 0")
 
       val buffer: util.Deque[In] = new util.ArrayDeque[In]()
       var acknowledgementReceived = false

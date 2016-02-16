@@ -6,6 +6,7 @@ package akka.stream.impl.io
 import java.io.{ IOException, InputStream }
 import java.util.concurrent.{ BlockingQueue, LinkedBlockingDeque, TimeUnit }
 import akka.stream.Attributes.InputBuffer
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.InputStreamSinkStage._
 import akka.stream.stage._
 import akka.util.ByteString
@@ -36,13 +37,13 @@ private[stream] object InputStreamSinkStage {
 final private[stream] class InputStreamSinkStage(readTimeout: FiniteDuration) extends GraphStageWithMaterializedValue[SinkShape[ByteString], InputStream] {
 
   val in = Inlet[ByteString]("InputStreamSink.in")
+  override def initialAttributes: Attributes = DefaultAttributes.inputStreamSink
   override val shape: SinkShape[ByteString] = SinkShape.of(in)
 
-  // has to be in this order as module depends on shape
-  val maxBuffer = module.attributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
-  require(maxBuffer > 0, "Buffer size must be greater than 0")
-
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, InputStream) = {
+    val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+    require(maxBuffer > 0, "Buffer size must be greater than 0")
+
     val dataQueue = new LinkedBlockingDeque[StreamToAdapterMessage](maxBuffer + 2)
 
     val logic = new GraphStageLogic(shape) with StageWithCallback {

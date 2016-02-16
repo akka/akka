@@ -5,6 +5,7 @@ package akka.stream.scaladsl
 
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.stream.ActorMaterializer
+import akka.stream.Attributes.inputBuffer
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
@@ -128,6 +129,16 @@ class ActorRefBackpressureSinkSpec extends AkkaSpec with ScalaFutures with Conve
         fw ! TriggerAckMessage
       }
       expectMsg(completeMessage)
+    }
+
+    "fail to materialize with zero sized input buffer" in {
+      val fw = createActor(classOf[Fw])
+      an[IllegalArgumentException] shouldBe thrownBy {
+        val badSink = Sink
+          .actorRefWithAck(fw, initMessage, ackMessage, completeMessage)
+          .withAttributes(inputBuffer(0, 0))
+        Source.single(()).runWith(badSink)
+      }
     }
 
   }

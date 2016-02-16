@@ -5,6 +5,7 @@ package akka.stream.scaladsl
 
 import akka.actor.Status
 import akka.pattern.pipe
+import akka.stream.Attributes.inputBuffer
 import akka.stream.{ OverflowStrategy, ActorMaterializer }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.{ AkkaSpec, _ }
@@ -129,5 +130,10 @@ class QueueSinkSpec extends AkkaSpec with ScalaFutures {
 
     }
 
+    "fail to materialize with zero sized input buffer" in {
+      an[IllegalArgumentException] shouldBe thrownBy {
+        Source.single(()).runWith(Sink.queue().withAttributes(inputBuffer(0, 0)))
+      }
+    }
   }
 }
