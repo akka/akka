@@ -49,3 +49,11 @@ class.  It utilizes ``SprayJsonSupport`` via the ``PersonJsonSupport`` object as
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
    :snippet: example-entity-with-json
 
+It is also possible to use the ``entity`` directive to obtain raw ``JsValue`` ( spray-json_ ) objects, by simply using
+``as[JsValue]``, or any other JSON type for which you have marshallers in-scope.
+
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
+   :snippet: example-entity-with-raw-json
+
+
+.. _spray-json: https://github.com/spray/spray-json
