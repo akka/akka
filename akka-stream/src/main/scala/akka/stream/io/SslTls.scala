@@ -127,9 +127,10 @@ object SslTls {
       TlsModule(attributes, sslContext, firstSession, role, closing, hostInfo)
 
     override def replaceShape(s: Shape) =
-      if (s == shape) this
-      else if (shape.hasSamePortsAs(s)) CompositeModule(this, s)
-      else throw new IllegalArgumentException("trying to replace shape with different ports")
+      if (s != shape) {
+        shape.requireSamePortsAs(s)
+        CompositeModule(this, s)
+      } else this
   }
 
   /**
