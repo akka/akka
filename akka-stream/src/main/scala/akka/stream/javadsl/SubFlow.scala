@@ -201,7 +201,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * @see [[#mapAsyncUnordered]]
    */
   def mapAsync[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): SubFlow[In, T, Mat] =
-    new SubFlow(delegate.mapAsync(parallelism)(x => f(x).toScala))
+    new SubFlow(delegate.mapAsync(parallelism)(x ⇒ f(x).toScala))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -233,7 +233,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * @see [[#mapAsync]]
    */
   def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): SubFlow[In, T, Mat] =
-    new SubFlow(delegate.mapAsyncUnordered(parallelism)(x => f(x).toScala))
+    new SubFlow(delegate.mapAsyncUnordered(parallelism)(x ⇒ f(x).toScala))
 
   /**
    * Only pass on those elements that satisfy the given predicate.
