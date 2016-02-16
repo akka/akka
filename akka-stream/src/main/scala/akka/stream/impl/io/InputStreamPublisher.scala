@@ -9,7 +9,7 @@ import akka.Done
 import akka.actor.{ Deploy, ActorLogging, DeadLetterSuppression, Props }
 import akka.io.DirectByteBufferPool
 import akka.stream.actor.ActorPublisherMessage
-import akka.stream.io.IOResult
+import akka.stream.IOResult
 import akka.util.ByteString
 import akka.util.ByteString.ByteString1C
 

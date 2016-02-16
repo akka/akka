@@ -8,7 +8,7 @@ import java.nio.file.StandardOpenOption
 import java.nio.file.StandardOpenOption._
 import java.util
 import akka.stream.{ scaladsl, javadsl, ActorAttributes }
-import akka.stream.io.IOResult
+import akka.stream.IOResult
 import akka.util.ByteString
 import java.util.concurrent.CompletionStage
 

@@ -9,8 +9,10 @@ import akka.actor.ActorSystem;
 import akka.dispatch.Foreach;
 import akka.japi.JavaPartialFunction;
 import akka.testkit.JavaTestKit;
+//#imports
 import akka.stream.*;
 import akka.stream.javadsl.*;
+//#imports
 import docs.AbstractJavaTest;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Author;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Hashtag;
@@ -38,6 +40,8 @@ import static docs.stream.TwitterStreamQuickstartDocTest.Model.tweets;
 
 @SuppressWarnings("unused")
 public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
+
+  private static final long serialVersionUID = 1L;
 
   static ActorSystem system;
 

@@ -5,7 +5,7 @@ package akka.stream.impl.io
 
 import java.io.{ File, OutputStream }
 import java.nio.file.StandardOpenOption
-import akka.stream.io.IOResult
+import akka.stream.IOResult
 import akka.stream.impl.SinkModule
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
