@@ -199,7 +199,7 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    * @see [[#mapAsyncUnordered]]
    */
   def mapAsync[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): SubSource[T, Mat] =
-    new SubSource(delegate.mapAsync(parallelism)(x => f(x).toScala))
+    new SubSource(delegate.mapAsync(parallelism)(x ⇒ f(x).toScala))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -231,7 +231,7 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    * @see [[#mapAsync]]
    */
   def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): SubSource[T, Mat] =
-    new SubSource(delegate.mapAsyncUnordered(parallelism)(x => f(x).toScala))
+    new SubSource(delegate.mapAsyncUnordered(parallelism)(x ⇒ f(x).toScala))
 
   /**
    * Only pass on those elements that satisfy the given predicate.

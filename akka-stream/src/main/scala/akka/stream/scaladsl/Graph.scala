@@ -1009,7 +1009,7 @@ object GraphDSL extends GraphApply {
     }
 
     private class PortOpsImpl[+Out](override val outlet: Outlet[Out @uncheckedVariance], b: Builder[_])
-        extends PortOps[Out] {
+      extends PortOps[Out] {
 
       override def withAttributes(attr: Attributes): Repr[Out] = throw settingAttrNotSupported
       override def addAttributes(attr: Attributes): Repr[Out] = throw settingAttrNotSupported

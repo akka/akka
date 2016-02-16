@@ -42,7 +42,7 @@ trait RouterConfig extends Serializable {
 
   /**
    * Create the actual router, responsible for routing messages to routees.
- *
+   *
    * @param system the ActorSystem this router belongs to
    */
   def createRouter(system: ActorSystem): Router
