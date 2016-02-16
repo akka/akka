@@ -13,7 +13,7 @@ import akka.http.javadsl.model.ws._
 import akka.http.javadsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
 import akka.japi.Pair
 import akka.actor.ActorSystem
-import akka.event.{ NoLogging, LoggingAdapterTest }
+import akka.event.NoLogging
 import akka.http.javadsl.model._
 import akka.http.scaladsl.TestUtils
 import akka.japi.Function

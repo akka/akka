@@ -502,6 +502,68 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseStatefulMaponcat() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final java.lang.Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5);
+    final Source<Integer, NotUsed> ints = Source.from(input).statefulMapConcat(
+            () -> {
+              int[] state = new int[] {0};
+              return (elem) -> {
+                List<Integer> list = new ArrayList<>(Collections.nCopies(state[0], elem));
+                state[0] = elem;
+                return list;
+              };
+            });
+
+    ints
+      .runFold("", (acc, elem) -> acc + elem, materializer)
+      .thenAccept(elem -> probe.getRef().tell(elem, ActorRef.noSender()));
+
+    probe.expectMsgEquals("2334445555");
+  }
+
+  @Test
+  public void mustBeAbleToUseIntersperse() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Source<String, NotUsed> source = Source.from(Arrays.asList("0", "1", "2", "3"))
+                                                 .intersperse("[", ",", "]");
+
+    final CompletionStage<Done> future =
+        source.runWith(Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
+
+    probe.expectMsgEquals("[");
+    probe.expectMsgEquals("0");
+    probe.expectMsgEquals(",");
+    probe.expectMsgEquals("1");
+    probe.expectMsgEquals(",");
+    probe.expectMsgEquals("2");
+    probe.expectMsgEquals(",");
+    probe.expectMsgEquals("3");
+    probe.expectMsgEquals("]");
+    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+  }
+
+  @Test
+  public void mustBeAbleToUseIntersperseAndConcat() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Source<String, NotUsed> source = Source.from(Arrays.asList("0", "1", "2", "3"))
+                                                 .intersperse(",");
+
+    final CompletionStage<Done> future =
+        Source.single(">> ").concat(source).runWith(Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
+
+    probe.expectMsgEquals(">> ");
+    probe.expectMsgEquals("0");
+    probe.expectMsgEquals(",");
+    probe.expectMsgEquals("1");
+    probe.expectMsgEquals(",");
+    probe.expectMsgEquals("2");
+    probe.expectMsgEquals(",");
+    probe.expectMsgEquals("3");
+    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+  }
+
+  @Test
   public void mustBeAbleToUseDropWhile() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final Source<Integer, NotUsed> source = Source.from(Arrays.asList(0, 1, 2, 3)).dropWhile
