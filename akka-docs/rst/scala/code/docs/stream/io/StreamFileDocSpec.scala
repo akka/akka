@@ -6,7 +6,6 @@ package docs.stream.io
 import java.io.File
 
 import akka.stream._
-import akka.stream.io.IOResult
 import akka.stream.scaladsl.{ FileIO, Sink, Source }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._

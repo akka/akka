@@ -7,7 +7,7 @@ import java.io.{ File, InputStream }
 
 import akka.stream._
 import akka.stream.ActorAttributes.Dispatcher
-import akka.stream.io.IOResult
+import akka.stream.IOResult
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.impl.{ ErrorPublisher, SourceModule }

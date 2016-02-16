@@ -3,6 +3,7 @@
  */
 package akka.stream.io;
 
+import akka.stream.IOResult;
 import akka.stream.StreamTest;
 import akka.stream.javadsl.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Source;

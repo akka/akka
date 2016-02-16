@@ -10,7 +10,6 @@ import java.util.concurrent.CompletionStage;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.ActorAttributes;
-import akka.stream.io.IOResult;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.FileIO;
 import docs.AbstractJavaTest;

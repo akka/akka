@@ -9,7 +9,7 @@ import java.nio.file.StandardOpenOption
 
 import akka.Done
 import akka.actor.{ Deploy, ActorLogging, Props }
-import akka.stream.io.IOResult
+import akka.stream.IOResult
 import akka.stream.actor.{ ActorSubscriberMessage, WatermarkRequestStrategy }
 import akka.util.ByteString
 

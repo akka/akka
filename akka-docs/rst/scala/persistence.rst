@@ -102,7 +102,7 @@ about successful state changes by publishing events.
 
 When persisting events with ``persist`` it is guaranteed that the persistent actor will not receive further commands between
 the ``persist`` call and the execution(s) of the associated event handler. This also holds for multiple ``persist``
-calls in context of a single command. Incoming messages are :ref:`stashed <internal-stash>` until the ``persist``
+calls in context of a single command. Incoming messages are :ref:`stashed <internal-stash_scala>` until the ``persist``
 is completed. 
 
 If persistence of an event fails, ``onPersistFailure`` will be invoked (logging the error by default),
@@ -175,7 +175,7 @@ and before any other received messages.
 If there is a problem with recovering the state of the actor from the journal, ``onRecoveryFailure``
 is called (logging the error by default) and the actor will be stopped.
 
-.. _internal-stash:
+.. _internal-stash_scala:
 
 Internal stash 
 --------------

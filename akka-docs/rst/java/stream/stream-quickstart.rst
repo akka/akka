@@ -1,7 +1,141 @@
 .. _stream-quickstart-java:
 
-Quick Start Guide: Reactive Tweets
-==================================
+Quick Start Guide
+=================
+
+A stream usually begins at a source, so this is also how we start an Akka
+Stream. Before we create one, we import the full complement of streaming tools:
+
+.. includecode:: ../code/docs/stream/QuickStartDocTest.java#imports
+
+Now we will start with a rather simple source, emitting the integers 1 to 100:
+
+.. includecode:: ../code/docs/stream/QuickStartDocTest.java#create-source
+
+The :class:`Source` type is parameterized with two types: the first one is the
+type of element that this source emits and the second one may signal that
+running the source produces some auxiliary value (e.g. a network source may
+provide information about the bound port or the peer’s address). Where no
+auxiliary information is produced, the type ``akka.NotUsed`` is used—and a
+simple range of integers surely falls into this category.
+
+Having created this source means that we have a description of how to emit the
+first 100 natural numbers, but this source is not yet active. In order to get
+those numbers out we have to run it:
+
+.. includecode:: ../code/docs/stream/QuickStartDocTest.java#run-source
+
+This line will complement the source with a consumer function—in this example
+we simply print out the numbers to the console—and pass this little stream
+setup to an Actor that runs it. This activation is signaled by having “run” be
+part of the method name; there are other methods that run Akka Streams, and
+they all follow this pattern.
+
+You may wonder where the Actor gets created that runs the stream, and you are
+probably also asking yourself what this ``materializer`` means. In order to get
+this value we first need to create an Actor system:
+
+.. includecode:: ../code/docs/stream/QuickStartDocTest.java#create-materializer
+
+There are other ways to create a materializer, e.g. from an
+:class:`ActorContext` when using streams from within Actors. The
+:class:`Materializer` is a factory for stream execution engines, it is the
+thing that makes streams run—you don’t need to worry about any of the details
+just now apart from that you need one for calling any of the ``run`` methods on
+a :class:`Source`.
+
+The nice thing about Akka Streams is that the :class:`Source` is just a
+description of what you want to run, and like an architect’s blueprint it can
+be reused, incorporated into a larger design. We may choose to transform the
+source of integers and write it to a file instead:
+
+.. includecode:: ../code/docs/stream/QuickStartDocTest.java#transform-source
+
+First we use the ``scan`` combinator to run a computation over the whole
+stream: starting with the number 1 (``BigInteger.ONE``) we multiple by each of
+the incoming numbers, one after the other; the scan operationemits the initial
+value and then every calculation result. This yields the series of factorial
+numbers which we stash away as a :class:`Source` for later reuse—it is
+important to keep in mind that nothing is actually computed yet, this is just a
+description of what we want to have computed once we run the stream. Then we
+convert the resulting series of numbers into a stream of :class:`ByteString`
+objects describing lines in a text file. This stream is then run by attaching a
+file as the receiver of the data. In the terminology of Akka Streams this is
+called a :class:`Sink`. :class:`IOResult` is a type that IO operations return
+in Akka Streams in order to tell you how many bytes or elements were consumed
+and whether the stream terminated normally or exceptionally.
+
+Reusable Pieces
+---------------
+
+One of the nice parts of Akka Streams—and something that other stream libraries
+do not offer—is that not only sources can be reused like blueprints, all other
+elements can be as well. We can take the file-writing :class:`Sink`, prepend
+the processing steps necessary to get the :class:`ByteString` elements from
+incoming strings and package that up as a reusable piece as well. Since the
+language for writing these streams always flows from left to right (just like
+plain English), we need a starting point that is like a source but with an
+“open” input. In Akka Streams this is called a :class:`Flow`:
+
+.. includecode:: ../code/docs/stream/QuickStartDocTest.java#transform-sink
+
+Starting from a flow of strings we convert each to :class:`ByteString` and then
+feed to the already known file-writing :class:`Sink`. The resulting blueprint
+is a :class:`Sink<String, CompletionStage<IOResult>>`, which means that it
+accepts strings as its input and when materialized it will create auxiliary
+information of type ``CompletionStage<IOResult>`` (when chaining operations on
+a :class:`Source` or :class:`Flow` the type of the auxiliary information—called
+the “materialized value”—is given by the leftmost starting point; since we want
+to retain what the ``FileIO.toFile`` sink has to offer, we need to say
+``Keep.right()``).
+
+We can use the new and shiny :class:`Sink` we just created by
+attaching it to our ``factorials`` source—after a small adaptation to turn the
+numbers into strings:
+
+.. includecode:: ../code/docs/stream/QuickStartDocTest.java#use-transformed-sink
+
+Time-Based Processing
+---------------------
+
+Before we start looking at a more involved example we explore the streaming
+nature of what Akka Streams can do. Starting from the ``factorials`` source
+we transform the stream by zipping it together with another stream,
+represented by a :class:`Source` that emits the number 0 to 100: the first
+number emitted by the ``factorials`` source is the factorial of zero, the
+second is the factorial of one, and so on. We combine these two by forming
+strings like ``"3! = 6"``.
+
+.. includecode:: ../code/docs/stream/QuickStartDocTest.java#add-streams
+
+All operations so far have been time-independent and could have been performed
+in the same fashion on strict collections of elements. The next line
+demonstrates that we are in fact dealing with streams that can flow at a
+certain speed: we use the ``throttle`` combinator to slow down the stream to 1
+element per second (the second ``1`` in the argument list is the maximum size
+of a burst that we want to allow—passing ``1`` means that the first element
+gets through immediately and the second then has to wait for one second and so
+on). 
+
+If you run this program you will see one line printed per second. One aspect
+that is not immediately visible deserves mention, though: if you try and set
+the streams to produce a billion numbers each then you will notice that your
+JVM does not crash with an OutOfMemoryError, even though you will also notice
+that running the streams happens in the background, asynchronously (this is the
+reason for the auxiliary information to be provided as a
+:class:`CompletionStage`, in the future). The secret that makes this work is
+that Akka Streams implicitly implement pervasive flow control, all combinators
+respect back-pressure. This allows the throttle combinator to signal to all its
+upstream sources of data that it can only accept elements at a certain
+rate—when the incoming rate is higher than one per second the throttle
+combinator will assert *back-pressure* upstream.
+
+This is basically all there is to Akka Streams in a nutshell—glossing over the
+fact that there are dozens of sources and sinks and many more stream
+transformation combinators to choose from, see also :ref:`stages-overview_java`.
+
+Reactive Tweets
+===============
 
 A typical use case for stream processing is consuming a live stream of data that we want to extract or aggregate some
 other data from. In this example we'll consider consuming a stream of tweets and extracting information concerning Akka from them.
