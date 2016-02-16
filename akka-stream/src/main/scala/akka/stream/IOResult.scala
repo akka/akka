@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2016 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream.io
+package akka.stream
 
 import akka.Done
 import scala.util.{ Failure, Success, Try }
