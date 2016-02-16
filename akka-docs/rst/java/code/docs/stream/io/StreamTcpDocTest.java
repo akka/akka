@@ -79,7 +79,7 @@ public class StreamTcpDocTest extends AbstractJavaTest {
         System.out.println("New connection from: " + connection.remoteAddress());
 
         final Flow<ByteString, ByteString, NotUsed> echo = Flow.of(ByteString.class)
-          .via(Framing.delimiter(ByteString.fromString("\n"), 256, false))
+          .via(Framing.delimiter(ByteString.fromString("\n"), 256, FramingTruncation.DISALLOW))
           .map(ByteString::utf8String)
           .map(s -> s + "!!!\n")
           .map(ByteString::fromString);
@@ -113,7 +113,7 @@ public class StreamTcpDocTest extends AbstractJavaTest {
       final Source<String, NotUsed> welcome = Source.single(welcomeMsg);
       final Flow<ByteString, ByteString, NotUsed> serverLogic =
           Flow.of(ByteString.class)
-            .via(Framing.delimiter(ByteString.fromString("\n"), 256, false))
+            .via(Framing.delimiter(ByteString.fromString("\n"), 256, FramingTruncation.DISALLOW))
             .map(ByteString::utf8String)
             //#welcome-banner-chat-server
             .map(command -> {
@@ -149,7 +149,7 @@ public class StreamTcpDocTest extends AbstractJavaTest {
             .map(elem -> ByteString.fromString(elem + "\n"));
 
       final Flow<ByteString, ByteString, NotUsed> repl = Flow.of(ByteString.class)
-        .via(Framing.delimiter(ByteString.fromString("\n"), 256, false))
+        .via(Framing.delimiter(ByteString.fromString("\n"), 256, FramingTruncation.DISALLOW))
         .map(ByteString::utf8String)
         .map(text -> {System.out.println("Server: " + text); return "next";})
         .map(elem -> readLine("> "))
