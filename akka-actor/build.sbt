@@ -1,4 +1,4 @@
-import akka.{ AkkaBuild, Formatting, OSGi, Dependencies }
+import akka.{ AkkaBuild, Formatting, OSGi, Dependencies, Version }
 import com.typesafe.tools.mima.plugin.MimaKeys
 
 AkkaBuild.defaultSettings
@@ -12,3 +12,5 @@ Dependencies.actor
 MimaKeys.previousArtifacts := akkaPreviousArtifacts("akka-actor").value
 
 spray.boilerplate.BoilerplatePlugin.Boilerplate.settings
+
+Version.versionSettings
