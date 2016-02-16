@@ -38,6 +38,11 @@ logic is modeled as an instance of a :class:`GraphStageLogic` which will be crea
 the ``createLogic`` method. In other words, all we need to do is to create a suitable logic that will emit the
 numbers we want.
 
+.. note::
+
+   It is very important to keep the GraphStage object itself immutable and reusable. All mutable state needs to be
+   confined to the GraphStageLogic that is created for every materialization.
+
 In order to emit from a :class:`Source` in a backpressured stream one needs first to have demand from downstream.
 To receive the necessary events one needs to register a subclass of :class:`OutHandler` with the output port
 (:class:`Outlet`). This handler will receive events related to the lifecycle of the port. In our case we need to
