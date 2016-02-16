@@ -16,6 +16,7 @@ import akka.japi.Function
 import akka.event.LoggingAdapter
 import akka.util.ByteString
 import akka.stream._
+import akka.stream.TLSProtocol._
 import akka.stream.io._
 import akka.stream.scaladsl._
 import akka.stream.stage._

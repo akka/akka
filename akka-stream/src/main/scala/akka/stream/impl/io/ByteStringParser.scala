@@ -1,15 +1,19 @@
 /**
  * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream.io
+package akka.stream.impl.io
 
-import scala.util.control.NoStackTrace
 import akka.stream._
 import akka.stream.stage._
 import akka.util.ByteString
-import scala.annotation.tailrec
 
-abstract class ByteStringParser[T] extends GraphStage[FlowShape[ByteString, T]] {
+import scala.annotation.tailrec
+import scala.util.control.NoStackTrace
+
+/**
+ * INTERNAL API
+ */
+private[akka] abstract class ByteStringParser[T] extends GraphStage[FlowShape[ByteString, T]] {
   import ByteStringParser._
 
   private val bytesIn = Inlet[ByteString]("bytesIn")
@@ -67,7 +71,10 @@ abstract class ByteStringParser[T] extends GraphStage[FlowShape[ByteString, T]] 
   }
 }
 
-object ByteStringParser {
+/**
+ * INTERNAL API
+ */
+private[akka] object ByteStringParser {
 
   /**
    * @param result - parser can return some element for downstream or return None if no element was generated
