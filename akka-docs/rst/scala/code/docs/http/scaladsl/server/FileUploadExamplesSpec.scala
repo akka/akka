@@ -8,7 +8,7 @@ import java.io.File
 import akka.Done
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
-import akka.stream.io.{ Framing }
+import akka.stream.scaladsl.Framing
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model.Multipart
 import akka.util.ByteString

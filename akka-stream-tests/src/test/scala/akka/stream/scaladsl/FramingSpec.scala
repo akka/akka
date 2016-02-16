@@ -1,15 +1,14 @@
 /**
  * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream.io
+package akka.stream.scaladsl
 
 import java.nio.ByteOrder
 
-import akka.stream.io.Framing.FramingException
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import akka.stream.scaladsl._
-import akka.stream.stage.{ TerminationDirective, SyncDirective, Context, PushPullStage }
+import akka.stream.scaladsl.Framing.FramingException
+import akka.stream.stage.{ Context, PushPullStage, SyncDirective, TerminationDirective }
 import akka.stream.testkit.AkkaSpec
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.util.{ ByteString, ByteStringBuilder }
 
 import scala.collection.immutable

@@ -7,7 +7,8 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.io.Framing;
+import akka.stream.javadsl.Framing;
+import akka.stream.javadsl.FramingTruncation;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
@@ -48,7 +49,7 @@ public class RecipeParseLines extends RecipeTest {
 
     //#parse-lines
     final Source<String, NotUsed> lines = rawData
-      .via(Framing.delimiter(ByteString.fromString("\r\n"), 100, true))
+      .via(Framing.delimiter(ByteString.fromString("\r\n"), 100, FramingTruncation.ALLOW))
       .map(b -> b.utf8String());
     //#parse-lines
     lines.limit(10).runWith(Sink.seq(), mat).toCompletableFuture().get(1, TimeUnit.SECONDS);

@@ -21,7 +21,7 @@ class RecipeParseLines extends RecipeSpec {
         ByteString("\r\n\r\n")))
 
       //#parse-lines
-      import akka.stream.io.Framing
+      import akka.stream.scaladsl.Framing
       val linesStream = rawData.via(Framing.delimiter(
         ByteString("\r\n"), maximumFrameLength = 100, allowTruncation = true))
         .map(_.utf8String)

@@ -189,3 +189,10 @@ Replace with::
 
     http.cachedHostConnectionPool(toHostHttps("akka.io", 8081), materializer());
     http.cachedHostConnectionPool(toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext), materializer());
+
+Framing moved to akka.stream.[javadsl/scaladsl]
+-----------------------------------------------
+
+The ``Framing`` object which can be used to chunk up ``ByteString`` streams into
+framing dependent chunks (such as lines) has moved to ``akka.stream.scaladsl.Framing``,
+and has gotten a Java DSL equivalent type in ``akka.stream.javadsl.Framing``.
