@@ -13,8 +13,8 @@ import akka.util.ByteString
 import akka.event.LoggingAdapter
 
 import akka.stream.stage._
-import akka.stream.BidiShape
-import akka.stream.io.{ SessionBytes, SendBytes, SslTlsInbound }
+import akka.stream._
+import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 
 import akka.http.scaladsl.settings.ClientConnectionSettings

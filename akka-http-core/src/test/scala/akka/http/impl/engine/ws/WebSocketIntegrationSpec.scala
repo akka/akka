@@ -17,7 +17,6 @@ import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.stream.scaladsl.GraphDSL.Implicits._
 import org.scalatest.concurrent.Eventually
-import akka.stream.io.SslTlsPlacebo
 import java.net.InetSocketAddress
 import akka.stream.impl.fusing.GraphStages
 import akka.util.ByteString
@@ -78,7 +77,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
         Source.empty
           .viaMat {
             Http().webSocketClientLayer(WebSocketRequest("ws://localhost:" + myPort))
-              .atop(SslTlsPlacebo.forScala)
+              .atop(TLSPlacebo())
               .joinMat(Flow.fromGraph(GraphStages.breaker[ByteString]).via(
                 Tcp().outgoingConnection(new InetSocketAddress("localhost", myPort), halfClose = true)))(Keep.both)
           }(Keep.right)
@@ -158,7 +157,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
         Source.maybe
           .viaMat {
             Http().webSocketClientLayer(WebSocketRequest("ws://localhost:" + myPort))
-              .atop(SslTlsPlacebo.forScala)
+              .atop(TLSPlacebo())
               // the resource leak of #19398 existed only for severed websocket connections
               .atopMat(GraphStages.bidiBreaker[ByteString, ByteString])(Keep.right)
               .join(Tcp().outgoingConnection(new InetSocketAddress("localhost", myPort), halfClose = true))
