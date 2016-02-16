@@ -25,13 +25,19 @@ import scala.util.Try
 private[akka] final case class GraphStageModule(shape: Shape,
                                                 attributes: Attributes,
                                                 stage: GraphStageWithMaterializedValue[Shape, Any]) extends Module {
-  def carbonCopy: Module = CopiedModule(shape.deepCopy(), Attributes.none, this)
+  override def carbonCopy: Module = CopiedModule(shape.deepCopy(), Attributes.none, this)
 
-  def replaceShape(s: Shape): Module = CompositeModule(this, s)
+  override def replaceShape(s: Shape): Module =
+    if (s != shape) CompositeModule(this, s)
+    else this
 
-  def subModules: Set[Module] = Set.empty
+  override def subModules: Set[Module] = Set.empty
 
-  def withAttributes(attributes: Attributes): Module = new GraphStageModule(shape, attributes, stage)
+  override def withAttributes(attributes: Attributes): Module =
+    if (attributes ne this.attributes) new GraphStageModule(shape, attributes, stage)
+    else this
+
+  override def toString: String = stage.toString
 }
 
 /**

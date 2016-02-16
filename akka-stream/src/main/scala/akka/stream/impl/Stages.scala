@@ -23,6 +23,7 @@ private[stream] object Stages {
 
   object DefaultAttributes {
     val IODispatcher = ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
+    val inputBufferOne = inputBuffer(initial = 1, max = 1)
 
     val fused = name("fused")
     val materializedValueSource = name("matValueSource")
@@ -98,8 +99,8 @@ private[stream] object Stages {
 
     val subscriberSink = name("subscriberSink")
     val cancelledSink = name("cancelledSink")
-    val headSink = name("headSink") and inputBuffer(initial = 1, max = 1)
-    val headOptionSink = name("headOptionSink") and inputBuffer(initial = 1, max = 1)
+    val headSink = name("headSink") and inputBufferOne
+    val headOptionSink = name("headOptionSink") and inputBufferOne
     val lastSink = name("lastSink")
     val lastOptionSink = name("lastOptionSink")
     val seqSink = name("seqSink")
