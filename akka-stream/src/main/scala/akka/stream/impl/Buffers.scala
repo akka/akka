@@ -68,23 +68,24 @@ private[akka] object FixedSizeBuffer {
     override def toString = s"Buffer($capacity, $readIdx, $writeIdx)(${(readIdx until writeIdx).map(get).mkString(", ")})"
     private val buffer = new Array[AnyRef](capacity)
 
-    protected var readIdx = 0
-    protected var writeIdx = 0
-    def used: Int = writeIdx - readIdx
+    protected var readIdx = 0L
+    protected var writeIdx = 0L
+    def used: Int = (writeIdx - readIdx).toInt
 
     def isFull: Boolean = used == capacity
     def isEmpty: Boolean = used == 0
     def nonEmpty: Boolean = used != 0
 
     def enqueue(elem: T): Unit = {
-      put(writeIdx, elem)
+      put(writeIdx, elem, false)
       writeIdx += 1
     }
 
-    protected def toOffset(idx: Int): Int
+    // for the maintenance parameter see dropHead
+    protected def toOffset(idx: Long, maintenance: Boolean): Int
 
-    def put(idx: Int, elem: T): Unit = buffer(toOffset(idx)) = elem.asInstanceOf[AnyRef]
-    def get(idx: Int): T = buffer(toOffset(idx)).asInstanceOf[T]
+    private def put(idx: Long, elem: T, maintenance: Boolean): Unit = buffer(toOffset(idx, maintenance)) = elem.asInstanceOf[AnyRef]
+    private def get(idx: Long): T = buffer(toOffset(idx, false)).asInstanceOf[T]
 
     def peek(): T = get(readIdx)
 
@@ -101,23 +102,39 @@ private[akka] object FixedSizeBuffer {
     }
 
     def dropHead(): Unit = {
-      put(readIdx, null.asInstanceOf[T])
+      /*
+       * this is the only place where readIdx is advanced, so give ModuloFixedSizeBuffer
+       * a chance to prevent its fatal wrap-around
+       */
+      put(readIdx, null.asInstanceOf[T], true)
       readIdx += 1
     }
 
     def dropTail(): Unit = {
       writeIdx -= 1
-      put(writeIdx, null.asInstanceOf[T])
+      put(writeIdx, null.asInstanceOf[T], false)
     }
   }
 
   private[akka] final class ModuloFixedSizeBuffer[T](_size: Int) extends FixedSizeBuffer[T](_size) {
-    override protected def toOffset(idx: Int): Int = idx % capacity
+    override protected def toOffset(idx: Long, maintenance: Boolean): Int = {
+      if (maintenance && readIdx > Int.MaxValue) {
+        /*
+         * In order to be able to run perpetually we must ensure that the counters
+         * don’t overrun into negative territory, so set them back by as many multiples
+         * of the capacity as possible when both are above Int.MaxValue.
+         */
+        val shift = Int.MaxValue - (Int.MaxValue % capacity)
+        readIdx -= shift
+        writeIdx -= shift
+      }
+      (idx % capacity).toInt
+    }
   }
 
   private[akka] final class PowerOfTwoFixedSizeBuffer[T](_size: Int) extends FixedSizeBuffer[T](_size) {
     private val Mask = capacity - 1
-    override protected def toOffset(idx: Int): Int = idx & Mask
+    override protected def toOffset(idx: Long, maintenance: Boolean): Int = idx.toInt & Mask
   }
 
 }
