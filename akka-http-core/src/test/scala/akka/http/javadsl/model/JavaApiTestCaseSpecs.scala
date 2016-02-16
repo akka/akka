@@ -10,7 +10,7 @@ import javax.net.ssl.{ SSLParameters, SSLContext }
 import akka.http.javadsl.model.headers.Cookie
 import akka.http.scaladsl.model
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
-import akka.stream.io.ClientAuth
+import akka.stream.TLSClientAuth
 import org.scalatest.{ FreeSpec, MustMatchers }
 
 import scala.collection.immutable
@@ -64,7 +64,7 @@ class JavaApiTestCaseSpecs extends FreeSpec with MustMatchers {
       akka.http.javadsl.ConnectionContext.https(SSLContext.getDefault,
         Optional.empty[java.util.Collection[String]],
         Optional.empty[java.util.Collection[String]],
-        Optional.empty[ClientAuth],
+        Optional.empty[TLSClientAuth],
         Optional.empty[SSLParameters]) mustNot be(null)
     }
   }

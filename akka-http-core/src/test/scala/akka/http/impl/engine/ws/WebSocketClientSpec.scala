@@ -9,6 +9,7 @@ import java.util.Random
 import akka.NotUsed
 import akka.http.scaladsl.model.ws.{ InvalidUpgradeResponse, WebSocketUpgradeResponse }
 import akka.stream.ClosedShape
+import akka.stream.TLSProtocol._
 
 import scala.concurrent.duration._
 

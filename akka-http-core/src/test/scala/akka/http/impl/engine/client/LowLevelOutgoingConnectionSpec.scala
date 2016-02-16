@@ -9,10 +9,10 @@ import scala.reflect.ClassTag
 import org.scalatest.Inside
 import org.scalatest.concurrent.ScalaFutures
 import akka.http.scaladsl.settings.ClientConnectionSettings
-import akka.stream.io.{ SessionBytes, SslTlsOutbound, SendBytes }
 import akka.util.ByteString
 import akka.event.NoLogging
-import akka.stream.{ ClosedShape, ActorMaterializer }
+import akka.stream.{ClosedShape, ActorMaterializer}
+import akka.stream.TLSProtocol._
 import akka.stream.testkit._
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model.HttpEntity._
