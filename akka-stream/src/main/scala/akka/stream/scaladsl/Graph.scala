@@ -602,21 +602,14 @@ final class Balance[T](val outputPorts: Int, waitForAllDownstreams: Boolean) ext
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-    private val pendingQueue = Array.ofDim[Outlet[T]](outputPorts)
-    private var pendingHead: Int = 0
-    private var pendingTail: Int = 0
+    private val pendingQueue = FixedSizeBuffer[Outlet[T]](outputPorts)
+    private def noPending: Boolean = pendingQueue.isEmpty
 
     private var needDownstreamPulls: Int = if (waitForAllDownstreams) outputPorts else 0
     private var downstreamsRunning: Int = outputPorts
 
-    private def noPending: Boolean = pendingHead == pendingTail
-    private def enqueue(out: Outlet[T]): Unit = {
-      pendingQueue(pendingTail % outputPorts) = out
-      pendingTail += 1
-    }
     private def dequeueAndDispatch(): Unit = {
-      val out = pendingQueue(pendingHead % outputPorts)
-      pendingHead += 1
+      val out = pendingQueue.dequeue()
       push(out, grab(in))
       if (!noPending) pull(in)
     }
@@ -642,9 +635,9 @@ final class Balance[T](val outputPorts: Int, waitForAllDownstreams: Boolean) ext
               }
             } else {
               if (!hasBeenPulled(in)) pull(in)
-              enqueue(o)
+              pendingQueue.enqueue(o)
             }
-          } else enqueue(o)
+          } else pendingQueue.enqueue(o)
         }
 
         override def onDownstreamFinish() = {
