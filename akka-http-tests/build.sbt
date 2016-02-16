@@ -2,7 +2,6 @@ import akka._
 
 AkkaBuild.defaultSettings
 AkkaBuild.dontPublishSettings
-AkkaBuild.experimentalSettings
 Formatting.formatSettings
 Dependencies.httpTests
 
