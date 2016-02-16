@@ -4,7 +4,7 @@
 package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model._
-import akka.stream.io.Framing
+import akka.stream.scaladsl.Framing
 import akka.util.ByteString
 import docs.http.scaladsl.server.RoutingSpec
 import scala.concurrent.Future

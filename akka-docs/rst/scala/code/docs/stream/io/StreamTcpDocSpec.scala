@@ -39,7 +39,7 @@ class StreamTcpDocSpec extends AkkaSpec {
     {
       val (host, port) = TestUtils.temporaryServerHostnameAndPort()
       //#echo-server-simple-handle
-      import akka.stream.io.Framing
+      import akka.stream.scaladsl.Framing
 
       val connections: Source[IncomingConnection, Future[ServerBinding]] =
         Tcp().bind(host, port)
@@ -66,7 +66,7 @@ class StreamTcpDocSpec extends AkkaSpec {
     val connections = Tcp().bind(localhost.getHostName, localhost.getPort) // TODO getHostString in Java7
     val serverProbe = TestProbe()
 
-    import akka.stream.io.Framing
+    import akka.stream.scaladsl.Framing
     //#welcome-banner-chat-server
 
     connections.runForeach { connection =>
@@ -97,7 +97,7 @@ class StreamTcpDocSpec extends AkkaSpec {
     }
     //#welcome-banner-chat-server
 
-    import akka.stream.io.Framing
+    import akka.stream.scaladsl.Framing
 
     val input = new AtomicReference("Hello world" :: "What a lovely day" :: Nil)
     def readLine(prompt: String): String = {
