@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import akka.NotUsed;
 import akka.stream.io.Framing;
+import docs.AbstractJavaTest;
 import docs.stream.SilenceSystemOut;
 import java.net.InetSocketAddress;
 
@@ -26,22 +27,24 @@ import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
 import akka.util.ByteString;
 
-public class StreamTcpDocTest {
+public class StreamTcpDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
+  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("StreamTcpDocTest");
+    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
+    mat = null;
   }
 
-  final Materializer mat = ActorMaterializer.create(system);
 
   final SilenceSystemOut.System System = SilenceSystemOut.get();
 
@@ -77,9 +80,9 @@ public class StreamTcpDocTest {
 
         final Flow<ByteString, ByteString, NotUsed> echo = Flow.of(ByteString.class)
           .via(Framing.delimiter(ByteString.fromString("\n"), 256, false))
-          .map(bytes -> bytes.utf8String())
+          .map(ByteString::utf8String)
           .map(s -> s + "!!!\n")
-          .map(s -> ByteString.fromString(s));
+          .map(ByteString::fromString);
 
         connection.handleWith(echo, mat);
       }, mat);
@@ -95,50 +98,33 @@ public class StreamTcpDocTest {
     final TestProbe serverProbe = new TestProbe(system);
 
     final Source<IncomingConnection,CompletionStage<ServerBinding>> connections =
-        Tcp.get(system).bind(localhost.getHostName(), localhost.getPort()); // TODO getHostString in Java7
+        Tcp.get(system).bind(localhost.getHostString(), localhost.getPort());
     //#welcome-banner-chat-server
     connections.runForeach(connection -> {
       // server logic, parses incoming commands
-      final PushStage<String, String> commandParser = new PushStage<String, String>() {
-        @Override public SyncDirective onPush(String elem, Context<String> ctx) {
-          if (elem.equals("BYE"))
-            return ctx.finish();
-          else
-            return ctx.push(elem + "!");
-        }
-      };
+      final Flow<String, String, NotUsed> commandParser =
+          Flow.<String>create()
+            .takeWhile(elem -> !elem.equals("BYE"))
+            .map(elem -> elem + "!");
 
       final String welcomeMsg = "Welcome to: " + connection.localAddress() +
-          " you are: " + connection.remoteAddress() + "!\n";
+          " you are: " + connection.remoteAddress() + "!";
 
-      final Source<ByteString, NotUsed> welcome =
-          Source.single(ByteString.fromString(welcomeMsg));
-      final Flow<ByteString, ByteString, NotUsed> echoFlow =
+      final Source<String, NotUsed> welcome = Source.single(welcomeMsg);
+      final Flow<ByteString, ByteString, NotUsed> serverLogic =
           Flow.of(ByteString.class)
             .via(Framing.delimiter(ByteString.fromString("\n"), 256, false))
-            .map(bytes -> bytes.utf8String())
+            .map(ByteString::utf8String)
             //#welcome-banner-chat-server
             .map(command -> {
               serverProbe.ref().tell(command, null);
               return command;
             })
             //#welcome-banner-chat-server
-            .transform(() -> commandParser)
+            .via(commandParser)
+            .merge(welcome)
             .map(s ->  s + "\n")
-            .map(s -> ByteString.fromString(s));
-
-      final Flow<ByteString, ByteString, NotUsed> serverLogic =
-          Flow.fromGraph(GraphDSL.create(builder -> {
-            final UniformFanInShape<ByteString, ByteString> concat =
-                builder.add(Concat.create());
-            final FlowShape<ByteString, ByteString> echo = builder.add(echoFlow);
-
-            builder
-              .from(builder.add(welcome)).toFanIn(concat)
-              .from(echo).toFanIn(concat);
-
-            return FlowShape.of(echo.in(), concat.out());
-      }));
+            .map(ByteString::fromString);
 
       connection.handleWith(serverLogic, mat);
     }, mat);
@@ -156,26 +142,24 @@ public class StreamTcpDocTest {
       final Flow<ByteString, ByteString, CompletionStage<OutgoingConnection>> connection =
           Tcp.get(system).outgoingConnection(localhost.getHostString(), localhost.getPort());
       //#repl-client
-
-      final PushStage<String, ByteString> replParser = new PushStage<String, ByteString>() {
-        @Override public SyncDirective onPush(String elem, Context<ByteString> ctx) {
-          if (elem.equals("q"))
-            return ctx.pushAndFinish(ByteString.fromString("BYE\n"));
-          else
-            return ctx.push(ByteString.fromString(elem + "\n"));
-        }
-      };
+      final Flow<String, ByteString, NotUsed> replParser =
+          Flow.<String>create()
+            .takeWhile(elem -> !elem.equals("q"))
+            .concat(Source.single("BYE")) // will run after the original flow completes
+            .map(elem -> ByteString.fromString(elem + "\n"));
 
       final Flow<ByteString, ByteString, NotUsed> repl = Flow.of(ByteString.class)
         .via(Framing.delimiter(ByteString.fromString("\n"), 256, false))
-        .map(bytes -> bytes.utf8String())
+        .map(ByteString::utf8String)
         .map(text -> {System.out.println("Server: " + text); return "next";})
         .map(elem -> readLine("> "))
-        .transform(() -> replParser);
+        .via(replParser);
 
       connection.join(repl).run(mat);
-    //#repl-client
+      //#repl-client
     }
+
+
 
     serverProbe.expectMsg("Hello world");
     serverProbe.expectMsg("What a lovely day");

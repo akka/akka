@@ -1,5 +1,6 @@
 package docs.stream.cookbook
 
+import akka.stream.Attributes
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit._
 
@@ -7,40 +8,68 @@ import scala.concurrent.duration._
 
 object HoldOps {
   //#hold-version-1
+  import akka.stream._
   import akka.stream.stage._
-  class HoldWithInitial[T](initial: T) extends DetachedStage[T, T] {
-    private var currentValue: T = initial
+  final class HoldWithInitial[T](initial: T) extends GraphStage[FlowShape[T, T]] {
+    val in = Inlet[T]("HoldWithInitial.in")
+    val out = Outlet[T]("HoldWithInitial.out")
 
-    override def onPush(elem: T, ctx: DetachedContext[T]): UpstreamDirective = {
-      currentValue = elem
-      ctx.pull()
-    }
+    override val shape = FlowShape.of(in, out)
 
-    override def onPull(ctx: DetachedContext[T]): DownstreamDirective = {
-      ctx.push(currentValue)
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+      private var currentValue: T = initial
+
+      setHandlers(in, out, new InHandler with OutHandler {
+        override def onPush(): Unit = {
+          currentValue = grab(in)
+          pull(in)
+        }
+
+        override def onPull(): Unit = {
+          push(out, currentValue)
+        }
+      })
+
+      override def preStart(): Unit = {
+        pull(in)
+      }
     }
 
   }
   //#hold-version-1
 
   //#hold-version-2
+  import akka.stream._
   import akka.stream.stage._
-  class HoldWithWait[T] extends DetachedStage[T, T] {
-    private var currentValue: T = _
-    private var waitingFirstValue = true
+  final class HoldWithWait[T] extends GraphStage[FlowShape[T, T]] {
+    val in = Inlet[T]("HoldWithWait.in")
+    val out = Outlet[T]("HoldWithWait.out")
 
-    override def onPush(elem: T, ctx: DetachedContext[T]): UpstreamDirective = {
-      currentValue = elem
-      waitingFirstValue = false
-      if (ctx.isHoldingDownstream) ctx.pushAndPull(currentValue)
-      else ctx.pull()
+    override val shape = FlowShape.of(in, out)
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+      private var currentValue: T = _
+      private var waitingFirstValue = true
+
+      setHandlers(in, out, new InHandler with OutHandler {
+        override def onPush(): Unit = {
+          currentValue = grab(in)
+          if (waitingFirstValue) {
+            waitingFirstValue = false
+            if (isAvailable(out)) push(out, currentValue)
+          }
+          pull(in)
+        }
+
+        override def onPull(): Unit = {
+          if (!waitingFirstValue) push(out, currentValue)
+        }
+      })
+
+      override def preStart(): Unit = {
+        pull(in)
+      }
     }
-
-    override def onPull(ctx: DetachedContext[T]): DownstreamDirective = {
-      if (waitingFirstValue) ctx.holdDownstream()
-      else ctx.push(currentValue)
-    }
-
   }
   //#hold-version-2
 }
@@ -57,7 +86,9 @@ class RecipeHold extends RecipeSpec {
       val source = Source.fromPublisher(pub)
       val sink = Sink.fromSubscriber(sub)
 
-      source.transform(() => new HoldWithInitial(0)).to(sink).run()
+      source.via(new HoldWithInitial(0)).to(sink)
+        .withAttributes(Attributes.inputBuffer(1, 1))
+        .run()
 
       val subscription = sub.expectSubscription()
       sub.expectNoMsg(100.millis)
@@ -87,7 +118,7 @@ class RecipeHold extends RecipeSpec {
       val source = Source.fromPublisher(pub)
       val sink = Sink.fromSubscriber(sub)
 
-      source.transform(() => new HoldWithWait).to(sink).run()
+      source.via(new HoldWithWait).to(sink).run()
 
       val subscription = sub.expectSubscription()
       sub.expectNoMsg(100.millis)

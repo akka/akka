@@ -5,14 +5,10 @@ package docs.stream.javadsl.cookbook;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
+import akka.stream.*;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.stream.stage.Context;
-import akka.stream.stage.PushPullStage;
-import akka.stream.stage.SyncDirective;
-import akka.stream.stage.TerminationDirective;
+import akka.stream.stage.*;
 import akka.testkit.JavaTestKit;
 import akka.util.ByteString;
 import org.junit.AfterClass;
@@ -21,6 +17,7 @@ import org.junit.Test;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.Security;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
@@ -28,54 +25,84 @@ import static org.junit.Assert.assertEquals;
 
 public class RecipeDigest extends RecipeTest {
   static ActorSystem system;
+  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RecipeDigest");
+    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
+    mat = null;
   }
 
-  final Materializer mat = ActorMaterializer.create(system);
+
+  //#calculating-digest
+  class DigestCalculator extends GraphStage<FlowShape<ByteString, ByteString>> {
+    private final String algorithm;
+    public Inlet<ByteString> in = Inlet.<ByteString>create("DigestCalculator.in");
+    public Outlet<ByteString> out = Outlet.<ByteString>create("DigestCalculator.out");
+    private FlowShape<ByteString, ByteString> shape = FlowShape.of(in, out);
+
+    public DigestCalculator(String algorithm) {
+      this.algorithm = algorithm;
+    }
+
+    @Override
+    public FlowShape<ByteString, ByteString> shape() {
+      return shape;
+    }
+
+    @Override
+    public GraphStageLogic createLogic(Attributes inheritedAttributes) {
+      return new GraphStageLogic(shape) {
+        final MessageDigest digest;
+
+        {
+          try {
+            digest = MessageDigest.getInstance(algorithm);
+          } catch(NoSuchAlgorithmException ex) {
+            throw new RuntimeException(ex);
+          }
+
+          setHandler(out, new AbstractOutHandler() {
+            @Override
+            public void onPull() throws Exception {
+              pull(in);
+            }
+          });
+          setHandler(in, new AbstractInHandler() {
+            @Override
+            public void onPush() throws Exception {
+              ByteString chunk = grab(in);
+              digest.update(chunk.toArray());
+              pull(in);
+            }
+
+            @Override
+            public void onUpstreamFinish() throws Exception {
+              // If the stream is finished, we need to emit the digest
+              // before completing
+              emit(out, ByteString.fromArray(digest.digest()));
+              completeStage();
+            }
+          });
+        }
+
+
+      };
+    }
+
+  }
+  //#calculating-digest
 
   @Test
   public void work() throws Exception {
     new JavaTestKit(system) {
-      //#calculating-digest
-      public PushPullStage<ByteString, ByteString> digestCalculator(String algorithm)
-          throws NoSuchAlgorithmException {
-        return new PushPullStage<ByteString, ByteString>() {
-          final MessageDigest digest = MessageDigest.getInstance(algorithm);
-
-          @Override
-          public SyncDirective onPush(ByteString chunk, Context<ByteString> ctx) {
-            digest.update(chunk.toArray());
-            return ctx.pull();
-          }
-
-          @Override
-          public SyncDirective onPull(Context<ByteString> ctx) {
-            if (ctx.isFinishing()) {
-              return ctx.pushAndFinish(ByteString.fromArray(digest.digest()));
-            } else {
-              return ctx.pull();
-            }
-          }
-
-          @Override
-          public TerminationDirective onUpstreamFinish(Context<ByteString> ctx) {
-            // If the stream is finished, we need to emit the last element in the onPull block.
-            // It is not allowed to directly emit elements from a termination block
-            // (onUpstreamFinish or onUpstreamFailure)
-            return ctx.absorbTermination();
-          }
-        };
-      }
-      //#calculating-digest
 
       {
         Source<ByteString, NotUsed> data = Source.from(Arrays.asList(
@@ -84,7 +111,7 @@ public class RecipeDigest extends RecipeTest {
 
         //#calculating-digest2
         final Source<ByteString, NotUsed> digest = data
-          .transform(() -> digestCalculator("SHA-256"));
+          .via(new DigestCalculator("SHA-256"));
         //#calculating-digest2
 
         ByteString got = digest.runWith(Sink.head(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);

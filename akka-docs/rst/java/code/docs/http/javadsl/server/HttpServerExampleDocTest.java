@@ -6,8 +6,6 @@ package docs.http.javadsl.server;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.dispatch.OnFailure;
-import akka.http.impl.util.Util;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.IncomingConnection;
 import akka.http.javadsl.ServerBinding;
@@ -19,16 +17,11 @@ import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.model.Uri;
 import akka.http.scaladsl.model.HttpEntity;
 import akka.japi.function.Function;
-import akka.japi.function.Procedure;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.stream.stage.Context;
-import akka.stream.stage.PushStage;
-import akka.stream.stage.SyncDirective;
-import akka.stream.stage.TerminationDirective;
 import akka.util.ByteString;
 
 import java.io.BufferedReader;
@@ -88,19 +81,14 @@ public class HttpServerExampleDocTest {
             Http.get(system).bind("localhost", 8080, materializer);
 
         Flow<IncomingConnection, IncomingConnection, NotUsed> failureDetection =
-            Flow.of(IncomingConnection.class).transform(() ->
-                new PushStage<IncomingConnection, IncomingConnection>() {
-                    @Override
-                    public SyncDirective onPush(IncomingConnection elem, Context<IncomingConnection> ctx) {
-                        return ctx.push(elem);
-                    }
-
-                    @Override
-                    public TerminationDirective onUpstreamFailure(Throwable cause, Context<IncomingConnection> ctx) {
+            Flow.of(IncomingConnection.class).watchTermination((notUsed, termination) -> {
+                termination.whenComplete((done, cause) -> {
+                     if (cause != null) {
                         // signal the failure to external monitoring service!
-                        return super.onUpstreamFailure(cause, ctx);
-                    }
+                     }
                 });
+                return NotUsed.getInstance();
+            });
 
         CompletionStage<ServerBinding> serverBindingFuture =
                 serverSource
@@ -123,18 +111,14 @@ public class HttpServerExampleDocTest {
             Http.get(system).bind("localhost", 8080, materializer);
 
         Flow<HttpRequest, HttpRequest, NotUsed> failureDetection =
-                Flow.of(HttpRequest.class).transform(() ->
-                new PushStage<HttpRequest, HttpRequest>() {
-                    @Override
-                    public SyncDirective onPush(HttpRequest elem, Context<HttpRequest> ctx) {
-                        return ctx.push(elem);
-                    }
-
-                    @Override
-                    public TerminationDirective onUpstreamFailure(Throwable cause, Context<HttpRequest> ctx) {
-                        // signal the failure to external monitoring service!
-                        return super.onUpstreamFailure(cause, ctx);
-                    }
+            Flow.of(HttpRequest.class)
+                .watchTermination((notUsed, termination) -> {
+                    termination.whenComplete((done, cause) -> {
+                        if (cause != null) {
+                            // signal the failure to external monitoring service!
+                        }
+                    });
+                    return NotUsed.getInstance();
                 });
 
         Flow<HttpRequest, HttpResponse, NotUsed> httpEcho =

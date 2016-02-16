@@ -75,17 +75,15 @@ Calculating the digest of a ByteString stream
 **Situation:** A stream of bytes is given as a stream of ``ByteStrings`` and we want to calculate the cryptographic digest
 of the stream.
 
-This recipe uses a :class:`PushPullStage` to host a mutable :class:`MessageDigest` class (part of the Java Cryptography
+This recipe uses a :class:`GraphStage` to host a mutable :class:`MessageDigest` class (part of the Java Cryptography
 API) and update it with the bytes arriving from the stream. When the stream starts, the ``onPull`` handler of the
 stage is called, which just bubbles up the ``pull`` event to its upstream. As a response to this pull, a ByteString
 chunk will arrive (``onPush``) which we use to update the digest, then it will pull for the next chunk.
 
 Eventually the stream of ``ByteStrings`` depletes and we get a notification about this event via ``onUpstreamFinish``.
-At this point we want to emit the digest value, but we cannot do it in this handler directly. Instead we call
-``ctx.absorbTermination()`` signalling to our context that we do not yet want to finish. When the environment decides that
-we can emit further elements ``onPull`` is called again, and we see ``ctx.isFinishing()`` returning ``true`` (since the upstream
-source has been depleted already). Since we only want to emit a final element it is enough to call ``ctx.pushAndFinish``
-passing the digest ByteString to be emitted.
+At this point we want to emit the digest value, but we cannot do it with ``push`` in this handler directly since there may
+be no downstream demand. Instead we call ``emit`` which will temporarily replace the handlers, emit the provided value when
+demand comes in and then reset the stage state. It will then complete the stage.
 
 .. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeDigest.java#calculating-digest
 
@@ -278,14 +276,11 @@ Create a stream processor that repeats the last element seen
 of them is slowing down the other by dropping earlier unconsumed elements from the upstream if necessary, and repeating
 the last value for the downstream if necessary.
 
-We have two options to implement this feature. In both cases we will use :class:`DetachedStage` to build our custom
-element (:class:`DetachedStage` is specifically designed for rate translating elements just like ``conflate``,
-``expand`` or ``buffer``). In the first version we will use a provided initial value ``initial`` that will be used
+We have two options to implement this feature. In both cases we will use :class:`GraphStage` to build our custom
+element. In the first version we will use a provided initial value ``initial`` that will be used
 to feed the downstream if no upstream element is ready yet. In the ``onPush()`` handler we just overwrite the
-``currentValue`` variable and immediately relieve the upstream by calling ``pull()`` (remember, implementations of
-:class:`DetachedStage` are not allowed to call ``push()`` as a response to ``onPush()`` or call ``pull()`` as a response
-of ``onPull()``). The downstream ``onPull`` handler is very similar, we immediately relieve the downstream by
-emitting ``currentValue``.
+``currentValue`` variable and immediately relieve the upstream by calling ``pull()``. The downstream ``onPull`` handler
+is very similar, we immediately relieve the downstream by emitting ``currentValue``.
 
 .. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeHold.java#hold-version-1
 
@@ -296,9 +291,9 @@ case: if the very first element is not yet available.
 We introduce a boolean variable ``waitingFirstValue`` to denote whether the first element has been provided or not
 (alternatively an :class:`Optional` can be used for ``currentValue`` or if the element type is a subclass of Object
 a null can be used with the same purpose). In the downstream ``onPull()`` handler the difference from the previous
-version is that we call ``holdDownstream()`` if the first element is not yet available and thus blocking our downstream. The
-upstream ``onPush()`` handler sets ``waitingFirstValue`` to false, and after checking if ``holdDownstream()`` has been called it
-either relieves the upstream producer, or both the upstream producer and downstream consumer by calling ``pushAndPull()``
+version is that we check if we have received the the first value and only emit if we have. This leads to that when the
+first element comes in we must check if there possibly already was demand from downstream so that we in that case can
+push the element directly.
 
 .. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeHold.java#hold-version-2
 
@@ -343,14 +338,14 @@ Chunking up a stream of ByteStrings into limited size ByteStrings
 the same sequence, but capping the size of ByteStrings. In other words we want to slice up ByteStrings into smaller
 chunks if they exceed a size threshold.
 
-This can be achieved with a single :class:`PushPullStage`. The main logic of our stage is in ``emitChunkOrPull()``
+This can be achieved with a single :class:`GraphStage`. The main logic of our stage is in ``emitChunk()``
 which implements the following logic:
 
-* if the buffer is empty, we pull for more bytes
+* if the buffer is empty, and upstream is not closed we pull for more bytes, if it is closed we complete
 * if the buffer is nonEmpty, we split it according to the ``chunkSize``. This will give a next chunk that we will emit,
   and an empty or nonempty remaining buffer.
 
-Both ``onPush()`` and ``onPull()`` calls ``emitChunkOrPull()`` the only difference is that the push handler also stores
+Both ``onPush()`` and ``onPull()`` calls ``emitChunk()`` the only difference is that the push handler also stores
 the incoming chunk by appending to the end of the buffer.
 
 .. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeByteStrings.java#bytestring-chunker
@@ -363,7 +358,7 @@ Limit the number of bytes passing through a stream of ByteStrings
 **Situation:** Given a stream of ByteStrings we want to fail the stream if more than a given maximum of bytes has been
 consumed.
 
-This recipe uses a :class:`PushStage` to implement the desired feature. In the only handler we override,
+This recipe uses a :class:`GraphStage` to implement the desired feature. In the only handler we override,
 ``onPush()`` we just update a counter and see if it gets larger than ``maximumBytes``. If a violation happens
 we signal failure, otherwise we forward the chunk we have received.
 

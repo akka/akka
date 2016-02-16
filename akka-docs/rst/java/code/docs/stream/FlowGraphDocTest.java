@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import akka.NotUsed;
 import akka.stream.ClosedShape;
 import akka.stream.SourceShape;
+import docs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -26,22 +27,23 @@ import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
 
-public class FlowGraphDocTest {
+public class FlowGraphDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
+  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("FlowGraphDocTest");
+    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
+    mat = null;
   }
-
-  final Materializer mat = ActorMaterializer.create(system);
 
   @Test
   public void demonstrateBuildSimpleGraph() throws Exception {

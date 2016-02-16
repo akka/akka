@@ -10,6 +10,7 @@ import akka.actor.Props;
 import akka.japi.pf.FI;
 import akka.japi.pf.ReceiveBuilder;
 import akka.testkit.JavaTestKit;
+import docs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -18,7 +19,7 @@ import scala.concurrent.duration.Duration;
 
 import java.util.concurrent.TimeUnit;
 
-public class InitializationDocTest {
+public class InitializationDocTest extends AbstractJavaTest {
 
   static ActorSystem system = null;
 

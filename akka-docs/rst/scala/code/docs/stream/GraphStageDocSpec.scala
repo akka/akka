@@ -9,6 +9,7 @@ import akka.stream.stage._
 import akka.stream._
 
 import akka.stream.testkit.{ TestPublisher, TestSubscriber, AkkaSpec }
+import akka.testkit.TestLatch
 
 import scala.collection.mutable
 import scala.concurrent.{ Promise, Await, Future }
@@ -271,6 +272,7 @@ class GraphStageDocSpec extends AkkaSpec {
 
   "Demonstrate an asynchronous side channel" in {
     import system.dispatcher
+
     //#async-side-channel
     // will close upstream when the future completes
     class KillSwitch[A](switch: Future[Unit]) extends GraphStage[FlowShape[A, A]] {
@@ -301,20 +303,31 @@ class GraphStageDocSpec extends AkkaSpec {
     //#async-side-channel
 
     // tests:
+
     val switch = Promise[Unit]()
     val duplicator = Flow.fromGraph(new KillSwitch[Int](switch.future))
 
-    // TODO this is probably racey, is there a way to make sure it happens after?
-    val valueAfterKill = switch.future.flatMap(_ => Future(4))
+    val in = TestPublisher.probe[Int]()
+    val out = TestSubscriber.probe[Int]()
 
-    val result =
-      Source(Vector(1, 2, 3)).concat(Source.fromFuture(valueAfterKill))
-        .via(duplicator)
-        .runFold(Seq.empty[Int])((elem, acc) => elem :+ acc)
+    Source.fromPublisher(in)
+      .via(duplicator)
+      .to(Sink.fromSubscriber(out))
+      .withAttributes(Attributes.inputBuffer(1, 1))
+      .run()
+
+    val sub = in.expectSubscription()
+
+    out.request(1)
+
+    sub.expectRequest()
+    sub.sendNext(1)
+
+    out.expectNext(1)
 
     switch.success(Unit)
 
-    Await.result(result, 3.seconds) should ===(Seq(1, 2, 3))
+    out.expectComplete()
   }
 
   "Demonstrate a graph stage with a timer" in {

@@ -14,6 +14,7 @@ import akka.testkit.TestProbe;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import docs.AbstractJavaTest;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Author;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
 import org.junit.AfterClass;
@@ -32,11 +33,12 @@ import static docs.stream.TwitterStreamQuickstartDocTest.Model.AKKA;
 import static docs.stream.TwitterStreamQuickstartDocTest.Model.tweets;
 import static junit.framework.TestCase.assertTrue;
 
-public class IntegrationDocTest {
+public class IntegrationDocTest extends AbstractJavaTest {
 
   private static final SilenceSystemOut.System System = SilenceSystemOut.get();
 
   static ActorSystem system;
+  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
@@ -51,15 +53,16 @@ public class IntegrationDocTest {
                                                 "akka.actor.default-mailbox.mailbox-type = akka.dispatch.UnboundedMailbox\n");
 
     system = ActorSystem.create("ActorPublisherDocTest", config);
+    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
+    mat = null;
   }
 
-  final Materializer mat = ActorMaterializer.create(system);
 
   class AddressSystem {
     //#email-address-lookup

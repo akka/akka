@@ -3,6 +3,7 @@ package docs.stream.cookbook
 import java.security.MessageDigest
 
 import akka.NotUsed
+import akka.stream.{ Attributes, Outlet, Inlet, FlowShape }
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
 
@@ -21,28 +22,36 @@ class RecipeDigest extends RecipeSpec {
 
       //#calculating-digest
       import akka.stream.stage._
-      def digestCalculator(algorithm: String) = new PushPullStage[ByteString, ByteString] {
-        val digest = MessageDigest.getInstance(algorithm)
+      class DigestCalculator(algorithm: String) extends GraphStage[FlowShape[ByteString, ByteString]] {
+        val in = Inlet[ByteString]("DigestCalculator.in")
+        val out = Outlet[ByteString]("DigestCalculator.out")
+        override val shape = FlowShape.of(in, out)
 
-        override def onPush(chunk: ByteString, ctx: Context[ByteString]): SyncDirective = {
-          digest.update(chunk.toArray)
-          ctx.pull()
-        }
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+          val digest = MessageDigest.getInstance(algorithm)
 
-        override def onPull(ctx: Context[ByteString]): SyncDirective = {
-          if (ctx.isFinishing) ctx.pushAndFinish(ByteString(digest.digest()))
-          else ctx.pull()
-        }
+          setHandler(out, new OutHandler {
+            override def onPull(): Trigger = {
+              pull(in)
+            }
+          })
 
-        override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective = {
-          // If the stream is finished, we need to emit the last element in the onPull block.
-          // It is not allowed to directly emit elements from a termination block
-          // (onUpstreamFinish or onUpstreamFailure)
-          ctx.absorbTermination()
+          setHandler(in, new InHandler {
+            override def onPush(): Trigger = {
+              val chunk = grab(in)
+              digest.update(chunk.toArray)
+              pull(in)
+            }
+
+            override def onUpstreamFinish(): Unit = {
+              emit(out, ByteString(digest.digest()))
+              completeStage()
+            }
+          })
+
         }
       }
-
-      val digest: Source[ByteString, NotUsed] = data.transform(() => digestCalculator("SHA-256"))
+      val digest: Source[ByteString, NotUsed] = data.via(new DigestCalculator("SHA-256"))
       //#calculating-digest
 
       Await.result(digest.runWith(Sink.head), 3.seconds) should be(

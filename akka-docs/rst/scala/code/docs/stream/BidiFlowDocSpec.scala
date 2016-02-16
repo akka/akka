@@ -66,52 +66,68 @@ object BidiFlowDocSpec {
       ByteString.newBuilder.putInt(len).append(bytes).result()
     }
 
-    class FrameParser extends PushPullStage[ByteString, ByteString] {
-      // this holds the received but not yet parsed bytes
-      var stash = ByteString.empty
-      // this holds the current message length or -1 if at a boundary
-      var needed = -1
+    class FrameParser extends GraphStage[FlowShape[ByteString, ByteString]] {
 
-      override def onPush(bytes: ByteString, ctx: Context[ByteString]) = {
-        stash ++= bytes
-        run(ctx)
-      }
-      override def onPull(ctx: Context[ByteString]) = run(ctx)
-      override def onUpstreamFinish(ctx: Context[ByteString]) =
-        if (stash.isEmpty) ctx.finish()
-        else ctx.absorbTermination() // we still have bytes to emit
+      val in = Inlet[ByteString]("FrameParser.in")
+      val out = Outlet[ByteString]("FrameParser.out")
+      override val shape = FlowShape.of(in, out)
 
-      private def run(ctx: Context[ByteString]): SyncDirective =
-        if (needed == -1) {
-          // are we at a boundary? then figure out next length
-          if (stash.length < 4) pullOrFinish(ctx)
-          else {
-            needed = stash.iterator.getInt
-            stash = stash.drop(4)
-            run(ctx) // cycle back to possibly already emit the next chunk
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+
+        // this holds the received but not yet parsed bytes
+        var stash = ByteString.empty
+        // this holds the current message length or -1 if at a boundary
+        var needed = -1
+
+        setHandler(out, new OutHandler {
+          override def onPull(): Unit = {
+            if (isClosed(in)) run()
+            else pull(in)
           }
-        } else if (stash.length < needed) {
-          // we are in the middle of a message, need more bytes
-          pullOrFinish(ctx)
-        } else {
-          // we have enough to emit at least one message, so do it
-          val emit = stash.take(needed)
-          stash = stash.drop(needed)
-          needed = -1
-          ctx.push(emit)
-        }
+        })
+        setHandler(in, new InHandler {
+          override def onPush(): Unit = {
+            val bytes = grab(in)
+            stash = stash ++ bytes
+            run()
+          }
 
-      /*
-       * After having called absorbTermination() we cannot pull any more, so if we need
-       * more data we will just have to give up.
-       */
-      private def pullOrFinish(ctx: Context[ByteString]) =
-        if (ctx.isFinishing) ctx.finish()
-        else ctx.pull()
+          override def onUpstreamFinish(): Unit = {
+            if (stash.isEmpty) completeStage()
+            // wait with completion and let run() complete when the
+            // rest of the stash has been sent downstream
+          }
+        })
+
+        private def run(): Unit = {
+          if (needed == -1) {
+            // are we at a boundary? then figure out next length
+            if (stash.length < 4) {
+              if (isClosed(in)) completeStage()
+              else pull(in)
+            } else {
+              needed = stash.iterator.getInt
+              stash = stash.drop(4)
+              run() // cycle back to possibly already emit the next chunk
+            }
+          } else if (stash.length < needed) {
+            // we are in the middle of a message, need more bytes,
+            // or have to stop if input closed
+            if (isClosed(in)) completeStage()
+            else pull(in)
+          } else {
+            // we have enough to emit at least one message, so do it
+            val emit = stash.take(needed)
+            stash = stash.drop(needed)
+            needed = -1
+            push(out, emit)
+          }
+        }
+      }
     }
 
     val outbound = b.add(Flow[ByteString].map(addLengthHeader))
-    val inbound = b.add(Flow[ByteString].transform(() => new FrameParser))
+    val inbound = b.add(Flow[ByteString].via(new FrameParser))
     BidiShape.fromFlows(outbound, inbound)
   })
   //#framing
