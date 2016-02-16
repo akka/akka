@@ -5,14 +5,14 @@
 package akka.persistence
 
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.UUID
+
 import scala.collection.immutable
 import scala.util.control.NonFatal
-import akka.actor.Stash
-import akka.actor.StashFactory
+import akka.actor.DeadLetter
+import akka.actor.StashOverflowException
 import akka.event.Logging
 import akka.event.LoggingAdapter
-import akka.actor.ActorRef
-import java.util.UUID
 
 /**
  * INTERNAL API
@@ -37,7 +37,7 @@ private[persistence] object Eventsourced {
  * Scala API and implementation details of [[PersistentActor]], [[AbstractPersistentActor]] and
  * [[UntypedPersistentActor]].
  */
-private[persistence] trait Eventsourced extends Snapshotter with Stash with StashFactory with PersistenceIdentity with PersistenceRecovery {
+private[persistence] trait Eventsourced extends Snapshotter with PersistenceStash with PersistenceIdentity with PersistenceRecovery {
   import JournalProtocol._
   import SnapshotProtocol.LoadSnapshotResult
   import Eventsourced._
@@ -148,6 +148,20 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
     log.warning("Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
       event.getClass.getName, seqNr, persistenceId, cause.getMessage)
   }
+
+  private def stashInternally(currMsg: Any): Unit =
+    try internalStash.stash() catch {
+      case e: StashOverflowException ⇒
+        internalStashOverflowStrategy match {
+          case DiscardToDeadLetterStrategy ⇒
+            val snd = sender()
+            context.system.deadLetters.tell(DeadLetter(currMsg, snd, self), snd)
+          case ReplyToStrategy(response) ⇒
+            sender() ! response
+          case ThrowOverflowExceptionStrategy ⇒
+            throw e
+        }
+    }
 
   private def startRecovery(recovery: Recovery): Unit = {
     changeState(recoveryStarted(recovery.replayMax))
@@ -465,7 +479,8 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
         }
         changeState(recovering(recoveryBehavior))
         journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
-      case other ⇒ internalStash.stash()
+      case other ⇒
+        stashInternally(other)
     }
   }
 
@@ -480,7 +495,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    * All incoming messages are stashed.
    */
   private def recovering(recoveryBehavior: Receive) = new State {
-    override def toString: String = s"replay started"
+    override def toString: String = "replay started"
     override def recoveryRunning: Boolean = true
 
     override def stateReceive(receive: Receive, message: Any) = message match {
@@ -502,7 +517,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
       case ReplayMessagesFailure(cause) ⇒
         try onRecoveryFailure(cause, event = None) finally context.stop(self)
       case other ⇒
-        internalStash.stash()
+        stashInternally(other)
     }
   }
 
@@ -609,7 +624,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
 
     override def stateReceive(receive: Receive, message: Any) =
       if (common.isDefinedAt(message)) common(message)
-      else internalStash.stash()
+      else stashInternally(message)
 
     override def onWriteMessageComplete(err: Boolean): Unit = {
       pendingInvocations.pop() match {

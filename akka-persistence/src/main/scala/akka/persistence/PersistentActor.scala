@@ -4,10 +4,10 @@
 package akka.persistence
 
 import java.lang.{ Iterable ⇒ JIterable }
-import akka.actor.UntypedActor
+import akka.actor._
 import akka.japi.Procedure
-import akka.actor.AbstractActor
 import akka.japi.Util
+import com.typesafe.config.Config
 
 abstract class RecoveryCompleted
 /**
@@ -96,6 +96,58 @@ object Recovery {
    * @see [[Recovery]]
    */
   val none: Recovery = Recovery(toSequenceNr = 0L)
+}
+
+/**
+ * This defines how to handle the current received message which failed to stash, when the size of
+ * Stash exceeding the capacity of Stash.
+ */
+sealed trait StashOverflowStrategy
+
+/**
+ * Discard the message to [[DeadLetter]].
+ */
+case object DiscardToDeadLetterStrategy extends StashOverflowStrategy {
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
+}
+
+/**
+ * Throw [[StashOverflowException]], hence the persistent actor will starting recovery
+ * if guarded by default supervisor strategy.
+ * Be carefully if used together with persist/persistAll or has many messages needed
+ * to replay.
+ */
+case object ThrowOverflowExceptionStrategy extends StashOverflowStrategy {
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
+}
+
+/**
+ * Reply to sender with predefined response, and discard the received message silently.
+ * @param response the message replying to sender with
+ */
+final case class ReplyToStrategy(response: Any) extends StashOverflowStrategy
+
+/**
+ * Implement this interface in order to configure the stashOverflowStrategy for
+ * the internal stash of persistent actor.
+ * An instance of this class must be instantiable using a no-arg constructor.
+ */
+trait StashOverflowStrategyConfigurator {
+  def create(config: Config): StashOverflowStrategy
+}
+
+final class ThrowExceptionConfigurator extends StashOverflowStrategyConfigurator {
+  override def create(config: Config) = ThrowOverflowExceptionStrategy
+}
+
+final class DiscardConfigurator extends StashOverflowStrategyConfigurator {
+  override def create(config: Config) = DiscardToDeadLetterStrategy
 }
 
 /**
