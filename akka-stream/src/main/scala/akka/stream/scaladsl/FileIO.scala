@@ -10,7 +10,7 @@ import java.nio.file.StandardOpenOption._
 import akka.stream.ActorAttributes
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io._
-import akka.stream.io.IOResult
+import akka.stream.IOResult
 import akka.util.ByteString
 
 import scala.concurrent.Future

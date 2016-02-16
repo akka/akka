@@ -6,16 +6,15 @@ package akka.stream.io
 
 import java.io.{ FileInputStream, File }
 import java.util.concurrent.TimeUnit
-
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
 import akka.stream.{ Attributes, ActorMaterializer }
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import org.openjdk.jmh.annotations._
-
 import scala.concurrent.duration._
 import scala.concurrent.{ Promise, Await, Future }
+import akka.stream.IOResult
 
 /**
  * Benchmark                         (bufSize)  Mode  Cnt    Score    Error  Units
