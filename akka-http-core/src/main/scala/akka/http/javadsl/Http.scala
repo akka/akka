@@ -11,7 +11,7 @@ import akka.http.impl.util.JavaMapping.HttpsConnectionContext
 import akka.http.javadsl.model.ws._
 import akka.http.javadsl.settings.{ ConnectionPoolSettings, ClientConnectionSettings, ServerSettings }
 import akka.{ NotUsed, stream }
-import akka.stream.io.{ SslTlsInbound, SslTlsOutbound }
+import akka.stream.TLSProtocol._
 import scala.language.implicitConversions
 import scala.concurrent.Future
 import scala.util.Try
