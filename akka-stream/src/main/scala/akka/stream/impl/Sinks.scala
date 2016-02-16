@@ -303,6 +303,8 @@ final private[stream] class QueueSink[T]() extends GraphStageWithMaterializedVal
       var currentRequest: Option[Requested[T]] = None
 
       override def preStart(): Unit = {
+        // Allocates one additional element to hold stream
+        // closed/failure indicators
         buffer = Buffer(maxBuffer + 1, materializer)
         setKeepGoing(true)
         initCallback(callback.invoke)
@@ -319,7 +321,7 @@ final private[stream] class QueueSink[T]() extends GraphStageWithMaterializedVal
           case None ⇒
             if (buffer.isEmpty) currentRequest = Some(promise)
             else {
-              if (buffer.used == maxBuffer - 1) tryPull(in)
+              if (buffer.used == maxBuffer) tryPull(in)
               sendDownstream(promise)
             }
         })
@@ -347,7 +349,7 @@ final private[stream] class QueueSink[T]() extends GraphStageWithMaterializedVal
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
           enqueueAndNotify(Success(Some(grab(in))))
-          if (buffer.used < maxBuffer - 1) pull(in)
+          if (buffer.used < maxBuffer) pull(in)
         }
         override def onUpstreamFinish(): Unit = enqueueAndNotify(Success(None))
         override def onUpstreamFailure(ex: Throwable): Unit = enqueueAndNotify(Failure(ex))

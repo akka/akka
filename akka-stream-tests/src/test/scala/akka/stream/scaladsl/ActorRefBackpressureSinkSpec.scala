@@ -116,18 +116,46 @@ class ActorRefBackpressureSinkSpec extends AkkaSpec with ScalaFutures with Conve
     }
 
     "keep on sending even after the buffer has been full" in assertAllStagesStopped {
+      val bufferSize = 16
+      val streamElementCount = bufferSize + 4
       val fw = createActor(classOf[Fw2])
-      val probe = Source(1 to 20)
-        .alsoToMat(Flow[Int].take(16).watchTermination()(Keep.right).to(Sink.ignore))(Keep.right)
-        .to(Sink.actorRefWithAck(fw, initMessage, ackMessage, completeMessage))
+      val sink = Sink.actorRefWithAck(fw, initMessage, ackMessage, completeMessage)
+        .withAttributes(inputBuffer(bufferSize, bufferSize))
+      val probe = Source(1 to streamElementCount)
+        .alsoToMat(Flow[Int].take(bufferSize).watchTermination()(Keep.right).to(Sink.ignore))(Keep.right)
+        .to(sink)
         .run()
       probe.futureValue should ===(akka.Done)
       expectMsg(initMessage)
       fw ! TriggerAckMessage
-      for (i ← 1 to 20) {
+      for (i ← 1 to streamElementCount) {
         expectMsg(i)
         fw ! TriggerAckMessage
       }
+      expectMsg(completeMessage)
+    }
+
+    "work with one element buffer" in assertAllStagesStopped {
+      val fw = createActor(classOf[Fw2])
+      val publisher =
+        TestSource.probe[Int].to(Sink.actorRefWithAck(fw,
+          initMessage, ackMessage, completeMessage)
+          .withAttributes(inputBuffer(1, 1))).run()
+
+      expectMsg(initMessage)
+      fw ! TriggerAckMessage
+
+      publisher.sendNext(1)
+      expectMsg(1)
+
+      fw ! TriggerAckMessage
+      expectNoMsg() // Ack received but buffer empty
+
+      publisher.sendNext(2) // Buffer this value
+      fw ! TriggerAckMessage
+      expectMsg(2)
+
+      publisher.sendComplete()
       expectMsg(completeMessage)
     }
 

@@ -116,18 +116,41 @@ class QueueSinkSpec extends AkkaSpec with ScalaFutures {
     }
 
     "keep on sending even after the buffer has been full" in assertAllStagesStopped {
-      val (probe, queue) = Source(1 to 20)
-        .alsoToMat(Flow[Int].take(15).watchTermination()(Keep.right).to(Sink.ignore))(Keep.right)
-        .toMat(Sink.queue())(Keep.both)
+      val bufferSize = 16
+      val streamElementCount = bufferSize + 4
+      val sink = Sink.queue[Int]()
+        .withAttributes(inputBuffer(bufferSize, bufferSize))
+      val (probe, queue) = Source(1 to streamElementCount)
+        .alsoToMat(Flow[Int].take(bufferSize).watchTermination()(Keep.right).to(Sink.ignore))(Keep.right)
+        .toMat(sink)(Keep.both)
         .run()
       probe.futureValue should ===(akka.Done)
-      for (i ← 1 to 20) {
+      for (i ← 1 to streamElementCount) {
         queue.pull() pipeTo testActor
         expectMsg(Some(i))
       }
       queue.pull() pipeTo testActor
       expectMsg(None)
 
+    }
+
+    "work with one element buffer" in assertAllStagesStopped {
+      val sink = Sink.queue[Int]().withAttributes(inputBuffer(1, 1))
+      val probe = TestPublisher.manualProbe[Int]()
+      val queue = Source.fromPublisher(probe).runWith(sink)
+      val sub = probe.expectSubscription()
+
+      queue.pull().pipeTo(testActor)
+      sub.sendNext(1) // should pull next element
+      expectMsg(Some(1))
+
+      queue.pull().pipeTo(testActor)
+      expectNoMsg() // element requested but buffer empty
+      sub.sendNext(2)
+      expectMsg(Some(2))
+
+      sub.sendComplete()
+      Await.result(queue.pull(), noMsgTimeout) should be(None)
     }
 
     "fail to materialize with zero sized input buffer" in {
