@@ -18,7 +18,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 
-import akka.stream.io.{ SslTlsPlacebo, SessionBytes }
+import akka.stream.TLSProtocol._
 
 import org.scalatest.matchers.Matcher
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
@@ -482,7 +482,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
     def multiParse(parser: HttpRequestParser)(input: Seq[String]): Seq[Either[RequestOutput, StrictEqualHttpRequest]] =
       Source(input.toList)
-        .map(bytes ⇒ SessionBytes(SslTlsPlacebo.dummySession, ByteString(bytes)))
+        .map(bytes ⇒ SessionBytes(TLSPlacebo.dummySession, ByteString(bytes)))
         .transform(() ⇒ parser.stage).named("parser")
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
         .prefixAndTail(1)

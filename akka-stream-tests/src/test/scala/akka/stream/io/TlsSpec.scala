@@ -15,6 +15,7 @@ import scala.util.Random
 import akka.actor.ActorSystem
 import akka.pattern.{ after ⇒ later }
 import akka.stream._
+import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream.testkit._
@@ -102,9 +103,9 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
     }
 
     val cipherSuites = NegotiateNewSession.withCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_128_CBC_SHA")
-    def clientTls(closing: Closing) = SslTls(sslContext, cipherSuites, Client, closing)
-    def badClientTls(closing: Closing) = SslTls(initWithTrust("/badtruststore"), cipherSuites, Client, closing)
-    def serverTls(closing: Closing) = SslTls(sslContext, cipherSuites, Server, closing)
+    def clientTls(closing: TLSClosing) = TLS(sslContext, cipherSuites, Client, closing)
+    def badClientTls(closing: TLSClosing) = TLS(initWithTrust("/badtruststore"), cipherSuites, Client, closing)
+    def serverTls(closing: TLSClosing) = TLS(sslContext, cipherSuites, Server, closing)
 
     trait Named {
       def name: String =
@@ -116,19 +117,19 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
     }
 
     trait CommunicationSetup extends Named {
-      def decorateFlow(leftClosing: Closing, rightClosing: Closing,
+      def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
                        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]): Flow[SslTlsOutbound, SslTlsInbound, NotUsed]
       def cleanup(): Unit = ()
     }
 
     object ClientInitiates extends CommunicationSetup {
-      def decorateFlow(leftClosing: Closing, rightClosing: Closing,
+      def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
                        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) =
         clientTls(leftClosing) atop serverTls(rightClosing).reversed join rhs
     }
 
     object ServerInitiates extends CommunicationSetup {
-      def decorateFlow(leftClosing: Closing, rightClosing: Closing,
+      def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
                        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) =
         serverTls(leftClosing) atop clientTls(rightClosing).reversed join rhs
     }
@@ -143,7 +144,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
 
     object ClientInitiatesViaTcp extends CommunicationSetup {
       var binding: Tcp.ServerBinding = null
-      def decorateFlow(leftClosing: Closing, rightClosing: Closing,
+      def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
                        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) = {
         binding = server(serverTls(rightClosing).reversed join rhs)
         clientTls(leftClosing) join Tcp().outgoingConnection(binding.localAddress)
@@ -153,7 +154,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
 
     object ServerInitiatesViaTcp extends CommunicationSetup {
       var binding: Tcp.ServerBinding = null
-      def decorateFlow(leftClosing: Closing, rightClosing: Closing,
+      def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
                        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) = {
         binding = server(clientTls(rightClosing).reversed join rhs)
         serverTls(leftClosing) join Tcp().outgoingConnection(binding.localAddress)
@@ -189,8 +190,8 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
               case SessionBytes(s, b) ⇒ SendBytes(b)
             }
           }
-      def leftClosing: Closing = IgnoreComplete
-      def rightClosing: Closing = IgnoreComplete
+      def leftClosing: TLSClosing = IgnoreComplete
+      def rightClosing: TLSClosing = IgnoreComplete
 
       def inputs: immutable.Seq[SslTlsOutbound]
       def output: ByteString
@@ -441,7 +442,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
     "pass through data" in {
       val f = Source(1 to 3)
         .map(b ⇒ SendBytes(ByteString(b.toByte)))
-        .via(SslTlsPlacebo.forScala join Flow.apply)
+        .via(TLSPlacebo() join Flow.apply)
         .grouped(10)
         .runWith(Sink.head)
       val result = Await.result(f, 3.seconds)

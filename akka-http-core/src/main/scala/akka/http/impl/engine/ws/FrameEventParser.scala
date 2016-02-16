@@ -4,9 +4,9 @@
 
 package akka.http.impl.engine.ws
 
+import akka.stream.impl.io.ByteStringParser
 import akka.util.ByteString
 import scala.annotation.tailrec
-import akka.stream.io.ByteStringParser
 import akka.stream.Attributes
 
 /**
