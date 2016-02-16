@@ -7,7 +7,7 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.io.Framing;
+import akka.stream.javadsl.Framing;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;

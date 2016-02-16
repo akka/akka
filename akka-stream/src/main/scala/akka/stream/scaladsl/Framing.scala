@@ -1,14 +1,13 @@
 /**
- * Copyright (C) 2014-2016 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015-2016 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream.io
+package akka.stream.scaladsl
 
 import java.nio.ByteOrder
 
 import akka.NotUsed
-import akka.stream.scaladsl.{ Keep, BidiFlow, Flow }
 import akka.stream.stage._
-import akka.util.{ ByteIterator, ByteStringBuilder, ByteString }
+import akka.util.{ ByteIterator, ByteString }
 
 import scala.annotation.tailrec
 
@@ -24,11 +23,10 @@ object Framing {
    * false then this Flow will fail the stream reporting a truncated frame.
    *
    * @param delimiter The byte sequence to be treated as the end of the frame.
-   * @param allowTruncation If turned on, then when the last frame being decoded contains no valid delimiter this Flow
+   * @param allowTruncation If `false`, then when the last frame being decoded contains no valid delimiter this Flow
    *                        fails the stream instead of returning a truncated frame.
    * @param maximumFrameLength The maximum length of allowed frames while decoding. If the maximum length is
    *                           exceeded this Flow will fail the stream.
-   * @return
    */
   def delimiter(delimiter: ByteString, maximumFrameLength: Int, allowTruncation: Boolean = false): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].transform(() ⇒ new DelimiterFramingStage(delimiter, maximumFrameLength, allowTruncation))
@@ -47,7 +45,6 @@ object Framing {
    *                           this Flow will fail the stream. This length *includes* the header (i.e the offset and
    *                           the length of the size field)
    * @param byteOrder The ''ByteOrder'' to be used when decoding the field
-   * @return
    */
   def lengthField(fieldLength: Int,
                   fieldOffset: Int = 0,
@@ -75,7 +72,6 @@ object Framing {
    * @param maximumMessageLength Maximum length of allowed messages. If sent or received messages exceed the configured
    *                             limit this BidiFlow will fail the stream. The header attached by this BidiFlow are not
    *                             included in this limit.
-   * @return
    */
   def simpleFramingProtocol(maximumMessageLength: Int): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
     val decoder = lengthField(4, 0, maximumMessageLength + 4, ByteOrder.BIG_ENDIAN).map(_.drop(4))

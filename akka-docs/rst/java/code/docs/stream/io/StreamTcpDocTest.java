@@ -7,7 +7,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import akka.NotUsed;
-import akka.stream.io.Framing;
+import akka.stream.javadsl.Framing;
 import docs.AbstractJavaTest;
 import docs.stream.SilenceSystemOut;
 import java.net.InetSocketAddress;
