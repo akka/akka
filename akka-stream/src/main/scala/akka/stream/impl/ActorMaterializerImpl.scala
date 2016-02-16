@@ -13,8 +13,8 @@ import akka.pattern.ask
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.{ ActorGraphInterpreter, GraphModule }
-import akka.stream.impl.io.SslTlsCipherActor
-import akka.stream.io.SslTls.TlsModule
+import akka.stream.impl.io.TLSActor
+import akka.stream.impl.io.TlsModule
 import org.reactivestreams._
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Await, ExecutionContextExecutor }
@@ -121,7 +121,7 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
           case tls: TlsModule ⇒ // TODO solve this so TlsModule doesn't need special treatment here
             val es = effectiveSettings(effectiveAttributes)
             val props =
-              SslTlsCipherActor.props(es, tls.sslContext, tls.firstSession, tls.role, tls.closing, tls.hostInfo)
+              TLSActor.props(es, tls.sslContext, tls.firstSession, tls.role, tls.closing, tls.hostInfo)
             val impl = actorOf(props, stageName(effectiveAttributes), es.dispatcher)
             def factory(id: Int) = new ActorPublisher[Any](impl) {
               override val wakeUpMsg = FanOut.SubstreamSubscribePending(id)
@@ -129,11 +129,11 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
             val publishers = Vector.tabulate(2)(factory)
             impl ! FanOut.ExposedPublishers(publishers)
 
-            assignPort(tls.plainOut, publishers(SslTlsCipherActor.UserOut))
-            assignPort(tls.cipherOut, publishers(SslTlsCipherActor.TransportOut))
+            assignPort(tls.plainOut, publishers(TLSActor.UserOut))
+            assignPort(tls.cipherOut, publishers(TLSActor.TransportOut))
 
-            assignPort(tls.plainIn, FanIn.SubInput[Any](impl, SslTlsCipherActor.UserIn))
-            assignPort(tls.cipherIn, FanIn.SubInput[Any](impl, SslTlsCipherActor.TransportIn))
+            assignPort(tls.plainIn, FanIn.SubInput[Any](impl, TLSActor.UserIn))
+            assignPort(tls.cipherIn, FanIn.SubInput[Any](impl, TLSActor.TransportIn))
 
             matVal.put(atomic, NotUsed)
 

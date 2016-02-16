@@ -7,8 +7,7 @@ package akka.http.impl.engine.client
 import akka.NotUsed
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
-import akka.stream.ActorMaterializer
-import akka.stream.io._
+import akka.stream.{ Server, Client, ActorMaterializer }
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 import akka.http.impl.util._

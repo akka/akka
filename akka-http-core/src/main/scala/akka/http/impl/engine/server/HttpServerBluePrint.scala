@@ -16,7 +16,7 @@ import akka.japi.Function
 import akka.event.LoggingAdapter
 import akka.util.ByteString
 import akka.stream._
-import akka.stream.io._
+import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.http.scaladsl.settings.ServerSettings
@@ -150,10 +150,9 @@ private[http] object HttpServerBluePrint {
         }
       }
 
-
       def createEntity(creator: EntityCreator[RequestOutput, RequestEntity]): RequestEntity =
         creator match {
-          case StrictEntityCreator(entity) ⇒ entity
+          case StrictEntityCreator(entity)    ⇒ entity
           case StreamedEntityCreator(creator) ⇒ streamRequestEntity(creator)
         }
 
@@ -253,7 +252,7 @@ private[http] object HttpServerBluePrint {
   }
 
   class RequestTimeoutSupport(initialTimeout: FiniteDuration)
-    extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
+      extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
     private val requestIn = Inlet[HttpRequest]("requestIn")
     private val requestOut = Outlet[HttpRequest]("requestOut")
     private val responseIn = Inlet[HttpResponse]("responseIn")
@@ -309,7 +308,7 @@ private[http] object HttpServerBluePrint {
 
   private class TimeoutAccessImpl(request: HttpRequest, initialTimeout: FiniteDuration, requestEnd: Future[Unit],
                                   trigger: AsyncCallback[(TimeoutAccess, HttpResponse)], materializer: Materializer)
-    extends AtomicReference[Future[TimeoutSetup]] with TimeoutAccess with (HttpRequest ⇒ HttpResponse) { self ⇒
+      extends AtomicReference[Future[TimeoutSetup]] with TimeoutAccess with (HttpRequest ⇒ HttpResponse) { self ⇒
     import materializer.executionContext
 
     set {
@@ -351,7 +350,7 @@ private[http] object HttpServerBluePrint {
   }
 
   class ControllerStage(settings: ServerSettings, log: LoggingAdapter)
-    extends GraphStage[BidiShape[RequestOutput, RequestOutput, HttpResponse, ResponseRenderingContext]] {
+      extends GraphStage[BidiShape[RequestOutput, RequestOutput, HttpResponse, ResponseRenderingContext]] {
     private val requestParsingIn = Inlet[RequestOutput]("requestParsingIn")
     private val requestPrepOut = Outlet[RequestOutput]("requestPrepOut")
     private val httpResponseIn = Inlet[HttpResponse]("httpResponseIn")
@@ -533,7 +532,7 @@ private[http] object HttpServerBluePrint {
     One2OneBidiFlow[HttpRequest, HttpResponse](pipeliningLimit).reversed
 
   private class ProtocolSwitchStage(settings: ServerSettings, log: LoggingAdapter)
-    extends GraphStage[BidiShape[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes]] {
+      extends GraphStage[BidiShape[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes]] {
 
     private val fromNet = Inlet[SessionBytes]("fromNet")
     private val toNet = Outlet[ByteString]("toNet")

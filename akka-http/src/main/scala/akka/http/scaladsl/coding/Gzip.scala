@@ -10,8 +10,8 @@ import akka.http.impl.engine.ws.{ ProtocolException, FrameEvent }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.stream.Attributes
-import akka.stream.io.ByteStringParser
-import akka.stream.io.ByteStringParser.{ ParseResult, ParseStep }
+import akka.stream.impl.io.ByteStringParser
+import ByteStringParser.{ ParseResult, ParseStep }
 import akka.util.ByteString
 
 class Gzip(val messageFilter: HttpMessage ⇒ Boolean) extends Coder with StreamDecoder {

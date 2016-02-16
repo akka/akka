@@ -80,5 +80,9 @@ worker*.log
 *-shim.sbt
 test-output
 
+# test output of QuickStart guide
+factorials.txt
+factorial2.txt
+
 # Default sigar library extract location.
 native/

@@ -9,7 +9,7 @@ import akka.http.scaladsl.settings.{ ClientConnectionSettings, ParserSettings }
 import language.existentials
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
-import akka.stream.io.{ SessionBytes, SslTlsInbound, SendBytes }
+import akka.stream.TLSProtocol._
 import akka.util.ByteString
 import akka.event.LoggingAdapter
 import akka.stream._
