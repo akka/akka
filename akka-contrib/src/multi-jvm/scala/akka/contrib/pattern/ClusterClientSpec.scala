@@ -250,6 +250,8 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
     }
 
     "re-establish connection to receptionist after server restart" in within(30 seconds) {
+      //FIXME: Fix ticket https://github.com/akka/akka/issues/18741 and reenable test
+      pending
       runOn(client) {
         remainingServerRoleNames.size should ===(1)
         val remainingContacts = remainingServerRoleNames.map { r ⇒
