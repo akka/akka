@@ -8,7 +8,7 @@ import akka.event.AddressTerminatedTopic
 import akka.pattern.ask
 import akka.remote.transport.AssociationHandle.{ HandleEventListener, InboundPayload, HandleEvent }
 import akka.remote.transport._
-import akka.remote.transport.Transport.{ AssociationEvent, InvalidAssociationException }
+import akka.remote.transport.Transport.InvalidAssociationException
 import akka.testkit._
 import akka.util.ByteString
 import com.typesafe.config._
