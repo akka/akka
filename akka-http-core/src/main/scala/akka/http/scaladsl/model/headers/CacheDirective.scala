@@ -68,7 +68,7 @@ object CacheDirectives {
 
   // http://tools.ietf.org/html/rfc7234#section-5.2.1.4
   case object `no-cache` extends SingletonValueRenderable with RequestDirective with ResponseDirective {
-    @varargs def apply(fieldNames: String*): `no-cache` = apply(immutable.Seq(fieldNames: _*))
+    def apply(fieldNames: String*): `no-cache` = new `no-cache`(immutable.Seq(fieldNames: _*))
   }
 
   // http://tools.ietf.org/html/rfc7234#section-5.2.1.5
@@ -97,11 +97,11 @@ object CacheDirectives {
   // http://tools.ietf.org/html/rfc7234#section-5.2.2.6
   final case class `private`(fieldNames: immutable.Seq[String]) extends FieldNamesDirective with ResponseDirective
   object `private` {
-    @varargs def apply(fieldNames: String*): `private` = apply(immutable.Seq(fieldNames: _*))
+    def apply(fieldNames: String*): `private` = new `private`(immutable.Seq(fieldNames: _*))
   }
 
   /** Java API */
-  @varargs def createPrivate(fieldNames: String*): ResponseDirective = `private`.apply(immutable.Seq(fieldNames: _*))
+  @varargs def createPrivate(fieldNames: String*): ResponseDirective = new `private`(immutable.Seq(fieldNames: _*))
 
   // http://tools.ietf.org/html/rfc7234#section-5.2.2.7
   case object `proxy-revalidate` extends SingletonValueRenderable with ResponseDirective

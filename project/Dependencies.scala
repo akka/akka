@@ -33,7 +33,7 @@ object Dependencies {
     val netty         = "io.netty"                    % "netty"                        % "3.10.3.Final" // ApacheV2
     val scalaStm      = Def.setting { "org.scala-stm" %% "scala-stm" % scalaStmVersion.value } // Modified BSD (Scala)
 
-    val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1" // Scala License
+    val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.5" // Scala License
     val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.16"       // MIT
@@ -174,7 +174,7 @@ object Dependencies {
     DependencyHelpers.versionDependentDeps(
       Dependencies.Compile.scalaReflect % "provided"
     ),
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.fullMapped(nominalScalaVersion))
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.fullMapped(nominalScalaVersion))
   )
 
   lazy val httpTestkit = l ++= Seq(
