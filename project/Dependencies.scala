@@ -174,7 +174,7 @@ object Dependencies {
     DependencyHelpers.versionDependentDeps(
       Dependencies.Compile.scalaReflect % "provided"
     ),
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
+    addCompilerPlugin("org.scalamacros" % "paradise_2.11.7" % "2.0.1")
   )
 
   lazy val httpTestkit = l ++= Seq(
