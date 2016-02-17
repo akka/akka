@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -82,7 +82,9 @@ class RemoteConfigSpec extends AkkaSpec(
       val s = new NettyTransportSettings(c)
       import s._
 
-      ConnectionTimeout should be(15.seconds)
+      ConnectionTimeout should ===(15.seconds)
+      ConnectionTimeout should ===(new AkkaProtocolSettings(RARP(system).provider.remoteSettings.config)
+        .HandshakeTimeout)
       WriteBufferHighWaterMark should be(None)
       WriteBufferLowWaterMark should be(None)
       SendBufferSize should be(Some(256000))
