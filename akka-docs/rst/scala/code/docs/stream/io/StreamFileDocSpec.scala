@@ -27,7 +27,7 @@ class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   {
     //#file-source
-    import akka.stream.io._
+    import akka.stream.scaladsl._
     //#file-source
     Thread.sleep(0) // needs a statement here for valid syntax and to avoid "unused" warnings
   }
