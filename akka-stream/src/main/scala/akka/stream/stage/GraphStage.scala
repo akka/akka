@@ -514,37 +514,36 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Read a number of elements from the given inlet and continue with the given function,
    * suspending execution if necessary. This action replaces the [[InHandler]]
    * for the given inlet if suspension is needed and reinstalls the current
-   * handler upon receiving the last `onPush()` signal (before invoking the `andThen` function).
+   * handler upon receiving the last `onPush()` signal.
+   *
+   * If upstream closes before N elements have been read,
+   * the `onClose` function is invoked with the elements which were read.
    */
   final protected def readN[T](in: Inlet[T], n: Int)(andThen: Seq[T] ⇒ Unit, onClose: Seq[T] ⇒ Unit): Unit =
+    //FIXME `onClose` is a poor name for `onComplete` rename this at the earliest possible opportunity
     if (n < 0) throw new IllegalArgumentException("cannot read negative number of elements")
     else if (n == 0) andThen(Nil)
     else {
-      val result = new ArrayBuffer[T](n)
+      val result = new Array[AnyRef](n).asInstanceOf[Array[T]]
       var pos = 0
-      def realAndThen = (elem: T) ⇒ {
-        result(pos) = elem
-        pos += 1
-        if (pos == n) andThen(result)
-      }
-      def realOnClose = () ⇒ onClose(result.take(pos))
 
-      if (isAvailable(in)) {
-        val elem = grab(in)
-        result(0) = elem
-        if (n == 1) {
-          andThen(result)
-        } else {
-          pos = 1
-          requireNotReading(in)
-          pull(in)
-          setHandler(in, new Reading(in, n - 1, getHandler(in))(realAndThen, realOnClose))
-        }
-      } else {
+      if (isAvailable(in)) { //If we already have data available, then shortcircuit and read the first
+        result(pos) = grab(in)
+        pos += 1
+      }
+
+      if (n != pos) { // If we aren't already done
         requireNotReading(in)
         if (!hasBeenPulled(in)) pull(in)
-        setHandler(in, new Reading(in, n, getHandler(in))(realAndThen, realOnClose))
-      }
+        setHandler(in, new Reading(in, n - pos, getHandler(in))(
+          (elem: T) ⇒ {
+            result(pos) = elem
+            pos += 1
+            if (pos == n) andThen(result)
+          },
+          () ⇒ onClose(result.take(pos)))
+        )
+      } else andThen(result)
     }
 
   /**
@@ -554,6 +553,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * handler upon receiving the last `onPush()` signal (before invoking the `andThen` function).
    */
   final protected def readN[T](in: Inlet[T], n: Int, andThen: Procedure[java.util.List[T]], onClose: Procedure[java.util.List[T]]): Unit = {
+    //FIXME `onClose` is a poor name for `onComplete` rename this at the earliest possible opportunity
     import collection.JavaConverters._
     readN(in, n)(seq ⇒ andThen(seq.asJava), seq ⇒ onClose(seq.asJava))
   }
@@ -604,22 +604,25 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       throw new IllegalStateException("already reading on inlet " + in)
 
   /**
-   * Caution: for n==1 andThen is called after resetting the handler, for
-   * other values it is called without resetting the handler.
+   * Caution: for n == 1 andThen is called after resetting the handler, for
+   * other values it is called without resetting the handler. n MUST be positive.
    */
-  private class Reading[T](in: Inlet[T], private var n: Int, val previous: InHandler)(andThen: T ⇒ Unit, onClose: () ⇒ Unit) extends InHandler {
+  private final class Reading[T](in: Inlet[T], private var n: Int, val previous: InHandler)(andThen: T ⇒ Unit, onComplete: () ⇒ Unit) extends InHandler {
+    require(n > 0, "number of elements to read must be positive!")
+
     override def onPush(): Unit = {
       val elem = grab(in)
-      if (n == 1) setHandler(in, previous)
-      else {
-        n -= 1
-        pull(in)
-      }
+      n -= 1
+
+      if (n > 0) pull(in)
+      else setHandler(in, previous)
+
       andThen(elem)
     }
+
     override def onUpstreamFinish(): Unit = {
       setHandler(in, previous)
-      onClose()
+      onComplete()
       previous.onUpstreamFinish()
     }
     override def onUpstreamFailure(ex: Throwable): Unit = {
