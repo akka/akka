@@ -174,7 +174,7 @@ object Dependencies {
     DependencyHelpers.versionDependentDeps(
       Dependencies.Compile.scalaReflect % "provided"
     ),
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.fullMapped(nominalScalaVersion))
   )
 
   lazy val httpTestkit = l ++= Seq(
@@ -223,4 +223,15 @@ object DependencyHelpers {
    */
   def versionDependentDeps(modules: ScalaVersionDependentModuleID*): Def.Setting[Seq[ModuleID]] =
     libraryDependencies <++= scalaVersion(version => modules.flatMap(m => m.modules(version)))
+
+  val ScalaVersion = """\d\.\d+\.\d+(?:-(?:M|RC)\d+)?""".r
+  val nominalScalaVersion: String => String = {
+    // matches:
+    // 2.12.0-M1
+    // 2.12.0-RC1
+    // 2.12.0
+    case version @ ScalaVersion() => version
+    // transforms 2.12.0-custom-version to 2.12.0
+    case version => version.takeWhile(_ != '-')
+  }
 }
