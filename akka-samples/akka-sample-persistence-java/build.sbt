@@ -10,3 +10,4 @@ libraryDependencies ++= Seq(
   "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8"
 )
 
+licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))
