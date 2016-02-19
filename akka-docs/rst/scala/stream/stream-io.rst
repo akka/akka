@@ -52,7 +52,7 @@ Let's say we know a server has exposed a simple command line interface over TCP,
 and would like to interact with it using Akka Streams over TCP. To open an outgoing connection socket we use
 the ``outgoingConnection`` method:
 
-ąio/StreamTcpDocSpec.scala#repl-client
+.. includecode:: ../code/docs/stream/io/StreamTcpDocSpec.scala#repl-client
 
 The ``repl`` flow we use to handle the server interaction first prints the servers response, then awaits on input from
 the command line (this blocking call is used here just for the sake of simplicity) and converts it to a
