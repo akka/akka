@@ -210,3 +210,6 @@ External Akka Serializers
 
 
 `Akka-kryo by Roman Levenstein <https://github.com/romix/akka-kryo-serialization>`_
+
+
+`Twitter Chill Scala extensions for Kryo <https://github.com/twitter/chill>`_
