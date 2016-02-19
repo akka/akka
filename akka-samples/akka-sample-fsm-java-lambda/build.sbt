@@ -15,3 +15,5 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %%    "akka-testkit" % "2.4-SNAPSHOT" % "test",
               "junit"  %           "junit" % "4.11"         % "test",
        "com.novocode"  % "junit-interface" % "0.10"         % "test")
+
+licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))
