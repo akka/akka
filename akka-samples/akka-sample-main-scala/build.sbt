@@ -26,3 +26,4 @@ mappings in Universal ++= {
 // when starting the application
 scriptClasspath := Seq("../config/") ++ scriptClasspath.value
 
+licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))

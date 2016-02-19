@@ -19,7 +19,7 @@ val project = Project(
     compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test),
     // disable parallel tests
     parallelExecution in Test := false,
-    // make sure that MultiJvm tests are executed by the default test target, 
+    // make sure that MultiJvm tests are executed by the default test target,
     // and combine the results from ordinary test and multi-jvm tests
     executeTests in Test <<= (executeTests in Test, executeTests in MultiJvm) map {
       case (testResults, multiNodeResults)  =>
@@ -31,6 +31,7 @@ val project = Project(
         Tests.Output(overall,
           testResults.events ++ multiNodeResults.events,
           testResults.summaries ++ multiNodeResults.summaries)
-    }
+    },
+    licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))
   )
 ) configs (MultiJvm)
