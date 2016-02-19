@@ -133,8 +133,8 @@ class StreamTcpDocSpec extends AkkaSpec {
         .via(replParser)
 
       connection.join(repl).run()
+      //#repl-client
     }
-    //#repl-client
 
     serverProbe.expectMsg("Hello world")
     serverProbe.expectMsg("What a lovely day")
