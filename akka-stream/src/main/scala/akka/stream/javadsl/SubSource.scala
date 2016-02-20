@@ -837,6 +837,7 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    * This operator makes it possible to extend the `Flow` API when there is no specialized
    * operator that performs the transformation.
    */
+  @deprecated("Use via(GraphStage) instead.", "2.4.3")
   def transform[U](mkStage: function.Creator[Stage[Out, U]]): SubSource[U, Mat] =
     new SubSource(delegate.transform(() ⇒ mkStage.create()))
 
