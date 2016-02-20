@@ -1105,6 +1105,7 @@ trait FlowOps[+Out, +Mat] {
    * This operator makes it possible to extend the `Flow` API when there is no specialized
    * operator that performs the transformation.
    */
+  @deprecated("Use via(GraphStage) instead.", "2.4.3")
   def transform[T](mkStage: () ⇒ Stage[Out, T]): Repr[T] =
     via(new PushPullGraphStage((attr) ⇒ mkStage(), Attributes.none))
 
