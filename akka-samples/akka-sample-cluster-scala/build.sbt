@@ -4,9 +4,11 @@ import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 val akkaVersion = "2.4-SNAPSHOT"
 
 val project = Project(
-  id = "akka-sample-cluster-scala",
-  base = file("."),
-  settings = Project.defaultSettings ++ SbtMultiJvm.multiJvmSettings ++ Seq(
+    id = "akka-sample-cluster-scala",
+    base = file(".")
+  )
+  .settings(SbtMultiJvm.multiJvmSettings: _*)
+  .settings(
     name := "akka-sample-cluster-scala",
     version := "2.4-SNAPSHOT",
     scalaVersion := "2.11.7",
@@ -44,4 +46,4 @@ val project = Project(
     },
     licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))
   )
-) configs (MultiJvm)
+  .configs (MultiJvm)
