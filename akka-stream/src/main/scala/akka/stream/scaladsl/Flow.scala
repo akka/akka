@@ -7,7 +7,7 @@ import akka.event.LoggingAdapter
 import akka.stream._
 import akka.Done
 import akka.stream.impl.Stages.{ DirectProcessor, StageModule }
-import akka.stream.impl.StreamLayout.{ Module }
+import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.stream.impl.fusing._
 import akka.stream.stage.AbstractStage.{ PushPullGraphStage, PushPullGraphStageWithMaterializedValue }
@@ -16,7 +16,7 @@ import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.concurrent.duration.{ FiniteDuration }
+import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 import akka.stream.impl.fusing.FlattenMerge
 
@@ -375,7 +375,10 @@ final case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Mo
 /**
  * Scala API: Operations offered by Sources and Flows with a free output side: the DSL flows left-to-right only.
  *
- * INTERNAL API: extending this trait is not supported under the binary compatibility rules for Akka.
+ * INTERNAL API: this trait will be changed in binary-incompatible ways for classes that are derived from it!
+ * Do not implement this interface outside the Akka code base!
+ *
+ * Binary compatibility is only maintained for callers of this trait’s interface.
  */
 trait FlowOps[+Out, +Mat] {
   import akka.stream.impl.Stages._
@@ -1803,7 +1806,10 @@ trait FlowOps[+Out, +Mat] {
 }
 
 /**
- * INTERNAL API: extending this trait is not supported under the binary compatibility rules for Akka.
+  * INTERNAL API: this trait will be changed in binary-incompatible ways for classes that are derived from it!
+  * Do not implement this interface outside the Akka code base!
+  *
+  * Binary compatibility is only maintained for callers of this trait’s interface.
  */
 trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
 
@@ -1994,6 +2000,15 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * Transform the materialized value of this graph, leaving all other properties as they were.
    */
   def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2]
+
+  /**
+    * Materializes to `FlowMonitor[Out]` that allows monitoring of the the current flow. All events are propagated
+    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
+    * event, and may therefor affect performance.
+    * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
+    */
+  def monitor[Mat2]()(combine: (Mat, FlowMonitor[Out]) => Mat2): ReprMat[Out, Mat2] =
+    viaMat(GraphStages.monitor)(combine)
 
   /**
    * INTERNAL API.

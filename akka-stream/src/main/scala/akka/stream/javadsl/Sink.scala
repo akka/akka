@@ -242,7 +242,6 @@ object Sink {
    */
   def queue[T](): Sink[T, SinkQueue[T]] =
     new Sink(scaladsl.Sink.queue[T]().mapMaterializedValue(new SinkQueueAdapter(_)))
-
 }
 
 /**
