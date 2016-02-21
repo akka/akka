@@ -194,7 +194,7 @@ object Sink {
     Flow[T].map(f).toMat(Sink.ignore)(Keep.right).named("foreachSink")
 
   /**
-   * Combine several sinks with fun-out strategy like `Broadcast` or `Balance` and returns `Sink`.
+   * Combine several sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink`.
    */
   def combine[T, U](first: Sink[U, _], second: Sink[U, _], rest: Sink[U, _]*)(strategy: Int ⇒ Graph[UniformFanOutShape[T, U], NotUsed]): Sink[T, NotUsed] =
 
@@ -339,5 +339,4 @@ object Sink {
    */
   def queue[T](): Sink[T, SinkQueue[T]] =
     Sink.fromGraph(new QueueSink())
-
 }
