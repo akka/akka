@@ -4,7 +4,6 @@
 package akka.stream.impl
 
 import language.existentials
-import org.reactivestreams.Subscription
 import akka.actor.{ NoSerializationVerificationNeeded, DeadLetterSuppression }
 
 /**

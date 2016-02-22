@@ -4,14 +4,10 @@
 package akka.remote
 
 import akka.actor.ActorSystem
-import akka.testkit.AkkaSpec
-import akka.testkit.DefaultTimeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
-import org.scalatest.WordSpecLike
 import org.scalatest.concurrent.Eventually._
-import scala.annotation.tailrec
 import scala.collection.JavaConversions._
 import scala.collection.mutable.Set
 import scala.concurrent.duration._

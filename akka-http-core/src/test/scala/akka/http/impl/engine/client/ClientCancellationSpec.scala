@@ -3,7 +3,7 @@ package akka.http.impl.engine.client
 import javax.net.ssl.SSLContext
 
 import akka.http.scaladsl.{ ConnectionContext, Http }
-import akka.http.scaladsl.model.{ HttpHeader, HttpResponse, HttpRequest }
+import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.testkit.{ TestSubscriber, TestPublisher, AkkaSpec, TestUtils, Utils }

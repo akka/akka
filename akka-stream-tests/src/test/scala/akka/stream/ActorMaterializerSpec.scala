@@ -4,7 +4,7 @@ import akka.actor.{ ActorSystem, Props }
 import akka.stream.impl.{ StreamSupervisor, ActorMaterializerImpl }
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.AkkaSpec
-import akka.testkit.{ TestActor, ImplicitSender, TestProbe }
+import akka.testkit.{ TestActor, ImplicitSender }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._

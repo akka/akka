@@ -7,7 +7,6 @@ import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 import akka.stream._
 import akka.stream.testkit._
-import akka.util.ByteString
 import org.scalactic.ConversionCheckedTripleEquals
 
 object GraphOpsIntegrationSpec {
@@ -90,7 +89,6 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
     }
 
     "support wikipedia Topological_sorting 2" in {
-      import Attributes.name
       // see https://en.wikipedia.org/wiki/Topological_sorting#mediaviewer/File:Directed_acyclic_graph.png
       val seqSink = Sink.head[Seq[Int]]
 

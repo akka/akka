@@ -12,7 +12,6 @@ import akka.testkit.TestEvent._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.pattern.ask
-import scala.util.Try
 
 object ResizerSpec {
 

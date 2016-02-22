@@ -8,7 +8,7 @@ import java.io.File
 import akka.actor._
 import akka.persistence.EndToEndEventAdapterSpec.NewA
 import akka.persistence.journal.{ EventSeq, EventAdapter }
-import akka.testkit.{ ImplicitSender, WatchedByCoroner, AkkaSpec, TestProbe, EventFilter }
+import akka.testkit.{ TestProbe, EventFilter }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.apache.commons.io.FileUtils
 import org.scalatest.{ WordSpecLike, Matchers, BeforeAndAfterAll }

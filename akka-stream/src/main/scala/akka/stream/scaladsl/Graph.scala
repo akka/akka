@@ -8,7 +8,7 @@ import akka.stream._
 import akka.stream.impl._
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
-import akka.stream.impl.Stages.{ DefaultAttributes, StageModule, SymbolicStage }
+import akka.stream.impl.Stages.{ DefaultAttributes, StageModule}
 import akka.stream.impl.StreamLayout._
 import akka.stream.scaladsl.Partition.PartitionOutOfBoundsException
 import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }

@@ -3,7 +3,6 @@
  */
 package akka.testkit.metrics
 
-import com.codahale.metrics
 import com.codahale.metrics._
 import java.util
 import com.codahale.metrics.jvm

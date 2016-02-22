@@ -4,9 +4,7 @@
 package akka.remote.testkit
 
 import language.implicitConversions
-import language.postfixOps
 import java.net.{ InetAddress, InetSocketAddress }
-import java.util.concurrent.TimeoutException
 import com.typesafe.config.{ ConfigObject, ConfigFactory, Config }
 import scala.concurrent.{ Await, Awaitable }
 import scala.util.control.NonFatal
@@ -14,7 +12,6 @@ import scala.collection.immutable
 import akka.actor._
 import akka.util.Timeout
 import akka.remote.testconductor.{ TestConductorExt, TestConductor, RoleName }
-import akka.remote.RemoteActorRefProvider
 import akka.testkit._
 import akka.testkit.TestEvent._
 import scala.concurrent.duration._

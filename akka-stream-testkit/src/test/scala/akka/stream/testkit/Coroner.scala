@@ -7,8 +7,6 @@ import java.io.PrintStream
 import java.lang.management.{ ManagementFactory, ThreadInfo }
 import java.util.Date
 import java.util.concurrent.{ TimeoutException, CountDownLatch }
-import org.scalatest.{ BeforeAndAfterAll, Suite }
-import scala.annotation.tailrec
 import scala.concurrent.{ Promise, Awaitable, CanAwait, Await }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal

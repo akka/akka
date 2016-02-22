@@ -5,9 +5,7 @@
 package akka.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model._
-import MediaTypes._
 import headers._
-import StatusCodes._
 
 import akka.http.scaladsl.server._
 

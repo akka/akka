@@ -6,7 +6,7 @@ package akka.remote
 
 import akka.AkkaException
 import akka.actor._
-import akka.event.{ Logging, LoggingAdapter }
+import akka.event.{ LoggingAdapter }
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace

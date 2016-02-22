@@ -5,7 +5,6 @@
 package akka.remote
 
 import akka.testkit.AkkaSpec
-import scala.collection.immutable.TreeMap
 import scala.concurrent.duration._
 import akka.remote.FailureDetector.Clock
 

@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 import akka.actor.Status
 import akka.pattern.pipe
 import akka.stream.Attributes.inputBuffer
-import akka.stream.{ OverflowStrategy, ActorMaterializer }
+import akka.stream.{ ActorMaterializer }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.{ AkkaSpec, _ }
 import org.scalatest.concurrent.ScalaFutures

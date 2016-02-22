@@ -4,7 +4,6 @@
 package akka.stream.tck
 
 import akka.NotUsed
-import akka.stream.impl.Stages
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.scaladsl.Flow

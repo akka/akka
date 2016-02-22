@@ -7,10 +7,8 @@ import akka.NotUsed
 import akka.event.LoggingAdapter
 import akka.japi.function
 import akka.stream._
-import akka.stream.impl.Stages.StageModule
 import akka.stream.impl.ConstantFun
 import akka.stream.stage.Stage
-import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.duration.FiniteDuration

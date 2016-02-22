@@ -3,9 +3,7 @@
  */
 package akka.stream
 
-import java.{ util ⇒ ju }
 import scala.collection.immutable
-import scala.collection.JavaConverters._
 import akka.stream.impl.StreamLayout._
 import akka.stream.impl.fusing.{ Fusing ⇒ Impl }
 import scala.annotation.unchecked.uncheckedVariance

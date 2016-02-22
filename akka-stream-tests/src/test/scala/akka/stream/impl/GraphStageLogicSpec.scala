@@ -12,7 +12,6 @@ import akka.stream.stage._
 import akka.stream.testkit.Utils.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.impl.fusing._
-import akka.stream.impl.fusing.GraphInterpreter._
 import org.scalactic.ConversionCheckedTripleEquals
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.duration.Duration

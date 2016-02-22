@@ -17,7 +17,6 @@
 package akka.shapeless
 package ops
 
-import scala.annotation.tailrec
 
 object hlist {
   /**

@@ -7,7 +7,6 @@ package akka.actor.dungeon
 import scala.collection.immutable
 
 import akka.actor.{ InvalidActorNameException, ChildStats, ChildRestartStats, ChildNameReserved, ActorRef }
-import akka.dispatch.sysmsg.{ EarliestFirstSystemMessageList, SystemMessageList, LatestFirstSystemMessageList, SystemMessage }
 import akka.util.Collections.{ EmptyImmutableSeq, PartialImmutableValuesIterable }
 
 /**

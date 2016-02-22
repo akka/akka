@@ -9,8 +9,6 @@ import java.io._
 import akka.actor._
 import akka.serialization._
 import akka.util.ByteString.UTF_8
-import scala.util.Success
-import scala.util.Failure
 
 /**
  * Wrapper for snapshot `data`. Snapshot `data` are the actual snapshot objects captured by

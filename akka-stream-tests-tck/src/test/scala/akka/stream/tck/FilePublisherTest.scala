@@ -8,7 +8,7 @@ import java.io.{ File, FileWriter }
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.stream.scaladsl.FileIO
-import akka.stream.scaladsl.{ Source, Sink }
+import akka.stream.scaladsl.{ Sink }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.testkit.{ EventFilter, TestEvent }

@@ -5,7 +5,7 @@ package akka.stream.javadsl
 
 import java.io.{ InputStream, OutputStream }
 import akka.japi.function
-import akka.stream.{ scaladsl, javadsl, ActorAttributes }
+import akka.stream.{ scaladsl, javadsl }
 import akka.stream.IOResult
 import akka.util.ByteString
 import scala.concurrent.duration.FiniteDuration

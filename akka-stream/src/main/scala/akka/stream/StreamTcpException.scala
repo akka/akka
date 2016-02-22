@@ -4,7 +4,6 @@
 package akka.stream
 
 import scala.util.control.NoStackTrace
-import java.net.InetSocketAddress
 
 class StreamTcpException(msg: String) extends RuntimeException(msg) with NoStackTrace
 

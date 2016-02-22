@@ -11,7 +11,6 @@ import org.reactivestreams._
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.Promise
-import scala.language.postfixOps
 
 /**
  * INTERNAL API

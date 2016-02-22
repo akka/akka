@@ -4,7 +4,7 @@
 package akka.testkit
 
 import language.postfixOps
-import scala.annotation.{ varargs, tailrec }
+import scala.annotation.{ tailrec }
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -12,7 +12,6 @@ import scala.reflect.ClassTag
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 import akka.actor._
-import akka.actor.Actor._
 import akka.util.{ Timeout, BoxedType }
 import scala.util.control.NonFatal
 import scala.Some

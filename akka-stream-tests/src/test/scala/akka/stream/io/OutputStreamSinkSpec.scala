@@ -5,7 +5,7 @@ package akka.stream.io
 
 import java.io.OutputStream
 
-import akka.stream.scaladsl.{ Source, Sink, StreamConverters }
+import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }

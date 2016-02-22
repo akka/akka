@@ -3,12 +3,6 @@
  */
 package akka.typed
 
-import scala.concurrent.duration.FiniteDuration
-import scala.reflect.ClassTag
-import akka.actor.OneForOneStrategy
-import scala.annotation.tailrec
-import scala.collection.immutable
-import akka.util.LineNumbers
 
 /**
  * The behavior of an actor defines how it reacts to the messages that it

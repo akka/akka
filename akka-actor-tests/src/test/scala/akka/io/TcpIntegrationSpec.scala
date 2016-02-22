@@ -7,7 +7,6 @@ package akka.io
 import akka.actor.{ ActorRef, PoisonPill }
 import akka.io.Tcp._
 import akka.testkit.{ TestProbe, AkkaSpec }
-import akka.testkit.SocketUtil._
 import akka.util.ByteString
 import java.io.IOException
 import java.net.{ ServerSocket, InetSocketAddress }

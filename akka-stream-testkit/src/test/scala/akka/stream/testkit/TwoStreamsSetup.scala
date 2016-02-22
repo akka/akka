@@ -3,9 +3,6 @@ package akka.stream.testkit
 import akka.stream._
 import akka.stream.scaladsl._
 import org.reactivestreams.Publisher
-import scala.collection.immutable
-import scala.util.control.NoStackTrace
-import akka.stream.testkit.Utils._
 
 abstract class TwoStreamsSetup extends BaseTwoStreamsSetup {
 

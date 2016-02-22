@@ -20,7 +20,6 @@ class MultipartSpec extends WordSpec with Matchers with Inside with BeforeAndAft
   akka.event-handlers = ["akka.testkit.TestEventListener"]
   akka.loglevel = WARNING""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-  import system.dispatcher
   implicit val materializer = ActorMaterializer()
   override def afterAll() = system.terminate()
 
