@@ -4,7 +4,7 @@
 
 package docs.http.scaladsl
 
-import akka.actor.{ ActorRef, ActorSystem }
+import akka.actor.{ Props, ActorRef, ActorSystem }
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
@@ -13,6 +13,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Sink }
 import akka.testkit.TestActors
 import org.scalatest.{ Matchers, WordSpec }
+import scala.io.StdIn
 import scala.language.postfixOps
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -31,7 +32,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-    implicit val ec = system.dispatcher
+    implicit val executionContext = system.dispatcher
 
     val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
       Http().bind(interface = "localhost", port = 8080)
@@ -49,7 +50,8 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-    implicit val ec = system.dispatcher
+    // needed for the future onFailure in the end
+    implicit val executionContext = system.dispatcher
 
     val handler = get {
       complete("Hello world!")
@@ -60,7 +62,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
     val bindingFuture: Future[ServerBinding] =
       Http().bindAndHandle(handler, host, port)
 
-    bindingFuture onFailure {
+    bindingFuture.onFailure {
       case ex: Exception =>
         log.error(ex, "Failed to bind to {}:{}!", host, port)
     }
@@ -74,7 +76,8 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
   "binding-failure-handling" in compileOnlySpec {
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-    implicit val ec = system.dispatcher
+    // needed for the future onFailure in the end
+    implicit val executionContext = system.dispatcher
 
     // let's say the OS won't allow us to bind to 80.
     val (host, port) = ("localhost", 80)
@@ -84,7 +87,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
       .to(handleConnections) // Sink[Http.IncomingConnection, _]
       .run()
 
-    bindingFuture onFailure {
+    bindingFuture.onFailure {
       case ex: Exception =>
         log.error(ex, "Failed to bind to {}:{}!", host, port)
     }
@@ -97,7 +100,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
   "incoming-connections-source-failure-handling" in compileOnlySpec {
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-    implicit val ec = system.dispatcher
+    implicit val executionContext = system.dispatcher
 
     import Http._
     val (host, port) = ("localhost", 8080)
@@ -119,7 +122,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
   "connection-stream-failure-handling" in compileOnlySpec {
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-    implicit val ec = system.dispatcher
+    implicit val executionContext = system.dispatcher
 
     val (host, port) = ("localhost", 8080)
     val serverSource = Http().bind(host, port)
@@ -153,6 +156,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
+    implicit val executionContext = system.dispatcher
 
     val serverSource = Http().bind(interface = "localhost", port = 8080)
 
@@ -186,87 +190,110 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
     import akka.http.scaladsl.model.HttpMethods._
     import akka.http.scaladsl.model._
     import akka.stream.ActorMaterializer
+    import scala.io.StdIn
 
-    implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
+    object WebServer {
 
-    val requestHandler: HttpRequest => HttpResponse = {
-      case HttpRequest(GET, Uri.Path("/"), _, _, _) =>
-        HttpResponse(entity = HttpEntity(ContentTypes.`text/html(UTF-8)`,
-          "<html><body>Hello world!</body></html>"))
+      def main(args: Array[String]) {
+        implicit val system = ActorSystem()
+        implicit val materializer = ActorMaterializer()
+        // needed for the future map/flatmap in the end
+        implicit val executionContext = system.dispatcher
 
-      case HttpRequest(GET, Uri.Path("/ping"), _, _, _) =>
-        HttpResponse(entity = "PONG!")
+        val requestHandler: HttpRequest => HttpResponse = {
+          case HttpRequest(GET, Uri.Path("/"), _, _, _) =>
+            HttpResponse(entity = HttpEntity(ContentTypes.`text/html(UTF-8)`,
+              "<html><body>Hello world!</body></html>"))
 
-      case HttpRequest(GET, Uri.Path("/crash"), _, _, _) =>
-        sys.error("BOOM!")
+          case HttpRequest(GET, Uri.Path("/ping"), _, _, _) =>
+            HttpResponse(entity = "PONG!")
 
-      case _: HttpRequest =>
-        HttpResponse(404, entity = "Unknown resource!")
+          case HttpRequest(GET, Uri.Path("/crash"), _, _, _) =>
+            sys.error("BOOM!")
+
+          case _: HttpRequest =>
+            HttpResponse(404, entity = "Unknown resource!")
+        }
+
+        val bindingFuture = Http().bindAndHandleSync(requestHandler, "localhost", 8080)
+        println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
+        StdIn.readLine() // let it run until user presses return
+        bindingFuture
+          .flatMap(_.unbind()) // trigger unbinding from the port
+          .onComplete(_ ⇒ system.terminate()) // and shutdown when done
+
+      }
     }
-
-    Http().bindAndHandleSync(requestHandler, "localhost", 8080)
   }
 
   // format: OFF
 
   "high-level-server-example" in compileOnlySpec {
     import akka.http.scaladsl.Http
-    import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
     import akka.http.scaladsl.server.Directives._
     import akka.stream.ActorMaterializer
+    import scala.io.StdIn
 
-    implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
+    object WebServer {
+      def main(args: Array[String]) {
+        implicit val system = ActorSystem()
+        implicit val materializer = ActorMaterializer()
+        // needed for the future flatMap/onComplete in the end
+        implicit val executionContext = system.dispatcher
 
-    val route =
-      get {
-        pathSingleSlash {
-          complete {
-            <html>
-              <body>Hello world!</body>
-            </html>
+        val route =
+          get {
+            pathSingleSlash {
+              complete(HttpEntity(ContentTypes.`text/html(UTF-8)`,"<html><body>Hello world!</body></html>"))
+            } ~
+              path("ping") {
+                complete("PONG!")
+              } ~
+              path("crash") {
+                sys.error("BOOM!")
+              }
           }
-        } ~
-        path("ping") {
-          complete("PONG!")
-        } ~
-        path("crash") {
-          sys.error("BOOM!")
-        }
-      }
 
-    // `route` will be implicitly converted to `Flow` using `RouteResult.route2HandlerFlow`
-    Http().bindAndHandle(route, "localhost", 8080)
+        // `route` will be implicitly converted to `Flow` using `RouteResult.route2HandlerFlow`
+        val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
+        println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
+        StdIn.readLine() // let it run until user presses return
+        bindingFuture
+          .flatMap(_.unbind()) // trigger unbinding from the port
+          .onComplete(_ ⇒ system.terminate()) // and shutdown when done
+      }
+    }
   }
 
   "minimal-routing-example" in compileOnlySpec {
     import akka.http.scaladsl.Http
-    import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
     import akka.http.scaladsl.server.Directives._
     import akka.stream.ActorMaterializer
+    import scala.io.StdIn
 
-    object Main extends App {
-      implicit val system = ActorSystem("my-system")
-      implicit val materializer = ActorMaterializer()
-      implicit val ec = system.dispatcher
+    object WebServer {
+      def main(args: Array[String]) {
 
-      val route =
-        path("hello") {
-          get {
-            complete {
-              <h1>Say hello to akka-http</h1>
+        implicit val system = ActorSystem("my-system")
+        implicit val materializer = ActorMaterializer()
+        // needed for the future flatMap/onComplete in the end
+        implicit val executionContext = system.dispatcher
+
+        val route =
+          path("hello") {
+            get {
+              complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
             }
           }
-        }
 
-      val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
+        val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
 
-      println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
-      Console.readLine() // for the future transformations
-      bindingFuture
-        .flatMap(_.unbind()) // trigger unbinding from the port
-        .onComplete(_ ⇒ system.terminate()) // and shutdown when done
+        println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
+        StdIn.readLine() // let it run until user presses return
+        bindingFuture
+          .flatMap(_.unbind()) // trigger unbinding from the port
+          .onComplete(_ ⇒ system.terminate()) // and shutdown when done
+      }
     }
   }
 
@@ -380,4 +407,121 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
       }
     }
   }
+
+  "stream random numbers" in compileOnlySpec {
+    //#stream-random-numbers
+    import akka.stream.scaladsl._
+    import akka.util.ByteString
+    import akka.http.scaladsl.Http
+    import akka.http.scaladsl.model.{HttpEntity, ContentTypes}
+    import akka.http.scaladsl.server.Directives._
+    import akka.stream.ActorMaterializer
+    import scala.util.Random
+    import scala.io.StdIn
+
+    object WebServer {
+
+      def main(args: Array[String]) {
+
+        implicit val system = ActorSystem()
+        implicit val materializer = ActorMaterializer()
+        // needed for the future flatMap/onComplete in the end
+        implicit val executionContext = system.dispatcher
+
+        // streams are re-usable so we can define it here
+        // and use it for every request
+        val numbers = Source.fromIterator(() =>
+          Iterator.continually(Random.nextInt()))
+
+        val route =
+          path("random") {
+            get {
+              complete(
+                HttpEntity(
+                  ContentTypes.`text/plain(UTF-8)`,
+                  // transform each number to a chunk of bytes
+                  numbers.map(n => ByteString(s"$n\n"))
+                )
+              )
+            }
+          }
+
+        val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
+        println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
+        StdIn.readLine() // let it run until user presses return
+        bindingFuture
+          .flatMap(_.unbind()) // trigger unbinding from the port
+          .onComplete(_ ⇒ system.terminate()) // and shutdown when done
+      }
+    }
+    //#stream-random-numbers
+  }
+
+
+  object Auction {
+    def props: Props = ???
+  }
+
+  "interact with an actor" in compileOnlySpec {
+    //#actor-interaction
+    import scala.concurrent.duration._
+    import akka.util.Timeout
+    import akka.pattern.ask
+    import akka.actor.ActorSystem
+    import akka.stream.ActorMaterializer
+    import akka.http.scaladsl.Http
+    import akka.http.scaladsl.server.Directives._
+    import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+    import spray.json.DefaultJsonProtocol._
+    import scala.io.StdIn
+
+    object WebServer {
+
+      case class Bid(userId: String, bid: Int)
+      case object GetBids
+      case class Bids(bids: List[Bid])
+
+      // these are from spray-json
+      implicit val bidFormat = jsonFormat2(Bid)
+      implicit val bidsFormat = jsonFormat1(Bids)
+
+      def main(args: Array[String]) {
+        implicit val system = ActorSystem()
+        implicit val materializer = ActorMaterializer()
+        // needed for the future flatMap/onComplete in the end
+        implicit val executionContext = system.dispatcher
+
+        val auction = system.actorOf(Auction.props, "auction")
+
+        val route =
+          path("auction") {
+            put {
+              parameter("bid".as[Int], "user") { (bid, user) =>
+                // place a bid, fire-and-forget
+                auction ! Bid(user, bid)
+                complete(StatusCodes.Accepted, "bid placed")
+              }
+            }
+            get {
+              implicit val timeout: Timeout = 5.seconds
+
+              // query the actor for the current auction state
+              val bids: Future[Bids] = (auction ? GetBids).mapTo[Bids]
+              complete(bids)
+            }
+          }
+
+        val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
+        println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
+        StdIn.readLine() // let it run until user presses return
+        bindingFuture
+          .flatMap(_.unbind()) // trigger unbinding from the port
+          .onComplete(_ ⇒ system.terminate()) // and shutdown when done
+
+      }
+    }
+    //#actor-interaction
+  }
+
+
 }

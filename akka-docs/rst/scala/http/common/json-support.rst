@@ -1,3 +1,5 @@
+.. _akka-http-spray-json:
+
 JSON Support
 ============
 
