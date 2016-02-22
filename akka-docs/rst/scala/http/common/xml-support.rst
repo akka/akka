@@ -1,3 +1,5 @@
+.. _akka-http-xml-marshalling:
+
 XML Support
 ===========
 
