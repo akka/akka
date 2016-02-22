@@ -125,7 +125,7 @@ package util {
     override val shape = FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
-      var bytes = ByteString.newBuilder
+      val bytes = ByteString.newBuilder
       private var emptyStream = false
 
       override def preStart(): Unit = scheduleOnce("ToStrictTimeoutTimer", timeout)
