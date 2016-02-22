@@ -14,7 +14,6 @@ import akka.cluster.Cluster
 import scala.collection.immutable
 import akka.cluster.MemberStatus
 import java.util.concurrent.ThreadLocalRandom
-import akka.actor.Terminated
 import akka.actor.DeadLetterSuppression
 
 /**
@@ -46,7 +45,6 @@ case object CollectionStopMessage extends CollectionControlMessage {
  * Actor providing customizable metrics collection supervision.
  */
 private[metrics] class ClusterMetricsSupervisor extends Actor with ActorLogging {
-  import ClusterMetricsExtension._
   val metrics = ClusterMetricsExtension(context.system)
   import metrics.settings._
   import context._
@@ -132,7 +130,7 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
   import Member.addressOrdering
   import context.dispatcher
   val cluster = Cluster(context.system)
-  import cluster.{ selfAddress, scheduler, settings }
+  import cluster.{ selfAddress, scheduler }
   import cluster.InfoLogger._
   val metrics = ClusterMetricsExtension(context.system)
   import metrics.settings._

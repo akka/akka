@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import akka.testkit.metrics._
 import org.scalatest.BeforeAndAfterAll
 import akka.testkit.metrics.HeapMemoryUsage
-import com.codahale.metrics.{ Timer, Histogram }
+import com.codahale.metrics.{ Histogram }
 
 object ActorCreationPerfSpec {
 

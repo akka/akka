@@ -4,7 +4,6 @@
 package akka.stream.scaladsl
 
 import akka.stream.{ FlowShape, ActorMaterializer, ActorMaterializerSettings, OverflowStrategy }
-import akka.stream.impl.fusing.GraphStages.Detacher
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl._
@@ -13,8 +12,6 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time._
 
 import scala.collection.immutable
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 class FlowJoinSpec extends AkkaSpec(ConfigFactory.parseString("akka.loglevel=INFO")) with ScalaFutures {
 

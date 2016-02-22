@@ -3,7 +3,7 @@
  */
 package akka.stream.impl
 
-import java.util.concurrent.atomic.{ AtomicInteger, AtomicReference }
+import java.util.concurrent.atomic.{ AtomicReference }
 import java.{ util ⇒ ju }
 import akka.NotUsed
 import akka.stream.impl.MaterializerSession.MaterializationPanic

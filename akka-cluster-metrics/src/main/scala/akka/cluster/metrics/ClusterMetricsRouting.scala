@@ -17,7 +17,6 @@ import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.Props
 import akka.actor.SupervisorStrategy
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.dispatch.Dispatchers
 import akka.japi.Util.immutableSeq
 import akka.routing._

@@ -3,7 +3,7 @@ package akka.actor
 import language.postfixOps
 
 import akka.testkit.AkkaSpec
-import akka.dispatch.{ ThreadPoolConfig, ThreadPoolConfigBuilder, UnboundedMailbox }
+import akka.dispatch.{ ThreadPoolConfig }
 import scala.concurrent.duration._
 
 object ConsistencySpec {

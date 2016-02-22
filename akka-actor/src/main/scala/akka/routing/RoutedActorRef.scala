@@ -3,7 +3,6 @@
  */
 package akka.routing
 
-import scala.concurrent.duration._
 import akka.ConfigurationException
 import akka.actor.ActorPath
 import akka.actor.ActorSystemImpl

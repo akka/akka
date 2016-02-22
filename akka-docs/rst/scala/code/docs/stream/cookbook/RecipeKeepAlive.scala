@@ -3,7 +3,6 @@ package docs.stream.cookbook
 import akka.NotUsed
 import akka.stream.ClosedShape
 import akka.stream.scaladsl._
-import akka.stream.testkit._
 import akka.util.ByteString
 
 class RecipeKeepAlive extends RecipeSpec {

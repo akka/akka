@@ -4,9 +4,6 @@
 
 package akka.persistence
 
-import java.lang.{ Iterable ⇒ JIterable }
-import java.util.{ List ⇒ JList }
-
 import akka.actor.{ ActorRef, NoSerializationVerificationNeeded }
 import akka.persistence.serialization.Message
 

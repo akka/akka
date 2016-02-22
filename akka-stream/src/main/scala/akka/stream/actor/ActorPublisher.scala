@@ -111,7 +111,6 @@ object ActorPublisherMessage {
  * failure, completed or canceled.
  */
 trait ActorPublisher[T] extends Actor {
-  import ActorPublisher._
   import akka.stream.actor.ActorPublisherMessage._
   import ActorPublisher.Internal._
   import ActorPublisherMessage._
@@ -368,7 +367,6 @@ trait ActorPublisher[T] extends Actor {
  * INTERNAL API
  */
 private[akka] final case class ActorPublisherImpl[T](ref: ActorRef) extends Publisher[T] {
-  import ActorPublisher._
   import ActorPublisher.Internal._
 
   override def subscribe(sub: Subscriber[_ >: T]): Unit = {
@@ -381,7 +379,6 @@ private[akka] final case class ActorPublisherImpl[T](ref: ActorRef) extends Publ
  * INTERNAL API
  */
 private[akka] class ActorPublisherSubscription[T](ref: ActorRef) extends Subscription {
-  import ActorPublisher._
   import ActorPublisherMessage._
 
   override def request(n: Long): Unit = ref ! Request(n)

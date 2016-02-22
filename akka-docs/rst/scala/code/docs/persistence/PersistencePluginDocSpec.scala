@@ -5,7 +5,6 @@
 package docs.persistence
 
 import scala.collection.immutable
-import akka.actor.Actor.Receive
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import com.typesafe.config._

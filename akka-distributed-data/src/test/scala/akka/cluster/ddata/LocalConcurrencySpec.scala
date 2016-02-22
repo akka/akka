@@ -4,8 +4,6 @@
 
 package akka.cluster.ddata
 
-import scala.concurrent.duration._
-
 import akka.actor.Actor
 import akka.actor.ActorSystem
 import akka.actor.Props

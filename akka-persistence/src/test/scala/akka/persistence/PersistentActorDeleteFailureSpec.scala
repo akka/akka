@@ -12,7 +12,6 @@ import akka.testkit.{ EventFilter, ImplicitSender, TestEvent }
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.language.postfixOps
 import scala.util.control.NoStackTrace
 
 object PersistentActorDeleteFailureSpec {

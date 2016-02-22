@@ -5,10 +5,9 @@
 package akka.remote.serialization
 
 import akka.serialization.{ BaseSerializer, SerializationExtension }
-import java.io.Serializable
 import akka.protobuf.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
-import akka.actor.{ Actor, ActorRef, Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope }
+import akka.actor.{ Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope }
 import akka.remote.DaemonMsgCreate
 import akka.remote.WireFormats.{ DaemonMsgCreateData, DeployData, PropsData }
 import akka.routing.{ NoRouter, RouterConfig }

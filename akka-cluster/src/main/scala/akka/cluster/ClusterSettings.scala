@@ -7,7 +7,6 @@ import scala.collection.immutable
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigObject
 import scala.concurrent.duration.Duration
-import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.Address
 import akka.actor.AddressFromURIString
 import akka.dispatch.Dispatchers

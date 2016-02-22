@@ -4,7 +4,7 @@
 package akka.stream.impl
 
 import akka.actor._
-import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings, InPort, Shape }
+import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings }
 import akka.stream.actor.{ ActorSubscriberMessage, ActorSubscriber }
 import org.reactivestreams.{ Subscription, Subscriber }
 

@@ -9,7 +9,6 @@ import akka.NotUsed
 import scala.concurrent.duration._
 import scala.util.Random
 import org.scalatest.{ Matchers, FreeSpec }
-import akka.stream.FlowShape
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.util.ByteString

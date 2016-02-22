@@ -4,7 +4,6 @@
 package akka.cluster
 
 import language.existentials
-import language.postfixOps
 import scala.collection.immutable
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom

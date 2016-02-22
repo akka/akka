@@ -4,7 +4,7 @@
 package akka.stream.impl
 
 import scala.util.control.NonFatal
-import akka.actor.{ Actor, ActorRefFactory }
+import akka.actor.{ Actor }
 
 /**
  * INTERNAL API

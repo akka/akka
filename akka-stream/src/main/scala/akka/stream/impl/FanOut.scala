@@ -3,7 +3,7 @@
  */
 package akka.stream.impl
 
-import akka.stream.{ AbruptTerminationException, Shape, ActorMaterializerSettings }
+import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings }
 
 import scala.collection.immutable
 import akka.actor._

@@ -4,18 +4,11 @@
 package akka.typed
 
 import scala.concurrent.duration.Duration
-import scala.collection.immutable
-import scala.collection.immutable.TreeSet
 import scala.collection.immutable.TreeMap
 import akka.util.Helpers
 import akka.{ actor ⇒ untyped }
-import scala.reflect.ClassTag
-import scala.reflect.classTag
-import java.util.concurrent.ConcurrentLinkedQueue
-import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContextExecutor
-import akka.typed.Behavior.stoppedBehavior
 
 /**
  * An Actor is given by the combination of a [[Behavior]] and a context in

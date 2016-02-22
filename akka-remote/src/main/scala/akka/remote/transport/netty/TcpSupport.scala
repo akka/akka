@@ -12,7 +12,6 @@ import java.net.InetSocketAddress
 import org.jboss.netty.buffer.{ ChannelBuffers, ChannelBuffer }
 import org.jboss.netty.channel._
 import scala.concurrent.{ Future, Promise }
-import scala.util.{ Success, Failure }
 
 /**
  * INTERNAL API

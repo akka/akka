@@ -4,12 +4,7 @@
 package akka.typed
 
 import ScalaDSL._
-import Ops._
-import AskPattern._
-import StepWise._
 import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.concurrent.Future
 import com.typesafe.config.ConfigFactory
 
 class PerformanceSpec extends TypedSpec(
@@ -28,7 +23,6 @@ class PerformanceSpec extends TypedSpec(
       def behavior(pairs: Int, pings: Int, count: Int, executor: String) =
         StepWise[Pong] { (ctx, startWith) ⇒
           startWith {
-            import ctx.executionContext
 
             val pinger = Props(SelfAware[Ping](self ⇒ Static { msg ⇒
               if (msg.x == 0) {

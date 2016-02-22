@@ -4,12 +4,11 @@ package akka.serialization
  * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
  */
 
-import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream }
+import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ByteArrayInputStream }
 import java.util.concurrent.Callable
 import akka.util.ClassLoaderObjectInputStream
 import akka.actor.ExtendedActorSystem
 import scala.util.DynamicVariable
-import akka.serialization.JavaSerializer.CurrentSystem
 
 /**
  * A Serializer represents a bimap between an object and an array of bytes representing that object.

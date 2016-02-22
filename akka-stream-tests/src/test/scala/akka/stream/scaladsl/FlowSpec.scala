@@ -10,10 +10,8 @@ import akka.stream.impl._
 import akka.stream.impl.fusing.{ ActorGraphInterpreter }
 import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
 import akka.stream.stage.AbstractStage.PushPullGraphStage
-import akka.stream.stage.{ GraphStageLogic, OutHandler, InHandler, Stage }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.TestSink
 import akka.stream._
 import akka.testkit.TestEvent.{ Mute, UnMute }
 import akka.testkit.{ EventFilter, TestDuration }
@@ -47,8 +45,6 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
   class BrokenActorInterpreter(_shell: GraphInterpreterShell, brokenMessage: Any)
     extends ActorGraphInterpreter(_shell) {
-
-    import akka.stream.actor.ActorSubscriberMessage._
 
     override protected[akka] def aroundReceive(receive: Receive, msg: Any) = {
       msg match {

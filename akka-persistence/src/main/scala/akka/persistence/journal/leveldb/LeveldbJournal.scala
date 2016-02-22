@@ -3,8 +3,6 @@
  */
 package akka.persistence.journal.leveldb
 
-import scala.concurrent.duration._
-import scala.language.postfixOps
 import akka.actor._
 import akka.persistence.Persistence
 import akka.persistence.journal._

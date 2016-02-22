@@ -4,8 +4,6 @@
 
 package akka.cluster
 
-import language.postfixOps
-import language.reflectiveCalls
 import scala.concurrent.duration._
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
@@ -14,7 +12,6 @@ import akka.actor.Address
 import akka.cluster.InternalClusterAction._
 import java.lang.management.ManagementFactory
 import javax.management.ObjectName
-import akka.actor.ActorRef
 import akka.testkit.TestProbe
 import akka.actor.ActorSystem
 import akka.actor.Props
@@ -39,7 +36,6 @@ object ClusterSpec {
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
-  import ClusterSpec._
 
   val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
 

@@ -3,7 +3,6 @@
  */
 package akka.stream.tck
 
-import scala.collection.immutable
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import org.reactivestreams._
