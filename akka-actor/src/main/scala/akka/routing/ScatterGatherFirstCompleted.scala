@@ -4,8 +4,6 @@
 package akka.routing
 
 import scala.collection.immutable
-import akka.actor.ActorContext
-import akka.actor.Props
 import akka.dispatch.Dispatchers
 import com.typesafe.config.Config
 import akka.actor.SupervisorStrategy
@@ -19,7 +17,6 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
 import akka.util.Timeout
 import akka.util.Helpers.ConfigOps
-import java.util.concurrent.TimeUnit
 import akka.actor.ActorSystem
 import scala.concurrent.Future
 import java.util.concurrent.TimeoutException

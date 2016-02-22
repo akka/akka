@@ -26,7 +26,6 @@ object EventsByPersistenceIdSpec {
 
 class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.config)
   with Cleanup with ImplicitSender {
-  import EventsByPersistenceIdSpec._
 
   implicit val mat = ActorMaterializer()(system)
 

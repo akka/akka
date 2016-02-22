@@ -5,7 +5,6 @@
 package akka.http.scaladsl.model
 
 import java.util.{ OptionalLong, Optional }
-import java.{ lang ⇒ jl }
 import akka.http.impl.util.{ Rendering, ValueRenderable }
 import akka.http.javadsl.{ model ⇒ jm }
 import scala.compat.java8.OptionConverters._

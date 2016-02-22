@@ -6,7 +6,6 @@ package akka.stream
 import java.util.concurrent.CompletionStage
 import scala.concurrent.Future
 import scala.compat.java8.FutureConverters
-import akka.japi.function
 
 /**
  * Scala API: The flow DSL allows the formulation of stream transformations based on some

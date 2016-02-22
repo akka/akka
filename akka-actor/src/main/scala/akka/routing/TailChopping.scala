@@ -11,7 +11,7 @@ import akka.dispatch.Dispatchers
 import com.typesafe.config.Config
 import akka.japi.Util.immutableSeq
 import scala.concurrent.{ ExecutionContext, Promise }
-import akka.pattern.{ AskTimeoutException, after, ask, pipe }
+import akka.pattern.{ AskTimeoutException, ask, pipe }
 import scala.concurrent.duration._
 import akka.util.Timeout
 import akka.util.Helpers.ConfigOps

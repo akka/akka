@@ -3,11 +3,9 @@
  */
 package akka.stream.impl
 
-import scala.annotation.switch
 import scala.annotation.tailrec
 import org.reactivestreams.{ Subscriber, Subscription }
 import SubscriberManagement.ShutDown
-import ResizableMultiReaderRingBuffer.NothingToReadException
 
 /**
  * INTERNAL API

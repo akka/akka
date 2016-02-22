@@ -3,7 +3,7 @@
  */
 package akka.stream.impl
 
-import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
+import java.util.concurrent.atomic.{ AtomicBoolean }
 import java.{ util ⇒ ju }
 import akka.NotUsed
 import akka.actor._

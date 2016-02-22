@@ -3,7 +3,6 @@
  */
 package akka.stream.impl.fusing
 
-import scala.collection.immutable
 import akka.stream.testkit.AkkaSpec
 import akka.util.ByteString
 import akka.stream.stage._

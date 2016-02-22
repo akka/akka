@@ -14,7 +14,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ThreadLocalRandom
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NoStackTrace
-import scala.util.Try
 
 @SerialVersionUID(1L)
 final case class FailureInjectorException(msg: String) extends AkkaException(msg) with NoStackTrace

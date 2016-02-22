@@ -15,7 +15,6 @@ import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
 import scala.util.Try
-import scala.util.Success
 
 object SteppingInmemJournal {
 

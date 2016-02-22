@@ -3,14 +3,12 @@
  */
 package akka.testkit
 
-import language.{ postfixOps, reflectiveCalls }
-import org.scalatest.Matchers
-import org.scalatest.{ BeforeAndAfterEach, WordSpec }
+import language.{ postfixOps }
+import org.scalatest.{ BeforeAndAfterEach }
 import akka.actor._
 import akka.event.Logging.Warning
-import scala.concurrent.{ Future, Promise, Await }
+import scala.concurrent.{ Promise, Await }
 import scala.concurrent.duration._
-import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.dispatch.Dispatcher
 

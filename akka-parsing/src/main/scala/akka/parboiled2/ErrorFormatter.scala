@@ -19,8 +19,6 @@ package akka.parboiled2
 import scala.annotation.tailrec
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
 
-import scala.collection.immutable.VectorBuilder
-
 /**
  * Abstraction for error formatting logic.
  * Instantiate with a custom configuration or override with custom logic.

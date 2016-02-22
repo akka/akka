@@ -4,13 +4,13 @@
 
 package akka.dispatch
 
-import akka.actor.{ ActorCell, ActorRef }
+import akka.actor.{ ActorCell }
 import akka.dispatch.sysmsg._
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import akka.util.Helpers
 import java.util.{ Comparator, Iterator }
-import java.util.concurrent.{ Executor, LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
+import java.util.concurrent.{ ConcurrentSkipListSet }
 import akka.actor.ActorSystemImpl
 import scala.concurrent.duration.FiniteDuration
 

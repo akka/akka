@@ -2,9 +2,6 @@ package akka.actor.dispatch
 
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-
 import akka.actor.{ Props, ActorRefWithCell, ActorCell, Actor }
 import akka.dispatch.Mailbox
 import akka.testkit.AkkaSpec

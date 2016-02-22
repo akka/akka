@@ -13,13 +13,6 @@ import scala.concurrent.Await
 import akka.ConfigurationException
 import com.typesafe.config.ConfigFactory
 import akka.pattern.{ ask, pipe }
-import java.util.concurrent.ConcurrentHashMap
-import com.typesafe.config.Config
-import akka.dispatch.Dispatchers
-import akka.util.Collections.EmptyImmutableSeq
-import akka.util.Timeout
-import java.util.concurrent.atomic.AtomicInteger
-import akka.routing._
 
 object RoutingSpec {
 

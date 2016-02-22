@@ -4,15 +4,7 @@
 
 package akka.actor.dsl
 
-import scala.concurrent.Await
 import akka.actor._
-import scala.collection.immutable.TreeSet
-import scala.concurrent.duration._
-import scala.collection.mutable.Queue
-import akka.util.Timeout
-import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicInteger
-import akka.pattern.ask
 import scala.reflect.ClassTag
 
 trait Creators { this: ActorDSL.type ⇒

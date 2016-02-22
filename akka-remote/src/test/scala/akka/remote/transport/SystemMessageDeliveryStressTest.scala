@@ -9,12 +9,11 @@ import akka.testkit.DefaultTimeout
 import akka.testkit.ImplicitSender
 import akka.testkit.{ TimingTest, DefaultTimeout, ImplicitSender, AkkaSpec }
 import com.typesafe.config.{ Config, ConfigFactory }
-import AkkaProtocolStressTest._
 import akka.actor._
 import scala.concurrent.duration._
 import akka.testkit._
 import akka.remote.{ QuarantinedEvent, EndpointException, RARP }
-import akka.remote.transport.FailureInjectorTransportAdapter.{ One, All, Drop }
+import akka.remote.transport.FailureInjectorTransportAdapter.{ One, Drop }
 import scala.concurrent.Await
 import akka.actor.ActorRef
 import akka.actor.Actor
@@ -27,9 +26,7 @@ import akka.remote.transport.FailureInjectorTransportAdapter.One
 import akka.remote.transport.FailureInjectorTransportAdapter.Drop
 import akka.testkit.TestEvent
 import akka.testkit.EventFilter
-import akka.event.Logging
 import akka.dispatch.sysmsg.{ Failed, SystemMessage }
-import akka.pattern.pipe
 
 object SystemMessageDeliveryStressTest {
   val msgCount = 5000

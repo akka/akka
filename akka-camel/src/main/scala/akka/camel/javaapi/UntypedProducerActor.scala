@@ -6,7 +6,7 @@ package akka.camel.javaapi
 
 import akka.actor.UntypedActor
 import akka.camel._
-import org.apache.camel.{ CamelContext, ProducerTemplate }
+import org.apache.camel.{ ProducerTemplate }
 import org.apache.camel.impl.DefaultCamelContext
 
 /**

@@ -9,7 +9,6 @@ import akka.http.impl.engine.ws.WSTestUtils._
 import akka.util.ByteString
 import org.scalatest.Matchers
 
-import scala.annotation.tailrec
 import scala.util.Random
 
 trait WSTestSetupBase extends Matchers {

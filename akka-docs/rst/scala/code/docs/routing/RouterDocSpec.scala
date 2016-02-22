@@ -4,7 +4,6 @@
 package docs.routing
 
 import scala.concurrent.duration._
-import scala.collection.JavaConverters._
 import akka.testkit._
 import akka.actor.{ ActorRef, Props, Actor }
 import akka.actor.Terminated

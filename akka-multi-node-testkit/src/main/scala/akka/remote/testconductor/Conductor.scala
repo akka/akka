@@ -4,11 +4,10 @@
 package akka.remote.testconductor
 
 import language.postfixOps
-import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props, NoSerializationVerificationNeeded }
+import akka.actor.{ Actor, ActorRef, LoggingFSM, Props, NoSerializationVerificationNeeded }
 import RemoteConnection.getAddrString
 import TestConductorProtocol._
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent }
-import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import akka.pattern.ask
 import scala.concurrent.Await
@@ -17,9 +16,8 @@ import scala.util.control.NoStackTrace
 import akka.event.LoggingReceive
 import java.net.InetSocketAddress
 import scala.concurrent.Future
-import akka.actor.{ OneForOneStrategy, SupervisorStrategy, Status, Address, PoisonPill }
+import akka.actor.{ OneForOneStrategy, SupervisorStrategy, Status, Address }
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.util.{ Timeout }
 import scala.reflect.classTag
 import akka.ConfigurationException
@@ -302,7 +300,6 @@ private[akka] object ServerFSM {
  */
 private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) extends Actor with LoggingFSM[ServerFSM.State, Option[ActorRef]] {
   import ServerFSM._
-  import akka.actor.FSM._
   import Controller._
 
   var roleName: RoleName = null
@@ -525,9 +522,7 @@ private[akka] object BarrierCoordinator {
  */
 private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State, BarrierCoordinator.Data] {
   import BarrierCoordinator._
-  import akka.actor.FSM._
   import Controller._
-  import akka.util.{ Timeout ⇒ auTimeout }
 
   // this shall be set to true if all subsequent barriers shall fail
   var failed = false

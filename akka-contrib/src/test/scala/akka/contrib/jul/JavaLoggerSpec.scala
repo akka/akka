@@ -4,10 +4,9 @@
 package akka.contrib.jul
 
 import com.typesafe.config.ConfigFactory
-import akka.actor.{ ActorSystem, Actor, ActorLogging, Props }
+import akka.actor.{ Actor, ActorLogging, Props }
 import akka.testkit.AkkaSpec
 import java.util.logging
-import java.io.ByteArrayInputStream
 
 object JavaLoggerSpec {
 

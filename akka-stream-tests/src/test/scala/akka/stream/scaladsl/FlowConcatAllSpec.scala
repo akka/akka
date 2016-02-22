@@ -6,7 +6,6 @@ package akka.stream.scaladsl
 import akka.NotUsed
 import akka.stream.impl.ConstantFun
 
-import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings

@@ -5,9 +5,7 @@
 package akka.cluster.metrics.protobuf
 
 import akka.actor.{ ExtendedActorSystem, Address }
-import collection.immutable.SortedSet
 import akka.testkit.AkkaSpec
-import java.math.BigInteger
 import akka.cluster.MemberStatus
 import akka.cluster.metrics.MetricsGossip
 import akka.cluster.metrics.NodeMetrics

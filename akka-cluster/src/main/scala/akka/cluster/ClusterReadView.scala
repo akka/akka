@@ -8,7 +8,7 @@ package akka.cluster
 
 import java.io.Closeable
 import scala.collection.immutable
-import akka.actor.{ Actor, ActorRef, ActorSystemImpl, Address, Props }
+import akka.actor.{ Actor, ActorRef, Address, Props }
 import akka.cluster.ClusterEvent._
 import akka.actor.PoisonPill
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }

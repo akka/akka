@@ -3,7 +3,6 @@
  */
 package akka.camel
 
-import language.postfixOps
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import scala.concurrent.{ Promise, Await, Future }

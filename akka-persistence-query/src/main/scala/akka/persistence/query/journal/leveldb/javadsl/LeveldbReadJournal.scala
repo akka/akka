@@ -5,8 +5,6 @@ package akka.persistence.query.journal.leveldb.javadsl
 
 import akka.NotUsed
 
-import scala.concurrent.duration._
-
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.javadsl._
 import akka.stream.javadsl.Source

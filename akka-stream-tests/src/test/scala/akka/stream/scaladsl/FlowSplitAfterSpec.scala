@@ -17,7 +17,6 @@ import akka.stream.StreamSubscriptionTimeoutSettings
 import akka.stream.StreamSubscriptionTimeoutTerminationMode
 
 object FlowSplitAfterSpec {
-  import language.higherKinds
 
   implicit class Lift[M](val f: SubFlow[Int, M, Source[Int, M]#Repr, RunnableGraph[M]]) extends AnyVal {
     def lift = f.prefixAndTail(0).map(_._2).concatSubstreams

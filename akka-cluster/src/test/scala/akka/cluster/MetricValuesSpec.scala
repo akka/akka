@@ -6,7 +6,6 @@ package akka.cluster
 
 // TODO remove metrics
 
-import scala.util.Try
 import akka.actor.Address
 import akka.testkit.AkkaSpec
 import akka.cluster.StandardMetrics._

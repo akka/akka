@@ -3,7 +3,6 @@
  */
 package akka.persistence.journal
 
-import scala.concurrent.duration._
 import akka.actor._
 import akka.testkit._
 import akka.persistence.JournalProtocol

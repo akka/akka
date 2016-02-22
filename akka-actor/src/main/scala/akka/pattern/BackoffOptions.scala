@@ -5,7 +5,6 @@ package akka.pattern
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import akka.actor.{ Props, OneForOneStrategy, SupervisorStrategy }
-import akka.actor.SupervisorStrategy.{ Decider, JDecider }
 
 /**
  * Builds back-off options for creating a back-off supervisor.

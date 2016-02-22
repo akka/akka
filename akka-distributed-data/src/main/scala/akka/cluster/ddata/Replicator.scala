@@ -4,9 +4,7 @@
 package akka.cluster.ddata
 
 import java.security.MessageDigest
-import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.collection.immutable.Queue
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
@@ -1269,7 +1267,6 @@ private[akka] object ReadWriteAggregator {
  * INTERNAL API
  */
 private[akka] abstract class ReadWriteAggregator extends Actor {
-  import Replicator.Internal._
   import ReadWriteAggregator._
 
   def timeout: FiniteDuration

@@ -6,9 +6,6 @@ package akka.stream.tck
 import java.util.concurrent.Executors
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
-import scala.concurrent.duration._
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.testkit.TestPublisher
 import org.reactivestreams.{ Subscriber, Subscription, Processor, Publisher }
 import org.reactivestreams.tck.IdentityProcessorVerification

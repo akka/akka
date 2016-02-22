@@ -7,7 +7,6 @@ package akka.cluster.metrics
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.event.Logging
-import akka.event.LoggingAdapter
 import akka.ConfigurationException
 import akka.actor.Address
 import java.lang.management.MemoryMXBean

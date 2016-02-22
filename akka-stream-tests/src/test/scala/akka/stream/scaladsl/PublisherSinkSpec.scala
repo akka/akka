@@ -14,7 +14,6 @@ import scala.concurrent.Await
 class PublisherSinkSpec extends AkkaSpec {
 
   implicit val materializer = ActorMaterializer()
-  import materializer.executionContext
 
   "A PublisherSink" must {
 

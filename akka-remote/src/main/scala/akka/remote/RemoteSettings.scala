@@ -5,7 +5,6 @@ package akka.remote
 
 import com.typesafe.config.Config
 import scala.concurrent.duration._
-import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.util.Timeout
 import scala.collection.immutable
 import akka.util.Helpers.ConfigOps

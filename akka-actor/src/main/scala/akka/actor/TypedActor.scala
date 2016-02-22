@@ -9,7 +9,6 @@ import scala.util.control.NonFatal
 import scala.util.{ Try, Success, Failure }
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 import scala.concurrent.{ Await, Future }
 import akka.japi.{ Creator, Option ⇒ JOption }
@@ -20,7 +19,6 @@ import akka.serialization.{ JavaSerializer, SerializationExtension }
 import akka.dispatch._
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import java.util.concurrent.TimeoutException
-import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.io.ObjectStreamException
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.pattern.AskTimeoutException

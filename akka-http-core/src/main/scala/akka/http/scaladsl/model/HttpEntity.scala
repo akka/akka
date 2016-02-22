@@ -8,7 +8,7 @@ import java.util.OptionalLong
 
 import language.implicitConversions
 import java.io.File
-import java.lang.{ Iterable ⇒ JIterable, Long ⇒ JLong }
+import java.lang.{ Iterable ⇒ JIterable}
 import scala.util.control.NonFatal
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -17,7 +17,7 @@ import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream._
-import akka.{ NotUsed, japi, stream }
+import akka.{ NotUsed, stream }
 import akka.http.scaladsl.model.ContentType.{ NonBinary, Binary }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model ⇒ jm }

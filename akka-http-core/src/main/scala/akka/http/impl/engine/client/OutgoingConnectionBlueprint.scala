@@ -23,7 +23,6 @@ import akka.http.impl.util._
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.{ InHandler, OutHandler }
-import akka.stream.impl.fusing.SubSource
 
 /**
  * INTERNAL API

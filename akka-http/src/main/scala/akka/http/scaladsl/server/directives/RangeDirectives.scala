@@ -36,7 +36,6 @@ trait RangeDirectives {
    */
   def withRangeSupport: Directive0 =
     extractRequestContext.flatMap { ctx ⇒
-      import ctx.materializer
       val settings = ctx.settings
       implicit val log = ctx.log
       import settings.{ rangeCountLimit, rangeCoalescingThreshold }

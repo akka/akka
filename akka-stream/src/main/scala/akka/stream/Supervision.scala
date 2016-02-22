@@ -3,7 +3,6 @@
  */
 package akka.stream
 
-import scala.util.control.NonFatal
 import akka.japi.{ function ⇒ japi }
 
 object Supervision {

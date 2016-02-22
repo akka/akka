@@ -7,7 +7,6 @@ import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 import org.reactivestreams.{ Subscription, Subscriber, Publisher }
 import akka.stream._
-import akka.event.Logging.simpleName
 
 class StreamLayoutSpec extends AkkaSpec {
   import StreamLayout._

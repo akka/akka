@@ -3,8 +3,8 @@
  */
 package akka.persistence.journal.leveldb
 
-import akka.persistence.journal.{ JournalPerfSpec, JournalSpec }
-import akka.persistence.{ CapabilityFlag, PersistenceSpec, PluginCleanup }
+import akka.persistence.journal.{ JournalPerfSpec }
+import akka.persistence.{ PersistenceSpec, PluginCleanup }
 import org.scalatest.DoNotDiscover
 
 @DoNotDiscover // because only checking that compilation is OK with JournalPerfSpec

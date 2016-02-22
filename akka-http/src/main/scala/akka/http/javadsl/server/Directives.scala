@@ -6,8 +6,6 @@ package akka.http.javadsl.server
 
 import akka.http.javadsl.server.directives._
 import scala.collection.immutable
-import scala.annotation.varargs
-import akka.http.javadsl.model.HttpMethods
 
 abstract class AllDirectives extends WebSocketDirectives
 

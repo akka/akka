@@ -8,13 +8,12 @@ import akka.dispatch.sysmsg._
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 import akka.routing._
 import akka.event._
-import akka.util.{ Switch, Helpers }
+import akka.util.{ Helpers }
 import akka.japi.Util.immutableSeq
 import akka.util.Collections.EmptyImmutableSeq
-import scala.util.{ Success, Failure }
 import scala.util.control.NonFatal
 import java.util.concurrent.atomic.AtomicLong
-import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future, Promise }
+import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
 import scala.annotation.implicitNotFound
 import akka.ConfigurationException
 import akka.dispatch.Mailboxes

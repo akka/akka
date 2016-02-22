@@ -10,7 +10,6 @@ import akka.dispatch._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import akka.ConfigurationException
 import com.typesafe.config.Config
-import java.util.concurrent.TimeUnit
 import akka.util.Helpers.ConfigOps
 
 object ActorMailboxSpec {

@@ -12,7 +12,6 @@ import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 import akka.event.DefaultLoggingFilter
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

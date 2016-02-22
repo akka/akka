@@ -13,7 +13,6 @@ import org.openjdk.jmh.annotations.OutputTimeUnit
 import org.openjdk.jmh.annotations.{ Scope => JmhScope }
 import org.openjdk.jmh.annotations.State
 import org.openjdk.jmh.annotations.Warmup
-import akka.actor.ActorPath
 import akka.cluster.UniqueAddress
 import akka.actor.Address
 import org.openjdk.jmh.annotations.Param

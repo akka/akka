@@ -6,7 +6,6 @@ package akka.cluster.ddata
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
 import akka.util.HashCode
-import akka.japi.function.{ Function ⇒ JFunction }
 
 object ORMap {
   private val _empty: ORMap[ReplicatedData] = new ORMap(ORSet.empty, Map.empty)

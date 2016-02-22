@@ -6,7 +6,6 @@ package akka.io
 
 import java.net.InetSocketAddress
 import java.net.Socket
-import akka.ConfigurationException
 import akka.io.Inet._
 import com.typesafe.config.Config
 import scala.concurrent.duration._

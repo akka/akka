@@ -6,15 +6,11 @@ package akka.actor
 
 import java.lang.reflect.{ Modifier, ParameterizedType, TypeVariable }
 
-import akka.dispatch._
 import akka.japi.Creator
-import akka.routing._
 import akka.util.Reflect
 
 import scala.annotation.varargs
 import scala.language.existentials
-import scala.reflect.ClassTag
-import akka.japi.Util.immutableSeq
 
 /**
  *

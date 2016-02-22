@@ -3,7 +3,6 @@
  */
 package akka.stream.scaladsl
 
-import akka.actor.Status.Failure
 import akka.stream.testkit.Utils._
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
@@ -11,8 +10,6 @@ import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import akka.pattern.pipe
-
-import scala.concurrent.Await
 
 class FlowSlidingSpec extends AkkaSpec with GeneratorDrivenPropertyChecks with ScalaFutures {
   import system.dispatcher

@@ -7,7 +7,7 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.stream.{ ActorMaterializerSettings, ActorMaterializer }
+import akka.stream.{ ActorMaterializer }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._
@@ -17,7 +17,6 @@ import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.Supervision.resumingDecider
 import akka.stream.impl.ReactiveStreamsCompliance
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.ConcurrentLinkedQueue
 import scala.concurrent.Promise
 import java.util.concurrent.LinkedBlockingQueue
 import scala.annotation.tailrec

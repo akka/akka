@@ -6,7 +6,6 @@ package akka.persistence.journal.inmem
 
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.concurrent.duration._
 import scala.util.Try
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.PersistentRepr

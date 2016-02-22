@@ -6,7 +6,6 @@ package akka.http.scaladsl.coding
 
 import java.util.zip.{ CRC32, Deflater, Inflater, ZipException }
 
-import akka.http.impl.engine.ws.{ ProtocolException, FrameEvent }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.stream.Attributes

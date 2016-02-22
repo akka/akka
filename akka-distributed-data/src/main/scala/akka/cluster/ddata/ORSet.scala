@@ -4,7 +4,6 @@
 package akka.cluster.ddata
 
 import scala.annotation.tailrec
-import scala.collection.immutable.TreeMap
 
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress

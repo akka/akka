@@ -4,8 +4,6 @@
 
 package akka.cluster
 
-import language.postfixOps
-import language.reflectiveCalls
 import scala.concurrent.duration._
 import akka.actor.Address
 import akka.actor.Scheduler

@@ -3,27 +3,13 @@
  */
 package akka.typed
 
-import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicInteger
-import scala.collection.immutable.TreeSet
-import scala.collection.mutable.Queue
-import scala.concurrent.Await
-import scala.concurrent.duration.{ Deadline, Duration, DurationInt, FiniteDuration }
-import akka.{ actor ⇒ a }
-import akka.pattern.ask
-import akka.util.Helpers.ConfigOps
-import akka.util.Timeout
-import scala.concurrent.Future
-import akka.actor.MinimalActorRef
 import java.util.concurrent.ConcurrentLinkedQueue
 import akka.actor.ActorPath
 import akka.actor.RootActorPath
 import akka.actor.Address
-import scala.reflect.ClassTag
 import scala.collection.immutable
 import scala.annotation.tailrec
 import akka.actor.ActorRefProvider
-import scala.concurrent.ExecutionContext
 
 object Inbox {
 

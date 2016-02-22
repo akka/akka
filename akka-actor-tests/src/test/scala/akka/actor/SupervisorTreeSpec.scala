@@ -5,13 +5,9 @@ package akka.actor
 
 import language.postfixOps
 
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.actor.Actor._
-import akka.testkit.{ TestKit, EventFilter, filterEvents, filterException, AkkaSpec, ImplicitSender, DefaultTimeout }
-import akka.dispatch.Dispatchers
+import akka.testkit.{ EventFilter, AkkaSpec, ImplicitSender, DefaultTimeout }
 import akka.pattern.ask
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

@@ -9,10 +9,6 @@ import akka.actor.InternalActorRef
 import akka.pattern.AskTimeoutException
 import akka.pattern.PromiseActorRef
 import java.lang.IllegalArgumentException
-import scala.util.Success
-import scala.concurrent.ExecutionContext
-import scala.util.Failure
-import akka.actor.Status
 
 /**
  * The ask-pattern implements the initiator side of a request–reply protocol.

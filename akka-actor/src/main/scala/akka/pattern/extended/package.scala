@@ -4,8 +4,6 @@
 package akka
 package pattern
 
-import akka.actor._
-
 /**
  * == Extended Versions Of Akka Patterns ==
  *

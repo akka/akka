@@ -3,7 +3,7 @@
  */
 package akka.remote.security.provider
 
-import java.security.{ PrivilegedAction, AccessController, Provider, Security }
+import java.security.{ PrivilegedAction, AccessController, Provider }
 
 /**
  * A provider that for AES128CounterRNGFast, a cryptographically secure random number generator through SecureRandom

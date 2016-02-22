@@ -21,7 +21,6 @@ import akka.pattern.ask
 object MetricsBasedResizerSpec {
 
   class TestLatchingActor(implicit timeout: Timeout) extends Actor {
-    import context.system
 
     def receive = {
       case latch: TestLatch ⇒

@@ -16,7 +16,6 @@ import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.impl.fusing.GraphStages.detacher
 import akka.stream.scaladsl.Tcp.{ OutgoingConnection, ServerBinding }
 import akka.stream.scaladsl.{ BidiFlow, Flow, Tcp ⇒ StreamTcp }
-import akka.stream.stage.GraphStageLogic.StageActor
 import akka.stream.stage._
 import akka.util.ByteString
 

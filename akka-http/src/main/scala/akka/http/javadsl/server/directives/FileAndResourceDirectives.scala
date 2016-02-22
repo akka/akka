@@ -5,7 +5,7 @@
 package akka.http.javadsl.server.directives
 
 import java.io.File
-import akka.http.javadsl.model.{ MediaType, ContentType }
+import akka.http.javadsl.model.{ ContentType }
 import akka.http.javadsl.server.Route
 import akka.http.scaladsl.server
 import akka.http.impl.server.RouteStructure._

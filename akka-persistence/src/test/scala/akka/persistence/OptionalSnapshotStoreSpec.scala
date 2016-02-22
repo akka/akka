@@ -9,8 +9,6 @@ import akka.event.Logging.Warning
 import akka.testkit.{ EventFilter, ImplicitSender, TestEvent }
 import com.typesafe.config.ConfigFactory
 
-import scala.language.postfixOps
-
 object OptionalSnapshotStoreSpec {
 
   class AnyPersistentActor(name: String) extends PersistentActor {

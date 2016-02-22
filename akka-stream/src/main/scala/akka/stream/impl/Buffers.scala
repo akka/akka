@@ -5,8 +5,6 @@ package akka.stream.impl
 
 import java.{ util ⇒ ju }
 import akka.stream._
-import scala.reflect.classTag
-import scala.reflect.ClassTag
 
 /**
  * INTERNAL API

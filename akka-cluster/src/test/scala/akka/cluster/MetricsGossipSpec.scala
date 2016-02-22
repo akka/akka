@@ -6,8 +6,6 @@ package akka.cluster
 
 // TODO remove metrics
 
-import scala.concurrent.duration._
-
 import akka.testkit.{ ImplicitSender, AkkaSpec }
 import akka.actor.Address
 

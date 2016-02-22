@@ -9,7 +9,6 @@ import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.cluster.Cluster
 import akka.cluster.ddata._
-import akka.cluster.ddata.Replicator._
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
@@ -103,8 +102,6 @@ object DistributedDataDocSpec {
 
 class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
   import Replicator._
-
-  import DistributedDataDocSpec._
 
   "demonstrate update" in {
     val probe = TestProbe()

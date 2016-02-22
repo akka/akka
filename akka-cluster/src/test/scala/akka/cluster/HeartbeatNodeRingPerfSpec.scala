@@ -3,8 +3,6 @@
  */
 package akka.cluster
 
-import scala.collection.immutable.HashSet
-import scala.concurrent.duration.Deadline
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import akka.actor.Address

@@ -4,7 +4,7 @@
 package akka.stream.impl
 
 import scala.util.control.NonFatal
-import org.reactivestreams.{ Subscriber, Publisher, Subscription }
+import org.reactivestreams.{ Subscriber, Subscription }
 
 /**
  * INTERNAL API

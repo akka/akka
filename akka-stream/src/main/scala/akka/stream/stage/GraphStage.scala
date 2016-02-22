@@ -3,23 +3,18 @@
  */
 package akka.stream.stage
 
-import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicReference }
+import java.util.concurrent.atomic.{ AtomicReference }
 import akka.NotUsed
 import java.util.concurrent.locks.ReentrantLock
 import akka.actor._
-import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Unwatch, Watch }
-import akka.event.LoggingAdapter
 import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSource, SubSink }
-import akka.stream.impl.{ ReactiveStreamsCompliance, SeqActorName }
-import scala.annotation.tailrec
-import scala.collection.mutable.ArrayBuffer
+import akka.stream.impl.{ ReactiveStreamsCompliance}
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.actor.ActorSubscriberMessage
-import akka.stream.actor.ActorPublisherMessage
 
 abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
 

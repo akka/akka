@@ -3,10 +3,8 @@
  */
 package akka.stream.scaladsl
 
-import akka.actor.PoisonPill
-import akka.stream.{ Attributes, OverflowStrategy, ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.stage._
-import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.stream.ActorMaterializer

@@ -7,7 +7,6 @@ package akka.http.impl
 import akka.NotUsed
 
 import language.implicitConversions
-import language.higherKinds
 import java.nio.charset.Charset
 import com.typesafe.config.Config
 import akka.stream.scaladsl.{ Flow, Source }

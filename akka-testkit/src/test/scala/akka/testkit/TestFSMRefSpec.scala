@@ -6,8 +6,6 @@ package akka.testkit
 
 import language.postfixOps
 
-import org.scalatest.Matchers
-import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
 import scala.concurrent.duration._
 

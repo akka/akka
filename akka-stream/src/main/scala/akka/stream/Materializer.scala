@@ -6,7 +6,6 @@ package akka.stream
 import akka.actor.Cancellable
 
 import scala.concurrent.ExecutionContextExecutor
-import akka.japi
 
 import scala.concurrent.duration.FiniteDuration
 

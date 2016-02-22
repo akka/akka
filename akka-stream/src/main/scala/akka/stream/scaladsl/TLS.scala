@@ -1,6 +1,6 @@
 package akka.stream.scaladsl
 
-import javax.net.ssl.{ SSLContext, SSLParameters }
+import javax.net.ssl.{ SSLContext }
 
 import akka.stream.impl.io.TlsModule
 import akka.NotUsed

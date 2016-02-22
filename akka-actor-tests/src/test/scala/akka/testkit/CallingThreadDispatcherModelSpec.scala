@@ -9,7 +9,6 @@ import com.typesafe.config.Config
 import akka.dispatch.DispatcherPrerequisites
 import akka.dispatch.MessageDispatcher
 import akka.dispatch.MessageDispatcherConfigurator
-import akka.dispatch.UnboundedMailbox
 
 object CallingThreadDispatcherModelSpec {
   import ActorModelSpec._

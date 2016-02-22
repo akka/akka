@@ -3,13 +3,11 @@
  */
 package akka.remote
 
-import scala.concurrent.duration._
 import akka.testkit.AkkaSpec
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.event.Logging
-import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
 import akka.actor.Deploy
 import akka.event.Logging.Info
