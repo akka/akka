@@ -420,7 +420,6 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
       | oneOrMore(DIGIT) ~ push(999999999999999999L)) ~ OWS)
 
   private def digitInt(c: Char): Int = c - '0'
-  private def digitLong(c: Char): Long = (c - '0').toLong
 
   private def createDateTime(year: Int, month: Int, day: Int, hour: Int, min: Int, sec: Int, wkday: Int) = {
     val dt = DateTime(year, month, day, hour, min, sec)

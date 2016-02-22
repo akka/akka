@@ -493,7 +493,7 @@ private[http] object HttpHeaderParser {
     }
   }
 
-  @tailrec private def scanHeaderNameAndReturnIndexOfColon(input: ByteString, start: Int, limit: Int)(ix: Int = start): Int =
+  @tailrec private def scanHeaderNameAndReturnIndexOfColon(input: ByteString, start: Int, limit: Int)(ix: Int): Int =
     if (ix < limit)
       byteChar(input, ix) match {
         case ':'           ⇒ ix
