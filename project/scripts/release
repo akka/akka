@@ -20,7 +20,7 @@
 #
 # 1.2) Check that signing works
 #      From inside sbt do the following
-#        sbt> publish-local-signed
+#        sbt> publishLocalSigned
 #      It should should ask you for your pass phrase, and create .asc files for
 #      all artifacts
 #
@@ -300,13 +300,13 @@ if [ ! $dry_run ]; then
 else
   RELEASE_OPT="-Dakka.genjavadoc.enabled=true"
 fi
-try sbt $RELEASE_OPT +build-release
+try sbt $RELEASE_OPT +buildRelease
 echolog "Successfully created local release"
 
 # check binary compatibility for dry run
 if [ ! $no_mima ] && [ $dry_run ]; then
   echodry "Running migration manager report..."
-  sbt mima-report-binary-issues
+  sbt mimaReportBinaryIssues
   echodry "Finished migration manager report"
 fi
 
@@ -358,10 +358,10 @@ echolog "Pushing ${release_dir} to ${publish_path} ..."
 if [ $dry_run ]; then
   echodry "Not actually pushing to server. Command:"
   echodry "  rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads ${release_dir}/ ${publish_path}/"
-  echodry "  sbt upload-release"
+  echodry "  sbt uploadRelease"
 else
   important rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads ${release_dir}/ ${publish_path}/
-  important sbt upload-release
+  important sbt uploadRelease
 fi
 
 echolog "Updating http://doc.akka.io/docs/versions.json [from $script_dir/../../akka-docs/versions.json]..."

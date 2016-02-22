@@ -350,7 +350,7 @@ Custom materialized values
 
 Custom stages can return materialized values instead of ``Unit`` by inheriting from :class:`GraphStageWithMaterializedValue`
 instead of the simpler :class:`GraphStage`. The difference is that in this case the method
-``createLogicAndMaterializedValue(inheritedAttributes)`` needs to be overridden, overridden, and in addition to the
+``createLogicAndMaterializedValue(inheritedAttributes)`` needs to be overridden, and in addition to the
 stage logic the materialized value must be provided
 
 .. warning::
