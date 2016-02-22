@@ -12,7 +12,6 @@ import akka.http.scaladsl.common.{ StrictForm, NameUnmarshallerReceptacle, NameR
 import akka.http.scaladsl.unmarshalling._
 
 import scala.reflect.ClassTag
-import akka.http.scaladsl.server.directives.FormFieldDirectives._
 import akka.http.scaladsl.server.{ Directives, Directive1 }
 
 import scala.compat.java8.OptionConverters._

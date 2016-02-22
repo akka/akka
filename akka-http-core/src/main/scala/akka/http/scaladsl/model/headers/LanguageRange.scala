@@ -10,7 +10,6 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model.WithQValue
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.japi
 
 sealed trait LanguageRange extends jm.headers.LanguageRange with ValueRenderable with WithQValue[LanguageRange] {
   def qValue: Float

@@ -4,7 +4,6 @@
 
 package akka.http.scaladsl.model
 
-import language.implicitConversions
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
