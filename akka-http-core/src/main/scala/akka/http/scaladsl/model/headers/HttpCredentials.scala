@@ -27,9 +27,9 @@ final case class BasicHttpCredentials(username: String, password: String) extend
   }
   def render[R <: Rendering](r: R): r.type = r ~~ "Basic " ~~ cookie
 
-  def scheme: String = "Basic"
-  def token = cookie.toString
-  def params = Map.empty
+  override def scheme: String = "Basic"
+  override def token: String = String.valueOf(cookie)
+  override def params: Map[String, String] = Map.empty
 }
 
 object BasicHttpCredentials {
@@ -46,8 +46,8 @@ object BasicHttpCredentials {
 final case class OAuth2BearerToken(token: String) extends jm.headers.OAuth2BearerToken {
   def render[R <: Rendering](r: R): r.type = r ~~ "Bearer " ~~ token
 
-  def scheme: String = "Bearer"
-  def params: Map[String, String] = Map.empty
+  override def scheme: String = "Bearer"
+  override def params: Map[String, String] = Map.empty
 }
 
 final case class GenericHttpCredentials(scheme: String, token: String,
