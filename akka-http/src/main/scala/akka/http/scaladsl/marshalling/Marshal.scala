@@ -9,11 +9,13 @@ import akka.http.scaladsl.server.ContentNegotiator
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture._
 
+import scala.util.control.NoStackTrace
+
 object Marshal {
   def apply[T](value: T): Marshal[T] = new Marshal(value)
 
-  case class UnacceptableResponseContentTypeException(supported: Set[ContentNegotiator.Alternative])
-    extends RuntimeException
+  final case class UnacceptableResponseContentTypeException(supported: Set[ContentNegotiator.Alternative])
+    extends RuntimeException with NoStackTrace
 }
 
 class Marshal[A](val value: A) {

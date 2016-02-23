@@ -37,10 +37,11 @@ private[http] class RequestContextImpl(
   override def complete(trm: ToResponseMarshallable): Future[RouteResult] =
     trm(request)(executionContext)
       .fast.map(res ⇒ RouteResult.Complete(res))(executionContext)
-      .fast.recover {
+      .fast.recoverWith {
         case Marshal.UnacceptableResponseContentTypeException(supported) ⇒
-          RouteResult.Rejected(UnacceptedResponseContentTypeRejection(supported) :: Nil)
-        case RejectionError(rej) ⇒ RouteResult.Rejected(rej :: Nil)
+          attemptRecoveryFromUnacceptableResponseContentTypeException(trm, supported)
+        case RejectionError(rej) ⇒
+          Future.successful(RouteResult.Rejected(rej :: Nil))
       }(executionContext)
 
   override def reject(rejections: Rejection*): Future[RouteResult] =
@@ -88,6 +89,13 @@ private[http] class RequestContextImpl(
       }))
     case _ ⇒ this
   }
+
+  /** Attempts recovering from the special case when non-2xx response is sent, yet content negotiation was unable to find a match. */
+  private def attemptRecoveryFromUnacceptableResponseContentTypeException(trm: ToResponseMarshallable, supported: Set[ContentNegotiator.Alternative]): Future[RouteResult] =
+    trm.value match {
+      case (status: StatusCode, value) if !status.isSuccess ⇒ this.withAcceptAll.complete(trm) // retry giving up content negotiation
+      case _ ⇒ Future.successful(RouteResult.Rejected(UnacceptedResponseContentTypeRejection(supported) :: Nil))
+    }
 
   private def copy(request: HttpRequest = request,
                    unmatchedPath: Uri.Path = unmatchedPath,
