@@ -84,8 +84,8 @@ first message for a specific entity is delivered.
 
 .. includecode:: ../../../akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala#counter-usage
 
-A more comprehensive sample is available in the `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
-tutorial named `Akka Cluster Sharding with Scala! <http://www.typesafe.com/activator/template/akka-cluster-sharding-scala>`_.
+A more comprehensive sample is available in the `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
+tutorial named `Akka Cluster Sharding with Scala! <http://www.lightbend.com/activator/template/akka-cluster-sharding-scala>`_.
 
 How it works
 ------------

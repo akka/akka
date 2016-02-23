@@ -28,7 +28,7 @@
         <bundle start-level="20">wrap:mvn:org.fusesource.leveldbjni/leveldbjni-all/${leveldbjni.version}</bundle>
     </feature>
 
-    <feature name='typesafe-config' description='Typesafe config' version='${typesafe.config.version}' resolver='(obr)'>
+    <feature name='typesafe-config' description='Lightbend config' version='${typesafe.config.version}' resolver='(obr)'>
         <bundle start-level="25">mvn:com.typesafe/config/${typesafe.config.version}</bundle>
     </feature>
 

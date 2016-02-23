@@ -3,8 +3,8 @@
 Akka and the Java Memory Model
 ================================
 
-A major benefit of using the Typesafe Platform, including Scala and Akka, is that it simplifies the process of writing
-concurrent software.  This article discusses how the Typesafe Platform, and Akka in particular, approaches shared memory
+A major benefit of using the Lightbend Platform, including Scala and Akka, is that it simplifies the process of writing
+concurrent software.  This article discusses how the Lightbend Platform, and Akka in particular, approaches shared memory
 in concurrent applications.
 
 The Java Memory Model

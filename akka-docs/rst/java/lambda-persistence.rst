@@ -137,8 +137,8 @@ and the actor will unconditionally be stopped. If persistence of an event is rej
 stored, e.g. due to serialization error, ``onPersistRejected`` will be invoked (logging a warning
 by default), and the actor continues with next message.
 
-The easiest way to run this example yourself is to download `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
-and open the tutorial named `Akka Persistence Samples in Java with Lambdas <http://www.typesafe.com/activator/template/akka-sample-persistence-java-lambda>`_.
+The easiest way to run this example yourself is to download `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
+and open the tutorial named `Akka Persistence Samples in Java with Lambdas <http://www.lightbend.com/activator/template/akka-sample-persistence-java-lambda>`_.
 It contains instructions on how to run the ``PersistentActorExample``.
 
 .. note::

@@ -30,7 +30,7 @@ Process
 
 The full process is described in `The Akka Contributor Guidelines`_. In summary:
 
-* Make sure you have signed the Akka CLA, if not, `sign it online <http://www.typesafe.com/contribute/cla>`_.
+* Make sure you have signed the Akka CLA, if not, `sign it online <http://www.lightbend.com/contribute/cla>`_.
 * Pick a ticket, if there is no ticket for your work then create one first.
 * Fork `akka/akka <https://github.com/akka/akka>`_. Start working in a feature branch.
 * When you are done, create a GitHub Pull-Request towards the targeted branch.
