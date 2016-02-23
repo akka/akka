@@ -149,6 +149,23 @@ Combine several sources, using a given strategy such as merge or concat, into on
 
 **completes** when all sources has completed
 
+unfoldResource
+^^^^^
+Wrap any resource that can be opened, queried for next element (in a blocking way) and closed using three distinct functions into a source.
+
+**emits** when there is demand and read function returns value
+
+**completes** when read function returns ``None``
+
+unfoldAsyncResource
+^^^^^
+Wrap any resource that can be opened, queried for next element (in a blocking way) and closed using three distinct functions into a source.
+Functions return ``Future`` to achieve asynchronous processing
+
+**emits** when there is demand and ``Future`` from read function returns value
+
+**completes** when ``Future`` from read function returns ``None``
+
 queue
 ^^^^^
 Materialize a ``SourceQueue`` onto which elements can be pushed for emitting from the source. The queue contains

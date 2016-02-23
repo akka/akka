@@ -160,6 +160,23 @@ Emit each integer in a range, with an option to take bigger steps than 1.
 
 **completes** when the end of the range has been reached
 
+unfoldResource
+^^^^^
+Wrap any resource that can be opened, queried for next element (in a blocking way) and closed using three distinct functions into a source.
+
+**emits** when there is demand and read method returns value
+
+**completes** when read function returns ``None``
+
+unfoldAsyncResource
+^^^^^
+Wrap any resource that can be opened, queried for next element and closed using three distinct functions into a source.
+Functions return ``CompletionStage`` result to achieve asynchronous processing
+
+**emits** when there is demand and ``CompletionStage`` from read function returns value
+
+**completes** when ``CompletionStage`` from read function returns ``None``
+
 queue
 ^^^^^
 Materialize a ``SourceQueue`` onto which elements can be pushed for emitting from the source. The queue contains

@@ -3,14 +3,20 @@
  */
 package akka.stream.impl
 
+import akka.dispatch.ExecutionContexts
+import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.OverflowStrategies._
 import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
-import scala.concurrent.{ Future, Promise }
 import akka.stream.scaladsl.SourceQueueWithComplete
+import scala.annotation.tailrec
+import scala.concurrent.{ Future, Promise }
 import akka.Done
 import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters._
+import scala.util.Try
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -184,4 +190,144 @@ private[akka] final class SourceQueueAdapter[T](delegate: SourceQueueWithComplet
   def watchCompletion(): CompletionStage[Done] = delegate.watchCompletion().toJava
   def complete(): Unit = delegate.complete()
   def fail(ex: Throwable): Unit = delegate.fail(ex)
+}
+
+/**
+ * INTERNAL API
+ */
+private[stream] final class UnfoldResourceSource[T, S](create: () ⇒ S,
+                                                       readData: (S) ⇒ Option[T],
+                                                       close: (S) ⇒ Unit) extends GraphStage[SourceShape[T]] {
+  val out = Outlet[T]("UnfoldResourceSource.out")
+  override val shape = SourceShape(out)
+  override def initialAttributes: Attributes = DefaultAttributes.unfoldResourceSource
+
+  def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with OutHandler {
+    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+    var blockingStream: S = _
+    setHandler(out, this)
+
+    override def preStart(): Unit = blockingStream = create()
+
+    @tailrec
+    final override def onPull(): Unit = {
+      var resumingMode = false
+      try {
+        readData(blockingStream) match {
+          case Some(data) ⇒ push(out, data)
+          case None       ⇒ closeStage()
+        }
+      } catch {
+        case NonFatal(ex) ⇒ decider(ex) match {
+          case Supervision.Stop ⇒
+            close(blockingStream)
+            failStage(ex)
+          case Supervision.Restart ⇒
+            restartState()
+            resumingMode = true
+          case Supervision.Resume ⇒
+            resumingMode = true
+        }
+      }
+      if (resumingMode) onPull()
+    }
+
+    override def onDownstreamFinish(): Unit = closeStage()
+
+    private def restartState(): Unit = {
+      close(blockingStream)
+      blockingStream = create()
+    }
+
+    private def closeStage(): Unit =
+      try {
+        close(blockingStream)
+        completeStage()
+      } catch {
+        case NonFatal(ex) ⇒ failStage(ex)
+      }
+
+  }
+  override def toString = "UnfoldResourceSource"
+}
+
+private[stream] final class UnfoldResourceSourceAsync[T, S](create: () ⇒ Future[S],
+                                                            readData: (S) ⇒ Future[Option[T]],
+                                                            close: (S) ⇒ Future[Done]) extends GraphStage[SourceShape[T]] {
+  val out = Outlet[T]("UnfoldResourceSourceAsync.out")
+  override val shape = SourceShape(out)
+  override def initialAttributes: Attributes = DefaultAttributes.unfoldResourceSourceAsync
+
+  def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with OutHandler {
+    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+    var resource = Promise[S]()
+    implicit val context = ExecutionContexts.sameThreadExecutionContext
+
+    setHandler(out, this)
+
+    override def preStart(): Unit = createStream(false)
+
+    private def createStream(withPull: Boolean): Unit = {
+      val cb = getAsyncCallback[Try[S]] {
+        case scala.util.Success(res) ⇒
+          resource.success(res)
+          if (withPull) onPull()
+        case scala.util.Failure(t) ⇒ failStage(t)
+      }
+      try {
+        create().onComplete(cb.invoke)
+      } catch {
+        case NonFatal(ex) ⇒ failStage(ex)
+      }
+    }
+
+    private def onResourceReady(f: (S) ⇒ Unit): Unit = resource.future.onSuccess {
+      case resource ⇒ f(resource)
+    }
+
+    val errorHandler: PartialFunction[Throwable, Unit] = {
+      case NonFatal(ex) ⇒ decider(ex) match {
+        case Supervision.Stop ⇒
+          onResourceReady(close(_))
+          failStage(ex)
+        case Supervision.Restart ⇒ restartState()
+        case Supervision.Resume  ⇒ onPull()
+      }
+    }
+    val callback = getAsyncCallback[Try[Option[T]]] {
+      case scala.util.Success(data) ⇒ data match {
+        case Some(d) ⇒ push(out, d)
+        case None    ⇒ closeStage()
+      }
+      case scala.util.Failure(t) ⇒ errorHandler(t)
+    }.invoke _
+
+    final override def onPull(): Unit = onResourceReady {
+      case resource ⇒
+        try { readData(resource).onComplete(callback) } catch errorHandler
+    }
+
+    override def onDownstreamFinish(): Unit = closeStage()
+
+    private def closeAndThen(f: () ⇒ Unit): Unit = {
+      setKeepGoing(true)
+      val cb = getAsyncCallback[Try[Done]] {
+        case scala.util.Success(_) ⇒ f()
+        case scala.util.Failure(t) ⇒ failStage(t)
+      }
+
+      onResourceReady(res ⇒
+        try { close(res).onComplete(cb.invoke) } catch {
+          case NonFatal(ex) ⇒ failStage(ex)
+        })
+    }
+    private def restartState(): Unit = closeAndThen(() ⇒ {
+      resource = Promise[S]()
+      createStream(true)
+    })
+    private def closeStage(): Unit = closeAndThen(completeStage)
+
+  }
+  override def toString = "UnfoldResourceSourceAsync"
+
 }
