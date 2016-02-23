@@ -118,7 +118,7 @@ about successful state changes by publishing events.
 
 When persisting events with ``persist`` it is guaranteed that the persistent actor will not receive further commands between
 the ``persist`` call and the execution(s) of the associated event handler. This also holds for multiple ``persist``
-calls in context of a single command. Incoming messages are :ref:`stashed <internal-stash_java>` until the ``persist``
+calls in context of a single command. Incoming messages are :ref:`stashed <internal-stash-java>` until the ``persist``
 is completed.
 
 If persistence of an event fails, ``onPersistFailure`` will be invoked (logging the error by default),
@@ -192,21 +192,19 @@ and before any other received messages.
 If there is a problem with recovering the state of the actor from the journal, ``onRecoveryFailure``
 is called (logging the error by default) and the actor will be stopped.
 
-.. _internal-stash_java:
+.. _internal-stash-java:
 
 Internal stash 
 --------------
 
-The persistent actor has a private :ref:`stash <stash-scala>` for internally caching incoming messages during 
-:ref:`recovery` or the ``persist\persistAll`` method persisting events. However You can use inherited stash or create 
-one or more stashes if needed. The internal stash doesn't interfere with these stashes apart from user inherited 
-``unstashAll`` method, which prepends all messages in the inherited stash to the internal stash instead of mailbox. 
-Hence, If the message in the inherited stash need to be handled after the messages in the internal stash, you should 
-call inherited ``unstash`` method. 
+The persistent actor has a private :ref:`stash <stash-java>` for internally caching incoming messages during 
+:ref:`recovery <recovery-java>` or the ``persist\persistAll`` method persisting events. You can still use/inherit 
+from the ``Stash`` interface. The internal stash cooperates with the normal stash by hooking into ``unstashAll`` 
+method and making sure messages are unstashed properly to the internal stash to maintain ordering guarantees.
 
 You should be careful to not send more messages to a persistent actor than it can keep up with, otherwise the number 
-of stashed messages will grow. It can be wise to protect against `OutOfMemoryError` by defining a maximum stash 
-capacity in the mailbox configuration::
+of stashed messages will grow without bounds. It can be wise to protect against ``OutOfMemoryError`` by defining a 
+maximum stash capacity in the mailbox configuration::
 
     akka.actor.default-mailbox.stash-capacity=10000
 
@@ -228,11 +226,11 @@ The ``DiscardToDeadLetterStrategy`` strategy also has a pre-packaged companion c
 
 You can also query default strategy via the Akka persistence extension singleton::
 
-    Persistence.get(context().system()).defaultInternalStashOverflowStrategy()
+    Persistence.get(context().system()).defaultInternalStashOverflowStrategy();
 
 .. note::
-  The bounded mailbox should be avoid in the persistent actor, because it may be discarding the messages come from 
-  Storage backends. You can use bounded stash instead of bounded mailbox.
+  The bounded mailbox should be avoided in the persistent actor, by which the messages come from storage backends may 
+  be discarded. You can use bounded stash instead of it.
 
 
 .. _persist-async-java:
