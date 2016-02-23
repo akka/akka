@@ -32,16 +32,18 @@ object ConnectHttp {
   /** Extracts host data from given Uri. */
   def toHost(uriHost: Uri): ConnectHttp = {
     val s = uriHost.scheme.toLowerCase(Locale.ROOT)
-    if (s == "https") new ConnectHttpsImpl(uriHost.host.address, uriHost.port)
-    else new ConnectHttpImpl(uriHost.host.address, uriHost.port)
+    if (s == "https") new ConnectHttpsImpl(uriHost.host.address, effectivePort(s, uriHost.port))
+    else new ConnectHttpImpl(uriHost.host.address, effectivePort(s, uriHost.port))
   }
 
-  def toHost(host: String): ConnectHttp =
-    toHost(Uri.create(host))
+  def toHost(host: String): ConnectHttp = {
+    if (isHttpOrHttps(host)) toHost(Uri.create(host))
+    else toHost(Uri.create(s"http://$host"))
+  }
 
   def toHost(host: String, port: Int): ConnectHttp = {
     require(port > 0, "port must be > 0")
-    val start = if (host.startsWith("http://") || host.startsWith("https://")) host else s"http://$host"
+    val start = if (isHttpOrHttps(host)) host else s"http://$host"
     toHost(Uri.create(start).port(port))
   }
 
@@ -66,13 +68,15 @@ object ConnectHttp {
   @throws(classOf[IllegalArgumentException])
   def toHostHttps(host: String, port: Int): ConnectWithHttps = {
     require(port > 0, "port must be > 0")
-    val start = if (host.startsWith("https://")) host else s"https://$host"
+    val start = if (isHttpOrHttps(host)) host else s"https://$host"
     toHostHttps(Uri.create(s"$start").port(port))
   }
 
+  private def isHttpOrHttps(s: String) = s.startsWith("http://") || s.startsWith("https://")
+
   private def effectivePort(uri: Uri): Int = {
     val s = uri.scheme.toLowerCase(Locale.ROOT)
-    effectivePort(s, -1)
+    effectivePort(s, uri.port)
   }
 
   private def effectivePort(scheme: String, port: Int): Int = {
