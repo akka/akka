@@ -9,7 +9,6 @@ import akka.stream.Attributes._
 import akka.stream.Supervision.Decider
 import akka.stream._
 import akka.stream.impl.StreamLayout._
-import akka.stream.scaladsl.Source
 import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.stage.Stage
 import org.reactivestreams.Processor

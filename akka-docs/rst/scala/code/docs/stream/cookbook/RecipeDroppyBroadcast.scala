@@ -6,7 +6,6 @@ import akka.stream.testkit._
 
 import scala.collection.immutable
 import scala.concurrent.Await
-import scala.concurrent.duration._
 
 class RecipeDroppyBroadcast extends RecipeSpec {
 

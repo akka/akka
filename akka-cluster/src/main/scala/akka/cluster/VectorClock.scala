@@ -4,11 +4,7 @@
 
 package akka.cluster
 
-import akka.AkkaException
-
-import System.{ currentTimeMillis ⇒ newTimestamp }
 import java.security.MessageDigest
-import java.util.concurrent.atomic.AtomicLong
 import scala.collection.immutable.TreeMap
 import scala.annotation.tailrec
 

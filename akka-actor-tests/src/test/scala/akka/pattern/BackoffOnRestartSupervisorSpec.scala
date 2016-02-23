@@ -8,7 +8,6 @@ import java.util.concurrent.{ TimeUnit, CountDownLatch }
 
 import akka.pattern.TestActor.NormalException
 import akka.testkit.{ ImplicitSender, AkkaSpec, TestProbe, filterException }
-import scala.concurrent.Future
 import scala.concurrent.duration._
 import akka.actor._
 import scala.language.postfixOps
@@ -21,7 +20,6 @@ object TestActor {
 }
 
 class TestActor(probe: ActorRef) extends Actor {
-  import context.dispatcher
 
   probe ! "STARTED"
 

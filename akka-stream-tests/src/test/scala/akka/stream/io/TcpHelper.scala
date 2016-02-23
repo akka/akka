@@ -4,7 +4,7 @@
 package akka.stream.io
 
 import akka.actor._
-import akka.io.Tcp.{ ResumeReading, Register, ConnectionClosed, Closed }
+import akka.io.Tcp.{ ResumeReading, ConnectionClosed }
 import akka.io.{ IO, Tcp }
 import akka.stream.testkit._
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }

@@ -5,7 +5,7 @@
 package akka.persistence.fsm
 
 import akka.actor._
-import akka.persistence.fsm.PersistentFSM.{ State, FSMState }
+import akka.persistence.fsm.PersistentFSM.{ FSMState }
 import akka.persistence.serialization.Message
 import akka.persistence.{ PersistentActor, RecoveryCompleted }
 

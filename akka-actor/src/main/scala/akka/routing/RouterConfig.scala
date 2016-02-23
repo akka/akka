@@ -3,11 +3,9 @@
  */
 package akka.routing
 
-import akka.util.Collections.EmptyImmutableSeq
 
 import scala.collection.immutable
 import akka.ConfigurationException
-import akka.actor.Actor
 import akka.actor.ActorContext
 import akka.actor.ActorPath
 import akka.actor.AutoReceivedMessage

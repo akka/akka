@@ -4,10 +4,8 @@
 package akka.typed
 
 import scala.concurrent.duration.FiniteDuration
-import scala.annotation.tailrec
 import java.util.concurrent.TimeoutException
 import scala.concurrent.duration.Deadline
-import scala.util.control.NonFatal
 
 /**
  * This object contains tools for building step-wise behaviors for formulating
@@ -37,7 +35,6 @@ import scala.util.control.NonFatal
  */
 @deprecated("to be replaced by process DSL", "2.4-M2")
 object StepWise {
-  import Behavior._
   import ScalaDSL._
 
   sealed trait AST

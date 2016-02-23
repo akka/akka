@@ -8,7 +8,6 @@ import akka.actor.Deploy.{ NoDispatcherGiven, NoMailboxGiven }
 import akka.dispatch._
 import akka.routing._
 
-import scala.annotation.varargs
 import scala.collection.immutable
 import scala.language.existentials
 import scala.reflect.ClassTag

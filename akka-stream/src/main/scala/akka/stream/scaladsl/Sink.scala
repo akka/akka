@@ -3,7 +3,6 @@
  */
 package akka.stream.scaladsl
 
-import java.io.{ InputStream, OutputStream, File }
 import akka.{ Done, NotUsed }
 import akka.dispatch.ExecutionContexts
 import akka.actor.{ Status, ActorRef, Props }
@@ -11,14 +10,11 @@ import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
-import akka.stream.impl.io.{ InputStreamSinkStage, OutputStreamSink, FileSink }
 import akka.stream.stage.{ Context, PushStage, SyncDirective, TerminationDirective }
 import akka.stream.{ javadsl, _ }
-import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 

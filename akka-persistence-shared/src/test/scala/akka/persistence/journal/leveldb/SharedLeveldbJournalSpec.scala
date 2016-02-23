@@ -4,9 +4,6 @@
 
 package akka.persistence.journal.leveldb
 
-import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
-
 import akka.actor._
 import akka.persistence._
 import akka.testkit.{ TestProbe, AkkaSpec }

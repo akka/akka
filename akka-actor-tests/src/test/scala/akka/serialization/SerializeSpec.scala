@@ -318,7 +318,6 @@ class ReferenceSerializationSpec extends AkkaSpec(SerializationTests.mostlyRefer
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyReferenceSystem) {
-  import SerializationTests._
 
   val ser = SerializationExtension(system)
 

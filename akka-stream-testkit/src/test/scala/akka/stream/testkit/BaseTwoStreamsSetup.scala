@@ -3,7 +3,7 @@
  */
 package akka.stream.testkit
 
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, Inlet, Outlet }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.scaladsl._
 import org.reactivestreams.Publisher
 import scala.collection.immutable

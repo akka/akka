@@ -13,13 +13,11 @@ import org.openjdk.jmh.annotations.OutputTimeUnit
 import org.openjdk.jmh.annotations.{ Scope => JmhScope }
 import org.openjdk.jmh.annotations.State
 import org.openjdk.jmh.annotations.Warmup
-import akka.actor.ActorPath
 import akka.cluster.UniqueAddress
 import akka.actor.Address
 import org.openjdk.jmh.annotations.Param
 import org.openjdk.jmh.annotations.Setup
 import org.openjdk.jmh.annotations.Level
-import scala.collection.immutable.TreeMap
 
 @Fork(2)
 @State(JmhScope.Benchmark)

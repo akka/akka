@@ -6,7 +6,6 @@ package akka.stream.stage
 import akka.NotUsed
 import akka.stream._
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.util.control.NonFatal
 
 /**

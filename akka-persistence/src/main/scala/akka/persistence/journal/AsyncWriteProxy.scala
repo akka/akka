@@ -14,7 +14,6 @@ import scala.util.Try
 import scala.collection.immutable
 import scala.concurrent._
 import scala.concurrent.duration.Duration
-import scala.language.postfixOps
 
 /**
  * INTERNAL API.

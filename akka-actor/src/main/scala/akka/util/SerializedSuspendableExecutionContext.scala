@@ -3,7 +3,6 @@
  */
 package akka.util
 
-import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal

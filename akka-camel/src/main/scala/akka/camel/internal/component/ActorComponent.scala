@@ -4,7 +4,6 @@
 
 package akka.camel.internal.component
 
-import language.postfixOps
 import java.util.{ Map ⇒ JMap }
 import org.apache.camel._
 import org.apache.camel.impl.{ DefaultProducer, DefaultEndpoint, DefaultComponent }
@@ -12,9 +11,9 @@ import akka.actor._
 import akka.pattern._
 import scala.beans.BeanProperty
 import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ Future }
 import scala.util.control.NonFatal
-import java.util.concurrent.{ TimeUnit, TimeoutException, CountDownLatch }
+import java.util.concurrent.{ TimeoutException, CountDownLatch }
 import akka.util.Timeout
 import akka.camel.internal.CamelExchangeAdapter
 import akka.camel.{ ActorNotRegisteredException, Camel, Ack, FailureResult, CamelMessage }
@@ -199,7 +198,6 @@ private[camel] object DurationTypeConverter extends TypeConverterSupport {
  * @param actorPath the String representation of the path to the actor
  */
 private[camel] case class ActorEndpointPath private (actorPath: String) {
-  import ActorEndpointPath._
   require(actorPath != null)
   require(actorPath.length() > 0)
   require(actorPath.startsWith("akka://"))

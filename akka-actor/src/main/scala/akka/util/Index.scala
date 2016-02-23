@@ -8,7 +8,6 @@ import annotation.tailrec
 import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
 import java.util.Comparator
 import scala.collection.JavaConverters.{ asScalaIteratorConverter, collectionAsScalaIterableConverter }
-import scala.collection.mutable
 
 /**
  * An implementation of a ConcurrentMultiMap

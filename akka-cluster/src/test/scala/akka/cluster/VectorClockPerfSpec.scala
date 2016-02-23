@@ -4,7 +4,6 @@
 
 package akka.cluster
 
-import akka.testkit.AkkaSpec
 import scala.collection.immutable.{ TreeMap, SortedSet }
 import org.scalatest.WordSpec
 import org.scalatest.Matchers

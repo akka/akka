@@ -5,21 +5,15 @@
 package akka.cluster.metrics
 
 import scala.language.postfixOps
-import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.util.{ Success, Try, Failure }
 import akka.actor._
 import akka.testkit._
 import akka.cluster.metrics.StandardMetrics._
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
 import akka.cluster.Cluster
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock)
   with ImplicitSender with RedirectLogging {
-  import system.dispatcher
 
   val cluster = Cluster(system)
 

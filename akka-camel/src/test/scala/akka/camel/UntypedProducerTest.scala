@@ -17,7 +17,6 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest._
 import akka.testkit._
-import matchers.MustMatchers
 
 class UntypedProducerTest extends WordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach with SharedCamelSystem with GivenWhenThen {
   import UntypedProducerTest._

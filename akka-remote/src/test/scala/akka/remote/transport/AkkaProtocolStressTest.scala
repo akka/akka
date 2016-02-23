@@ -7,7 +7,7 @@ import akka.actor._
 import scala.concurrent.duration._
 import akka.testkit._
 import akka.remote.{ RARP, EndpointException }
-import akka.remote.transport.FailureInjectorTransportAdapter.{ One, All, Drop }
+import akka.remote.transport.FailureInjectorTransportAdapter.{ One, Drop }
 import scala.concurrent.Await
 
 object AkkaProtocolStressTest {

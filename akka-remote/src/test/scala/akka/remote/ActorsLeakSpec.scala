@@ -7,9 +7,7 @@ import java.util.concurrent.TimeoutException
 
 import akka.actor._
 import akka.actor.dungeon.ChildrenContainer
-import akka.event.Logging
-import akka.remote.transport.ThrottlerTransportAdapter.Direction.Both
-import akka.remote.transport.ThrottlerTransportAdapter.{ ForceDisassociate, Blackhole, SetThrottle }
+import akka.remote.transport.ThrottlerTransportAdapter.{ ForceDisassociate }
 import akka.testkit._
 import akka.testkit.TestActors.EchoActor
 import com.typesafe.config.ConfigFactory

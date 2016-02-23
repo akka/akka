@@ -7,7 +7,6 @@ import akka.testkit._
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Await }
-import scala.annotation.tailrec
 
 class CircuitBreakerMTSpec extends AkkaSpec {
   implicit val ec = system.dispatcher

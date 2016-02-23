@@ -128,7 +128,6 @@ object CallingThreadDispatcher {
  */
 class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) extends MessageDispatcher(_configurator) {
   import CallingThreadDispatcher._
-  import configurator.prerequisites._
 
   val log = akka.event.Logging(eventStream, getClass.getName)
 

@@ -3,8 +3,6 @@
  */
 package akka.cluster.ddata
 
-import scala.concurrent.duration._
-
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem

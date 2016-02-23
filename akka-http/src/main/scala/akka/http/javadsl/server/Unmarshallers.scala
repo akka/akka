@@ -8,7 +8,6 @@ import akka.http.impl.server.{ Util, UnmarshallerImpl }
 import akka.http.javadsl.model.{ HttpEntity, HttpMessage }
 import akka.http.scaladsl.unmarshalling.{ Unmarshaller ⇒ ScalaUnmarshaller, FromMessageUnmarshaller }
 import akka.japi.function.Function
-import akka.stream.Materializer
 import akka.util.ByteString
 
 import scala.reflect.ClassTag

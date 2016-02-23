@@ -1,7 +1,7 @@
 package akka.persistence.journal.leveldb
 
 import akka.persistence.journal.JournalSpec
-import akka.persistence.{ CapabilityFlag, PersistenceSpec, PluginCleanup }
+import akka.persistence.{ PersistenceSpec, PluginCleanup }
 
 class LeveldbJournalJavaSpec extends JournalSpec(
   config = PersistenceSpec.config(

@@ -6,7 +6,7 @@ package akka.actor
 import scala.collection.immutable
 
 import akka.AkkaException
-import akka.dispatch.{ UnboundedDequeBasedMessageQueueSemantics, RequiresMessageQueue, Envelope, DequeBasedMessageQueueSemantics, Mailboxes }
+import akka.dispatch.{ UnboundedDequeBasedMessageQueueSemantics, RequiresMessageQueue, Envelope, DequeBasedMessageQueueSemantics }
 
 import scala.util.control.NoStackTrace
 

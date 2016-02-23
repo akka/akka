@@ -9,9 +9,7 @@ import java.rmi.RemoteException
 import java.util.concurrent.{ TimeUnit, CountDownLatch, ConcurrentHashMap }
 import java.util.concurrent.atomic.{ AtomicLong, AtomicInteger }
 
-import org.junit.runner.RunWith
 import org.scalatest.Assertions._
-import org.scalatest.junit.JUnitRunner
 
 import com.typesafe.config.Config
 
@@ -21,10 +19,9 @@ import akka.dispatch._
 import akka.event.Logging.Error
 import akka.pattern.ask
 import akka.testkit._
-import akka.util.Helpers.ConfigOps
 import akka.util.Switch
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{ Await, Future }
 import scala.annotation.tailrec
 
 object ActorModelSpec {

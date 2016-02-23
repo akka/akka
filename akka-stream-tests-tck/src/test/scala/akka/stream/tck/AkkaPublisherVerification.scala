@@ -4,19 +4,12 @@
 package akka.stream.tck
 
 import scala.collection.immutable
-import akka.event.Logging
-import scala.concurrent.duration._
-import akka.actor.ActorSystem
 import akka.stream.ActorMaterializerSettings
 import akka.stream.ActorMaterializer
-import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.TestPublisher
 import org.reactivestreams.Publisher
 import org.reactivestreams.tck.{ PublisherVerification, TestEnvironment }
 import org.scalatest.testng.TestNGSuiteLike
-import org.testng.annotations.AfterClass
-import akka.actor.ActorSystemImpl
-import java.util.concurrent.TimeoutException
 
 abstract class AkkaPublisherVerification[T](val env: TestEnvironment, publisherShutdownTimeout: Long)
   extends PublisherVerification[T](env, publisherShutdownTimeout)

@@ -8,8 +8,6 @@ import akka.actor._
 import akka.util.{ Timeout }
 import akka.dispatch.sysmsg.{ Unwatch, Watch }
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
-import scala.util.Success
 import scala.concurrent.duration.FiniteDuration
 
 trait GracefulStopSupport {

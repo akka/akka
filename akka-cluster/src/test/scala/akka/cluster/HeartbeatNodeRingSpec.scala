@@ -7,9 +7,6 @@ package akka.cluster
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import akka.actor.Address
-import akka.routing.ConsistentHash
-import scala.concurrent.duration._
-import scala.collection.immutable
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class HeartbeatNodeRingSpec extends WordSpec with Matchers {

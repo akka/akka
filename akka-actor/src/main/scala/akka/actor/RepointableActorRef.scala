@@ -4,9 +4,7 @@
 
 package akka.actor
 
-import java.io.ObjectStreamException
-import java.util.{ LinkedList ⇒ JLinkedList, ListIterator ⇒ JListIterator }
-import java.util.concurrent.TimeUnit
+import java.util.{ LinkedList ⇒ JLinkedList }
 import java.util.concurrent.locks.ReentrantLock
 
 import scala.annotation.tailrec
@@ -17,7 +15,6 @@ import akka.event.Logging.Warning
 import akka.util.Unsafe
 import akka.dispatch._
 import akka.dispatch.sysmsg._
-import util.Try
 
 /**
  * This actor ref starts out with some dummy cell (by default just enqueuing

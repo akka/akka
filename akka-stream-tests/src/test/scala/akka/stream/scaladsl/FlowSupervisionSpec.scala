@@ -6,7 +6,6 @@ package akka.stream.scaladsl
 import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import scala.util.control.NoStackTrace
 import scala.concurrent.Await

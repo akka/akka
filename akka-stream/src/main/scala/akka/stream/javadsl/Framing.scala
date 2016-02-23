@@ -7,7 +7,6 @@ import java.nio.ByteOrder
 
 import akka.NotUsed
 import akka.stream.scaladsl
-import akka.stream.stage._
 import akka.util.ByteString
 
 object Framing {

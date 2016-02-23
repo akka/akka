@@ -5,7 +5,7 @@ package akka.testkit
 
 import org.scalactic.Constraint
 
-import language.{ postfixOps, reflectiveCalls }
+import language.{ postfixOps }
 import org.scalatest.{ WordSpecLike, BeforeAndAfterAll }
 import org.scalatest.Matchers
 import akka.actor.ActorSystem

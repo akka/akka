@@ -1,7 +1,7 @@
 package akka.stream.javadsl
 
 import java.util.Optional
-import javax.net.ssl.{ SSLContext, SSLParameters }
+import javax.net.ssl.{ SSLContext }
 
 import akka.{ japi, NotUsed }
 import akka.stream._
