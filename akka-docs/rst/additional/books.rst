@@ -2,7 +2,7 @@ Books
 =====
 
 * `Learning Akka <https://www.packtpub.com/application-development/learning-akka>`_, by Jason Goodwin, PACKT Publishing, ISBN: 9781784393007, December 2015
-* `Akka in Action <http://typesafe.com/resources/e-book/akka-in-action>`_, by Raymond Roestenburg and Rob Bakker, Manning Publications Co., ISBN: 9781617291012, estimated in 2016
+* `Akka in Action <http://www.lightbend.com/resources/e-book/akka-in-action>`_, by Raymond Roestenburg and Rob Bakker, Manning Publications Co., ISBN: 9781617291012, estimated in 2016
 * `Reactive Messaging Patterns with the Actor Model <http://www.informit.com/store/reactive-messaging-patterns-with-the-actor-model-applications-9780133846836>`_, by Vaughn Vernon, Addison-Wesley Professional, ISBN: 0133846830, August 2015
 * `Developing an Akka Edge <http://bleedingedgepress.com/our-books/developing-an-akka-edge/>`_, by Thomas Lockney and Raymond Tay, Bleeding Edge Press, ISBN: 9781939902054, April 2014
 * `Effective Akka <http://shop.oreilly.com/product/0636920028789.do>`_, by Jamie Allen, O'Reilly Media, ISBN: 1449360076, August 2013

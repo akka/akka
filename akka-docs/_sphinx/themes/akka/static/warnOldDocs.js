@@ -43,7 +43,7 @@ function showVersionWarning(version, akkaVersionsData, seriesInfo) {
         .append(
             '<p>' +
             '<span style="font-weight: bold">This version of Akka (' + version + ') has been end-of-lifed and is currently not supported! </span><br/>' +
-            'Please upgrade to <a href="' + insteadUrl(version, instead) + '">Akka ' + instead + '</a> or <a href="http://www.typesafe.com/products/typesafe-reactive-platform">Typesafe Reactive Platform</a> as soon as possible.' +
+            'Please upgrade to <a href="' + insteadUrl(version, instead) + '">Akka ' + instead + '</a> or <a href="http://www.lightbend.com/products/lightbend-reactive-platform">Lightbend Reactive Platform</a> as soon as possible.' +
             '</p>');
   }
 

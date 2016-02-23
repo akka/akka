@@ -82,12 +82,12 @@ Akka can be used and deployed in different ways:
 
 - Package with `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_
 
-- Package and deploy using `Typesafe ConductR <http://typesafe.com/products/conductr>`_.
+- Package and deploy using `Lightbend ConductR <http://www.lightbend.com/products/conductr>`_.
 
 Commercial Support
 ==================
 
-Akka is available from Typesafe Inc. under a commercial license which includes
+Akka is available from Lightbend Inc. under a commercial license which includes
 development or production support, read more `here
-<http://www.typesafe.com/how/subscription>`_.
+<http://www.lightbend.com/how/subscription>`_.
 

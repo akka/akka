@@ -134,8 +134,8 @@ The same type of router could also have been defined in code:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/factorial/Extra.scala#router-deploy-in-code
 
-The `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_ tutorial named 
-`Akka Cluster Samples with Scala <http://www.typesafe.com/activator/template/akka-sample-cluster-scala>`_.
+The `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_ tutorial named
+`Akka Cluster Samples with Scala <http://www.lightbend.com/activator/template/akka-sample-cluster-scala>`_.
 contains the full source code and instructions of how to run the **Adaptive Load Balancing** sample.
 
 Subscribe to Metrics Events

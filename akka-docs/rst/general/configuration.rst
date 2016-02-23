@@ -14,7 +14,7 @@ might amend:
 * definition of routers
 * tuning of dispatchers
 
-Akka uses the `Typesafe Config Library
+Akka uses the `Lightbend Config Library
 <https://github.com/typesafehub/config>`_, which might also be a good choice
 for the configuration of your own application or library built with or without
 Akka. This library is implemented in Java with no external dependencies; you

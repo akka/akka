@@ -14,7 +14,7 @@ Akka can be used in different ways:
 
 - Package with `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_
 
-- Package and deploy using `Typesafe ConductR <http://typesafe.com/products/conductr>`_.
+- Package and deploy using `Lightbend ConductR <http://www.lightbend.com/products/conductr>`_.
 
 
 Native Packager
@@ -69,5 +69,5 @@ described here: :ref:`remote-configuration-nat`
 For an example of how to set up a project using Akka Cluster and Docker take a look at the
 `"akka-docker-cluster" activator template`__.
 
-__ https://www.typesafe.com/activator/template/akka-docker-cluster
+__ https://www.lightbend.com/activator/template/akka-docker-cluster
 

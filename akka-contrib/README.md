@@ -16,7 +16,7 @@ later time.
 A module in this subproject doesn't have to obey the rule of staying binary
 compatible between micro releases. Breaking API changes may be introduced in
 minor releases without notice as we refine and simplify based on your feedback.
-A module may be dropped in any release without prior deprecation. The Typesafe
+A module may be dropped in any release without prior deprecation. The Lightbend
 subscription does not cover support for these modules.
 
 ## Suggested Format of Contributions

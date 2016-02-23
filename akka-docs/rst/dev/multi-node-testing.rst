@@ -195,8 +195,8 @@ message send/receive.
 .. includecode:: ../../../akka-samples/akka-sample-multi-node-scala/src/multi-jvm/scala/sample/multinode/MultiNodeSample.scala
   :include: package,spec
 
-The easiest way to run this example yourself is to download `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
-and open the tutorial named `Akka Multi-Node Testing Sample with Scala <http://www.typesafe.com/activator/template/akka-sample-multi-node-scala>`_.
+The easiest way to run this example yourself is to download `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
+and open the tutorial named `Akka Multi-Node Testing Sample with Scala <http://www.lightbend.com/activator/template/akka-sample-multi-node-scala>`_.
 
 Things to Keep in Mind
 ======================

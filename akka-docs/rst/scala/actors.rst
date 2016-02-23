@@ -189,8 +189,8 @@ __ Props_
 Techniques for dependency injection and integration with dependency injection frameworks
 are described in more depth in the 
 `Using Akka with Dependency Injection <http://letitcrash.com/post/55958814293/akka-dependency-injection>`_ 
-guideline and the `Akka Java Spring <http://www.typesafe.com/activator/template/akka-java-spring>`_ tutorial
-in Typesafe Activator.
+guideline and the `Akka Java Spring <http://www.lightbend.com/activator/template/akka-java-spring>`_ tutorial
+in Lightbend Activator.
 
 The Inbox
 ---------
@@ -772,7 +772,7 @@ Hakkers`_). It will replace the current behavior (i.e. the top of the behavior
 stack), which means that you do not use :meth:`unbecome`, instead always the
 next behavior is explicitly installed.
 
-.. _Dining Hakkers: http://www.typesafe.com/activator/template/akka-sample-fsm-scala
+.. _Dining Hakkers: http://www.lightbend.com/activator/template/akka-sample-fsm-scala
 
 The other way of using :meth:`become` does not replace but add to the top of
 the behavior stack. In this case care must be taken to ensure that the number

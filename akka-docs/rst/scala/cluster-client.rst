@@ -93,8 +93,8 @@ The ``initialContacts`` parameter is a ``Set[ActorPath]``, which can be created 
 You will probably define the address information of the initial contact points in configuration or system property.
 See also :ref:`cluster-client-config-scala`.
 
-A more comprehensive sample is available in the `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
-tutorial named `Distributed workers with Akka and Scala! <http://www.typesafe.com/activator/template/akka-distributed-workers>`_.
+A more comprehensive sample is available in the `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
+tutorial named `Distributed workers with Akka and Scala! <http://www.lightbend.com/activator/template/akka-distributed-workers>`_.
 
 ClusterClientReceptionist Extension
 -----------------------------------
