@@ -4,11 +4,7 @@
 
 package akka.http.scaladsl
 
-import java.util.concurrent.ConcurrentHashMap
-
 import akka.actor.ActorSystem
-import akka.http.impl.engine.client.PoolGateway
-import akka.http.impl.settings.HostConnectionPoolSetup
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.stream.ActorMaterializer
@@ -16,7 +12,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ Matchers, WordSpec }
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.{ Await }
 
 class ClientSpec extends WordSpec with Matchers {
   val testConf: Config = ConfigFactory.parseString("""
@@ -27,7 +23,6 @@ class ClientSpec extends WordSpec with Matchers {
     akka.log-dead-letters = OFF
     akka.http.server.request-timeout = infinite""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-  import system.dispatcher
   implicit val materializer = ActorMaterializer()
 
   "HTTP Client" should {

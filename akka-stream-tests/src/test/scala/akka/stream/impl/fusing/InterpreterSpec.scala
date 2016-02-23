@@ -8,7 +8,6 @@ import akka.stream.stage._
 import akka.stream.testkit.AkkaSpec
 import akka.testkit.EventFilter
 
-import scala.util.control.NoStackTrace
 import akka.stream.Supervision
 
 class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {

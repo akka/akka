@@ -16,7 +16,6 @@
 
 package akka.shapeless
 
-import scala.annotation.tailrec
 
 /**
  * `HList` ADT base trait.

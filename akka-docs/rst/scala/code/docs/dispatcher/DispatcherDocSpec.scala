@@ -10,7 +10,6 @@ import org.scalatest.Matchers
 import akka.testkit.AkkaSpec
 import akka.event.Logging
 import akka.event.LoggingAdapter
-import scala.concurrent.duration._
 import akka.actor._
 import docs.dispatcher.DispatcherDocSpec.MyBoundedActor
 import akka.dispatch.RequiresMessageQueue

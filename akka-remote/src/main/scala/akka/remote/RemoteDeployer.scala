@@ -22,7 +22,6 @@ final case class RemoteScope(node: Address) extends Scope {
  */
 private[akka] class RemoteDeployer(_settings: ActorSystem.Settings, _pm: DynamicAccess) extends Deployer(_settings, _pm) {
   override def parseConfig(path: String, config: Config): Option[Deploy] = {
-    import scala.collection.JavaConverters._
 
     super.parseConfig(path, config) match {
       case d @ Some(deploy) ⇒

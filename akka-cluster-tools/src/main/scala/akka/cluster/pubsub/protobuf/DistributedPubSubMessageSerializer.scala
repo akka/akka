@@ -4,22 +4,16 @@
 package akka.cluster.pubsub.protobuf
 
 import akka.serialization.BaseSerializer
-import akka.cluster._
 import scala.collection.breakOut
 import akka.actor.{ ExtendedActorSystem, Address }
 import scala.Some
-import scala.collection.immutable
-import java.io.{ ByteArrayInputStream, ObjectOutputStream, ByteArrayOutputStream }
+import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
 import akka.protobuf.{ ByteString, MessageLite }
-import akka.util.ClassLoaderObjectInputStream
-import java.{ lang ⇒ jl }
 import java.util.zip.GZIPOutputStream
 import java.util.zip.GZIPInputStream
 import scala.annotation.tailrec
 import akka.cluster.pubsub.protobuf.msg.{ DistributedPubSubMessages ⇒ dm }
 import scala.collection.JavaConverters._
-import scala.concurrent.duration.Deadline
-import akka.cluster.pubsub.DistributedPubSubMessage
 import akka.cluster.pubsub.DistributedPubSubMediator._
 import akka.cluster.pubsub.DistributedPubSubMediator.Internal._
 import akka.serialization.Serialization

@@ -6,8 +6,6 @@ package akka.camel
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 import akka.actor.ActorSystem
-import scala.concurrent.duration.Duration
-import java.util.concurrent.TimeUnit._
 import akka.testkit.TestKit
 import akka.util.Helpers.ConfigOps
 

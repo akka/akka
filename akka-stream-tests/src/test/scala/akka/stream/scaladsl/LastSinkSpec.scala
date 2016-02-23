@@ -3,12 +3,8 @@
  */
 package akka.stream.scaladsl
 
-import org.reactivestreams.Subscriber
-
 import scala.concurrent.Await
-import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.Failure
 
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings

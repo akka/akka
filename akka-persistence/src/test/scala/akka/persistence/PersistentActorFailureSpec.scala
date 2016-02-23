@@ -5,13 +5,9 @@
 package akka.persistence
 
 import akka.actor.{ OneForOneStrategy, _ }
-import akka.persistence.journal.AsyncWriteTarget.{ ReplayFailure, ReplayMessages, ReplaySuccess, WriteMessages }
 import akka.persistence.journal.AsyncWriteJournal
 import akka.testkit.{ EventFilter, ImplicitSender, TestEvent }
-import akka.util.Timeout
 import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.language.postfixOps
 import scala.util.control.NoStackTrace
 import scala.util.{ Failure, Try }
 import akka.persistence.journal.inmem.InmemJournal

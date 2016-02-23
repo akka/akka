@@ -4,7 +4,6 @@
 package docs.ddata.protobuf
 
 //#serializer
-import scala.collection.JavaConverters._
 import akka.actor.ExtendedActorSystem
 import akka.cluster.ddata.GSet
 import akka.cluster.ddata.protobuf.ReplicatedDataSerializer

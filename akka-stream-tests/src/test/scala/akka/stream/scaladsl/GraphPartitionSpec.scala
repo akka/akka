@@ -4,7 +4,6 @@
 package akka.stream.scaladsl
 
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ OverflowStrategy, ActorMaterializer, ActorMaterializerSettings, ClosedShape }
 import akka.stream.testkit.Utils._
 import org.scalatest.concurrent.ScalaFutures

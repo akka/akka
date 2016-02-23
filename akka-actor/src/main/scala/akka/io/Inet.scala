@@ -3,7 +3,7 @@
  */
 package akka.io
 
-import java.nio.channels.{ DatagramChannel, SocketChannel, ServerSocketChannel }
+import java.nio.channels.{ DatagramChannel }
 import java.net.DatagramSocket
 import java.net.ServerSocket
 import java.net.Socket

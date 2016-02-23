@@ -3,11 +3,10 @@
  */
 package akka.persistence
 
-import scala.annotation.tailrec
 import scala.collection.breakOut
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
-import akka.actor.{ ActorSelection, Actor, ActorPath, NotInfluenceReceiveTimeout }
+import akka.actor.{ ActorSelection, ActorPath, NotInfluenceReceiveTimeout }
 import akka.persistence.serialization.Message
 import akka.actor.Cancellable
 

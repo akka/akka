@@ -12,7 +12,6 @@ import akka.actor.Cancellable
 import akka.actor.Stash
 import akka.actor.StashFactory
 import akka.actor.UntypedActor
-import akka.dispatch.Envelope
 import akka.actor.ActorLogging
 
 /**

@@ -8,9 +8,7 @@ import com.typesafe.config.Config
 import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.actor.Actor
-import akka.actor.Actor.Receive
 import akka.actor.Deploy
-import akka.actor.ActorLogging
 import akka.actor.ActorSystem
 import akka.actor.ActorRef
 import akka.actor.ActorSelection
@@ -222,7 +220,6 @@ object ClusterSingletonManager {
      */
     class OldestChangedBuffer(role: Option[String]) extends Actor {
       import OldestChangedBuffer._
-      import context.dispatcher
 
       val cluster = Cluster(context.system)
       // sort by age, oldest first
@@ -372,7 +369,6 @@ class ClusterSingletonManager(
   settings: ClusterSingletonManagerSettings)
   extends Actor with FSM[ClusterSingletonManager.State, ClusterSingletonManager.Data] {
 
-  import ClusterSingletonManager._
   import ClusterSingletonManager.Internal._
   import ClusterSingletonManager.Internal.OldestChangedBuffer._
   import settings._

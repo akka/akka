@@ -3,10 +3,8 @@
  */
 package akka.cluster
 
-import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.breakOut
-import akka.actor.Address
 
 /**
  * INTERNAL API

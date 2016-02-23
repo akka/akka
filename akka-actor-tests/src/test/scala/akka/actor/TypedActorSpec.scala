@@ -20,7 +20,6 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
 import scala.language.postfixOps
-import scala.util.Random
 
 object TypedActorSpec {
 

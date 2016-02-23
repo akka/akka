@@ -3,17 +3,14 @@
  */
 package akka.stream.javadsl
 
-import akka.stream.impl.fusing.RecoverWith
 import akka.{ NotUsed, Done }
 import akka.event.LoggingAdapter
 import akka.japi.{ function, Pair }
-import akka.stream.impl.Timers.{ DelayInitial, IdleInject }
 import akka.stream.impl.{ ConstantFun, StreamLayout }
 import akka.stream.{ scaladsl, _ }
 import akka.stream.stage.Stage
 import org.reactivestreams.Processor
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util
 import java.util.Comparator

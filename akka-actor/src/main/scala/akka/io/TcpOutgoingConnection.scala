@@ -7,10 +7,8 @@ package akka.io
 import java.net.InetSocketAddress
 import java.nio.channels.{ SelectionKey, SocketChannel }
 import scala.util.control.NonFatal
-import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.actor.{ ReceiveTimeout, ActorRef }
-import akka.io.Inet.SocketOption
 import akka.io.TcpConnection.CloseInformation
 import akka.io.SelectionHandler._
 import akka.io.Tcp._

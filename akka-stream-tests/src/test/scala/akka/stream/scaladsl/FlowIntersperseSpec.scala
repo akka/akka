@@ -4,7 +4,6 @@
 package akka.stream.scaladsl
 
 import akka.stream.testkit._
-import akka.stream.testkit.Utils.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.{ TestSource, TestSink }
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import org.scalatest.concurrent.ScalaFutures

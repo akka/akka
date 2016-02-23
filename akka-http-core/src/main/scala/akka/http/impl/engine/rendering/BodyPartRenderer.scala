@@ -89,7 +89,7 @@ private[http] object BodyPartRenderer {
     r.get
   }
 
-  private def renderBoundary(r: Rendering, boundary: String, suppressInitialCrLf: Boolean = false): Unit = {
+  private def renderBoundary(r: Rendering, boundary: String, suppressInitialCrLf: Boolean): Unit = {
     if (!suppressInitialCrLf) r ~~ CrLf
     r ~~ '-' ~~ '-' ~~ boundary ~~ CrLf
   }

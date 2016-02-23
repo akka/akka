@@ -3,11 +3,10 @@
  */
 package akka.stream.scaladsl
 
-import akka.actor.{ NoSerializationVerificationNeeded, Status }
+import akka.actor.{ Status }
 import akka.pattern.pipe
 import akka.stream._
 import akka.stream.impl.QueueSource
-import akka.stream.stage.OutHandler
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.testkit.TestProbe

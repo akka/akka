@@ -4,16 +4,10 @@
 
 package akka.actor
 
-import scala.collection.mutable.Queue
 import scala.concurrent.duration._
 import akka.pattern.ask
 import scala.concurrent.Await
-import akka.util.Timeout
 import akka.util.Helpers.ConfigOps
-import scala.collection.immutable.TreeSet
-import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.TimeUnit
 
 /**
  * This object contains elements which make writing actors and related code

@@ -6,7 +6,6 @@ package akka.http.javadsl.server.values
 
 import akka.http.impl.server.{ ExtractionImplBase, RouteStructure }
 import akka.http.javadsl.server.{ AbstractDirective, RequestVal, Route }
-import akka.http.scaladsl.util.FastFuture
 import scala.reflect.ClassTag
 import java.util.concurrent.CompletionStage
 import java.util.Optional

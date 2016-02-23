@@ -8,8 +8,6 @@ import language.postfixOps
 import akka.testkit.AkkaSpec
 import akka.dispatch.Dispatchers
 import scala.concurrent.duration._
-import akka.remote.PhiAccrualFailureDetector
-import akka.util.Helpers.ConfigOps
 import com.typesafe.config.ConfigFactory
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

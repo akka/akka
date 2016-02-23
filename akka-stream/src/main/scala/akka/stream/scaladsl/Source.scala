@@ -3,7 +3,6 @@
  */
 package akka.stream.scaladsl
 
-import java.io.{ OutputStream, InputStream, File }
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream.actor.ActorPublisher
@@ -11,18 +10,14 @@ import akka.stream.impl.Stages.{ DefaultAttributes, StageModule }
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.fusing.GraphStages._
-import akka.stream.impl.io.{ OutputStreamSourceStage, InputStreamSource, FileSource }
 import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, _ }
 import akka.stream.{ Outlet, SourceShape, _ }
-import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
-import scala.language.higherKinds
 import scala.collection.immutable
-import scala.concurrent.duration.{ FiniteDuration, _ }
+import scala.concurrent.duration.{ FiniteDuration }
 import scala.concurrent.{ Future, Promise }
-import akka.stream.impl.fusing.Buffer
 import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters._
 

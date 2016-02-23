@@ -7,8 +7,6 @@ package akka.cluster
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import akka.actor.Address
-import scala.concurrent.duration._
-import scala.collection.immutable
 import akka.remote.FailureDetector
 import akka.remote.DefaultFailureDetectorRegistry
 import java.util.concurrent.ThreadLocalRandom

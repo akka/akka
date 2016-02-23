@@ -2,12 +2,9 @@ package akka.dispatch
 
 import language.postfixOps
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import com.typesafe.config.Config
 
 import akka.actor.{ Props, ActorSystem, Actor }
-import akka.pattern.ask
 import akka.testkit.{ DefaultTimeout, AkkaSpec }
 import scala.concurrent.duration._
 

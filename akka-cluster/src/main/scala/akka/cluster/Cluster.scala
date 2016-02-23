@@ -21,7 +21,6 @@ import scala.annotation.varargs
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext }
-import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
 /**

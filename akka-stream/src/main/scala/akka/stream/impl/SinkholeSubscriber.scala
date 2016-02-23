@@ -3,7 +3,6 @@
  */
 package akka.stream.impl
 
-import java.util.concurrent.atomic.AtomicReference
 import akka.Done
 
 import scala.concurrent.Promise

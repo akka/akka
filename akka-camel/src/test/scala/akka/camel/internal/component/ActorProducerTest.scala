@@ -8,7 +8,7 @@ import language.postfixOps
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
-import org.apache.camel.{ CamelContext, ProducerTemplate, AsyncCallback }
+import org.apache.camel.{ ProducerTemplate, AsyncCallback }
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.duration._
 import java.lang.String
@@ -16,16 +16,16 @@ import akka.camel._
 import internal.{ DefaultCamel, CamelExchangeAdapter }
 import org.scalatest.{ Suite, WordSpecLike, BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.camel.TestSupport._
-import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
+import java.util.concurrent.{ TimeoutException, CountDownLatch }
 import org.mockito.{ ArgumentMatcher, Matchers ⇒ MMatchers, Mockito }
 import org.scalatest.Matchers
-import akka.actor.Status.{ Success, Failure }
+import akka.actor.Status.{ Failure }
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem.Settings
 import akka.event.LoggingAdapter
 import akka.testkit.{ TestLatch, TimingTest, TestKit, TestProbe }
 import org.apache.camel.impl.DefaultCamelContext
-import scala.concurrent.{ Await, Promise, Future }
+import scala.concurrent.{ Await, Future }
 import akka.util.Timeout
 import akka.actor._
 import akka.testkit._

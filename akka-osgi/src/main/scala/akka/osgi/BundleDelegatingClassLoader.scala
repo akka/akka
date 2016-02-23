@@ -8,7 +8,6 @@ import java.net.URL
 import java.util.Enumeration
 import org.osgi.framework.{ BundleContext, Bundle }
 import scala.util.Try
-import scala.io.Source
 import org.osgi.framework.wiring.{ BundleRevision, BundleWire, BundleWiring }
 import scala.collection.JavaConverters._
 import scala.util.Success

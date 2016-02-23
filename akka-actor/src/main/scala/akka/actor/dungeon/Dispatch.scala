@@ -5,7 +5,7 @@
 package akka.actor.dungeon
 
 import scala.annotation.tailrec
-import akka.dispatch.{ MessageDispatcher, Mailbox, Envelope }
+import akka.dispatch.{ Mailbox, Envelope }
 import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
 import akka.util.Unsafe

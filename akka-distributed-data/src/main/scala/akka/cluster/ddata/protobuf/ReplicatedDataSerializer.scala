@@ -12,7 +12,6 @@ import scala.collection.JavaConverters._
 import scala.collection.breakOut
 import akka.actor.ExtendedActorSystem
 import akka.cluster.ddata._
-import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.Replicator.Internal._
 import akka.cluster.ddata.protobuf.msg.{ ReplicatedDataMessages ⇒ rd }
 import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages ⇒ dm }

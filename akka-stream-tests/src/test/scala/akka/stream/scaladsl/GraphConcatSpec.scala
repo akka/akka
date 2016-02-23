@@ -3,11 +3,9 @@
  */
 package akka.stream.scaladsl
 
-import scala.concurrent.{ Await, Promise }
-import scala.concurrent.duration._
+import scala.concurrent.{ Promise }
 
 import akka.stream._
-import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 

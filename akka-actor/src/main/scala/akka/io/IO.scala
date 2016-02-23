@@ -4,10 +4,7 @@
 
 package akka.io
 
-import scala.util.control.NonFatal
 import akka.actor._
-import akka.io.SelectionHandler.WorkerForCommand
-import akka.event.Logging
 
 /**
  * Entry point to Akka’s IO layer.

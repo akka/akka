@@ -3,8 +3,7 @@
  */
 package akka.persistence.japi.snapshot
 
-import akka.persistence.CapabilityFlag
-import akka.persistence.snapshot.{ SnapshotStore, SnapshotStoreSpec }
+import akka.persistence.snapshot.{ SnapshotStoreSpec }
 import com.typesafe.config.Config
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner

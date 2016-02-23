@@ -5,7 +5,6 @@ package akka.stream.scaladsl
 
 import java.io.{ OutputStream, InputStream }
 
-import akka.stream.ActorAttributes
 import akka.stream.IOResult
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.{ InputStreamSinkStage, OutputStreamSink, OutputStreamSourceStage, InputStreamSource }

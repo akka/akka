@@ -6,11 +6,9 @@ package akka.stream.scaladsl
 import akka.actor.{ Kill, PoisonPill, NoSerializationVerificationNeeded, ActorRef }
 import akka.event.Logging
 import akka.stream._
-import akka.stream.stage.GraphStageLogic.StageActorRef
-import akka.stream.stage.{ GraphStageWithMaterializedValue, GraphStage, GraphStageLogic, InHandler }
+import akka.stream.stage.{ GraphStageWithMaterializedValue, GraphStageLogic, InHandler }
 import akka.stream.testkit.AkkaSpec
 import akka.testkit.{ TestProbe, TestEvent, EventFilter, ImplicitSender }
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.{ Future, Promise }

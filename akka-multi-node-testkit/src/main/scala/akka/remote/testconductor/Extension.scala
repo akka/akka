@@ -3,12 +3,9 @@
  */
 package akka.remote.testconductor
 
-import akka.actor.{ Extension, ExtensionId, ExtensionIdProvider, ExtendedActorSystem, ActorContext, ActorRef, Address, ActorSystem, Props }
+import akka.actor.{ Extension, ExtensionId, ExtensionIdProvider, ExtendedActorSystem, ActorContext, ActorSystem }
 import akka.remote.RemoteActorRefProvider
 import akka.util.Timeout
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util.concurrent.ConcurrentHashMap
-import scala.concurrent.duration.Duration
 import com.typesafe.config.Config
 import akka.dispatch.ThreadPoolConfig
 

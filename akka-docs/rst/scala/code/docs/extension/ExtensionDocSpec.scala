@@ -80,7 +80,6 @@ object ExtensionDocSpec {
 }
 
 class ExtensionDocSpec extends AkkaSpec(ExtensionDocSpec.config) {
-  import ExtensionDocSpec._
 
   "demonstrate how to create an extension in Scala" in {
     //#extension-usage

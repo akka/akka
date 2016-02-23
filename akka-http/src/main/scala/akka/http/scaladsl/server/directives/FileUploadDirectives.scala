@@ -9,7 +9,7 @@ import akka.http.scaladsl.server.{ MissingFormFieldRejection, Directive1 }
 import akka.http.scaladsl.model.{ ContentType, Multipart }
 import akka.util.ByteString
 import scala.concurrent.Future
-import scala.util.{ Failure, Success, Try }
+import scala.util.{ Failure, Success }
 import akka.stream.scaladsl._
 
 trait FileUploadDirectives {

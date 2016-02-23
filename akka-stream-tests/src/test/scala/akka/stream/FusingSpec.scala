@@ -3,7 +3,6 @@
  */
 package akka.stream
 
-import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 import org.scalactic.ConversionCheckedTripleEquals

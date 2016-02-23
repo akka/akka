@@ -3,7 +3,6 @@ package akka.typed.patterns
 import akka.typed._
 import scala.concurrent.duration._
 import akka.typed.Effect.{ ReceiveTimeoutSet, Scheduled }
-import scala.util.control.NonFatal
 import Receiver._
 
 object ReceiverSpec {

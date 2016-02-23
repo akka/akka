@@ -8,8 +8,6 @@ import language.postfixOps
 
 import akka.testkit._
 import scala.concurrent.duration._
-import akka.actor.Actor._
-import scala.concurrent.Await
 import akka.pattern.{ ask, pipe }
 
 object ForwardActorSpec {

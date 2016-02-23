@@ -7,7 +7,6 @@ package akka.util
 import language.implicitConversions
 
 import java.util.concurrent.TimeUnit
-import java.lang.{ Double ⇒ JDouble }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 @SerialVersionUID(1L)

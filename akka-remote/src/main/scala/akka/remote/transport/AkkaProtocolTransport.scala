@@ -4,7 +4,6 @@
 package akka.remote.transport
 
 import java.util.concurrent.TimeoutException
-import akka.ConfigurationException
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
 import akka.pattern.pipe

@@ -5,10 +5,8 @@ package akka.actor
 
 import language.postfixOps
 
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
-import akka.actor._
 import org.scalatest.BeforeAndAfterAll
-import akka.testkit.{ TestKit, filterEvents, EventFilter }
+import akka.testkit.{ filterEvents, EventFilter }
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.DefaultTimeout

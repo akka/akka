@@ -9,12 +9,10 @@ import language.postfixOps
 import org.scalatest.BeforeAndAfterEach
 import akka.testkit._
 import scala.concurrent.duration._
-import java.util.concurrent.atomic._
 
-import akka.actor.{ Props, Actor, ActorRef, ActorSystem, PoisonPill, RootActorPath }
-import akka.japi.{ Procedure, Function }
+import akka.actor.{ Props, Actor, ActorRef, ActorSystem, PoisonPill}
+import akka.japi.{ Procedure}
 import com.typesafe.config.{ Config, ConfigFactory }
-import scala.concurrent.Await
 
 object EventBusSpec {
   class TestActorWrapperActor(testActor: ActorRef) extends Actor {
@@ -26,7 +24,6 @@ object EventBusSpec {
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class EventBusSpec(busName: String, conf: Config = ConfigFactory.empty()) extends AkkaSpec(conf) with BeforeAndAfterEach {
-  import EventBusSpec._
   type BusType <: EventBus
 
   def createNewEventBus(): BusType

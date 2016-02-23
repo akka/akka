@@ -3,7 +3,6 @@
  */
 package akka
 
-import language.implicitConversions
 
 import akka.actor.ActorSystem
 import scala.concurrent.duration.{ Duration, FiniteDuration }

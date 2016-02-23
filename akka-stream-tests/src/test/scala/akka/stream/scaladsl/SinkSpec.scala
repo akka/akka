@@ -4,7 +4,6 @@
 package akka.stream.scaladsl
 
 import akka.stream._
-import akka.stream.testkit.TestPublisher.ManualProbe
 import akka.stream.testkit._
 import org.scalactic.ConversionCheckedTripleEquals
 import org.scalatest.concurrent.ScalaFutures

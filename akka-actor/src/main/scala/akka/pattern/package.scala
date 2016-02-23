@@ -3,8 +3,6 @@
  */
 package akka
 
-import akka.actor._
-
 /**
  * == Commonly Used Patterns With Akka ==
  *

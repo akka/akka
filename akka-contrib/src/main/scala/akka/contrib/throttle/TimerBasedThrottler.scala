@@ -5,13 +5,11 @@
 package akka.contrib.throttle
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.util.control.NonFatal
 import scala.collection.immutable.{ Queue ⇒ Q }
 import akka.actor.{ ActorRef, Actor, FSM }
 import Throttler._
 import TimerBasedThrottler._
 import java.util.concurrent.TimeUnit
-import akka.AkkaException
 
 /**
  * @see [[akka.contrib.throttle.TimerBasedThrottler]]
@@ -80,8 +78,6 @@ object Throttler {
    * @param rate the rate at which messages will be delivered to the target of the throttler
    */
   final case class SetRate(rate: Rate)
-
-  import language.implicitConversions
 
   /**
    * Helper for some syntactic sugar.

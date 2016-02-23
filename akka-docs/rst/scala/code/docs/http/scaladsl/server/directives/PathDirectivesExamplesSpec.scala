@@ -4,7 +4,6 @@
 
 package docs.http.scaladsl.server.directives
 
-import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server._
 import docs.http.scaladsl.server.RoutingSpec
 

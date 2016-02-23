@@ -50,7 +50,6 @@ class ColorTagger extends WriteEventAdapter {
 
 class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
   with Cleanup with ImplicitSender {
-  import EventsByTagSpec._
 
   implicit val mat = ActorMaterializer()(system)
 

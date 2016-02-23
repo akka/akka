@@ -8,7 +8,6 @@ import java.io.File
 import kamon.sigar.SigarProvisioner
 import org.hyperic.sigar.Sigar
 import org.hyperic.sigar.SigarProxy
-import org.hyperic.sigar.SigarException
 import scala.language.postfixOps
 import scala.util.Success
 import scala.util.Failure

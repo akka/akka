@@ -12,7 +12,7 @@ import scala.compat.java8.FutureConverters._
 
 object Patterns {
   import akka.japi
-  import akka.actor.{ ActorRef, ActorSystem }
+  import akka.actor.{ ActorRef }
   import akka.pattern.{ ask ⇒ scalaAsk, pipe ⇒ scalaPipe, gracefulStop ⇒ scalaGracefulStop, after ⇒ scalaAfter }
   import akka.util.Timeout
   import scala.concurrent.Future
@@ -261,10 +261,9 @@ object Patterns {
 
 object PatternsCS {
   import akka.japi
-  import akka.actor.{ ActorRef, ActorSystem }
-  import akka.pattern.{ ask ⇒ scalaAsk, pipe ⇒ scalaPipe, gracefulStop ⇒ scalaGracefulStop, after ⇒ scalaAfter }
+  import akka.actor.{ ActorRef }
+  import akka.pattern.{ ask ⇒ scalaAsk, gracefulStop ⇒ scalaGracefulStop }
   import akka.util.Timeout
-  import scala.concurrent.Future
   import scala.concurrent.duration._
 
   /**

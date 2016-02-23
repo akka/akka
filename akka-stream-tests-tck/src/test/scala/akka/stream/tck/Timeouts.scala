@@ -3,10 +3,6 @@
  */
 package akka.stream.tck
 
-import akka.actor.ActorSystem
-import scala.concurrent.duration._
-import akka.testkit._
-
 /**
  * Specifies timeouts for the TCK
  */

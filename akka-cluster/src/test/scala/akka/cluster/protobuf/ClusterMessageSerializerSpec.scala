@@ -9,7 +9,6 @@ import akka.cluster._
 import akka.actor.{ ExtendedActorSystem, Address }
 import collection.immutable.SortedSet
 import akka.testkit.AkkaSpec
-import java.math.BigInteger
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterMessageSerializerSpec extends AkkaSpec(

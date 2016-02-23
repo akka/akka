@@ -7,7 +7,6 @@ import java.io.File
 import java.nio.file.StandardOpenOption
 import java.nio.file.StandardOpenOption._
 
-import akka.stream.ActorAttributes
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io._
 import akka.stream.IOResult

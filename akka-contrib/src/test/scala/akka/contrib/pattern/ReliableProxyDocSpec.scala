@@ -6,7 +6,6 @@ package akka.contrib.pattern
 
 import akka.testkit.AkkaSpec
 import akka.actor._
-import akka.testkit.ImplicitSender
 import scala.concurrent.duration._
 import akka.testkit.TestProbe
 

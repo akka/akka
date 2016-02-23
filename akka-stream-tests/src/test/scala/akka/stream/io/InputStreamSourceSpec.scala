@@ -3,14 +3,14 @@
  */
 package akka.stream.io
 
-import java.io.{ OutputStream, PipedOutputStream, PipedInputStream, InputStream }
+import java.io.{ InputStream }
 import java.util.concurrent.CountDownLatch
 
-import akka.stream.scaladsl.{ Source, Sink, StreamConverters }
+import akka.stream.scaladsl.{ Sink, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ Attributes, OverflowStrategy, ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.Await

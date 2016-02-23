@@ -235,7 +235,6 @@ object UdpMessage {
   import Udp._
   import java.lang.{ Iterable ⇒ JIterable }
   import scala.collection.JavaConverters._
-  import language.implicitConversions
 
   /**
    * Each [[Udp.Send]] can optionally request a positive acknowledgment to be sent

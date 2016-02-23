@@ -5,7 +5,6 @@ package akka.remote
 
 import akka.remote.FailureDetector.Clock
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.TimeUnit.MILLISECONDS
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration

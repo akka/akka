@@ -3,7 +3,6 @@
  */
 package akka.stream.scaladsl
 
-import akka.actor.Status.Failure
 import akka.Done
 import akka.pattern.pipe
 import akka.stream._

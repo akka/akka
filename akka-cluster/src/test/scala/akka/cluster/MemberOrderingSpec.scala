@@ -5,7 +5,6 @@
 package akka.cluster
 
 import akka.actor.{ Address, AddressFromURIString }
-import java.net.InetSocketAddress
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 import scala.collection.immutable.SortedSet

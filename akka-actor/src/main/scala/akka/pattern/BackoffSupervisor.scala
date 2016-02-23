@@ -12,7 +12,6 @@ import akka.actor.ActorRef
 import akka.actor.DeadLetterSuppression
 import akka.actor.Props
 import akka.actor.Terminated
-import akka.actor.SupervisorStrategy.Decider
 import akka.actor.SupervisorStrategy.Directive
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.OneForOneStrategy

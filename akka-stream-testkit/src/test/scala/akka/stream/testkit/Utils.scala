@@ -7,7 +7,6 @@ import akka.stream.impl._
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
-import scala.util.Try
 import scala.util.control.NoStackTrace
 
 object Utils {

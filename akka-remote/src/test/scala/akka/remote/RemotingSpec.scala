@@ -6,7 +6,7 @@ package akka.remote
 import akka.actor._
 import akka.event.AddressTerminatedTopic
 import akka.pattern.ask
-import akka.remote.transport.AssociationHandle.{ HandleEventListener, InboundPayload, HandleEvent }
+import akka.remote.transport.AssociationHandle.{ HandleEventListener, HandleEvent }
 import akka.remote.transport._
 import akka.remote.transport.Transport.InvalidAssociationException
 import akka.testkit._

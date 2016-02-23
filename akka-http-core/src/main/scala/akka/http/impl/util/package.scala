@@ -7,7 +7,6 @@ package akka.http.impl
 import akka.NotUsed
 
 import language.implicitConversions
-import language.higherKinds
 import java.nio.charset.Charset
 import com.typesafe.config.Config
 import akka.stream.scaladsl.{ Flow, Source }
@@ -125,7 +124,7 @@ package util {
     override val shape = FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
-      var bytes = ByteString.newBuilder
+      val bytes = ByteString.newBuilder
       private var emptyStream = false
 
       override def preStart(): Unit = scheduleOnce("ToStrictTimeoutTimer", timeout)

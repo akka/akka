@@ -6,10 +6,8 @@ package akka.stream.javadsl
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.Optional
 import akka.NotUsed
-import scala.collection.immutable
 import scala.concurrent.duration._
 import java.net.InetSocketAddress
-import scala.util.control.NoStackTrace
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.ExtensionId

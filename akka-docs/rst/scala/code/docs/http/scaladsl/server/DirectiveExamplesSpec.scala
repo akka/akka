@@ -5,9 +5,7 @@
 package docs.http.scaladsl.server
 
 import akka.http.scaladsl.server._
-import Directives._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.scalatest._
 
 class DirectiveExamplesSpec extends RoutingSpec {
 

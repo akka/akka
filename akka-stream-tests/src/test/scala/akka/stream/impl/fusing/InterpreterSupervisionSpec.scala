@@ -6,7 +6,6 @@ package akka.stream.impl.fusing
 import scala.util.control.NoStackTrace
 import akka.stream.Supervision
 import akka.stream.stage.Context
-import akka.stream.stage.Directive
 import akka.stream.stage.PushPullStage
 import akka.stream.stage.Stage
 import akka.stream.stage.TerminationDirective

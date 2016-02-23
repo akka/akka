@@ -3,7 +3,6 @@
  */
 package akka.cluster.ddata
 
-import scala.collection.immutable
 import java.util.concurrent.atomic.AtomicLong
 import scala.annotation.tailrec
 import scala.collection.immutable.TreeMap
