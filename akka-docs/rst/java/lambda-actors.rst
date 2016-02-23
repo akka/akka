@@ -789,7 +789,7 @@ behavior is not the default).
 
 .. includecode:: code/docs/actorlambda/ActorDocTest.java#swapper
 
-.. _stash-lambda-java:
+.. _stash-lambda:
 
 Stash
 =====

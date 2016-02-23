@@ -414,51 +414,6 @@ object PersistenceDocSpec {
     // Shutdown
     // -- stop --
     //#safe-shutdown-example-good
-
-    class MyPersistAsyncActor extends PersistentActor {
-      override def persistenceId = "my-stable-persistence-id"
-
-      override def receiveRecover: Receive = {
-        case _ => // handle recovery here
-      }
-
-      //#nested-persistAsync-persistAsync
-      override def receiveCommand: Receive = {
-        case c: String =>
-          sender() ! c
-          persistAsync(c + "-outer-1") { outer ⇒
-            sender() ! outer
-            persistAsync(c + "-inner-1") { inner ⇒ sender() ! inner }
-          }
-          persistAsync(c + "-outer-2") { outer ⇒
-            sender() ! outer
-            persistAsync(c + "-inner-2") { inner ⇒ sender() ! inner }
-          }
-      }
-      //#nested-persistAsync-persistAsync
-    }
-
-    //#nested-persistAsync-persistAsync-caller
-    persistentActor ! "a"
-    persistentActor ! "b"
-
-    // order of received messages:
-    // a
-    // b
-    // a-outer-1
-    // a-outer-2
-    // b-outer-1
-    // b-outer-2
-    // a-inner-1
-    // a-inner-2
-    // b-inner-1
-    // b-inner-2
-
-    // which can be seen as the following causal relationship:
-    // a -> a-outer-1 -> a-outer-2 -> a-inner-1 -> a-inner-2
-    // b -> b-outer-1 -> b-outer-2 -> b-inner-1 -> b-inner-2
-
-    //#nested-persistAsync-persistAsync-caller
   }
 
   object View {
