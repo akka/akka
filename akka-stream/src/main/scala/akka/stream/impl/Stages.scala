@@ -95,6 +95,8 @@ private[stream] object Stages {
     val inputStreamSource = name("inputStreamSource") and IODispatcher
     val outputStreamSource = name("outputStreamSource") and IODispatcher
     val fileSource = name("fileSource") and IODispatcher
+    val unfoldResourceSource = name("unfoldResourceSource") and IODispatcher
+    val unfoldResourceSourceAsync = name("unfoldResourceSourceAsync") and IODispatcher
 
     val subscriberSink = name("subscriberSink")
     val cancelledSink = name("cancelledSink")
