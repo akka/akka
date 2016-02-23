@@ -4,11 +4,9 @@
 package akka.util
 
 import java.io.DataInputStream
-import java.io.BufferedInputStream
-import scala.annotation.{ switch, tailrec }
+import scala.annotation.{ switch }
 import scala.util.control.NonFatal
 import java.io.InputStream
-import scala.util.Try
 
 /**
  * This is a minimized byte-code parser that concentrates exclusively on line

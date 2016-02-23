@@ -6,14 +6,12 @@ package akka.stream.scaladsl
 import akka.NotUsed
 
 import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.Supervision.resumingDecider
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import org.reactivestreams.Publisher
-import akka.stream.Attributes
 import akka.stream.ActorAttributes
 import org.scalatest.concurrent.ScalaFutures
 import org.scalactic.ConversionCheckedTripleEquals
@@ -22,7 +20,6 @@ import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.testkit.scaladsl.TestSink
 
 object FlowGroupBySpec {
-  import language.higherKinds
 
   implicit class Lift[M](val f: SubFlow[Int, M, Source[Int, M]#Repr, RunnableGraph[M]]) extends AnyVal {
     def lift(key: Int ⇒ Int) = f.prefixAndTail(1).map(p ⇒ key(p._1.head) -> (Source.single(p._1.head) ++ p._2)).concatSubstreams

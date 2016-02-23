@@ -4,7 +4,6 @@
 package akka.io
 
 import java.net.InetSocketAddress
-import java.nio.channels.DatagramChannel
 import akka.testkit.{ TestProbe, ImplicitSender, AkkaSpec }
 import akka.util.ByteString
 import akka.actor.ActorRef

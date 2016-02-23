@@ -5,11 +5,7 @@
 package akka.testkit
 
 import akka.actor._
-import scala.concurrent.duration.Duration
-import akka.dispatch.DispatcherPrerequisites
 import scala.concurrent.duration.FiniteDuration
-import akka.dispatch.MessageDispatcher
-import akka.dispatch.MailboxType
 import scala.reflect.ClassTag
 
 /**

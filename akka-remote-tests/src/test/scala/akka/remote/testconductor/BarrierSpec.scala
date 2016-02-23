@@ -8,9 +8,6 @@ import language.postfixOps
 import akka.actor._
 import akka.testkit.{ AkkaSpec, ImplicitSender, EventFilter, TestProbe, TimingTest }
 import scala.concurrent.duration._
-import akka.event.Logging
-import akka.util.Timeout
-import org.scalatest.BeforeAndAfterEach
 import java.net.{ InetSocketAddress, InetAddress }
 
 object BarrierSpec {

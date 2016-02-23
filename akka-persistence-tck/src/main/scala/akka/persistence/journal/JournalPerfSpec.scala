@@ -5,7 +5,7 @@ package akka.persistence.journal
 
 import akka.actor.{ ActorLogging, ActorRef, Props }
 import akka.persistence.journal.JournalPerfSpec.{ BenchActor, Cmd, ResetCounter }
-import akka.persistence.{ PersistentActor, PluginSpec }
+import akka.persistence.{ PersistentActor }
 import akka.testkit.TestProbe
 import scala.collection.immutable
 import scala.concurrent.duration._

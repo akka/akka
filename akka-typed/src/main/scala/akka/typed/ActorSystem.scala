@@ -4,12 +4,7 @@
 package akka.typed
 
 import akka.event.EventStream
-import akka.actor.Scheduler
 import scala.concurrent.ExecutionContext
-import java.util.concurrent.Executor
-import scala.concurrent.duration.Duration
-import akka.actor.Extension
-import akka.actor.ExtensionId
 import akka.actor.ActorRefProvider
 import java.util.concurrent.ThreadFactory
 import akka.actor.DynamicAccess

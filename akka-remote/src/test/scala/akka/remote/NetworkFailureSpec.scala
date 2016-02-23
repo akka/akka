@@ -4,18 +4,13 @@
 
 package akka.remote
 
-import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
-
-import akka.actor.Actor
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
 
-import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import java.util.concurrent.atomic.AtomicBoolean
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ Future }
 
 trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec ⇒
-  import Actor._
   import scala.concurrent.duration.Duration
 
   import system.dispatcher

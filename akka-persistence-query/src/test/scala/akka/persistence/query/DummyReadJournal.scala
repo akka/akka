@@ -7,7 +7,6 @@ package akka.persistence.query
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.typesafe.config.{ Config, ConfigFactory }
-import scala.runtime.BoxedUnit
 
 /**
  * Use for tests only!

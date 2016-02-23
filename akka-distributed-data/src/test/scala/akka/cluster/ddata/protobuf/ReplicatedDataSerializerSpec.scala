@@ -3,7 +3,6 @@
  */
 package akka.cluster.ddata.protobuf
 
-import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
@@ -20,7 +19,6 @@ import akka.cluster.ddata.ORMultiMap
 import akka.cluster.ddata.ORSet
 import akka.cluster.ddata.PNCounter
 import akka.cluster.ddata.PNCounterMap
-import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.Replicator.Internal._
 import akka.cluster.ddata.VersionVector
 import akka.testkit.TestKit

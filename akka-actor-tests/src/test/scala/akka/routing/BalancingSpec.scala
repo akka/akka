@@ -3,7 +3,6 @@
  */
 package akka.routing
 
-import language.postfixOps
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Await
 import scala.concurrent.duration._

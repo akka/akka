@@ -11,9 +11,7 @@ import akka.actor.ActorCell
 import akka.actor.ActorRefWithCell
 import akka.actor.SupervisorStrategy
 import akka.dispatch.Dispatchers
-import akka.japi.Util.immutableSeq
 import akka.actor.ActorSystem
-import akka.actor.Props
 
 object SmallestMailboxRoutingLogic {
   def apply(): SmallestMailboxRoutingLogic = new SmallestMailboxRoutingLogic

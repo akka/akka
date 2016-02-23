@@ -23,11 +23,10 @@ import akka.{ OnlyCauseStackTrace, AkkaException }
 import java.io.NotSerializableException
 import java.util.concurrent.{ TimeUnit, TimeoutException, ConcurrentHashMap }
 import scala.annotation.tailrec
-import scala.concurrent.duration.{ Duration, Deadline }
+import scala.concurrent.duration.{ Deadline }
 import scala.util.control.NonFatal
 import java.util.concurrent.locks.LockSupport
 import scala.concurrent.Future
-import scala.concurrent.blocking
 
 /**
  * INTERNAL API

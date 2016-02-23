@@ -5,8 +5,6 @@ package akka.routing
 
 import scala.collection.immutable
 import java.util.concurrent.ThreadLocalRandom
-import akka.actor.ActorContext
-import akka.actor.Props
 import akka.dispatch.Dispatchers
 import com.typesafe.config.Config
 import akka.actor.SupervisorStrategy

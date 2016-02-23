@@ -26,7 +26,6 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
     akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.loglevel = WARNING""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-  import system.dispatcher
 
   val ServerOnTheMove = StatusCodes.custom(330, "Server on the move")
   implicit val materializer = ActorMaterializer()

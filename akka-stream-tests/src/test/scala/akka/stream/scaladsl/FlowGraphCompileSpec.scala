@@ -3,7 +3,6 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.Attributes._
 import akka.stream.{ ClosedShape, ActorMaterializer, OverflowStrategy }
 import akka.stream.testkit._
 import akka.stream.stage._

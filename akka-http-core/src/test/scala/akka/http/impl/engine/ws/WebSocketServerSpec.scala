@@ -10,12 +10,9 @@ import akka.stream.testkit.Utils
 import akka.util.ByteString
 import org.scalatest.{ Matchers, FreeSpec }
 
-import akka.http.impl.util._
-
 import akka.http.impl.engine.server.HttpServerTestSetupBase
 
 class WebSocketServerSpec extends FreeSpec with Matchers with WithMaterializerSpec { spec ⇒
-  import WSTestUtils._
 
   "The server-side WebSocket integration should" - {
     "establish a websocket connection when the user requests it" - {

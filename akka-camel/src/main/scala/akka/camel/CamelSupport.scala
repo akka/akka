@@ -4,9 +4,6 @@
 package akka.camel
 
 import akka.actor.Actor
-import com.typesafe.config.Config
-import scala.concurrent.duration.Duration
-import java.util.concurrent.TimeUnit._
 
 private[camel] trait CamelSupport { this: Actor ⇒
 

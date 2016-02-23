@@ -3,14 +3,10 @@
  */
 package akka.event.slf4j
 
-import language.postfixOps
 import akka.testkit.AkkaSpec
-import akka.actor.{ DiagnosticActorLogging, Actor, ActorLogging, Props }
+import akka.actor.{ Actor, ActorLogging, Props }
 import scala.concurrent.duration._
 import akka.event.Logging
-import ch.qos.logback.core.OutputStreamAppender
-import java.io.StringWriter
-import java.io.ByteArrayOutputStream
 import org.scalatest.BeforeAndAfterEach
 import akka.actor.ActorRef
 import akka.event.Logging.InitializeLogger
@@ -20,8 +16,6 @@ import akka.testkit.TestProbe
 import akka.event.Logging.Warning
 import akka.event.Logging.Info
 import akka.event.Logging.Debug
-import akka.event.LoggingAdapter
-import akka.event.LogSource
 
 object Slf4jLoggingFilterSpec {
 
@@ -80,7 +74,6 @@ class Slf4jLoggingFilterSpec extends AkkaSpec(Slf4jLoggingFilterSpec.config) wit
   "Slf4jLoggingFilter" must {
 
     "use configured LoggingFilter at debug log level in logback conf" in {
-      import LogSource.fromClass
       val log1 = Logging(system, classOf[DebugLevelProducer])
       log1.isDebugEnabled should be(true)
       log1.isInfoEnabled should be(true)
@@ -89,7 +82,6 @@ class Slf4jLoggingFilterSpec extends AkkaSpec(Slf4jLoggingFilterSpec.config) wit
     }
 
     "use configured LoggingFilter at warning log level in logback conf" in {
-      import LogSource.fromClass
       val log1 = Logging(system, classOf[WarningLevelProducer])
       log1.isDebugEnabled should be(false)
       log1.isInfoEnabled should be(false)

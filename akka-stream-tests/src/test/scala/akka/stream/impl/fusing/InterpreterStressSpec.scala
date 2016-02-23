@@ -3,11 +3,8 @@
  */
 package akka.stream.impl.fusing
 
-import akka.NotUsed
 import akka.stream.impl.ConstantFun
-import akka.stream.{ Attributes, Shape, Supervision }
-import akka.stream.stage.AbstractStage.PushPullGraphStage
-import akka.stream.stage.GraphStageWithMaterializedValue
+import akka.stream.{ Supervision }
 import akka.stream.testkit.AkkaSpec
 
 class InterpreterStressSpec extends AkkaSpec with GraphInterpreterSpecKit {

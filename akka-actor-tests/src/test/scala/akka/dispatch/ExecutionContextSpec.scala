@@ -6,7 +6,6 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import akka.testkit.{ TestLatch, AkkaSpec, DefaultTimeout }
 import akka.util.SerializedSuspendableExecutionContext
-import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 import akka.testkit.TestActorRef
 import akka.actor.Props
 import akka.actor.Actor

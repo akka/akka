@@ -162,7 +162,7 @@ private[http] trait Rendering {
    */
   def ~~%(lng: Long): this.type =
     if (lng != 0) {
-      @tailrec def putChar(shift: Int = 60): this.type = {
+      @tailrec def putChar(shift: Int): this.type = {
         this ~~ CharUtils.lowerHexDigit(lng >>> shift)
         if (shift > 0) putChar(shift - 4) else this
       }

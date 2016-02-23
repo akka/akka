@@ -3,16 +3,12 @@
  */
 package akka.routing
 
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 import akka.AkkaException
-import akka.event.Logging.Error.NoCause
 
 import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.concurrent.duration.FiniteDuration
 
 import com.typesafe.config.Config
 
@@ -22,12 +18,10 @@ import akka.actor.ActorInitializationException
 import akka.actor.ActorRefWithCell
 import akka.actor.ActorSystemImpl
 import akka.actor.InternalActorRef
-import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.actor.SupervisorStrategy
 import akka.dispatch.Envelope
 import akka.dispatch.MessageDispatcher
-import java.lang.{ Double ⇒ JDouble }
 
 /**
  * [[Pool]] routers with dynamically resizable number of routees are implemented by providing a Resizer

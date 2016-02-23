@@ -1,7 +1,7 @@
 package akka.remote
 
 import akka.testkit.AkkaSpec
-import akka.actor.{ Props, ActorRef, Address }
+import akka.actor.{ Props, Address }
 import akka.remote.EndpointManager._
 import scala.concurrent.duration._
 

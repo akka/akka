@@ -10,7 +10,6 @@ import akka.persistence._
 import akka.persistence.journal.{ AsyncWriteJournal ⇒ SAsyncWriteJournal }
 import scala.concurrent.Future
 import scala.util.Try
-import scala.util.Success
 import scala.util.Failure
 
 /**

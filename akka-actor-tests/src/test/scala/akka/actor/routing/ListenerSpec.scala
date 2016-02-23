@@ -2,7 +2,6 @@ package akka.actor.routing
 
 import akka.testkit._
 import akka.actor._
-import akka.actor.Actor._
 import akka.routing._
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Await

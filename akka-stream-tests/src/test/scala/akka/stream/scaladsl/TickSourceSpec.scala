@@ -3,11 +3,8 @@
  */
 package akka.stream.scaladsl
 
-import akka.actor.Cancellable
-
 import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
-import akka.stream.{ ClosedShape, ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.{ ClosedShape, ActorMaterializer }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 

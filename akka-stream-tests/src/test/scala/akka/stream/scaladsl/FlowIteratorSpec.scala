@@ -10,9 +10,6 @@ import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import org.reactivestreams.Subscription
-import akka.testkit.TestProbe
-import org.reactivestreams.Subscriber
 import akka.testkit.EventFilter
 
 class FlowIteratorSpec extends AbstractFlowIteratorSpec {

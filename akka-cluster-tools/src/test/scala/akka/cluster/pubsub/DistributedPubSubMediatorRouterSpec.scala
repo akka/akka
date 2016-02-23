@@ -3,7 +3,7 @@ package akka.cluster.pubsub
 import akka.testkit._
 import akka.routing.{ ConsistentHashingRoutingLogic, RouterEnvelope }
 import org.scalatest.WordSpecLike
-import akka.actor.{ ActorInitializationException, ActorRef }
+import akka.actor.{ ActorRef }
 import com.typesafe.config.ConfigFactory
 
 case class WrappedMessage(msg: String) extends RouterEnvelope {

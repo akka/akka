@@ -3,7 +3,7 @@
  */
 package akka.cluster.sharding.protobuf
 
-import akka.actor.{ ExtendedActorSystem, Address }
+import akka.actor.{ ExtendedActorSystem }
 import akka.testkit.AkkaSpec
 import akka.actor.Props
 import akka.cluster.sharding.ShardCoordinator

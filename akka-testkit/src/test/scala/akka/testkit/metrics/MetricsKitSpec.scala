@@ -5,8 +5,6 @@ package akka.testkit.metrics
 
 import org.scalatest._
 import com.typesafe.config.ConfigFactory
-import scala.util.Random
-import org.scalautils.Tolerance
 
 class MetricsKitSpec extends WordSpec with Matchers with BeforeAndAfter with BeforeAndAfterAll
   with MetricsKit {

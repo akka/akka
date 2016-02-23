@@ -21,7 +21,6 @@ import scala.util.{ Failure, Success, Try }
 import akka.stream.ActorAttributes.SupervisionStrategy
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.NotUsed
 
 /**
  * INTERNAL API

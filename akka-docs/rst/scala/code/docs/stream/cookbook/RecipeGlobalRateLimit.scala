@@ -2,7 +2,6 @@ package docs.stream.cookbook
 
 import akka.NotUsed
 import akka.actor.{ Props, ActorRef, Actor }
-import akka.actor.Actor.Receive
 import akka.stream.ClosedShape
 import akka.stream.scaladsl._
 import akka.stream.testkit._
