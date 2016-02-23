@@ -103,8 +103,8 @@ configured proxy.
 
 .. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java#create-singleton-proxy
 
-A more comprehensive sample is available in the `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
-tutorial named `Distributed workers with Akka and Java! <http://www.typesafe.com/activator/template/akka-distributed-workers-java>`_.
+A more comprehensive sample is available in the `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
+tutorial named `Distributed workers with Akka and Java! <http://www.lightbend.com/activator/template/akka-distributed-workers-java>`_.
 
 Dependencies
 ------------

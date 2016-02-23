@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.settings

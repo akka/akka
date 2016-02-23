@@ -220,7 +220,7 @@ Microkernel is Deprecated
 
 Akka Microkernel is deprecated and will be removed. It is replaced by using an ordinary
 user defined main class and packaging with `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_
-or `Typesafe ConductR <http://typesafe.com/products/conductr>`_.
+or `Lightbend ConductR <http://www.lightbend.com/products/conductr>`_.
 Please see :ref:`deployment-scenarios` for more information.
 
 New Cluster Metrics Extension 

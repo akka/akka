@@ -379,7 +379,7 @@ An incomplete list of other implementations:
 .. _Reactor (1.1+): http://github.com/reactor/reactor
 .. _RxJava: https://github.com/ReactiveX/RxJavaReactiveStreams
 .. _Ratpack: http://www.ratpack.io/manual/current/streams.html
-.. _Slick: http://slick.typesafe.com
+.. _Slick: http://slick.lightbend.com
 
 The two most important interfaces in Reactive Streams are the :class:`Publisher` and :class:`Subscriber`.
 

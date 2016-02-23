@@ -33,8 +33,8 @@ any other node.
 There a two different modes of message delivery, explained in the sections
 :ref:`distributed-pub-sub-publish-scala` and :ref:`distributed-pub-sub-send-scala` below. 
 
-A more comprehensive sample is available in the `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
-tutorial named `Akka Clustered PubSub with Scala! <http://www.typesafe.com/activator/template/akka-clustering>`_.
+A more comprehensive sample is available in the `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
+tutorial named `Akka Clustered PubSub with Scala! <http://www.lightbend.com/activator/template/akka-clustering>`_.
 
 .. _distributed-pub-sub-publish-scala:
 
