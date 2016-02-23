@@ -7,20 +7,20 @@ Prerequisites
 Akka requires that you have `Java 8 <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`_ or
 later installed on your machine.
 
-`Typesafe <http://www.typesafe.com>`_ provides a commercial build of Akka and related projects such as Scala or Play
-as part of the `Reactive Platform <http://www.typesafe.com/products/typesafe-reactive-platform>`_ which is made available
+`Lightbend Inc. <http://www.lightbend.com>`_ provides a commercial build of Akka and related projects such as Scala or Play
+as part of the `Reactive Platform <http://www.lightbend.com/products/lightbend-reactive-platform>`_ which is made available
 for Java 6 in case your project can not upgrade to Java 8 just yet. It also includes additional commercial features or libraries.
 
 Getting Started Guides and Template Projects
 --------------------------------------------
 
-The best way to start learning Akka is to download `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
+The best way to start learning Akka is to download `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
 and try out one of Akka Template Projects.
 
 Download
 --------
 
-There are several ways to download Akka. You can download it as part of the Typesafe Platform
+There are several ways to download Akka. You can download it as part of the Lightbend Platform
 (as described above). You can download the full distribution, which includes all modules. 
 Or you can use a build tool like Maven or SBT to download dependencies from the Akka Maven repository.
 
@@ -101,8 +101,8 @@ Using Akka with Maven
 ---------------------
 
 The simplest way to get started with Akka and Maven is to check out the
-`Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
-tutorial named `Akka Main in Java <http://www.typesafe.com/activator/template/akka-sample-main-java>`_.
+`Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
+tutorial named `Akka Main in Java <http://www.lightbend.com/activator/template/akka-sample-main-java>`_.
 
 Since Akka is published to Maven Central (for versions since 2.1-M2), it is
 enough to add the Akka dependencies to the POM. For example, here is the
@@ -137,7 +137,7 @@ Using Akka with SBT
 -------------------
 
 The simplest way to get started with Akka and SBT is to use
-`Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_ with one of the SBT `templates <https://www.typesafe.com/activator/templates>`_.
+`Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_ with one of the SBT `templates <https://www.lightbend.com/activator/templates>`_.
 
 Summary of the essential parts for using Akka with SBT:
 
@@ -249,7 +249,7 @@ Need help?
 
 If you have questions you can get help on the `Akka Mailing List <https://groups.google.com/group/akka-user>`_.
 
-You can also ask for `commercial support <https://www.typesafe.com>`_.
+You can also ask for `commercial support <https://www.lightbend.com>`_.
 
 Thanks for being a part of the Akka community.
 

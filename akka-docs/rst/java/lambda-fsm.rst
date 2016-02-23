@@ -460,5 +460,5 @@ Examples
 ========
 
 A bigger FSM example contrasted with Actor's :meth:`become`/:meth:`unbecome` can be found in
-the `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_ template named 
-`Akka FSM in Scala <http://www.typesafe.com/activator/template/akka-sample-fsm-java-lambda>`_
+the `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_ template named
+`Akka FSM in Scala <http://www.lightbend.com/activator/template/akka-sample-fsm-java-lambda>`_

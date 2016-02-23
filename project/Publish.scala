@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka
 
@@ -18,8 +18,8 @@ object Publish extends AutoPlugin {
     pomExtra := akkaPomExtra,
     publishTo := akkaPublishTo.value,
     credentials ++= akkaCredentials,
-    organizationName := "Typesafe Inc.",
-    organizationHomepage := Some(url("http://www.typesafe.com")),
+    organizationName := "Lightbend Inc.",
+    organizationHomepage := Some(url("http://www.lightbend.com")),
     publishMavenStyle := true,
     pomIncludeRepository := { x => false },
     defaultPublishTo := crossTarget.value / "repository"

@@ -446,8 +446,8 @@ cluster. Data types that need pruning have to implement the ``RemovedNodePruning
 Samples
 =======
 
-Several interesting samples are included and described in the `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
-tutorial named `Akka Distributed Data Samples with Java <http://www.typesafe.com/activator/template/akka-sample-distributed-data-java>`_.
+Several interesting samples are included and described in the `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
+tutorial named `Akka Distributed Data Samples with Java <http://www.lightbend.com/activator/template/akka-sample-distributed-data-java>`_.
 
 * Low Latency Voting Service
 * Highly Available Shopping Cart

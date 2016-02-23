@@ -279,8 +279,8 @@ That is not done by the router.
 Remoting Sample
 ^^^^^^^^^^^^^^^
 
-There is a more extensive remote example that comes with `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_.
-The tutorial named `Akka Remote Samples with Scala <http://www.typesafe.com/activator/template/akka-sample-remote-scala>`_
+There is a more extensive remote example that comes with `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_.
+The tutorial named `Akka Remote Samples with Scala <http://www.lightbend.com/activator/template/akka-sample-remote-scala>`_
 demonstrates both remote deployment and look-up of remote actors.
 
 Pluggable transport support
