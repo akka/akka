@@ -4,6 +4,8 @@
 package akka.stream.impl.io
 
 import java.nio.ByteBuffer
+import java.util
+import java.util.Collections
 import javax.net.ssl.SSLEngineResult.HandshakeStatus
 import javax.net.ssl.SSLEngineResult.HandshakeStatus._
 import javax.net.ssl.SSLEngineResult.Status._
@@ -154,6 +156,15 @@ private[akka] class TLSActor(settings: ActorMaterializerSettings,
     e.setUseClientMode(role == Client)
     e
   }
+
+  // since setting a custom HostnameVerified (in JDK8, update 60 still) disables SNI
+  // see here: https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#SNIExamples
+  // resolves: https://github.com/akka/akka/issues/19287
+  private def applySNI(hostname: String, params: SSLParameters): Unit = {
+    val serverName = new SNIHostName(hostname)
+    params.setServerNames(Collections.singletonList(serverName))
+  }
+
   var currentSession = engine.getSession
   applySessionParameters(firstSession)
 
@@ -166,7 +177,10 @@ private[akka] class TLSActor(settings: ActorMaterializerSettings,
       case Some(TLSClientAuth.Need) ⇒ engine.setNeedClientAuth(true)
       case _                        ⇒ // do nothing
     }
-    params.sslParameters foreach (p ⇒ engine.setSSLParameters(p))
+    params.sslParameters foreach { p ⇒
+      hostInfo foreach { case (host, _) ⇒ applySNI(host, p) }
+      engine.setSSLParameters(p)
+    }
 
     engine.beginHandshake()
     lastHandshakeStatus = engine.getHandshakeStatus
