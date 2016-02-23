@@ -99,6 +99,8 @@ abstract class ClusterShardingGetStatsSpec extends MultiNodeSpec(ClusterSharding
     enterBarrier(from.name + "-joined")
   }
 
+  var shardActor = Actor.noSender
+
   "Inspecting cluster sharding state" must {
 
     "join cluster" in {
@@ -117,7 +119,7 @@ abstract class ClusterShardingGetStatsSpec extends MultiNodeSpec(ClusterSharding
         startProxy()
       }
       runOn(first, second, third) {
-        startShard()
+        shardActor = startShard()
       }
 
       enterBarrier("sharding started")
@@ -174,8 +176,51 @@ abstract class ClusterShardingGetStatsSpec extends MultiNodeSpec(ClusterSharding
         }
       }
 
-      enterBarrier("done")
+      enterBarrier("got shard state")
 
+    }
+
+    "return stats after a node leaves" in {
+      runOn(first) {
+        Cluster(system).leave(node(third).address)
+      }
+
+      runOn(third) {
+        watch(shardActor)
+        expectTerminated(shardActor, 15.seconds)
+      }
+
+      enterBarrier("third node removed")
+
+      runOn(first, second) {
+        within(10.seconds) {
+          awaitAssert {
+            val pingProbe = TestProbe()
+            // trigger the same four shards
+            (1 to 6).filterNot(_ % 3 == 0).foreach(n ⇒ shardActor.tell(Ping(n), pingProbe.ref))
+            pingProbe.receiveWhile(messages = 4) {
+              case Pong ⇒ ()
+            }
+          }
+        }
+      }
+
+      enterBarrier("shards revived")
+
+      runOn(first, second) {
+        within(10.seconds) {
+          awaitAssert {
+            val probe = TestProbe()
+            val region = ClusterSharding(system).shardRegion(shardTypeName)
+            region.tell(ShardRegion.GetClusterShardingStats(10.seconds.dilated), probe.ref)
+            val regions = probe.expectMsgType[ShardRegion.ClusterShardingStats].regions
+            regions.size shouldEqual 2
+            regions.values.flatMap(_.stats.values).sum shouldEqual 4
+          }
+        }
+      }
+
+      enterBarrier("done")
     }
   }
 }

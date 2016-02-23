@@ -646,6 +646,7 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
         state = state.updated(evt)
         gracefulShutdownInProgress -= ref
         regionTerminationInProgress -= ref
+        aliveRegions -= ref
         allocateShardHomes()
       }
     }
