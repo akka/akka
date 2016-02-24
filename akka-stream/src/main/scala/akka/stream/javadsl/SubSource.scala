@@ -1121,6 +1121,8 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
    *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate
    *
+   * Throttle is able to work with rates between 1/nanosecond and 1/10 days.
+   *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
    * '''Backpressures when''' downstream backpressures
@@ -1150,6 +1152,8 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
    *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate. Enforcing
    *  cannot emit elements that cost more than the maximumBurst
+   *
+   * Throttle is able to work with rates between 1/nanosecond and 1/10 days.
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
