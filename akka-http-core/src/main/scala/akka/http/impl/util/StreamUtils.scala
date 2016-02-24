@@ -5,7 +5,6 @@
 package akka.http.impl.util
 
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
-
 import akka.NotUsed
 import akka.http.scaladsl.model.RequestEntity
 import akka.stream._
@@ -16,7 +15,6 @@ import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.util.ByteString
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
-
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 
 /**
@@ -179,8 +177,8 @@ private[http] object StreamUtils {
 
   /** A copy of PublisherSink that allows access to the publisher through the cell but can only materialized once */
   private class OneTimePublisherSink[In](attributes: Attributes, shape: SinkShape[In], cell: OneTimeWriteCell[Publisher[In]])
-    extends PublisherSink[In](attributes, shape) {
-    override def create(context: MaterializationContext): (Subscriber[In], Publisher[In]) = {
+      extends PublisherSink[In](attributes, shape) {
+    override def create(context: MaterializationContext): (AnyRef, Publisher[In]) = {
       val results = super.create(context)
       cell.set(results._2)
       results
@@ -193,7 +191,7 @@ private[http] object StreamUtils {
   }
   /** A copy of SubscriberSource that allows access to the subscriber through the cell but can only materialized once */
   private class OneTimeSubscriberSource[Out](val attributes: Attributes, shape: SourceShape[Out], cell: OneTimeWriteCell[Subscriber[Out]])
-    extends SourceModule[Out, Subscriber[Out]](shape) {
+      extends SourceModule[Out, Subscriber[Out]](shape) {
 
     override def create(context: MaterializationContext): (Publisher[Out], Subscriber[Out]) = {
       val processor = new Processor[Out, Out] {

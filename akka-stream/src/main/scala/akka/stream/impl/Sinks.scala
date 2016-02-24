@@ -26,7 +26,14 @@ import java.util.Optional
  */
 private[akka] abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) extends Module {
 
-  def create(context: MaterializationContext): (Subscriber[In] @uncheckedVariance, Mat)
+  /**
+   * Create the Subscriber or VirtualPublisher that consumes the incoming
+   * stream, plus the materialized value. Since Subscriber and VirtualPublisher
+   * do not share a common supertype apart from AnyRef this is what the type
+   * union devolves into; unfortunately we do not have union types at our
+   * disposal at this point.
+   */
+  def create(context: MaterializationContext): (AnyRef, Mat)
 
   override def replaceShape(s: Shape): Module =
     if (s != shape) throw new UnsupportedOperationException("cannot replace the shape of a Sink, you need to wrap it in a Graph for that")
@@ -59,8 +66,13 @@ private[akka] class PublisherSink[In](val attributes: Attributes, shape: SinkSha
 
   override def toString: String = "PublisherSink"
 
-  override def create(context: MaterializationContext): (Subscriber[In], Publisher[In]) = {
-    val proc = new VirtualProcessor[In]
+  /*
+   * This method is the reason why SinkModule.create may return something that is
+   * not a Subscriber: a VirtualPublisher is used in order to avoid the immediate
+   * subscription a VirtualProcessor would perform (and it also saves overhead).
+   */
+  override def create(context: MaterializationContext): (AnyRef, Publisher[In]) = {
+    val proc = new VirtualPublisher[In]
     (proc, proc)
   }
 
