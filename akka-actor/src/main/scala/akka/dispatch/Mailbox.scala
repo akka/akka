@@ -842,7 +842,7 @@ final case class UnboundedControlAwareMailbox() extends MailboxType with Produce
 }
 
 object UnboundedControlAwareMailbox {
-  class MessageQueue extends ControlAwareMessageQueueSemantics with UnboundedMessageQueueSemantics {
+  class MessageQueue extends UnboundedControlAwareMessageQueueSemantics with java.io.Serializable {
     val controlQueue: Queue[Envelope] = new ConcurrentLinkedQueue[Envelope]()
     val queue: Queue[Envelope] = new ConcurrentLinkedQueue[Envelope]()
   }
@@ -862,7 +862,7 @@ final case class BoundedControlAwareMailbox(capacity: Int, override final val pu
 }
 
 object BoundedControlAwareMailbox {
-  class MessageQueue(val capacity: Int, val pushTimeOut: FiniteDuration) extends BoundedControlAwareMessageQueueSemantics {
+  class MessageQueue(val capacity: Int, val pushTimeOut: FiniteDuration) extends BoundedControlAwareMessageQueueSemantics with java.io.Serializable {
 
     private final val size = new AtomicInteger(0)
     private final val putLock = new ReentrantLock()
