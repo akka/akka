@@ -85,14 +85,20 @@ class FlowThrottleSpec extends AkkaSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
       Source.fromPublisher(upstream).throttle(1, 200.millis, 5, Shaping).runWith(Sink.fromSubscriber(downstream))
+
+      // Exhaust bucket first
+      downstream.request(5)
+      (1 to 5) foreach upstream.sendNext
+      downstream.receiveWithin(300.millis, 5) should be(1 to 5)
+
       downstream.request(1)
-      upstream.sendNext(1)
+      upstream.sendNext(6)
       downstream.expectNoMsg(100.millis)
-      downstream.expectNext(1)
+      downstream.expectNext(6)
       downstream.request(5)
       downstream.expectNoMsg(1200.millis)
-      for (i ← 2 to 6) upstream.sendNext(i)
-      downstream.receiveWithin(300.millis, 5) should be(2 to 6)
+      for (i ← 7 to 11) upstream.sendNext(i)
+      downstream.receiveWithin(300.millis, 5) should be(7 to 11)
       downstream.cancel()
     }
 
@@ -100,21 +106,31 @@ class FlowThrottleSpec extends AkkaSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
       Source.fromPublisher(upstream).throttle(1, 200.millis, 5, Shaping).runWith(Sink.fromSubscriber(downstream))
+
+      // Exhaust bucket first
+      downstream.request(5)
+      (1 to 5) foreach upstream.sendNext
+      downstream.receiveWithin(300.millis, 5) should be(1 to 5)
+
       downstream.request(1)
-      upstream.sendNext(1)
+      upstream.sendNext(6)
       downstream.expectNoMsg(100.millis)
-      downstream.expectNext(1)
+      downstream.expectNext(6)
       downstream.expectNoMsg(500.millis) //wait to receive 2 in burst afterwards
       downstream.request(5)
-      for (i ← 2 to 4) upstream.sendNext(i)
-      downstream.receiveWithin(100.millis, 2) should be(Seq(2, 3))
+      for (i ← 7 to 10) upstream.sendNext(i)
+      downstream.receiveWithin(100.millis, 2) should be(Seq(7, 8))
       downstream.cancel()
     }
 
     "throw exception when exceeding throughtput in enforced mode" in Utils.assertAllStagesStopped {
+      Await.result(
+        Source(1 to 5).throttle(1, 200.millis, 5, Enforcing).runWith(Sink.seq),
+        2.seconds) should ===(1 to 5) // Burst is 5 so this will not fail
+
       an[RateExceededException] shouldBe thrownBy {
         Await.result(
-          Source(1 to 5).throttle(1, 200.millis, 5, Enforcing).runWith(Sink.ignore),
+          Source(1 to 6).throttle(1, 200.millis, 5, Enforcing).runWith(Sink.ignore),
           2.seconds)
       }
     }
@@ -190,41 +206,57 @@ class FlowThrottleSpec extends AkkaSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
       Source.fromPublisher(upstream).throttle(2, 400.millis, 5, (_) ⇒ 1, Shaping).runWith(Sink.fromSubscriber(downstream))
+
+      // Exhaust bucket first
+      downstream.request(5)
+      (1 to 5) foreach upstream.sendNext
+      downstream.receiveWithin(300.millis, 5) should be(1 to 5)
+
       downstream.request(1)
-      upstream.sendNext(1)
+      upstream.sendNext(6)
       downstream.expectNoMsg(100.millis)
-      downstream.expectNext(1)
+      downstream.expectNext(6)
       downstream.request(5)
       downstream.expectNoMsg(1200.millis)
-      for (i ← 2 to 6) upstream.sendNext(i)
-      downstream.receiveWithin(300.millis, 5) should be(2 to 6)
+      for (i ← 7 to 11) upstream.sendNext(i)
+      downstream.receiveWithin(300.millis, 5) should be(7 to 11)
       downstream.cancel()
     }
 
     "burst some elements if have enough time" in Utils.assertAllStagesStopped {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
-      Source.fromPublisher(upstream).throttle(2, 400.millis, 5, (e) ⇒ if (e < 4) 1 else 20, Shaping).runWith(Sink.fromSubscriber(downstream))
+      Source.fromPublisher(upstream).throttle(2, 400.millis, 5, (e) ⇒ if (e < 9) 1 else 20, Shaping).runWith(Sink.fromSubscriber(downstream))
+
+      // Exhaust bucket first
+      downstream.request(5)
+      (1 to 5) foreach upstream.sendNext
+      downstream.receiveWithin(300.millis, 5) should be(1 to 5)
+
       downstream.request(1)
-      upstream.sendNext(1)
+      upstream.sendNext(6)
       downstream.expectNoMsg(100.millis)
-      downstream.expectNext(1)
+      downstream.expectNext(6)
       downstream.expectNoMsg(500.millis) //wait to receive 2 in burst afterwards
       downstream.request(5)
-      for (i ← 2 to 4) upstream.sendNext(i)
-      downstream.receiveWithin(200.millis, 2) should be(Seq(2, 3))
+      for (i ← 7 to 9) upstream.sendNext(i)
+      downstream.receiveWithin(200.millis, 2) should be(Seq(7, 8))
       downstream.cancel()
     }
 
     "throw exception when exceeding throughtput in enforced mode" in Utils.assertAllStagesStopped {
+      Await.result(
+        Source(1 to 4).throttle(2, 200.millis, 10, identity, Enforcing).runWith(Sink.seq),
+        2.seconds) should ===(1 to 4) // Burst is 10 so this will not fail
+
       an[RateExceededException] shouldBe thrownBy {
         Await.result(
-          Source(1 to 5).throttle(2, 200.millis, 0, identity, Enforcing).runWith(Sink.ignore),
+          Source(1 to 6).throttle(2, 200.millis, 0, identity, Enforcing).runWith(Sink.ignore),
           2.seconds)
       }
     }
 
-    "properly combine shape and throttle modes" in Utils.assertAllStagesStopped {
+    "properly combine shape and enforce modes" in Utils.assertAllStagesStopped {
       Source(1 to 5).throttle(2, 200.millis, 0, identity, Shaping)
         .throttle(1, 100.millis, 5, Enforcing)
         .runWith(TestSink.probe[Int])

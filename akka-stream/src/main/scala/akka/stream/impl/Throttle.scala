@@ -13,6 +13,30 @@ import scala.concurrent.duration.{ FiniteDuration, _ }
 /**
  * INTERNAL API
  */
+private[stream] object Throttle {
+
+  val miniTokenBits = 30
+
+  private def tokenToMiniToken(e: Int): Long = e.toLong << Throttle.miniTokenBits
+}
+
+/**
+ * INTERNAL API
+ */
+/*
+ * This class tracks a token bucket in an efficient way.
+ *
+ * For accuracy, instead of tracking integer tokens the implementation tracks "miniTokens" which are 1/2^30 fraction
+ * of a token. This allows us to track token replenish rate as miniTokens/nanosecond which allows us to use simple
+ * arithmetic without division and also less inaccuracy due to rounding on token count caculation.
+ *
+ * The replenish amount, and hence the current time is only queried if the bucket does not hold enough miniTokens, in
+ * other words, replenishing the bucket is *on-need*. In addition, to compensate scheduler inaccuracy, the implementation
+ * calculates the ideal "previous time" explicitly, not relying on the scheduler to tick at that time. This means that
+ * when the scheduler actually ticks, some time has been elapsed since the calculated ideal tick time, and those tokens
+ * are added to the bucket as any calculation is always relative to the ideal tick time.
+ *
+ */
 private[stream] class Throttle[T](cost: Int,
                                   per: FiniteDuration,
                                   maximumBurst: Int,
@@ -23,18 +47,18 @@ private[stream] class Throttle[T](cost: Int,
   require(per.toMillis > 0, "per time must be > 0")
   require(!(mode == ThrottleMode.Enforcing && maximumBurst < 0), "maximumBurst must be > 0 in Enforcing mode")
 
+  private val maximumBurstMiniTokens = Throttle.tokenToMiniToken(maximumBurst)
+  private val miniTokensPerNanos = (Throttle.tokenToMiniToken(cost).toDouble / per.toNanos).toLong
+  private val timerName: String = "ThrottleTimer"
+
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     var willStop = false
-    var lastTokens: Long = maximumBurst
-    var previousTime: Long = now()
-
-    val speed = ((cost.toDouble / per.toNanos) * 1073741824).toLong
-    val timerName: String = "ThrottleTimer"
+    var previousMiniTokens: Long = maximumBurstMiniTokens
+    var previousNanos: Long = System.nanoTime()
 
     var currentElement: Option[T] = None
 
     setHandler(in, new InHandler {
-      val scaledMaximumBurst = scale(maximumBurst)
 
       override def onUpstreamFinish(): Unit =
         if (isAvailable(out) && isTimerActive(timerName)) willStop = true
@@ -42,26 +66,29 @@ private[stream] class Throttle[T](cost: Int,
 
       override def onPush(): Unit = {
         val elem = grab(in)
-        val elementCost = scale(costCalculation(elem))
+        val elementCostMiniTokens = Throttle.tokenToMiniToken(costCalculation(elem))
 
-        if (lastTokens >= elementCost) {
-          lastTokens -= elementCost
+        if (previousMiniTokens >= elementCostMiniTokens) {
+          previousMiniTokens -= elementCostMiniTokens
           push(out, elem)
         } else {
-          val currentTime = now()
-          val currentTokens = Math.min((currentTime - previousTime) * speed + lastTokens, scaledMaximumBurst)
-          if (currentTokens < elementCost)
+          val currentNanos = System.nanoTime()
+          val currentMiniTokens = Math.min(
+            (currentNanos - previousNanos) * miniTokensPerNanos + previousMiniTokens,
+            maximumBurstMiniTokens)
+
+          if (currentMiniTokens < elementCostMiniTokens)
             mode match {
               case Shaping ⇒
                 currentElement = Some(elem)
-                val waitTime = (elementCost - currentTokens) / speed
-                previousTime = currentTime + waitTime
-                scheduleOnce(timerName, waitTime.nanos)
+                val waitNanos = (elementCostMiniTokens - currentMiniTokens) / miniTokensPerNanos
+                previousNanos = currentNanos + waitNanos
+                scheduleOnce(timerName, waitNanos.nanos)
               case Enforcing ⇒ failStage(new RateExceededException("Maximum throttle throughput exceeded"))
             }
           else {
-            lastTokens = currentTokens - elementCost
-            previousTime = currentTime
+            previousMiniTokens = currentMiniTokens - elementCostMiniTokens
+            previousNanos = currentNanos
             push(out, elem)
           }
         }
@@ -71,7 +98,7 @@ private[stream] class Throttle[T](cost: Int,
     override protected def onTimer(key: Any): Unit = {
       push(out, currentElement.get)
       currentElement = None
-      lastTokens = 0
+      previousMiniTokens = 0
       if (willStop) completeStage()
     }
 
@@ -79,11 +106,8 @@ private[stream] class Throttle[T](cost: Int,
       override def onPull(): Unit = pull(in)
     })
 
-    override def preStart(): Unit = previousTime = now()
+    override def preStart(): Unit = previousNanos = System.nanoTime()
 
-    private def now(): Long = System.nanoTime()
-
-    private def scale(e: Int): Long = e.toLong << 30
   }
 
   override def toString = "Throttle"
