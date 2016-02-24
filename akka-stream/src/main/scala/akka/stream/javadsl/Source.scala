@@ -1428,6 +1428,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * This operator makes it possible to extend the `Flow` API when there is no specialized
    * operator that performs the transformation.
    */
+  @deprecated("Use via(GraphStage) instead.", "2.4.3")
   def transform[U](mkStage: function.Creator[Stage[Out, U]]): javadsl.Source[U, Mat] =
     new Source(delegate.transform(() ⇒ mkStage.create()))
 
