@@ -519,6 +519,10 @@ involves creating an internal actor for handling this reply, which needs to
 have a timeout after which it is destroyed in order not to leak resources; see
 more below.
 
+.. note::
+    A Java 8 variant of the ``ask`` pattern that returns a ``CompletionStage`` instead of a Scala ``Future``
+    is available in the ``akka.pattern.PatternsCS`` object.
+
 .. warning::
 
     To complete the future with an exception you need send a Failure message to the sender.
