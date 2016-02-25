@@ -29,6 +29,23 @@ class FlowThrottleSpec extends AkkaSpec {
         .expectComplete()
     }
 
+    "accept very high rates" in Utils.assertAllStagesStopped {
+      Source(1 to 5).throttle(1, 1 nanos, 0, ThrottleMode.Shaping)
+        .runWith(TestSink.probe[Int])
+        .request(5)
+        .expectNext(1, 2, 3, 4, 5)
+        .expectComplete()
+    }
+
+    "accept very low rates" in Utils.assertAllStagesStopped {
+      Source(1 to 5).throttle(1, 100.days, 1, ThrottleMode.Shaping)
+        .runWith(TestSink.probe[Int])
+        .request(5)
+        .expectNext(1)
+        .expectNoMsg(100.millis)
+        .cancel() // We won't wait 100 days, sorry
+    }
+
     "emit single element per tick" in Utils.assertAllStagesStopped {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
