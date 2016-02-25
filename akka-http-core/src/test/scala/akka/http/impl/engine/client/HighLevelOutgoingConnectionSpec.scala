@@ -10,15 +10,14 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.stream.{ ActorMaterializerSettings, FlowShape, ActorMaterializer }
 import akka.stream.scaladsl._
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.http.scaladsl.{ Http, TestUtils }
 import akka.http.scaladsl.model._
 import akka.stream.testkit.Utils
 import org.scalatest.concurrent.ScalaFutures
 
-class HighLevelOutgoingConnectionSpec extends AkkaSpec with ScalaFutures {
+class HighLevelOutgoingConnectionSpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withFuzzing(true))
-  implicit val patience = PatienceConfig(1.second)
 
   "The connection-level client implementation" should {
 
