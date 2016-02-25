@@ -11,7 +11,7 @@ import org.scalatest.concurrent.ScalaFutures
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.util.ByteString
 import akka.event.NoLogging
-import akka.stream.{ClosedShape, ActorMaterializer}
+import akka.stream.{ ClosedShape, ActorMaterializer }
 import akka.stream.TLSProtocol._
 import akka.stream.testkit._
 import akka.stream.scaladsl._
@@ -20,6 +20,7 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
+import akka.testkit.AkkaSpec
 
 class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside {
   implicit val materializer = ActorMaterializer()
@@ -179,7 +180,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
       }
     }
 
-    "proceed to next response once previous response's entity has been drained" in new TestSetup with ScalaFutures {
+    "proceed to next response once previous response's entity has been drained" in new TestSetup {
       def twice(action: => Unit): Unit = { action; action }
 
       twice {
@@ -203,10 +204,9 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |""")
 
         val whenComplete = expectResponse().entity.dataBytes.runWith(Sink.ignore)
-        whenComplete.futureValue should be (akka.Done)
+        whenComplete.futureValue should be(akka.Done)
       }
     }
-
 
     "handle several requests on one persistent connection" which {
       "has a first response that was chunked" in new TestSetup {

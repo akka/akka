@@ -9,7 +9,7 @@ import akka.stream.javadsl.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
-import akka.stream.testkit.AkkaSpec;
+import akka.testkit.AkkaSpec;
 import akka.stream.testkit.Utils;
 import akka.util.ByteString;
 import org.junit.ClassRule;

@@ -11,6 +11,7 @@ import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.testkit.EventFilter
+import akka.testkit.AkkaSpec
 
 class FlowIteratorSpec extends AbstractFlowIteratorSpec {
   override def testName = "A Flow based on an iterator producing function"

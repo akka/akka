@@ -13,6 +13,7 @@ import akka.stream.Supervision
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.ActorAttributes
 import akka.NotUsed
+import akka.testkit.AkkaSpec
 
 class FlowSupervisionSpec extends AkkaSpec {
   import ActorAttributes.supervisionStrategy

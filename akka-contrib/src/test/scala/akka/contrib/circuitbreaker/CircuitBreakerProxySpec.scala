@@ -7,14 +7,13 @@ import akka.actor.{ ActorRef, PoisonPill }
 import akka.contrib.circuitbreaker.CircuitBreakerProxy._
 import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.util.Timeout
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{ Millis, Second, Span }
 import org.scalatest.{ GivenWhenThen, Matchers }
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen with Matchers with ScalaFutures {
+class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
 
   val baseCircuitBreakerPropsBuilder =
     CircuitBreakerPropsBuilder(
@@ -439,7 +438,6 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen with Matcher
   }
 
   "Ask Extension" should {
-    implicit val patienceConfig = PatienceConfig(timeout = Span(1, Second), interval = Span(100, Millis))
     import Implicits.askWithCircuitBreaker
 
     import scala.concurrent.ExecutionContext.Implicits.global
@@ -488,7 +486,6 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen with Matcher
   }
 
   "Future Extension" should {
-    implicit val patienceConfig = PatienceConfig(timeout = Span(1, Second), interval = Span(100, Millis))
     import Implicits.futureExtensions
     import akka.pattern.ask
 

@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 import org.scalactic.ConversionCheckedTripleEquals
 import org.scalacheck.Shrink
 
-class GraphMergeSortedSpec extends TwoStreamsSetup with GeneratorDrivenPropertyChecks with ScalaFutures with ConversionCheckedTripleEquals {
+class GraphMergeSortedSpec extends TwoStreamsSetup with GeneratorDrivenPropertyChecks {
 
   override type Outputs = Int
 
@@ -24,7 +24,6 @@ class GraphMergeSortedSpec extends TwoStreamsSetup with GeneratorDrivenPropertyC
     override def out: Outlet[Outputs] = merge.out
   }
 
-  implicit val patience = PatienceConfig(1.second)
   implicit def noShrink[T] = Shrink[T](_ ⇒ Stream.empty) // do not shrink failures, it only destroys evidence
 
   "MergeSorted" must {

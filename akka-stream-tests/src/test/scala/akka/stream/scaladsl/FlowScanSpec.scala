@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 import akka.NotUsed
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ ActorAttributes, ActorMaterializer, ActorMaterializerSettings, Supervision }
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.stream.testkit.Utils._
 
 import scala.collection.immutable

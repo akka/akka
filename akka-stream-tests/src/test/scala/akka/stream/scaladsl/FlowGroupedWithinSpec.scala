@@ -6,11 +6,11 @@ package akka.stream.scaladsl
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
-
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.testkit.AkkaSpec
 
 class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
 

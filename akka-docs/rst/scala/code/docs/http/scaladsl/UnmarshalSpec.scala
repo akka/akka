@@ -5,7 +5,7 @@
 package docs.http.scaladsl
 
 import akka.stream.{ Materializer, ActorMaterializer }
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 
 class UnmarshalSpec extends AkkaSpec {
 

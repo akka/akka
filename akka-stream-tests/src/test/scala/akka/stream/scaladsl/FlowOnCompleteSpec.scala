@@ -4,16 +4,15 @@
 package akka.stream.scaladsl
 
 import akka.Done
-
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 import scala.util.control.NoStackTrace
-
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.testkit.TestProbe
+import akka.testkit.AkkaSpec
 
 class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
 

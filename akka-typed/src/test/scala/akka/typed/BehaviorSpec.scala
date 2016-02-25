@@ -5,7 +5,7 @@ package akka.typed
 
 import org.scalautils.ConversionCheckedTripleEquals
 
-class BehaviorSpec extends TypedSpec with ConversionCheckedTripleEquals {
+class BehaviorSpec extends TypedSpec {
 
   sealed trait Command {
     def expectedResponse(ctx: ActorContext[Command]): Seq[Event] = Nil

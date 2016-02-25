@@ -3,7 +3,7 @@ package docs.stream
 import akka.NotUsed
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 
 class StreamBuffersRateSpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer()

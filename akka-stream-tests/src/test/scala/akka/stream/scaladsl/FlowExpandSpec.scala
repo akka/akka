@@ -10,6 +10,7 @@ import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.AkkaSpec
 
 class FlowExpandSpec extends AkkaSpec {
 

@@ -10,6 +10,7 @@ import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._
 import akka.actor.PoisonPill
 import akka.actor.Status
+import akka.testkit.AkkaSpec
 
 class ActorRefSourceSpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer()

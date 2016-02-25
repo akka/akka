@@ -5,8 +5,8 @@ package akka.stream.scaladsl
 
 import akka.stream.Attributes._
 import akka.stream.ActorAttributes._
-import akka.stream.{ ActorMaterializer }
-import akka.stream.testkit.AkkaSpec
+import akka.stream.ActorMaterializer
+import akka.testkit.AkkaSpec
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
 

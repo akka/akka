@@ -8,7 +8,7 @@ import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, Failed, GraphAssembly, UpstreamBoundaryStageLogic }
 import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, _ }
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.stream.testkit.Utils.TE
 import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
 

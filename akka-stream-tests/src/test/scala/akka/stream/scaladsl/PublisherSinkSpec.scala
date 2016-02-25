@@ -5,7 +5,7 @@ package akka.stream.scaladsl
 
 import akka.stream.{ ClosedShape, ActorMaterializer }
 
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.stream.testkit.Utils._
 import scala.concurrent.duration._
 

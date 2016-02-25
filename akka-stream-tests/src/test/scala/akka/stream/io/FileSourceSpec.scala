@@ -6,7 +6,6 @@ package akka.stream.io
 import java.io.File
 import java.io.FileWriter
 import java.util.Random
-
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
@@ -22,9 +21,9 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
 import akka.util.Timeout
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import akka.testkit.AkkaSpec
 
 object FileSourceSpec {
   final case class Settings(chunkSize: Int, readAhead: Int)

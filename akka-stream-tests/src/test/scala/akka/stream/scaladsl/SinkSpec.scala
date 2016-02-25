@@ -7,16 +7,15 @@ import akka.stream._
 import akka.stream.testkit._
 import org.scalactic.ConversionCheckedTripleEquals
 import org.scalatest.concurrent.ScalaFutures
-
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import akka.testkit.AkkaSpec
 
-class SinkSpec extends AkkaSpec with ConversionCheckedTripleEquals with ScalaFutures {
+class SinkSpec extends AkkaSpec {
 
   import GraphDSL.Implicits._
 
   implicit val materializer = ActorMaterializer()
-  implicit val patience = PatienceConfig(2.seconds)
 
   "A Sink" must {
 

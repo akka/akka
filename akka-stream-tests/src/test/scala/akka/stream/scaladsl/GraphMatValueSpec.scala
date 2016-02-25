@@ -5,10 +5,10 @@ package akka.stream.scaladsl
 
 import akka.stream._
 import akka.stream.testkit._
-
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import akka.testkit.AkkaSpec
 
 class GraphMatValueSpec extends AkkaSpec {
 

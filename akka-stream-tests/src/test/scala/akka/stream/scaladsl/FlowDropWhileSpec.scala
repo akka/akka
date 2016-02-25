@@ -6,13 +6,12 @@ package akka.stream.scaladsl
 import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
 import akka.stream.testkit.Utils._
-
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
-
 import scala.util.control.NoStackTrace
+import akka.testkit.AkkaSpec
 
 class FlowDropWhileSpec extends AkkaSpec {
 

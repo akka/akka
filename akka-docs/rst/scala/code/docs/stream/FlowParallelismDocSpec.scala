@@ -3,7 +3,7 @@ package docs.stream
 import akka.NotUsed
 import akka.stream.FlowShape
 import akka.stream.scaladsl.{ GraphDSL, Merge, Balance, Source, Flow }
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 
 class FlowParallelismDocSpec extends AkkaSpec {
 
