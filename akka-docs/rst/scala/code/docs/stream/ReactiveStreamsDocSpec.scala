@@ -8,6 +8,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.testkit._
 import org.reactivestreams.Processor
+import akka.testkit.AkkaSpec
 
 class ReactiveStreamsDocSpec extends AkkaSpec {
   import TwitterStreamQuickstartDocSpec._

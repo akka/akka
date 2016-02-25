@@ -8,7 +8,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.Supervision
 import akka.stream.scaladsl._
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.stream.Attributes
 import akka.stream.ActorAttributes
 import scala.concurrent.duration._

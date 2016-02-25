@@ -6,7 +6,7 @@ package docs.stream
 import akka.NotUsed
 
 import scala.concurrent.duration._
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.stream.scaladsl._
 import akka.stream.ActorMaterializer
 import scala.concurrent.Future

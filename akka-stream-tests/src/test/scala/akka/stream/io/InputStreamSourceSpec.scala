@@ -12,11 +12,12 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.util.ByteString
+import akka.testkit.AkkaSpec
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class InputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) with ScalaFutures {
+class InputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)

@@ -7,7 +7,7 @@ import akka.NotUsed
 import akka.actor.Cancellable
 import akka.stream.{ ClosedShape, FlowShape }
 import akka.stream.scaladsl._
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 
 import scala.concurrent.{ Promise, Future }
 

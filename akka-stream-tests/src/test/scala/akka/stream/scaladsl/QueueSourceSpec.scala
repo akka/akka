@@ -9,9 +9,9 @@ import akka.stream._
 import akka.stream.impl.QueueSource
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
-import akka.testkit.TestProbe
+import akka.testkit.{ AkkaSpec, TestProbe }
 import scala.concurrent.duration._
-import scala.concurrent.{ Future, _ }
+import scala.concurrent._
 import akka.Done
 
 class QueueSourceSpec extends AkkaSpec {
@@ -24,7 +24,7 @@ class QueueSourceSpec extends AkkaSpec {
     expectMsg(QueueOfferResult.Enqueued)
   }
 
-  "A QueueSourceSpec" must {
+  "A QueueSource" must {
 
     "emit received messages to the stream" in {
       val s = TestSubscriber.manualProbe[Int]()

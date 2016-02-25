@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.testkit.TestProbe
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 

@@ -8,8 +8,7 @@ import scala.concurrent.Future
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.duration._
 
-class RecipeSeq extends RecipeSpec with ScalaFutures {
-  implicit val patience = PatienceConfig(3.seconds)
+class RecipeSeq extends RecipeSpec {
 
   "Draining to a strict sequence" must {
 

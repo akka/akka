@@ -15,7 +15,7 @@ import scala.concurrent.Future
 
 //#imports
 
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 
 object TwitterStreamQuickstartDocSpec {
   //#model

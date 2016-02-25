@@ -4,7 +4,6 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-
 import scala.concurrent.duration._
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
@@ -18,6 +17,7 @@ import org.scalactic.ConversionCheckedTripleEquals
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.AkkaSpec
 
 object FlowGroupBySpec {
 
@@ -27,7 +27,7 @@ object FlowGroupBySpec {
 
 }
 
-class FlowGroupBySpec extends AkkaSpec with ScalaFutures with ConversionCheckedTripleEquals {
+class FlowGroupBySpec extends AkkaSpec {
   import FlowGroupBySpec._
 
   val settings = ActorMaterializerSettings(system)

@@ -7,7 +7,7 @@ import akka.NotUsed
 import akka.stream._
 import akka.stream.scaladsl.Tcp.OutgoingConnection
 import akka.stream.scaladsl._
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.util.ByteString
 
 import scala.concurrent.{ Future, Promise }

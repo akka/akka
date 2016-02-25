@@ -6,6 +6,7 @@ package akka.stream.scaladsl
 import akka.stream.{ ClosedShape, ActorMaterializer, OverflowStrategy }
 import akka.stream.testkit._
 import akka.stream.stage._
+import akka.testkit.AkkaSpec
 
 object FlowGraphCompileSpec {
   class Fruit

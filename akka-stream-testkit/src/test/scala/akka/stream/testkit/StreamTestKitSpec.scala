@@ -6,8 +6,8 @@ package akka.stream.testkit
 import akka.stream._
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
-
 import scala.concurrent.duration._
+import akka.testkit.AkkaSpec
 
 class StreamTestKitSpec extends AkkaSpec {
 

@@ -9,7 +9,6 @@ import java.nio.ByteBuffer
 import java.nio.channels.{ SocketChannel, ServerSocketChannel }
 import java.util.concurrent.atomic.AtomicInteger
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
@@ -20,10 +19,11 @@ import akka.http.impl.util.{ SingletonException, StreamUtils }
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
 import akka.stream.{ ActorMaterializer }
 import akka.stream.TLSProtocol._
-import akka.stream.testkit.{ TestPublisher, TestSubscriber, AkkaSpec }
+import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model._
+import akka.testkit.AkkaSpec
 
 class ConnectionPoolSpec extends AkkaSpec("""
     akka.loggers = []

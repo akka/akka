@@ -8,11 +8,11 @@ import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 import scala.util.control.NoStackTrace
+import akka.testkit.AkkaSpec
 
 class FlowThrottleSpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(1, 1))

@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 import akka.NotUsed
 import akka.stream._
 import akka.stream.Supervision.resumingDecider
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.Utils._

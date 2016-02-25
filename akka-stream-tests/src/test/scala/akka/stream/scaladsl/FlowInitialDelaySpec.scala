@@ -1,12 +1,11 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.TimeoutException
-
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import akka.stream.testkit.{ Utils, TestSubscriber, AkkaSpec }
-
+import akka.stream.testkit.{ Utils, TestSubscriber }
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import akka.testkit.AkkaSpec
 
 class FlowInitialDelaySpec extends AkkaSpec {
 

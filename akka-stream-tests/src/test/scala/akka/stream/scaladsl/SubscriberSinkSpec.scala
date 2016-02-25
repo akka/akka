@@ -7,6 +7,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.testkit.AkkaSpec
 
 class SubscriberSinkSpec extends AkkaSpec {
 

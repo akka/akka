@@ -9,7 +9,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
 import akka.stream.{ Server, Client, ActorMaterializer }
 import akka.stream.scaladsl._
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.http.impl.util._
 import akka.http.scaladsl.{ ConnectionContext, Http }
 import akka.http.scaladsl.model.{ StatusCodes, HttpResponse, HttpRequest }
@@ -21,7 +21,7 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
     akka.loglevel = INFO
     akka.io.tcp.trace-logging = off
     akka.http.parsing.tls-session-info-header = on
-  """) with ScalaFutures {
+  """) {
   implicit val materializer = ActorMaterializer()
 
   /*
@@ -30,7 +30,6 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
   val includeTestsHittingActualWebsites = false
 
   val timeout = Timeout(Span(3, Seconds))
-  implicit val patience = PatienceConfig(Span(10, Seconds))
 
   "The client implementation" should {
     "not accept certificates signed by unknown CA" in {

@@ -15,7 +15,7 @@ import akka.stream.*;
 import akka.stream.impl.ConstantFun;
 import akka.stream.javadsl.GraphDSL.Builder;
 import akka.stream.stage.*;
-import akka.stream.testkit.AkkaSpec;
+import akka.testkit.AkkaSpec;
 import akka.stream.testkit.TestPublisher;
 import akka.testkit.JavaTestKit;
 import org.junit.ClassRule;

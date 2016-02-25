@@ -10,7 +10,7 @@ import akka.stream.stage.PushPullStage
 import akka.stream.stage.Stage
 import akka.stream.stage.TerminationDirective
 import akka.stream.stage.SyncDirective
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 
 object InterpreterSupervisionSpec {
   val TE = new Exception("TEST") with NoStackTrace {

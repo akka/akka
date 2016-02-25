@@ -21,12 +21,11 @@ import java.net.InetSocketAddress
 import akka.stream.impl.fusing.GraphStages
 import akka.util.ByteString
 import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.EventFilter
+import akka.testkit.{ AkkaSpec, EventFilter }
 
 class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.fuzzing-mode=off")
-  with ScalaFutures with ConversionCheckedTripleEquals with Eventually {
+  with Eventually {
 
-  implicit val patience = PatienceConfig(3.seconds)
   implicit val materializer = ActorMaterializer()
 
   "A WebSocket server" must {

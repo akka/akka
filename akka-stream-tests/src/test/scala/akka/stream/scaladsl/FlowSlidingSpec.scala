@@ -10,8 +10,9 @@ import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import akka.pattern.pipe
+import akka.testkit.AkkaSpec
 
-class FlowSlidingSpec extends AkkaSpec with GeneratorDrivenPropertyChecks with ScalaFutures {
+class FlowSlidingSpec extends AkkaSpec with GeneratorDrivenPropertyChecks {
   import system.dispatcher
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)

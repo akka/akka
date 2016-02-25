@@ -4,7 +4,7 @@
 package akka.stream.impl.fusing
 
 import akka.stream.stage._
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.stream.testkit.Utils.TE
 
 import scala.concurrent.duration._
