@@ -29,7 +29,7 @@ object SubstreamCancelStrategy {
   def propagate: SubstreamCancelStrategy = Propagate
 
   /**
-   * Drain substream on cancellation in order to prevent stailling of the stream of streams.
+   * Drain substream on cancellation in order to prevent stalling of the stream of streams.
    */
   def drain: SubstreamCancelStrategy = Drain
 }
