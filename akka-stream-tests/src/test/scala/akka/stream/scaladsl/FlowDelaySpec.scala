@@ -6,12 +6,12 @@ package akka.stream.scaladsl
 import akka.stream.Attributes._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.{ AkkaSpec, TestPublisher, TestSubscriber }
+import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.stream.{ BufferOverflowException, DelayOverflowStrategy, ActorMaterializer }
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+import akka.testkit.AkkaSpec
 
 class FlowDelaySpec extends AkkaSpec {
 

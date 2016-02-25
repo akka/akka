@@ -7,6 +7,7 @@ import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.testkit.AkkaSpec
 
 import scala.concurrent.Await
 import scala.concurrent.duration._

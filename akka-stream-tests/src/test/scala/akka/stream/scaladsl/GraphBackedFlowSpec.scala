@@ -8,6 +8,7 @@ import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream._
 import org.reactivestreams.Subscriber
+import akka.testkit.AkkaSpec
 
 object GraphFlowSpec {
   val source1 = Source(0 to 3)

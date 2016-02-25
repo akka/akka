@@ -8,8 +8,8 @@ import akka.stream.scaladsl.{ Keep, Sink, Flow, Source }
 import akka.stream.stage._
 import akka.stream._
 
-import akka.stream.testkit.{ TestPublisher, TestSubscriber, AkkaSpec }
-import akka.testkit.TestLatch
+import akka.stream.testkit.{ TestPublisher, TestSubscriber }
+import akka.testkit.{ AkkaSpec, TestLatch }
 
 import scala.collection.mutable
 import scala.concurrent.{ Promise, Await, Future }

@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.actor.ActorSystemImpl
 import org.testng.annotations.AfterClass
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.event.Logging
 import akka.testkit.TestEvent
 import akka.testkit.EventFilter

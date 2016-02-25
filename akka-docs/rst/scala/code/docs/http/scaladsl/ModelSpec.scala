@@ -9,7 +9,7 @@ import akka.http.scaladsl.model._
 
 //#import-model
 
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.util.ByteString
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 

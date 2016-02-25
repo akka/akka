@@ -8,12 +8,12 @@ import akka.stream.Attributes.inputBuffer
 import akka.stream.Supervision.{ resumingDecider, restartingDecider }
 import akka.stream.testkit.Utils.TE
 import akka.testkit.TestLatch
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.stream._
 import akka.stream.testkit._
+import akka.testkit.AkkaSpec
 
 class FlowConflateSpec extends AkkaSpec {
 

@@ -9,6 +9,7 @@ import akka.stream.testkit.TestSubscriber._
 import akka.stream.testkit.Utils._
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import org.reactivestreams.Subscription
+import akka.testkit.AkkaSpec
 
 class TestPublisherSubscriberSpec extends AkkaSpec {
 

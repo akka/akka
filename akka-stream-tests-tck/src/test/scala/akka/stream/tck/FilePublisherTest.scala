@@ -4,7 +4,6 @@
 package akka.stream.tck
 
 import java.io.{ File, FileWriter }
-
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.stream.scaladsl.FileIO
@@ -15,6 +14,7 @@ import akka.testkit.{ EventFilter, TestEvent }
 import akka.util.ByteString
 import org.reactivestreams.Publisher
 import org.testng.annotations.{ AfterClass, BeforeClass }
+import akka.testkit.AkkaSpec
 
 class FilePublisherTest extends AkkaPublisherVerification[ByteString] {
 

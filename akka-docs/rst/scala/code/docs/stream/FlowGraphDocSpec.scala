@@ -6,7 +6,7 @@ package docs.stream
 import akka.NotUsed
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 
 import scala.collection.immutable
 import scala.concurrent.{ Future, Await }

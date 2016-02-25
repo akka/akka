@@ -5,7 +5,7 @@ package akka.stream.javadsl;
 
 import akka.NotUsed;
 import akka.stream.StreamTest;
-import akka.stream.testkit.AkkaSpec;
+import akka.testkit.AkkaSpec;
 import akka.util.ByteString;
 import org.junit.ClassRule;
 import org.junit.Test;

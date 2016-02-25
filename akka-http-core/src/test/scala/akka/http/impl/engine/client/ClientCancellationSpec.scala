@@ -1,13 +1,13 @@
 package akka.http.impl.engine.client
 
 import javax.net.ssl.SSLContext
-
 import akka.http.scaladsl.{ ConnectionContext, Http }
 import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Sink, Source }
-import akka.stream.testkit.{ TestSubscriber, TestPublisher, AkkaSpec, TestUtils, Utils }
+import akka.stream.testkit.{ TestSubscriber, TestPublisher, TestUtils, Utils }
 import akka.http.scaladsl.model.headers
+import akka.testkit.AkkaSpec
 
 class ClientCancellationSpec extends AkkaSpec("""
     akka.loglevel = DEBUG

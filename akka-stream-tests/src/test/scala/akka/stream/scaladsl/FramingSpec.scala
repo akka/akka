@@ -7,7 +7,7 @@ import java.nio.ByteOrder
 
 import akka.stream.scaladsl.Framing.FramingException
 import akka.stream.stage.{ Context, PushPullStage, SyncDirective, TerminationDirective }
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.util.{ ByteString, ByteStringBuilder }
 

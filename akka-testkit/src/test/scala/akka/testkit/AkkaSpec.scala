@@ -5,7 +5,7 @@ package akka.testkit
 
 import org.scalactic.Constraint
 
-import language.{ postfixOps }
+import language.postfixOps
 import org.scalatest.{ WordSpecLike, BeforeAndAfterAll }
 import org.scalatest.Matchers
 import akka.actor.ActorSystem
@@ -16,6 +16,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import akka.dispatch.Dispatchers
 import akka.testkit.TestEvent._
 import org.scalactic.ConversionCheckedTripleEquals
+import org.scalatest.concurrent.ScalaFutures
 
 object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""
@@ -54,8 +55,10 @@ object AkkaSpec {
 }
 
 abstract class AkkaSpec(_system: ActorSystem)
-  extends TestKit(_system) with WordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner
-  with ConversionCheckedTripleEquals {
+    extends TestKit(_system) with WordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner
+    with ConversionCheckedTripleEquals with ScalaFutures {
+
+  implicit val patience = PatienceConfig(testKitSettings.DefaultTimeout.duration)
 
   def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName(getClass),
     ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
@@ -105,5 +108,10 @@ abstract class AkkaSpec(_system: ActorSystem)
   implicit def classEqualityConstraint[A, B]: Constraint[Class[A], Class[B]] =
     new Constraint[Class[A], Class[B]] {
       def areEqual(a: Class[A], b: Class[B]) = a == b
+    }
+
+  implicit def setEqualityConstraint[A, T <: Set[_ <: A]]: Constraint[Set[A], T] =
+    new Constraint[Set[A], T] {
+      def areEqual(a: Set[A], b: T) = a == b
     }
 }

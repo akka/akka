@@ -21,8 +21,9 @@ import scala.concurrent.Promise
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.LinkedBlockingQueue
 import org.scalatest.concurrent.ScalaFutures
+import akka.testkit.AkkaSpec
 
-class FlowMapAsyncSpec extends AkkaSpec with ScalaFutures {
+class FlowMapAsyncSpec extends AkkaSpec {
 
   implicit val materializer = ActorMaterializer()
 

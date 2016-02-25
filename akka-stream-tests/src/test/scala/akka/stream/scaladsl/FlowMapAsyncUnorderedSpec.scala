@@ -22,8 +22,9 @@ import java.util.concurrent.LinkedBlockingQueue
 import scala.annotation.tailrec
 import org.scalatest.concurrent.ScalaFutures
 import org.scalactic.ConversionCheckedTripleEquals
+import akka.testkit.AkkaSpec
 
-class FlowMapAsyncUnorderedSpec extends AkkaSpec with ScalaFutures with ConversionCheckedTripleEquals {
+class FlowMapAsyncUnorderedSpec extends AkkaSpec {
 
   implicit val materializer = ActorMaterializer()
 

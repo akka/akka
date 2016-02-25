@@ -3,7 +3,7 @@
  */
 package akka.stream.impl.fusing
 
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.util.ByteString
 import akka.stream.stage._
 import akka.stream.Supervision

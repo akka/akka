@@ -1,13 +1,12 @@
 package akka.stream.scaladsl
 
 import akka.stream.testkit.scaladsl.TestSink
-
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
-
 import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.testkit.AkkaSpec
 
 class GraphBroadcastSpec extends AkkaSpec {
 

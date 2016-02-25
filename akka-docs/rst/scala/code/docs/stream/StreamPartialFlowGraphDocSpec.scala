@@ -6,7 +6,7 @@ package docs.stream
 import akka.actor.ActorRef
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._

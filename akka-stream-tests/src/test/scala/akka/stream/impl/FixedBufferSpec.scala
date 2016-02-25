@@ -3,7 +3,7 @@
  */
 package akka.stream.impl
 
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.stream.ActorMaterializerSettings
 
 class FixedBufferSpec extends AkkaSpec {

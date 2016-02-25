@@ -3,11 +3,11 @@ package akka.stream.scaladsl
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.Future
-
 import akka.stream.{ SourceShape, ClosedShape, ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._
+import akka.testkit.AkkaSpec
 
 class GraphBalanceSpec extends AkkaSpec {
 

@@ -10,6 +10,7 @@ import akka.stream.scaladsl.{ FileIO, Sink, Source }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.util.ByteString
+import akka.testkit.AkkaSpec
 
 import scala.concurrent.Future
 

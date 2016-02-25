@@ -5,7 +5,7 @@ package akka.util
 
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
-import org.scalautils.ConversionCheckedTripleEquals
+import org.scalactic.ConversionCheckedTripleEquals
 
 object TypedMultiMapSpec {
   trait AbstractKey { type Type }

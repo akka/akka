@@ -8,6 +8,7 @@ import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.stream.{ OverflowStrategy, ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
+import akka.testkit.AkkaSpec
 
 class FlowBatchSpec extends AkkaSpec {
 

@@ -18,11 +18,14 @@ import akka.actor.ActorInitializationException
 import language.existentials
 import akka.testkit.EventFilter
 import akka.testkit.TestEvent.Mute
+import org.scalatest.concurrent.ScalaFutures
+import org.scalactic.ConversionCheckedTripleEquals
+import org.scalactic.Constraint
 
 /**
  * Helper class for writing tests for typed Actors with ScalaTest.
  */
-class TypedSpec(config: Config) extends Spec with Matchers with BeforeAndAfterAll {
+class TypedSpec(config: Config) extends Spec with Matchers with BeforeAndAfterAll with ScalaFutures with ConversionCheckedTripleEquals {
   import TypedSpec._
   import AskPattern._
 
@@ -30,7 +33,8 @@ class TypedSpec(config: Config) extends Spec with Matchers with BeforeAndAfterAl
 
   implicit val system = ActorSystem(AkkaSpec.getCallerName(classOf[TypedSpec]), Props(guardian()), Some(config withFallback AkkaSpec.testConf))
 
-  implicit def timeout = Timeout(1.minute)
+  implicit val timeout = Timeout(1.minute)
+  implicit val patience = PatienceConfig(3.seconds)
 
   override def afterAll(): Unit = {
     Await.result(system ? (Terminate(_)), timeout.duration): Status
@@ -80,6 +84,17 @@ class TypedSpec(config: Config) extends Spec with Matchers with BeforeAndAfterAl
   def assertEmpty(inboxes: Inbox.SyncInbox[_]*): Unit = {
     inboxes foreach (i ⇒ withClue(s"inbox $i had messages")(i.hasMessages should be(false)))
   }
+
+  // for ScalaTest === compare of Class objects
+  implicit def classEqualityConstraint[A, B]: Constraint[Class[A], Class[B]] =
+    new Constraint[Class[A], Class[B]] {
+      def areEqual(a: Class[A], b: Class[B]) = a == b
+    }
+
+  implicit def setEqualityConstraint[A, T <: Set[_ <: A]]: Constraint[Set[A], T] =
+    new Constraint[Set[A], T] {
+      def areEqual(a: Set[A], b: T) = a == b
+    }
 }
 
 object TypedSpec {
