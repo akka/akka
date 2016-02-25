@@ -122,8 +122,8 @@ private[stream] object AbstractStage {
     final override def absorbTermination(): TerminationDirective = {
       if (isClosed(shape.out)) {
         val ex = new UnsupportedOperationException("It is not allowed to call absorbTermination() from onDownstreamFinish.")
-        // This MUST be logged here, since the downstream has cancelled, i.e. there is noone to send onError to, the
-        // stage is just about to finish so noone will catch it anyway just the interpreter
+        // This MUST be logged here, since the downstream has cancelled, i.e. there is no one to send onError to, the
+        // stage is just about to finish so no one will catch it anyway just the interpreter
 
         interpreter.log.error(ex.getMessage)
         throw ex // We still throw for correctness (although a finish() would also work here)
@@ -204,7 +204,7 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
 
   /**
    * `onPush` is called when an element from upstream is available and there is demand from downstream, i.e.
-   * in `onPush` you are allowed to call [[akka.stream.stage.Context#push]] to emit one element downstreams,
+   * in `onPush` you are allowed to call [[akka.stream.stage.Context#push]] to emit one element downstream,
    * or you can absorb the element by calling [[akka.stream.stage.Context#pull]]. Note that you can only
    * emit zero or one element downstream from `onPull`.
    *
@@ -216,7 +216,7 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
 
   /**
    * `onPull` is called when there is demand from downstream, i.e. you are allowed to push one element
-   * downstreams with [[akka.stream.stage.Context#push]], or request elements from upstreams with
+   * downstream with [[akka.stream.stage.Context#push]], or request elements from upstreams with
    * [[akka.stream.stage.Context#pull]]
    */
   def onPull(ctx: Ctx): PullD
@@ -294,7 +294,7 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
  * stages produce *exactly one* push or pull signal.
  *
  * [[#onPush]] is called when an element from upstream is available and there is demand from downstream, i.e.
- * in `onPush` you are allowed to call [[Context#push]] to emit one element downstreams, or you can absorb the
+ * in `onPush` you are allowed to call [[Context#push]] to emit one element downstream, or you can absorb the
  * element by calling [[Context#pull]]. Note that you can only emit zero or one element downstream from `onPull`.
  * To emit more than one element you have to push the remaining elements from [[#onPull]], one-by-one.
  * `onPush` is not called again until `onPull` has requested more elements with [[Context#pull]].
@@ -302,7 +302,7 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
  * [[StatefulStage]] has support for making it easy to emit more than one element from `onPush`.
  *
  * [[#onPull]] is called when there is demand from downstream, i.e. you are allowed to push one element
- * downstreams with [[Context#push]], or request elements from upstreams with [[Context#pull]]. If you
+ * downstream with [[Context#push]], or request elements from upstreams with [[Context#pull]]. If you
  * always perform transitive pull by calling `ctx.pull` from `onPull` you can use [[PushStage]] instead of
  * `PushPullStage`.
  *
@@ -464,13 +464,13 @@ abstract class StatefulStage[In, Out] extends PushPullStage[In, Out] {
 
   /**
    * Scala API: Can be used from [[StageState#onPush]] or [[StageState#onPull]] to push more than one
-   * element downstreams.
+   * element downstream.
    */
   final def emit(iter: Iterator[Out], ctx: Context[Out]): SyncDirective = emit(iter, ctx, _current)
 
   /**
    * Java API: Can be used from [[StageState#onPush]] or [[StageState#onPull]] to push more than one
-   * element downstreams.
+   * element downstream.
    */
   final def emit(iter: java.util.Iterator[Out], ctx: Context[Out]): SyncDirective = {
     import scala.collection.JavaConverters._
@@ -479,7 +479,7 @@ abstract class StatefulStage[In, Out] extends PushPullStage[In, Out] {
 
   /**
    * Scala API: Can be used from [[StageState#onPush]] or [[StageState#onPull]] to push more than one
-   * element downstreams and after that change behavior.
+   * element downstream and after that change behavior.
    */
   final def emit(iter: Iterator[Out], ctx: Context[Out], nextState: StageState[In, Out]): SyncDirective = {
     if (emitting) throw new IllegalStateException("already in emitting state")
@@ -499,7 +499,7 @@ abstract class StatefulStage[In, Out] extends PushPullStage[In, Out] {
 
   /**
    * Java API: Can be used from [[StageState#onPush]] or [[StageState#onPull]] to push more than one
-   * element downstreams and after that change behavior.
+   * element downstream and after that change behavior.
    */
   final def emit(iter: java.util.Iterator[Out], ctx: Context[Out], nextState: StageState[In, Out]): SyncDirective = {
     import scala.collection.JavaConverters._
@@ -508,7 +508,7 @@ abstract class StatefulStage[In, Out] extends PushPullStage[In, Out] {
 
   /**
    * Scala API: Can be used from [[StageState#onPush]] or [[StageState#onPull]] to push more than one
-   * element downstreams and after that finish (complete downstreams, cancel upstreams).
+   * element downstream and after that finish (complete downstreams, cancel upstreams).
    */
   final def emitAndFinish(iter: Iterator[Out], ctx: Context[Out]): SyncDirective = {
     if (emitting) throw new IllegalStateException("already in emitting state")
@@ -527,7 +527,7 @@ abstract class StatefulStage[In, Out] extends PushPullStage[In, Out] {
 
   /**
    * Java API: Can be used from [[StageState#onPush]] or [[StageState#onPull]] to push more than one
-   * element downstreams and after that finish (complete downstreams, cancel upstreams).
+   * element downstream and after that finish (complete downstreams, cancel upstreams).
    */
   final def emitAndFinish(iter: java.util.Iterator[Out], ctx: Context[Out]): SyncDirective = {
     import scala.collection.JavaConverters._
@@ -535,7 +535,7 @@ abstract class StatefulStage[In, Out] extends PushPullStage[In, Out] {
   }
 
   /**
-   * Scala API: Can be used from [[#onUpstreamFinish]] to push final elements downstreams
+   * Scala API: Can be used from [[#onUpstreamFinish]] to push final elements downstream
    * before completing the stream successfully. Note that if this is used from
    * [[#onUpstreamFailure]] the failure will be absorbed and the stream will be completed
    * successfully.
@@ -556,7 +556,7 @@ abstract class StatefulStage[In, Out] extends PushPullStage[In, Out] {
 
   /**
    * Java API: Can be used from [[#onUpstreamFinish]] or [[#onUpstreamFailure]] to push final
-   * elements downstreams.
+   * elements downstream.
    */
   final def terminationEmit(iter: java.util.Iterator[Out], ctx: Context[Out]): TerminationDirective = {
     import scala.collection.JavaConverters._

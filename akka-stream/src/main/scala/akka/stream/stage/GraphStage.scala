@@ -226,7 +226,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   private[this] var _interpreter: GraphInterpreter = _
 
   /**
-   * INTENRAL API
+   * INTERNAL API
    */
   private[stream] def interpreter_=(gi: GraphInterpreter) = _interpreter = gi
 

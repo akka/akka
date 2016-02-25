@@ -197,7 +197,7 @@ private[akka] object FanIn {
       dequeue(id)
     }
 
-    def dequeuePrefering(preferred: Int): Any = {
+    def dequeuePreferring(preferred: Int): Any = {
       preferredId = preferred
       val id = idToDequeue()
       dequeue(id)
