@@ -174,6 +174,31 @@ On the server-side the stand-alone HTTP layer forms a ``BidiFlow`` that is defin
 You create an instance of ``Http.ServerLayer`` by calling one of the two overloads of the ``Http().serverLayer`` method,
 which also allows for varying degrees of configuration.
 
+Controlling server parallelism
+------------------------------
+
+Request handling can be parallelized on two axes, by handling several connections in parallel and by
+relying on HTTP pipelining to send several requests on one connection without waiting for a response first. In both
+cases the client controls the number of ongoing requests. To prevent being overloaded by too many requests, Akka HTTP
+can limit the number of requests it handles in parallel.
+
+To limit the number of simultaneously open connections, use the ``akka.http.server.max-connections`` setting. This setting
+applies to all of ``Http.bindAndHandle*`` methods. If you use ``Http.bind``, incoming connections are represented by
+a ``Source[IncomingConnection, ...]``. Use Akka Stream's combinators to apply backpressure to control the flow of
+incoming connections, e.g. by using ``throttle`` or ``mapAsync``.
+
+HTTP pipelining is generally discouraged (and `disabled by most browsers <https://en.wikipedia.org/w/index.php?title=HTTP_pipelining&oldid=700966692#Implementation_in_web_browsers>`_) but
+is nevertheless fully supported in Akka HTTP. The limit is applied on two levels. First, there's the
+``akka.http.server.pipeline-limit`` config setting which prevents that more than the given number of outstanding requests
+is ever given to the user-supplied handler-flow. On the other hand, the handler flow itself can apply any kind of throttling
+itself. If you use one of the ``Http.bindAndHandleSync`` or ``Http.bindAndHandleAsync``
+entry-points, you can specify the ``parallelism`` argument (default = 1, i.e. pipelining disabled) to control the
+number of concurrent requests per connection. If you use ``Http.bindAndHandle`` or ``Http.bind``, the user-supplied handler
+flow has full control over how many request it accepts simultaneously by applying backpressure. In this case, you can
+e.g. use Akka Stream's ``mapAsync`` combinator with a given parallelism to limit the number of concurrently handled requests.
+Effectively, the more constraining one of these two measures, config setting and manual flow shaping, will determine
+how parallel requests on one connection are handled.
+
 .. _handling-http-server-failures-low-level-scala:
 
 Handling HTTP Server failures in the Low-Level API
