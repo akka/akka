@@ -266,7 +266,7 @@ private[akka] object GraphInterpreter {
 }
 
 /**
- * INERNAL API
+ * INTERNAL API
  *
  * From an external viewpoint, the GraphInterpreter takes an assembly of graph processing stages encoded as a
  * [[GraphInterpreter#GraphAssembly]] object and provides facilities to execute and interact with this assembly.
@@ -495,7 +495,7 @@ private[stream] final class GraphInterpreter(
       case owner    ⇒ assembly.stages(owner).toString
     }
 
-  // Debug name for a connections ouput part
+  // Debug name for a connections output part
   private def outOwnerName(connection: Int): String =
     assembly.outOwners(connection) match {
       case Boundary ⇒ "UpstreamBoundary"
@@ -509,7 +509,7 @@ private[stream] final class GraphInterpreter(
       case owner    ⇒ logics(owner).toString
     }
 
-  // Debug name for a connections ouput part
+  // Debug name for a connections output part
   private def outLogicName(connection: Int): String =
     assembly.outOwners(connection) match {
       case Boundary ⇒ "UpstreamBoundary"

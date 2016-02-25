@@ -201,7 +201,7 @@ final class PrefixAndTail[T](n: Int) extends GraphStage[FlowShape[T, (immutable.
 }
 
 /**
- * INERNAL API
+ * INTERNAL API
  */
 object Split {
   sealed abstract class SplitDecision
@@ -220,7 +220,7 @@ object Split {
 }
 
 /**
- * INERNAL API
+ * INTERNAL API
  */
 final class Split[T](decision: Split.SplitDecision, p: T ⇒ Boolean, substreamCancelStrategy: SubstreamCancelStrategy) extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
   val in: Inlet[T] = Inlet("Split.in")

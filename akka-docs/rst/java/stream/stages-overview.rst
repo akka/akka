@@ -885,7 +885,7 @@ splitAfter
 ^^^^^^^^^^
 End the current substream whenever a predicate returns ``true``, starting a new substream for the next element.
 
-**emits** when an element passes through. When the provided predicate is true it emitts the element * and opens a new substream for subsequent element
+**emits** when an element passes through. When the provided predicate is true it emits the element * and opens a new substream for subsequent element
 
 **backpressures** when there is an element pending for the next substream, but the previous is not fully consumed yet, or the substream backpressures
 

@@ -188,7 +188,7 @@ class GraphUnzipWithSpec extends AkkaSpec {
       rightProbe.expectNoMsg(100.millis)
     }
 
-    "unzipWith expanded Person.unapply (3 ouputs)" in {
+    "unzipWith expanded Person.unapply (3 outputs)" in {
       val probe0 = TestSubscriber.manualProbe[String]()
       val probe1 = TestSubscriber.manualProbe[String]()
       val probe2 = TestSubscriber.manualProbe[Int]()

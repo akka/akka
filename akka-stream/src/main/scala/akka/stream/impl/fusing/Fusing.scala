@@ -312,7 +312,7 @@ private[stream] object Fusing {
               // need to add the module so that the structural (internal) wirings can be rewritten as well
               // but these modules must not be added to any of the groups
               struct.addModule(copy, new ju.HashSet, inheritedAttributes, indent, shape)
-              struct.registerInteral(newShape, indent)
+              struct.registerInternals(newShape, indent)
 
               copy
           }
@@ -560,7 +560,7 @@ private[stream] object Fusing {
      * connections within imported (and not dissolved) GraphModules.
      * See also the comment in addModule where this is partially undone.
      */
-    def registerInteral(s: Shape, indent: Int): Unit = {
+    def registerInternals(s: Shape, indent: Int): Unit = {
       if (Debug) println("  " * indent + s"registerInternals(${s.outlets.map(hash)})")
       internalOuts.addAll(s.outlets.asJava)
     }
