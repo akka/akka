@@ -791,6 +791,19 @@ final case class Server(products: immutable.Seq[ProductVersion]) extends jm.head
   def getProducts: Iterable[jm.headers.ProductVersion] = products.asJava
 }
 
+// https://tools.ietf.org/html/rfc6797
+object `Strict-Transport-Security` extends ModeledCompanion[`Strict-Transport-Security`] {
+  def apply(maxAge: Long, includeSubDomains: Option[Boolean]) = new `Strict-Transport-Security`(maxAge, includeSubDomains.getOrElse(false))
+}
+final case class `Strict-Transport-Security`(maxAge: Long, includeSubDomains: Boolean = false) extends jm.headers.StrictTransportSecurity with ResponseHeader {
+  def renderValue[R <: Rendering](r: R): r.type = {
+    r ~~ "max-age=" ~~ maxAge
+    if (includeSubDomains) r ~~ "; includeSubDomains"
+    r
+  }
+  protected def companion = `Strict-Transport-Security`
+}
+
 // https://tools.ietf.org/html/rfc6265
 object `Set-Cookie` extends ModeledCompanion[`Set-Cookie`]
 final case class `Set-Cookie`(cookie: HttpCookie) extends jm.headers.SetCookie with ResponseHeader {
