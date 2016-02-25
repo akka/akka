@@ -484,6 +484,21 @@ public class SourceTest extends StreamTest {
     assertEquals(result.size(), 10000);
     for (Integer i: result) assertEquals(i, (Integer) 42);
   }
+  
+  @Test
+  public void mustBeAbleToUseQueue() throws Exception {
+    final Pair<SourceQueueWithComplete<String>, CompletionStage<List<String>>> x = 
+        Flow.of(String.class).runWith(
+            Source.queue(2, OverflowStrategy.fail()),
+            Sink.seq(), materializer);
+    final SourceQueueWithComplete<String> source = x.first();
+    final CompletionStage<List<String>> result = x.second();
+    source.offer("hello");
+    source.offer("world");
+    source.complete();
+    assertEquals(result.toCompletableFuture().get(3, TimeUnit.SECONDS),
+        Arrays.asList("hello", "world"));
+  }
 
   @Test
   public void mustBeAbleToUseActorRefSource() throws Exception {
