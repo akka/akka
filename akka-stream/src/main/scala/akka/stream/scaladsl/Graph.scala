@@ -71,10 +71,10 @@ final class Merge[T] private (val inputPorts: Int, val eagerComplete: Boolean) e
       setHandler(i, new InHandler {
         override def onPush(): Unit = {
           if (isAvailable(out)) {
-            if (!pending) {
-              push(out, grab(i))
-              tryPull(i)
-            }
+            // isAvailable(out) implies !pending
+            // -> grab and push immediately
+            push(out, grab(i))
+            tryPull(i)
           } else pendingQueue.enqueue(i)
         }
 
