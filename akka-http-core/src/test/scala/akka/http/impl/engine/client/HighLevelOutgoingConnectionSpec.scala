@@ -90,5 +90,6 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
       a[One2OneBidiFlow.OutputTruncationException.type] should be thrownBy Await.result(x, 3.second)
       binding.futureValue.unbind()
     }
+
   }
 }
