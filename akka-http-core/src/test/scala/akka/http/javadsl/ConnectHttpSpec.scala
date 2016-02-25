@@ -7,7 +7,7 @@ import akka.http.javadsl.model._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 
-class ConnectHttpSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+class ConnectHttpSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   val httpContext = ConnectionContext.noEncryption()
   val httpsContext = ConnectionContext.https(null)
