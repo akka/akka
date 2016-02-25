@@ -126,7 +126,7 @@ private[akka] class TLSActor(settings: ActorMaterializerSettings,
     }
   }
 
-  // These are Nettys default values
+  // These are Netty's default values
   // 16665 + 1024 (room for compressed data) + 1024 (for OpenJDK compatibility)
   val transportOutBuffer = ByteBuffer.allocate(16665 + 2048)
   /*

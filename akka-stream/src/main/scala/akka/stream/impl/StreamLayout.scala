@@ -527,7 +527,7 @@ private[stream] final class VirtualProcessor[T] extends Processor[T, T] {
 }
 
 /**
- * INERNAL API
+ * INTERNAL API
  */
 private[stream] object MaterializerSession {
   class MaterializationPanic(cause: Throwable) extends RuntimeException("Materialization aborted.", cause) with NoStackTrace

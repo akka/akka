@@ -278,7 +278,7 @@ private[stream] object TcpConnectionStage {
 
     override def postStop(): Unit = role match {
       case Outbound(_, _, localAddressPromise, _) ⇒
-        // Fail if has not been completed with an address eariler
+        // Fail if has not been completed with an address earlier
         localAddressPromise.tryFailure(new StreamTcpException("Connection failed."))
       case _ ⇒ // do nothing...
     }
