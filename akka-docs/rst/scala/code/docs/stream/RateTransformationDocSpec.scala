@@ -12,7 +12,7 @@ import scala.math._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.collection.immutable
-import akka.testkit.TestLatch
+import akka.testkit.{ AkkaSpec, TestLatch }
 
 class RateTransformationDocSpec extends AkkaSpec {
 

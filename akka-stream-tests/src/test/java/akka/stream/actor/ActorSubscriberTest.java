@@ -6,7 +6,7 @@ import akka.stream.StreamTest;
 import akka.stream.javadsl.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.stream.testkit.AkkaSpec;
+import akka.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 import org.junit.ClassRule;
 import org.junit.Test;

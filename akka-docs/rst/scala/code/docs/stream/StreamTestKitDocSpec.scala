@@ -10,7 +10,7 @@ import akka.stream.testkit.scaladsl._
 import scala.util._
 import scala.concurrent.duration._
 import scala.concurrent._
-import akka.testkit.TestProbe
+import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.pattern
 
 class StreamTestKitDocSpec extends AkkaSpec {

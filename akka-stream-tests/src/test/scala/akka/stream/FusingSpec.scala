@@ -4,7 +4,7 @@
 package akka.stream
 
 import akka.stream.scaladsl._
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import org.scalactic.ConversionCheckedTripleEquals
 import akka.stream.Attributes._
 import akka.stream.Fusing.FusedGraph
@@ -15,11 +15,10 @@ import scala.concurrent.duration._
 import akka.stream.impl.fusing.GraphInterpreter
 import akka.event.BusLogging
 
-class FusingSpec extends AkkaSpec with ScalaFutures with ConversionCheckedTripleEquals {
+class FusingSpec extends AkkaSpec {
 
   final val Debug = false
   implicit val materializer = ActorMaterializer()
-  implicit val patience = PatienceConfig(1.second)
 
   def graph(async: Boolean) =
     Source.unfold(1)(x ⇒ Some(x -> x)).filter(_ % 2 == 1)

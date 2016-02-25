@@ -159,7 +159,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
      |    lifecycle = off
      |    autoreceive = off
      |  }
-     |}""".stripMargin)) with ConversionCheckedTripleEquals {
+     |}""".stripMargin)) {
   import ActorContextSpec._
   import ScalaDSL._
 

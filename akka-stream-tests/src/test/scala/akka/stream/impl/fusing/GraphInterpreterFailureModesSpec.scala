@@ -2,7 +2,7 @@ package akka.stream.impl.fusing
 
 import akka.stream.testkit.Utils.TE
 import akka.testkit.EventFilter
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 
 class GraphInterpreterFailureModesSpec extends AkkaSpec with GraphInterpreterSpecKit {
 

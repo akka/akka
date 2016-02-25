@@ -4,8 +4,8 @@
 package akka.stream.impl.fusing
 
 import akka.stream.impl.ConstantFun
-import akka.stream.{ Supervision }
-import akka.stream.testkit.AkkaSpec
+import akka.stream.Supervision
+import akka.testkit.AkkaSpec
 
 class InterpreterStressSpec extends AkkaSpec with GraphInterpreterSpecKit {
   import Supervision.stoppingDecider

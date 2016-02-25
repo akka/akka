@@ -4,7 +4,7 @@
 package docs.stream
 
 import akka.stream.scaladsl._
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 
 class MigrationsScala extends AkkaSpec {
 

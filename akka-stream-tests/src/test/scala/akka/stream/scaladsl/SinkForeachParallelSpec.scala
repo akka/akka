@@ -7,7 +7,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.testkit.{ TestLatch, TestProbe }
 
 import scala.concurrent.Await

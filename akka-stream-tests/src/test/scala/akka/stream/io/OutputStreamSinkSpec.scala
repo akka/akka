@@ -9,7 +9,7 @@ import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import akka.testkit.TestProbe
+import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.util.ByteString
 
 import scala.concurrent.Await

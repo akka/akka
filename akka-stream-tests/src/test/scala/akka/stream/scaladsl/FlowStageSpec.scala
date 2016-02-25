@@ -17,6 +17,7 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
+import akka.testkit.AkkaSpec
 
 class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
 

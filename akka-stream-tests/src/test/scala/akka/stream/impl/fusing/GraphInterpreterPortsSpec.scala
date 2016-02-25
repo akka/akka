@@ -3,7 +3,7 @@
  */
 package akka.stream.impl.fusing
 
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.stream.testkit.Utils._
 
 class GraphInterpreterPortsSpec extends AkkaSpec with GraphInterpreterSpecKit {

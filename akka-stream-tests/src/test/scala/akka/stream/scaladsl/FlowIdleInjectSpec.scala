@@ -1,10 +1,10 @@
 package akka.stream.scaladsl
 
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import akka.stream.testkit.{ TestSubscriber, TestPublisher, Utils, AkkaSpec }
-
+import akka.stream.testkit.{ TestSubscriber, TestPublisher, Utils }
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import akka.testkit.AkkaSpec
 
 class FlowIdleInjectSpec extends AkkaSpec {
 

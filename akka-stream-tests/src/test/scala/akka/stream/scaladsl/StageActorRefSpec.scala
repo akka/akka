@@ -7,14 +7,13 @@ import akka.actor.{ Kill, PoisonPill, NoSerializationVerificationNeeded, ActorRe
 import akka.event.Logging
 import akka.stream._
 import akka.stream.stage.{ GraphStageWithMaterializedValue, GraphStageLogic, InHandler }
-import akka.stream.testkit.AkkaSpec
-import akka.testkit.{ TestProbe, TestEvent, EventFilter, ImplicitSender }
+import akka.testkit.{ AkkaSpec, TestProbe, TestEvent, EventFilter, ImplicitSender }
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration._
 
-class StageActorRefSpec extends AkkaSpec with ImplicitSender with ScalaFutures {
+class StageActorRefSpec extends AkkaSpec with ImplicitSender {
   implicit val materializer = ActorMaterializer()
 
   import StageActorRefSpec._

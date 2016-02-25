@@ -11,7 +11,7 @@ import scala.concurrent.Future
 
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 
 class FlowCompileSpec extends AkkaSpec {
 

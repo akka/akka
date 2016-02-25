@@ -5,7 +5,7 @@ package akka.stream.impl.fusing
 
 import akka.stream.impl.ConstantFun
 import akka.stream.stage._
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 
 import akka.stream.Supervision

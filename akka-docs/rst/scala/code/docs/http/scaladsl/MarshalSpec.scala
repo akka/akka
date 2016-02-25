@@ -4,7 +4,7 @@
 
 package docs.http.scaladsl
 
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 
 class MarshalSpec extends AkkaSpec {
 

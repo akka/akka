@@ -9,7 +9,7 @@ import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.testkit.TestEvent.Mute
-import akka.testkit.{ EventFilter, ImplicitSender, TestProbe }
+import akka.testkit.{ AkkaSpec, EventFilter, ImplicitSender, TestProbe }
 
 import scala.annotation.tailrec
 import scala.concurrent.duration._

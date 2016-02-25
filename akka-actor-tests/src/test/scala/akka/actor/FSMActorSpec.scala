@@ -13,7 +13,6 @@ import scala.concurrent.Await
 import akka.util.Timeout
 
 object FSMActorSpec {
-  val timeout = Timeout(2 seconds)
 
   class Latches(implicit system: ActorSystem) {
     val unlockedLatch = TestLatch()
@@ -102,6 +101,8 @@ object FSMActorSpec {
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with ImplicitSender {
   import FSMActorSpec._
+
+  val timeout = Timeout(2 seconds)
 
   "An FSM Actor" must {
 

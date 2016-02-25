@@ -9,6 +9,7 @@ import org.reactivestreams.Publisher
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
 import akka.stream.testkit.Utils._
+import akka.testkit.AkkaSpec
 
 abstract class BaseTwoStreamsSetup extends AkkaSpec {
 

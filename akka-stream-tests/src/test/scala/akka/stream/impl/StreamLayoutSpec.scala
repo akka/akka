@@ -4,7 +4,7 @@
 package akka.stream.impl
 
 import akka.stream.scaladsl._
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import org.reactivestreams.{ Subscription, Subscriber, Publisher }
 import akka.stream._
 

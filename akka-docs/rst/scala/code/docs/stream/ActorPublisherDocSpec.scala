@@ -8,7 +8,7 @@ import akka.actor.Props
 import akka.stream.ActorMaterializer
 import akka.stream.actor.ActorPublisher
 import akka.stream.scaladsl.{ Flow, Sink, Source }
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 
 object ActorPublisherDocSpec {
 

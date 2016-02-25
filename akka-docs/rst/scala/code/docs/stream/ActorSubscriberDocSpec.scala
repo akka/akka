@@ -15,7 +15,7 @@ import akka.stream.actor.ActorSubscriberMessage
 import akka.stream.actor.MaxInFlightRequestStrategy
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 
 object ActorSubscriberDocSpec {
   //#worker-pool

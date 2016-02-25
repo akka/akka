@@ -6,7 +6,7 @@ package akka.stream.javadsl;
 import org.junit.rules.ExternalResource;
 
 import akka.actor.ActorSystem;
-import akka.stream.testkit.AkkaSpec;
+import akka.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 
 import com.typesafe.config.Config;

@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.stream.ActorMaterializer
 import scala.concurrent._
 import scala.concurrent.duration._
@@ -15,7 +15,7 @@ import org.scalatest.exceptions.TestFailedException
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestLatch
 
-class FlowFlattenMergeSpec extends AkkaSpec with ScalaFutures with ConversionCheckedTripleEquals {
+class FlowFlattenMergeSpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
@@ -24,8 +24,6 @@ class FlowFlattenMergeSpec extends AkkaSpec with ScalaFutures with ConversionChe
 
   val toSeq = Flow[Int].grouped(1000).toMat(Sink.head)(Keep.right)
   val toSet = toSeq.mapMaterializedValue(_.map(_.toSet))
-
-  implicit val patience = PatienceConfig(1.second)
 
   "A FattenMerge" must {
 

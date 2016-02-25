@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
 import akka.stream._
 import akka.stream.scaladsl.Tcp._
 import akka.stream.scaladsl._
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.testkit.TestProbe
 import akka.util.ByteString
 import docs.utils.TestUtils

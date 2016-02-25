@@ -4,7 +4,7 @@
 package akka.stream.impl
 
 import akka.stream.stage.GraphStageLogic.{ EagerTerminateOutput, EagerTerminateInput }
-import akka.stream.testkit.AkkaSpec
+import akka.testkit.AkkaSpec
 import akka.stream._
 import akka.stream.Fusing.aggressive
 import akka.stream.scaladsl._
@@ -16,7 +16,7 @@ import org.scalactic.ConversionCheckedTripleEquals
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.duration.Duration
 
-class GraphStageLogicSpec extends AkkaSpec with GraphInterpreterSpecKit with ConversionCheckedTripleEquals with ScalaFutures {
+class GraphStageLogicSpec extends AkkaSpec with GraphInterpreterSpecKit {
 
   implicit val materializer = ActorMaterializer()
 
