@@ -31,8 +31,8 @@ code with ``git pull``::
    git pull origin master
 
 
-sbt - Simple Build Tool
-=======================
+sbt
+===
 
 Akka is using the excellent `sbt`_ build system. So the first thing you have to
 do is to download and install sbt. You can read more about how to do that in the
