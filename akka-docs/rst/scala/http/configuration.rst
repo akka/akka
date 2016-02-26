@@ -3,7 +3,7 @@
 Configuration
 =============
 
-Just like any other Akka module Akka HTTP is configured via `Lightbend Config`_.
+Just like any other Akka module Akka HTTP is configured via `Typesafe Config`_.
 Usually this means that you provide an ``application.conf`` which contains all the application-specific settings that
 differ from the default ones provided by the reference configuration files from the individual Akka modules.
 
