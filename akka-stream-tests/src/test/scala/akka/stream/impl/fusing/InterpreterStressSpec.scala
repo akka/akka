@@ -16,6 +16,9 @@ class InterpreterStressSpec extends AkkaSpec with GraphInterpreterSpecKit {
 
   val map = Map((x: Int) ⇒ x + 1, stoppingDecider).toGS
 
+  // GraphStage can be reused
+  val dropOne = Drop(1)
+
   "Interpreter" must {
 
     "work with a massive chain of maps" in new OneBoundedSetup[Int](Vector.fill(chainLength)(map): _*) {
@@ -80,7 +83,7 @@ class InterpreterStressSpec extends AkkaSpec with GraphInterpreterSpecKit {
 
     }
 
-    "work with a massive chain of drops" in new OneBoundedSetup[Int](Vector.fill(chainLength / 1000)(Drop(1))) {
+    "work with a massive chain of drops" in new OneBoundedSetup[Int](Vector.fill(chainLength / 1000)(dropOne): _*) {
       lastEvents() should be(Set.empty)
 
       downstream.requestOne()

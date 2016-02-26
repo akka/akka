@@ -183,10 +183,6 @@ private[stream] object Stages {
     override def create(attr: Attributes): Stage[T, T] = fusing.Take(n)
   }
 
-  final case class Drop[T](n: Long, attributes: Attributes = drop) extends SymbolicStage[T, T] {
-    override def create(attr: Attributes): Stage[T, T] = fusing.Drop(n)
-  }
-
   final case class TakeWhile[T](p: T ⇒ Boolean, attributes: Attributes = takeWhile) extends SymbolicStage[T, T] {
     override def create(attr: Attributes): Stage[T, T] = fusing.TakeWhile(p, supervision(attr))
   }
