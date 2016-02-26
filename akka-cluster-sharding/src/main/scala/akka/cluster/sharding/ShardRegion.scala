@@ -10,11 +10,7 @@ import akka.util.Timeout
 import akka.pattern.{ ask, pipe }
 import akka.actor._
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent.ClusterDomainEvent
-import akka.cluster.ClusterEvent.CurrentClusterState
-import akka.cluster.ClusterEvent.MemberEvent
-import akka.cluster.ClusterEvent.MemberRemoved
-import akka.cluster.ClusterEvent.MemberUp
+import akka.cluster.ClusterEvent._
 import akka.cluster.Member
 import akka.cluster.MemberStatus
 
@@ -437,7 +433,9 @@ class ShardRegion(
       else if (matchingRole(m))
         changeMembers(membersByAge - m)
 
-    case _ ⇒ unhandled(evt)
+    case _: MemberEvent ⇒ // these are expected, no need to warn about them
+
+    case _              ⇒ unhandled(evt)
   }
 
   def receiveCoordinatorMessage(msg: CoordinatorMessage): Unit = msg match {
