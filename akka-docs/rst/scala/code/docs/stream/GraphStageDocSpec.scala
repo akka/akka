@@ -73,7 +73,7 @@ class GraphStageDocSpec extends AkkaSpec {
     val sourceGraph: Graph[SourceShape[Int], NotUsed] = new NumbersSource
 
     // Create a Source from the Graph to access the DSL
-    val mySource: Source[Int, NotUsed] = Source.fromGraph(new NumbersSource)
+    val mySource: Source[Int, NotUsed] = Source.fromGraph(sourceGraph)
 
     // Returns 55
     val result1: Future[Int] = mySource.take(10).runFold(0)(_ + _)
