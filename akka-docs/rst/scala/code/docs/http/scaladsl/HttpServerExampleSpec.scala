@@ -12,17 +12,17 @@ import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Sink }
 import akka.testkit.TestActors
+import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
 import scala.language.postfixOps
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-class HttpServerExampleSpec extends WordSpec with Matchers {
+class HttpServerExampleSpec extends WordSpec with Matchers
+  with CompileOnlySpec {
 
   // never actually called
   val log: LoggingAdapter = null
-
-  def compileOnlySpec(body: => Unit) = ()
 
   "binding-example" in compileOnlySpec {
     import akka.http.scaladsl.Http
