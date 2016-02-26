@@ -102,5 +102,4 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
     }
   }
 
-  private def compileOnlySpec(block: => Unit) = pending
 }

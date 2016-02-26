@@ -19,3 +19,4 @@ which are specific to one side only.
    de-coding
    json-support
    xml-support
+   timeouts

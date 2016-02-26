@@ -65,7 +65,12 @@ Timeouts
 
 Currently Akka HTTP doesn't implement client-side request timeout checking itself as this functionality can be regarded
 as a more general purpose streaming infrastructure feature.
-However, akka-stream should soon provide such a feature.
+
+It should be noted that Akka Streams provide various timeout functionality so any API that uses a streams can benefit
+from the stream stages such as ``idleTimeout``, ``completionTimeout``, ``initialTimeout`` and even ``throttle``.
+To learn more about these refer to their documentation in Akka Streams (and Scala Doc).
+
+For more details about timeout support in Akka HTTP in general refer to :ref:`http-timeouts`.
 
 
 .. _http-client-layer:
