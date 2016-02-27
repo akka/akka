@@ -225,3 +225,21 @@ p.caption { width: 80%; text-align: justify; font-size: 0.95em; font-style: ital
   font-weight: normal;
   text-decoration: none;
 }
+
+/* fancy searchbox */
+#q {
+  background: url('search.jpg') 5px center no-repeat #FFF;
+  border: 1px solid #AAA;
+  float: right;
+  font-size: 11px;
+  margin: -4px 32px 0 12px;
+  opacity: 0.6;
+  outline: none;
+  padding: 3px 5px 3px 20px;
+  width: 180px;
+  border-radius: 5px;
+  -webkit-transition: 0.3s;
+  -moz-transition: 0.3s;
+  -o-transition: 0.3s;
+  transition: 0.3s;
+}
