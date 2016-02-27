@@ -13,10 +13,12 @@
 {% set script_files = script_files + ['_static/contentsFix.js'] %}
 {% set script_files = script_files + ['_static/ga.js'] %}
 {% set script_files = script_files + ['_static/warnOldDocs.js'] %}
+{% set script_files = script_files + ['https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js'] %}
 {% set css_files = css_files + ['_static/prettify.css'] %}
 {% set css_files = css_files + ['_static/base.css'] %}
 {% set css_files = css_files + ['_static/docs.css'] %}
 {% set css_files = css_files + ['http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700'] %}
+{% set css_files = css_files + ['https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css'] %}
 
 {# do not display relbars #}
 {% block relbar1 %}{% endblock %}
@@ -70,6 +72,7 @@
         })();
     </script>
   {%- endif %}
+
 {% endblock %}
 
 {% block content %}
@@ -116,8 +119,11 @@
                 <span class="divider">«</span> <a href="{{ prev.link|e }}">{{ prev.title }}</a> <span class="divider">|</span> 
                 {%- endif %}
               </li>
-              <li>
+              <li style="float: left">
                 Version {{ release|e }}
+              </li>
+              <li style="float: left">
+                <input type="search" id="q" class="form-control" />
               </li>
             </ul>
           </div>
@@ -184,173 +190,7 @@
   </div>
 </div>
 {%- if include_analytics %}
-<script src="http://www.google.com/jsapi" type="text/javascript"></script>
-<script type="text/javascript">
-    google.load('search', '1', {language : 'en', style : google.loader.themes.MINIMALIST});
-    google.setOnLoadCallback(function() {
-    var customSearchOptions = {};  var customSearchControl = new google.search.CustomSearchControl(
-    '003065520604945464838:izzukx8-qba', customSearchOptions);
-    customSearchControl.setResultSetSize(google.search.Search.FILTERED_CSE_RESULTSET);
-    customSearchControl.draw('cse');
-    var path = window.location.pathname.split('/').slice(0,4);
-    if(window.location.hostname && path.length >= 4) {
-    var site = "site:" + window.location.hostname + path.join('/').toString();
-    customSearchControl.setSearchStartingCallback(this, function(c, s, q) { s.setQueryAddition(site); });
-    }
-    }, true);
-</script>
-<style type="text/css">
-    .gsc-control-cse {
-    font-family: Arial, sans-serif;
-    border-color: rgb(242, 242, 235);
-    background-color: rgb(242, 242, 235);
-    }
-    .gsc-control-cse .gsc-table-result {
-      font-family: Arial, sans-serif;
-      display: block;
-    }
-    input.gsc-input {
-    border-color: #BBBBBB;
-    }
-    input.gsc-search-button {
-    border-color: rgb(34, 57, 64);
-    background-color: rgb(68, 114, 129);
-    color: #FFFFFF;
-    }
-    .gsc-tabHeader.gsc-tabhInactive {
-    border-color: #777777;
-    background-color: #777777;
-    }
-    .gsc-tabHeader.gsc-tabhActive {
-    border-color: #333333;
-    background-color: #333333;
-    }
-    .gsc-tabsArea {
-    border-color: #333333;
-    }
-    .gsc-webResult.gsc-result,
-    .gsc-results .gsc-imageResult {
-      border-color: #666666;
-      background-color: #FFFFFF;
-      padding: 0.5em 0.5em;
-    }
-    .gsc-webResult.gsc-result:hover,
-    .gsc-imageResult:hover {
-      border-color: #AAAAAA;
-      background-color: #FFFFFF;
-      padding: 0.5em 0.5em;
-    }
-    .gsc-webResult.gsc-result.gsc-promotion:hover {
-    border-color: #AAAAAA;
-    background-color: #FFFFFF;
-    }
-    .gs-webResult.gs-result a.gs-title:link,
-    .gs-webResult.gs-result a.gs-title:link b,
-    .gs-imageResult a.gs-title:link,
-    .gs-imageResult a.gs-title:link b {
-    color: #444444;
-    }
-    .gs-webResult.gs-result a.gs-title:visited,
-    .gs-webResult.gs-result a.gs-title:visited b,
-    .gs-imageResult a.gs-title:visited,
-    .gs-imageResult a.gs-title:visited b {
-    color: #444444;
-    }
-    .gs-webResult.gs-result a.gs-title:hover,
-    .gs-webResult.gs-result a.gs-title:hover b,
-    .gs-imageResult a.gs-title:hover,
-    .gs-imageResult a.gs-title:hover b {
-    color: #444444;
-    }
-    .gs-webResult.gs-result a.gs-title:active,
-    .gs-webResult.gs-result a.gs-title:active b,
-    .gs-imageResult a.gs-title:active,
-    .gs-imageResult a.gs-title:active b {
-    color: #777777;
-    }
-    .gsc-cursor-page {
-    color: #444444;
-    }
-    a.gsc-trailing-more-results:link {
-    color: #444444;
-    }
-    .gs-webResult .gs-snippet,
-    .gs-imageResult .gs-snippet,
-    .gs-fileFormatType {
-    color: #333333;
-    }
-    .gs-webResult div.gs-visibleUrl,
-    .gs-imageResult div.gs-visibleUrl {
-    color: #000000;
-    }
-    .gs-webResult div.gs-visibleUrl-short {
-    color: #000000;
-    }
-    .gs-webResult div.gs-visibleUrl-short {
-    display: none;
-    }
-    .gs-webResult div.gs-visibleUrl-long {
-    display: block;
-    }
-    .gs-promotion div.gs-visibleUrl-short {
-    display: none;
-    }
-    .gs-promotion div.gs-visibleUrl-long {
-    display: block;
-    }
-    .gsc-cursor-box {
-    border-color: #FFFFFF;
-    }
-    .gsc-results .gsc-cursor-box .gsc-cursor-page {
-    border-color: #777777;
-    background-color: #FFFFFF;
-    color: #444444;
-    }
-    .gsc-results .gsc-cursor-box .gsc-cursor-current-page {
-    border-color: #333333;
-    background-color: #333333;
-    color: #444444;
-    }
-    .gsc-webResult.gsc-result.gsc-promotion {
-    border-color: #CCCCCC;
-    background-color: #E6E6E6;
-    }
-    .gsc-completion-title {
-    color: #444444;
-    }
-    .gsc-completion-snippet {
-    color: #333333;
-    }
-    .gs-promotion a.gs-title:link,
-    .gs-promotion a.gs-title:link *,
-    .gs-promotion .gs-snippet a:link {
-    color: #0000CC;
-    }
-    .gs-promotion a.gs-title:visited,
-    .gs-promotion a.gs-title:visited *,
-    .gs-promotion .gs-snippet a:visited {
-    color: #0000CC;
-    }
-    .gs-promotion a.gs-title:hover,
-    .gs-promotion a.gs-title:hover *,
-    .gs-promotion .gs-snippet a:hover {
-    color: #444444;
-    }
-    .gs-promotion a.gs-title:active,
-    .gs-promotion a.gs-title:active *,
-    .gs-promotion .gs-snippet a:active {
-    color: #00CC00;
-    }
-    .gs-promotion .gs-snippet,
-    .gs-promotion .gs-title .gs-promotion-title-right,
-    .gs-promotion .gs-title .gs-promotion-title-right *  {
-    color: #333333;
-    }
-    .gs-promotion .gs-visibleUrl,
-    .gs-promotion .gs-visibleUrl-short {
-    color: #00CC00;
-    }
-</style>
+
 {%- endif %}
 <script type="text/javascript">
   var $toc = $('#toc');
@@ -362,6 +202,36 @@
       $el.prepend($("<a class='section-marker' href='#" + $el.attr("id") + "'>&sect;</a>"))
   });
 </script>
+
+<!-- Algolia docs search -->
+<script type="text/javascript">
+  var version = DOCUMENTATION_OPTIONS.VERSION;
+
+  var lang = "scala";
+  var path = window.location.pathname;
+  if (path.includes("/java/") || path.includes("java.html")) lang = "java";
+
+  console.log("Search configured for:", lang, "@", version);
+
+  docsearch({
+    apiKey: '543bad5ad786495d9ccd445ed34ed082',
+    indexName: 'akka_io',
+    inputSelector: '#q',
+    algoliaOptions: {
+      hitsPerPage: 10,
+      facetFilters: '["language:' + lang + '","version:' + version + '"]'
+    }
+  });
+
+  // set up "/" as global shortcut for focusing on search
+  $(document).keypress(function (event) {
+    if (event.keyCode == 47) {
+      $("#q").focus();
+      return false; // swallow key event, otherwise the / char would be input into the search box
+    }
+  });
+</script>
+
   {% block footer %}{% endblock %}
   {%- endblock %}
 {% endblock %}
