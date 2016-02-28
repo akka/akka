@@ -282,6 +282,16 @@ Connection
   request's method, protocol and potential ``Connection`` header as well as the response's protocol, entity and
   potential ``Connection`` header. See `this test`__ for a full table of what happens when.
 
+Strict-Transport-Security
+  HTTP Strict Transport Security (HSTS) is a web security policy mechanism which is communicated by the
+  ``Strict-Transport-Security`` header. The most important security vulnerability that HSTS can fix is SSL-stripping
+  man-in-the-middle attacks. The SSL-stripping attact works by transparently converting a secure HTTPS connection into a
+  plain HTTP connection. The user can see that the connection is insecure, but crucially there is no way of knowing
+  whether the connection should be secure. HSTS addresses this problem by informing the browser that connections to the
+  site should always use TLS/SSL. See also `RFC 6797`_.
+
+.. _RFC 6797: http://tools.ietf.org/html/rfc6797
+
 __ @github@/akka-http-core/src/test/scala/akka/http/impl/engine/rendering/ResponseRendererSpec.scala#L422
 
 Custom Headers
