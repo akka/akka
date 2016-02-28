@@ -99,11 +99,6 @@ Streaming File IO
 Akka Streams provide simple Sources and Sinks that can work with :class:`ByteString` instances to perform IO operations
 on files.
 
-.. note::
-  Since the current version of Akka (``2.3.x``) needs to support JDK6, the currently provided File IO implementations
-  are not able to utilise Asynchronous File IO operations, as these were introduced in JDK7 (and newer).
-  Once Akka is free to require JDK8 (from ``2.4.x``) these implementations will be updated to make use of the
-  new NIO APIs (i.e. :class:`AsynchronousFileChannel`).
 
 Streaming data from a file is as easy as creating a `FileIO.fromFile` given a target file, and an optional
 ``chunkSize`` which determines the buffer size determined as one "element" in such stream:
