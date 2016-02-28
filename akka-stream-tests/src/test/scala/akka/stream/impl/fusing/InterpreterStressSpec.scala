@@ -16,8 +16,10 @@ class InterpreterStressSpec extends AkkaSpec with GraphInterpreterSpecKit {
 
   val map = Map((x: Int) ⇒ x + 1, stoppingDecider).toGS
 
-  // GraphStage can be reused
+  // GraphStages can be reused
   val dropOne = Drop(1)
+  val takeOne = Take(1)
+  val takeHalfOfRepetition = Take(repetition / 2)
 
   "Interpreter" must {
 
@@ -45,7 +47,7 @@ class InterpreterStressSpec extends AkkaSpec with GraphInterpreterSpecKit {
 
     "work with a massive chain of maps with early complete" in new OneBoundedSetup[Int](
       Vector.fill(halfLength)(map) ++
-        Seq(Take(repetition / 2).toGS) ++
+        Seq(takeHalfOfRepetition) ++
         Vector.fill(halfLength)(map): _*) {
 
       lastEvents() should be(Set.empty)
@@ -72,7 +74,7 @@ class InterpreterStressSpec extends AkkaSpec with GraphInterpreterSpecKit {
       info(s"Chain finished in $time seconds ${(chainLength * repetition) / (time * 1000 * 1000)} million maps/s")
     }
 
-    "work with a massive chain of takes" in new OneBoundedSetup[Int](Vector.fill(chainLength / 10)(Take(1))) {
+    "work with a massive chain of takes" in new OneBoundedSetup[Int](Vector.fill(chainLength / 10)(takeOne): _*) {
       lastEvents() should be(Set.empty)
 
       downstream.requestOne()

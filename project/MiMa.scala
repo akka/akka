@@ -659,6 +659,13 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.Drop.onPush"),
         ProblemFilters.exclude[FinalClassProblem]("akka.stream.stage.GraphStageLogic$Reading"), // this class is private
 
+        // #19908 Take is private
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$Take$"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$Take"),
+        ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.fusing.Take"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.Take.onPush"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.Take.onPull"),
+
         // #19815 make HTTP compile under Scala 2.12.0-M3
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.model.headers.CacheDirectives#private.apply"),
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.model.headers.CacheDirectives#no-cache.apply"),
