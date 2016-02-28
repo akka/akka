@@ -124,19 +124,30 @@ private[akka] final case class Recover[T](pf: PartialFunction[Throwable, T]) ext
 /**
  * INTERNAL API
  */
-private[akka] final case class Take[T](count: Long) extends PushPullStage[T, T] {
-  private var left: Long = count
+private[akka] final case class Take[T](count: Long) extends SimpleLinearGraphStage[T] {
+  override def initialAttributes: Attributes = DefaultAttributes.take
 
-  override def onPush(elem: T, ctx: Context[T]): SyncDirective = {
-    left -= 1
-    if (left > 0) ctx.push(elem)
-    else if (left == 0) ctx.pushAndFinish(elem)
-    else ctx.finish() //Handle negative take counts
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+    private var left: Long = count
+
+    override def onPush(): Unit = {
+      val leftBefore = left
+      if (leftBefore >= 1) {
+        left = leftBefore - 1
+        push(out, grab(in))
+      }
+      if (leftBefore <= 1) completeStage()
+    }
+
+    override def onPull(): Unit = {
+      if (left > 0) pull(in)
+      else completeStage()
+    }
+
+    setHandlers(in, out, this)
   }
 
-  override def onPull(ctx: Context[T]): SyncDirective =
-    if (left <= 0) ctx.finish()
-    else ctx.pull()
+  override def toString: String = "Take"
 }
 
 /**

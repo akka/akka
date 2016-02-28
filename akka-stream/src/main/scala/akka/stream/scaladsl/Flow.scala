@@ -923,7 +923,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.limit]], [[FlowOps.limitWeighted]]
    */
-  def take(n: Long): Repr[Out] = andThen(Take(n))
+  def take(n: Long): Repr[Out] =
+    via(Take[Out](n))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after the given
