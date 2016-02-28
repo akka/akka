@@ -887,7 +887,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def drop(n: Long): Repr[Out] = andThen(Drop(n))
+  def drop(n: Long): Repr[Out] =
+    via(Drop[Out](n))
 
   /**
    * Discard the elements received within the given duration at beginning of the stream.
