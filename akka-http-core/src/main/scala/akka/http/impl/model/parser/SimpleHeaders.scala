@@ -186,6 +186,10 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
   // http://tools.ietf.org/html/rfc7231#section-7.4.2
   def server = rule { products ~ EOI ~> (Server(_)) }
 
+  def `strict-transport-security` = rule {
+    ignoreCase("max-age=") ~ `delta-seconds` ~ optional(ws(";") ~ ignoreCase("includesubdomains") ~ push(true)) ~ EOI ~> (`Strict-Transport-Security`(_, _))
+  }
+
   // http://tools.ietf.org/html/rfc7230#section-3.3.1
   def `transfer-encoding` = rule {
     oneOrMore(`transfer-coding`).separatedBy(listSep) ~ EOI ~> (`Transfer-Encoding`(_))
