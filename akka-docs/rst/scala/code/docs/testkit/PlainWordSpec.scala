@@ -13,11 +13,9 @@ import org.scalatest.Matchers
 import org.scalatest.BeforeAndAfterAll
 
 //#implicit-sender
-class MySpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
+class MySpec() extends TestKit(ActorSystem("MySpec")) with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll {
   //#implicit-sender
-
-  def this() = this(ActorSystem("MySpec"))
 
   override def afterAll {
     TestKit.shutdownActorSystem(system)
