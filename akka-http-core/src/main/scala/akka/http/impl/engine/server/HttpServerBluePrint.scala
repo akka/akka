@@ -248,7 +248,7 @@ private[http] object HttpServerBluePrint {
 
     Flow[ResponseRenderingContext]
       .via(responseRendererFactory.renderer.named("renderer"))
-      .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorHandling(errorHandler)).named("errorLogger"))
+      .via(ErrorHandling[ResponseRenderingOutput](errorHandler).named("errorLogger"))
   }
 
   class RequestTimeoutSupport(initialTimeout: FiniteDuration)
