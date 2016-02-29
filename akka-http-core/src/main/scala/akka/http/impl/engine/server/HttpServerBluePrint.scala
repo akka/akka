@@ -240,15 +240,15 @@ private[http] object HttpServerBluePrint {
 
     val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log)
 
-    val errorHandler: Throwable ⇒ Unit = {
+    val errorHandler: PartialFunction[Throwable, Throwable] = {
       // idle timeouts should not result in errors in the log. See 19058.
-      case timeout: HttpConnectionTimeoutException ⇒ log.debug(s"Closing HttpConnection due to timeout: ${timeout.getMessage}")
-      case t                                       ⇒ log.error(t, "Outgoing response stream error")
+      case timeout: HttpConnectionTimeoutException ⇒ log.debug(s"Closing HttpConnection due to timeout: ${timeout.getMessage}"); timeout
+      case t                                       ⇒ log.error(t, "Outgoing response stream error"); t
     }
 
     Flow[ResponseRenderingContext]
       .via(responseRendererFactory.renderer.named("renderer"))
-      .via(ErrorHandling[ResponseRenderingOutput](errorHandler).named("errorLogger"))
+      .via(MapError[ResponseRenderingOutput](errorHandler).named("errorLogger"))
   }
 
   class RequestTimeoutSupport(initialTimeout: FiniteDuration)
