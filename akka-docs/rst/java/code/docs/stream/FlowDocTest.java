@@ -246,7 +246,7 @@ public class FlowDocTest extends AbstractJavaTest {
     CompletableFuture<Optional<Integer>> r5 = flow.to(sink).runWith(source, mat);
     Pair<CompletableFuture<Optional<Integer>>, CompletionStage<Integer>> r6 = flow.runWith(source, sink, mat);
 
-    // Using more complext combinations
+    // Using more complex combinations
     RunnableGraph<Pair<CompletableFuture<Optional<Integer>>, Cancellable>> r7 =
     source.viaMat(flow, Keep.both()).to(sink);
 
