@@ -545,7 +545,7 @@ a resizer.
 .. note::
 
   Brendan W McAdams' excellent blog post `Distributing Akka Workloads - And Shutting Down Afterwards
-  <http://blog.evilmonkeylabs.com/2013/01/17/Distributing_Akka_Workloads_And_Shutting_Down_After/>`_
+  <http://bytes.codes/2013/01/17/Distributing_Akka_Workloads_And_Shutting_Down_After/>`_
   discusses in more detail how ``PoisonPill`` messages can be used to shut down routers and routees.
 
 Kill Messages
