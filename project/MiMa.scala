@@ -673,13 +673,8 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.model.headers.CacheDirectives#private.apply"),
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.model.headers.CacheDirectives#no-cache.apply"),
 
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.model.parser.SimpleHeaders.strict-transport-security"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.rendering.RequestRenderingContext.copy"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.rendering.RequestRenderingContext.this"),
-        ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.rendering.RequestRenderingContext$"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.rendering.RequestRenderingContext.apply"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.parsing.HttpResponseParser.setRequestMethodForNextResponse"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.package.errorHandling"),
+        // #19913 internal and shouldn't be public
+        FilterAnyProblemStartingWith("akka.http.impl"),
 
         // #19983 withoutSizeLimit overrides for Scala API
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.RequestEntity.withoutSizeLimit"),
