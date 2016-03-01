@@ -36,13 +36,10 @@ object AkkaBuild extends Build {
     version             := "2.4-SNAPSHOT"
   )
 
-  lazy val root = Project(
-    id = "akka",
-    base = file("."),
-    settings = parentSettings ++ Release.settings ++
-      SphinxDoc.akkaSettings ++ Dist.settings ++ s3Settings ++
-      UnidocRoot.akkaSettings ++
-      Protobuf.settings ++ Seq(
+  lazy val rootSettings = parentSettings ++ Release.settings ++
+    SphinxDoc.akkaSettings ++ Dist.settings ++ s3Settings ++
+    UnidocRoot.akkaSettings ++
+    Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
       Dist.distExclude := Seq(actorTests.id, docs.id, samples.id, osgi.id),
       S3.host in S3.upload := "downloads.typesafe.com.s3.amazonaws.com",
@@ -52,15 +49,19 @@ object AkkaBuild extends Build {
         val archivesPathFinder = downloads * s"*$v.zip"
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       }
-    ),
+    )
+  
+  lazy val root = Project(
+    id = "akka",
+    base = file("."),
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel,
       cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
       slf4j, agent, persistence, persistenceQuery, persistenceTck, persistenceShared,
       kernel, osgi, docs, contrib, samples, multiNodeTestkit, benchJmh, typed, protobuf,
       stream, streamTestkit, streamTests, streamTestsTck, parsing,
       httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests, httpTestkit
-    )
-  )
+    ) 
+  ).settings(rootSettings: _*)
 
   lazy val akkaScalaNightly = Project(
     id = "akka-scala-nightly",
@@ -234,9 +235,10 @@ object AkkaBuild extends Build {
 
   lazy val httpMarshallersScala = Project(
     id = "akka-http-marshallers-scala-experimental",
-    base = file("akka-http-marshallers-scala"),
-    settings = parentSettings
-  ).aggregate(httpSprayJson, httpXml)
+    base = file("akka-http-marshallers-scala")
+  )
+  .settings(parentSettings: _*)
+  .aggregate(httpSprayJson, httpXml)
 
   lazy val httpXml =
     httpMarshallersScalaSubproject("xml")
@@ -246,9 +248,10 @@ object AkkaBuild extends Build {
 
   lazy val httpMarshallersJava = Project(
     id = "akka-http-marshallers-java-experimental",
-    base = file("akka-http-marshallers-java"),
-    settings = parentSettings
-  ).aggregate(httpJackson)
+    base = file("akka-http-marshallers-java")
+  )
+  .settings(parentSettings: _*)
+  .aggregate(httpJackson)
 
   lazy val httpJackson =
     httpMarshallersJavaSubproject("jackson")
@@ -335,10 +338,11 @@ object AkkaBuild extends Build {
     dependencies = Seq(remote, remoteTests % "test->test", cluster, clusterTools, persistence % "compile;test->provided")
   ) configs (MultiJvm)
 
+  lazy val samplesSettings = parentSettings ++ ActivatorDist.settings
+
   lazy val samples = Project(
     id = "akka-samples",
     base = file("akka-samples"),
-    settings = parentSettings ++ ActivatorDist.settings,
     // FIXME osgiDiningHakkersSampleMavenTest temporarily removed from aggregate due to #16703
     aggregate = if (!Sample.CliOptions.aggregateSamples) Nil else
       Seq(sampleCamelJava, sampleCamelScala, sampleClusterJava, sampleClusterScala, sampleFsmScala, sampleFsmJavaLambda,
@@ -346,7 +350,7 @@ object AkkaBuild extends Build {
         samplePersistenceJava, samplePersistenceScala, samplePersistenceJavaLambda,
         sampleRemoteJava, sampleRemoteScala, sampleSupervisionJavaLambda,
         sampleDistributedDataScala, sampleDistributedDataJava)
-  )
+  ).settings(samplesSettings: _*)
 
   lazy val sampleCamelJava = Sample.project("akka-sample-camel-java")
   lazy val sampleCamelScala = Sample.project("akka-sample-camel-scala")
@@ -375,24 +379,26 @@ object AkkaBuild extends Build {
   lazy val sampleDistributedDataScala = Sample.project("akka-sample-distributed-data-scala")
   lazy val sampleDistributedDataJava = Sample.project("akka-sample-distributed-data-java")
 
-  lazy val osgiDiningHakkersSampleMavenTest = Project(id = "akka-sample-osgi-dining-hakkers-maven-test",
-    base = file("akka-samples/akka-sample-osgi-dining-hakkers-maven-test"),
-    settings = Seq(
-      publishArtifact := false,
-      // force publication of artifacts to local maven repo, so latest versions can be used when running maven tests
-      compile in Compile <<=
-        (publishM2 in actor, publishM2 in testkit, publishM2 in remote, publishM2 in cluster, publishM2 in osgi,
-          publishM2 in slf4j, publishM2 in persistence, compile in Compile) map
-          ((_, _, _, _, _, _, _, c) => c),
-      test in Test ~= { x => {
-        def executeMvnCommands(failureMessage: String, commands: String*) = {
-          if ({List("sh", "-c", commands.mkString("cd akka-samples/akka-sample-osgi-dining-hakkers; mvn ", " ", "")) !} != 0)
-            throw new Exception(failureMessage)
-        }
-        executeMvnCommands("Osgi sample Dining hakkers test failed", "clean", "install")
-      }}
-    ) ++ dontPublishSettings
+  lazy val osgiDiningHakkersSampleMavenTest = Project(
+    id = "akka-sample-osgi-dining-hakkers-maven-test",
+    base = file("akka-samples/akka-sample-osgi-dining-hakkers-maven-test")
   )
+  .settings(
+    publishArtifact := false,
+    // force publication of artifacts to local maven repo, so latest versions can be used when running maven tests
+    compile in Compile <<=
+      (publishM2 in actor, publishM2 in testkit, publishM2 in remote, publishM2 in cluster, publishM2 in osgi,
+        publishM2 in slf4j, publishM2 in persistence, compile in Compile) map
+        ((_, _, _, _, _, _, _, c) => c),
+    test in Test ~= { x => {
+      def executeMvnCommands(failureMessage: String, commands: String*) = {
+        if ({List("sh", "-c", commands.mkString("cd akka-samples/akka-sample-osgi-dining-hakkers; mvn ", " ", "")) !} != 0)
+          throw new Exception(failureMessage)
+      }
+      executeMvnCommands("Osgi sample Dining hakkers test failed", "clean", "install")
+    }}
+  )
+  .settings(dontPublishSettings: _*)
 
   val dontPublishSettings = Seq(
     publishSigned := (),
@@ -412,9 +418,7 @@ object AkkaBuild extends Build {
     ) ++
     resolverSettings
 
-  lazy val baseSettings = Defaults.defaultSettings
-
-  lazy val parentSettings = baseSettings ++ Seq(
+  lazy val parentSettings = Seq(
     publishArtifact := false
   ) ++ dontPublishSettings
 
