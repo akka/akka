@@ -25,15 +25,15 @@ object Formatting {
     import scalariform.formatter.preferences._
     FormattingPreferences()
       .setPreference(RewriteArrowSymbols, true)
-      .setPreference(AlignParameters, true)
+      .setPreference(AlignParameters, false)
+      .setPreference(SpacesAroundMultiImports, true)
+      .setPreference(DanglingCloseParenthesis, Prevent)
       .setPreference(AlignSingleLineCaseStatements, true)
   }
 
   def docFormattingPreferences = {
     import scalariform.formatter.preferences._
-    FormattingPreferences()
+    formattingPreferences
       .setPreference(RewriteArrowSymbols, false)
-      .setPreference(AlignParameters, true)
-      .setPreference(AlignSingleLineCaseStatements, true)
   }
 }
