@@ -25,10 +25,12 @@ object Formatting {
     import scalariform.formatter.preferences._
     FormattingPreferences()
       .setPreference(RewriteArrowSymbols, true)
-      .setPreference(AlignParameters, false)
+      .setPreference(AlignParameters, true)
+      .setPreference(AlignParameterTypes, false)
       .setPreference(SpacesAroundMultiImports, true)
       .setPreference(DanglingCloseParenthesis, Prevent)
       .setPreference(FirstParameterOnNewline, Preserve)
+      .setPreference(FirstArgumentOnNewline, Preserve)
       .setPreference(AlignSingleLineCaseStatements, true)
   }
 
