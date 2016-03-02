@@ -181,7 +181,7 @@ class FlowDocSpec extends AkkaSpec {
     val r5: Promise[Option[Int]] = flow.to(sink).runWith(source)
     val r6: (Promise[Option[Int]], Future[Int]) = flow.runWith(source, sink)
 
-    // Using more complext combinations
+    // Using more complex combinations
     val r7: RunnableGraph[(Promise[Option[Int]], Cancellable)] =
       source.viaMat(flow)(Keep.both).to(sink)
 
