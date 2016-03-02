@@ -12,6 +12,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.3.8")
 //#sbt-multi-jvm
 
 addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.6.0")
+libraryDependencies += "org.scalariform" %% "scalariform" % "0.2.0-SNAPSHOT"
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "0.7.1")
 

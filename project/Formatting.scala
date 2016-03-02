@@ -28,6 +28,7 @@ object Formatting {
       .setPreference(AlignParameters, false)
       .setPreference(SpacesAroundMultiImports, true)
       .setPreference(DanglingCloseParenthesis, Prevent)
+      .setPreference(FirstParameterOnNewline, Preserve)
       .setPreference(AlignSingleLineCaseStatements, true)
   }
 
