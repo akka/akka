@@ -4,9 +4,12 @@
 
 package akka.http.impl.engine.rendering
 
+import akka.NotUsed
+import akka.http.impl.engine.parsing.HttpResponseParser
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.model.RequestEntityAcceptance._
 
+import scala.concurrent.Future
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.util.ByteString
@@ -102,8 +105,16 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
     def renderContentLength(contentLength: Long) =
       if (method.isEntityAccepted && (contentLength > 0 || method.requestEntityAcceptance == Expected)) r ~~ `Content-Length` ~~ contentLength ~~ CrLf else r
 
-    def renderStreamed(body: Source[ByteString, Any]): RequestRenderingOutput =
-      RequestRenderingOutput.Streamed(renderByteStrings(r, body))
+    def renderStreamed(body: Source[ByteString, Any]): RequestRenderingOutput = {
+      val headerPart = Source.single(r.get)
+      val stream = ctx.sendEntityTrigger match {
+        case None ⇒ headerPart ++ body
+        case Some(future) ⇒
+          val barrier = Source.fromFuture(future).drop(1).asInstanceOf[Source[ByteString, Any]]
+          (headerPart ++ barrier ++ body).recoverWith { case HttpResponseParser.OneHundredContinueError ⇒ Source.empty }
+      }
+      RequestRenderingOutput.Streamed(stream)
+    }
 
     def completeRequestRendering(): RequestRenderingOutput =
       entity match {
@@ -113,7 +124,8 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
 
         case HttpEntity.Strict(_, data) ⇒
           renderContentLength(data.length) ~~ CrLf
-          RequestRenderingOutput.Strict(r.get ++ data)
+          if (ctx.sendEntityTrigger.isDefined) renderStreamed(Source.single(data))
+          else RequestRenderingOutput.Strict(r.get ++ data)
 
         case HttpEntity.Default(_, contentLength, data) ⇒
           renderContentLength(contentLength) ~~ CrLf
@@ -155,5 +167,14 @@ private[http] object HttpRequestRendererFactory {
 
 /**
  * INTERNAL API
+ *
+ * @param request the request to be rendered
+ * @param hostHeader the host header to render (not necessarily contained in the request.headers)
+ * @param sendEntityTrigger defined when the request has a `Expect: 100-continue` header; in this case the future will
+ *                          be completed successfully when the request entity is allowed to go out onto the wire;
+ *                          if the future is completed with an error the connection is to be closed.
  */
-private[http] final case class RequestRenderingContext(request: HttpRequest, hostHeader: Host)
+private[http] final case class RequestRenderingContext(
+  request: HttpRequest,
+  hostHeader: Host,
+  sendEntityTrigger: Option[Future[NotUsed]] = None)
