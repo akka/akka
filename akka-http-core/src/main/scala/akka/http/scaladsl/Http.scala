@@ -258,7 +258,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   def clientLayer(hostHeader: Host,
                   settings: ClientConnectionSettings,
                   log: LoggingAdapter = system.log): ClientLayer =
-    OutgoingConnectionBlueprint(hostHeader, settings, log)
+    BidiFlow.fromGraph(new RedirectSupportStage()).atop(OutgoingConnectionBlueprint(hostHeader, settings, log))
 
   // ** CONNECTION POOL ** //
 
