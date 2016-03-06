@@ -36,7 +36,7 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
   val dataCount = 10000
 
   @Setup
-  def setup() {
+  def setup():Unit = {
     system = ActorSystem("PersistentActorWithAtLeastOnceDeliveryBenchmark", config)
 
     probe = TestProbe()(system)
@@ -51,7 +51,7 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
   }
 
   @TearDown
-  def shutdown() {
+  def shutdown():Unit = {
     system.terminate()
     Await.ready(system.whenTerminated, 15.seconds)
 
@@ -60,7 +60,7 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def persistentActor_persistAsync_with_AtLeastOnceDelivery() {
+  def persistentActor_persistAsync_with_AtLeastOnceDelivery():Unit = {
     for (i <- 1 to dataCount)
       persistAsyncPersistentActorWithAtLeastOnceDelivery.tell(i, probe.ref)
     probe.expectMsg(20.seconds, Evt(dataCount))
@@ -68,7 +68,7 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def persistentActor_persist_with_AtLeastOnceDelivery() {
+  def persistentActor_persist_with_AtLeastOnceDelivery():Unit = {
     for (i <- 1 to dataCount)
       persistPersistentActorWithAtLeastOnceDelivery.tell(i, probe.ref)
     probe.expectMsg(2.minutes, Evt(dataCount))
@@ -76,7 +76,7 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def persistentActor_noPersist_with_AtLeastOnceDelivery() {
+  def persistentActor_noPersist_with_AtLeastOnceDelivery():Unit = {
     for (i <- 1 to dataCount)
       noPersistPersistentActorWithAtLeastOnceDelivery.tell(i, probe.ref)
     probe.expectMsg(20.seconds, Evt(dataCount))

@@ -35,7 +35,7 @@ class PersistentActorThroughputBenchmark {
   val data10k = (1 to 10000).toArray
 
   @Setup
-  def setup() {
+  def setup():Unit = {
     system = ActorSystem("test", config)
 
     probe = TestProbe()(system)
@@ -52,7 +52,7 @@ class PersistentActorThroughputBenchmark {
   }
 
   @TearDown
-  def shutdown() {
+  def shutdown():Unit = {
     system.terminate()
     Await.ready(system.whenTerminated, 15.seconds)
 
@@ -61,7 +61,7 @@ class PersistentActorThroughputBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def actor_normalActor_reply_baseline() {
+  def actor_normalActor_reply_baseline():Unit = {
     for (i <- data10k) actor.tell(i, probe.ref)
 
     probe.expectMsg(data10k.last)
@@ -69,7 +69,7 @@ class PersistentActorThroughputBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def persistentActor_persist_reply() {
+  def persistentActor_persist_reply():Unit = {
     for (i <- data10k) persistPersistentActor.tell(i, probe.ref)
 
     probe.expectMsg(Evt(data10k.last))
@@ -77,7 +77,7 @@ class PersistentActorThroughputBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def persistentActor_persistAsync_reply() {
+  def persistentActor_persistAsync_reply():Unit = {
     for (i <- data10k) persistAsync1PersistentActor.tell(i, probe.ref)
 
     probe.expectMsg(Evt(data10k.last))
@@ -85,7 +85,7 @@ class PersistentActorThroughputBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def persistentActor_noPersist_reply() {
+  def persistentActor_noPersist_reply():Unit = {
     for (i <- data10k) noPersistPersistentActor.tell(i, probe.ref)
 
     probe.expectMsg(Evt(data10k.last))
@@ -93,7 +93,7 @@ class PersistentActorThroughputBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def persistentActor_persistAsync_replyRightOnCommandReceive() {
+  def persistentActor_persistAsync_replyRightOnCommandReceive():Unit = {
     for (i <- data10k) persistAsyncQuickReplyPersistentActor.tell(i, probe.ref)
 
     probe.expectMsg(Evt(data10k.last))
