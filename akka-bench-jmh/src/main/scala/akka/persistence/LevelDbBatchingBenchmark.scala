@@ -45,7 +45,7 @@ class LevelDbBatchingBenchmark {
   val batch_200 = List.fill(200) { AtomicWrite(PersistentRepr("data", 12, "pa")) }
 
   @Setup(Level.Trial)
-  def setup() {
+  def setup():Unit = {
     sys = ActorSystem("sys")
     deleteStorage(sys)
     SharedLeveldbJournal.setStore(store, sys)
@@ -55,7 +55,7 @@ class LevelDbBatchingBenchmark {
   }
 
   @TearDown(Level.Trial)
-  def tearDown() {
+  def tearDown():Unit = {
     store ! PoisonPill
     Thread.sleep(500)
 
@@ -66,7 +66,7 @@ class LevelDbBatchingBenchmark {
   @Benchmark
   @Measurement(timeUnit = TimeUnit.MICROSECONDS)
   @OperationsPerInvocation(1)
-  def write_1() = {
+  def write_1():Unit = {
     probe.send(store, WriteMessages(batch_1))
     probe.expectMsgType[Any]
   }
@@ -74,7 +74,7 @@ class LevelDbBatchingBenchmark {
   @Benchmark
   @Measurement(timeUnit = TimeUnit.MICROSECONDS)
   @OperationsPerInvocation(10)
-  def writeBatch_10() = {
+  def writeBatch_10():Unit = {
     probe.send(store, WriteMessages(batch_10))
     probe.expectMsgType[Any]
   }
@@ -82,7 +82,7 @@ class LevelDbBatchingBenchmark {
   @Benchmark
   @Measurement(timeUnit = TimeUnit.MICROSECONDS)
   @OperationsPerInvocation(100)
-  def writeBatch_100() = {
+  def writeBatch_100():Unit = {
     probe.send(store, WriteMessages(batch_100))
     probe.expectMsgType[Any]
   }
@@ -90,7 +90,7 @@ class LevelDbBatchingBenchmark {
   @Benchmark
   @Measurement(timeUnit = TimeUnit.MICROSECONDS)
   @OperationsPerInvocation(200)
-  def writeBatch_200() = {
+  def writeBatch_200():Unit = {
     probe.send(store, WriteMessages(batch_200))
     probe.expectMsgType[Any]
   }
