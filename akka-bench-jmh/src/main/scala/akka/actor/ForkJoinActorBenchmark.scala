@@ -28,7 +28,7 @@ class ForkJoinActorBenchmark {
   implicit var system: ActorSystem = _
 
   @Setup(Level.Trial)
-  def setup() {
+  def setup():Unit = {
     system = ActorSystem("ForkJoinActorBenchmark", ConfigFactory.parseString(
       s"""| akka {
         |   log-dead-letters = off
@@ -48,7 +48,7 @@ class ForkJoinActorBenchmark {
   }
 
   @TearDown(Level.Trial)
-  def shutdown() {
+  def shutdown():Unit = {
     system.terminate()
     Await.ready(system.whenTerminated, 15.seconds)
   }
@@ -56,7 +56,7 @@ class ForkJoinActorBenchmark {
   @Benchmark
   @Measurement(timeUnit = TimeUnit.MILLISECONDS)
   @OperationsPerInvocation(messages)
-  def pingPong = {
+  def pingPong():Unit = {
     val ping = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
     val pong = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
 
@@ -72,7 +72,7 @@ class ForkJoinActorBenchmark {
   @Benchmark
   @Measurement(timeUnit = TimeUnit.MILLISECONDS)
   @OperationsPerInvocation(messages)
-  def floodPipe = {
+  def floodPipe():Unit = {
 
     val end = system.actorOf(Props(classOf[ForkJoinActorBenchmark.Pipe], None))
     val middle = system.actorOf(Props(classOf[ForkJoinActorBenchmark.Pipe], Some(end)))

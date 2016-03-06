@@ -88,10 +88,10 @@ class MaterializationBenchmark {
   var graphWithImportedFlow: RunnableGraph[NotUsed] = _
 
   @Param(Array("1", "10", "100", "1000"))
-  val complexity = 0
+  var complexity = 0
 
   @Setup
-  def setup() {
+  def setup():Unit = {
     flowWithMap = flowWithMapBuilder(complexity)
     graphWithJunctions = graphWithJunctionsBuilder(complexity)
     graphWithNestedImports = graphWithNestedImportsBuilder(complexity)
@@ -99,27 +99,23 @@ class MaterializationBenchmark {
   }
 
   @TearDown
-  def shutdown() {
+  def shutdown():Unit = {
     Await.result(system.terminate(), 5.seconds)
   }
 
   @Benchmark
-  def flow_with_map() {
-    flowWithMap.run()
-  }
+  def flow_with_map():Unit = flowWithMap.run()
+
 
   @Benchmark
-  def graph_with_junctions() {
-    graphWithJunctions.run()
-  }
+  def graph_with_junctions():Unit = graphWithJunctions.run()
+
 
   @Benchmark
-  def graph_with_nested_imports() {
-    graphWithNestedImports.run()
-  }
+  def graph_with_nested_imports():Unit = graphWithNestedImports.run()
+
 
   @Benchmark
-  def graph_with_imported_flow() {
-    graphWithImportedFlow.run()
-  }
+  def graph_with_imported_flow():Unit = graphWithImportedFlow.run()
+
 }

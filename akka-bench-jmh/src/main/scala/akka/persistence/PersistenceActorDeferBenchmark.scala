@@ -43,7 +43,7 @@ class PersistentActorDeferBenchmark {
   val data10k = (1 to 10000).toArray
 
   @Setup
-  def setup() {
+  def setup():Unit = {
     system = ActorSystem("test", config)
 
     probe = TestProbe()(system)
@@ -54,7 +54,7 @@ class PersistentActorDeferBenchmark {
   }
 
   @TearDown
-  def shutdown() {
+  def shutdown():Unit = {
     system.terminate()
     Await.ready(system.whenTerminated, 15.seconds)
 
@@ -63,7 +63,7 @@ class PersistentActorDeferBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def tell_persistAsync_defer_persistAsync_reply() {
+  def tell_persistAsync_defer_persistAsync_reply():Unit = {
     for (i <- data10k) persistAsync_defer.tell(i, probe.ref)
 
     probe.expectMsg(data10k.last)
@@ -71,7 +71,7 @@ class PersistentActorDeferBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def tell_persistAsync_defer_persistAsync_replyASAP() {
+  def tell_persistAsync_defer_persistAsync_replyASAP():Unit = {
     for (i <- data10k) persistAsync_defer_replyASAP.tell(i, probe.ref)
 
     probe.expectMsg(data10k.last)

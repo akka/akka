@@ -26,7 +26,7 @@ class RouterPoolCreationBenchmark {
   var size = 0
 
   @TearDown(Level.Trial)
-  def shutdown() {
+  def shutdown():Unit = {
     system.terminate()
     Await.ready(system.whenTerminated, 15.seconds)
   }
