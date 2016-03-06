@@ -43,14 +43,14 @@ class FileSourcesBenchmark {
   }
 
   @Param(Array("2048"))
-  val bufSize = 0
+  var bufSize = 0
 
   var fileChannelSource: Source[ByteString, Future[IOResult]] = _
   var fileInputStreamSource: Source[ByteString, Future[IOResult]] = _
   var ioSourceLinesIterator: Source[ByteString, NotUsed] = _
 
   @Setup
-  def setup() {
+  def setup():Unit = {
     fileChannelSource = FileIO.fromFile(file, bufSize)
     fileInputStreamSource = StreamConverters.fromInputStream(() ⇒ new FileInputStream(file), bufSize)
     ioSourceLinesIterator = Source.fromIterator(() ⇒ scala.io.Source.fromFile(file).getLines()).map(ByteString(_))
@@ -62,26 +62,26 @@ class FileSourcesBenchmark {
   }
 
   @TearDown
-  def shutdown() {
+  def shutdown():Unit = {
     Await.result(system.terminate(), Duration.Inf)
   }
 
   @Benchmark
-  def fileChannel() = {
+  def fileChannel():Unit = {
     val h = fileChannelSource.to(Sink.ignore).run()
 
     Await.result(h, 30.seconds)
   }
 
   @Benchmark
-  def fileChannel_noReadAhead() = {
+  def fileChannel_noReadAhead():Unit = {
     val h = fileChannelSource.withAttributes(Attributes.inputBuffer(1, 1)).to(Sink.ignore).run()
 
     Await.result(h, 30.seconds)
   }
 
   @Benchmark
-  def inputStream() = {
+  def inputStream():Unit = {
     val h = fileInputStreamSource.to(Sink.ignore).run()
 
     Await.result(h, 30.seconds)
@@ -93,7 +93,7 @@ class FileSourcesBenchmark {
    * FileSourcesBenchmark.naive_ioSourceLinesIterator  avgt   20  7067.944 ± 1341.847  ms/op
    */
   @Benchmark
-  def naive_ioSourceLinesIterator() = {
+  def naive_ioSourceLinesIterator():Unit = {
     val p = Promise[Done]()
     ioSourceLinesIterator.to(Sink.onComplete(p.complete(_))).run()
 

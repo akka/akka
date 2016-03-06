@@ -54,7 +54,7 @@ class FlowMapBenchmark {
   var materializer: ActorMaterializer = _
 
   @Param(Array("true", "false"))
-  val UseGraphStageIdentity = false
+  var UseGraphStageIdentity = false
 
   final val successMarker = Success(1)
   final val successFailure = Success(new Exception)
@@ -63,13 +63,13 @@ class FlowMapBenchmark {
   var flow: Source[Int, NotUsed] = _
 
   @Param(Array("8", "32", "128"))
-  val initialInputBufferSize = 0
+  var initialInputBufferSize = 0
 
   @Param(Array("1", "5", "10"))
-  val numberOfMapOps = 0
+  var numberOfMapOps = 0
 
   @Setup
-  def setup() {
+  def setup():Unit = {
     val settings = ActorMaterializerSettings(system)
       .withInputBuffer(initialInputBufferSize, initialInputBufferSize)
 
@@ -111,13 +111,13 @@ class FlowMapBenchmark {
   }
 
   @TearDown
-  def shutdown() {
+  def shutdown():Unit = {
     Await.result(system.terminate(), 5.seconds)
   }
 
   @Benchmark
   @OperationsPerInvocation(100000)
-  def flow_map_100k_elements() {
+  def flow_map_100k_elements():Unit = {
     val lock = new Lock() // todo rethink what is the most lightweight way to await for a streams completion
     lock.acquire()
 

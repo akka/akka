@@ -13,25 +13,25 @@ import org.openjdk.jmh.annotations._
 class GraphBuilderBenchmark {
 
   @Param(Array("1", "10", "100", "1000"))
-  val complexity = 0
+  var complexity = 0
 
   @Benchmark
-  def flow_with_map() {
+  def flow_with_map():Unit = {
     MaterializationBenchmark.flowWithMapBuilder(complexity)
   }
 
   @Benchmark
-  def graph_with_junctions() {
+  def graph_with_junctions():Unit ={
     MaterializationBenchmark.graphWithJunctionsBuilder(complexity)
   }
 
   @Benchmark
-  def graph_with_nested_imports() {
+  def graph_with_nested_imports():Unit = {
     MaterializationBenchmark.graphWithNestedImportsBuilder(complexity)
   }
 
   @Benchmark
-  def graph_with_imported_flow() {
+  def graph_with_imported_flow():Unit = {
     MaterializationBenchmark.graphWithImportedFlowBuilder(complexity)
   }
 }
