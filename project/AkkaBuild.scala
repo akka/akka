@@ -532,6 +532,47 @@ object AkkaBuild extends Build {
      javacOptions in doc ++= Seq("-Xdoclint:none")
    )
 
+  def akkaPreviousArtifacts(id: String): Def.Initialize[Set[sbt.ModuleID]] = Def.setting {
+    if (enableMiMa) {
+      val versions = {
+        val akka23Versions = Seq("2.3.11", "2.3.12", "2.3.13", "2.3.14")
+        val akka24Versions = Seq("2.4.0", "2.4.1", "2.4.2")
+        val akka24NewArtifacts = Seq(
+          "akka-cluster-sharding",
+          "akka-cluster-tools",
+          "akka-cluster-metrics",
+          "akka-persistence",
+          "akka-distributed-data-experimental",
+          "akka-persistence-query-experimental"
+        )
+        scalaBinaryVersion.value match {
+          case "2.11" if !akka24NewArtifacts.contains(id) => akka23Versions ++ akka24Versions
+          case _ => akka24Versions // Only Akka 2.4.x for scala > than 2.11
+        }
+      }
+
+      // check against all binary compatible artifacts
+      versions.map(organization.value %% id % _).toSet
+    }
+    else Set.empty
+  }
+
+  def akkaStreamAndHttpPreviousArtifacts(id: String): Def.Initialize[Set[sbt.ModuleID]] = Def.setting {
+    if (enableMiMa) {
+      val versions = {
+          val akka24Versions = Seq("2.4.2")
+          val akka24NewArtifacts = Seq(
+            "akka-http-core"
+          )
+
+          akka24Versions
+        }
+
+        // check against all binary compatible artifacts
+        versions.map(organization.value %% id % _).toSet
+    } else Set.empty
+  }
+
   def loadSystemProperties(fileName: String): Unit = {
     import scala.collection.JavaConverters._
     val file = new File(fileName)
