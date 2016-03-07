@@ -10,7 +10,7 @@ You get to pick the API level of abstraction that is most suitable for your appl
 This means that, if you have trouble achieving something using a high-level API, there's a good chance that you can get
 it done with a low-level API, which offers more flexibility but might require you to write more application code.
 
-Phylosophy
+Philosophy
 ---------------
 Akka HTTP has been driven with a clear focus on providing tools for building integration layers rather than application cores. As such it regards itself as a suite of libraries rather than a framework.
 
