@@ -246,10 +246,14 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   val serializerByIdentity: Map[Int, Serializer] =
     Map(NullSerializer.identifier -> NullSerializer) ++ serializers map { case (_, v) ⇒ (v.identifier, v) }
 
-  private def shouldWarnAboutJavaSerializer(serializedClass: Class[_], serializer: Serializer) =
-    settings.config.getBoolean("akka.actor.warn-about-java-serializer-usage") &&
+  private val isJavaSerializationWarningEnabled = settings.config.getBoolean("akka.actor.warn-about-java-serializer-usage")
+
+  private def shouldWarnAboutJavaSerializer(serializedClass: Class[_], serializer: Serializer) = {
+    isJavaSerializationWarningEnabled &&
       serializer.isInstanceOf[JavaSerializer] &&
-      !serializedClass.getName.startsWith("akka.")
+      !serializedClass.getName.startsWith("akka.") &&
+      !serializedClass.getName.startsWith("java.lang.")
+  }
 
 }
 
