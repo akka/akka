@@ -25,7 +25,9 @@
 {% block relbar2 %}{% endblock %}
 
 {% block extrahead %}
-  <!-- Akka release version-->
+    <!-- Hint to search engines that the "canonical" page is under "current", which will boost it appearing in search results -->
+    <link rel="canonical" href="http://akka.io/docs/akka/current/{{ pagename }}.html" />
+
   {%- if include_analytics %}
     <!--Google Analytics-->
     <script type="text/javascript">
