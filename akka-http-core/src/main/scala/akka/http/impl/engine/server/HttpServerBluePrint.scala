@@ -277,7 +277,7 @@ private[http] object HttpServerBluePrint {
         override def onUpstreamFailure(ex: Throwable) = fail(requestOut, ex)
         def emitTimeoutResponse(response: (TimeoutAccess, HttpResponse)) =
           if (openTimeouts.head eq response._1) {
-            emit(responseOut, response._2, () ⇒ complete(responseOut))
+            emit(responseOut, response._2, () ⇒ completeStage())
           } // else the application response arrived after we scheduled the timeout response, which is close but ok
       })
       // TODO: provide and use default impl for simply connecting an input and an output port as we do here
@@ -315,8 +315,11 @@ private[http] object HttpServerBluePrint {
       requestEnd.fast.map(_ ⇒ new TimeoutSetup(Deadline.now, schedule(initialTimeout, this), initialTimeout, this))
     }
 
-    override def apply(request: HttpRequest) = HttpResponse(StatusCodes.ServiceUnavailable, entity = "The server was not able " +
+    override def apply(request: HttpRequest) =
+      //#default-request-timeout-httpresponse
+      HttpResponse(StatusCodes.ServiceUnavailable, entity = "The server was not able " +
       "to produce a timely response to your request.\r\nPlease try again in a short while!")
+      //#default-request-timeout-httpresponse
 
     def clear(): Unit = // best effort timeout cancellation
       get.fast.foreach(setup ⇒ if (setup.scheduledTask ne null) setup.scheduledTask.cancel())
