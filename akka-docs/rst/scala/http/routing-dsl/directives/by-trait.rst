@@ -74,6 +74,9 @@ Directives creating or transforming the response
 :ref:`BasicDirectives` and :ref:`MiscDirectives`
   Directives handling or transforming response properties.
 
+:ref:`TimeoutDirectives`
+  Configure request timeouts and automatic timeout responses.
+
 
 List of predefined directives by trait
 --------------------------------------
@@ -104,3 +107,4 @@ List of predefined directives by trait
    scheme-directives/index
    security-directives/index
    websocket-directives/index
+   timeout-directives/index
