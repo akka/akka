@@ -11,6 +11,6 @@ Dependencies.actor
 
 MimaKeys.previousArtifacts := akkaPreviousArtifacts("akka-actor").value
 
-spray.boilerplate.BoilerplatePlugin.Boilerplate.settings
+enablePlugins(spray.boilerplate.BoilerplatePlugin)
 
 Version.versionSettings
