@@ -346,6 +346,19 @@ if [ $dry_run ]; then
 else
   important rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads ${release_dir}/ ${publish_path}/
 fi
+# push the release to the server
+echolog "Pushing ${release_dir} to ${publish_path} ..."
+if [ $dry_run ]; then
+  echodry "Not actually pushing to server. Command:"
+  echodry "  rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads ${release_dir}/ ${publish_path}/"
+else
+  important rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads ${release_dir}/ ${publish_path}/
+  important ssh ${release_server} ln -snvf ../../warnOldDocs.js ${release_path}/docs/${subproject}/${version}/_static/warnOldDocs.js
+fi
+
+echolog "*****"
+echolog "Do not forget to update versions.json on akka.github.com!"
+echolog "*****"
 
 if [ $dry_run ]; then
   if [ $no_revert ]; then
