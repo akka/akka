@@ -4,41 +4,23 @@
 
 package akka.http.javadsl.server.values;
 
-import akka.http.javadsl.model.HttpRequest;
-import akka.http.javadsl.server.Handler1;
-import akka.http.javadsl.server.RequestContext;
-import akka.http.javadsl.server.RequestVal;
-import akka.http.javadsl.server.RouteResult;
-import akka.http.javadsl.testkit.JUnitRouteTest;
-import akka.http.javadsl.testkit.TestRoute;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Map;
+
 import org.junit.Test;
 
-import java.util.*;
+import akka.http.javadsl.model.HttpRequest;
+import akka.http.javadsl.server.StringUnmarshallers;
+import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.testkit.TestRoute;
 
 public class ParametersTest extends JUnitRouteTest {
-    static Parameter<String> stringParam = Parameters.stringValue("stringParam");
-    static Parameter<Byte> byteParam = Parameters.byteValue("byteParam");
-    static Parameter<Short> shortParam = Parameters.shortValue("shortParam");
-    static Parameter<Integer> intParam = Parameters.intValue("intParam");
-    static Parameter<Long> longParam = Parameters.longValue("longParam");
-    static Parameter<Float> floatParam = Parameters.floatValue("floatParam");
-    static Parameter<Double> doubleParam = Parameters.doubleValue("doubleParam");
-
-    static Parameter<Byte> hexByteParam = Parameters.hexByteValue("hexByteParam");
-    static Parameter<Short> hexShortParam = Parameters.hexShortValue("hexShortParam");
-    static Parameter<Integer> hexIntParam = Parameters.hexIntValue("hexIntParam");
-    static Parameter<Long> hexLongParam = Parameters.hexLongValue("hexLongParam");
-
-    static RequestVal<String> nameWithDefault = Parameters.stringValue("nameWithDefault").withDefault("John Doe");
-    static RequestVal<Optional<Integer>> optionalIntParam = Parameters.intValue("optionalIntParam").optional();
-
-    static RequestVal<Map<String, String>> paramMap = Parameters.asMap();
-    static RequestVal<Map<String, Collection<String>>> paramMultiMap = Parameters.asMultiMap();
-    static RequestVal<Collection<Map.Entry<String, String>>> paramEntries = Parameters.asCollection();
 
     @Test
     public void testStringParameterExtraction() {
-        TestRoute route = testRoute(completeWithValueToString(stringParam));
+        TestRoute route = testRoute(param("stringParam", value -> complete(value)));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -53,7 +35,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testByteParameterExtraction() {
-        TestRoute route = testRoute(completeWithValueToString(byteParam));
+        TestRoute route = testRoute(param(StringUnmarshallers.BYTE, "byteParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -78,7 +60,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testShortParameterExtraction() {
-        TestRoute route = testRoute(completeWithValueToString(shortParam));
+        TestRoute route = testRoute(param(StringUnmarshallers.SHORT, "shortParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -103,7 +85,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testIntegerParameterExtraction() {
-        TestRoute route = testRoute(completeWithValueToString(intParam));
+        TestRoute route = testRoute(param(StringUnmarshallers.INTEGER, "intParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -123,7 +105,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testLongParameterExtraction() {
-        TestRoute route = testRoute(completeWithValueToString(longParam));
+        TestRoute route = testRoute(param(StringUnmarshallers.LONG, "longParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -143,7 +125,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testFloatParameterExtraction() {
-        TestRoute route = testRoute(completeWithValueToString(floatParam));
+        TestRoute route = testRoute(param(StringUnmarshallers.FLOAT, "floatParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -163,7 +145,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testDoubleParameterExtraction() {
-        TestRoute route = testRoute(completeWithValueToString(doubleParam));
+        TestRoute route = testRoute(param(StringUnmarshallers.DOUBLE, "doubleParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -183,7 +165,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testHexByteParameterExtraction() {
-        TestRoute route = testRoute(completeWithValueToString(hexByteParam));
+        TestRoute route = testRoute(param(StringUnmarshallers.BYTE, "hexByteParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -208,7 +190,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testHexShortParameterExtraction() {
-        TestRoute route = testRoute(completeWithValueToString(hexShortParam));
+        TestRoute route = testRoute(param(StringUnmarshallers.SHORT_HEX, "hexShortParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -233,7 +215,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testHexIntegerParameterExtraction() {
-        TestRoute route = testRoute(completeWithValueToString(hexIntParam));
+        TestRoute route = testRoute(param(StringUnmarshallers.INTEGER_HEX, "hexIntParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -253,7 +235,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testHexLongParameterExtraction() {
-        TestRoute route = testRoute(completeWithValueToString(hexLongParam));
+        TestRoute route = testRoute(param(StringUnmarshallers.LONG_HEX, "hexLongParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -273,9 +255,8 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testParametersAsMapExtraction() {
-        TestRoute route = testRoute(handleWith1(paramMap, new Handler1<Map<String, String>>(){
-            @Override
-            public RouteResult apply(RequestContext ctx, Map<String, String> paramMap) {
+        TestRoute route = testRoute(
+            parameterMap(paramMap -> {
                 ArrayList<String> keys = new ArrayList<String>(paramMap.keySet());
                 Collections.sort(keys);
                 StringBuilder res = new StringBuilder();
@@ -283,8 +264,7 @@ public class ParametersTest extends JUnitRouteTest {
                 for (String key: keys)
                     res.append(key).append(" -> ").append(paramMap.get(key)).append(", ");
                 res.append(']');
-                return ctx.complete(res.toString());
-            }
+                return complete(res.toString());
         }));
 
         route
@@ -304,9 +284,8 @@ public class ParametersTest extends JUnitRouteTest {
     }
     @Test
     public void testParametersAsMultiMapExtraction() {
-        TestRoute route = testRoute(handleWith1(paramMultiMap, new Handler1<Map<String, Collection<String>>>(){
-            @Override
-            public RouteResult apply(RequestContext ctx, Map<String, Collection<String>> paramMap) {
+        TestRoute route = testRoute(
+                parameterMultiMap(paramMap -> {
                 ArrayList<String> keys = new ArrayList<String>(paramMap.keySet());
                 Collections.sort(keys);
                 StringBuilder res = new StringBuilder();
@@ -320,8 +299,7 @@ public class ParametersTest extends JUnitRouteTest {
                     res.append("], ");
                 }
                 res.append(']');
-                return ctx.complete(res.toString());
-            }
+                return complete(res.toString());
         }));
 
         route
@@ -341,9 +319,8 @@ public class ParametersTest extends JUnitRouteTest {
     }
     @Test
     public void testParametersAsCollectionExtraction() {
-        TestRoute route = testRoute(handleWith1(paramEntries, new Handler1<Collection<Map.Entry<String, String>>>(){
-            @Override
-            public RouteResult apply(RequestContext ctx, Collection<Map.Entry<String, String>> paramEntries) {
+        TestRoute route = testRoute(
+                parameterList(paramEntries -> { 
                 ArrayList<Map.Entry<String, String>> entries = new ArrayList<Map.Entry<String, String>>(paramEntries);
                 Collections.sort(entries, new Comparator<Map.Entry<String, String>>() {
                     @Override
@@ -358,8 +335,7 @@ public class ParametersTest extends JUnitRouteTest {
                 for (Map.Entry<String, String> entry: entries)
                     res.append(entry.getKey()).append(" -> ").append(entry.getValue()).append(", ");
                 res.append(']');
-                return ctx.complete(res.toString());
-            }
+                return complete(res.toString());
         }));
 
         route
@@ -380,31 +356,17 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testOptionalIntParameterExtraction() {
-        TestRoute route = testRoute(completeWithValueToString(optionalIntParam));
+        TestRoute route = testRoute(paramOptional(StringUnmarshallers.INTEGER, "optionalIntParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
             .assertStatusCode(200)
-            .assertEntity("None");
+            .assertEntity("Optional.empty");
 
         route
             .run(HttpRequest.create().withUri("/abc?optionalIntParam=23"))
             .assertStatusCode(200)
-            .assertEntity("Some(23)");
+            .assertEntity("Optional[23]");
     }
 
-    @Test
-    public void testStringParameterExtractionWithDefaultValue() {
-        TestRoute route = testRoute(completeWithValueToString(nameWithDefault));
-
-        route
-            .run(HttpRequest.create().withUri("/abc"))
-            .assertStatusCode(200)
-            .assertEntity("John Doe");
-
-        route
-            .run(HttpRequest.create().withUri("/abc?nameWithDefault=paul"))
-            .assertStatusCode(200)
-            .assertEntity("paul");
-    }
 }

@@ -4,27 +4,28 @@
 
 package docs.http.javadsl.server;
 
+
+import org.junit.Test;
+
 import akka.http.javadsl.model.FormData;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.server.Route;
-import akka.http.javadsl.server.values.FormField;
-import akka.http.javadsl.server.values.FormFields;
+import akka.http.javadsl.server.StringUnmarshallers;
+import akka.http.javadsl.server.StringUnmarshaller;
+import akka.http.javadsl.server.Unmarshaller;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.japi.Pair;
-import org.junit.Test;
 
 public class FormFieldRequestValsExampleTest extends JUnitRouteTest {
 
   @Test
   public void testFormFieldVals() {
     //#simple
-    FormField<String> name = FormFields.stringValue("name");
-    FormField<Integer> age = FormFields.intValue("age");
 
     final Route route =
-      route(
-        handleWith2(name, age, (ctx, n, a) ->
-          ctx.complete(String.format("Name: %s, age: %d", n, a))
+      formField("name", n ->
+        formField(StringUnmarshallers.INTEGER, "age", a ->
+          complete(String.format("Name: %s, age: %d", n, a))
         )
       );
 
@@ -44,13 +45,11 @@ public class FormFieldRequestValsExampleTest extends JUnitRouteTest {
   @Test
   public void testFormFieldValsUnmarshaling() {
     //#custom-unmarshal
-    FormField<SampleId> sampleId = FormFields.fromString("id", SampleId.class, s -> new SampleId(Integer.valueOf(s)));
+    Unmarshaller<String, SampleId> SAMPLE_ID = StringUnmarshaller.sync(s -> new SampleId(Integer.valueOf(s)));
 
     final Route route =
-      route(
-        handleWith1(sampleId, (ctx, sid) ->
-          ctx.complete(String.format("SampleId: %s", sid.id))
-        )
+      formField(SAMPLE_ID, "id", sid ->
+        complete(String.format("SampleId: %s", sid.id))
       );
 
     // tests:

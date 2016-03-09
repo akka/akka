@@ -4,20 +4,18 @@
 
 package akka.http.javadsl.server
 
-import akka.http.javadsl.server.directives._
-import scala.collection.immutable
+import akka.http.scaladsl.server.Rejection
+import scala.annotation.varargs
+import akka.http.javadsl.model.HttpMethods
+import akka.http.javadsl.server.directives.WebSocketDirectives
 
 abstract class AllDirectives extends WebSocketDirectives
 
-/**
- *
- */
 object Directives extends AllDirectives {
-  /**
-   * INTERNAL API
-   */
-  private[http] def custom(f: (Route, immutable.Seq[Route]) ⇒ Route): Directive =
-    new AbstractDirective {
-      def createRoute(first: Route, others: Array[Route]): Route = f(first, others.toList)
-    }
+
+  // These are repeated here since sometimes (?) the Scala compiler won't actually generate java-compatible
+  // signatures for varargs methods, making them show up as Seq<Object> instead of T... in Java.
+  @varargs override def reject(rejections: Rejection*): Route = super.reject(rejections: _*)
+  @varargs override def route(alternatives: Route*): Route = super.route(alternatives: _*)
+  @varargs override def getFromBrowseableDirectories(directories: String*): Route = super.getFromBrowseableDirectories(directories: _*)
 }

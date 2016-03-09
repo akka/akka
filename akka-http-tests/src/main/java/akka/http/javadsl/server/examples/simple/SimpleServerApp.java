@@ -6,15 +6,10 @@ package akka.http.javadsl.server.examples.simple;
 
 //#https-http-app
 
-import akka.actor.ActorSystem;
+import static akka.http.javadsl.server.StringUnmarshallers.INTEGER;
 import akka.http.javadsl.ConnectionContext;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.HttpsConnectionContext;
-import akka.http.javadsl.server.*;
-import akka.http.javadsl.server.values.Parameter;
-import akka.http.javadsl.server.values.Parameters;
-import akka.http.javadsl.server.values.PathMatcher;
-import akka.http.javadsl.server.values.PathMatchers;
 import com.typesafe.config.ConfigFactory;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -23,83 +18,74 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
+import akka.actor.ActorSystem;
 
 public class SimpleServerApp extends HttpApp {
-  static Parameter<Integer> x = Parameters.intValue("x");
-  static Parameter<Integer> y = Parameters.intValue("y");
 
-  static PathMatcher<Integer> xSegment = PathMatchers.intValue();
-  static PathMatcher<Integer> ySegment = PathMatchers.intValue();
-
-  static RequestVal<String> bodyAsName = RequestVals.entityAs(Unmarshallers.String());
-
-  public static RouteResult multiply(RequestContext ctx, int x, int y) {
-    int result = x * y;
-    return ctx.complete(String.format("%d * %d = %d", x, y, result));
+    public Route multiply(int x, int y) {
+        int result = x * y;
+        return complete(String.format("%d * %d = %d", x, y, result));
+    }
+    
+    public CompletionStage<Route> multiplyAsync(Executor ctx, int x, int y) {
+        return CompletableFuture.supplyAsync(() -> multiply(x, y), ctx);
   }
 
-  public static CompletionStage<RouteResult> multiplyAsync(final RequestContext ctx, final int x, final int y) {
-    return CompletableFuture.supplyAsync(() -> multiply(ctx, x, y), ctx.executionContext());
-  }
-
-  @Override
-  public Route createRoute() {
-    Handler addHandler = new Handler() {
-      @Override
-      public RouteResult apply(RequestContext ctx) {
-        int xVal = x.get(ctx);
-        int yVal = y.get(ctx);
-        int result = xVal + yVal;
-        return ctx.complete(String.format("%d + %d = %d", xVal, yVal, result));
-      }
-    };
-    Handler2<Integer, Integer> subtractHandler = new Handler2<Integer, Integer>() {
-      public RouteResult apply(RequestContext ctx, Integer xVal, Integer yVal) {
-        int result = xVal - yVal;
-        return ctx.complete(String.format("%d - %d = %d", xVal, yVal, result));
-      }
-    };
-    Handler1<String> helloPostHandler =
-      new Handler1<String>() {
-        @Override
-        public RouteResult apply(RequestContext ctx, String s) {
-          return ctx.complete("Hello " + s + "!");
-        }
-      };
-    return
-      route(
-        // matches the empty path
-        pathSingleSlash().route(
-          getFromResource("web/calculator.html")
-        ),
-        // matches paths like this: /add?x=42&y=23
-        path("add").route(
-          handleWith(addHandler, x, y)
-        ),
-        path("subtract").route(
-          handleWith2(x, y, subtractHandler)
-        ),
-        // matches paths like this: /multiply/{x}/{y}
-        path("multiply", xSegment, ySegment).route(
-          // bind handler by reflection
-          handleReflectively(SimpleServerApp.class, "multiply", xSegment, ySegment)
-        ),
-        path("multiplyAsync", xSegment, ySegment).route(
-          // bind async handler by reflection
-          handleReflectively(SimpleServerApp.class, "multiplyAsync", xSegment, ySegment)
-        ),
-        post(
-          path("hello").route(
-            handleWith1(bodyAsName, helloPostHandler)
-          )
-        )
-      );
-  }
+    @Override
+    public Route createRoute() {
+        Route addHandler = param(INTEGER, "x", x ->
+            param(INTEGER, "y", y -> {
+                int result = x + y;
+                return complete(String.format("%d + %d = %d", x, y, result));
+            })
+        );
+        
+        BiFunction<Integer, Integer, Route> subtractHandler = (x, y) -> {
+            int result = x - y;
+            return complete(String.format("%d - %d = %d", x, y, result));            
+        };
+        
+        return
+            route(
+                // matches the empty path
+                pathSingleSlash(() ->
+                    getFromResource("web/calculator.html")
+                ),
+                // matches paths like this: /add?x=42&y=23
+                path("add", () -> addHandler),
+                path("subtract", () ->
+                    param(INTEGER, "x", x ->
+                        param(INTEGER, "y", y ->
+                            subtractHandler.apply(x, y)
+                        )
+                    )
+                ),
+                // matches paths like this: /multiply/{x}/{y}
+                path(segment("multiply").slash(INTEGER_SEGMENT).slash(INTEGER_SEGMENT), 
+                    this::multiply
+                ),
+                path(segment("multiplyAsync").slash(INTEGER_SEGMENT).slash(INTEGER_SEGMENT), (x, y) ->
+                    extractExecutionContext(ctx ->
+                        onSuccess(() -> multiplyAsync(ctx, x, y), Function.identity())
+                    )
+                ),
+                post(() ->
+                    path("hello", () ->
+                        entity(entityToString(), body ->
+                            complete("Hello " + body + "!")
+                        )
+                    )
+                )
+            );
+    }
 
   // ** STARTING THE SERVER ** //
 

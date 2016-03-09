@@ -5,9 +5,8 @@
 package akka.http.javadsl.server
 package directives
 
-import akka.http.impl.server.RouteStructure.RangeSupport
-
-import scala.annotation.varargs
+import java.util.function.Supplier
+import akka.http.scaladsl.server.{ Directives ⇒ D }
 
 abstract class RangeDirectives extends PathDirectives {
   /**
@@ -24,5 +23,7 @@ abstract class RangeDirectives extends PathDirectives {
    *
    * For more information, see: https://tools.ietf.org/html/rfc7233
    */
-  @varargs def withRangeSupport(innerRoute: Route, moreInnerRoutes: Route*): Route = RangeSupport()(innerRoute, moreInnerRoutes.toList)
+  def withRangeSupport(inner: Supplier[Route]): Route = ScalaRoute {
+    D.withRangeSupport { inner.get.toScala }
+  }
 }

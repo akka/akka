@@ -5,41 +5,84 @@
 package akka.http.javadsl.server
 package directives
 
-import akka.http.javadsl.server.Directive
-import akka.http.javadsl.server.Directives
-import akka.http.javadsl.server.Route
-import akka.http.scaladsl.server._
+import java.util.function.Supplier
 
-import scala.annotation.varargs
-import akka.http.scaladsl
-import akka.http.impl.server.RouteStructure
+import scala.collection.JavaConverters._
+
+import akka.http.javadsl.model.headers.HttpEncoding
+import akka.http.javadsl.server.JavaScalaTypeEquivalence._
+import akka.http.javadsl.server.Route
+import akka.http.scaladsl.server.{ Directives ⇒ D }
 
 abstract class CodingDirectives extends CacheConditionDirectives {
   /**
-   * Wraps the inner routes with encoding support. The response will be encoded
-   * using one of the predefined coders, `Gzip`, `Deflate`, or `NoCoding` depending on
-   * a potential [[akka.http.javadsl.model.headers.AcceptEncoding]] header from the client.
+   * Rejects the request with an UnacceptedResponseEncodingRejection
+   * if the given response encoding is not accepted by the client.
    */
-  @varargs def encodeResponse(innerRoute: Route, moreInnerRoutes: Route*): Route =
-    RouteStructure.EncodeResponse(CodingDirectives._DefaultCodersToEncodeResponse)(innerRoute, moreInnerRoutes.toList)
+  def responseEncodingAccepted(encoding: HttpEncoding, inner: Supplier[Route]): Route = ScalaRoute {
+    D.responseEncodingAccepted(encoding) {
+      inner.get.toScala
+    }
+  }
 
   /**
-   * A directive that Wraps its inner routes with encoding support.
-   * The response will be encoded using one of the given coders with the precedence given
-   * by the order of the coders in this call.
+   * Encodes the response with the encoding that is requested by the client via the `Accept-
+   * Encoding` header. The response encoding is determined by the rules specified in
+   * http://tools.ietf.org/html/rfc7231#section-5.3.4.
    *
-   * In any case, a potential [[akka.http.javadsl.model.headers.AcceptEncoding]] header from the client
-   * will be respected (or otherwise, if no matching .
+   * If the `Accept-Encoding` header is missing or empty or specifies an encoding other than
+   * identity, gzip or deflate then no encoding is used.
    */
-  @varargs def encodeResponse(coders: Coder*): Directive =
-    Directives.custom(RouteStructure.EncodeResponse(coders.toList))
+  def encodeResponse(inner: Supplier[Route]): Route = ScalaRoute {
+    D.encodeResponse {
+      inner.get.toScala
+    }
+  }
+
+  /**
+   * Encodes the response with the encoding that is requested by the client via the `Accept-
+   * Encoding` header. The response encoding is determined by the rules specified in
+   * http://tools.ietf.org/html/rfc7231#section-5.3.4.
+   *
+   * If the `Accept-Encoding` header is missing then the response is encoded using the `first`
+   * encoder.
+   *
+   * If the `Accept-Encoding` header is empty and `NoCoding` is part of the encoders then no
+   * response encoding is used. Otherwise the request is rejected.
+   *
+   * If [encoders] is empty, no encoding is performed.
+   */
+  // TODO #19882: provide Java API for creating Encoder, by extracting a Java interface from the Scala trait
+  def encodeResponseWith(coders: java.lang.Iterable[Coder], inner: Supplier[Route]): Route = ScalaRoute {
+    coders.asScala.toList match {
+      case head :: tail ⇒
+        D.encodeResponseWith(head._underlyingScalaCoder, tail.toSeq.map(_._underlyingScalaCoder): _*) {
+          inner.get.toScala
+        }
+      case _ ⇒
+        inner.get.toScala
+    }
+  }
 
   /**
    * Decodes the incoming request using the given Decoder.
    * If the request encoding doesn't match the request is rejected with an `UnsupportedRequestEncodingRejection`.
    */
-  @varargs def decodeRequestWith(decoder: Coder, innerRoute: Route, moreInnerRoutes: Route*): Route =
-    RouteStructure.DecodeRequest(decoder :: Nil)(innerRoute, moreInnerRoutes.toList)
+  // TODO #19882: provide Java API for creating Decoder, by extracting a Java interface from the Scala trait
+  def decodeRequestWith(coder: Coder, inner: Supplier[Route]): Route = ScalaRoute {
+    D.decodeRequestWith(coder._underlyingScalaCoder) {
+      inner.get.toScala
+    }
+  }
+
+  /**
+   * Rejects the request with an UnsupportedRequestEncodingRejection if its encoding doesn't match the given one.
+   */
+  def requestEncodedWith(encoding: HttpEncoding, inner: Supplier[Route]): Route = ScalaRoute {
+    D.requestEncodedWith(encoding) {
+      inner.get.toScala
+    }
+  }
 
   /**
    * Decodes the incoming request if it is encoded with one of the given
@@ -47,27 +90,31 @@ abstract class CodingDirectives extends CacheConditionDirectives {
    * the request is rejected with an `UnsupportedRequestEncodingRejection`.
    * If no decoders are given the default encoders (`Gzip`, `Deflate`, `NoCoding`) are used.
    */
-  @varargs def decodeRequestWith(decoders: Coder*): Directive =
-    Directives.custom(RouteStructure.DecodeRequest(decoders.toList))
+  def decodeRequestWith(coders: java.lang.Iterable[Coder], inner: Supplier[Route]): Route = ScalaRoute {
+    D.decodeRequestWith(coders.asScala.map(_._underlyingScalaCoder).toSeq: _*) {
+      inner.get.toScala
+    }
+  }
 
   /**
    * Decompresses the incoming request if it is `gzip` or `deflate` compressed.
    * Uncompressed requests are passed through untouched.
    * If the request encoded with another encoding the request is rejected with an `UnsupportedRequestEncodingRejection`.
    */
-  @varargs def decodeRequest(innerRoute: Route, moreInnerRoutes: Route*): Route =
-    RouteStructure.DecodeRequest(CodingDirectives._DefaultCodersToDecodeRequest)(innerRoute, moreInnerRoutes.toList)
+  def decodeRequest(inner: Supplier[Route]): Route = ScalaRoute {
+    D.decodeRequest {
+      inner.get.toScala
+    }
+  }
+
+  /**
+   * Inspects the response entity and adds a `Content-Encoding: gzip` response header if
+   * the entities media-type is precompressed with gzip and no `Content-Encoding` header is present yet.
+   */
+  def withPrecompressedMediaTypeSupport(inner: Supplier[Route]): Route = ScalaRoute {
+    D.withPrecompressedMediaTypeSupport {
+      inner.get.toScala
+    }
+  }
 }
 
-/**
- * Internal API
- */
-private[http] object CodingDirectives {
-  private[http] val _DefaultCodersToEncodeResponse =
-    scaladsl.server.directives.CodingDirectives.DefaultEncodeResponseEncoders
-      .map(c ⇒ Coder.values().find(_._underlyingScalaCoder() == c).get)
-
-  private[http] val _DefaultCodersToDecodeRequest =
-    scaladsl.server.directives.CodingDirectives.DefaultCoders
-      .map(c ⇒ Coder.values().find(_._underlyingScalaCoder() == c).get)
-}
