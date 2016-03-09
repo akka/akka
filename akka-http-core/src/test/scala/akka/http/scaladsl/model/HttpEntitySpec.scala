@@ -149,6 +149,28 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
         entity.toString must include(entity.productPrefix)
       }
     }
+    "support withoutSizeLimit" - {
+      "Strict" in {
+        HttpEntity.Empty.withoutSizeLimit
+        withReturnType[UniversalEntity](Strict(tpe, abc).withoutSizeLimit)
+        withReturnType[RequestEntity](Strict(tpe, abc).asInstanceOf[RequestEntity].withoutSizeLimit)
+        withReturnType[ResponseEntity](Strict(tpe, abc).asInstanceOf[ResponseEntity].withoutSizeLimit)
+      }
+      "Default" in {
+        withReturnType[Default](Default(tpe, 11, source(abc, de, fgh, ijk)).withoutSizeLimit)
+        withReturnType[RequestEntity](Default(tpe, 11, source(abc, de, fgh, ijk)).asInstanceOf[RequestEntity].withoutSizeLimit)
+        withReturnType[ResponseEntity](Default(tpe, 11, source(abc, de, fgh, ijk)).asInstanceOf[ResponseEntity].withoutSizeLimit)
+      }
+      "CloseDelimited" in {
+        withReturnType[CloseDelimited](CloseDelimited(tpe, source(abc, de, fgh, ijk)).withoutSizeLimit)
+        withReturnType[ResponseEntity](CloseDelimited(tpe, source(abc, de, fgh, ijk)).asInstanceOf[ResponseEntity].withoutSizeLimit)
+      }
+      "Chunked" in {
+        withReturnType[Chunked](Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk)).withoutSizeLimit)
+        withReturnType[RequestEntity](Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk)).asInstanceOf[RequestEntity].withoutSizeLimit)
+        withReturnType[ResponseEntity](Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk)).asInstanceOf[ResponseEntity].withoutSizeLimit)
+      }
+    }
   }
 
   def source[T](elems: T*) = Source(elems.toList)
@@ -158,6 +180,8 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
       val future = entity.dataBytes.limit(1000).runWith(Sink.seq)
       Await.result(future, 250.millis)
     }
+
+  def withReturnType[T](expr: T) = expr
 
   def strictifyTo(strict: Strict): Matcher[HttpEntity] =
     equal(strict).matcher[Strict].compose(x ⇒ Await.result(x.toStrict(250.millis), 250.millis))
