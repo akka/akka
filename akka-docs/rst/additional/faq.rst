@@ -37,6 +37,16 @@ you have a matching ``stop``, ``terminate``, or ``shutdown`` call implemented.
 In particular you typically want to bind such values to immutable references, i.e.
 ``final ActorSystem system`` in Java or ``val system: ActorSystem`` in Scala.
 
+JVM application or Scala REPL “hanging”
+---------------------------------------
+
+Due to an ActorSystem’s explicit lifecycle the JVM will not exit until it is stopped.
+Therefore it is necessary to shutdown all ActorSystems within a running application or
+Scala REPL session in order to allow these processes to terminate.
+
+Shutting down an ActorSystem will properly terminate all Actors and ActorMaterializers
+that were created within it.
+
 Actors in General
 ^^^^^^^^^^^^^^^^^
 
