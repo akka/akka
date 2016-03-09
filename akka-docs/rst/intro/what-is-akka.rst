@@ -4,9 +4,9 @@
  What is Akka?
 ###############
 
-**Scalable real-time transaction processing**
+**«resilient elastic distributed real-time transaction processing»**
 
-We believe that writing correct concurrent, fault-tolerant and scalable
+We believe that writing correct distributed, concurrent, fault-tolerant and scalable
 applications is too hard. Most of the time it's because we are using the wrong
 tools and the wrong level of abstraction. Akka is here to change that. Using
 the Actor Model we raise the abstraction level and provide a better platform to
@@ -34,8 +34,8 @@ Actors
 
 Actors give you:
 
-- Simple and high-level abstractions for concurrency and parallelism.
-- Asynchronous, non-blocking and highly performant event-driven programming model.
+- Simple and high-level abstractions for distribution, concurrency and parallelism.
+- Asynchronous, non-blocking and highly performant message-driven programming model.
 - Very lightweight event-driven processes (several million actors per GB of heap memory).
 
 See the chapter for :ref:`Scala <actors-scala>` or :ref:`Java <untyped-actors-java>`.
@@ -44,7 +44,7 @@ Fault Tolerance
 ---------------
 
 - Supervisor hierarchies with "let-it-crash" semantics.
-- Supervisor hierarchies can span over multiple JVMs to provide truly fault-tolerant systems.
+- Actor systems can span over multiple JVMs to provide truly fault-tolerant systems.
 - Excellent for writing highly fault-tolerant systems that self-heal and never stop.
 
 See :ref:`Fault Tolerance (Scala) <fault-tolerance-scala>` and :ref:`Fault Tolerance (Java) <fault-tolerance-java>`.
@@ -60,7 +60,7 @@ and :ref:`Scala <cluster_usage_scala>` documentation chapters.
 Persistence
 -----------
 
-Messages received by an actor can optionally be persisted and replayed when the actor is started or
+State changes experience by an actor can optionally be persisted and replayed when the actor is started or
 restarted. This allows actors to recover their state, even after JVM crashes or when being migrated
 to another node.
 
@@ -72,17 +72,21 @@ Scala and Java APIs
 Akka has both a :ref:`scala-api` and a :ref:`java-api`.
 
 
-Akka can be used in two different ways
-======================================
+Akka can be used in different ways
+==================================
 
-Akka can be used and deployed in different ways:
+Akka is a toolkit, not a framework: you integrate it into your build like any other library
+without having to follow a particular source code layout. When expressing your systems as collaborating
+Actors you may feel pushed more towards proper encapsulation of internal state, you may find that
+there is a natural separation between business logic and inter-component communication.
 
-- As a library: used as a regular JAR on the classpath and/or in a web app, to
-  be put into ``WEB-INF/lib``
+Akka applications are typically deployed as follows:
 
-- Package with `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_
+- as a library: used as a regular JAR on the classpath or in a web app.
 
-- Package and deploy using `Lightbend ConductR <http://www.lightbend.com/products/conductr>`_.
+- packaged with `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_.
+
+- packaged and deployed using `Lightbend ConductR <http://www.lightbend.com/products/conductr>`_.
 
 Commercial Support
 ==================
