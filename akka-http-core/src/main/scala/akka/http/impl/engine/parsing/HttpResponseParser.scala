@@ -5,6 +5,8 @@
 package akka.http.impl.engine.parsing
 
 import scala.annotation.tailrec
+import scala.concurrent.Promise
+import scala.util.control.NoStackTrace
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.impl.model.parser.CharacterClasses
 import akka.util.ByteString
@@ -17,19 +19,20 @@ import ParserOutput._
  */
 private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser: HttpHeaderParser)
   extends HttpMessageParser[ResponseOutput](_settings, _headerParser) {
+  import HttpResponseParser._
   import HttpMessageParser._
   import settings._
 
-  private[this] var requestMethodForCurrentResponse: Option[HttpMethod] = None
+  private[this] var contextForCurrentResponse: Option[ResponseContext] = None
   private[this] var statusCode: StatusCode = StatusCodes.OK
 
   def createShallowCopy(): HttpResponseParser = new HttpResponseParser(settings, headerParser.createShallowCopy())
 
-  def setRequestMethodForNextResponse(requestMethod: HttpMethod): Unit =
-    if (requestMethodForCurrentResponse.isEmpty) requestMethodForCurrentResponse = Some(requestMethod)
+  def setContextForNextResponse(responseContext: ResponseContext): Unit =
+    if (contextForCurrentResponse.isEmpty) contextForCurrentResponse = Some(responseContext)
 
   protected def parseMessage(input: ByteString, offset: Int): StateResult =
-    if (requestMethodForCurrentResponse.isDefined) {
+    if (contextForCurrentResponse.isDefined) {
       var cursor = parseProtocol(input, offset)
       if (byteChar(input, cursor) == ' ') {
         cursor = parseStatus(input, cursor + 1)
@@ -41,7 +44,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser:
     }
 
   override def emit(output: ResponseOutput): Unit = {
-    if (output == MessageEnd) requestMethodForCurrentResponse = None
+    if (output == MessageEnd) contextForCurrentResponse = None
     super.emit(output)
   }
 
@@ -78,21 +81,47 @@ private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser:
     } else badStatusCode
   }
 
+  def handleInformationalResponses: Boolean = true
+
   // http://tools.ietf.org/html/rfc7230#section-3.3
   def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
                   expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult = {
+
     def emitResponseStart(createEntity: EntityCreator[ResponseOutput, ResponseEntity],
-                          headers: List[HttpHeader] = headers) =
-      emit(ResponseStart(statusCode, protocol, headers, createEntity, closeAfterResponseCompletion))
-    def finishEmptyResponse() = {
-      emitResponseStart(emptyEntity(cth))
-      setCompletionHandling(HttpMessageParser.CompletionOk)
-      emit(MessageEnd)
-      startNewMessage(input, bodyStart)
+                          headers: List[HttpHeader] = headers) = {
+      val close =
+        contextForCurrentResponse.get.oneHundredContinueTrigger match {
+          case None ⇒ closeAfterResponseCompletion
+          case Some(trigger) if statusCode.isSuccess ⇒
+            trigger.trySuccess(())
+            closeAfterResponseCompletion
+          case Some(trigger) ⇒
+            trigger.tryFailure(OneHundredContinueError)
+            true
+        }
+      emit(ResponseStart(statusCode, protocol, headers, createEntity, close))
     }
 
-    if (statusCode.allowsEntity && (requestMethodForCurrentResponse.get != HttpMethods.HEAD)) {
+    def finishEmptyResponse() =
+      statusCode match {
+        case _: StatusCodes.Informational if handleInformationalResponses ⇒
+          if (statusCode == StatusCodes.Continue)
+            contextForCurrentResponse.get.oneHundredContinueTrigger.foreach(_.trySuccess(()))
+
+          // http://tools.ietf.org/html/rfc7231#section-6.2 says:
+          // "A client MUST be able to parse one or more 1xx responses received prior to a final response,
+          // even if the client does not expect one."
+          // so we simply drop this interim response and start parsing the next one
+          startNewMessage(input, bodyStart)
+        case _ ⇒
+          emitResponseStart(emptyEntity(cth))
+          setCompletionHandling(HttpMessageParser.CompletionOk)
+          emit(MessageEnd)
+          startNewMessage(input, bodyStart)
+      }
+
+    if (statusCode.allowsEntity && (contextForCurrentResponse.get.requestMethod != HttpMethods.HEAD)) {
       teh match {
         case None ⇒ clh match {
           case Some(`Content-Length`(contentLength)) ⇒
@@ -137,4 +166,19 @@ private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser:
       emit(EntityPart(input.drop(bodyStart).compact))
     continue(parseToCloseBody(_, _, newTotalBytes))
   }
+}
+
+private[http] object HttpResponseParser {
+  /**
+   * @param requestMethod the request's HTTP method
+   * @param oneHundredContinueTrigger if the request contains an `Expect: 100-continue` header this option contains
+   *                                  a promise whose completion either triggers the sending of the (suspended)
+   *                                  request entity or the closing of the connection (for error completion)
+   */
+  private[http] final case class ResponseContext(requestMethod: HttpMethod,
+                                                 oneHundredContinueTrigger: Option[Promise[Unit]])
+
+  private[http] object OneHundredContinueError
+    extends RuntimeException("Received error response for request with `Expect: 100-continue` header")
+    with NoStackTrace
 }

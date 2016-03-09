@@ -312,7 +312,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
     def newParserStage(requestMethod: HttpMethod = GET) = {
       val parser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings)())
-      parser.setRequestMethodForNextResponse(requestMethod)
+      parser.setContextForNextResponse(HttpResponseParser.ResponseContext(requestMethod, None))
       parser.stage
     }
 
