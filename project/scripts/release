@@ -360,17 +360,17 @@ if [ $dry_run ]; then
   echodry "  rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads ${release_dir}/ ${publish_path}/"
   echodry "  sbt uploadRelease"
 else
+  important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'before publishing version $version'; true"
   important rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads ${release_dir}/ ${publish_path}/
   important sbt uploadRelease
+  important ssh ${release_server} cp -v ${release_path}/docs/akka/${version}/_static/warnOldDocs.js ${release_path}/docs/akka
+  important ssh ${release_server} ln -snvf ../../warnOldDocs.js ${release_path}/docs/akka/${version}/_static/warnOldDocs.js
+  important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'publish version $version'"
 fi
 
-echolog "Updating http://doc.akka.io/docs/versions.json [from $script_dir/../../akka-docs/versions.json]..."
-if [ $dry_run ]; then
-  echodry "Not actually updating versions.json. Command:"
-  echodry "  important scp $script_dir/../../akka-docs/versions.json ${publish_path}/docs/"
-else
-  important scp $script_dir/../../akka-docs/versions.json ${publish_path}/docs/
-fi
+echolog "*****"
+echolog "Do not forget to update versions.json on akka.github.com!"
+echolog "*****"
 
 if [ $dry_run ]; then
   if [ $no_revert ]; then
