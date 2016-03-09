@@ -19,8 +19,8 @@ These guidelines mainly apply to Lightbend’s “mature” projects - not neces
 Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
 
 * `master` – active development branch of Akka 2.4.x
-* `release-2.3` – maintanance branch of Akka 2.3.x
-* similarily `release-2.#` branches contain legacy versions of Akka
+* `release-2.3` – maintenance branch of Akka 2.3.x
+* similarly `release-2.#` branches contain legacy versions of Akka
 
 ## General Workflow
 
@@ -182,7 +182,7 @@ Upon a submission of a Pull Request the Github pull request builder plugin will 
     Can one of the repo owners verify this patch?
 
 This requires a member from a core team to start Pull Request validation process by posting comment consisting only of `OK TO TEST`.
-From now on, whenever new commits are pushed to the Pull Request, a validation job will be automaticaly started and the results of the validation posted to the Pull Request.
+From now on, whenever new commits are pushed to the Pull Request, a validation job will be automatically started and the results of the validation posted to the Pull Request.
 
 A Pull Request validation job can be started manually by posting `PLS BUILD` comment on the Pull Request.
 
@@ -193,7 +193,7 @@ will validate all projects that depend on `akka-persistence` (including samples)
 Also, tests tagged as `PerformanceTest` and the likes of it are excluded from PR validation.
 
 In order to force the `validatePullRequest` task to build the entire project, regardless of dependency analysis of a PRs
-changes one can use the special `PLS BUILD ALL` command (typed in a comment on github, on the Pull Request), which will cause
+changes one can use the special `PLS BUILD ALL` command (typed in a comment on Github, on the Pull Request), which will cause
 the validator to test all projects.
 
 ## Source style
