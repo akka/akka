@@ -6,11 +6,12 @@ package akka.stream.impl.io
 import java.io.{ File, RandomAccessFile }
 import java.nio.channels.FileChannel
 
-import akka.actor.{ Deploy, ActorLogging, Props }
+import akka.actor.{ ActorLogging, Deploy, Props }
 import akka.stream.actor.{ ActorSubscriberMessage, WatermarkRequestStrategy }
 import akka.util.ByteString
 
 import scala.concurrent.Promise
+import scala.util.{ Failure, Success, Try }
 
 /** INTERNAL API */
 private[akka] object FileSubscriber {
@@ -43,7 +44,7 @@ private[akka] class FileSubscriber(f: File, bytesWrittenPromise: Promise[Long], 
     super.preStart()
   } catch {
     case ex: Exception ⇒
-      bytesWrittenPromise.failure(ex)
+      closeAndComplete(Failure(ex))
       cancel()
   }
 
@@ -53,12 +54,13 @@ private[akka] class FileSubscriber(f: File, bytesWrittenPromise: Promise[Long], 
         bytesWritten += chan.write(bytes.asByteBuffer)
       } catch {
         case ex: Exception ⇒
-          bytesWrittenPromise.failure(ex)
+          closeAndComplete(Failure(ex))
           cancel()
       }
 
-    case ActorSubscriberMessage.OnError(cause) ⇒
-      log.error(cause, "Tearing down FileSink({}) due to upstream error", f.getAbsolutePath)
+    case ActorSubscriberMessage.OnError(ex) ⇒
+      log.error(ex, "Tearing down FileSink({}) due to upstream error", f.getAbsolutePath)
+      closeAndComplete(Failure(ex))
       context.stop(self)
 
     case ActorSubscriberMessage.OnComplete ⇒
@@ -66,16 +68,24 @@ private[akka] class FileSubscriber(f: File, bytesWrittenPromise: Promise[Long], 
         chan.force(true)
       } catch {
         case ex: Exception ⇒
-          bytesWrittenPromise.failure(ex)
+          closeAndComplete(Failure(ex))
       }
       context.stop(self)
   }
 
   override def postStop(): Unit = {
-    bytesWrittenPromise.trySuccess(bytesWritten)
-
-    if (chan ne null) chan.close()
-    if (raf ne null) raf.close()
+    closeAndComplete(Success(bytesWritten))
     super.postStop()
+  }
+
+  private def closeAndComplete(bytesWritten: Try[Long]): Unit = {
+    val closeTry = Try {
+      if (chan ne null) chan.close()
+      if (raf ne null) raf.close()
+    }
+
+    val result = closeTry.flatMap(_ ⇒ bytesWritten)
+
+    bytesWrittenPromise.tryComplete(result)
   }
 }
