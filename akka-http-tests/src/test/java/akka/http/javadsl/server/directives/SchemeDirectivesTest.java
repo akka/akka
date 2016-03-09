@@ -13,7 +13,7 @@ import org.junit.Test;
 public class SchemeDirectivesTest extends JUnitRouteTest {
     @Test
     public void testSchemeFilter() {
-        TestRoute route = testRoute(scheme("http", complete("OK!")));
+        TestRoute route = testRoute(scheme("http", () -> complete("OK!")));
 
         route
             .run(HttpRequest.create().withUri(Uri.create("http://example.org")))

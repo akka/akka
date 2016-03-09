@@ -11,8 +11,6 @@ import akka.http.javadsl.model.RequestEntity;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.Uri;
 import akka.http.javadsl.model.headers.Location;
-import akka.http.javadsl.server.RequestContext;
-import akka.http.javadsl.server.RouteResult;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import akka.japi.function.Function;
@@ -41,31 +39,30 @@ public class RouteDirectivesTest extends JUnitRouteTest {
   public void testEntitySizeLimit() {
     TestRoute route =
       testRoute(
-        path("no-limit")
-          .route(
-            handleWith(new Function<RequestContext, RouteResult>() {
-              @Override
-              public RouteResult apply(final RequestContext ctx) throws Exception {
-                final RequestEntity entity = ctx.request().entity();
-                return ctx.completeWith(
-                  entity
-                    .withoutSizeLimit()
-                    .getDataBytes()
-                    .runWith(Sink.<ByteString>head(), ctx.materializer())
-                    .thenApplyAsync(s -> ctx.complete(s.utf8String()), ctx.executionContext()));
-              }
-            })),
-        path("limit-5")
-          .route(
-            handleWith(ctx -> {
-                final RequestEntity entity = ctx.request().entity();
-                return ctx.completeWith(
-                  entity
-                    .withSizeLimit(5)
-                    .getDataBytes()
-                    .runWith(Sink.<ByteString>head(), ctx.materializer())
-                    .thenApplyAsync(s -> ctx.complete(s.utf8String()), ctx.executionContext()));
-            }))
+        path("no-limit", () ->
+          extractEntity(entity ->
+            extractMaterializer(mat ->
+              onSuccess(() -> entity
+                .withoutSizeLimit()
+                .getDataBytes()
+                .runWith(Sink.<ByteString>head(), mat),
+                bytes -> complete(bytes.utf8String())
+              )
+            )
+          )
+        ),
+        path("limit-5", () ->
+          extractEntity(entity ->
+            extractMaterializer(mat ->
+              onSuccess(() -> entity
+                .withSizeLimit(5)
+                .getDataBytes()
+                .runWith(Sink.<ByteString>head(), mat),
+                bytes -> complete(bytes.utf8String())
+              )
+            )
+          )
+        )
       );
 
     route

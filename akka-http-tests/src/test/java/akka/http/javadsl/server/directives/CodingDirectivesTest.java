@@ -9,14 +9,17 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.AcceptEncoding;
 import akka.http.javadsl.model.headers.ContentEncoding;
 import akka.http.javadsl.model.headers.HttpEncodings;
-import akka.http.javadsl.server.Coder;
 import akka.stream.ActorMaterializer;
 import akka.http.javadsl.server.*;
 import akka.util.ByteString;
+
 import org.junit.*;
+
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
 import akka.http.javadsl.testkit.*;
+
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 public class CodingDirectivesTest extends JUnitRouteTest {
@@ -40,12 +43,12 @@ public class CodingDirectivesTest extends JUnitRouteTest {
     public void testAutomaticEncodingWhenNoEncodingRequested() throws Exception {
         TestRoute route =
             testRoute(
-                encodeResponse(
+                encodeResponse(() ->
                     complete("TestString")
                 )
             );
 
-        TestResponse response = route.run(HttpRequest.create());
+        TestRouteResult response = route.run(HttpRequest.create());
         response
             .assertStatusCode(200);
 
@@ -55,13 +58,13 @@ public class CodingDirectivesTest extends JUnitRouteTest {
     public void testAutomaticEncodingWhenDeflateRequested() throws Exception {
         TestRoute route =
             testRoute(
-                encodeResponse(
+                encodeResponse(() ->
                     complete("tester")
                 )
             );
 
         HttpRequest request = HttpRequest.create().addHeader(AcceptEncoding.create(HttpEncodings.DEFLATE));
-        TestResponse response = route.run(request);
+        TestRouteResult response = route.run(request);
         response
             .assertStatusCode(200)
             .assertHeaderExists(ContentEncoding.create(HttpEncodings.DEFLATE));
@@ -74,7 +77,7 @@ public class CodingDirectivesTest extends JUnitRouteTest {
     public void testEncodingWhenDeflateRequestedAndGzipSupported() {
         TestRoute route =
             testRoute(
-                encodeResponse(Coder.Gzip).route(
+                encodeResponseWith(Arrays.asList(Coder.Gzip), () ->
                     complete("tester")
                 )
             );
@@ -89,8 +92,8 @@ public class CodingDirectivesTest extends JUnitRouteTest {
     public void testAutomaticDecoding() {
         TestRoute route =
             testRoute(
-                decodeRequest(
-                    completeWithValueToString(RequestVals.entityAs(Unmarshallers.String()))
+                decodeRequest(() ->
+                    extractEntity(entity -> complete(entity))
                 )
             );
 
@@ -114,8 +117,8 @@ public class CodingDirectivesTest extends JUnitRouteTest {
     public void testGzipDecoding() {
         TestRoute route =
             testRoute(
-                decodeRequestWith(Coder.Gzip,
-                    completeWithValueToString(RequestVals.entityAs(Unmarshallers.String()))
+                decodeRequestWith(Arrays.asList(Coder.Gzip), () -> 
+                    extractEntity(entity -> complete(entity))
                 )
             );
 

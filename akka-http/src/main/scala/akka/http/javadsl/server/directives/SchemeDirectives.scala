@@ -4,15 +4,24 @@
 
 package akka.http.javadsl.server.directives
 
-import akka.http.impl.server.RouteStructure.SchemeFilter
+import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.Supplier
+
 import akka.http.javadsl.server.Route
+import akka.http.scaladsl.server.{ Directives ⇒ D }
 
-import scala.annotation.varargs
+abstract class SchemeDirectives extends RouteDirectives {
+  /**
+   * Extracts the Uri scheme from the request.
+   */
+  def extractScheme(inner: JFunction[String, Route]): Route = ScalaRoute {
+    D.extractScheme { s ⇒ inner.apply(s).toScala }
+  }
 
-abstract class SchemeDirectives extends RangeDirectives {
   /**
    * Rejects all requests whose Uri scheme does not match the given one.
    */
-  @varargs
-  def scheme(scheme: String, innerRoute: Route, moreInnerRoutes: Route*): Route = SchemeFilter(scheme)(innerRoute, moreInnerRoutes.toList)
+  def scheme(name: String, inner: Supplier[Route]): Route = ScalaRoute {
+    D.scheme(name) { inner.get().toScala }
+  }
 }

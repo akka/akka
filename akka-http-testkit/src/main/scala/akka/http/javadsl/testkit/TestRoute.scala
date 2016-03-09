@@ -17,5 +17,5 @@ import akka.http.javadsl.server.Route
  */
 trait TestRoute {
   def underlying: Route
-  def run(request: HttpRequest): TestResponse
+  def run(request: HttpRequest): TestRouteResult
 }
