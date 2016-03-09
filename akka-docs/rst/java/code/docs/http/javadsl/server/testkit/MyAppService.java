@@ -5,25 +5,26 @@
 package docs.http.javadsl.server.testkit;
 
 //#simple-app
-import akka.http.javadsl.server.*;
-import akka.http.javadsl.server.values.Parameters;
+import akka.http.javadsl.server.HttpApp;
+import akka.http.javadsl.server.Route;
+import akka.http.javadsl.server.StringUnmarshallers;
 
 public class MyAppService extends HttpApp {
-    RequestVal<Double> x = Parameters.doubleValue("x");
-    RequestVal<Double> y = Parameters.doubleValue("y");
 
-    public RouteResult add(RequestContext ctx, double x, double y) {
-        return ctx.complete("x + y = " + (x + y));
+    public String add(double x, double y) {
+        return "x + y = " + (x + y);
     }
 
     @Override
     public Route createRoute() {
         return
-            route(
-                get(
-                    pathPrefix("calculator").route(
-                        path("add").route(
-                            handleReflectively(this, "add", x, y)
+            get(() ->
+                pathPrefix("calculator", () ->
+                    path("add", () ->
+                        param(StringUnmarshallers.INTEGER, "x", x ->
+                            param(StringUnmarshallers.INTEGER, "y", y ->
+                                complete(add(x,y))
+                            )
                         )
                     )
                 )

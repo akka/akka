@@ -4,200 +4,140 @@
 
 package akka.http.javadsl.server.directives
 
-import java.lang.reflect.{ Method, ParameterizedType }
+import java.util.function.{ Function ⇒ JFunction }
+import scala.concurrent.ExecutionContextExecutor
+import akka.http.impl.model.JavaUri
+import akka.http.javadsl.model.HttpRequest
+import akka.http.javadsl.model.RequestEntity
+import akka.http.javadsl.model.Uri
+import akka.http.javadsl.server.Route
+import akka.http.scaladsl.server.{ Directives ⇒ D }
+import akka.http.scaladsl
+import akka.stream.Materializer
+import java.util.function.Supplier
+import akka.http.javadsl.server.JavaScalaTypeEquivalence._
+import java.util.{ List ⇒ JList }
+import akka.http.scaladsl.server.Rejection
+import scala.collection.JavaConverters._
+import akka.http.javadsl.model.HttpResponse
+import akka.http.javadsl.model.ResponseEntity
+import akka.http.javadsl.model.HttpHeader
+import java.lang.{ Iterable ⇒ JIterable }
+import java.util.function.Predicate
+import akka.event.LoggingAdapter
 
-import akka.http.impl.server.RouteStructure._
-import akka.http.impl.server._
-import akka.http.javadsl.model.{ ContentType, HttpResponse, StatusCode, Uri }
-import akka.http.javadsl.server._
+abstract class BasicDirectives {
+  def mapRequest(f: JFunction[HttpRequest, HttpRequest], inner: Supplier[Route]): Route = ScalaRoute {
+    D.mapRequest(rq ⇒ f.apply(rq)) { inner.get.toScala }
+  }
 
-import scala.annotation.varargs
-import scala.concurrent.Future
-import java.util.concurrent.CompletionStage
-import scala.compat.java8.FutureConverters._
+  def mapRejections(f: JFunction[JList[Rejection], JList[Rejection]], inner: Supplier[Route]): Route = ScalaRoute {
+    D.mapRejections(rejections ⇒ f.apply(rejections.asJava).asScala.toVector) { inner.get.toScala }
+  }
 
-abstract class BasicDirectives extends BasicDirectivesBase {
-  /**
-   * Tries the given route alternatives in sequence until the first one matches.
-   */
-  @varargs
-  def route(innerRoute: Route, moreInnerRoutes: Route*): Route =
-    RouteAlternatives()(innerRoute, moreInnerRoutes.toList)
+  def mapResponse(f: JFunction[HttpResponse, HttpResponse], inner: Supplier[Route]): Route = ScalaRoute {
+    D.mapResponse(resp ⇒ f.apply(resp)) { inner.get.toScala }
+  }
 
-  /**
-   * A route that completes the request with a static text
-   */
-  def complete(text: String): Route =
-    new OpaqueRoute() {
-      def handle(ctx: RequestContext): RouteResult = ctx.complete(text)
-    }
+  def mapResponseEntity(f: JFunction[ResponseEntity, ResponseEntity], inner: Supplier[Route]): Route = ScalaRoute {
+    implicit val j2s = javaToScalaResponseEntity
+    D.mapResponseEntity(e ⇒ f.apply(e)) { inner.get.toScala }
+  }
 
-  /**
-   * A route that completes the request with a static text
-   */
-  def complete(contentType: ContentType.NonBinary, text: String): Route =
-    new OpaqueRoute() {
-      def handle(ctx: RequestContext): RouteResult =
-        ctx.complete(contentType, text)
-    }
-
-  /**
-   * A route that completes the request with a static text
-   */
-  def complete(response: HttpResponse): Route =
-    new OpaqueRoute() {
-      def handle(ctx: RequestContext): RouteResult = ctx.complete(response)
-    }
-
-  /**
-   * A route that completes the request with a status code.
-   */
-  def completeWithStatus(code: StatusCode): Route =
-    new OpaqueRoute() {
-      def handle(ctx: RequestContext): RouteResult = ctx.completeWithStatus(code)
-    }
-
-  /**
-   * A route that completes the request using the given marshaller and value.
-   */
-  def completeAs[T](marshaller: Marshaller[T], value: T): Route =
-    new OpaqueRoute() {
-      def handle(ctx: RequestContext): RouteResult = ctx.completeAs(marshaller, value)
-    }
-
-  /**
-   * Completes the request with redirection response of the given type to the given URI.
-   *
-   * The `redirectionType` must be a StatusCode for which `isRedirection` returns true.
-   */
-  def redirect(uri: Uri, redirectionType: StatusCode): Route = Redirect(uri, redirectionType)
-
-  /**
-   * A route that extracts a value and completes the request with it.
-   */
-  def extractAndComplete[T](marshaller: Marshaller[T], extraction: RequestVal[T]): Route =
-    handle(extraction)(ctx ⇒ ctx.completeAs(marshaller, extraction.get(ctx)))
-
-  /**
-   * A directive that makes sure that all the standalone extractions have been
-   * executed and validated.
-   */
-  @varargs
-  def extractHere(extractions: RequestVal[_]*): Directive =
-    Directives.custom(Extract(extractions.map(_.asInstanceOf[StandaloneExtractionImpl[_ <: AnyRef]])))
-
-  private[http] def handle(extractions: RequestVal[_]*)(f: RequestContext ⇒ RouteResult): Route = {
-    val route =
-      new OpaqueRoute() {
-        def handle(ctx: RequestContext): RouteResult = f(ctx)
-      }
-    val saExtractions = extractions.collect { case sa: StandaloneExtractionImpl[_] ⇒ sa }
-    if (saExtractions.isEmpty) route
-    else extractHere(saExtractions: _*).route(route)
+  def mapResponseHeaders(f: JFunction[JList[HttpHeader], JList[HttpHeader]], inner: Supplier[Route]): Route = ScalaRoute {
+    D.mapResponseHeaders(l ⇒ f.apply((l: Seq[HttpHeader]).asJava).asScala.toVector) { inner.get.toScala }
   }
 
   /**
-   * Handles the route by reflectively calling the instance method specified by `instance`, and `methodName`.
-   * Additionally, the value of all extractions will be passed to the function.
-   *
-   * For extraction types `Extraction[T1]`, `Extraction[T2]`, ... the shape of the method must match this pattern:
-   *
-   * public static RouteResult methodName(RequestContext ctx, T1 t1, T2 t2, ...)
+   * Adds a TransformationRejection cancelling all rejections equal to the given one
+   * to the list of rejections potentially coming back from the inner route.
    */
-  @varargs
-  def handleReflectively(instance: AnyRef, methodName: String, extractions: RequestVal[_]*): Route =
-    handleReflectively(instance.getClass, instance, methodName, extractions: _*)
+  def cancelRejection(rejection: Rejection, inner: Supplier[Route]): Route = ScalaRoute {
+    D.cancelRejection(rejection) { inner.get.toScala }
+  }
 
   /**
-   * Handles the route by reflectively calling the static method specified by `clazz`, and `methodName`.
-   * Additionally, the value of all extractions will be passed to the function.
-   *
-   * For extraction types `Extraction[T1]`, `Extraction[T2]`, ... the shape of the method must match this pattern:
-   *
-   * public static RouteResult methodName(RequestContext ctx, T1 t1, T2 t2, ...)
+   * Adds a TransformationRejection cancelling all rejections of one of the given classes
+   * to the list of rejections potentially coming back from the inner route.
    */
-  @varargs
-  def handleReflectively(clazz: Class[_], methodName: String, extractions: RequestVal[_]*): Route =
-    handleReflectively(clazz, null, methodName, extractions: _*)
+  def cancelRejections(classes: JIterable[Class[_]], inner: Supplier[Route]): Route = ScalaRoute {
+    D.cancelRejections(classes.asScala.toSeq: _*) { inner.get.toScala }
+  }
 
   /**
-   * Handles the route by calling the method specified by `clazz`, `instance`, and `methodName`. Additionally, the value
-   * of all extractions will be passed to the function.
-   *
-   * For extraction types `Extraction[T1]`, `Extraction[T2]`, ... the shape of the method must match this pattern:
-   *
-   * public static RouteResult methodName(RequestContext ctx, T1 t1, T2 t2, ...)
+   * Adds a TransformationRejection cancelling all rejections for which the given filter function returns true
+   * to the list of rejections potentially coming back from the inner route.
    */
-  @varargs
-  def handleReflectively(clazz: Class[_], instance: AnyRef, methodName: String, extractions: RequestVal[_]*): Route = {
-    def chooseOverload(methods: Seq[Method]): (RequestContext, Seq[Any]) ⇒ RouteResult = {
-      val extractionTypes = extractions.map(_.resultClass).toList
-      val RequestContextClass = classOf[RequestContext]
+  def cancelRejections(filter: Predicate[Rejection], inner: Supplier[Route]): Route = ScalaRoute {
+    D.cancelRejections(r ⇒ filter.test(r)) { inner.get.toScala }
+  }
 
-      import java.{ lang ⇒ jl }
-      def paramMatches(expected: Class[_], actual: Class[_]): Boolean = expected match {
-        case e if e isAssignableFrom actual ⇒ true
-        case jl.Long.TYPE if actual == classOf[jl.Long] ⇒ true
-        case jl.Integer.TYPE if actual == classOf[jl.Integer] ⇒ true
-        case jl.Short.TYPE if actual == classOf[jl.Short] ⇒ true
-        case jl.Character.TYPE if actual == classOf[jl.Character] ⇒ true
-        case jl.Byte.TYPE if actual == classOf[jl.Byte] ⇒ true
-        case jl.Double.TYPE if actual == classOf[jl.Double] ⇒ true
-        case jl.Float.TYPE if actual == classOf[jl.Float] ⇒ true
-        case _ ⇒ false
-      }
-      def paramsMatch(params: Seq[Class[_]]): Boolean = {
-        val res =
-          params.size == extractionTypes.size &&
-            (params, extractionTypes).zipped.forall(paramMatches)
+  /**
+   * Transforms the unmatchedPath of the RequestContext using the given function.
+   */
+  def mapUnmatchedPath(f: JFunction[String, String], inner: Supplier[Route]): Route = ScalaRoute {
+    D.mapUnmatchedPath(path ⇒ scaladsl.model.Uri.Path(f.apply(path.toString))) { inner.get.toScala }
+  }
 
-        res
-      }
-      def returnTypeMatches(method: Method): Boolean =
-        method.getReturnType == classOf[RouteResult] || returnsFuture(method) || returnsCompletionStage(method)
-
-      def returnsFuture(method: Method): Boolean =
-        method.getReturnType == classOf[Future[_]] &&
-          method.getGenericReturnType.isInstanceOf[ParameterizedType] &&
-          method.getGenericReturnType.asInstanceOf[ParameterizedType].getActualTypeArguments()(0) == classOf[RouteResult]
-
-      def returnsCompletionStage(method: Method): Boolean =
-        method.getReturnType == classOf[CompletionStage[_]] &&
-          method.getGenericReturnType.isInstanceOf[ParameterizedType] &&
-          method.getGenericReturnType.asInstanceOf[ParameterizedType].getActualTypeArguments()(0) == classOf[RouteResult]
-
-      /** Makes sure both RouteResult and Future[RouteResult] are acceptable result types. */
-      def adaptResult(method: Method): (RequestContext, AnyRef) ⇒ RouteResult =
-        if (returnsFuture(method)) (ctx, v) ⇒ ctx.completeWith(v.asInstanceOf[Future[RouteResult]].toJava)
-        else if (returnsCompletionStage(method)) (ctx, v) => ctx.completeWith(v.asInstanceOf[CompletionStage[RouteResult]])
-        else (_, v) ⇒ v.asInstanceOf[RouteResult]
-
-      val IdentityAdaptor: (RequestContext, Seq[Any]) ⇒ Seq[Any] = (_, ps) ⇒ ps
-      def methodInvocator(method: Method, adaptParams: (RequestContext, Seq[Any]) ⇒ Seq[Any]): (RequestContext, Seq[Any]) ⇒ RouteResult = {
-        val resultAdaptor = adaptResult(method)
-        if (!method.isAccessible) method.setAccessible(true)
-        if (adaptParams == IdentityAdaptor)
-          (ctx, params) ⇒ resultAdaptor(ctx, method.invoke(instance, params.toArray.asInstanceOf[Array[AnyRef]]: _*))
-        else
-          (ctx, params) ⇒ resultAdaptor(ctx, method.invoke(instance, adaptParams(ctx, params).toArray.asInstanceOf[Array[AnyRef]]: _*))
-      }
-
-      object ParameterTypes {
-        def unapply(method: Method): Option[List[Class[_]]] = Some(method.getParameterTypes.toList)
-      }
-
-      methods.filter(returnTypeMatches).collectFirst {
-        case method @ ParameterTypes(RequestContextClass :: rest) if paramsMatch(rest) ⇒ methodInvocator(method, _ +: _)
-        case method @ ParameterTypes(rest) if paramsMatch(rest)                        ⇒ methodInvocator(method, IdentityAdaptor)
-      }.getOrElse(throw new RuntimeException("No suitable method found"))
+  /**
+   * Extracts the yet unmatched path from the RequestContext.
+   */
+  def extractUnmatchedPath(inner: JFunction[String, Route]) = ScalaRoute {
+    D.extractUnmatchedPath { path ⇒
+      inner.apply(path.toString).toScala
     }
-    def lookupMethod() = {
-      val candidateMethods = clazz.getMethods.filter(_.getName == methodName)
-      chooseOverload(candidateMethods)
+  }
+
+  /**
+   * Extracts the current [[HttpRequest]] instance.
+   */
+  def extractRequest(inner: JFunction[HttpRequest, Route]) = ScalaRoute {
+    D.extractRequest { rq ⇒
+      inner.apply(rq).toScala
     }
+  }
 
-    val method = lookupMethod()
+  /**
+   * Extracts the complete request URI.
+   */
+  def extractUri(inner: JFunction[Uri, Route]) = ScalaRoute {
+    D.extractUri { uri ⇒
+      inner.apply(JavaUri(uri)).toScala
+    }
+  }
 
-    handle(extractions: _*)(ctx ⇒ method(ctx, extractions.map(_.get(ctx))))
+  /**
+   * Extracts the current http request entity.
+   */
+  def extractEntity(inner: java.util.function.Function[RequestEntity, Route]): Route = ScalaRoute {
+    D.extractRequest { rq ⇒
+      inner.apply(rq.entity).toScala
+    }
+  }
+
+  /**
+   * Extracts the [[Materializer]] from the [[RequestContext]].
+   */
+  def extractMaterializer(inner: JFunction[Materializer, Route]): Route = ScalaRoute(
+    D.extractMaterializer { m ⇒ inner.apply(m).toScala })
+
+  /**
+   * Extracts the [[ExecutionContextExecutor]] from the [[RequestContext]].
+   */
+  def extractExecutionContext(inner: JFunction[ExecutionContextExecutor, Route]): Route = ScalaRoute(
+    D.extractExecutionContext { c ⇒ inner.apply(c).toScala })
+
+  /**
+   * Runs its inner route with the given alternative [[LoggingAdapter]].
+   */
+  def withLog(log: LoggingAdapter, inner: Supplier[Route]): Route = ScalaRoute {
+    D.withLog(log) { inner.get.toScala }
+  }
+
+  /**
+   * Extracts the [[LoggingAdapter]]
+   */
+  def extractLog(inner: JFunction[LoggingAdapter, Route]): Route = ScalaRoute {
+    D.extractLog { log ⇒ inner.apply(log).toScala }
   }
 }

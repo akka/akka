@@ -5,34 +5,54 @@
 package akka.http.javadsl.server
 package directives
 
-import java.lang.{ Iterable ⇒ JIterable, Boolean ⇒ JBoolean }
+import java.lang.{ Iterable ⇒ JIterable }
+import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.Predicate
+import java.util.function.Supplier
+import java.util.regex.Pattern
 
-import scala.annotation.varargs
 import scala.collection.JavaConverters._
 
-import akka.http.impl.server.RouteStructure.{ GenericHostFilter, HostNameFilter }
+import akka.http.javadsl.server.RegexConverters.toScala
+import akka.http.scaladsl.server.{ Directives ⇒ D }
 
-abstract class HostDirectives extends FileAndResourceDirectives {
+abstract class HostDirectives extends HeaderDirectives {
   /**
-   * Rejects all requests with a host name different from the given one.
+   * Extracts the hostname part of the Host request header value.
    */
-  @varargs
-  def host(hostName: String, innerRoute: Route, moreInnerRoutes: Route*): Route =
-    HostNameFilter(hostName :: Nil)(innerRoute, moreInnerRoutes.toList)
+  def extractHost(inner: JFunction[String, Route]): Route = ScalaRoute {
+    D.extractHost { host ⇒ inner.apply(host).toScala }
+  }
 
   /**
    * Rejects all requests with a host name different from the given ones.
    */
-  @varargs
-  def host(hostNames: JIterable[String], innerRoute: Route, moreInnerRoutes: Route*): Route =
-    HostNameFilter(hostNames.asScala.toList)(innerRoute, moreInnerRoutes.toList)
+  def host(hostNames: JIterable[String], inner: Supplier[Route]): Route = ScalaRoute {
+    D.host(hostNames.asScala.toSeq: _*) { inner.get().toScala }
+  }
+
+  /**
+   * Rejects all requests with a host name different from the given one.
+   */
+  def host(hostName: String, inner: Supplier[Route]): Route = ScalaRoute {
+    D.host(hostName) { inner.get().toScala }
+  }
 
   /**
    * Rejects all requests for whose host name the given predicate function returns false.
    */
-  @varargs
-  def host(predicate: akka.japi.function.Function[String, JBoolean], innerRoute: Route, moreInnerRoutes: Route*): Route =
-    new GenericHostFilter(innerRoute, moreInnerRoutes.toList) {
-      def filter(hostName: String): Boolean = predicate.apply(hostName)
-    }
+  def host(predicate: Predicate[String], inner: Supplier[Route]): Route = ScalaRoute {
+    D.host(s ⇒ predicate.test(s)) { inner.get().toScala }
+  }
+
+  /**
+   * Rejects all requests with a host name that doesn't have a prefix matching the given regular expression.
+   * For all matching requests the prefix string matching the regex is extracted and passed to the inner route.
+   * If the regex contains a capturing group only the string matched by this group is extracted.
+   * If the regex contains more than one capturing group an IllegalArgumentException is thrown.
+   */
+  def host(regex: Pattern, inner: JFunction[String, Route]): Route = ScalaRoute {
+    D.host(toScala(regex)) { s ⇒ inner.apply(s).toScala }
+  }
+
 }

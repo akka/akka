@@ -9,8 +9,8 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.MediaTypes;
 import akka.http.javadsl.testkit.*;
 import static org.junit.Assert.*;
-
 import akka.http.javadsl.testkit.TestRoute;
+
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -19,13 +19,13 @@ import java.util.Map;
 public class PetStoreAPITest extends JUnitRouteTest {
     @Test
     public void testGetPet() {
-        TestResponse response = createRoute().run(HttpRequest.GET("/pet/1"));
+        TestRouteResult response = createRoute().run(HttpRequest.GET("/pet/1"));
 
         response
             .assertStatusCode(200)
             .assertMediaType("application/json");
 
-        Pet pet = response.entityAs(Jackson.jsonAs(Pet.class));
+        Pet pet = response.entity(Jackson.unmarshaller(Pet.class));
         assertEquals("cat", pet.getName());
         assertEquals(1, pet.getId());
     }
@@ -40,11 +40,11 @@ public class PetStoreAPITest extends JUnitRouteTest {
             HttpRequest.PUT("/pet/1")
                 .withEntity(MediaTypes.APPLICATION_JSON.toContentType(), "{\"id\": 1, \"name\": \"giraffe\"}");
 
-        TestResponse response = createRoute().run(request);
+        TestRouteResult response = createRoute().run(request);
 
         response.assertStatusCode(200);
 
-        Pet pet = response.entityAs(Jackson.jsonAs(Pet.class));
+        Pet pet = response.entity(Jackson.unmarshaller(Pet.class));
         assertEquals("giraffe", pet.getName());
         assertEquals(1, pet.getId());
     }

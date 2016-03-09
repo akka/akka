@@ -6,47 +6,34 @@ package akka.http.javadsl.server.directives;
 
 import org.junit.Test;
 
-import akka.http.javadsl.model.*;
-import akka.http.javadsl.server.*;
-import akka.http.javadsl.server.values.*;
-import akka.http.javadsl.testkit.*;
+import akka.http.javadsl.model.HttpRequest;
+import akka.http.javadsl.model.StatusCodes;
+import akka.http.javadsl.server.ExceptionHandler;
+import akka.http.javadsl.server.RejectionHandler;
+import akka.http.javadsl.server.Route;
+import akka.http.javadsl.server.StringUnmarshallers;
+import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.testkit.TestRoute;
+import akka.http.scaladsl.server.MethodRejection;
+import akka.http.scaladsl.server.Rejection;
 
 public class ExecutionDirectivesTest extends JUnitRouteTest {
     @Test
     public void testCatchExceptionThrownFromHandler() {
-        Parameter<Integer> a = Parameters.intValue("a");
-        Parameter<Integer> b = Parameters.intValue("b");
-        Handler2<Integer, Integer> divide =
-            new Handler2<Integer, Integer>() {
-                @Override
-                public RouteResult apply(RequestContext ctx, Integer a, Integer b) {
-                    int result = a / b;
-                    return ctx.complete("The result is: " + result);
-                }
-            };
+        Route divide = 
+            path("divide", () ->
+                param(StringUnmarshallers.INTEGER, "a", a -> 
+                    param(StringUnmarshallers.INTEGER, "b", b ->
+                        complete("The result is: " + (a / b)))));
+            
 
-        ExceptionHandler handleDivByZero =
-            new ExceptionHandler() {
-                @Override
-                public Route handle(RuntimeException exception) {
-                    try {
-                        throw exception;
-                    } catch(ArithmeticException t) {
-                        return complete(
-                                HttpResponse.create()
-                                    .withStatus(400)
-                                    .withEntity("Congratulations you provoked a division by zero!"));
-                    }
-                }
-            };
+        ExceptionHandler handleDivByZero = ExceptionHandler.newBuilder()
+            .match(ArithmeticException.class, t -> complete(StatusCodes.BAD_REQUEST, "Congratulations you provoked a division by zero!"))
+            .build();
 
         TestRoute route =
             testRoute(
-                handleExceptions(handleDivByZero,
-                    path("divide").route(
-                        handleWith2(a, b, divide)
-                    )
-                )
+                handleExceptions(handleDivByZero, () -> divide)
             );
 
         route.run(HttpRequest.GET("/divide?a=10&b=5"))
@@ -59,21 +46,14 @@ public class ExecutionDirectivesTest extends JUnitRouteTest {
 
     @Test
     public void testHandleMethodRejection() {
-        RejectionHandler rejectionHandler =
-            new RejectionHandler() {
-                @Override
-                public RouteResult handleMethodRejection(RequestContext ctx, HttpMethod supported) {
-                    return ctx.complete(
-                        HttpResponse.create()
-                            .withStatus(400)
-                            .withEntity("Whoopsie! Unsupported method. Supported would have been " + supported.value()));
-                }
-            };
+        RejectionHandler rejectionHandler = RejectionHandler.newBuilder()
+            .handle(MethodRejection.class, r -> complete(StatusCodes.BAD_REQUEST, "Whoopsie! Unsupported method. Supported would have been " + r.supported().value()))
+            .build();
 
         TestRoute route =
             testRoute(
-               handleRejections(rejectionHandler,
-                   get(complete("Successful!"))
+               handleRejections(rejectionHandler, () ->
+                   get(() -> complete("Successful!"))
                )
             );
 
@@ -86,61 +66,27 @@ public class ExecutionDirectivesTest extends JUnitRouteTest {
             .assertEntity("Whoopsie! Unsupported method. Supported would have been GET");
     }
 
-    public static final class TooManyRequestsRejection extends CustomRejection {
+    public static final class TooManyRequestsRejection implements Rejection {
         final public String message;
         TooManyRequestsRejection(String message) {
             this.message = message;
         }
     }
 
-    private static Handler testHandler =
-        new Handler() {
-            @Override
-            public RouteResult apply(RequestContext ctx) {
-                if (ctx.request().getUri().path().startsWith("/test"))
-                    return ctx.complete("Successful!");
-                else
-                    return ctx.reject(new TooManyRequestsRejection("Too many requests for busy path!"));
-            }
-        };
+    private final Route testRoute = extractUri(uri -> {
+        if (uri.path().startsWith("/test"))
+            return complete("Successful!");
+        else
+            return reject(new TooManyRequestsRejection("Too many requests for busy path!"));
+    });
 
     @Test
     public void testHandleCustomRejection() {
-        RejectionHandler rejectionHandler =
-            new RejectionHandler() {
-                @Override
-                public RouteResult handleCustomRejection(RequestContext ctx, CustomRejection rejection) {
-                    if (rejection instanceof TooManyRequestsRejection) {
-                        TooManyRequestsRejection rej = (TooManyRequestsRejection) rejection;
-                        HttpResponse response =
-                            HttpResponse.create()
-                                .withStatus(StatusCodes.TOO_MANY_REQUESTS)
-                                .withEntity(rej.message);
-                        return ctx.complete(response);
-                    } else
-                        return passRejection();
-                }
-            };
+        RejectionHandler rejectionHandler = RejectionHandler.newBuilder()
+            .handle(TooManyRequestsRejection.class, rej -> complete(StatusCodes.TOO_MANY_REQUESTS, rej.message))
+            .build();
 
-        testRouteWithHandler(handleRejections(rejectionHandler, handleWith(testHandler)));
-    }
-    @Test
-    public void testHandleCustomRejectionByClass() {
-        Handler1<TooManyRequestsRejection> rejectionHandler =
-            new Handler1<TooManyRequestsRejection>() {
-                public RouteResult apply(RequestContext ctx, TooManyRequestsRejection rej) {
-                    HttpResponse response =
-                            HttpResponse.create()
-                                    .withStatus(StatusCodes.TOO_MANY_REQUESTS)
-                                    .withEntity(rej.message);
-                    return ctx.complete(response);
-                }
-            };
-        testRouteWithHandler(handleRejections(TooManyRequestsRejection.class, rejectionHandler, handleWith(testHandler)));
-    }
-
-    private void testRouteWithHandler(Route innerRoute) {
-        TestRoute route = testRoute(innerRoute);
+        TestRoute route = testRoute(handleRejections(rejectionHandler, () -> testRoute));
 
         route.run(HttpRequest.GET("/test"))
                 .assertStatusCode(200);
