@@ -4,8 +4,10 @@
 
 package akka.http.javadsl.server.examples.petstore;
 
-import akka.http.javadsl.server.RequestContext;
-import akka.http.javadsl.server.RouteResult;
+import akka.http.javadsl.model.StatusCodes;
+import static akka.http.javadsl.server.Directives.*;
+
+import akka.http.javadsl.server.Route;
 
 import java.util.Map;
 
@@ -15,8 +17,9 @@ public class PetStoreController {
     public PetStoreController(Map<Integer, Pet> dataStore) {
         this.dataStore = dataStore;
     }
-    public RouteResult deletePet(RequestContext ctx, int petId) {
+    
+    public Route deletePet(int petId) {
         dataStore.remove(petId);
-        return ctx.completeWithStatus(200);
+        return complete(StatusCodes.OK);
     }
 }

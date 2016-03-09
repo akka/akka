@@ -323,9 +323,9 @@ trait PathMatchers {
    * A PathMatcher that matches and extracts the complete remaining,
    * unmatched part of the request's URI path as an (encoded!) String.
    * If you need access to the remaining unencoded elements of the path
-   * use the `RestPath` matcher!
+   * use the `RemainingPath` matcher!
    */
-  object Rest extends PathMatcher1[String] {
+  object Remaining extends PathMatcher1[String] {
     def apply(path: Path) = Matched(Path.Empty, Tuple1(path.toString))
   }
 
@@ -333,7 +333,7 @@ trait PathMatchers {
    * A PathMatcher that matches and extracts the complete remaining,
    * unmatched part of the request's URI path.
    */
-  object RestPath extends PathMatcher1[Path] {
+  object RemainingPath extends PathMatcher1[Path] {
     def apply(path: Path) = Matched(Path.Empty, Tuple1(path))
   }
 

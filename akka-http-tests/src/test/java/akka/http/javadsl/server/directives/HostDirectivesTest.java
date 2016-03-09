@@ -16,7 +16,7 @@ import java.util.ArrayList;
 public class HostDirectivesTest extends JUnitRouteTest {
     @Test
     public void testHostFilterBySingleName() {
-        TestRoute route = testRoute(host("example.org", complete("OK!")));
+        TestRoute route = testRoute(host("example.org", () -> complete("OK!")));
 
         route
             .run(HttpRequest.create().withUri(Uri.create("http://example.org")))
@@ -32,7 +32,7 @@ public class HostDirectivesTest extends JUnitRouteTest {
         ArrayList<String> hosts = new ArrayList<String>();
         hosts.add("example.org");
         hosts.add("example2.org");
-        TestRoute route = testRoute(host(hosts, complete("OK!")));
+        TestRoute route = testRoute(host(hosts, () -> complete("OK!")));
 
         route
             .run(HttpRequest.create().withUri(Uri.create("http://example.org")))
@@ -50,15 +50,7 @@ public class HostDirectivesTest extends JUnitRouteTest {
     }
     @Test
     public void testHostFilterByPredicate() {
-        Function<String, Boolean> predicate =
-            new Function<String, Boolean>(){
-                @Override
-                public Boolean apply(String hostName) throws Exception {
-                    return hostName.contains("ample");
-                }
-            };
-
-        TestRoute route = testRoute(host(predicate, complete("OK!")));
+        TestRoute route = testRoute(host(hostName -> hostName.contains("ample"), () -> complete("OK!")));
 
         route
             .run(HttpRequest.create().withUri(Uri.create("http://example.org")))

@@ -5,43 +5,79 @@
 package akka.http.javadsl.server
 package directives
 
-import java.lang.{ Boolean ⇒ JBoolean }
+import java.lang.{ Iterable ⇒ JIterable }
+import java.util.function.BooleanSupplier
+import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.Supplier
 
-import akka.http.impl.server.RouteStructure.{ DynamicDirectiveRoute2, Validated, DynamicDirectiveRoute1 }
+import scala.collection.JavaConverters._
 
-import scala.annotation.varargs
-import akka.japi.function.{ Function2, Function }
+import akka.http.javadsl.model.RemoteAddress
+import akka.http.javadsl.model.headers.Language
+import akka.http.javadsl.server.JavaScalaTypeEquivalence._
+
+import akka.http.scaladsl.server.{ Directives ⇒ D }
 
 abstract class MiscDirectives extends MethodDirectives {
-  /**
-   * Returns a Route which checks the given condition on the request context before running its inner Route.
-   * If the condition fails the  route is rejected with a [[akka.http.scaladsl.server.ValidationRejection]].
-   */
-  @varargs
-  def validate(check: Function[RequestContext, JBoolean], errorMsg: String, innerRoute: Route, moreInnerRoutes: Route*): Route =
-    validate(RequestVals.requestContext, check, errorMsg, innerRoute, moreInnerRoutes: _*)
 
   /**
-   * Returns a Route which checks the given condition before running its inner Route. If the condition fails the
-   * route is rejected with a [[akka.http.scaladsl.server.ValidationRejection]].
+   * Checks the given condition before running its inner route.
+   * If the condition fails the route is rejected with a [[ValidationRejection]].
    */
-  @varargs
-  def validate[T](value: RequestVal[T], check: Function[T, JBoolean], errorMsg: String, innerRoute: Route, moreInnerRoutes: Route*): Route =
-    new DynamicDirectiveRoute1[T](value)(innerRoute, moreInnerRoutes.toList) {
-      def createDirective(t1: T): Directive = Directives.custom(Validated(check.apply(t1), errorMsg))
-    }
+  def validate(check: BooleanSupplier, errorMsg: String, inner: Supplier[Route]): Route = ScalaRoute {
+    D.validate(check.getAsBoolean(), errorMsg) { inner.get.toScala }
+  }
 
   /**
-   * Returns a Route which checks the given condition before running its inner Route. If the condition fails the
-   * route is rejected with a [[akka.http.scaladsl.server.ValidationRejection]].
+   * Extracts the client's IP from either the X-Forwarded-For, Remote-Address or X-Real-IP header
+   * (in that order of priority).
    */
-  @varargs
-  def validate[T1, T2](value1: RequestVal[T1],
-                       value2: RequestVal[T2],
-                       check: Function2[T1, T2, JBoolean],
-                       errorMsg: String,
-                       innerRoute: Route, moreInnerRoutes: Route*): Route =
-    new DynamicDirectiveRoute2[T1, T2](value1, value2)(innerRoute, moreInnerRoutes.toList) {
-      def createDirective(t1: T1, t2: T2): Directive = Directives.custom(Validated(check.apply(t1, t2), errorMsg))
+  def extractClientIP(inner: JFunction[RemoteAddress, Route]): Route = ScalaRoute {
+    D.extractClientIP { ip ⇒ inner.apply(ip).toScala }
+  }
+
+  /**
+   * Rejects if the request entity is non-empty.
+   */
+  def requestEntityEmpty(inner: Supplier[Route]): Route = ScalaRoute {
+    D.requestEntityEmpty { inner.get.toScala }
+  }
+
+  /**
+   * Rejects with a [[RequestEntityExpectedRejection]] if the request entity is empty.
+   * Non-empty requests are passed on unchanged to the inner route.
+   */
+  def requestEntityPresent(inner: Supplier[Route]): Route = ScalaRoute {
+    D.requestEntityPresent { inner.get.toScala }
+  }
+
+  /**
+   * Converts responses with an empty entity into (empty) rejections.
+   * This way you can, for example, have the marshalling of a ''None'' option
+   * be treated as if the request could not be matched.
+   */
+  def rejectEmptyResponse(inner: Supplier[Route]): Route = ScalaRoute {
+    D.rejectEmptyResponse { inner.get.toScala }
+  }
+
+  /**
+   * Inspects the request's `Accept-Language` header and determines,
+   * which of the given language alternatives is preferred by the client.
+   * (See http://tools.ietf.org/html/rfc7231#section-5.3.5 for more details on the
+   * negotiation logic.)
+   * If there are several best language alternatives that the client
+   * has equal preference for (even if this preference is zero!)
+   * the order of the arguments is used as a tie breaker (First one wins).
+   *
+   * If [languages] is empty, the route is rejected.
+   */
+  def selectPreferredLanguage(languages: JIterable[Language], inner: JFunction[Language, Route]): Route = ScalaRoute {
+    languages.asScala.toList match {
+      case head :: tail ⇒
+        D.selectPreferredLanguage(head, tail.toSeq: _*) { lang ⇒ inner.apply(lang).toScala }
+      case _ ⇒
+        D.reject()
     }
+  }
+
 }
