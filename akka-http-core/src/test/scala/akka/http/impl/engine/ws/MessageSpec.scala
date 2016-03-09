@@ -742,7 +742,9 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           """
 
         pushInput(header)
-        expectProtocolErrorOnNetwork()
+        EventFilter[ProtocolException](occurrences = 1).intercept {
+          expectProtocolErrorOnNetwork()
+        }
       }
       "control frame bigger than 125 bytes" in new ServerTestSetup {
         pushInput(frameHeader(Opcode.Ping, 126, fin = true, mask = Some(0)))
