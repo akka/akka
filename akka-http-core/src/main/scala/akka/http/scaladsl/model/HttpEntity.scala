@@ -126,6 +126,11 @@ sealed trait RequestEntity extends HttpEntity with jm.RequestEntity with Respons
    */
   def withSizeLimit(maxBytes: Long): RequestEntity
 
+  /**
+   * See [[HttpEntity#withoutSizeLimit]].
+   */
+  def withoutSizeLimit: RequestEntity
+
   def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): RequestEntity
 }
 
@@ -142,6 +147,11 @@ sealed trait ResponseEntity extends HttpEntity with jm.ResponseEntity {
    */
   def withSizeLimit(maxBytes: Long): ResponseEntity
 
+  /**
+   * See [[HttpEntity#withoutSizeLimit]]
+   */
+  def withoutSizeLimit: ResponseEntity
+
   def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): ResponseEntity
 }
 /* An entity that can be used for requests, responses, and body parts */
@@ -152,6 +162,11 @@ sealed trait UniversalEntity extends jm.UniversalEntity with MessageEntity with 
    * See [[HttpEntity#withSizeLimit]].
    */
   def withSizeLimit(maxBytes: Long): UniversalEntity
+
+  /**
+   * See [[HttpEntity#withoutSizeLimit]]
+   */
+  def withoutSizeLimit: UniversalEntity
 
   def contentLength: Long
   def contentLengthOption: Option[Long] = Some(contentLength)
@@ -228,7 +243,7 @@ object HttpEntity {
       if (contentType == this.contentType) this else copy(contentType = contentType)
 
     override def withSizeLimit(maxBytes: Long): UniversalEntity =
-      if (data.length <= maxBytes) this
+      if (data.length <= maxBytes || isKnownEmpty) this
       else HttpEntity.Default(contentType, data.length, limitableByteSource(Source.single(data))) withSizeLimit maxBytes
 
     override def withoutSizeLimit: UniversalEntity =
