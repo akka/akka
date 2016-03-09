@@ -25,6 +25,18 @@ Akka is also:
 * a town in Morocco
 * a near-earth asteroid
 
+Resources with Explicit Lifecycle
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Actors, ActorSystems, ActorMaterializers (for streams), all these types of objects bind
+resources that must be released explicitly. The reason is that Actors are meant to have
+a life of their own, existing independently of whether messages are currently en route
+to them. Therefore you should always make sure that for every creation of such an object
+you have a matching ``stop``, ``terminate``, or ``shutdown`` call implemented.
+
+In particular you typically want to bind such values to immutable references, i.e.
+``final ActorSystem system`` in Java or ``val system: ActorSystem`` in Scala.
+
 Actors in General
 ^^^^^^^^^^^^^^^^^
 
