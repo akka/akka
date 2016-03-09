@@ -104,7 +104,7 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
         atomic match {
           case sink: SinkModule[_, _] ⇒
             val (sub, mat) = sink.create(newMaterializationContext())
-            assignPort(sink.shape.in, sub.asInstanceOf[Subscriber[Any]])
+            assignPort(sink.shape.in, sub)
             matVal.put(atomic, mat)
           case source: SourceModule[_, _] ⇒
             val (pub, mat) = source.create(newMaterializationContext())
