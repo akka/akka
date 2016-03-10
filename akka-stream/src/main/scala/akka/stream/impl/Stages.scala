@@ -155,10 +155,6 @@ private[stream] object Stages {
     override def create(attr: Attributes): Stage[T, T] = fusing.Filter(p, supervision(attr))
   }
 
-  final case class Collect[In, Out](pf: PartialFunction[In, Out], attributes: Attributes = collect) extends SymbolicStage[In, Out] {
-    override def create(attr: Attributes): Stage[In, Out] = fusing.Collect(pf, supervision(attr))
-  }
-
   final case class Recover[In, Out >: In](pf: PartialFunction[Throwable, Out], attributes: Attributes = recover) extends SymbolicStage[In, Out] {
     override def create(attr: Attributes): Stage[In, Out] = fusing.Recover(pf)
   }
@@ -166,10 +162,6 @@ private[stream] object Stages {
   final case class Grouped[T](n: Int, attributes: Attributes = grouped) extends SymbolicStage[T, immutable.Seq[T]] {
     require(n > 0, "n must be greater than 0")
     override def create(attr: Attributes): Stage[T, immutable.Seq[T]] = fusing.Grouped(n)
-  }
-
-  final case class LimitWeighted[T](max: Long, weightFn: T ⇒ Long, attributes: Attributes = limitWeighted) extends SymbolicStage[T, T] {
-    override def create(attr: Attributes): Stage[T, T] = fusing.LimitWeighted(max, weightFn)
   }
 
   final case class Sliding[T](n: Int, step: Int, attributes: Attributes = sliding) extends SymbolicStage[T, immutable.Seq[T]] {
@@ -181,10 +173,6 @@ private[stream] object Stages {
 
   final case class TakeWhile[T](p: T ⇒ Boolean, attributes: Attributes = takeWhile) extends SymbolicStage[T, T] {
     override def create(attr: Attributes): Stage[T, T] = fusing.TakeWhile(p, supervision(attr))
-  }
-
-  final case class DropWhile[T](p: T ⇒ Boolean, attributes: Attributes = dropWhile) extends SymbolicStage[T, T] {
-    override def create(attr: Attributes): Stage[T, T] = fusing.DropWhile(p, supervision(attr))
   }
 
   final case class Scan[In, Out](zero: Out, f: (Out, In) ⇒ Out, attributes: Attributes = scan) extends SymbolicStage[In, Out] {
