@@ -25,7 +25,7 @@ import scala.util.DynamicVariable
  * load classes using reflection.</li>
  * </ul>
  *
- * <b>Be sure to always use the [[akka.actor.DynamicAccess]] for loading classes!</b> This is necessary to
+ * <b>Be sure to always use the </b>[[akka.actor.DynamicAccess]]<b> for loading classes!</b> This is necessary to
  * avoid strange match errors and inequalities which arise from different class loaders loading
  * the same class.
  */
@@ -72,7 +72,7 @@ trait Serializer {
  * that the class can be moved/removed and the serializer can still deserialize old data by matching
  * on the `String`. This is especially useful for Akka Persistence.
  *
- * The manifest string can also encode a version number that can be used in [[#fromBinary]] to
+ * The manifest string can also encode a version number that can be used in `fromBinary` to
  * deserialize in different ways to migrate old data to new domain objects.
  *
  * If the data was originally serialized with [[Serializer]] and in a later version of the
@@ -91,7 +91,7 @@ trait Serializer {
  * load classes using reflection.</li>
  * </ul>
  *
- * <b>Be sure to always use the [[akka.actor.DynamicAccess]] for loading classes!</b> This is necessary to
+ * <b>Be sure to always use the </b>[[akka.actor.DynamicAccess]]<b> for loading classes!</b> This is necessary to
  * avoid strange match errors and inequalities which arise from different class loaders loading
  * the same class.
  */
@@ -141,6 +141,7 @@ trait BaseSerializer extends Serializer {
    *  Actor system which is required by most serializer implementations.
    */
   def system: ExtendedActorSystem
+
   /**
    * Configuration namespace of serialization identifiers in the `reference.conf`.
    *
@@ -150,10 +151,11 @@ trait BaseSerializer extends Serializer {
    * and `ID` is globally unique serializer identifier number.
    */
   final val SerializationIdentifiers = "akka.actor.serialization-identifiers"
+
   /**
    * Globally unique serialization identifier configured in the `reference.conf`.
    *
-   * See [[Serializer#identifier()]].
+   * See [[Serializer#identifier]].
    */
   override val identifier: Int = identifierFromConfig
 
