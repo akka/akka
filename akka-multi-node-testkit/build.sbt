@@ -1,8 +1,4 @@
-import akka.{AkkaBuild, Formatting, OSGi}
-import com.typesafe.tools.mima.plugin.MimaKeys
+import akka.{AkkaBuild, Formatting}
 
 AkkaBuild.defaultSettings
-
 Formatting.formatSettings
-
-MimaKeys.previousArtifacts := akkaPreviousArtifacts("akka-multi-node-testkit").value

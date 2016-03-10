@@ -76,7 +76,6 @@ object Sample {
    */
   private val enableAutoPlugins = (project: Project) =>
     project.settings((
-      MiMa.projectSettings ++
       Publish.projectSettings ++
       ValidatePullRequest.projectSettings
     ): _*).configs(ValidatePullRequest.ValidatePR)

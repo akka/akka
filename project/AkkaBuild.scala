@@ -13,6 +13,7 @@ import com.typesafe.sbt.S3Plugin.S3
 import com.typesafe.sbt.S3Plugin.s3Settings
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
+import com.typesafe.tools.mima.plugin.MimaPlugin
 import sbt.Keys._
 import sbt._
 import sbtunidoc.Plugin.ScalaUnidoc
@@ -50,7 +51,7 @@ object AkkaBuild extends Build {
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       }
     )
-  
+
   lazy val root = Project(
     id = "akka",
     base = file("."),
@@ -60,7 +61,7 @@ object AkkaBuild extends Build {
       kernel, osgi, docs, contrib, samples, multiNodeTestkit, benchJmh, typed, protobuf,
       stream, streamTestkit, streamTests, streamTestsTck, parsing,
       httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests, httpTestkit
-    ) 
+    )
   ).settings(rootSettings: _*)
 
   lazy val akkaScalaNightly = Project(
@@ -75,7 +76,7 @@ object AkkaBuild extends Build {
       stream, streamTestkit, streamTests, streamTestsTck, parsing,
       httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests, httpTestkit
     )
-  ).disablePlugins(ValidatePullRequest)
+  ).disablePlugins(ValidatePullRequest, MimaPlugin)
 
   lazy val actor = Project(
     id = "akka-actor",
@@ -341,16 +342,18 @@ object AkkaBuild extends Build {
   lazy val samplesSettings = parentSettings ++ ActivatorDist.settings
 
   lazy val samples = Project(
-    id = "akka-samples",
-    base = file("akka-samples"),
-    // FIXME osgiDiningHakkersSampleMavenTest temporarily removed from aggregate due to #16703
-    aggregate = if (!Sample.CliOptions.aggregateSamples) Nil else
-      Seq(sampleCamelJava, sampleCamelScala, sampleClusterJava, sampleClusterScala, sampleFsmScala, sampleFsmJavaLambda,
-        sampleMainJava, sampleMainScala, sampleMainJavaLambda, sampleMultiNodeScala,
-        samplePersistenceJava, samplePersistenceScala, samplePersistenceJavaLambda,
-        sampleRemoteJava, sampleRemoteScala, sampleSupervisionJavaLambda,
-        sampleDistributedDataScala, sampleDistributedDataJava)
-  ).settings(samplesSettings: _*)
+      id = "akka-samples",
+      base = file("akka-samples"),
+      // FIXME osgiDiningHakkersSampleMavenTest temporarily removed from aggregate due to #16703
+      aggregate = if (!Sample.CliOptions.aggregateSamples) Nil else
+        Seq(sampleCamelJava, sampleCamelScala, sampleClusterJava, sampleClusterScala, sampleFsmScala, sampleFsmJavaLambda,
+          sampleMainJava, sampleMainScala, sampleMainJavaLambda, sampleMultiNodeScala,
+          samplePersistenceJava, samplePersistenceScala, samplePersistenceJavaLambda,
+          sampleRemoteJava, sampleRemoteScala, sampleSupervisionJavaLambda,
+          sampleDistributedDataScala, sampleDistributedDataJava)
+    )
+    .settings(samplesSettings: _*)
+    .disablePlugins(MimaPlugin)
 
   lazy val sampleCamelJava = Sample.project("akka-sample-camel-java")
   lazy val sampleCamelScala = Sample.project("akka-sample-camel-scala")
@@ -528,36 +531,6 @@ object AkkaBuild extends Build {
      javacOptions in test ++= Seq("-Xdoclint:none"),
      javacOptions in doc ++= Seq("-Xdoclint:none")
    )
-
-  def akkaPreviousArtifacts(id: String): Def.Initialize[Set[sbt.ModuleID]] = Def.setting {
-    if (enableMiMa) {
-      val versions = {
-        val akka23Versions = Seq("2.3.11", "2.3.12", "2.3.13", "2.3.14")
-        val akka24Versions = Seq("2.4.0", "2.4.1")
-        val akka24NewArtifacts = Seq(
-          "akka-cluster-sharding",
-          "akka-cluster-tools",
-          "akka-cluster-metrics",
-          "akka-persistence",
-          "akka-distributed-data-experimental",
-          "akka-persistence-query-experimental"
-        )
-        scalaBinaryVersion.value match {
-          case "2.11" if !akka24NewArtifacts.contains(id) => akka23Versions ++ akka24Versions
-          case _ => akka24Versions // Only Akka 2.4.x for scala > than 2.11
-        }
-      }
-
-      // check against all binary compatible artifacts
-      versions.map(organization.value %% id % _).toSet
-    }
-    else Set.empty
-  }
-
-  def akkaStreamAndHttpPreviousArtifacts(id: String): Def.Initialize[Set[sbt.ModuleID]] = Def.setting {
-    // TODO fix MiMa for 2.4 Akka streams
-    Set.empty
-  }
 
   def loadSystemProperties(fileName: String): Unit = {
     import scala.collection.JavaConverters._
