@@ -17,6 +17,7 @@ SecurityDirectives
    authenticateOAuth2PFAsync
    authenticateOrRejectWithChallenge
    authorize
+   authorizeAsync
    extractCredentials
 
 

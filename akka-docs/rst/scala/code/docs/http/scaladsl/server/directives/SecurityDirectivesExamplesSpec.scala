@@ -219,7 +219,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
       }
   }
 
-  "0authorize" in {
+  "0authorize-0" in {
     case class User(name: String)
 
     // authenticate the user:
@@ -239,6 +239,48 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
         authenticateBasic(realm = "secure site", myUserPassAuthenticator) { user =>
           path("peters-lair") {
             authorize(hasAdminPermissions(user)) {
+              complete(s"'${user.name}' visited Peter's lair")
+            }
+          }
+        }
+      }
+
+    // tests:
+    val johnsCred = BasicHttpCredentials("John", "p4ssw0rd")
+    Get("/peters-lair") ~> addCredentials(johnsCred) ~> // adds Authorization header
+      route ~> check {
+        status shouldEqual StatusCodes.Forbidden
+        responseAs[String] shouldEqual "The supplied authentication is not authorized to access this resource"
+      }
+
+    val petersCred = BasicHttpCredentials("Peter", "pan")
+    Get("/peters-lair") ~> addCredentials(petersCred) ~> // adds Authorization header
+      route ~> check {
+        responseAs[String] shouldEqual "'Peter' visited Peter's lair"
+      }
+  }
+
+  "0authorizeAsync" in {
+    case class User(name: String)
+
+    // authenticate the user:
+    def myUserPassAuthenticator(credentials: Credentials): Option[User] =
+      credentials match {
+        case Credentials.Provided(id) => Some(User(id))
+        case _                        => None
+      }
+
+    // check if user is authorized to perform admin actions,
+    // this could potentially be a long operation so it would return a Future
+    val admins = Set("Peter")
+    def hasAdminPermissions(user: User): Future[Boolean] =
+      Future.successful(admins.contains(user.name))
+
+    val route =
+      Route.seal {
+        authenticateBasic(realm = "secure site", myUserPassAuthenticator) { user =>
+          path("peters-lair") {
+            authorizeAsync(_ => hasAdminPermissions(user)) {
               complete(s"'${user.name}' visited Peter's lair")
             }
           }
