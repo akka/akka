@@ -94,7 +94,7 @@ object RequestVals {
     }
 
   /**
-   * Creates a new [[RequestVal]] given a [[ju.Map]] and a [[RequestVal]] that represents the key.
+   * Creates a new [[RequestVal]] given a [[java.util.Map]] and a [[RequestVal]] that represents the key.
    * The new RequestVal represents the existing value as looked up in the map. If the key doesn't
    * exist the request is rejected.
    */

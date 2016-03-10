@@ -42,13 +42,13 @@ object HttpHeader {
    *       partial value parsing. In this case the method returns a `ParsingResult.Ok` with the respective header
    *       instance holding the valid value elements and an [[ErrorInfo]] for each invalid value.
    *    c) the value has invalid elements and the header type doesn't support partial value parsing.
-   *       In this case the method returns a `ParsingResult.Ok` with a [[RawHeader]] instance and
+   *       In this case the method returns a `ParsingResult.Ok` with a [[akka.http.scaladsl.model.headers.RawHeader]] instance and
    *       a single [[ErrorInfo]] for the value parsing problem.
    *
    * 2. The header name does not correspond to a properly modelled header but the header name and the value are both
    *    syntactically legal according to the basic header requirements from the HTTP specification.
    *    (http://tools.ietf.org/html/rfc7230#section-3.2)
-   *    In this case the method returns a `ParsingResult.Ok` with a [[RawHeader]] instance and no errors.
+   *    In this case the method returns a `ParsingResult.Ok` with a [[akka.http.scaladsl.model.headers.RawHeader]] instance and no errors.
    *
    * 3. The header name or value are illegal according to the basic requirements for HTTP headers
    *    (http://tools.ietf.org/html/rfc7230#section-3.2). In this case the method returns a `ParsingResult.Error`.

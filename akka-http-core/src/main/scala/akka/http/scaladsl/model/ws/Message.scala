@@ -15,7 +15,7 @@ sealed trait Message
 
 /**
  * Represents a WebSocket text message. A text message can either be a [[TextMessage.Strict]] in which case
- * the complete data is already available or it can be [[TextMessage.Streamed]] in which case [[textStream]]
+ * the complete data is already available or it can be [[TextMessage.Streamed]] in which case `textStream`
  * will return a Source streaming the data as it comes in.
  */
 sealed trait TextMessage extends Message {
@@ -42,7 +42,7 @@ object TextMessage {
 
 /**
  * Represents a WebSocket binary message. A binary message can either be [[BinaryMessage.Strict]] in which case
- * the complete data is already available or it can be [[BinaryMessage.Streamed]] in which case [[dataStream]]
+ * the complete data is already available or it can be [[BinaryMessage.Streamed]] in which case `dataStream`
  * will return a Source streaming the data as it comes in.
  */
 //#message-model
@@ -59,7 +59,7 @@ object BinaryMessage {
     Streamed(dataStream)
 
   /**
-   * A strict [[BinaryMessage]] that contains the complete data as a [[ByteString]].
+   * A strict [[BinaryMessage]] that contains the complete data as a [[akka.util.ByteString]].
    */
   final case class Strict(data: ByteString) extends BinaryMessage {
     def dataStream: Source[ByteString, _] = Source.single(data)
