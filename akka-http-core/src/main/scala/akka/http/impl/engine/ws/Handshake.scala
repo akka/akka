@@ -109,16 +109,12 @@ private[http] object Handshake {
 
     /*
       From: http://tools.ietf.org/html/rfc6455#section-4.2.2
-
       1.  A Status-Line with a 101 response code as per RFC 2616
           [RFC2616].  Such a response could look like "HTTP/1.1 101
           Switching Protocols".
-
       2.  An |Upgrade| header field with value "websocket" as per RFC
           2616 [RFC2616].
-
       3.  A |Connection| header field with value "Upgrade".
-
       4.  A |Sec-WebSocket-Accept| header field.  The value of this
           header field is constructed by concatenating /key/, defined
           above in step 4 in Section 4.2.2, with the string "258EAFA5-
@@ -168,24 +164,20 @@ private[http] object Handshake {
     def validateResponse(response: HttpResponse, subprotocols: Seq[String], key: `Sec-WebSocket-Key`): Either[String, NegotiatedWebSocketSettings] = {
       /*
        From http://tools.ietf.org/html/rfc6455#section-4.1
-
        1.  If the status code received from the server is not 101, the
            client handles the response per HTTP [RFC2616] procedures.  In
            particular, the client might perform authentication if it
            receives a 401 status code; the server might redirect the client
            using a 3xx status code (but clients are not required to follow
            them), etc.  Otherwise, proceed as follows.
-
        2.  If the response lacks an |Upgrade| header field or the |Upgrade|
            header field contains a value that is not an ASCII case-
            insensitive match for the value "websocket", the client MUST
            _Fail the WebSocket Connection_.
-
        3.  If the response lacks a |Connection| header field or the
            |Connection| header field doesn't contain a token that is an
            ASCII case-insensitive match for the value "Upgrade", the client
            MUST _Fail the WebSocket Connection_.
-
        4.  If the response lacks a |Sec-WebSocket-Accept| header field or
            the |Sec-WebSocket-Accept| contains a value other than the
            base64-encoded SHA-1 of the concatenation of the |Sec-WebSocket-
@@ -193,7 +185,6 @@ private[http] object Handshake {
            E914-47DA-95CA-C5AB0DC85B11" but ignoring any leading and
            trailing whitespace, the client MUST _Fail the WebSocket
            Connection_.
-
        5.  If the response includes a |Sec-WebSocket-Extensions| header
            field and this header field indicates the use of an extension
            that was not present in the client's handshake (the server has
@@ -201,7 +192,6 @@ private[http] object Handshake {
            MUST _Fail the WebSocket Connection_.  (The parsing of this
            header field to determine which extensions are requested is
            discussed in Section 9.1.)
-
        6.  If the response includes a |Sec-WebSocket-Protocol| header field
            and this header field indicates the use of a subprotocol that was
            not present in the client's handshake (the server has indicated a

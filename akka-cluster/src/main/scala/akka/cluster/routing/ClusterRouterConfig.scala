@@ -276,9 +276,9 @@ private[akka] class ClusterRouterPoolActor(
     } else {
       // find the node with least routees
       val numberOfRouteesPerNode: Map[Address, Int] =
-        currentRoutees.foldLeft(currentNodes.map(_ -> 0).toMap.withDefaultValue(0)) { (acc, x) ⇒
+        currentRoutees.foldLeft(currentNodes.map(_ → 0).toMap.withDefaultValue(0)) { (acc, x) ⇒
           val address = fullAddress(x)
-          acc + (address -> (acc(address) + 1))
+          acc + (address → (acc(address) + 1))
         }
 
       val (address, count) = numberOfRouteesPerNode.minBy(_._2)
@@ -304,7 +304,7 @@ private[akka] class ClusterRouterGroupActor(val settings: ClusterRouterGroupSett
 
   var usedRouteePaths: Map[Address, Set[String]] =
     if (settings.allowLocalRoutees)
-      Map(cluster.selfAddress -> settings.routeesPaths.toSet)
+      Map(cluster.selfAddress → settings.routeesPaths.toSet)
     else
       Map.empty
 

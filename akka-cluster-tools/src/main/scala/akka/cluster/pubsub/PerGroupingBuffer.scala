@@ -44,5 +44,5 @@ private[pubsub] trait PerGroupingBuffer {
     }
   }
 
-  def initializeGrouping(grouping: String): Unit = buffers += grouping -> Vector.empty
+  def initializeGrouping(grouping: String): Unit = buffers += grouping → Vector.empty
 }

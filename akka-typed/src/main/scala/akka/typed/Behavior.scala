@@ -3,7 +3,6 @@
  */
 package akka.typed
 
-
 /**
  * The behavior of an actor defines how it reacts to the messages that it
  * receives. The message may either be of the type that the Actor declares
@@ -58,7 +57,7 @@ abstract class Behavior[T] {
 
 /*
  * FIXME
- * 
+ *
  * Closing over ActorContext makes a Behavior immobile: it cannot be moved to
  * another context and executed there, and therefore it cannot be replicated or
  * forked either.

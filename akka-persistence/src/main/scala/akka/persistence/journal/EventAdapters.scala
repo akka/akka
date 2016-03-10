@@ -84,7 +84,7 @@ private[akka] object EventAdapters {
 
     // A Map of handler from alias to implementation (i.e. class implementing akka.serialization.Serializer)
     // For example this defines a handler named 'country': `"country" -> com.example.comain.CountryTagsAdapter`
-    val handlers = for ((k: String, v: String) ← adapters) yield k -> instantiateAdapter(v, system).get
+    val handlers = for ((k: String, v: String) ← adapters) yield k → instantiateAdapter(v, system).get
 
     // bindings is a Seq of tuple representing the mapping from Class to handler.
     // It is primarily ordered by the most specific classes first, and secondly in the configured order.
@@ -131,7 +131,7 @@ private[akka] object EventAdapters {
    * loading is performed by the system’s [[akka.actor.DynamicAccess]].
    */
   private def instantiate[T: ClassTag](fqn: FQN, system: ExtendedActorSystem): Try[T] =
-    system.dynamicAccess.createInstanceFor[T](fqn, List(classOf[ExtendedActorSystem] -> system)) recoverWith {
+    system.dynamicAccess.createInstanceFor[T](fqn, List(classOf[ExtendedActorSystem] → system)) recoverWith {
       case _: NoSuchMethodException ⇒ system.dynamicAccess.createInstanceFor[T](fqn, Nil)
     }
 
@@ -151,7 +151,7 @@ private[akka] object EventAdapters {
   private final def configToMap(config: Config, path: String): Map[String, String] = {
     import scala.collection.JavaConverters._
     if (config.hasPath(path)) {
-      config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) ⇒ k -> v.toString }
+      config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) ⇒ k → v.toString }
     } else Map.empty
   }
 
@@ -159,8 +159,8 @@ private[akka] object EventAdapters {
     import scala.collection.JavaConverters._
     if (config.hasPath(path)) {
       config.getConfig(path).root.unwrapped.asScala.toMap map {
-        case (k, v: util.ArrayList[_]) if v.isInstanceOf[util.ArrayList[_]] ⇒ k -> v.asScala.map(_.toString).toList
-        case (k, v) ⇒ k -> List(v.toString)
+        case (k, v: util.ArrayList[_]) if v.isInstanceOf[util.ArrayList[_]] ⇒ k → v.asScala.map(_.toString).toList
+        case (k, v) ⇒ k → List(v.toString)
       }
     } else Map.empty
   }

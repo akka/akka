@@ -323,14 +323,14 @@ private[stream] object Fusing {
           var result = List.empty[(Module, MaterializedValueNode)]
           var i = 0
           while (i < mvids.length) {
-            result ::= mvids(i) -> Atomic(newids(i))
+            result ::= mvids(i) → Atomic(newids(i))
             i += 1
           }
-          result ::= m -> Atomic(newgm)
+          result ::= m → Atomic(newgm)
           result
         case _ ⇒
           if (Debug) log(s"atomic module $m")
-          List(m -> struct.addModule(m, localGroup, inheritedAttributes, indent))
+          List(m → struct.addModule(m, localGroup, inheritedAttributes, indent))
       }
     } else {
       val attributes = inheritedAttributes and m.attributes
@@ -338,7 +338,7 @@ private[stream] object Fusing {
         case CopiedModule(shape, _, copyOf) ⇒
           val ret =
             descend(copyOf, attributes, struct, localGroup, indent + 1) match {
-              case xs @ (_, mat) :: _ ⇒ (m -> mat) :: xs
+              case xs @ (_, mat) :: _ ⇒ (m → mat) :: xs
               case _                  ⇒ throw new IllegalArgumentException("cannot happen")
             }
           struct.rewire(copyOf.shape, shape, indent)
@@ -387,7 +387,7 @@ private[stream] object Fusing {
             struct.replace(c, replacement, localGroup)
           }
           // the result for each level is the materialized value computation
-          List(m -> newMat)
+          List(m → newMat)
       }
     }
   }

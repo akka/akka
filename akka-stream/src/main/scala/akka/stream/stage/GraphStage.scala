@@ -11,7 +11,7 @@ import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSource, SubSink }
-import akka.stream.impl.{ ReactiveStreamsCompliance}
+import akka.stream.impl.{ ReactiveStreamsCompliance }
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.actor.ActorSubscriberMessage
@@ -536,8 +536,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
             pos += 1
             if (pos == n) andThen(result)
           },
-          () ⇒ onClose(result.take(pos)))
-        )
+          () ⇒ onClose(result.take(pos))))
       } else andThen(result)
     }
 

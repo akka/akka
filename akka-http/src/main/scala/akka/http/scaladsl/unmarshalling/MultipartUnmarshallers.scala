@@ -10,7 +10,7 @@ import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import akka.util.ByteString
 import akka.event.{ NoLogging, LoggingAdapter }
-import akka.stream.{ActorMaterializer, OverflowStrategy}
+import akka.stream.{ ActorMaterializer, OverflowStrategy }
 import akka.stream.impl.fusing.IteratorInterpreter
 import akka.stream.scaladsl._
 import akka.http.impl.engine.parsing.BodyPartParser
@@ -67,7 +67,7 @@ trait MultipartUnmarshallers {
     createStreamed: (MediaType.Multipart, Source[BP, Any]) ⇒ T,
     createStrictBodyPart: (HttpEntity.Strict, List[HttpHeader]) ⇒ BPS,
     createStrict: (MediaType.Multipart, immutable.Seq[BPS]) ⇒ T)(implicit log: LoggingAdapter = NoLogging, parserSettings: ParserSettings = null): FromEntityUnmarshaller[T] =
-    Unmarshaller.withMaterializer { implicit ec ⇒ mat =>
+    Unmarshaller.withMaterializer { implicit ec ⇒ mat ⇒
       entity ⇒
         if (entity.contentType.mediaType.isMultipart && mediaRange.matches(entity.contentType.mediaType)) {
           entity.contentType.mediaType.params.get("boundary") match {

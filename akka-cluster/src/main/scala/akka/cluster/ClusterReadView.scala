@@ -4,7 +4,7 @@
 
 package akka.cluster
 
-// TODO remove metrics 
+// TODO remove metrics
 
 import java.io.Closeable
 import scala.collection.immutable
@@ -74,7 +74,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
           case LeaderChanged(leader) ⇒
             _state = _state.copy(leader = leader)
           case RoleLeaderChanged(role, leader) ⇒
-            _state = _state.copy(roleLeaderMap = _state.roleLeaderMap + (role -> leader))
+            _state = _state.copy(roleLeaderMap = _state.roleLeaderMap + (role → leader))
           case stats: CurrentInternalStats  ⇒ _latestStats = stats
           case ClusterMetricsChanged(nodes) ⇒ _clusterMetrics = nodes
           case ClusterShuttingDown          ⇒

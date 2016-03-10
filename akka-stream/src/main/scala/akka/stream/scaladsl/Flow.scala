@@ -26,7 +26,7 @@ import akka.NotUsed
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
  */
 final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
-    extends FlowOpsMat[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
+  extends FlowOpsMat[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
 
   override val shape: FlowShape[In, Out] = module.shape.asInstanceOf[FlowShape[In, Out]]
 
@@ -410,23 +410,23 @@ trait FlowOps[+Out, +Mat] {
   def recover[T >: Out](pf: PartialFunction[Throwable, T]): Repr[T] = andThen(Recover(pf))
 
   /**
-    * RecoverWith allows to switch to alternative Source on flow failure. It will stay in effect after
-    * a failure has been recovered so that each time there is a failure it is fed into the `pf` and a new
-    * Source may be materialized.
-    *
-    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
-    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
-    *
-    * '''Emits when''' element is available from the upstream or upstream is failed and element is available
-    * from alternative Source
-    *
-    * '''Backpressures when''' downstream backpressures
-    *
-    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
-    *
-    * '''Cancels when''' downstream cancels
-    *
-    */
+   * RecoverWith allows to switch to alternative Source on flow failure. It will stay in effect after
+   * a failure has been recovered so that each time there is a failure it is fed into the `pf` and a new
+   * Source may be materialized.
+   *
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * '''Emits when''' element is available from the upstream or upstream is failed and element is available
+   * from alternative Source
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   */
   def recoverWith[T >: Out](pf: PartialFunction[Throwable, Graph[SourceShape[T], NotUsed]]): Repr[T] =
     via(new RecoverWith(pf))
 
@@ -463,30 +463,30 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def mapConcat[T](f: Out ⇒ immutable.Iterable[T]): Repr[T] = statefulMapConcat(() => f)
+  def mapConcat[T](f: Out ⇒ immutable.Iterable[T]): Repr[T] = statefulMapConcat(() ⇒ f)
 
   /**
-    * Transform each input element into an `Iterable` of output elements that is
-    * then flattened into the output stream. The transformation is meant to be stateful,
-    * which is enabled by creating the transformation function anew for every materialization —
-    * the returned function will typically close over mutable objects to store state between
-    * invocations. For the stateless variant see [[FlowOps.mapConcat]].
-    *
-    * The returned `Iterable` MUST NOT contain `null` values,
-    * as they are illegal as stream elements - according to the Reactive Streams specification.
-    *
-    * '''Emits when''' the mapping function returns an element or there are still remaining elements
-    * from the previously calculated collection
-    *
-    * '''Backpressures when''' downstream backpressures or there are still remaining elements from the
-    * previously calculated collection
-    *
-    * '''Completes when''' upstream completes and all remaining elements has been emitted
-    *
-    * '''Cancels when''' downstream cancels
-    *
-    * See also [[FlowOps.mapConcat]]
-    */
+   * Transform each input element into an `Iterable` of output elements that is
+   * then flattened into the output stream. The transformation is meant to be stateful,
+   * which is enabled by creating the transformation function anew for every materialization —
+   * the returned function will typically close over mutable objects to store state between
+   * invocations. For the stateless variant see [[FlowOps.mapConcat]].
+   *
+   * The returned `Iterable` MUST NOT contain `null` values,
+   * as they are illegal as stream elements - according to the Reactive Streams specification.
+   *
+   * '''Emits when''' the mapping function returns an element or there are still remaining elements
+   * from the previously calculated collection
+   *
+   * '''Backpressures when''' downstream backpressures or there are still remaining elements from the
+   * previously calculated collection
+   *
+   * '''Completes when''' upstream completes and all remaining elements has been emitted
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * See also [[FlowOps.mapConcat]]
+   */
   def statefulMapConcat[T](f: () ⇒ Out ⇒ immutable.Iterable[T]): Repr[T] =
     via(new StatefulMapConcat(f))
 
@@ -994,7 +994,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.conflate]], [[FlowOps.limit]], [[FlowOps.limitWeighted]] [[FlowOps.batch]] [[FlowOps.batchWeighted]]
    */
-  def conflate[O2 >: Out](aggregate: (O2, O2) => O2): Repr[O2] = conflateWithSeed[O2](ConstantFun.scalaIdentityFunction)(aggregate)
+  def conflate[O2 >: Out](aggregate: (O2, O2) ⇒ O2): Repr[O2] = conflateWithSeed[O2](ConstantFun.scalaIdentityFunction)(aggregate)
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by aggregating elements into batches
@@ -1541,11 +1541,10 @@ trait FlowOps[+Out, +Mat] {
   def zip[U](that: Graph[SourceShape[U], _]): Repr[(Out, U)] = via(zipGraph(that))
 
   protected def zipGraph[U, M](that: Graph[SourceShape[U], M]): Graph[FlowShape[Out @uncheckedVariance, (Out, U)], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val zip = b.add(Zip[Out, U]())
-        r ~> zip.in1
-        FlowShape(zip.in0, zip.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val zip = b.add(Zip[Out, U]())
+      r ~> zip.in1
+      FlowShape(zip.in0, zip.out)
     }
 
   /**
@@ -1564,11 +1563,10 @@ trait FlowOps[+Out, +Mat] {
     via(zipWithGraph(that)(combine))
 
   protected def zipWithGraph[Out2, Out3, M](that: Graph[SourceShape[Out2], M])(combine: (Out, Out2) ⇒ Out3): Graph[FlowShape[Out @uncheckedVariance, Out3], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val zip = b.add(ZipWith[Out, Out2, Out3](combine))
-        r ~> zip.in1
-        FlowShape(zip.in0, zip.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val zip = b.add(ZipWith[Out, Out2, Out3](combine))
+      r ~> zip.in1
+      FlowShape(zip.in0, zip.out)
     }
 
   /**
@@ -1599,11 +1597,10 @@ trait FlowOps[+Out, +Mat] {
 
   protected def interleaveGraph[U >: Out, M](that: Graph[SourceShape[U], M],
                                              segmentSize: Int): Graph[FlowShape[Out @uncheckedVariance, U], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val interleave = b.add(Interleave[U](2, segmentSize))
-        r ~> interleave.in(1)
-        FlowShape(interleave.in(0), interleave.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val interleave = b.add(Interleave[U](2, segmentSize))
+      r ~> interleave.in(1)
+      FlowShape(interleave.in(0), interleave.out)
     }
 
   /**
@@ -1622,11 +1619,10 @@ trait FlowOps[+Out, +Mat] {
     via(mergeGraph(that, eagerComplete))
 
   protected def mergeGraph[U >: Out, M](that: Graph[SourceShape[U], M], eagerComplete: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val merge = b.add(Merge[U](2, eagerComplete))
-        r ~> merge.in(1)
-        FlowShape(merge.in(0), merge.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val merge = b.add(Merge[U](2, eagerComplete))
+      r ~> merge.in(1)
+      FlowShape(merge.in(0), merge.out)
     }
 
   /**
@@ -1648,11 +1644,10 @@ trait FlowOps[+Out, +Mat] {
     via(mergeSortedGraph(that))
 
   protected def mergeSortedGraph[U >: Out, M](that: Graph[SourceShape[U], M])(implicit ord: Ordering[U]): Graph[FlowShape[Out @uncheckedVariance, U], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val merge = b.add(new MergeSorted[U])
-        r ~> merge.in1
-        FlowShape(merge.in0, merge.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val merge = b.add(new MergeSorted[U])
+      r ~> merge.in1
+      FlowShape(merge.in0, merge.out)
     }
 
   /**
@@ -1677,11 +1672,10 @@ trait FlowOps[+Out, +Mat] {
     via(concatGraph(that))
 
   protected def concatGraph[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2]): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val merge = b.add(Concat[U]())
-        r ~> merge.in(1)
-        FlowShape(merge.in(0), merge.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val merge = b.add(Concat[U]())
+      r ~> merge.in(1)
+      FlowShape(merge.in(0), merge.out)
     }
 
   /**
@@ -1706,11 +1700,10 @@ trait FlowOps[+Out, +Mat] {
     via(prependGraph(that))
 
   protected def prependGraph[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2]): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val merge = b.add(Concat[U]())
-        r ~> merge.in(0)
-        FlowShape(merge.in(1), merge.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val merge = b.add(Concat[U]())
+      r ~> merge.in(0)
+      FlowShape(merge.in(1), merge.out)
     }
 
   /**
@@ -1756,12 +1749,11 @@ trait FlowOps[+Out, +Mat] {
   def alsoTo(that: Graph[SinkShape[Out], _]): Repr[Out] = via(alsoToGraph(that))
 
   protected def alsoToGraph[M](that: Graph[SinkShape[Out], M]): Graph[FlowShape[Out @uncheckedVariance, Out], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        import GraphDSL.Implicits._
-        val bcast = b.add(Broadcast[Out](2))
-        bcast.out(1) ~> r
-        FlowShape(bcast.in, bcast.out(0))
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      import GraphDSL.Implicits._
+      val bcast = b.add(Broadcast[Out](2))
+      bcast.out(1) ~> r
+      FlowShape(bcast.in, bcast.out(0))
     }
 
   def withAttributes(attr: Attributes): Repr[Out]

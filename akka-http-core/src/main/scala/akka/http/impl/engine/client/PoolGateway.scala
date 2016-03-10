@@ -40,7 +40,8 @@ private object PoolGateway {
  */
 private[http] class PoolGateway(hcps: HostConnectionPoolSetup,
                                 _shutdownStartedPromise: Promise[Done])( // constructor arg only
-                                  implicit system: ActorSystem, fm: Materializer) {
+  implicit
+  system: ActorSystem, fm: Materializer) {
   import PoolGateway._
   import fm.executionContext
 

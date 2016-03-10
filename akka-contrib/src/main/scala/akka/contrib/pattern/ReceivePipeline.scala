@@ -67,8 +67,8 @@ trait ReceivePipeline extends Actor {
   }
 
   private def combinedDecorator: Receive ⇒ Receive = { receive ⇒
-    // So that reconstructed Receive PF is undefined only when the actor's 
-    // receive is undefined for a transformed message that reaches it...     
+    // So that reconstructed Receive PF is undefined only when the actor's
+    // receive is undefined for a transformed message that reaches it...
     val innerReceiveHandler: Handler = {
       case msg ⇒ receive.lift(msg).map(_ ⇒ Done).getOrElse(Undefined)
     }

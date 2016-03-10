@@ -60,12 +60,12 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
 
   @varargs
   def withCustomMethods(methods: HttpMethod*): ParserSettings = {
-    val map = methods.map(m ⇒ m.name -> m.asScala).toMap
+    val map = methods.map(m ⇒ m.name → m.asScala).toMap
     self.copy(customMethods = map.get)
   }
   @varargs
   def withCustomStatusCodes(codes: StatusCode*): ParserSettings = {
-    val map = codes.map(c ⇒ c.intValue -> c.asScala).toMap
+    val map = codes.map(c ⇒ c.intValue → c.asScala).toMap
     self.copy(customStatusCodes = map.get)
   }
 

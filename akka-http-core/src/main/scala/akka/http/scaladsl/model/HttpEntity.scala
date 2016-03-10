@@ -8,7 +8,7 @@ import java.util.OptionalLong
 
 import language.implicitConversions
 import java.io.File
-import java.lang.{ Iterable ⇒ JIterable}
+import java.lang.{ Iterable ⇒ JIterable }
 import scala.util.control.NonFatal
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -515,18 +515,18 @@ object HttpEntity {
    */
   private[http] def captureTermination[T <: HttpEntity](entity: T): (T, Future[Unit]) =
     entity match {
-      case x: HttpEntity.Strict ⇒ x.asInstanceOf[T] -> FastFuture.successful(())
+      case x: HttpEntity.Strict ⇒ x.asInstanceOf[T] → FastFuture.successful(())
       case x: HttpEntity.Default ⇒
         val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
-        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
+        x.copy(data = newData).asInstanceOf[T] → whenCompleted
       case x: HttpEntity.Chunked ⇒
         val (newChunks, whenCompleted) = StreamUtils.captureTermination(x.chunks)
-        x.copy(chunks = newChunks).asInstanceOf[T] -> whenCompleted
+        x.copy(chunks = newChunks).asInstanceOf[T] → whenCompleted
       case x: HttpEntity.CloseDelimited ⇒
         val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
-        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
+        x.copy(data = newData).asInstanceOf[T] → whenCompleted
       case x: HttpEntity.IndefiniteLength ⇒
         val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
-        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
+        x.copy(data = newData).asInstanceOf[T] → whenCompleted
     }
 }

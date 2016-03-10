@@ -319,7 +319,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
     deliverySequenceNr = snapshot.currentDeliveryId
     val now = System.nanoTime()
     unconfirmed = snapshot.unconfirmedDeliveries.map(d ⇒
-      d.deliveryId -> Delivery(d.destination, d.message, now, 0))(breakOut)
+      d.deliveryId → Delivery(d.destination, d.message, now, 0))(breakOut)
   }
 
   /**

@@ -183,7 +183,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
           transportMapping = transports.groupBy {
             case (transport, _) ⇒ transport.schemeIdentifier
-          } map { case (k, v) ⇒ k -> v.toSet }
+          } map { case (k, v) ⇒ k → v.toSet }
 
           defaultAddress = transports.head._2
           addresses = transports.map { _._2 }.toSet
@@ -232,7 +232,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
   private[akka] def boundAddresses: Map[String, Set[Address]] = {
     transportMapping.map {
       case (scheme, transports) ⇒
-        scheme -> transports.flatMap {
+        scheme → transports.flatMap {
           // Need to do like this for binary compatibility reasons
           case (t, _) ⇒ Option(t.boundAddress)
         }
@@ -304,21 +304,21 @@ private[remote] object EndpointManager {
         case Some(Pass(e, _, _)) ⇒
           throw new IllegalArgumentException(s"Attempting to overwrite existing endpoint [$e] with [$endpoint]")
         case _ ⇒
-          addressToWritable += address -> Pass(endpoint, uid, refuseUid)
-          writableToAddress += endpoint -> address
+          addressToWritable += address → Pass(endpoint, uid, refuseUid)
+          writableToAddress += endpoint → address
           endpoint
       }
 
     def registerWritableEndpointUid(remoteAddress: Address, uid: Int): Unit = {
       addressToWritable.get(remoteAddress) match {
-        case Some(Pass(ep, _, refuseUid)) ⇒ addressToWritable += remoteAddress -> Pass(ep, Some(uid), refuseUid)
+        case Some(Pass(ep, _, refuseUid)) ⇒ addressToWritable += remoteAddress → Pass(ep, Some(uid), refuseUid)
         case other                        ⇒ // the GotUid might have lost the race with some failure
       }
     }
 
     def registerReadOnlyEndpoint(address: Address, endpoint: ActorRef, uid: Int): ActorRef = {
-      addressToReadonly += address -> ((endpoint, uid))
-      readonlyToAddress += endpoint -> address
+      addressToReadonly += address → ((endpoint, uid))
+      readonlyToAddress += endpoint → address
       endpoint
     }
 
@@ -371,7 +371,7 @@ private[remote] object EndpointManager {
      */
     def markAsFailed(endpoint: ActorRef, timeOfRelease: Deadline): Unit =
       if (isWritable(endpoint)) {
-        addressToWritable += writableToAddress(endpoint) -> Gated(timeOfRelease)
+        addressToWritable += writableToAddress(endpoint) → Gated(timeOfRelease)
         writableToAddress -= endpoint
       } else if (isReadOnly(endpoint)) {
         addressToReadonly -= readonlyToAddress(endpoint)
@@ -379,7 +379,7 @@ private[remote] object EndpointManager {
       }
 
     def markAsQuarantined(address: Address, uid: Int, timeOfRelease: Deadline): Unit =
-      addressToWritable += address -> Quarantined(uid, timeOfRelease)
+      addressToWritable += address → Quarantined(uid, timeOfRelease)
 
     def removePolicy(address: Address): Unit =
       addressToWritable -= address
@@ -509,13 +509,13 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       } map {
         case (a, t) if t.size > 1 ⇒
           throw new RemoteTransportException(s"There are more than one transports listening on local address [$a]", null)
-        case (a, t) ⇒ a -> t.head._1
+        case (a, t) ⇒ a → t.head._1
       }
       // Register to each transport as listener and collect mapping to addresses
       val transportsAndAddresses = results map {
         case (transport, address, promise) ⇒
           promise.success(ActorAssociationEventListener(self))
-          transport -> address
+          transport → address
       }
       addressesPromise.success(transportsAndAddresses)
     case ListensFailure(addressesPromise, cause) ⇒
@@ -582,7 +582,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       // Stop all matching stashed connections
       stashedInbound = stashedInbound.map {
         case (writer, associations) ⇒
-          writer -> associations.filter { assoc ⇒
+          writer → associations.filter { assoc ⇒
             val handle = assoc.association.asInstanceOf[AkkaProtocolHandle]
             val drop = matchesQuarantine(handle)
             if (drop) handle.disassociate()
@@ -677,7 +677,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case ia @ InboundAssociation(handle: AkkaProtocolHandle) ⇒ endpoints.readOnlyEndpointFor(handle.remoteAddress) match {
       case Some((endpoint, _)) ⇒
         pendingReadHandoffs.get(endpoint) foreach (_.disassociate())
-        pendingReadHandoffs += endpoint -> handle
+        pendingReadHandoffs += endpoint → handle
         endpoint ! EndpointWriter.TakeOver(handle, self)
         endpoints.writableEndpointWithPolicyFor(handle.remoteAddress) match {
           case Some(Pass(ep, _, _)) ⇒ ep ! ReliableDeliverySupervisor.Ungate
@@ -692,13 +692,13 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
             // to get an unstash event
             if (!writerIsIdle) {
               ep ! ReliableDeliverySupervisor.IsIdle
-              stashedInbound += ep -> (stashedInbound.getOrElse(ep, Vector.empty) :+ ia)
+              stashedInbound += ep → (stashedInbound.getOrElse(ep, Vector.empty) :+ ia)
             } else
               createAndRegisterEndpoint(handle, refuseUid = endpoints.refuseUid(handle.remoteAddress))
           case Some(Pass(ep, Some(uid), _)) ⇒
             if (handle.handshakeInfo.uid == uid) {
               pendingReadHandoffs.get(ep) foreach (_.disassociate())
-              pendingReadHandoffs += ep -> handle
+              pendingReadHandoffs += ep → handle
               ep ! EndpointWriter.StopReading(ep, self)
               ep ! ReliableDeliverySupervisor.Ungate
             } else {
@@ -743,7 +743,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
      */
     val transports: Seq[AkkaProtocolTransport] = for ((fqn, adapters, config) ← settings.Transports) yield {
 
-      val args = Seq(classOf[ExtendedActorSystem] -> context.system, classOf[Config] -> config)
+      val args = Seq(classOf[ExtendedActorSystem] → context.system, classOf[Config] → config)
 
       // Loads the driver -- the bottom element of the chain.
       // The chain at this point:

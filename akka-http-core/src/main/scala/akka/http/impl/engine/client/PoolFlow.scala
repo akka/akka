@@ -50,27 +50,24 @@ private object PoolFlow {
                        |   Merge   | <-------------------+     |                                  
                        |           | <-------------------------+                                  
                        +-----------+
-
     Conductor:
     - Maintains slot state overview by running a simple state machine per Connection Slot
     - Decides which slot will receive the next request from upstream according to current slot state and dispatch configuration
     - Forwards demand from selected slot to upstream
     - Always maintains demand for SlotEvents from the Connection Slots
     - Implemented as a sub-graph
-
     Connection Slot:
     - Wraps a low-level outgoing connection flow and (re-)materializes and uses it whenever necessary
     - Directly forwards demand from the underlying connection to the Conductor
     - Dispatches SlotEvents to the Conductor (via the SlotEventMerge)
     - Implemented as a sub-graph
-
     Response Merge:
     - Simple merge of the Connection Slots' outputs
-
   */
   def apply(connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
             remoteAddress: InetSocketAddress, settings: ConnectionPoolSettings, log: LoggingAdapter)(
-              implicit system: ActorSystem, fm: Materializer): Flow[RequestContext, ResponseContext, NotUsed] =
+    implicit
+    system: ActorSystem, fm: Materializer): Flow[RequestContext, ResponseContext, NotUsed] =
     Flow.fromGraph(GraphDSL.create[FlowShape[RequestContext, ResponseContext]]() { implicit b ⇒
       import settings._
       import GraphDSL.Implicits._

@@ -280,7 +280,7 @@ private[persistence] object AsyncWriteJournal {
         delivered = d.snr
         d.target.tell(d.msg, d.sender)
       } else {
-        delayed += (d.snr -> d)
+        delayed += (d.snr → d)
       }
       val ro = delayed.remove(delivered + 1)
       if (ro.isDefined) resequence(ro.get)

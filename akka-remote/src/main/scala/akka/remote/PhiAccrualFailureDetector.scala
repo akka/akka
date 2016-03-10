@@ -59,7 +59,8 @@ class PhiAccrualFailureDetector(
   val minStdDeviation: FiniteDuration,
   val acceptableHeartbeatPause: FiniteDuration,
   val firstHeartbeatEstimate: FiniteDuration)(
-    implicit clock: Clock) extends FailureDetector {
+  implicit
+  clock: Clock) extends FailureDetector {
 
   /**
    * Constructor that reads parameters from config.

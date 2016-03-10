@@ -47,7 +47,8 @@ class FlowMapBenchmark {
             type = akka.testkit.CallingThreadDispatcherConfigurator
           }
         }
-      }""".stripMargin).withFallback(ConfigFactory.load())
+      }""".stripMargin
+  ).withFallback(ConfigFactory.load())
 
   implicit val system = ActorSystem("test", config)
 

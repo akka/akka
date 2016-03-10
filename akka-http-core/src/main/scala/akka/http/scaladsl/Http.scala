@@ -233,7 +233,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   private def _outgoingTlsConnectionLayer(host: String, port: Int, localAddress: Option[InetSocketAddress],
                                           settings: ClientConnectionSettings, connectionContext: ConnectionContext,
                                           log: LoggingAdapter): Flow[SslTlsOutbound, SslTlsInbound, Future[OutgoingConnection]] = {
-    val tlsStage = sslTlsStage(connectionContext, Client, Some(host -> port))
+    val tlsStage = sslTlsStage(connectionContext, Client, Some(host → port))
     val transportFlow = Tcp().outgoingConnection(new InetSocketAddress(host, port), localAddress,
       settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
 
@@ -320,7 +320,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * object of type `T` from the application which is emitted together with the corresponding response.
    */
   private[akka] def newHostConnectionPool[T](setup: HostConnectionPoolSetup)(
-    implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+    implicit
+    fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
     val gatewayFuture = FastFuture.successful(new PoolGateway(setup, Promise()))
     gatewayClientFlow(setup, gatewayFuture)
   }
@@ -389,7 +390,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * object of type `T` from the application which is emitted together with the corresponding response.
    */
   private def cachedHostConnectionPool[T](setup: HostConnectionPoolSetup)(
-    implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    implicit
+    fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
     gatewayClientFlow(setup, cachedGateway(setup))
 
   /**
@@ -412,7 +414,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   def superPool[T](connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
                    settings: ConnectionPoolSettings = defaultConnectionPoolSettings,
                    log: LoggingAdapter = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
-    clientFlow[T](settings) { request ⇒ request -> cachedGateway(request, settings, connectionContext, log) }
+    clientFlow[T](settings) { request ⇒ request → cachedGateway(request, settings, connectionContext, log) }
 
   /**
    * Fires a single [[HttpRequest]] across the (cached) host connection pool for the request's
@@ -588,12 +590,14 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   private def gatewayClientFlow[T](hcps: HostConnectionPoolSetup,
                                    gatewayFuture: Future[PoolGateway])(
-                                     implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
-    clientFlow[T](hcps.setup.settings)(_ -> gatewayFuture)
+    implicit
+    fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    clientFlow[T](hcps.setup.settings)(_ → gatewayFuture)
       .mapMaterializedValue(_ ⇒ HostConnectionPool(hcps)(gatewayFuture))
 
   private def clientFlow[T](settings: ConnectionPoolSettings)(f: HttpRequest ⇒ (HttpRequest, Future[PoolGateway]))(
-    implicit system: ActorSystem, fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] = {
+    implicit
+    system: ActorSystem, fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] = {
     // a connection pool can never have more than pipeliningLimit * maxConnections requests in flight at any point
     val parallelism = settings.pipeliningLimit * settings.maxConnections
     Flow[(HttpRequest, T)].mapAsyncUnordered(parallelism) {
@@ -602,7 +606,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
         val result = Promise[(Try[HttpResponse], T)]() // TODO: simplify to `transformWith` when on Scala 2.12
         gatewayFuture
           .flatMap(_(effectiveRequest))(fm.executionContext)
-          .onComplete(responseTry ⇒ result.success(responseTry -> userContext))(fm.executionContext)
+          .onComplete(responseTry ⇒ result.success(responseTry → userContext))(fm.executionContext)
         result.future
     }
   }

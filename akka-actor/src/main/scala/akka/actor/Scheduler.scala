@@ -72,7 +72,8 @@ trait Scheduler {
   final def schedule(
     initialDelay: FiniteDuration,
     interval: FiniteDuration)(f: ⇒ Unit)(
-      implicit executor: ExecutionContext): Cancellable =
+    implicit
+    executor: ExecutionContext): Cancellable =
     schedule(initialDelay, interval, new Runnable { override def run = f })
 
   /**
@@ -118,7 +119,8 @@ trait Scheduler {
    * Scala API
    */
   final def scheduleOnce(delay: FiniteDuration)(f: ⇒ Unit)(
-    implicit executor: ExecutionContext): Cancellable =
+    implicit
+    executor: ExecutionContext): Cancellable =
     scheduleOnce(delay, new Runnable { override def run = f })
 
   /**

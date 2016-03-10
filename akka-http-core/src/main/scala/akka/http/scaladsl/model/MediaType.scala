@@ -274,7 +274,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
 
   private def register[T <: MediaType](mediaType: T): T = {
     registerFileExtensions(mediaType)
-    register(mediaType.mainType.toRootLowerCase -> mediaType.subType.toRootLowerCase, mediaType)
+    register(mediaType.mainType.toRootLowerCase → mediaType.subType.toRootLowerCase, mediaType)
   }
 
   import MediaType._  

@@ -145,7 +145,7 @@ object CharUtils {
 
     phase1(math.abs(long), endIndex)
 
-    // for large numbers we bite the bullet of performing one division every two digits 
+    // for large numbers we bite the bullet of performing one division every two digits
     @tailrec def phase1(l: Long, ix: Int): Unit =
       if (l > 65535L) {
         val q = l / 100

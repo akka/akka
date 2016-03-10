@@ -4,7 +4,7 @@
 
 package akka.stream
 
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import java.util.concurrent.TimeUnit

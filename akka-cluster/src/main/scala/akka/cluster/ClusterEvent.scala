@@ -395,7 +395,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
       unreachable = unreachable,
       seenBy = latestGossip.seenBy.map(_.address),
       leader = latestGossip.leader(selfUniqueAddress).map(_.address),
-      roleLeaderMap = latestGossip.allRoles.map(r ⇒ r -> latestGossip.roleLeader(r, selfUniqueAddress)
+      roleLeaderMap = latestGossip.allRoles.map(r ⇒ r → latestGossip.roleLeader(r, selfUniqueAddress)
         .map(_.address))(collection.breakOut))
     receiver ! state
   }

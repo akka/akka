@@ -627,7 +627,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
           if (nodes(b.owner)) {
             val myBucket = registry(b.owner)
             if (b.version > myBucket.version) {
-              registry += (b.owner -> myBucket.copy(version = b.version, content = myBucket.content ++ b.content))
+              registry += (b.owner → myBucket.copy(version = b.version, content = myBucket.content ++ b.content))
             }
           }
         }
@@ -710,8 +710,8 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
   def put(key: String, valueOption: Option[ActorRef]): Unit = {
     val bucket = registry(selfAddress)
     val v = nextVersion()
-    registry += (selfAddress -> bucket.copy(version = v,
-      content = bucket.content + (key -> ValueHolder(v, valueOption))))
+    registry += (selfAddress → bucket.copy(version = v,
+      content = bucket.content + (key → ValueHolder(v, valueOption))))
   }
 
   def getCurrentTopics(): Set[String] = {
@@ -734,11 +734,11 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
 
   def mkKey(path: ActorPath): String = Internal.mkKey(path)
 
-  def myVersions: Map[Address, Long] = registry.map { case (owner, bucket) ⇒ (owner -> bucket.version) }
+  def myVersions: Map[Address, Long] = registry.map { case (owner, bucket) ⇒ (owner → bucket.version) }
 
   def collectDelta(otherVersions: Map[Address, Long]): immutable.Iterable[Bucket] = {
     // missing entries are represented by version 0
-    val filledOtherVersions = myVersions.map { case (k, _) ⇒ k -> 0L } ++ otherVersions
+    val filledOtherVersions = myVersions.map { case (k, _) ⇒ k → 0L } ++ otherVersions
     var count = 0
     filledOtherVersions.collect {
       case (owner, v) if registry(owner).version > v && count < maxDeltaElements ⇒
@@ -782,7 +782,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
           case (key, ValueHolder(version, None)) if (bucket.version - version > removedTimeToLiveMillis) ⇒ key
         }
         if (oldRemoved.nonEmpty)
-          registry += owner -> bucket.copy(content = bucket.content -- oldRemoved)
+          registry += owner → bucket.copy(content = bucket.content -- oldRemoved)
     }
   }
 

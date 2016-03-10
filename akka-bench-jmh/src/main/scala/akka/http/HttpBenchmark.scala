@@ -28,7 +28,8 @@ class HttpBenchmark {
     """
       akka {
         loglevel = "ERROR"
-      }""".stripMargin).withFallback(ConfigFactory.load())
+      }""".stripMargin
+  ).withFallback(ConfigFactory.load())
 
   implicit val system = ActorSystem("HttpBenchmark", config)
   implicit val materializer = ActorMaterializer()

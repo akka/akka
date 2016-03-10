@@ -235,7 +235,7 @@ object PersistentFSM {
    * This extractor is just convenience for matching a (S, S) pair, including a
    * reminder what the new state is.
    */
-  object -> {
+  object → {
     def unapply[S](in: (S, S)) = Some(in)
   }
 

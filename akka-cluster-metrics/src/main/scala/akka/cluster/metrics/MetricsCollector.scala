@@ -60,7 +60,7 @@ private[metrics] object MetricsCollector {
     def create(provider: String) = TryNative {
       log.debug(s"Trying ${provider}.")
       system.asInstanceOf[ExtendedActorSystem].dynamicAccess
-        .createInstanceFor[MetricsCollector](provider, List(classOf[ActorSystem] -> system)).get
+        .createInstanceFor[MetricsCollector](provider, List(classOf[ActorSystem] → system)).get
     }
 
     val collector = if (useCustom)

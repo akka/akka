@@ -192,8 +192,8 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
     case Event(ToServer(msg), d @ Data(Some(channel), None)) ⇒
       channel.write(msg)
       val token = msg match {
-        case EnterBarrier(barrier, timeout) ⇒ Some(barrier -> sender())
-        case GetAddress(node)               ⇒ Some(node.name -> sender())
+        case EnterBarrier(barrier, timeout) ⇒ Some(barrier → sender())
+        case GetAddress(node)               ⇒ Some(node.name → sender())
         case _                              ⇒ None
       }
       stay using d.copy(runningOp = token)

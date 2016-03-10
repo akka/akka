@@ -3,7 +3,6 @@
  */
 package akka.routing
 
-
 import scala.collection.immutable
 import akka.ConfigurationException
 import akka.actor.ActorContext

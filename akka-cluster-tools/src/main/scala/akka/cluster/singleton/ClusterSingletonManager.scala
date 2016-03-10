@@ -406,7 +406,7 @@ class ClusterSingletonManager(
   var removed = Map.empty[Address, Deadline]
 
   def addRemoved(address: Address): Unit =
-    removed += address -> (Deadline.now + 15.minutes)
+    removed += address → (Deadline.now + 15.minutes)
 
   def cleanupOverdueNotMemberAnyMore(): Unit = {
     removed = removed filter { case (address, deadline) ⇒ deadline.hasTimeLeft }
@@ -698,24 +698,24 @@ class ClusterSingletonManager(
   }
 
   onTransition {
-    case from -> to ⇒ logInfo("ClusterSingletonManager state change [{} -> {}]", from, to)
+    case from → to ⇒ logInfo("ClusterSingletonManager state change [{} -> {}]", from, to)
   }
 
   onTransition {
-    case _ -> BecomingOldest ⇒ setTimer(HandOverRetryTimer, HandOverRetry(1), handOverRetryInterval, repeat = false)
+    case _ → BecomingOldest ⇒ setTimer(HandOverRetryTimer, HandOverRetry(1), handOverRetryInterval, repeat = false)
   }
 
   onTransition {
-    case BecomingOldest -> _ ⇒ cancelTimer(HandOverRetryTimer)
-    case WasOldest -> _      ⇒ cancelTimer(TakeOverRetryTimer)
+    case BecomingOldest → _ ⇒ cancelTimer(HandOverRetryTimer)
+    case WasOldest → _      ⇒ cancelTimer(TakeOverRetryTimer)
   }
 
   onTransition {
-    case _ -> (Younger | Oldest) ⇒ getNextOldestChanged()
+    case _ → (Younger | Oldest) ⇒ getNextOldestChanged()
   }
 
   onTransition {
-    case _ -> (Younger | End) if removed.contains(cluster.selfAddress) ⇒
+    case _ → (Younger | End) if removed.contains(cluster.selfAddress) ⇒
       logInfo("Self removed, stopping ClusterSingletonManager")
       // note that FSM.stop() can't be used in onTransition
       context.stop(self)

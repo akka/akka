@@ -300,7 +300,7 @@ private[engine] final class HttpHeaderParser private (
         val prefixedLines = lines.zipWithIndex map {
           case (line, ix) ⇒ (if (ix < mainIx) p1 else if (ix > mainIx) p3 else p2) :: line
         }
-        prefixedLines -> mainIx
+        prefixedLines → mainIx
       }
       def branchLines(dataIx: Int, p1: String, p2: String, p3: String) = branchData(dataIx) match {
         case 0         ⇒ Seq.empty
@@ -315,9 +315,9 @@ private[engine] final class HttpHeaderParser private (
             case ValueBranch(_, valueParser, branchRootNodeIx, _) ⇒
               val pad = " " * (valueParser.headerName.length + 3)
               recurseAndPrefixLines(branchRootNodeIx, pad, "(" + valueParser.headerName + ")-", pad)
-            case vp: HeaderValueParser ⇒ Seq(" (" :: vp.headerName :: ")" :: Nil) -> 0
-            case value: RawHeader      ⇒ Seq(" *" :: value.toString :: Nil) -> 0
-            case value                 ⇒ Seq(" " :: value.toString :: Nil) -> 0
+            case vp: HeaderValueParser ⇒ Seq(" (" :: vp.headerName :: ")" :: Nil) → 0
+            case value: RawHeader      ⇒ Seq(" *" :: value.toString :: Nil) → 0
+            case value                 ⇒ Seq(" " :: value.toString :: Nil) → 0
           }
           case nodeChar ⇒
             val rix = rowIx(msb)
@@ -350,7 +350,7 @@ private[engine] final class HttpHeaderParser private (
       node >>> 8 match {
         case 0 ⇒ build(nodeIx + 1)
         case msb if (node & 0xFF) == 0 ⇒ values(msb - 1) match {
-          case ValueBranch(_, parser, _, count) ⇒ Map(parser.headerName -> count)
+          case ValueBranch(_, parser, _, count) ⇒ Map(parser.headerName → count)
           case _                                ⇒ Map.empty
         }
         case msb ⇒
@@ -481,7 +481,7 @@ private[http] object HttpHeaderParser {
           onIllegalHeader(error.withSummaryPrepended(s"Illegal '$headerName' header"))
           RawHeader(headerName, trimmedHeaderValue)
       }
-      header -> endIx
+      header → endIx
     }
   }
 
@@ -489,7 +489,7 @@ private[http] object HttpHeaderParser {
     extends HeaderValueParser(headerName, maxValueCount) {
     def apply(hhp: HttpHeaderParser, input: ByteString, valueStart: Int, onIllegalHeader: ErrorInfo ⇒ Unit): (HttpHeader, Int) = {
       val (headerValue, endIx) = scanHeaderValue(hhp, input, valueStart, valueStart + maxHeaderValueLength + 2)()
-      RawHeader(headerName, headerValue.trim) -> endIx
+      RawHeader(headerName, headerValue.trim) → endIx
     }
   }
 

@@ -550,7 +550,7 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
       implicit val timeout: Timeout = waitMax
       Future.sequence(aliveRegions.map { regionActor ⇒
         (regionActor ? ShardRegion.GetShardRegionStats).mapTo[ShardRegion.ShardRegionStats]
-          .map(stats ⇒ regionActor -> stats)
+          .map(stats ⇒ regionActor → stats)
       }).map { allRegionStats ⇒
         ShardRegion.ClusterShardingStats(allRegionStats.map {
           case (region, stats) ⇒
@@ -559,7 +559,7 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
               if (regionAddress.hasLocalScope && regionAddress.system == cluster.selfAddress.system) cluster.selfAddress
               else regionAddress
 
-            address -> stats
+            address → stats
         }.toMap)
       }.recover {
         case x: AskTimeoutException ⇒ ShardRegion.ClusterShardingStats(Map.empty)

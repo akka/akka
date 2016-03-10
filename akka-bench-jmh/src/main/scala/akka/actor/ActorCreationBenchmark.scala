@@ -11,11 +11,8 @@ import scala.concurrent.Await
 /*
 regex checking:
 [info] a.a.ActorCreationBenchmark.synchronousStarting       ss    120000       28.285        0.481       us
-
 hand checking:
 [info] a.a.ActorCreationBenchmark.synchronousStarting       ss    120000       21.496        0.502       us
-
-
 */
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.SingleShotTime))

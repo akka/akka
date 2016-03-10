@@ -77,7 +77,7 @@ private[http] object StreamUtils {
         ctx.fail(cause)
       }
     }
-    source.transform(() ⇒ transformer) -> promise.future
+    source.transform(() ⇒ transformer) → promise.future
   }
 
   def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString, NotUsed] = {

@@ -595,9 +595,9 @@ object Uri {
   }
 
   private val defaultPorts: Map[String, Int] =
-    Map("ftp" -> 21, "ssh" -> 22, "telnet" -> 23, "smtp" -> 25, "domain" -> 53, "tftp" -> 69, "http" -> 80, "ws" -> 80,
-      "pop3" -> 110, "nntp" -> 119, "imap" -> 143, "snmp" -> 161, "ldap" -> 389, "https" -> 443, "wss" -> 443, "imaps" -> 993,
-      "nfs" -> 2049).withDefaultValue(-1)
+    Map("ftp" → 21, "ssh" → 22, "telnet" → 23, "smtp" → 25, "domain" → 53, "tftp" → 69, "http" → 80, "ws" → 80,
+      "pop3" → 110, "nntp" → 119, "imap" → 143, "snmp" → 161, "ldap" → 389, "https" → 443, "wss" → 443, "imaps" → 993,
+      "nfs" → 2049).withDefaultValue(-1)
 
   sealed trait ParsingMode extends akka.http.javadsl.model.Uri.ParsingMode
   object ParsingMode {

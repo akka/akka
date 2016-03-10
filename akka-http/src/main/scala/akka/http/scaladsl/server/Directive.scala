@@ -44,12 +44,11 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
   def as[A](constructor: ConstructFromTuple[L, A]): Directive1[A] = {
     def validatedMap[R](f: L ⇒ R)(implicit tupler: Tupler[R]): Directive[tupler.Out] =
       Directive[tupler.Out] { inner ⇒
-        tapply { values ⇒
-          ctx ⇒
-            try inner(tupler(f(values)))(ctx)
-            catch {
-              case e: IllegalArgumentException ⇒ ctx.reject(ValidationRejection(e.getMessage.nullAsEmpty, Some(e)))
-            }
+        tapply { values ⇒ ctx ⇒
+          try inner(tupler(f(values)))(ctx)
+          catch {
+            case e: IllegalArgumentException ⇒ ctx.reject(ValidationRejection(e.getMessage.nullAsEmpty, Some(e)))
+          }
         }
       }(tupler.OutIsTuple)
 
@@ -88,14 +87,13 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
    * **before the inner route was applied**.
    */
   def recover[R >: L: Tuple](recovery: immutable.Seq[Rejection] ⇒ Directive[R]): Directive[R] =
-    Directive[R] { inner ⇒
-      ctx ⇒
-        import ctx.executionContext
-        @volatile var rejectedFromInnerRoute = false
-        tapply({ list ⇒ c ⇒ rejectedFromInnerRoute = true; inner(list)(c) })(ctx).fast.flatMap {
-          case RouteResult.Rejected(rejections) if !rejectedFromInnerRoute ⇒ recovery(rejections).tapply(inner)(ctx)
-          case x ⇒ FastFuture.successful(x)
-        }
+    Directive[R] { inner ⇒ ctx ⇒
+      import ctx.executionContext
+      @volatile var rejectedFromInnerRoute = false
+      tapply({ list ⇒ c ⇒ rejectedFromInnerRoute = true; inner(list)(c) })(ctx).fast.flatMap {
+        case RouteResult.Rejected(rejections) if !rejectedFromInnerRoute ⇒ recovery(rejections).tapply(inner)(ctx)
+        case x ⇒ FastFuture.successful(x)
+      }
     }
 
   /**

@@ -38,7 +38,6 @@ private object PoolSlot {
   /*
     Stream Setup
     ============
-
     Request-   +-----------+              +-------------+              +-------------+     +------------+
     Context    | Slot-     |  List[       |   flatten   |  Processor-  |   doubler   |     | SlotEvent- |  Response-
     +--------->| Processor +------------->| (MapConcat) +------------->| (MapConcat) +---->| Split      +------------->
