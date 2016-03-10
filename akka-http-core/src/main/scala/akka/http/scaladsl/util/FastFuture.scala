@@ -12,8 +12,8 @@ import scala.concurrent.duration.Duration
 import scala.concurrent._
 
 /**
- * Provides alternative implementations of the basic transformation operations defined on [[Future]],
- * which try to avoid scheduling to an [[ExecutionContext]] if possible, i.e. if the given future
+ * Provides alternative implementations of the basic transformation operations defined on [[scala.concurrent.Future]],
+ * which try to avoid scheduling to an [[scala.concurrent.ExecutionContext]] if possible, i.e. if the given future
  * value is already present.
  */
 class FastFuture[A](val future: Future[A]) extends AnyVal {

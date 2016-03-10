@@ -16,13 +16,13 @@ import FastFuture._
 
 /**
  * Read-only abstraction on top of `application/x-www-form-urlencoded` and multipart form data,
- * allowing joint unmarshalling access to either kind, **if** you supply both, a [[FromStringUnmarshaller]]
- * as well as a [[FromEntityUnmarshaller]] for the target type `T`.
+ * allowing joint unmarshalling access to either kind, **if** you supply both, a [[akka.http.scaladsl.unmarshalling.FromStringUnmarshaller]]
+ * as well as a [[akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller]] for the target type `T`.
  * Note: In order to allow for random access to the field values streamed multipart form data are strictified!
  * Don't use this abstraction on potentially unbounded forms (e.g. large file uploads).
  *
  * If you only need to consume one type of form (`application/x-www-form-urlencoded` *or* multipart) then
- * simply unmarshal directly to the respective form abstraction ([[FormData]] or [[Multipart.FormData]])
+ * simply unmarshal directly to the respective form abstraction ([[akka.http.scaladsl.model.FormData]] or [[akka.http.scaladsl.model.Multipart.FormData]])
  * rather than going through [[StrictForm]].
  *
  * Simple usage example:

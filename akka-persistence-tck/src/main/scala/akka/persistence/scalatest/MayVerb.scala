@@ -31,7 +31,7 @@ trait MayVerb {
      * Block of tests which MAY pass, and if not should be ignored.
      * Such as rules which may be optionally implemented by Journals.
      *
-     * MUST be used in conjunction with [[optional]] to provide explanation as to why it may be ok to fail this spec.
+     * MUST be used in conjunction with [[MayVerb#optional]] to provide explanation as to why it may be ok to fail this spec.
      *
      * The word `MAY` is to be understood as defined in RFC 2119
      *

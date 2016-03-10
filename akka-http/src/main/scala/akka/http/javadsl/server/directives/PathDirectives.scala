@@ -19,7 +19,7 @@ abstract class PathDirectives extends MiscDirectives {
    * The matcher has to match the remaining path completely.
    * If matched the value extracted by the PathMatchers is extracted on the directive level.
    *
-   * Each of Each of the arguments s must either be an instance of [[PathMatcher]] or a constant String
+   * Each of Each of the arguments s must either be an instance of [[akka.http.javadsl.server.values.PathMatcher]] or a constant String
    * that will be automatically converted using `PathMatcher.segment`.
    */
   @varargs
@@ -31,7 +31,7 @@ abstract class PathDirectives extends MiscDirectives {
    * The matcher has to match a prefix of the remaining path.
    * If matched the value extracted by the PathMatcher is extracted on the directive level.
    *
-   * Each of the arguments  must either be an instance of [[PathMatcher]] or a constant String
+   * Each of the arguments  must either be an instance of [[akka.http.javadsl.server.values.PathMatcher]] or a constant String
    * that will be automatically converted using `PathMatcher.segment`.
    */
   @varargs
@@ -39,10 +39,10 @@ abstract class PathDirectives extends MiscDirectives {
     RawPathPrefixForMatchers(joinWithSlash(convertMatchers(matchers)))
 
   /**
-   * Checks whether the unmatchedPath of the [[RequestContext]] has a prefix matched by the
+   * Checks whether the unmatchedPath of the [[akka.http.javadsl.server.RequestContext]] has a prefix matched by the
    * given PathMatcher. In analogy to the `pathPrefix` directive a leading slash is implied.
    *
-   * Each of the arguments  must either be an instance of [[PathMatcher]] or a constant String
+   * Each of the arguments  must either be an instance of [[akka.http.javadsl.server.values.PathMatcher]] or a constant String
    * that will be automatically converted using `PathMatcher.segment`.
    */
   @varargs
@@ -51,11 +51,11 @@ abstract class PathDirectives extends MiscDirectives {
 
   /**
    * Applies the given matcher directly to a prefix of the unmatched path of the
-   * [[RequestContext]] (i.e. without implicitly consuming a leading slash).
+   * [[akka.http.javadsl.server.RequestContext]] (i.e. without implicitly consuming a leading slash).
    * The matcher has to match a prefix of the remaining path.
    * If matched the value extracted by the PathMatcher is extracted on the directive level.
    *
-   * Each of the arguments  must either be an instance of [[PathMatcher]] or a constant String
+   * Each of the arguments  must either be an instance of [[akka.http.javadsl.server.values.PathMatcher]] or a constant String
    * that will be automatically converted using `PathMatcher.segment`.
    */
   @varargs
@@ -63,11 +63,11 @@ abstract class PathDirectives extends MiscDirectives {
     RawPathPrefixForMatchers(convertMatchers(matchers))
 
   /**
-   * Checks whether the unmatchedPath of the [[RequestContext]] has a prefix matched by the
+   * Checks whether the unmatchedPath of the [[akka.http.javadsl.server.RequestContext]] has a prefix matched by the
    * given PathMatcher. However, as opposed to the `pathPrefix` directive the matched path is not
    * actually "consumed".
    *
-   * Each of the arguments  must either be an instance of [[PathMatcher]] or a constant String
+   * Each of the arguments  must either be an instance of [[akka.http.javadsl.server.values.PathMatcher]] or a constant String
    * that will be automatically converted using `PathMatcher.segment`.
    */
   @varargs
@@ -75,12 +75,12 @@ abstract class PathDirectives extends MiscDirectives {
     RawPathPrefixTestForMatchers(convertMatchers(matchers))
 
   /**
-   * Applies the given PathMatchers to a suffix of the remaining unmatchedPath of the [[RequestContext]].
+   * Applies the given PathMatchers to a suffix of the remaining unmatchedPath of the [[akka.http.javadsl.server.RequestContext]].
    * If matched the value extracted by the PathMatchers is extracted and the matched parts of the path are consumed.
    * Note that, for efficiency reasons, the given PathMatchers must match the desired suffix in reversed-segment
    * order, i.e. `pathSuffix("baz" / "bar")` would match `/foo/bar/baz`!
    *
-   * Each of the arguments  must either be an instance of [[PathMatcher]] or a constant String
+   * Each of the arguments  must either be an instance of [[akka.http.javadsl.server.values.PathMatcher]] or a constant String
    * that will be automatically converted using `PathMatcher.segment`.
    */
   @varargs
@@ -88,13 +88,13 @@ abstract class PathDirectives extends MiscDirectives {
     Directives.custom(RouteStructure.PathSuffix(convertMatchers(matchers)))
 
   /**
-   * Checks whether the unmatchedPath of the [[RequestContext]] has a suffix matched by the
+   * Checks whether the unmatchedPath of the [[akka.http.javadsl.server.RequestContext]] has a suffix matched by the
    * given PathMatcher. However, as opposed to the pathSuffix directive the matched path is not
    * actually "consumed".
    * Note that, for efficiency reasons, the given PathMatcher must match the desired suffix in reversed-segment
    * order, i.e. `pathSuffixTest("baz" / "bar")` would match `/foo/bar/baz`!
    *
-   * Each of the arguments  must either be an instance of [[PathMatcher]] or a constant String
+   * Each of the arguments  must either be an instance of [[akka.http.javadsl.server.values.PathMatcher]] or a constant String
    * that will be automatically converted using `PathMatcher.segment`.
    */
   @varargs
@@ -102,7 +102,7 @@ abstract class PathDirectives extends MiscDirectives {
     Directives.custom(RouteStructure.PathSuffixTest(convertMatchers(matchers)))
 
   /**
-   * Rejects the request if the unmatchedPath of the [[RequestContext]] is non-empty,
+   * Rejects the request if the unmatchedPath of the [[akka.http.javadsl.server.RequestContext]] is non-empty,
    * or said differently: only passes on the request to its inner route if the request path
    * has been matched completely.
    */
@@ -114,7 +114,7 @@ abstract class PathDirectives extends MiscDirectives {
    *
    * Note that trailing slash and non-trailing slash URLs are '''not''' the same, although they often serve
    * the same content. It is recommended to serve only one URL version and make the other redirect to it using
-   * [[redirectToTrailingSlashIfMissing]] or [[redirectToNoTrailingSlashIfPresent]] directive.
+   * [[#redirectToTrailingSlashIfMissing]] or [[#redirectToNoTrailingSlashIfPresent]] directive.
    *
    * For example:
    * {{{
@@ -147,7 +147,7 @@ abstract class PathDirectives extends MiscDirectives {
   /**
    * If the request path doesn't end with a slash, redirect to the same uri with trailing slash in the path.
    *
-   * '''Caveat''': [[path]] without trailing slash and [[pathEnd]] directives will not match inside of this directive.
+   * '''Caveat''': [[#path]] without trailing slash and [[#pathEnd]] directives will not match inside of this directive.
    */
   @varargs
   def redirectToTrailingSlashIfMissing(redirectionStatusCode: StatusCode, innerRoute: Route, moreInnerRoutes: Route*): Route =
@@ -156,7 +156,7 @@ abstract class PathDirectives extends MiscDirectives {
   /**
    * If the request path ends with a slash, redirect to the same uri without trailing slash in the path.
    *
-   * '''Caveat''': [[pathSingleSlash]] directive will not match inside of this directive.
+   * '''Caveat''': [[#pathSingleSlash]] directive will not match inside of this directive.
    */
   @varargs
   def redirectToNoTrailingSlashIfPresent(redirectionStatusCode: StatusCode, innerRoute: Route, moreInnerRoutes: Route*): Route =

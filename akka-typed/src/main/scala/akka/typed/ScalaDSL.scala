@@ -185,7 +185,7 @@ object ScalaDSL {
   /**
    * This type of Behavior is created from a partial function from the declared
    * message type to the next behavior, flagging all unmatched messages as
-   * [[Unhandled]]. All system signals are
+   * [[ScalaDSL.Unhandled]]. All system signals are
    * ignored by this behavior, which implies that a failure of a child actor
    * will be escalated unconditionally.
    *
