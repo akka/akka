@@ -155,7 +155,7 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
    * http://tools.ietf.org/html/rfc7230#section-5.5
    *
    * Throws an [[IllegalUriException]] if the URI is relative and the `headers` don't
-   * include a valid [[Host]] header or if URI authority and [[Host]] header don't match.
+   * include a valid [[akka.http.scaladsl.model.headers.Host]] header or if URI authority and [[akka.http.scaladsl.model.headers.Host]] header don't match.
    */
   def effectiveUri(securedConnection: Boolean, defaultHostHeader: Host = Host.empty): Uri =
     HttpRequest.effectiveUri(uri, headers, securedConnection, defaultHostHeader)

@@ -23,7 +23,7 @@ import akka.util.BoxedType
  * uninstall it.
  *
  * You should always prefer the filter methods in the package object
- * (see [[akka.testkit]] `filterEvents` and `filterException`) or on the
+ * (see `akka.testkit` `filterEvents` and `filterException`) or on the
  * EventFilter implementations.
  */
 sealed trait TestEvent
@@ -34,7 +34,7 @@ sealed trait TestEvent
  * uninstall it.
  *
  * You should always prefer the filter methods in the package object
- * (see [[akka.testkit]] `filterEvents` and `filterException`) or on the
+ * (see `akka.testkit` `filterEvents` and `filterException`) or on the
  * EventFilter implementations.
  */
 object TestEvent {
@@ -141,7 +141,7 @@ abstract class EventFilter(occurrences: Int) {
  * that you can keep your test run’s console output clean and do not miss real
  * error messages.
  *
- * '''Also have a look at the [[akka.testkit]] package object’s `filterEvents` and
+ * '''Also have a look at the `akka.testkit` package object’s `filterEvents` and
  * `filterException` methods.'''
  *
  * The source filters do accept `Class[_]` arguments, matching any
