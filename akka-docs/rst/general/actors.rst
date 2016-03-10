@@ -10,9 +10,13 @@ encounter while implementing it. For a more in depth reference with all the
 details please refer to
 :ref:`Actors (Scala) <actors-scala>` and :ref:`Untyped Actors (Java) <untyped-actors-java>`.
 
-An actor is a container for `State`_, `Behavior`_, a `Mailbox`_, `Children`_
+An actor is a container for `State`_, `Behavior`_, a `Mailbox`_, `Child Actors`_
 and a `Supervisor Strategy`_. All of this is encapsulated behind an `Actor
-Reference`_. Finally, this happens `When an Actor Terminates`_.
+Reference`_. One noteworthy aspect is that actors have an explicit lifecycle,
+they are not automatically destroyed when no longer referenced; after having
+created one, it is your responsibility to make sure that it will eventually be
+terminated as well—which also gives you control over how resources are released
+`When an Actor Terminates`_.
 
 Actor Reference
 ---------------
@@ -99,8 +103,8 @@ dequeued message, there is no scanning the mailbox for the next matching one.
 Failure to handle a message will typically be treated as a failure, unless this
 behavior is overridden.
 
-Children
---------
+Child Actors
+------------
 
 Each actor is potentially a supervisor: if it creates children for delegating
 sub-tasks, it will automatically supervise them. The list of children is
