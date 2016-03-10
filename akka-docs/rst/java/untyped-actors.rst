@@ -249,6 +249,13 @@ name of the new incarnation will be the same as the previous one but the
 UIDs will differ. An actor can be stopped by the actor itself, another actor
 or the ``ActorSystem`` (see :ref:`stopping-actors-java`).
 
+.. note::
+
+   It is important to note that Actors do not stop automatically when no longer
+   referenced, every Actor that is created must also explicitly be destroyed.
+   The only simplification is that stopping a parent Actor will also recursively
+   stop all the child Actors that this parent has created.
+
 An ``ActorRef`` always represents an incarnation (path and UID) not just a
 given path. Therefore if an actor is stopped and a new one with the same
 name is created an ``ActorRef`` of the old incarnation will not point
