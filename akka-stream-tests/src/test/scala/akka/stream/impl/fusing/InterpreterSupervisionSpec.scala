@@ -302,27 +302,6 @@ class InterpreterSupervisionSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnNext(3)))
     }
 
-    "restart when Collect throws" in {
-      // TODO can't get type inference to work with `pf` inlined
-      val pf: PartialFunction[Int, Int] =
-        { case x: Int ⇒ if (x == 0) throw TE else x }
-      new OneBoundedSetup[Int](Seq(
-        Collect(pf, restartingDecider))) {
-        downstream.requestOne()
-        lastEvents() should be(Set(RequestOne))
-        upstream.onNext(2)
-        lastEvents() should be(Set(OnNext(2)))
-
-        downstream.requestOne()
-        lastEvents() should be(Set(RequestOne))
-        upstream.onNext(0) // boom
-        lastEvents() should be(Set(RequestOne))
-
-        upstream.onNext(3)
-        lastEvents() should be(Set(OnNext(3)))
-      }
-    }
-
     "resume when Scan throws" in new OneBoundedSetup[Int](Seq(
       Scan(1, (acc: Int, x: Int) ⇒ if (x == 10) throw TE else acc + x, resumingDecider))) {
       downstream.requestOne()
