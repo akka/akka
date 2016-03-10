@@ -4,3 +4,5 @@ AkkaBuild.defaultSettings
 AkkaBuild.dontPublishSettings
 Formatting.formatSettings
 Dependencies.actorTests
+
+disablePlugins(MimaPlugin)

@@ -6,3 +6,5 @@ Formatting.formatSettings
 Dependencies.persistenceShared
 
 fork in Test := true
+
+disablePlugins(MimaPlugin)
