@@ -6,9 +6,11 @@ package akka.http.scaladsl.model
 
 import java.net.{ InetSocketAddress, UnknownHostException, InetAddress }
 import java.util.Optional
+import akka.http.impl.model.JavaInitialization
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
+import akka.util.Unsafe
 
 sealed abstract class RemoteAddress extends jm.RemoteAddress with ValueRenderable {
   def toOption: Option[InetAddress]
@@ -53,4 +55,8 @@ object RemoteAddress {
     require(bytes.length == 4 || bytes.length == 16)
     try IP(InetAddress.getByAddress(bytes)) catch { case _: UnknownHostException ⇒ Unknown }
   }
+
+  JavaInitialization.initializeStaticFieldWith(
+    Unknown, classOf[jm.RemoteAddress].getField("UNKNOWN"))
+
 }

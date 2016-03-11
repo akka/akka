@@ -34,7 +34,7 @@ public abstract class RemoteAddress {
     /**
      * @deprecated because of troublesome initialisation order (with regards to scaladsl class implementing this class).
      *             In some edge cases this field could end up containing a null value.
-     *             Will be removed in Akka 3.x, use {@link HttpEncodingRanges#ALL} instead.
+     *             Will be removed in Akka 3.x, use {@link RemoteAddresses#UNKNOWN} instead.
      */
     @Deprecated
     // FIXME: Remove in Akka 3.0
