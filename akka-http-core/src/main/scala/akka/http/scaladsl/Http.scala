@@ -54,7 +54,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   private[this] final val DefaultPortForProtocol = -1 // any negative value
 
   /**
-   * Creates a [[Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
+   * Creates a [[akka.stream.scaladsl.Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
    * on the given `endpoint`.
    *
    * If the given port is 0 the resulting source can be materialized several times. Each materialization will
@@ -666,16 +666,16 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   /**
    * Represents a prospective HTTP server binding.
    *
-   * @param localAddress  The local address of the endpoint bound by the materialization of the `connections` [[Source]]
+   * @param localAddress  The local address of the endpoint bound by the materialization of the `connections` [[akka.stream.scaladsl.Source]]
    *
    */
   final case class ServerBinding(localAddress: InetSocketAddress)(private val unbindAction: () ⇒ Future[Unit]) {
 
     /**
      * Asynchronously triggers the unbinding of the port that was bound by the materialization of the `connections`
-     * [[Source]]
+     * [[akka.stream.scaladsl.Source]]
      *
-     * The produced [[Future]] is fulfilled when the unbinding has been completed.
+     * The produced [[scala.concurrent.Future]] is fulfilled when the unbinding has been completed.
      */
     def unbind(): Future[Unit] = unbindAction()
   }
@@ -722,7 +722,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
     /**
      * Asynchronously triggers the shutdown of the host connection pool.
      *
-     * The produced [[Future]] is fulfilled when the shutdown has been completed.
+     * The produced [[scala.concurrent.Future]] is fulfilled when the shutdown has been completed.
      */
     def shutdown()(implicit ec: ExecutionContextExecutor): Future[Done] = gatewayFuture.flatMap(_.shutdown())
 
@@ -746,7 +746,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
  * TLS configuration for an HTTPS server binding or client connection.
  * For the sslContext please refer to the com.typeasfe.ssl-config library.
  * The remaining four parameters configure the initial session that will
- * be negotiated, see [[NegotiateNewSession]] for details.
+ * be negotiated, see [[akka.stream.TLSProtocol.NegotiateNewSession]] for details.
  */
 trait DefaultSSLContextCreation {
 

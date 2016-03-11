@@ -5,7 +5,7 @@
 package akka.http.javadsl.server
 
 /**
- * A marker trait for a marshaller that converts a value of type [[T]] to an
+ * A marker trait for a marshaller that converts a value of type `T` to an
  * HttpResponse.
  */
 trait Marshaller[T]

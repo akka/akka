@@ -24,7 +24,7 @@ import akka.http.impl.util._
 
 /**
  * A base class to create route tests for testing libraries. An implementation needs to provide
- * code to provide and shutdown an [[ActorSystem]], [[Materializer]], and [[ExecutionContextExecutor]].
+ * code to provide and shutdown an [[akka.actor.ActorSystem]], [[akka.stream.Materializer]], and [[scala.concurrent.ExecutionContextExecutor]].
  * Also an implementation should provide instances of [[TestResponse]] to define the assertion
  * facilities of the testing library.
  *
@@ -77,7 +77,7 @@ abstract class RouteTest extends AllDirectives {
     }
 
   /**
-   * Creates a [[TestRoute]] for the main route of an [[HttpApp]].
+   * Creates a [[TestRoute]] for the main route of an [[akka.http.javadsl.server.HttpApp]].
    */
   def testAppRoute(app: HttpApp): TestRoute = testRoute(app.createRoute())
 

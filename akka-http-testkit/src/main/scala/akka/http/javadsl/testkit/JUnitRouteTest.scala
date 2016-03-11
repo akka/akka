@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 import scala.concurrent.Await
 
 /**
- * A RouteTest that uses JUnit assertions. ActorSystem and Materializer are provided as an [[ExternalResource]]
+ * A RouteTest that uses JUnit assertions. ActorSystem and Materializer are provided as an [[org.junit.rules.ExternalResource]]
  * and their lifetime is automatically managed.
  */
 abstract class JUnitRouteTestBase extends RouteTest {

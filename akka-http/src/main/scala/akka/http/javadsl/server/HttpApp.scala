@@ -10,7 +10,7 @@ import java.util.concurrent.CompletionStage
 
 /**
  * A convenience class to derive from to get everything from HttpService and Directives into scope.
- * Implement the [[HttpApp.createRoute]] method to provide the Route and then call [[HttpApp.bindRoute]]
+ * Implement the [[createRoute]] method to provide the Route and then call [[bindRoute]]
  * to start the server on the specified interface.
  */
 abstract class HttpApp
