@@ -38,6 +38,8 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
 
   override val shape: SourceShape[Out] = module.shape.asInstanceOf[SourceShape[Out]]
 
+  override def toString: String = s"Source($shape, $module)"
+
   override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] = viaMat(flow)(Keep.left)
 
   override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Source[T, Mat3] = {

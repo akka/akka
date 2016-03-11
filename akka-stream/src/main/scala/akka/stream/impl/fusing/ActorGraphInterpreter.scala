@@ -10,7 +10,7 @@ import akka.event.Logging
 import akka.stream._
 import akka.stream.impl._
 import akka.stream.impl.ReactiveStreamsCompliance._
-import akka.stream.impl.StreamLayout.{ CompositeModule, CopiedModule, Module }
+import akka.stream.impl.StreamLayout.{ CompositeModule, CopiedModule, Module, AtomicModule }
 import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic, GraphAssembly }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 import org.reactivestreams.{ Subscriber, Subscription }
@@ -23,9 +23,9 @@ import scala.annotation.tailrec
 /**
  * INTERNAL API
  */
-private[stream] case class GraphModule(assembly: GraphAssembly, shape: Shape, attributes: Attributes,
-                                       matValIDs: Array[Module]) extends Module {
-  override def subModules: Set[Module] = Set.empty
+private[stream] final case class GraphModule(assembly: GraphAssembly, shape: Shape, attributes: Attributes,
+                                             matValIDs: Array[Module]) extends AtomicModule {
+
   override def withAttributes(newAttr: Attributes): Module = copy(attributes = newAttr)
 
   override final def carbonCopy: Module = CopiedModule(shape.deepCopy(), Attributes.none, this)
@@ -34,7 +34,12 @@ private[stream] case class GraphModule(assembly: GraphAssembly, shape: Shape, at
     if (newShape != shape) CompositeModule(this, newShape)
     else this
 
-  override def toString: String = s"GraphModule\n  ${assembly.toString.replace("\n", "\n  ")}\n  shape=$shape, attributes=$attributes"
+  override def toString: String =
+    s"""GraphModule
+       |  ${assembly.toString.replace("\n", "\n  ")}
+       |  shape=$shape, attributes=$attributes
+       |  matVals=
+       |    ${matValIDs.mkString("\n    ")}""".stripMargin
 }
 
 /**
