@@ -7,6 +7,8 @@ import java.util.Optional
 
 /**
  * Represents an Http content-type. A content-type consists of a media-type and an optional charset.
+ *
+ * See [[ContentTypes]] for convenience access to often used values.
  */
 // Has to be defined in Scala even though it's JavaDSL because of:
 // https://issues.scala-lang.org/browse/SI-9621
