@@ -122,9 +122,19 @@ final class PrefixAndTail[T](n: Int) extends GraphStage[FlowShape[T, (immutable.
     private val SubscriptionTimer = "SubstreamSubscriptionTimer"
 
     override protected def onTimer(timerKey: Any): Unit = {
-      val timeout = ActorMaterializer.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
-      tailSource.timeout(timeout)
-      if (tailSource.isClosed) completeStage()
+      val materializer = ActorMaterializer.downcast(interpreter.materializer)
+      val timeoutSettings = materializer.settings.subscriptionTimeoutSettings
+      val timeout = timeoutSettings.timeout
+
+      timeoutSettings.mode match {
+        case StreamSubscriptionTimeoutTerminationMode.CancelTermination ⇒
+          tailSource.timeout(timeout)
+          if (tailSource.isClosed) completeStage()
+        case StreamSubscriptionTimeoutTerminationMode.NoopTermination ⇒
+        // do nothing
+        case StreamSubscriptionTimeoutTerminationMode.WarnTermination ⇒
+          materializer.logger.warning("Substream subscription timeout triggered after {} in prefixAndTail({}).", timeout, n)
+      }
     }
 
     private def prefixComplete = builder eq null

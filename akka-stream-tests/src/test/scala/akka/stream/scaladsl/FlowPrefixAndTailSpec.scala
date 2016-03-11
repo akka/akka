@@ -107,10 +107,12 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
     }
 
     "signal error if substream has been not subscribed in time" in assertAllStagesStopped {
+      val ms = 300
+
       val tightTimeoutMaterializer =
         ActorMaterializer(ActorMaterializerSettings(system)
           .withSubscriptionTimeoutSettings(
-            StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 500.millisecond)))
+            StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, ms.millisecond)))
 
       val futureSink = newHeadSink
       val fut = Source(1 to 2).prefixAndTail(1).runWith(futureSink)(tightTimeoutMaterializer)
@@ -121,7 +123,25 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       Thread.sleep(1000)
 
       tail.to(Sink.fromSubscriber(subscriber)).run()(tightTimeoutMaterializer)
-      subscriber.expectSubscriptionAndError().getMessage should ===("Substream Source has not been materialized in 500 milliseconds")
+      subscriber.expectSubscriptionAndError().getMessage should ===(s"Substream Source has not been materialized in ${ms} milliseconds")
+    }
+    "not fail the stream if substream has not been subscribed in time and configured subscription timeout is noop" in assertAllStagesStopped {
+      val tightTimeoutMaterializer =
+        ActorMaterializer(ActorMaterializerSettings(system)
+          .withSubscriptionTimeoutSettings(
+            StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.noop, 1.millisecond)))
+
+      val futureSink = newHeadSink
+      val fut = Source(1 to 2).prefixAndTail(1).runWith(futureSink)(tightTimeoutMaterializer)
+      val (takes, tail) = Await.result(fut, 3.seconds)
+      takes should be(Seq(1))
+
+      val subscriber = TestSubscriber.probe[Int]()
+      Thread.sleep(200)
+
+      tail.to(Sink.fromSubscriber(subscriber)).run()(tightTimeoutMaterializer)
+      subscriber.expectSubscription().request(2)
+      subscriber.expectNext(2).expectComplete()
     }
 
     "shut down main stage if substream is empty, even when not subscribed" in assertAllStagesStopped {
