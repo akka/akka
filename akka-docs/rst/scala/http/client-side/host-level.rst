@@ -143,6 +143,11 @@ It's also possible to trigger the immediate termination of *all* connection pool
 time by calling ``Http().shutdownAllConnectionPools()``. This call too produces a ``Future[Unit]`` which is fulfilled when
 all pools have terminated.
 
+.. note::
+  When encoutering unexpected ``akka.stream.AbruptTerminationException`` exceptions during ``ActorSystem`` **shutdown**
+  please make sure that active connections are shut down before shutting down the entire system, this can be done by
+  calling the ``Http().shutdownAllConnectionPools()`` method, and only once its Future completes, shutting down the actor system.
+
 
 Example
 -------
