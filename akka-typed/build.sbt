@@ -1,6 +1,7 @@
-import akka.{ AkkaBuild, Formatting, OSGi, Dependencies }
-import com.typesafe.tools.mima.plugin.MimaKeys
+import akka.{ AkkaBuild, Formatting }
 
 AkkaBuild.defaultSettings
 AkkaBuild.experimentalSettings
 Formatting.formatSettings
+
+disablePlugins(MimaPlugin)

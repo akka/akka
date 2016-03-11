@@ -1,11 +1,8 @@
 import akka.{ AkkaBuild, Formatting, OSGi, Unidoc, Dependencies }
 
-import com.typesafe.tools.mima.plugin.MimaKeys
-
 AkkaBuild.defaultSettings
-
 Formatting.formatSettings
+OSGi.protobuf
 
 enablePlugins(ScaladocNoVerificationOfDiagrams)
-
-OSGi.protobuf
+disablePlugins(MimaPlugin)
