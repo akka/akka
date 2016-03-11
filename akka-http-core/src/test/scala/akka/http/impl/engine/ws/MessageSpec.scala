@@ -741,8 +741,8 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
               00000000 # empty mask
           """
 
-        pushInput(header)
         EventFilter[ProtocolException](occurrences = 1).intercept {
+          pushInput(header)
           expectProtocolErrorOnNetwork()
         }
       }
