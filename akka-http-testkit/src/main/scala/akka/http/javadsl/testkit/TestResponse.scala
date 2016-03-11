@@ -63,7 +63,7 @@ abstract class TestResponse(_response: HttpResponse, awaitAtMost: FiniteDuration
   def entityAsString: String = entity.getData.utf8String
 
   /**
-   * Returns the [[StatusCode]] of the response.
+   * Returns the [[akka.http.javadsl.model.StatusCode]] of the response.
    */
   def status: StatusCode = response.status.asJava
 
@@ -117,7 +117,7 @@ abstract class TestResponse(_response: HttpResponse, awaitAtMost: FiniteDuration
     assertEqualsKind(expected, entityBytes, "entity")
 
   /**
-   * Assert on the response entity to equal the given object after applying an [[Unmarshaller]].
+   * Assert on the response entity to equal the given object after applying an [[akka.http.javadsl.server.Unmarshaller]].
    */
   def assertEntityAs[T <: AnyRef](unmarshaller: Unmarshaller[T], expected: T): TestResponse =
     assertEqualsKind(expected, entityAs(unmarshaller), "entity")

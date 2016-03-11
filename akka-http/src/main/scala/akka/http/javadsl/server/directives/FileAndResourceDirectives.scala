@@ -11,14 +11,14 @@ import akka.http.scaladsl.server
 import akka.http.impl.server.RouteStructure._
 
 /**
- * Implement this interface to provide a custom mapping from a file name to a [[ContentType]].
+ * Implement this interface to provide a custom mapping from a file name to a [[akka.http.javadsl.model.ContentType]].
  */
 trait ContentTypeResolver {
   def resolve(fileName: String): ContentType
 }
 
 /**
- * A resolver that assumes the given constant [[ContentType]] for all files.
+ * A resolver that assumes the given constant [[akka.http.javadsl.model.ContentType]] for all files.
  */
 case class StaticContentTypeResolver(contentType: ContentType) extends ContentTypeResolver {
   def resolve(fileName: String): ContentType = contentType
@@ -32,13 +32,13 @@ case class StaticContentTypeResolver(contentType: ContentType) extends ContentTy
  */
 trait FileAndResourceRoute extends Route {
   /**
-   * Returns a variant of this route that responds with the given constant [[ContentType]].
+   * Returns a variant of this route that responds with the given constant [[akka.http.javadsl.model.ContentType]].
    */
   def withContentType(contentType: ContentType): Route
 
   /**
    * Returns a variant of this route that uses the specified [[ContentTypeResolver]] to determine
-   * which [[ContentType]] to respond with by file name.
+   * which [[akka.http.javadsl.model.ContentType]] to respond with by file name.
    */
   def resolveContentTypeWith(resolver: ContentTypeResolver): Route
 }
@@ -115,12 +115,12 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
   def getFromDirectory(directoryPath: String): FileAndResourceRoute = getFromDirectory(new File(directoryPath))
 
   /**
-   * Same as [[getFromDirectory]] but generates a listing of files if the path is a directory.
+   * Same as [[#getFromDirectory]] but generates a listing of files if the path is a directory.
    */
   def getFromBrowseableDirectory(directory: File): FileAndResourceRoute = FileAndResourceRoute(GetFromDirectory(directory, browseable = true, _))
 
   /**
-   * Same as [[getFromDirectory]] but generates a listing of files if the path is a directory.
+   * Same as [[#getFromDirectory]] but generates a listing of files if the path is a directory.
    */
   def getFromBrowseableDirectory(directoryPath: String): FileAndResourceRoute = FileAndResourceRoute(GetFromDirectory(new File(directoryPath), browseable = true, _))
 

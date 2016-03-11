@@ -105,7 +105,7 @@ object Recovery {
 sealed trait StashOverflowStrategy
 
 /**
- * Discard the message to [[DeadLetter]].
+ * Discard the message to [[akka.actor.DeadLetter]].
  */
 case object DiscardToDeadLetterStrategy extends StashOverflowStrategy {
   /**
@@ -115,7 +115,7 @@ case object DiscardToDeadLetterStrategy extends StashOverflowStrategy {
 }
 
 /**
- * Throw [[StashOverflowException]], hence the persistent actor will starting recovery
+ * Throw [[akka.actor.StashOverflowException]], hence the persistent actor will starting recovery
  * if guarded by default supervisor strategy.
  * Be carefully if used together with persist/persistAll or has many messages needed
  * to replay.
