@@ -3,7 +3,7 @@ package akka.stream.impl.io
 import javax.net.ssl.SSLContext
 
 import akka.stream._
-import akka.stream.impl.StreamLayout.{ CompositeModule, Module }
+import akka.stream.impl.StreamLayout.{ CompositeModule, AtomicModule }
 import akka.stream.TLSProtocol._
 import akka.util.ByteString
 
@@ -15,11 +15,10 @@ private[akka] final case class TlsModule(plainIn: Inlet[SslTlsOutbound], plainOu
                                          shape: Shape, attributes: Attributes,
                                          sslContext: SSLContext,
                                          firstSession: NegotiateNewSession,
-                                         role: TLSRole, closing: TLSClosing, hostInfo: Option[(String, Int)]) extends Module {
-  override def subModules: Set[Module] = Set.empty
+                                         role: TLSRole, closing: TLSClosing, hostInfo: Option[(String, Int)]) extends AtomicModule {
 
-  override def withAttributes(att: Attributes): Module = copy(attributes = att)
-  override def carbonCopy: Module =
+  override def withAttributes(att: Attributes): TlsModule = copy(attributes = att)
+  override def carbonCopy: TlsModule =
     TlsModule(attributes, sslContext, firstSession, role, closing, hostInfo)
 
   override def replaceShape(s: Shape) =
@@ -27,6 +26,8 @@ private[akka] final case class TlsModule(plainIn: Inlet[SslTlsOutbound], plainOu
       shape.requireSamePortsAs(s)
       CompositeModule(this, s)
     } else this
+
+  override def toString: String = f"TlsModule($firstSession, $role, $closing, $hostInfo) [${System.identityHashCode(this)}%08x]"
 }
 
 /**

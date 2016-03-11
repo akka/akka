@@ -4,7 +4,6 @@
 
 package akka.http.javadsl.model;
 
-import akka.http.impl.util.Util;
 import akka.http.javadsl.model.headers.*;
 import akka.japi.Pair;
 

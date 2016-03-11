@@ -61,6 +61,8 @@ trait GraphApply {
 private[stream] object GraphApply {
   final class GraphImpl[S <: Shape, Mat](override val shape: S, private[stream] override val module: StreamLayout.Module)
     extends Graph[S, Mat] {
+    
+    override def toString: String = s"Graph($shape, $module)"
 
     override def withAttributes(attr: Attributes): Graph[S, Mat] =
       new GraphImpl(shape, module.withAttributes(attr))

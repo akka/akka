@@ -8,7 +8,7 @@ import akka.actor.{ ActorRef, Props }
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.stage._
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.unchecked.uncheckedVariance
@@ -20,11 +20,12 @@ import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import java.util.Optional
+import akka.event.Logging
 
 /**
  * INTERNAL API
  */
-private[akka] abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) extends Module {
+private[akka] abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) extends AtomicModule {
 
   /**
    * Create the Subscriber or VirtualPublisher that consumes the incoming
@@ -35,16 +36,14 @@ private[akka] abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) exte
    */
   def create(context: MaterializationContext): (AnyRef, Mat)
 
-  override def replaceShape(s: Shape): Module =
+  override def replaceShape(s: Shape): AtomicModule =
     if (s != shape) throw new UnsupportedOperationException("cannot replace the shape of a Sink, you need to wrap it in a Graph for that")
     else this
 
   // This is okay since we the only caller of this method is right below.
   protected def newInstance(s: SinkShape[In] @uncheckedVariance): SinkModule[In, Mat]
 
-  override def carbonCopy: Module = newInstance(SinkShape(shape.in.carbonCopy()))
-
-  override def subModules: Set[Module] = Set.empty
+  override def carbonCopy: AtomicModule = newInstance(SinkShape(shape.in.carbonCopy()))
 
   protected def amendShape(attr: Attributes): SinkShape[In] = {
     val thisN = attributes.nameOrDefault(null)
@@ -53,6 +52,10 @@ private[akka] abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) exte
     if ((thatN eq null) || thisN == thatN) shape
     else shape.copy(in = Inlet(thatN + ".in"))
   }
+
+  protected def label: String = Logging.simpleName(this)
+  final override def toString: String = f"$label [${System.identityHashCode(this)}%08x]"
+
 }
 
 /**
@@ -63,8 +66,6 @@ private[akka] abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) exte
  * a subscriber connects and creates demand for elements to be emitted.
  */
 private[akka] class PublisherSink[In](val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, Publisher[In]](shape) {
-
-  override def toString: String = "PublisherSink"
 
   /*
    * This method is the reason why SinkModule.create may return something that is
@@ -77,7 +78,7 @@ private[akka] class PublisherSink[In](val attributes: Attributes, shape: SinkSha
   }
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] = new PublisherSink[In](attributes, shape)
-  override def withAttributes(attr: Attributes): Module = new PublisherSink[In](attr, amendShape(attr))
+  override def withAttributes(attr: Attributes): AtomicModule = new PublisherSink[In](attr, amendShape(attr))
 }
 
 /**
@@ -100,7 +101,7 @@ private[akka] final class FanoutPublisherSink[In](
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
     new FanoutPublisherSink[In](attributes, shape)
 
-  override def withAttributes(attr: Attributes): Module =
+  override def withAttributes(attr: Attributes): AtomicModule =
     new FanoutPublisherSink[In](attr, amendShape(attr))
 }
 
@@ -118,8 +119,7 @@ private[akka] final class SinkholeSink(val attributes: Attributes, shape: SinkSh
   }
 
   override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, Future[Done]] = new SinkholeSink(attributes, shape)
-  override def withAttributes(attr: Attributes): Module = new SinkholeSink(attr, amendShape(attr))
-  override def toString: String = "SinkholeSink"
+  override def withAttributes(attr: Attributes): AtomicModule = new SinkholeSink(attr, amendShape(attr))
 }
 
 /**
@@ -131,8 +131,7 @@ private[akka] final class SubscriberSink[In](subscriber: Subscriber[In], val att
   override def create(context: MaterializationContext) = (subscriber, NotUsed)
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, NotUsed] = new SubscriberSink[In](subscriber, attributes, shape)
-  override def withAttributes(attr: Attributes): Module = new SubscriberSink[In](subscriber, attr, amendShape(attr))
-  override def toString: String = "SubscriberSink"
+  override def withAttributes(attr: Attributes): AtomicModule = new SubscriberSink[In](subscriber, attr, amendShape(attr))
 }
 
 /**
@@ -142,8 +141,7 @@ private[akka] final class SubscriberSink[In](subscriber: Subscriber[In], val att
 private[akka] final class CancelSink(val attributes: Attributes, shape: SinkShape[Any]) extends SinkModule[Any, NotUsed](shape) {
   override def create(context: MaterializationContext): (Subscriber[Any], NotUsed) = (new CancellingSubscriber[Any], NotUsed)
   override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, NotUsed] = new CancelSink(attributes, shape)
-  override def withAttributes(attr: Attributes): Module = new CancelSink(attr, amendShape(attr))
-  override def toString: String = "CancelSink"
+  override def withAttributes(attr: Attributes): AtomicModule = new CancelSink(attr, amendShape(attr))
 }
 
 /**
@@ -159,8 +157,7 @@ private[akka] final class ActorSubscriberSink[In](props: Props, val attributes: 
   }
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, ActorRef] = new ActorSubscriberSink[In](props, attributes, shape)
-  override def withAttributes(attr: Attributes): Module = new ActorSubscriberSink[In](props, attr, amendShape(attr))
-  override def toString: String = "ActorSubscriberSink"
+  override def withAttributes(attr: Attributes): AtomicModule = new ActorSubscriberSink[In](props, attr, amendShape(attr))
 }
 
 /**
@@ -180,9 +177,8 @@ private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, NotUsed] =
     new ActorRefSink[In](ref, onCompleteMessage, attributes, shape)
-  override def withAttributes(attr: Attributes): Module =
+  override def withAttributes(attr: Attributes): AtomicModule =
     new ActorRefSink[In](ref, onCompleteMessage, attr, amendShape(attr))
-  override def toString: String = "ActorRefSink"
 }
 
 private[akka] final class LastOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
@@ -257,6 +253,8 @@ private[akka] final class HeadOptionStage[T] extends GraphStageWithMaterializedV
 private[akka] final class SeqStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[immutable.Seq[T]]] {
   val in = Inlet[T]("seq.in")
 
+  override def toString: String = "SeqStage"
+
   override val shape: SinkShape[T] = SinkShape.of(in)
 
   override protected def initialAttributes: Attributes = DefaultAttributes.seqSink
@@ -301,6 +299,8 @@ final private[stream] class QueueSink[T]() extends GraphStageWithMaterializedVal
   val in = Inlet[T]("queueSink.in")
   override def initialAttributes = DefaultAttributes.queueSink
   override val shape: SinkShape[T] = SinkShape.of(in)
+
+  override def toString: String = "QueueSink"
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val stageLogic = new GraphStageLogic(shape) with CallbackWrapper[Requested[T]] {

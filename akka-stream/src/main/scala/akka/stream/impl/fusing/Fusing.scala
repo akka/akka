@@ -27,7 +27,14 @@ private[stream] object Fusing {
   /**
    * Fuse everything that is not forbidden via AsyncBoundary attribute.
    */
-  def aggressive[S <: Shape, M](g: Graph[S, M]): FusedGraph[S, M] = {
+  def aggressive[S <: Shape, M](g: Graph[S, M]): FusedGraph[S, M] =
+    g match {
+      case fg: FusedGraph[_, _]      ⇒ fg
+      case FusedGraph(module, shape) => FusedGraph(module, shape)
+      case _                         ⇒ doAggressive(g)
+    }
+
+  private def doAggressive[S <: Shape, M](g: Graph[S, M]): FusedGraph[S, M] = {
     val struct = new BuildStructuralInfo
     /*
      * First perform normalization by descending the module tree and recording
@@ -153,6 +160,7 @@ private[stream] object Fusing {
         }
 
         pos += 1
+      case _ => throw new IllegalArgumentException("unexpected module structure")
     }
 
     val outsB2 = new Array[Outlet[_]](insB2.size)
@@ -178,6 +186,7 @@ private[stream] object Fusing {
             }
         }
         pos += 1
+      case _ => throw new IllegalArgumentException("unexpected module structure")
     }
 
     /*
@@ -207,7 +216,10 @@ private[stream] object Fusing {
     copyToArray(outOwnersB3.iterator, outOwners, outStart)
 
     // FIXME attributes should contain some naming info and async boundary where needed
-    val firstModule = group.iterator.next()
+    val firstModule = group.iterator.next() match {
+      case c: CopiedModule => c
+      case _               => throw new IllegalArgumentException("unexpected module structure")
+    }
     val async = if (isAsync(firstModule)) Attributes(AsyncBoundary) else Attributes.none
     val disp = dispatcher(firstModule) match {
       case None    ⇒ Attributes.none
@@ -253,7 +265,7 @@ private[stream] object Fusing {
       case _ if m.isAtomic     ⇒ true // non-GraphStage atomic or has AsyncBoundary
       case _                   ⇒ m.attributes.contains(AsyncBoundary)
     }
-    if (Debug) log(s"entering ${m.getClass} (hash=${m.hashCode}, async=$async, name=${m.attributes.nameLifted}, dispatcher=${dispatcher(m)})")
+    if (Debug) log(s"entering ${m.getClass} (hash=${struct.hash(m)}, async=$async, name=${m.attributes.nameLifted}, dispatcher=${dispatcher(m)})")
     val localGroup =
       if (async) struct.newGroup(indent)
       else openGroup
@@ -315,6 +327,7 @@ private[stream] object Fusing {
               struct.registerInternals(newShape, indent)
 
               copy
+            case _ => throw new IllegalArgumentException("unexpected module structure")
           }
           val newgm = gm.copy(shape = oldShape.copyFromPorts(oldIns.toList, oldOuts.toList), matValIDs = newids)
           // make sure to add all the port mappings from old GraphModule Shape to new shape
@@ -356,7 +369,7 @@ private[stream] object Fusing {
             subMatBuilder ++= res
           }
           val subMat = subMatBuilder.result()
-          if (Debug) log(subMat.map(p ⇒ s"${p._1.getClass.getName}[${p._1.hashCode}] -> ${p._2}").mkString("subMat\n  " + "  " * indent, "\n  " + "  " * indent, ""))
+          if (Debug) log(subMat.map(p ⇒ s"${p._1.getClass.getName}[${struct.hash(p._1)}] -> ${p._2}").mkString("subMat\n  " + "  " * indent, "\n  " + "  " * indent, ""))
           // we need to remove all wirings that this module copied from nested modules so that we
           // don’t do wirings twice
           val oldDownstreams = m match {
@@ -370,17 +383,17 @@ private[stream] object Fusing {
           // now rewrite the materialized value computation based on the copied modules and their computation nodes
           val matNodeMapping: ju.Map[MaterializedValueNode, MaterializedValueNode] = new ju.HashMap
           val newMat = rewriteMat(subMat, m.materializedValueComputation, matNodeMapping)
+          if (Debug) log(matNodeMapping.asScala.map(p ⇒ s"${p._1} -> ${p._2}").mkString("matNodeMapping\n  " + "  " * indent, "\n  " + "  " * indent, ""))
           // and finally rewire all MaterializedValueSources to their new computation nodes
           val matSrcs = struct.exitMatCtx()
           matSrcs.foreach { c ⇒
-            if (Debug) log(s"materialized value source: ${struct.hash(c)}")
-            val ms = c.copyOf match {
-              case g: GraphStageModule ⇒ g.stage.asInstanceOf[MaterializedValueSource[Any]]
-            }
+            val ms = c.copyOf.asInstanceOf[GraphStageModule].stage.asInstanceOf[MaterializedValueSource[Any]]
             val mapped = ms.computation match {
               case Atomic(sub) ⇒ subMat(sub)
+              case Ignore      => Ignore
               case other       ⇒ matNodeMapping.get(other)
             }
+            if (Debug) log(s"materialized value source: ${c.copyOf} -> $mapped")
             require(mapped != null, s"mismatch:\n  ${ms.computation}\n  ${m.materializedValueComputation}")
             val newSrc = new MaterializedValueSource[Any](mapped, ms.out)
             val replacement = CopiedModule(c.shape, c.attributes, newSrc.module)
@@ -692,7 +705,7 @@ private[stream] object Fusing {
   /**
    * Determine whether the given CopiedModule has an AsyncBoundary attribute.
    */
-  private def isAsync(m: Module): Boolean = m match {
+  private def isAsync(m: CopiedModule): Boolean = m match {
     case CopiedModule(_, inherited, orig) ⇒
       val attr = inherited and orig.attributes
       attr.contains(AsyncBoundary)

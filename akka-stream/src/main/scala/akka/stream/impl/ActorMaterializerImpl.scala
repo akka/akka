@@ -11,7 +11,7 @@ import akka.event.Logging
 import akka.dispatch.Dispatchers
 import akka.pattern.ask
 import akka.stream._
-import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl.StreamLayout.{ Module, AtomicModule }
 import akka.stream.impl.fusing.{ ActorGraphInterpreter, GraphModule }
 import akka.stream.impl.io.TLSActor
 import akka.stream.impl.io.TlsModule
@@ -97,7 +97,8 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
         name
       }
 
-      override protected def materializeAtomic(atomic: Module, effectiveAttributes: Attributes, matVal: ju.Map[Module, Any]): Unit = {
+      override protected def materializeAtomic(atomic: AtomicModule, effectiveAttributes: Attributes, matVal: ju.Map[Module, Any]): Unit = {
+        if (MaterializerSession.Debug) println(s"materializing $atomic")
 
         def newMaterializationContext() =
           new MaterializationContext(ActorMaterializerImpl.this, effectiveAttributes, stageName(effectiveAttributes))
