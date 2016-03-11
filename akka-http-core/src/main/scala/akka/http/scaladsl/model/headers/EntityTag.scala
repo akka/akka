@@ -4,6 +4,9 @@
 
 package akka.http.scaladsl.model.headers
 
+import akka.http.impl.model.JavaInitialization
+import akka.util.Unsafe
+
 import scala.collection.immutable
 import akka.http.impl.util.{ Renderer, Rendering, ValueRenderable }
 import akka.http.javadsl.{ model ⇒ jm }
@@ -37,4 +40,8 @@ object EntityTagRange {
     require(tags.nonEmpty, "tags must not be empty")
     def render[R <: Rendering](r: R): r.type = r ~~ tags
   }
+
+  JavaInitialization.initializeStaticFieldWith(
+    `*`, classOf[jm.headers.EntityTagRange].getField("ALL"))
+
 }

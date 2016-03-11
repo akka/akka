@@ -26,5 +26,5 @@ public abstract class HttpEncodingRange {
      */
     @Deprecated
     // FIXME: Remove in Akka 3.0
-    public static final HttpEncodingRange ALL = akka.http.scaladsl.model.headers.HttpEncodingRange.$times$.MODULE$;
+    public static final HttpEncodingRange ALL = HttpEncodingRanges.ALL;
 }
