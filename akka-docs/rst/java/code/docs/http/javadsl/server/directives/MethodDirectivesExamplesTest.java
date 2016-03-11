@@ -4,20 +4,19 @@
 
 package docs.http.javadsl.server.directives;
 
-import akka.http.javadsl.model.HttpMethod;
+import org.junit.Test;
+
 import akka.http.javadsl.model.HttpMethods;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
-import akka.http.javadsl.server.*;
+import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
-
-import org.junit.Test;
 
 public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testDelete() {
     //#delete
-    final Route route = delete(complete("This is a DELETE request."));
+    final Route route = delete(() -> complete("This is a DELETE request."));
 
     testRoute(route).run(HttpRequest.DELETE("/")).assertEntity(
         "This is a DELETE request.");
@@ -27,7 +26,7 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testGet() {
     //#get
-    final Route route = get(complete("This is a GET request."));
+    final Route route = get(() -> complete("This is a GET request."));
 
     testRoute(route).run(HttpRequest.GET("/")).assertEntity(
         "This is a GET request.");
@@ -37,7 +36,7 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testHead() {
     //#head
-    final Route route = head(complete("This is a HEAD request."));
+    final Route route = head(() -> complete("This is a HEAD request."));
 
     testRoute(route).run(HttpRequest.HEAD("/")).assertEntity(
         "This is a HEAD request.");
@@ -47,7 +46,7 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testOptions() {
     //#options
-    final Route route = options(complete("This is a OPTIONS request."));
+    final Route route = options(() -> complete("This is a OPTIONS request."));
 
     testRoute(route).run(HttpRequest.OPTIONS("/")).assertEntity(
         "This is a OPTIONS request.");
@@ -57,7 +56,7 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testPatch() {
     //#patch
-    final Route route = patch(complete("This is a PATCH request."));
+    final Route route = patch(() -> complete("This is a PATCH request."));
 
     testRoute(route).run(HttpRequest.PATCH("/").withEntity("patch content"))
         .assertEntity("This is a PATCH request.");
@@ -67,7 +66,7 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testPost() {
     //#post
-    final Route route = post(complete("This is a POST request."));
+    final Route route = post(() -> complete("This is a POST request."));
 
     testRoute(route).run(HttpRequest.POST("/").withEntity("post content"))
         .assertEntity("This is a POST request.");
@@ -77,7 +76,7 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testPut() {
     //#put
-    final Route route = put(complete("This is a PUT request."));
+    final Route route = put(() -> complete("This is a PUT request."));
 
     testRoute(route).run(HttpRequest.PUT("/").withEntity("put content"))
         .assertEntity("This is a PUT request.");
@@ -88,7 +87,7 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   public void testMethodExample() {
     //#method-example
     final Route route = method(HttpMethods.PUT,
-        complete("This is a PUT request."));
+        () -> complete("This is a PUT request."));
 
     testRoute(route).run(HttpRequest.PUT("/").withEntity("put content"))
         .assertEntity("This is a PUT request.");
@@ -101,15 +100,15 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testExtractMethodExample() {
     //#extractMethod
-    final RequestVal<HttpMethod> requestMethod = RequestVals.requestMethod();
 
-    final Route otherMethod = handleWith1(
-        requestMethod,
-        (ctx, method) -> ctx.complete("This " + method.value()
-            + " request, clearly is not a GET!"));
-
-    final Route route = route(get(complete("This is a GET request.")),
-        otherMethod);
+    final Route route = route(
+        get(() -> 
+            complete("This is a GET request.")
+        ),
+        extractMethod(method ->
+            complete("This " + method.value() + " request, clearly is not a GET!")
+        )
+    );
 
     testRoute(route).run(HttpRequest.GET("/")).assertEntity(
         "This is a GET request.");

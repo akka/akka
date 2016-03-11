@@ -18,6 +18,8 @@ import akka.http.scaladsl.marshalling.{ Marshaller, ToEntityMarshaller }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
+import akka.http.javadsl
+import scala.collection.JavaConverters._
 
 trait FileAndResourceDirectives {
   import CacheConditionDirectives._
@@ -287,7 +289,10 @@ object ContentTypeResolver {
     }
 }
 
-case class DirectoryListing(path: String, isRoot: Boolean, files: Seq[File])
+case class DirectoryListing(path: String, isRoot: Boolean, files: Seq[File]) extends javadsl.server.directives.DirectoryListing {
+  override def getPath: String = path
+  override def getFiles: java.util.List[File] = files.asJava
+}
 
 object DirectoryListing {
 

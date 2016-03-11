@@ -4,16 +4,13 @@
 
 package docs.http.javadsl.server;
 
+import akka.NotUsed;
 import akka.http.javadsl.server.Route;
-
 import akka.japi.JavaPartialFunction;
-
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
-
 import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
-
 import akka.http.javadsl.server.HttpApp;
 
 public class WebSocketRoutingExample extends HttpApp {
@@ -21,7 +18,7 @@ public class WebSocketRoutingExample extends HttpApp {
     @Override
     public Route createRoute() {
         return
-            path("greeter").route(
+            path("greeter", () ->
                 handleWebSocketMessages(greeter())
             );
     }
@@ -31,7 +28,7 @@ public class WebSocketRoutingExample extends HttpApp {
      * A handler that treats incoming messages as a name,
      * and responds with a greeting to that name
      */
-    public static Flow<Message, Message, ?> greeter() {
+    public static Flow<Message, Message, NotUsed> greeter() {
         return
             Flow.<Message>create()
                 .collect(new JavaPartialFunction<Message, Message>() {

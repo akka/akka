@@ -4,16 +4,17 @@
 
 package akka.http.javadsl.server;
 
-import org.junit.Test;
+import static akka.http.javadsl.server.StringUnmarshallers.INTEGER;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
-import akka.http.javadsl.testkit.*;
+import org.junit.Test;
 
 import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.MediaTypes;
-import akka.http.javadsl.server.values.*;
+import akka.http.javadsl.testkit.JUnitRouteTest;
 
 public class CompleteTest extends JUnitRouteTest {
     @Test
@@ -30,12 +31,14 @@ public class CompleteTest extends JUnitRouteTest {
 
     @Test
     public void completeAsJacksonJson() {
+        
+        @SuppressWarnings("unused") // The getters are used reflectively by Jackson
         class Person {
             public String getFirstName() { return "Peter"; }
             public String getLastName() { return "Parker"; }
             public int getAge() { return 138; }
         }
-        Route route = completeAs(Jackson.json(), new Person());
+        Route route = completeOK(new Person(), Jackson.marshaller());
 
         HttpRequest request = HttpRequest.create();
 
@@ -44,22 +47,23 @@ public class CompleteTest extends JUnitRouteTest {
             .assertMediaType("application/json")
             .assertEntity("{\"age\":138,\"firstName\":\"Peter\",\"lastName\":\"Parker\"}");
     }
+    
+    private CompletionStage<String> doSlowCalculation(int x, int y) {
+        return CompletableFuture.supplyAsync(() -> {
+            int result = x + y;
+            return String.format("%d + %d = %d",x, y, result);
+        });
+    }
+    
     @Test
     public void completeWithFuture() {
-        Parameter<Integer> x = Parameters.intValue("x");
-        Parameter<Integer> y = Parameters.intValue("y");
+        Route route = 
+            param(INTEGER, "x", x -> 
+                param(INTEGER, "y", y -> 
+                    onSuccess(() -> doSlowCalculation(x, y), Directives::complete)
+                )
+            );
 
-        Handler2<Integer, Integer> slowCalc = new Handler2<Integer, Integer>() {
-            @Override
-            public RouteResult apply(final RequestContext ctx, final Integer x, final Integer y) {
-                return ctx.completeWith(CompletableFuture.supplyAsync(() -> {
-                  int result = x + y;
-                  return ctx.complete(String.format("%d + %d = %d",x, y, result));
-                }, ctx.executionContext()));
-            }
-        };
-
-        Route route = handleWith2(x, y, slowCalc);
         runRoute(route, HttpRequest.GET("add?x=42&y=23"))
             .assertStatusCode(200)
             .assertEntity("42 + 23 = 65");

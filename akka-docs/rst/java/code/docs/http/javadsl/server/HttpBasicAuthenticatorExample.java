@@ -4,58 +4,34 @@
 package docs.http.javadsl.server;
 
 import java.util.Optional;
+
+import org.junit.Test;
+
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.Host;
-import akka.http.javadsl.server.Handler1;
-import akka.http.javadsl.server.RequestContext;
 import akka.http.javadsl.server.Route;
-import akka.http.javadsl.server.RouteResult;
-import akka.http.javadsl.server.values.BasicCredentials;
-import akka.http.javadsl.server.values.HttpBasicAuthenticator;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.scaladsl.model.headers.Authorization;
 
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-
-import org.junit.Test;
-import scala.Option;
-import scala.concurrent.Future;
-
 public class HttpBasicAuthenticatorExample extends JUnitRouteTest {
 
+    private final String hardcodedPassword = "correcthorsebatterystaple";
+    
+    private Optional<String> authenticate(Optional<ProvidedCredentials> creds) {
+        // this is where your actual authentication logic would go
+        return creds
+            .filter(c -> c.verify(hardcodedPassword))  // Only allow users that provide the right password
+            .map(c -> c.identifier());                 // Provide the username down to the inner route
+    }
 
     @Test
     public void testBasicAuthenticator() {
         //#basic-authenticator-java
-        final HttpBasicAuthenticator<String> authentication = new HttpBasicAuthenticator<String>("My realm") {
-
-            private final String hardcodedPassword = "correcthorsebatterystaple";
-
-            public CompletionStage<Optional<String>> authenticate(BasicCredentials credentials) {
-                // this is where your actual authentication logic would go
-                if (credentials.available() && // no anonymous access
-                    credentials.verify(hardcodedPassword)) {
-                    return authenticateAs(credentials.identifier());
-                } else {
-                    return refuseAccess();
-                }
-            }
-        };
 
         final Route route =
-            authentication.route(
-                handleWith1(
-                    authentication,
-                    new Handler1<String>() {
-                        public RouteResult apply(RequestContext ctx, String user) {
-                            return ctx.complete("Hello " + user + "!");
-                        }
-
-                    }
-                )
+            authenticateBasic("My realm", this::authenticate, user ->
+                complete("Hello " + user + "!")
             );
-
 
         // tests:
         final HttpRequest okRequest =
