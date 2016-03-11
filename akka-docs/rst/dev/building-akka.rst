@@ -47,8 +47,10 @@ want to find out more about sbt and using it for your own projects do read the
 
 .. _sbt documentation: http://www.scala-sbt.org/documentation.html
 
-The Akka sbt build file is ``project/AkkaBuild.scala``.
-
+The main Akka sbt build file is ``project/AkkaBuild.scala``, with a `build.sbt` in
+each subproject’s directory. It is advisable to allocate at least 2GB of heap size
+to the JVM that runs sbt, otherwise you may experience some spurious failures when
+running the tests.
 
 Building Akka
 =============
