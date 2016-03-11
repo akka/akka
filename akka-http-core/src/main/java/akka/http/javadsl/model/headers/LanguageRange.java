@@ -18,5 +18,5 @@ public interface LanguageRange {
      */
     @Deprecated
     // FIXME: Remove in Akka 3.0
-    public static final LanguageRange ALL = akka.http.scaladsl.model.headers.LanguageRange.$times$.MODULE$;
+    public static final LanguageRange ALL = LanguageRanges.ALL;
 }
