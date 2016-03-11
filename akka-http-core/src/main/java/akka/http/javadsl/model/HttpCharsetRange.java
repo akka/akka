@@ -7,6 +7,8 @@ package akka.http.javadsl.model;
 /**
  * Represents an Http charset range. This can either be `*` which matches all charsets or a specific
  * charset. {@link HttpCharsetRanges} contains static constructors for HttpCharsetRanges.
+ *
+ * @see HttpCharsetRanges for convenience access to often used values.
  */
 public abstract class HttpCharsetRange {
 

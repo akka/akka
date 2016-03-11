@@ -16,6 +16,8 @@ import akka.stream.javadsl.Source;
 public final class HttpEntities {
     private HttpEntities() {}
 
+    public static final HttpEntity.Strict EMPTY = HttpEntity$.MODULE$.Empty();
+
     public static HttpEntity.Strict create(String string) {
         return HttpEntity$.MODULE$.apply(string);
     }

@@ -9,6 +9,8 @@ import java.nio.charset.Charset;
 /**
  * Represents a charset in Http. See {@link HttpCharsets} for a set of predefined charsets and
  * static constructors to create custom charsets.
+ *
+ * @see HttpCharsets for convenience access to often used values.
  */
 public abstract class HttpCharset {
     /**

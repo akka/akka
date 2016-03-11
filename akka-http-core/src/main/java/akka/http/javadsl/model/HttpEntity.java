@@ -5,6 +5,7 @@
 package akka.http.javadsl.model;
 
 import akka.http.impl.util.Util;
+import akka.http.javadsl.model.headers.EntityTagRanges;
 import akka.http.scaladsl.model.HttpEntity$;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Source;
@@ -37,6 +38,8 @@ import java.util.concurrent.CompletionStage;
  *  - UniversalEntity: an entity type that can be used in every context
  *
  * Use the static constructors in HttpEntities to construct instances.
+ *
+ * @see HttpEntities for javadsl convenience methods.
  */
 public interface HttpEntity {
     /**
@@ -46,8 +49,12 @@ public interface HttpEntity {
 
     /**
      * The empty entity.
+     *
+     * @deprecated Will be removed in Akka 3.x, use {@link HttpEntities#EMPTY} instead.
      */
-    HttpEntity.Strict EMPTY = HttpEntity$.MODULE$.Empty();
+    @Deprecated
+    // FIXME: Remove in Akka 3.0
+    HttpEntity.Strict EMPTY = HttpEntities.EMPTY;
 
     /**
      * Returns if this entity is known to be empty. Open-ended entity types like
