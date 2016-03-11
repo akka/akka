@@ -65,7 +65,7 @@ private[akka] object PersistentView {
  * Implementation classes refer to a persistent actors' message stream by implementing `persistenceId`
  * with the corresponding (shared) identifier value.
  *
- * Views can also store snapshots of internal state by calling [[autoUpdate]]. The snapshots of a view
+ * Views can also store snapshots of internal state by calling [[PersistentView#autoUpdate]]. The snapshots of a view
  * are independent of those of the referenced persistent actor. During recovery, a saved snapshot is offered
  * to the view with a [[SnapshotOffer]] message, followed by replayed messages, if any, that are younger
  * than the snapshot. Default is to offer the latest saved snapshot.
@@ -76,8 +76,8 @@ private[akka] object PersistentView {
  * `akka.persistence.view.auto-update-interval` configuration key. Applications may trigger additional
  * view updates by sending the view [[Update]] requests. See also methods
  *
- *  - [[autoUpdate]] for turning automated updates on or off
- *  - [[autoUpdateReplayMax]] for limiting the number of replayed messages per view update cycle
+ *  - [[PersistentView#autoUpdate]] for turning automated updates on or off
+ *  - [[PersistentView#autoUpdateReplayMax]] for limiting the number of replayed messages per view update cycle
  *
  */
 @deprecated("use Persistence Query instead", "2.4")

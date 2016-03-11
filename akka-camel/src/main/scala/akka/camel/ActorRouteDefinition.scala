@@ -11,7 +11,7 @@ import scala.concurrent.duration.Duration
 
 /**
  * Wraps a [[org.apache.camel.model.ProcessorDefinition]].
- * There is an implicit conversion in the [[akka.camel]] package object that converts a `ProcessorDefinition` into `this` type.
+ * There is an implicit conversion in the `akka.camel` package object that converts a `ProcessorDefinition` into `this` type.
  * Because of this conversion, it is possible to use an [[akka.actor.ActorRef]] as a `to` parameter in building a route:
  * {{{
  *   class TestRoute(system: ActorSystem) extends RouteBuilder {
