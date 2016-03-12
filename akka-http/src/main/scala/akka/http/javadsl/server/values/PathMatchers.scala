@@ -51,7 +51,7 @@ object PathMatchers {
    * Creates a PathMatcher that consumes (a prefix of) the first path segment
    * (if the path begins with a segment) and extracts a given value.
    */
-  def segment(name: String): PathMatcher[String] = matcher(_ ⇒ name -> name)
+  def segment(name: String): PathMatcher[String] = matcher(_ ⇒ name → name)
 
   /**
    * A PathMatcher that efficiently matches a number of digits and extracts their (non-negative) Int value.

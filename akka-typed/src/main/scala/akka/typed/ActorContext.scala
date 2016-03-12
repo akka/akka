@@ -157,7 +157,7 @@ trait ActorContext[T] {
 class StubbedActorContext[T](
   val name: String,
   override val props: Props[T])(
-    override implicit val system: ActorSystem[Nothing]) extends ActorContext[T] {
+  override implicit val system: ActorSystem[Nothing]) extends ActorContext[T] {
 
   val inbox = Inbox.sync[T](name)
   override val self = inbox.ref
@@ -169,7 +169,7 @@ class StubbedActorContext[T](
   override def child(name: String): Option[ActorRef[Nothing]] = _children get name map (_.ref)
   override def spawnAnonymous[U](props: Props[U]): ActorRef[U] = {
     val i = Inbox.sync[U](childName.next())
-    _children += i.ref.untypedRef.path.name -> i
+    _children += i.ref.untypedRef.path.name → i
     i.ref
   }
   override def spawn[U](props: Props[U], name: String): ActorRef[U] =
@@ -177,12 +177,12 @@ class StubbedActorContext[T](
       case Some(_) ⇒ throw new untyped.InvalidActorNameException(s"actor name $name is already taken")
       case None ⇒
         val i = Inbox.sync[U](name)
-        _children += name -> i
+        _children += name → i
         i.ref
     }
   override def actorOf(props: untyped.Props): untyped.ActorRef = {
     val i = Inbox.sync[Any](childName.next())
-    _children += i.ref.untypedRef.path.name -> i
+    _children += i.ref.untypedRef.path.name → i
     i.ref.untypedRef
   }
   override def actorOf(props: untyped.Props, name: String): untyped.ActorRef =
@@ -190,7 +190,7 @@ class StubbedActorContext[T](
       case Some(_) ⇒ throw new untyped.InvalidActorNameException(s"actor name $name is already taken")
       case None ⇒
         val i = Inbox.sync[Any](name)
-        _children += name -> i
+        _children += name → i
         i.ref.untypedRef
     }
   override def stop(child: ActorRef[Nothing]): Boolean = {
@@ -219,13 +219,13 @@ class StubbedActorContext[T](
 
 /*
  * TODO
- * 
+ *
  * Currently running a behavior requires that the context stays the same, since
  * the behavior may well close over it and thus a change might not be effective
  * at all. Another issue is that there is genuine state within the context that
  * is coupled to the behavior’s state: if child actors were created then
  * migrating a behavior into a new context will not work.
- * 
+ *
  * This note is about remembering the reasons behind this restriction and
  * proposes an ActorContextProxy as a (broken) half-solution. Another avenue
  * by which a solution may be explored is for Pure behaviors in that they

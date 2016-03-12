@@ -26,14 +26,17 @@ object Formatting {
     FormattingPreferences()
       .setPreference(RewriteArrowSymbols, true)
       .setPreference(AlignParameters, true)
+      .setPreference(AlignParameterTypes, false)
+      .setPreference(SpacesAroundMultiImports, true)
+      .setPreference(DanglingCloseParenthesis, Prevent)
+      .setPreference(FirstParameterOnNewline, Preserve)
+      .setPreference(FirstArgumentOnNewline, Preserve)
       .setPreference(AlignSingleLineCaseStatements, true)
   }
 
   def docFormattingPreferences = {
     import scalariform.formatter.preferences._
-    FormattingPreferences()
+    formattingPreferences
       .setPreference(RewriteArrowSymbols, false)
-      .setPreference(AlignParameters, true)
-      .setPreference(AlignSingleLineCaseStatements, true)
   }
 }

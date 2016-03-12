@@ -44,7 +44,8 @@ class ForkJoinActorBenchmark {
         |     }
         |   }
         | }
-      """.stripMargin))
+      """.stripMargin
+    ))
   }
 
   @TearDown(Level.Trial)

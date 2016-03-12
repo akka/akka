@@ -1048,14 +1048,14 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     if (keys.nonEmpty) {
       if (log.isDebugEnabled)
         log.debug("Sending gossip to [{}], containing [{}]", sender().path.address, keys.mkString(", "))
-      val g = Gossip(keys.map(k ⇒ k -> getData(k).get)(collection.breakOut), sendBack = otherDifferentKeys.nonEmpty)
+      val g = Gossip(keys.map(k ⇒ k → getData(k).get)(collection.breakOut), sendBack = otherDifferentKeys.nonEmpty)
       sender() ! g
     }
     val myMissingKeys = otherKeys diff myKeys
     if (myMissingKeys.nonEmpty) {
       if (log.isDebugEnabled)
         log.debug("Sending gossip status to [{}], requesting missing [{}]", sender().path.address, myMissingKeys.mkString(", "))
-      val status = Status(myMissingKeys.map(k ⇒ k -> NotFoundDigest)(collection.breakOut), chunk, totChunks)
+      val status = Status(myMissingKeys.map(k ⇒ k → NotFoundDigest)(collection.breakOut), chunk, totChunks)
       sender() ! status
     }
   }

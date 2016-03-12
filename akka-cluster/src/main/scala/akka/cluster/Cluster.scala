@@ -123,9 +123,9 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         case tf                           ⇒ tf
       }
       system.dynamicAccess.createInstanceFor[Scheduler](system.settings.SchedulerClass, immutable.Seq(
-        classOf[Config] -> cfg,
-        classOf[LoggingAdapter] -> log,
-        classOf[ThreadFactory] -> threadFactory)).get
+        classOf[Config] → cfg,
+        classOf[LoggingAdapter] → log,
+        classOf[ThreadFactory] → threadFactory)).get
     } else {
       // delegate to system.scheduler, but don't close over system
       val systemScheduler = system.scheduler

@@ -174,7 +174,7 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
     path.findActorIn(camel.system) getOrElse (throw new ActorNotRegisteredException(path.actorPath))
 
   private[this] def messageFor(exchange: CamelExchangeAdapter) =
-    exchange.toRequestMessage(Map(CamelMessage.MessageExchangeId -> exchange.getExchangeId))
+    exchange.toRequestMessage(Map(CamelMessage.MessageExchangeId → exchange.getExchangeId))
 }
 
 /**

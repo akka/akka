@@ -182,7 +182,7 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
   }
   def pathMatcherDirective[T](matchers: immutable.Seq[PathMatcher[_]],
                               directive: PathMatcher1[T] ⇒ Directive1[T] // this type is too specific and only a placeholder for a proper polymorphic function
-                              ): Directive0 = {
+  ): Directive0 = {
     // Concatenating PathMatchers is a bit complicated as we don't want to build up a tuple
     // but something which we can later split all the separate values and add them to the
     // ExtractionMap.
@@ -197,7 +197,7 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
         Tuple1(prefix._1 ++ suffix._1)
     }
     def toScala(matcher: PathMatcher[_]): ScalaPathMatcher[ValMap] =
-      matcher.asInstanceOf[PathMatcherImpl[_]].matcher.transform(_.map(v ⇒ Tuple1(Map(matcher -> v._1))))
+      matcher.asInstanceOf[PathMatcherImpl[_]].matcher.transform(_.map(v ⇒ Tuple1(Map(matcher → v._1))))
     def addExtractions(valMap: T): Directive0 = transformExtractionMap(_.addAll(valMap.asInstanceOf[Map[RequestVal[_], Any]]))
     val reduced: ScalaPathMatcher[ValMap] = matchers.map(toScala).reduce(_.~(_)(AddToMapJoin))
     directive(reduced.asInstanceOf[PathMatcher1[T]]).flatMap(addExtractions)

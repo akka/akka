@@ -156,7 +156,7 @@ private[http] object HttpServerBluePrint {
           case StreamedEntityCreator(creator) ⇒ streamRequestEntity(creator)
         }
 
-      def streamRequestEntity(creator: (Source[ParserOutput.RequestOutput, NotUsed]) => RequestEntity): RequestEntity = {
+      def streamRequestEntity(creator: (Source[ParserOutput.RequestOutput, NotUsed]) ⇒ RequestEntity): RequestEntity = {
         // stream incoming chunks into the request entity until we reach the end of it
         // and then toggle back to "idle"
 
@@ -242,7 +242,8 @@ private[http] object HttpServerBluePrint {
 
     val errorHandler: PartialFunction[Throwable, Throwable] = {
       // idle timeouts should not result in errors in the log. See 19058.
-      case timeout: HttpConnectionTimeoutException ⇒ log.debug(s"Closing HttpConnection due to timeout: ${timeout.getMessage}"); timeout
+      case timeout: HttpConnectionTimeoutException ⇒
+        log.debug(s"Closing HttpConnection due to timeout: ${timeout.getMessage}"); timeout
       case t                                       ⇒ log.error(t, "Outgoing response stream error"); t
     }
 
@@ -252,7 +253,7 @@ private[http] object HttpServerBluePrint {
   }
 
   class RequestTimeoutSupport(initialTimeout: FiniteDuration)
-      extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
+    extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
     private val requestIn = Inlet[HttpRequest]("requestIn")
     private val requestOut = Outlet[HttpRequest]("requestOut")
     private val responseIn = Inlet[HttpResponse]("responseIn")
@@ -308,7 +309,7 @@ private[http] object HttpServerBluePrint {
 
   private class TimeoutAccessImpl(request: HttpRequest, initialTimeout: FiniteDuration, requestEnd: Future[Unit],
                                   trigger: AsyncCallback[(TimeoutAccess, HttpResponse)], materializer: Materializer)
-      extends AtomicReference[Future[TimeoutSetup]] with TimeoutAccess with (HttpRequest ⇒ HttpResponse) { self ⇒
+    extends AtomicReference[Future[TimeoutSetup]] with TimeoutAccess with (HttpRequest ⇒ HttpResponse) { self ⇒
     import materializer.executionContext
 
     set {
@@ -353,7 +354,7 @@ private[http] object HttpServerBluePrint {
   }
 
   class ControllerStage(settings: ServerSettings, log: LoggingAdapter)
-      extends GraphStage[BidiShape[RequestOutput, RequestOutput, HttpResponse, ResponseRenderingContext]] {
+    extends GraphStage[BidiShape[RequestOutput, RequestOutput, HttpResponse, ResponseRenderingContext]] {
     private val requestParsingIn = Inlet[RequestOutput]("requestParsingIn")
     private val requestPrepOut = Outlet[RequestOutput]("requestPrepOut")
     private val httpResponseIn = Inlet[HttpResponse]("httpResponseIn")
@@ -535,7 +536,7 @@ private[http] object HttpServerBluePrint {
     One2OneBidiFlow[HttpRequest, HttpResponse](pipeliningLimit).reversed
 
   private class ProtocolSwitchStage(settings: ServerSettings, log: LoggingAdapter)
-      extends GraphStage[BidiShape[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes]] {
+    extends GraphStage[BidiShape[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes]] {
 
     private val fromNet = Inlet[SessionBytes]("fromNet")
     private val toNet = Outlet[ByteString]("toNet")

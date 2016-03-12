@@ -135,13 +135,13 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
     def simpleName = id.substring(id.lastIndexOf('.') + 1)
     idConfig(id)
       .withFallback(appConfig)
-      .withFallback(ConfigFactory.parseMap(Map("name" -> simpleName).asJava))
+      .withFallback(ConfigFactory.parseMap(Map("name" → simpleName).asJava))
       .withFallback(defaultDispatcherConfig)
   }
 
   private def idConfig(id: String): Config = {
     import scala.collection.JavaConverters._
-    ConfigFactory.parseMap(Map("id" -> id).asJava)
+    ConfigFactory.parseMap(Map("id" → id).asJava)
   }
 
   /**
@@ -180,7 +180,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
           classOf[BalancingDispatcherConfigurator].getName)
       case "PinnedDispatcher" ⇒ new PinnedDispatcherConfigurator(cfg, prerequisites)
       case fqn ⇒
-        val args = List(classOf[Config] -> cfg, classOf[DispatcherPrerequisites] -> prerequisites)
+        val args = List(classOf[Config] → cfg, classOf[DispatcherPrerequisites] → prerequisites)
         prerequisites.dynamicAccess.createInstanceFor[MessageDispatcherConfigurator](fqn, args).recover({
           case exception ⇒
             throw new ConfigurationException(

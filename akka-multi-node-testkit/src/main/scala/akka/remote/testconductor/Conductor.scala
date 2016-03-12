@@ -431,7 +431,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
         }
         fsm ! ToClient(BarrierResult("initial startup", false))
       } else {
-        nodes += name -> c
+        nodes += name → c
         if (initialParticipants <= 0) fsm ! ToClient(Done)
         else if (nodes.size == initialParticipants) {
           for (NodeInfo(_, _, client) ← nodes.values) client ! ToClient(Done)
@@ -451,7 +451,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
         case _: FailBarrier  ⇒ barrier forward op
         case GetAddress(node) ⇒
           if (nodes contains node) sender() ! ToClient(AddressReply(node, nodes(node).addr))
-          else addrInterest += node -> ((addrInterest get node getOrElse Set()) + sender())
+          else addrInterest += node → ((addrInterest get node getOrElse Set()) + sender())
         case _: Done ⇒ //FIXME what should happen?
       }
     case op: CommandOp ⇒
@@ -567,8 +567,8 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
   }
 
   onTransition {
-    case Idle -> Waiting ⇒ setTimer("Timeout", StateTimeout, nextStateData.deadline.timeLeft, false)
-    case Waiting -> Idle ⇒ cancelTimer("Timeout")
+    case Idle → Waiting ⇒ setTimer("Timeout", StateTimeout, nextStateData.deadline.timeLeft, false)
+    case Waiting → Idle ⇒ cancelTimer("Timeout")
   }
 
   when(Waiting) {

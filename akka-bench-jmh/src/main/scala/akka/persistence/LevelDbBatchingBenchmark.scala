@@ -18,11 +18,9 @@ import org.openjdk.jmh.annotations._
   # OS:   OSX 10.9.3
   # CPU:  Intel(R) Core(TM) i7-4850HQ CPU @ 2.30GHz
   # Date: Mon Jul 23 11:07:42 CEST 2014
-
   This bench emulates what we provide with "Processor batching".
   As expected, batching writes is better than writing 1 by 1.
   The important thing though is that there didn't appear to be any "write latency spikes" throughout this bench.
-
 [info] Benchmark                                       Mode   Samples        Score  Score error    Units
 [info] a.p.LevelDbBatchingBenchmark.write_1            avgt        20        0.799        0.011    ms/op
 [info] a.p.LevelDbBatchingBenchmark.writeBatch_10      avgt        20        0.117        0.001    ms/op
@@ -101,7 +99,8 @@ class LevelDbBatchingBenchmark {
     val storageLocations = List(
       "akka.persistence.journal.leveldb.dir",
       "akka.persistence.journal.leveldb-shared.store.dir",
-      "akka.persistence.snapshot-store.local.dir").map(s ⇒ new File(sys.settings.config.getString(s)))
+      "akka.persistence.snapshot-store.local.dir"
+    ).map(s ⇒ new File(sys.settings.config.getString(s)))
 
     storageLocations.foreach(FileUtils.deleteDirectory)
   }

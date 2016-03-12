@@ -46,7 +46,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
       val r = new ByteArrayRendering(48)
       DateTime(now).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
       cachedBytes = r.get
-      cachedDateHeader = cachedSeconds -> cachedBytes
+      cachedDateHeader = cachedSeconds → cachedBytes
     }
     cachedBytes
   }

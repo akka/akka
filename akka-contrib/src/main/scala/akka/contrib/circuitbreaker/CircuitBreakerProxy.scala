@@ -243,15 +243,15 @@ final class CircuitBreakerProxy(
   }
 
   onTransition {
-    case from -> Closed ⇒
+    case from → Closed ⇒
       log.debug("Moving from state {} to state CLOSED", from)
       circuitEventListener foreach { _ ! CircuitClosed(self) }
 
-    case from -> HalfOpen ⇒
+    case from → HalfOpen ⇒
       log.debug("Moving from state {} to state HALF OPEN", from)
       circuitEventListener foreach { _ ! CircuitHalfOpen(self) }
 
-    case from -> Open ⇒
+    case from → Open ⇒
       log.debug("Moving from state {} to state OPEN", from)
       circuitEventListener foreach { _ ! CircuitOpen(self) }
   }

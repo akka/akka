@@ -322,8 +322,8 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
       case "thread-pool-executor"           ⇒ new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
       case fqcn ⇒
         val args = List(
-          classOf[Config] -> config,
-          classOf[DispatcherPrerequisites] -> prerequisites)
+          classOf[Config] → config,
+          classOf[DispatcherPrerequisites] → prerequisites)
         prerequisites.dynamicAccess.createInstanceFor[ExecutorServiceConfigurator](fqcn, args).recover({
           case exception ⇒ throw new IllegalArgumentException(
             ("""Cannot instantiate ExecutorServiceConfigurator ("executor = [%s]"), defined in [%s],

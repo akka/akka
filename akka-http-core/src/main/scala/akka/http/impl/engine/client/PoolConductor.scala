@@ -61,7 +61,6 @@ private object PoolConductor {
                     +-------------+  retry  |<-------- RawSlotEvent (from slotEventMerge)
                                   |  Split  |
                                   +---------+
-
   */
   def apply(slotCount: Int, pipeliningLimit: Int, log: LoggingAdapter): Graph[Ports, Any] =
     GraphDSL.create() { implicit b ⇒
@@ -194,7 +193,7 @@ private object PoolConductor {
       @tailrec def bestSlot(ix: Int = 0, bestIx: Int = -1, bestState: SlotState = Busy): Int =
         if (ix < slotStates.length) {
           val pl = pipeliningLimit
-          slotStates(ix) -> bestState match {
+          slotStates(ix) → bestState match {
             case (Idle, _)                           ⇒ ix
             case (Unconnected, Loaded(_) | Busy)     ⇒ bestSlot(ix + 1, ix, Unconnected)
             case (x @ Loaded(a), Loaded(b)) if a < b ⇒ bestSlot(ix + 1, ix, x)

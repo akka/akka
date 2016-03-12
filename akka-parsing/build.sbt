@@ -6,7 +6,7 @@ site.settings
 OSGi.parsing
 Dependencies.parsing
 
-unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test
+unmanagedSourceDirectories in scalariformFormat in Test <<= unmanagedSourceDirectories in Test
 scalacOptions += "-language:_"
 
 // ScalaDoc doesn't like the macros

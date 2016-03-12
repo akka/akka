@@ -84,7 +84,7 @@ private[cluster] final case class Gossip(
   }
 
   @transient private lazy val membersMap: Map[UniqueAddress, Member] =
-    members.map(m ⇒ m.uniqueAddress -> m)(collection.breakOut)
+    members.map(m ⇒ m.uniqueAddress → m)(collection.breakOut)
 
   /**
    * Increments the version for this 'Node'.

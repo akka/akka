@@ -22,7 +22,8 @@ import scala.compat.java8.OptionConverters._
  * INTERNAL API
  */
 private[http] class ParameterImpl[T, U](receptacle: NameReceptacle[T])(
-  implicit fu: FromStringUnmarshaller[T], tTag: ClassTag[U], conv: T ⇒ U)
+  implicit
+  fu: FromStringUnmarshaller[T], tTag: ClassTag[U], conv: T ⇒ U)
   extends StandaloneExtractionImpl[U] with Parameter[U] {
 
   import ParameterDirectives._

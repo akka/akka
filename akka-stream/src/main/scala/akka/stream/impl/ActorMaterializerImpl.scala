@@ -182,7 +182,7 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
         case _ ⇒
           val (opprops, mat) = ActorProcessorFactory.props(ActorMaterializerImpl.this, op, effectiveAttributes)
           ActorProcessorFactory[Any, Any](
-            actorOf(opprops, stageName(effectiveAttributes), effectiveSettings.dispatcher)) -> mat
+            actorOf(opprops, stageName(effectiveAttributes), effectiveSettings.dispatcher)) → mat
       }
     }
 

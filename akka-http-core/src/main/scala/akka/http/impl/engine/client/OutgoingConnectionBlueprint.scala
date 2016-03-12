@@ -36,7 +36,6 @@ private[http] object OutgoingConnectionBlueprint {
   /*
     Stream Setup
     ============
-
     requestIn                                            +----------+
     +-----------------------------------------------+--->|  Termi-  |   requestRendering
                                                     |    |  nation  +---------------------> |

@@ -35,36 +35,35 @@ sealed abstract class Marshaller[-A, +B] {
    * If the wrapping is illegal the [[Future]] produced by the resulting marshaller will contain a [[RuntimeException]].
    */
   def wrapWithEC[C, D >: B](newMediaType: MediaType)(f: ExecutionContext ⇒ C ⇒ A)(implicit cto: ContentTypeOverrider[D]): Marshaller[C, D] =
-    Marshaller { implicit ec ⇒
-      value ⇒
-        import Marshalling._
-        this(f(ec)(value)).fast map {
-          _ map {
-            (_, newMediaType) match {
-              case (WithFixedContentType(_, marshal), newMT: MediaType.Binary) ⇒
-                WithFixedContentType(newMT, () ⇒ cto(marshal(), newMT))
-              case (WithFixedContentType(oldCT: ContentType.Binary, marshal), newMT: MediaType.WithFixedCharset) ⇒
-                WithFixedContentType(newMT, () ⇒ cto(marshal(), newMT))
-              case (WithFixedContentType(oldCT: ContentType.NonBinary, marshal), newMT: MediaType.WithFixedCharset) if oldCT.charset == newMT.charset ⇒
-                WithFixedContentType(newMT, () ⇒ cto(marshal(), newMT))
-              case (WithFixedContentType(oldCT: ContentType.NonBinary, marshal), newMT: MediaType.WithOpenCharset) ⇒
-                val newCT = newMT withCharset oldCT.charset
-                WithFixedContentType(newCT, () ⇒ cto(marshal(), newCT))
+    Marshaller { implicit ec ⇒ value ⇒
+      import Marshalling._
+      this(f(ec)(value)).fast map {
+        _ map {
+          (_, newMediaType) match {
+            case (WithFixedContentType(_, marshal), newMT: MediaType.Binary) ⇒
+              WithFixedContentType(newMT, () ⇒ cto(marshal(), newMT))
+            case (WithFixedContentType(oldCT: ContentType.Binary, marshal), newMT: MediaType.WithFixedCharset) ⇒
+              WithFixedContentType(newMT, () ⇒ cto(marshal(), newMT))
+            case (WithFixedContentType(oldCT: ContentType.NonBinary, marshal), newMT: MediaType.WithFixedCharset) if oldCT.charset == newMT.charset ⇒
+              WithFixedContentType(newMT, () ⇒ cto(marshal(), newMT))
+            case (WithFixedContentType(oldCT: ContentType.NonBinary, marshal), newMT: MediaType.WithOpenCharset) ⇒
+              val newCT = newMT withCharset oldCT.charset
+              WithFixedContentType(newCT, () ⇒ cto(marshal(), newCT))
 
-              case (WithOpenCharset(oldMT, marshal), newMT: MediaType.WithOpenCharset) ⇒
-                WithOpenCharset(newMT, cs ⇒ cto(marshal(cs), newMT withCharset cs))
-              case (WithOpenCharset(oldMT, marshal), newMT: MediaType.WithFixedCharset) ⇒
-                WithFixedContentType(newMT, () ⇒ cto(marshal(newMT.charset), newMT))
+            case (WithOpenCharset(oldMT, marshal), newMT: MediaType.WithOpenCharset) ⇒
+              WithOpenCharset(newMT, cs ⇒ cto(marshal(cs), newMT withCharset cs))
+            case (WithOpenCharset(oldMT, marshal), newMT: MediaType.WithFixedCharset) ⇒
+              WithFixedContentType(newMT, () ⇒ cto(marshal(newMT.charset), newMT))
 
-              case (Opaque(marshal), newMT: MediaType.Binary) ⇒
-                WithFixedContentType(newMT, () ⇒ cto(marshal(), newMT))
-              case (Opaque(marshal), newMT: MediaType.WithFixedCharset) ⇒
-                WithFixedContentType(newMT, () ⇒ cto(marshal(), newMT))
+            case (Opaque(marshal), newMT: MediaType.Binary) ⇒
+              WithFixedContentType(newMT, () ⇒ cto(marshal(), newMT))
+            case (Opaque(marshal), newMT: MediaType.WithFixedCharset) ⇒
+              WithFixedContentType(newMT, () ⇒ cto(marshal(), newMT))
 
-              case x ⇒ sys.error(s"Illegal marshaller wrapping. Marshalling `$x` cannot be wrapped with MediaType `$newMediaType`")
-            }
+            case x ⇒ sys.error(s"Illegal marshaller wrapping. Marshalling `$x` cannot be wrapped with MediaType `$newMediaType`")
           }
         }
+      }
     }
 
   def compose[C](f: C ⇒ A): Marshaller[C, B] =

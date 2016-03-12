@@ -233,13 +233,13 @@ object MemberStatus {
    */
   private[cluster] val allowedTransitions: Map[MemberStatus, Set[MemberStatus]] =
     Map(
-      Joining -> Set(WeaklyUp, Up, Down, Removed),
-      WeaklyUp -> Set(Up, Down, Removed),
-      Up -> Set(Leaving, Down, Removed),
-      Leaving -> Set(Exiting, Down, Removed),
-      Down -> Set(Removed),
-      Exiting -> Set(Removed, Down),
-      Removed -> Set.empty[MemberStatus])
+      Joining → Set(WeaklyUp, Up, Down, Removed),
+      WeaklyUp → Set(Up, Down, Removed),
+      Up → Set(Leaving, Down, Removed),
+      Leaving → Set(Exiting, Down, Removed),
+      Down → Set(Removed),
+      Exiting → Set(Removed, Down),
+      Removed → Set.empty[MemberStatus])
 }
 
 /**

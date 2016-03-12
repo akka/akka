@@ -19,7 +19,6 @@ import org.openjdk.jmh.annotations.Warmup
 [info] Benchmark                                            Mode   Samples        Score  Score error    Units
 [info] a.a.ActorPathValidationBenchmark.handLoop7000       thrpt        20        0.070        0.002   ops/us
 [info] a.a.ActorPathValidationBenchmark.old7000            -- blows up (stack overflow) --
-
 [info] a.a.ActorPathValidationBenchmark.handLoopActor_1    thrpt        20       38.825        3.378   ops/us
 [info] a.a.ActorPathValidationBenchmark.oldActor_1         thrpt        20        1.585        0.090   ops/us
  */

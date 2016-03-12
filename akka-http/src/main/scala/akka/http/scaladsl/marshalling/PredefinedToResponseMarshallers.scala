@@ -17,7 +17,8 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
 
   def fromToEntityMarshaller[T](status: StatusCode = StatusCodes.OK,
                                 headers: immutable.Seq[HttpHeader] = Nil)(
-                                  implicit m: ToEntityMarshaller[T]): ToResponseMarshaller[T] =
+    implicit
+    m: ToEntityMarshaller[T]): ToResponseMarshaller[T] =
     fromStatusCodeAndHeadersAndValue compose (t ⇒ (status, headers, t))
 
   implicit val fromResponse: TRM[HttpResponse] = Marshaller.opaque(ConstantFun.scalaIdentityFunction)

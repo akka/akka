@@ -607,7 +607,7 @@ object Parser {
   private class DetermineReportQuiet(
     private var _minErrorIndex: Int, // the smallest index at which a mismatch triggers a StartTracingException
     var inQuiet: Boolean = false // are we currently in a quiet rule?
-    ) extends ErrorAnalysisPhase {
+  ) extends ErrorAnalysisPhase {
     def minErrorIndex = _minErrorIndex
     def applyOffset(offset: Int) = _minErrorIndex -= offset
   }
@@ -619,7 +619,7 @@ object Parser {
     val reportQuiet: Boolean, // do we need to trace mismatches from quiet rules?
     val traceNr: Int = 0, // the zero-based index number of the RuleTrace we are currently building
     var errorMismatches: Int = 0 // the number of times we have already seen a mismatch at >= minErrorIndex
-    ) extends ErrorAnalysisPhase {
+  ) extends ErrorAnalysisPhase {
     def applyOffset(offset: Int) = minErrorIndex -= offset
   }
 }
