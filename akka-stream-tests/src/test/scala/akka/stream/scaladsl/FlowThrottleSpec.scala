@@ -37,8 +37,8 @@ class FlowThrottleSpec extends AkkaSpec {
       val mat1 = ActorMaterializer(ActorMaterializerSettings(system))
       val mat2 = ActorMaterializer(ActorMaterializerSettings(system))
 
-      val stream1 = Source(1 to 1).via(crateFlow).runWith(TestSink.probe[Int])(mat1)
-      val stream2 = Source(1 to 1).via(crateFlow).runWith(TestSink.probe[Int])(mat2)
+      val stream1 = Source.single(1).via(crateFlow).runWith(TestSink.probe[Int])(mat1)
+      val stream2 = Source.single(1).via(crateFlow).runWith(TestSink.probe[Int])(mat2)
 
       stream1.request(3)
       stream1.expectNoMsg(200.millis)
