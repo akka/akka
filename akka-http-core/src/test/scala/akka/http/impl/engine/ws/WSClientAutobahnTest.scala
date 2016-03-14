@@ -57,7 +57,6 @@ object WSClientAutobahnTest extends App {
     import Console._
     info.flatMap { i ⇒
       val prefix = f"$YELLOW${i.caseInfo.id}%-7s$RESET - $RESET${i.caseInfo.description}$RESET ... "
-      //println(prefix)
 
       status.onComplete {
         case Success((CaseStatus(status), millis)) ⇒
