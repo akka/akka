@@ -5,6 +5,7 @@
 package akka.http.impl.engine.client
 
 import akka.http.impl.util.One2OneBidiFlow
+import akka.http.scaladsl.model.headers.Location
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -89,6 +90,31 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
 
       a[One2OneBidiFlow.OutputTruncationException.type] should be thrownBy Await.result(x, 3.second)
       binding.futureValue.unbind()
+    }
+    "be able to handle redirects" in Utils.assertAllStagesStopped {
+      val (_, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
+      val binding = Http().bindAndHandleSync(r ⇒ {
+        val c = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse.toInt
+        if (c % 2 == 0) {
+          HttpResponse(entity = c.toString)
+        } else {
+          HttpResponse(status = StatusCodes.MovedPermanently, headers = Location(s"/${c + 1}") :: Nil)
+        }
+      }, serverHostName, serverPort)
+
+      val N = 100
+      val result = Source.fromIterator(() ⇒ Iterator.from(1))
+        .take(N)
+        .filterNot(_ % 2 == 0)
+        .map(id ⇒ HttpRequest(uri = s"/r$id"))
+        .via(Http().outgoingConnection(serverHostName, serverPort))
+        .mapAsync(4)(_.entity.toStrict(1.second))
+        .map { r ⇒ val s = r.data.utf8String; log.debug(s); s.toInt }
+        .runFold(0)(_ + _)
+
+      result.futureValue(PatienceConfig(10.seconds)) shouldEqual 2500
+      binding.futureValue.unbind()
+
     }
 
   }
