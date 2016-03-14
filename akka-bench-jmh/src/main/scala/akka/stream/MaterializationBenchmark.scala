@@ -117,5 +117,4 @@ class MaterializationBenchmark {
 
   @Benchmark
   def graph_with_imported_flow():Unit = graphWithImportedFlow.run()
-
 }
