@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.{ AtomicBoolean }
 
 import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, ExtendedActorSystem, Props }
 import akka.event.LoggingAdapter
+import akka.stream.ActorMaterializerSettings.defaultMaxFixedBufferSize
 import akka.stream.impl._
 import com.typesafe.config.Config
 
@@ -224,7 +225,7 @@ object ActorMaterializerSettings {
    * Create [[ActorMaterializerSettings]] from a Config subsection (Scala).
    */
   def apply(config: Config): ActorMaterializerSettings =
-    ActorMaterializerSettings(
+    new ActorMaterializerSettings(
       initialInputBufferSize = config.getInt("initial-input-buffer-size"),
       maxInputBufferSize = config.getInt("max-input-buffer-size"),
       dispatcher = config.getString("dispatcher"),
@@ -234,7 +235,8 @@ object ActorMaterializerSettings {
       outputBurstLimit = config.getInt("output-burst-limit"),
       fuzzingMode = config.getBoolean("debug.fuzzing-mode"),
       autoFusing = config.getBoolean("auto-fusing"),
-      maxFixedBufferSize = config.getInt("max-fixed-buffer-size"))
+      maxFixedBufferSize = config.getInt("max-fixed-buffer-size"),
+      syncProcessingLimit = config.getInt("sync-processing-limit"))
 
   /**
    * Create [[ActorMaterializerSettings]] from individual settings (Java).
@@ -266,13 +268,14 @@ object ActorMaterializerSettings {
   def create(config: Config): ActorMaterializerSettings =
     apply(config)
 
+  private val defaultMaxFixedBufferSize = 1000
 }
 
 /**
  * This class describes the configurable properties of the [[ActorMaterializer]].
  * Please refer to the `withX` methods for descriptions of the individual settings.
  */
-final class ActorMaterializerSettings(
+final class ActorMaterializerSettings private (
   val initialInputBufferSize: Int,
   val maxInputBufferSize: Int,
   val dispatcher: String,
@@ -282,9 +285,25 @@ final class ActorMaterializerSettings(
   val outputBurstLimit: Int,
   val fuzzingMode: Boolean,
   val autoFusing: Boolean,
-  val maxFixedBufferSize: Int) {
+  val maxFixedBufferSize: Int,
+  val syncProcessingLimit: Int) {
+
+  def this(initialInputBufferSize: Int,
+           maxInputBufferSize: Int,
+           dispatcher: String,
+           supervisionDecider: Supervision.Decider,
+           subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
+           debugLogging: Boolean,
+           outputBurstLimit: Int,
+           fuzzingMode: Boolean,
+           autoFusing: Boolean,
+           maxFixedBufferSize: Int) {
+    this(initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
+      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, defaultMaxFixedBufferSize)
+  }
 
   require(initialInputBufferSize > 0, "initialInputBufferSize must be > 0")
+  require(syncProcessingLimit > 0, "syncProcessingLimit must be > 0")
 
   requirePowerOfTwo(maxInputBufferSize, "maxInputBufferSize")
   require(initialInputBufferSize <= maxInputBufferSize, s"initialInputBufferSize($initialInputBufferSize) must be <= maxInputBufferSize($maxInputBufferSize)")
@@ -299,10 +318,12 @@ final class ActorMaterializerSettings(
     outputBurstLimit: Int = this.outputBurstLimit,
     fuzzingMode: Boolean = this.fuzzingMode,
     autoFusing: Boolean = this.autoFusing,
-    maxFixedBufferSize: Int = this.maxFixedBufferSize) =
+    maxFixedBufferSize: Int = this.maxFixedBufferSize,
+    syncProcessingLimit: Int = this.syncProcessingLimit) = {
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize)
+      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, syncProcessingLimit)
+  }
 
   /**
    * Each asynchronous piece of a materialized stream topology is executed by one Actor
@@ -367,6 +388,13 @@ final class ActorMaterializerSettings(
     else copy(outputBurstLimit = limit)
 
   /**
+   * Limit for number of messages that can be processed synchronously in stream to substream communication
+   */
+  def withSyncProcessingLimit(limit: Int): ActorMaterializerSettings =
+    if (limit == this.syncProcessingLimit) this
+    else copy(syncProcessingLimit = limit)
+
+  /**
    * Enable to log all elements that are dropped due to failures (at DEBUG level).
    */
   def withDebugLogging(enable: Boolean): ActorMaterializerSettings =
@@ -413,12 +441,13 @@ final class ActorMaterializerSettings(
         s.subscriptionTimeoutSettings == subscriptionTimeoutSettings &&
         s.debugLogging == debugLogging &&
         s.outputBurstLimit == outputBurstLimit &&
+        s.syncProcessingLimit == syncProcessingLimit &&
         s.fuzzingMode == fuzzingMode &&
         s.autoFusing == autoFusing
     case _ ⇒ false
   }
 
-  override def toString: String = s"ActorMaterializerSettings($initialInputBufferSize,$maxInputBufferSize,$dispatcher,$supervisionDecider,$subscriptionTimeoutSettings,$debugLogging,$outputBurstLimit,$fuzzingMode,$autoFusing)"
+  override def toString: String = s"ActorMaterializerSettings($initialInputBufferSize,$maxInputBufferSize,$dispatcher,$supervisionDecider,$subscriptionTimeoutSettings,$debugLogging,$outputBurstLimit,$syncProcessingLimit,$fuzzingMode,$autoFusing)"
 }
 
 object StreamSubscriptionTimeoutSettings {
