@@ -177,13 +177,13 @@ private object PoolSlot {
       val results: List[ProcessorOut] = {
         if (inflightRequests.isEmpty && firstContext.isDefined) {
           (error match {
-            case Some(err) ⇒ ResponseDelivery(ResponseContext(firstContext.get, Failure(new RuntimeException("Unexpected (early) disconnect", err))))
-            case _         ⇒ ResponseDelivery(ResponseContext(firstContext.get, Failure(new RuntimeException("Unexpected (early) disconnect"))))
+            case Some(err) ⇒ ResponseDelivery(ResponseContext(firstContext.get, Failure(new UnexpectedDisconnectException("Unexpected (early) disconnect", err))))
+            case _         ⇒ ResponseDelivery(ResponseContext(firstContext.get, Failure(new UnexpectedDisconnectException("Unexpected (early) disconnect"))))
           }) :: Nil
         } else {
           inflightRequests.map { rc ⇒
             if (rc.retriesLeft == 0) {
-              val reason = error.fold[Throwable](new RuntimeException("Unexpected disconnect"))(conforms)
+              val reason = error.fold[Throwable](new UnexpectedDisconnectException("Unexpected disconnect"))(conforms)
               connInport ! ActorPublisherMessage.Cancel
               ResponseDelivery(ResponseContext(rc, Failure(reason)))
             } else SlotEvent.RetryRequest(rc.copy(retriesLeft = rc.retriesLeft - 1))
@@ -236,5 +236,9 @@ private object PoolSlot {
         slotProcessor ! FromConnection(ev)
         context.stop(self)
     }
+  }
+
+  final class UnexpectedDisconnectException(msg: String, cause: Throwable) extends RuntimeException(msg, cause) {
+    def this(msg: String) = this(msg, null)
   }
 }
