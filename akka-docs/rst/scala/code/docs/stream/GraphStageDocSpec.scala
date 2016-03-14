@@ -274,7 +274,8 @@ class GraphStageDocSpec extends AkkaSpec {
     import system.dispatcher
 
     //#async-side-channel
-    // will close upstream when the future completes
+    // will close upstream in all materializations of the graph stage instance
+    // when the future completes
     class KillSwitch[A](switch: Future[Unit]) extends GraphStage[FlowShape[A, A]] {
 
       val in = Inlet[A]("KillSwitch.in")

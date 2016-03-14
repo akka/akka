@@ -76,9 +76,9 @@ private[stream] object Timers {
   }
 
   final class Idle[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
-    private var nextDeadline: Deadline = Deadline.now + timeout
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
+      private var nextDeadline: Deadline = Deadline.now + timeout
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
           nextDeadline = Deadline.now + timeout
