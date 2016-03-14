@@ -115,9 +115,10 @@ private[http] object StreamUtils {
   def limitByteChunksStage(maxBytesPerChunk: Int): GraphStage[FlowShape[ByteString, ByteString]] =
     new SimpleLinearGraphStage[ByteString] {
       override def initialAttributes = Attributes.name("limitByteChunksStage")
-      var remaining = ByteString.empty
 
       override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+
+        var remaining = ByteString.empty
 
         def splitAndPush(elem: ByteString): Unit = {
           val toPush = remaining.take(maxBytesPerChunk)

@@ -384,7 +384,8 @@ public class GraphStageDocTest extends AbstractJavaTest {
 
 
   //#async-side-channel
-  // will close upstream when the future completes
+  // will close upstream in all materializations of the stage instance
+  // when the completion stage completes
   public class KillSwitch<A> extends GraphStage<FlowShape<A, A>> {
 
     private final CompletionStage<Done> switchF;
