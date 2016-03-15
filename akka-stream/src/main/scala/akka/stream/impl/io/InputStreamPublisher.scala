@@ -28,8 +28,8 @@ private[akka] object InputStreamPublisher {
 
 /** INTERNAL API */
 private[akka] class InputStreamPublisher(is: InputStream, completionPromise: Promise[IOResult], chunkSize: Int)
-  extends akka.stream.actor.ActorPublisher[ByteString]
-  with ActorLogging {
+    extends akka.stream.actor.ActorPublisher[ByteString]
+    with ActorLogging {
 
   // TODO possibly de-duplicate with FilePublisher?
 
@@ -47,7 +47,7 @@ private[akka] class InputStreamPublisher(is: InputStream, completionPromise: Pro
   def readAndSignal(): Unit =
     if (isActive) {
       readAndEmit()
-      if (totalDemand > 0) self ! Continue
+      if (totalDemand > 0 && isActive) self ! Continue
     }
 
   def readAndEmit(): Unit = if (totalDemand > 0) try {
