@@ -124,7 +124,9 @@ Akka comes shipped with a number of mailbox implementations:
 
 * **SingleConsumerOnlyUnboundedMailbox**
 
-  - Backed by a very efficient Multiple-Producer Single-Consumer queue, cannot be used with ``BalancingDispatcher``
+  This queue may or may not be faster than the default one depending on your use-case—be sure to benchmark properly!
+
+  - Backed by a Multiple-Producer Single-Consumer queue, cannot be used with ``BalancingDispatcher``
 
   - Blocking: No
 
