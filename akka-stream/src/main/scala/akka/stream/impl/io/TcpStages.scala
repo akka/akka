@@ -40,14 +40,14 @@ private[stream] class ConnectionSourceStage(val tcpManager: ActorRef,
   override def initialAttributes = Attributes.name("ConnectionSource")
   val shape: SourceShape[StreamTcp.IncomingConnection] = SourceShape(out)
 
-  private val connectionFlowsAwaitingInitialization = new AtomicLong()
-
   // TODO: Timeout on bind
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[ServerBinding]) = {
     val bindingPromise = Promise[ServerBinding]
 
     val logic = new TimerGraphStageLogic(shape) {
       implicit def self: ActorRef = stageActor.ref
+
+      val connectionFlowsAwaitingInitialization = new AtomicLong()
       var listener: ActorRef = _
       var unbindPromise = Promise[Unit]()
 

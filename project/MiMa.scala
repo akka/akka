@@ -680,7 +680,10 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[FinalClassProblem]("akka.http.scaladsl.model.EntityStreamSizeException"),
 
         // #19849 content negotiation fixes
-        ProblemFilters.exclude[FinalClassProblem]("akka.http.scaladsl.marshalling.Marshal$UnacceptableResponseContentTypeException")
+        ProblemFilters.exclude[FinalClassProblem]("akka.http.scaladsl.marshalling.Marshal$UnacceptableResponseContentTypeException"),
+
+        // #20009 internal and shouldn't have been public
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.QueueSource.completion")
       )
     )
   }
