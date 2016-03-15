@@ -58,7 +58,7 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
 
   /**
    * Maps over this directive using the given function, which can produce either a tuple or any other value
-   * (which will then we wrapped into a [[Tuple1]]).
+   * (which will then we wrapped into a [[scala.Tuple1]]).
    */
   def tmap[R](f: L ⇒ R)(implicit tupler: Tupler[R]): Directive[tupler.Out] =
     Directive[tupler.Out] { inner ⇒ tapply { values ⇒ inner(tupler(f(values))) } }(tupler.OutIsTuple)
@@ -70,7 +70,7 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
     Directive[R] { inner ⇒ tapply { values ⇒ f(values) tapply inner } }
 
   /**
-   * Creates a new [[Directive0]], which passes if the given predicate matches the current
+   * Creates a new [[akka.http.scaladsl.server.Directive0]], which passes if the given predicate matches the current
    * extractions or rejects with the given rejections.
    */
   def trequire(predicate: L ⇒ Boolean, rejections: Rejection*): Directive0 =

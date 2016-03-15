@@ -22,8 +22,8 @@ import HttpCharsets._
 import akka.stream.impl.fusing.SubSource
 
 /**
- * Provides [[Multipart]] marshallers.
- * It is possible to configure the default parsing mode by providing an implicit [[ParserSettings]] instance.
+ * Provides [[akka.http.scaladsl.model.Multipart]] marshallers.
+ * It is possible to configure the default parsing mode by providing an implicit [[akka.http.scaladsl.settings.ParserSettings]] instance.
  */
 trait MultipartUnmarshallers {
 

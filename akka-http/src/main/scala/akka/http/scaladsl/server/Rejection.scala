@@ -10,7 +10,7 @@ import headers._
 
 /**
  * A rejection encapsulates a specific reason why a Route was not able to handle a request. Rejections are gathered
- * up over the course of a Route evaluation and finally converted to [[spray.http.HttpResponse]]s by the
+ * up over the course of a Route evaluation and finally converted to [[akka.http.scaladsl.model.HttpResponse]]s by the
  * `handleRejections` directive, if there was no way for the request to be completed.
  */
 trait Rejection
@@ -125,7 +125,7 @@ object UnacceptedResponseEncodingRejection {
 }
 
 /**
- * Rejection created by an [[akka.http.scaladsl.server.authentication.HttpAuthenticator]].
+ * Rejection created by an [[akka.http.javadsl.server.values.HttpBasicAuthenticator]].
  * Signals that the request was rejected because the user could not be authenticated. The reason for the rejection is
  * specified in the cause.
  */
