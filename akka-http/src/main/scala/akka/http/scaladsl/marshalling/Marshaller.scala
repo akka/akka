@@ -19,20 +19,20 @@ sealed abstract class Marshaller[-A, +B] {
 
   /**
    * Reuses this Marshaller's logic to produce a new Marshaller from another type `C` which overrides
-   * the [[MediaType]] of the marshalling result with the given one.
-   * Note that not all wrappings are legal. f the underlying [[MediaType]] has constraints with regard to the
-   * charsets it allows the new [[MediaType]] must be compatible, since akka-http will never recode entities.
-   * If the wrapping is illegal the [[Future]] produced by the resulting marshaller will contain a [[RuntimeException]].
+   * the [[akka.http.scaladsl.model.MediaType]] of the marshalling result with the given one.
+   * Note that not all wrappings are legal. f the underlying [[akka.http.scaladsl.model.MediaType]] has constraints with regard to the
+   * charsets it allows the new [[akka.http.scaladsl.model.MediaType]] must be compatible, since akka-http will never recode entities.
+   * If the wrapping is illegal the [[scala.concurrent.Future]] produced by the resulting marshaller will contain a [[RuntimeException]].
    */
   def wrap[C, D >: B](newMediaType: MediaType)(f: C ⇒ A)(implicit mto: ContentTypeOverrider[D]): Marshaller[C, D] =
     wrapWithEC[C, D](newMediaType)(_ ⇒ f)
 
   /**
    * Reuses this Marshaller's logic to produce a new Marshaller from another type `C` which overrides
-   * the [[MediaType]] of the marshalling result with the given one.
-   * Note that not all wrappings are legal. f the underlying [[MediaType]] has constraints with regard to the
-   * charsets it allows the new [[MediaType]] must be compatible, since akka-http will never recode entities.
-   * If the wrapping is illegal the [[Future]] produced by the resulting marshaller will contain a [[RuntimeException]].
+   * the [[akka.http.scaladsl.model.MediaType]] of the marshalling result with the given one.
+   * Note that not all wrappings are legal. f the underlying [[akka.http.scaladsl.model.MediaType]] has constraints with regard to the
+   * charsets it allows the new [[akka.http.scaladsl.model.MediaType]] must be compatible, since akka-http will never recode entities.
+   * If the wrapping is illegal the [[scala.concurrent.Future]] produced by the resulting marshaller will contain a [[RuntimeException]].
    */
   def wrapWithEC[C, D >: B](newMediaType: MediaType)(f: ExecutionContext ⇒ C ⇒ A)(implicit cto: ContentTypeOverrider[D]): Marshaller[C, D] =
     Marshaller { implicit ec ⇒
@@ -149,7 +149,7 @@ sealed trait Marshalling[+A] {
 object Marshalling {
 
   /**
-   * A Marshalling to a specific [[ContentType]].
+   * A Marshalling to a specific [[akka.http.scaladsl.model.ContentType]].
    */
   final case class WithFixedContentType[A](contentType: ContentType,
                                            marshal: () ⇒ A) extends Marshalling[A] {
@@ -157,7 +157,7 @@ object Marshalling {
   }
 
   /**
-   * A Marshalling to a specific [[MediaType]] with a flexible charset.
+   * A Marshalling to a specific [[akka.http.scaladsl.model.MediaType]] with a flexible charset.
    */
   final case class WithOpenCharset[A](mediaType: MediaType.WithOpenCharset,
                                       marshal: HttpCharset ⇒ A) extends Marshalling[A] {

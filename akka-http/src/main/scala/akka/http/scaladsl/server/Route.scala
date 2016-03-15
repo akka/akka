@@ -38,7 +38,7 @@ object Route {
   /**
    * Turns a `Route` into a server flow.
    *
-   * This conversion is also implicitly available through [[RouteResult.route2HandlerFlow]].
+   * This conversion is also implicitly available through [[RouteResult#route2HandlerFlow]].
    */
   def handlerFlow(route: Route)(implicit routingSettings: RoutingSettings,
                                 parserSettings: ParserSettings,

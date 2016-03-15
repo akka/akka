@@ -133,8 +133,7 @@ abstract class PathDirectives extends MiscDirectives {
    * }
    * }}}
    *
-   * For further information, refer to:
-   * [[http://googlewebmastercentral.blogspot.de/2010/04/to-slash-or-not-to-slash.html]]
+   * For further information, refer to: http://googlewebmastercentral.blogspot.de/2010/04/to-slash-or-not-to-slash.html
    */
   def pathEndOrSingleSlash: Directive = RawPathPrefixForMatchers(List(PathMatchers.SLASH.optional, PathMatchers.END))
 

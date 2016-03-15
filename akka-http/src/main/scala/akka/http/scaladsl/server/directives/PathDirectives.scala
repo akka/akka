@@ -123,7 +123,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    * }}}
    *
    * For further information, refer to:
-   * [[http://googlewebmastercentral.blogspot.de/2010/04/to-slash-or-not-to-slash.html]]
+   * @see [[http://googlewebmastercentral.blogspot.de/2010/04/to-slash-or-not-to-slash.html]]
    */
   def pathEndOrSingleSlash: Directive0 = rawPathPrefix(Slash.? ~ PathEnd)
 
