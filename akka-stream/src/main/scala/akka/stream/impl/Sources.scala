@@ -20,9 +20,9 @@ final private[stream] class QueueSource[T](maxBuffer: Int, overflowStrategy: Ove
 
   val out = Outlet[T]("queueSource.out")
   override val shape: SourceShape[T] = SourceShape.of(out)
-  val completion = Promise[Done]
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+    val completion = Promise[Done]
     val stageLogic = new GraphStageLogic(shape) with CallbackWrapper[(T, Offered)] {
       var buffer: Buffer[T] = _
       var pendingOffer: Option[(T, Offered)] = None

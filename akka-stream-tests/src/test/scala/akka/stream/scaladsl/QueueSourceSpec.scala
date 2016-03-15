@@ -194,6 +194,27 @@ class QueueSourceSpec extends AkkaSpec {
       queue.offer(1).onFailure { case e ⇒ e.isInstanceOf[IllegalStateException] should ===(true) }
     }
 
+    "not share future across materializations" in {
+      val source = Source.queue[String](1, OverflowStrategy.fail)
+
+      val mat1subscriber = TestSubscriber.probe[String]()
+      val mat2subscriber = TestSubscriber.probe[String]()
+      val sourceQueue1 = source.to(Sink.fromSubscriber(mat1subscriber)).run()
+      val sourceQueue2 = source.to(Sink.fromSubscriber(mat2subscriber)).run()
+
+      mat1subscriber.ensureSubscription()
+      mat2subscriber.ensureSubscription()
+
+      mat1subscriber.request(1)
+      sourceQueue1.offer("hello")
+      mat1subscriber.expectNext("hello")
+      mat1subscriber.cancel()
+      sourceQueue1.watchCompletion pipeTo testActor
+      expectMsg(Done)
+
+      sourceQueue2.watchCompletion().isCompleted should ===(false)
+    }
+
   }
 
 }
