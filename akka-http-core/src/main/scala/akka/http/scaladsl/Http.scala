@@ -54,16 +54,16 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   private[this] final val DefaultPortForProtocol = -1 // any negative value
 
   /**
-   * Creates a [[akka.stream.scaladsl.Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
+   * Creates a [[akka.stream.scaladsl.Source]] of [[akka.http.scaladsl.Http.IncomingConnection]] instances which represents a prospective HTTP server binding
    * on the given `endpoint`.
    *
    * If the given port is 0 the resulting source can be materialized several times. Each materialization will
    * then be assigned a new local port by the operating system, which can then be retrieved by the materialized
-   * [[ServerBinding]].
+   * [[akka.http.scaladsl.Http.ServerBinding]].
    *
    * If the given port is non-zero subsequent materialization attempts of the produced source will immediately
    * fail, unless the first materialization has already been unbound. Unbinding can be triggered via the materialized
-   * [[ServerBinding]].
+   * [[akka.http.scaladsl.Http.ServerBinding]].
    *
    * If an [[ConnectionContext]] is given it will be used for setting up TLS encryption on the binding.
    * Otherwise the binding will be unencrypted.
@@ -94,13 +94,13 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[Flow]] for processing all incoming connections.
+   * [[akka.stream.scaladsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting.
    *
    * To configure additional settings for a server started using this method,
-   * use the `akka.http.server` config section or pass in a [[ServerSettings]] explicitly.
+   * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
    */
   def bindAndHandle(handler: Flow[HttpRequest, HttpResponse, Any],
                     interface: String, port: Int = DefaultPortForProtocol,
@@ -135,13 +135,13 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[Flow]] for processing all incoming connections.
+   * [[akka.stream.scaladsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting.
    *
    * To configure additional settings for a server started using this method,
-   * use the `akka.http.server` config section or pass in a [[ServerSettings]] explicitly.
+   * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
    */
   def bindAndHandleSync(handler: HttpRequest ⇒ HttpResponse,
                         interface: String, port: Int = DefaultPortForProtocol,
@@ -152,13 +152,13 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[Flow]] for processing all incoming connections.
+   * [[akka.stream.scaladsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting.
    *
    * To configure additional settings for a server started using this method,
-   * use the `akka.http.server` config section or pass in a [[ServerSettings]] explicitly.
+   * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
    */
   def bindAndHandleAsync(handler: HttpRequest ⇒ Future[HttpResponse],
                          interface: String, port: Int = DefaultPortForProtocol,
@@ -171,16 +171,16 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   type ServerLayer = Http.ServerLayer
 
   /**
-   * Constructs a [[ServerLayer]] stage using the configured default [[ServerSettings]],
+   * Constructs a [[akka.http.scaladsl.Http.ServerLayer]] stage using the configured default [[akka.http.scaladsl.settings.ServerSettings]],
    * configured using the `akka.http.server` config section.
    *
-   * The returned [[BidiFlow]] can only be materialized once.
+   * The returned [[akka.stream.scaladsl.BidiFlow]] can only be materialized once.
    */
   def serverLayer()(implicit mat: Materializer): ServerLayer = serverLayer(ServerSettings(system))
 
   /**
-   * Constructs a [[ServerLayer]] stage using the given [[ServerSettings]]. The returned [[BidiFlow]] isn't reusable and
-   * can only be materialized once. The `remoteAddress`, if provided, will be added as a header to each [[HttpRequest]]
+   * Constructs a [[akka.http.scaladsl.Http.ServerLayer]] stage using the given [[akka.http.scaladsl.settings.ServerSettings]]. The returned [[akka.stream.scaladsl.BidiFlow]] isn't reusable and
+   * can only be materialized once. The `remoteAddress`, if provided, will be added as a header to each [[akka.http.scaladsl.model.HttpRequest]]
    * this layer produces if the `akka.http.server.remote-address-header` configuration option is enabled.
    */
   def serverLayer(settings: ServerSettings,
@@ -191,11 +191,11 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   // ** CLIENT ** //
 
   /**
-   * Creates a [[Flow]] representing a prospective HTTP client connection to the given endpoint.
+   * Creates a [[akka.stream.scaladsl.Flow]] representing a prospective HTTP client connection to the given endpoint.
    * Every materialization of the produced flow will attempt to establish a new outgoing connection.
    *
    * To configure additional settings for requests made using this method,
-   * use the `akka.http.client` config section or pass in a [[ClientConnectionSettings]] explicitly.
+   * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
    */
   def outgoingConnection(host: String, port: Int = 80,
                          localAddress: Option[InetSocketAddress] = None,
@@ -204,13 +204,13 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     _outgoingConnection(host, port, localAddress, settings, ConnectionContext.noEncryption(), log)
 
   /**
-   * Same as [[outgoingConnection]] but for encrypted (HTTPS) connections.
+   * Same as [[#outgoingConnection]] but for encrypted (HTTPS) connections.
    *
    * If an explicit [[HttpsConnectionContext]] is given then it rather than the configured default [[HttpsConnectionContext]] will be used
    * for encryption on the connection.
    *
    * To configure additional settings for requests made using this method,
-   * use the `akka.http.client` config section or pass in a [[ClientConnectionSettings]] explicitly.
+   * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
    */
   def outgoingConnectionHttps(host: String, port: Int = 443,
                               connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
@@ -246,14 +246,14 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   type ClientLayer = Http.ClientLayer
 
   /**
-   * Constructs a [[ClientLayer]] stage using the configured default [[ClientConnectionSettings]],
+   * Constructs a [[akka.http.scaladsl.Http.ClientLayer]] stage using the configured default [[akka.http.scaladsl.settings.ClientConnectionSettings]],
    * configured using the `akka.http.client` config section.
    */
   def clientLayer(hostHeader: Host): ClientLayer =
     clientLayer(hostHeader, ClientConnectionSettings(system))
 
   /**
-   * Constructs a [[ClientLayer]] stage using the given [[ClientConnectionSettings]].
+   * Constructs a [[akka.http.scaladsl.Http.ClientLayer]] stage using the given [[akka.http.scaladsl.settings.ClientConnectionSettings]].
    */
   def clientLayer(hostHeader: Host,
                   settings: ClientConnectionSettings,
@@ -263,7 +263,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   // ** CONNECTION POOL ** //
 
   /**
-   * Starts a new connection pool to the given host and configuration and returns a [[Flow]] which dispatches
+   * Starts a new connection pool to the given host and configuration and returns a [[akka.stream.scaladsl.Flow]] which dispatches
    * the requests from all its materializations across this pool.
    * While the started host connection pool internally shuts itself down automatically after the configured idle
    * timeout it will spin itself up again if more requests arrive from an existing or a new client flow
@@ -287,7 +287,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   }
 
   /**
-   * Same as [[newHostConnectionPool]] but for encrypted (HTTPS) connections.
+   * Same as [[#newHostConnectionPool]] but for encrypted (HTTPS) connections.
    *
    * If an explicit [[ConnectionContext]] is given then it rather than the configured default [[ConnectionContext]] will be used
    * for encryption on the connections.
@@ -306,7 +306,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   /**
    * INTERNAL API
    *
-   * Starts a new connection pool to the given host and configuration and returns a [[Flow]] which dispatches
+   * Starts a new connection pool to the given host and configuration and returns a [[akka.stream.scaladsl.Flow]] which dispatches
    * the requests from all its materializations across this pool.
    * While the started host connection pool internally shuts itself down automatically after the configured idle
    * timeout it will spin itself up again if more requests arrive from an existing or a new client flow
@@ -326,11 +326,11 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   }
 
   /**
-   * Returns a [[Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
+   * Returns a [[akka.stream.scaladsl.Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
    * HTTP connections to the given target host endpoint. For every ActorSystem, target host and pool
    * configuration a separate connection pool is maintained.
    * The HTTP layer transparently manages idle shutdown and restarting of connections pools as configured.
-   * The returned [[Flow]] instances therefore remain valid throughout the lifetime of the application.
+   * The returned [[akka.stream.scaladsl.Flow]] instances therefore remain valid throughout the lifetime of the application.
    *
    * The internal caching logic guarantees that there will never be more than a single pool running for the
    * given target host endpoint and configuration (in this ActorSystem).
@@ -354,7 +354,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   }
 
   /**
-   * Same as [[cachedHostConnectionPool]] but for encrypted (HTTPS) connections.
+   * Same as [[#cachedHostConnectionPool]] but for encrypted (HTTPS) connections.
    *
    * If an explicit [[ConnectionContext]] is given then it rather than the configured default [[ConnectionContext]] will be used
    * for encryption on the connections.
@@ -372,11 +372,11 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   }
 
   /**
-   * Returns a [[Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
+   * Returns a [[akka.stream.scaladsl.Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
    * HTTP connections to the given target host endpoint. For every ActorSystem, target host and pool
    * configuration a separate connection pool is maintained.
    * The HTTP layer transparently manages idle shutdown and restarting of connections pools as configured.
-   * The returned [[Flow]] instances therefore remain valid throughout the lifetime of the application.
+   * The returned [[akka.stream.scaladsl.Flow]] instances therefore remain valid throughout the lifetime of the application.
    *
    * The internal caching logic guarantees that there will never be more than a single pool running for the
    * given target host endpoint and configuration (in this ActorSystem).
@@ -415,7 +415,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     clientFlow[T](settings) { request ⇒ request -> cachedGateway(request, settings, connectionContext, log) }
 
   /**
-   * Fires a single [[HttpRequest]] across the (cached) host connection pool for the request's
+   * Fires a single [[akka.http.scaladsl.model.HttpRequest]] across the (cached) host connection pool for the request's
    * effective URI to produce a response future.
    *
    * If an explicit [[ConnectionContext]] is given then it rather than the configured default [[ConnectionContext]] will be used
@@ -435,7 +435,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     }
 
   /**
-   * Constructs a [[WebSocketClientLayer]] stage using the configured default [[ClientConnectionSettings]],
+   * Constructs a [[akka.http.scaladsl.Http.WebSocketClientLayer]] stage using the configured default [[akka.http.scaladsl.settings.ClientConnectionSettings]],
    * configured using the `akka.http.client` config section.
    *
    * The layer is not reusable and must only be materialized once.
@@ -487,7 +487,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
       .joinMat(clientFlow)(Keep.both).run()
 
   /**
-   * Triggers an orderly shutdown of all host connections pools currently maintained by the [[ActorSystem]].
+   * Triggers an orderly shutdown of all host connections pools currently maintained by the [[akka.actor.ActorSystem]].
    * The returned future is completed when all pools that were live at the time of this method call
    * have completed their shutdown process.
    *
