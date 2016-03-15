@@ -73,7 +73,7 @@ class FixedBufferSpec extends AkkaSpec {
       "become non-full after head dropped from full buffer" in {
         val buf = FixedSizeBuffer[String](size)
         for (_ ← 1 to size) buf.enqueue("test")
-        buf.dropTail()
+        buf.dropHead()
         buf.isEmpty should be(size == 1)
         buf.isFull should be(false)
       }
