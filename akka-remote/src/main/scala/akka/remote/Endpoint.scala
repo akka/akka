@@ -203,6 +203,8 @@ private[remote] class ReliableDeliverySupervisor(
   val autoResendTimer = context.system.scheduler.schedule(
     settings.SysResendTimeout, settings.SysResendTimeout, self, AttemptSysMsgRedelivery)
 
+  private val selfAddressUid = AddressUidExtension(context.system).addressUid
+
   private var bufferWasInUse = false
 
   override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
@@ -280,9 +282,10 @@ private[remote] class ReliableDeliverySupervisor(
     case IsIdle ⇒ // Do not reply, we will Terminate soon, or send a GotUid
     case s: Send ⇒
       handleSend(s)
-    case ack: Ack ⇒
+    case AckWithOrigin(ack, originUid) ⇒
       // If we are not sure about the UID just ignore the ack. Ignoring is fine.
-      if (uidConfirmed) {
+      // originUid is empty for communication with systems running 2.4.2 or older
+      if (uidConfirmed && originUid.forall(_ == selfAddressUid)) {
         try resendBuffer = resendBuffer.acknowledge(ack)
         catch {
           case NonFatal(e) ⇒
@@ -342,7 +345,8 @@ private[remote] class ReliableDeliverySupervisor(
     case AttemptSysMsgRedelivery               ⇒ // Ignore
     case s @ Send(msg: SystemMessage, _, _, _) ⇒ tryBuffer(s.copy(seqOpt = Some(nextSeq())))
     case s: Send                               ⇒ context.system.deadLetters ! s
-    case EndpointWriter.FlushAndStop           ⇒ context.stop(self)
+    case EndpointWriter.FlushAndStop ⇒
+      context.stop(self)
     case EndpointWriter.StopReading(w, replyTo) ⇒
       replyTo ! EndpointWriter.StoppedReading(w)
       sender() ! EndpointWriter.StoppedReading(w)
@@ -492,7 +496,7 @@ private[remote] object EndpointWriter {
 
   final case class Handle(handle: AkkaProtocolHandle) extends NoSerializationVerificationNeeded
 
-  final case class OutboundAck(ack: Ack)
+  final case class OutboundAck(ack: AckWithOrigin)
 
   // These settings are not configurable because wrong configuration will break the auto-tuning
   private val SendBufferBatchSize = 5
@@ -532,7 +536,7 @@ private[remote] class EndpointWriter(
   def newAckDeadline: Deadline = Deadline.now + settings.SysMsgAckTimeout
   var ackDeadline: Deadline = newAckDeadline
 
-  var lastAck: Option[Ack] = None
+  var lastAck: Option[AckWithOrigin] = None
 
   override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
     case NonFatal(e) ⇒ publishAndThrow(e, Logging.ErrorLevel)
@@ -1011,13 +1015,13 @@ private[remote] class EndpointReader(
     ackedReceiveBuffer = updatedBuffer
 
     // Notify writer that some messages can be acked
-    context.parent ! OutboundAck(ack)
+    context.parent ! OutboundAck(AckWithOrigin(ack, Some(uid)))
     deliver foreach { m ⇒
       msgDispatch.dispatch(m.recipient, m.recipientAddress, m.serializedMessage, m.senderOption)
     }
   }
 
-  private def tryDecodeMessageAndAck(pdu: ByteString): (Option[Ack], Option[Message]) = try {
+  private def tryDecodeMessageAndAck(pdu: ByteString): (Option[AckWithOrigin], Option[Message]) = try {
     codec.decodeMessage(pdu, provider, localAddress)
   } catch {
     case NonFatal(e) ⇒ throw new EndpointException("Error while decoding incoming Akka PDU", e)

@@ -28,6 +28,7 @@ message RemoteEnvelope {
 message AcknowledgementInfo {
   required fixed64 cumulativeAck = 1;
   repeated fixed64 nacks = 2;
+  optional sfixed32 originUid = 3; 
 }
 
 /**
