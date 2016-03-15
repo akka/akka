@@ -192,11 +192,11 @@ trait ActorPublisher[T] extends Actor {
    * call [[#onNext]], [[#onError]] and [[#onComplete]].
    */
   def onComplete(): Unit = lifecycleState match {
-    case Active | PreSubscriber | CompleteThenStop ⇒
+    case Active | PreSubscriber ⇒
       lifecycleState = Completed
       if (subscriber ne null) // otherwise onComplete will be called when the subscription arrives
         try tryOnComplete(subscriber) finally subscriber = null
-    case Completed ⇒
+    case Completed | CompleteThenStop ⇒
       throw new IllegalStateException("onComplete must only be called once")
     case _: ErrorEmitted ⇒
       throw new IllegalStateException("onComplete must not be called after onError")
@@ -225,13 +225,13 @@ trait ActorPublisher[T] extends Actor {
    * call [[#onNext]], [[#onError]] and [[#onComplete]].
    */
   def onError(cause: Throwable): Unit = lifecycleState match {
-    case Active | PreSubscriber | CompleteThenStop ⇒
+    case Active | PreSubscriber ⇒
       lifecycleState = ErrorEmitted(cause, stop = false)
       if (subscriber ne null) // otherwise onError will be called when the subscription arrives
         try tryOnError(subscriber, cause) finally subscriber = null
     case _: ErrorEmitted ⇒
       throw new IllegalStateException("onError must only be called once")
-    case Completed ⇒
+    case Completed | CompleteThenStop ⇒
       throw new IllegalStateException("onError must not be called after onComplete")
     case Canceled ⇒ // drop
   }
@@ -260,8 +260,6 @@ trait ActorPublisher[T] extends Actor {
       if (n < 1) {
         if (lifecycleState == Active)
           onError(numberOfElementsInRequestMustBePositiveException)
-        else
-          super.aroundReceive(receive, msg)
       } else {
         demand += n
         if (demand < 0)
