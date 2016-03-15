@@ -563,8 +563,11 @@ object UnboundedMailbox {
 
 /**
  * SingleConsumerOnlyUnboundedMailbox is a high-performance, multiple producer—single consumer, unbounded MailboxType,
- * the only drawback is that you can't have multiple consumers,
+ * with the drawback that you can't have multiple consumers,
  * which rules out using it with BalancingPool (BalancingDispatcher) for instance.
+ *
+ * Currently this queue is slower for some benchmarks than the ConcurrentLinkedQueue from JDK 8 that is used by default,
+ * so be sure to measure the performance in your particular setting in order to determine which one to use.
  */
 case class SingleConsumerOnlyUnboundedMailbox() extends MailboxType with ProducesMessageQueue[NodeMessageQueue] {
 
