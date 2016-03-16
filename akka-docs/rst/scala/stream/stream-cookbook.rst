@@ -201,6 +201,8 @@ The graph consists of a ``Balance`` node which is a special fan-out operation th
 downstream consumers. In a ``for`` loop we wire all of our desired workers as outputs of this balancer element, then
 we wire the outputs of these workers to a ``Merge`` element that will collect the results from the workers.
 
+To make the worker stages run in parallel we mark them as asynchronous with `async`.
+
 .. includecode:: ../code/docs/stream/cookbook/RecipeWorkerPool.scala#worker-pool
 
 Working with rate
