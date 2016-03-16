@@ -380,7 +380,6 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
     "create an outgoing connection (with 6 parameters)" in {
       val (host, port, binding) = runServer()
-      println("host = " + host)
       val flow = http.outgoingConnection(
         toHost(host, port),
         Optional.empty(),
