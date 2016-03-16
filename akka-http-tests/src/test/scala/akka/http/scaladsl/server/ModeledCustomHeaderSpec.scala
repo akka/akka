@@ -6,6 +6,7 @@ package akka.http.scaladsl.server
 
 import akka.http.scaladsl.model.{ HttpHeader, StatusCodes }
 import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.server.directives.HeaderMagnet
 
 import scala.concurrent.Future
 import scala.util.{ Success, Failure, Try }
@@ -13,20 +14,26 @@ import scala.util.{ Success, Failure, Try }
 object ModeledCustomHeaderSpec {
 
   //#modeled-api-key-custom-header
-  object ApiTokenHeader extends ModeledCustomHeaderCompanion[ApiTokenHeader] {
-    def renderInRequests = false
-    def renderInResponses = false
-    override val name = "apiKey"
-    override def parse(value: String) = Try(new ApiTokenHeader(value))
-  }
   final class ApiTokenHeader(token: String) extends ModeledCustomHeader[ApiTokenHeader] {
     def renderInRequests = false
     def renderInResponses = false
     override val companion = ApiTokenHeader
     override def value: String = token
   }
+  object ApiTokenHeader extends ModeledCustomHeaderCompanion[ApiTokenHeader] {
+    def renderInRequests = false
+    def renderInResponses = false
+    override val name = "apiKey"
+    override def parse(value: String) = Try(new ApiTokenHeader(value))
+  }
   //#modeled-api-key-custom-header
 
+  final class DifferentHeader(token: String) extends ModeledCustomHeader[DifferentHeader] {
+    def renderInRequests = false
+    def renderInResponses = false
+    override val companion = DifferentHeader
+    override def value = token
+  }
   object DifferentHeader extends ModeledCustomHeaderCompanion[DifferentHeader] {
     def renderInRequests = false
     def renderInResponses = false
@@ -34,12 +41,6 @@ object ModeledCustomHeaderSpec {
     override def parse(value: String) =
       if (value contains " ") Failure(new Exception("Contains illegal whitespace!"))
       else Success(new DifferentHeader(value))
-  }
-  final class DifferentHeader(token: String) extends ModeledCustomHeader[DifferentHeader] {
-    def renderInRequests = false
-    def renderInResponses = false
-    override val companion = DifferentHeader
-    override def value = token
   }
 
 }
@@ -106,6 +107,27 @@ class ModeledCustomHeaderSpec extends RoutingSpec {
         responseAs[String] should ===("extracted> apiKey: TheKey")
       }
       //#matching-in-routes
+    }
+
+    "be able to extract in routing DSL via headerValueByType" in {
+      val routes = headerValueByType[ApiTokenHeader]() { token ⇒
+        val ApiTokenHeader(t) = token
+        complete(s"extracted> $t")
+      }
+
+      Get().withHeaders(RawHeader("apiKey", "TheKey")) ~> routes ~> check {
+        status should ===(StatusCodes.OK)
+        responseAs[String] should ===("extracted> apiKey: TheKey")
+      }
+
+      Get().withHeaders(RawHeader("somethingElse", "TheKey")) ~> routes ~> check {
+        rejection should ===(MissingHeaderRejection("ApiTokenHeader"))
+      }
+
+      Get().withHeaders(ApiTokenHeader("TheKey")) ~> routes ~> check {
+        status should ===(StatusCodes.OK)
+        responseAs[String] should ===("extracted> apiKey: TheKey")
+      }
     }
 
     "fail with useful message when unable to parse" in {
