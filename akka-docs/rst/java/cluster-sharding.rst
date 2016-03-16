@@ -184,11 +184,18 @@ Distributed Data Mode
 
 Instead of using :ref:`persistence-java` it is possible to use the :ref:`distributed_data_java` module
 as storage for the state of the sharding coordinator. In such case the state of the 
-``ShardCoordinator`` will be replicated inside a cluster by the Distributed Data module with
+``ShardCoordinator`` will be replicated inside a cluster by the :ref:`distributed_data_java` module with
 ``WriteMajority``/``ReadMajority`` consistency.
 
-This mode can be enabled by setting configuration property ``akka.cluster.sharding.state-store-mode``
-as ``ddata``. 
+This mode can be enabled by setting configuration property::
+
+    akka.cluster.sharding.state-store-mode = ddata 
+
+It is using the Distributed Data extension that must be running on all nodes in the cluster.
+Therefore you should add that extension to the configuration to make sure that it is started
+on all nodes::
+
+    akka.extensions += "akka.cluster.ddata.DistributedData"
 
 You must explicitly add the ``akka-distributed-data-experimental`` dependency to your build if
 you use this mode. It is possible to remove ``akka-persistence`` dependency from a project if it

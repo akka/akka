@@ -9,5 +9,4 @@ Information for Akka Developers
    io-layer
    developer-guidelines
    documentation
-   team
 
