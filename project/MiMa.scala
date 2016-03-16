@@ -724,7 +724,11 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.FlowModule"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.FlowModule.subModules"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.impl.FlowModule.label"),
-        ProblemFilters.exclude[FinalClassProblem]("akka.stream.impl.fusing.GraphModule")
+        ProblemFilters.exclude[FinalClassProblem]("akka.stream.impl.fusing.GraphModule"),
+
+        // #15947 catch mailbox creation failures
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.RepointableActorRef.point"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.Dispatch.initWithFailure")
       )
     )
   }

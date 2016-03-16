@@ -621,7 +621,7 @@ private[akka] class ActorCell(
 
   // future extension point
   protected def handleSupervise(child: ActorRef, async: Boolean): Unit = child match {
-    case r: RepointableActorRef if async ⇒ r.point()
+    case r: RepointableActorRef if async ⇒ r.point(catchFailures = true)
     case _                               ⇒
   }
 
@@ -649,4 +649,3 @@ private[akka] class ActorCell(
 
   protected final def clazz(o: AnyRef): Class[_] = if (o eq null) this.getClass else o.getClass
 }
-
