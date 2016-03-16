@@ -12,9 +12,9 @@ class StreamBuffersRateSpec extends AkkaSpec {
     def println(s: Any) = ()
     //#pipelining
     Source(1 to 3)
-      .map { i => println(s"A: $i"); i }
-      .map { i => println(s"B: $i"); i }
-      .map { i => println(s"C: $i"); i }
+      .map { i => println(s"A: $i"); i }.async
+      .map { i => println(s"B: $i"); i }.async
+      .map { i => println(s"C: $i"); i }.async
       .runWith(Sink.ignore)
     //#pipelining
   }
@@ -29,9 +29,9 @@ class StreamBuffersRateSpec extends AkkaSpec {
     //#materializer-buffer
 
     //#section-buffer
-    val section = Flow[Int].map(_ * 2)
-      .withAttributes(Attributes.inputBuffer(initial = 1, max = 1))
-    val flow = section.via(Flow[Int].map(_ / 2)) // the buffer size of this map is the default
+    val section = Flow[Int].map(_ * 2).async
+      .withAttributes(Attributes.inputBuffer(initial = 1, max = 1)) // the buffer size of this map is 1
+    val flow = section.via(Flow[Int].map(_ / 2)).async // the buffer size of this map is the default
     //#section-buffer
   }
 
@@ -43,7 +43,8 @@ class StreamBuffersRateSpec extends AkkaSpec {
     RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
 
-      val zipper = b.add(ZipWith[Tick, Int, Int]((tick, count) => count))
+      // this is the asynchronous stage in this graph
+      val zipper = b.add(ZipWith[Tick, Int, Int]((tick, count) => count).async)
 
       Source.tick(initialDelay = 3.second, interval = 3.second, Tick()) ~> zipper.in0
 

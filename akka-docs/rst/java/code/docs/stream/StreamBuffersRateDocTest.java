@@ -45,9 +45,9 @@ public class StreamBuffersRateDocTest extends AbstractJavaTest {
   public void demonstratePipelining() {
     //#pipelining
     Source.from(Arrays.asList(1, 2, 3))
-      .map(i -> {System.out.println("A: " + i); return i;})
-      .map(i -> {System.out.println("B: " + i); return i;})
-      .map(i -> {System.out.println("C: " + i); return i;})
+      .map(i -> {System.out.println("A: " + i); return i;}).async()
+      .map(i -> {System.out.println("B: " + i); return i;}).async()
+      .map(i -> {System.out.println("C: " + i); return i;}).async()
       .runWith(Sink.ignore(), mat);
     //#pipelining
   }
@@ -64,12 +64,12 @@ public class StreamBuffersRateDocTest extends AbstractJavaTest {
     //#section-buffer
     final Flow<Integer, Integer, NotUsed> flow1 =
       Flow.of(Integer.class)
-      .map(elem -> elem * 2) // the buffer size of this map is 1
-      .withAttributes(Attributes.inputBuffer(1, 1));
+      .map(elem -> elem * 2).async()
+      .withAttributes(Attributes.inputBuffer(1, 1)); // the buffer size of this map is 1
     final Flow<Integer, Integer, NotUsed> flow2 =
       flow1.via(
         Flow.of(Integer.class)
-        .map(elem -> elem / 2)); // the buffer size of this map is the default
+        .map(elem -> elem / 2)).async(); // the buffer size of this map is the default
     //#section-buffer
   }
 
@@ -87,8 +87,9 @@ public class StreamBuffersRateDocTest extends AbstractJavaTest {
             first -> 1, (count, elem) -> count + 1);
 
     RunnableGraph.fromGraph(GraphDSL.create(b -> {
+      // this is the asynchronous stage in this graph
       final FanInShape2<String, Integer, Integer> zipper =
-          b.add(ZipWith.create((String tick, Integer count) -> count));
+          b.add(ZipWith.create((String tick, Integer count) -> count).async());
       b.from(b.add(msgSource)).via(b.add(conflate)).toInlet(zipper.in1());
       b.from(b.add(tickSource)).toInlet(zipper.in0());
       b.from(zipper.out()).to(b.add(Sink.foreach(elem -> System.out.println(elem))));
