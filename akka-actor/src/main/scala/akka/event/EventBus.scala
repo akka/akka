@@ -255,7 +255,7 @@ trait ScanningClassification { self: EventBus ⇒
 /**
  * Maps ActorRefs to ActorRefs to form an EventBus where ActorRefs can listen to other ActorRefs.
  *
- * All subscribers will be watched by an [[akka.event.ActorClassificationUnsubscriber]] and unsubscribed when they terminate.
+ * All subscribers will be watched by an `akka.event.ActorClassificationUnsubscriber` and unsubscribed when they terminate.
  * The unsubscriber actor will not be stopped automatically, and if you want to stop using the bus you should stop it yourself.
  */
 trait ManagedActorClassification { this: ActorEventBus with ActorClassifier ⇒
