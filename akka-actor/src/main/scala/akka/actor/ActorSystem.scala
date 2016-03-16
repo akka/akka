@@ -176,6 +176,7 @@ object ActorSystem {
     final val LogLevel: String = getString("akka.loglevel")
     final val StdoutLogLevel: String = getString("akka.stdout-loglevel")
     final val Loggers: immutable.Seq[String] = immutableSeq(getStringList("akka.loggers"))
+    final val LoggersDispatcher: String = getString("akka.loggers-dispatcher")
     final val LoggingFilter: String = getString("akka.logging-filter")
     final val LoggerStartTimeout: Timeout = Timeout(config.getMillisDuration("akka.logger-startup-timeout"))
     final val LogConfigOnStart: Boolean = config.getBoolean("akka.log-config-on-start")
