@@ -6,8 +6,9 @@ package akka.stream
 import java.util.Optional
 
 import akka.event.Logging
+
 import scala.annotation.tailrec
-import scala.reflect.{ classTag, ClassTag }
+import scala.reflect.{ClassTag, classTag}
 import akka.japi.function
 import akka.stream.impl.StreamLayout._
 import java.net.URLEncoder
@@ -169,7 +170,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 }
 
 /**
- * Note that more attributes for the [[ActorMaterializer]] are defined in [[ActorAttributes]].
+ * Note that more attributes for the [[ActorMaterializer]] are defined in [[akka.stream.ActorAttributes]].
  */
 object Attributes {
 
@@ -178,6 +179,16 @@ object Attributes {
   final case class InputBuffer(initial: Int, max: Int) extends Attribute
   final case class LogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel) extends Attribute
   final case object AsyncBoundary extends Attribute
+  final case class Cleaner(clean:Any => Unit) extends Attribute{
+    require(clean != null,"The clean function should not be null.")
+  }
+
+  object Cleaner{
+    /**
+      * Used to return a cleaner function which does nothing.
+      * */
+    final val Ignore:Any => Unit = any => ()
+  }
 
   object LogLevels {
     /** Use to disable logging on certain operations when configuring [[Attributes.LogLevels]] */
@@ -230,6 +241,18 @@ object Attributes {
    */
   def logLevels(onElement: Logging.LogLevel = Logging.DebugLevel, onFinish: Logging.LogLevel = Logging.DebugLevel, onFailure: Logging.LogLevel = Logging.ErrorLevel) =
     Attributes(LogLevels(onElement, onFinish, onFailure))
+
+  /**
+    * Specifies the function of how to clean up.
+    * */
+  def cleaner(clean:Any => Unit):Attributes = Attributes(Cleaner(clean))
+
+  /**
+    * Java API
+    *
+    * Specifies the function of how to clean up.
+    * */
+  def createCleaner(clean: akka.japi.function.Procedure[Any]):Attributes = cleaner(clean.apply)
 
   /**
    * Compute a name by concatenating all Name attributes that the given module

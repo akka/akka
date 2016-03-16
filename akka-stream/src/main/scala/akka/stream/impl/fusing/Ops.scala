@@ -5,13 +5,14 @@ package akka.stream.impl.fusing
 
 import akka.event.Logging.LogLevel
 import akka.event.{ LogSource, Logging, LoggingAdapter }
-import akka.stream.Attributes.{ InputBuffer, LogLevels }
+import akka.stream.Attributes.{ Cleaner, InputBuffer, LogLevels }
 import akka.stream.OverflowStrategies._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.impl.{ Buffer ⇒ BufferImpl, ReactiveStreamsCompliance }
+import akka.stream.impl.{ ReactiveStreamsCompliance, Buffer ⇒ BufferImpl }
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
@@ -19,6 +20,7 @@ import scala.concurrent.Future
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 import akka.stream.ActorAttributes.SupervisionStrategy
+
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import akka.stream.impl.Stages.DefaultAttributes
 
@@ -35,9 +37,17 @@ private[akka] final case class Map[In, Out](f: In ⇒ Out, decider: Supervision.
  * INTERNAL API
  */
 private[akka] final case class Filter[T](p: T ⇒ Boolean, decider: Supervision.Decider) extends PushStage[T, T] {
+  private var cleaner: Option[Cleaner] = None
+  override def preStart(ctx: LifecycleContext) = {
+    cleaner = ctx.attributes.get[Cleaner]
+    super.preStart(ctx)
+  }
+
   override def onPush(elem: T, ctx: Context[T]): SyncDirective =
-    if (p(elem)) ctx.push(elem)
-    else ctx.pull()
+    if (p(elem)) ctx.push(elem) else {
+      cleaner.foreach(_.clean(elem))
+      ctx.pull()
+    }
 
   override def decide(t: Throwable): Supervision.Directive = decider(t)
 }
