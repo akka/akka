@@ -4,6 +4,7 @@
 
 package akka.remote
 
+import akka.Done
 import akka.actor._
 import akka.dispatch.sysmsg._
 import akka.event.{ Logging, LoggingAdapter, EventStream }
@@ -59,8 +60,13 @@ private[akka] object RemoteActorRefProvider {
     }
 
     when(WaitTransportShutdown) {
-      case Event((), _) ⇒
+      case Event(Done, _) ⇒
         log.info("Remoting shut down.")
+        systemGuardian ! TerminationHookDone
+        stop()
+
+      case Event(Status.Failure(ex), _) ⇒
+        log.error(ex, "Remoting shut down with error")
         systemGuardian ! TerminationHookDone
         stop()
     }
