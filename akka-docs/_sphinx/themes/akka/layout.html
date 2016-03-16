@@ -125,7 +125,7 @@
                 Version {{ release|e }}
               </li>
               <li style="float: left">
-                <input type="search" id="q" class="form-control" />
+                <input type="search" id="search" class="form-control" />
               </li>
             </ul>
           </div>
@@ -217,10 +217,12 @@
   docsearch({
     apiKey: '543bad5ad786495d9ccd445ed34ed082',
     indexName: 'akka_io',
-    inputSelector: '#q',
+    inputSelector: '#search',
     algoliaOptions: {
       hitsPerPage: 10,
-      facetFilters: '["language:' + lang + '","version:' + version + '"]'
+      facetFilters: '[' +
+      '["language:' + lang + '","language:general"]' +
+      ',"version:2.4.2"]'
     }
   });
 
