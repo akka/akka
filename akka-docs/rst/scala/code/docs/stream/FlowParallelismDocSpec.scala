@@ -30,7 +30,7 @@ class FlowParallelismDocSpec extends AkkaSpec {
 
     // With the two frying pans we can fully cook pancakes
     val pancakeChef: Flow[ScoopOfBatter, Pancake, NotUsed] =
-      Flow[ScoopOfBatter].via(fryingPan1).via(fryingPan2)
+      Flow[ScoopOfBatter].via(fryingPan1.async).via(fryingPan2.async)
     //#pipelining
   }
 
@@ -45,11 +45,11 @@ class FlowParallelismDocSpec extends AkkaSpec {
 
       // Using two frying pans in parallel, both fully cooking a pancake from the batter.
       // We always put the next scoop of batter to the first frying pan that becomes available.
-      dispatchBatter.out(0) ~> fryingPan ~> mergePancakes.in(0)
+      dispatchBatter.out(0) ~> fryingPan.async ~> mergePancakes.in(0)
       // Notice that we used the "fryingPan" flow without importing it via builder.add().
       // Flows used this way are auto-imported, which in this case means that the two
       // uses of "fryingPan" mean actually different stages in the graph.
-      dispatchBatter.out(1) ~> fryingPan ~> mergePancakes.in(1)
+      dispatchBatter.out(1) ~> fryingPan.async ~> mergePancakes.in(1)
 
       FlowShape(dispatchBatter.in, mergePancakes.out)
     })
@@ -67,8 +67,8 @@ class FlowParallelismDocSpec extends AkkaSpec {
 
         // Using two pipelines, having two frying pans each, in total using
         // four frying pans
-        dispatchBatter.out(0) ~> fryingPan1 ~> fryingPan2 ~> mergePancakes.in(0)
-        dispatchBatter.out(1) ~> fryingPan1 ~> fryingPan2 ~> mergePancakes.in(1)
+        dispatchBatter.out(0) ~> fryingPan1.async ~> fryingPan2.async ~> mergePancakes.in(0)
+        dispatchBatter.out(1) ~> fryingPan1.async ~> fryingPan2.async ~> mergePancakes.in(1)
 
         FlowShape(dispatchBatter.in, mergePancakes.out)
       })
@@ -84,8 +84,8 @@ class FlowParallelismDocSpec extends AkkaSpec {
 
         // Two chefs work with one frying pan for each, half-frying the pancakes then putting
         // them into a common pool
-        dispatchBatter.out(0) ~> fryingPan1 ~> mergeHalfPancakes.in(0)
-        dispatchBatter.out(1) ~> fryingPan1 ~> mergeHalfPancakes.in(1)
+        dispatchBatter.out(0) ~> fryingPan1.async ~> mergeHalfPancakes.in(0)
+        dispatchBatter.out(1) ~> fryingPan1.async ~> mergeHalfPancakes.in(1)
 
         FlowShape(dispatchBatter.in, mergeHalfPancakes.out)
       })
@@ -97,8 +97,8 @@ class FlowParallelismDocSpec extends AkkaSpec {
 
         // Two chefs work with one frying pan for each, finishing the pancakes then putting
         // them into a common pool
-        dispatchHalfPancakes.out(0) ~> fryingPan2 ~> mergePancakes.in(0)
-        dispatchHalfPancakes.out(1) ~> fryingPan2 ~> mergePancakes.in(1)
+        dispatchHalfPancakes.out(0) ~> fryingPan2.async ~> mergePancakes.in(0)
+        dispatchHalfPancakes.out(1) ~> fryingPan2.async ~> mergePancakes.in(1)
 
         FlowShape(dispatchHalfPancakes.in, mergePancakes.out)
       })
