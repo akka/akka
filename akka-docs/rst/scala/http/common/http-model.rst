@@ -294,6 +294,8 @@ Strict-Transport-Security
 
 __ @github@/akka-http-core/src/test/scala/akka/http/impl/engine/rendering/ResponseRendererSpec.scala#L422
 
+.. _custom-headers-scala:
+
 Custom Headers
 --------------
 
