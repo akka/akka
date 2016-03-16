@@ -3,7 +3,7 @@ a { color: #15A9CE; }
 a:hover { color: #15A9CE; text-decoration: underline; }
 .navbar { margin-bottom: 18px; }
 .navbar-logo { visibility: visible; float: left; padding-top: 0px; }
-.main { position: relative; height: auto; margin-top: -18px; overflow: auto; background: #15A9CE;}
+.main { position: relative; height: auto; margin-top: -18px; overflow: visible; background: #15A9CE;}
 .page-title { position: relative; top: 24px; font-family: 'Source Sans Pro', sans-serif; font-size: 24px; font-weight: 400; color: rgba(255, 255, 255, 1); width: 840px;}
 .main-container { background: #ffffff;  min-height: 600px; padding-top: 20px; margin-top: 28px; }
 .pdf-link { float: right; height: 40px; margin-bottom: -15px; margin-top: -5px; }
