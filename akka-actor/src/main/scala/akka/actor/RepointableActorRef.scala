@@ -6,15 +6,14 @@ package akka.actor
 
 import java.util.{ LinkedList ⇒ JLinkedList }
 import java.util.concurrent.locks.ReentrantLock
-
 import scala.annotation.tailrec
 import scala.collection.immutable
-
 import akka.actor.dungeon.ChildrenContainer
 import akka.event.Logging.Warning
 import akka.util.Unsafe
 import akka.dispatch._
 import akka.dispatch.sysmsg._
+import scala.util.control.NonFatal
 
 /**
  * This actor ref starts out with some dummy cell (by default just enqueuing
@@ -76,7 +75,7 @@ private[akka] class RepointableActorRef(
         swapCell(new UnstartedCell(system, this, props, supervisor))
         swapLookup(underlying)
         supervisor.sendSystemMessage(Supervise(this, async))
-        if (!async) point()
+        if (!async) point(false)
         this
       case other ⇒ throw new IllegalStateException("initialize called more than once!")
     }
@@ -87,9 +86,16 @@ private[akka] class RepointableActorRef(
    * modification of the `underlying` field, though it is safe to send messages
    * at any time.
    */
-  def point(): this.type =
+  def point(catchFailures: Boolean): this.type =
     underlying match {
       case u: UnstartedCell ⇒
+        val cell =
+          try newCell(u)
+          catch {
+            case NonFatal(ex) if catchFailures ⇒
+              val safeDispatcher = system.dispatchers.defaultGlobalDispatcher
+              new ActorCell(system, this, props, safeDispatcher, supervisor).initWithFailure(ex)
+          }
         /*
          * The problem here was that if the real actor (which will start running
          * at cell.start()) creates children in its constructor, then this may
@@ -97,7 +103,6 @@ private[akka] class RepointableActorRef(
          * children cannot be looked up immediately, e.g. if they shall become
          * routees.
          */
-        val cell = newCell(u)
         swapLookup(cell)
         cell.start()
         u.replaceWith(cell)
