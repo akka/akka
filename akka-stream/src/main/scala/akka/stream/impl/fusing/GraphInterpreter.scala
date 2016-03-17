@@ -191,14 +191,17 @@ private[akka] object GraphInterpreter {
       (inHandlers, outHandlers, logics)
     }
 
-    override def toString: String =
+    override def toString: String = {
+      val stageList = stages.iterator.zip(originalAttributes.iterator).map {
+        case (stage, attr) ⇒ s"${stage.module}    [${attr.attributeList.mkString(", ")}]"
+      }
       "GraphAssembly\n  " +
-        stages.mkString("Stages: [", ",", "]") + "\n  " +
-        originalAttributes.mkString("Attributes: [", ",", "]") + "\n  " +
-        ins.mkString("Inlets: [", ",", "]") + "\n  " +
-        inOwners.mkString("InOwners: [", ",", "]") + "\n  " +
-        outs.mkString("Outlets: [", ",", "]") + "\n  " +
-        outOwners.mkString("OutOwners: [", ",", "]")
+        stageList.mkString("[ ", "\n    ", "\n  ]") + "\n  " +
+        ins.mkString("[", ",", "]") + "\n  " +
+        inOwners.mkString("[", ",", "]") + "\n  " +
+        outs.mkString("[", ",", "]") + "\n  " +
+        outOwners.mkString("[", ",", "]")
+    }
   }
 
   object GraphAssembly {

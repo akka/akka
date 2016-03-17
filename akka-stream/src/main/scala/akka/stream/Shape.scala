@@ -215,6 +215,8 @@ object ClosedShape extends ClosedShape {
    * Java API: obtain ClosedShape instance
    */
   def getInstance: ClosedShape = this
+
+  override def toString: String = "ClosedShape"
 }
 
 /**

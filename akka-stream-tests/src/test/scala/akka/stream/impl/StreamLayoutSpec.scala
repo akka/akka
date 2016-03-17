@@ -11,11 +11,9 @@ import akka.stream._
 class StreamLayoutSpec extends AkkaSpec {
   import StreamLayout._
 
-  def testAtomic(inPortCount: Int, outPortCount: Int): Module = new Module {
+  def testAtomic(inPortCount: Int, outPortCount: Int): Module = new AtomicModule {
     override val shape = AmorphousShape(List.fill(inPortCount)(Inlet("")), List.fill(outPortCount)(Outlet("")))
     override def replaceShape(s: Shape): Module = ???
-
-    override def subModules: Set[Module] = Set.empty
 
     override def carbonCopy: Module = ???
 
@@ -174,7 +172,7 @@ class StreamLayoutSpec extends AkkaSpec {
     var publishers = Vector.empty[TestPublisher]
     var subscribers = Vector.empty[TestSubscriber]
 
-    override protected def materializeAtomic(atomic: Module, effectiveAttributes: Attributes,
+    override protected def materializeAtomic(atomic: AtomicModule, effectiveAttributes: Attributes,
                                              matVal: java.util.Map[Module, Any]): Unit = {
       for (inPort ← atomic.inPorts) {
         val subscriber = TestSubscriber(atomic, inPort)
