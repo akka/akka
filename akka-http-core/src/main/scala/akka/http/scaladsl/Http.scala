@@ -548,9 +548,12 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   // every ActorSystem maintains its own connection pools
   private[http] val hostPoolCache = new ConcurrentHashMap[HostConnectionPoolSetup, Future[PoolGateway]]
 
+  // an ActorSystem-wide materializer must be used for gateways stored in cache
+  private[this] val hostPoolCacheFm = ActorMaterializer()(system)
+
   private def cachedGateway(request: HttpRequest,
                             settings: ConnectionPoolSettings, connectionContext: ConnectionContext,
-                            log: LoggingAdapter)(implicit fm: Materializer): Future[PoolGateway] =
+                            log: LoggingAdapter): Future[PoolGateway] =
     if (request.uri.scheme.nonEmpty && request.uri.authority.nonEmpty) {
       val httpsCtx = if (request.uri.scheme.equalsIgnoreCase("https")) connectionContext else ConnectionContext.noEncryption()
       val setup = ConnectionPoolSetup(settings, httpsCtx, log)
@@ -563,13 +566,13 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     }
 
   /** INTERNAL API */
-  private[http] def cachedGateway(setup: HostConnectionPoolSetup)(implicit fm: Materializer): Future[PoolGateway] = {
+  private[http] def cachedGateway(setup: HostConnectionPoolSetup): Future[PoolGateway] = {
     val gatewayPromise = Promise[PoolGateway]()
     hostPoolCache.putIfAbsent(setup, gatewayPromise.future) match {
       case null ⇒ // only one thread can get here at a time
         val whenShuttingDown = Promise[Done]()
         val gateway =
-          try new PoolGateway(setup, whenShuttingDown)
+          try new PoolGateway(setup, whenShuttingDown)(system, hostPoolCacheFm)
           catch {
             case NonFatal(e) ⇒
               hostPoolCache.remove(setup)
@@ -579,7 +582,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
         val fastFuture = FastFuture.successful(gateway)
         hostPoolCache.put(setup, fastFuture) // optimize subsequent gateway accesses
         gatewayPromise.success(gateway) // satisfy everyone who got a hold of our promise while we were starting up
-        whenShuttingDown.future.onComplete(_ ⇒ hostPoolCache.remove(setup, fastFuture))(fm.executionContext)
+        whenShuttingDown.future.onComplete(_ ⇒ hostPoolCache.remove(setup, fastFuture))(hostPoolCacheFm.executionContext)
         fastFuture
 
       case future ⇒ future // return cached instance
