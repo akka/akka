@@ -5,7 +5,6 @@
 package akka.actor
 
 import language.postfixOps
-
 import org.scalatest.BeforeAndAfterEach
 import scala.concurrent.duration._
 import akka.{ Die, Ping }
@@ -14,6 +13,12 @@ import akka.testkit._
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Await
 import akka.pattern.ask
+import com.typesafe.config.ConfigFactory
+import akka.dispatch.MailboxType
+import akka.dispatch.MessageQueue
+import com.typesafe.config.Config
+import akka.ConfigurationException
+import akka.routing.RoundRobinPool
 
 object SupervisorSpec {
   val Timeout = 5.seconds
@@ -64,10 +69,40 @@ object SupervisorSpec {
       case Status.Failure(_)  ⇒ /*Ignore*/
     }
   }
+
+  class Creator(target: ActorRef) extends Actor {
+    override val supervisorStrategy = OneForOneStrategy() {
+      case ex ⇒
+        target ! ((self, sender(), ex))
+        SupervisorStrategy.Stop
+    }
+    def receive = {
+      case p: Props ⇒ sender() ! context.actorOf(p)
+    }
+  }
+
+  def creator(target: ActorRef, fail: Boolean = false) = {
+    val p = Props(new Creator(target))
+    if (fail) p.withMailbox("error-mailbox") else p
+  }
+
+  val failure = new AssertionError("deliberate test failure")
+
+  class Mailbox(settings: ActorSystem.Settings, config: Config) extends MailboxType {
+    override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
+      throw failure
+  }
+
+  val config = ConfigFactory.parseString("""
+akka.actor.serialize-messages = off
+error-mailbox {
+  mailbox-type = "akka.actor.SupervisorSpec$Mailbox"
+}
+""")
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class SupervisorSpec extends AkkaSpec("akka.actor.serialize-messages = off") with BeforeAndAfterEach with ImplicitSender with DefaultTimeout {
+class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfterEach with ImplicitSender with DefaultTimeout {
 
   import SupervisorSpec._
 
@@ -422,6 +457,44 @@ class SupervisorSpec extends AkkaSpec("akka.actor.serialize-messages = off") wit
       expectMsg("green")
       parent ! "testchild"
       expectMsg("child green")
+    }
+
+    "log pre-creation check failures" when {
+
+      "creating a top-level actor" in EventFilter[ActorInitializationException](occurrences = 1).intercept {
+        val ref = system.actorOf(creator(testActor, fail = true))
+        watch(ref)
+        expectTerminated(ref)
+      }
+
+      "creating a normal child actor" in EventFilter[ConfigurationException](occurrences = 1).intercept {
+        val top = system.actorOf(creator(testActor))
+        top ! creator(testActor)
+        val middle = expectMsgType[ActorRef]
+        middle ! creator(testActor, fail = true)
+        expectMsgPF(hint = "ConfigurationException") {
+          case (top, middle, ex: ConfigurationException) ⇒
+            ex.getCause should ===(failure)
+        }
+      }
+
+      "creating a top-level router" in EventFilter[ActorInitializationException](occurrences = 1).intercept {
+        val ref = system.actorOf(creator(testActor, fail = true).withRouter(RoundRobinPool(1)))
+        watch(ref)
+        expectTerminated(ref)
+      }
+
+      "creating a router" in EventFilter[ConfigurationException](occurrences = 1).intercept {
+        val top = system.actorOf(creator(testActor))
+        top ! creator(testActor)
+        val middle = expectMsgType[ActorRef]
+        middle ! creator(testActor, fail = true).withRouter(RoundRobinPool(1))
+        expectMsgPF(hint = "ConfigurationException") {
+          case (top, middle, ex: ConfigurationException) ⇒
+            ex.getCause should ===(failure)
+        }
+      }
+
     }
   }
 }
