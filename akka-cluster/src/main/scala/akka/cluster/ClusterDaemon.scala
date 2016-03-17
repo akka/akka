@@ -496,7 +496,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
           // new node will retry join
           logInfo("New incarnation of existing member [{}] is trying to join. " +
             "Existing will be removed from the cluster and then new member will be allowed to join.", m)
-          if (m.status != Down && m.status != Leaving && m.status != Exiting)
+          if (m.status != Down)
             downing(m.address)
         case None ⇒
           // remove the node from the failure detector
