@@ -90,7 +90,7 @@ private[remote] trait AkkaPduCodec {
 
   def constructHeartbeat: ByteString
 
-  def decodeMessage(raw: ByteString, provider: RemoteActorRefProvider, localAddress: Address): (Option[Ack], Option[Message])
+  def decodeMessage(raw: ByteString, provider: RemoteActorRefProvider, localAddress: Address): (Option[AckWithOrigin], Option[Message])
 
   def constructMessage(
     localAddress: Address,
@@ -98,9 +98,9 @@ private[remote] trait AkkaPduCodec {
     serializedMessage: SerializedMessage,
     senderOption: Option[ActorRef],
     seqOption: Option[SeqNo] = None,
-    ackOption: Option[Ack] = None): ByteString
+    ackOption: Option[AckWithOrigin] = None): ByteString
 
-  def constructPureAck(ack: Ack): ByteString
+  def constructPureAck(ack: AckWithOrigin): ByteString
 }
 
 /**
@@ -109,10 +109,11 @@ private[remote] trait AkkaPduCodec {
 private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
   import AkkaPduCodec._
 
-  private def ackBuilder(ack: Ack): AcknowledgementInfo.Builder = {
+  private def ackBuilder(a: AckWithOrigin): AcknowledgementInfo.Builder = {
     val ackBuilder = AcknowledgementInfo.newBuilder()
-    ackBuilder.setCumulativeAck(ack.cumulativeAck.rawValue)
-    ack.nacks foreach { nack ⇒ ackBuilder.addNacks(nack.rawValue) }
+    ackBuilder.setCumulativeAck(a.ack.cumulativeAck.rawValue)
+    a.ack.nacks foreach { nack ⇒ ackBuilder.addNacks(nack.rawValue) }
+    a.originUid.foreach(ackBuilder.setOriginUid)
     ackBuilder
   }
 
@@ -122,7 +123,7 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     serializedMessage: SerializedMessage,
     senderOption: Option[ActorRef],
     seqOption: Option[SeqNo] = None,
-    ackOption: Option[Ack] = None): ByteString = {
+    ackOption: Option[AckWithOrigin] = None): ByteString = {
 
     val ackAndEnvelopeBuilder = AckAndEnvelopeContainer.newBuilder
 
@@ -138,7 +139,7 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     ByteString.ByteString1C(ackAndEnvelopeBuilder.build.toByteArray) //Reuse Byte Array (naughty!)
   }
 
-  override def constructPureAck(ack: Ack): ByteString =
+  override def constructPureAck(ack: AckWithOrigin): ByteString =
     ByteString.ByteString1C(AckAndEnvelopeContainer.newBuilder.setAck(ackBuilder(ack)).build().toByteArray) //Reuse Byte Array (naughty!)
 
   override def constructPayload(payload: ByteString): ByteString =
@@ -177,12 +178,14 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
   override def decodeMessage(
     raw: ByteString,
     provider: RemoteActorRefProvider,
-    localAddress: Address): (Option[Ack], Option[Message]) = {
+    localAddress: Address): (Option[AckWithOrigin], Option[Message]) = {
     val ackAndEnvelope = AckAndEnvelopeContainer.parseFrom(raw.toArray)
 
     val ackOption = if (ackAndEnvelope.hasAck) {
       import scala.collection.JavaConverters._
-      Some(Ack(SeqNo(ackAndEnvelope.getAck.getCumulativeAck), ackAndEnvelope.getAck.getNacksList.asScala.map(SeqNo(_)).toSet))
+      val ack = Ack(SeqNo(ackAndEnvelope.getAck.getCumulativeAck), ackAndEnvelope.getAck.getNacksList.asScala.map(SeqNo(_)).toSet)
+      val originUid = if (ackAndEnvelope.getAck.hasOriginUid) Some(ackAndEnvelope.getAck.getOriginUid) else None
+      Some(AckWithOrigin(ack, originUid))
     } else None
 
     val messageOption = if (ackAndEnvelope.hasEnvelope) {

@@ -710,7 +710,16 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[FinalClassProblem]("akka.http.scaladsl.marshalling.Marshal$UnacceptableResponseContentTypeException"),
 
         // #20009 internal and shouldn't have been public
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.QueueSource.completion")
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.QueueSource.completion"),
+
+        // #19780
+        FilterAnyProblem("akka.remote.EndpointWriter$OutboundAck"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.transport.AkkaPduProtobufCodec.constructPureAck"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AkkaPduCodec.constructPureAck"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.transport.AkkaPduCodec.constructPureAck"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#AcknowledgementInfoOrBuilder.getOriginUid"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#AcknowledgementInfoOrBuilder.hasOriginUid")
+
       )
     )
   }

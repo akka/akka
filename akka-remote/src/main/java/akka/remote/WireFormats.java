@@ -1913,6 +1913,16 @@ public final class WireFormats {
      * <code>repeated fixed64 nacks = 2;</code>
      */
     long getNacks(int index);
+
+    // optional sfixed32 originUid = 3;
+    /**
+     * <code>optional sfixed32 originUid = 3;</code>
+     */
+    boolean hasOriginUid();
+    /**
+     * <code>optional sfixed32 originUid = 3;</code>
+     */
+    int getOriginUid();
   }
   /**
    * Protobuf type {@code AcknowledgementInfo}
@@ -1989,6 +1999,11 @@ public final class WireFormats {
                 nacks_.add(input.readFixed64());
               }
               input.popLimit(limit);
+              break;
+            }
+            case 29: {
+              bitField0_ |= 0x00000002;
+              originUid_ = input.readSFixed32();
               break;
             }
           }
@@ -2073,9 +2088,26 @@ public final class WireFormats {
       return nacks_.get(index);
     }
 
+    // optional sfixed32 originUid = 3;
+    public static final int ORIGINUID_FIELD_NUMBER = 3;
+    private int originUid_;
+    /**
+     * <code>optional sfixed32 originUid = 3;</code>
+     */
+    public boolean hasOriginUid() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>optional sfixed32 originUid = 3;</code>
+     */
+    public int getOriginUid() {
+      return originUid_;
+    }
+
     private void initFields() {
       cumulativeAck_ = 0L;
       nacks_ = java.util.Collections.emptyList();
+      originUid_ = 0;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -2099,6 +2131,9 @@ public final class WireFormats {
       for (int i = 0; i < nacks_.size(); i++) {
         output.writeFixed64(2, nacks_.get(i));
       }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeSFixed32(3, originUid_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -2117,6 +2152,10 @@ public final class WireFormats {
         dataSize = 8 * getNacksList().size();
         size += dataSize;
         size += 1 * getNacksList().size();
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeSFixed32Size(3, originUid_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -2238,6 +2277,8 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000001);
         nacks_ = java.util.Collections.emptyList();
         bitField0_ = (bitField0_ & ~0x00000002);
+        originUid_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -2275,6 +2316,10 @@ public final class WireFormats {
           bitField0_ = (bitField0_ & ~0x00000002);
         }
         result.nacks_ = nacks_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.originUid_ = originUid_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -2303,6 +2348,9 @@ public final class WireFormats {
             nacks_.addAll(other.nacks_);
           }
           onChanged();
+        }
+        if (other.hasOriginUid()) {
+          setOriginUid(other.getOriginUid());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -2430,6 +2478,39 @@ public final class WireFormats {
       public Builder clearNacks() {
         nacks_ = java.util.Collections.emptyList();
         bitField0_ = (bitField0_ & ~0x00000002);
+        onChanged();
+        return this;
+      }
+
+      // optional sfixed32 originUid = 3;
+      private int originUid_ ;
+      /**
+       * <code>optional sfixed32 originUid = 3;</code>
+       */
+      public boolean hasOriginUid() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional sfixed32 originUid = 3;</code>
+       */
+      public int getOriginUid() {
+        return originUid_;
+      }
+      /**
+       * <code>optional sfixed32 originUid = 3;</code>
+       */
+      public Builder setOriginUid(int value) {
+        bitField0_ |= 0x00000004;
+        originUid_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional sfixed32 originUid = 3;</code>
+       */
+      public Builder clearOriginUid() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        originUid_ = 0;
         onChanged();
         return this;
       }
@@ -9551,31 +9632,32 @@ public final class WireFormats {
       "\016RemoteEnvelope\022 \n\trecipient\030\001 \002(\0132\r.Act" +
       "orRefData\022#\n\007message\030\002 \002(\0132\022.SerializedM" +
       "essage\022\035\n\006sender\030\004 \001(\0132\r.ActorRefData\022\013\n" +
-      "\003seq\030\005 \001(\006\";\n\023AcknowledgementInfo\022\025\n\rcum" +
-      "ulativeAck\030\001 \002(\006\022\r\n\005nacks\030\002 \003(\006\"\034\n\014Actor" +
-      "RefData\022\014\n\004path\030\001 \002(\t\"S\n\021SerializedMessa" +
-      "ge\022\017\n\007message\030\001 \002(\014\022\024\n\014serializerId\030\002 \002(",
-      "\005\022\027\n\017messageManifest\030\003 \001(\014\"~\n\023DaemonMsgC" +
-      "reateData\022\031\n\005props\030\001 \002(\0132\n.PropsData\022\033\n\006" +
-      "deploy\030\002 \002(\0132\013.DeployData\022\014\n\004path\030\003 \002(\t\022" +
-      "!\n\nsupervisor\030\004 \002(\0132\r.ActorRefData\"V\n\tPr" +
-      "opsData\022\033\n\006deploy\030\002 \002(\0132\013.DeployData\022\r\n\005" +
-      "clazz\030\003 \002(\t\022\014\n\004args\030\004 \003(\014\022\017\n\007classes\030\005 \003" +
-      "(\t\"c\n\nDeployData\022\014\n\004path\030\001 \002(\t\022\016\n\006config" +
-      "\030\002 \001(\014\022\024\n\014routerConfig\030\003 \001(\014\022\r\n\005scope\030\004 " +
-      "\001(\014\022\022\n\ndispatcher\030\005 \001(\t\"P\n\023AkkaProtocolM" +
-      "essage\022\017\n\007payload\030\001 \001(\014\022(\n\013instruction\030\002",
-      " \001(\0132\023.AkkaControlMessage\"b\n\022AkkaControl" +
-      "Message\022!\n\013commandType\030\001 \002(\0162\014.CommandTy" +
-      "pe\022)\n\rhandshakeInfo\030\002 \001(\0132\022.AkkaHandshak" +
-      "eInfo\"N\n\021AkkaHandshakeInfo\022\034\n\006origin\030\001 \002" +
-      "(\0132\014.AddressData\022\013\n\003uid\030\002 \002(\006\022\016\n\006cookie\030" +
-      "\003 \001(\t\"O\n\013AddressData\022\016\n\006system\030\001 \002(\t\022\020\n\010" +
-      "hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010protocol" +
-      "\030\004 \001(\t*{\n\013CommandType\022\r\n\tASSOCIATE\020\001\022\020\n\014" +
-      "DISASSOCIATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032DISASSO" +
-      "CIATE_SHUTTING_DOWN\020\004\022\034\n\030DISASSOCIATE_QU",
-      "ARANTINED\020\005B\017\n\013akka.remoteH\001"
+      "\003seq\030\005 \001(\006\"N\n\023AcknowledgementInfo\022\025\n\rcum" +
+      "ulativeAck\030\001 \002(\006\022\r\n\005nacks\030\002 \003(\006\022\021\n\torigi" +
+      "nUid\030\003 \001(\017\"\034\n\014ActorRefData\022\014\n\004path\030\001 \002(\t" +
+      "\"S\n\021SerializedMessage\022\017\n\007message\030\001 \002(\014\022\024",
+      "\n\014serializerId\030\002 \002(\005\022\027\n\017messageManifest\030" +
+      "\003 \001(\014\"~\n\023DaemonMsgCreateData\022\031\n\005props\030\001 " +
+      "\002(\0132\n.PropsData\022\033\n\006deploy\030\002 \002(\0132\013.Deploy" +
+      "Data\022\014\n\004path\030\003 \002(\t\022!\n\nsupervisor\030\004 \002(\0132\r" +
+      ".ActorRefData\"V\n\tPropsData\022\033\n\006deploy\030\002 \002" +
+      "(\0132\013.DeployData\022\r\n\005clazz\030\003 \002(\t\022\014\n\004args\030\004" +
+      " \003(\014\022\017\n\007classes\030\005 \003(\t\"c\n\nDeployData\022\014\n\004p" +
+      "ath\030\001 \002(\t\022\016\n\006config\030\002 \001(\014\022\024\n\014routerConfi" +
+      "g\030\003 \001(\014\022\r\n\005scope\030\004 \001(\014\022\022\n\ndispatcher\030\005 \001" +
+      "(\t\"P\n\023AkkaProtocolMessage\022\017\n\007payload\030\001 \001",
+      "(\014\022(\n\013instruction\030\002 \001(\0132\023.AkkaControlMes" +
+      "sage\"b\n\022AkkaControlMessage\022!\n\013commandTyp" +
+      "e\030\001 \002(\0162\014.CommandType\022)\n\rhandshakeInfo\030\002" +
+      " \001(\0132\022.AkkaHandshakeInfo\"N\n\021AkkaHandshak" +
+      "eInfo\022\034\n\006origin\030\001 \002(\0132\014.AddressData\022\013\n\003u" +
+      "id\030\002 \002(\006\022\016\n\006cookie\030\003 \001(\t\"O\n\013AddressData\022" +
+      "\016\n\006system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004por" +
+      "t\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t*{\n\013CommandType" +
+      "\022\r\n\tASSOCIATE\020\001\022\020\n\014DISASSOCIATE\020\002\022\r\n\tHEA" +
+      "RTBEAT\020\003\022\036\n\032DISASSOCIATE_SHUTTING_DOWN\020\004",
+      "\022\034\n\030DISASSOCIATE_QUARANTINED\020\005B\017\n\013akka.r" +
+      "emoteH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -9599,7 +9681,7 @@ public final class WireFormats {
           internal_static_AcknowledgementInfo_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_AcknowledgementInfo_descriptor,
-              new java.lang.String[] { "CumulativeAck", "Nacks", });
+              new java.lang.String[] { "CumulativeAck", "Nacks", "OriginUid", });
           internal_static_ActorRefData_descriptor =
             getDescriptor().getMessageTypes().get(3);
           internal_static_ActorRefData_fieldAccessorTable = new

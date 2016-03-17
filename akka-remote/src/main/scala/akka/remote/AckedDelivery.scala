@@ -69,6 +69,13 @@ final case class Ack(cumulativeAck: SeqNo, nacks: Set[SeqNo] = Set.empty) {
   override def toString = s"ACK[$cumulativeAck, ${nacks.mkString("{", ", ", "}")}]"
 }
 
+/**
+ * INTERNAL API: The `originUid` is used for discarding in-flight ACK that is
+ * delivered to "wrong" actor system incarnation after a system restart.
+ * See issue #19780
+ */
+private[akka] final case class AckWithOrigin(ack: Ack, originUid: Option[Int])
+
 class ResendBufferCapacityReachedException(c: Int)
   extends AkkaException(s"Resend buffer capacity of [$c] has been reached.")
 
