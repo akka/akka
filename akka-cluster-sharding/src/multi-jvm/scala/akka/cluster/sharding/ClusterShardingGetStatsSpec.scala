@@ -114,7 +114,7 @@ abstract class ClusterShardingGetStatsSpec extends MultiNodeSpec(ClusterSharding
       // make sure all nodes are up
       within(10.seconds) {
         awaitAssert {
-          Cluster(system).state.members.count(_.status == MemberStatus.Up) should === (4)
+          Cluster(system).state.members.count(_.status == MemberStatus.Up) should ===(4)
         }
       }
 

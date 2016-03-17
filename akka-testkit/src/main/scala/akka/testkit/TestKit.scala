@@ -432,7 +432,7 @@ trait TestKitBase {
   private def expectMsgClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
     val o = receiveOne(max)
     assert(o ne null, s"timeout ($max) during expectMsgClass waiting for $c")
-    assert(BoxedType(c) isInstance o, s"expected $c, found ${o.getClass}")
+    assert(BoxedType(c) isInstance o, s"expected $c, found ${o.getClass} ($o)")
     o.asInstanceOf[C]
   }
 
