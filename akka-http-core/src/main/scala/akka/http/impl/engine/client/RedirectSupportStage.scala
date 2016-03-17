@@ -56,6 +56,7 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
         override def onPull(): Unit = {
           println("requestOut: onPull")
           pull(requestIn)
+          currentRequest.foreach(push(requestOut, _))
           printStatus
         }
 
@@ -106,7 +107,10 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
           val response = grab(responseIn)
           if (response.status.isRedirection) {
             println("\tRedirection!")
-            response.headers.find(_.is("location")).foreach(h ⇒ push(requestOut, currentRequest.get.withUri(h.value)))
+            currentRequest = response.headers.find(_.is("location")).map(h ⇒ currentRequest.get.withUri(h.value))
+            if (isAvailable(requestOut)) {
+              currentRequest.foreach(push(requestOut, _))
+            }
           } else {
             if (isAvailable(responseOut)) {
               println("\tPushing non-redirection response to responseOut")
