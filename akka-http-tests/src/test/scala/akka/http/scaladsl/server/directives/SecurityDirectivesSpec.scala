@@ -136,4 +136,34 @@ class SecurityDirectivesSpec extends RoutingSpec {
       }
     }
   }
+
+  "authorization directives" should {
+    "authorize" in {
+      Get() ~> {
+        authorize(_ ⇒ true) { complete("OK") }
+      } ~> check { responseAs[String] shouldEqual "OK" }
+    }
+    "not authorize" in {
+      Get() ~> {
+        authorize(_ ⇒ false) { complete("OK") }
+      } ~> check { rejection shouldEqual AuthorizationFailedRejection }
+    }
+
+    "authorizeAsync" in {
+      Get() ~> {
+        authorizeAsync(_ ⇒ Future.successful(true)) { complete("OK") }
+      } ~> check { responseAs[String] shouldEqual "OK" }
+    }
+    "not authorizeAsync" in {
+      Get() ~> {
+        authorizeAsync(_ ⇒ Future.successful(false)) { complete("OK") }
+      } ~> check { rejection shouldEqual AuthorizationFailedRejection }
+    }
+    "not authorizeAsync when future fails" in {
+      Get() ~> {
+        authorizeAsync(_ ⇒ Future.failed(new Exception("Boom!"))) { complete("OK") }
+      } ~> check { rejection shouldEqual AuthorizationFailedRejection }
+    }
+  }
+
 }
