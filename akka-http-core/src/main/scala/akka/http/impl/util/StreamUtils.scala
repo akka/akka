@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 import akka.NotUsed
 import akka.http.scaladsl.model.RequestEntity
 import akka.stream._
-import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ PublisherSink, SinkModule, SourceModule }
 import akka.stream.scaladsl._
@@ -187,7 +186,7 @@ private[http] object StreamUtils {
     override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
       new OneTimePublisherSink[In](attributes, shape, cell)
 
-    override def withAttributes(attr: Attributes): Module =
+    override def withAttributes(attr: Attributes): OneTimePublisherSink[In] =
       new OneTimePublisherSink[In](attr, amendShape(attr), cell)
   }
   /** A copy of SubscriberSource that allows access to the subscriber through the cell but can only materialized once */
@@ -212,7 +211,7 @@ private[http] object StreamUtils {
 
     override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Subscriber[Out]] =
       new OneTimeSubscriberSource[Out](attributes, shape, cell)
-    override def withAttributes(attr: Attributes): Module =
+    override def withAttributes(attr: Attributes): OneTimeSubscriberSource[Out] =
       new OneTimeSubscriberSource[Out](attr, amendShape(attr), cell)
   }
 
