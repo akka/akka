@@ -24,20 +24,18 @@ import scala.util.Try
  */
 private[akka] final case class GraphStageModule(shape: Shape,
                                                 attributes: Attributes,
-                                                stage: GraphStageWithMaterializedValue[Shape, Any]) extends Module {
+                                                stage: GraphStageWithMaterializedValue[Shape, Any]) extends AtomicModule {
   override def carbonCopy: Module = CopiedModule(shape.deepCopy(), Attributes.none, this)
 
   override def replaceShape(s: Shape): Module =
     if (s != shape) CompositeModule(this, s)
     else this
 
-  override def subModules: Set[Module] = Set.empty
-
   override def withAttributes(attributes: Attributes): Module =
     if (attributes ne this.attributes) new GraphStageModule(shape, attributes, stage)
     else this
 
-  override def toString: String = stage.toString
+  override def toString: String = f"GraphStage($stage) [${System.identityHashCode(this)}%08x]"
 }
 
 /**
@@ -133,6 +131,7 @@ object GraphStages {
 
     override val initialAttributes = Attributes.name("breaker")
     override val shape = FlowShape(Inlet[Any]("breaker.in"), Outlet[Any]("breaker.out"))
+    override def toString: String = "Breaker"
 
     override def createLogicAndMaterializedValue(attr: Attributes) = {
       val promise = Promise[Breaker]
@@ -167,6 +166,7 @@ object GraphStages {
     override val shape = BidiShape(
       Inlet[Any]("breaker.in1"), Outlet[Any]("breaker.out1"),
       Inlet[Any]("breaker.in2"), Outlet[Any]("breaker.out2"))
+    override def toString: String = "BidiBreaker"
 
     override def createLogicAndMaterializedValue(attr: Attributes) = {
       val promise = Promise[Breaker]
@@ -215,21 +215,6 @@ object GraphStages {
 
   def bidiBreaker[T1, T2]: Graph[BidiShape[T1, T1, T2, T2], Future[Breaker]] = BidiBreaker.asInstanceOf[Graph[BidiShape[T1, T1, T2, T2], Future[Breaker]]]
 
-  private object TickSource {
-    class TickSourceCancellable(cancelled: AtomicBoolean) extends Cancellable {
-      private val cancelPromise = Promise[Done]()
-
-      def cancelFuture: Future[Done] = cancelPromise.future
-
-      override def cancel(): Boolean = {
-        if (!isCancelled) cancelPromise.trySuccess(Done)
-        true
-      }
-
-      override def isCancelled: Boolean = cancelled.get()
-    }
-  }
-
   private object TerminationWatcher extends GraphStageWithMaterializedValue[FlowShape[Any, Any], Future[Done]] {
     val in = Inlet[Any]("terminationWatcher.in")
     val out = Outlet[Any]("terminationWatcher.out")
@@ -269,6 +254,21 @@ object GraphStages {
   def terminationWatcher[T]: GraphStageWithMaterializedValue[FlowShape[T, T], Future[Done]] =
     TerminationWatcher.asInstanceOf[GraphStageWithMaterializedValue[FlowShape[T, T], Future[Done]]]
 
+  private object TickSource {
+    class TickSourceCancellable(cancelled: AtomicBoolean) extends Cancellable {
+      private val cancelPromise = Promise[Done]()
+
+      def cancelFuture: Future[Done] = cancelPromise.future
+
+      override def cancel(): Boolean = {
+        if (!isCancelled) cancelPromise.trySuccess(Done)
+        true
+      }
+
+      override def isCancelled: Boolean = cancelled.get()
+    }
+  }
+
   final class TickSource[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T)
     extends GraphStageWithMaterializedValue[SourceShape[T], Cancellable] {
     override val shape = SourceShape(Outlet[T]("TickSource.out"))
@@ -302,7 +302,7 @@ object GraphStages {
       (logic, cancellable)
     }
 
-    override def toString: String = "TickSource"
+    override def toString: String = s"TickSource($initialDelay, $interval, $tick)"
   }
 
   /**

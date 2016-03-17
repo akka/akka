@@ -27,6 +27,8 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
 
   override val shape: SinkShape[In] = module.shape.asInstanceOf[SinkShape[In]]
 
+  override def toString: String = s"Sink($shape, $module)"
+
   /**
    * Transform this Sink by applying a function to each *incoming* upstream element before
    * it is passed to the [[Sink]]
