@@ -24,6 +24,7 @@ Directive                                   Description
                                             a given ``AsyncAuthenticatorPF[T]``
 :ref:`-authenticateOrRejectWithChallenge-`  Lifts an authenticator function into a directive
 :ref:`-authorize-`                          Applies the given authorization check to the request
+:ref:`-authorizeAsync-`                     Applies the given asynchronous authorization check to the request
 :ref:`-cancelRejection-`                    Adds a ``TransformationRejection`` cancelling all rejections equal to the
                                             given one to the rejections potentially coming back from the inner route.
 :ref:`-cancelRejections-`                   Adds a ``TransformationRejection`` cancelling all matching rejections

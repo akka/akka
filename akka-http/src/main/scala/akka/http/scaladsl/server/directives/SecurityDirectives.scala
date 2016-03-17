@@ -13,6 +13,8 @@ import akka.http.scaladsl.util.FastFuture._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection.{ CredentialsRejected, CredentialsMissing }
 
+import scala.util.{Try, Success}
+
 /**
  * Provides directives for securing an inner route using the standard Http authentication headers [[`WWW-Authenticate`]]
  * and [[Authorization]]. Most prominently, HTTP Basic authentication as defined in RFC 2617.
@@ -176,8 +178,30 @@ trait SecurityDirectives {
    * If the check fails the route is rejected with an [[AuthorizationFailedRejection]].
    */
   def authorize(check: RequestContext ⇒ Boolean): Directive0 =
-    extract(check).flatMap[Unit](if (_) pass else reject(AuthorizationFailedRejection)) &
-      cancelRejection(AuthorizationFailedRejection)
+    authorizeAsync(ctx => Future.successful(check(ctx)))
+
+  /**
+   * Asynchronous version of [[authorize]].
+   * If the [[Future]] fails or is completed with `false`
+   * authorization fails and the route is rejected with an [[AuthorizationFailedRejection]].
+   */
+  def authorizeAsync(check: ⇒ Future[Boolean]): Directive0 =
+    authorizeAsync(ctx => check)
+
+  /**
+   * Asynchronous version of [[authorize]].
+   * If the [[Future]] fails or is completed with `false`
+   * authorization fails and the route is rejected with an [[AuthorizationFailedRejection]].
+   */
+  def authorizeAsync(check: RequestContext ⇒ Future[Boolean]): Directive0 =
+    extractExecutionContext.flatMap { implicit ec ⇒
+      extract(check).flatMap[Unit] { fa =>
+        onComplete(fa).flatMap {
+          case Success(true) => pass
+          case _ => reject(AuthorizationFailedRejection)
+        }
+      }
+    }
 
   /**
    * Creates a `Basic` [[HttpChallenge]] for the given realm.
