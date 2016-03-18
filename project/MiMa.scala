@@ -3,6 +3,7 @@
  */
 package akka
 
+import akka.MiMa.FilterAnyProblemStartingWith
 import sbt._
 import sbt.Keys._
 import com.typesafe.tools.mima.plugin.MimaPlugin
@@ -645,36 +646,18 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.FutureTimeoutSupport.afterCompletionStage")
       ),
       "2.4.2" -> Seq(
-        FilterAnyProblemStartingWith("akka.stream.impl.VirtualProcessor"),
-        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.fusing.GraphInterpreter.execute"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreter.this"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreterShell.init"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreterShell.receive"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$Drop"),
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.MaterializerSession.assignPort"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$Drop$"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.FanIn#InputBunch.dequeuePrefering"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.Fusing#BuildStructuralInfo.registerInteral"),
-        ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.fusing.Drop"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.Drop.onPush"),
+        //internal API
+        FilterAnyProblemStartingWith("akka.http.impl"),
+        FilterAnyProblemStartingWith("akka.stream.impl"),
+
         ProblemFilters.exclude[FinalClassProblem]("akka.stream.stage.GraphStageLogic$Reading"), // this class is private
 
         // lifting this method to the type where it belongs
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.mapMaterializedValue"),
 
-        // #19908 Take is private
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$Take$"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$Take"),
-        ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.fusing.Take"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.Take.onPush"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.Take.onPull"),
-
         // #19815 make HTTP compile under Scala 2.12.0-M3
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.model.headers.CacheDirectives#private.apply"),
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.model.headers.CacheDirectives#no-cache.apply"),
-
-        // #19913 internal and shouldn't be public
-        FilterAnyProblemStartingWith("akka.http.impl"),
 
         // #19983 withoutSizeLimit overrides for Scala API
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.RequestEntity.withoutSizeLimit"),
@@ -722,29 +705,9 @@ object MiMa extends AutoPlugin {
         // #19849 content negotiation fixes
         ProblemFilters.exclude[FinalClassProblem]("akka.http.scaladsl.marshalling.Marshal$UnacceptableResponseContentTypeException"),
 
-        // #20009 internal and shouldn't have been public
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.QueueSource.completion"),
-
-        // #20015 simplify materialized value computation tree
-        ProblemFilters.exclude[FinalMethodProblem]("akka.stream.impl.StreamLayout#AtomicModule.subModules"),
-        ProblemFilters.exclude[FinalMethodProblem]("akka.stream.impl.StreamLayout#AtomicModule.downstreams"),
-        ProblemFilters.exclude[FinalMethodProblem]("akka.stream.impl.StreamLayout#AtomicModule.upstreams"),
-        ProblemFilters.exclude[FinalMethodProblem]("akka.stream.impl.Stages#DirectProcessor.toString"),
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.MaterializerSession.materializeAtomic"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.impl.MaterializerSession.materializeAtomic"),
-        ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.Stages$StageModule"),
-        ProblemFilters.exclude[FinalMethodProblem]("akka.stream.impl.Stages#GroupBy.toString"),
-        ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.FlowModule"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.FlowModule.subModules"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.impl.FlowModule.label"),
-        ProblemFilters.exclude[FinalClassProblem]("akka.stream.impl.fusing.GraphModule"),
-
         // #15947 catch mailbox creation failures
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.RepointableActorRef.point"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.Dispatch.initWithFailure"),
-
-        // #19877 Source.queue termination support
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.SourceQueueAdapter.this"),
 
         // #19828
         ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.persistence.Eventsourced#ProcessingState.onWriteMessageComplete"),
