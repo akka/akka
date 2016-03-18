@@ -107,6 +107,8 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
           //assuming there can be no further in messages
           downstreamStatus.set(Canceled)
           dataQueue.clear()
+          // if blocked reading, make sure the take() completes
+          dataQueue.put(ByteString())
           completeStage()
         }
         override def onPull(): Unit = {
