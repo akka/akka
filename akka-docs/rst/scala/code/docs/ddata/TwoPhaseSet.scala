@@ -19,7 +19,7 @@ case class TwoPhaseSet(
   def remove(element: String): TwoPhaseSet =
     copy(removals = removals.add(element))
 
-  def elements: Set[String] = adds.elements -- removals.elements
+  def elements: Set[String] = adds.elements diff removals.elements
 
   override def merge(that: TwoPhaseSet): TwoPhaseSet =
     copy(
