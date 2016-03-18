@@ -16,7 +16,7 @@ import akka.actor.ActorSystem;
 object TestSource {
 
   /**
-   * A Source that materializes to a [[TestPublisher.Probe]].
+   * A Source that materializes to a [[akka.stream.testkit.TestPublisher.Probe]].
    */
   def probe[T](implicit system: ActorSystem) = new Source[T, TestPublisher.Probe[T]](new StreamTestKit.ProbeSource(none, SourceShape(Outlet("ProbeSource.out"))))
 

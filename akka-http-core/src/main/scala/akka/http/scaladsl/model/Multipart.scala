@@ -54,7 +54,7 @@ sealed trait Multipart extends jm.Multipart {
   def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[Multipart.Strict]
 
   /**
-   * Creates a [[MessageEntity]] from this multipart object.
+   * Creates a [[akka.http.scaladsl.model.MessageEntity]] from this multipart object.
    */
   def toEntity(charset: HttpCharset = HttpCharsets.`UTF-8`,
                boundary: String = BodyPartRenderer.randomBoundary())(implicit log: LoggingAdapter = NoLogging): MessageEntity = {
@@ -146,7 +146,7 @@ object Multipart {
       }
 
     /**
-     * The [[ContentDispositionType]] of the potentially present [[`Content-Disposition`]] header.
+     * The [[akka.http.scaladsl.model.headers.ContentDispositionType]] of the potentially present [[`Content-Disposition`]] header.
      */
     def dispositionType: Option[ContentDispositionType] =
       contentDispositionHeader.map(_.dispositionType)
@@ -510,7 +510,7 @@ object Multipart {
       def contentRange: ContentRange
 
       /**
-       * The [[RangeUnit]] for the `contentRange`.
+       * The [[akka.http.scaladsl.model.headers.RangeUnit]] for the `contentRange`.
        */
       def rangeUnit: RangeUnit
 

@@ -11,7 +11,7 @@ import akka.stream.testkit._
 object TestSink {
 
   /**
-   * A Sink that materialized to a [[TestSubscriber.Probe]].
+   * A Sink that materialized to a [[akka.stream.testkit.TestSubscriber.Probe]].
    */
   def probe[T](system: ActorSystem): Sink[T, TestSubscriber.Probe[T]] =
     new Sink(scaladsl.TestSink.probe[T](system))

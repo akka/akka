@@ -131,35 +131,35 @@ trait BasicDirectives {
   def extractUri: Directive1[Uri] = BasicDirectives._extractUri
 
   /**
-   * Runs its inner route with the given alternative [[ExecutionContextExecutor]].
+   * Runs its inner route with the given alternative [[scala.concurrent.ExecutionContextExecutor]].
    */
   def withExecutionContext(ec: ExecutionContextExecutor): Directive0 =
     mapRequestContext(_ withExecutionContext ec)
 
   /**
-   * Extracts the [[ExecutionContextExecutor]] from the [[RequestContext]].
+   * Extracts the [[scala.concurrent.ExecutionContextExecutor]] from the [[akka.http.scaladsl.server.RequestContext]].
    */
   def extractExecutionContext: Directive1[ExecutionContextExecutor] = BasicDirectives._extractExecutionContext
 
   /**
-   * Runs its inner route with the given alternative [[Materializer]].
+   * Runs its inner route with the given alternative [[akka.stream.Materializer]].
    */
   def withMaterializer(materializer: Materializer): Directive0 =
     mapRequestContext(_ withMaterializer materializer)
 
   /**
-   * Extracts the [[Materializer]] from the [[RequestContext]].
+   * Extracts the [[akka.stream.Materializer]] from the [[akka.http.scaladsl.server.RequestContext]].
    */
   def extractMaterializer: Directive1[Materializer] = BasicDirectives._extractMaterializer
 
   /**
-   * Runs its inner route with the given alternative [[LoggingAdapter]].
+   * Runs its inner route with the given alternative [[akka.event.LoggingAdapter]].
    */
   def withLog(log: LoggingAdapter): Directive0 =
     mapRequestContext(_ withLog log)
 
   /**
-   * Extracts the [[LoggingAdapter]] from the [[RequestContext]].
+   * Extracts the [[akka.event.LoggingAdapter]] from the [[akka.http.scaladsl.server.RequestContext]].
    */
   def extractLog: Directive1[LoggingAdapter] =
     BasicDirectives._extractLog
@@ -177,19 +177,19 @@ trait BasicDirectives {
     mapRequestContext(ctx ⇒ ctx.withRoutingSettings(f(ctx.settings)))
 
   /**
-   * Extracts the [[RoutingSettings]] from the [[RequestContext]].
+   * Extracts the [[RoutingSettings]] from the [[akka.http.scaladsl.server.RequestContext]].
    */
   def extractSettings: Directive1[RoutingSettings] =
     BasicDirectives._extractSettings
 
   /**
-   * Extracts the [[akka.http.scaladsl.settings.ParserSettings]] from the [[RequestContext]].
+   * Extracts the [[akka.http.scaladsl.settings.ParserSettings]] from the [[akka.http.scaladsl.server.RequestContext]].
    */
   def extractParserSettings: Directive1[ParserSettings] =
     BasicDirectives._extractParserSettings
 
   /**
-   * Extracts the [[RequestContext]] itself.
+   * Extracts the [[akka.http.scaladsl.server.RequestContext]] itself.
    */
   def extractRequestContext: Directive1[RequestContext] = BasicDirectives._extractRequestContext
 }

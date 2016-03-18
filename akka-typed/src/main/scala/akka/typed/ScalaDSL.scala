@@ -185,7 +185,7 @@ object ScalaDSL {
   /**
    * This type of Behavior is created from a partial function from the declared
    * message type to the next behavior, flagging all unmatched messages as
-   * [[ScalaDSL.Unhandled]]. All system signals are
+   * [[#Unhandled]]. All system signals are
    * ignored by this behavior, which implies that a failure of a child actor
    * will be escalated unconditionally.
    *
@@ -324,7 +324,7 @@ object ScalaDSL {
    * A behavior combinator that feeds incoming messages and signals either into
    * the left or right sub-behavior and allows them to evolve independently of
    * each other. The message or signal is passed first into the left sub-behavior
-   * and only if that results in [[Unhandled]] is it passed to the right
+   * and only if that results in [[#Unhandled]] is it passed to the right
    * sub-behavior. When one of the sub-behaviors terminates the other takes over
    * exclusively. When both sub-behaviors respond to a [[Failed]] signal, the
    * response with the higher precedence is chosen (see [[Failed$]]).

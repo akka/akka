@@ -11,7 +11,7 @@ import akka.stream.testkit._
 object TestSource {
 
   /**
-   * A Source that materializes to a [[TestPublisher.Probe]].
+   * A Source that materializes to a [[akka.stream.testkit.TestPublisher.Probe]].
    */
   def probe[T](system: ActorSystem): Source[T, TestPublisher.Probe[T]] =
     new Source(scaladsl.TestSource.probe[T](system))

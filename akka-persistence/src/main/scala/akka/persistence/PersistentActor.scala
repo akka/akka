@@ -222,7 +222,7 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    * Unlike `persist` the persistent actor will continue to receive incoming commands between the
    * call to `persist` and executing it's `handler`. This asynchronous, non-stashing, version of
    * of persist should be used when you favor throughput over the "command-2 only processed after
-   * command-1 effects' have been applied" guarantee, which is provided by the plain [[persist]] method.
+   * command-1 effects' have been applied" guarantee, which is provided by the plain [[#persist]] method.
    *
    * An event `handler` may close over persistent actor state and modify it. The `sender` of a persisted
    * event is the sender of the corresponding command. This means that one can reply to a command
