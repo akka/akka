@@ -35,12 +35,12 @@ abstract class TestResponse(_response: HttpResponse, awaitAtMost: FiniteDuration
   lazy val response: HttpResponse = _response.withEntity(entity)
 
   /**
-   * Returns the media-type of the the response's content-type
+   * Returns the media-type of the response's content-type
    */
   def mediaType: MediaType = extractFromResponse(_.entity.contentType.mediaType)
 
   /**
-   * Returns a string representation of the media-type of the the response's content-type
+   * Returns a string representation of the media-type of the response's content-type
    */
   def mediaTypeString: String = mediaType.toString
 
