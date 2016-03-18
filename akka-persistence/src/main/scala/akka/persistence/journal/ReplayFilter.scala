@@ -14,7 +14,7 @@ import scala.collection.mutable.LinkedHashSet
 /**
  * INTERNAL API
  *
- * Detect corrupt event stream during replay. It uses the the writerUuid and the
+ * Detect corrupt event stream during replay. It uses the writerUuid and the
  * sequenceNr in the replayed events to find events emitted by overlapping writers.
  */
 private[akka] object ReplayFilter {
