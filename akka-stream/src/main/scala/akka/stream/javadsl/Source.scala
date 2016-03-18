@@ -111,7 +111,7 @@ object Source {
    * `ConcurrentModificationException` or other more subtle errors may occur.
    */
   def from[O](iterable: java.lang.Iterable[O]): javadsl.Source[O, NotUsed] = {
-    // this adapter is not immutable if the the underlying java.lang.Iterable is modified
+    // this adapter is not immutable if the underlying java.lang.Iterable is modified
     // but there is not anything we can do to prevent that from happening.
     // ConcurrentModificationException will be thrown in some cases.
     val scalaIterable = new immutable.Iterable[O] {

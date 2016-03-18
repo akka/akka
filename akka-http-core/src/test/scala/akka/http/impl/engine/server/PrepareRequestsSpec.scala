@@ -85,7 +85,7 @@ class PrepareRequestsSpec extends AkkaSpec {
       val entitySub = entityProbe.expectSubscription()
 
       // the bug happens when both the client has signalled demand
-      // and the the streamed entity has
+      // and the streamed entity has
       upstreamSub.request(1)
       entitySub.request(1)
 

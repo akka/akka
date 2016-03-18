@@ -560,7 +560,7 @@ saved snapshot matches the specified ``SnapshotSelectionCriteria`` will replay a
 
   Since it is acceptable for some applications to not use any snapshotting, it is legal to not configure a snapshot store.
   However Akka will log a warning message when this situation is detected and then continue to operate until
-  an actor tries to store a snapshot, at which point the the operation will fail (by replying with an ``SaveSnapshotFailure`` for example).
+  an actor tries to store a snapshot, at which point the operation will fail (by replying with an ``SaveSnapshotFailure`` for example).
 
   Note that :ref:`cluster_sharding_java` is using snapshots, so if you use Cluster Sharding you need to define a snapshot store plugin.
 
