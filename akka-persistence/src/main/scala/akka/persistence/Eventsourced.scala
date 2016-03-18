@@ -163,6 +163,9 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         }
     }
 
+  private def unstashInternally(all: Boolean): Unit =
+    if (all) internalStash.unstashAll() else internalStash.unstash()
+
   private def startRecovery(recovery: Recovery): Unit = {
     changeState(recoveryStarted(recovery.replayMax))
     loadSnapshot(snapshotterId, recovery.fromSnapshot, recovery.toSequenceNr)
@@ -538,6 +541,8 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    * Common receive handler for processingCommands and persistingEvents
    */
   private abstract class ProcessingState extends State {
+    override def recoveryRunning: Boolean = false
+
     val common: Receive = {
       case WriteMessageSuccess(p, id) ⇒
         // instanceId mismatch can happen for persistAsync and defer in case of actor restart
@@ -582,8 +587,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         () // it will be stopped by the first WriteMessageFailure message
     }
 
-    def onWriteMessageComplete(err: Boolean): Unit =
-      pendingInvocations.pop()
+    def onWriteMessageComplete(err: Boolean): Unit
   }
 
   /**
@@ -592,7 +596,6 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    */
   private val processingCommands: State = new ProcessingState {
     override def toString: String = "processing commands"
-    override def recoveryRunning: Boolean = false
 
     override def stateReceive(receive: Receive, message: Any) =
       if (common.isDefinedAt(message)) common(message)
@@ -604,12 +607,13 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
     private def aroundReceiveComplete(err: Boolean): Unit = {
       if (eventBatch.nonEmpty) flushBatch()
 
-      if (pendingStashingPersistInvocations > 0)
-        changeState(persistingEvents)
-      else if (err)
-        internalStash.unstashAll()
-      else
-        internalStash.unstash()
+      if (pendingStashingPersistInvocations > 0) changeState(persistingEvents)
+      else unstashInternally(all = err)
+    }
+
+    override def onWriteMessageComplete(err: Boolean): Unit = {
+      pendingInvocations.pop()
+      unstashInternally(all = err)
     }
   }
 
@@ -620,7 +624,6 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    */
   private val persistingEvents: State = new ProcessingState {
     override def toString: String = "persisting events"
-    override def recoveryRunning: Boolean = false
 
     override def stateReceive(receive: Receive, message: Any) =
       if (common.isDefinedAt(message)) common(message)
@@ -638,8 +641,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
       if (pendingStashingPersistInvocations == 0) {
         changeState(processingCommands)
-        if (err) internalStash.unstashAll()
-        else internalStash.unstash()
+        unstashInternally(all = err)
       }
     }
 
