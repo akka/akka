@@ -4,6 +4,7 @@
 package akka.stream.io
 
 import java.io.IOException
+import java.lang.management.ManagementFactory
 import java.util.concurrent.TimeoutException
 import akka.actor.ActorSystem
 import akka.stream._
@@ -11,12 +12,13 @@ import akka.stream.Attributes.inputBuffer
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.io.OutputStreamSourceStage
 import akka.stream.impl.{ ActorMaterializerImpl, StreamSupervisor }
-import akka.stream.scaladsl.{ Keep, StreamConverters, Sink }
+import akka.stream.scaladsl.{ Source, Keep, StreamConverters, Sink }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
 import akka.util.ByteString
+import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration.Duration.Zero
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
@@ -160,6 +162,26 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
          Materializer.
          */
       }
+    }
+
+    "not leave blocked threads" in {
+      val (outputStream, probe) = StreamConverters.asOutputStream(timeout)
+        .toMat(TestSink.probe[ByteString])(Keep.both).run()(materializer)
+
+      val sub = probe.expectSubscription()
+
+      // triggers a blocking read on the queue
+      // and then cancel the stage before we got anything
+      sub.request(1)
+      sub.cancel()
+
+      def threadsBlocked =
+        ManagementFactory.getThreadMXBean.dumpAllThreads(true, true).toSeq
+          .filter(t ⇒ t.getThreadName.startsWith("OutputStreamSourceSpec") &&
+            t.getLockName != null &&
+            t.getLockName.startsWith("java.util.concurrent.locks.AbstractQueuedSynchronizer"))
+
+      awaitAssert(threadsBlocked should ===(Seq()), 3.seconds)
     }
   }
 }
