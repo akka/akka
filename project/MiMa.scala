@@ -659,6 +659,9 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.Drop.onPush"),
         ProblemFilters.exclude[FinalClassProblem]("akka.stream.stage.GraphStageLogic$Reading"), // this class is private
 
+        // lifting this method to the type where it belongs
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.mapMaterializedValue"),
+
         // #19908 Take is private
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$Take$"),
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$Take"),

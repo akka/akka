@@ -28,7 +28,7 @@ import scala.compat.java8.FutureConverters._
  * a Reactive Streams `Publisher` (at least conceptually).
  */
 final class Source[+Out, +Mat](private[stream] override val module: Module)
-  extends FlowOpsMat[Out, Mat] with Graph[SourceShape[Out], Mat] {
+    extends FlowOpsMat[Out, Mat] with Graph[SourceShape[Out], Mat] {
 
   override type Repr[+O] = Source[O, Mat @uncheckedVariance]
   override type ReprMat[+O, +M] = Source[O, M]
@@ -71,7 +71,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
   /**
    * Transform only the materialized value of this Source, leaving all other properties as they were.
    */
-  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2] =
+  override def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2] =
     new Source[Out, Mat2](module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
 
   /** INTERNAL API */
