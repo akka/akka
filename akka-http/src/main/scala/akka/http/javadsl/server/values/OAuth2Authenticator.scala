@@ -32,16 +32,16 @@ trait OAuth2Credentials {
 }
 
 /**
- * Implement this class to provide an OAuth 2 Bearer Token authentication check. The [[authenticate]] method needs to be implemented
+ * Implement this class to provide an OAuth 2 Bearer Token authentication check. The [[#authenticate]] method needs to be implemented
  * to check if the supplied or missing credentials are authenticated and provide a domain level object representing
- * the user as a [[RequestVal]].
+ * the user as a [[akka.http.javadsl.server.RequestVal]].
  */
 abstract class OAuth2Authenticator[T](val realm: String) extends AbstractDirective with ExtractionImplBase[T] with RequestVal[T] {
   protected[http] implicit def classTag: ClassTag[T] = reflect.classTag[AnyRef].asInstanceOf[ClassTag[T]]
   def authenticate(credentials: OAuth2Credentials): CompletionStage[Optional[T]]
 
   /**
-   * Creates a return value for use in [[authenticate]] that successfully authenticates the requests and provides
+   * Creates a return value for use in [[#authenticate]] that successfully authenticates the requests and provides
    * the given user.
    */
   def authenticateAs(user: T): CompletionStage[Optional[T]] = CompletableFuture.completedFuture(Optional.of(user))

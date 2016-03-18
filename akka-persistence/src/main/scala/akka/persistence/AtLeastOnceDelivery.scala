@@ -207,7 +207,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
    * later if no matching `confirmDelivery` was performed.
    *
    * This method will throw [[AtLeastOnceDelivery.MaxUnconfirmedMessagesExceededException]]
-   * if [[numberOfUnconfirmed]] is greater than or equal to [[#maxUnconfirmedMessages]].
+   * if [[#numberOfUnconfirmed]] is greater than or equal to [[#maxUnconfirmedMessages]].
    */
   def deliver(destination: ActorPath)(deliveryIdToMessage: Long ⇒ Any): Unit = {
     if (unconfirmed.size >= maxUnconfirmedMessages)

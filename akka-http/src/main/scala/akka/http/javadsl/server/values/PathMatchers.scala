@@ -20,8 +20,8 @@ import scala.reflect.ClassTag
  * It is also a RequestVal that allows to access dynamic parts of the part in a
  * handler.
  *
- * Using a PathMatcher with the [[Directives.path]] or [[Directives.pathPrefix]] directives
- * "consumes" a part of the path which is recorded in [[RequestContext.unmatchedPath]].
+ * Using a PathMatcher with the [[akka.http.javadsl.server.Directives#path]] or [[akka.http.javadsl.server.Directives#pathPrefix]] directives
+ * "consumes" a part of the path which is recorded in [[akka.http.javadsl.server.RequestContext#unmatchedPath]].
  */
 trait PathMatcher[T] extends RequestVal[T] {
   def optional: PathMatcher[Optional[T]]

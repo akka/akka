@@ -219,7 +219,7 @@ object TestSubscriber {
     private val self = this.asInstanceOf[Self]
 
     /**
-     * Expect and return a [[Subscription]].
+     * Expect and return a [[org.reactivestreams.Subscription]].
      */
     def expectSubscription(): Subscription = {
       _subscription = probe.expectMsgType[OnSubscribe].subscription
@@ -394,7 +394,7 @@ object TestSubscriber {
      *
      * By default `1` demand will be signalled in order to wake up a possibly lazy upstream.
      *
-     * See also [[#expectSubscriptionAndComplete(Throwable, Boolean)]] if no demand should be signalled.
+     * See also [[#expectSubscriptionAndComplete(cause: Throwable, signalDemand: Boolean)]] if no demand should be signalled.
      */
     def expectSubscriptionAndError(cause: Throwable): Self =
       expectSubscriptionAndError(cause, signalDemand = true)
@@ -405,7 +405,7 @@ object TestSubscriber {
      * Expect subscription followed by immediate stream completion.
      * By default `1` demand will be signalled in order to wake up a possibly lazy upstream
      *
-     * See also [[#expectSubscriptionAndError(Throwable)]].
+     * See also [[#expectSubscriptionAndError(cause: Throwable)]].
      */
     def expectSubscriptionAndError(cause: Throwable, signalDemand: Boolean): Self = {
       val sub = expectSubscription()
@@ -420,7 +420,7 @@ object TestSubscriber {
      * Expect subscription followed by immediate stream completion.
      * By default `1` demand will be signalled in order to wake up a possibly lazy upstream
      *
-     * See also [[#expectSubscriptionAndComplete(Boolean)]] if no demand should be signalled.
+     * See also [[#expectSubscriptionAndComplete(signalDemand: Boolean)]] if no demand should be signalled.
      */
     def expectSubscriptionAndComplete(): Self =
       expectSubscriptionAndComplete(true)

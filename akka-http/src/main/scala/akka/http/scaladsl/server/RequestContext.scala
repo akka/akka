@@ -100,7 +100,7 @@ trait RequestContext {
   def withRoutingSettings(settings: RoutingSettings): RequestContext
 
   /**
-   * Returns a copy of this context with the new [[ParserSettings]].
+   * Returns a copy of this context with the new [[akka.http.scaladsl.settings.ParserSettings]].
    */
   def withParserSettings(settings: ParserSettings): RequestContext
 
