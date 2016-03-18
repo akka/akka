@@ -101,5 +101,37 @@ class TickSourceSpec extends AkkaSpec {
       c.expectComplete()
     }
 
+    "acknowledge cancellation only once" in assertAllStagesStopped {
+      val c = TestSubscriber.manualProbe[String]()
+      val cancellable = Source.tick(1.second, 500.millis, "tick").to(Sink.fromSubscriber(c)).run()
+      val sub = c.expectSubscription()
+      sub.request(2)
+      c.expectNext("tick")
+      cancellable.cancel() should be(true)
+      cancellable.cancel() should be(false)
+      c.expectComplete()
+    }
+
+    "have isCancelled mirror the cancellation state" in assertAllStagesStopped {
+      val c = TestSubscriber.manualProbe[String]()
+      val cancellable = Source.tick(1.second, 500.millis, "tick").to(Sink.fromSubscriber(c)).run()
+      val sub = c.expectSubscription()
+      sub.request(2)
+      c.expectNext("tick")
+      cancellable.isCancelled should be(false)
+      cancellable.cancel() should be(true)
+      cancellable.isCancelled should be(true)
+      c.expectComplete()
+    }
+
+    "support being cancelled immediately after its materialization" in assertAllStagesStopped {
+      val c = TestSubscriber.manualProbe[String]()
+      val cancellable = Source.tick(1.second, 500.millis, "tick").to(Sink.fromSubscriber(c)).run()
+      cancellable.cancel() should be(true)
+      val sub = c.expectSubscription()
+      sub.request(2)
+      c.expectComplete()
+    }
+
   }
 }
