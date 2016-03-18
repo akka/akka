@@ -22,7 +22,7 @@ abstract class RangeDirectives extends PathDirectives {
    * it on the *inside* of the `conditional(...)` directive, i.e. `conditional(...)` must be
    * on a higher level in your route structure in order to function correctly.
    *
-   * @see https://tools.ietf.org/html/rfc7233
+   * For more information, see: https://tools.ietf.org/html/rfc7233
    */
   @varargs def withRangeSupport(innerRoute: Route, moreInnerRoutes: Route*): Route = RangeSupport()(innerRoute, moreInnerRoutes.toList)
 }
