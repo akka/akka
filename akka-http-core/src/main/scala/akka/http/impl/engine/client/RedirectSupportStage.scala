@@ -9,8 +9,9 @@ import akka.stream._
 
 import akka.stream.stage.{ InHandler, GraphStageLogic, GraphStage, OutHandler }
 
-class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
+import scala.language.higherKinds
 
+class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
   /**
    * in1 is where the original messages come from
    */
@@ -39,12 +40,70 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
-      var currentRequest: Option[HttpRequest] = None
-      var currentResponse: Option[HttpResponse] = None
-      var requestsInFlight = 0
+
+      trait OpOutPrinter[F, _ <: Outlet[F]] {
+        def print(t: F): Unit
+      }
+
+      trait OpInPrinter[T <: Inlet[_]] {
+        def print(): Unit
+      }
+
+      def printy(s: String) = ()//println(s)
+
+      object OpOutPrinter {
+        implicit val RequestOutPrinterReq = new OpOutPrinter[HttpRequest, Outlet[HttpRequest]] {
+          override def print(t: HttpRequest): Unit = printy(s"\tpushing $t to requestOut")
+        }
+        implicit val ResponseOutPrinterResp = new OpOutPrinter[HttpResponse, Outlet[HttpResponse]] {
+          override def print(t: HttpResponse): Unit = printy(s"\tpushing $t to responseOut")
+        }
+      }
+
+      object OpInPrinter {
+        implicit val RequestInPrinterReq = new OpInPrinter[Inlet[HttpRequest]] {
+          override def print(): Unit = {
+            printy("\tpulling from requestIn")
+          }
+        }
+        implicit val ResponseInPrinterResp = new OpInPrinter[Inlet[HttpResponse]] {
+          override def print(): Unit = {
+            printy("\tpulling from responseIn")
+          }
+        }
+      }
+
+      import OpOutPrinter._
+      import OpInPrinter._
+
+      def doPush[T](outlet: Outlet[T], t: T)(implicit ev: OpOutPrinter[T, Outlet[T]]) = {
+        push(outlet, t)
+        ev.print(t)
+      }
+
+      def doPull[T](inlet: Inlet[T])(implicit ev: OpInPrinter[Inlet[T]]) = {
+        if (!isClosed(inlet)) {
+          pull(inlet)
+        }
+        ev.print()
+      }
+
+      var inFlight = Vector.empty[HttpRequest]
+      var unconsumedResponses = Vector.empty[HttpResponse]
+      var unconsumedRequests = Vector.empty[HttpRequest]
       var requestsProcessed = 0
-      def printStatus = println(s"=================================================" +
-        s"\nIn flight: $requestsInFlight, processed: $requestsProcessed\n\n")
+      def printStatus() = printy(s"=================================================" +
+        s"\nIn flight: ${inFlight.length}, processed: $requestsProcessed\n\n")
+
+      /**
+       * Invoked before any external events are processed, at the startup of the stage.
+       */
+      override def preStart(): Unit = {
+        printy("preStart")
+        doPull(requestIn)
+        printStatus()
+      }
+
       /**
        * This is to tell to requestIn that demand exists on requestOut
        */
@@ -54,10 +113,12 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
          * i.e. [[GraphStageLogic.push()]] is now allowed to be called on this port.
          */
         override def onPull(): Unit = {
-          println("requestOut: onPull")
-          pull(requestIn)
-          currentRequest.foreach(push(requestOut, _))
-          printStatus
+          printy("requestOut: onPull")
+          unconsumedRequests = unconsumedRequests.headOption match {
+            case Some(h) => doPush(requestOut, h); doPull(responseIn); unconsumedRequests.tail
+            case None => unconsumedRequests
+          }
+          printStatus()
         }
 
         /**
@@ -73,19 +134,16 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
          * [[GraphStageLogic.grab()]] method.
          */
         override def onPush(): Unit = {
-          println("requestIn: onPush")
-          val request = grab(requestIn)
-          requestsInFlight += 1
-          currentRequest = Some(request)
+          printy("requestIn: onPush")
+          val r = grab(requestIn)
           if (isAvailable(requestOut)) {
-            println("\tPushing incoming request to requestOut")
-            push(requestOut, request)
+            doPush(requestOut, r)
+            doPull(responseIn)
+          } else {
+            unconsumedRequests = unconsumedRequests :+ r
           }
-          if (!hasBeenPulled(responseIn)) {
-            println("\tPulling from responseIn")
-            pull(responseIn)
-          }
-          printStatus
+          inFlight = inFlight :+ r
+          printStatus()
         }
 
         /**
@@ -103,31 +161,31 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
          * [[GraphStageLogic.grab()]] method.
          */
         override def onPush(): Unit = {
-          println("responseIn: onPush")
-          val response = grab(responseIn)
-          if (response.status.isRedirection) {
-            println("\tRedirection!")
-            currentRequest = response.headers.find(_.is("location")).map(h ⇒ currentRequest.get.withUri(h.value))
-            if (isAvailable(requestOut)) {
-              currentRequest.foreach(push(requestOut, _))
+          printy("responseIn: onPush")
+          val r = grab(responseIn)
+          if (r.status.isRedirection) {
+            val location = r.headers.find(_.is("location"))
+            if (location.isDefined) {
+              val redirect = inFlight.head.withUri(location.get.value) // FIXME not all headers should be copied
+              inFlight = inFlight.tail :+ redirect
+              if (isAvailable(requestOut)) {
+                doPush(requestOut, redirect)
+                doPull(responseIn)
+              } else {
+                unconsumedRequests = unconsumedRequests :+ redirect
+              }
             }
           } else {
+            requestsProcessed += 1
+            inFlight = inFlight.tail
             if (isAvailable(responseOut)) {
-              println("\tPushing non-redirection response to responseOut")
-              push(responseOut, response)
-              requestsInFlight -= 1
-              requestsProcessed += 1
+              doPush(responseOut, r)
+              doPull(requestIn)
             } else {
-              println("\tStashing non-redirection response due to lack of demand on responseOut")
-              currentResponse = Some(response)
-            }
-
-            if (!hasBeenPulled(responseIn)) {
-              println("\tPulling from responseIn")
-              pull(responseIn)
+              unconsumedResponses = unconsumedResponses :+ r
             }
           }
-          printStatus
+          printStatus()
         }
       })
 
@@ -137,16 +195,12 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
          * i.e. [[GraphStageLogic.push()]] is now allowed to be called on this port.
          */
         override def onPull(): Unit = {
-          println("responseOut: onPull")
-          if (currentResponse.isDefined) {
-            requestsInFlight -= 1
-            requestsProcessed += 1
-            println("\tPushing to responseOut after redirection")
-            push(responseOut, currentResponse.get)
-            currentResponse = None
-            currentRequest = None
+          printy("responseOut: onPull")
+          unconsumedResponses = unconsumedResponses.headOption match {
+            case Some(h) => doPush(responseOut, h); unconsumedResponses.tail
+            case None => unconsumedResponses
           }
-          printStatus
+          printStatus()
         }
 
         /**
@@ -155,5 +209,6 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
          */
         override def onDownstreamFinish(): Unit = cancel(responseIn)
       })
+
     }
 }
