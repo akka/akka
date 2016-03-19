@@ -18,7 +18,7 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
   val requestIn: Inlet[HttpRequest] = Inlet("Input1")
 
   /**
-   * in2 is the responses to original messages, that might not be forwarded, but retried
+   * in2 is the responses to original messages. If it's a redirect, its not forwarded upstream, but goes downstream
    */
   val responseIn: Inlet[HttpResponse] = Inlet("Input2")
 
@@ -28,7 +28,7 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
   val requestOut: Outlet[HttpRequest] = Outlet("Output1")
 
   /**
-   * out2 is where resulting messages is going to, potentially after retry
+   * out2 is where resulting messages is going to, potentially after redirect
    */
   val responseOut: Outlet[HttpResponse] = Outlet("Output2")
 
@@ -49,7 +49,7 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
         def print(): Unit
       }
 
-      def printy(s: String) = ()//println(s)
+      def printy(s: String) = println(s)
 
       object OpOutPrinter {
         implicit val RequestOutPrinterReq = new OpOutPrinter[HttpRequest, Outlet[HttpRequest]] {
@@ -125,7 +125,8 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
          * Called when the output port will no longer accept any new elements. After this callback no other callbacks
          * will be called for this port.
          */
-        override def onDownstreamFinish(): Unit = super.onDownstreamFinish()
+        override def onDownstreamFinish(): Unit = printy("requestOut: onDownstreamFinish")
+
       })
 
       setHandler(requestIn, new InHandler {
@@ -149,7 +150,18 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
         /**
          * Called when the input port is finished. After this callback no other callbacks will be called for this port.
          */
-        override def onUpstreamFinish(): Unit = complete(requestOut)
+        override def onUpstreamFinish(): Unit = {
+          printy("requestIn: onUpstreamFinish")
+          complete(requestOut)
+        }
+
+        /**
+          * Called when the input port has failed. After this callback no other callbacks will be called for this port.
+          */
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          printy("requestIn: onUpstreamFailure")
+          fail(requestOut, ex)
+        }
       })
 
       /**
@@ -187,6 +199,22 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
           }
           printStatus()
         }
+
+        /**
+          * Called when the input port is finished. After this callback no other callbacks will be called for this port.
+          */
+        override def onUpstreamFinish(): Unit = {
+          printy("responseIn: onUpstreamFinish")
+          complete(responseOut)
+        }
+
+        /**
+          * Called when the input port has failed. After this callback no other callbacks will be called for this port.
+          */
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          printy("responseIn: onUpstreamFailure")
+          fail(responseOut, ex)
+        }
       })
 
       setHandler(responseOut, new OutHandler {
@@ -207,7 +235,10 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
          * Called when the output port will no longer accept any new elements. After this callback no other callbacks will
          * be called for this port.
          */
-        override def onDownstreamFinish(): Unit = cancel(responseIn)
+        override def onDownstreamFinish(): Unit = {
+          printy("responseOut: onDownstreamFinish")
+          cancel(responseIn)
+        }
       })
 
     }
