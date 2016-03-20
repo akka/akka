@@ -37,7 +37,7 @@ object TextMessage {
     def textStream: Source[String, _] = Source.single(text)
     override def toString: String = s"TextMessage.Strict($text)"
   }
-  final private case class Streamed(textStream: Source[String, _]) extends TextMessage
+  final case class Streamed(textStream: Source[String, _]) extends TextMessage
 }
 
 /**
@@ -65,5 +65,5 @@ object BinaryMessage {
     def dataStream: Source[ByteString, _] = Source.single(data)
     override def toString: String = s"BinaryMessage.Strict($data)"
   }
-  final private case class Streamed(dataStream: Source[ByteString, _]) extends BinaryMessage
+  final case class Streamed(dataStream: Source[ByteString, _]) extends BinaryMessage
 }
