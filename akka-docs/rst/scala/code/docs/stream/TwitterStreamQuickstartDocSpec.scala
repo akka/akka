@@ -55,7 +55,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
   trait Example0 {
     //#tweet-source
-    val tweets: Source[Tweet, Unit]
+    val tweets: Source[Tweet, NotUsed]
     //#tweet-source
   }
 
