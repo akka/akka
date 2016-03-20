@@ -22,14 +22,14 @@ public class HandlerBindingTest extends JUnitRouteTest {
     }
     @Test
     public void testHandler1() {
-        Route route = param("a", a -> complete("Ok " + a));
+        Route route = parameter("a", a -> complete("Ok " + a));
         TestRouteResult response = runRoute(route, HttpRequest.GET("?a=23"));
         response.assertStatusCode(200);
         response.assertEntity("Ok 23");
     }
     @Test
     public void testHandler2() {
-        Route route = param(INTEGER, "a", a -> param(INTEGER, "b", b -> complete("Sum: " + (a + b))));
+        Route route = parameter(INTEGER, "a", a -> parameter(INTEGER, "b", b -> complete("Sum: " + (a + b))));
         TestRouteResult response = runRoute(route, HttpRequest.GET("?a=23&b=42"));
         response.assertStatusCode(200);
         response.assertEntity("Sum: 65");
@@ -40,10 +40,10 @@ public class HandlerBindingTest extends JUnitRouteTest {
     }
     @Test
     public void testHandlerMethod() {
-        Route route = param(INTEGER, "a", a ->
-                      param(INTEGER, "b", b ->
-                      param(INTEGER, "c", c ->
-                      param(INTEGER, "d", d -> sum(a,b,c,d)))));
+        Route route = parameter(INTEGER, "a", a ->
+                      parameter(INTEGER, "b", b ->
+                      parameter(INTEGER, "c", c ->
+                      parameter(INTEGER, "d", d -> sum(a,b,c,d)))));
         TestRouteResult response = runRoute(route, HttpRequest.GET("?a=23&b=42&c=30&d=45"));
         response.assertStatusCode(200);
         response.assertEntity("Sum: 140");

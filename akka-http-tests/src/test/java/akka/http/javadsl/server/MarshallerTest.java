@@ -45,7 +45,7 @@ public class MarshallerTest extends JUnitRouteTest {
             testRoute(
                 get(() ->
                     path("nummer", () ->
-                        param(StringUnmarshallers.INTEGER, "n", nummerHandler)
+                        parameter(StringUnmarshallers.INTEGER, "n", nummerHandler)
                     )
                 )
             );
@@ -88,7 +88,7 @@ public class MarshallerTest extends JUnitRouteTest {
                 testRoute(
                     get(() ->
                         path("nummer", () ->
-                            param(StringUnmarshallers.INTEGER, "n", nummerHandler)
+                            parameter(StringUnmarshallers.INTEGER, "n", nummerHandler)
                         )
                     )
                 );
@@ -124,7 +124,7 @@ public class MarshallerTest extends JUnitRouteTest {
             testRoute(
                 get(() ->
                     path("nummer", () ->
-                        param(StringUnmarshallers.INTEGER, "n", nummerHandler)
+                        parameter(StringUnmarshallers.INTEGER, "n", nummerHandler)
                     )
                 )
             );
@@ -160,7 +160,7 @@ public class MarshallerTest extends JUnitRouteTest {
             testRoute(
                 get(() ->
                     path("nummer", () ->
-                        param(StringUnmarshallers.INTEGER, "n", nummerHandler)
+                        parameter(StringUnmarshallers.INTEGER, "n", nummerHandler)
                     )
                 )
             );

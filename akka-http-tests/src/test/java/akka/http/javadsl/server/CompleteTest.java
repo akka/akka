@@ -58,8 +58,8 @@ public class CompleteTest extends JUnitRouteTest {
     @Test
     public void completeWithFuture() {
         Route route = 
-            param(INTEGER, "x", x -> 
-                param(INTEGER, "y", y -> 
+            parameter(INTEGER, "x", x ->
+                parameter(INTEGER, "y", y ->
                     onSuccess(() -> doSlowCalculation(x, y), Directives::complete)
                 )
             );

@@ -4,7 +4,11 @@
 
 package akka.http.javadsl.server
 
-import akka.http.scaladsl.unmarshalling
+import akka.http.impl.util.JavaMapping
+import akka.http.javadsl.RoutingJavaMapping
+import akka.http.scaladsl.marshalling.Marshalling
+import akka.http.scaladsl.unmarshalling.Unmarshaller.{EnhancedFromEntityUnmarshaller, EnhancedUnmarshaller}
+import akka.http.scaladsl.{model, unmarshalling, marshalling}
 import scala.concurrent.ExecutionContext
 import scala.annotation.varargs
 import akka.http.javadsl.model.HttpEntity
@@ -17,18 +21,18 @@ import akka.http.javadsl.model.MediaType
 import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters._
 import scala.collection.JavaConverters._
-import JavaScalaTypeEquivalence._
+import akka.http.impl.util.JavaMapping.Implicits._
+import akka.http.javadsl.RoutingJavaMapping._
 
 object Unmarshaller {
-  // Allow java HttpEntity to be treated as scala HttpEntity
-  private implicit val javaToScalaHttpEntity = JavaScalaTypeEquivalence.javaToScalaHttpEntity
-  
-  def wrap[A,B](scalaUnmarshaller: unmarshalling.Unmarshaller[A,B]) = new Unmarshaller()(scalaUnmarshaller)
+  implicit def fromScala[A, B](scalaUnmarshaller: unmarshalling.Unmarshaller[A, B]) = new Unmarshaller()(scalaUnmarshaller)
+
+  def wrap[A, B](scalaUnmarshaller: unmarshalling.Unmarshaller[A, B]) = new Unmarshaller()(scalaUnmarshaller)
 
   /**
    * Creates an unmarshaller from an asynchronous Java function. 
    */
-  def async[A,B](f: java.util.function.Function[A,CompletionStage[B]]) = wrap(unmarshalling.Unmarshaller[A,B] {
+  def async[A, B](f: java.util.function.Function[A, CompletionStage[B]]) = wrap(unmarshalling.Unmarshaller[A, B] {
     ctx => a => f.apply(a).toScala
   })
   
@@ -48,13 +52,16 @@ object Unmarshaller {
   def requestToEntity = wrap(unmarshalling.Unmarshaller[HttpRequest,RequestEntity] {
     ctx => request => scala.concurrent.Future.successful(request.entity())
   })
-  
-  def forMediaType[B](t: MediaType, um:Unmarshaller[_ <: HttpEntity,B]): Unmarshaller[HttpEntity,B] = {
-    wrap(assumeScala(um.asScala).forContentTypes(t: scaladsl.model.MediaType))
+
+  def forMediaType[B](t: MediaType, um: Unmarshaller[HttpEntity, B]): Unmarshaller[HttpEntity, B] = {
+    val x: unmarshalling.Unmarshaller[model.HttpEntity, HttpEntity] = unmarshalling.Unmarshaller.strict[model.HttpEntity, HttpEntity](_.asJava)
+    val z = x.flatMap(ex => mat => en => um.asScala(en))
+    val xx = z.forContentTypes(t.asScala)
+    wrap(xx)  // FIXME
   }
   
   def forMediaTypes[B](types: java.lang.Iterable[MediaType], um:Unmarshaller[_ <: HttpEntity,B]): Unmarshaller[HttpEntity,B] = {
-    wrap(assumeScala(um.asScala).forContentTypes(types.asScala.toSeq.map(ContentTypeRange(_)): _*))
+    wrap(um.asScala.forContentTypes(types.asScala.toSeq.map(ContentTypeRange(_)): _*))
   }
   
   def firstOf[A, B] (u1: Unmarshaller[A, B], u2: Unmarshaller[A, B]): Unmarshaller[A, B] = {
@@ -72,9 +79,9 @@ object Unmarshaller {
   def firstOf[A, B] (u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B], u5: Unmarshaller[A, B]): Unmarshaller[A, B] = {
     wrap(unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala, u4.asScala, u5.asScala))
   }
-  
-  private def wrapFromHttpEntity[B](scalaUnmarshaller: unmarshalling.Unmarshaller[scaladsl.model.HttpEntity,B]) = {
-    wrap(scalaUnmarshaller: unmarshalling.Unmarshaller[HttpEntity,B])
+
+  private def wrapFromHttpEntity[B](scalaUnmarshaller: unmarshalling.Unmarshaller[scaladsl.model.HttpEntity, B]) = {
+    wrap(scalaUnmarshaller.asScala)
   }
     
 }

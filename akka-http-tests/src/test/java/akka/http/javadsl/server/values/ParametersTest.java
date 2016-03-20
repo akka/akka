@@ -20,7 +20,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testStringParameterExtraction() {
-        TestRoute route = testRoute(param("stringParam", value -> complete(value)));
+        TestRoute route = testRoute(parameter("stringParam", value -> complete(value)));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -35,7 +35,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testByteParameterExtraction() {
-        TestRoute route = testRoute(param(StringUnmarshallers.BYTE, "byteParam", value -> complete(value.toString())));
+        TestRoute route = testRoute(parameter(StringUnmarshallers.BYTE, "byteParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -60,7 +60,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testShortParameterExtraction() {
-        TestRoute route = testRoute(param(StringUnmarshallers.SHORT, "shortParam", value -> complete(value.toString())));
+        TestRoute route = testRoute(parameter(StringUnmarshallers.SHORT, "shortParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -85,7 +85,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testIntegerParameterExtraction() {
-        TestRoute route = testRoute(param(StringUnmarshallers.INTEGER, "intParam", value -> complete(value.toString())));
+        TestRoute route = testRoute(parameter(StringUnmarshallers.INTEGER, "intParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -105,7 +105,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testLongParameterExtraction() {
-        TestRoute route = testRoute(param(StringUnmarshallers.LONG, "longParam", value -> complete(value.toString())));
+        TestRoute route = testRoute(parameter(StringUnmarshallers.LONG, "longParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -125,7 +125,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testFloatParameterExtraction() {
-        TestRoute route = testRoute(param(StringUnmarshallers.FLOAT, "floatParam", value -> complete(value.toString())));
+        TestRoute route = testRoute(parameter(StringUnmarshallers.FLOAT, "floatParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -145,7 +145,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testDoubleParameterExtraction() {
-        TestRoute route = testRoute(param(StringUnmarshallers.DOUBLE, "doubleParam", value -> complete(value.toString())));
+        TestRoute route = testRoute(parameter(StringUnmarshallers.DOUBLE, "doubleParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -165,7 +165,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testHexByteParameterExtraction() {
-        TestRoute route = testRoute(param(StringUnmarshallers.BYTE, "hexByteParam", value -> complete(value.toString())));
+        TestRoute route = testRoute(parameter(StringUnmarshallers.BYTE, "hexByteParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -190,7 +190,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testHexShortParameterExtraction() {
-        TestRoute route = testRoute(param(StringUnmarshallers.SHORT_HEX, "hexShortParam", value -> complete(value.toString())));
+        TestRoute route = testRoute(parameter(StringUnmarshallers.SHORT_HEX, "hexShortParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -215,7 +215,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testHexIntegerParameterExtraction() {
-        TestRoute route = testRoute(param(StringUnmarshallers.INTEGER_HEX, "hexIntParam", value -> complete(value.toString())));
+        TestRoute route = testRoute(parameter(StringUnmarshallers.INTEGER_HEX, "hexIntParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -235,7 +235,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testHexLongParameterExtraction() {
-        TestRoute route = testRoute(param(StringUnmarshallers.LONG_HEX, "hexLongParam", value -> complete(value.toString())));
+        TestRoute route = testRoute(parameter(StringUnmarshallers.LONG_HEX, "hexLongParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))
@@ -356,7 +356,7 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testOptionalIntParameterExtraction() {
-        TestRoute route = testRoute(paramOptional(StringUnmarshallers.INTEGER, "optionalIntParam", value -> complete(value.toString())));
+        TestRoute route = testRoute(parameterOptional(StringUnmarshallers.INTEGER, "optionalIntParam", value -> complete(value.toString())));
 
         route
             .run(HttpRequest.create().withUri("/abc"))

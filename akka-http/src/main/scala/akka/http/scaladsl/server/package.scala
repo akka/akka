@@ -9,6 +9,7 @@ import scala.concurrent.Future
 package object server {
 
   type Route = RequestContext ⇒ Future[RouteResult]
+
   type RouteGenerator[T] = T ⇒ Route
   type Directive0 = Directive[Unit]
   type Directive1[T] = Directive[Tuple1[T]]

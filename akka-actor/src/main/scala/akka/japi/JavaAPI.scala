@@ -240,6 +240,13 @@ object Util {
 
   def immutableSingletonSeq[T](value: T): immutable.Seq[T] = value :: Nil
 
+  def javaArrayList[T](seq: Seq[T]): java.util.List[T] = {
+    val size = seq.size
+    val l = new java.util.ArrayList[T](size)
+    seq.foreach(l.add) // TODO could be optimised based on type of Seq
+    l
+  }
+
   /**
    * Turns an [[java.lang.Iterable]] into an immutable Scala IndexedSeq (by copying it).
    */

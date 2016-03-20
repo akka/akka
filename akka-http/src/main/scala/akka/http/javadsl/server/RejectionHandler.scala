@@ -37,7 +37,7 @@ class RejectionHandlerBuilder(asScala: server.RejectionHandler.Builder) {
    * Handles a single [[Rejection]] with the given partial function.
    */
   def handle[T <: Rejection](t: Class[T], handler: function.Function[T, Route]): RejectionHandlerBuilder = {
-    asScala.handle { case r if t.isInstance(r) => handler.apply(t.cast(r)).toScala }
+    asScala.handle { case r if t.isInstance(r) => handler.apply(t.cast(r)).delegate }
     this
   }
   
@@ -46,7 +46,7 @@ class RejectionHandlerBuilder(asScala: server.RejectionHandler.Builder) {
    * The list passed to the given function is guaranteed to be non-empty.
    */
   def handleAll[T <: Rejection](t: Class[T], handler: function.Function[java.util.List[T], Route]): RejectionHandlerBuilder = {
-    asScala.handleAll { rejections:collection.immutable.Seq[T] => handler.apply(rejections.asJava).toScala } (ClassTag(t))
+    asScala.handleAll { rejections:collection.immutable.Seq[T] => handler.apply(rejections.asJava).delegate } (ClassTag(t))
     this
   }
   
@@ -54,7 +54,7 @@ class RejectionHandlerBuilder(asScala: server.RejectionHandler.Builder) {
    * Handles the special "not found" case using the given [[Route]].
    */
   def handleNotFound(route: Route): RejectionHandlerBuilder = {
-    asScala.handleNotFound(route.toScala)
+    asScala.handleNotFound(route.delegate)
     this
   }
 }
