@@ -22,13 +22,13 @@ import akka.NotUsed
  *
  * <pre>
  * Route myDirective(String test, Supplier<Route> inner) {
- *     return path("fixed", () ->
- *         path(test),
- *             inner
- *         )
+ *   return
+ *     path("fixed", () ->
+ *       path(test),
+ *         inner
+ *       )
  *     );
  * }
- *
  * </pre>
  *
  * The above example will invoke [inner] whenever the path "fixed/{test}" is matched, where "{test}"

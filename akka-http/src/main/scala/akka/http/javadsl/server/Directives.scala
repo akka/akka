@@ -7,9 +7,9 @@ package akka.http.javadsl.server
 import akka.http.scaladsl.server.Rejection
 import scala.annotation.varargs
 import akka.http.javadsl.model.HttpMethods
-import akka.http.javadsl.server.directives.WebSocketDirectives
+import akka.http.javadsl.server.directives.{ TimeoutDirectives, WebSocketDirectives }
 
-abstract class AllDirectives extends WebSocketDirectives
+abstract class AllDirectives extends TimeoutDirectives
 
 object Directives extends AllDirectives {
 

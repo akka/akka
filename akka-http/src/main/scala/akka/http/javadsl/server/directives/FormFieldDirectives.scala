@@ -31,7 +31,7 @@ abstract class FormFieldDirectives extends FileUploadDirectives {
     })
 
   def formFieldList(name: String, inner: JFunction[java.util.List[String], Route]): Route = ScalaRoute(
-    D.formField(string2NR(name).*) { values ⇒
+    D.formField(_string2NR(name).*) { values ⇒
       inner.apply(values.toSeq.asJava).toScala
     })
 

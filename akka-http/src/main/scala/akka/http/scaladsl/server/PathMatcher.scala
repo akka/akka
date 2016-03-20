@@ -230,17 +230,17 @@ trait ImplicitPathMatcherConstruction {
    * Creates a PathMatcher that consumes (a prefix of) the first path segment
    * (if the path begins with a segment) and extracts a given value.
    */
-  implicit def stringExtractionPair2PathMatcher[T](tuple: (String, T)): PathMatcher1[T] =
+  implicit def _stringExtractionPair2PathMatcher[T](tuple: (String, T)): PathMatcher1[T] =
     PathMatcher(tuple._1 :: Path.Empty, Tuple1(tuple._2))
 
   /**
    * Creates a PathMatcher that consumes (a prefix of) the first path segment
    * (if the path begins with a segment).
    */
-  implicit def segmentStringToPathMatcher(segment: String): PathMatcher0 =
+  implicit def _segmentStringToPathMatcher(segment: String): PathMatcher0 =
     PathMatcher(segment :: Path.Empty, ())
 
-  implicit def stringNameOptionReceptacle2PathMatcher(nr: NameOptionReceptacle[String]): PathMatcher0 =
+  implicit def _stringNameOptionReceptacle2PathMatcher(nr: NameOptionReceptacle[String]): PathMatcher0 =
     PathMatcher(nr.name).?
 
   /**
@@ -250,7 +250,7 @@ trait ImplicitPathMatcherConstruction {
    * the capture group (if the regex contains exactly one).
    * If the regex contains more than one capture group the method throws an IllegalArgumentException.
    */
-  implicit def regex2PathMatcher(regex: Regex): PathMatcher1[String] = regex.groupCount match {
+  implicit def _regex2PathMatcher(regex: Regex): PathMatcher1[String] = regex.groupCount match {
     case 0 ⇒ new PathMatcher1[String] {
       def apply(path: Path) = path match {
         case Path.Segment(segment, tail) ⇒ regex findPrefixOf segment match {
@@ -277,9 +277,9 @@ trait ImplicitPathMatcherConstruction {
    * If the unmatched path starts with a segment having one of the maps keys as a prefix
    * the matcher consumes this path segment (prefix) and extracts the corresponding map value.
    */
-  implicit def valueMap2PathMatcher[T](valueMap: Map[String, T]): PathMatcher1[T] =
+  implicit def _valueMap2PathMatcher[T](valueMap: Map[String, T]): PathMatcher1[T] =
     if (valueMap.isEmpty) PathMatchers.nothingMatcher
-    else valueMap.map { case (prefix, value) ⇒ stringExtractionPair2PathMatcher((prefix, value)) }.reduceLeft(_ | _)
+    else valueMap.map { case (prefix, value) ⇒ _stringExtractionPair2PathMatcher((prefix, value)) }.reduceLeft(_ | _)
 }
 
 trait PathMatchers {

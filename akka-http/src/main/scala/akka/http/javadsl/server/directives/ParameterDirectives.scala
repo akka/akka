@@ -29,7 +29,7 @@ abstract class ParameterDirectives extends MiscDirectives {
     })
 
   def paramList(name: String, inner: java.util.function.Function[java.util.List[String], Route]): Route = ScalaRoute(
-    D.parameter(string2NR(name).*) { values ⇒
+    D.parameter(_string2NR(name).*) { values ⇒
       inner.apply(values.toSeq.asJava).toScala
     })
 
@@ -49,6 +49,7 @@ abstract class ParameterDirectives extends MiscDirectives {
       })
   }
 
+  @CorrespondsTo("paramSeq")
   def paramList[T](t: Unmarshaller[String, T], name: String, inner: java.util.function.Function[java.util.List[T], Route]): Route = {
     import t.asScala
     ScalaRoute(

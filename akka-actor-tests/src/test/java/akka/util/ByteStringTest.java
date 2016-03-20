@@ -20,7 +20,7 @@ public class ByteStringTest {
   public void testBuilderCreation() {
     final ByteStringBuilder sb = ByteString.createBuilder();
     sb.append(ByteString.fromString("Hello"));
-    sb.append(ByteString.fromString("World"));
+    sb.append(ByteString.fromString("xxx"));
     assertEquals(ByteString.fromString("Hello World"), sb.result());
   }
 
