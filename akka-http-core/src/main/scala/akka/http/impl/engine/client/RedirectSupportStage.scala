@@ -1,40 +1,59 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
- */
+  * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+  */
 
 package akka.http.impl.engine.client
 
-import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
+import akka.http.impl.engine.client.RedirectSupportStage.{InfiniteRedirectLoopException, RedirectMapper}
+import akka.http.scaladsl.model.headers.Location
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
 import akka.stream._
+import akka.stream.scaladsl.BidiFlow
+import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 
-import akka.stream.stage.{ InHandler, GraphStageLogic, GraphStage, OutHandler }
-
+import scala.collection.immutable.HashMap
+import scala.collection.mutable
 import scala.language.higherKinds
+import scala.util.control.NoStackTrace
 
-class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
+object RedirectSupportStage {
+  type RedirectMapper = (HttpRequest, HttpResponse) => Option[HttpRequest]
+  case object InfiniteRedirectLoopException
+    extends RuntimeException("Infinite redirect loop detected, breaking.")
+      with NoStackTrace
+  val defaultRedirectMapper: RedirectMapper =
+    (req, resp) =>
+      resp.headers.find(_.is("location")).map(location =>
+        req.withUri(location.value).withHeaders(List.empty)
+      )
+  def apply() = BidiFlow.fromGraph(new RedirectSupportStage(defaultRedirectMapper))
+  def apply(redirectMapper: RedirectMapper) = BidiFlow.fromGraph(new RedirectSupportStage(redirectMapper))
+}
+
+class RedirectSupportStage(redirectMapper: RedirectMapper) extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
   /**
-   * in1 is where the original messages come from
-   */
+    * in1 is where the original messages come from
+    */
   val requestIn: Inlet[HttpRequest] = Inlet("Input1")
 
   /**
-   * in2 is the responses to original messages. If it's a redirect, its not forwarded upstream, but goes downstream
-   */
+    * in2 is the responses to original messages. If it's a redirect, its not forwarded upstream, but goes downstream
+    */
   val responseIn: Inlet[HttpResponse] = Inlet("Input2")
 
   /**
-   * out1 is where input messages go to
-   */
+    * out1 is where input messages go to
+    */
   val requestOut: Outlet[HttpRequest] = Outlet("Output1")
 
   /**
-   * out2 is where resulting messages is going to, potentially after redirect
-   */
+    * out2 is where resulting messages is going to, potentially after redirect
+    */
   val responseOut: Outlet[HttpResponse] = Outlet("Output2")
 
   /**
-   * The shape of a graph is all that is externally visible: its inlets and outlets.
-   */
+    * The shape of a graph is all that is externally visible: its inlets and outlets.
+    */
   override def shape: BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse] =
     BidiShape(requestIn, requestOut, responseIn, responseOut)
 
@@ -91,13 +110,15 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
       var inFlight = Vector.empty[HttpRequest]
       var unconsumedResponses = Vector.empty[HttpResponse]
       var unconsumedRequests = Vector.empty[HttpRequest]
+      var loopDetector = Map.empty[HttpRequest, List[Uri]]
       var requestsProcessed = 0
+
       def printStatus() = printy(s"=================================================" +
         s"\nIn flight: ${inFlight.length}, processed: $requestsProcessed\n\n")
 
       /**
-       * Invoked before any external events are processed, at the startup of the stage.
-       */
+        * Invoked before any external events are processed, at the startup of the stage.
+        */
       override def preStart(): Unit = {
         printy("preStart")
         doPull(requestIn)
@@ -105,13 +126,13 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
       }
 
       /**
-       * This is to tell to requestIn that demand exists on requestOut
-       */
+        * This is to tell to requestIn that demand exists on requestOut
+        */
       setHandler(requestOut, new OutHandler {
         /**
-         * Called when the output port has received a pull, and therefore ready to emit an element,
-         * i.e. [[GraphStageLogic.push()]] is now allowed to be called on this port.
-         */
+          * Called when the output port has received a pull, and therefore ready to emit an element,
+          * i.e. [[GraphStageLogic.push()]] is now allowed to be called on this port.
+          */
         override def onPull(): Unit = {
           printy("requestOut: onPull")
           unconsumedRequests = unconsumedRequests.headOption match {
@@ -122,18 +143,18 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
         }
 
         /**
-         * Called when the output port will no longer accept any new elements. After this callback no other callbacks
-         * will be called for this port.
-         */
+          * Called when the output port will no longer accept any new elements. After this callback no other callbacks
+          * will be called for this port.
+          */
         override def onDownstreamFinish(): Unit = printy("requestOut: onDownstreamFinish")
 
       })
 
       setHandler(requestIn, new InHandler {
         /**
-         * Called when the input port has a new element available. The actual element can be retrieved via the
-         * [[GraphStageLogic.grab()]] method.
-         */
+          * Called when the input port has a new element available. The actual element can be retrieved via the
+          * [[GraphStageLogic.grab()]] method.
+          */
         override def onPush(): Unit = {
           printy("requestIn: onPush")
           val r = grab(requestIn)
@@ -144,12 +165,13 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
             unconsumedRequests = unconsumedRequests :+ r
           }
           inFlight = inFlight :+ r
+          loopDetector += (r -> List(r.uri))
           printStatus()
         }
 
         /**
-         * Called when the input port is finished. After this callback no other callbacks will be called for this port.
-         */
+          * Called when the input port is finished. After this callback no other callbacks will be called for this port.
+          */
         override def onUpstreamFinish(): Unit = {
           printy("requestIn: onUpstreamFinish")
           complete(requestOut)
@@ -165,36 +187,43 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
       })
 
       /**
-       * Response is available. Check if it is redirect and act accordingly.
-       */
+        * Response is available. Check if it is redirect and act accordingly.
+        */
       setHandler(responseIn, new InHandler {
         /**
-         * Called when the input port has a new element available. The actual element can be retrieved via the
-         * [[GraphStageLogic.grab()]] method.
-         */
+          * Called when the input port has a new element available. The actual element can be retrieved via the
+          * [[GraphStageLogic.grab()]] method.
+          */
         override def onPush(): Unit = {
           printy("responseIn: onPush")
-          val r = grab(responseIn)
-          if (r.status.isRedirection) {
-            val location = r.headers.find(_.is("location"))
-            if (location.isDefined) {
-              val redirect = inFlight.head.withUri(location.get.value) // FIXME not all headers should be copied
-              inFlight = inFlight.tail :+ redirect
-              if (isAvailable(requestOut)) {
-                doPush(requestOut, redirect)
-                doPull(responseIn)
+          val response = grab(responseIn)
+          if (response.status.isRedirection) {
+            redirectMapper(inFlight.head, response).foreach { redirect =>
+              printy(loopDetector.toString())
+              val loops = loopDetector(inFlight.head)
+              if (loops.contains(redirect.uri)) {
+                throw InfiniteRedirectLoopException
               } else {
-                unconsumedRequests = unconsumedRequests :+ redirect
+                loopDetector -= inFlight.head
+                loopDetector += (redirect -> (redirect.uri :: loops))
+                inFlight = inFlight.tail :+ redirect
+                if (isAvailable(requestOut)) {
+                  doPush(requestOut, redirect)
+                  doPull(responseIn)
+                } else {
+                  unconsumedRequests = unconsumedRequests :+ redirect
+                }
               }
             }
           } else {
             requestsProcessed += 1
+            loopDetector -= inFlight.head
             inFlight = inFlight.tail
             if (isAvailable(responseOut)) {
-              doPush(responseOut, r)
+              doPush(responseOut, response)
               doPull(requestIn)
             } else {
-              unconsumedResponses = unconsumedResponses :+ r
+              unconsumedResponses = unconsumedResponses :+ response
             }
           }
           printStatus()
@@ -219,9 +248,9 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
 
       setHandler(responseOut, new OutHandler {
         /**
-         * Called when the output port has received a pull, and therefore ready to emit an element,
-         * i.e. [[GraphStageLogic.push()]] is now allowed to be called on this port.
-         */
+          * Called when the output port has received a pull, and therefore ready to emit an element,
+          * i.e. [[GraphStageLogic.push()]] is now allowed to be called on this port.
+          */
         override def onPull(): Unit = {
           printy("responseOut: onPull")
           unconsumedResponses = unconsumedResponses.headOption match {
@@ -232,9 +261,9 @@ class RedirectSupportStage extends GraphStage[BidiShape[HttpRequest, HttpRequest
         }
 
         /**
-         * Called when the output port will no longer accept any new elements. After this callback no other callbacks will
-         * be called for this port.
-         */
+          * Called when the output port will no longer accept any new elements. After this callback no other callbacks will
+          * be called for this port.
+          */
         override def onDownstreamFinish(): Unit = {
           printy("responseOut: onDownstreamFinish")
           cancel(responseIn)
