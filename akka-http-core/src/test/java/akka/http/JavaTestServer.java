@@ -2,13 +2,14 @@
  * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.http.javadsl.model;
+package akka.http;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
+import akka.http.javadsl.model.JavaApiTestCases;
 import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
 import akka.http.javadsl.model.ws.WebSocket;

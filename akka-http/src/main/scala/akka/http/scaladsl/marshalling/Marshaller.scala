@@ -138,7 +138,7 @@ object Marshaller
 }
 //#
 
-//# marshalling
+//#marshalling
 /**
  * Describes one possible option for marshalling a given value.
  */

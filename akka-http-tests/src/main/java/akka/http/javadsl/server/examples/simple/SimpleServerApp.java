@@ -27,65 +27,67 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import akka.actor.ActorSystem;
+import akka.http.javadsl.Http;
+import akka.http.javadsl.server.AllDirectives;
+import akka.stream.ActorMaterializer;
 
-public class SimpleServerApp extends HttpApp {
+public class SimpleServerApp extends AllDirectives { // or import Directives.*
 
-    public Route multiply(int x, int y) {
-        int result = x * y;
-        return complete(String.format("%d * %d = %d", x, y, result));
-    }
-    
-    public CompletionStage<Route> multiplyAsync(Executor ctx, int x, int y) {
-        return CompletableFuture.supplyAsync(() -> multiply(x, y), ctx);
+  public Route multiply(int x, int y) {
+    int result = x * y;
+    return complete(String.format("%d * %d = %d", x, y, result));
   }
 
-    @Override
-    public Route createRoute() {
-        Route addHandler = param(INTEGER, "x", x ->
-            param(INTEGER, "y", y -> {
-                int result = x + y;
-                return complete(String.format("%d + %d = %d", x, y, result));
-            })
-        );
-        
-        BiFunction<Integer, Integer, Route> subtractHandler = (x, y) -> {
-            int result = x - y;
-            return complete(String.format("%d - %d = %d", x, y, result));            
-        };
-        
-        return
-            route(
-                // matches the empty path
-                pathSingleSlash(() ->
-                    getFromResource("web/calculator.html")
-                ),
-                // matches paths like this: /add?x=42&y=23
-                path("add", () -> addHandler),
-                path("subtract", () ->
-                    param(INTEGER, "x", x ->
-                        param(INTEGER, "y", y ->
-                            subtractHandler.apply(x, y)
-                        )
-                    )
-                ),
-                // matches paths like this: /multiply/{x}/{y}
-                path(segment("multiply").slash(INTEGER_SEGMENT).slash(INTEGER_SEGMENT), 
-                    this::multiply
-                ),
-                path(segment("multiplyAsync").slash(INTEGER_SEGMENT).slash(INTEGER_SEGMENT), (x, y) ->
-                    extractExecutionContext(ctx ->
-                        onSuccess(() -> multiplyAsync(ctx, x, y), Function.identity())
-                    )
-                ),
-                post(() ->
-                    path("hello", () ->
-                        entity(entityToString(), body ->
-                            complete("Hello " + body + "!")
-                        )
-                    )
-                )
-            );
-    }
+  public CompletionStage<Route> multiplyAsync(Executor ctx, int x, int y) {
+    return CompletableFuture.supplyAsync(() -> multiply(x, y), ctx);
+  }
+
+  public Route createRoute() {
+    Route addHandler = parameter(INTEGER, "x", x ->
+      parameter(INTEGER, "y", y -> {
+        int result = x + y;
+        return complete(String.format("%d + %d = %d", x, y, result));
+      })
+    );
+
+    BiFunction<Integer, Integer, Route> subtractHandler = (x, y) -> {
+      int result = x - y;
+      return complete(String.format("%d - %d = %d", x, y, result));
+    };
+
+    return
+      route(
+        // matches the empty path
+        pathSingleSlash(() ->
+          getFromResource("web/calculator.html")
+        ),
+        // matches paths like this: /add?x=42&y=23
+        path("add", () -> addHandler),
+        path("subtract", () ->
+          parameter(INTEGER, "x", x ->
+            parameter(INTEGER, "y", y ->
+              subtractHandler.apply(x, y)
+            )
+          )
+        ),
+        // matches paths like this: /multiply/{x}/{y}
+        path(segment("multiply").slash(INTEGER_SEGMENT).slash(INTEGER_SEGMENT),
+          this::multiply
+        ),
+        path(segment("multiplyAsync").slash(INTEGER_SEGMENT).slash(INTEGER_SEGMENT), (x, y) ->
+          extractExecutionContext(ctx ->
+            onSuccess(() -> multiplyAsync(ctx, x, y), Function.identity())
+          )
+        ),
+        post(() ->
+          path("hello", () ->
+            entity(entityToString(), body ->
+              complete("Hello " + body + "!")
+            )
+          )
+        )
+      );
+  }
 
   // ** STARTING THE SERVER ** //
 

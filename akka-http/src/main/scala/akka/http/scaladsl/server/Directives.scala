@@ -6,6 +6,11 @@ package akka.http.scaladsl.server
 
 import directives._
 
+/**
+ * Collects all default directives into one trait for simple importing.
+ *
+ * See [[akka.http.javadsl.server.AllDirectives]] for JavaDSL equivalent of this trait.
+ */
 trait Directives extends RouteConcatenation
   with BasicDirectives
   with CacheConditionDirectives

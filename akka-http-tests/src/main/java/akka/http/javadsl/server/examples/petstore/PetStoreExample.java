@@ -22,10 +22,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import akka.actor.ActorSystem;
+import akka.http.javadsl.ConnectHttp;
+import akka.http.javadsl.Http;
 import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.StatusCodes;
-import akka.http.javadsl.server.HttpService;
 import akka.http.javadsl.server.Route;
+import akka.http.javadsl.server.examples.simple.SimpleServerApp;
+import akka.stream.ActorMaterializer;
 
 public class PetStoreExample {
 
@@ -77,13 +80,14 @@ public class PetStoreExample {
     pets.put(0, dog);
     pets.put(1, cat);
 
-    ActorSystem system = ActorSystem.create();
-    try {
-      HttpService.bindRoute("localhost", 8080, appRoute(pets), system);
-      System.out.println("Type RETURN to exit");
-      System.in.read();
-    } finally {
-      system.terminate();
-    }
+    final ActorSystem system = ActorSystem.create();
+    final ActorMaterializer materializer = ActorMaterializer.create(system);
+
+    final ConnectHttp host = ConnectHttp.toHost("127.0.0.1");
+
+    Http.get(system).bindAndHandle(appRoute(pets).flow(system, materializer), host, materializer);
+
+    System.console().readLine("Type RETURN to exit...");
+    system.terminate();
   }
 }

@@ -9,13 +9,13 @@ import akka.http.javadsl.server.Route
 import akka.http.scaladsl.server.directives.{ ExecutionDirectives ⇒ D }
 
 abstract class ExecutionDirectives extends DebuggingDirectives {
-  def handleExceptions(handler: ExceptionHandler, inner: java.util.function.Supplier[Route]) = ScalaRoute(
+  def handleExceptions(handler: ExceptionHandler, inner: java.util.function.Supplier[Route]) = RouteAdapter(
     D.handleExceptions(handler.asScala) {
-      inner.get.toScala
+      inner.get.delegate
     })
 
-  def handleRejections(handler: RejectionHandler, inner: java.util.function.Supplier[Route]) = ScalaRoute(
+  def handleRejections(handler: RejectionHandler, inner: java.util.function.Supplier[Route]) = RouteAdapter(
     D.handleRejections(handler.asScala) {
-      inner.get.toScala
+      inner.get.delegate
     })
 }

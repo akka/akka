@@ -35,8 +35,8 @@ abstract class PathDirectives extends ParameterDirectives {
    * or said differently: only passes on the request to its inner route if the request path
    * has been matched completely.
    */
-  def pathEnd(inner: Supplier[Route]): Route = ScalaRoute(
-    D.pathEnd { inner.get.toScala })
+  def pathEnd(inner: Supplier[Route]): Route = RouteAdapter(
+    D.pathEnd { inner.get.delegate })
 
   /**
    * Only passes on the request to its inner route if the request path has been matched
@@ -65,16 +65,16 @@ abstract class PathDirectives extends ParameterDirectives {
    *
    * For further information, refer to: http://googlewebmastercentral.blogspot.de/2010/04/to-slash-or-not-to-slash.html
    */
-  def pathEndOrSingleSlash(inner: Supplier[Route]): Route = ScalaRoute {
-    D.pathEndOrSingleSlash { inner.get.toScala }
+  def pathEndOrSingleSlash(inner: Supplier[Route]): Route = RouteAdapter {
+    D.pathEndOrSingleSlash { inner.get.delegate }
   }
 
   /**
    * Only passes on the request to its inner route if the request path
    * consists of exactly one remaining slash.
    */
-  def pathSingleSlash(inner: Supplier[Route]): Route = ScalaRoute {
-    D.pathSingleSlash { inner.get.toScala }
+  def pathSingleSlash(inner: Supplier[Route]): Route = RouteAdapter {
+    D.pathSingleSlash { inner.get.delegate }
   }
 
   /**
@@ -82,20 +82,20 @@ abstract class PathDirectives extends ParameterDirectives {
    * The matcher has to match the remaining path completely.
    * If matched the value extracted by the [[PathMatcher]] is extracted on the directive level.
    */
-  def path(segment: String, inner: Supplier[Route]): Route = ScalaRoute {
-    D.path(segment) { inner.get.toScala }
+  def path(segment: String, inner: Supplier[Route]): Route = RouteAdapter {
+    D.path(segment) { inner.get.delegate }
   }
-  def path(inner: java.util.function.Function[String, Route]): Route = ScalaRoute {
-    D.path(PathMatchers.Segment) { element ⇒ inner.apply(element).toScala }
+  def path(inner: java.util.function.Function[String, Route]): Route = RouteAdapter {
+    D.path(PathMatchers.Segment) { element ⇒ inner.apply(element).delegate }
   }
-  def path(p: PathMatcher0, inner: Supplier[Route]): Route = ScalaRoute {
-    D.path(p.toScala) { inner.get.toScala }
+  def path(p: PathMatcher0, inner: Supplier[Route]): Route = RouteAdapter {
+    D.path(p.toScala) { inner.get.delegate }
   }
-  def path[T](p: PathMatcher1[T], inner: JFunction[T, Route]): Route = ScalaRoute {
-    D.path(p.toScala) { t1 ⇒ inner.apply(t1).toScala }
+  def path[T](p: PathMatcher1[T], inner: JFunction[T, Route]): Route = RouteAdapter {
+    D.path(p.toScala) { t1 ⇒ inner.apply(t1).delegate }
   }
-  def path[T1, T2](p: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = ScalaRoute {
-    D.path(p.toScala) { (t1, t2) ⇒ inner.apply(t1, t2).toScala }
+  def path[T1, T2](p: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
+    D.path(p.toScala) { (t1, t2) ⇒ inner.apply(t1, t2).delegate }
   }
 
   /**
@@ -103,20 +103,20 @@ abstract class PathDirectives extends ParameterDirectives {
    * The matcher has to match a prefix of the remaining path.
    * If matched the value extracted by the PathMatcher is extracted on the directive level.
    */
-  def pathPrefix(segment: String, inner: Supplier[Route]): Route = ScalaRoute {
-    D.pathPrefix(segment) { inner.get.toScala }
+  def pathPrefix(segment: String, inner: Supplier[Route]): Route = RouteAdapter {
+    D.pathPrefix(segment) { inner.get.delegate }
   }
-  def pathPrefix(inner: java.util.function.Function[String, Route]): Route = ScalaRoute {
-    D.pathPrefix(PathMatchers.Segment) { element ⇒ inner.apply(element).toScala }
+  def pathPrefix(inner: java.util.function.Function[String, Route]): Route = RouteAdapter {
+    D.pathPrefix(PathMatchers.Segment) { element ⇒ inner.apply(element).delegate }
   }
-  def pathPrefix(p: PathMatcher0, inner: Supplier[Route]): Route = ScalaRoute {
-    D.pathPrefix(p.toScala) { inner.get.toScala }
+  def pathPrefix(p: PathMatcher0, inner: Supplier[Route]): Route = RouteAdapter {
+    D.pathPrefix(p.toScala) { inner.get.delegate }
   }
-  def pathPrefix[T](p: PathMatcher1[T], inner: JFunction[T, Route]): Route = ScalaRoute {
-    D.pathPrefix(p.toScala) { t1 ⇒ inner.apply(t1).toScala }
+  def pathPrefix[T](p: PathMatcher1[T], inner: JFunction[T, Route]): Route = RouteAdapter {
+    D.pathPrefix(p.toScala) { t1 ⇒ inner.apply(t1).delegate }
   }
-  def pathPrefix[T1, T2](p: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = ScalaRoute {
-    D.pathPrefix(p.toScala) { (t1, t2) ⇒ inner.apply(t1, t2).toScala }
+  def pathPrefix[T1, T2](p: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
+    D.pathPrefix(p.toScala) { (t1, t2) ⇒ inner.apply(t1, t2).delegate }
   }
 
   /**
@@ -125,34 +125,34 @@ abstract class PathDirectives extends ParameterDirectives {
    * The matcher has to match a prefix of the remaining path.
    * If matched the value extracted by the PathMatcher is extracted on the directive level.
    */
-  def rawPathPrefix(segment: String, inner: Supplier[Route]): Route = ScalaRoute {
-    D.rawPathPrefix(segment) { inner.get().toScala }
+  def rawPathPrefix(segment: String, inner: Supplier[Route]): Route = RouteAdapter {
+    D.rawPathPrefix(segment) { inner.get().delegate }
   }
-  def rawPathPrefix(pm: PathMatcher0, inner: Supplier[Route]): Route = ScalaRoute {
-    D.rawPathPrefix(pm.toScala) { inner.get().toScala }
+  def rawPathPrefix(pm: PathMatcher0, inner: Supplier[Route]): Route = RouteAdapter {
+    D.rawPathPrefix(pm.toScala) { inner.get().delegate }
   }
-  def rawPathPrefix[T1](pm: PathMatcher1[T1], inner: Function[T1, Route]): Route = ScalaRoute {
-    D.rawPathPrefix(pm.toScala) { t1 ⇒ inner.apply(t1).toScala }
+  def rawPathPrefix[T1](pm: PathMatcher1[T1], inner: Function[T1, Route]): Route = RouteAdapter {
+    D.rawPathPrefix(pm.toScala) { t1 ⇒ inner.apply(t1).delegate }
   }
-  def rawPathPrefix[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = ScalaRoute {
-    D.rawPathPrefix(pm.toScala) { case (t1, t2) ⇒ inner.apply(t1, t2).toScala }
+  def rawPathPrefix[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
+    D.rawPathPrefix(pm.toScala) { case (t1, t2) ⇒ inner.apply(t1, t2).delegate }
   }
 
   /**
    * Checks whether the unmatchedPath of the [[RequestContext]] has a prefix matched by the
    * given PathMatcher. In analogy to the `pathPrefix` directive a leading slash is implied.
    */
-  def pathPrefixTest(segment: String, inner: Supplier[Route]): Route = ScalaRoute {
-    D.pathPrefixTest(segment) { inner.get().toScala }
+  def pathPrefixTest(segment: String, inner: Supplier[Route]): Route = RouteAdapter {
+    D.pathPrefixTest(segment) { inner.get().delegate }
   }
-  def pathPrefixTest(pm: PathMatcher0, inner: Supplier[Route]): Route = ScalaRoute {
-    D.pathPrefixTest(pm.toScala) { inner.get().toScala }
+  def pathPrefixTest(pm: PathMatcher0, inner: Supplier[Route]): Route = RouteAdapter {
+    D.pathPrefixTest(pm.toScala) { inner.get().delegate }
   }
-  def pathPrefixTest[T1](pm: PathMatcher1[T1], inner: Function[T1, Route]): Route = ScalaRoute {
-    D.pathPrefixTest(pm.toScala) { t1 ⇒ inner.apply(t1).toScala }
+  def pathPrefixTest[T1](pm: PathMatcher1[T1], inner: Function[T1, Route]): Route = RouteAdapter {
+    D.pathPrefixTest(pm.toScala) { t1 ⇒ inner.apply(t1).delegate }
   }
-  def pathPrefixTest[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = ScalaRoute {
-    D.pathPrefixTest(pm.toScala) { case (t1, t2) ⇒ inner.apply(t1, t2).toScala }
+  def pathPrefixTest[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
+    D.pathPrefixTest(pm.toScala) { case (t1, t2) ⇒ inner.apply(t1, t2).delegate }
   }
 
   /**
@@ -160,17 +160,17 @@ abstract class PathDirectives extends ParameterDirectives {
    * given PathMatcher. However, as opposed to the `pathPrefix` directive the matched path is not
    * actually "consumed".
    */
-  def rawPathPrefixTest(segment: String, inner: Supplier[Route]): Route = ScalaRoute {
-    D.rawPathPrefixTest(segment) { inner.get().toScala }
+  def rawPathPrefixTest(segment: String, inner: Supplier[Route]): Route = RouteAdapter {
+    D.rawPathPrefixTest(segment) { inner.get().delegate }
   }
-  def rawPathPrefixTest(pm: PathMatcher0, inner: Supplier[Route]): Route = ScalaRoute {
-    D.rawPathPrefixTest(pm.toScala) { inner.get().toScala }
+  def rawPathPrefixTest(pm: PathMatcher0, inner: Supplier[Route]): Route = RouteAdapter {
+    D.rawPathPrefixTest(pm.toScala) { inner.get().delegate }
   }
-  def rawPathPrefixTest[T1](pm: PathMatcher1[T1], inner: Function[T1, Route]): Route = ScalaRoute {
-    D.rawPathPrefixTest(pm.toScala) { t1 ⇒ inner.apply(t1).toScala }
+  def rawPathPrefixTest[T1](pm: PathMatcher1[T1], inner: Function[T1, Route]): Route = RouteAdapter {
+    D.rawPathPrefixTest(pm.toScala) { t1 ⇒ inner.apply(t1).delegate }
   }
-  def rawPathPrefixTest[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = ScalaRoute {
-    D.rawPathPrefixTest(pm.toScala) { case (t1, t2) ⇒ inner.apply(t1, t2).toScala }
+  def rawPathPrefixTest[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
+    D.rawPathPrefixTest(pm.toScala) { case (t1, t2) ⇒ inner.apply(t1, t2).delegate }
   }
 
   /**
@@ -179,17 +179,17 @@ abstract class PathDirectives extends ParameterDirectives {
    * Note that, for efficiency reasons, the given [[PathMatcher]] must match the desired suffix in reversed-segment
    * order, i.e. `pathSuffix("baz" / "bar")` would match `/foo/bar/baz`!
    */
-  def pathSuffix(segment: String, inner: Supplier[Route]): Route = ScalaRoute {
-    D.pathSuffix(segment) { inner.get().toScala }
+  def pathSuffix(segment: String, inner: Supplier[Route]): Route = RouteAdapter {
+    D.pathSuffix(segment) { inner.get().delegate }
   }
-  def pathSuffix(pm: PathMatcher0, inner: Supplier[Route]): Route = ScalaRoute {
-    D.pathSuffix(pm.toScala) { inner.get().toScala }
+  def pathSuffix(pm: PathMatcher0, inner: Supplier[Route]): Route = RouteAdapter {
+    D.pathSuffix(pm.toScala) { inner.get().delegate }
   }
-  def pathSuffix[T1](pm: PathMatcher1[T1], inner: Function[T1, Route]): Route = ScalaRoute {
-    D.pathSuffix(pm.toScala) { t1 ⇒ inner.apply(t1).toScala }
+  def pathSuffix[T1](pm: PathMatcher1[T1], inner: Function[T1, Route]): Route = RouteAdapter {
+    D.pathSuffix(pm.toScala) { t1 ⇒ inner.apply(t1).delegate }
   }
-  def pathSuffix[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = ScalaRoute {
-    D.pathSuffix(pm.toScala) { case (t1, t2) ⇒ inner.apply(t1, t2).toScala }
+  def pathSuffix[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
+    D.pathSuffix(pm.toScala) { case (t1, t2) ⇒ inner.apply(t1, t2).delegate }
   }
 
   /**
@@ -199,17 +199,17 @@ abstract class PathDirectives extends ParameterDirectives {
    * Note that, for efficiency reasons, the given PathMatcher must match the desired suffix in reversed-segment
    * order, i.e. `pathSuffixTest("baz" / "bar")` would match `/foo/bar/baz`!
    */
-  def pathSuffixTest(segment: String, inner: Supplier[Route]): Route = ScalaRoute {
-    D.pathSuffixTest(segment) { inner.get().toScala }
+  def pathSuffixTest(segment: String, inner: Supplier[Route]): Route = RouteAdapter {
+    D.pathSuffixTest(segment) { inner.get().delegate }
   }
-  def pathSuffixTest(pm: PathMatcher0, inner: Supplier[Route]): Route = ScalaRoute {
-    D.pathSuffixTest(pm.toScala) { inner.get().toScala }
+  def pathSuffixTest(pm: PathMatcher0, inner: Supplier[Route]): Route = RouteAdapter {
+    D.pathSuffixTest(pm.toScala) { inner.get().delegate }
   }
-  def pathSuffixTest[T1](pm: PathMatcher1[T1], inner: Function[T1, Route]): Route = ScalaRoute {
-    D.pathSuffixTest(pm.toScala) { t1 ⇒ inner.apply(t1).toScala }
+  def pathSuffixTest[T1](pm: PathMatcher1[T1], inner: Function[T1, Route]): Route = RouteAdapter {
+    D.pathSuffixTest(pm.toScala) { t1 ⇒ inner.apply(t1).delegate }
   }
-  def pathSuffixTest[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = ScalaRoute {
-    D.pathSuffixTest(pm.toScala) { case (t1, t2) ⇒ inner.apply(t1, t2).toScala }
+  def pathSuffixTest[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
+    D.pathSuffixTest(pm.toScala) { case (t1, t2) ⇒ inner.apply(t1, t2).delegate }
   }
 
   /**
@@ -219,9 +219,9 @@ abstract class PathDirectives extends ParameterDirectives {
    *
    * @param redirectionType A status code from StatusCodes, which must be a redirection type.
    */
-  def redirectToTrailingSlashIfMissing(redirectionType: StatusCode, inner: Supplier[Route]): Route = ScalaRoute {
+  def redirectToTrailingSlashIfMissing(redirectionType: StatusCode, inner: Supplier[Route]): Route = RouteAdapter {
     redirectionType match {
-      case r: Redirection ⇒ D.redirectToTrailingSlashIfMissing(r) { inner.get().toScala }
+      case r: Redirection ⇒ D.redirectToTrailingSlashIfMissing(r) { inner.get().delegate }
       case _              ⇒ throw new IllegalArgumentException("Not a valid redirection status code: " + redirectionType)
     }
   }
@@ -233,9 +233,9 @@ abstract class PathDirectives extends ParameterDirectives {
    *
    * @param redirectionType A status code from StatusCodes, which must be a redirection type.
    */
-  def redirectToNoTrailingSlashIfPresent(redirectionType: StatusCode, inner: Supplier[Route]): Route = ScalaRoute {
+  def redirectToNoTrailingSlashIfPresent(redirectionType: StatusCode, inner: Supplier[Route]): Route = RouteAdapter {
     redirectionType match {
-      case r: Redirection ⇒ D.redirectToNoTrailingSlashIfPresent(r) { inner.get().toScala }
+      case r: Redirection ⇒ D.redirectToNoTrailingSlashIfPresent(r) { inner.get().delegate }
       case _              ⇒ throw new IllegalArgumentException("Not a valid redirection status code: " + redirectionType)
     }
   }
@@ -246,7 +246,7 @@ abstract class PathDirectives extends ParameterDirectives {
   /**
    * Consumes a leading slash and extracts the next path segment, unmarshalling it and passing the result to the inner function.
    */
-  def pathPrefix[T](t: Unmarshaller[String, T], inner: java.util.function.Function[T, Route]): Route = ScalaRoute {
+  def pathPrefix[T](t: Unmarshaller[String, T], inner: java.util.function.Function[T, Route]): Route = RouteAdapter {
     D.pathPrefix(PathMatchers.Segment)(unmarshal(t, inner))
   }
 
@@ -254,7 +254,7 @@ abstract class PathDirectives extends ParameterDirectives {
    * Consumes a leading slash and extracts the next path segment, unmarshalling it and passing the result to the inner function,
    * expecting the full path to have been consumed then.
    */
-  def path[T](t: Unmarshaller[String, T], inner: java.util.function.Function[T, Route]): Route = ScalaRoute {
+  def path[T](t: Unmarshaller[String, T], inner: java.util.function.Function[T, Route]): Route = RouteAdapter {
     D.path(PathMatchers.Segment)(unmarshal(t, inner))
   }
 
@@ -265,7 +265,7 @@ abstract class PathDirectives extends ParameterDirectives {
 
       D.onComplete(t.asScala.apply(element)) {
         case Success(value) ⇒
-          inner.apply(value).toScala
+          inner.apply(value).delegate
         case Failure(x: IllegalArgumentException) ⇒
           D.reject()
         case Failure(x) ⇒
