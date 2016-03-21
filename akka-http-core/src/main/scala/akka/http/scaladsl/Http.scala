@@ -259,6 +259,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
                   settings: ClientConnectionSettings,
                   log: LoggingAdapter = system.log): ClientLayer =
     RedirectSupportStage().atop(OutgoingConnectionBlueprint(hostHeader, settings, log))
+  //    OutgoingConnectionBlueprint(hostHeader, settings, log)
 
   // ** CONNECTION POOL ** //
 

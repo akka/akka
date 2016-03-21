@@ -68,7 +68,7 @@ class RedirectSupportStage(redirectMapper: RedirectMapper) extends GraphStage[Bi
         def print(): Unit
       }
 
-      def printy(s: String) = println(s)
+      def printy(s: String) = ()//println(s)
 
       object OpOutPrinter {
         implicit val RequestOutPrinterReq = new OpOutPrinter[HttpRequest, Outlet[HttpRequest]] {
@@ -108,8 +108,8 @@ class RedirectSupportStage(redirectMapper: RedirectMapper) extends GraphStage[Bi
       }
 
       var inFlight = Vector.empty[HttpRequest]
-      var unconsumedResponses = Vector.empty[HttpResponse]
-      var unconsumedRequests = Vector.empty[HttpRequest]
+//      var unconsumedResponses = Vector.empty[HttpResponse]
+//      var unconsumedRequests = Vector.empty[HttpRequest]
       var loopDetector = Map.empty[HttpRequest, List[Uri]]
       var requestsProcessed = 0
 
@@ -135,10 +135,10 @@ class RedirectSupportStage(redirectMapper: RedirectMapper) extends GraphStage[Bi
           */
         override def onPull(): Unit = {
           printy("requestOut: onPull")
-          unconsumedRequests = unconsumedRequests.headOption match {
+          /*unconsumedRequests = unconsumedRequests.headOption match {
             case Some(h) => doPush(requestOut, h); doPull(responseIn); unconsumedRequests.tail
             case None => unconsumedRequests
-          }
+          }*/
           printStatus()
         }
 
@@ -146,7 +146,10 @@ class RedirectSupportStage(redirectMapper: RedirectMapper) extends GraphStage[Bi
           * Called when the output port will no longer accept any new elements. After this callback no other callbacks
           * will be called for this port.
           */
-        override def onDownstreamFinish(): Unit = printy("requestOut: onDownstreamFinish")
+        override def onDownstreamFinish(): Unit = {
+          printy("requestOut: onDownstreamFinish")
+          cancel(requestIn)
+        }
 
       })
 
@@ -158,12 +161,13 @@ class RedirectSupportStage(redirectMapper: RedirectMapper) extends GraphStage[Bi
         override def onPush(): Unit = {
           printy("requestIn: onPush")
           val r = grab(requestIn)
-          if (isAvailable(requestOut)) {
+          /*if (isAvailable(requestOut)) {
             doPush(requestOut, r)
             doPull(responseIn)
           } else {
             unconsumedRequests = unconsumedRequests :+ r
-          }
+          }*/
+          emit(requestOut, r, () => doPull(responseIn))
           inFlight = inFlight :+ r
           loopDetector += (r -> List(r.uri))
           printStatus()
@@ -207,24 +211,26 @@ class RedirectSupportStage(redirectMapper: RedirectMapper) extends GraphStage[Bi
                 loopDetector -= inFlight.head
                 loopDetector += (redirect -> (redirect.uri :: loops))
                 inFlight = inFlight.tail :+ redirect
-                if (isAvailable(requestOut)) {
+                emit(requestOut, redirect, () => doPull(responseIn))
+                /*if (isAvailable(requestOut)) {
                   doPush(requestOut, redirect)
                   doPull(responseIn)
                 } else {
                   unconsumedRequests = unconsumedRequests :+ redirect
-                }
+                }*/
               }
             }
           } else {
             requestsProcessed += 1
             loopDetector -= inFlight.head
             inFlight = inFlight.tail
-            if (isAvailable(responseOut)) {
+            emit(responseOut, response, () => doPull(requestIn))
+            /*if (isAvailable(responseOut)) {
               doPush(responseOut, response)
               doPull(requestIn)
             } else {
               unconsumedResponses = unconsumedResponses :+ response
-            }
+            }*/
           }
           printStatus()
         }
@@ -233,6 +239,7 @@ class RedirectSupportStage(redirectMapper: RedirectMapper) extends GraphStage[Bi
           * Called when the input port is finished. After this callback no other callbacks will be called for this port.
           */
         override def onUpstreamFinish(): Unit = {
+//          emitMultiple(responseOut, unconsumedResponses)
           printy("responseIn: onUpstreamFinish")
           complete(responseOut)
         }
@@ -253,10 +260,10 @@ class RedirectSupportStage(redirectMapper: RedirectMapper) extends GraphStage[Bi
           */
         override def onPull(): Unit = {
           printy("responseOut: onPull")
-          unconsumedResponses = unconsumedResponses.headOption match {
-            case Some(h) => doPush(responseOut, h); unconsumedResponses.tail
+          /*unconsumedResponses = unconsumedResponses.headOption match {
+            case Some(h) => doPush(responseOut, h); doPull(requestIn); unconsumedResponses.tail
             case None => unconsumedResponses
-          }
+          }*/
           printStatus()
         }
 
