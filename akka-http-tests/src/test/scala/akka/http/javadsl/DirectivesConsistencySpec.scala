@@ -9,6 +9,8 @@ import java.lang.reflect.{ Modifier, Method }
 import akka.http.javadsl.server.directives.CorrespondsTo
 import org.scalatest.{ Matchers, WordSpec }
 
+import scala.util.control.NoStackTrace
+
 class DirectivesConsistencySpec extends WordSpec with Matchers {
 
   val scalaDirectivesClazz = classOf[akka.http.scaladsl.server.Directives]
@@ -19,7 +21,7 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
       Set("productArity", "canEqual", "productPrefix", "copy", "productIterator", "productElement") ++
       // param extractions in ScalaDSL
       Set("DoubleNumber", "HexIntNumber", "HexLongNumber", "IntNumber", "JavaUUID", "LongNumber",
-        "Neutral", "PathEnd") // TODO do we cover these?
+        "Neutral", "PathEnd", "Remaining", "Segment", "Segments", "Slash", "RemainingPath") // TODO do we cover these?
 
   def prepareDirectivesList(in: Array[Method]): List[Method] = {
     in.toSet[Method]
@@ -78,8 +80,12 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
 
   def assertHasMethod(c: Class[_], name: String): Unit = {
     // include class name to get better error message
-    if (!allowMissing.getOrElse(c, Set.empty).contains(name))
-      c.getMethods.collect { case m if !ignore(m.getName) ⇒ c.getName + "." + m.getName } should contain(c.getName + "." + name)
+    if (!allowMissing.getOrElse(c, Set.empty).contains(name)) {
+      val methods = c.getMethods.collect { case m if !ignore(m.getName) ⇒ c.getName + "." + m.getName }
+      try { methods should contain(c.getName + "." + name) } catch {
+        case all: Throwable ⇒ throw new AssertionError(s"Method [$name] was not defined on class: ${c.getName}") with NoStackTrace
+      }
+    }
   }
 
   "DSL Stats" should {

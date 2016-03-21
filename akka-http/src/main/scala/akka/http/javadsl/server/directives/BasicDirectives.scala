@@ -5,19 +5,22 @@
 package akka.http.javadsl.server.directives
 
 import java.util.function.{ Function ⇒ JFunction }
+import akka.http.javadsl.settings.ParserSettings
+import akka.http.scaladsl.server.directives.BasicDirectives
+import akka.http.scaladsl.settings.RoutingSettings
+
 import scala.concurrent.ExecutionContextExecutor
 import akka.http.impl.model.JavaUri
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.RequestEntity
 import akka.http.javadsl.model.Uri
 import akka.http.javadsl.server.Route
-import akka.http.scaladsl.server.{ Directives ⇒ D }
+import akka.http.scaladsl.server.{ Directives ⇒ D, _ }
 import akka.http.scaladsl
 import akka.stream.Materializer
 import java.util.function.Supplier
 import akka.http.javadsl.server.JavaScalaTypeEquivalence._
 import java.util.{ List ⇒ JList }
-import akka.http.scaladsl.server.Rejection
 import scala.collection.JavaConverters._
 import akka.http.javadsl.model.HttpResponse
 import akka.http.javadsl.model.ResponseEntity
@@ -128,6 +131,13 @@ abstract class BasicDirectives {
     D.extractExecutionContext { c ⇒ inner.apply(c).toScala })
 
   /**
+   * Extracts a single value using the given function.
+   */
+  def extract[T](extract: JFunction[RequestContext, T], inner: JFunction[T, Route]): Route = ScalaRoute {
+    D.extract(extract.apply) { c ⇒ inner.apply(c).toScala }
+  }
+
+  /**
    * Runs its inner route with the given alternative [[LoggingAdapter]].
    */
   def withLog(log: LoggingAdapter, inner: Supplier[Route]): Route = ScalaRoute {
@@ -139,5 +149,23 @@ abstract class BasicDirectives {
    */
   def extractLog(inner: JFunction[LoggingAdapter, Route]): Route = ScalaRoute {
     D.extractLog { log ⇒ inner.apply(log).toScala }
+  }
+
+  /**
+   * Extracts the [[akka.http.javadsl.settings.ParserSettings]] from the [[akka.http.javadsl.server.RequestContext]].
+   */
+  def extractParserSettings(inner: JFunction[ParserSettings, Route]) = ScalaRoute {
+    D.extractParserSettings { settings ⇒
+      inner.apply(settings).toScala
+    }
+  }
+
+  /**
+   * Extracts the [[RoutingSettings]] from the [[akka.http.javadsl.server.RequestContext]].
+   */
+  def extractSettings(inner: JFunction[RoutingSettings, Route]) = ScalaRoute {
+    D.extractSettings { settings ⇒
+      inner.apply(settings).toScala
+    }
   }
 }

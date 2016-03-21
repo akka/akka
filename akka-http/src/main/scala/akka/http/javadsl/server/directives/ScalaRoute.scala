@@ -16,6 +16,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
 
 /** INTERNAL API */
+// TODO rename
 final case class ScalaRoute(toScala: akka.http.scaladsl.server.Route) extends Route {
   import ScalaRoute._
 
