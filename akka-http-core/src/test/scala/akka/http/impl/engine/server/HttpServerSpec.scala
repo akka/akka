@@ -811,7 +811,7 @@ class HttpServerSpec extends AkkaSpec(
         (System.nanoTime() - mark) should be < (40 * 1000000L)
       }
 
-      "have a programmatically set timeout handler" in new RequestTimeoutTestSetup(10.millis) {
+      "have a programmatically set timeout handler" in new RequestTimeoutTestSetup(400.millis) {
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
         val timeoutResponse = HttpResponse(StatusCodes.InternalServerError, entity = "OOPS!")
         expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateHandler(_ ⇒ timeoutResponse))
