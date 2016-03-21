@@ -4,8 +4,13 @@
 Pipelining and Parallelism
 ##########################
 
-Akka Streams processing stages (be it simple operators on Flows and Sources or graph junctions) are executed
-concurrently by default. This is realized by mapping each of the processing stages to a dedicated actor internally.
+Akka Streams processing stages (be it simple operators on Flows and Sources or graph junctions) are "fused" together
+and executed sequentially by default. This avoids the overhead of events crossing asynchronous boundaries but
+limits the flow to execute at most one stage at any given time.
+
+In many cases it is useful to be able to concurrently execute the stages of a flow, this is done by explicitly marking
+them as asynchronous using the ``async`` method. Each processing stage marked as asynchronous will run in a
+dedicated actor internally, while all stages not marked asynchronous will run in one single actor.
 
 We will illustrate through the example of pancake cooking how streams can be used for various processing patterns,
 exploiting the available parallelism on modern computers. The setting is the following: both Patrik and Roland
@@ -40,8 +45,9 @@ be able to operate at full throughput because they will wait on a previous or su
 pancake example frying the second half of the pancake is usually faster than frying the first half, ``fryingPan2`` will
 not be able to operate at full capacity [#]_.
 
-Stream processing stages have internal buffers to make communication between them more efficient. For more details
-about the behavior of these and how to add additional buffers refer to :ref:`stream-rate-scala`.
+.. note::
+  Asynchronous stream processing stages have internal buffers to make communication between them more efficient.
+  For more details about the behavior of these and how to add additional buffers refer to :ref:`stream-rate-scala`.
 
 Parallel processing
 -------------------

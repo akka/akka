@@ -51,7 +51,8 @@ public class FlowParallelismDocTest extends AbstractJavaTest {
     //#pipelining
 
     // With the two frying pans we can fully cook pancakes
-    Flow<ScoopOfBatter, Pancake, NotUsed> pancakeChef = fryingPan1.via(fryingPan2);
+    Flow<ScoopOfBatter, Pancake, NotUsed> pancakeChef =
+      fryingPan1.async().via(fryingPan2.async());
     //#pipelining
   }
 
@@ -70,11 +71,11 @@ public class FlowParallelismDocTest extends AbstractJavaTest {
 
         // Using two frying pans in parallel, both fully cooking a pancake from the batter.
         // We always put the next scoop of batter to the first frying pan that becomes available.
-        b.from(dispatchBatter.out(0)).via(b.add(fryingPan)).toInlet(mergePancakes.in(0));
+        b.from(dispatchBatter.out(0)).via(b.add(fryingPan.async())).toInlet(mergePancakes.in(0));
         // Notice that we used the "fryingPan" flow without importing it via builder.add().
         // Flows used this way are auto-imported, which in this case means that the two
         // uses of "fryingPan" mean actually different stages in the graph.
-        b.from(dispatchBatter.out(1)).via(b.add(fryingPan)).toInlet(mergePancakes.in(1));
+        b.from(dispatchBatter.out(1)).via(b.add(fryingPan.async())).toInlet(mergePancakes.in(1));
 
         return FlowShape.of(dispatchBatter.in(), mergePancakes.out());
       }));
@@ -94,13 +95,13 @@ public class FlowParallelismDocTest extends AbstractJavaTest {
         // Using two pipelines, having two frying pans each, in total using
         // four frying pans
         b.from(dispatchBatter.out(0))
-          .via(b.add(fryingPan1))
-          .via(b.add(fryingPan2))
+          .via(b.add(fryingPan1.async()))
+          .via(b.add(fryingPan2.async()))
           .toInlet(mergePancakes.in(0));
 
         b.from(dispatchBatter.out(1))
-          .via(b.add(fryingPan1))
-          .via(b.add(fryingPan2))
+          .via(b.add(fryingPan1.async()))
+          .via(b.add(fryingPan2.async()))
           .toInlet(mergePancakes.in(1));
 
         return FlowShape.of(dispatchBatter.in(), mergePancakes.out());
@@ -120,8 +121,8 @@ public class FlowParallelismDocTest extends AbstractJavaTest {
 
         // Two chefs work with one frying pan for each, half-frying the pancakes then putting
         // them into a common pool
-        b.from(dispatchBatter.out(0)).via(b.add(fryingPan1)).toInlet(mergeHalfCooked.in(0));
-        b.from(dispatchBatter.out(1)).via(b.add(fryingPan1)).toInlet(mergeHalfCooked.in(1));
+        b.from(dispatchBatter.out(0)).via(b.add(fryingPan1.async())).toInlet(mergeHalfCooked.in(0));
+        b.from(dispatchBatter.out(1)).via(b.add(fryingPan1.async())).toInlet(mergeHalfCooked.in(1));
 
         return FlowShape.of(dispatchBatter.in(), mergeHalfCooked.out());
       }));
@@ -135,8 +136,8 @@ public class FlowParallelismDocTest extends AbstractJavaTest {
 
         // Two chefs work with one frying pan for each, finishing the pancakes then putting
         // them into a common pool
-        b.from(dispatchHalfCooked.out(0)).via(b.add(fryingPan2)).toInlet(mergePancakes.in(0));
-        b.from(dispatchHalfCooked.out(1)).via(b.add(fryingPan2)).toInlet(mergePancakes.in(1));
+        b.from(dispatchHalfCooked.out(0)).via(b.add(fryingPan2.async())).toInlet(mergePancakes.in(0));
+        b.from(dispatchHalfCooked.out(1)).via(b.add(fryingPan2.async())).toInlet(mergePancakes.in(1));
 
         return FlowShape.of(dispatchHalfCooked.in(), mergePancakes.out());
       }));

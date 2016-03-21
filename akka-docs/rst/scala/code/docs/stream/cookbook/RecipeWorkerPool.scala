@@ -29,7 +29,7 @@ class RecipeWorkerPool extends RecipeSpec {
           for (_ <- 1 to workerCount) {
             // for each worker, add an edge from the balancer to the worker, then wire
             // it to the merge element
-            balancer ~> worker ~> merge
+            balancer ~> worker.async ~> merge
           }
 
           FlowShape(balancer.in, merge.out)

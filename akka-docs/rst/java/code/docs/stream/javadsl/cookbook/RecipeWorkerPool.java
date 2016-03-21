@@ -50,7 +50,7 @@ public class RecipeWorkerPool extends RecipeTest {
                 b.add(Merge.<Out>create(workerCount));
 
         for (int i = 0; i < workerCount; i++) {
-            b.from(balance.out(i)).via(b.add(worker)).toInlet(merge.in(i));
+            b.from(balance.out(i)).via(b.add(worker.async())).toInlet(merge.in(i));
         }
 
         return FlowShape.of(balance.in(), merge.out());
