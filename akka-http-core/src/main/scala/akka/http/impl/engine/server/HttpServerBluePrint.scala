@@ -319,7 +319,7 @@ private[http] object HttpServerBluePrint {
       //#default-request-timeout-httpresponse
       HttpResponse(StatusCodes.ServiceUnavailable, entity = "The server was not able " +
       "to produce a timely response to your request.\r\nPlease try again in a short while!")
-      //#default-request-timeout-httpresponse
+      //#
 
     def clear(): Unit = // best effort timeout cancellation
       get.fast.foreach(setup ⇒ if (setup.scheduledTask ne null) setup.scheduledTask.cancel())
