@@ -227,8 +227,9 @@ private[remote] class ReliableDeliverySupervisor(
   var resendBuffer: AckedSendBuffer[Send] = _
   var seqCounter: Long = _
 
-  def reset() {
+  def reset(): Unit = {
     resendBuffer = new AckedSendBuffer[Send](settings.SysMsgBufferSize)
+    bufferWasInUse = false
     seqCounter = 0L
     bailoutAt = None
   }
