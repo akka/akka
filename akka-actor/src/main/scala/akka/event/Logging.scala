@@ -174,7 +174,7 @@ trait LoggingBus extends ActorEventBus {
    */
   private def addLogger(system: ActorSystemImpl, clazz: Class[_ <: Actor], level: LogLevel, logName: String): ActorRef = {
     val name = "log" + Extension(system).id() + "-" + simpleName(clazz)
-    val actor = system.systemActorOf(Props(clazz), name)
+    val actor = system.systemActorOf(Props(clazz).withDispatcher(system.settings.LoggersDispatcher), name)
     implicit def timeout = system.settings.LoggerStartTimeout
     import akka.pattern.ask
     val response = try Await.result(actor ? InitializeLogger(this), timeout.duration) catch {
