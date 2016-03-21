@@ -12,7 +12,7 @@ import akka.remote.transport.netty.NettyTransportSettings.{ Udp, Tcp, Mode }
 import akka.remote.transport.{ AssociationHandle, Transport }
 import akka.{ OnlyCauseStackTrace, ConfigurationException }
 import com.typesafe.config.Config
-import java.net.{ SocketAddress, InetAddress, InetSocketAddress}
+import java.net.{ SocketAddress, InetAddress, InetSocketAddress }
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ ConcurrentHashMap, Executors, CancellationException }
 import org.jboss.netty.bootstrap.{ ConnectionlessBootstrap, Bootstrap, ClientBootstrap, ServerBootstrap }
@@ -22,7 +22,7 @@ import org.jboss.netty.channel.group.{ DefaultChannelGroup, ChannelGroup, Channe
 import org.jboss.netty.channel.socket.nio.{ NioWorkerPool, NioDatagramChannelFactory, NioServerSocketChannelFactory, NioClientSocketChannelFactory }
 import org.jboss.netty.handler.codec.frame.{ LengthFieldBasedFrameDecoder, LengthFieldPrepender }
 import org.jboss.netty.handler.ssl.SslHandler
-import scala.concurrent.duration.{ FiniteDuration}
+import scala.concurrent.duration.{ FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Promise, Future, blocking }
 import scala.util.{ Try }
 import scala.util.control.{ NoStackTrace, NonFatal }
@@ -66,6 +66,11 @@ object NettyFutureBridge {
 
 @SerialVersionUID(1L)
 class NettyTransportException(msg: String, cause: Throwable) extends RuntimeException(msg, cause) with OnlyCauseStackTrace {
+  def this(msg: String) = this(msg, null)
+}
+
+@SerialVersionUID(1L)
+class NettyTransportExceptionNoStack(msg: String, cause: Throwable) extends NettyTransportException(msg, cause) with NoStackTrace {
   def this(msg: String) = this(msg, null)
 }
 
@@ -473,8 +478,16 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
         else
           readyChannel.getPipeline.get(classOf[ClientHandler]).statusFuture
       } yield handle) recover {
-        case c: CancellationException ⇒ throw new NettyTransportException("Connection was cancelled") with NoStackTrace
-        case NonFatal(t)              ⇒ throw new NettyTransportException(t.getMessage, t.getCause) with NoStackTrace
+        case c: CancellationException ⇒ throw new NettyTransportExceptionNoStack("Connection was cancelled")
+        case NonFatal(t) ⇒
+          val msg =
+            if (t.getCause == null)
+              t.getMessage
+            else if (t.getCause.getCause == null)
+              s"${t.getMessage}, caused by: ${t.getCause}"
+            else
+              s"${t.getMessage}, caused by: ${t.getCause}, caused by: ${t.getCause.getCause}"
+          throw new NettyTransportExceptionNoStack(msg, t.getCause)
       }
     }
   }
