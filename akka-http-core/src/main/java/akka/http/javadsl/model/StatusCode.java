@@ -7,6 +7,8 @@ package akka.http.javadsl.model;
 /**
  * Represents an Http status-code and message. See {@link StatusCodes} for the set of predefined
  * status-codes.
+ *
+ * @see StatusCodes for convenience access to often used values.
  */
 public abstract class StatusCode {
     /**

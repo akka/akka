@@ -4,6 +4,9 @@
 
 package akka.http.scaladsl.model.headers
 
+import akka.http.impl.model.JavaInitialization
+import akka.util.Unsafe
+
 import language.implicitConversions
 import scala.collection.immutable
 import akka.parboiled2.UTF8
@@ -31,6 +34,10 @@ object HttpOriginRange {
     def matches(origin: HttpOrigin): Boolean = origins contains origin
     def render[R <: Rendering](r: R): r.type = r ~~ origins
   }
+
+  JavaInitialization.initializeStaticFieldWith(
+    `*`, classOf[jm.headers.HttpOriginRange].getField("ALL"))
+
 }
 
 final case class HttpOrigin(scheme: String, host: Host) extends jm.headers.HttpOrigin with ValueRenderable {

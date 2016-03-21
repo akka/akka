@@ -13,6 +13,8 @@ import akka.http.scaladsl.model.ContentType$;
  * you can obtain it from a {@link MediaType} by using: {@code MediaTypes.TEXT_HTML.toContentType()}
  */
 public final class ContentTypes {
+  private ContentTypes() { }
+
   public static final ContentType.WithFixedCharset APPLICATION_JSON = MediaTypes.APPLICATION_JSON.toContentType();
   public static final ContentType.Binary APPLICATION_OCTET_STREAM = MediaTypes.APPLICATION_OCTET_STREAM.toContentType();
 

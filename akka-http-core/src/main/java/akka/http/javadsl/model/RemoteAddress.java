@@ -7,6 +7,8 @@ package akka.http.javadsl.model;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Optional;
+
+import akka.http.javadsl.model.headers.HttpEncodingRanges;
 import scala.compat.java8.OptionConverters;
 
 public abstract class RemoteAddress {
@@ -19,7 +21,6 @@ public abstract class RemoteAddress {
      */
     public abstract int getPort();
 
-    public static final RemoteAddress UNKNOWN = akka.http.scaladsl.model.RemoteAddress.Unknown$.MODULE$;
     public static RemoteAddress create(InetAddress address) {
         return akka.http.scaladsl.model.RemoteAddress.apply(address, OptionConverters.toScala(Optional.empty()));
     }
@@ -29,4 +30,13 @@ public abstract class RemoteAddress {
     public static RemoteAddress create(byte[] address) {
         return akka.http.scaladsl.model.RemoteAddress.apply(address);
     }
+
+    /**
+     * @deprecated because of troublesome initialisation order (with regards to scaladsl class implementing this class).
+     *             In some edge cases this field could end up containing a null value.
+     *             Will be removed in Akka 3.x, use {@link RemoteAddresses#UNKNOWN} instead.
+     */
+    @Deprecated
+    // FIXME: Remove in Akka 3.0
+    public static final RemoteAddress UNKNOWN = RemoteAddresses.UNKNOWN;
 }
