@@ -4,6 +4,9 @@
 
 package akka.http.scaladsl.model.headers
 
+import akka.http.impl.model.JavaInitialization
+import akka.util.Unsafe
+
 import language.implicitConversions
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
@@ -37,6 +40,10 @@ object HttpEncodingRange {
 
   implicit def apply(encoding: HttpEncoding): HttpEncodingRange = apply(encoding, 1.0f)
   def apply(encoding: HttpEncoding, qValue: Float): HttpEncodingRange = One(encoding, qValue)
+
+  JavaInitialization.initializeStaticFieldWith(
+    `*`, classOf[jm.headers.HttpEncodingRange].getField("ALL"))
+
 }
 
 final case class HttpEncoding private[http] (value: String) extends jm.headers.HttpEncoding with LazyValueBytesRenderable with WithQValue[HttpEncodingRange] {

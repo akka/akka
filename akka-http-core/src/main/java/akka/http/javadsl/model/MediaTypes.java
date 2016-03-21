@@ -12,7 +12,9 @@ import java.util.Optional;
 /**
  * Contains the set of predefined media-types.
  */
-public abstract class MediaTypes {
+public final class MediaTypes {
+    private MediaTypes() { }
+
     public static final MediaType.WithOpenCharset APPLICATION_ATOM_XML = akka.http.scaladsl.model.MediaTypes.application$divatom$plusxml();
     public static final MediaType.WithOpenCharset APPLICATION_BASE64 = akka.http.scaladsl.model.MediaTypes.application$divbase64();
     public static final MediaType.Binary APPLICATION_EXCEL = akka.http.scaladsl.model.MediaTypes.application$divexcel();
