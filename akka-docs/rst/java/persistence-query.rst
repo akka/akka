@@ -11,8 +11,8 @@ The most typical use case of persistence query is implementing the so-called que
 in the popular CQRS architecture pattern - in which the writing side of the application (e.g. implemented using akka
 persistence) is completely separated from the "query side". Akka Persistence Query itself is *not* directly the query
 side of an application, however it can help to migrate data from the write side to the query side database. In very
-simple scenarios Persistence Query may be powerful enough to fulful the query needs of your app, however we highly
-recommend (in the spirit of CQRS) of splitting up the write/read sides into separate datastores as the need arrises.
+simple scenarios Persistence Query may be powerful enough to fulfill the query needs of your app, however we highly
+recommend (in the spirit of CQRS) of splitting up the write/read sides into separate datastores as the need arises.
 
 .. warning::
 
@@ -41,7 +41,7 @@ features, e.g. a SQL journal can use complex SQL queries or if a journal is able
 this should also be possible to expose the same API - a typed stream of events.
 
 **Each read journal must explicitly document which types of queries it supports.**
-Refer to the your journal's plugins documentation for details on which queries and semantics it supports.
+Refer to your journal's plugins documentation for details on which queries and semantics it supports.
 
 While Akka Persistence Query does not provide actual implementations of ReadJournals, it defines a number of pre-defined
 query types for the most common query scenarios, that most journals are likely to implement (however they are not required to).
@@ -183,7 +183,7 @@ projected into the other read-optimised datastore.
 Materialize view to Reactive Streams compatible datastore
 ---------------------------------------------------------
 
-If the read datastore exposes an `Reactive Streams`_ interface then implementing a simple projection
+If the read datastore exposes a `Reactive Streams`_ interface then implementing a simple projection
 is as simple as, using the read-journal and feeding it into the databases driver interface, for example like so:
 
 .. includecode:: code/docs/persistence/PersistenceQueryDocTest.java#projection-into-different-store-rs
@@ -265,4 +265,3 @@ Plugin TCK
 ----------
 
 TODO, not available yet.
-
