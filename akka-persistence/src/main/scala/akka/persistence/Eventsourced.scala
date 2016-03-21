@@ -427,7 +427,10 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   /**
    * Returns `true` if this persistent actor is currently recovering.
    */
-  def recoveryRunning: Boolean = currentState.recoveryRunning
+  def recoveryRunning: Boolean = {
+    // currentState is null if this is called from constructor
+    if (currentState == null) true else currentState.recoveryRunning
+  }
 
   /**
    * Returns `true` if this persistent actor has successfully finished recovery.

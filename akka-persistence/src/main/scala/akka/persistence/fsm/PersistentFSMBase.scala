@@ -309,17 +309,23 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    *
    * @see [[#startWith]]
    */
-  final def initialize(): Unit = makeTransition(currentState)
+  final def initialize(): Unit =
+    if (currentState != null) makeTransition(currentState)
+    else throw new IllegalStateException("You must call `startWith` before calling `initialize`")
 
   /**
    * Return current state name (i.e. object of type S)
    */
-  final def stateName: S = currentState.stateName
+  final def stateName: S =
+    if (currentState != null) currentState.stateName
+    else throw new IllegalStateException("You must call `startWith` before using `stateName`")
 
   /**
    * Return current state data (i.e. object of type D)
    */
-  final def stateData: D = currentState.stateData
+  final def stateData: D =
+    if (currentState != null) currentState.stateData
+    else throw new IllegalStateException("You must call `startWith` before using `stateData`")
 
   /**
    * Return all defined state names
