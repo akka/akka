@@ -11,7 +11,7 @@ import akka.http.javadsl.model.HttpHeader
 import akka.http.javadsl.server.RequestVal
 import akka.http.scaladsl.model
 import akka.http.scaladsl.server.Directive1
-import akka.http.scaladsl.server.util.ClassMagnet
+import akka.http.scaladsl.server.directives.HeaderMagnet
 
 import scala.compat.java8.OptionConverters._
 import scala.reflect.{ ClassTag, classTag }
@@ -31,7 +31,7 @@ object Headers {
     HeaderImpl[HttpHeader](name, _ ⇒ optionalHeaderInstanceByName(name.toLowerCase()).map(_.asScala), classTag[HttpHeader])
 
   def byClass[T <: HttpHeader](clazz: Class[T]): Header[T] =
-    HeaderImpl[T](clazz.getSimpleName, ct ⇒ optionalHeaderValueByType(ClassMagnet(ct)), ClassTag(clazz))
+    HeaderImpl[T](clazz.getSimpleName, ct ⇒ optionalHeaderValueByType(HeaderMagnet.fromUnit(())(ct)), ClassTag(clazz))
 
   private def optionalHeaderInstanceByName(lowercaseName: String): Directive1[Optional[model.HttpHeader]] =
     extract(_.request.headers.collectFirst {
