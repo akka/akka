@@ -10,9 +10,10 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
+import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.FiniteDuration;
 
-public class InboxJavaAPITest {
+public class InboxJavaAPITest extends JUnitSuite {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("InboxJavaAPITest",

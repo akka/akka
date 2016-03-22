@@ -11,7 +11,9 @@ import static akka.event.Logging.*;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.Test;
+import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.Duration;
+import scala.util.control.NoStackTrace;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -21,7 +23,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 
 
-public class LoggingAdapterTest {
+public class LoggingAdapterTest extends JUnitSuite {
 
     private static final Config config = ConfigFactory.parseString(
             "akka.loglevel = DEBUG\n" +
@@ -37,7 +39,12 @@ public class LoggingAdapterTest {
             log.error("One arg message: {}", "the arg");
             expectLog(ErrorLevel(), "One arg message: the arg");
 
-            Throwable cause = new IllegalStateException("This state is illegal");
+            Throwable cause = new IllegalStateException("This state is illegal") {
+                @Override
+                public synchronized Throwable fillInStackTrace() {
+                    return this; // no stack trace
+                }
+            };
             log.error(cause, "Two args message: {}, {}", "an arg", "another arg");
             expectLog(ErrorLevel(), "Two args message: an arg, another arg", cause);
 

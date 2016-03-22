@@ -9,11 +9,12 @@ import akka.japi.pf.Match;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.Test;
+import org.scalatest.junit.JUnitSuite;
 import scala.MatchError;
 
 import static org.junit.Assert.*;
 
-public class MatchBuilderTest {
+public class MatchBuilderTest extends JUnitSuite {
 
   @Rule
   public ExpectedException exception = ExpectedException.none();

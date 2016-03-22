@@ -29,6 +29,8 @@ class QuickStartDocSpec extends WordSpec with BeforeAndAfterAll with ScalaFuture
     system.terminate()
   }
 
+  def println(any: Any) = () // silence printing stuff
+
   "demonstrate Source" in {
     //#create-source
     val source: Source[Int, NotUsed] = Source(1 to 100)
