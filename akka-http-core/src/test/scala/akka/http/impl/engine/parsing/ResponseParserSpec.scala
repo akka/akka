@@ -243,14 +243,16 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   override def afterAll() = system.terminate()
 
   private class Test {
+    def awaitAtMost: FiniteDuration = 3.seconds
     var closeAfterResponseCompletion = Seq.empty[Boolean]
 
     class StrictEqualHttpResponse(val resp: HttpResponse) {
       override def equals(other: scala.Any): Boolean = other match {
         case other: StrictEqualHttpResponse ⇒
+
           this.resp.copy(entity = HttpEntity.Empty) == other.resp.copy(entity = HttpEntity.Empty) &&
-            Await.result(this.resp.entity.toStrict(250.millis), 250.millis) ==
-            Await.result(other.resp.entity.toStrict(250.millis), 250.millis)
+            Await.result(this.resp.entity.toStrict(awaitAtMost), awaitAtMost) ==
+            Await.result(other.resp.entity.toStrict(awaitAtMost), awaitAtMost)
       }
 
       override def toString = resp.toString
@@ -319,7 +321,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     private def compactEntity(entity: ResponseEntity): Future[ResponseEntity] =
       entity match {
         case x: HttpEntity.Chunked ⇒ compactEntityChunks(x.chunks).fast.map(compacted ⇒ x.copy(chunks = compacted))
-        case _                     ⇒ entity.toStrict(250.millis)
+        case _                     ⇒ entity.toStrict(awaitAtMost)
       }
 
     private def compactEntityChunks(data: Source[ChunkStreamPart, Any]): Future[Source[ChunkStreamPart, Any]] =

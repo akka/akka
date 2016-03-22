@@ -581,6 +581,8 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
   class TestSetup(val serverHeader: Option[Server] = Some(Server("akka-http/1.0.0")))
     extends HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint = 64, NoLogging) {
 
+    def awaitAtMost: FiniteDuration = 3.seconds
+
     def renderTo(expected: String): Matcher[HttpResponse] =
       renderTo(expected, close = false) compose (ResponseRenderingContext(_))
 
@@ -605,7 +607,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
           } catch {
             case NonFatal(_) ⇒ false
           }
-        Await.result(resultFuture, 250.millis).reduceLeft(_ ++ _).utf8String -> wasCompleted
+        Await.result(resultFuture, awaitAtMost).reduceLeft(_ ++ _).utf8String -> wasCompleted
       }
 
     override def currentTimeMillis() = DateTime(2011, 8, 25, 9, 10, 29).clicks // provide a stable date for testing
