@@ -87,6 +87,7 @@ abstract class ModeledCustomHeaderCompanion[H <: ModeledCustomHeader[H]] {
     case _               ⇒ None
   }
 
+  final implicit val implicitlyLocatableCompanion: ModeledCustomHeaderCompanion[H] = this
 }
 
 /**
