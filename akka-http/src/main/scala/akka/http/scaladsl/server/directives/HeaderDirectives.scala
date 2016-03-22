@@ -5,7 +5,13 @@
 package akka.http.scaladsl.server
 package directives
 
+import akka.http.javadsl.model.headers.CustomHeader
+import akka.http.scaladsl.model.headers.{ModeledCustomHeaderCompanion, ModeledCustomHeader, RawHeader}
+
+import scala.annotation.implicitNotFound
+import scala.reflect.ClassTag
 import scala.util.control.NonFatal
+import akka.http.javadsl.{ model => jm }
 import akka.http.scaladsl.server.util.ClassMagnet
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
@@ -55,8 +61,11 @@ trait HeaderDirectives {
   /**
    * Extracts the first HTTP request header of the given type.
    * If no header with a matching type is found the request is rejected with a [[akka.http.scaladsl.server.MissingHeaderRejection]].
+   *
+   * Custom headers will only be matched by this directive if they extend [[ModeledCustomHeader]]
+   * and provide a companion extending [[ModeledCustomHeaderCompanion]].
    */
-  def headerValueByType[T <: HttpHeader](magnet: ClassMagnet[T]): Directive1[T] =
+  def headerValueByType[T](magnet: HeaderMagnet[T]): Directive1[T] =
     headerValuePF(magnet.extractPF) | reject(MissingHeaderRejection(magnet.runtimeClass.getSimpleName))
 
   //#optional-header
@@ -97,8 +106,11 @@ trait HeaderDirectives {
 
   /**
    * Extract the header value of the optional HTTP request header with the given type.
+   *
+   * Custom headers will only be matched by this directive if they extend [[ModeledCustomHeader]]
+   * and provide a companion extending [[ModeledCustomHeaderCompanion]].
    */
-  def optionalHeaderValueByType[T <: HttpHeader](magnet: ClassMagnet[T]): Directive1[Option[T]] =
+  def optionalHeaderValueByType[T <: HttpHeader](magnet: HeaderMagnet[T]): Directive1[Option[T]] =
     optionalHeaderValuePF(magnet.extractPF)
 
   private def optionalValue(lowerCaseName: String): HttpHeader ⇒ Option[String] = {
@@ -108,3 +120,40 @@ trait HeaderDirectives {
 }
 
 object HeaderDirectives extends HeaderDirectives
+
+trait HeaderMagnet[T] {
+  def classTag: ClassTag[T]
+  def runtimeClass: Class[T]
+
+  /**
+   * Returns a partial function that checks if the input value is of runtime type
+   * T and returns the value if it does. Doesn't take erased information into account.
+   */
+  def extractPF: PartialFunction[HttpHeader, T]
+}
+object HeaderMagnet extends LowPriorityHeaderMagnetImplicits {
+
+  /**
+   * If possible we want to apply the special logic for [[ModeledCustomHeader]] to extract custom headers by type,
+   * otherwise the default `fromUnit` is good enough (for headers that the parser emits in the right type already).
+   */
+  implicit def fromUnitForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]]
+    (u: Unit)(implicit tag: ClassTag[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
+    new HeaderMagnet[T] {
+      override def runtimeClass = tag.runtimeClass.asInstanceOf[Class[T]]
+      override def classTag = tag
+      override def extractPF = {
+        case h if h.is(companion.lowercaseName) => companion.apply(h.toString)
+      }
+    }
+
+}
+
+trait LowPriorityHeaderMagnetImplicits {
+  implicit def fromUnit[T <: HttpHeader](u: Unit)(implicit tag: ClassTag[T]): HeaderMagnet[T] =
+    new HeaderMagnet[T] {
+      val classTag: ClassTag[T] = tag
+      val runtimeClass: Class[T] = tag.runtimeClass.asInstanceOf[Class[T]]
+      val extractPF: PartialFunction[Any, T] = { case x: T ⇒ x }
+    }
+}
