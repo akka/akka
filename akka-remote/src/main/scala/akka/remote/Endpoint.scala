@@ -809,6 +809,12 @@ private[remote] class EndpointWriter(
 
     case s: Send ⇒
       enqueueInBuffer(s)
+
+    case OutboundAck(_) ⇒
+    // Ignore outgoing acks during take over, since we might have
+    // replaced the handle with a connection to a new, restarted, system
+    // and the ack might be targeted to the old incarnation.
+    // See issue #19780
   }
 
   override def unhandled(message: Any): Unit = message match {
