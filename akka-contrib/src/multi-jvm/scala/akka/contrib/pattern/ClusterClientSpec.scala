@@ -36,6 +36,8 @@ object ClusterClientSpec extends MultiNodeConfig {
     akka.contrib.cluster.client.heartbeat-interval = 1s
     akka.contrib.cluster.client.acceptable-heartbeat-pause = 3s
     akka.test.filter-leeway = 10s
+    # number-of-contacts must be >= 4 because we shutdown all but one in the end
+    akka.contrib.cluster.receptionist.number-of-contacts = 4
     """))
 
   testTransport(on = true)
