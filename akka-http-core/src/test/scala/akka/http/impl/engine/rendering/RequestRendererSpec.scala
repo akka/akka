@@ -322,11 +322,13 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
                   serverAddress: InetSocketAddress = new InetSocketAddress("test.com", 8080))
     extends HttpRequestRendererFactory(userAgent, requestHeaderSizeHint = 64, NoLogging) {
 
+    def awaitAtMost: FiniteDuration = 3.seconds
+
     def renderTo(expected: String): Matcher[HttpRequest] =
       equal(expected.stripMarginWithNewline("\r\n")).matcher[String] compose { request ⇒
         val byteStringSource = renderToSource(RequestRenderingContext(request, Host(serverAddress)))
         val future = byteStringSource.limit(1000).runWith(Sink.seq).map(_.reduceLeft(_ ++ _).utf8String)
-        Await.result(future, 250.millis)
+        Await.result(future, awaitAtMost)
       }
   }
 
