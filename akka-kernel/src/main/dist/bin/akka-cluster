@@ -33,9 +33,13 @@ function get() {
 }
 
 function ensureNodeIsRunningAndAvailable {
-    REPLY=$(get Available) # redirects STDERR to STDOUT before capturing it
+    REPLY=$(get Available 2>&1) # redirects STDERR to STDOUT before capturing it
     if [[ "$REPLY" != *true ]]; then
-        echo "Akka cluster node is not available on $HOST, due to $REPLY"
+        if [[ "$REPLY" == *"Cannot convert result to a string." ]]; then
+          echo "Akka cluster MBean is not available on $HOST:$PORT"
+        else
+          echo "Akka cluster node is not available on $HOST:$PORT, due to $REPLY"
+        fi
         exit 1
     fi
 }
@@ -61,7 +65,6 @@ case "$1" in
         fi
 
         ensureNodeIsRunningAndAvailable
-
         ACTOR_SYSTEM_URL=$2
         echo "Scheduling $ACTOR_SYSTEM_URL to LEAVE cluster"
         invoke leave $ACTOR_SYSTEM_URL
