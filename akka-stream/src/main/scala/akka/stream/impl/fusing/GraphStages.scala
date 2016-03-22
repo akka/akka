@@ -4,7 +4,8 @@
 package akka.stream.impl.fusing
 
 import akka.Done
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
+
 import akka.actor.Cancellable
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
@@ -12,6 +13,7 @@ import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
+
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.impl.StreamLayout._
@@ -254,52 +256,42 @@ object GraphStages {
   def terminationWatcher[T]: GraphStageWithMaterializedValue[FlowShape[T, T], Future[Done]] =
     TerminationWatcher.asInstanceOf[GraphStageWithMaterializedValue[FlowShape[T, T], Future[Done]]]
 
-  private object TickSource {
-    class TickSourceCancellable(cancelled: AtomicBoolean) extends Cancellable {
-      private val cancelPromise = Promise[Done]()
-
-      def cancelFuture: Future[Done] = cancelPromise.future
-
-      override def cancel(): Boolean = {
-        if (!isCancelled) cancelPromise.trySuccess(Done)
-        true
-      }
-
-      override def isCancelled: Boolean = cancelled.get()
-    }
-  }
-
   final class TickSource[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T)
     extends GraphStageWithMaterializedValue[SourceShape[T], Cancellable] {
     override val shape = SourceShape(Outlet[T]("TickSource.out"))
     val out = shape.out
     override def initialAttributes: Attributes = DefaultAttributes.tickSource
     override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Cancellable) = {
-      import TickSource._
 
-      val cancelled = new AtomicBoolean(false)
-      val cancellable = new TickSourceCancellable(cancelled)
+      val logic = new TimerGraphStageLogic(shape) with Cancellable {
+        val cancelled = new AtomicBoolean(false)
+        val cancelCallback: AtomicReference[Option[AsyncCallback[Unit]]] = new AtomicReference(None)
 
-      val logic = new TimerGraphStageLogic(shape) {
         override def preStart() = {
-          schedulePeriodicallyWithInitialDelay("TickTimer", initialDelay, interval)
-          val callback = getAsyncCallback[Unit]((_) ⇒ {
+          cancelCallback.set(Some(getAsyncCallback[Unit](_ ⇒ completeStage())))
+          if (cancelled.get)
             completeStage()
-            cancelled.set(true)
-          })
-
-          cancellable.cancelFuture.onComplete(_ ⇒ callback.invoke(()))(interpreter.materializer.executionContext)
+          else
+            schedulePeriodicallyWithInitialDelay("TickTimer", initialDelay, interval)
         }
 
         setHandler(out, eagerTerminateOutput)
 
         override protected def onTimer(timerKey: Any) =
-          if (isAvailable(out)) push(out, tick)
+          if (isAvailable(out) && !isCancelled) push(out, tick)
+
+        override def cancel() = {
+          val success = !cancelled.getAndSet(true)
+          if (success) cancelCallback.get.foreach(_.invoke(()))
+          success
+        }
+
+        override def isCancelled = cancelled.get
 
         override def toString: String = "TickSourceLogic"
       }
 
-      (logic, cancellable)
+      (logic, logic)
     }
 
     override def toString: String = s"TickSource($initialDelay, $interval, $tick)"
