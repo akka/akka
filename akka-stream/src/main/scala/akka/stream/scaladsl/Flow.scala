@@ -1378,6 +1378,20 @@ trait FlowOps[+Out, +Mat] {
   def flatMapMerge[T, M](breadth: Int, f: Out ⇒ Graph[SourceShape[T], M]): Repr[T] = map(f).via(new FlattenMerge[T, M](breadth))
 
   /**
+    * Fold each element into a `Hub` of merged `Source`'s, that can be added to
+    * and removed from dynamically each time an element is received.
+    *
+    * '''Emits when''' a currently consumed substream has an element available
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' upstream completes and all consumed substreams complete
+    *
+    * '''Cancels when''' downstream cancels
+    */
+  def foldMerge[Id, T](initial: Hub[Id, T])(f: (Out, Hub[Id, T]) => Hub[Id, T]): Repr[T] = via(new FoldMerge[Id, Out, T](initial, f))
+
+  /**
    * If the first element has not passed through this stage before the provided timeout, the stream is failed
    * with a [[scala.concurrent.TimeoutException]].
    *
