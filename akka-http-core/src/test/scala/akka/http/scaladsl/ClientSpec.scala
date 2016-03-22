@@ -46,5 +46,21 @@ class ClientSpec extends WordSpec with Matchers {
 
       Await.ready(binding.unbind(), 1.second)
     }
+
+    "not use short-lived materializer when creating a cached gateway" in {
+      val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+      val bindingFuture = Http().bindAndHandleSync(_ ⇒ HttpResponse(), hostname, port)
+      val binding = Await.result(bindingFuture, 3.seconds)
+
+      for (_ ← 1 to 4) {
+        val fm = ActorMaterializer()
+        val respFuture = Http().singleRequest(HttpRequest(POST, s"http://$hostname:$port/"))(fm)
+        val resp = Await.result(respFuture, 3.seconds)
+        resp.status shouldBe StatusCodes.OK
+        fm.shutdown()
+      }
+
+      Await.ready(binding.unbind(), 1.second)
+    }
   }
 }
