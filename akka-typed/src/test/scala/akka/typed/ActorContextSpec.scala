@@ -163,6 +163,8 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
   import ActorContextSpec._
   import ScalaDSL._
 
+  val expectTimeout = 3.seconds
+
   trait Tests {
     /**
      * The name for the set of tests to be instantiated, used for keeping the test case actors’ names unique.
@@ -178,7 +180,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       runTest(s"$suite-$name")(StepWise[Event] { (ctx, startWith) ⇒
         val steps =
           startWith.withKeepTraces(true)(ctx.spawn(Props(behavior(ctx)), "subject"))
-            .expectMessage(500.millis) { (msg, ref) ⇒
+            .expectMessage(expectTimeout) { (msg, ref) ⇒
               msg should ===(GotSignal(PreStart))
               ref
             }
@@ -198,7 +200,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
         val s =
           startWith.keep { subj ⇒
             subj ! MkChild(name, monitor, self)
-          }.expectMultipleMessages(500.millis, 2) { (msgs, subj) ⇒
+          }.expectMultipleMessages(expectTimeout, 2) { (msgs, subj) ⇒
             val child = msgs match {
               case Created(child) :: ChildEvent(GotSignal(PreStart)) :: Nil ⇒ child
               case ChildEvent(GotSignal(PreStart)) :: Created(child) :: Nil ⇒ child
@@ -211,14 +213,14 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
           s.keep {
             case (subj, child) ⇒
               child ! BecomeInert(self)
-          }.expectMessageKeep(500.millis) { (msg, _) ⇒
+          }.expectMessageKeep(expectTimeout) { (msg, _) ⇒
             msg should ===(BecameInert)
           }
       }
     }
 
     private implicit class MessageStep[T](val startWith: StepWise.Steps[Event, T]) {
-      def stimulate(f: T ⇒ Unit, ev: T ⇒ Event, timeout: FiniteDuration = 500.millis): StepWise.Steps[Event, T] =
+      def stimulate(f: T ⇒ Unit, ev: T ⇒ Event, timeout: FiniteDuration = expectTimeout): StepWise.Steps[Event, T] =
         startWith.keep(f).expectMessageKeep(timeout) { (msg, v) ⇒
           msg should ===(ev(v))
         }
@@ -230,16 +232,16 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       val self = ctx.self
       startWith.keep { subj ⇒
         subj ! Ping(self)
-      }.expectMessageKeep(500.millis) { (msg, subj) ⇒
+      }.expectMessageKeep(expectTimeout) { (msg, subj) ⇒
         msg should ===(Pong1)
         subj ! Miss(self)
-      }.expectMessageKeep(500.millis) { (msg, subj) ⇒
+      }.expectMessageKeep(expectTimeout) { (msg, subj) ⇒
         msg should ===(Missed)
         subj ! Renew(self)
-      }.expectMessage(500.millis) { (msg, subj) ⇒
+      }.expectMessage(expectTimeout) { (msg, subj) ⇒
         msg should ===(Renewed)
         subj ! Ping(self)
-      }.expectMessage(500.millis) { (msg, _) ⇒
+      }.expectMessage(expectTimeout) { (msg, _) ⇒
         msg should ===(Pong1)
       }
     })
@@ -251,20 +253,20 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
         val log = muteExpectedException[Exception]("KABOOM1", occurrences = 1)
         subj ! Throw(ex)
         (subj, log)
-      }.expectFailureKeep(500.millis) {
+      }.expectFailureKeep(expectTimeout) {
         case (f, (subj, _)) ⇒
           f.cause should ===(ex)
           f.child should ===(subj)
           Failed.Restart
-      }.expectMessage(500.millis) {
+      }.expectMessage(expectTimeout) {
         case (msg, (subj, log)) ⇒
           msg should ===(GotSignal(PreRestart(ex)))
-          log.assertDone(500.millis)
+          log.assertDone(expectTimeout)
           subj
-      }.expectMessage(500.millis) { (msg, subj) ⇒
+      }.expectMessage(expectTimeout) { (msg, subj) ⇒
         msg should ===(GotSignal(PostRestart(ex)))
         ctx.stop(subj)
-      }.expectMessage(500.millis) { (msg, _) ⇒
+      }.expectMessage(expectTimeout) { (msg, _) ⇒
         msg should ===(GotSignal(PostStop))
       }
     })
@@ -273,7 +275,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       startWith.keep { subj ⇒
         ctx.watch(subj)
         stop(subj)
-      }.expectTermination(500.millis) { (t, subj) ⇒
+      }.expectTermination(expectTimeout) { (t, subj) ⇒
         t.ref should ===(subj)
       }
     })
@@ -286,27 +288,27 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
           val log = muteExpectedException[Exception]("KABOOM2", occurrences = 1)
           child ! Throw(ex)
           (subj, child, log)
-      }.expectMultipleMessages(500.millis, 3) {
+      }.expectMultipleMessages(expectTimeout, 3) {
         case (msgs, (subj, child, log)) ⇒
           msgs should ===(
             GotSignal(Failed(`ex`, `child`)) ::
               ChildEvent(GotSignal(PreRestart(`ex`))) ::
               ChildEvent(GotSignal(PostRestart(`ex`))) :: Nil)
-          log.assertDone(500.millis)
+          log.assertDone(expectTimeout)
           child ! BecomeInert(self) // necessary to avoid PostStop/Terminated interference
           (subj, child)
-      }.expectMessageKeep(500.millis) {
+      }.expectMessageKeep(expectTimeout) {
         case (msg, (subj, child)) ⇒
           msg should ===(BecameInert)
           stop(subj)
           ctx.watch(child)
           ctx.watch(subj)
-      }.expectTermination(500.millis) {
+      }.expectTermination(expectTimeout) {
         case (t, (subj, child)) ⇒
           if (t.ref === child) subj
           else if (t.ref === subj) child
           else fail(s"expected termination of either $subj or $child but got $t")
-      }.expectTermination(500.millis) { (t, subj) ⇒
+      }.expectTermination(expectTimeout) { (t, subj) ⇒
         t.ref should ===(subj)
       }
     })
@@ -317,10 +319,10 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
         case (subj, child) ⇒
           subj ! Kill(child, self)
           child
-      }.expectMessageKeep(500.millis) { (msg, child) ⇒
+      }.expectMessageKeep(expectTimeout) { (msg, child) ⇒
         msg should ===(Killed)
         ctx.watch(child)
-      }.expectTermination(500.millis) { (t, child) ⇒
+      }.expectTermination(expectTimeout) { (t, child) ⇒
         t.ref should ===(child)
       }
     })
@@ -334,15 +336,15 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
           val log = muteExpectedException[Exception]("KABOOM05")
           subj ! Throw(ex)
           (subj, log)
-        }.expectFailureKeep(500.millis) {
+        }.expectFailureKeep(expectTimeout) {
           case (f, (subj, log)) ⇒
             f.child should ===(subj)
             f.cause should ===(ex)
             Failed.Restart
-        }.expectMessage(500.millis) {
+        }.expectMessage(expectTimeout) {
           case (msg, (subj, log)) ⇒
             msg should ===(GotSignal(PostRestart(ex)))
-            log.assertDone(500.millis)
+            log.assertDone(expectTimeout)
             subj
         }.stimulate(_ ! Ping(self), _ ⇒ Pong1)
     })
@@ -354,7 +356,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
         .stimulate(_ ! BecomeInert(self), _ ⇒ BecameInert)
         .stimulate(_ ! Ping(self), _ ⇒ Pong2).keep { subj ⇒
           subj ! Throw(ex)
-        }.expectFailureKeep(500.millis) { (f, subj) ⇒
+        }.expectFailureKeep(expectTimeout) { (f, subj) ⇒
           f.child should ===(subj)
           f.cause should ===(ex)
           Failed.Resume
@@ -368,13 +370,13 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
         .stimulate(_ ! Ping(self), _ ⇒ Pong1).keep { subj ⇒
           subj ! Throw(ex)
           ctx.watch(subj)
-        }.expectFailureKeep(500.millis) { (f, subj) ⇒
+        }.expectFailureKeep(expectTimeout) { (f, subj) ⇒
           f.child should ===(subj)
           f.cause should ===(ex)
           Failed.Stop
-        }.expectMessageKeep(500.millis) { (msg, _) ⇒
+        }.expectMessageKeep(expectTimeout) { (msg, _) ⇒
           msg should ===(GotSignal(PostStop))
-        }.expectTermination(500.millis) { (t, subj) ⇒
+        }.expectTermination(expectTimeout) { (t, subj) ⇒
           t.ref should ===(subj)
         }
     })
@@ -383,12 +385,12 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       val self = ctx.self
       startWith.mkChild(Some("A"), ctx.spawnAdapter(ChildEvent), self) { pair ⇒
         (pair._1, pair._2, ctx.spawn(Props(behavior(ctx)), "A"))
-      }.expectMessage(500.millis) {
+      }.expectMessage(expectTimeout) {
         case (msg, (subj, child, other)) ⇒
           msg should ===(GotSignal(PreStart))
           subj ! Kill(other, ctx.self)
           child
-      }.expectMessageKeep(500.millis) { (msg, _) ⇒
+      }.expectMessageKeep(expectTimeout) { (msg, _) ⇒
         msg should ===(NotKilled)
       }.stimulate(_ ! Ping(self), _ ⇒ Pong1)
     })
@@ -399,10 +401,10 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
         case (subj, child) ⇒
           subj ! Watch(child, self)
           child
-      }.expectMessageKeep(500.millis) { (msg, child) ⇒
+      }.expectMessageKeep(expectTimeout) { (msg, child) ⇒
         msg should ===(Watched)
         child ! Stop
-      }.expectMessage(500.millis) { (msg, child) ⇒
+      }.expectMessage(expectTimeout) { (msg, child) ⇒
         msg should ===(GotSignal(Terminated(child)))
       }
     })
@@ -413,12 +415,12 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
         case (subj, child) ⇒
           ctx.watch(child)
           child ! Stop
-      }.expectTermination(500.millis) {
+      }.expectTermination(expectTimeout) {
         case (t, (subj, child)) ⇒
           t should ===(Terminated(child))
           subj ! Watch(child, blackhole)
           child
-      }.expectMessage(500.millis) { (msg, child) ⇒
+      }.expectMessage(expectTimeout) { (msg, child) ⇒
         msg should ===(GotSignal(Terminated(child)))
       }
     })
@@ -428,17 +430,17 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self).keep {
         case (subj, child) ⇒
           subj ! Watch(child, self)
-      }.expectMessageKeep(500.millis) {
+      }.expectMessageKeep(expectTimeout) {
         case (msg, (subj, child)) ⇒
           msg should ===(Watched)
           subj ! Unwatch(child, self)
-      }.expectMessage(500.millis) {
+      }.expectMessage(expectTimeout) {
         case (msg, (subj, child)) ⇒
           msg should ===(Unwatched)
           ctx.watch(child)
           child ! Stop
           child
-      }.expectTermination(500.millis) { (t, child) ⇒
+      }.expectTermination(expectTimeout) { (t, child) ⇒
         t should ===(Terminated(child))
       }
     })
@@ -448,19 +450,19 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self).keep {
         case (subj, child) ⇒
           subj ! Watch(child, self)
-      }.expectMessageKeep(500.millis) {
+      }.expectMessageKeep(expectTimeout) {
         case (msg, (subj, child)) ⇒
           msg should ===(Watched)
           subj ! BecomeCareless(self)
-      }.expectMessageKeep(500.millis) {
+      }.expectMessageKeep(expectTimeout) {
         case (msg, (subj, child)) ⇒
           msg should ===(BecameCareless)
           child ! Stop
-      }.expectFailureKeep(500.millis) {
+      }.expectFailureKeep(expectTimeout) {
         case (f, (subj, child)) ⇒
           f.child should ===(subj)
           Failed.Stop
-      }.expectMessage(500.millis) {
+      }.expectMessage(expectTimeout) {
         case (msg, (subj, child)) ⇒
           msg should ===(GotSignal(PostStop))
       }
@@ -468,7 +470,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
 
     def `20 must return the right context info`(): Unit = sync(setup("ctx20") { (ctx, startWith) ⇒
       startWith.keep(_ ! GetInfo(ctx.self))
-        .expectMessage(500.millis) {
+        .expectMessage(expectTimeout) {
           case (msg: Info, subj) ⇒
             msg.self should ===(subj)
             msg.system should ===(system)
@@ -490,7 +492,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       val self = ctx.self
       startWith
         .stimulate(_ ! SetTimeout(1.nano, self), _ ⇒ TimeoutSet)
-        .expectMessage(500.millis) { (msg, _) ⇒
+        .expectMessage(expectTimeout) { (msg, _) ⇒
           msg should ===(GotSignal(ReceiveTimeout))
         }
     })
@@ -505,7 +507,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
 
     def `32 must schedule a message`(): Unit = sync(setup("ctx32") { (ctx, startWith) ⇒
       startWith(_ ! Schedule(1.nano, ctx.self, Pong2, ctx.self))
-        .expectMultipleMessages(500.millis, 2) { (msgs, _) ⇒
+        .expectMultipleMessages(expectTimeout, 2) { (msgs, _) ⇒
           msgs should ===(Scheduled :: Pong2 :: Nil)
         }
     })
@@ -513,19 +515,19 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
     def `40 must create a working adapter`(): Unit = sync(setup("ctx40") { (ctx, startWith) ⇒
       startWith.keep { subj ⇒
         subj ! GetAdapter(ctx.self)
-      }.expectMessage(500.millis) { (msg, subj) ⇒
+      }.expectMessage(expectTimeout) { (msg, subj) ⇒
         val Adapter(adapter) = msg
         ctx.watch(adapter)
         adapter ! Ping(ctx.self)
         (subj, adapter)
-      }.expectMessage(500.millis) {
+      }.expectMessage(expectTimeout) {
         case (msg, (subj, adapter)) ⇒
           msg should ===(Pong1)
           ctx.stop(subj)
           adapter
-      }.expectMessageKeep(500.millis) { (msg, _) ⇒
+      }.expectMessageKeep(expectTimeout) { (msg, _) ⇒
         msg should ===(GotSignal(PostStop))
-      }.expectTermination(500.millis) { (t, adapter) ⇒
+      }.expectTermination(expectTimeout) { (t, adapter) ⇒
         t.ref should ===(adapter)
       }
     })
