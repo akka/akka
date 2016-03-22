@@ -14,6 +14,11 @@ import akka.testkit.{ ImplicitSender, DefaultTimeout, AkkaSpec }
 import akka.pattern.gracefulStop
 import com.typesafe.config.Config
 import akka.actor.ActorSystem
+import akka.testkit.TestProbe
+import akka.testkit.TestProbe
+import akka.actor.ExtendedActorSystem
+import akka.testkit.TestActors.echoActorProps
+import akka.actor.ActorPath
 
 object ConfiguredLocalRoutingSpec {
   val config = """
@@ -51,6 +56,10 @@ object ConfiguredLocalRoutingSpec {
             router = "akka.routing.ConfiguredLocalRoutingSpec$MyRouter"
             foo = bar
           }
+          /sys-parent/round {
+            router = round-robin-pool
+            nr-of-instances = 6
+          }
         }
       }
     }
@@ -81,6 +90,13 @@ object ConfiguredLocalRoutingSpec {
     def receive = { case _ ⇒ }
   }
 
+  class Parent extends Actor {
+    def receive = {
+      case (p: Props, name: String) ⇒
+        sender() ! context.actorOf(p, name)
+    }
+  }
+
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -93,6 +109,15 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
         case c: RoutedActorCell ⇒ c.routerConfig
         case _: UnstartedCell   ⇒ awaitCond(r.isStarted, 1 second, 10 millis); routerConfig(ref)
       }
+  }
+
+  def collectRouteePaths(probe: TestProbe, router: ActorRef, n: Int): immutable.Seq[ActorPath] = {
+    for (i ← 1 to n) yield {
+      val msg = i.toString
+      router.tell(msg, probe.ref)
+      probe.expectMsg(msg)
+      probe.lastSender.path
+    }
   }
 
   "RouterConfig" must {
@@ -147,6 +172,19 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
       val myrouter = system.actorOf(FromConfig.props(), "myrouter")
       myrouter ! "foo"
       expectMsg("bar")
+    }
+
+    "load settings from config for local child router of system actor" in {
+      // we don't really support deployment configuration of system actors, but
+      // it's used for the pool of the SimpleDnsManager "/IO-DNS/inet-address"
+      val probe = TestProbe()
+      val parent = system.asInstanceOf[ExtendedActorSystem].systemActorOf(Props[Parent], "sys-parent")
+      parent.tell((FromConfig.props(echoActorProps), "round"), probe.ref)
+      val router = probe.expectMsgType[ActorRef]
+      val replies = collectRouteePaths(probe, router, 10)
+      val children = replies.toSet
+      children should have size 6
+      system.stop(router)
     }
 
   }
