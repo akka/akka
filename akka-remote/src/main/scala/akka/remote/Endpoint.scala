@@ -225,8 +225,9 @@ private[remote] class ReliableDeliverySupervisor(
   var resendBuffer: AckedSendBuffer[Send] = _
   var seqCounter: Long = _
 
-  def reset() {
+  def reset(): Unit = {
     resendBuffer = new AckedSendBuffer[Send](settings.SysMsgBufferSize)
+    bufferWasInUse = false
     seqCounter = 0L
     bailoutAt = None
   }
@@ -806,6 +807,12 @@ private[remote] class EndpointWriter(
 
     case s: Send ⇒
       enqueueInBuffer(s)
+
+    case OutboundAck(_) ⇒
+    // Ignore outgoing acks during take over, since we might have
+    // replaced the handle with a connection to a new, restarted, system
+    // and the ack might be targeted to the old incarnation.
+    // See issue #19780
   }
 
   override def unhandled(message: Any): Unit = message match {
