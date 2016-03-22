@@ -63,20 +63,24 @@ abstract class NodeChurnSpec
   def awaitAllMembersUp(additionaSystems: Vector[ActorSystem]): Unit = {
     val numberOfMembers = roles.size + roles.size * additionaSystems.size
     awaitMembersUp(numberOfMembers)
-    awaitAssert {
-      additionaSystems.foreach { s ⇒
-        val c = Cluster(s)
-        c.state.members.size should be(numberOfMembers)
-        c.state.members.forall(_.status == MemberStatus.Up) shouldBe true
+    within(20.seconds) {
+      awaitAssert {
+        additionaSystems.foreach { s ⇒
+          val c = Cluster(s)
+          c.state.members.size should be(numberOfMembers)
+          c.state.members.forall(_.status == MemberStatus.Up) shouldBe true
+        }
       }
     }
   }
 
   def awaitRemoved(additionaSystems: Vector[ActorSystem]): Unit = {
     awaitMembersUp(roles.size, timeout = 40.seconds)
-    awaitAssert {
-      additionaSystems.foreach { s ⇒
-        Cluster(s).isTerminated should be(true)
+    within(20.seconds) {
+      awaitAssert {
+        additionaSystems.foreach { s ⇒
+          Cluster(s).isTerminated should be(true)
+        }
       }
     }
   }
@@ -87,6 +91,7 @@ abstract class NodeChurnSpec
       system.eventStream.subscribe(logListener, classOf[Info])
       cluster.joinSeedNodes(seedNodes)
       awaitMembersUp(roles.size)
+      enterBarrier("stable")
     }
 
     "join and remove transient nodes without growing gossip payload" taggedAs LongRunningTest in {
