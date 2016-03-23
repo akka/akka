@@ -7,6 +7,8 @@ package akka.http.impl.engine.client
 import akka.http.impl.engine.client.RedirectSupportStage.{InfiniteRedirectLoopException, RedirectMapper}
 import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
+import akka.http.scaladsl.settings.ClientAutoRedirectSettings
+import akka.http.scaladsl.settings.ClientAutoRedirectSettings.HeadersForwardMode.{All, Zero, Only}
 import akka.stream._
 import akka.stream.scaladsl.BidiFlow
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
@@ -17,20 +19,35 @@ import scala.language.higherKinds
 import scala.util.control.NoStackTrace
 
 object RedirectSupportStage {
-  type RedirectMapper = (HttpRequest, HttpResponse) => Option[HttpRequest]
+  type RedirectMapper = (ClientAutoRedirectSettings, HttpRequest, HttpResponse) => Option[HttpRequest]
   case object InfiniteRedirectLoopException
     extends RuntimeException("Infinite redirect loop detected, breaking.")
       with NoStackTrace
   val defaultRedirectMapper: RedirectMapper =
-    (req, resp) =>
-      resp.headers.find(_.is("location")).map(location =>
-        req.withUri(location.value).withHeaders(List.empty)
-      )
-  def apply() = BidiFlow.fromGraph(new RedirectSupportStage(defaultRedirectMapper))
-  def apply(redirectMapper: RedirectMapper) = BidiFlow.fromGraph(new RedirectSupportStage(redirectMapper))
+    (s, req, resp) =>
+      resp.headers.find(_.is("location")).flatMap(location => {
+        val item = if (sameOrigin(req.uri, Uri(location.value))) s.sameOrigin else s.crossOrigin
+        if (item.getAllow) {
+          val headers = item.getForwardHeaders match {
+            case All => req.headers
+            case Zero => List.empty
+            case Only(hs) => req.headers.filter(hs.contains)
+          }
+          Some(req.withUri(location.value).withHeaders(headers))
+        } else {
+          None
+        }
+      })
+  def sameOrigin(u1: Uri, u2: Uri): Boolean = {
+    if (u1.isRelative && u2.isRelative) true
+    else if (u1.isAbsolute && u2.isAbsolute && u1.authority == u2.authority) true
+    else false
+  }
+  def apply(settings: ClientAutoRedirectSettings) = BidiFlow.fromGraph(new RedirectSupportStage(settings, defaultRedirectMapper))
+  def apply(settings: ClientAutoRedirectSettings, redirectMapper: RedirectMapper) = BidiFlow.fromGraph(new RedirectSupportStage(settings, redirectMapper))
 }
 
-class RedirectSupportStage(redirectMapper: RedirectMapper) extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
+class RedirectSupportStage(settings: ClientAutoRedirectSettings, redirectMapper: RedirectMapper) extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
   /**
     * in1 is where the original messages come from
     */
@@ -202,7 +219,7 @@ class RedirectSupportStage(redirectMapper: RedirectMapper) extends GraphStage[Bi
           printy("responseIn: onPush")
           val response = grab(responseIn)
           if (response.status.isRedirection) {
-            redirectMapper(inFlight.head, response).foreach { redirect =>
+            redirectMapper(settings, inFlight.head, response).foreach { redirect =>
               printy(loopDetector.toString())
               val loops = loopDetector(inFlight.head)
               if (loops.contains(redirect.uri)) {

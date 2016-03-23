@@ -172,6 +172,7 @@ private[http] object JavaMapping {
   implicit object ClientConnectionSettings extends Inherited[js.ClientConnectionSettings, akka.http.scaladsl.settings.ClientConnectionSettings]
   implicit object ConnectionPoolSettings extends Inherited[js.ConnectionPoolSettings, akka.http.scaladsl.settings.ConnectionPoolSettings]
   implicit object ParserSettings extends Inherited[js.ParserSettings, akka.http.scaladsl.settings.ParserSettings]
+  implicit object ClientAutoRedirectSettings extends Inherited[js.ClientAutoRedirectSettings, akka.http.scaladsl.settings.ClientAutoRedirectSettings]
   implicit object CookieParsingMode extends Inherited[js.ParserSettings.CookieParsingMode, akka.http.scaladsl.settings.ParserSettings.CookieParsingMode]
   implicit object ErrorLoggingVerbosity extends Inherited[js.ParserSettings.ErrorLoggingVerbosity, akka.http.scaladsl.settings.ParserSettings.ErrorLoggingVerbosity]
   implicit object ServerSettings extends Inherited[js.ServerSettings, akka.http.scaladsl.settings.ServerSettings]
