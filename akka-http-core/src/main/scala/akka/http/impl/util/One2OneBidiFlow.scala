@@ -16,9 +16,6 @@ import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
 private[http] object One2OneBidiFlow {
 
   case class UnexpectedOutputException(element: Any) extends RuntimeException(element.toString) with NoStackTrace
-  case object OutputTruncationException
-    extends RuntimeException("Inner stream finished before inputs completed. Outputs might have been truncated.")
-    with NoStackTrace
 
   /**
    * Creates a generic ``BidiFlow`` which verifies that another flow produces exactly one output element per
@@ -36,11 +33,18 @@ private[http] object One2OneBidiFlow {
   def apply[I, O](maxPending: Int): BidiFlow[I, I, O, O, NotUsed] =
     BidiFlow.fromGraph(new One2OneBidi[I, O](maxPending))
 
+  /*
+   *    +------------------+
+   * ~> | inIn       inOut | ~>
+   *    |                  |
+   * <~ | outOut     outIn | <~
+   *    +------------------+
+   */
   class One2OneBidi[I, O](maxPending: Int) extends GraphStage[BidiShape[I, I, O, O]] {
-    val inIn = Inlet[I]("inIn")
-    val inOut = Outlet[I]("inOut")
-    val outIn = Inlet[O]("outIn")
-    val outOut = Outlet[O]("outOut")
+    val inIn = Inlet[I]("One2OneBidi.inIn")
+    val inOut = Outlet[I]("One2OneBidi.inOut")
+    val outIn = Inlet[O]("One2OneBidi.outIn")
+    val outOut = Outlet[O]("One2OneBidi.outOut")
 
     override def initialAttributes = Attributes.name("One2OneBidi")
     val shape = BidiShape(inIn, inOut, outIn, outOut)
@@ -87,8 +91,13 @@ private[http] object One2OneBidiFlow {
           } else throw new UnexpectedOutputException(element)
         }
         override def onUpstreamFinish(): Unit = {
-          if (pending == 0 && isClosed(inIn) && !innerFlowCancelled) complete(outOut)
-          else throw OutputTruncationException
+          if (pending > 0 || innerFlowCancelled) {
+            if (materializer.isInstanceOf[ActorMaterializer])
+              ActorMaterializer.downcast(materializer).logger.debug(
+                "Inner stream finished before inputs completed. " +
+                  "Outputs might have been truncated.")
+          }
+          super.onUpstreamFinish()
         }
       })
 
