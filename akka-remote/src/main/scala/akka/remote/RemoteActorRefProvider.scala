@@ -257,9 +257,9 @@ private[akka] class RemoteActorRefProvider(
       val lookup =
         if (lookupDeploy)
           elems.head match {
-            case "user"   ⇒ deployer.lookup(elems.drop(1))
-            case "remote" ⇒ lookupRemotes(elems)
-            case _        ⇒ None
+            case "user" | "system" ⇒ deployer.lookup(elems.drop(1))
+            case "remote"          ⇒ lookupRemotes(elems)
+            case _                 ⇒ None
           }
         else None
 
