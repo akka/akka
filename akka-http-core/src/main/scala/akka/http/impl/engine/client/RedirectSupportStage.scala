@@ -6,9 +6,9 @@ package akka.http.impl.engine.client
 
 import akka.http.impl.engine.client.RedirectSupportStage.{InfiniteRedirectLoopException, RedirectMapper}
 import akka.http.scaladsl.model.headers.Location
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ClientAutoRedirectSettings
-import akka.http.scaladsl.settings.ClientAutoRedirectSettings.HeadersForwardMode.{All, Zero, Only}
+import akka.http.scaladsl.settings.ClientAutoRedirectSettings.HeadersForwardMode.{All, Only, Zero}
 import akka.stream._
 import akka.stream.scaladsl.BidiFlow
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
@@ -23,21 +23,36 @@ object RedirectSupportStage {
   case object InfiniteRedirectLoopException
     extends RuntimeException("Infinite redirect loop detected, breaking.")
       with NoStackTrace
+
+  def inferMethod(req: HttpRequest, resp: HttpResponse): Option[HttpMethod] = {
+    import HttpMethods._
+    import StatusCodes._
+    val m = req.method
+    resp.status match {
+      case MovedPermanently | Found | TemporaryRedirect | PermanentRedirect if m == GET || m == HEAD => Some(m)
+      case SeeOther => Some(GET)
+      case _ => None
+    }
+  }
+
   val defaultRedirectMapper: RedirectMapper =
-    (s, req, resp) =>
-      resp.headers.find(_.is("location")).flatMap(location => {
-        val item = if (sameOrigin(req.uri, Uri(location.value))) s.sameOrigin else s.crossOrigin
-        if (item.getAllow) {
-          val headers = item.getForwardHeaders match {
-            case All => req.headers
-            case Zero => List.empty
-            case Only(hs) => req.headers.filter(hs.contains)
+    (s, req, resp) => {
+      inferMethod(req, resp).flatMap { method =>
+        resp.headers.find(_.is("location")).flatMap(location => {
+          val item = if (sameOrigin(req.uri, Uri(location.value))) s.sameOrigin else s.crossOrigin
+          if (item.getAllow) {
+            val headers = item.getForwardHeaders match {
+              case All => req.headers
+              case Zero => Nil
+              case Only(hs) => req.headers.filter(hs.contains)
+            }
+            Some(req.withUri(location.value).withHeaders(headers).withMethod(method))
+          } else {
+            None
           }
-          Some(req.withUri(location.value).withHeaders(headers))
-        } else {
-          None
-        }
-      })
+        })
+      }
+    }
   def sameOrigin(u1: Uri, u2: Uri): Boolean = {
     if (u1.isRelative && u2.isRelative) true
     else if (u1.isAbsolute && u2.isAbsolute && u1.authority == u2.authority) true
