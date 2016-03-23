@@ -91,6 +91,20 @@ object Source {
     new Source(scaladsl.Source.fromIterator(() ⇒ f.create().asScala))
 
   /**
+   * Helper to create 'cycled' [[Source]] from iterator provider.
+   * Example usage:
+   *
+   * {{{
+   * Source.cycle(() -> Arrays.asList(1, 2, 3).iterator());
+   * }}}
+   *
+   * Start a new 'cycled' `Source` from the given elements. The producer stream of elements
+   * will continue infinitely by repeating the sequence of elements provided by function parameter.
+   */
+  def cycle[O](f: function.Creator[java.util.Iterator[O]]): javadsl.Source[O, NotUsed] =
+    new Source(scaladsl.Source.cycle(() ⇒ f.create().asScala))
+
+  /**
    * Helper to create [[Source]] from `Iterable`.
    * Example usage:
    * {{{
