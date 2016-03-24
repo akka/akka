@@ -67,7 +67,6 @@ class RedirectTestSpec extends AkkaSpec {
 
     "be able to forward selected headers to redirected requests in same origin" in Utils.assertAllStagesStopped {
       val (_, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
-      println(serverHostName)
       val binding = Http().bindAndHandleSync(r ⇒ {
         val c = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse.toInt
         if (c % 2 == 0) {
@@ -84,7 +83,6 @@ class RedirectTestSpec extends AkkaSpec {
         .via(Http().outgoingConnection(serverHostName, serverPort))
         .map(p ⇒ {
           if (p.status.isRedirection) throw new Exception("No redirects here!")
-          println(p.headers)
           p.headers.find(_.is("etag")).map(_.value.replace("\"", "").toInt).getOrElse(0)
         })
         .runFold(0)(_ + _)
@@ -96,7 +94,6 @@ class RedirectTestSpec extends AkkaSpec {
 
     "be able to forward selected headers to redirected requests in different origin" /*in Utils.assertAllStagesStopped */ ignore {
       val (ipAddress, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
-      println(serverHostName)
       val binding = Http().bindAndHandleSync(r ⇒ {
         val c = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse.toInt
         if (c % 2 == 0) {
@@ -120,10 +117,7 @@ class RedirectTestSpec extends AkkaSpec {
             ClientConnectionSettings(system)
               .withRedirectSettings(
                 ClientAutoRedirectSettings("akka.http.client.redirect.cross-origin.allow = true"))))
-        .map(p ⇒ {
-          println(p.headers)
-          p.headers.find(_.is("etag")).map(_.value.replace("\"", "").toInt).getOrElse(0)
-        })
+        .map(_.headers.find(_.is("etag")).map(_.value.replace("\"", "").toInt).getOrElse(0))
         .runFold(0)(_ + _)
 
       result.futureValue(PatienceConfig(100.seconds)) shouldEqual (N + 2) * (N / 4) // all even numbers till N

@@ -1,12 +1,10 @@
 /**
-  * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
   */
 
 package akka.http.impl.engine.client
 
-import akka.http.impl.engine.client.RedirectSupportStage.{InfiniteRedirectLoopException, RedirectMapper}
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.headers.Location
+import akka.http.impl.engine.client.RedirectSupportStage.RedirectMapper
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ClientAutoRedirectSettings
 import akka.http.scaladsl.settings.ClientAutoRedirectSettings.HeadersForwardMode.{All, Only, Zero}
@@ -14,8 +12,6 @@ import akka.stream._
 import akka.stream.scaladsl.BidiFlow
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 
-import scala.collection.immutable.HashMap
-import scala.collection.mutable
 import scala.language.higherKinds
 import scala.util.control.NoStackTrace
 
@@ -66,11 +62,45 @@ object RedirectSupportStage {
     else false
   }
 
+  trait OpOutPrinter[F, _ <: Outlet[F]] {
+    def print(t: F): Unit
+  }
+
+  trait OpInPrinter[T <: Inlet[_]] {
+    def print(): Unit
+  }
+
+  def printy(s: Any) = ()//println(s)
+
+  implicit val RequestOutPrinterReq = new OpOutPrinter[HttpRequest, Outlet[HttpRequest]] {
+    override def print(t: HttpRequest): Unit = printy(s"\tpushing $t to requestOut")
+  }
+  implicit val ResponseOutPrinterResp = new OpOutPrinter[HttpResponse, Outlet[HttpResponse]] {
+    override def print(t: HttpResponse): Unit = printy(s"\tpushing $t to responseOut")
+  }
+  implicit val RequestInPrinterReq = new OpInPrinter[Inlet[HttpRequest]] {
+    override def print(): Unit = {
+      printy("\tpulling from requestIn")
+    }
+  }
+  implicit val ResponseInPrinterResp = new OpInPrinter[Inlet[HttpResponse]] {
+    override def print(): Unit = {
+      printy("\tpulling from responseIn")
+    }
+  }
+
   def apply(settings: ClientAutoRedirectSettings) = BidiFlow.fromGraph(new RedirectSupportStage(settings, defaultRedirectMapper))
 
   def apply(settings: ClientAutoRedirectSettings, redirectMapper: RedirectMapper) = BidiFlow.fromGraph(new RedirectSupportStage(settings, redirectMapper))
 }
 
+/**
+  * A BidiShape that sits on top of OutgoingConnectionBlueprint and routes the redirect responses back to the
+  * downstream outgoing connection if [[redirectMapper]] allows, or upstream otherwise
+  * @param settings Redirect configuration
+  * @param redirectMapper returns Some(HttpRequest) with the redirect HttpRequest if automatic redirect must be
+  *                       performed, or None if received response must go directly upstream
+  */
 class RedirectSupportStage(settings: ClientAutoRedirectSettings, redirectMapper: RedirectMapper) extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
   /**
     * in1 is where the original messages come from
@@ -101,40 +131,7 @@ class RedirectSupportStage(settings: ClientAutoRedirectSettings, redirectMapper:
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
 
-      trait OpOutPrinter[F, _ <: Outlet[F]] {
-        def print(t: F): Unit
-      }
-
-      trait OpInPrinter[T <: Inlet[_]] {
-        def print(): Unit
-      }
-
-      def printy(s: Any) = println(s)
-
-      object OpOutPrinter {
-        implicit val RequestOutPrinterReq = new OpOutPrinter[HttpRequest, Outlet[HttpRequest]] {
-          override def print(t: HttpRequest): Unit = printy(s"\tpushing $t to requestOut")
-        }
-        implicit val ResponseOutPrinterResp = new OpOutPrinter[HttpResponse, Outlet[HttpResponse]] {
-          override def print(t: HttpResponse): Unit = printy(s"\tpushing $t to responseOut")
-        }
-      }
-
-      object OpInPrinter {
-        implicit val RequestInPrinterReq = new OpInPrinter[Inlet[HttpRequest]] {
-          override def print(): Unit = {
-            printy("\tpulling from requestIn")
-          }
-        }
-        implicit val ResponseInPrinterResp = new OpInPrinter[Inlet[HttpResponse]] {
-          override def print(): Unit = {
-            printy("\tpulling from responseIn")
-          }
-        }
-      }
-
-      import OpOutPrinter._
-      import OpInPrinter._
+      import RedirectSupportStage.{printy, OpInPrinter, OpOutPrinter, InfiniteRedirectLoopException}
 
       def doPush[T](outlet: Outlet[T], t: T)(implicit ev: OpOutPrinter[T, Outlet[T]]) = {
         push(outlet, t)
@@ -149,8 +146,6 @@ class RedirectSupportStage(settings: ClientAutoRedirectSettings, redirectMapper:
       }
 
       var inFlight = Vector.empty[HttpRequest]
-      //      var unconsumedResponses = Vector.empty[HttpResponse]
-      //      var unconsumedRequests = Vector.empty[HttpRequest]
       var loopDetector = Map.empty[HttpRequest, List[Uri]]
       var requestsProcessed = 0
 
@@ -176,10 +171,6 @@ class RedirectSupportStage(settings: ClientAutoRedirectSettings, redirectMapper:
           */
         override def onPull(): Unit = {
           printy("requestOut: onPull")
-          /*unconsumedRequests = unconsumedRequests.headOption match {
-            case Some(h) => doPush(requestOut, h); doPull(responseIn); unconsumedRequests.tail
-            case None => unconsumedRequests
-          }*/
           printStatus()
         }
 
@@ -202,12 +193,6 @@ class RedirectSupportStage(settings: ClientAutoRedirectSettings, redirectMapper:
         override def onPush(): Unit = {
           printy("requestIn: onPush")
           val r = grab(requestIn)
-          /*if (isAvailable(requestOut)) {
-            doPush(requestOut, r)
-            doPull(responseIn)
-          } else {
-            unconsumedRequests = unconsumedRequests :+ r
-          }*/
           emit(requestOut, r, () => doPull(responseIn))
           inFlight = inFlight :+ r
           loopDetector += (r -> List(r.uri))
@@ -255,24 +240,12 @@ class RedirectSupportStage(settings: ClientAutoRedirectSettings, redirectMapper:
               inFlight = inFlight.tail :+ redirect
               printy(redirect)
               emit(requestOut, redirect, () => doPull(responseIn))
-              /*if (isAvailable(requestOut)) {
-                doPush(requestOut, redirect)
-                doPull(responseIn)
-              } else {
-                unconsumedRequests = unconsumedRequests :+ redirect
-              }*/
             }
           } else {
             requestsProcessed += 1
             loopDetector -= inFlight.head
             inFlight = inFlight.tail
             emit(responseOut, response, () => doPull(requestIn))
-            /*if (isAvailable(responseOut)) {
-              doPush(responseOut, response)
-              doPull(requestIn)
-            } else {
-              unconsumedResponses = unconsumedResponses :+ response
-            }*/
           }
           printStatus()
         }
@@ -281,7 +254,6 @@ class RedirectSupportStage(settings: ClientAutoRedirectSettings, redirectMapper:
           * Called when the input port is finished. After this callback no other callbacks will be called for this port.
           */
         override def onUpstreamFinish(): Unit = {
-          //          emitMultiple(responseOut, unconsumedResponses)
           printy("responseIn: onUpstreamFinish")
           complete(responseOut)
         }
@@ -302,10 +274,6 @@ class RedirectSupportStage(settings: ClientAutoRedirectSettings, redirectMapper:
           */
         override def onPull(): Unit = {
           printy("responseOut: onPull")
-          /*unconsumedResponses = unconsumedResponses.headOption match {
-            case Some(h) => doPush(responseOut, h); doPull(requestIn); unconsumedResponses.tail
-            case None => unconsumedResponses
-          }*/
           printStatus()
         }
 
