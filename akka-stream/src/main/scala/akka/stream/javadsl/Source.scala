@@ -24,7 +24,6 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
 import scala.compat.java8.FutureConverters._
 import akka.stream.impl.SourceQueueAdapter
-import akka.stream.scaladsl.SourceQueueWithComplete
 
 /** Java API */
 object Source {

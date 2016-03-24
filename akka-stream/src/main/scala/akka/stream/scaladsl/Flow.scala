@@ -114,7 +114,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
   /**
    * Transform the materialized value of this Flow, leaving all other properties as they were.
    */
-  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2] =
+  override def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2] =
     new Flow(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
 
   /**
@@ -1982,6 +1982,11 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def watchTermination[Mat2]()(matF: (Mat, Future[Done]) ⇒ Mat2): ReprMat[Out, Mat2] =
     viaMat(GraphStages.terminationWatcher)(matF)
+
+  /**
+   * Transform the materialized value of this graph, leaving all other properties as they were.
+   */
+  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2]
 
   /**
    * INTERNAL API.
