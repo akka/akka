@@ -52,16 +52,16 @@ object StreamLayout {
     var problems: List[String] = Nil
 
     if (inset.size != shape.inlets.size) problems ::= "shape has duplicate inlets: " + ins(shape.inlets)
-    if (inset != inPorts) problems ::= s"shape has extra ${ins(inset -- inPorts)}, module has extra ${ins(inPorts -- inset)}"
+    if (inset != inPorts) problems ::= s"shape has extra ${ins(inset diff inPorts)}, module has extra ${ins(inPorts diff inset)}"
     if (inset.intersect(upstreams.keySet).nonEmpty) problems ::= s"found connected inlets ${inset.intersect(upstreams.keySet)}"
     if (outset.size != shape.outlets.size) problems ::= "shape has duplicate outlets: " + outs(shape.outlets)
-    if (outset != outPorts) problems ::= s"shape has extra ${outs(outset -- outPorts)}, module has extra ${outs(outPorts -- outset)}"
+    if (outset != outPorts) problems ::= s"shape has extra ${outs(outset diff outPorts)}, module has extra ${outs(outPorts diff outset)}"
     if (outset.intersect(downstreams.keySet).nonEmpty) problems ::= s"found connected outlets ${outset.intersect(downstreams.keySet)}"
     val ups = upstreams.toSet
     val ups2 = ups.map(_.swap)
     val downs = downstreams.toSet
     val inter = ups2.intersect(downs)
-    if (downs != ups2) problems ::= s"inconsistent maps: ups ${pairs(ups2 -- inter)} downs ${pairs(downs -- inter)}"
+    if (downs != ups2) problems ::= s"inconsistent maps: ups ${pairs(ups2 diff inter)} downs ${pairs(downs diff inter)}"
     val (allIn, dupIn, allOut, dupOut) =
       subModules.foldLeft((Set.empty[InPort], Set.empty[InPort], Set.empty[OutPort], Set.empty[OutPort])) {
         case ((ai, di, ao, doo), sm) ⇒
@@ -69,11 +69,11 @@ object StreamLayout {
       }
     if (dupIn.nonEmpty) problems ::= s"duplicate ports in submodules ${ins(dupIn)}"
     if (dupOut.nonEmpty) problems ::= s"duplicate ports in submodules ${outs(dupOut)}"
-    if (!isSealed && (inset -- allIn).nonEmpty) problems ::= s"foreign inlets ${ins(inset -- allIn)}"
-    if (!isSealed && (outset -- allOut).nonEmpty) problems ::= s"foreign outlets ${outs(outset -- allOut)}"
-    val unIn = allIn -- inset -- upstreams.keySet
+    if (!isSealed && (inset diff allIn).nonEmpty) problems ::= s"foreign inlets ${ins(inset diff allIn)}"
+    if (!isSealed && (outset diff allOut).nonEmpty) problems ::= s"foreign outlets ${outs(outset diff allOut)}"
+    val unIn = allIn diff inset diff upstreams.keySet
     if (unIn.nonEmpty && !isCopied) problems ::= s"unconnected inlets ${ins(unIn)}"
-    val unOut = allOut -- outset -- downstreams.keySet
+    val unOut = allOut diff outset diff downstreams.keySet
     if (unOut.nonEmpty && !isCopied) problems ::= s"unconnected outlets ${outs(unOut)}"
 
     def atomics(n: MaterializedValueNode): Set[Module] =
@@ -88,8 +88,8 @@ object StreamLayout {
       case GraphModule(_, _, _, mvids) ⇒ mvids
       case _                           ⇒ Nil
     }
-    if ((atomic -- subModules -- graphValues - m).nonEmpty)
-      problems ::= s"computation refers to non-existent modules [${atomic -- subModules -- graphValues - m mkString ","}]"
+    if (((atomic diff subModules diff graphValues) - m).nonEmpty)
+      problems ::= s"computation refers to non-existent modules [${(atomic diff subModules diff graphValues) - m mkString ","}]"
 
     val print = doPrint || problems.nonEmpty
 
@@ -273,7 +273,7 @@ object StreamLayout {
         }
 
       CompositeModule(
-        modulesLeft ++ modulesRight,
+        modulesLeft union modulesRight,
         AmorphousShape(shape.inlets ++ that.shape.inlets, shape.outlets ++ that.shape.outlets),
         downstreams ++ that.downstreams,
         upstreams ++ that.upstreams,

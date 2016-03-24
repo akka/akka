@@ -84,11 +84,10 @@ class BundleDelegatingClassLoader(bundle: Bundle, fallBackClassLoader: ClassLoad
                 wire ⇒ Option(wire.getProviderWiring) map { _.getBundle }
               }.toSet
             }
-          process(processed + b, rest ++ (direct -- processed))
+          process(processed + b, rest ++ (direct diff processed))
         }
       }
     }
     process(Set.empty, Set(bundle))
   }
 }
-
