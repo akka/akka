@@ -33,6 +33,11 @@ object TestSingleRequest extends App {
 
   val res = Await.result(x, 10.seconds)
 
-  val response = res.entity.dataBytes.runFold(ByteString.empty)(_ ++ _).map
+  val response = res.entity.dataBytes.runFold(ByteString.empty)(_ ++ _).map(_.utf8String)
 
+  println(" ------------ RESPONSE ------------")
+  println(Await.result(response, 10.seconds))
+  println(" -------- END OF RESPONSE ---------")
+
+  system.terminate()
 }
