@@ -17,15 +17,15 @@ import akka.http.javadsl.server.Route
 import akka.http.scaladsl.server.directives.{ FutureDirectives ⇒ D }
 
 abstract class FutureDirectives extends FormFieldDirectives {
-  def onComplete[T](f: Supplier[CompletionStage[T]], inner: JFunction[Try[T], Route]) = ScalaRoute {
+  def onComplete[T](f: Supplier[CompletionStage[T]], inner: JFunction[Try[T], Route]) = RouteAdapter {
     D.onComplete(f.get.toScala.recover(unwrapCompletionException)) { value ⇒
-      inner.apply(value).toScala
+      inner.apply(value).delegate
     }
   }
 
-  def onSuccess[T](f: Supplier[CompletionStage[T]], inner: JFunction[T, Route]) = ScalaRoute {
+  def onSuccess[T](f: Supplier[CompletionStage[T]], inner: JFunction[T, Route]) = RouteAdapter {
     D.onSuccess(f.get.toScala.recover(unwrapCompletionException)) { value ⇒
-      inner.apply(value).toScala
+      inner.apply(value).delegate
     }
   }
 

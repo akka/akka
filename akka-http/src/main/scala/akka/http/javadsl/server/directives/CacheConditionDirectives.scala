@@ -27,8 +27,8 @@ abstract class CacheConditionDirectives extends BasicDirectives {
    * it on the *outside* of the `withRangeSupport(...)` directive, i.e. `withRangeSupport(...)`
    * must be on a deeper level in your route structure in order to function correctly.
    */
-  def conditional(eTag: EntityTag, inner: Supplier[Route]): Route = ScalaRoute {
-    D.conditional(eTag) { inner.get.toScala }
+  def conditional(eTag: EntityTag, inner: Supplier[Route]): Route = RouteAdapter {
+    D.conditional(eTag) { inner.get.delegate }
   }
 
   /**
@@ -42,8 +42,8 @@ abstract class CacheConditionDirectives extends BasicDirectives {
    * it on the *outside* of the `withRangeSupport(...)` directive, i.e. `withRangeSupport(...)`
    * must be on a deeper level in your route structure in order to function correctly.
    */
-  def conditional(lastModified: DateTime, inner: Supplier[Route]): Route = ScalaRoute {
-    D.conditional(lastModified) { inner.get.toScala }
+  def conditional(lastModified: DateTime, inner: Supplier[Route]): Route = RouteAdapter {
+    D.conditional(lastModified) { inner.get.delegate }
   }
 
   /**
@@ -57,8 +57,8 @@ abstract class CacheConditionDirectives extends BasicDirectives {
    * it on the *outside* of the `withRangeSupport(...)` directive, i.e. `withRangeSupport(...)`
    * must be on a deeper level in your route structure in order to function correctly.
    */
-  def conditional(eTag: EntityTag, lastModified: DateTime, inner: Supplier[Route]): Route = ScalaRoute {
-    D.conditional(eTag, lastModified) { inner.get.toScala }
+  def conditional(eTag: EntityTag, lastModified: DateTime, inner: Supplier[Route]): Route = RouteAdapter {
+    D.conditional(eTag, lastModified) { inner.get.delegate }
   }
 
   /**
@@ -72,8 +72,8 @@ abstract class CacheConditionDirectives extends BasicDirectives {
    * it on the *outside* of the `withRangeSupport(...)` directive, i.e. `withRangeSupport(...)`
    * must be on a deeper level in your route structure in order to function correctly.
    */
-  def conditional(eTag: Optional[EntityTag], lastModified: Optional[DateTime], inner: Supplier[Route]): Route = ScalaRoute {
-    D.conditional(eTag.asScala, lastModified.asScala) { inner.get.toScala }
+  def conditional(eTag: Optional[EntityTag], lastModified: Optional[DateTime], inner: Supplier[Route]): Route = RouteAdapter {
+    D.conditional(eTag.asScala, lastModified.asScala) { inner.get.delegate }
   }
 
 }

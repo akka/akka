@@ -17,8 +17,8 @@ import scala.collection.JavaConverters._
 
 abstract class TimeoutDirectives extends WebSocketDirectives {
 
-  def withoutRequestTimeout(inner: Supplier[Route]): ScalaRoute = ScalaRoute {
-    D.withoutRequestTimeout { inner.get.toScala }
+  def withoutRequestTimeout(inner: Supplier[Route]): RouteAdapter = RouteAdapter {
+    D.withoutRequestTimeout { inner.get.delegate }
   }
 
 }

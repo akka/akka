@@ -26,9 +26,9 @@ abstract class HeaderDirectives extends FutureDirectives {
    * request is rejected with an empty rejection set. If the given function throws an exception the request is rejected
    * with a [[spray.routing.MalformedHeaderRejection]].
    */
-  def headerValue[T](f: jf.Function[HttpHeader, Optional[T]], inner: jf.Function[T, Route]) = ScalaRoute {
+  def headerValue[T](f: jf.Function[HttpHeader, Optional[T]], inner: jf.Function[T, Route]) = RouteAdapter {
     D.headerValue(h => f.apply(h).asScala) { value => 
-      inner.apply(value).toScala
+      inner.apply(value).delegate
     }
   }
   
@@ -36,9 +36,9 @@ abstract class HeaderDirectives extends FutureDirectives {
    * Extracts an HTTP header value using the given partial function. If the function is undefined for all headers the
    * request is rejected with an empty rejection set.
    */
-  def headerValuePF[T](pf: PartialFunction[HttpHeader, T], inner: jf.Function[T, Route]) = ScalaRoute {
+  def headerValuePF[T](pf: PartialFunction[HttpHeader, T], inner: jf.Function[T, Route]) = RouteAdapter {
     D.headerValuePF(pf) { value =>
-      inner.apply(value).toScala
+      inner.apply(value).delegate
     }
   }
   
@@ -46,9 +46,9 @@ abstract class HeaderDirectives extends FutureDirectives {
    * Extracts the value of the first HTTP request header with the given name.
    * If no header with a matching name is found the request is rejected with a [[spray.routing.MissingHeaderRejection]].
    */
-  def headerValueByName(headerName: String, inner: jf.Function[String, Route]) = ScalaRoute {
+  def headerValueByName(headerName: String, inner: jf.Function[String, Route]) = RouteAdapter {
     D.headerValueByName(headerName) { value =>
-      inner.apply(value).toScala
+      inner.apply(value).delegate
     }
   }
   
@@ -56,9 +56,9 @@ abstract class HeaderDirectives extends FutureDirectives {
    * Extracts the first HTTP request header of the given type.
    * If no header with a matching type is found the request is rejected with a [[spray.routing.MissingHeaderRejection]].
    */
-  def headerValueByType[T <: HttpHeader](t: Class[T], inner: jf.Function[T, Route]) = ScalaRoute {
+  def headerValueByType[T <: HttpHeader](t: Class[T], inner: jf.Function[T, Route]) = RouteAdapter {
     D.headerValueByType(ClassMagnet(ClassTag(t)).asInstanceOf[ClassMagnet[akka.http.scaladsl.model.HttpHeader]]) { value =>
-      inner.apply(value.asInstanceOf[T]).toScala
+      inner.apply(value.asInstanceOf[T]).delegate
     }
   }
   
@@ -67,9 +67,9 @@ abstract class HeaderDirectives extends FutureDirectives {
    * If the given function throws an exception the request is rejected
    * with a [[spray.routing.MalformedHeaderRejection]].
    */
-  def optionalHeaderValue[T](f: jf.Function[HttpHeader, Optional[T]], inner: jf.Function[Optional[T], Route]) = ScalaRoute {
+  def optionalHeaderValue[T](f: jf.Function[HttpHeader, Optional[T]], inner: jf.Function[Optional[T], Route]) = RouteAdapter {
     D.optionalHeaderValue(h => f.apply(h).asScala) { value => 
-      inner.apply(value.asJava).toScala
+      inner.apply(value.asJava).delegate
     }
   }
   
@@ -78,27 +78,27 @@ abstract class HeaderDirectives extends FutureDirectives {
    * If the given function throws an exception the request is rejected
    * with a [[spray.routing.MalformedHeaderRejection]].
    */
-  def optionalHeaderValuePF[T](pf: PartialFunction[HttpHeader, T], inner: jf.Function[Optional[T], Route]) = ScalaRoute {
+  def optionalHeaderValuePF[T](pf: PartialFunction[HttpHeader, T], inner: jf.Function[Optional[T], Route]) = RouteAdapter {
     D.optionalHeaderValuePF(pf) { value =>
-      inner.apply(value.asJava).toScala
+      inner.apply(value.asJava).delegate
     }
   }
   
   /**
    * Extracts the value of the optional HTTP request header with the given name.
    */
-  def optionalHeaderValueByName(headerName: String, inner: jf.Function[Optional[String], Route]) = ScalaRoute {
+  def optionalHeaderValueByName(headerName: String, inner: jf.Function[Optional[String], Route]) = RouteAdapter {
     D.optionalHeaderValueByName(headerName) { value =>
-      inner.apply(value.asJava).toScala
+      inner.apply(value.asJava).delegate
     }
   }
   
   /**
    * Extract the header value of the optional HTTP request header with the given type.
    */
-  def optionalHeaderValueByType[T <: HttpHeader](t: Class[T], inner: jf.Function[Optional[T], Route]) = ScalaRoute {
+  def optionalHeaderValueByType[T <: HttpHeader](t: Class[T], inner: jf.Function[Optional[T], Route]) = RouteAdapter {
     D.optionalHeaderValueByType(ClassMagnet(ClassTag(t)).asInstanceOf[ClassMagnet[akka.http.scaladsl.model.HttpHeader]]) { value =>
-      inner.apply(value.asInstanceOf[Optional[T]]).toScala
+      inner.apply(value.asInstanceOf[Optional[T]]).delegate
     }
   }
   

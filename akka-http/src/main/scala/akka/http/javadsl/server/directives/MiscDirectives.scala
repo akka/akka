@@ -24,31 +24,31 @@ abstract class MiscDirectives extends MethodDirectives {
    * Checks the given condition before running its inner route.
    * If the condition fails the route is rejected with a [[ValidationRejection]].
    */
-  def validate(check: BooleanSupplier, errorMsg: String, inner: Supplier[Route]): Route = ScalaRoute {
-    D.validate(check.getAsBoolean(), errorMsg) { inner.get.toScala }
+  def validate(check: BooleanSupplier, errorMsg: String, inner: Supplier[Route]): Route = RouteAdapter {
+    D.validate(check.getAsBoolean(), errorMsg) { inner.get.delegate }
   }
 
   /**
    * Extracts the client's IP from either the X-Forwarded-For, Remote-Address or X-Real-IP header
    * (in that order of priority).
    */
-  def extractClientIP(inner: JFunction[RemoteAddress, Route]): Route = ScalaRoute {
-    D.extractClientIP { ip ⇒ inner.apply(ip).toScala }
+  def extractClientIP(inner: JFunction[RemoteAddress, Route]): Route = RouteAdapter {
+    D.extractClientIP { ip ⇒ inner.apply(ip).delegate }
   }
 
   /**
    * Rejects if the request entity is non-empty.
    */
-  def requestEntityEmpty(inner: Supplier[Route]): Route = ScalaRoute {
-    D.requestEntityEmpty { inner.get.toScala }
+  def requestEntityEmpty(inner: Supplier[Route]): Route = RouteAdapter {
+    D.requestEntityEmpty { inner.get.delegate }
   }
 
   /**
    * Rejects with a [[RequestEntityExpectedRejection]] if the request entity is empty.
    * Non-empty requests are passed on unchanged to the inner route.
    */
-  def requestEntityPresent(inner: Supplier[Route]): Route = ScalaRoute {
-    D.requestEntityPresent { inner.get.toScala }
+  def requestEntityPresent(inner: Supplier[Route]): Route = RouteAdapter {
+    D.requestEntityPresent { inner.get.delegate }
   }
 
   /**
@@ -56,8 +56,8 @@ abstract class MiscDirectives extends MethodDirectives {
    * This way you can, for example, have the marshalling of a ''None'' option
    * be treated as if the request could not be matched.
    */
-  def rejectEmptyResponse(inner: Supplier[Route]): Route = ScalaRoute {
-    D.rejectEmptyResponse { inner.get.toScala }
+  def rejectEmptyResponse(inner: Supplier[Route]): Route = RouteAdapter {
+    D.rejectEmptyResponse { inner.get.delegate }
   }
 
   /**
@@ -71,10 +71,10 @@ abstract class MiscDirectives extends MethodDirectives {
    *
    * If [languages] is empty, the route is rejected.
    */
-  def selectPreferredLanguage(languages: JIterable[Language], inner: JFunction[Language, Route]): Route = ScalaRoute {
+  def selectPreferredLanguage(languages: JIterable[Language], inner: JFunction[Language, Route]): Route = RouteAdapter {
     languages.asScala.toList match {
       case head :: tail ⇒
-        D.selectPreferredLanguage(head, tail.toSeq: _*) { lang ⇒ inner.apply(lang).toScala }
+        D.selectPreferredLanguage(head, tail.toSeq: _*) { lang ⇒ inner.apply(lang).delegate }
       case _ ⇒
         D.reject()
     }

@@ -46,13 +46,13 @@ abstract class RouteTest extends AllDirectives {
     runRoute(route, request, defaultHostInfo)
 
   def runRoute(route: Route, request: HttpRequest, defaultHostInfo: DefaultHostInfo): TestRouteResult =
-    runScalaRoute(route.seal(system, materializer).toScala, request, defaultHostInfo)
+    runScalaRoute(route.seal(system, materializer).delegate, request, defaultHostInfo)
 
   def runRouteUnSealed(route: Route, request: HttpRequest): TestRouteResult =
     runRouteUnSealed(route, request, defaultHostInfo)
 
   def runRouteUnSealed(route: Route, request: HttpRequest, defaultHostInfo: DefaultHostInfo): TestRouteResult =
-    runScalaRoute(route.toScala, request, defaultHostInfo)
+    runScalaRoute(route.delegate, request, defaultHostInfo)
 
   private def runScalaRoute(scalaRoute: ScalaRoute, request: HttpRequest, defaultHostInfo: DefaultHostInfo): TestRouteResult = {
     val effectiveRequest = request.asScala

@@ -20,57 +20,57 @@ import akka.http.scaladsl.server.directives.ParameterDirectives._
 
 abstract class FormFieldDirectives extends FileUploadDirectives {
 
-  def formField(name: String, inner: JFunction[String, Route]): Route = ScalaRoute(
+  def formField(name: String, inner: JFunction[String, Route]): Route = RouteAdapter(
     D.formField(name) { value ⇒
-      inner.apply(value).toScala
+      inner.apply(value).delegate
     })
 
-  def formFieldOptional(name: String, inner: JFunction[Optional[String], Route]): Route = ScalaRoute(
+  def formFieldOptional(name: String, inner: JFunction[Optional[String], Route]): Route = RouteAdapter(
     D.formField(name.?) { value ⇒
-      inner.apply(value.asJava).toScala
+      inner.apply(value.asJava).delegate
     })
 
-  def formFieldList(name: String, inner: JFunction[java.util.List[String], Route]): Route = ScalaRoute(
+  def formFieldList(name: String, inner: JFunction[java.util.List[String], Route]): Route = RouteAdapter(
     D.formField(_string2NR(name).*) { values ⇒
-      inner.apply(values.toSeq.asJava).toScala
+      inner.apply(values.toSeq.asJava).delegate
     })
 
   def formField[T](t: Unmarshaller[String, T], name: String, inner: JFunction[T, Route]): Route = {
     import t.asScala
-    ScalaRoute(
+    RouteAdapter(
       D.formField(name.as[T]) { value ⇒
-        inner.apply(value).toScala
+        inner.apply(value).delegate
       })
   }
 
   def formFieldOptional[T](t: Unmarshaller[String, T], name: String, inner: JFunction[Optional[T], Route]): Route = {
     import t.asScala
-    ScalaRoute(
+    RouteAdapter(
       D.formField(name.as[T].?) { value ⇒
-        inner.apply(value.asJava).toScala
+        inner.apply(value.asJava).delegate
       })
   }
 
   def formFieldList[T](t: Unmarshaller[String, T], name: String, inner: JFunction[java.util.List[T], Route]): Route = {
     import t.asScala
-    ScalaRoute(
+    RouteAdapter(
       D.formField(name.as[T].*) { values ⇒
-        inner.apply(values.toSeq.asJava).toScala
+        inner.apply(values.toSeq.asJava).delegate
       })
   }
 
-  def formFieldMap(inner: JFunction[JMap[String, String], Route]): Route = ScalaRoute {
-    D.formFieldMap { map ⇒ inner.apply(map.asJava).toScala }
+  def formFieldMap(inner: JFunction[JMap[String, String], Route]): Route = RouteAdapter {
+    D.formFieldMap { map ⇒ inner.apply(map.asJava).delegate }
   }
 
-  def formFieldMultiMap(inner: JFunction[JMap[String, JList[String]], Route]): Route = ScalaRoute {
-    D.formFieldMultiMap { map ⇒ inner.apply(map.mapValues { l ⇒ l.asJava }.asJava).toScala }
+  def formFieldMultiMap(inner: JFunction[JMap[String, JList[String]], Route]): Route = RouteAdapter {
+    D.formFieldMultiMap { map ⇒ inner.apply(map.mapValues { l ⇒ l.asJava }.asJava).delegate }
   }
 
-  def formFieldList(inner: JFunction[JList[JMap.Entry[String, String]], Route]): Route = ScalaRoute {
+  def formFieldList(inner: JFunction[JList[JMap.Entry[String, String]], Route]): Route = RouteAdapter {
     D.formFieldSeq { list ⇒
       val entries: Seq[JMap.Entry[String, String]] = list.map { e ⇒ new SimpleImmutableEntry(e._1, e._2) }
-      inner.apply(entries.asJava).toScala
+      inner.apply(entries.asJava).delegate
     }
   }
 

@@ -23,8 +23,8 @@ abstract class FileUploadDirectives extends FileAndResourceDirectives {
    * field the request will be rejected, if there are multiple file parts with the same name, the first one will be
    * used and the subsequent ones ignored.
    */
-  def uploadedFile(fieldName: String, inner: BiFunction[FileInfo, File, Route]): Route = ScalaRoute {
-    D.uploadedFile(fieldName) { case (info, file) ⇒ inner.apply(info, file).toScala }
+  def uploadedFile(fieldName: String, inner: BiFunction[FileInfo, File, Route]): Route = RouteAdapter {
+    D.uploadedFile(fieldName) { case (info, file) ⇒ inner.apply(info, file).delegate }
   }
 
   /**
@@ -33,8 +33,8 @@ abstract class FileUploadDirectives extends FileAndResourceDirectives {
    * if there are multiple file parts with the same name, the first one will be used and the subsequent
    * ones ignored.
    */
-  def fileUpload(fieldName: String, inner: BiFunction[FileInfo, Source[ByteString, Any], Route]): Route = ScalaRoute {
-    D.fileUpload(fieldName) { case (info, src) ⇒ inner.apply(info, src.asJava).toScala }
+  def fileUpload(fieldName: String, inner: BiFunction[FileInfo, Source[ByteString, Any], Route]): Route = RouteAdapter {
+    D.fileUpload(fieldName) { case (info, src) ⇒ inner.apply(info, src.asJava).delegate }
   }
 }
 

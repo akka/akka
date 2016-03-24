@@ -75,8 +75,11 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
     }
 
   val allowMissing: Map[Class[_], Set[String]] = Map(
-    scalaDirectivesClazz -> Set(),
-    javaDirectivesClazz -> Set())
+    scalaDirectivesClazz -> Set( // none so far
+    ),
+    javaDirectivesClazz -> Set(
+      "as",
+      "authenticateBasicPF", "authenticateBasicPFAsync"))
 
   def assertHasMethod(c: Class[_], name: String): Unit = {
     // include class name to get better error message

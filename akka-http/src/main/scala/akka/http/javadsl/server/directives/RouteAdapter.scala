@@ -9,34 +9,40 @@ import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.HttpResponse
 import akka.http.javadsl.server.JavaScalaTypeEquivalence._
 import akka.http.javadsl.server.Route
-import akka.http.javadsl.server.directives.ScalaRoute
 import akka.http.scaladsl
 import akka.http.scaladsl.server.RouteConcatenation._
-import akka.stream.Materializer
+import akka.stream.{ javadsl, Materializer }
 import akka.stream.scaladsl.Flow
 
 /** INTERNAL API */
-// TODO rename
-final case class ScalaRoute(toScala: akka.http.scaladsl.server.Route) extends Route {
-  import ScalaRoute._
+final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends Route {
+  import RouteAdapter._
 
-  override def flow(system: ActorSystem, materializer: Materializer) = scalaFlow(system, materializer).asJava
+  override def flow(system: ActorSystem, materializer: Materializer): javadsl.Flow[HttpRequest, HttpResponse, NotUsed] =
+    scalaFlow(system, materializer).asJava
 
   private def scalaFlow(system: ActorSystem, materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed] = {
     implicit val s = system
     implicit val m = materializer
-    scaladsl.server.Route.handlerFlow(toScala)
+    scaladsl.server.Route.handlerFlow(delegate)
   }
 
-  override def orElse(alternative: Route): Route = alternative match {
-    case ScalaRoute(altRoute) ⇒
-      ScalaRoute(toScala ~ altRoute)
-  }
+  override def orElse(alternative: Route): Route =
+    alternative match {
+      case adapt: RouteAdapter ⇒
+        RouteAdapter(delegate ~ adapt.delegate)
+    }
 
   override def seal(system: ActorSystem, materializer: Materializer): Route = {
     implicit val s = system
     implicit val m = materializer
 
-    ScalaRoute(scaladsl.server.Route.seal(toScala))
+    RouteAdapter(scaladsl.server.Route.seal(delegate))
   }
+
+  override def toString = s"akka.http.javadsl.server.Route($delegate)"
+}
+
+object RouteAdapter {
+  def apply(delegate: akka.http.scaladsl.server.Route) = new RouteAdapter(delegate)
 }

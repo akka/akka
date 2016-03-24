@@ -62,7 +62,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * using the default content type resolver.
    * If the resource cannot be found or read the Route rejects the request.
    */
-  def getFromResource(path: String): Route = ScalaRoute {
+  def getFromResource(path: String): Route = RouteAdapter {
     D.getFromResource(path)
   }
 
@@ -71,7 +71,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * using the given content type resolver.
    * If the resource cannot be found or read the Route rejects the request.
    */
-  def getFromResource(path: String, resolver: ContentTypeResolver): Route = ScalaRoute {
+  def getFromResource(path: String, resolver: ContentTypeResolver): Route = RouteAdapter {
     D.getFromResource(path)(resolver)
   }
 
@@ -80,7 +80,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * with the given content type.
    * If the resource cannot be found or read the Route rejects the request.
    */
-  def getFromResource(path: String, contentType: ContentType): Route = ScalaRoute {
+  def getFromResource(path: String, contentType: ContentType): Route = RouteAdapter {
     D.getFromResource(path, contentType)
   }
 
@@ -89,7 +89,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * with the given content type.
    * If the resource cannot be found or read the Route rejects the request.
    */
-  def getFromResource(path: String, contentType: ContentType, classLoader: ClassLoader): Route = ScalaRoute {
+  def getFromResource(path: String, contentType: ContentType, classLoader: ClassLoader): Route = RouteAdapter {
     D.getFromResource(path, contentType, classLoader)
   }
 
@@ -100,7 +100,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    *
    * If the requested resource is itself a directory or cannot be found or read the Route rejects the request.
    */
-  def getFromResourceDirectory(directoryName: String): Route = ScalaRoute {
+  def getFromResourceDirectory(directoryName: String): Route = RouteAdapter {
     D.getFromResourceDirectory(directoryName)
   }
 
@@ -111,7 +111,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    *
    * If the requested resource is itself a directory or cannot be found or read the Route rejects the request.
    */
-  def getFromResourceDirectory(directoryName: String, classLoader: ClassLoader): Route = ScalaRoute {
+  def getFromResourceDirectory(directoryName: String, classLoader: ClassLoader): Route = RouteAdapter {
     D.getFromResourceDirectory(directoryName, classLoader)
   }
 
@@ -122,7 +122,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    *
    * If the requested resource is itself a directory or cannot be found or read the Route rejects the request.
    */
-  def getFromResourceDirectory(directoryName: String, resolver: ContentTypeResolver): Route = ScalaRoute {
+  def getFromResourceDirectory(directoryName: String, resolver: ContentTypeResolver): Route = RouteAdapter {
     D.getFromResourceDirectory(directoryName)(resolver)
   }
 
@@ -133,7 +133,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    *
    * If the requested resource is itself a directory or cannot be found or read the Route rejects the request.
    */
-  def getFromResourceDirectory(directoryName: String, resolver: ContentTypeResolver, classLoader: ClassLoader): Route = ScalaRoute {
+  def getFromResourceDirectory(directoryName: String, resolver: ContentTypeResolver, classLoader: ClassLoader): Route = RouteAdapter {
     D.getFromResourceDirectory(directoryName, classLoader)(resolver)
   }
 
@@ -141,7 +141,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * Completes GET requests with the content of the given file, resolving the content type using the default resolver.
    * If the file cannot be found or read the request is rejected.
    */
-  def getFromFile(file: File): Route = ScalaRoute {
+  def getFromFile(file: File): Route = RouteAdapter {
     D.getFromFile(file)
   }
 
@@ -149,7 +149,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * Completes GET requests with the content of the given file, resolving the content type using the given resolver.
    * If the file cannot be found or read the request is rejected.
    */
-  def getFromFile(file: File, resolver: ContentTypeResolver): Route = ScalaRoute {
+  def getFromFile(file: File, resolver: ContentTypeResolver): Route = RouteAdapter {
     D.getFromFile(file)(resolver)
   }
 
@@ -157,7 +157,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * Completes GET requests with the content of the given file, using the content type.
    * If the file cannot be found or read the request is rejected.
    */
-  def getFromFile(file: File, contentType: ContentType): Route = ScalaRoute {
+  def getFromFile(file: File, contentType: ContentType): Route = RouteAdapter {
     D.getFromFile(file, contentType)
   }
 
@@ -165,7 +165,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * Completes GET requests with the content of the given file, resolving the content type using the default resolver.
    * If the file cannot be found or read the request is rejected.
    */
-  def getFromFile(file: String): Route = ScalaRoute {
+  def getFromFile(file: String): Route = RouteAdapter {
     D.getFromFile(file)
   }
 
@@ -173,7 +173,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * Completes GET requests with the content of the given file, resolving the content type using the given resolver.
    * If the file cannot be found or read the request is rejected.
    */
-  def getFromFile(file: String, resolver: ContentTypeResolver): Route = ScalaRoute {
+  def getFromFile(file: String, resolver: ContentTypeResolver): Route = RouteAdapter {
     D.getFromFile(file)(resolver)
   }
 
@@ -181,7 +181,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * Completes GET requests with the content of a file underneath the given directory, using the default content-type resolver.
    * If the file cannot be read the Route rejects the request.
    */
-  def getFromDirectory(directoryPath: String): Route = ScalaRoute {
+  def getFromDirectory(directoryPath: String): Route = RouteAdapter {
     D.getFromDirectory(directoryPath)
   }
 
@@ -189,21 +189,21 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * Completes GET requests with the content of a file underneath the given directory, using the given content-type resolver.
    * If the file cannot be read the Route rejects the request.
    */
-  def getFromDirectory(directoryPath: String, resolver: ContentTypeResolver): Route = ScalaRoute {
+  def getFromDirectory(directoryPath: String, resolver: ContentTypeResolver): Route = RouteAdapter {
     D.getFromDirectory(directoryPath)(resolver)
   }
 
   /**
    * Same as `getFromBrowseableDirectories` with only one directory.
    */
-  def getFromBrowseableDirectory(directory: String, renderer: DirectoryRenderer, resolver: ContentTypeResolver): Route = ScalaRoute {
+  def getFromBrowseableDirectory(directory: String, renderer: DirectoryRenderer, resolver: ContentTypeResolver): Route = RouteAdapter {
     D.getFromBrowseableDirectory(directory)(renderer, resolver)
   }
 
   /**
    * Same as `getFromBrowseableDirectories` with only one directory.
    */
-  def getFromBrowseableDirectory(directory: String, renderer: DirectoryRenderer): Route = ScalaRoute {
+  def getFromBrowseableDirectory(directory: String, renderer: DirectoryRenderer): Route = RouteAdapter {
     D.getFromBrowseableDirectory(directory)(renderer = renderer,
       resolver = implicitly[scaladsl.server.directives.ContentTypeResolver])
   }
@@ -211,7 +211,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
   /**
    * Same as `getFromBrowseableDirectories` with only one directory.
    */
-  def getFromBrowseableDirectory(directory: String, resolver: ContentTypeResolver): Route = ScalaRoute {
+  def getFromBrowseableDirectory(directory: String, resolver: ContentTypeResolver): Route = RouteAdapter {
     D.getFromBrowseableDirectory(directory)(resolver = resolver,
       renderer = implicitly[scaladsl.server.directives.FileAndResourceDirectives.DirectoryRenderer])
   }
@@ -219,7 +219,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
   /**
    * Same as `getFromBrowseableDirectories` with only one directory.
    */
-  def getFromBrowseableDirectory(directory: String): Route = ScalaRoute {
+  def getFromBrowseableDirectory(directory: String): Route = RouteAdapter {
     D.getFromBrowseableDirectory(directory)
   }
 
@@ -227,7 +227,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * Serves the content of the given directories as a file system browser, i.e. files are sent and directories
    * served as browseable listings.
    */
-  def getFromBrowseableDirectories(directories: java.lang.Iterable[String], renderer: DirectoryRenderer, resolver: ContentTypeResolver): Route = ScalaRoute {
+  def getFromBrowseableDirectories(directories: java.lang.Iterable[String], renderer: DirectoryRenderer, resolver: ContentTypeResolver): Route = RouteAdapter {
     D.getFromBrowseableDirectories(directories.asScala.toSeq: _*)(renderer, resolver)
   }
 
@@ -235,7 +235,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * Serves the content of the given directories as a file system browser, i.e. files are sent and directories
    * served as browseable listings.
    */
-  def getFromBrowseableDirectories(directories: java.lang.Iterable[String], renderer: DirectoryRenderer): Route = ScalaRoute {
+  def getFromBrowseableDirectories(directories: java.lang.Iterable[String], renderer: DirectoryRenderer): Route = RouteAdapter {
     D.getFromBrowseableDirectories(directories.asScala.toSeq: _*)(renderer = renderer,
       resolver = implicitly[scaladsl.server.directives.ContentTypeResolver])
   }
@@ -244,7 +244,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * Serves the content of the given directories as a file system browser, i.e. files are sent and directories
    * served as browseable listings.
    */
-  def getFromBrowseableDirectories(directories: java.lang.Iterable[String], resolver: ContentTypeResolver): Route = ScalaRoute {
+  def getFromBrowseableDirectories(directories: java.lang.Iterable[String], resolver: ContentTypeResolver): Route = RouteAdapter {
     D.getFromBrowseableDirectories(directories.asScala.toSeq: _*)(resolver = resolver,
       renderer = implicitly[scaladsl.server.directives.FileAndResourceDirectives.DirectoryRenderer])
   }
@@ -253,7 +253,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * Serves the content of the given directories as a file system browser, i.e. files are sent and directories
    * served as browseable listings.
    */
-  @varargs def getFromBrowseableDirectories(directories: String*): Route = ScalaRoute {
+  @varargs def getFromBrowseableDirectories(directories: String*): Route = RouteAdapter {
     D.getFromBrowseableDirectories(directories: _*)
   }
 }

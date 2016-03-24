@@ -82,7 +82,7 @@ trait FileAndResourceDirectives {
    * Completes GET requests with the content of the given resource.
    * If the resource is a directory or cannot be found or read the Route rejects the request.
    */
-  def getFromResource(resourceName: String, contentType: ContentType, classLoader: ClassLoader = defaultClassLoader): Route =
+  def getFromResource(resourceName: String, contentType: ContentType, classLoader: ClassLoader = _defaultClassLoader): Route =
     if (!resourceName.endsWith("/"))
       get {
         Option(classLoader.getResource(resourceName)) flatMap ResourceFile.apply match {
@@ -166,7 +166,7 @@ trait FileAndResourceDirectives {
    * "resource directory".
    * If the requested resource is itself a directory or cannot be found or read the Route rejects the request.
    */
-  def getFromResourceDirectory(directoryName: String, classLoader: ClassLoader = defaultClassLoader)(implicit resolver: ContentTypeResolver): Route = {
+  def getFromResourceDirectory(directoryName: String, classLoader: ClassLoader = _defaultClassLoader)(implicit resolver: ContentTypeResolver): Route = {
     val base = if (directoryName.isEmpty) "" else withTrailingSlash(directoryName)
 
     extractUnmatchedPath { path ⇒
@@ -179,7 +179,7 @@ trait FileAndResourceDirectives {
     }
   }
 
-  protected[http] def defaultClassLoader: ClassLoader = classOf[ActorSystem].getClassLoader
+  protected[http] def _defaultClassLoader: ClassLoader = classOf[ActorSystem].getClassLoader
 }
 
 object FileAndResourceDirectives extends FileAndResourceDirectives {

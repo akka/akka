@@ -22,31 +22,31 @@ abstract class RespondWithDirectives extends RangeDirectives {
   /**
    * Unconditionally adds the given response header to all HTTP responses of its inner Route.
    */
-  def respondWithHeader(responseHeader: HttpHeader, inner: Supplier[Route]): Route = ScalaRoute {
-    D.respondWithHeader(responseHeader) { inner.get.toScala }
+  def respondWithHeader(responseHeader: HttpHeader, inner: Supplier[Route]): Route = RouteAdapter {
+    D.respondWithHeader(responseHeader) { inner.get.delegate }
   }
 
   /**
    * Adds the given response header to all HTTP responses of its inner Route,
    * if the response from the inner Route doesn't already contain a header with the same name.
    */
-  def respondWithDefaultHeader(responseHeader: HttpHeader, inner: Supplier[Route]): Route = ScalaRoute {
-    D.respondWithDefaultHeader(responseHeader) { inner.get.toScala }
+  def respondWithDefaultHeader(responseHeader: HttpHeader, inner: Supplier[Route]): Route = RouteAdapter {
+    D.respondWithDefaultHeader(responseHeader) { inner.get.delegate }
   }
 
   /**
    * Unconditionally adds the given response headers to all HTTP responses of its inner Route.
    */
-  def respondWithHeaders(responseHeaders: JIterable[HttpHeader], inner: Supplier[Route]): Route = ScalaRoute {
-    D.respondWithHeaders(responseHeaders.asScala.toVector) { inner.get.toScala }
+  def respondWithHeaders(responseHeaders: JIterable[HttpHeader], inner: Supplier[Route]): Route = RouteAdapter {
+    D.respondWithHeaders(responseHeaders.asScala.toVector) { inner.get.delegate }
   }
 
   /**
    * Adds the given response headers to all HTTP responses of its inner Route,
    * if a header already exists it is not added again.
    */
-  def respondWithDefaultHeaders(responseHeaders: JIterable[HttpHeader], inner: Supplier[Route]): Route = ScalaRoute {
-    D.respondWithDefaultHeaders(responseHeaders.asScala.toVector) { inner.get.toScala }
+  def respondWithDefaultHeaders(responseHeaders: JIterable[HttpHeader], inner: Supplier[Route]): Route = RouteAdapter {
+    D.respondWithDefaultHeaders(responseHeaders.asScala.toVector) { inner.get.delegate }
   }
 
 }

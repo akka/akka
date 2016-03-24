@@ -23,7 +23,7 @@ abstract class RangeDirectives extends PathDirectives {
    *
    * For more information, see: https://tools.ietf.org/html/rfc7233
    */
-  def withRangeSupport(inner: Supplier[Route]): Route = ScalaRoute {
-    D.withRangeSupport { inner.get.toScala }
+  def withRangeSupport(inner: Supplier[Route]): Route = RouteAdapter {
+    D.withRangeSupport { inner.get.delegate }
   }
 }

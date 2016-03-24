@@ -13,34 +13,34 @@ import akka.http.javadsl.server.Route
 import akka.http.scaladsl.server.directives.{ MethodDirectives ⇒ D }
 
 abstract class MethodDirectives extends MarshallingDirectives {
-  def delete(inner: function.Supplier[Route]): Route = ScalaRoute(
-    D.delete { inner.get.toScala })
+  def delete(inner: function.Supplier[Route]): Route = RouteAdapter(
+    D.delete { inner.get.delegate })
 
-  def get(inner: function.Supplier[Route]): Route = ScalaRoute(
-    D.get { inner.get.toScala })
+  def get(inner: function.Supplier[Route]): Route = RouteAdapter(
+    D.get { inner.get.delegate })
 
-  def head(inner: function.Supplier[Route]): Route = ScalaRoute(
-    D.head { inner.get.toScala })
+  def head(inner: function.Supplier[Route]): Route = RouteAdapter(
+    D.head { inner.get.delegate })
 
-  def options(inner: function.Supplier[Route]): Route = ScalaRoute(
-    D.options { inner.get.toScala })
+  def options(inner: function.Supplier[Route]): Route = RouteAdapter(
+    D.options { inner.get.delegate })
 
-  def patch(inner: function.Supplier[Route]): Route = ScalaRoute(
-    D.patch { inner.get.toScala })
+  def patch(inner: function.Supplier[Route]): Route = RouteAdapter(
+    D.patch { inner.get.delegate })
 
-  def post(inner: function.Supplier[Route]): Route = ScalaRoute(
-    D.post { inner.get.toScala })
+  def post(inner: function.Supplier[Route]): Route = RouteAdapter(
+    D.post { inner.get.delegate })
 
-  def put(inner: function.Supplier[Route]): Route = ScalaRoute(
-    D.put { inner.get.toScala })
+  def put(inner: function.Supplier[Route]): Route = RouteAdapter(
+    D.put { inner.get.delegate })
 
-  def extractMethod(inner: function.Function[HttpMethod, Route]) = ScalaRoute(
+  def extractMethod(inner: function.Function[HttpMethod, Route]) = RouteAdapter(
     D.extractMethod { m ⇒
-      inner.apply(m).toScala
+      inner.apply(m).delegate
     })
 
-  def method(method: HttpMethod, inner: function.Supplier[Route]): Route = ScalaRoute(
+  def method(method: HttpMethod, inner: function.Supplier[Route]): Route = RouteAdapter(
     D.method(method) {
-      inner.get.toScala
+      inner.get.delegate
     })
 }

@@ -3,6 +3,8 @@
  */
 package akka.http.javadsl.server.directives
 
+import akka.http.impl.util.JavaMapping
+
 import scala.annotation.varargs
 import scala.collection.JavaConverters._
 
@@ -13,13 +15,13 @@ import akka.http.javadsl.model.RequestEntity
 import akka.http.javadsl.model.StatusCode
 import akka.http.javadsl.model.Uri
 import akka.http.javadsl.server.JavaScalaTypeEquivalence._
-import akka.http.javadsl.server.Marshaller
-import akka.http.javadsl.server.Route
+import akka.http.javadsl.server.{ Rejection, Marshaller, Route }
 import akka.http.scaladsl
 import akka.http.scaladsl.marshalling.Marshaller._
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model.StatusCodes.Redirection
-import akka.http.scaladsl.server.Rejection
+import JavaMapping.Implicits._
+import akka.http.javadsl.RoutingJavaMapping._
 
 import akka.http.scaladsl.server.directives.{ RouteDirectives ⇒ D }
 
@@ -28,119 +30,129 @@ abstract class RouteDirectives extends RespondWithDirectives {
    * Java-specific call added so you can chain together multiple alternate routes using comma,
    * rather than having to explicitly call route1.orElse(route2).orElse(route3).
    */
-  @varargs def route(alternatives: Route*): Route = ScalaRoute {
+  @varargs def route(alternatives: Route*): Route = RouteAdapter {
     import akka.http.scaladsl.server.Directives._
 
-    alternatives.map(_.toScala).reduce(_ ~ _)
+    alternatives.map(_.delegate).reduce(_ ~ _)
   }
 
   /**
    * Rejects the request with the given rejections, or with an empty set of rejections if no rejections are given.
    */
-  @varargs def reject(rejections: Rejection*): Route = ScalaRoute(
-    D.reject(rejections: _*))
+  @varargs def reject(rejection: Rejection, rejections: Rejection*): Route = RouteAdapter {
+    D.reject(rejections.map(_.asScala): _*)
+  }
+
+  /**
+   * Rejects the request with an empty rejection (usualy used for "no directive matched").
+   */
+  def reject(): Route = RouteAdapter {
+    D.reject()
+  }
 
   /**
    * Completes the request with redirection response of the given type to the given URI.
+   *
    * @param redirectionType A status code from StatusCodes, which must be a redirection type.
    */
-  def redirect(uri: Uri, redirectionType: StatusCode): Route = ScalaRoute(
+  def redirect(uri: Uri, redirectionType: StatusCode): Route = RouteAdapter {
     redirectionType match {
       case r: Redirection ⇒ D.redirect(uri.asInstanceOf[JavaUri].uri, r)
       case _              ⇒ throw new IllegalArgumentException("Not a valid redirection status code: " + redirectionType)
-    })
+    }
+  }
 
   /**
    * Bubbles the given error up the response chain, where it is dealt with by the closest `handleExceptions`
    * directive and its ExceptionHandler.
    */
-  def failWith(error: Throwable): Route = ScalaRoute(D.failWith(error))
+  def failWith(error: Throwable): Route = RouteAdapter(D.failWith(error))
 
   /**
    * Completes the request using an HTTP 200 OK status code and the given body as UTF-8 entity.
    */
-  def complete(body: String): Route = ScalaRoute(
+  def complete(body: String): Route = RouteAdapter(
     D.complete(body))
 
   /**
    * Completes the request using the given http response.
    */
-  def complete(response: HttpResponse): Route = ScalaRoute(
+  def complete(response: HttpResponse): Route = RouteAdapter(
     D.complete(response: scaladsl.model.HttpResponse))
 
   /**
    * Completes the request using the given status code.
    */
-  def complete(status: StatusCode): Route = ScalaRoute(
+  def complete(status: StatusCode): Route = RouteAdapter(
     D.complete(status: scaladsl.model.StatusCode))
 
   /**
    * Completes the request by marshalling the given value into an http response.
    */
-  def complete[T](value: T, marshaller: Marshaller[T, HttpResponse]) = ScalaRoute {
+  def complete[T](value: T, marshaller: Marshaller[T, HttpResponse]) = RouteAdapter {
     D.complete(ToResponseMarshallable(value)(marshaller.asScala))
   }
 
   /**
    * Completes the request using the given status code and headers, marshalling the given value as response entity.
    */
-  def complete[T](status: StatusCode, headers: java.lang.Iterable[HttpHeader], value: T, marshaller: Marshaller[T, RequestEntity]) = ScalaRoute {
+  def complete[T](status: StatusCode, headers: java.lang.Iterable[HttpHeader], value: T, marshaller: Marshaller[T, RequestEntity]) = RouteAdapter {
     D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(status, headers.asScala.toVector)(marshaller.asScala)))
   }
 
   /**
    * Completes the request using the given status code, headers, and response entity.
    */
-  def complete(status: StatusCode, headers: java.lang.Iterable[HttpHeader], entity: RequestEntity) = ScalaRoute {
+  def complete(status: StatusCode, headers: java.lang.Iterable[HttpHeader], entity: RequestEntity) = RouteAdapter {
     D.complete(scaladsl.model.HttpResponse(status = status, entity = entity, headers = headers.asScala.toVector))
   }
 
   /**
    * Completes the request using the given status code, marshalling the given value as response entity.
    */
-  def complete[T](status: StatusCode, value: T, marshaller: Marshaller[T, RequestEntity]) = ScalaRoute {
+  def complete[T](status: StatusCode, value: T, marshaller: Marshaller[T, RequestEntity]) = RouteAdapter {
     D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(status)(marshaller.asScala)))
   }
 
   /**
    * Completes the request using the given status code and response entity.
    */
-  def complete(status: StatusCode, entity: RequestEntity) = ScalaRoute {
+  def complete(status: StatusCode, entity: RequestEntity) = RouteAdapter {
     D.complete(scaladsl.model.HttpResponse(status = status, entity = entity))
   }
 
   /**
    * Completes the request using the given status code and the given body as UTF-8.
    */
-  def complete(status: StatusCode, entity: String) = ScalaRoute {
+  def complete(status: StatusCode, entity: String) = RouteAdapter {
     D.complete(scaladsl.model.HttpResponse(status = status, entity = entity))
   }
 
   /**
    * Completes the request as HTTP 200 OK, adding the given headers, and marshalling the given value as response entity.
    */
-  def complete[T](headers: java.lang.Iterable[HttpHeader], value: T, marshaller: Marshaller[T, RequestEntity]) = ScalaRoute {
+  def complete[T](headers: java.lang.Iterable[HttpHeader], value: T, marshaller: Marshaller[T, RequestEntity]) = RouteAdapter {
     D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(headers = headers.asScala.toVector)(marshaller.asScala)))
   }
 
   /**
    * Completes the request as HTTP 200 OK, adding the given headers and response entity.
    */
-  def complete(headers: java.lang.Iterable[HttpHeader], entity: RequestEntity) = ScalaRoute {
+  def complete(headers: java.lang.Iterable[HttpHeader], entity: RequestEntity) = RouteAdapter {
     D.complete(scaladsl.model.HttpResponse(headers = headers.asScala.toVector, entity = entity))
   }
 
   /**
    * Completes the request as HTTP 200 OK, marshalling the given value as response entity.
    */
-  def completeOK[T](value: T, marshaller: Marshaller[T, RequestEntity]) = ScalaRoute {
+  def completeOK[T](value: T, marshaller: Marshaller[T, RequestEntity]) = RouteAdapter {
     D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller()(marshaller.asScala)))
   }
 
   /**
    * Completes the request as HTTP 200 OK with the given value as response entity.
    */
-  def complete(entity: RequestEntity) = ScalaRoute {
+  def complete(entity: RequestEntity) = RouteAdapter {
     D.complete(scaladsl.model.HttpResponse(entity = entity))
   }
 }

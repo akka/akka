@@ -23,9 +23,9 @@ abstract class WebSocketDirectives extends SecurityDirectives {
   /**
    * Extract the [[UpgradeToWebSocket]] header if existent. Rejects with an [[ExpectedWebSocketRequestRejection]], otherwise.
    */
-  def extractUpgradeToWebSocket(inner: JFunction[UpgradeToWebSocket, Route]): Route = ScalaRoute {
+  def extractUpgradeToWebSocket(inner: JFunction[UpgradeToWebSocket, Route]): Route = RouteAdapter {
     D.extractUpgradeToWebSocket { header ⇒
-      inner.apply(header).toScala
+      inner.apply(header).delegate
     }
   }
 
@@ -33,9 +33,9 @@ abstract class WebSocketDirectives extends SecurityDirectives {
    * Extract the list of WebSocket subprotocols as offered by the client in the [[Sec-WebSocket-Protocol]] header if
    * this is a WebSocket request. Rejects with an [[ExpectedWebSocketRequestRejection]], otherwise.
    */
-  def extractOfferedWsProtocols(inner: JFunction[JList[String], Route]): Route = ScalaRoute {
+  def extractOfferedWsProtocols(inner: JFunction[JList[String], Route]): Route = RouteAdapter {
     D.extractOfferedWsProtocols { list ⇒
-      inner.apply(list.asJava).toScala
+      inner.apply(list.asJava).delegate
     }
   }
 
@@ -43,7 +43,7 @@ abstract class WebSocketDirectives extends SecurityDirectives {
    * Handles WebSocket requests with the given handler and rejects other requests with an
    * [[ExpectedWebSocketRequestRejection]].
    */
-  def handleWebSocketMessages[T](handler: Flow[Message, Message, T]): Route = ScalaRoute {
+  def handleWebSocketMessages[T](handler: Flow[Message, Message, T]): Route = RouteAdapter {
     D.handleWebSocketMessages(handler)
   }
 
@@ -51,7 +51,7 @@ abstract class WebSocketDirectives extends SecurityDirectives {
    * Handles WebSocket requests with the given handler if the given subprotocol is offered in the request and
    * rejects other requests with an [[ExpectedWebSocketRequestRejection]] or an [[UnsupportedWebSocketSubprotocolRejection]].
    */
-  def handleWebSocketMessagesForProtocol(handler: Flow[Message, Message, Any], subprotocol: String): Route = ScalaRoute {
+  def handleWebSocketMessagesForProtocol(handler: Flow[Message, Message, Any], subprotocol: String): Route = RouteAdapter {
     D.handleWebSocketMessagesForProtocol(handler, subprotocol)
   }
 
@@ -66,7 +66,7 @@ abstract class WebSocketDirectives extends SecurityDirectives {
    *
    * To support several subprotocols you may chain several `handleWebSocketMessage` Routes.
    */
-  def handleWebSocketMessagesForOptionalProtocol(handler: Flow[Message, Message, Any], subprotocol: Optional[String]): Route = ScalaRoute {
+  def handleWebSocketMessagesForOptionalProtocol(handler: Flow[Message, Message, Any], subprotocol: Optional[String]): Route = RouteAdapter {
     D.handleWebSocketMessagesForOptionalProtocol(handler, subprotocol.asScala)
   }
 

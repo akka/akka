@@ -10,8 +10,6 @@ import akka.http.javadsl.model.HttpResponse
 import akka.http.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import akka.http.scaladsl.server.Directives._
-import scala.annotation.varargs
 import akka.NotUsed
 
 /**
@@ -36,7 +34,7 @@ import akka.NotUsed
  */
 trait Route {
   /** INTERNAL API */
-  private[http] def toScala: scaladsl.server.Route
+  private[http] def delegate: scaladsl.server.Route
 
   def flow(system: ActorSystem, materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed]
   def seal(system: ActorSystem, materializer: Materializer): Route

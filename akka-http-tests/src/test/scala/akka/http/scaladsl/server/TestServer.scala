@@ -9,7 +9,8 @@ import akka.http.scaladsl.model.{ StatusCodes, HttpResponse }
 import akka.http.scaladsl.server.directives.Credentials
 import com.typesafe.config.{ ConfigFactory, Config }
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream._
+import akka.stream.scaladsl._
 import akka.http.scaladsl.Http
 import scala.concurrent.duration._
 

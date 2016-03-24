@@ -14,14 +14,14 @@ abstract class SchemeDirectives extends RouteDirectives {
   /**
    * Extracts the Uri scheme from the request.
    */
-  def extractScheme(inner: JFunction[String, Route]): Route = ScalaRoute {
-    D.extractScheme { s ⇒ inner.apply(s).toScala }
+  def extractScheme(inner: JFunction[String, Route]): Route = RouteAdapter {
+    D.extractScheme { s ⇒ inner.apply(s).delegate }
   }
 
   /**
    * Rejects all requests whose Uri scheme does not match the given one.
    */
-  def scheme(name: String, inner: Supplier[Route]): Route = ScalaRoute {
-    D.scheme(name) { inner.get().toScala }
+  def scheme(name: String, inner: Supplier[Route]): Route = RouteAdapter {
+    D.scheme(name) { inner.get().delegate }
   }
 }

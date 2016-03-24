@@ -36,7 +36,7 @@ trait HttpServiceBase {
     implicit val m = materializer
 
     import system.dispatcher
-    val r: server.Route = route.toScala
+    val r: server.Route = route.delegate
     Http(system).bind(interface, port).toMat(Sink.foreach(_.handleWith(r)))(Keep.left).run()(materializer).toJava
   }
 }

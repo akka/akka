@@ -16,7 +16,7 @@ object ExceptionHandler {
   def newBuilder: ExceptionHandlerBuilder = new ExceptionHandlerBuilder()
 
   /** INTERNAL API */
-  def of(pf: PartialFunction[Throwable, Route]) = new ExceptionHandler(server.ExceptionHandler(pf.andThen(_.toScala)))
+  def of(pf: PartialFunction[Throwable, Route]) = new ExceptionHandler(server.ExceptionHandler(pf.andThen(_.delegate)))
 }
 
 /**
