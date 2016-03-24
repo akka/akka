@@ -77,7 +77,7 @@ Picking the right serialization format
 
 Picking the serialization format is a very important decision you will have to make while building your application.
 It affects which kind of evolutions are simple (or hard) to do, how much work is required to add a new datatype, and,
-last but not least, serialization performanceion.
+last but not least, serialization performance.
 
 If you find yourself realising you have picked "the wrong" serialization format, it is always possible to change
 the format used for storing new events, however you would have to keep the old deserialization code in order to
