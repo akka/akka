@@ -1220,10 +1220,16 @@ private[stream] final class Reduce[T](f: (T, T) ⇒ T) extends SimpleLinearGraph
 /**
  * INTERNAL API
  */
-private[stream] final class RecoverWith[T, M](pf: PartialFunction[Throwable, Graph[SourceShape[T], M]]) extends SimpleLinearGraphStage[T] {
+private[stream] object RecoverWith {
+  val InfiniteRetries = -1
+}
+
+private[stream] final class RecoverWith[T, M](maximumRetries: Int, pf: PartialFunction[Throwable, Graph[SourceShape[T], M]]) extends SimpleLinearGraphStage[T] {
   override def initialAttributes = DefaultAttributes.recoverWith
 
   override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
+    var attempt = 0
+
     setHandler(in, new InHandler {
       override def onPush(): Unit = push(out, grab(in))
       override def onUpstreamFailure(ex: Throwable) = onFailure(ex)
@@ -1233,7 +1239,13 @@ private[stream] final class RecoverWith[T, M](pf: PartialFunction[Throwable, Gra
       override def onPull(): Unit = pull(in)
     })
 
-    def onFailure(ex: Throwable) = if (pf.isDefinedAt(ex)) switchTo(pf(ex)) else failStage(ex)
+    def onFailure(ex: Throwable) =
+      if ((maximumRetries == RecoverWith.InfiniteRetries || attempt < maximumRetries) && pf.isDefinedAt(ex)) {
+        switchTo(pf(ex))
+        attempt += 1
+      }
+      else
+        failStage(ex)
 
     def switchTo(source: Graph[SourceShape[T], M]): Unit = {
       val sinkIn = new SubSinkInlet[T]("RecoverWithSink")

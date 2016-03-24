@@ -818,6 +818,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * '''Cancels when''' downstream cancels
    */
+  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recover[T >: Out](pf: PartialFunction[Throwable, T]): javadsl.Source[T, Mat] =
     new Source(delegate.recover(pf))
 
@@ -842,6 +843,28 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
   def recoverWith[T >: Out](pf: PartialFunction[Throwable, _ <: Graph[SourceShape[T], NotUsed]]): Source[T, Mat @uncheckedVariance] =
     new Source(delegate.recoverWith(pf))
 
+
+  /**
+    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
+    * a failure has been recovered up to `attempts` number of times so that each time there is a failure
+    * it is fed into the `pf` and a new Source may be materialized. Note that if you pass in 0, this won't
+    * attempt to recover at all. Passing in a negative number will behave exactly the same as  `recoverWith`.
+    *
+    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+    *
+    * '''Emits when''' element is available from the upstream or upstream is failed and element is available
+    * from alternative Source
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+    *
+    * '''Cancels when''' downstream cancels
+    *
+    */
+  def recoverWithRetries[T >: Out](attempts: Int, pf: PartialFunction[Throwable, _ <: Graph[SourceShape[T], NotUsed]]): Source[T, Mat @uncheckedVariance]  =
+    new Source(delegate.recoverWithRetries(attempts, pf))
   /**
    * Transform each input element into an `Iterable` of output elements that is
    * then flattened into the output stream.

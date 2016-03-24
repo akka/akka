@@ -53,7 +53,7 @@ class FlowRecoverWithSpec extends AkkaSpec {
         .expectError(ex)
     }
 
-    "be able to recover with th same unmaterialized source if configured" in assertAllStagesStopped {
+    "be able to recover with the same unmaterialized source if configured" in assertAllStagesStopped {
       val src = Source(1 to 3).map { a ⇒ if (a == 3) throw ex else a }
       src.recoverWith { case t: Throwable ⇒ src }
         .runWith(TestSink.probe[Int])
@@ -99,7 +99,7 @@ class FlowRecoverWithSpec extends AkkaSpec {
         .expectComplete()
     }
 
-    "terminate with exception if altrnative source failed" in assertAllStagesStopped {
+    "terminate with exception if partial function fails to match after an alternative source failure" in assertAllStagesStopped {
       Source(1 to 3).map { a ⇒ if (a == 3) throw new IndexOutOfBoundsException() else a }
         .recoverWith {
           case t: IndexOutOfBoundsException ⇒
@@ -111,6 +111,24 @@ class FlowRecoverWithSpec extends AkkaSpec {
         .expectNextN(List(11))
         .request(1)
         .expectError(ex)
+    }
+
+    "terminate with exception after set number of retries" in assertAllStagesStopped {
+      Source(1 to 3).map { a ⇒ if (a == 3) throw new IndexOutOfBoundsException() else a }
+      .recoverWithRetries(3, {
+        case t: Throwable ⇒
+          Source(List(11, 22)).concat(Source.failed(ex))
+      }).runWith(TestSink.probe[Int])
+      .request(2)
+      .expectNextN(List(1, 2))
+      .request(2)
+      .expectNextN(List(11, 22))
+      .request(2)
+      .expectNextN(List(11, 22))
+      .request(2)
+      .expectNextN(List(11, 22))
+      .request(1)
+      .expectError(ex)
     }
   }
 }

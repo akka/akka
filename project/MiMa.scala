@@ -738,8 +738,11 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.engine.client.PoolGateway$Running"),
         ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.engine.client.PoolGateway$IsShutdown"),
         ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.engine.client.PoolGateway$NewIncarnation"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.engine.client.PoolGateway$State")
-      )
+        ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.engine.client.PoolGateway$State"),
+
+        // #20123
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.recoverWithRetries")
+    )
     )
   }
 }
