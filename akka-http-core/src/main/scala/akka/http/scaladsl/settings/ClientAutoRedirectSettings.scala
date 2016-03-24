@@ -44,11 +44,12 @@ object ClientAutoRedirectSettings extends SettingsCompanion[ClientAutoRedirectSe
     }
 
     def apply(strings: immutable.Seq[String]): HeadersForwardMode = {
-      strings match {
+      val res = strings.toList match {
         case Nil      ⇒ Zero
         case "*" :: _ ⇒ All
         case s        ⇒ Only(s)
       }
+      res
     }
   }
 

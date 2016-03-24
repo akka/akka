@@ -5,6 +5,7 @@
 package akka.http.impl.engine.client
 
 import akka.http.impl.engine.client.RedirectSupportStage.{InfiniteRedirectLoopException, RedirectMapper}
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ClientAutoRedirectSettings
@@ -20,6 +21,7 @@ import scala.util.control.NoStackTrace
 
 object RedirectSupportStage {
   type RedirectMapper = (ClientAutoRedirectSettings, HttpRequest, HttpResponse) => Option[HttpRequest]
+
   case object InfiniteRedirectLoopException
     extends RuntimeException("Infinite redirect loop detected, breaking.")
       with NoStackTrace
@@ -37,28 +39,35 @@ object RedirectSupportStage {
 
   val defaultRedirectMapper: RedirectMapper =
     (s, req, resp) => {
-      inferMethod(req, resp).flatMap { method =>
-        resp.headers.find(_.is("location")).flatMap(location => {
-          val item = if (sameOrigin(req.uri, Uri(location.value))) s.sameOrigin else s.crossOrigin
-          if (item.getAllow) {
-            val headers = item.getForwardHeaders match {
-              case All => req.headers
-              case Zero => Nil
-              case Only(hs) => req.headers.filter(hs.contains)
+      if (resp.status.isRedirection) {
+        inferMethod(req, resp).flatMap { method =>
+          resp.headers.find(_.is("location")).flatMap(location => {
+            val item = if (sameOrigin(req.uri, Uri(location.value))) s.sameOrigin else s.crossOrigin
+            if (item.getAllow) {
+              val headers = item.getForwardHeaders match {
+                case All => req.headers
+                case Zero => Nil
+                case Only(hs) => req.headers.filter(h => hs.contains(h.name))
+              }
+              Some(req.withUri(location.value).withHeaders(headers).withMethod(method))
+            } else {
+              None
             }
-            Some(req.withUri(location.value).withHeaders(headers).withMethod(method))
-          } else {
-            None
-          }
-        })
+          })
+        }
+      } else {
+        None
       }
     }
+
   def sameOrigin(u1: Uri, u2: Uri): Boolean = {
-    if (u1.isRelative && u2.isRelative) true
+    if (u2.isRelative) true
     else if (u1.isAbsolute && u2.isAbsolute && u1.authority == u2.authority) true
     else false
   }
+
   def apply(settings: ClientAutoRedirectSettings) = BidiFlow.fromGraph(new RedirectSupportStage(settings, defaultRedirectMapper))
+
   def apply(settings: ClientAutoRedirectSettings, redirectMapper: RedirectMapper) = BidiFlow.fromGraph(new RedirectSupportStage(settings, redirectMapper))
 }
 
@@ -100,7 +109,7 @@ class RedirectSupportStage(settings: ClientAutoRedirectSettings, redirectMapper:
         def print(): Unit
       }
 
-      def printy(s: String) = ()//println(s)
+      def printy(s: Any) = println(s)
 
       object OpOutPrinter {
         implicit val RequestOutPrinterReq = new OpOutPrinter[HttpRequest, Outlet[HttpRequest]] {
@@ -140,8 +149,8 @@ class RedirectSupportStage(settings: ClientAutoRedirectSettings, redirectMapper:
       }
 
       var inFlight = Vector.empty[HttpRequest]
-//      var unconsumedResponses = Vector.empty[HttpResponse]
-//      var unconsumedRequests = Vector.empty[HttpRequest]
+      //      var unconsumedResponses = Vector.empty[HttpResponse]
+      //      var unconsumedRequests = Vector.empty[HttpRequest]
       var loopDetector = Map.empty[HttpRequest, List[Uri]]
       var requestsProcessed = 0
 
@@ -233,24 +242,25 @@ class RedirectSupportStage(settings: ClientAutoRedirectSettings, redirectMapper:
         override def onPush(): Unit = {
           printy("responseIn: onPush")
           val response = grab(responseIn)
-          if (response.status.isRedirection) {
-            redirectMapper(settings, inFlight.head, response).foreach { redirect =>
-              printy(loopDetector.toString())
-              val loops = loopDetector(inFlight.head)
-              if (loops.contains(redirect.uri)) {
-                throw InfiniteRedirectLoopException
+          val maybeRedirect = redirectMapper(settings, inFlight.head, response)
+          if (maybeRedirect.isDefined) {
+            val redirect = maybeRedirect.get
+            printy(loopDetector.toString())
+            val loops = loopDetector(inFlight.head)
+            if (loops.contains(redirect.uri)) {
+              throw InfiniteRedirectLoopException
+            } else {
+              loopDetector -= inFlight.head
+              loopDetector += (redirect -> (redirect.uri :: loops))
+              inFlight = inFlight.tail :+ redirect
+              printy(redirect)
+              emit(requestOut, redirect, () => doPull(responseIn))
+              /*if (isAvailable(requestOut)) {
+                doPush(requestOut, redirect)
+                doPull(responseIn)
               } else {
-                loopDetector -= inFlight.head
-                loopDetector += (redirect -> (redirect.uri :: loops))
-                inFlight = inFlight.tail :+ redirect
-                emit(requestOut, redirect, () => doPull(responseIn))
-                /*if (isAvailable(requestOut)) {
-                  doPush(requestOut, redirect)
-                  doPull(responseIn)
-                } else {
-                  unconsumedRequests = unconsumedRequests :+ redirect
-                }*/
-              }
+                unconsumedRequests = unconsumedRequests :+ redirect
+              }*/
             }
           } else {
             requestsProcessed += 1
@@ -271,7 +281,7 @@ class RedirectSupportStage(settings: ClientAutoRedirectSettings, redirectMapper:
           * Called when the input port is finished. After this callback no other callbacks will be called for this port.
           */
         override def onUpstreamFinish(): Unit = {
-//          emitMultiple(responseOut, unconsumedResponses)
+          //          emitMultiple(responseOut, unconsumedResponses)
           printy("responseIn: onUpstreamFinish")
           complete(responseOut)
         }
