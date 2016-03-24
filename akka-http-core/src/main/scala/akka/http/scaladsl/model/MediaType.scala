@@ -425,6 +425,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `text/css`                  = txt("css", "css")
   val `text/csv`                  = txt("csv", "csv")
   val `text/html`                 = txt("html", "htm", "html", "htmls", "htx")
+  val `text/markdown`             = txt("markdown", "md")
   val `text/mcf`                  = txt("mcf", "mcf")
   val `text/plain`                = txt("plain", "conf", "text", "txt", "properties")
   val `text/richtext`             = txt("richtext", "rtf", "rtx")
