@@ -603,7 +603,7 @@ class instead of ``UntypedPersistentActor`` on the sending side.  It takes care 
 have not been confirmed within a configurable timeout.
 
 The state of the sending actor, including which messages have been sent that have not been
-confirmed by the recepient must be persistent so that it can survive a crash of the sending actor
+confirmed by the recipient must be persistent so that it can survive a crash of the sending actor
 or JVM. The ``UntypedPersistentActorWithAtLeastOnceDelivery`` class does not persist anything by itself.
 It is your responsibility to persist the intent that a message is sent and that a confirmation has been
 received.
