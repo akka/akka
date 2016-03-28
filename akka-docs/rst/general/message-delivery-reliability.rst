@@ -319,7 +319,7 @@ Akka Persistence.
 Mailbox with Explicit Acknowledgement
 -------------------------------------
 
-By implementing a custom mailbox type it is possible retry message processing
+By implementing a custom mailbox type it is possible to retry message processing
 at the receiving actor’s end in order to handle temporary failures. This
 pattern is mostly useful in the local communication context where delivery
 guarantees are otherwise sufficient to fulfill the application’s requirements.
