@@ -54,13 +54,12 @@ class RedirectTestSpec extends AkkaSpec {
         HttpResponse(status = StatusCodes.MovedPermanently, headers = List(Location(s"/r${(c % cycleLength) + 1}")))
       }, serverHostName, serverPort)
 
-      val x = Source.fromIterator(() ⇒ Iterator.from(1))
-        .take(cycleLength)
-        .map(id ⇒ HttpRequest(uri = s"/r$id"))
+      val x = Source.single(HttpRequest(uri = s"/r1"))
         .via(Http().outgoingConnection(serverHostName, serverPort))
         .runWith(Sink.head)
 
-      a[RedirectSupportStage.InfiniteRedirectLoopException.type] should be thrownBy Await.result(x, 3.second)
+      val thrown = the[RedirectSupportStage.InfiniteRedirectLoopException] thrownBy Await.result(x, 3.second)
+      thrown.loop shouldEqual List(Uri("/r1"), Uri("/r2"), Uri("/r3"), Uri("/r1"))
 
       binding.futureValue.unbind()
     }
