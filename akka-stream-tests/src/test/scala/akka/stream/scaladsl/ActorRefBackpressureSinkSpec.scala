@@ -10,6 +10,7 @@ import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalactic.ConversionCheckedTripleEquals
+
 import scala.concurrent.duration._
 
 object ActorRefBackpressureSinkSpec {
@@ -160,6 +161,16 @@ class ActorRefBackpressureSinkSpec extends AkkaSpec with ScalaFutures with Conve
 
       publisher.sendComplete()
       expectMsg(completeMessage)
+    }
+
+    "fail to materialize with zero sized input buffer" in {
+      val fw = createActor(classOf[Fw])
+      an[IllegalArgumentException] shouldBe thrownBy {
+        val badSink = Sink
+          .actorRefWithAck(fw, initMessage, ackMessage, completeMessage)
+          .withAttributes(Attributes.inputBuffer(0, 0))
+        Source.single(()).runWith(badSink)
+      }
     }
 
   }

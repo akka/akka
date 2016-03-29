@@ -301,6 +301,19 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
       inputStream.close()
     }
+
+    "fail to materialize with zero sized input buffer" in {
+      an[IllegalArgumentException] shouldBe thrownBy {
+        Source.single(byteString)
+          .runWith(StreamConverters.asInputStream(timeout).withAttributes(Attributes.inputBuffer(0, 0)))
+        /*
+       With Source.single we test the code path in which the sink
+       itself throws an exception when being materialized. If
+       Source.empty is used, the same exception is thrown by
+       Materializer.
+       */
+      }
+    }
   }
 
 }

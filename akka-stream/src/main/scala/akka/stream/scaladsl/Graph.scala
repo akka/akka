@@ -886,7 +886,7 @@ object GraphDSL extends GraphApply {
     }
 
     private class PortOpsImpl[+Out](override val outlet: Outlet[Out @uncheckedVariance], b: Builder[_])
-        extends PortOps[Out] {
+      extends PortOps[Out] {
 
       override def withAttributes(attr: Attributes): Repr[Out] =
         throw new UnsupportedOperationException("Cannot set attributes on chained ops from a junction output port")

@@ -3,12 +3,15 @@
  */
 package akka.stream.impl.fusing
 
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
+import java.util.concurrent.locks.ReentrantLock
+
 import akka.actor.Cancellable
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.stream._
 import akka.stream.stage._
+
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.impl.StreamLayout._
@@ -279,5 +282,57 @@ object GraphStages {
       })
     }
     override def toString: String = s"SingleSource($elem)"
+  }
+}
+
+/**
+ * INTERNAL API
+ * This trait wraps callback for `GraphStage` stage instances and handle gracefully cases when stage is
+ * not yet initialized or already finished.
+ *
+ * While `GraphStage` has not initialized it adds all requests to list.
+ * As soon as `GraphStage` is started it stops collecting requests (pointing to real callback
+ * function) and run all the callbacks from the list
+ *
+ * Supposed to be used by GraphStages that share call back to outer world
+ */
+private[akka] trait CallbackWrapper[T] extends AsyncCallback[T] {
+  private trait CallbackState
+  private case class NotInitialized(list: List[T]) extends CallbackState
+  private case class Initialized(f: T ⇒ Unit) extends CallbackState
+  private case class Stopped(f: T ⇒ Unit) extends CallbackState
+
+  /*
+   * To preserve message order when switching between not initialized / initialized states
+   * lock is used. Case is similar to RepointableActorRef
+   */
+  private[this] final val lock = new ReentrantLock
+
+  private[this] val callbackState = new AtomicReference[CallbackState](NotInitialized(Nil))
+
+  def stopCallback(f: T ⇒ Unit): Unit = locked {
+    callbackState.set(Stopped(f))
+  }
+
+  def initCallback(f: T ⇒ Unit): Unit = locked {
+    val list = (callbackState.getAndSet(Initialized(f)): @unchecked) match {
+      case NotInitialized(l) ⇒ l
+    }
+    list.reverse.foreach(f)
+  }
+
+  override def invoke(arg: T): Unit = locked {
+    callbackState.get() match {
+      case Initialized(cb)          ⇒ cb(arg)
+      case list @ NotInitialized(l) ⇒ callbackState.compareAndSet(list, NotInitialized(arg :: l))
+      case Stopped(cb) ⇒
+        lock.unlock()
+        cb(arg)
+    }
+  }
+
+  private[this] def locked(body: ⇒ Unit): Unit = {
+    lock.lock()
+    try body finally if (lock.isLocked) lock.unlock()
   }
 }
