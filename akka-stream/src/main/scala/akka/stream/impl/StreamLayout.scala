@@ -661,7 +661,7 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
       println(s"  matValSrc = $matValSrc")
       println(s"  matVals = $materializedValues")
     }
-    resolveMaterialized(module.materializedValueComputation, materializedValues, "  ")
+    resolveMaterialized(module.materializedValueComputation, materializedValues, 2)
   }
 
   protected def materializeComposite(composite: Module, effectiveAttributes: Attributes): Any = {
@@ -670,19 +670,19 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
 
   protected def materializeAtomic(atomic: Module, effectiveAttributes: Attributes, matVal: ju.Map[Module, Any]): Unit
 
-  private def resolveMaterialized(matNode: MaterializedValueNode, matVal: ju.Map[Module, Any], indent: String): Any = {
-    if (MaterializerSession.Debug) println(indent + matNode)
+  private def resolveMaterialized(matNode: MaterializedValueNode, matVal: ju.Map[Module, Any], spaces: Int): Any = {
+    if (MaterializerSession.Debug) println(" " * spaces + matNode)
     val ret = matNode match {
       case Atomic(m)          ⇒ matVal.get(m)
-      case Combine(f, d1, d2) ⇒ f(resolveMaterialized(d1, matVal, indent + "  "), resolveMaterialized(d2, matVal, indent + "  "))
-      case Transform(f, d)    ⇒ f(resolveMaterialized(d, matVal, indent + "  "))
+      case Combine(f, d1, d2) ⇒ f(resolveMaterialized(d1, matVal, spaces + 2), resolveMaterialized(d2, matVal, spaces + 2))
+      case Transform(f, d)    ⇒ f(resolveMaterialized(d, matVal, spaces + 2))
       case Ignore             ⇒ ()
     }
-    if (MaterializerSession.Debug) println(indent + s"result = $ret")
+    if (MaterializerSession.Debug) println(" " * spaces + s"result = $ret")
     matValSrc.remove(matNode) match {
       case null ⇒ // nothing to do
       case srcs ⇒
-        if (MaterializerSession.Debug) println(indent + s"triggering sources $srcs")
+        if (MaterializerSession.Debug) println(" " * spaces + s"triggering sources $srcs")
         srcs.foreach(_.setValue(ret))
     }
     ret
