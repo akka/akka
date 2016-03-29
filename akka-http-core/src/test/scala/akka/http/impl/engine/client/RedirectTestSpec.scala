@@ -17,7 +17,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class RedirectTestSpec extends AkkaSpec {
-  implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withFuzzing(true))
+  implicit val materializer = ActorMaterializer()
 
   "The connection-level client implementation" should {
 
@@ -42,7 +42,7 @@ class RedirectTestSpec extends AkkaSpec {
         .runFold(0)(_ + _)
 
       result.futureValue(PatienceConfig(10.seconds)) shouldEqual (N + 2) * (N / 2) // (2*2) + (4*2) + ... + (100 * 2)
-      binding.futureValue.unbind()
+      binding.futureValue.unbind().futureValue
 
     }
 
@@ -61,7 +61,7 @@ class RedirectTestSpec extends AkkaSpec {
       val thrown = the[RedirectSupportStage.InfiniteRedirectLoopException] thrownBy Await.result(x, 3.second)
       thrown.loop shouldEqual List(Uri("/r1"), Uri("/r2"), Uri("/r3"), Uri("/r1"))
 
-      binding.futureValue.unbind()
+      binding.futureValue.unbind().futureValue
     }
 
     "be able to forward selected headers to redirected requests in same origin" in Utils.assertAllStagesStopped {
@@ -88,7 +88,7 @@ class RedirectTestSpec extends AkkaSpec {
 
       result.futureValue(PatienceConfig(1000.seconds)) shouldEqual (N + 1) * (N / 2)
 
-      binding.futureValue.unbind()
+      binding.futureValue.unbind().futureValue
     }
 
     "be able to forward selected headers to redirected requests in different origin" /*in Utils.assertAllStagesStopped */ ignore {
@@ -120,7 +120,7 @@ class RedirectTestSpec extends AkkaSpec {
         .runFold(0)(_ + _)
 
       result.futureValue(PatienceConfig(100.seconds)) shouldEqual (N + 2) * (N / 4) // all even numbers till N
-      binding.futureValue.unbind()
+      binding.futureValue.unbind().futureValue
     }
   }
 }
