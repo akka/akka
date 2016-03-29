@@ -64,8 +64,8 @@ private[akka] final class FilePublisher(f: File, bytesReadPromise: Promise[Long]
 
   def readAndSignal(maxReadAhead: Int): Unit =
     if (isActive) {
-      // Write previously buffered, read into buffer, write newly buffered
-      availableChunks = signalOnNexts(readAhead(maxReadAhead, signalOnNexts(availableChunks)))
+      // Write previously buffered, then refill buffer
+      availableChunks = readAhead(maxReadAhead, signalOnNexts(availableChunks))
       if (totalDemand > 0 && isActive) self ! Continue
     }
 

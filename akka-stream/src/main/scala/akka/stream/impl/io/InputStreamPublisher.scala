@@ -47,7 +47,7 @@ private[akka] class InputStreamPublisher(is: InputStream, bytesReadPromise: Prom
   def readAndSignal(): Unit =
     if (isActive) {
       readAndEmit()
-      if (totalDemand > 0) self ! Continue
+      if (totalDemand > 0 && isActive) self ! Continue
     }
 
   def readAndEmit(): Unit = if (totalDemand > 0) try {
