@@ -5,7 +5,7 @@ package akka.stream.scaladsl
 
 import akka.actor.Status
 import akka.pattern.pipe
-import akka.stream.ActorMaterializer
+import akka.stream.{ ActorMaterializer, Attributes }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.{ AkkaSpec, _ }
 
@@ -95,6 +95,25 @@ class QueueSinkSpec extends AkkaSpec {
       expectMsg(Some(1))
       sub.sendComplete()
       queue.pull()
+    }
+
+    "work with one element buffer" in assertAllStagesStopped {
+      val sink = Sink.queue[Int]().withAttributes(Attributes.inputBuffer(1, 1))
+      val probe = TestPublisher.manualProbe[Int]()
+      val queue = Source.fromPublisher(probe).runWith(sink)
+      val sub = probe.expectSubscription()
+
+      queue.pull().pipeTo(testActor)
+      sub.sendNext(1) // should pull next element
+      expectMsg(Some(1))
+
+      queue.pull().pipeTo(testActor)
+      expectNoMsg() // element requested but buffer empty
+      sub.sendNext(2)
+      expectMsg(Some(2))
+
+      sub.sendComplete()
+      Await.result(queue.pull(), noMsgTimeout) should be(None)
     }
 
   }
