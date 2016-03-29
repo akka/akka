@@ -6,6 +6,7 @@ package akka.http.impl.engine.client
 
 import akka.http.impl.engine.client.RedirectSupportStage.RedirectMapper
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.settings.ClientAutoRedirectSettings
 import akka.http.scaladsl.settings.ClientAutoRedirectSettings.HeadersForwardMode.{All, Only, Zero}
 import akka.stream._
@@ -34,30 +35,22 @@ object RedirectSupportStage {
     }
 
     def sameOrigin(u1: Uri, u2: Uri): Boolean = {
-      if (u2.isRelative) true
-      else if (u1.isAbsolute && u2.isAbsolute && u1.authority == u2.authority) true
-      else false
+      u2.isRelative || u1.isAbsolute && u1.authority == u2.authority
     }
 
     def apply(s: ClientAutoRedirectSettings, req: HttpRequest, resp: HttpResponse): Option[HttpRequest] = {
-      if (resp.status.isRedirection) {
-        inferMethod(req, resp).flatMap { method =>
-          resp.headers.find(_.is("location")).flatMap(location => {
-            val item = if (sameOrigin(req.uri, Uri(location.value))) s.sameOrigin else s.crossOrigin
-            if (item.allow) {
-              val headers = item.forwardHeaders match {
-                case All => req.headers
-                case Zero => Nil
-                case Only(hs) => req.headers.filter(h => hs.exists(h.is))
-              }
-              Some(req.withUri(location.value).withHeaders(headers).withMethod(method))
-            } else {
-              None
-            }
-          })
+      for {
+        location <- resp.header[Location] if resp.status.isRedirection
+        method <- inferMethod(req, resp)
+        item = if (sameOrigin(req.uri, Uri(location.value))) s.sameOrigin else s.crossOrigin
+        if item.allow
+      } yield {
+        val headers = item.forwardHeaders match {
+          case All => req.headers
+          case Zero => Nil
+          case Only(hs) => req.headers.filter(h => hs.exists(h.is))
         }
-      } else {
-        None
+        req.withUri(location.value).withHeaders(headers).withMethod(method)
       }
     }
   }
