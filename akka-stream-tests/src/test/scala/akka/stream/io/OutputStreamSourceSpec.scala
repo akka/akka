@@ -11,7 +11,7 @@ import akka.stream._
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.io.OutputStreamSourceStage
 import akka.stream.impl.{ ActorMaterializerImpl, StreamSupervisor }
-import akka.stream.scaladsl.{ Keep, Source, StreamConverters }
+import akka.stream.scaladsl.{ Keep, Sink, Source, StreamConverters }
 import akka.stream.stage.OutHandler
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
@@ -174,6 +174,20 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
       s.cancel()
       sourceProbe.expectMsg(OutputStreamSourceTestMessages.Finish)
       the[Exception] thrownBy outputStream.write(bytesArray) shouldBe a[IOException]
+    }
+
+    "fail to materialize with zero sized input buffer" in {
+      an[IllegalArgumentException] shouldBe thrownBy {
+        StreamConverters.asOutputStream(timeout)
+          .withAttributes(Attributes.inputBuffer(0, 0))
+          .runWith(Sink.head)
+        /*
+          With Sink.head we test the code path in which the source
+          itself throws an exception when being materialized. If
+          Sink.ignore is used, the same exception is thrown by
+          Materializer.
+         */
+      }
     }
   }
 }
