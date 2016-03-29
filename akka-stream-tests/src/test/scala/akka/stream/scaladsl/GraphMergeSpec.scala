@@ -5,6 +5,7 @@ package akka.stream.scaladsl
 
 import akka.stream._
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import akka.stream.testkit._
@@ -56,6 +57,18 @@ class GraphMergeSpec extends TwoStreamsSetup {
 
       collected should be(Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
       probe.expectComplete()
+    }
+
+    "work with 1-way merge" in {
+      val result = Source.fromGraph(GraphDSL.create() { implicit b ⇒
+        val merge = b.add(Merge[Int](1))
+        val source = b.add(Source(1 to 3))
+
+        source ~> merge.in(0)
+        SourceShape(merge.out)
+      }).runFold(Seq[Int]())(_ :+ _)
+
+      Await.result(result, 3.seconds) should ===(Seq(1, 2, 3))
     }
 
     "work with n-way merge" in {
