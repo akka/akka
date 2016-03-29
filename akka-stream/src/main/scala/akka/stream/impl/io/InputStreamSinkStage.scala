@@ -46,7 +46,6 @@ private[akka] class InputStreamSinkStage(readTimeout: FiniteDuration) extends Gr
     val dataQueue = new LinkedBlockingDeque[StreamToAdapterMessage](maxBuffer + 2)
 
     val logic = new GraphStageLogic(shape) with StageWithCallback {
-      var pullRequestIsSent = true
 
       private val callback: AsyncCallback[AdapterToStageMessage] =
         getAsyncCallback {
@@ -57,10 +56,8 @@ private[akka] class InputStreamSinkStage(readTimeout: FiniteDuration) extends Gr
       override def wakeUp(msg: AdapterToStageMessage): Unit = callback.invoke(msg)
 
       private def sendPullIfAllowed(): Unit =
-        if (!pullRequestIsSent) {
-          pullRequestIsSent = true
+        if (dataQueue.remainingCapacity() > 1 && !hasBeenPulled(in))
           pull(in)
-        }
 
       override def preStart() = {
         dataQueue.add(Initialized)
@@ -71,7 +68,6 @@ private[akka] class InputStreamSinkStage(readTimeout: FiniteDuration) extends Gr
         override def onPush(): Unit = {
           //1 is buffer for Finished or Failed callback
           require(dataQueue.remainingCapacity() > 1)
-          pullRequestIsSent = false
           dataQueue.add(Data(grab(in)))
           if (dataQueue.remainingCapacity() > 1) sendPullIfAllowed()
         }
@@ -209,6 +205,9 @@ private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapt
           case Data(data) ⇒
             detachedChunk = Some(data)
             detachedChunk
+          case Finished ⇒
+            isStageAlive = false
+            None
           case _ ⇒ None
         }
       case Some(_) ⇒ detachedChunk
