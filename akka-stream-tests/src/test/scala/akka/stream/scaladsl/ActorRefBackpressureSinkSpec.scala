@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.actor.{ Actor, ActorRef, Props }
-import akka.stream.ActorMaterializer
+import akka.stream.{ ActorMaterializer, Attributes }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
@@ -135,6 +135,30 @@ class ActorRefBackpressureSinkSpec extends AkkaSpec with ScalaFutures with Conve
       probe.expectNextN(1 to 20)
       probe.expectComplete()
 
+      expectMsg(completeMessage)
+    }
+
+    "work with one element buffer" in assertAllStagesStopped {
+      val fw = createActor(classOf[Fw2])
+      val publisher =
+        TestSource.probe[Int].to(Sink.actorRefWithAck(fw,
+          initMessage, ackMessage, completeMessage)
+          .withAttributes(Attributes.inputBuffer(1, 1))).run()
+
+      expectMsg(initMessage)
+      fw ! TriggerAckMessage
+
+      publisher.sendNext(1)
+      expectMsg(1)
+
+      fw ! TriggerAckMessage
+      expectNoMsg() // Ack received but buffer empty
+
+      publisher.sendNext(2) // Buffer this value
+      fw ! TriggerAckMessage
+      expectMsg(2)
+
+      publisher.sendComplete()
       expectMsg(completeMessage)
     }
 
