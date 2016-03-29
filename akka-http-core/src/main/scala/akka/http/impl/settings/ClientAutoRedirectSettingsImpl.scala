@@ -5,7 +5,6 @@
 package akka.http.impl.settings
 
 import akka.http.impl.util.SettingsCompanion
-import akka.http.javadsl.settings.ClientAutoRedirectSettingsItem
 import com.typesafe.config.Config
 
 /** INTERNAL API */
@@ -19,7 +18,7 @@ object ClientAutoRedirectSettingsImpl extends SettingsCompanion[ClientAutoRedire
     val sameOriginConfig = inner.withFallback(root.getConfig(prefix)).getConfig("same-origin")
     val crossOriginConfig = inner.withFallback(root.getConfig(prefix)).getConfig("cross-origin")
     ClientAutoRedirectSettingsImpl(
-      ClientAutoRedirectSettingsItemImpl.fromSubConfig(root, sameOriginConfig),
-      ClientAutoRedirectSettingsItemImpl.fromSubConfig(root, crossOriginConfig))
+      ClientAutoRedirectSettingsItem.fromSubConfig(root, sameOriginConfig),
+      ClientAutoRedirectSettingsItem.fromSubConfig(root, crossOriginConfig))
   }
 }

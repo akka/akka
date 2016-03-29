@@ -4,7 +4,7 @@
 
 package akka.http.javadsl.settings
 
-import akka.http.impl.settings.ClientAutoRedirectSettingsImpl
+import akka.http.impl.settings.{ ClientAutoRedirectSettingsImpl, ClientAutoRedirectSettingsItem }
 import com.typesafe.config.Config
 
 abstract class ClientAutoRedirectSettings private[akka] () { self: ClientAutoRedirectSettingsImpl ⇒

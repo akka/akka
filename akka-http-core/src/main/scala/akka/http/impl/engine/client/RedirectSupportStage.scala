@@ -44,8 +44,8 @@ object RedirectSupportStage {
         inferMethod(req, resp).flatMap { method =>
           resp.headers.find(_.is("location")).flatMap(location => {
             val item = if (sameOrigin(req.uri, Uri(location.value))) s.sameOrigin else s.crossOrigin
-            if (item.getAllow) {
-              val headers = item.getForwardHeaders match {
+            if (item.allow) {
+              val headers = item.forwardHeaders match {
                 case All => req.headers
                 case Zero => Nil
                 case Only(hs) => req.headers.filter(h => hs.exists(h.is))

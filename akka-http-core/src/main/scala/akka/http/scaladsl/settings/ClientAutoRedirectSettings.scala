@@ -6,7 +6,7 @@ package akka.http.scaladsl.settings
 
 import java.util
 
-import akka.http.impl.settings.ClientAutoRedirectSettingsImpl
+import akka.http.impl.settings.{ ClientAutoRedirectSettingsImpl, ClientAutoRedirectSettingsItem }
 import com.typesafe.config.Config
 
 import scala.collection.immutable
@@ -14,19 +14,19 @@ import scala.collection.JavaConverters._
 import scala.annotation.varargs
 
 abstract class ClientAutoRedirectSettings private[akka] () extends akka.http.javadsl.settings.ClientAutoRedirectSettings { self: ClientAutoRedirectSettingsImpl ⇒
-  def sameOrigin: akka.http.javadsl.settings.ClientAutoRedirectSettingsItem
-  def crossOrigin: akka.http.javadsl.settings.ClientAutoRedirectSettingsItem
+  def sameOrigin: ClientAutoRedirectSettingsItem
+  def crossOrigin: ClientAutoRedirectSettingsItem
 
   /* JAVA APIs */
 
-  final override def getSameOrigin: akka.http.javadsl.settings.ClientAutoRedirectSettingsItem = sameOrigin
-  final override def getCrossOrigin: akka.http.javadsl.settings.ClientAutoRedirectSettingsItem = crossOrigin
+  final override def getSameOrigin: ClientAutoRedirectSettingsItem = sameOrigin
+  final override def getCrossOrigin: ClientAutoRedirectSettingsItem = crossOrigin
 
   // ---
 
   // overrides for more specific return type
-  override def withSameOrigin(newValue: akka.http.javadsl.settings.ClientAutoRedirectSettingsItem): ClientAutoRedirectSettings = self.copy(sameOrigin = newValue)
-  override def withCrossOrigin(newValue: akka.http.javadsl.settings.ClientAutoRedirectSettingsItem): ClientAutoRedirectSettings = self.copy(crossOrigin = newValue)
+  override def withSameOrigin(newValue: ClientAutoRedirectSettingsItem): ClientAutoRedirectSettings = self.copy(sameOrigin = newValue)
+  override def withCrossOrigin(newValue: ClientAutoRedirectSettingsItem): ClientAutoRedirectSettings = self.copy(crossOrigin = newValue)
 }
 
 object ClientAutoRedirectSettings extends SettingsCompanion[ClientAutoRedirectSettings] {
