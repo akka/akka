@@ -1332,7 +1332,11 @@ object AkkaBuild extends Build {
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor#GotUid.apply")
     )
 
-    val akkaStream = Seq()
+    val akkaStream = Seq(
+      // Removed internal methods https://github.com/akka/akka/pull/20162/files
+      ProblemFilters.exclude[MissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreter.fail"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.stream.stage.GraphStageLogic.failStage")
+    )
   }
 
   lazy val mimaSettings = mimaDefaultSettings ++ Seq(
