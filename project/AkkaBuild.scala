@@ -1332,7 +1332,12 @@ object AkkaBuild extends Build {
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor#GotUid.apply")
     )
 
-    val akkaStream = Seq()
+    val akkaStream = Seq(
+      // #19783
+      ProblemFilters.exclude[MissingMethodProblem]("akka.stream.impl.ActorRefBackpressureSinkStage.maxBuffer"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.stream.impl.io.OutputStreamSourceStage.maxBuffer"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.stream.impl.io.InputStreamSinkStage.maxBuffer")
+    )
   }
 
   lazy val mimaSettings = mimaDefaultSettings ++ Seq(

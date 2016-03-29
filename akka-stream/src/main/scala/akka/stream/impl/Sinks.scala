@@ -254,7 +254,7 @@ private[akka] class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkS
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     type Received[E] = Try[Option[E]]
 
-    val maxBuffer = module.attributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+    val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
     require(maxBuffer > 0, "Buffer size must be greater than 0")
 
     val buffer = FixedSizeBuffer[Received[T]](maxBuffer + 1)
