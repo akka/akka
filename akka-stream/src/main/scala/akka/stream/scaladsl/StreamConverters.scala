@@ -56,11 +56,24 @@ object StreamConverters {
    *
    * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
    *
+   * If flushing after each write operation is required, user the overload with `autoFlush set to `true`.
+   *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    */
   def fromOutputStream(out: () ⇒ OutputStream): Sink[ByteString, Future[Long]] =
-    new Sink(new OutputStreamSink(out, DefaultAttributes.outputStreamSink, sinkShape("OutputStreamSink")))
+    fromOutputStream(out, autoFlush = false)
+
+  /**
+   * Creates a Sink which writes incoming [[ByteString]]s to an [[OutputStream]] created by the given function.
+   *
+   * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   */
+  def fromOutputStream(out: () ⇒ OutputStream, autoFlush: Boolean): Sink[ByteString, Future[Long]] =
+    new Sink(new OutputStreamSink(out, DefaultAttributes.outputStreamSink, sinkShape("OutputStreamSink"), autoFlush))
 
   /**
    * Creates a Sink which when materialized will return an [[InputStream]] which it is possible

@@ -24,10 +24,25 @@ object StreamConverters {
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
+   * If flushing after each write operation is required, user the overload with `autoFlush set to `true`.
+   *
    * @param f A Creator which creates an OutputStream to write to
    */
   def fromOutputStream(f: function.Creator[OutputStream]): javadsl.Sink[ByteString, Future[java.lang.Long]] =
-    new Sink(scaladsl.StreamConverters.fromOutputStream(() ⇒ f.create())).asInstanceOf[javadsl.Sink[ByteString, Future[java.lang.Long]]]
+    fromOutputStream(f, autoFlush = false)
+
+  /**
+   * Sink which writes incoming [[ByteString]]s to an [[OutputStream]] created by the given function.
+   *
+   * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * @param f A Creator which creates an OutputStream to write to
+   */
+  def fromOutputStream(f: function.Creator[OutputStream], autoFlush: Boolean): javadsl.Sink[ByteString, Future[java.lang.Long]] =
+    new Sink(scaladsl.StreamConverters.fromOutputStream(() ⇒ f.create(), autoFlush)).asInstanceOf[javadsl.Sink[ByteString, Future[java.lang.Long]]]
 
   /**
    * Creates a Sink which when materialized will return an [[java.io.InputStream]] which it is possible

@@ -44,7 +44,7 @@ private[akka] final class FileSink(f: File, append: Boolean, val attributes: Att
  * Creates simple synchronous (Java 6 compatible) Sink which writes all incoming elements to the given file
  * (creating it before hand if necessary).
  */
-private[akka] final class OutputStreamSink(createOutput: () ⇒ OutputStream, val attributes: Attributes, shape: SinkShape[ByteString])
+private[akka] final class OutputStreamSink(createOutput: () ⇒ OutputStream, val attributes: Attributes, shape: SinkShape[ByteString], autoFlush: Boolean)
   extends SinkModule[ByteString, Future[Long]](shape) {
 
   override def create(context: MaterializationContext) = {
@@ -54,16 +54,16 @@ private[akka] final class OutputStreamSink(createOutput: () ⇒ OutputStream, va
 
     val os = createOutput() // if it fails, we fail the materialization
 
-    val props = OutputStreamSubscriber.props(os, bytesWrittenPromise, settings.maxInputBufferSize)
+    val props = OutputStreamSubscriber.props(os, bytesWrittenPromise, settings.maxInputBufferSize, autoFlush)
 
     val ref = materializer.actorOf(context, props)
     (akka.stream.actor.ActorSubscriber[ByteString](ref), bytesWrittenPromise.future)
   }
 
   override protected def newInstance(shape: SinkShape[ByteString]): SinkModule[ByteString, Future[Long]] =
-    new OutputStreamSink(createOutput, attributes, shape)
+    new OutputStreamSink(createOutput, attributes, shape, autoFlush)
 
   override def withAttributes(attr: Attributes): Module =
-    new OutputStreamSink(createOutput, attr, amendShape(attr))
+    new OutputStreamSink(createOutput, attr, amendShape(attr), autoFlush)
 }
 
