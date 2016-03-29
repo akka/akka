@@ -754,7 +754,14 @@ object MiMa extends AutoPlugin {
 
         // #20028 Simplify TickSource cancellation
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$TickSource$TickSourceCancellable"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$TickSource$")
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$TickSource$"),
+
+        // #15990
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.getRedirectSettings"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ClientConnectionSettings.redirectSettings"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ClientConnectionSettingsImpl.this"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ClientConnectionSettingsImpl.copy"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ClientConnectionSettingsImpl.apply")
       )
     )
   }
