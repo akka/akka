@@ -123,40 +123,8 @@ When our original ``Future``, f1, completes, it will also apply our function and
 with its result. When we finally ``get`` the result, it will contain the number 10.
 Our original ``Future`` still contains the string "HelloWorld" and is unaffected by the ``map``.
 
-Something to note when using these methods: if the ``Future`` is still being processed when one of these methods are called,
-it will be the completing thread that actually does the work.
-If the ``Future`` is already complete though, it will be run in our current thread. For example:
-
-.. includecode:: code/docs/future/FutureDocTest.java
-   :include: map2
-
-The original ``Future`` will take at least 0.1 second to execute now, which means it is still being processed at
-the time we call ``map``. The function we provide gets stored within the ``Future`` and later executed automatically
-by the dispatcher when the result is ready.
-
-If we do the opposite:
-
-.. includecode:: code/docs/future/FutureDocTest.java
-   :include: map3
-
-Our little string has been processed long before our 0.1 second sleep has finished. Because of this,
-the dispatcher has moved onto other messages that need processing and can no longer calculate
-the length of the string for us, instead it gets calculated in the current thread just as if we weren't using a ``Future``.
-
-Normally this works quite well as it means there is very little overhead to running a quick function.
-If there is a possibility of the function taking a non-trivial amount of time to process it might be better
-to have this done concurrently, and for that we use ``flatMap``:
-
-.. includecode:: code/docs/future/FutureDocTest.java
-   :include: flat-map
-
-Now our second ``Future`` is executed concurrently as well. This technique can also be used to combine the results
-of several Futures into a single calculation, which will be better explained in the following sections.
-
-If you need to do conditional propagation, you can use ``filter``:
-
-.. includecode:: code/docs/future/FutureDocTest.java
-   :include: filter
+Something to note when using these methods: passed work is always dispatched on the provided ``ExecutionContext``. Even if
+the ``Future`` has already been completed, when one of these methods is called.
 
 Composing Futures
 ^^^^^^^^^^^^^^^^^
