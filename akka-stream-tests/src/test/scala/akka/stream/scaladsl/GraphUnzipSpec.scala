@@ -93,6 +93,52 @@ class GraphUnzipSpec extends AkkaSpec {
       c1.expectComplete()
     }
 
+    "not push twice when pull is followed by cancel before element has been pushed" in {
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[String]()
+
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+        val unzip = b.add(Unzip[Int, String]())
+        Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
+        unzip.out0 ~> Sink.fromSubscriber(c1)
+        unzip.out1 ~> Sink.fromSubscriber(c2)
+        ClosedShape
+      }).run()
+
+      val sub1 = c1.expectSubscription()
+      val sub2 = c2.expectSubscription()
+      sub2.request(3)
+      sub1.request(3)
+      sub2.cancel()
+      c1.expectNext(1)
+      c1.expectNext(2)
+      c1.expectNext(3)
+      c1.expectComplete()
+    }
+
+    "not loose elements when pull is followed by cancel before other sink has requested" in {
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[String]()
+
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+        val unzip = b.add(Unzip[Int, String]())
+        Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
+        unzip.out0 ~> Sink.fromSubscriber(c1)
+        unzip.out1 ~> Sink.fromSubscriber(c2)
+        ClosedShape
+      }).run()
+
+      val sub1 = c1.expectSubscription()
+      val sub2 = c2.expectSubscription()
+      sub2.request(3)
+      sub2.cancel()
+      sub1.request(3)
+      c1.expectNext(1)
+      c1.expectNext(2)
+      c1.expectNext(3)
+      c1.expectComplete()
+    }
+
     "cancel upstream when downstreams cancel" in {
       val p1 = TestPublisher.manualProbe[(Int, String)]()
       val c1 = TestSubscriber.manualProbe[Int]()
