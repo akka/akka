@@ -627,7 +627,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def dropWhile(p: Out ⇒ Boolean): Repr[Out] = andThen(DropWhile(p))
+  def dropWhile(p: Out ⇒ Boolean): Repr[Out] = via(DropWhile(p))
 
   /**
    * Transform this stream by applying the given partial function to each of the elements
@@ -642,7 +642,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def collect[T](pf: PartialFunction[Out, T]): Repr[T] = andThen(Collect(pf))
+  def collect[T](pf: PartialFunction[Out, T]): Repr[T] = via(Collect(pf))
 
   /**
    * Chunk up this stream into groups of the given size, with the last group
@@ -705,7 +705,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.take]], [[FlowOps.takeWithin]], [[FlowOps.takeWhile]]
    */
-  def limitWeighted[T](max: Long)(costFn: Out ⇒ Long): Repr[Out] = andThen(LimitWeighted(max, costFn))
+  def limitWeighted[T](max: Long)(costFn: Out ⇒ Long): Repr[Out] = via(LimitWeighted(max, costFn))
 
   /**
    * Apply a sliding window over the stream and return the windows as groups of elements, with the last group

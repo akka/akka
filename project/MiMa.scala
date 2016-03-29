@@ -757,7 +757,18 @@ object MiMa extends AutoPlugin {
 
         // #20028 Simplify TickSource cancellation
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$TickSource$TickSourceCancellable"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$TickSource$")
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$TickSource$"),
+
+        // #19834 replacing PushStages usages with GraphStages
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$LimitWeighted"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$Collect$"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$DropWhile"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$LimitWeighted$"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$Collect"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$DropWhile$"),
+        FilterAnyProblemStartingWith("akka.stream.impl.fusing.Collect"),
+        FilterAnyProblemStartingWith("akka.stream.impl.fusing.DropWhile"),
+        FilterAnyProblemStartingWith("akka.stream.impl.fusing.LimitWeighted")
       )
     )
   }
