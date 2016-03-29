@@ -5,6 +5,7 @@
 package akka.http.impl.engine.client
 
 import akka.http.impl.util.One2OneBidiFlow
+import akka.http.scaladsl.model.headers.Location
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -90,6 +91,5 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
       a[One2OneBidiFlow.OutputTruncationException.type] should be thrownBy Await.result(x, 3.second)
       binding.futureValue.unbind()
     }
-
   }
 }

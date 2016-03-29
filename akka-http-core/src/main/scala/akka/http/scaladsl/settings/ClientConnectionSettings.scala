@@ -16,7 +16,7 @@ import com.typesafe.config.Config
 
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters
-import scala.concurrent.duration.{ FiniteDuration, Duration }
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.collection.JavaConverters._
 
 /**
@@ -30,6 +30,7 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   def websocketRandomFactory: () ⇒ Random
   def socketOptions: immutable.Seq[SocketOption]
   def parserSettings: ParserSettings
+  def redirectSettings: akka.http.scaladsl.settings.ClientAutoRedirectSettings
 
   /* JAVA APIs */
 
@@ -42,6 +43,7 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   final override def getWebsocketRandomFactory: Supplier[Random] = new Supplier[Random] {
     override def get(): Random = websocketRandomFactory()
   }
+  final override def getRedirectSettings: ClientAutoRedirectSettings = redirectSettings
 
   // ---
 
@@ -50,11 +52,14 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   override def withIdleTimeout(newValue: Duration): ClientConnectionSettings = self.copy(idleTimeout = newValue)
   override def withRequestHeaderSizeHint(newValue: Int): ClientConnectionSettings = self.copy(requestHeaderSizeHint = newValue)
 
+  //  override def withRedirectSettings(newValue: ClientAutoRedirectSettings): ClientConnectionSettings = super.withRedirectSettings(newValue)
+
   // overloads for idiomatic Scala use
   def withWebsocketRandomFactory(newValue: () ⇒ Random): ClientConnectionSettings = self.copy(websocketRandomFactory = newValue)
   def withUserAgentHeader(newValue: Option[`User-Agent`]): ClientConnectionSettings = self.copy(userAgentHeader = newValue)
   def withSocketOptions(newValue: immutable.Seq[SocketOption]): ClientConnectionSettings = self.copy(socketOptions = newValue)
   def withParserSettings(newValue: ParserSettings): ClientConnectionSettings = self.copy(parserSettings = newValue)
+  def withRedirectSettings(newValue: ClientAutoRedirectSettings): ClientConnectionSettings = self.copy(redirectSettings = newValue)
 }
 
 object ClientConnectionSettings extends SettingsCompanion[ClientConnectionSettings] {

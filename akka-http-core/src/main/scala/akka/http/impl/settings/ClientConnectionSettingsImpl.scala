@@ -9,7 +9,7 @@ import java.util.Random
 import akka.http.impl.engine.ws.Randoms
 import akka.http.impl.util._
 import akka.http.scaladsl.model.headers.`User-Agent`
-import akka.http.scaladsl.settings.ParserSettings
+import akka.http.scaladsl.settings.{ ClientAutoRedirectSettings, ParserSettings }
 import akka.io.Inet.SocketOption
 import com.typesafe.config.Config
 
@@ -24,7 +24,8 @@ private[akka] final case class ClientConnectionSettingsImpl(
   requestHeaderSizeHint: Int,
   websocketRandomFactory: () ⇒ Random,
   socketOptions: immutable.Seq[SocketOption],
-  parserSettings: ParserSettings)
+  parserSettings: ParserSettings,
+  redirectSettings: akka.http.scaladsl.settings.ClientAutoRedirectSettings)
   extends akka.http.scaladsl.settings.ClientConnectionSettings {
 
   require(connectingTimeout >= Duration.Zero, "connectingTimeout must be >= 0")
@@ -43,7 +44,8 @@ object ClientConnectionSettingsImpl extends SettingsCompanion[ClientConnectionSe
       requestHeaderSizeHint = c getIntBytes "request-header-size-hint",
       websocketRandomFactory = Randoms.SecureRandomInstances, // can currently only be overridden from code
       socketOptions = SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
-      parserSettings = ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")))
+      parserSettings = ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")),
+      redirectSettings = ClientAutoRedirectSettingsImpl.fromSubConfig(root, c.getConfig("redirect")))
   }
 
 }
