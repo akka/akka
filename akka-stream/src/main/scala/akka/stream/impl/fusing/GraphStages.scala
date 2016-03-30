@@ -102,7 +102,7 @@ object GraphStages {
   private val _detacher = new Detacher[Any]
   def detacher[T]: GraphStage[FlowShape[T, T]] = _detacher.asInstanceOf[GraphStage[FlowShape[T, T]]]
 
-  final class Breaker(callback: Breaker.Operation ⇒ Unit) {
+  class Breaker(callback: Breaker.Operation ⇒ Unit) {
     import Breaker._
     def complete(): Unit = callback(Complete)
     def fail(ex: Throwable): Unit = callback(Fail(ex))
