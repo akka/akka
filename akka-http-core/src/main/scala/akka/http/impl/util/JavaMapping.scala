@@ -76,6 +76,13 @@ private[http] object JavaMapping {
     implicit def convertSeqToScala[J](j: Seq[J])(implicit mapping: J2SMapping[J]): immutable.Seq[mapping.S] =
       j.map(mapping.toScala(_)).toList
 
+    implicit def convertToJavaList[J](j: Seq[J])(implicit mapping: J2SMapping[J]): immutable.Seq[mapping.S] = {
+      val arr = new java.util.ArrayList[mapping.S](j.size)
+      var i = 0
+
+      j.map(mapping.toScala(_)).toList
+    }
+
     implicit def AddAsScala[J](javaObject: J)(implicit mapping: J2SMapping[J]): AsScala[mapping.S] = new AsScala[mapping.S] {
       def asScala = convertToScala(javaObject)
     }
@@ -190,12 +197,13 @@ private[http] object JavaMapping {
   implicit object HttpCharset extends Inherited[jm.HttpCharset, sm.HttpCharset]
   implicit object HttpCharsetRange extends Inherited[jm.HttpCharsetRange, sm.HttpCharsetRange]
   implicit object HttpEntity extends Inherited[jm.HttpEntity, sm.HttpEntity]
+  implicit object RequestEntity extends Inherited[jm.RequestEntity, sm.RequestEntity]
+  implicit object ResponseEntity extends Inherited[jm.ResponseEntity, sm.ResponseEntity]
   implicit object HttpHeader extends Inherited[jm.HttpHeader, sm.HttpHeader]
   implicit object HttpMethod extends Inherited[jm.HttpMethod, sm.HttpMethod]
   implicit object HttpProtocol extends Inherited[jm.HttpProtocol, sm.HttpProtocol]
   implicit object HttpRequest extends Inherited[jm.HttpRequest, sm.HttpRequest]
   implicit object HttpResponse extends Inherited[jm.HttpResponse, sm.HttpResponse]
-  implicit object RequestEntity extends Inherited[jm.RequestEntity, sm.RequestEntity]
   implicit object MediaRange extends Inherited[jm.MediaRange, sm.MediaRange]
   implicit object MediaType extends Inherited[jm.MediaType, sm.MediaType]
   implicit object MediaTypeBinary extends Inherited[jm.MediaType.Binary, sm.MediaType.Binary]

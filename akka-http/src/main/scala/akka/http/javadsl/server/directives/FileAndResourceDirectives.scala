@@ -11,7 +11,6 @@ import scala.collection.JavaConverters._
 
 import akka.http.javadsl.model.ContentType
 import akka.http.javadsl.model.RequestEntity
-import akka.http.javadsl.server.JavaScalaTypeEquivalence._
 import akka.http.javadsl.server.Route
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 
@@ -66,7 +65,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * If the resource cannot be found or read the Route rejects the request.
    */
   def getFromResource(path: String, contentType: ContentType): Route = RouteAdapter {
-    D.getFromResource(path, contentType)
+    D.getFromResource(path, contentType.asScala)
   }
 
   /**
@@ -75,7 +74,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * If the resource cannot be found or read the Route rejects the request.
    */
   def getFromResource(path: String, contentType: ContentType, classLoader: ClassLoader): Route = RouteAdapter {
-    D.getFromResource(path, contentType, classLoader)
+    D.getFromResource(path, contentType.asScala, classLoader)
   }
 
   /**
@@ -143,7 +142,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * If the file cannot be found or read the request is rejected.
    */
   def getFromFile(file: File, contentType: ContentType): Route = RouteAdapter {
-    D.getFromFile(file, contentType)
+    D.getFromFile(file, contentType.asScala)
   }
 
   /**

@@ -5,6 +5,7 @@
 package akka.http.javadsl.server.directives
 
 import java.util.function.{ Function ⇒ JFunction }
+import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.settings.ParserSettings
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.japi.Util
@@ -18,7 +19,6 @@ import akka.http.scaladsl.server.{ Directives ⇒ D, _ }
 import akka.http.scaladsl
 import akka.stream.Materializer
 import java.util.function.Supplier
-import akka.http.javadsl.server.JavaScalaTypeEquivalence._
 import java.util.{ List ⇒ JList }
 import scala.collection.JavaConverters._
 import akka.http.javadsl.model.HttpResponse
@@ -27,10 +27,14 @@ import akka.http.javadsl.model.HttpHeader
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.function.Predicate
 import akka.event.LoggingAdapter
+import akka.http.javadsl.server.RequestContext
 
 abstract class BasicDirectives {
+  import akka.http.impl.util.JavaMapping.Implicits._
+  import akka.http.javadsl.RoutingJavaMapping._
+
   def mapRequest(f: JFunction[HttpRequest, HttpRequest], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapRequest(rq ⇒ f.apply(rq)) { inner.get.delegate }
+    D.mapRequest(rq ⇒ f.apply(rq.asJava).asScala) { inner.get.delegate }
   }
 
   def mapRejections(f: JFunction[JList[Rejection], JList[Rejection]], inner: Supplier[Route]): Route = RouteAdapter {
@@ -38,16 +42,15 @@ abstract class BasicDirectives {
   }
 
   def mapResponse(f: JFunction[HttpResponse, HttpResponse], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapResponse(resp ⇒ f.apply(resp)) { inner.get.delegate }
+    D.mapResponse(resp ⇒ f.apply(resp.asJava).asScala) { inner.get.delegate }
   }
 
   def mapResponseEntity(f: JFunction[ResponseEntity, ResponseEntity], inner: Supplier[Route]): Route = RouteAdapter {
-    implicit val j2s = javaToScalaResponseEntity
-    D.mapResponseEntity(e ⇒ f.apply(e)) { inner.get.delegate }
+    D.mapResponseEntity(e ⇒ f.apply(e.asJava).asScala) { inner.get.delegate }
   }
 
   def mapResponseHeaders(f: JFunction[JList[HttpHeader], JList[HttpHeader]], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapResponseHeaders(l ⇒ f.apply((l: Seq[HttpHeader]).asJava).asScala.toVector) { inner.get.delegate }
+    D.mapResponseHeaders(l ⇒ Util.immutableSeq(f.apply(Util.javaArrayList(l))).map(_.asScala)) { inner.get.delegate } // TODO try to remove map()
   }
 
   /**
@@ -138,7 +141,7 @@ abstract class BasicDirectives {
    * Extracts a single value using the given function.
    */
   def extract[T](extract: JFunction[RequestContext, T], inner: JFunction[T, Route]): Route = RouteAdapter {
-    D.extract(extract.apply) { c ⇒ inner.apply(c).delegate }
+    D.extract(sc ⇒ extract.apply(JavaMapping.toJava(sc)(akka.http.javadsl.RoutingJavaMapping.RequestContext))) { c ⇒ inner.apply(c).delegate }
   }
 
   /**
@@ -172,4 +175,13 @@ abstract class BasicDirectives {
       inner.apply(settings).delegate
     }
   }
+
+  /**
+   * Extracts the [[akka.http.javadsl.server.RequestContext]] itself.
+   */
+  def extractRequestContext(inner: JFunction[RequestContext, Route]) = RouteAdapter {
+    // TODO figure out implicit ambiguity here... did not pick it up - likely because name conflict?
+    D.extractRequestContext { ctx ⇒ inner.apply(JavaMapping.toJava(ctx)(akka.http.javadsl.RoutingJavaMapping.RequestContext)).delegate }
+  }
+
 }
