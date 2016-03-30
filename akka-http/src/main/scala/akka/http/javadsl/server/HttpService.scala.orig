@@ -5,9 +5,13 @@
 package akka.http.javadsl.server
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.server
-import akka.http.javadsl.{ConnectHttp, Http}
+import akka.http.scaladsl.{ server, Http }
 import akka.http.scaladsl.Http.ServerBinding
+<<<<<<< 0e2bd4e6959489e5d47f1b30979e64c66a41e8fd
+import akka.http.impl.server.RouteImplementation
+=======
+import akka.http.scaladsl.server.RouteResult
+>>>>>>> !htt #18919 #19519 Align Java HTTP server DSL with Scala
 import akka.stream.{ ActorMaterializer, Materializer }
 import akka.stream.scaladsl.{ Keep, Sink }
 import java.util.concurrent.CompletionStage
@@ -37,11 +41,13 @@ trait HttpServiceBase {
     implicit val m = materializer
 
     import system.dispatcher
-    val r: server.Route = route.delegate
-    Http.get(system).bind(ConnectHttp.toHost(interface, port), materializer)
-      .toMat(Sink.foreach(_.handleWith(r)))(Keep.left)
-      .run()(materializer)
-      .toJava
+<<<<<<< 0e2bd4e6959489e5d47f1b30979e64c66a41e8fd
+    val r: server.Route = RouteImplementation(route)
+    Http(system).bind(interface, port).toMat(Sink.foreach(_.handleWith(akka.http.scaladsl.server.RouteResult.route2HandlerFlow(r))))(Keep.left).run()(materializer).toJava
+=======
+    val r: server.Route = route.toScala
+    Http(system).bind(interface, port).toMat(Sink.foreach(_.handleWith(r)))(Keep.left).run()(materializer).toJava
+>>>>>>> !htt #18919 #19519 Align Java HTTP server DSL with Scala
   }
 }
 

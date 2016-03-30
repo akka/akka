@@ -3,7 +3,11 @@
  */
 package akka.http.javadsl.server.directives
 
+import java.util.concurrent.{ CompletionStage, CompletableFuture }
+
+import akka.dispatch.ExecutionContexts
 import akka.http.impl.util.JavaMapping
+import akka.http.scaladsl.server._
 
 import scala.annotation.varargs
 import scala.collection.JavaConverters._
@@ -25,7 +29,13 @@ import akka.http.javadsl.RoutingJavaMapping._
 
 import akka.http.scaladsl.server.directives.{ RouteDirectives ⇒ D }
 
+import akka.http.scaladsl.util.FastFuture._
+
 abstract class RouteDirectives extends RespondWithDirectives {
+
+  // Don't try this at home – we only use it here for the java -> scala conversions
+  private implicit val conversionExecutionContext = ExecutionContexts.sameThreadExecutionContext
+
   /**
    * Java-specific call added so you can chain together multiple alternate routes using comma,
    * rather than having to explicitly call route1.orElse(route2).orElse(route3).
@@ -155,4 +165,65 @@ abstract class RouteDirectives extends RespondWithDirectives {
   def complete(entity: RequestEntity) = RouteAdapter {
     D.complete(scaladsl.model.HttpResponse(entity = entity))
   }
+
+  // --- manual "magnet" for Scala Future ---
+
+  /**
+   * Completes the request by marshalling the given future value into an http response.
+   */
+  def completeWithFutureResponse(value: scala.concurrent.Future[HttpResponse]) = RouteAdapter {
+    D.complete(value.fast.map(_.asScala))
+  }
+
+  /**
+   * Completes the request by marshalling the given future value into an http response.
+   */
+  def completeWithFutureString(value: scala.concurrent.Future[String]) = RouteAdapter {
+    D.complete(value)
+  }
+
+  /**
+   * Completes the request using the given future status code.
+   */
+  def completeWithFutureStatus(status: scala.concurrent.Future[StatusCode]): Route = RouteAdapter {
+    D.complete(status.fast.map(_.asScala))
+  }
+
+  /**
+   * Completes the request by marshalling the given value into an http response.
+   */
+  def completeWithFuture[T](value: scala.concurrent.Future[T], marshaller: Marshaller[T, HttpResponse]) = RouteAdapter {
+    D.complete(value.fast.map(v ⇒ ToResponseMarshallable(v)(marshaller.asScala)))
+  }
+
+  // --- manual "magnet" for CompletionStage ---
+
+  /**
+   * Completes the request by marshalling the given future value into an http response.
+   */
+  def completeWithFutureResponse(value: CompletionStage[HttpResponse]) = RouteAdapter {
+    D.complete(value.asScala.fast.map(_.asScala))
+  }
+
+  /**
+   * Completes the request by marshalling the given future value into an http response.
+   */
+  def completeWithFutureString(value: CompletionStage[String]) = RouteAdapter {
+    D.complete(value.asScala)
+  }
+
+  /**
+   * Completes the request using the given future status code.
+   */
+  def completeWithFutureStatus(status: CompletionStage[StatusCode]): Route = RouteAdapter {
+    D.complete(status.asScala.fast.map(_.asScala))
+  }
+
+  /**
+   * Completes the request by marshalling the given value into an http response.
+   */
+  def completeWithFuture[T](value: CompletionStage[T], marshaller: Marshaller[T, HttpResponse]) = RouteAdapter {
+    D.complete(value.asScala.fast.map(v ⇒ ToResponseMarshallable(v)(marshaller.asScala)))
+  }
+
 }

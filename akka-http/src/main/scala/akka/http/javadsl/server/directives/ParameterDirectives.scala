@@ -18,22 +18,23 @@ import akka.http.scaladsl.server.directives.ParameterDirectives._
 import akka.http.scaladsl.unmarshalling.PredefinedFromStringUnmarshallers._
 
 abstract class ParameterDirectives extends MiscDirectives {
-  def param(name: String, inner: java.util.function.Function[String, Route]): Route = RouteAdapter(
+
+  def parameter(name: String, inner: java.util.function.Function[String, Route]): Route = RouteAdapter(
     D.parameter(name) { value ⇒
       inner.apply(value).delegate
     })
 
-  def paramOptional(name: String, inner: java.util.function.Function[Optional[String], Route]): Route = RouteAdapter(
+  def parameterOptional(name: String, inner: java.util.function.Function[Optional[String], Route]): Route = RouteAdapter(
     D.parameter(name.?) { value ⇒
       inner.apply(value.asJava).delegate
     })
 
-  def paramList(name: String, inner: java.util.function.Function[java.util.List[String], Route]): Route = RouteAdapter(
+  def parameterList(name: String, inner: java.util.function.Function[java.util.List[String], Route]): Route = RouteAdapter(
     D.parameter(_string2NR(name).*) { values ⇒
       inner.apply(values.toSeq.asJava).delegate
     })
 
-  def param[T](t: Unmarshaller[String, T], name: String, inner: java.util.function.Function[T, Route]): Route = {
+  def parameter[T](t: Unmarshaller[String, T], name: String, inner: java.util.function.Function[T, Route]): Route = {
     import t.asScala
     RouteAdapter(
       D.parameter(name.as[T]) { value ⇒
@@ -41,7 +42,7 @@ abstract class ParameterDirectives extends MiscDirectives {
       })
   }
 
-  def paramOptional[T](t: Unmarshaller[String, T], name: String, inner: java.util.function.Function[Optional[T], Route]): Route = {
+  def parameterOptional[T](t: Unmarshaller[String, T], name: String, inner: java.util.function.Function[Optional[T], Route]): Route = {
     import t.asScala
     RouteAdapter(
       D.parameter(name.as[T].?) { value ⇒
@@ -50,7 +51,7 @@ abstract class ParameterDirectives extends MiscDirectives {
   }
 
   @CorrespondsTo("paramSeq")
-  def paramList[T](t: Unmarshaller[String, T], name: String, inner: java.util.function.Function[java.util.List[T], Route]): Route = {
+  def parameterList[T](t: Unmarshaller[String, T], name: String, inner: java.util.function.Function[java.util.List[T], Route]): Route = {
     import t.asScala
     RouteAdapter(
       D.parameter(name.as[T].*) { values ⇒

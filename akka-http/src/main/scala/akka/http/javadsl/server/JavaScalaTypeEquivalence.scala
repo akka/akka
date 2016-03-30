@@ -9,6 +9,8 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import java.util.Optional
 
+// FIXME remove this
+@deprecated("now", "USE THE AKKA HTTP ONE INSTEAD")
 object JavaScalaTypeEquivalence {
   // We define implicit conversions from the javadsl model objects to the scaladsl subclasses,
   // for all types where there is only 1 valid direct subclass of the javadsl type

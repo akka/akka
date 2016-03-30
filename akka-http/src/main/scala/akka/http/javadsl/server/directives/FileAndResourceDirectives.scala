@@ -12,9 +12,7 @@ import scala.collection.JavaConverters._
 import akka.http.javadsl.model.ContentType
 import akka.http.javadsl.model.RequestEntity
 import akka.http.javadsl.server.JavaScalaTypeEquivalence._
-import akka.http.javadsl.server.Marshaller
 import akka.http.javadsl.server.Route
-import akka.http.scaladsl
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 
 /**
@@ -31,21 +29,7 @@ abstract class DirectoryListing {
 }
 
 trait DirectoryRenderer {
-  def marshaller(renderVanityFooter: Boolean): Marshaller[DirectoryListing, RequestEntity]
-}
-
-private[directives] object FileAndResourceDirectives {
-  /** INTERNAL API */
-  implicit def scalaResolver(resolver: ContentTypeResolver) =
-    new scaladsl.server.directives.ContentTypeResolver {
-      override def apply(fileName: String) = resolver.resolve(fileName)
-    }
-
-  /** INTERNAL API */
-  implicit def scalaRenderer(renderer: DirectoryRenderer) =
-    new scaladsl.server.directives.FileAndResourceDirectives.DirectoryRenderer {
-      override def marshaller(renderVanityFooter: Boolean) = renderer.marshaller(renderVanityFooter).asScala
-    }
+  def directoryMarshaller(renderVanityFooter: Boolean): akka.http.javadsl.server.Marshaller[DirectoryListing, RequestEntity]
 }
 
 /**
@@ -55,7 +39,8 @@ private[directives] object FileAndResourceDirectives {
  * the akka.actor.ActorSystem class.
  */
 abstract class FileAndResourceDirectives extends ExecutionDirectives {
-  import FileAndResourceDirectives._
+  import akka.http.impl.util.JavaMapping.Implicits._
+  import akka.http.javadsl.RoutingJavaMapping._
 
   /**
    * Completes GET requests with the content of the given resource loaded from the default ClassLoader,
@@ -72,7 +57,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * If the resource cannot be found or read the Route rejects the request.
    */
   def getFromResource(path: String, resolver: ContentTypeResolver): Route = RouteAdapter {
-    D.getFromResource(path)(resolver)
+    D.getFromResource(path)(resolver.asScala)
   }
 
   /**
@@ -123,7 +108,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * If the requested resource is itself a directory or cannot be found or read the Route rejects the request.
    */
   def getFromResourceDirectory(directoryName: String, resolver: ContentTypeResolver): Route = RouteAdapter {
-    D.getFromResourceDirectory(directoryName)(resolver)
+    D.getFromResourceDirectory(directoryName)(resolver.asScala)
   }
 
   /**
@@ -134,7 +119,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * If the requested resource is itself a directory or cannot be found or read the Route rejects the request.
    */
   def getFromResourceDirectory(directoryName: String, resolver: ContentTypeResolver, classLoader: ClassLoader): Route = RouteAdapter {
-    D.getFromResourceDirectory(directoryName, classLoader)(resolver)
+    D.getFromResourceDirectory(directoryName, classLoader)(resolver.asScala)
   }
 
   /**
@@ -150,7 +135,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * If the file cannot be found or read the request is rejected.
    */
   def getFromFile(file: File, resolver: ContentTypeResolver): Route = RouteAdapter {
-    D.getFromFile(file)(resolver)
+    D.getFromFile(file)(resolver.asScala)
   }
 
   /**
@@ -174,7 +159,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * If the file cannot be found or read the request is rejected.
    */
   def getFromFile(file: String, resolver: ContentTypeResolver): Route = RouteAdapter {
-    D.getFromFile(file)(resolver)
+    D.getFromFile(file)(resolver.asScala)
   }
 
   /**
@@ -190,30 +175,28 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * If the file cannot be read the Route rejects the request.
    */
   def getFromDirectory(directoryPath: String, resolver: ContentTypeResolver): Route = RouteAdapter {
-    D.getFromDirectory(directoryPath)(resolver)
+    D.getFromDirectory(directoryPath)(resolver.asScala)
   }
 
   /**
    * Same as `getFromBrowseableDirectories` with only one directory.
    */
   def getFromBrowseableDirectory(directory: String, renderer: DirectoryRenderer, resolver: ContentTypeResolver): Route = RouteAdapter {
-    D.getFromBrowseableDirectory(directory)(renderer, resolver)
+    D.getFromBrowseableDirectory(directory)(renderer.asScala, resolver.asScala)
   }
 
   /**
    * Same as `getFromBrowseableDirectories` with only one directory.
    */
   def getFromBrowseableDirectory(directory: String, renderer: DirectoryRenderer): Route = RouteAdapter {
-    D.getFromBrowseableDirectory(directory)(renderer = renderer,
-      resolver = implicitly[scaladsl.server.directives.ContentTypeResolver])
+    D.getFromBrowseableDirectory(directory)(renderer.asScala, defaultContentTypeResolver.asScala)
   }
 
   /**
    * Same as `getFromBrowseableDirectories` with only one directory.
    */
   def getFromBrowseableDirectory(directory: String, resolver: ContentTypeResolver): Route = RouteAdapter {
-    D.getFromBrowseableDirectory(directory)(resolver = resolver,
-      renderer = implicitly[scaladsl.server.directives.FileAndResourceDirectives.DirectoryRenderer])
+    D.getFromBrowseableDirectory(directory)(defaultDirectoryRenderer.asScala, resolver.asScala)
   }
 
   /**
@@ -228,7 +211,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * served as browseable listings.
    */
   def getFromBrowseableDirectories(directories: java.lang.Iterable[String], renderer: DirectoryRenderer, resolver: ContentTypeResolver): Route = RouteAdapter {
-    D.getFromBrowseableDirectories(directories.asScala.toSeq: _*)(renderer, resolver)
+    D.getFromBrowseableDirectories(directories.asScala.toSeq: _*)(renderer.asScala, resolver.asScala)
   }
 
   /**
@@ -236,8 +219,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * served as browseable listings.
    */
   def getFromBrowseableDirectories(directories: java.lang.Iterable[String], renderer: DirectoryRenderer): Route = RouteAdapter {
-    D.getFromBrowseableDirectories(directories.asScala.toSeq: _*)(renderer = renderer,
-      resolver = implicitly[scaladsl.server.directives.ContentTypeResolver])
+    D.getFromBrowseableDirectories(directories.asScala.toSeq: _*)(renderer.asScala, defaultContentTypeResolver.asScala)
   }
 
   /**
@@ -245,8 +227,7 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    * served as browseable listings.
    */
   def getFromBrowseableDirectories(directories: java.lang.Iterable[String], resolver: ContentTypeResolver): Route = RouteAdapter {
-    D.getFromBrowseableDirectories(directories.asScala.toSeq: _*)(resolver = resolver,
-      renderer = implicitly[scaladsl.server.directives.FileAndResourceDirectives.DirectoryRenderer])
+    D.getFromBrowseableDirectories(directories.asScala.toSeq: _*)(defaultDirectoryRenderer.asScala, resolver.asScala)
   }
 
   /**
@@ -256,4 +237,27 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
   @varargs def getFromBrowseableDirectories(directories: String*): Route = RouteAdapter {
     D.getFromBrowseableDirectories(directories: _*)
   }
+
+  /**
+   * Completes GET requests with a unified listing of the contents of all given directories.
+   * The actual rendering of the directory contents is performed by the in-scope `Marshaller[DirectoryListing]`.
+   */
+  @varargs def listDirectoryContents(directories: String*): Route = RouteAdapter {
+    D.listDirectoryContents(directories: _*)(defaultDirectoryRenderer.asScala)
+  }
+  /**
+   * Completes GET requests with a unified listing of the contents of all given directories.
+   * The actual rendering of the directory contents is performed by the in-scope `Marshaller[DirectoryListing]`.
+   */
+  @varargs def listDirectoryContents(directoryRenderer: DirectoryRenderer, directories: String*): Route = RouteAdapter {
+    D.listDirectoryContents(directories: _*)(directoryRenderer.asScala)
+  }
+
+  /** Default [[DirectoryRenderer]] to be used with directory listing directives. */
+  def defaultDirectoryRenderer: DirectoryRenderer =
+    akka.http.scaladsl.server.directives.FileAndResourceDirectives.DirectoryRenderer.defaultDirectoryRenderer
+
+  /** Default [[ContentTypeResolver]]. */
+  def defaultContentTypeResolver: ContentTypeResolver =
+    akka.http.scaladsl.server.directives.ContentTypeResolver.Default
 }

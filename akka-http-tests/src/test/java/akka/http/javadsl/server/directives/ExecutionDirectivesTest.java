@@ -22,8 +22,8 @@ public class ExecutionDirectivesTest extends JUnitRouteTest {
     public void testCatchExceptionThrownFromHandler() {
         Route divide = 
             path("divide", () ->
-                param(StringUnmarshallers.INTEGER, "a", a -> 
-                    param(StringUnmarshallers.INTEGER, "b", b ->
+                parameter(StringUnmarshallers.INTEGER, "a", a ->
+                    parameter(StringUnmarshallers.INTEGER, "b", b ->
                         complete("The result is: " + (a / b)))));
             
 

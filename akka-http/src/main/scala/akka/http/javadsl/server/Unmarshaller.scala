@@ -4,7 +4,7 @@
 
 package akka.http.javadsl.server
 
-import akka.http.scaladsl.unmarshalling
+import akka.http.scaladsl.{marshalling, unmarshalling}
 import scala.concurrent.ExecutionContext
 import scala.annotation.varargs
 import akka.http.javadsl.model.HttpEntity
@@ -20,6 +20,8 @@ import scala.collection.JavaConverters._
 import JavaScalaTypeEquivalence._
 
 object Unmarshaller {
+  implicit def fromScala[A, B](scalaUnmarshaller: unmarshalling.Unmarshaller[A, B]) = new Unmarshaller()(scalaUnmarshaller)
+
   // Allow java HttpEntity to be treated as scala HttpEntity
   private implicit val javaToScalaHttpEntity = JavaScalaTypeEquivalence.javaToScalaHttpEntity
   

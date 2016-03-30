@@ -23,7 +23,7 @@ import scala.collection.JavaConverters._
 import JavaScalaTypeEquivalence._
 
 object Marshaller {
-  def fromScala[A,B](scalaMarshaller: marshalling.Marshaller[A,B]) = new Marshaller()(scalaMarshaller)
+  implicit def fromScala[A, B](scalaMarshaller: marshalling.Marshaller[A, B]) = new Marshaller()(scalaMarshaller)
   
   /** 
    * Safe downcasting of the output type of the marshaller to a superclass. 

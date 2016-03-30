@@ -17,7 +17,6 @@ import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.headers.Host
 import akka.http.javadsl.server.AllDirectives
 import akka.http.javadsl.server.Directives
-import akka.http.javadsl.server.HttpApp
 import akka.http.javadsl.server.Route
 import akka.http.scaladsl.server
 import akka.http.scaladsl.server.{ Route ⇒ ScalaRoute }
@@ -28,8 +27,6 @@ import akka.stream.Materializer
 /**
  * A base class to create route tests for testing libraries. An implementation needs to provide
  * code to provide and shutdown an [[akka.actor.ActorSystem]], [[akka.stream.Materializer]], and [[scala.concurrent.ExecutionContextExecutor]].
- * Also an implementation should provide instances of [[TestResponse]] to define the assertion
- * facilities of the testing library.
  *
  * See `JUnitRouteTest` for an example of a concrete implementation.
  */
@@ -75,11 +72,6 @@ abstract class RouteTest extends AllDirectives {
 
       def run(request: HttpRequest): TestRouteResult = runRoute(underlying, request)
     }
-
-  /**
-   * Creates a [[TestRoute]] for the main route of an [[akka.http.javadsl.server.HttpApp]].
-   */
-  def testAppRoute(app: HttpApp): TestRoute = testRoute(app.createRoute())
 
   protected def createTestRouteResult(result: RouteResult): TestRouteResult
 }

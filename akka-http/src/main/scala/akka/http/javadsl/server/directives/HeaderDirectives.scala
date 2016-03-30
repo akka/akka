@@ -6,12 +6,14 @@ package akka.http.javadsl.server.directives
 import java.util.Optional
 import java.util.{function => jf}
 
+import akka.http.scaladsl.model
+
 import scala.compat.java8.OptionConverters._
 import scala.reflect.ClassTag
 
 import akka.http.javadsl.model.HttpHeader
 import akka.http.javadsl.server.Route
-import akka.http.scaladsl.server.directives.{HeaderDirectives => D}
+import akka.http.scaladsl.server.directives.{HeaderDirectives => D, HeaderMagnet}
 import akka.http.scaladsl.server.util.ClassMagnet
 
 /**
@@ -21,6 +23,9 @@ import akka.http.scaladsl.server.util.ClassMagnet
  * since the java API's CustomHeader class does not implement render().
  */
 abstract class HeaderDirectives extends FutureDirectives {
+
+  type ScalaHeaderMagnet = HeaderMagnet[akka.http.scaladsl.model.HttpHeader]
+
   /**
    * Extracts an HTTP header value using the given function. If the function result is undefined for all headers the
    * request is rejected with an empty rejection set. If the given function throws an exception the request is rejected
@@ -51,14 +56,16 @@ abstract class HeaderDirectives extends FutureDirectives {
       inner.apply(value).delegate
     }
   }
-  
+
   /**
    * Extracts the first HTTP request header of the given type.
    * If no header with a matching type is found the request is rejected with a [[spray.routing.MissingHeaderRejection]].
    */
   def headerValueByType[T <: HttpHeader](t: Class[T], inner: jf.Function[T, Route]) = RouteAdapter {
-    D.headerValueByType(ClassMagnet(ClassTag(t)).asInstanceOf[ClassMagnet[akka.http.scaladsl.model.HttpHeader]]) { value =>
-      inner.apply(value.asInstanceOf[T]).delegate
+    // TODO custom headers don't work yet
+    // TODO needs instance of check if it's a modeled header and then magically locate companion
+    D.headerValueByType(HeaderMagnet.fromClassNormalJavaHeader(t)) { value =>
+      inner.apply(value).delegate
     }
   }
   
@@ -92,12 +99,14 @@ abstract class HeaderDirectives extends FutureDirectives {
       inner.apply(value.asJava).delegate
     }
   }
-  
+
   /**
    * Extract the header value of the optional HTTP request header with the given type.
    */
   def optionalHeaderValueByType[T <: HttpHeader](t: Class[T], inner: jf.Function[Optional[T], Route]) = RouteAdapter {
-    D.optionalHeaderValueByType(ClassMagnet(ClassTag(t)).asInstanceOf[ClassMagnet[akka.http.scaladsl.model.HttpHeader]]) { value =>
+    // TODO custom headers don't work yet
+    // TODO needs instance of check if it's a modeled header and then magically locate companion
+    D.optionalHeaderValueByType(HeaderMagnet.fromClassNormalJavaHeader(t).asInstanceOf[ScalaHeaderMagnet]) { value =>
       inner.apply(value.asInstanceOf[Optional[T]]).delegate
     }
   }

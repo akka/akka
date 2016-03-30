@@ -30,6 +30,7 @@ abstract class FormFieldDirectives extends FileUploadDirectives {
       inner.apply(value.asJava).delegate
     })
 
+  @CorrespondsTo("formFieldSeq")
   def formFieldList(name: String, inner: JFunction[java.util.List[String], Route]): Route = RouteAdapter(
     D.formField(_string2NR(name).*) { values ⇒
       inner.apply(values.toSeq.asJava).delegate
@@ -51,6 +52,7 @@ abstract class FormFieldDirectives extends FileUploadDirectives {
       })
   }
 
+  @CorrespondsTo("formFieldSeq")
   def formFieldList[T](t: Unmarshaller[String, T], name: String, inner: JFunction[java.util.List[T], Route]): Route = {
     import t.asScala
     RouteAdapter(
@@ -67,6 +69,7 @@ abstract class FormFieldDirectives extends FileUploadDirectives {
     D.formFieldMultiMap { map ⇒ inner.apply(map.mapValues { l ⇒ l.asJava }.asJava).delegate }
   }
 
+  @CorrespondsTo("formFieldSeq")
   def formFieldList(inner: JFunction[JList[JMap.Entry[String, String]], Route]): Route = RouteAdapter {
     D.formFieldSeq { list ⇒
       val entries: Seq[JMap.Entry[String, String]] = list.map { e ⇒ new SimpleImmutableEntry(e._1, e._2) }

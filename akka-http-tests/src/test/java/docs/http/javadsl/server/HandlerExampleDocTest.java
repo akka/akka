@@ -81,8 +81,8 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
         class TestHandler extends akka.http.javadsl.server.AllDirectives {
 
             final Route multiplyXAndYParam = 
-                param(StringUnmarshallers.INTEGER, "x", x ->
-                    param(StringUnmarshallers.INTEGER, "y", y ->
+                parameter(StringUnmarshallers.INTEGER, "x", x ->
+                    parameter(StringUnmarshallers.INTEGER, "y", y ->
                         complete("x * y = " + (x * y))
                     )
                 );
@@ -155,8 +155,8 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
              */
             Route paramXY(BiFunction<Integer,Integer,Route> inner) {
                 return 
-                    param(StringUnmarshallers.INTEGER, "x", x ->
-                        param(StringUnmarshallers.INTEGER, "y", y ->
+                    parameter(StringUnmarshallers.INTEGER, "x", x ->
+                        parameter(StringUnmarshallers.INTEGER, "y", y ->
                             inner.apply(x, y)
                         )
                     );

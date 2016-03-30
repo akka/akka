@@ -34,7 +34,7 @@ object SecurityDirectives {
      * Safely compares the passed in `secret` with the received secret part of the Credentials.
      * Use of this method instead of manual String equality testing is recommended in order to guard against timing attacks.
      *
-     * See also [[EnhancedString#secure_==]], for more information.
+     * See also [[akka.http.impl.util.EnhancedString#secure_==]], for more information.
      */
     def verify(secret: String): Boolean = toScala.verify(secret)    
   }
@@ -49,7 +49,7 @@ abstract class SecurityDirectives extends SchemeDirectives {
   import SecurityDirectives._
   
   /**
-   * Extracts the potentially present [[HttpCredentials]] provided with the request's [[Authorization]] header.
+   * Extracts the potentially present [[HttpCredentials]] provided with the request's [[akka.http.javadsl.model.headers.Authorization]] header.
    */
   def extractCredentials(inner: JFunction[Optional[HttpCredentials], Route]): Route = RouteAdapter {
     D.extractCredentials { cred =>
@@ -179,9 +179,9 @@ abstract class SecurityDirectives extends SchemeDirectives {
   
   /**
    * Lifts an authenticator function into a directive. The authenticator function gets passed in credentials from the
-   * [[Authorization]] header of the request. If the function returns `Right(user)` the user object is provided
+   * [[akka.http.javadsl.model.headers.Authorization]] header of the request. If the function returns `Right(user)` the user object is provided
    * to the inner route. If the function returns `Left(challenge)` the request is rejected with an
-   * [[AuthenticationFailedRejection]] that contains this challenge to be added to the response.
+   * [[akka.http.javadsl.server.AuthenticationFailedRejection]] that contains this challenge to be added to the response.
    */
   def authenticateOrRejectWithChallenge[T](authenticator: JFunction[Optional[HttpCredentials], CompletionStage[Either[HttpChallenge,T]]],
                                            inner: JFunction[T, Route]): Route = RouteAdapter {
@@ -214,12 +214,26 @@ abstract class SecurityDirectives extends SchemeDirectives {
     }
   }
   
+  // TODO authorize with request context
+
   /**
    * Applies the given authorization check to the request.
-   * If the check fails the route is rejected with an [[AuthorizationFailedRejection]].
+   * If the check fails the route is rejected with an [[akka.http.javadsl.server.AuthorizationFailedRejection]].
    */
   def authorize(check: Supplier[Boolean], inner: Supplier[Route]): Route = RouteAdapter {
     D.authorize(check.get()) {
+      inner.get().delegate
+    }
+  }
+
+  // TODO authorizeAsync with request context
+
+  /**
+   * Applies the given authorization check to the request.
+   * If the check fails the route is rejected with an [[akka.http.javadsl.server.AuthorizationFailedRejection]].
+   */
+  def authorizeAsync(check: Supplier[CompletionStage[Boolean]], inner: Supplier[Route]): Route = RouteAdapter {
+    D.authorizeAsync(check.get().toScala) {
       inner.get().delegate
     }
   }

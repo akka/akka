@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.testkit
 
+import akka.http.scaladsl.server.RouteResult
+
 import scala.reflect.ClassTag
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Await
@@ -14,10 +16,9 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.impl.util._
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.javadsl.server.Unmarshaller
+import akka.http.javadsl.RoutingJavaMapping._
+import akka.http.javadsl.server.{Rejection, Unmarshaller}
 import akka.http.javadsl.model._
-import akka.http.scaladsl.server.RouteResult
-import akka.http.scaladsl.server.Rejection
 import scala.collection.JavaConverters._
 import scala.annotation.varargs
 
@@ -30,13 +31,13 @@ import scala.annotation.varargs
 abstract class TestRouteResult(_result: RouteResult, awaitAtMost: FiniteDuration)(implicit ec: ExecutionContext, materializer: Materializer) {
   
   private def _response = _result match {
-    case RouteResult.Complete(response)   ⇒ response
+    case RouteResult.Complete(r)          ⇒ r
     case RouteResult.Rejected(rejections) ⇒ doFail("Expected route to complete, but was instead rejected with " + rejections)
   }
   
   private def _rejections = _result match {
-    case RouteResult.Complete(response) ⇒ doFail("Request was not rejected, response was " + response)
-    case RouteResult.Rejected(ex)       ⇒ ex
+    case RouteResult.Complete(r)  ⇒ doFail("Request was not rejected, response was " + r)
+    case RouteResult.Rejected(ex) ⇒ ex
   }  
   
   /**
@@ -57,7 +58,7 @@ abstract class TestRouteResult(_result: RouteResult, awaitAtMost: FiniteDuration
   /**
    * Returns a string representation of the response's content-type
    */
-  def contentTypeString: String = contentType.toString()
+  def contentTypeString: String = contentType.toString
   
   /**
    * Returns the media-type of the the response's content-type
@@ -94,7 +95,6 @@ abstract class TestRouteResult(_result: RouteResult, awaitAtMost: FiniteDuration
 
   /**
    * Returns the numeric status code of the response.
-   * @return
    */
   def statusCode: Int = response.status.intValue
 
@@ -110,7 +110,7 @@ abstract class TestRouteResult(_result: RouteResult, awaitAtMost: FiniteDuration
    * was rejected with an empty rejection list.
    * Fails the test if the route completes with a response rather than having been rejected.
    */
-  def rejections: java.util.List[Rejection] = _rejections.asJava
+  def rejections: java.util.List[Rejection] = _rejections.map(_.asJava).asJava
   
   /**
    * Expects the route to have been rejected with a single rejection.

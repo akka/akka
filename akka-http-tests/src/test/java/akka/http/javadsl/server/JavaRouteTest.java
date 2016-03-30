@@ -37,18 +37,18 @@ import akka.util.ByteString;
 
 public class JavaRouteTest extends JUnitRouteTest {
     private final Route route = getRoute();
-    private static final Unmarshaller<String,BigDecimal> BIG_DECIMAL_PARAM = Unmarshaller.sync(s -> new BigDecimal(s));
+    private static final Unmarshaller<String,BigDecimal> BIG_DECIMAL_PARAM =
+      Unmarshaller.sync(BigDecimal::new);
     
     private final Unmarshaller<HttpEntity,BigDecimal> BIG_DECIMAL_BODY =
-        Unmarshaller.entityToString()
-                    .map(s -> new BigDecimal(s));
+        Unmarshaller.entityToString() .map(BigDecimal::new);
     
     private final Unmarshaller<HttpEntity,UUID> UUID_FROM_JSON_BODY =
         Unmarshaller.forMediaType(MediaTypes.APPLICATION_JSON,
                          Unmarshaller.entityToString())
                     .map(s -> {
-                        // just a fake JSON parser, assuming it's {"id":"..."}
-                    	// A real implementation could easily invoke Jackson here instead.
+                        // just a fake JSON parser, assuming it's {"id":"..."}  
+                        // A real implementation could easily invoke Jackson here instead.
                         Pattern regex = Pattern.compile("\"id\":\"(.+)\"");
                         Matcher matcher = regex.matcher(s);
                         matcher.find();
@@ -60,7 +60,7 @@ public class JavaRouteTest extends JUnitRouteTest {
                         Unmarshaller.entityToString())
                     .map(s -> {
                         // just a fake XML parser, assuming it's <id>...</id>
-                    	// A real implementation could easily invoke JAXB here instead.
+                      // A real implementation could easily invoke JAXB here instead.
                         Pattern regex = Pattern.compile("<id>(.+)</id>");
                         Matcher matcher = regex.matcher(s);
                         matcher.find();
@@ -127,50 +127,50 @@ public class JavaRouteTest extends JUnitRouteTest {
         
         @Override
         public boolean renderInRequests() {
-        	return true;
+          return true;
         }
         
         @Override
         public boolean renderInResponses() {
-        	return true;
+          return true;
         }
     }
     
     @Test
     public void path_can_match_uuid() {
-    	runRoute(route, HttpRequest.GET("/documents/359e4920-a6a2-4614-9355-113165d600fb"))
-    		.assertEntity("document 359e4920-a6a2-4614-9355-113165d600fb");
+      runRoute(route, HttpRequest.GET("/documents/359e4920-a6a2-4614-9355-113165d600fb"))
+        .assertEntity("document 359e4920-a6a2-4614-9355-113165d600fb");
     }
 
     @Test
     public void path_can_match_element() {
-    	runRoute(route, HttpRequest.GET("/people/john"))
-    		.assertEntity("person john");
+      runRoute(route, HttpRequest.GET("/people/john"))
+        .assertEntity("person john");
     }
 
     @Test
     public void param_is_extracted() {
-    	runRoute(route, HttpRequest.GET("/cookies?amount=5"))
-    		.assertEntity("cookies 5");            
+      runRoute(route, HttpRequest.GET("/cookies?amount=5"))
+        .assertEntity("cookies 5");            
     }
     
     @Test
     public void required_param_causes_rejection_when_missing() {
-    	// The rejection on "amount" appears twice because we have two route alternatives both requiring it.
-    	runRouteUnSealed(route, HttpRequest.GET("/cookies"))
-    		.assertRejections(Rejections.missingQueryParam("amount"), Rejections.missingQueryParam("amount"));            
+      // The rejection on "amount" appears twice because we have two route alternatives both requiring it.
+      runRouteUnSealed(route, HttpRequest.GET("/cookies"))
+        .assertRejections(Rejections.missingQueryParam("amount"), Rejections.missingQueryParam("amount"));            
     }
     
     @Test
     public void wrong_param_type_causes_next_route_to_be_evaluated() {
-    	runRoute(route, HttpRequest.GET("/cookies?amount=one"))
+      runRoute(route, HttpRequest.GET("/cookies?amount=one"))
             .assertEntity("cookies (string) one");            
     }
     
     @Test
     public void required_param_causes_404_on_sealed_route() {
         runRoute(route, HttpRequest.GET("/cookies"))
-        	.assertStatusCode(StatusCodes.NOT_FOUND)
+          .assertStatusCode(StatusCodes.NOT_FOUND)
             .assertEntity("Request is missing required query parameter 'amount'");
     }
     
@@ -182,31 +182,31 @@ public class JavaRouteTest extends JUnitRouteTest {
     
     @Test
     public void entity_can_be_unmarshalled() {
-    	runRoute(route, HttpRequest.POST("/bigdecimal").withEntity("1234"))
+      runRoute(route, HttpRequest.POST("/bigdecimal").withEntity("1234"))
             .assertEntity("body 1234");            
     }
     
     @Test
     public void entity_can_be_unmarshalled_when_picking_json_unmarshaller() {
         runRoute(route, HttpRequest
-        		.PUT("/uuid")
-        		.withEntity(ContentTypes.create(MediaTypes.APPLICATION_JSON), 
-        				"{\"id\":\"76b38659-1dec-4ee6-86d0-9ca787bf578c\"}"))
+            .PUT("/uuid")
+            .withEntity(ContentTypes.create(MediaTypes.APPLICATION_JSON), 
+                "{\"id\":\"76b38659-1dec-4ee6-86d0-9ca787bf578c\"}"))
             .assertEntity("uuid 76b38659-1dec-4ee6-86d0-9ca787bf578c");            
     }
     
     @Test
     public void entity_can_be_unmarshalled_when_picking_xml_unmarshaller() {
         runRoute(route, HttpRequest
-        		.PUT("/uuid")
-        		.withEntity(ContentTypes.create(MediaTypes.APPLICATION_XML, HttpCharsets.UTF_8), 
-        				"<id>76b38659-1dec-4ee6-86d0-9ca787bf578c</id>"))
+            .PUT("/uuid")
+            .withEntity(ContentTypes.create(MediaTypes.APPLICATION_XML, HttpCharsets.UTF_8), 
+                "<id>76b38659-1dec-4ee6-86d0-9ca787bf578c</id>"))
             .assertEntity("uuid 76b38659-1dec-4ee6-86d0-9ca787bf578c");
     }
     
-	@Test
+  @Test
     public void entity_can_be_marshalled_when_json_is_accepted() {
-    	runRoute(route, HttpRequest.GET("/uuid").addHeader(Accept.create(MediaRanges.create(MediaTypes.APPLICATION_JSON))))
+      runRoute(route, HttpRequest.GET("/uuid").addHeader(Accept.create(MediaRanges.create(MediaTypes.APPLICATION_JSON))))
             .assertEntity("{\"id\":\"80a05eee-652e-4458-9bee-19b69dbe1dee\"}")            
             .assertContentType(MediaTypes.APPLICATION_JSON.toContentType());
     }
@@ -266,7 +266,7 @@ public class JavaRouteTest extends JUnitRouteTest {
         .build());
     
     private CompletionStage<Integer> throwExceptionInFuture() {
-    	return CompletableFuture.supplyAsync(() -> { throw new IllegalArgumentException("always failing"); });
+      return CompletableFuture.supplyAsync(() -> { throw new IllegalArgumentException("always failing"); });
     }
     
     
@@ -299,12 +299,12 @@ public class JavaRouteTest extends JUnitRouteTest {
                 )
             ),
             path("cookies", () ->
-                param(StringUnmarshallers.INTEGER, "amount", amount -> 
+                parameter(StringUnmarshallers.INTEGER, "amount", amount ->
                     complete("cookies " + amount)
                 )
             ),
             path("cookies", () ->
-                param("amount", (String amount) -> 
+                parameter("amount", (String amount) ->
                     complete("cookies (string) " + amount)
                 )
             ),
@@ -328,7 +328,7 @@ public class JavaRouteTest extends JUnitRouteTest {
                 })
             )),
             path("cakes", () ->
-                param(BIG_DECIMAL_PARAM, "amount", amount -> 
+                parameter(BIG_DECIMAL_PARAM, "amount", amount ->
                     complete("cakes " + amount)
                 )
             ),

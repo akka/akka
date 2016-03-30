@@ -195,6 +195,7 @@ private[http] object JavaMapping {
   implicit object HttpProtocol extends Inherited[jm.HttpProtocol, sm.HttpProtocol]
   implicit object HttpRequest extends Inherited[jm.HttpRequest, sm.HttpRequest]
   implicit object HttpResponse extends Inherited[jm.HttpResponse, sm.HttpResponse]
+  implicit object RequestEntity extends Inherited[jm.RequestEntity, sm.RequestEntity]
   implicit object MediaRange extends Inherited[jm.MediaRange, sm.MediaRange]
   implicit object MediaType extends Inherited[jm.MediaType, sm.MediaType]
   implicit object MediaTypeBinary extends Inherited[jm.MediaType.Binary, sm.MediaType.Binary]

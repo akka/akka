@@ -6,8 +6,11 @@ package akka.http.javadsl
 
 import java.lang.reflect.{ Modifier, Method }
 
+import akka.http.javadsl.server.AllDirectives
 import akka.http.javadsl.server.directives.CorrespondsTo
+import org.scalatest.exceptions.TestPendingException
 import org.scalatest.{ Matchers, WordSpec }
+import scala.reflect.runtime.{ universe ⇒ ru }
 
 import scala.util.control.NoStackTrace
 
@@ -46,48 +49,70 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
     prepareDirectivesList(scalaDirectivesClazz.getMethods)
   }
   val javaDirectives = {
-    prepareDirectivesList(scalaDirectivesClazz.getMethods)
+    prepareDirectivesList(javaDirectivesClazz.getMethods)
   }
 
   val correspondingScalaMethods = {
     val javaToScalaMappings =
       for {
-        d ← javaDirectives
-        if d.isAnnotationPresent(classOf[CorrespondsTo])
-        correspondingScalaMethod = d.getAnnotation(classOf[CorrespondsTo]).value()
-      } yield d.getName -> correspondingScalaMethod
+        // using Scala annotations - Java annotations were magically not present in certain places...
+        d ← ru.typeOf[AllDirectives].members.filter(m ⇒ m.isMethod && !m.isConstructor).map(_.asMethod)
+        annot ← d.annotations.find(_.toString.contains("akka.http.javadsl.server.directives.CorrespondsTo"))
+        correspondingScalaMethod ← annot.tree.children.tail.find(_.toString() startsWith "value = ")
+          .map(v ⇒ v.toString().replaceAll("""value = """", "").replaceAll("\"", ""))
+      } yield d.asMethod.name.toString -> correspondingScalaMethod
 
-    Map(javaToScalaMappings: _*)
+    Map(javaToScalaMappings.toList: _*)
   }
 
   val correspondingJavaMethods = Map() ++ correspondingScalaMethods.map(_.swap)
 
-  def correspondingScalaMethodName(m: Method): String =
+  /** Left(@CorrespondsTo(...) or Right(normal name) */
+  def correspondingScalaMethodName(m: Method): Either[String, String] =
     correspondingScalaMethods.get(m.getName) match {
-      case Some(correspondent) ⇒ correspondent
-      case _                   ⇒ m.getName
+      case Some(correspondent) ⇒ Left(correspondent)
+      case _                   ⇒ Right(m.getName)
     }
 
-  def correspondingJavaMethodName(m: Method): String =
+  /** Left(@CorrespondsTo(...) or Right(normal name) */
+  def correspondingJavaMethodName(m: Method): Either[String, String] =
     correspondingJavaMethods.get(m.getName) match {
-      case Some(correspondent) ⇒ correspondent
-      case _                   ⇒ m.getName
+      case Some(correspondent) ⇒ Left(correspondent)
+      case _                   ⇒ Right(m.getName)
     }
 
   val allowMissing: Map[Class[_], Set[String]] = Map(
     scalaDirectivesClazz -> Set( // none so far
-    ),
+      "parameterOptional"),
     javaDirectivesClazz -> Set(
       "as",
+      "instanceOf",
+
+      // TODO PENDING ->
+      "extractRequestContext", "nothingMatcher", "separateOnSlashes",
+      "textract", "tprovide", "withExecutionContext", "withRequestTimeoutResponse",
+      "withSettings", "pass", "parameterSeq",
+      "provide", "withMaterializer", "recoverRejectionsWith",
+      "mapSettings", "mapRequestContext", "mapInnerRoute", "mapRouteResultFuture",
+      "mapRouteResultWith",
+      "mapRouteResult", "handleWith", "formFields", "formFieldsSeq",
+      "mapRouteResultWithPF", "mapRouteResultPF",
+      // TODO <- END OF PENDING
+
+      "authenticateOAuth2PF", "authenticateOAuth2PFAsync",
       "authenticateBasicPF", "authenticateBasicPFAsync"))
 
-  def assertHasMethod(c: Class[_], name: String): Unit = {
+  def assertHasMethod(c: Class[_], name: String, alternativeName: String): Unit = {
     // include class name to get better error message
-    if (!allowMissing.getOrElse(c, Set.empty).contains(name)) {
+    if (!allowMissing.getOrElse(c, Set.empty).exists(n ⇒ n == name || n == alternativeName)) {
       val methods = c.getMethods.collect { case m if !ignore(m.getName) ⇒ c.getName + "." + m.getName }
-      try { methods should contain(c.getName + "." + name) } catch {
-        case all: Throwable ⇒ throw new AssertionError(s"Method [$name] was not defined on class: ${c.getName}") with NoStackTrace
-      }
+
+      if (methods.contains(c.getName + "." + name) && name == alternativeName) ()
+      else if (methods.contains(c.getName + "." + alternativeName)) ()
+      else throw new AssertionError(s"Method [$name] was not defined on class: ${c.getName}") with NoStackTrace
+    } else {
+      // allowed missing - we mark as pending, perhaps we'll want that method eventually
+      throw new TestPendingException
     }
   }
 
@@ -96,14 +121,19 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
     info("Java Directives: ~" + javaDirectives.map(_.getName).filterNot(ignore).size)
   }
 
+  "Directive aliases" should {
+    info("Aliases: ")
+    correspondingScalaMethods.foreach { case (k, v) ⇒ info(s"  $k => $v") }
+  }
+
   "Consistency scaladsl -> javadsl" should {
     for {
       m ← scalaDirectives
       name = m.getName
-      targetName = correspondingJavaMethodName(m)
+      targetName = correspondingJavaMethodName(m) match { case Left(l) ⇒ l case Right(r) ⇒ r }
       text = if (name == targetName) name else s"$name (alias: $targetName)"
     } s"""define Scala directive [$text] for JavaDSL too""" in {
-      assertHasMethod(javaDirectivesClazz, name)
+      assertHasMethod(javaDirectivesClazz, name, targetName)
     }
   }
 
@@ -111,10 +141,10 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
     for {
       m ← javaDirectives
       name = m.getName
-      targetName = correspondingScalaMethodName(m)
+      targetName = correspondingScalaMethodName(m) match { case Left(l) ⇒ l case Right(r) ⇒ r }
       text = if (name == targetName) name else s"$name (alias: $targetName)"
     } s"""define Java directive [$text] for ScalaDSL too""" in {
-      assertHasMethod(scalaDirectivesClazz, name)
+      assertHasMethod(scalaDirectivesClazz, name, targetName)
     }
   }
 
