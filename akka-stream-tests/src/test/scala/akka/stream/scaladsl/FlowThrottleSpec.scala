@@ -29,6 +29,30 @@ class FlowThrottleSpec extends AkkaSpec {
         .expectComplete()
     }
 
+    "work if there are two throttles in different streams" in Utils.assertAllStagesStopped {
+      def crateFlow() = {
+        Flow.apply[Int].throttle(1, 300.millis, 0, Shaping)
+      }
+
+      val mat1 = ActorMaterializer(ActorMaterializerSettings(system))
+      val mat2 = ActorMaterializer(ActorMaterializerSettings(system))
+
+      val stream1 = Source.single(1).via(crateFlow).runWith(TestSink.probe[Int])(mat1)
+      val stream2 = Source.single(1).via(crateFlow).runWith(TestSink.probe[Int])(mat2)
+
+      stream1.request(3)
+      stream1.expectNoMsg(200.millis)
+      stream1.expectNext(1)
+
+      stream2.request(3)
+      stream2.expectNoMsg(200.millis)
+      stream2.expectNext(1)
+
+      stream1.expectComplete()
+      stream2.expectComplete()
+
+    }
+
     "emit single element per tick" in Utils.assertAllStagesStopped {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
