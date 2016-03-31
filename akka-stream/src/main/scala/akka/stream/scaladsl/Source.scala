@@ -440,4 +440,53 @@ object Source {
   def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, SourceQueueWithComplete[T]] =
     Source.fromGraph(new QueueSource(bufferSize, overflowStrategy).withAttributes(DefaultAttributes.queueSource))
 
+  /**
+   * Start a new `Source` from some resource which can be opened, read and closed.
+   * Interaction with resource happens in a blocking way.
+   *
+   * Example:
+   * {{{
+   * Source.unfoldResource(
+   *   () => new BufferedReader(new FileReader("...")),
+   *   reader => Option(reader.readLine()),
+   *   reader => reader.close())
+   * }}}
+   *
+   * You can use the supervision strategy to handle exceptions for `read` function. All exceptions thrown by `create`
+   * or `close` will fail the stream.
+   *
+   * `Restart` supervision strategy will close and create blocking IO again. Default strategy is `Stop` which means
+   * that stream will be terminated on error in `read` function by default.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * @param create - function that is called on stream start and creates/opens resource.
+   * @param read - function that reads data from opened resource. It is called each time backpressure signal
+   *             is received. Stream calls close and completes when `read` returns None.
+   * @param close - function that closes resource
+   */
+  def unfoldResource[T, S](create: () ⇒ S, read: (S) ⇒ Option[T], close: (S) ⇒ Unit): Source[T, NotUsed] =
+    Source.fromGraph(new UnfoldResourceSource(create, read, close))
+
+  /**
+   * Start a new `Source` from some resource which can be opened, read and closed.
+   * It's similar to `unfoldResource` but takes functions that return `Futures` instead of plain values.
+   *
+   * You can use the supervision strategy to handle exceptions for `read` function or failures of produced `Futures`.
+   * All exceptions thrown by `create` or `close` as well as fails of returned futures will fail the stream.
+   *
+   * `Restart` supervision strategy will close and create resource. Default strategy is `Stop` which means
+   * that stream will be terminated on error in `read` function (or future) by default.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * @param create - function that is called on stream start and creates/opens resource.
+   * @param read - function that reads data from opened resource. It is called each time backpressure signal
+   *             is received. Stream calls close and completes when `Future` from read function returns None.
+   * @param close - function that closes resource
+   */
+  def unfoldResourceAsync[T, S](create: () ⇒ Future[S], read: (S) ⇒ Future[Option[T]], close: (S) ⇒ Future[Done]): Source[T, NotUsed] =
+    Source.fromGraph(new UnfoldResourceSourceAsync(create, read, close))
 }

@@ -10,7 +10,7 @@ import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
 import akka.stream._
-import akka.stream.impl.{ ConstantFun, StreamLayout }
+import akka.stream.impl.{ ConstantFun, StreamLayout, SourceQueueAdapter }
 import akka.stream.stage.Stage
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.unchecked.uncheckedVariance
@@ -307,6 +307,62 @@ object Source {
   def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, SourceQueueWithComplete[T]] =
     new Source(scaladsl.Source.queue[T](bufferSize, overflowStrategy).mapMaterializedValue(new SourceQueueAdapter(_)))
 
+  /**
+    * Start a new `Source` from some resource which can be opened, read and closed.
+    * Interaction with resource happens in a blocking way.
+    *
+    * Example:
+    * {{{
+    * Source.unfoldResource(
+    *   () -> new BufferedReader(new FileReader("...")),
+    *   reader -> reader.readLine(),
+    *   reader -> reader.close())
+    * }}}
+    *
+    * You can use the supervision strategy to handle exceptions for `read` function. All exceptions thrown by `create`
+    * or `close` will fail the stream.
+    *
+    * `Restart` supervision strategy will close and create blocking IO again. Default strategy is `Stop` which means
+    * that stream will be terminated on error in `read` function by default.
+    *
+    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+    * set it for a given Source by using [[ActorAttributes]].
+    *
+    * @param create - function that is called on stream start and creates/opens resource.
+    * @param read - function that reads data from opened resource. It is called each time backpressure signal
+    *             is received. Stream calls close and completes when `read` returns None.
+    * @param close - function that closes resource
+    */
+  def unfoldResource[T, S](create: function.Creator[S],
+                     read: function.Function[S, Optional[T]],
+                     close: function.Procedure[S]): javadsl.Source[T, NotUsed] =
+    new Source(scaladsl.Source.unfoldResource[T,S](create.create,
+      (s: S) ⇒ read.apply(s).asScala, close.apply))
+
+  /**
+    * Start a new `Source` from some resource which can be opened, read and closed.
+    * It's similar to `unfoldResource` but takes functions that return `CopletionStage` instead of plain values.
+    *
+    * You can use the supervision strategy to handle exceptions for `read` function or failures of produced `Futures`.
+    * All exceptions thrown by `create` or `close` as well as fails of returned futures will fail the stream.
+    *
+    * `Restart` supervision strategy will close and create resource. Default strategy is `Stop` which means
+    * that stream will be terminated on error in `read` function (or future) by default.
+    *
+    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+    * set it for a given Source by using [[ActorAttributes]].
+    *
+    * @param create - function that is called on stream start and creates/opens resource.
+    * @param read - function that reads data from opened resource. It is called each time backpressure signal
+    *             is received. Stream calls close and completes when `CompletionStage` from read function returns None.
+    * @param close - function that closes resource
+    */
+  def unfoldResourceAsync[T, S](create: function.Creator[CompletionStage[S]],
+    read: function.Function[S, CompletionStage[Optional[T]]],
+    close: function.Function[S, CompletionStage[Done]]): javadsl.Source[T, NotUsed] =
+  new Source(scaladsl.Source.unfoldResourceAsync[T,S](() ⇒ create.create().toScala,
+    (s: S) ⇒ read.apply(s).toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext),
+    (s: S) ⇒ close.apply(s).toScala))
 }
 
 /**

@@ -9,7 +9,7 @@ import akka.stream.Attributes.{ InputBuffer, LogLevels }
 import akka.stream.OverflowStrategies._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ Buffer ⇒ BufferImpl, ReactiveStreamsCompliance }
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ SourceQueue, Source }
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
 import scala.annotation.tailrec
@@ -507,7 +507,7 @@ private[akka] final case class Batch[In, Out](max: Long, costFn: In ⇒ Long, se
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
 
-    val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
     private var agg: Out = null.asInstanceOf[Out]
     private var left: Long = max
@@ -699,7 +699,7 @@ private[akka] final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Fut
     override def toString = s"MapAsync.Logic(buffer=$buffer)"
 
     //FIXME Put Supervision.stoppingDecider as a SupervisionStrategy on DefaultAttributes.mapAsync?
-    val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
     var buffer: BufferImpl[Holder[Try[Out]]] = _
     def todo = buffer.used
@@ -1238,7 +1238,7 @@ private[stream] final class StatefulMapConcat[In, Out](f: () ⇒ In ⇒ immutabl
   override def initialAttributes: Attributes = DefaultAttributes.statefulMapConcat
 
   def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
-    val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
     var currentIterator: Iterator[Out] = _
     var plainFun = f()
     def hasNext = if (currentIterator != null) currentIterator.hasNext else false
