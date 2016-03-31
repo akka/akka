@@ -170,8 +170,6 @@ class FileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val materializer = ActorMaterializer()(sys)
-      implicit val timeout = Timeout(500.millis)
-
       try {
         val p = FileIO.fromFile(manyLines).runWith(TestSink.probe)(materializer)
 
