@@ -763,7 +763,19 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$DropWhile$"),
         FilterAnyProblemStartingWith("akka.stream.impl.fusing.Collect"),
         FilterAnyProblemStartingWith("akka.stream.impl.fusing.DropWhile"),
-        FilterAnyProblemStartingWith("akka.stream.impl.fusing.LimitWeighted")
+        FilterAnyProblemStartingWith("akka.stream.impl.fusing.LimitWeighted"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$TickSource$"),
+
+        // #19892 Removed internal Breaker classes from akka.stream.impl.fusing
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$Breaker$"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphStages.breaker"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphStages.bidiBreaker"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$Breaker$Fail$"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$Breaker$FailAndCancel$"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$Breaker$FailAndCancel"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$Breaker"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$Breaker$Operation"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$Breaker$Fail")
       )
     )
   }
