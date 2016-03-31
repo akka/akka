@@ -56,11 +56,10 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
     val javaToScalaMappings =
       for {
         // using Scala annotations - Java annotations were magically not present in certain places...
-        d ← ru.typeOf[AllDirectives].members.filter(m ⇒ m.isMethod && !m.isConstructor).map(_.asMethod)
-        annot ← d.annotations.find(_.toString.contains("akka.http.javadsl.server.directives.CorrespondsTo"))
-        correspondingScalaMethod ← annot.tree.children.tail.find(_.toString() startsWith "value = ")
-          .map(v ⇒ v.toString().replaceAll("""value = """", "").replaceAll("\"", ""))
-      } yield d.asMethod.name.toString -> correspondingScalaMethod
+        d ← javaDirectives
+        if d.isAnnotationPresent(classOf[CorrespondsTo])
+        annot = d.getAnnotation(classOf[CorrespondsTo])
+      } yield d.getName -> annot.value()
 
     Map(javaToScalaMappings.toList: _*)
   }
@@ -82,22 +81,29 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
     }
 
   val allowMissing: Map[Class[_], Set[String]] = Map(
-    scalaDirectivesClazz -> Set( // none so far
-      "parameterOptional"),
+    scalaDirectivesClazz -> Set(
+      "route", "request",
+      "completeOK", // solved by raw complete() in Scala
+      "defaultDirectoryRenderer", "defaultContentTypeResolver" // solved by implicits in Scala
+      ),
     javaDirectivesClazz -> Set(
       "as",
       "instanceOf",
+      "pass",
 
       // TODO PENDING ->
       "extractRequestContext", "nothingMatcher", "separateOnSlashes",
       "textract", "tprovide", "withExecutionContext", "withRequestTimeoutResponse",
-      "withSettings", "pass", "parameterSeq",
+      "withSettings",
       "provide", "withMaterializer", "recoverRejectionsWith",
       "mapSettings", "mapRequestContext", "mapInnerRoute", "mapRouteResultFuture",
       "mapRouteResultWith",
-      "mapRouteResult", "handleWith", "formFields", "formFieldsSeq",
+      "mapRouteResult", "handleWith",
       "mapRouteResultWithPF", "mapRouteResultPF",
+      "route", "request",
+      "completeOrRecoverWith", "completeWith",
       // TODO <- END OF PENDING
+      "parameters", "formFields", // since we can't do magnet-style "arbitrary arity"
 
       "authenticateOAuth2PF", "authenticateOAuth2PFAsync",
       "authenticateBasicPF", "authenticateBasicPFAsync"))
@@ -107,9 +113,44 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
     if (!allowMissing.getOrElse(c, Set.empty).exists(n ⇒ n == name || n == alternativeName)) {
       val methods = c.getMethods.collect { case m if !ignore(m.getName) ⇒ c.getName + "." + m.getName }
 
+      def originClazz = {
+        // look in the "opposite" class
+        // traversal is different in scala/java - in scala its traits, so we need to look at interfaces
+        // in hava we have a huge inheritance chain so we unfold it
+        c match {
+          case `javaDirectivesClazz` ⇒
+            val all = scalaDirectivesClazz
+            (for {
+              i ← all.getInterfaces
+              m ← i.getDeclaredMethods
+              if m.getName == name || m.getName == alternativeName
+            } yield i).headOption
+              .map(_.getName)
+              .getOrElse(throw new Exception(s"Unable to locate method [$name] on source class $all"))
+
+          case `scalaDirectivesClazz` ⇒
+            val all = javaDirectivesClazz
+
+            var is = List.empty[Class[_]]
+            var c: Class[_] = all
+            while (c != classOf[java.lang.Object]) {
+              is = c :: is
+              c = c.getSuperclass
+            }
+
+            (for {
+              i ← is
+              m ← i.getDeclaredMethods
+              if m.getName == name || m.getName == alternativeName
+            } yield i).headOption
+              .map(_.getName)
+              .getOrElse(throw new Exception(s"Unable to locate method [$name] on source class $all"))
+        }
+      }
+
       if (methods.contains(c.getName + "." + name) && name == alternativeName) ()
       else if (methods.contains(c.getName + "." + alternativeName)) ()
-      else throw new AssertionError(s"Method [$name] was not defined on class: ${c.getName}") with NoStackTrace
+      else throw new AssertionError(s"Method [$originClazz#$name] was not defined on class: ${c.getName}") with NoStackTrace
     } else {
       // allowed missing - we mark as pending, perhaps we'll want that method eventually
       throw new TestPendingException
@@ -142,7 +183,7 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
       m ← javaDirectives
       name = m.getName
       targetName = correspondingScalaMethodName(m) match { case Left(l) ⇒ l case Right(r) ⇒ r }
-      text = if (name == targetName) name else s"$name (alias: $targetName)"
+      text = if (name == targetName) name else s"$name (alias for: $targetName)"
     } s"""define Java directive [$text] for ScalaDSL too""" in {
       assertHasMethod(scalaDirectivesClazz, name, targetName)
     }

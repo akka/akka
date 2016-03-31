@@ -115,6 +115,7 @@ abstract class BasicDirectives {
   /**
    * Extracts the current http request entity.
    */
+  @CorrespondsTo("extract")
   def extractEntity(inner: java.util.function.Function[RequestEntity, Route]): Route = RouteAdapter {
     D.extractRequest { rq ⇒
       inner.apply(rq.entity).delegate

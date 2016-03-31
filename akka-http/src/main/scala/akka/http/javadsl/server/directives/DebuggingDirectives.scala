@@ -99,6 +99,7 @@ abstract class DebuggingDirectives extends CookieDirectives {
    * @param showSuccess Function invoked when the route result was successful and yielded an HTTP response
    * @param showRejection Function invoked when the route yielded a rejection
    */
+  @CorrespondsTo("logRequestResult")
   def logRequestResultOptional(showSuccess: BiFunction[HttpRequest, HttpResponse, Optional[LogEntry]],
                                showRejection: BiFunction[HttpRequest, JList[Rejection], Optional[LogEntry]],
                                inner: Supplier[Route]) = RouteAdapter {

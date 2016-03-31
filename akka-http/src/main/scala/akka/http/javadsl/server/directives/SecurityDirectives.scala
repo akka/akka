@@ -78,6 +78,7 @@ abstract class SecurityDirectives extends SchemeDirectives {
    * 
    * Authentication is optional in this variant.
    */
+  @CorrespondsTo("authenticateBasic")
   def authenticateBasicOptional[T](realm: String, authenticator: JFunction[Optional[ProvidedCredentials], Optional[T]], 
                                    inner: JFunction[Optional[T], Route]): Route = RouteAdapter {
     D.authenticateBasic(realm, c => authenticator.apply(toJava(c)).asScala).optional { t =>
@@ -108,6 +109,7 @@ abstract class SecurityDirectives extends SchemeDirectives {
    * 
    * Authentication is optional in this variant.
    */
+  @CorrespondsTo("authenticateBasicAsync")
   def authenticateBasicAsyncOptional[T](realm: String, authenticator: JFunction[Optional[ProvidedCredentials], CompletionStage[Optional[T]]], 
                                         inner: JFunction[Optional[T], Route]): Route = RouteAdapter {
     D.extractExecutionContext { implicit ctx =>
@@ -138,6 +140,7 @@ abstract class SecurityDirectives extends SchemeDirectives {
    * 
    * Authentication is optional in this variant.
    */
+  @CorrespondsTo("authenticateOAuth2")
   def authenticateOAuth2Optional[T](realm: String, authenticator: JFunction[Optional[ProvidedCredentials], Optional[T]], 
                                     inner: JFunction[Optional[T], Route]): Route = RouteAdapter {
     D.authenticateOAuth2(realm, c => authenticator.apply(toJava(c)).asScala).optional { t =>
@@ -168,7 +171,8 @@ abstract class SecurityDirectives extends SchemeDirectives {
    * 
    * Authentication is optional in this variant.
    */
-  def authenticateOAuth2AsyncOptional[T](realm: String, authenticator: JFunction[Optional[ProvidedCredentials], CompletionStage[Optional[T]]], 
+  @CorrespondsTo("authenticateOAuth2Async")
+  def authenticateOAuth2AsyncOptional[T](realm: String, authenticator: JFunction[Optional[ProvidedCredentials], CompletionStage[Optional[T]]],
                                          inner: JFunction[Optional[T], Route]): Route = RouteAdapter {
     D.extractExecutionContext { implicit ctx =>
       D.authenticateBasicAsync(realm, c => authenticator.apply(toJava(c)).toScala.map(_.asScala)).optional { t =>

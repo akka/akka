@@ -171,6 +171,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
   /**
    * Completes the request by marshalling the given future value into an http response.
    */
+  @CorrespondsTo("complete")
   def completeWithFutureResponse(value: scala.concurrent.Future[HttpResponse]) = RouteAdapter {
     D.complete(value.fast.map(_.asScala))
   }
@@ -178,6 +179,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
   /**
    * Completes the request by marshalling the given future value into an http response.
    */
+  @CorrespondsTo("complete")
   def completeWithFutureString(value: scala.concurrent.Future[String]) = RouteAdapter {
     D.complete(value)
   }
@@ -185,6 +187,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
   /**
    * Completes the request using the given future status code.
    */
+  @CorrespondsTo("complete")
   def completeWithFutureStatus(status: scala.concurrent.Future[StatusCode]): Route = RouteAdapter {
     D.complete(status.fast.map(_.asScala))
   }
@@ -192,6 +195,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
   /**
    * Completes the request by marshalling the given value into an http response.
    */
+  @CorrespondsTo("complete")
   def completeWithFuture[T](value: scala.concurrent.Future[T], marshaller: Marshaller[T, HttpResponse]) = RouteAdapter {
     D.complete(value.fast.map(v ⇒ ToResponseMarshallable(v)(marshaller.asScala)))
   }
@@ -201,6 +205,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
   /**
    * Completes the request by marshalling the given future value into an http response.
    */
+  @CorrespondsTo("complete")
   def completeWithFutureResponse(value: CompletionStage[HttpResponse]) = RouteAdapter {
     D.complete(value.asScala.fast.map(_.asScala))
   }
@@ -208,6 +213,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
   /**
    * Completes the request by marshalling the given future value into an http response.
    */
+  @CorrespondsTo("complete")
   def completeWithFutureString(value: CompletionStage[String]) = RouteAdapter {
     D.complete(value.asScala)
   }
@@ -215,6 +221,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
   /**
    * Completes the request using the given future status code.
    */
+  @CorrespondsTo("complete")
   def completeWithFutureStatus(status: CompletionStage[StatusCode]): Route = RouteAdapter {
     D.complete(status.asScala.fast.map(_.asScala))
   }
@@ -222,6 +229,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
   /**
    * Completes the request by marshalling the given value into an http response.
    */
+  @CorrespondsTo("complete")
   def completeWithFuture[T](value: CompletionStage[T], marshaller: Marshaller[T, HttpResponse]) = RouteAdapter {
     D.complete(value.asScala.fast.map(v ⇒ ToResponseMarshallable(v)(marshaller.asScala)))
   }
