@@ -60,7 +60,10 @@ class UnzipWith1[In, [#A1#]](unzipper: In ⇒ ([#A1#])) extends GraphStage[FanOu
     setHandler(in, new InHandler {
       override def onPush() = {
         val elem = unzipper(grab(in))
-        [#if (!isClosed(out0)) push(out0, elem._1)#
+        [#if (!isClosed(out0)) {
+          push(out0, elem._1)
+          pending0 = true
+        }#
         ]
         pendingCount = downstreamRunning
       }
@@ -69,6 +72,7 @@ class UnzipWith1[In, [#A1#]](unzipper: In ⇒ ([#A1#])) extends GraphStage[FanOu
     [#setHandler(out0, new OutHandler {
       override def onPull() = {
         pendingCount -= ##1
+        pending0 = false
         if (pendingCount == ##0) pull(in)
       }
 
@@ -77,7 +81,7 @@ class UnzipWith1[In, [#A1#]](unzipper: In ⇒ ([#A1#])) extends GraphStage[FanOu
         if (downstreamRunning == ##0) completeStage()
         else {
           if (pending0) pendingCount -= ##1
-          if (pendingCount == ##0) pull(in)
+          if (pendingCount == ##0 && !hasBeenPulled(in)) pull(in)
         }
       }
     })#
