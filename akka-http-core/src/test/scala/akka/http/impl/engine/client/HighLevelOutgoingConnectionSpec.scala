@@ -4,11 +4,13 @@
 
 package akka.http.impl.engine.client
 
+import java.util.concurrent.CountDownLatch
+
 import akka.http.impl.util.One2OneBidiFlow
 
-import scala.concurrent.Await
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
-import akka.stream.{ ActorMaterializerSettings, FlowShape, ActorMaterializer }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, FlowShape, OverflowStrategy }
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 import akka.http.scaladsl.{ Http, TestUtils }
@@ -70,24 +72,6 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
         .runFold(0)(_ + _)
 
       result.futureValue(PatienceConfig(10.seconds)) shouldEqual C * N * (N + 1) / 2
-      binding.futureValue.unbind()
-    }
-
-    "catch response stream truncation" in Utils.assertAllStagesStopped {
-      val (_, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
-
-      val binding = Http().bindAndHandleSync({
-        case HttpRequest(_, Uri.Path("/b"), _, _, _) ⇒ HttpResponse(headers = List(headers.Connection("close")))
-        case _                                       ⇒ HttpResponse()
-      }, serverHostName, serverPort)
-
-      val x = Source(List("/a", "/b", "/c"))
-        .map(path ⇒ HttpRequest(uri = path))
-        .via(Http().outgoingConnection(serverHostName, serverPort))
-        .grouped(10)
-        .runWith(Sink.head)
-
-      a[One2OneBidiFlow.OutputTruncationException.type] should be thrownBy Await.result(x, 3.second)
       binding.futureValue.unbind()
     }
 

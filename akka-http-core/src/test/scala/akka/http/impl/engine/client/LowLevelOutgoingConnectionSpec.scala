@@ -359,7 +359,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         val error @ EntityStreamException(info) = probe.expectError()
         info.summary shouldEqual "Illegal chunk termination"
 
-        responses.expectError()
+        responses.expectComplete()
         netOut.expectComplete()
         requestsSub.expectCancellation()
         netInSub.expectCancellation()
