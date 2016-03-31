@@ -3,7 +3,7 @@
  */
 package akka.http.impl.engine.ws
 
-import scala.concurrent.Await
+import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration.DurationInt
 import org.scalactic.ConversionCheckedTripleEquals
 import org.scalatest.concurrent.ScalaFutures
@@ -18,7 +18,10 @@ import akka.stream.testkit._
 import akka.stream.scaladsl.GraphDSL.Implicits._
 import org.scalatest.concurrent.Eventually
 import java.net.InetSocketAddress
+
+import akka.Done
 import akka.stream.impl.fusing.GraphStages
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
 import akka.util.ByteString
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.{ AkkaSpec, EventFilter }
@@ -69,12 +72,35 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
       val binding = Await.result(bindingFuture, 3.seconds)
       val myPort = binding.localAddress.getPort
 
+      val completeOnlySwitch: Flow[ByteString, ByteString, Promise[Done]] = Flow.fromGraph(
+        new GraphStageWithMaterializedValue[FlowShape[ByteString, ByteString], Promise[Done]] {
+          override val shape: FlowShape[ByteString, ByteString] =
+            FlowShape(Inlet("completeOnlySwitch.in"), Outlet("completeOnlySwitch.out"))
+
+          override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Promise[Done]) = {
+            val promise = Promise[Done]
+
+            val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
+              override def onPush(): Unit = push(shape.out, grab(shape.in))
+              override def onPull(): Unit = pull(shape.in)
+
+              override def preStart(): Unit = {
+                promise.future.foreach(_ ⇒ getAsyncCallback[Done](_ ⇒ complete(shape.out)).invoke(Done))(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+              }
+
+              setHandlers(shape.in, shape.out, this)
+            }
+
+            (logic, promise)
+          }
+        })
+
       val ((response, breaker), sink) =
         Source.empty
           .viaMat {
             Http().webSocketClientLayer(WebSocketRequest("ws://localhost:" + myPort))
               .atop(TLSPlacebo())
-              .joinMat(Flow.fromGraph(GraphStages.breaker[ByteString]).via(
+              .joinMat(completeOnlySwitch.via(
                 Tcp().outgoingConnection(new InetSocketAddress("localhost", myPort), halfClose = true)))(Keep.both)
           }(Keep.right)
           .toMat(TestSink.probe[Message])(Keep.both)
@@ -85,7 +111,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
         .request(10)
         .expectNoMsg(1500.millis)
 
-      breaker.value.get.get.complete()
+      breaker.trySuccess(Done)
 
       source
         .sendNext(TextMessage("hello"))
@@ -149,20 +175,20 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
       val myPort = binding.localAddress.getPort
 
       @volatile var messages = 0
-      val (breaker, completion) =
+      val (switch, completion) =
         Source.maybe
           .viaMat {
             Http().webSocketClientLayer(WebSocketRequest("ws://localhost:" + myPort))
               .atop(TLSPlacebo())
               // the resource leak of #19398 existed only for severed websocket connections
-              .atopMat(GraphStages.bidiBreaker[ByteString, ByteString])(Keep.right)
+              .atopMat(KillSwitches.singleBidi[ByteString, ByteString])(Keep.right)
               .join(Tcp().outgoingConnection(new InetSocketAddress("localhost", myPort), halfClose = true))
           }(Keep.right)
           .toMat(Sink.foreach(_ ⇒ messages += 1))(Keep.both)
           .run()
       eventually(messages should ===(N))
       // breaker should have been fulfilled long ago
-      breaker.value.get.get.completeAndCancel()
+      switch.shutdown()
       completion.futureValue
 
       binding.unbind()
