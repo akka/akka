@@ -254,6 +254,17 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       }
     }
 
+    "insert its path in a ActorInitializationException" in {
+      EventFilter[ActorInitializationException](occurrences = 1, pattern = "/user/failingActor:") intercept {
+        intercept[java.lang.IllegalStateException] {
+          wrap(result ⇒
+            system.actorOf(Props(promiseIntercept({
+              throw new IllegalStateException
+            })(result)), "failingActor"))
+        }
+      }
+    }
+
     "be serializable using Java Serialization on local node" in {
       val a = system.actorOf(Props[InnerActor])
       val esys = system.asInstanceOf[ExtendedActorSystem]
