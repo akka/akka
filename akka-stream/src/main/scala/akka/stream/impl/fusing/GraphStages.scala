@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 import akka.actor.Cancellable
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
+import akka.stream.FlowMonitorState._
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.impl.Stages.DefaultAttributes
@@ -152,6 +153,72 @@ object GraphStages {
 
   def terminationWatcher[T]: GraphStageWithMaterializedValue[FlowShape[T, T], Future[Done]] =
     TerminationWatcher.asInstanceOf[GraphStageWithMaterializedValue[FlowShape[T, T], Future[Done]]]
+
+  private class FlowMonitorImpl[T] extends AtomicReference[Any](Initialized) with FlowMonitor[T] {
+    override def state = get match {
+      case s: StreamState[_] ⇒ s.asInstanceOf[StreamState[T]]
+      case msg               ⇒ Received(msg.asInstanceOf[T])
+    }
+  }
+
+  private class MonitorFlow[T] extends GraphStageWithMaterializedValue[FlowShape[T, T], FlowMonitor[T]] {
+    val in = Inlet[T]("FlowMonitor.in")
+    val out = Outlet[T]("FlowMonitor.out")
+    val shape = FlowShape.of(in, out)
+
+    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, FlowMonitor[T]) = {
+      val monitor: FlowMonitorImpl[T] = new FlowMonitorImpl[T]
+
+      val logic: GraphStageLogic = new GraphStageLogic(shape) {
+        setHandler(in, new InHandler {
+          override def onPush(): Unit = {
+            val msg = grab(in)
+            push(out, msg)
+            monitor.set(if (msg.isInstanceOf[StreamState[_]]) Received(msg) else msg)
+          }
+          override def onUpstreamFinish(): Unit = {
+            super.onUpstreamFinish()
+            monitor.set(Finished)
+          }
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            super.onUpstreamFailure(ex)
+            monitor.set(Failed(ex))
+          }
+        })
+        setHandler(out, new OutHandler {
+          override def onPull(): Unit = pull(in)
+          override def onDownstreamFinish(): Unit = {
+            super.onDownstreamFinish()
+            monitor.set(Finished)
+          }
+        })
+
+        override def toString = "MonitorFlowLogic"
+      }
+
+      (logic, monitor)
+    }
+
+    override def toString = "MonitorFlow"
+  }
+
+  def monitor[T]: GraphStageWithMaterializedValue[FlowShape[T, T], FlowMonitor[T]] =
+    new MonitorFlow[T]
+
+  private object TickSource {
+    class TickSourceCancellable(cancelled: AtomicBoolean) extends Cancellable {
+      private val cancelPromise = Promise[Done]()
+
+      def cancelFuture: Future[Done] = cancelPromise.future
+
+      override def cancel(): Boolean = {
+        if (!isCancelled) cancelPromise.trySuccess(Done)
+        true
+      }
+
+      override def isCancelled: Boolean = cancelled.get()
+    }
+  }
 
   final class TickSource[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T)
     extends GraphStageWithMaterializedValue[SourceShape[T], Cancellable] {
