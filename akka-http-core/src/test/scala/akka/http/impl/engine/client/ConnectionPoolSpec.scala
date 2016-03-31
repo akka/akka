@@ -208,8 +208,9 @@ class ConnectionPoolSpec extends AkkaSpec("""
     "automatically shutdown after configured timeout periods" in new TestSetup() {
       val (_, _, _, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second)
       val gateway = Await.result(hcp.gatewayFuture, 500.millis)
-      val PoolGateway.Running(_, shutdownStartedPromise, shutdownCompletedPromise) = gateway.currentState
+      val PoolGateway.Running(_, shutdownStartedPromise, shutdownStartedHandled, shutdownCompletedPromise) = gateway.currentState
       shutdownStartedPromise.isCompleted shouldEqual false
+      shutdownStartedHandled.isCompleted shouldEqual false
       shutdownCompletedPromise.isCompleted shouldEqual false
       Await.result(shutdownStartedPromise.future, 1500.millis) // verify shutdown start (after idle)
       Await.result(shutdownCompletedPromise.future, 1500.millis) // verify shutdown completed
@@ -219,7 +220,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second)
 
       val gateway = Await.result(hcp.gatewayFuture, 500.millis)
-      val PoolGateway.Running(_, _, shutdownCompletedPromise) = gateway.currentState
+      val PoolGateway.Running(_, _, _, shutdownCompletedPromise) = gateway.currentState
       Await.result(shutdownCompletedPromise.future, 1500.millis) // verify shutdown completed
 
       requestIn.sendNext(HttpRequest(uri = "/") -> 42)

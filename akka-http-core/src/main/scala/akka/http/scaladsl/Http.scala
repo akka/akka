@@ -321,7 +321,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    */
   private[akka] def newHostConnectionPool[T](setup: HostConnectionPoolSetup)(
     implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
-    val gatewayFuture = FastFuture.successful(new PoolGateway(setup, Promise()))
+    val shutdownStartedPromise = Promise[Done]()
+    val gatewayFuture = FastFuture.successful(new PoolGateway(setup, shutdownStartedPromise, shutdownStartedPromise.future))
     gatewayClientFlow(setup, gatewayFuture)
   }
 
@@ -568,8 +569,9 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     hostPoolCache.putIfAbsent(setup, gatewayPromise.future) match {
       case null ⇒ // only one thread can get here at a time
         val whenShuttingDown = Promise[Done]()
+        val whenShuttingDownCompleted = Promise[Done]()
         val gateway =
-          try new PoolGateway(setup, whenShuttingDown)
+          try new PoolGateway(setup, whenShuttingDown, whenShuttingDownCompleted.future)
           catch {
             case NonFatal(e) ⇒
               hostPoolCache.remove(setup)
@@ -579,7 +581,10 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
         val fastFuture = FastFuture.successful(gateway)
         hostPoolCache.put(setup, fastFuture) // optimize subsequent gateway accesses
         gatewayPromise.success(gateway) // satisfy everyone who got a hold of our promise while we were starting up
-        whenShuttingDown.future.onComplete(_ ⇒ hostPoolCache.remove(setup, fastFuture))(fm.executionContext)
+        whenShuttingDown.future.onComplete { _ ⇒
+          hostPoolCache.remove(setup, fastFuture)
+          whenShuttingDownCompleted.success(Done)
+        }(fm.executionContext)
         fastFuture
 
       case future ⇒ future // return cached instance
