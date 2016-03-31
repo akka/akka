@@ -5,7 +5,7 @@
 package akka.http.impl.engine.rendering
 
 import akka.parboiled2.CharUtils
-import akka.stream.{Attributes, SourceShape}
+import akka.stream.{ Attributes, SourceShape }
 import akka.util.ByteString
 import akka.event.LoggingAdapter
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
@@ -107,7 +107,6 @@ private object RenderSupport {
 
     override def toString = "CheckContentLength"
   }
-
 
   private def renderChunk(chunk: HttpEntity.ChunkStreamPart): ByteString = {
     import chunk._
