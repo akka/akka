@@ -36,65 +36,64 @@ private[http] object One2OneBidiFlow {
   def apply[I, O](maxPending: Int): BidiFlow[I, I, O, O, NotUsed] =
     BidiFlow.fromGraph(new One2OneBidi[I, O](maxPending))
 
+  /*
+   *    +--------------------+
+   * ~> | in       toWrapped | ~>
+   *    |                    |    
+   * <~ | out    fromWrapped | <~
+   *    +--------------------+
+   */
   class One2OneBidi[I, O](maxPending: Int) extends GraphStage[BidiShape[I, I, O, O]] {
-    val inIn = Inlet[I]("inIn")
-    val inOut = Outlet[I]("inOut")
-    val outIn = Inlet[O]("outIn")
-    val outOut = Outlet[O]("outOut")
+    val in = Inlet[I]("One2OneBidi.in")
+    val out = Outlet[O]("One2OneBidi.out")
+    val toWrapped = Outlet[I]("One2OneBidi.toWrapped")
+    val fromWrapped = Inlet[O]("One2OneBidi.fromWrapped")
 
     override def initialAttributes = Attributes.name("One2OneBidi")
-    val shape = BidiShape(inIn, inOut, outIn, outOut)
+    val shape = BidiShape(in, toWrapped, fromWrapped, out)
 
     override def toString = "One2OneBidi"
 
     override def createLogic(effectiveAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-      private var pending = 0
+      private var insideWrappedFlow = 0
       private var pullSuppressed = false
 
-      // If the inner flow cancelled the upstream before the upstream finished, we still want to treat it as a truncation
-      // since upstream elements might possibly been lost/ignored (although we don't know for sure, since there is a
-      // race with the upstream completion and downstream cancellattion)
-      private var innerFlowCancelled = false
-
-      setHandler(inIn, new InHandler {
+      setHandler(in, new InHandler {
         override def onPush(): Unit = {
-          pending += 1
-          push(inOut, grab(inIn))
+          insideWrappedFlow += 1
+          push(toWrapped, grab(in))
         }
-        override def onUpstreamFinish(): Unit = complete(inOut)
+        override def onUpstreamFinish(): Unit = complete(toWrapped)
       })
 
-      setHandler(inOut, new OutHandler {
+      setHandler(toWrapped, new OutHandler {
         override def onPull(): Unit =
-          if (pending < maxPending || maxPending == -1) pull(inIn)
+          if (insideWrappedFlow < maxPending || maxPending == -1) pull(in)
           else pullSuppressed = true
-        override def onDownstreamFinish(): Unit = {
-          if (!isClosed(inIn)) innerFlowCancelled = true
-          cancel(inIn)
-        }
+        override def onDownstreamFinish(): Unit = cancel(in)
       })
 
-      setHandler(outIn, new InHandler {
+      setHandler(fromWrapped, new InHandler {
         override def onPush(): Unit = {
-          val element = grab(outIn)
-          if (pending > 0) {
-            pending -= 1
-            push(outOut, element)
+          val element = grab(fromWrapped)
+          if (insideWrappedFlow > 0) {
+            insideWrappedFlow -= 1
+            push(out, element)
             if (pullSuppressed) {
               pullSuppressed = false
-              pull(inIn)
+              pull(in)
             }
           } else throw new UnexpectedOutputException(element)
         }
         override def onUpstreamFinish(): Unit = {
-          if (pending == 0 && isClosed(inIn) && !innerFlowCancelled) complete(outOut)
-          else throw OutputTruncationException
+          if (insideWrappedFlow > 0) throw OutputTruncationException
+          else completeStage()
         }
       })
 
-      setHandler(outOut, new OutHandler {
-        override def onPull(): Unit = pull(outIn)
-        override def onDownstreamFinish(): Unit = cancel(outIn)
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = pull(fromWrapped)
+        override def onDownstreamFinish(): Unit = cancel(fromWrapped)
       })
     }
   }
