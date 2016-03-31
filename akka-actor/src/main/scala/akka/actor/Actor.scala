@@ -164,10 +164,12 @@ final case class InvalidActorNameException(message: String) extends AkkaExceptio
  */
 @SerialVersionUID(1L)
 class ActorInitializationException protected (actor: ActorRef, message: String, cause: Throwable)
-  extends AkkaException(message, cause) {
+  extends AkkaException(ActorInitializationException.enrichedMessage(actor, message), cause) {
   def getActor: ActorRef = actor
 }
 object ActorInitializationException {
+  private def enrichedMessage(actor: ActorRef, message: String) =
+    if (actor == null) message else s"${actor.path}: $message"
   private[akka] def apply(actor: ActorRef, message: String, cause: Throwable = null): ActorInitializationException =
     new ActorInitializationException(actor, message, cause)
   private[akka] def apply(message: String): ActorInitializationException = new ActorInitializationException(null, message, null)
