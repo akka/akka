@@ -9,12 +9,14 @@ import java.util.Optional
 import java.util.function.{ Function ⇒ JFunction }
 
 import scala.collection.JavaConverters._
-import scala.compat.java8.OptionConverters._
+import akka.http.impl.util.JavaMapping.Implicits._
 
 import akka.http.javadsl.server.{ Route, Unmarshaller }
 
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 import akka.http.scaladsl.server.directives.ParameterDirectives._
+
+import scala.compat.java8.OptionConverters
 
 abstract class FormFieldDirectives extends FileUploadDirectives {
 
@@ -48,7 +50,7 @@ abstract class FormFieldDirectives extends FileUploadDirectives {
     import t.asScala
     RouteAdapter(
       D.formField(name.as[T].?) { value ⇒
-        inner.apply(value.asJava).delegate
+        inner.apply(OptionConverters.toJava(value)).delegate
       })
   }
 

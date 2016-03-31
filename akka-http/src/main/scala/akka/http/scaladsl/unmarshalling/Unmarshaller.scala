@@ -109,8 +109,6 @@ object Unmarshaller
             } else FastFuture.failed(UnsupportedContentTypeException(ranges: _*))
       }
 
-    // TODO: move back into the [[EnhancedFromEntityUnmarshaller]] value class after the upgrade to Scala 2.11,
-    // Scala 2.10 suffers from this bug: https://issues.scala-lang.org/browse/SI-8018
     private def barkAtUnsupportedContentTypeException(ranges: Seq[ContentTypeRange],
                                                       newContentType: ContentType): PartialFunction[Throwable, Nothing] = {
       case UnsupportedContentTypeException(supported) ⇒ throw new IllegalStateException(

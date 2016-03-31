@@ -7,7 +7,8 @@ package akka.http.javadsl.server
 import akka.http.scaladsl.server
 import akka.japi.pf.PFBuilder
 import akka.http.javadsl.settings.RoutingSettings
-import JavaScalaTypeEquivalence._
+import akka.http.impl.util.JavaMapping.Implicits._
+import akka.http.javadsl.RoutingJavaMapping._
 
 object ExceptionHandler {
   /**
@@ -37,5 +38,5 @@ final class ExceptionHandler private (val asScala: server.ExceptionHandler) {
   /**
    * "Seals" this handler by attaching a default handler as fallback if necessary.
    */
-  def seal(settings: RoutingSettings): ExceptionHandler = new ExceptionHandler(asScala.seal(settings))
+  def seal(settings: RoutingSettings): ExceptionHandler = new ExceptionHandler(asScala.seal(settings.asScala))
 }

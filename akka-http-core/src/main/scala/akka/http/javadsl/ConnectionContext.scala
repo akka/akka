@@ -7,6 +7,7 @@ import java.util.{ Collection ⇒ JCollection, Optional }
 import javax.net.ssl.{ SSLContext, SSLParameters }
 import akka.http.scaladsl
 import akka.stream.TLSClientAuth
+import akka.http.impl.util.JavaMapping.Implicits._
 
 import scala.compat.java8.OptionConverters
 

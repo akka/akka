@@ -7,7 +7,8 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.HttpResponse
-import akka.http.javadsl.server.JavaScalaTypeEquivalence._
+import akka.http.impl.util.JavaMapping.Implicits._
+import akka.http.javadsl.RoutingJavaMapping._
 import akka.http.javadsl.server.Route
 import akka.http.scaladsl
 import akka.http.scaladsl.server.RouteConcatenation._
@@ -24,7 +25,7 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
   private def scalaFlow(system: ActorSystem, materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed] = {
     implicit val s = system
     implicit val m = materializer
-    scaladsl.server.Route.handlerFlow(delegate)
+    Flow[HttpRequest].map(_.asScala).via(delegate).map(_.asJava)
   }
 
   override def orElse(alternative: Route): Route =

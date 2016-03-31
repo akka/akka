@@ -6,11 +6,9 @@ package akka.http.javadsl.server.directives
 import java.io.File
 import java.util.function.BiFunction
 
-import scala.collection.JavaConverters._
-import scala.compat.java8.OptionConverters._
+import akka.http.impl.util.JavaMapping.Implicits._
 
 import akka.http.javadsl.model.ContentType
-import akka.http.javadsl.server.JavaScalaTypeEquivalence._
 import akka.http.javadsl.server.Route
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 import akka.stream.javadsl.Source

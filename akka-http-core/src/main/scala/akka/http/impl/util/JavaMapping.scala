@@ -19,7 +19,7 @@ import akka.http.javadsl.{ model ⇒ jm, HttpConnectionContext, ConnectionContex
 import akka.http.scaladsl.{ model ⇒ sm }
 import akka.http.javadsl.{ settings ⇒ js }
 
-import scala.compat.java8.OptionConverters._
+import akka.http.impl.util.JavaMapping.Implicits._
 
 import scala.util.Try
 
@@ -76,13 +76,6 @@ private[http] object JavaMapping {
     implicit def convertSeqToScala[J](j: Seq[J])(implicit mapping: J2SMapping[J]): immutable.Seq[mapping.S] =
       j.map(mapping.toScala(_)).toList
 
-    implicit def convertToJavaList[J](j: Seq[J])(implicit mapping: J2SMapping[J]): immutable.Seq[mapping.S] = {
-      val arr = new java.util.ArrayList[mapping.S](j.size)
-      var i = 0
-
-      j.map(mapping.toScala(_)).toList
-    }
-
     implicit def AddAsScala[J](javaObject: J)(implicit mapping: J2SMapping[J]): AsScala[mapping.S] = new AsScala[mapping.S] {
       def asScala = convertToScala(javaObject)
     }
@@ -92,11 +85,11 @@ private[http] object JavaMapping {
   }
 
   /** This trivial mapping isn't enabled by default to prevent it from conflicting with the `Inherited` ones */
-  def identity[T]: JavaMapping[T, T] =
-    new JavaMapping[T, T] {
-      def toJava(scalaObject: T): J = scalaObject
-      def toScala(javaObject: T): S = javaObject
-    }
+  def identity[T]: JavaMapping[T, T] = _identityMapping.asInstanceOf[JavaMapping[T, T]]
+  private final val _identityMapping = new JavaMapping[Any, Any] {
+    def toJava(scalaObject: Any): Any = scalaObject
+    def toScala(javaObject: Any): Any = javaObject
+  }
 
   implicit def iterableMapping[_J, _S](implicit mapping: JavaMapping[_J, _S]): JavaMapping[jl.Iterable[_J], immutable.Seq[_S]] =
     new JavaMapping[jl.Iterable[_J], immutable.Seq[_S]] {
@@ -114,8 +107,8 @@ private[http] object JavaMapping {
     }
   implicit def option[_J, _S](implicit mapping: JavaMapping[_J, _S]): JavaMapping[Optional[_J], Option[_S]] =
     new JavaMapping[Optional[_J], Option[_S]] {
-      def toScala(javaObject: Optional[_J]): Option[_S] = javaObject.asScala.map(mapping.toScala)
-      def toJava(scalaObject: Option[_S]): Optional[_J] = scalaObject.map(mapping.toJava).asJava
+      def toScala(javaObject: Optional[_J]): Option[_S] = OptionConverters.toScala(javaObject).map(mapping.toScala)
+      def toJava(scalaObject: Option[_S]): Optional[_J] = OptionConverters.toJava(scalaObject.map(mapping.toJava))
     }
 
   implicit def flowMapping[JIn, SIn, JOut, SOut, M](implicit inMapping: JavaMapping[JIn, SIn], outMapping: JavaMapping[JOut, SOut]): JavaMapping[javadsl.Flow[JIn, JOut, M], scaladsl.Flow[SIn, SOut, M]] =

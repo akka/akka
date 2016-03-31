@@ -8,13 +8,11 @@ import java.util.concurrent.CompletionStage
 import java.util.function.{ Function ⇒ JFunction }
 import java.util.function.Supplier
 
-import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 
 import akka.http.javadsl.model.headers.HttpChallenge
 import akka.http.javadsl.model.headers.HttpCredentials
-import akka.http.javadsl.server.JavaScalaTypeEquivalence._
 import akka.http.javadsl.server.Route
 import akka.http.scaladsl
 
@@ -24,11 +22,11 @@ object SecurityDirectives {
   /**
    * Represents HTTP Basic or OAuth2 authentication credentials supplied with a request.
    */
-  case class ProvidedCredentials(private val toScala: scaladsl.server.directives.Credentials.Provided) {
+  case class ProvidedCredentials(private val asScala: scaladsl.server.directives.Credentials.Provided) {
     /**
      * The username or token provided with the credentials
      */
-    def identifier: String = toScala.identifier
+    def identifier: String = asScala.identifier
     
     /**
      * Safely compares the passed in `secret` with the received secret part of the Credentials.
@@ -36,7 +34,7 @@ object SecurityDirectives {
      *
      * See also [[akka.http.impl.util.EnhancedString#secure_==]], for more information.
      */
-    def verify(secret: String): Boolean = toScala.verify(secret)    
+    def verify(secret: String): Boolean = asScala.verify(secret)    
   }
   
   private def toJava(cred: scaladsl.server.directives.Credentials): Optional[ProvidedCredentials] = cred match {
@@ -47,13 +45,14 @@ object SecurityDirectives {
 
 abstract class SecurityDirectives extends SchemeDirectives {
   import SecurityDirectives._
-  
+  import akka.http.impl.util.JavaMapping.Implicits._
+
   /**
    * Extracts the potentially present [[HttpCredentials]] provided with the request's [[akka.http.javadsl.model.headers.Authorization]] header.
    */
   def extractCredentials(inner: JFunction[Optional[HttpCredentials], Route]): Route = RouteAdapter {
     D.extractCredentials { cred =>
-      inner.apply(cred.asJava).delegate
+      inner.apply(cred.map(_.asJava).asJava).delegate // TODO attempt to not need map()
     }
   }
   
@@ -191,7 +190,7 @@ abstract class SecurityDirectives extends SchemeDirectives {
                                            inner: JFunction[T, Route]): Route = RouteAdapter {
     D.extractExecutionContext { implicit ctx =>
       val scalaAuthenticator = { cred: Option[scaladsl.model.headers.HttpCredentials] =>
-        authenticator.apply(cred.asJava).toScala.map(_.left.map(ch => ch: scaladsl.model.headers.HttpChallenge))
+        authenticator.apply(cred.map(_.asJava).asJava).toScala.map(_.left.map(_.asScala))
       }
     
       D.authenticateOrRejectWithChallenge(scalaAuthenticator) { t =>
@@ -209,7 +208,7 @@ abstract class SecurityDirectives extends SchemeDirectives {
                               inner: JFunction[T, Route]): Route = RouteAdapter {
     D.extractExecutionContext { implicit ctx =>
       val scalaAuthenticator = { cred: Option[scaladsl.model.headers.HttpCredentials] =>
-        authenticator.apply(cred.filter(c.isInstance).asJava).toScala.map(_.left.map(ch => ch: scaladsl.model.headers.HttpChallenge))
+        authenticator.apply(cred.filter(c.isInstance).map(_.asJava).asJava.asInstanceOf[Optional[C]]).toScala.map(_.left.map(_.asScala)) // TODO make sure cast is safe
       }
     
       D.authenticateOrRejectWithChallenge(scalaAuthenticator) { t =>

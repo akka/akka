@@ -43,11 +43,11 @@ private[http] object RoutingJavaMapping {
     override def toScala(javaObject: javadsl.server.RequestContext): RequestContext = javaObject.delegate
     override def toJava(scalaObject: RequestContext): server.RequestContext = javadsl.server.RequestContext.wrap(scalaObject)
   }
-  implicit object RouteResult extends Inherited[javadsl.server.RouteResult, scaladsl.server.RouteResult]
+  implicit object convertRouteResult extends Inherited[javadsl.server.RouteResult, scaladsl.server.RouteResult]
 
-  implicit object DirectoryRenderer extends Inherited[jdirectives.DirectoryRenderer, sdirectives.FileAndResourceDirectives.DirectoryRenderer]
-  implicit object ContentTypeResolver extends Inherited[jdirectives.ContentTypeResolver, sdirectives.ContentTypeResolver]
-  implicit object DirectoryListing extends Inherited[jdirectives.DirectoryListing, sdirectives.DirectoryListing]
+  implicit object convertDirectoryRenderer extends Inherited[jdirectives.DirectoryRenderer, sdirectives.FileAndResourceDirectives.DirectoryRenderer]
+  implicit object convertContentTypeResolver extends Inherited[jdirectives.ContentTypeResolver, sdirectives.ContentTypeResolver]
+  implicit object convertDirectoryListing extends Inherited[jdirectives.DirectoryListing, sdirectives.DirectoryListing]
 
   //  implicit object javaToScalaMediaType extends Inherited[javadsl.model.MediaType, scaladsl.model.MediaType]
   //  implicit object javaToScalaContentType extends Inherited[javadsl.model.ContentType, scaladsl.model.ContentType]
@@ -67,9 +67,9 @@ private[http] object RoutingJavaMapping {
   //  implicit object javaToScalaMessage extends Inherited[javadsl.model.ws.Message, scaladsl.model.ws.Message]
   //  implicit object javaToScalaEntityTag extends Inherited[javadsl.model.headers.EntityTag, scaladsl.model.headers.EntityTag]
   //  implicit object javaToScalaDateTime extends Inherited[javadsl.model.DateTime, scaladsl.model.DateTime]
-  implicit object javaToScalaRouteSettings extends Inherited[javadsl.settings.RoutingSettings, scaladsl.settings.RoutingSettings]
-  implicit object javaToScalaParserSettings extends Inherited[javadsl.settings.ParserSettings, scaladsl.settings.ParserSettings]
-  implicit object javaToScalaLogEntry extends Inherited[javadsl.server.directives.LogEntry, scaladsl.server.directives.LogEntry]
+  implicit object convertRouteSettings extends Inherited[javadsl.settings.RoutingSettings, scaladsl.settings.RoutingSettings]
+  implicit object convertParserSettings extends Inherited[javadsl.settings.ParserSettings, scaladsl.settings.ParserSettings]
+  implicit object convertLogEntry extends Inherited[javadsl.server.directives.LogEntry, scaladsl.server.directives.LogEntry]
 
   //  // not made implicit since these are subtypes of RequestEntity
   //  val javaToScalaHttpEntity extends Inherited[javadsl.model.HttpEntity, scaladsl.model.HttpEntity]

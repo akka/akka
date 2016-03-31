@@ -8,9 +8,9 @@ package directives
 import java.util.function.Supplier
 
 import scala.collection.JavaConverters._
-
+import akka.http.impl.util.JavaMapping.Implicits._
+import akka.http.javadsl.RoutingJavaMapping._
 import akka.http.javadsl.model.headers.HttpEncoding
-import akka.http.javadsl.server.JavaScalaTypeEquivalence._
 import akka.http.javadsl.server.Route
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 
@@ -20,7 +20,7 @@ abstract class CodingDirectives extends CacheConditionDirectives {
    * if the given response encoding is not accepted by the client.
    */
   def responseEncodingAccepted(encoding: HttpEncoding, inner: Supplier[Route]): Route = RouteAdapter {
-    D.responseEncodingAccepted(encoding) {
+    D.responseEncodingAccepted(encoding.asScala) {
       inner.get.delegate
     }
   }
@@ -79,7 +79,7 @@ abstract class CodingDirectives extends CacheConditionDirectives {
    * Rejects the request with an UnsupportedRequestEncodingRejection if its encoding doesn't match the given one.
    */
   def requestEncodedWith(encoding: HttpEncoding, inner: Supplier[Route]): Route = RouteAdapter {
-    D.requestEncodedWith(encoding) {
+    D.requestEncodedWith(encoding.asScala) {
       inner.get.delegate
     }
   }

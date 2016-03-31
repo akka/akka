@@ -248,7 +248,7 @@ object FileAndResourceDirectives extends FileAndResourceDirectives {
 
     def marshaller(renderVanityFooter: Boolean): ToEntityMarshaller[DirectoryListing]
     final override def directoryMarshaller(renderVanityFooter: Boolean): akka.http.javadsl.server.Marshaller[JDL, JRE] = {
-      Marshaller.combined[JDL, SDL, SRE](x ⇒ JavaMapping.toScala(x)(RoutingJavaMapping.DirectoryListing))(marshaller(renderVanityFooter)).map(_.asJava)
+      Marshaller.combined[JDL, SDL, SRE](x ⇒ JavaMapping.toScala(x)(RoutingJavaMapping.convertDirectoryListing))(marshaller(renderVanityFooter)).map(_.asJava)
     }
 
   }

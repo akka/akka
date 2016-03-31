@@ -14,7 +14,8 @@ import scala.collection.JavaConverters._
 
 import akka.http.javadsl.model.RemoteAddress
 import akka.http.javadsl.model.headers.Language
-import akka.http.javadsl.server.JavaScalaTypeEquivalence._
+import akka.http.impl.util.JavaMapping.Implicits._
+import akka.http.javadsl.RoutingJavaMapping._
 
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 
@@ -74,7 +75,7 @@ abstract class MiscDirectives extends MethodDirectives {
   def selectPreferredLanguage(languages: JIterable[Language], inner: JFunction[Language, Route]): Route = RouteAdapter {
     languages.asScala.toList match {
       case head :: tail ⇒
-        D.selectPreferredLanguage(head, tail.toSeq: _*) { lang ⇒ inner.apply(lang).delegate }
+        D.selectPreferredLanguage(head.asScala, tail.map(_.asScala).toSeq: _*) { lang ⇒ inner.apply(lang).delegate }
       case _ ⇒
         D.reject()
     }

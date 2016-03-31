@@ -11,7 +11,6 @@ import akka.http.scaladsl.model.Uri.ParsingMode
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.{ model ⇒ sm }
 import akka.http.impl.util.JavaMapping.Implicits._
-import scala.compat.java8.OptionConverters._
 
 /** INTERNAL API */
 case class JavaUri(uri: sm.Uri) extends jm.Uri {

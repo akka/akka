@@ -9,17 +9,18 @@ import java.util.{ List ⇒ JList }
 import java.util.Optional
 import java.util.function.{ Function ⇒ JFunction }
 
+import akka.NotUsed
 import scala.collection.JavaConverters._
-import scala.compat.java8.OptionConverters._
-
-import JavaScalaTypeEquivalence._
-
+import akka.http.scaladsl.model.{ ws ⇒ s }
 import akka.http.javadsl.model.ws.Message
 import akka.http.javadsl.model.ws.UpgradeToWebSocket
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 import akka.stream.javadsl.Flow
+import akka.stream.scaladsl
 
 abstract class WebSocketDirectives extends SecurityDirectives {
+  import akka.http.impl.util.JavaMapping.Implicits._
+
   /**
    * Extract the [[UpgradeToWebSocket]] header if existent. Rejects with an [[ExpectedWebSocketRequestRejection]], otherwise.
    */
@@ -44,7 +45,7 @@ abstract class WebSocketDirectives extends SecurityDirectives {
    * [[ExpectedWebSocketRequestRejection]].
    */
   def handleWebSocketMessages[T](handler: Flow[Message, Message, T]): Route = RouteAdapter {
-    D.handleWebSocketMessages(handler)
+    D.handleWebSocketMessages(adapt(handler))
   }
 
   /**
@@ -52,7 +53,8 @@ abstract class WebSocketDirectives extends SecurityDirectives {
    * rejects other requests with an [[ExpectedWebSocketRequestRejection]] or an [[UnsupportedWebSocketSubprotocolRejection]].
    */
   def handleWebSocketMessagesForProtocol(handler: Flow[Message, Message, Any], subprotocol: String): Route = RouteAdapter {
-    D.handleWebSocketMessagesForProtocol(handler, subprotocol)
+    val adapted = scaladsl.Flow[s.Message].map(_.asJava).via(handler).map(_.asScala)
+    D.handleWebSocketMessagesForProtocol(adapted, subprotocol)
   }
 
   /**
@@ -67,7 +69,12 @@ abstract class WebSocketDirectives extends SecurityDirectives {
    * To support several subprotocols you may chain several `handleWebSocketMessage` Routes.
    */
   def handleWebSocketMessagesForOptionalProtocol(handler: Flow[Message, Message, Any], subprotocol: Optional[String]): Route = RouteAdapter {
-    D.handleWebSocketMessagesForOptionalProtocol(handler, subprotocol.asScala)
+    val adapted = scaladsl.Flow[s.Message].map(_.asJava).via(handler).map(_.asScala)
+    D.handleWebSocketMessagesForOptionalProtocol(adapted, subprotocol.asScala)
   }
 
+  // TODO this is because scala Message does not extend java Message - we could fix that, but http-core is stable
+  private def adapt[T](handler: Flow[Message, Message, T]): scaladsl.Flow[s.Message, s.Message, NotUsed] = {
+    scaladsl.Flow[s.Message].map(_.asJava).via(handler).map(_.asScala)
+  }
 }
