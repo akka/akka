@@ -65,13 +65,12 @@ private[http] object StreamUtils {
     val promise = Promise[Unit]()
     val transformer = new PushStage[T, T] {
       def onPush(element: T, ctx: Context[T]) = ctx.push(element)
-      override def onUpstreamFinish(ctx: Context[T]) = {
-        promise.success(())
-        super.onUpstreamFinish(ctx)
-      }
       override def onUpstreamFailure(cause: Throwable, ctx: Context[T]) = {
         promise.failure(cause)
         ctx.fail(cause)
+      }
+      override def postStop(): Unit = {
+        promise.trySuccess(())
       }
     }
     source.transform(() ⇒ transformer) -> promise.future
