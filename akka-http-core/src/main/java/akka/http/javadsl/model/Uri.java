@@ -57,7 +57,7 @@ public abstract class Uri {
   public abstract String path();
 
   /**
-   * Returns the the path segments of this Uri as an Iterable.
+   * Returns the path segments of this Uri as an Iterable.
    */
   public abstract Iterable<String> pathSegments();
 
