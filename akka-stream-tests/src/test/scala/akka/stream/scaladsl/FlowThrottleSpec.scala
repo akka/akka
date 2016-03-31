@@ -46,6 +46,23 @@ class FlowThrottleSpec extends AkkaSpec {
         .cancel() // We won't wait 100 days, sorry
     }
 
+    "work if there are two throttles in different streams" in Utils.assertAllStagesStopped {
+      val sharedThrottle = Flow[Int].throttle(1, 1.day, 1, Enforcing)
+
+      // If there is accidental shared state then we would not be able to pass through the single element
+      Source.single(1)
+        .via(sharedThrottle)
+        .via(sharedThrottle)
+        .runWith(Sink.seq).futureValue should ===(Seq(1))
+
+      // It works with a new stream, too
+      Source.single(2)
+        .via(sharedThrottle)
+        .via(sharedThrottle)
+        .runWith(Sink.seq).futureValue should ===(Seq(2))
+
+    }
+
     "emit single element per tick" in Utils.assertAllStagesStopped {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
