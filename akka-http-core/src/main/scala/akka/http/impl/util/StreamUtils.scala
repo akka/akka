@@ -63,17 +63,32 @@ private[http] object StreamUtils {
 
   def captureTermination[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit]) = {
     val promise = Promise[Unit]()
-    val transformer = new PushStage[T, T] {
-      def onPush(element: T, ctx: Context[T]) = ctx.push(element)
-      override def onUpstreamFailure(cause: Throwable, ctx: Context[T]) = {
-        promise.failure(cause)
-        ctx.fail(cause)
-      }
-      override def postStop(): Unit = {
-        promise.trySuccess(())
+    val transformer = new SimpleLinearGraphStage[T] {
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+        setHandler(in, new InHandler {
+          override def onPush(): Unit = push(out, grab(in))
+
+          override def onUpstreamFinish(): Unit = {
+            promise.trySuccess(())
+            completeStage()
+          }
+
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            promise.failure(ex)
+            failStage(ex)
+          }
+        })
+
+        setHandler(out, new OutHandler {
+          override def onPull(): Unit = pull(in)
+          override def onDownstreamFinish(): Unit = {
+            promise.trySuccess(())
+            completeStage()
+          }
+        })
       }
     }
-    source.transform(() ⇒ transformer) -> promise.future
+    source.via(transformer) -> promise.future
   }
 
   def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString, NotUsed] = {
