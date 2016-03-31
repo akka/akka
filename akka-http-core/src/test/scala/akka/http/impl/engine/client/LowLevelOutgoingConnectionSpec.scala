@@ -20,7 +20,7 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
-import akka.testkit.AkkaSpec
+import akka.testkit.{EventFilter, AkkaSpec}
 
 class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside {
   implicit val materializer = ActorMaterializer()
@@ -290,7 +290,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         info.summary shouldEqual "HTTP message had declared Content-Length 8 but entity data stream amounts to 2 bytes less"
         netInSub.sendComplete()
         responsesSub.request(1)
-        responses.expectError(One2OneBidiFlow.OutputTruncationException)
+        responses.expectComplete()
       }
 
       "catch the request entity stream being longer than the Content-Length" in new TestSetup {
@@ -316,7 +316,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         info.summary shouldEqual "HTTP message had declared Content-Length 8 but entity data stream amounts to more bytes"
         netInSub.sendComplete()
         responsesSub.request(1)
-        responses.expectError(One2OneBidiFlow.OutputTruncationException)
+        responses.expectComplete()
       }
 
       "catch illegal response starts" in new TestSetup {
@@ -359,7 +359,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         val error @ EntityStreamException(info) = probe.expectError()
         info.summary shouldEqual "Illegal chunk termination"
 
-        responses.expectError()
+        responses.expectComplete()
         netOut.expectComplete()
         requestsSub.expectCancellation()
         netInSub.expectCancellation()

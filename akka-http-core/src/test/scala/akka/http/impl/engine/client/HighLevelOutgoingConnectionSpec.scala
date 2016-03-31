@@ -87,7 +87,8 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
         .grouped(10)
         .runWith(Sink.head)
 
-      a[One2OneBidiFlow.OutputTruncationException.type] should be thrownBy Await.result(x, 3.second)
+      val responses = Await.result(x, 3.second)
+      responses.length should ===(2)
       binding.futureValue.unbind()
     }
 
