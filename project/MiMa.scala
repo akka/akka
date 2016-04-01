@@ -3,7 +3,6 @@
  */
 package akka
 
-import akka.MiMa.FilterAnyProblemStartingWith
 import sbt._
 import sbt.Keys._
 import com.typesafe.tools.mima.plugin.MimaPlugin
@@ -75,6 +74,7 @@ object MiMa extends AutoPlugin {
     val bcIssuesBetween23and24 = Seq(
       FilterAnyProblem("akka.remote.testconductor.Terminate"),
       FilterAnyProblem("akka.remote.testconductor.TerminateMsg"),
+
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.testconductor.Conductor.shutdown"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.testkit.MultiNodeSpec.akka$remote$testkit$MultiNodeSpec$$deployer"),
       FilterAnyProblem("akka.remote.EndpointManager$Pass"),
@@ -712,33 +712,6 @@ object MiMa extends AutoPlugin {
         // #19828
         ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.persistence.Eventsourced#ProcessingState.onWriteMessageComplete"),
         ProblemFilters.exclude[ReversedAbstractMethodProblem]("akka.persistence.Eventsourced#ProcessingState.onWriteMessageComplete"),
-
-        // #20028 Simplify TickSource cancellation
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$TickSource$TickSourceCancellable"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$TickSource$"),
-
-        // #19834 replacing PushStages usages with GraphStages
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$LimitWeighted"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$Collect$"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$DropWhile"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$LimitWeighted$"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$Collect"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$DropWhile$"),
-        FilterAnyProblemStartingWith("akka.stream.impl.fusing.Collect"),
-        FilterAnyProblemStartingWith("akka.stream.impl.fusing.DropWhile"),
-        FilterAnyProblemStartingWith("akka.stream.impl.fusing.LimitWeighted"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$TickSource$"),
-
-        // #19892 Removed internal Breaker classes from akka.stream.impl.fusing
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$Breaker$"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphStages.breaker"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphStages.bidiBreaker"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$Breaker$Fail$"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$Breaker$FailAndCancel$"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$Breaker$FailAndCancel"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$Breaker"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$Breaker$Operation"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$Breaker$Fail"),
 
         // #19390 Add flow monitor
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.monitor")

@@ -173,10 +173,6 @@ private[stream] object Stages {
     override def create(attr: Attributes): Stage[T, immutable.Seq[T]] = fusing.Sliding(n, step)
   }
 
-  final case class TakeWhile[T](p: T ⇒ Boolean, attributes: Attributes = takeWhile) extends SymbolicStage[T, T] {
-    override def create(attr: Attributes): Stage[T, T] = fusing.TakeWhile(p, supervision(attr))
-  }
-
   final case class Scan[In, Out](zero: Out, f: (Out, In) ⇒ Out, attributes: Attributes = scan) extends SymbolicStage[In, Out] {
     override def create(attr: Attributes): Stage[In, Out] = fusing.Scan(zero, f, supervision(attr))
   }
