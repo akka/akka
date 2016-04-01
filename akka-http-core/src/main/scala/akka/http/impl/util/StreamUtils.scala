@@ -64,28 +64,21 @@ private[http] object StreamUtils {
   def captureTermination[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit]) = {
     val promise = Promise[Unit]()
     val transformer = new SimpleLinearGraphStage[T] {
-      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = push(out, grab(in))
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+        override def onPush(): Unit = push(out, grab(in))
 
-          override def onUpstreamFinish(): Unit = {
-            promise.trySuccess(())
-            completeStage()
-          }
+        override def onPull(): Unit = pull(in)
 
-          override def onUpstreamFailure(ex: Throwable): Unit = {
-            promise.failure(ex)
-            failStage(ex)
-          }
-        })
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          promise.failure(ex)
+          failStage(ex)
+        }
 
-        setHandler(out, new OutHandler {
-          override def onPull(): Unit = pull(in)
-          override def onDownstreamFinish(): Unit = {
-            promise.trySuccess(())
-            completeStage()
-          }
-        })
+        override def postStop(): Unit = {
+          promise.trySuccess(())
+        }
+
+        setHandlers(in, out, this)
       }
     }
     source.via(transformer) -> promise.future
