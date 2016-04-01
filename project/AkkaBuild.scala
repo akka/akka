@@ -1336,13 +1336,22 @@ object AkkaBuild extends Build {
       // Removed internal methods https://github.com/akka/akka/pull/20162/files
       ProblemFilters.exclude[MissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreter.fail"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.stream.stage.GraphStageLogic.failStage"),
-      
+
       ProblemFilters.exclude[FinalClassProblem]("akka.stream.impl.fusing.GraphStages$Breaker"),
 
       // #19589 auto flushing (params on internal classes changed)
       ProblemFilters.exclude[MissingMethodProblem]("akka.stream.impl.io.OutputStreamSubscriber.this"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.stream.impl.io.OutputStreamSubscriber.props"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.stream.impl.io.OutputStreamSink.this")
+      ProblemFilters.exclude[MissingMethodProblem]("akka.stream.impl.io.OutputStreamSink.this"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.stream.stage.GraphStageLogic.failStage"),
+
+      // #19783
+      ProblemFilters.exclude[MissingMethodProblem]("akka.stream.impl.ActorRefBackpressureSinkStage.maxBuffer"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.stream.impl.io.OutputStreamSourceStage.maxBuffer"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.stream.impl.io.InputStreamSinkStage.maxBuffer"),
+
+      // #Changing QuueueSink internal implementation
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.QueueSink$RequestElementCallback")
     )
   }
 

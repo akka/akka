@@ -7,8 +7,9 @@ import java.io.{ IOException, OutputStream }
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ BlockingQueue, LinkedBlockingQueue }
 
-import akka.stream.{ Outlet, SourceShape, Attributes }
+import akka.stream.{ Attributes, Outlet, SourceShape }
 import akka.stream.Attributes.InputBuffer
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.OutputStreamSourceStage._
 import akka.stream.stage._
 import akka.util.ByteString
@@ -35,12 +36,13 @@ private[akka] object OutputStreamSourceStage {
 private[akka] class OutputStreamSourceStage(writeTimeout: FiniteDuration) extends GraphStageWithMaterializedValue[SourceShape[ByteString], OutputStream] {
   val out = Outlet[ByteString]("OutputStreamSource.out")
   override val shape: SourceShape[ByteString] = SourceShape.of(out)
-
-  // has to be in this order as module depends on shape
-  val maxBuffer = module.attributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
-  require(maxBuffer > 0, "Buffer size must be greater than 0")
+  override def initialAttributes = DefaultAttributes.outputStreamSource
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, OutputStream) = {
+    // has to be in this order as module depends on shape
+    val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+    require(maxBuffer > 0, "Buffer size must be greater than 0")
+
     val dataQueue = new LinkedBlockingQueue[ByteString](maxBuffer)
     val downstreamStatus = new AtomicReference[DownstreamStatus](Ok)
 

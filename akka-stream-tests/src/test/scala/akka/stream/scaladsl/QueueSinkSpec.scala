@@ -116,5 +116,11 @@ class QueueSinkSpec extends AkkaSpec {
       Await.result(queue.pull(), noMsgTimeout) should be(None)
     }
 
+    "fail to materialize with zero sized input buffer" in {
+      an[IllegalArgumentException] shouldBe thrownBy {
+        Source.single(()).runWith(Sink.queue().withAttributes(Attributes.inputBuffer(0, 0)))
+      }
+    }
+
   }
 }

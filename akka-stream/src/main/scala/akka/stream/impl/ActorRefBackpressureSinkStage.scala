@@ -8,10 +8,14 @@ import java.util
 import akka.actor._
 import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Watch }
 import akka.stream.stage.GraphStageLogic.StageActorRef
-import akka.stream.{ Inlet, SinkShape, ActorMaterializer, Attributes }
+import akka.stream.{ ActorMaterializer, Attributes, Inlet, SinkShape }
 import akka.stream.Attributes.InputBuffer
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
 
+/**
+ * INTERNAL API
+ */
 /**
  * INTERNAL API
  */
@@ -21,14 +25,15 @@ private[akka] class ActorRefBackpressureSinkStage[In](ref: ActorRef, onInitMessa
                                                       onFailureMessage: (Throwable) ⇒ Any)
   extends GraphStage[SinkShape[In]] {
   val in: Inlet[In] = Inlet[In]("ActorRefBackpressureSink.in")
+  override def initialAttributes = DefaultAttributes.actorRefWithAck
   override val shape: SinkShape[In] = SinkShape(in)
-
-  val maxBuffer = module.attributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
-  require(maxBuffer > 0, "Buffer size must be greater than 0")
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
       implicit var self: StageActorRef = _
+
+      val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+      require(maxBuffer > 0, "Buffer size must be greater than 0")
 
       val buffer: util.Deque[In] = new util.ArrayDeque[In]()
       var acknowledgementReceived = false
@@ -36,9 +41,15 @@ private[akka] class ActorRefBackpressureSinkStage[In](ref: ActorRef, onInitMessa
 
       private def receive(evt: (ActorRef, Any)): Unit = {
         evt._2 match {
-          case `ackMessage` ⇒
-            if (!buffer.isEmpty) sendData()
-            else acknowledgementReceived = true
+          case `ackMessage` ⇒ {
+            if (buffer.isEmpty) acknowledgementReceived = true
+            else {
+              // onPush might have filled the buffer up and
+              // stopped pulling, so we pull here
+              if (buffer.size() == maxBuffer) tryPull(in)
+              dequeueAndSend()
+            }
+          }
           case Terminated(`ref`) ⇒ completeStage()
           case _                 ⇒ //ignore all other messages
         }
@@ -52,10 +63,8 @@ private[akka] class ActorRefBackpressureSinkStage[In](ref: ActorRef, onInitMessa
         pull(in)
       }
 
-      private def sendData(): Unit = {
-        if (buffer.size() == maxBuffer) tryPull(in)
+      private def dequeueAndSend(): Unit = {
         ref ! buffer.poll()
-        acknowledgementReceived = false
         if (buffer.isEmpty && completeReceived) finish()
       }
 
@@ -67,7 +76,10 @@ private[akka] class ActorRefBackpressureSinkStage[In](ref: ActorRef, onInitMessa
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
           buffer offer grab(in)
-          if (acknowledgementReceived) sendData()
+          if (acknowledgementReceived) {
+            dequeueAndSend()
+            acknowledgementReceived = false
+          }
           if (buffer.size() < maxBuffer) pull(in)
         }
         override def onUpstreamFinish(): Unit = {
