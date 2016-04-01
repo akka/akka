@@ -616,7 +616,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.limit]], [[FlowOps.limitWeighted]]
    */
-  def takeWhile(p: Out ⇒ Boolean): Repr[Out] = andThen(TakeWhile(p))
+  def takeWhile(p: Out ⇒ Boolean): Repr[Out] = via(TakeWhile(p))
 
   /**
    * Discard elements at the beginning of the stream while predicate is true.
