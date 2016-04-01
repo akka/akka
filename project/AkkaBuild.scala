@@ -1335,7 +1335,14 @@ object AkkaBuild extends Build {
     val akkaStream = Seq(
       // Removed internal methods https://github.com/akka/akka/pull/20162/files
       ProblemFilters.exclude[MissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreter.fail"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.stream.stage.GraphStageLogic.failStage")
+      ProblemFilters.exclude[MissingMethodProblem]("akka.stream.stage.GraphStageLogic.failStage"),
+      
+      ProblemFilters.exclude[FinalClassProblem]("akka.stream.impl.fusing.GraphStages$Breaker"),
+
+      // #19589 auto flushing (params on internal classes changed)
+      ProblemFilters.exclude[MissingMethodProblem]("akka.stream.impl.io.OutputStreamSubscriber.this"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.stream.impl.io.OutputStreamSubscriber.props"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.stream.impl.io.OutputStreamSink.this")
     )
   }
 
