@@ -43,8 +43,8 @@ private[akka] final case class Filter[T](p: T ⇒ Boolean, decider: Supervision.
 }
 
 /**
-  * INTERNAL API
-  */
+ * INTERNAL API
+ */
 private[akka] final case class TakeWhile[T](p: T ⇒ Boolean) extends SimpleLinearGraphStage[T] {
   override def initialAttributes: Attributes = DefaultAttributes.takeWhile
 
@@ -67,7 +67,7 @@ private[akka] final case class TakeWhile[T](p: T ⇒ Boolean) extends SimpleLine
         } catch {
           case NonFatal(ex) ⇒ decider(ex) match {
             case Supervision.Stop ⇒ failStage(ex)
-            case _ ⇒ pull(in)
+            case _                ⇒ pull(in)
           }
         }
       }
