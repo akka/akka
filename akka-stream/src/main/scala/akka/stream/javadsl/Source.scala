@@ -23,7 +23,6 @@ import scala.compat.java8.OptionConverters._
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
 import scala.compat.java8.FutureConverters._
-import akka.stream.impl.SourceQueueAdapter
 
 /** Java API */
 object Source {
@@ -1869,6 +1868,15 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    */
   def watchTermination[M]()(matF: function.Function2[Mat, CompletionStage[Done], M]): javadsl.Source[Out, M] =
     new Source(delegate.watchTermination()((left, right) ⇒ matF(left, right.toJava)))
+
+  /**
+    * Materializes to `FlowMonitor[Out]` that allows monitoring of the the current flow. All events are propagated
+    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
+    * event, and may therefor affect performance.
+    * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
+    */
+  def monitor[M]()(combine: function.Function2[Mat, FlowMonitor[Out], M]): javadsl.Source[Out, M] =
+    new Source(delegate.monitor()(combinerToScala(combine)))
 
   /**
    * Delays the initial element by the specified duration.
