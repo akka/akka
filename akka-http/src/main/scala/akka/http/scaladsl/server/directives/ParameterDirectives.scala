@@ -11,21 +11,31 @@ import scala.util.{ Failure, Success }
 import akka.http.scaladsl.common._
 import akka.http.impl.util._
 
+/**
+ * @groupname param Parameter directives
+ * @groupprio param 150
+ */
 trait ParameterDirectives extends ToNameReceptacleEnhancements {
   import ParameterDirectives._
 
   /**
    * Extracts the request's query parameters as a `Map[String, String]`.
+   *
+   * @group param
    */
   def parameterMap: Directive1[Map[String, String]] = _parameterMap
 
   /**
    * Extracts the request's query parameters as a `Map[String, List[String]]`.
+   *
+   * @group param
    */
   def parameterMultiMap: Directive1[Map[String, List[String]]] = _parameterMultiMap
 
   /**
    * Extracts the request's query parameters as a `Seq[(String, String)]`.
+   *
+   * @group param
    */
   def parameterSeq: Directive1[immutable.Seq[(String, String)]] = _parameterSeq
 
@@ -37,6 +47,8 @@ trait ParameterDirectives extends ToNameReceptacleEnhancements {
    * "too many arguments for method parameter" or "type mismatch" error.
    *
    * As a workaround add an `import ParameterDirectives.ParamMagnet` or use Scala 2.11.x.
+   *
+   * @group param
    */
   def parameter(pdm: ParamMagnet): pdm.Out = pdm()
 
@@ -48,6 +60,8 @@ trait ParameterDirectives extends ToNameReceptacleEnhancements {
    * "too many arguments for method parameters" or "type mismatch" error.
    *
    * As a workaround add an `import ParameterDirectives.ParamMagnet` or use Scala 2.11.x.
+   *
+   * @group param
    */
   def parameters(pdm: ParamMagnet): pdm.Out = pdm()
 

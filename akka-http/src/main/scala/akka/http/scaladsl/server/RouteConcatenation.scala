@@ -7,8 +7,15 @@ package akka.http.scaladsl.server
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 
+/**
+ * @groupname concat Route concatenation
+ * @groupprio concat 300
+ */
 trait RouteConcatenation {
 
+  /**
+   * @group concat
+   */
   implicit def enhanceRouteWithConcatenation(route: Route): RouteConcatenation.RouteWithConcatenation =
     new RouteConcatenation.RouteWithConcatenation(route: Route)
 }

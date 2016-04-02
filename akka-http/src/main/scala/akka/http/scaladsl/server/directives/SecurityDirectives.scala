@@ -20,6 +20,9 @@ import scala.util.{Try, Success}
  * and [[Authorization]]. Most prominently, HTTP Basic authentication as defined in RFC 2617.
  *
  * See: <a href="https://www.ietf.org/rfc/rfc2617.txt">RFC 2617</a>.
+ *
+ * @groupname security Security directives
+ * @groupprio security 220
  */
 trait SecurityDirectives {
   import BasicDirectives._
@@ -31,25 +34,41 @@ trait SecurityDirectives {
   /**
    * The result of an HTTP authentication attempt is either the user object or
    * an HttpChallenge to present to the browser.
+   *
+   * @group security
    */
   type AuthenticationResult[+T] = Either[HttpChallenge, T]
   //#authentication-result
 
   //#authenticator
+  /**
+   * @group security
+   */
   type Authenticator[T] = Credentials ⇒ Option[T]
   //#authenticator
   //#async-authenticator
+  /**
+   * @group security
+   */
   type AsyncAuthenticator[T] = Credentials ⇒ Future[Option[T]]
   //#async-authenticator
   //#authenticator-pf
+  /**
+   * @group security
+   */
   type AuthenticatorPF[T] = PartialFunction[Credentials, T]
   //#authenticator-pf
   //#async-authenticator-pf
+  /**
+   * @group security
+   */
   type AsyncAuthenticatorPF[T] = PartialFunction[Credentials, Future[T]]
   //#async-authenticator-pf
 
   /**
    * Extracts the potentially present [[HttpCredentials]] provided with the request's [[Authorization]] header.
+   *
+   * @group security
    */
   def extractCredentials: Directive1[Option[HttpCredentials]] =
     optionalHeaderValueByType[Authorization](()).map(_.map(_.credentials))
@@ -58,6 +77,8 @@ trait SecurityDirectives {
    * Wraps the inner route with Http Basic authentication support using a given `Authenticator[T]`.
    * The given authenticator determines whether the credentials in the request are valid
    * and, if so, which user object to supply to the inner route.
+   *
+   * @group security
    */
   def authenticateBasic[T](realm: String, authenticator: Authenticator[T]): AuthenticationDirective[T] =
     authenticateBasicAsync(realm, cred ⇒ FastFuture.successful(authenticator(cred)))
@@ -66,6 +87,8 @@ trait SecurityDirectives {
    * Wraps the inner route with Http Basic authentication support.
    * The given authenticator determines whether the credentials in the request are valid
    * and, if so, which user object to supply to the inner route.
+   *
+   * @group security
    */
   def authenticateBasicAsync[T](realm: String, authenticator: AsyncAuthenticator[T]): AuthenticationDirective[T] =
     extractExecutionContext.flatMap { implicit ec ⇒
@@ -81,6 +104,8 @@ trait SecurityDirectives {
    * A directive that wraps the inner route with Http Basic authentication support.
    * The given authenticator determines whether the credentials in the request are valid
    * and, if so, which user object to supply to the inner route.
+   *
+   * @group security
    */
   def authenticateBasicPF[T](realm: String, authenticator: AuthenticatorPF[T]): AuthenticationDirective[T] =
     authenticateBasic(realm, authenticator.lift)
@@ -89,6 +114,8 @@ trait SecurityDirectives {
    * A directive that wraps the inner route with Http Basic authentication support.
    * The given authenticator determines whether the credentials in the request are valid
    * and, if so, which user object to supply to the inner route.
+   *
+   * @group security
    */
   def authenticateBasicPFAsync[T](realm: String, authenticator: AsyncAuthenticatorPF[T]): AuthenticationDirective[T] =
     extractExecutionContext.flatMap { implicit ec ⇒
@@ -101,6 +128,8 @@ trait SecurityDirectives {
    * A directive that wraps the inner route with OAuth2 Bearer Token authentication support.
    * The given authenticator determines whether the credentials in the request are valid
    * and, if so, which user object to supply to the inner route.
+   *
+   * @group security
    */
   def authenticateOAuth2[T](realm: String, authenticator: Authenticator[T]): AuthenticationDirective[T] =
     authenticateOAuth2Async(realm, cred ⇒ FastFuture.successful(authenticator(cred)))
@@ -109,6 +138,8 @@ trait SecurityDirectives {
    * A directive that wraps the inner route with OAuth2 Bearer Token authentication support.
    * The given authenticator determines whether the credentials in the request are valid
    * and, if so, which user object to supply to the inner route.
+   *
+   * @group security
    */
   def authenticateOAuth2Async[T](realm: String, authenticator: AsyncAuthenticator[T]): AuthenticationDirective[T] =
     extractExecutionContext.flatMap { implicit ec ⇒
@@ -124,6 +155,8 @@ trait SecurityDirectives {
    * A directive that wraps the inner route with OAuth2 Bearer Token authentication support.
    * The given authenticator determines whether the credentials in the request are valid
    * and, if so, which user object to supply to the inner route.
+   *
+   * @group security
    */
   def authenticateOAuth2PF[T](realm: String, authenticator: AuthenticatorPF[T]): AuthenticationDirective[T] =
     authenticateOAuth2(realm, authenticator.lift)
@@ -132,6 +165,8 @@ trait SecurityDirectives {
    * A directive that wraps the inner route with OAuth2 Bearer Token authentication support.
    * The given authenticator determines whether the credentials in the request are valid
    * and, if so, which user object to supply to the inner route.
+   *
+   * @group security
    */
   def authenticateOAuth2PFAsync[T](realm: String, authenticator: AsyncAuthenticatorPF[T]): AuthenticationDirective[T] =
     extractExecutionContext.flatMap { implicit ec ⇒
@@ -146,6 +181,7 @@ trait SecurityDirectives {
    * to the inner route. If the function returns `Left(challenge)` the request is rejected with an
    * [[AuthenticationFailedRejection]] that contains this challenge to be added to the response.
    *
+   * @group security
    */
   def authenticateOrRejectWithChallenge[T](authenticator: Option[HttpCredentials] ⇒ Future[AuthenticationResult[T]]): AuthenticationDirective[T] =
     extractExecutionContext.flatMap { implicit ec ⇒
@@ -162,6 +198,8 @@ trait SecurityDirectives {
   /**
    * Lifts an authenticator function into a directive. Same as `authenticateOrRejectWithChallenge`
    * but only applies the authenticator function with a certain type of credentials.
+   *
+   * @group security
    */
   def authenticateOrRejectWithChallenge[C <: HttpCredentials: ClassTag, T](
     authenticator: Option[C] ⇒ Future[AuthenticationResult[T]]): AuthenticationDirective[T] =
@@ -170,12 +208,16 @@ trait SecurityDirectives {
   /**
    * Applies the given authorization check to the request.
    * If the check fails the route is rejected with an [[AuthorizationFailedRejection]].
+   *
+   * @group security
    */
   def authorize(check: ⇒ Boolean): Directive0 = authorize(_ ⇒ check)
 
   /**
    * Applies the given authorization check to the request.
    * If the check fails the route is rejected with an [[AuthorizationFailedRejection]].
+   *
+   * @group security
    */
   def authorize(check: RequestContext ⇒ Boolean): Directive0 =
     authorizeAsync(ctx => Future.successful(check(ctx)))
@@ -184,6 +226,8 @@ trait SecurityDirectives {
    * Asynchronous version of [[authorize]].
    * If the [[Future]] fails or is completed with `false`
    * authorization fails and the route is rejected with an [[AuthorizationFailedRejection]].
+   *
+   * @group security
    */
   def authorizeAsync(check: ⇒ Future[Boolean]): Directive0 =
     authorizeAsync(ctx => check)
@@ -192,6 +236,8 @@ trait SecurityDirectives {
    * Asynchronous version of [[authorize]].
    * If the [[Future]] fails or is completed with `false`
    * authorization fails and the route is rejected with an [[AuthorizationFailedRejection]].
+   *
+   * @group security
    */
   def authorizeAsync(check: RequestContext ⇒ Future[Boolean]): Directive0 =
     extractExecutionContext.flatMap { implicit ec ⇒
@@ -205,6 +251,8 @@ trait SecurityDirectives {
 
   /**
    * Creates a `Basic` [[HttpChallenge]] for the given realm.
+   *
+   * @group security
    */
   def challengeFor(realm: String) = HttpChallenge(scheme = "Basic", realm = realm, params = Map.empty)
 }
