@@ -8,6 +8,7 @@ package directives
 import akka.event.Logging._
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.model._
+import akka.http.javadsl
 
 trait DebuggingDirectives {
   import BasicDirectives._
@@ -83,10 +84,12 @@ object LoggingMagnet {
     }
 }
 
-case class LogEntry(obj: Any, level: LogLevel = DebugLevel) {
+case class LogEntry(obj: Any, level: LogLevel = DebugLevel) extends javadsl.server.directives.LogEntry {
   def logTo(log: LoggingAdapter): Unit = {
     log.log(level, obj.toString)
   }
+  override def getObj: Any = obj
+  override def getLevel: LogLevel = level
 }
 
 object LogEntry {

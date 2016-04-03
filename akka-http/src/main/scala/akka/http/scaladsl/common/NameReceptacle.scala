@@ -7,8 +7,8 @@ package akka.http.scaladsl.common
 import akka.http.scaladsl.unmarshalling.{ FromStringUnmarshaller ⇒ FSU }
 
 private[http] trait ToNameReceptacleEnhancements {
-  implicit def symbol2NR(symbol: Symbol): NameReceptacle[String] = new NameReceptacle[String](symbol.name)
-  implicit def string2NR(string: String): NameReceptacle[String] = new NameReceptacle[String](string)
+  implicit def _symbol2NR(symbol: Symbol): NameReceptacle[String] = new NameReceptacle[String](symbol.name)
+  implicit def _string2NR(string: String): NameReceptacle[String] = new NameReceptacle[String](string)
 }
 object ToNameReceptacleEnhancements extends ToNameReceptacleEnhancements
 

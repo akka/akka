@@ -5,13 +5,13 @@
 package docs.http.javadsl.server;
 
 //#high-level-server-example
+import java.io.IOException;
+
 import akka.actor.ActorSystem;
 import akka.http.javadsl.model.ContentTypes;
-import akka.http.javadsl.model.MediaTypes;
-import akka.http.javadsl.server.*;
-import akka.http.javadsl.server.values.Parameters;
-
-import java.io.IOException;
+import akka.http.javadsl.model.HttpEntities;
+import akka.http.javadsl.server.HttpApp;
+import akka.http.javadsl.server.Route;
 
 public class HighLevelServerExample extends HttpApp {
     public static void main(String[] args) throws IOException {
@@ -25,45 +25,34 @@ public class HighLevelServerExample extends HttpApp {
         system.terminate();
     }
 
-    // A RequestVal is a type-safe representation of some aspect of the request.
-    // In this case it represents the `name` URI parameter of type String.
-    private RequestVal<String> name = Parameters.stringValue("name").withDefault("Mister X");
-
     @Override
     public Route createRoute() {
         // This handler generates responses to `/hello?name=XXX` requests
         Route helloRoute =
-            handleWith1(name,
-                // in Java 8 the following becomes simply
-                // (ctx, name) -> ctx.complete("Hello " + name + "!")
-                new Handler1<String>() {
-                    @Override
-                    public RouteResult apply(RequestContext ctx, String name) {
-                        return ctx.complete("Hello " + name + "!");
-                    }
-                });
+            paramOptional("name", optName -> {
+                String name = optName.orElse("Mister X");
+                return complete("Hello " +name + "!");
+            });
 
         return
             // here the complete behavior for this server is defined
-            route(
-                // only handle GET requests
-                get(
-                    // matches the empty path
-                    pathSingleSlash().route(
-                        // return a constant string with a certain content type
-                        complete(ContentTypes.TEXT_HTML_UTF8,
-                                "<html><body>Hello world!</body></html>")
-                    ),
-                    path("ping").route(
-                        // return a simple `text/plain` response
-                        complete("PONG!")
-                    ),
-                    path("hello").route(
-                        // uses the route defined above
-                        helloRoute
-                    )
+                
+            // only handle GET requests
+            get(() -> route(
+                // matches the empty path
+                pathSingleSlash(() ->
+                    // return a constant string with a certain content type
+                    complete(HttpEntities.create(ContentTypes.TEXT_HTML_UTF8, "<html><body>Hello world!</body></html>"))
+                ),
+                path("ping", () ->
+                    // return a simple `text/plain` response
+                    complete("PONG!")
+                ),
+                path("hello", () ->
+                    // uses the route defined above
+                    helloRoute
                 )
-            );
+            ));
     }
 }
 //#high-level-server-example

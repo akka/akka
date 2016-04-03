@@ -8,16 +8,22 @@ package directives
 import java.io.File
 import java.net.{ URI, URL }
 
+import akka.http.javadsl.{ RoutingJavaMapping, model }
+import akka.http.javadsl.model.RequestEntity
 import akka.stream.ActorAttributes
 import akka.stream.scaladsl.{ FileIO, StreamConverters }
 
 import scala.annotation.tailrec
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.marshalling.{ Marshaller, ToEntityMarshaller }
+import akka.http.scaladsl.marshalling.{ Marshalling, Marshaller, ToEntityMarshaller }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
+import akka.http.javadsl
+import scala.collection.JavaConverters._
+import JavaMapping.Implicits._
+import akka.http.javadsl.RoutingJavaMapping._
 
 trait FileAndResourceDirectives {
   import CacheConditionDirectives._
@@ -80,7 +86,7 @@ trait FileAndResourceDirectives {
    * Completes GET requests with the content of the given resource.
    * If the resource is a directory or cannot be found or read the Route rejects the request.
    */
-  def getFromResource(resourceName: String, contentType: ContentType, classLoader: ClassLoader = defaultClassLoader): Route =
+  def getFromResource(resourceName: String, contentType: ContentType, classLoader: ClassLoader = _defaultClassLoader): Route =
     if (!resourceName.endsWith("/"))
       get {
         Option(classLoader.getResource(resourceName)) flatMap ResourceFile.apply match {
@@ -164,7 +170,7 @@ trait FileAndResourceDirectives {
    * "resource directory".
    * If the requested resource is itself a directory or cannot be found or read the Route rejects the request.
    */
-  def getFromResourceDirectory(directoryName: String, classLoader: ClassLoader = defaultClassLoader)(implicit resolver: ContentTypeResolver): Route = {
+  def getFromResourceDirectory(directoryName: String, classLoader: ClassLoader = _defaultClassLoader)(implicit resolver: ContentTypeResolver): Route = {
     val base = if (directoryName.isEmpty) "" else withTrailingSlash(directoryName)
 
     extractUnmatchedPath { path ⇒
@@ -177,7 +183,7 @@ trait FileAndResourceDirectives {
     }
   }
 
-  protected[http] def defaultClassLoader: ClassLoader = classOf[ActorSystem].getClassLoader
+  protected[http] def _defaultClassLoader: ClassLoader = classOf[ActorSystem].getClassLoader
 }
 
 object FileAndResourceDirectives extends FileAndResourceDirectives {
@@ -234,8 +240,17 @@ object FileAndResourceDirectives extends FileAndResourceDirectives {
   }
   case class ResourceFile(url: URL, length: Long, lastModified: Long)
 
-  trait DirectoryRenderer {
+  trait DirectoryRenderer extends akka.http.javadsl.server.directives.DirectoryRenderer {
+    type JDL = akka.http.javadsl.server.directives.DirectoryListing
+    type SDL = akka.http.scaladsl.server.directives.DirectoryListing
+    type SRE = akka.http.scaladsl.model.RequestEntity
+    type JRE = akka.http.javadsl.model.RequestEntity
+
     def marshaller(renderVanityFooter: Boolean): ToEntityMarshaller[DirectoryListing]
+    final override def directoryMarshaller(renderVanityFooter: Boolean): akka.http.javadsl.server.Marshaller[JDL, JRE] = {
+      Marshaller.combined[JDL, SDL, SRE](x ⇒ JavaMapping.toScala(x)(RoutingJavaMapping.convertDirectoryListing))(marshaller(renderVanityFooter)).map(_.asJava)
+    }
+
   }
   trait LowLevelDirectoryRenderer {
     implicit def defaultDirectoryRenderer: DirectoryRenderer =
@@ -252,8 +267,9 @@ object FileAndResourceDirectives extends FileAndResourceDirectives {
   }
 }
 
-trait ContentTypeResolver {
+trait ContentTypeResolver extends akka.http.javadsl.server.directives.ContentTypeResolver {
   def apply(fileName: String): ContentType
+  final override def resolve(fileName: String): model.ContentType = apply(fileName)
 }
 
 object ContentTypeResolver {
@@ -287,7 +303,10 @@ object ContentTypeResolver {
     }
 }
 
-case class DirectoryListing(path: String, isRoot: Boolean, files: Seq[File])
+final case class DirectoryListing(path: String, isRoot: Boolean, files: Seq[File]) extends javadsl.server.directives.DirectoryListing {
+  override def getPath: String = path
+  override def getFiles: java.util.List[File] = files.asJava
+}
 
 object DirectoryListing {
 

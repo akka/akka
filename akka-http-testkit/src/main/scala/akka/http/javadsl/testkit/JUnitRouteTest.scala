@@ -12,6 +12,7 @@ import org.junit.rules.ExternalResource
 import org.junit.{ Assert, Rule }
 import scala.concurrent.duration._
 import scala.concurrent.Await
+import akka.http.scaladsl.server.RouteResult
 
 /**
  * A RouteTest that uses JUnit assertions. ActorSystem and Materializer are provided as an [[org.junit.rules.ExternalResource]]
@@ -22,8 +23,8 @@ abstract class JUnitRouteTestBase extends RouteTest {
   implicit def system: ActorSystem = systemResource.system
   implicit def materializer: Materializer = systemResource.materializer
 
-  protected def createTestResponse(response: HttpResponse): TestResponse =
-    new TestResponse(response, awaitDuration)(system.dispatcher, materializer) {
+  protected def createTestRouteResult(result: RouteResult): TestRouteResult =
+    new TestRouteResult(result, awaitDuration)(system.dispatcher, materializer) {
       protected def assertEquals(expected: AnyRef, actual: AnyRef, message: String): Unit =
         Assert.assertEquals(message, expected, actual)
 
@@ -38,11 +39,6 @@ abstract class JUnitRouteTestBase extends RouteTest {
         throw new IllegalStateException("Assertion should have failed")
       }
     }
-
-  protected def completeWithValueToString[T](value: RequestVal[T]): Route =
-    handleWith1(value, new Handler1[T] {
-      def apply(ctx: RequestContext, t: T): RouteResult = ctx.complete(t.toString)
-    })
 }
 abstract class JUnitRouteTest extends JUnitRouteTestBase {
   private[this] val _systemResource = new ActorSystemResource

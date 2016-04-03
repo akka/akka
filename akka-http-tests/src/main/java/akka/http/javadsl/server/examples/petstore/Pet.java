@@ -8,7 +8,6 @@ public class Pet {
     private int id;
     private String name;
 
-    private Pet(){}
     public Pet(int id, String name) {
         this.id = id;
         this.name = name;

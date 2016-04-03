@@ -402,7 +402,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
           getFromResourceDirectory("docs")
         }
       } ~
-      path("oldApi" / Rest) { pathRest =>
+      path("oldApi" / Remaining) { pathRest =>
         redirect("http://oldapi.example.com/" + pathRest, MovedPermanently)
       }
     }

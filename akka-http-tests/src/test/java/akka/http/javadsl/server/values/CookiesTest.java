@@ -12,12 +12,12 @@ import akka.http.javadsl.testkit.TestRoute;
 import org.junit.Test;
 
 public class CookiesTest extends JUnitRouteTest {
-    Cookie userIdCookie = Cookies.create("userId").withDomain("example.com").withPath("/admin");
-    
     @Test
     public void testCookieValue() {
         TestRoute route =
-            testRoute(completeWithValueToString(userIdCookie.value()));
+            testRoute(
+                cookie("userId", userId -> complete(userId.value()))
+            );
 
         route.run(HttpRequest.create())
             .assertStatusCode(400)
@@ -30,24 +30,24 @@ public class CookiesTest extends JUnitRouteTest {
     @Test
     public void testCookieOptionalValue() {
         TestRoute route =
-            testRoute(completeWithValueToString(userIdCookie.optionalValue()));
+            testRoute(
+                optionalCookie("userId", opt -> complete(opt.toString()))
+            );
 
         route.run(HttpRequest.create())
             .assertStatusCode(200)
-            .assertEntity("None");
+            .assertEntity("Optional.empty");
 
         route.run(HttpRequest.create().addHeader(akka.http.javadsl.model.headers.Cookie.create("userId", "12345")))
             .assertStatusCode(200)
-            .assertEntity("Some(12345)");
+            .assertEntity("Optional[12345]");
     }
     @Test
     public void testCookieSet() {
         TestRoute route =
-                testRoute(
-                        userIdCookie.set("12").route(
-                                complete("OK!")
-                        )
-                );
+            testRoute(
+                setCookie(HttpCookie.create("userId", "12"), () -> complete("OK!"))
+            );
 
         route.run(HttpRequest.create())
                 .assertStatusCode(200)
@@ -58,9 +58,7 @@ public class CookiesTest extends JUnitRouteTest {
     public void testDeleteCookie() {
         TestRoute route =
             testRoute(
-                userIdCookie.delete(
-                    complete("OK!")
-                )
+                deleteCookie("userId", () -> complete("OK!"))
             );
 
         route.run(HttpRequest.create())

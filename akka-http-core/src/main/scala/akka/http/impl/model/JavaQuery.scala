@@ -17,7 +17,6 @@ import akka.parboiled2.CharPredicate
 
 import scala.collection.JavaConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
-import scala.compat.java8.OptionConverters._
 
 /** INTERNAL API */
 case class JavaQuery(query: sm.Uri.Query) extends jm.Query {
