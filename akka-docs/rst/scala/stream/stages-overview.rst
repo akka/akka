@@ -150,7 +150,7 @@ Combine several sources, using a given strategy such as merge or concat, into on
 **completes** when all sources has completed
 
 unfoldResource
-^^^^^
+^^^^^^^^^^^^^^
 Wrap any resource that can be opened, queried for next element (in a blocking way) and closed using three distinct functions into a source.
 
 **emits** when there is demand and read function returns value
@@ -158,7 +158,7 @@ Wrap any resource that can be opened, queried for next element (in a blocking wa
 **completes** when read function returns ``None``
 
 unfoldAsyncResource
-^^^^^
+^^^^^^^^^^^^^^^^^^^
 Wrap any resource that can be opened, queried for next element (in a blocking way) and closed using three distinct functions into a source.
 Functions return ``Future`` to achieve asynchronous processing
 
