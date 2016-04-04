@@ -27,22 +27,23 @@ private[http] object StreamUtils {
    * input has been read it will call `finish` once to determine the final ByteString to post to the output.
    * Empty ByteStrings are discarded.
    */
-  def byteStringTransformer(f: ByteString ⇒ ByteString, finish: () ⇒ ByteString): Stage[ByteString, ByteString] = {
-    new PushPullStage[ByteString, ByteString] {
-      override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective = {
-        val data = f(element)
-        if (data.nonEmpty) ctx.push(data)
-        else ctx.pull()
+  def byteStringTransformer(f: ByteString ⇒ ByteString, finish: () ⇒ ByteString): GraphStage[FlowShape[ByteString, ByteString]] = new SimpleLinearGraphStage[ByteString] {
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+      override def onPush(): Unit = {
+        val data = f(grab(in))
+        if (data.nonEmpty) push(out, data)
+        else pull(in)
       }
 
-      override def onPull(ctx: Context[ByteString]): SyncDirective =
-        if (ctx.isFinishing) {
-          val data = finish()
-          if (data.nonEmpty) ctx.pushAndFinish(data)
-          else ctx.finish()
-        } else ctx.pull()
+      override def onPull(): Unit = pull(in)
 
-      override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective = ctx.absorbTermination()
+      override def onUpstreamFinish(): Unit = {
+        val data = finish()
+        if (data.nonEmpty) emit(out, data)
+        completeStage()
+      }
+
+      setHandlers(in, out, this)
     }
   }
 
