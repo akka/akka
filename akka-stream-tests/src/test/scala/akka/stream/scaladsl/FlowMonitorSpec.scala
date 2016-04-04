@@ -1,6 +1,6 @@
 /**
-  * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
-  */
+ * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.scaladsl
 
 import akka.stream.testkit.scaladsl.{ TestSource, TestSink }
