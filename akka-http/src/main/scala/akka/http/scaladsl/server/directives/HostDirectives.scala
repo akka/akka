@@ -8,23 +8,33 @@ package directives
 import scala.util.matching.Regex
 import akka.http.impl.util._
 
+/**
+ * @groupname host Host directives
+ * @groupprio host 110
+ */
 trait HostDirectives {
   import BasicDirectives._
   import RouteDirectives._
 
   /**
    * Extracts the hostname part of the Host request header value.
+   *
+   * @group host
    */
   def extractHost: Directive1[String] = HostDirectives._extractHost
 
   /**
    * Rejects all requests with a host name different from the given ones.
+   *
+   * @group host
    */
   def host(hostNames: String*): Directive0 = host(hostNames.contains(_))
 
   //#require-host
   /**
    * Rejects all requests for whose host name the given predicate function returns false.
+   *
+   * @group host
    */
   def host(predicate: String ⇒ Boolean): Directive0 = extractHost.require(predicate)
   //#
@@ -34,6 +44,8 @@ trait HostDirectives {
    * For all matching requests the prefix string matching the regex is extracted and passed to the inner route.
    * If the regex contains a capturing group only the string matched by this group is extracted.
    * If the regex contains more than one capturing group an IllegalArgumentException is thrown.
+   *
+   * @group host
    */
   def host(regex: Regex): Directive1[String] = {
     def forFunc(regexMatch: String ⇒ Option[String]): Directive1[String] = {

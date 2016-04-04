@@ -10,6 +10,10 @@ import scala.collection.immutable
 import akka.http.scaladsl.model.ws.{ UpgradeToWebSocket, Message }
 import akka.stream.scaladsl.Flow
 
+/**
+ * @groupname websocket WebSocket directives
+ * @groupprio websocket 230
+ */
 trait WebSocketDirectives {
   import RouteDirectives._
   import HeaderDirectives._
@@ -17,6 +21,8 @@ trait WebSocketDirectives {
 
   /**
    * Extract the [[UpgradeToWebSocket]] header if existent. Rejects with an [[ExpectedWebSocketRequestRejection]], otherwise.
+   *
+   * @group websocket
    */
   def extractUpgradeToWebSocket: Directive1[UpgradeToWebSocket] =
     optionalHeaderValueByType[UpgradeToWebSocket](()).flatMap {
@@ -27,12 +33,16 @@ trait WebSocketDirectives {
   /**
    * Extract the list of WebSocket subprotocols as offered by the client in the [[Sec-WebSocket-Protocol]] header if
    * this is a WebSocket request. Rejects with an [[ExpectedWebSocketRequestRejection]], otherwise.
+   *
+   * @group websocket
    */
   def extractOfferedWsProtocols: Directive1[immutable.Seq[String]] = extractUpgradeToWebSocket.map(_.requestedProtocols)
 
   /**
    * Handles WebSocket requests with the given handler and rejects other requests with an
    * [[ExpectedWebSocketRequestRejection]].
+   *
+   * @group websocket
    */
   def handleWebSocketMessages(handler: Flow[Message, Message, Any]): Route =
     handleWebSocketMessagesForOptionalProtocol(handler, None)
@@ -40,6 +50,8 @@ trait WebSocketDirectives {
   /**
    * Handles WebSocket requests with the given handler if the given subprotocol is offered in the request and
    * rejects other requests with an [[ExpectedWebSocketRequestRejection]] or an [[UnsupportedWebSocketSubprotocolRejection]].
+   *
+   * @group websocket
    */
   def handleWebSocketMessagesForProtocol(handler: Flow[Message, Message, Any], subprotocol: String): Route =
     handleWebSocketMessagesForOptionalProtocol(handler, Some(subprotocol))
@@ -54,6 +66,8 @@ trait WebSocketDirectives {
    * the request is rejected with an [[UnsupportedWebSocketSubprotocolRejection]] rejection.
    *
    * To support several subprotocols you may chain several `handleWebSocketMessage` Routes.
+   *
+   * @group websocket
    */
   def handleWebSocketMessagesForOptionalProtocol(handler: Flow[Message, Message, Any], subprotocol: Option[String]): Route =
     extractUpgradeToWebSocket { upgrade ⇒

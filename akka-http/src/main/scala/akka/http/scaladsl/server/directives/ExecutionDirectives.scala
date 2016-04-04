@@ -11,12 +11,18 @@ import scala.util.control.NonFatal
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 
+/**
+ * @groupname execution Execution directives
+ * @groupprio execution 60
+ */
 trait ExecutionDirectives {
   import BasicDirectives._
 
   /**
    * Transforms exceptions thrown during evaluation of its inner route using the given
    * [[akka.http.scaladsl.server.ExceptionHandler]].
+   *
+   * @group execution
    */
   def handleExceptions(handler: ExceptionHandler): Directive0 =
     Directive { innerRouteBuilder ⇒
@@ -33,6 +39,8 @@ trait ExecutionDirectives {
   /**
    * Transforms rejections produced by its inner route using the given
    * [[akka.http.scaladsl.server.RejectionHandler]].
+   *
+   * @group execution
    */
   def handleRejections(handler: RejectionHandler): Directive0 =
     extractRequestContext flatMap { ctx ⇒
