@@ -76,14 +76,27 @@ It can publish messages to the topic from anywhere in the cluster:
 
 .. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java#publish-message
 
-Actors may also be subscribed to a named topic with an optional property (``group``).
-If subscribing with a group name, each message published to a topic with the
-(``sendOneMessageToEachGroup``) flag is delivered via the supplied ``RoutingLogic``
+Topic Groups
+^^^^^^^^^^^^
+
+Actors may also be subscribed to a named topic with a ``group`` id.
+If subscribing with a group id, each message published to a topic with the
+``sendOneMessageToEachGroup`` flag set to ``true`` is delivered via the supplied ``RoutingLogic``
 (default random) to one actor within each subscribing group.
-If all the subscribed actors have the same group name, then this works just like
-``Send`` and all messages are delivered to one subscriber.
+
+If all the subscribed actors have the same group id, then this works just like
+``Send`` and each message is only delivered to one subscriber.
+
 If all the subscribed actors have different group names, then this works like
-normal ``Publish`` and all messages are broadcast to all subscribers.
+normal ``Publish`` and each message is broadcasted to all subscribers.
+
+.. note::
+
+  Note that if the group id is used it is part of the topic identifier.
+  Messages published with ``sendOneMessageToEachGroup=false`` will not be delivered
+  to subscribers that subscribed with a group id.
+  Messages published with ``sendOneMessageToEachGroup=true`` will not be delivered
+  to subscribers that subscribed without a group id.
 
 .. _distributed-pub-sub-send-java:
 
