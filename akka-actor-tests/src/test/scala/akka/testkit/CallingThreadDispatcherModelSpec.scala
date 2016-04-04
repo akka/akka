@@ -28,7 +28,7 @@ object CallingThreadDispatcherModelSpec {
   }
 
   class CallingThreadDispatcherInterceptorConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
-    extends MessageDispatcherConfigurator(config, prerequisites) {
+      extends MessageDispatcherConfigurator(config, prerequisites) {
 
     private val instance: MessageDispatcher =
       new CallingThreadDispatcher(this) with MessageDispatcherInterceptor {

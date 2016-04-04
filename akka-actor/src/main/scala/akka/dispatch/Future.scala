@@ -9,7 +9,7 @@ import akka.japi.{ Function ⇒ JFunc, Option ⇒ JOption, Procedure }
 import scala.concurrent.{ Future, Promise, ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService }
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ LinkedList ⇒ JLinkedList }
-import java.util.concurrent.{ Executor, ExecutorService, Callable}
+import java.util.concurrent.{ Executor, ExecutorService, Callable }
 import scala.util.{ Try, Success, Failure }
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture

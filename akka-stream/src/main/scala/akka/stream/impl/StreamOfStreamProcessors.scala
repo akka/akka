@@ -36,7 +36,7 @@ private[akka] object MultiStreamOutputProcessor {
   }
 
   class SubstreamOutput(val key: SubstreamKey, actor: ActorRef, pump: Pump, subscriptionTimeout: Cancellable)
-    extends SimpleOutputs(actor, pump) with Publisher[Any] {
+      extends SimpleOutputs(actor, pump) with Publisher[Any] {
     import ReactiveStreamsCompliance._
 
     import SubstreamOutput._

@@ -139,14 +139,15 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
       type Out = HttpRequest
       def apply(request: HttpRequest, f: HttpRequest ⇒ HttpRequest) = f(request)
     }
-    implicit def injectIntoRoute(implicit timeout: RouteTestTimeout,
-                                 defaultHostInfo: DefaultHostInfo,
-                                 routingSettings: RoutingSettings,
-                                 executionContext: ExecutionContext,
-                                 materializer: Materializer,
-                                 routingLog: RoutingLog,
-                                 rejectionHandler: RejectionHandler = RejectionHandler.default,
-                                 exceptionHandler: ExceptionHandler = null) =
+    implicit def injectIntoRoute(implicit
+      timeout: RouteTestTimeout,
+      defaultHostInfo: DefaultHostInfo,
+      routingSettings: RoutingSettings,
+      executionContext: ExecutionContext,
+      materializer: Materializer,
+      routingLog: RoutingLog,
+      rejectionHandler: RejectionHandler = RejectionHandler.default,
+      exceptionHandler: ExceptionHandler = null) =
       new TildeArrow[RequestContext, Future[RouteResult]] {
         type Out = RouteTestResult
         def apply(request: HttpRequest, route: Route): Out = {

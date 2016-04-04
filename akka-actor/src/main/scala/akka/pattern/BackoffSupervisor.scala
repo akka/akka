@@ -172,7 +172,7 @@ final class BackoffSupervisor(
   val reset: BackoffReset,
   randomFactor: Double,
   strategy: SupervisorStrategy)
-  extends Actor with HandleBackoff {
+    extends Actor with HandleBackoff {
 
   import BackoffSupervisor._
   import context.dispatcher

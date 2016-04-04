@@ -167,10 +167,11 @@ private[netty] trait CommonHandlers extends NettyHelpers {
 
   protected def createHandle(channel: Channel, localAddress: Address, remoteAddress: Address): AssociationHandle
 
-  protected def registerListener(channel: Channel,
-                                 listener: HandleEventListener,
-                                 msg: ChannelBuffer,
-                                 remoteSocketAddress: InetSocketAddress): Unit
+  protected def registerListener(
+    channel: Channel,
+    listener: HandleEventListener,
+    msg: ChannelBuffer,
+    remoteSocketAddress: InetSocketAddress): Unit
 
   final protected def init(channel: Channel, remoteSocketAddress: SocketAddress, remoteAddress: Address, msg: ChannelBuffer)(
     op: (AssociationHandle ⇒ Any)): Unit = {
@@ -193,9 +194,10 @@ private[netty] trait CommonHandlers extends NettyHelpers {
 /**
  * INTERNAL API
  */
-private[netty] abstract class ServerHandler(protected final val transport: NettyTransport,
-                                            private final val associationListenerFuture: Future[AssociationEventListener])
-  extends NettyServerHelpers with CommonHandlers {
+private[netty] abstract class ServerHandler(
+  protected final val transport: NettyTransport,
+  private final val associationListenerFuture: Future[AssociationEventListener])
+    extends NettyServerHelpers with CommonHandlers {
 
   import transport.executionContext
 
@@ -205,7 +207,7 @@ private[netty] abstract class ServerHandler(protected final val transport: Netty
       case listener: AssociationEventListener ⇒
         val remoteAddress = NettyTransport.addressFromSocketAddress(remoteSocketAddress, transport.schemeIdentifier,
           transport.system.name, hostName = None, port = None).getOrElse(
-            throw new NettyTransportException(s"Unknown inbound remote address type [${remoteSocketAddress.getClass.getName}]"))
+          throw new NettyTransportException(s"Unknown inbound remote address type [${remoteSocketAddress.getClass.getName}]"))
         init(channel, remoteSocketAddress, remoteAddress, msg) { listener notify InboundAssociation(_) }
     }
   }
@@ -216,7 +218,7 @@ private[netty] abstract class ServerHandler(protected final val transport: Netty
  * INTERNAL API
  */
 private[netty] abstract class ClientHandler(protected final val transport: NettyTransport, remoteAddress: Address)
-  extends NettyClientHelpers with CommonHandlers {
+    extends NettyClientHelpers with CommonHandlers {
   final protected val statusPromise = Promise[AssociationHandle]()
   def statusFuture = statusPromise.future
 
@@ -243,7 +245,7 @@ private[transport] object NettyTransport {
   val uniqueIdCounter = new AtomicInteger(0)
 
   def addressFromSocketAddress(addr: SocketAddress, schemeIdentifier: String, systemName: String,
-                               hostName: Option[String], port: Option[Int]): Option[Address] = addr match {
+    hostName: Option[String], port: Option[Int]): Option[Address] = addr match {
     case sa: InetSocketAddress ⇒ Some(Address(schemeIdentifier, systemName,
       hostName.getOrElse(sa.getHostString), port.getOrElse(sa.getPort)))
     case _ ⇒ None
@@ -251,7 +253,7 @@ private[transport] object NettyTransport {
 
   // Need to do like this for binary compatibility reasons
   def addressFromSocketAddress(addr: SocketAddress, schemeIdentifier: String, systemName: String,
-                               hostName: Option[String]): Option[Address] =
+    hostName: Option[String]): Option[Address] =
     addressFromSocketAddress(addr, schemeIdentifier, systemName, hostName, port = None)
 }
 

@@ -102,7 +102,7 @@ private[persistence] object JournalProtocol {
    * @param persistentActor requesting persistent actor.
    */
   final case class ReplayMessages(fromSequenceNr: Long, toSequenceNr: Long, max: Long,
-                                  persistenceId: String, persistentActor: ActorRef) extends Request
+    persistenceId: String, persistentActor: ActorRef) extends Request
 
   /**
    * Reply message to a [[ReplayMessages]] request. A separate reply is sent to the requestor for each

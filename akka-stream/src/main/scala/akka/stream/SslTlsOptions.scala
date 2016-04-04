@@ -189,10 +189,10 @@ object TLSProtocol {
    * switches off client authentication.
    */
   case class NegotiateNewSession(
-    enabledCipherSuites: Option[immutable.Seq[String]],
-    enabledProtocols: Option[immutable.Seq[String]],
-    clientAuth: Option[TLSClientAuth],
-    sslParameters: Option[SSLParameters]) extends SslTlsOutbound {
+      enabledCipherSuites: Option[immutable.Seq[String]],
+      enabledProtocols: Option[immutable.Seq[String]],
+      clientAuth: Option[TLSClientAuth],
+      sslParameters: Option[SSLParameters]) extends SslTlsOutbound {
 
     /**
      * Java API: Make a copy of this message with the given `enabledCipherSuites`.

@@ -32,11 +32,10 @@ private object RenderSupport {
   val defaultLastChunkBytes: ByteString = renderChunk(HttpEntity.LastChunk)
 
   def CancelSecond[T, Mat](first: Source[T, Mat], second: Source[T, Any]): Source[T, Mat] = {
-    Source.fromGraph(GraphDSL.create(first) { implicit b ⇒
-      frst ⇒
-        import GraphDSL.Implicits._
-        second ~> Sink.cancelled
-        SourceShape(frst.out)
+    Source.fromGraph(GraphDSL.create(first) { implicit b ⇒ frst ⇒
+      import GraphDSL.Implicits._
+      second ~> Sink.cancelled
+      SourceShape(frst.out)
     })
   }
 
@@ -45,7 +44,7 @@ private object RenderSupport {
     else r
 
   def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Source[ByteString, Any],
-                        skipEntity: Boolean = false): Source[ByteString, Any] = {
+    skipEntity: Boolean = false): Source[ByteString, Any] = {
     val messageStart = Source.single(r.get)
     val messageBytes =
       if (!skipEntity) (messageStart ++ entityBytes).mapMaterializedValue(_ ⇒ ())
@@ -129,6 +128,6 @@ private object RenderSupport {
   }
 
   def suppressionWarning(log: LoggingAdapter, h: HttpHeader,
-                         msg: String = "the akka-http-core layer sets this header automatically!"): Unit =
+    msg: String = "the akka-http-core layer sets this header automatically!"): Unit =
     log.warning("Explicitly set HTTP header '{}' is ignored, {}", h, msg)
 }

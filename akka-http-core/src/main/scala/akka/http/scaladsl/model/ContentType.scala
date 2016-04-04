@@ -65,12 +65,12 @@ object ContentType {
   }
 
   final case class WithFixedCharset(val mediaType: MediaType.WithFixedCharset)
-    extends jm.ContentType.WithFixedCharset with NonBinary {
+      extends jm.ContentType.WithFixedCharset with NonBinary {
     def charset = mediaType.charset
   }
 
   final case class WithCharset(val mediaType: MediaType.WithOpenCharset, val charset: HttpCharset)
-    extends jm.ContentType.WithCharset with NonBinary {
+      extends jm.ContentType.WithCharset with NonBinary {
 
     private[http] override def render[R <: Rendering](r: R): r.type =
       super.render(r) ~~ ContentType.`; charset=` ~~ charset

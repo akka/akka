@@ -15,7 +15,7 @@ import annotation.tailrec
  * @param backing - the backing Queue
  */
 class BoundedBlockingQueue[E <: AnyRef](
-  val maxCapacity: Int, private val backing: Queue[E]) extends AbstractQueue[E] with BlockingQueue[E] {
+    val maxCapacity: Int, private val backing: Queue[E]) extends AbstractQueue[E] with BlockingQueue[E] {
 
   backing match {
     case null ⇒ throw new IllegalArgumentException("Backing Queue may not be null")

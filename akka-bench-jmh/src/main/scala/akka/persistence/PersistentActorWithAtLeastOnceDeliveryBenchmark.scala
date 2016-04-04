@@ -22,7 +22,8 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
   lazy val storageLocations = List(
     "akka.persistence.journal.leveldb.dir",
     "akka.persistence.journal.leveldb-shared.store.dir",
-    "akka.persistence.snapshot-store.local.dir").map(s ⇒ new File(system.settings.config.getString(s)))
+    "akka.persistence.snapshot-store.local.dir"
+  ).map(s ⇒ new File(system.settings.config.getString(s)))
 
   var system: ActorSystem = _
 
@@ -36,7 +37,7 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
   val dataCount = 10000
 
   @Setup
-  def setup():Unit = {
+  def setup(): Unit = {
     system = ActorSystem("PersistentActorWithAtLeastOnceDeliveryBenchmark", config)
 
     probe = TestProbe()(system)
@@ -51,7 +52,7 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
   }
 
   @TearDown
-  def shutdown():Unit = {
+  def shutdown(): Unit = {
     system.terminate()
     Await.ready(system.whenTerminated, 15.seconds)
 
@@ -60,7 +61,7 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def persistentActor_persistAsync_with_AtLeastOnceDelivery():Unit = {
+  def persistentActor_persistAsync_with_AtLeastOnceDelivery(): Unit = {
     for (i <- 1 to dataCount)
       persistAsyncPersistentActorWithAtLeastOnceDelivery.tell(i, probe.ref)
     probe.expectMsg(20.seconds, Evt(dataCount))
@@ -68,7 +69,7 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def persistentActor_persist_with_AtLeastOnceDelivery():Unit = {
+  def persistentActor_persist_with_AtLeastOnceDelivery(): Unit = {
     for (i <- 1 to dataCount)
       persistPersistentActorWithAtLeastOnceDelivery.tell(i, probe.ref)
     probe.expectMsg(2.minutes, Evt(dataCount))
@@ -76,7 +77,7 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def persistentActor_noPersist_with_AtLeastOnceDelivery():Unit = {
+  def persistentActor_noPersist_with_AtLeastOnceDelivery(): Unit = {
     for (i <- 1 to dataCount)
       noPersistPersistentActorWithAtLeastOnceDelivery.tell(i, probe.ref)
     probe.expectMsg(20.seconds, Evt(dataCount))

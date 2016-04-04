@@ -204,7 +204,7 @@ object TypedActorSpec {
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
-  with BeforeAndAfterEach with BeforeAndAfterAll with DefaultTimeout {
+    with BeforeAndAfterEach with BeforeAndAfterAll with DefaultTimeout {
 
   import akka.actor.TypedActorSpec._
 
@@ -515,7 +515,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TypedActorRouterSpec extends AkkaSpec(TypedActorSpec.config)
-  with BeforeAndAfterEach with BeforeAndAfterAll with DefaultTimeout {
+    with BeforeAndAfterEach with BeforeAndAfterAll with DefaultTimeout {
 
   import akka.actor.TypedActorSpec._
 

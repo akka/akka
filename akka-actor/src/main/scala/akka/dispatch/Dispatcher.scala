@@ -32,7 +32,7 @@ class Dispatcher(
   val throughputDeadlineTime: Duration,
   executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
   val shutdownTimeout: FiniteDuration)
-  extends MessageDispatcher(_configurator) {
+    extends MessageDispatcher(_configurator) {
 
   import configurator.prerequisites._
 

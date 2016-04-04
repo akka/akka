@@ -50,9 +50,10 @@ private[http] object OutgoingConnectionBlueprint {
                                   |  Merge     |<------------------------------------------ V
                                   +------------+
   */
-  def apply(hostHeader: headers.Host,
-            settings: ClientConnectionSettings,
-            log: LoggingAdapter): Http.ClientLayer = {
+  def apply(
+    hostHeader: headers.Host,
+    settings: ClientConnectionSettings,
+    log: LoggingAdapter): Http.ClientLayer = {
     import settings._
 
     val core = BidiFlow.fromGraph(GraphDSL.create() { implicit b ⇒
@@ -157,7 +158,7 @@ private[http] object OutgoingConnectionBlueprint {
    * of downstream until end of chunks has been reached.
    */
   private[client] final class PrepareResponse(parserSettings: ParserSettings)
-    extends GraphStage[FlowShape[ResponseOutput, HttpResponse]] {
+      extends GraphStage[FlowShape[ResponseOutput, HttpResponse]] {
 
     private val in = Inlet[ResponseOutput]("PrepareResponse.in")
     private val out = Outlet[HttpResponse]("PrepareResponse.out")
@@ -279,7 +280,7 @@ private[http] object OutgoingConnectionBlueprint {
    * 3. Go back to 1.
    */
   private class ResponseParsingMerge(rootParser: HttpResponseParser)
-    extends GraphStage[FanInShape2[SessionBytes, BypassData, List[ResponseOutput]]] {
+      extends GraphStage[FanInShape2[SessionBytes, BypassData, List[ResponseOutput]]] {
     private val dataInput = Inlet[SessionBytes]("data")
     private val bypassInput = Inlet[BypassData]("request")
     private val out = Outlet[List[ResponseOutput]]("out")

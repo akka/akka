@@ -34,11 +34,12 @@ private[remote] object AkkaPduCodec {
   case object Heartbeat extends AkkaPdu
   final case class Payload(bytes: ByteString) extends AkkaPdu
 
-  final case class Message(recipient: InternalActorRef,
-                           recipientAddress: Address,
-                           serializedMessage: SerializedMessage,
-                           senderOption: Option[ActorRef],
-                           seqOption: Option[SeqNo]) extends HasSequenceNumber {
+  final case class Message(
+    recipient: InternalActorRef,
+      recipientAddress: Address,
+      serializedMessage: SerializedMessage,
+      senderOption: Option[ActorRef],
+      seqOption: Option[SeqNo]) extends HasSequenceNumber {
 
     def reliableDeliveryEnabled = seqOption.isDefined
 

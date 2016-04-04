@@ -22,7 +22,7 @@ import akka.persistence.journal.leveldb.LeveldbJournal.ReplayedTaggedMessage
  */
 private[akka] object EventsByTagPublisher {
   def props(tag: String, fromOffset: Long, toOffset: Long, refreshInterval: Option[FiniteDuration],
-            maxBufSize: Int, writeJournalPluginId: String): Props = {
+    maxBufSize: Int, writeJournalPluginId: String): Props = {
     refreshInterval match {
       case Some(interval) ⇒
         Props(new LiveEventsByTagPublisher(tag, fromOffset, toOffset, interval,
@@ -45,7 +45,7 @@ private[akka] object EventsByTagPublisher {
 private[akka] abstract class AbstractEventsByTagPublisher(
   val tag: String, val fromOffset: Long,
   val maxBufSize: Int, val writeJournalPluginId: String)
-  extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
+    extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
   import EventsByTagPublisher._
 
   val journal: ActorRef = Persistence(context.system).journalFor(writeJournalPluginId)
@@ -126,8 +126,8 @@ private[akka] class LiveEventsByTagPublisher(
   tag: String, fromOffset: Long, override val toOffset: Long,
   refreshInterval: FiniteDuration,
   maxBufSize: Int, writeJournalPluginId: String)
-  extends AbstractEventsByTagPublisher(
-    tag, fromOffset, maxBufSize, writeJournalPluginId) {
+    extends AbstractEventsByTagPublisher(
+      tag, fromOffset, maxBufSize, writeJournalPluginId) {
   import EventsByTagPublisher._
 
   val tickTask =
@@ -162,8 +162,8 @@ private[akka] class LiveEventsByTagPublisher(
 private[akka] class CurrentEventsByTagPublisher(
   tag: String, fromOffset: Long, var _toOffset: Long,
   maxBufSize: Int, writeJournalPluginId: String)
-  extends AbstractEventsByTagPublisher(
-    tag, fromOffset, maxBufSize, writeJournalPluginId) {
+    extends AbstractEventsByTagPublisher(
+      tag, fromOffset, maxBufSize, writeJournalPluginId) {
   import EventsByTagPublisher._
 
   override def toOffset: Long = _toOffset

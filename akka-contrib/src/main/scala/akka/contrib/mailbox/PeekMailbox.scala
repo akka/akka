@@ -53,7 +53,7 @@ class PeekMailboxType(settings: ActorSystem.Settings, config: Config) extends Ma
 }
 
 class PeekMailbox(owner: ActorRef, system: ActorSystem, maxRetries: Int)
-  extends UnboundedQueueBasedMessageQueue {
+    extends UnboundedQueueBasedMessageQueue {
   final val queue = new ConcurrentLinkedQueue[Envelope]()
 
   /*

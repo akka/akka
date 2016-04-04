@@ -304,7 +304,7 @@ object ShardRegion {
    * them have terminated it replies with `ShardStopped`.
    */
   private[akka] class HandOffStopper(shard: String, replyTo: ActorRef, entities: Set[ActorRef], stopMessage: Any)
-    extends Actor {
+      extends Actor {
     import ShardCoordinator.Internal.ShardStopped
 
     entities.foreach { a ⇒
@@ -337,13 +337,13 @@ object ShardRegion {
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
 class ShardRegion(
-  typeName: String,
-  entityProps: Option[Props],
-  settings: ClusterShardingSettings,
-  coordinatorPath: String,
-  extractEntityId: ShardRegion.ExtractEntityId,
-  extractShardId: ShardRegion.ExtractShardId,
-  handOffStopMessage: Any) extends Actor with ActorLogging {
+    typeName: String,
+    entityProps: Option[Props],
+    settings: ClusterShardingSettings,
+    coordinatorPath: String,
+    extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId: ShardRegion.ExtractShardId,
+    handOffStopMessage: Any) extends Actor with ActorLogging {
 
   import ShardCoordinator.Internal._
   import ShardRegion._
@@ -609,7 +609,8 @@ class ShardRegion(
   def register(): Unit = {
     coordinatorSelection.foreach(_ ! registrationMessage)
     if (shardBuffers.nonEmpty && retryCount >= 5)
-      log.warning("Trying to register to coordinator at [{}], but no acknowledgement. Total [{}] buffered messages.",
+      log.warning(
+        "Trying to register to coordinator at [{}], but no acknowledgement. Total [{}] buffered messages.",
         coordinatorSelection, totalBufferSize)
   }
 

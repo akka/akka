@@ -48,7 +48,7 @@ class ORSetMergeBenchmark {
   var elem2: String = _
 
   @Setup(Level.Trial)
-  def setup():Unit = {
+  def setup(): Unit = {
     set1 = (1 to set1Size).foldLeft(ORSet.empty[String])((s, n) => s.add(nextNode(), "elem" + n))
     addFromSameNode = set1.add(nodeA, "elem" + set1Size + 1).merge(set1)
     addFromOtherNode = set1.add(nodeB, "elem" + set1Size + 1).merge(set1)

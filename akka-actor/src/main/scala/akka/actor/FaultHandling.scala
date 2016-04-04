@@ -30,7 +30,7 @@ private[akka] case object ChildNameReserved extends ChildStats
  * and is used for SupervisorStrategies to know how to deal with problems that occur for the children.
  */
 final case class ChildRestartStats(child: ActorRef, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L)
-  extends ChildStats {
+    extends ChildStats {
 
   def uid: Int = child.path.uid
 
@@ -383,7 +383,7 @@ case class AllForOneStrategy(
   maxNrOfRetries: Int = -1,
   withinTimeRange: Duration = Duration.Inf,
   override val loggingEnabled: Boolean = true)(val decider: SupervisorStrategy.Decider)
-  extends SupervisorStrategy {
+    extends SupervisorStrategy {
 
   import SupervisorStrategy._
 
@@ -461,7 +461,7 @@ case class OneForOneStrategy(
   maxNrOfRetries: Int = -1,
   withinTimeRange: Duration = Duration.Inf,
   override val loggingEnabled: Boolean = true)(val decider: SupervisorStrategy.Decider)
-  extends SupervisorStrategy {
+    extends SupervisorStrategy {
 
   /**
    * Java API

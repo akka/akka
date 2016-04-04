@@ -123,9 +123,10 @@ object GraphStageLogic {
   /**
    * Minimal actor to work with other actors and watch them in a synchronous ways
    */
-  final class StageActor(materializer: ActorMaterializer,
-                         getAsyncCallback: StageActorRef.Receive ⇒ AsyncCallback[(ActorRef, Any)],
-                         initialReceive: StageActorRef.Receive) {
+  final class StageActor(
+    materializer: ActorMaterializer,
+      getAsyncCallback: StageActorRef.Receive ⇒ AsyncCallback[(ActorRef, Any)],
+      initialReceive: StageActorRef.Receive) {
 
     private val callback = getAsyncCallback(internalReceive)
     private def cell = materializer.supervisor match {
@@ -537,8 +538,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
             pos += 1
             if (pos == n) andThen(result)
           },
-          () ⇒ onClose(result.take(pos)))
-        )
+          () ⇒ onClose(result.take(pos))))
       } else andThen(result)
     }
 
@@ -794,7 +794,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   }
 
   private class EmittingSingle[T](_out: Outlet[T], elem: T, _previous: OutHandler, _andThen: () ⇒ Unit)
-    extends Emitting(_out, _previous, _andThen) {
+      extends Emitting(_out, _previous, _andThen) {
 
     override def onPull(): Unit = {
       push(out, elem)
@@ -803,7 +803,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   }
 
   private class EmittingIterator[T](_out: Outlet[T], elems: Iterator[T], _previous: OutHandler, _andThen: () ⇒ Unit)
-    extends Emitting(_out, _previous, _andThen) {
+      extends Emitting(_out, _previous, _andThen) {
 
     override def onPull(): Unit = {
       push(out, elems.next())
@@ -824,8 +824,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * `doPull` instructs to perform one initial pull on the `from` port.
    */
   final protected def passAlong[Out, In <: Out](from: Inlet[In], to: Outlet[Out],
-                                                doFinish: Boolean = true, doFail: Boolean = true,
-                                                doPull: Boolean = false): Unit = {
+    doFinish: Boolean = true, doFail: Boolean = true,
+    doPull: Boolean = false): Unit = {
     class PassAlongHandler extends InHandler with (() ⇒ Unit) {
       override def apply(): Unit = tryPull(from)
       override def onPush(): Unit = {

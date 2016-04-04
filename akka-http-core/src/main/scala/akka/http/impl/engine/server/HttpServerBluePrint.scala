@@ -156,7 +156,7 @@ private[http] object HttpServerBluePrint {
           case StreamedEntityCreator(creator) ⇒ streamRequestEntity(creator)
         }
 
-      def streamRequestEntity(creator: (Source[ParserOutput.RequestOutput, NotUsed]) => RequestEntity): RequestEntity = {
+      def streamRequestEntity(creator: (Source[ParserOutput.RequestOutput, NotUsed]) ⇒ RequestEntity): RequestEntity = {
         // stream incoming chunks into the request entity until we reach the end of it
         // and then toggle back to "idle"
 
@@ -242,7 +242,8 @@ private[http] object HttpServerBluePrint {
 
     val errorHandler: PartialFunction[Throwable, Throwable] = {
       // idle timeouts should not result in errors in the log. See 19058.
-      case timeout: HttpConnectionTimeoutException ⇒ log.debug(s"Closing HttpConnection due to timeout: ${timeout.getMessage}"); timeout
+      case timeout: HttpConnectionTimeoutException ⇒
+        log.debug(s"Closing HttpConnection due to timeout: ${timeout.getMessage}"); timeout
       case t                                       ⇒ log.error(t, "Outgoing response stream error"); t
     }
 
@@ -301,13 +302,14 @@ private[http] object HttpServerBluePrint {
     }
   }
 
-  private class TimeoutSetup(val timeoutBase: Deadline,
-                             val scheduledTask: Cancellable,
-                             val timeout: Duration,
-                             val handler: HttpRequest ⇒ HttpResponse)
+  private class TimeoutSetup(
+    val timeoutBase: Deadline,
+    val scheduledTask: Cancellable,
+    val timeout: Duration,
+    val handler: HttpRequest ⇒ HttpResponse)
 
   private class TimeoutAccessImpl(request: HttpRequest, initialTimeout: FiniteDuration, requestEnd: Future[Unit],
-                                  trigger: AsyncCallback[(TimeoutAccess, HttpResponse)], materializer: Materializer)
+    trigger: AsyncCallback[(TimeoutAccess, HttpResponse)], materializer: Materializer)
       extends AtomicReference[Future[TimeoutSetup]] with TimeoutAccess with (HttpRequest ⇒ HttpResponse) { self ⇒
     import materializer.executionContext
 
@@ -318,8 +320,8 @@ private[http] object HttpServerBluePrint {
     override def apply(request: HttpRequest) =
       //#default-request-timeout-httpresponse
       HttpResponse(StatusCodes.ServiceUnavailable, entity = "The server was not able " +
-      "to produce a timely response to your request.\r\nPlease try again in a short while!")
-      //#
+        "to produce a timely response to your request.\r\nPlease try again in a short while!")
+    //#
 
     def clear(): Unit = // best effort timeout cancellation
       get.fast.foreach(setup ⇒ if (setup.scheduledTask ne null) setup.scheduledTask.cancel())
@@ -455,7 +457,8 @@ private[http] object HttpServerBluePrint {
       })
 
       def finishWithIllegalRequestError(status: StatusCode, info: ErrorInfo): Unit = {
-        logParsingError(info withSummaryPrepended s"Illegal request, responding with status '$status'",
+        logParsingError(
+          info withSummaryPrepended s"Illegal request, responding with status '$status'",
           log, settings.parserSettings.errorLoggingVerbosity)
         val msg = if (settings.verboseErrorMessages) info.formatPretty else info.summary
         emitErrorResponse(HttpResponse(status, entity = msg))

@@ -29,17 +29,17 @@ object PNCounterMap {
 @SerialVersionUID(1L)
 final class PNCounterMap private[akka] (
   private[akka] val underlying: ORMap[PNCounter])
-  extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
+    extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
 
   type T = PNCounterMap
 
   /** Scala API */
-  def entries: Map[String, BigInt] = underlying.entries.map { case (k, c) ⇒ k -> c.value }
+  def entries: Map[String, BigInt] = underlying.entries.map { case (k, c) ⇒ k → c.value }
 
   /** Java API */
   def getEntries: java.util.Map[String, BigInteger] = {
     import scala.collection.JavaConverters._
-    underlying.entries.map { case (k, c) ⇒ k -> c.value.bigInteger }.asJava
+    underlying.entries.map { case (k, c) ⇒ k → c.value.bigInteger }.asJava
   }
 
   /**

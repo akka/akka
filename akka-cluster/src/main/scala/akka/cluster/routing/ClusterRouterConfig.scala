@@ -43,10 +43,10 @@ object ClusterRouterGroupSettings {
  */
 @SerialVersionUID(1L)
 final case class ClusterRouterGroupSettings(
-  totalInstances: Int,
-  routeesPaths: immutable.Seq[String],
-  allowLocalRoutees: Boolean,
-  useRole: Option[String]) extends ClusterRouterSettingsBase {
+    totalInstances: Int,
+    routeesPaths: immutable.Seq[String],
+    allowLocalRoutees: Boolean,
+    useRole: Option[String]) extends ClusterRouterSettingsBase {
 
   /**
    * Java API
@@ -82,10 +82,10 @@ object ClusterRouterPoolSettings {
  */
 @SerialVersionUID(1L)
 final case class ClusterRouterPoolSettings(
-  totalInstances: Int,
-  maxInstancesPerNode: Int,
-  allowLocalRoutees: Boolean,
-  useRole: Option[String]) extends ClusterRouterSettingsBase {
+    totalInstances: Int,
+    maxInstancesPerNode: Int,
+    allowLocalRoutees: Boolean,
+    useRole: Option[String]) extends ClusterRouterSettingsBase {
 
   /**
    * Java API
@@ -242,7 +242,7 @@ private[akka] trait ClusterRouterConfigBase extends RouterConfig {
  */
 private[akka] class ClusterRouterPoolActor(
   supervisorStrategy: SupervisorStrategy, val settings: ClusterRouterPoolSettings)
-  extends RouterPoolActor(supervisorStrategy) with ClusterRouterActor {
+    extends RouterPoolActor(supervisorStrategy) with ClusterRouterActor {
 
   override def receive = clusterReceive orElse super.receive
 
@@ -276,9 +276,9 @@ private[akka] class ClusterRouterPoolActor(
     } else {
       // find the node with least routees
       val numberOfRouteesPerNode: Map[Address, Int] =
-        currentRoutees.foldLeft(currentNodes.map(_ -> 0).toMap.withDefaultValue(0)) { (acc, x) ⇒
+        currentRoutees.foldLeft(currentNodes.map(_ → 0).toMap.withDefaultValue(0)) { (acc, x) ⇒
           val address = fullAddress(x)
-          acc + (address -> (acc(address) + 1))
+          acc + (address → (acc(address) + 1))
         }
 
       val (address, count) = numberOfRouteesPerNode.minBy(_._2)
@@ -292,7 +292,7 @@ private[akka] class ClusterRouterPoolActor(
  * INTERNAL API
  */
 private[akka] class ClusterRouterGroupActor(val settings: ClusterRouterGroupSettings)
-  extends RouterActor with ClusterRouterActor {
+    extends RouterActor with ClusterRouterActor {
 
   val group = cell.routerConfig match {
     case x: Group ⇒ x
@@ -304,7 +304,7 @@ private[akka] class ClusterRouterGroupActor(val settings: ClusterRouterGroupSett
 
   var usedRouteePaths: Map[Address, Set[String]] =
     if (settings.allowLocalRoutees)
-      Map(cluster.selfAddress -> settings.routeesPaths.toSet)
+      Map(cluster.selfAddress → settings.routeesPaths.toSet)
     else
       Map.empty
 

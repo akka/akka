@@ -56,11 +56,11 @@ object ClusterEvent {
    * Current snapshot state of the cluster. Sent to new subscriber.
    */
   final case class CurrentClusterState(
-    members: immutable.SortedSet[Member] = immutable.SortedSet.empty,
-    unreachable: Set[Member] = Set.empty,
-    seenBy: Set[Address] = Set.empty,
-    leader: Option[Address] = None,
-    roleLeaderMap: Map[String, Option[Address]] = Map.empty) {
+      members: immutable.SortedSet[Member] = immutable.SortedSet.empty,
+      unreachable: Set[Member] = Set.empty,
+      seenBy: Set[Address] = Set.empty,
+      leader: Option[Address] = None,
+      roleLeaderMap: Map[String, Option[Address]] = Map.empty) {
 
     /**
      * Java API: get current member list.
@@ -355,7 +355,7 @@ object ClusterEvent {
  * domain events to event bus.
  */
 private[cluster] final class ClusterDomainEventPublisher extends Actor with ActorLogging
-  with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._
 
   val selfUniqueAddress = Cluster(context.system).selfUniqueAddress
@@ -395,7 +395,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
       unreachable = unreachable,
       seenBy = latestGossip.seenBy.map(_.address),
       leader = latestGossip.leader(selfUniqueAddress).map(_.address),
-      roleLeaderMap = latestGossip.allRoles.map(r ⇒ r -> latestGossip.roleLeader(r, selfUniqueAddress)
+      roleLeaderMap = latestGossip.allRoles.map(r ⇒ r → latestGossip.roleLeader(r, selfUniqueAddress)
         .map(_.address))(collection.breakOut))
     receiver ! state
   }

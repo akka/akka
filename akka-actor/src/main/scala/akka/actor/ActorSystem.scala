@@ -523,11 +523,11 @@ abstract class ExtendedActorSystem extends ActorSystem {
 }
 
 private[akka] class ActorSystemImpl(
-  val name: String,
-  applicationConfig: Config,
-  classLoader: ClassLoader,
-  defaultExecutionContext: Option[ExecutionContext],
-  val guardianProps: Option[Props]) extends ExtendedActorSystem {
+    val name: String,
+    applicationConfig: Config,
+    classLoader: ClassLoader,
+    defaultExecutionContext: Option[ExecutionContext],
+    val guardianProps: Option[Props]) extends ExtendedActorSystem {
 
   if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-_]*$"""))
     throw new IllegalArgumentException(
@@ -611,7 +611,7 @@ private[akka] class ActorSystemImpl(
   eventStream.startStdoutLogger(settings)
 
   val logFilter: LoggingFilter = {
-    val arguments = Vector(classOf[Settings] -> settings, classOf[EventStream] -> eventStream)
+    val arguments = Vector(classOf[Settings] → settings, classOf[EventStream] → eventStream)
     dynamicAccess.createInstanceFor[LoggingFilter](LoggingFilter, arguments).get
   }
 
@@ -621,10 +621,10 @@ private[akka] class ActorSystemImpl(
 
   val provider: ActorRefProvider = try {
     val arguments = Vector(
-      classOf[String] -> name,
-      classOf[Settings] -> settings,
-      classOf[EventStream] -> eventStream,
-      classOf[DynamicAccess] -> dynamicAccess)
+      classOf[String] → name,
+      classOf[Settings] → settings,
+      classOf[EventStream] → eventStream,
+      classOf[DynamicAccess] → dynamicAccess)
 
     dynamicAccess.createInstanceFor[ActorRefProvider](ProviderClass, arguments).get
   } catch {
@@ -716,9 +716,9 @@ private[akka] class ActorSystemImpl(
    */
   protected def createScheduler(): Scheduler =
     dynamicAccess.createInstanceFor[Scheduler](settings.SchedulerClass, immutable.Seq(
-      classOf[Config] -> settings.config,
-      classOf[LoggingAdapter] -> log,
-      classOf[ThreadFactory] -> threadFactory.withName(threadFactory.name + "-scheduler"))).get
+      classOf[Config] → settings.config,
+      classOf[LoggingAdapter] → log,
+      classOf[ThreadFactory] → threadFactory.withName(threadFactory.name + "-scheduler"))).get
   //#create-scheduler
 
   /*

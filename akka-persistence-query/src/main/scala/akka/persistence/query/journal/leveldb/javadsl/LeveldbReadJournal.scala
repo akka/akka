@@ -26,13 +26,13 @@ import akka.stream.javadsl.Source
  *
  */
 class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal)
-  extends ReadJournal
-  with AllPersistenceIdsQuery
-  with CurrentPersistenceIdsQuery
-  with EventsByPersistenceIdQuery
-  with CurrentEventsByPersistenceIdQuery
-  with EventsByTagQuery
-  with CurrentEventsByTagQuery {
+    extends ReadJournal
+    with AllPersistenceIdsQuery
+    with CurrentPersistenceIdsQuery
+    with EventsByPersistenceIdQuery
+    with CurrentEventsByPersistenceIdQuery
+    with EventsByTagQuery
+    with CurrentEventsByTagQuery {
 
   /**
    * `allPersistenceIds` is used for retrieving all `persistenceIds` of all
@@ -90,7 +90,7 @@ class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.lev
    * backend journal.
    */
   override def eventsByPersistenceId(persistenceId: String, fromSequenceNr: Long,
-                                     toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
+    toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
     scaladslReadJournal.eventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr).asJava
 
   /**
@@ -99,7 +99,7 @@ class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.lev
    * stored after the query is completed are not included in the event stream.
    */
   override def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long,
-                                            toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
+    toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
     scaladslReadJournal.currentEventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr).asJava
 
   /**

@@ -44,8 +44,9 @@ trait Scheduler {
     initialDelay: FiniteDuration,
     interval: FiniteDuration,
     receiver: ActorRef,
-    message: Any)(implicit executor: ExecutionContext,
-                  sender: ActorRef = Actor.noSender): Cancellable =
+    message: Any)(implicit
+    executor: ExecutionContext,
+    sender: ActorRef = Actor.noSender): Cancellable =
     schedule(initialDelay, interval, new Runnable {
       def run = {
         receiver ! message
@@ -72,7 +73,8 @@ trait Scheduler {
   final def schedule(
     initialDelay: FiniteDuration,
     interval: FiniteDuration)(f: ⇒ Unit)(
-      implicit executor: ExecutionContext): Cancellable =
+    implicit
+    executor: ExecutionContext): Cancellable =
     schedule(initialDelay, interval, new Runnable { override def run = f })
 
   /**
@@ -105,8 +107,9 @@ trait Scheduler {
   final def scheduleOnce(
     delay: FiniteDuration,
     receiver: ActorRef,
-    message: Any)(implicit executor: ExecutionContext,
-                  sender: ActorRef = Actor.noSender): Cancellable =
+    message: Any)(implicit
+    executor: ExecutionContext,
+    sender: ActorRef = Actor.noSender): Cancellable =
     scheduleOnce(delay, new Runnable {
       override def run = receiver ! message
     })
@@ -118,7 +121,8 @@ trait Scheduler {
    * Scala API
    */
   final def scheduleOnce(delay: FiniteDuration)(f: ⇒ Unit)(
-    implicit executor: ExecutionContext): Cancellable =
+    implicit
+    executor: ExecutionContext): Cancellable =
     scheduleOnce(delay, new Runnable { override def run = f })
 
   /**

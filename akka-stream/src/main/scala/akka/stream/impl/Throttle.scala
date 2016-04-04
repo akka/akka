@@ -14,12 +14,13 @@ import scala.concurrent.duration.{ FiniteDuration, _ }
 /**
  * INTERNAL API
  */
-private[stream] class Throttle[T](cost: Int,
-                                  per: FiniteDuration,
-                                  maximumBurst: Int,
-                                  costCalculation: (T) ⇒ Int,
-                                  mode: ThrottleMode)
-  extends SimpleLinearGraphStage[T] {
+private[stream] class Throttle[T](
+  cost: Int,
+  per: FiniteDuration,
+  maximumBurst: Int,
+  costCalculation: (T) ⇒ Int,
+  mode: ThrottleMode)
+    extends SimpleLinearGraphStage[T] {
   require(cost > 0, "cost must be > 0")
   require(per.toNanos > 0, "per time must be > 0")
   require(!(mode == ThrottleMode.Enforcing && maximumBurst < 0), "maximumBurst must be > 0 in Enforcing mode")

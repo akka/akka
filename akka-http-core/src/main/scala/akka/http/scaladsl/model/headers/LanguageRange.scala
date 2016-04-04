@@ -61,7 +61,7 @@ object LanguageRange {
 }
 
 final case class Language(primaryTag: String, subTags: immutable.Seq[String])
-  extends jm.headers.Language with ValueRenderable with WithQValue[LanguageRange] {
+    extends jm.headers.Language with ValueRenderable with WithQValue[LanguageRange] {
   def withQValue(qValue: Float) = LanguageRange(this, qValue.toFloat)
   def render[R <: Rendering](r: R): r.type = {
     r ~~ primaryTag

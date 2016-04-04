@@ -23,7 +23,7 @@ private[akka] object GroupByProcessorImpl {
  * INTERNAL API
  */
 private[akka] class GroupByProcessorImpl(settings: ActorMaterializerSettings, val maxSubstreams: Int, val keyFor: Any ⇒ Any)
-  extends MultiStreamOutputProcessor(settings) {
+    extends MultiStreamOutputProcessor(settings) {
 
   import MultiStreamOutputProcessor._
   import GroupByProcessorImpl.Drop

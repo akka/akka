@@ -95,7 +95,7 @@ final class LWWRegister[A] private[akka] (
   private[akka] val node: UniqueAddress,
   val value: A,
   val timestamp: Long)
-  extends ReplicatedData with ReplicatedDataSerialization {
+    extends ReplicatedData with ReplicatedDataSerialization {
   import LWWRegister.{ Clock, defaultClock }
 
   type T = LWWRegister[A]

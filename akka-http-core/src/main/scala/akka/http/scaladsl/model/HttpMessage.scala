@@ -13,7 +13,7 @@ import scala.collection.immutable
 import scala.reflect.{ classTag, ClassTag }
 import akka.parboiled2.CharUtils
 import akka.stream.Materializer
-import akka.util.{HashCode, ByteString}
+import akka.util.{ HashCode, ByteString }
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.util.FastFuture._
@@ -135,16 +135,17 @@ object HttpMessage {
  * The immutable model HTTP request model.
  */
 final class HttpRequest(
-    val method: HttpMethod,
-    val uri: Uri,
-    val headers: immutable.Seq[HttpHeader],
-    val entity: RequestEntity,
-    val protocol: HttpProtocol)
-  extends jm.HttpRequest with HttpMessage {
+  val method: HttpMethod,
+  val uri: Uri,
+  val headers: immutable.Seq[HttpHeader],
+  val entity: RequestEntity,
+  val protocol: HttpProtocol)
+    extends jm.HttpRequest with HttpMessage {
 
   HttpRequest.verifyUri(uri)
   require(entity.isKnownEmpty || method.isEntityAccepted, s"Requests with method '${method.value}' must have an empty entity")
-  require(protocol != HttpProtocols.`HTTP/1.0` || !entity.isInstanceOf[HttpEntity.Chunked],
+  require(
+    protocol != HttpProtocols.`HTTP/1.0` || !entity.isInstanceOf[HttpEntity.Chunked],
     "HTTP/1.0 requests must not have a chunked entity")
 
   type Self = HttpRequest
@@ -202,13 +203,12 @@ final class HttpRequest(
 
   /* Manual Case Class things, to easen bin-compat */
 
-  def copy(method: HttpMethod = method,
-           uri: Uri = uri,
-           headers: immutable.Seq[HttpHeader] = headers,
-           entity: RequestEntity = entity,
-           protocol: HttpProtocol = protocol) = new HttpRequest(method, uri, headers, entity, protocol)
-
-
+  def copy(
+    method: HttpMethod = method,
+    uri: Uri = uri,
+    headers: immutable.Seq[HttpHeader] = headers,
+    entity: RequestEntity = entity,
+    protocol: HttpProtocol = protocol) = new HttpRequest(method, uri, headers, entity, protocol)
 
   override def hashCode(): Int = {
     var result = HashCode.SEED
@@ -221,13 +221,13 @@ final class HttpRequest(
   }
 
   override def equals(obj: scala.Any): Boolean = obj match {
-    case HttpRequest(_method, _uri, _headers, _entity, _protocol) =>
+    case HttpRequest(_method, _uri, _headers, _entity, _protocol) ⇒
       method == _method &&
         uri == _uri &&
         headers == _headers &&
         entity == _entity &&
         protocol == _protocol
-    case _ => false
+    case _ ⇒ false
   }
 
   override def toString = s"""HttpRequest(${_1},${_2},${_3},${_4},${_5})"""
@@ -263,7 +263,8 @@ object HttpRequest {
     } else // http://tools.ietf.org/html/rfc7230#section-5.4
     if (hostHeader.isEmpty || uri.authority.isEmpty && hostHeader.get.isEmpty ||
       hostHeader.get.host.equalsIgnoreCase(uri.authority.host) && hostHeader.get.port == uri.authority.port) uri
-    else throw IllegalUriException(s"'Host' header value of request to `$uri` doesn't match request target authority",
+    else throw IllegalUriException(
+      s"'Host' header value of request to `$uri` doesn't match request target authority",
       s"Host header: $hostHeader\nrequest target authority: ${uri.authority}")
   }
 
@@ -285,11 +286,12 @@ object HttpRequest {
 
   /* Manual Case Class things, to easen bin-compat */
 
-  def apply(method: HttpMethod = HttpMethods.GET,
-            uri: Uri = Uri./,
-            headers: immutable.Seq[HttpHeader] = Nil,
-            entity: RequestEntity = HttpEntity.Empty,
-            protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) = new HttpRequest(method, uri, headers, entity, protocol)
+  def apply(
+    method: HttpMethod = HttpMethods.GET,
+    uri: Uri = Uri./,
+    headers: immutable.Seq[HttpHeader] = Nil,
+    entity: RequestEntity = HttpEntity.Empty,
+    protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) = new HttpRequest(method, uri, headers, entity, protocol)
 
   def unapply(any: HttpRequest) = new OptHttpRequest(any)
 }
@@ -298,14 +300,15 @@ object HttpRequest {
  * The immutable HTTP response model.
  */
 final class HttpResponse(
-    val status: StatusCode,
-    val headers: immutable.Seq[HttpHeader],
-    val entity: ResponseEntity,
-    val protocol: HttpProtocol)
-  extends jm.HttpResponse with HttpMessage {
+  val status: StatusCode,
+  val headers: immutable.Seq[HttpHeader],
+  val entity: ResponseEntity,
+  val protocol: HttpProtocol)
+    extends jm.HttpResponse with HttpMessage {
 
   require(entity.isKnownEmpty || status.allowsEntity, "Responses with this status code must have an empty entity")
-  require(protocol == HttpProtocols.`HTTP/1.1` || !entity.isInstanceOf[HttpEntity.Chunked],
+  require(
+    protocol == HttpProtocols.`HTTP/1.1` || !entity.isInstanceOf[HttpEntity.Chunked],
     "HTTP/1.0 responses must not have a chunked entity")
 
   type Self = HttpResponse
@@ -331,19 +334,19 @@ final class HttpResponse(
 
   /* Manual Case Class things, to easen bin-compat */
 
-  def copy(status: StatusCode = status,
-           headers: immutable.Seq[HttpHeader] = headers,
-           entity: ResponseEntity = entity,
-           protocol: HttpProtocol = protocol) = new HttpResponse(status, headers, entity, protocol)
-
+  def copy(
+    status: StatusCode = status,
+    headers: immutable.Seq[HttpHeader] = headers,
+    entity: ResponseEntity = entity,
+    protocol: HttpProtocol = protocol) = new HttpResponse(status, headers, entity, protocol)
 
   override def equals(obj: scala.Any): Boolean = obj match {
-    case HttpResponse(_status, _headers, _entity, _protocol) =>
+    case HttpResponse(_status, _headers, _entity, _protocol) ⇒
       status == _status &&
         headers == _headers &&
         entity == _entity &&
         protocol == _protocol
-    case _ => false
+    case _ ⇒ false
   }
 
   override def hashCode: Int = {
@@ -368,10 +371,11 @@ final class HttpResponse(
 object HttpResponse {
   /* Manual Case Class things, to easen bin-compat */
 
-  def apply(status: StatusCode = StatusCodes.OK,
-            headers: immutable.Seq[HttpHeader] = Nil,
-            entity: ResponseEntity = HttpEntity.Empty,
-            protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) = new HttpResponse(status, headers, entity, protocol)
+  def apply(
+    status: StatusCode = StatusCodes.OK,
+    headers: immutable.Seq[HttpHeader] = Nil,
+    entity: ResponseEntity = HttpEntity.Empty,
+    protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) = new HttpResponse(status, headers, entity, protocol)
 
   def unapply(any: HttpResponse): OptHttpResponse = new OptHttpResponse(any)
 }

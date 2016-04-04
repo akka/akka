@@ -36,7 +36,7 @@ private[akka] object FilePublisher {
 
 /** INTERNAL API */
 private[akka] final class FilePublisher(f: File, completionPromise: Promise[IOResult], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
-  extends akka.stream.actor.ActorPublisher[ByteString] with ActorLogging {
+    extends akka.stream.actor.ActorPublisher[ByteString] with ActorLogging {
   import FilePublisher._
 
   var eofReachedAtOffset = Long.MinValue

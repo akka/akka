@@ -37,7 +37,7 @@ object Coroner {
   }
 
   private class WatchHandleImpl(startAndStopDuration: FiniteDuration)
-    extends WatchHandle {
+      extends WatchHandle {
     val cancelPromise = Promise[Boolean]
     val startedLatch = new CountDownLatch(1)
     val finishedLatch = new CountDownLatch(1)
@@ -77,8 +77,8 @@ object Coroner {
    * and stop.
    */
   def watch(duration: FiniteDuration, reportTitle: String, out: PrintStream,
-            startAndStopDuration: FiniteDuration = defaultStartAndStopDuration,
-            displayThreadCounts: Boolean = false): WatchHandle = {
+    startAndStopDuration: FiniteDuration = defaultStartAndStopDuration,
+    displayThreadCounts: Boolean = false): WatchHandle = {
 
     val watchedHandle = new WatchHandleImpl(startAndStopDuration)
 

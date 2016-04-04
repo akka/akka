@@ -125,7 +125,7 @@ package util {
   }
 
   private[http] class ToStrict(timeout: FiniteDuration, contentType: ContentType)
-    extends GraphStage[FlowShape[ByteString, HttpEntity.Strict]] {
+      extends GraphStage[FlowShape[ByteString, HttpEntity.Strict]] {
 
     val in = Inlet[ByteString]("in")
     val out = Outlet[HttpEntity.Strict]("out")

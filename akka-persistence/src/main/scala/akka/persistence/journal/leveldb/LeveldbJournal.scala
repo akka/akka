@@ -94,7 +94,7 @@ private[persistence] object LeveldbJournal {
   final case class TaggedEventAppended(tag: String) extends DeadLetterSuppression
 
   final case class ReplayTaggedMessages(fromSequenceNr: Long, toSequenceNr: Long, max: Long,
-                                        tag: String, replyTo: ActorRef) extends SubscriptionCommand
+    tag: String, replyTo: ActorRef) extends SubscriptionCommand
   final case class ReplayedTaggedMessage(persistent: PersistentRepr, tag: String, offset: Long)
     extends DeadLetterSuppression with NoSerializationVerificationNeeded
 }

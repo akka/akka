@@ -18,7 +18,7 @@ import akka.serialization.SerializerWithStringManifest
  * the ClusterSingleton we want to make protobuf representations of them.
  */
 private[akka] class ClusterSingletonMessageSerializer(val system: ExtendedActorSystem)
-  extends SerializerWithStringManifest with BaseSerializer {
+    extends SerializerWithStringManifest with BaseSerializer {
 
   private lazy val serialization = SerializationExtension(system)
 
@@ -30,10 +30,10 @@ private[akka] class ClusterSingletonMessageSerializer(val system: ExtendedActorS
   private val emptyByteArray = Array.empty[Byte]
 
   private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] ⇒ AnyRef](
-    HandOverToMeManifest -> { _ ⇒ HandOverToMe },
-    HandOverInProgressManifest -> { _ ⇒ HandOverInProgress },
-    HandOverDoneManifest -> { _ ⇒ HandOverDone },
-    TakeOverFromMeManifest -> { _ ⇒ TakeOverFromMe })
+    HandOverToMeManifest → { _ ⇒ HandOverToMe },
+    HandOverInProgressManifest → { _ ⇒ HandOverInProgress },
+    HandOverDoneManifest → { _ ⇒ HandOverDone },
+    TakeOverFromMeManifest → { _ ⇒ TakeOverFromMe })
 
   override def manifest(obj: AnyRef): String = obj match {
     case HandOverToMe       ⇒ HandOverToMeManifest

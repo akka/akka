@@ -7,12 +7,13 @@ import org.reactivestreams.Subscriber
 /**
  * INTERNAL API
  */
-private[akka] abstract class FanoutOutputs(val maxBufferSize: Int,
-                                           val initialBufferSize: Int,
-                                           self: ActorRef,
-                                           val pump: Pump)
-  extends DefaultOutputTransferStates
-  with SubscriberManagement[Any] {
+private[akka] abstract class FanoutOutputs(
+  val maxBufferSize: Int,
+  val initialBufferSize: Int,
+  self: ActorRef,
+  val pump: Pump)
+    extends DefaultOutputTransferStates
+    with SubscriberManagement[Any] {
 
   override type S = ActorSubscriptionWithCursor[_ >: Any]
   override def createSubscription(subscriber: Subscriber[_ >: Any]): S =
@@ -99,7 +100,7 @@ private[akka] object FanoutProcessorImpl {
  * INTERNAL API
  */
 private[akka] class FanoutProcessorImpl(_settings: ActorMaterializerSettings)
-  extends ActorProcessorImpl(_settings) {
+    extends ActorProcessorImpl(_settings) {
 
   override val primaryOutputs: FanoutOutputs =
     new FanoutOutputs(settings.maxInputBufferSize, settings.initialInputBufferSize, self, this) {

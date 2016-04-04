@@ -11,7 +11,8 @@ resolvers += "Bintray Jcenter" at "https://jcenter.bintray.com/"
 addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.3.8")
 //#sbt-multi-jvm
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.2.0")
+addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.6.0")
+libraryDependencies += "org.scalariform" %% "scalariform" % "0.1.8"
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "0.7.1")
 
@@ -35,7 +36,7 @@ libraryDependencies += "com.timgroup" % "java-statsd-client" % "2.0.0"
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.0-RC1")
 
 // for advanced PR validation features
-addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.0")
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2")
 
 libraryDependencies += "org.kohsuke" % "github-api" % "1.68"
 

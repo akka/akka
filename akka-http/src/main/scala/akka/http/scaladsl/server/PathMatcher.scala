@@ -415,7 +415,7 @@ trait PathMatchers {
    * @group pathmatcher
    */
   abstract class NumberMatcher[@specialized(Int, Long) T](max: T, base: T)(implicit x: Integral[T])
-    extends PathMatcher1[T] {
+      extends PathMatcher1[T] {
 
     import x._ // import implicit conversions for numeric operators
     val minusOne = x.zero - x.one

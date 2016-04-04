@@ -19,7 +19,7 @@ private[akka] class HdrHistogram(
   highestTrackableValue: Long,
   numberOfSignificantValueDigits: Int,
   val unit: String = "")
-  extends Metric {
+    extends Metric {
 
   private val hist = new hdr.Histogram(highestTrackableValue, numberOfSignificantValueDigits)
 

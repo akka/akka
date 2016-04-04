@@ -23,7 +23,7 @@ import scala.util.{ Failure, Success, Try }
  * Can be used as a `Subscriber`
  */
 final class Sink[-In, +Mat](private[stream] override val module: Module)
-  extends Graph[SinkShape[In], Mat] {
+    extends Graph[SinkShape[In], Mat] {
 
   override val shape: SinkShape[In] = module.shape.asInstanceOf[SinkShape[In]]
 
@@ -307,7 +307,7 @@ object Sink {
    * function will be sent to the destination actor.
    */
   def actorRefWithAck[T](ref: ActorRef, onInitMessage: Any, ackMessage: Any, onCompleteMessage: Any,
-                         onFailureMessage: (Throwable) ⇒ Any = Status.Failure): Sink[T, NotUsed] =
+    onFailureMessage: (Throwable) ⇒ Any = Status.Failure): Sink[T, NotUsed] =
     Sink.fromGraph(new ActorRefBackpressureSinkStage(ref, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage))
 
   /**

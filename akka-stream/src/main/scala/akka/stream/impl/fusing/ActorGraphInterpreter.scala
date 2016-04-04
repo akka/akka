@@ -24,7 +24,7 @@ import scala.annotation.tailrec
  * INTERNAL API
  */
 private[stream] final case class GraphModule(assembly: GraphAssembly, shape: Shape, attributes: Attributes,
-                                             matValIDs: Array[Module]) extends AtomicModule {
+    matValIDs: Array[Module]) extends AtomicModule {
 
   override def withAttributes(newAttr: Attributes): Module = copy(attributes = newAttr)
 
@@ -308,13 +308,13 @@ private[stream] object ActorGraphInterpreter {
  * INTERNAL API
  */
 private[stream] final class GraphInterpreterShell(
-  assembly: GraphAssembly,
-  inHandlers: Array[InHandler],
-  outHandlers: Array[OutHandler],
-  logics: Array[GraphStageLogic],
-  shape: Shape,
-  settings: ActorMaterializerSettings,
-  val mat: ActorMaterializerImpl) {
+    assembly: GraphAssembly,
+    inHandlers: Array[InHandler],
+    outHandlers: Array[OutHandler],
+    logics: Array[GraphStageLogic],
+    shape: Shape,
+    settings: ActorMaterializerSettings,
+    val mat: ActorMaterializerImpl) {
 
   import ActorGraphInterpreter._
 

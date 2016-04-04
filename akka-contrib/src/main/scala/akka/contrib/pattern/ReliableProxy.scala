@@ -16,7 +16,7 @@ object ReliableProxy {
    * constructor.
    */
   def props(targetPath: ActorPath, retryAfter: FiniteDuration, reconnectAfter: Option[FiniteDuration],
-            maxReconnects: Option[Int]): Props = {
+    maxReconnects: Option[Int]): Props = {
     Props(new ReliableProxy(targetPath, retryAfter, reconnectAfter, maxReconnects))
   }
 
@@ -25,7 +25,7 @@ object ReliableProxy {
    * constructor.
    */
   def props(targetPath: ActorPath, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration,
-            maxReconnects: Int): Props = {
+    maxReconnects: Int): Props = {
     props(targetPath, retryAfter, Option(reconnectAfter), if (maxReconnects > 0) Some(maxReconnects) else None)
   }
 
@@ -225,8 +225,8 @@ import ReliableProxy._
  *   target actor. Use `None` for no limit. If `reconnectAfter` is `None` this value is ignored.
  */
 class ReliableProxy(targetPath: ActorPath, retryAfter: FiniteDuration,
-                    reconnectAfter: Option[FiniteDuration], maxConnectAttempts: Option[Int])
-  extends Actor with LoggingFSM[State, Vector[Message]] with ReliableProxyDebugLogging {
+  reconnectAfter: Option[FiniteDuration], maxConnectAttempts: Option[Int])
+    extends Actor with LoggingFSM[State, Vector[Message]] with ReliableProxyDebugLogging {
 
   var tunnel: ActorRef = _
   var currentSerial: Int = 0
@@ -284,9 +284,9 @@ class ReliableProxy(targetPath: ActorPath, retryAfter: FiniteDuration,
   }
 
   onTransition {
-    case _ -> Active     ⇒ scheduleTick()
-    case Active -> Idle  ⇒ cancelTimer(resendTimer)
-    case _ -> Connecting ⇒ scheduleReconnectTick()
+    case _ → Active     ⇒ scheduleTick()
+    case Active → Idle  ⇒ cancelTimer(resendTimer)
+    case _ → Connecting ⇒ scheduleReconnectTick()
   }
 
   when(Active) {

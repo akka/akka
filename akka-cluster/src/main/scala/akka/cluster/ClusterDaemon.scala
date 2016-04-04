@@ -153,7 +153,7 @@ private[cluster] object InternalClusterAction {
  * Supervisor managing the different Cluster daemons.
  */
 private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Actor with ActorLogging
-  with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._
   // Important - don't use Cluster(context.system) in constructor because that would
   // cause deadlock. The Cluster extension is currently being created and is waiting
@@ -195,7 +195,7 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
  * would be obsolete. Shutdown the member if any those actors crashed.
  */
 private[cluster] final class ClusterCoreSupervisor extends Actor with ActorLogging
-  with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._
 
   // Important - don't use Cluster(context.system) in constructor because that would
@@ -235,7 +235,7 @@ private[cluster] final class ClusterCoreSupervisor extends Actor with ActorLoggi
  * INTERNAL API.
  */
 private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with ActorLogging
-  with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._
 
   val cluster = Cluster(context.system)
@@ -272,15 +272,18 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   import context.dispatcher
 
   // start periodic gossip to random nodes in cluster
-  val gossipTask = scheduler.schedule(PeriodicTasksInitialDelay.max(GossipInterval),
+  val gossipTask = scheduler.schedule(
+    PeriodicTasksInitialDelay.max(GossipInterval),
     GossipInterval, self, GossipTick)
 
   // start periodic cluster failure detector reaping (moving nodes condemned by the failure detector to unreachable list)
-  val failureDetectorReaperTask = scheduler.schedule(PeriodicTasksInitialDelay.max(UnreachableNodesReaperInterval),
+  val failureDetectorReaperTask = scheduler.schedule(
+    PeriodicTasksInitialDelay.max(UnreachableNodesReaperInterval),
     UnreachableNodesReaperInterval, self, ReapUnreachableTick)
 
   // start periodic leader action management (only applies for the current leader)
-  val leaderActionsTask = scheduler.schedule(PeriodicTasksInitialDelay.max(LeaderActionsInterval),
+  val leaderActionsTask = scheduler.schedule(
+    PeriodicTasksInitialDelay.max(LeaderActionsInterval),
     LeaderActionsInterval, self, LeaderActionsTick)
 
   // start periodic publish of current stats
@@ -373,7 +376,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     case ClusterUserAction.JoinTo(address) ⇒
       logInfo("Trying to join [{}] when already part of a cluster, ignoring", address)
     case JoinSeedNodes(seedNodes) ⇒
-      logInfo("Trying to join seed nodes [{}] when already part of a cluster, ignoring",
+      logInfo(
+        "Trying to join seed nodes [{}] when already part of a cluster, ignoring",
         seedNodes.mkString(", "))
   }
 
@@ -429,10 +433,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    */
   def join(address: Address): Unit = {
     if (address.protocol != selfAddress.protocol)
-      log.warning("Trying to join member with wrong protocol, but was ignored, expected [{}] but was [{}]",
+      log.warning(
+        "Trying to join member with wrong protocol, but was ignored, expected [{}] but was [{}]",
         selfAddress.protocol, address.protocol)
     else if (address.system != selfAddress.system)
-      log.warning("Trying to join member with wrong ActorSystem name, but was ignored, expected [{}] but was [{}]",
+      log.warning(
+        "Trying to join member with wrong ActorSystem name, but was ignored, expected [{}] but was [{}]",
         selfAddress.system, address.system)
     else {
       require(latestGossip.members.isEmpty, "Join can only be done from empty state")
@@ -472,10 +478,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   def joining(node: UniqueAddress, roles: Set[String]): Unit = {
     val selfStatus = latestGossip.member(selfUniqueAddress).status
     if (node.address.protocol != selfAddress.protocol)
-      log.warning("Member with wrong protocol tried to join, but was ignored, expected [{}] but was [{}]",
+      log.warning(
+        "Member with wrong protocol tried to join, but was ignored, expected [{}] but was [{}]",
         selfAddress.protocol, node.address.protocol)
     else if (node.address.system != selfAddress.system)
-      log.warning("Member with wrong ActorSystem name tried to join, but was ignored, expected [{}] but was [{}]",
+      log.warning(
+        "Member with wrong ActorSystem name tried to join, but was ignored, expected [{}] but was [{}]",
         selfAddress.system, node.address.system)
     else if (Gossip.removeUnreachableWithMemberStatus.contains(selfStatus))
       logInfo("Trying to join [{}] to [{}] member, ignoring. Use a member that is Up instead.", node, selfStatus)
@@ -609,7 +617,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       val newOverview = localGossip.overview copy (reachability = newReachability)
       val newGossip = localGossip copy (overview = newOverview)
       updateLatestGossip(newGossip)
-      log.warning("Cluster Node [{}] - Marking node as TERMINATED [{}], due to quarantine",
+      log.warning(
+        "Cluster Node [{}] - Marking node as TERMINATED [{}], due to quarantine",
         selfAddress, node.address)
       publish(latestGossip)
       downing(node.address)
@@ -836,7 +845,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
         leaderActionCounter += 1
         if (leaderActionCounter == firstNotice || leaderActionCounter % periodicNotice == 0)
-          logInfo("Leader can currently not perform its duties, reachability status: [{}], member status: [{}]",
+          logInfo(
+            "Leader can currently not perform its duties, reachability status: [{}], member status: [{}]",
             latestGossip.reachabilityExcludingDownedObservers,
             latestGossip.members.map(m ⇒
               s"${m.address} ${m.status} seen=${latestGossip.seenByNode(m.uniqueAddress)}").mkString(", "))
@@ -1043,7 +1053,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
           if (nonExiting.nonEmpty)
             log.warning("Cluster Node [{}] - Marking node(s) as UNREACHABLE [{}]", selfAddress, nonExiting.mkString(", "))
           if (exiting.nonEmpty)
-            logInfo("Marking exiting node(s) as UNREACHABLE [{}]. This is expected and they will be removed.",
+            logInfo(
+              "Marking exiting node(s) as UNREACHABLE [{}]. This is expected and they will be removed.",
               exiting.mkString(", "))
           if (newlyDetectedReachableMembers.nonEmpty)
             logInfo("Marking node(s) as REACHABLE [{}]", newlyDetectedReachableMembers.mkString(", "))
@@ -1289,11 +1300,11 @@ private[cluster] class OnMemberStatusChangedListener(callback: Runnable, status:
  */
 @SerialVersionUID(1L)
 private[cluster] final case class GossipStats(
-  receivedGossipCount: Long = 0L,
-  mergeCount: Long = 0L,
-  sameCount: Long = 0L,
-  newerCount: Long = 0L,
-  olderCount: Long = 0L) {
+    receivedGossipCount: Long = 0L,
+    mergeCount: Long = 0L,
+    sameCount: Long = 0L,
+    newerCount: Long = 0L,
+    olderCount: Long = 0L) {
 
   def incrementMergeCount(): GossipStats =
     copy(mergeCount = mergeCount + 1, receivedGossipCount = receivedGossipCount + 1)

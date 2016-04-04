@@ -434,7 +434,7 @@ final class ExplicitlyAskableActorSelection(val actorSel: ActorSelection) extend
  * INTERNAL API
  */
 private[akka] final class PromiseActorRef private (val provider: ActorRefProvider, val result: Promise[Any], _mcn: String)
-  extends MinimalActorRef {
+    extends MinimalActorRef {
   import AbstractPromiseActorRef.{ stateOffset, watchedByOffset }
   import PromiseActorRef._
 

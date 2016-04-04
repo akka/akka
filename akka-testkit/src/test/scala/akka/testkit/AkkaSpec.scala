@@ -60,7 +60,8 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   implicit val patience = PatienceConfig(testKitSettings.DefaultTimeout.duration)
 
-  def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName(getClass),
+  def this(config: Config) = this(ActorSystem(
+    AkkaSpec.getCallerName(getClass),
     ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
 
   def this(s: String) = this(ConfigFactory.parseString(s))

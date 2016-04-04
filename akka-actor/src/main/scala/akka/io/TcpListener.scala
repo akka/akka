@@ -29,12 +29,13 @@ private[io] object TcpListener {
 /**
  * INTERNAL API
  */
-private[io] class TcpListener(selectorRouter: ActorRef,
-                              tcp: TcpExt,
-                              channelRegistry: ChannelRegistry,
-                              bindCommander: ActorRef,
-                              bind: Bind)
-  extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+private[io] class TcpListener(
+  selectorRouter: ActorRef,
+  tcp: TcpExt,
+  channelRegistry: ChannelRegistry,
+  bindCommander: ActorRef,
+  bind: Bind)
+    extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import TcpListener._
   import tcp.Settings._

@@ -396,7 +396,7 @@ object SubSink {
  * INTERNAL API
  */
 final class SubSink[T](name: String, externalCallback: ActorSubscriberMessage ⇒ Unit)
-  extends GraphStage[SinkShape[T]] {
+    extends GraphStage[SinkShape[T]] {
   import SubSink._
 
   private val in = Inlet[T]("SubSink.in")
@@ -482,7 +482,7 @@ object SubSource {
  * INTERNAL API
  */
 final class SubSource[T](name: String, private[fusing] val externalCallback: AsyncCallback[SubSink.Command])
-  extends GraphStage[SourceShape[T]] {
+    extends GraphStage[SourceShape[T]] {
   import SubSink._
 
   val out: Outlet[T] = Outlet("SubSource.out")

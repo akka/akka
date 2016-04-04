@@ -29,7 +29,7 @@ final case class AssociatedEvent(
   localAddress: Address,
   remoteAddress: Address,
   inbound: Boolean)
-  extends AssociationEvent {
+    extends AssociationEvent {
 
   protected override def eventName: String = "Associated"
   override def logLevel: Logging.LogLevel = Logging.DebugLevel
@@ -41,18 +41,18 @@ final case class DisassociatedEvent(
   localAddress: Address,
   remoteAddress: Address,
   inbound: Boolean)
-  extends AssociationEvent {
+    extends AssociationEvent {
   protected override def eventName: String = "Disassociated"
   override def logLevel: Logging.LogLevel = Logging.DebugLevel
 }
 
 @SerialVersionUID(1L)
 final case class AssociationErrorEvent(
-  cause: Throwable,
-  localAddress: Address,
-  remoteAddress: Address,
-  inbound: Boolean,
-  logLevel: Logging.LogLevel) extends AssociationEvent {
+    cause: Throwable,
+    localAddress: Address,
+    remoteAddress: Address,
+    inbound: Boolean,
+    logLevel: Logging.LogLevel) extends AssociationEvent {
   protected override def eventName: String = "AssociationError"
   override def toString: String = s"${super.toString}: Error [${cause.getMessage}] [${Logging.stackTraceFor(cause)}]"
   def getCause: Throwable = cause

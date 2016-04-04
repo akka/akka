@@ -48,14 +48,14 @@ private[akka] object ReplayFilter {
  * INTERNAL API
  */
 private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.Mode,
-                                 windowSize: Int, maxOldWriters: Int, debugEnabled: Boolean)
-  extends Actor with ActorLogging {
+  windowSize: Int, maxOldWriters: Int, debugEnabled: Boolean)
+    extends Actor with ActorLogging {
   import JournalProtocol._
   import ReplayFilter.{ Warn, Fail, RepairByDiscardOld, Disabled }
 
   // for binary compatibility
   def this(persistentActor: ActorRef, mode: ReplayFilter.Mode,
-           windowSize: Int, maxOldWriters: Int) = this(persistentActor, mode, windowSize, maxOldWriters, debugEnabled = false)
+    windowSize: Int, maxOldWriters: Int) = this(persistentActor, mode, windowSize, maxOldWriters, debugEnabled = false)
 
   val buffer = new LinkedList[ReplayedMessage]()
   val oldWriters = LinkedHashSet.empty[String]

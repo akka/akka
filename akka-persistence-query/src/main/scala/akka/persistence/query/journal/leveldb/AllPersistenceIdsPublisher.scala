@@ -27,7 +27,7 @@ private[akka] object AllPersistenceIdsPublisher {
  * INTERNAL API
  */
 private[akka] class AllPersistenceIdsPublisher(liveQuery: Boolean, maxBufSize: Int, writeJournalPluginId: String)
-  extends ActorPublisher[String] with DeliveryBuffer[String] with ActorLogging {
+    extends ActorPublisher[String] with DeliveryBuffer[String] with ActorLogging {
 
   val journal: ActorRef = Persistence(context.system).journalFor(writeJournalPluginId)
 

@@ -27,7 +27,7 @@ private[akka] object ActorProcessor {
  * INTERNAL API
  */
 private[akka] class ActorProcessor[I, O](impl: ActorRef) extends ActorPublisher[O](impl)
-  with Processor[I, O] {
+    with Processor[I, O] {
   override def onSubscribe(s: Subscription): Unit = {
     ReactiveStreamsCompliance.requireNonNullSubscription(s)
     impl ! OnSubscribe(s)
@@ -247,9 +247,9 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
  * INTERNAL API
  */
 private[akka] abstract class ActorProcessorImpl(val settings: ActorMaterializerSettings)
-  extends Actor
-  with ActorLogging
-  with Pump {
+    extends Actor
+    with ActorLogging
+    with Pump {
 
   protected val primaryInputs: Inputs = new BatchingInputBuffer(settings.initialInputBufferSize, this) {
     override def inputOnError(e: Throwable): Unit = ActorProcessorImpl.this.onError(e)

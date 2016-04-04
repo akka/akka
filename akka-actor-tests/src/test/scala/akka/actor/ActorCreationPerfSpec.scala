@@ -100,7 +100,7 @@ object ActorCreationPerfSpec {
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorCreationPerfSpec extends AkkaSpec("akka.actor.serialize-messages = off") with ImplicitSender
-  with MetricsKit with BeforeAndAfterAll {
+    with MetricsKit with BeforeAndAfterAll {
 
   import ActorCreationPerfSpec._
 

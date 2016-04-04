@@ -40,7 +40,7 @@ object GCounter {
 @SerialVersionUID(1L)
 final class GCounter private[akka] (
   private[akka] val state: Map[UniqueAddress, BigInt] = Map.empty)
-  extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning with FastMerge {
+    extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning with FastMerge {
 
   import GCounter.Zero
 
@@ -83,8 +83,8 @@ final class GCounter private[akka] (
     else state.get(key) match {
       case Some(v) ⇒
         val tot = v + delta
-        assignAncestor(new GCounter(state + (key -> tot)))
-      case None ⇒ assignAncestor(new GCounter(state + (key -> delta)))
+        assignAncestor(new GCounter(state + (key → tot)))
+      case None ⇒ assignAncestor(new GCounter(state + (key → delta)))
     }
   }
 

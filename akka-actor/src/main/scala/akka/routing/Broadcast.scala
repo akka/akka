@@ -60,7 +60,7 @@ final case class BroadcastPool(
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
   override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
   override val usePoolDispatcher: Boolean = false)
-  extends Pool with PoolOverrideUnsetConfig[BroadcastPool] {
+    extends Pool with PoolOverrideUnsetConfig[BroadcastPool] {
 
   def this(config: Config) =
     this(
@@ -120,7 +120,7 @@ final case class BroadcastPool(
 final case class BroadcastGroup(
   override val paths: immutable.Iterable[String],
   override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
-  extends Group {
+    extends Group {
 
   def this(config: Config) =
     this(paths = immutableSeq(config.getStringList("routees.paths")))

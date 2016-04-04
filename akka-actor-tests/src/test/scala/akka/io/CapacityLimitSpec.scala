@@ -13,7 +13,7 @@ class CapacityLimitSpec extends AkkaSpec("""
     akka.io.tcp.max-channels = 4
     akka.actor.serialize-creators = on
     """)
-  with TcpIntegrationSpecSupport {
+    with TcpIntegrationSpecSupport {
 
   "The TCP transport implementation" should {
 

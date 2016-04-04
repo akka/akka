@@ -13,7 +13,7 @@ private[parser] trait CommonActions {
   type StringMapBuilder = scala.collection.mutable.Builder[(String, String), Map[String, String]]
 
   def getMediaType(mainType: String, subType: String, charsetDefined: Boolean,
-                   params: Map[String, String]): MediaType = {
+    params: Map[String, String]): MediaType = {
     val subLower = subType.toRootLowerCase
     mainType.toRootLowerCase match {
       case "multipart" ⇒ subLower match {

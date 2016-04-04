@@ -214,7 +214,7 @@ object PersistentFSM {
    */
   // FIXME: what about the cancellable?
   private[persistence] final case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(context: ActorContext)
-    extends NoSerializationVerificationNeeded {
+      extends NoSerializationVerificationNeeded {
     private var ref: Option[Cancellable] = _
     private val scheduler = context.system.scheduler
     private implicit val executionContext = context.dispatcher
@@ -235,7 +235,7 @@ object PersistentFSM {
    * This extractor is just convenience for matching a (S, S) pair, including a
    * reminder what the new state is.
    */
-  object -> {
+  object → {
     def unapply[S](in: (S, S)) = Some(in)
   }
 
@@ -251,13 +251,13 @@ object PersistentFSM {
    * to be executed after FSM moves to the new state (also triggered when staying in the same state)
    */
   final case class State[S, D, E](
-    stateName: S,
-    stateData: D,
-    timeout: Option[FiniteDuration] = None,
-    stopReason: Option[Reason] = None,
-    replies: List[Any] = Nil,
-    domainEvents: Seq[E] = Nil,
-    afterTransitionDo: D ⇒ Unit = { _: D ⇒ })(private[akka] val notifies: Boolean = true) {
+      stateName: S,
+      stateData: D,
+      timeout: Option[FiniteDuration] = None,
+      stopReason: Option[Reason] = None,
+      replies: List[Any] = Nil,
+      domainEvents: Seq[E] = Nil,
+      afterTransitionDo: D ⇒ Unit = { _: D ⇒ })(private[akka] val notifies: Boolean = true) {
 
     /**
      * Copy object and update values if needed.

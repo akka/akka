@@ -26,7 +26,7 @@ import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
  * INTERNAL API
  */
 private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketChannel, val pullMode: Boolean)
-  extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+    extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import tcp.Settings._
   import tcp.bufferPool
@@ -106,7 +106,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
   /** connection is closing but a write has to be finished first */
   def closingWithPendingWrite(info: ConnectionInfo, closeCommander: Option[ActorRef],
-                              closedEvent: ConnectionClosed): Receive = {
+    closedEvent: ConnectionClosed): Receive = {
     case SuspendReading  ⇒ suspendReading(info)
     case ResumeReading   ⇒ resumeReading(info)
     case ChannelReadable ⇒ doRead(info, closeCommander)
@@ -189,7 +189,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
   /** used in subclasses to start the common machinery above once a channel is connected */
   def completeConnect(registration: ChannelRegistration, commander: ActorRef,
-                      options: immutable.Traversable[SocketOption]): Unit = {
+    options: immutable.Traversable[SocketOption]): Unit = {
     // Turn off Nagle's algorithm by default
     try channel.socket.setTcpNoDelay(true) catch {
       case e: SocketException ⇒
@@ -267,7 +267,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     else PeerClosed
 
   def handleClose(info: ConnectionInfo, closeCommander: Option[ActorRef],
-                  closedEvent: ConnectionClosed): Unit = closedEvent match {
+    closedEvent: ConnectionClosed): Unit = closedEvent match {
     case Aborted ⇒
       if (TraceLogging) log.debug("Got Abort command. RESETing connection.")
       doCloseConnection(info.handler, closeCommander, closedEvent)
@@ -386,11 +386,11 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   }
 
   class PendingBufferWrite(
-    val commander: ActorRef,
-    remainingData: ByteString,
-    ack: Any,
-    buffer: ByteBuffer,
-    tail: WriteCommand) extends PendingWrite {
+      val commander: ActorRef,
+      remainingData: ByteString,
+      ack: Any,
+      buffer: ByteBuffer,
+      tail: WriteCommand) extends PendingWrite {
 
     def doWrite(info: ConnectionInfo): PendingWrite = {
       @tailrec def writeToChannel(data: ByteString): PendingWrite = {
@@ -424,16 +424,16 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   }
 
   def PendingWriteFile(commander: ActorRef, filePath: String, offset: Long, count: Long, ack: Event,
-                       tail: WriteCommand): PendingWriteFile =
+    tail: WriteCommand): PendingWriteFile =
     new PendingWriteFile(commander, new FileInputStream(filePath).getChannel, offset, count, ack, tail)
 
   class PendingWriteFile(
-    val commander: ActorRef,
-    fileChannel: FileChannel,
-    offset: Long,
-    remaining: Long,
-    ack: Event,
-    tail: WriteCommand) extends PendingWrite with Runnable {
+      val commander: ActorRef,
+      fileChannel: FileChannel,
+      offset: Long,
+      remaining: Long,
+      ack: Event,
+      tail: WriteCommand) extends PendingWrite with Runnable {
 
     def doWrite(info: ConnectionInfo): PendingWrite = {
       tcp.fileIoDispatcher.execute(this)
@@ -479,10 +479,11 @@ private[io] object TcpConnection {
   /**
    * Groups required connection-related data that are only available once the connection has been fully established.
    */
-  final case class ConnectionInfo(registration: ChannelRegistration,
-                                  handler: ActorRef,
-                                  keepOpenOnPeerClosed: Boolean,
-                                  useResumeWriting: Boolean)
+  final case class ConnectionInfo(
+    registration: ChannelRegistration,
+    handler: ActorRef,
+    keepOpenOnPeerClosed: Boolean,
+    useResumeWriting: Boolean)
 
   // INTERNAL MESSAGES
 

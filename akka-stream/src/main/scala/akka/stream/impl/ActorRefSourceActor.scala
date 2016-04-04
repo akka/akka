@@ -25,7 +25,7 @@ private[akka] object ActorRefSourceActor {
  * INTERNAL API
  */
 private[akka] class ActorRefSourceActor(bufferSize: Int, overflowStrategy: OverflowStrategy, maxFixedBufferSize: Int)
-  extends akka.stream.actor.ActorPublisher[Any] with ActorLogging {
+    extends akka.stream.actor.ActorPublisher[Any] with ActorLogging {
   import akka.stream.actor.ActorPublisherMessage._
 
   // when bufferSize is 0 there the buffer is not used

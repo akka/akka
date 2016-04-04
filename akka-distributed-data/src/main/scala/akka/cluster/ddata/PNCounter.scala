@@ -39,7 +39,7 @@ object PNCounter {
 @SerialVersionUID(1L)
 final class PNCounter private[akka] (
   private[akka] val increments: GCounter, private[akka] val decrements: GCounter)
-  extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
+    extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
 
   type T = PNCounter
 
@@ -90,18 +90,21 @@ final class PNCounter private[akka] (
     else this
 
   override def merge(that: PNCounter): PNCounter =
-    copy(increments = that.increments.merge(this.increments),
+    copy(
+      increments = that.increments.merge(this.increments),
       decrements = that.decrements.merge(this.decrements))
 
   override def needPruningFrom(removedNode: UniqueAddress): Boolean =
     increments.needPruningFrom(removedNode) || decrements.needPruningFrom(removedNode)
 
   override def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): PNCounter =
-    copy(increments = increments.prune(removedNode, collapseInto),
+    copy(
+      increments = increments.prune(removedNode, collapseInto),
       decrements = decrements.prune(removedNode, collapseInto))
 
   override def pruningCleanup(removedNode: UniqueAddress): PNCounter =
-    copy(increments = increments.pruningCleanup(removedNode),
+    copy(
+      increments = increments.pruningCleanup(removedNode),
       decrements = decrements.pruningCleanup(removedNode))
 
   private def copy(increments: GCounter = this.increments, decrements: GCounter = this.decrements): PNCounter =

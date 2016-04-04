@@ -76,7 +76,8 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
     failureDetector)
 
   // start periodic heartbeat to other nodes in cluster
-  val heartbeatTask = scheduler.schedule(PeriodicTasksInitialDelay max HeartbeatInterval,
+  val heartbeatTask = scheduler.schedule(
+    PeriodicTasksInitialDelay max HeartbeatInterval,
     HeartbeatInterval, self, HeartbeatTick)
 
   override def preStart(): Unit = {
@@ -173,9 +174,9 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
  * It is immutable, but it updates the failureDetector.
  */
 private[cluster] final case class ClusterHeartbeatSenderState(
-  ring: HeartbeatNodeRing,
-  oldReceiversNowUnreachable: Set[UniqueAddress],
-  failureDetector: FailureDetectorRegistry[Address]) {
+    ring: HeartbeatNodeRing,
+    oldReceiversNowUnreachable: Set[UniqueAddress],
+    failureDetector: FailureDetectorRegistry[Address]) {
 
   val activeReceivers: Set[UniqueAddress] = ring.myReceivers union oldReceiversNowUnreachable
 
@@ -241,10 +242,10 @@ private[cluster] final case class ClusterHeartbeatSenderState(
  * It is immutable, i.e. the methods return new instances.
  */
 private[cluster] final case class HeartbeatNodeRing(
-  selfAddress: UniqueAddress,
-  nodes: Set[UniqueAddress],
-  unreachable: Set[UniqueAddress],
-  monitoredByNrOfMembers: Int) {
+    selfAddress: UniqueAddress,
+    nodes: Set[UniqueAddress],
+    unreachable: Set[UniqueAddress],
+    monitoredByNrOfMembers: Int) {
 
   require(nodes contains selfAddress, s"nodes [${nodes.mkString(", ")}] must contain selfAddress [${selfAddress}]")
 

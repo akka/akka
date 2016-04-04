@@ -25,7 +25,7 @@ private[akka] final case class ClientConnectionSettingsImpl(
   websocketRandomFactory: () ⇒ Random,
   socketOptions: immutable.Seq[SocketOption],
   parserSettings: ParserSettings)
-  extends akka.http.scaladsl.settings.ClientConnectionSettings {
+    extends akka.http.scaladsl.settings.ClientConnectionSettings {
 
   require(connectingTimeout >= Duration.Zero, "connectingTimeout must be >= 0")
   require(requestHeaderSizeHint > 0, "request-size-hint must be > 0")

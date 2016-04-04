@@ -98,7 +98,7 @@ private[camel] class Registry(activationTracker: ActorRef) extends Actor with Ca
 
   class RegistryLogStrategy()(_decider: SupervisorStrategy.Decider) extends OneForOneStrategy()(_decider) {
     override def logFailure(context: ActorContext, child: ActorRef, cause: Throwable,
-                            decision: SupervisorStrategy.Directive): Unit =
+      decision: SupervisorStrategy.Directive): Unit =
       cause match {
         case _: ActorActivationException | _: ActorDeActivationException ⇒
           try context.system.eventStream.publish {
@@ -163,7 +163,7 @@ private[camel] class ProducerRegistrar(activationTracker: ActorRef) extends Acto
         try {
           val endpoint = camelContext.getEndpoint(endpointUri)
           val processor = new SendProcessor(endpoint)
-          camelObjects = camelObjects.updated(producer, endpoint -> processor)
+          camelObjects = camelObjects.updated(producer, endpoint → processor)
           // if this throws, the supervisor stops the producer and de-registers it on termination
           processor.start()
           producer ! CamelProducerObjects(endpoint, processor)

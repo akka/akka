@@ -268,7 +268,7 @@ object Source {
    * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
    */
   def combine[T, U](first: Source[T, _ <: Any], second: Source[T, _ <: Any], rest: java.util.List[Source[T, _ <: Any]],
-                    strategy: function.Function[java.lang.Integer, _ <: Graph[UniformFanInShape[T, U], NotUsed]]): Source[U, NotUsed] = {
+    strategy: function.Function[java.lang.Integer, _ <: Graph[UniformFanInShape[T, U], NotUsed]]): Source[U, NotUsed] = {
     import scala.collection.JavaConverters._
     val seq = if (rest != null) rest.asScala.map(_.asScala) else Seq()
     new Source(scaladsl.Source.combine(first.asScala, second.asScala, seq: _*)(num ⇒ strategy.apply(num)))
@@ -307,61 +307,65 @@ object Source {
     new Source(scaladsl.Source.queue[T](bufferSize, overflowStrategy).mapMaterializedValue(new SourceQueueAdapter(_)))
 
   /**
-    * Start a new `Source` from some resource which can be opened, read and closed.
-    * Interaction with resource happens in a blocking way.
-    *
-    * Example:
-    * {{{
-    * Source.unfoldResource(
-    *   () -> new BufferedReader(new FileReader("...")),
-    *   reader -> reader.readLine(),
-    *   reader -> reader.close())
-    * }}}
-    *
-    * You can use the supervision strategy to handle exceptions for `read` function. All exceptions thrown by `create`
-    * or `close` will fail the stream.
-    *
-    * `Restart` supervision strategy will close and create blocking IO again. Default strategy is `Stop` which means
-    * that stream will be terminated on error in `read` function by default.
-    *
-    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
-    * set it for a given Source by using [[ActorAttributes]].
-    *
-    * @param create - function that is called on stream start and creates/opens resource.
-    * @param read - function that reads data from opened resource. It is called each time backpressure signal
-    *             is received. Stream calls close and completes when `read` returns None.
-    * @param close - function that closes resource
-    */
-  def unfoldResource[T, S](create: function.Creator[S],
-                     read: function.Function[S, Optional[T]],
-                     close: function.Procedure[S]): javadsl.Source[T, NotUsed] =
-    new Source(scaladsl.Source.unfoldResource[T,S](create.create,
+   * Start a new `Source` from some resource which can be opened, read and closed.
+   * Interaction with resource happens in a blocking way.
+   *
+   * Example:
+   * {{{
+   * Source.unfoldResource(
+   *   () -> new BufferedReader(new FileReader("...")),
+   *   reader -> reader.readLine(),
+   *   reader -> reader.close())
+   * }}}
+   *
+   * You can use the supervision strategy to handle exceptions for `read` function. All exceptions thrown by `create`
+   * or `close` will fail the stream.
+   *
+   * `Restart` supervision strategy will close and create blocking IO again. Default strategy is `Stop` which means
+   * that stream will be terminated on error in `read` function by default.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * @param create - function that is called on stream start and creates/opens resource.
+   * @param read - function that reads data from opened resource. It is called each time backpressure signal
+   *             is received. Stream calls close and completes when `read` returns None.
+   * @param close - function that closes resource
+   */
+  def unfoldResource[T, S](
+    create: function.Creator[S],
+    read: function.Function[S, Optional[T]],
+    close: function.Procedure[S]): javadsl.Source[T, NotUsed] =
+    new Source(scaladsl.Source.unfoldResource[T, S](
+      create.create,
       (s: S) ⇒ read.apply(s).asScala, close.apply))
 
   /**
-    * Start a new `Source` from some resource which can be opened, read and closed.
-    * It's similar to `unfoldResource` but takes functions that return `CopletionStage` instead of plain values.
-    *
-    * You can use the supervision strategy to handle exceptions for `read` function or failures of produced `Futures`.
-    * All exceptions thrown by `create` or `close` as well as fails of returned futures will fail the stream.
-    *
-    * `Restart` supervision strategy will close and create resource. Default strategy is `Stop` which means
-    * that stream will be terminated on error in `read` function (or future) by default.
-    *
-    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
-    * set it for a given Source by using [[ActorAttributes]].
-    *
-    * @param create - function that is called on stream start and creates/opens resource.
-    * @param read - function that reads data from opened resource. It is called each time backpressure signal
-    *             is received. Stream calls close and completes when `CompletionStage` from read function returns None.
-    * @param close - function that closes resource
-    */
-  def unfoldResourceAsync[T, S](create: function.Creator[CompletionStage[S]],
+   * Start a new `Source` from some resource which can be opened, read and closed.
+   * It's similar to `unfoldResource` but takes functions that return `CopletionStage` instead of plain values.
+   *
+   * You can use the supervision strategy to handle exceptions for `read` function or failures of produced `Futures`.
+   * All exceptions thrown by `create` or `close` as well as fails of returned futures will fail the stream.
+   *
+   * `Restart` supervision strategy will close and create resource. Default strategy is `Stop` which means
+   * that stream will be terminated on error in `read` function (or future) by default.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * @param create - function that is called on stream start and creates/opens resource.
+   * @param read - function that reads data from opened resource. It is called each time backpressure signal
+   *             is received. Stream calls close and completes when `CompletionStage` from read function returns None.
+   * @param close - function that closes resource
+   */
+  def unfoldResourceAsync[T, S](
+    create: function.Creator[CompletionStage[S]],
     read: function.Function[S, CompletionStage[Optional[T]]],
     close: function.Function[S, CompletionStage[Done]]): javadsl.Source[T, NotUsed] =
-  new Source(scaladsl.Source.unfoldResourceAsync[T,S](() ⇒ create.create().toScala,
-    (s: S) ⇒ read.apply(s).toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext),
-    (s: S) ⇒ close.apply(s).toScala))
+    new Source(scaladsl.Source.unfoldResourceAsync[T, S](
+      () ⇒ create.create().toScala,
+      (s: S) ⇒ read.apply(s).toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext),
+      (s: S) ⇒ close.apply(s).toScala))
 }
 
 /**
@@ -538,8 +542,9 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * @see [[#concat]].
    */
-  def concatMat[T >: Out, M, M2](that: Graph[SourceShape[T], M],
-                                 matF: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
+  def concatMat[T >: Out, M, M2](
+    that: Graph[SourceShape[T], M],
+    matF: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
     new Source(delegate.concatMat(that)(combinerToScala(matF)))
 
   /**
@@ -578,8 +583,9 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * @see [[#prepend]].
    */
-  def prependMat[T >: Out, M, M2](that: Graph[SourceShape[T], M],
-                                  matF: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
+  def prependMat[T >: Out, M, M2](
+    that: Graph[SourceShape[T], M],
+    matF: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
     new Source(delegate.prependMat(that)(combinerToScala(matF)))
 
   /**
@@ -606,8 +612,9 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * @see [[#alsoTo]]
    */
-  def alsoToMat[M2, M3](that: Graph[SinkShape[Out], M2],
-                        matF: function.Function2[Mat, M2, M3]): javadsl.Source[Out, M3] =
+  def alsoToMat[M2, M3](
+    that: Graph[SinkShape[Out], M2],
+    matF: function.Function2[Mat, M2, M3]): javadsl.Source[Out, M3] =
     new Source(delegate.alsoToMat(that)(combinerToScala(matF)))
 
   /**
@@ -652,7 +659,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * @see [[#interleave]].
    */
   def interleaveMat[T >: Out, M, M2](that: Graph[SourceShape[T], M], segmentSize: Int,
-                                     matF: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
+    matF: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
     new Source(delegate.interleaveMat(that, segmentSize)(combinerToScala(matF)))
 
   /**
@@ -679,8 +686,9 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * @see [[#merge]].
    */
-  def mergeMat[T >: Out, M, M2](that: Graph[SourceShape[T], M],
-                                matF: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
+  def mergeMat[T >: Out, M, M2](
+    that: Graph[SourceShape[T], M],
+    matF: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
     new Source(delegate.mergeMat(that)(combinerToScala(matF)))
 
   /**
@@ -714,7 +722,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * @see [[#mergeSorted]].
    */
   def mergeSortedMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], comp: util.Comparator[U],
-                                           matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Source[U, Mat3] =
+    matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Source[U, Mat3] =
     new Source(delegate.mergeSortedMat(that)(combinerToScala(matF))(Ordering.comparatorToOrdering(comp)))
 
   /**
@@ -739,8 +747,9 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * @see [[#zip]].
    */
-  def zipMat[T, M, M2](that: Graph[SourceShape[T], M],
-                       matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] =
+  def zipMat[T, M, M2](
+    that: Graph[SourceShape[T], M],
+    matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] =
     this.viaMat(Flow.create[Out].zipMat(that, Keep.right[NotUsed, M]), matF)
 
   /**
@@ -755,8 +764,9 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * '''Cancels when''' downstream cancels
    */
-  def zipWith[Out2, Out3](that: Graph[SourceShape[Out2], _],
-                          combine: function.Function2[Out, Out2, Out3]): javadsl.Source[Out3, Mat] =
+  def zipWith[Out2, Out3](
+    that: Graph[SourceShape[Out2], _],
+    combine: function.Function2[Out, Out2, Out3]): javadsl.Source[Out3, Mat] =
     new Source(delegate.zipWith[Out2, Out3](that)(combinerToScala(combine)))
 
   /**
@@ -768,9 +778,10 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * @see [[#zipWith]].
    */
-  def zipWithMat[Out2, Out3, M, M2](that: Graph[SourceShape[Out2], M],
-                                    combine: function.Function2[Out, Out2, Out3],
-                                    matF: function.Function2[Mat, M, M2]): javadsl.Source[Out3, M2] =
+  def zipWithMat[Out2, Out3, M, M2](
+    that: Graph[SourceShape[Out2], M],
+    combine: function.Function2[Out, Out2, Out3],
+    matF: function.Function2[Mat, M, M2]): javadsl.Source[Out3, M2] =
     new Source(delegate.zipWithMat[Out2, Out3, M, M2](that)(combinerToScala(combine))(combinerToScala(matF)))
 
   /**
@@ -1813,7 +1824,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * '''Cancels when''' downstream cancels
    */
   def throttle(elements: Int, per: FiniteDuration, maximumBurst: Int,
-               mode: ThrottleMode): javadsl.Source[Out, Mat] =
+    mode: ThrottleMode): javadsl.Source[Out, Mat] =
     new Source(delegate.throttle(elements, per, maximumBurst, mode))
 
   /**
@@ -1843,7 +1854,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * '''Cancels when''' downstream cancels
    */
   def throttle(cost: Int, per: FiniteDuration, maximumBurst: Int,
-               costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.Source[Out, Mat] =
+    costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.Source[Out, Mat] =
     new Source(delegate.throttle(cost, per, maximumBurst, costCalculation.apply _, mode))
 
   /**
@@ -1870,11 +1881,11 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.watchTermination()((left, right) ⇒ matF(left, right.toJava)))
 
   /**
-    * Materializes to `FlowMonitor[Out]` that allows monitoring of the the current flow. All events are propagated
-    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
-    * event, and may therefor affect performance.
-    * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
-    */
+   * Materializes to `FlowMonitor[Out]` that allows monitoring of the the current flow. All events are propagated
+   * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
+   * event, and may therefor affect performance.
+   * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
+   */
   def monitor[M]()(combine: function.Function2[Mat, FlowMonitor[Out], M]): javadsl.Source[Out, M] =
     new Source(delegate.monitor()(combinerToScala(combine)))
 

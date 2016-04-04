@@ -93,13 +93,13 @@ object ReplicatorSettings {
  *   be configured to worst case in a healthy cluster.
  */
 final class ReplicatorSettings(
-  val role: Option[String],
-  val gossipInterval: FiniteDuration,
-  val notifySubscribersInterval: FiniteDuration,
-  val maxDeltaElements: Int,
-  val dispatcher: String,
-  val pruningInterval: FiniteDuration,
-  val maxPruningDissemination: FiniteDuration) {
+    val role: Option[String],
+    val gossipInterval: FiniteDuration,
+    val notifySubscribersInterval: FiniteDuration,
+    val maxDeltaElements: Int,
+    val dispatcher: String,
+    val pruningInterval: FiniteDuration,
+    val maxPruningDissemination: FiniteDuration) {
 
   def withRole(role: String): ReplicatorSettings = copy(role = ReplicatorSettings.roleOption(role))
 
@@ -210,7 +210,7 @@ object Replicator {
    * or maintain local correlation data structures.
    */
   final case class Get[A <: ReplicatedData](key: Key[A], consistency: ReadConsistency, request: Option[Any] = None)
-    extends Command[A] with ReplicatorMessage {
+      extends Command[A] with ReplicatorMessage {
     /**
      * Java API: `Get` value from local `Replicator`, i.e. `ReadLocal` consistency.
      */
@@ -234,7 +234,7 @@ object Replicator {
    * Reply from `Get`. The data value is retrieved with [[#get]] using the typed key.
    */
   final case class GetSuccess[A <: ReplicatedData](key: Key[A], request: Option[Any])(data: A)
-    extends GetResponse[A] with ReplicatorMessage {
+      extends GetResponse[A] with ReplicatorMessage {
 
     /**
      * The data value, with correct type.
@@ -339,8 +339,8 @@ object Replicator {
    * for example not access `sender()` reference of an enclosing actor.
    */
   final case class Update[A <: ReplicatedData](key: Key[A], writeConsistency: WriteConsistency,
-                                               request: Option[Any])(val modify: Option[A] ⇒ A)
-    extends Command[A] with NoSerializationVerificationNeeded {
+    request: Option[Any])(val modify: Option[A] ⇒ A)
+      extends Command[A] with NoSerializationVerificationNeeded {
 
     /**
      * Java API: Modify value of local `Replicator` and replicate with given `writeConsistency`.
@@ -395,7 +395,7 @@ object Replicator {
    * will be this `ModifyFailure` message. The original exception is included as `cause`.
    */
   final case class ModifyFailure[A <: ReplicatedData](key: Key[A], errorMessage: String, cause: Throwable, request: Option[Any])
-    extends UpdateFailure[A] {
+      extends UpdateFailure[A] {
     override def toString: String = s"ModifyFailure [$key]: $errorMessage"
   }
 
@@ -411,7 +411,7 @@ object Replicator {
   final case class DeleteSuccess[A <: ReplicatedData](key: Key[A]) extends DeleteResponse[A]
   final case class ReplicationDeleteFailure[A <: ReplicatedData](key: Key[A]) extends DeleteResponse[A]
   final case class DataDeleted[A <: ReplicatedData](key: Key[A])
-    extends RuntimeException with NoStackTrace with DeleteResponse[A] {
+      extends RuntimeException with NoStackTrace with DeleteResponse[A] {
     override def toString: String = s"DataDeleted [$key]"
   }
 
@@ -473,7 +473,7 @@ object Replicator {
     final case class DataEnvelope(
       data: ReplicatedData,
       pruning: Map[UniqueAddress, PruningState] = Map.empty)
-      extends ReplicatorMessage {
+        extends ReplicatorMessage {
 
       import PruningState._
 
@@ -735,7 +735,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   val selfUniqueAddress = cluster.selfUniqueAddress
 
   require(!cluster.isTerminated, "Cluster node must not be terminated")
-  require(role.forall(cluster.selfRoles.contains),
+  require(
+    role.forall(cluster.selfRoles.contains),
     s"This cluster member [${selfAddress}] doesn't have the role [$role]")
 
   //Start periodic gossip to random nodes in cluster
@@ -851,7 +852,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def isLocalSender(): Boolean = !sender().path.address.hasGlobalScope
 
   def receiveUpdate(key: KeyR, modify: Option[ReplicatedData] ⇒ ReplicatedData,
-                    writeConsistency: WriteConsistency, req: Option[Any]): Unit = {
+    writeConsistency: WriteConsistency, req: Option[Any]): Unit = {
     val localValue = getData(key.id)
     Try {
       localValue match {
@@ -899,7 +900,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
           val merged = envelope.merge(pruningCleanupTombstoned(writeEnvelope)).addSeen(selfAddress)
           setData(key, merged)
         } else {
-          log.warning("Wrong type for writing [{}], existing type [{}], got [{}]",
+          log.warning(
+            "Wrong type for writing [{}], existing type [{}], got [{}]",
             key, existing.getClass.getName, writeEnvelope.data.getClass.getName)
         }
       case None ⇒
@@ -1048,14 +1050,14 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     if (keys.nonEmpty) {
       if (log.isDebugEnabled)
         log.debug("Sending gossip to [{}], containing [{}]", sender().path.address, keys.mkString(", "))
-      val g = Gossip(keys.map(k ⇒ k -> getData(k).get)(collection.breakOut), sendBack = otherDifferentKeys.nonEmpty)
+      val g = Gossip(keys.map(k ⇒ k → getData(k).get)(collection.breakOut), sendBack = otherDifferentKeys.nonEmpty)
       sender() ! g
     }
     val myMissingKeys = otherKeys diff myKeys
     if (myMissingKeys.nonEmpty) {
       if (log.isDebugEnabled)
         log.debug("Sending gossip status to [{}], requesting missing [{}]", sender().path.address, myMissingKeys.mkString(", "))
-      val status = Status(myMissingKeys.map(k ⇒ k -> NotFoundDigest)(collection.breakOut), chunk, totChunks)
+      val status = Status(myMissingKeys.map(k ⇒ k → NotFoundDigest)(collection.breakOut), chunk, totChunks)
       sender() ! status
     }
   }
@@ -1319,12 +1321,12 @@ private[akka] object WriteAggregator {
  * INTERNAL API
  */
 private[akka] class WriteAggregator(
-  key: KeyR,
-  envelope: Replicator.Internal.DataEnvelope,
-  consistency: Replicator.WriteConsistency,
-  req: Option[Any],
-  override val nodes: Set[Address],
-  replyTo: ActorRef) extends ReadWriteAggregator {
+    key: KeyR,
+    envelope: Replicator.Internal.DataEnvelope,
+    consistency: Replicator.WriteConsistency,
+    req: Option[Any],
+    override val nodes: Set[Address],
+    replyTo: ActorRef) extends ReadWriteAggregator {
 
   import Replicator._
   import Replicator.Internal._
@@ -1399,12 +1401,12 @@ private[akka] object ReadAggregator {
  * INTERNAL API
  */
 private[akka] class ReadAggregator(
-  key: KeyR,
-  consistency: Replicator.ReadConsistency,
-  req: Option[Any],
-  override val nodes: Set[Address],
-  localValue: Option[Replicator.Internal.DataEnvelope],
-  replyTo: ActorRef) extends ReadWriteAggregator {
+    key: KeyR,
+    consistency: Replicator.ReadConsistency,
+    req: Option[Any],
+    override val nodes: Set[Address],
+    localValue: Option[Replicator.Internal.DataEnvelope],
+    replyTo: ActorRef) extends ReadWriteAggregator {
 
   import Replicator._
   import Replicator.Internal._

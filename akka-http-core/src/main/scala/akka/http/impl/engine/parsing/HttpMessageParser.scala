@@ -23,8 +23,9 @@ import ParserOutput._
 /**
  * INTERNAL API
  */
-private[http] abstract class HttpMessageParser[Output >: MessageOutput <: ParserOutput](val settings: ParserSettings,
-                                                                                        val headerParser: HttpHeaderParser) { self ⇒
+private[http] abstract class HttpMessageParser[Output >: MessageOutput <: ParserOutput](
+  val settings: ParserSettings,
+    val headerParser: HttpHeaderParser) { self ⇒
   import HttpMessageParser._
   import settings._
 
@@ -120,10 +121,10 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
   def badProtocol: Nothing
 
   @tailrec final def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = initialHeaderBuffer,
-                                      headerCount: Int = 0, ch: Option[Connection] = None,
-                                      clh: Option[`Content-Length`] = None, cth: Option[`Content-Type`] = None,
-                                      teh: Option[`Transfer-Encoding`] = None, e100c: Boolean = false,
-                                      hh: Boolean = false): StateResult =
+    headerCount: Int = 0, ch: Option[Connection] = None,
+    clh: Option[`Content-Length`] = None, cth: Option[`Content-Type`] = None,
+    teh: Option[`Transfer-Encoding`] = None, e100c: Boolean = false,
+    hh: Boolean = false): StateResult =
     if (headerCount < maxHeaderCount) {
       var lineEnd = 0
       val resultHeader =
@@ -171,16 +172,17 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
 
   // work-around for compiler complaining about non-tail-recursion if we inline this method
   def parseHeaderLinesAux(headers: ListBuffer[HttpHeader], headerCount: Int, ch: Option[Connection],
-                          clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
-                          e100c: Boolean, hh: Boolean)(input: ByteString, lineStart: Int): StateResult =
+    clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
+    e100c: Boolean, hh: Boolean)(input: ByteString, lineStart: Int): StateResult =
     parseHeaderLines(input, lineStart, headers, headerCount, ch, clh, cth, teh, e100c, hh)
 
   def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
-                  clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
-                  expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult
+    clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
+    expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult
 
-  def parseFixedLengthBody(remainingBodyBytes: Long,
-                           isLastMessage: Boolean)(input: ByteString, bodyStart: Int): StateResult = {
+  def parseFixedLengthBody(
+    remainingBodyBytes: Long,
+    isLastMessage: Boolean)(input: ByteString, bodyStart: Int): StateResult = {
     val remainingInputBytes = input.length - bodyStart
     if (remainingInputBytes > 0) {
       if (remainingInputBytes < remainingBodyBytes) {
@@ -199,7 +201,7 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
 
   def parseChunk(input: ByteString, offset: Int, isLastMessage: Boolean, totalBytesRead: Long): StateResult = {
     @tailrec def parseTrailer(extension: String, lineStart: Int, headers: List[HttpHeader] = Nil,
-                              headerCount: Int = 0): StateResult = {
+      headerCount: Int = 0): StateResult = {
       var errorInfo: ErrorInfo = null
       val lineEnd =
         try headerParser.parseHeaderLine(input, lineStart)()
@@ -318,7 +320,7 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
     StrictEntityCreator(if (cth.isDefined) HttpEntity.empty(cth.get.contentType) else HttpEntity.Empty)
 
   def strictEntity(cth: Option[`Content-Type`], input: ByteString, bodyStart: Int,
-                   contentLength: Int) =
+    contentLength: Int) =
     StrictEntityCreator(HttpEntity.Strict(contentType(cth), input.slice(bodyStart, bodyStart + contentLength)))
 
   def defaultEntity[A <: ParserOutput](cth: Option[`Content-Type`], contentLength: Long) =

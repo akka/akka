@@ -36,12 +36,12 @@ import com.typesafe.config.Config
  * for the default [[LeveldbReadJournal#Identifier]]. See `reference.conf`.
  */
 class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends ReadJournal
-  with AllPersistenceIdsQuery
-  with CurrentPersistenceIdsQuery
-  with EventsByPersistenceIdQuery
-  with CurrentEventsByPersistenceIdQuery
-  with EventsByTagQuery
-  with CurrentEventsByTagQuery {
+    with AllPersistenceIdsQuery
+    with CurrentPersistenceIdsQuery
+    with EventsByPersistenceIdQuery
+    with CurrentEventsByPersistenceIdQuery
+    with EventsByTagQuery
+    with CurrentEventsByTagQuery {
 
   private val serialization = SerializationExtension(system)
   private val refreshInterval = Some(config.getDuration("refresh-interval", MILLISECONDS).millis)
@@ -112,7 +112,7 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
    * backend journal.
    */
   override def eventsByPersistenceId(persistenceId: String, fromSequenceNr: Long = 0L,
-                                     toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
+    toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
     Source.actorPublisher[EventEnvelope](EventsByPersistenceIdPublisher.props(persistenceId, fromSequenceNr, toSequenceNr,
       refreshInterval, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
       .named("eventsByPersistenceId-" + persistenceId)
@@ -124,7 +124,7 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
    * stored after the query is completed are not included in the event stream.
    */
   override def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long = 0L,
-                                            toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
+    toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
     Source.actorPublisher[EventEnvelope](EventsByPersistenceIdPublisher.props(persistenceId, fromSequenceNr, toSequenceNr,
       None, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
       .named("currentEventsByPersistenceId-" + persistenceId)

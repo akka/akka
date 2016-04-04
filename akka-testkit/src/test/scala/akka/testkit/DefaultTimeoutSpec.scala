@@ -9,7 +9,7 @@ import akka.actor.ActorSystem
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DefaultTimeoutSpec
-  extends WordSpec with Matchers with BeforeAndAfterAll with TestKitBase with DefaultTimeout {
+    extends WordSpec with Matchers with BeforeAndAfterAll with TestKitBase with DefaultTimeout {
 
   implicit lazy val system = ActorSystem("AkkaCustomSpec")
 

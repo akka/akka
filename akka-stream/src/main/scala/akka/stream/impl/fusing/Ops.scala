@@ -482,22 +482,22 @@ private[akka] final case class Buffer[T](size: Int, overflowStrategy: OverflowSt
         if (buffer.isFull) buffer.dropHead()
         buffer.enqueue(elem)
         ctx.pull()
-        case DropTail ⇒ (ctx, elem) ⇒
+      case DropTail ⇒ (ctx, elem) ⇒
         if (buffer.isFull) buffer.dropTail()
         buffer.enqueue(elem)
         ctx.pull()
-        case DropBuffer ⇒ (ctx, elem) ⇒
+      case DropBuffer ⇒ (ctx, elem) ⇒
         if (buffer.isFull) buffer.clear()
         buffer.enqueue(elem)
         ctx.pull()
-        case DropNew ⇒ (ctx, elem) ⇒
+      case DropNew ⇒ (ctx, elem) ⇒
         if (!buffer.isFull) buffer.enqueue(elem)
         ctx.pull()
-        case Backpressure ⇒ (ctx, elem) ⇒
+      case Backpressure ⇒ (ctx, elem) ⇒
         buffer.enqueue(elem)
         if (buffer.isFull) ctx.holdUpstream()
         else ctx.pull()
-        case Fail ⇒ (ctx, elem) ⇒
+      case Fail ⇒ (ctx, elem) ⇒
         if (buffer.isFull) ctx.fail(new BufferOverflowException(s"Buffer overflow (max capacity was: $size)!"))
         else {
           buffer.enqueue(elem)
@@ -520,7 +520,7 @@ private[akka] final case class Completed[T]() extends PushPullStage[T, T] {
  * INTERNAL API
  */
 private[akka] final case class Batch[In, Out](max: Long, costFn: In ⇒ Long, seed: In ⇒ Out, aggregate: (Out, In) ⇒ Out)
-  extends GraphStage[FlowShape[In, Out]] {
+    extends GraphStage[FlowShape[In, Out]] {
 
   val in = Inlet[In]("Batch.in")
   val out = Outlet[Out]("Batch.out")
@@ -715,7 +715,7 @@ private[akka] object MapAsync {
  * INTERNAL API
  */
 private[akka] final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Future[Out])
-  extends GraphStage[FlowShape[In, Out]] {
+    extends GraphStage[FlowShape[In, Out]] {
 
   import MapAsync._
 
@@ -779,7 +779,7 @@ private[akka] final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Fut
  * INTERNAL API
  */
 private[akka] final case class MapAsyncUnordered[In, Out](parallelism: Int, f: In ⇒ Future[Out])
-  extends GraphStage[FlowShape[In, Out]] {
+    extends GraphStage[FlowShape[In, Out]] {
 
   private val in = Inlet[In]("MapAsyncUnordered.in")
   private val out = Outlet[Out]("MapAsyncUnordered.out")
@@ -848,8 +848,8 @@ private[akka] final case class MapAsyncUnordered[In, Out](parallelism: Int, f: I
  * INTERNAL API
  */
 private[akka] final case class Log[T](name: String, extract: T ⇒ Any,
-                                      logAdapter: Option[LoggingAdapter],
-                                      decider: Supervision.Decider) extends PushStage[T, T] {
+    logAdapter: Option[LoggingAdapter],
+    decider: Supervision.Decider) extends PushStage[T, T] {
 
   import Log._
 

@@ -1196,7 +1196,7 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
  * [[akka.event.LoggingAdapter]] that publishes [[akka.event.Logging.LogEvent]] to event stream.
  */
 class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class[_], loggingFilter: LoggingFilter)
-  extends LoggingAdapter {
+    extends LoggingAdapter {
 
   // For backwards compatibility, and when LoggingAdapter is created without direct
   // association to an ActorSystem

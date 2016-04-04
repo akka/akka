@@ -218,7 +218,8 @@ object ActorModelSpec {
       await(deadline)(stats.restarts.get() == restarts)
     } catch {
       case e: Throwable ⇒
-        system.eventStream.publish(Error(e,
+        system.eventStream.publish(Error(
+          e,
           Option(dispatcher).toString,
           (Option(dispatcher) getOrElse this).getClass,
           "actual: " + stats + ", required: InterceptorStats(susp=" + suspensions +
@@ -524,12 +525,13 @@ object DispatcherModelSpec {
   }
 
   class MessageDispatcherInterceptorConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
-    extends MessageDispatcherConfigurator(config, prerequisites) {
+      extends MessageDispatcherConfigurator(config, prerequisites) {
 
     import akka.util.Helpers.ConfigOps
 
     private val instance: MessageDispatcher =
-      new Dispatcher(this,
+      new Dispatcher(
+        this,
         config.getString("id"),
         config.getInt("throughput"),
         config.getNanosDuration("throughput-deadline-time"),
@@ -598,12 +600,13 @@ object BalancingDispatcherModelSpec {
   }
 
   class BalancingMessageDispatcherInterceptorConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
-    extends BalancingDispatcherConfigurator(config, prerequisites) {
+      extends BalancingDispatcherConfigurator(config, prerequisites) {
 
     import akka.util.Helpers.ConfigOps
 
     override protected def create(mailboxType: MailboxType): BalancingDispatcher =
-      new BalancingDispatcher(this,
+      new BalancingDispatcher(
+        this,
         config.getString("id"),
         config.getInt("throughput"),
         config.getNanosDuration("throughput-deadline-time"),

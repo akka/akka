@@ -105,13 +105,13 @@ object ClusterClientSettings {
  *   external service registry
  */
 final class ClusterClientSettings(
-  val initialContacts: Set[ActorPath],
-  val establishingGetContactsInterval: FiniteDuration,
-  val refreshContactsInterval: FiniteDuration,
-  val heartbeatInterval: FiniteDuration,
-  val acceptableHeartbeatPause: FiniteDuration,
-  val bufferSize: Int,
-  val reconnectTimeout: Option[FiniteDuration]) extends NoSerializationVerificationNeeded {
+    val initialContacts: Set[ActorPath],
+    val establishingGetContactsInterval: FiniteDuration,
+    val refreshContactsInterval: FiniteDuration,
+    val heartbeatInterval: FiniteDuration,
+    val acceptableHeartbeatPause: FiniteDuration,
+    val bufferSize: Int,
+    val reconnectTimeout: Option[FiniteDuration]) extends NoSerializationVerificationNeeded {
 
   require(bufferSize >= 0 && bufferSize <= 10000, "bufferSize must be >= 0 and <= 10000")
 
@@ -504,9 +504,9 @@ object ClusterReceptionistSettings {
  *   client will be stopped after this time of inactivity.
  */
 final class ClusterReceptionistSettings(
-  val role: Option[String],
-  val numberOfContacts: Int,
-  val responseTunnelReceiveTimeout: FiniteDuration) extends NoSerializationVerificationNeeded {
+    val role: Option[String],
+    val numberOfContacts: Int,
+    val responseTunnelReceiveTimeout: FiniteDuration) extends NoSerializationVerificationNeeded {
 
   def withRole(role: String): ClusterReceptionistSettings = copy(role = ClusterReceptionistSettings.roleOption(role))
 
@@ -597,7 +597,7 @@ object ClusterReceptionist {
  *
  */
 final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterReceptionistSettings)
-  extends Actor with ActorLogging {
+    extends Actor with ActorLogging {
 
   import DistributedPubSubMediator.{ Send, SendToAll, Publish }
 
@@ -608,7 +608,8 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
   val verboseHeartbeat = cluster.settings.Debug.VerboseHeartbeatLogging
   import cluster.selfAddress
 
-  require(role.forall(cluster.selfRoles.contains),
+  require(
+    role.forall(cluster.selfRoles.contains),
     s"This cluster member [${selfAddress}] doesn't have the role [$role]")
 
   var nodes: immutable.SortedSet[Address] = {
