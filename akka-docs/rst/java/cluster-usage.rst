@@ -119,6 +119,10 @@ after the restart, when it come up as new incarnation of existing member in the 
 trying to join in, then the existing one will be removed from the cluster and then it will
 be allowed to join.
 
+.. note::
+
+  The name of the ``ActorSystem`` must be the same for all members of a cluster. The name is given
+  when you start the ``ActorSystem``.
 
 .. _automatic-vs-manual-downing-java:
 
