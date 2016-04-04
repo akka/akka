@@ -119,6 +119,10 @@ after the restart, when it come up as new incarnation of existing member in the 
 trying to join in, then the existing one will be removed from the cluster and then it will
 be allowed to join.
 
+.. note::
+
+  The name of the ``ActorSystem`` must be the same for all members of a cluster. The name is given
+  when you start the ``ActorSystem``.
 
 .. _automatic-vs-manual-downing-java:
 
@@ -141,9 +145,25 @@ You can enable automatic downing with configuration::
 This means that the cluster leader member will change the ``unreachable`` node
 status to ``down`` automatically after the configured time of unreachability.
 
-Be aware of that using auto-down implies that two separate clusters will
-automatically be formed in case of network partition. That might be
-desired by some applications but not by others.
+This is a naïve approach to remove unreachable nodes from the cluster membership. It
+works great for crashes and short transient network partitions, but not for long network
+partitions. Both sides of the network partition will see the other side as unreachable 
+and after a while remove it from its cluster membership. Since this happens on both
+sides the result is that two separate disconnected clusters have been created. This
+can also happen because of long GC pauses or system overload.
+
+.. warning::
+
+  We recommend against using the auto-down feature of Akka Cluster in production.
+  This is crucial for correct behavior if you use :ref:`cluster-singleton-java` or 
+  :ref:`cluster_sharding_java`, especially together with Akka :ref:`persistence-java`.
+  
+A pre-packaged solution for the downing problem is provided by 
+`Split Brain Resolver <http://doc.akka.io/docs/akka/rp-16s01p03/java/split-brain-resolver.html>`_, 
+which is part of the Lightbend Reactive Platform. If you don’t use RP, you should anyway carefully 
+read the `documentation <http://doc.akka.io/docs/akka/rp-16s01p03/java/split-brain-resolver.html>`_
+of the Split Brain Resolver and make sure that the solution you are using handles the concerns 
+described there.
 
 .. note:: If you have *auto-down* enabled and the failure detector triggers, you
    can over time end up with a lot of single node clusters if you don't put
@@ -372,7 +392,7 @@ Publish-subscribe messaging between actors in the cluster, and point-to-point me
 using the logical path of the actors, i.e. the sender does not have to know on which
 node the destination actor is running.
 
-See :ref:`distributed-pub-sub-scala`.
+See :ref:`distributed-pub-sub-java`.
 
 Cluster Client
 ^^^^^^^^^^^^^^
