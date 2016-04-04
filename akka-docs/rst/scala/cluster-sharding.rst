@@ -203,6 +203,8 @@ on all nodes::
 You must explicitly add the ``akka-distributed-data-experimental`` dependency to your build if
 you use this mode. It is possible to remove ``akka-persistence`` dependency from a project if it
 is not used in user code and ``remember-entities`` is ``off``.
+Using it together with ``Remember Entities`` shards will be recreated after rebalancing, however will
+not be recreated after a clean cluster start - as data source is empty.
 
 .. warning::
 
