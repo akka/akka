@@ -12,6 +12,10 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.coding._
 import akka.http.impl.util._
 
+/**
+ * @groupname coding Coding directives
+ * @groupprio coding 50
+ */
 trait CodingDirectives {
   import BasicDirectives._
   import MiscDirectives._
@@ -23,6 +27,8 @@ trait CodingDirectives {
   /**
    * Rejects the request with an UnacceptedResponseEncodingRejection
    * if the given response encoding is not accepted by the client.
+   *
+   * @group coding
    */
   def responseEncodingAccepted(encoding: HttpEncoding): Directive0 =
     extractRequest.flatMap { request ⇒
@@ -37,6 +43,8 @@ trait CodingDirectives {
    *
    * If the `Accept-Encoding` header is missing or empty or specifies an encoding other than
    * identity, gzip or deflate then no encoding is used.
+   *
+   * @group coding
    */
   def encodeResponse: Directive0 =
     _encodeResponse(DefaultEncodeResponseEncoders)
@@ -51,6 +59,8 @@ trait CodingDirectives {
    *
    * If the `Accept-Encoding` header is empty and `NoCoding` is part of the encoders then no
    * response encoding is used. Otherwise the request is rejected.
+   *
+   * @group coding
    */
   def encodeResponseWith(first: Encoder, more: Encoder*): Directive0 =
     _encodeResponse(immutable.Seq(first +: more: _*))
@@ -60,6 +70,8 @@ trait CodingDirectives {
   /**
    * Decodes the incoming request using the given Decoder.
    * If the request encoding doesn't match the request is rejected with an `UnsupportedRequestEncodingRejection`.
+   *
+   * @group coding
    */
   def decodeRequestWith(decoder: Decoder): Directive0 = {
     def applyDecoder =
@@ -85,6 +97,8 @@ trait CodingDirectives {
 
   /**
    * Rejects the request with an UnsupportedRequestEncodingRejection if its encoding doesn't match the given one.
+   *
+   * @group coding
    */
   def requestEncodedWith(encoding: HttpEncoding): Directive0 =
     extract(_.request.encoding).flatMap {
@@ -97,6 +111,8 @@ trait CodingDirectives {
    * encoders. If the request encoding doesn't match one of the given encoders
    * the request is rejected with an `UnsupportedRequestEncodingRejection`.
    * If no decoders are given the default encoders (`Gzip`, `Deflate`, `NoCoding`) are used.
+   *
+   * @group coding
    */
   def decodeRequestWith(decoders: Decoder*): Directive0 =
     theseOrDefault(decoders).map(decodeRequestWith).reduce(_ | _)
@@ -105,6 +121,8 @@ trait CodingDirectives {
    * Decompresses the incoming request if it is `gzip` or `deflate` compressed.
    * Uncompressed requests are passed through untouched.
    * If the request encoded with another encoding the request is rejected with an `UnsupportedRequestEncodingRejection`.
+   *
+   * @group coding
    */
   def decodeRequest: Directive0 =
     decodeRequestWith(DefaultCoders: _*)
@@ -112,6 +130,8 @@ trait CodingDirectives {
   /**
    * Inspects the response entity and adds a `Content-Encoding: gzip` response header if
    * the entities media-type is precompressed with gzip and no `Content-Encoding` header is present yet.
+   *
+   * @group coding
    */
   def withPrecompressedMediaTypeSupport: Directive0 =
     mapResponse { response ⇒

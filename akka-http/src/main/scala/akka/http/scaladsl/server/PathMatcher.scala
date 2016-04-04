@@ -223,12 +223,18 @@ object PathMatcher extends ImplicitPathMatcherConstruction {
   }
 }
 
+/**
+ * @groupname pathmatcherimpl Path matcher implicits
+ * @groupprio pathmatcherimpl 172
+ */
 trait ImplicitPathMatcherConstruction {
   import PathMatcher._
 
   /**
    * Creates a PathMatcher that consumes (a prefix of) the first path segment
    * (if the path begins with a segment) and extracts a given value.
+   *
+   * @group pathmatcherimpl
    */
   implicit def stringExtractionPair2PathMatcher[T](tuple: (String, T)): PathMatcher1[T] =
     PathMatcher(tuple._1 :: Path.Empty, Tuple1(tuple._2))
@@ -236,10 +242,15 @@ trait ImplicitPathMatcherConstruction {
   /**
    * Creates a PathMatcher that consumes (a prefix of) the first path segment
    * (if the path begins with a segment).
+   *
+   * @group pathmatcherimpl
    */
   implicit def segmentStringToPathMatcher(segment: String): PathMatcher0 =
     PathMatcher(segment :: Path.Empty, ())
 
+  /**
+   * @group pathmatcherimpl
+   */
   implicit def stringNameOptionReceptacle2PathMatcher(nr: NameOptionReceptacle[String]): PathMatcher0 =
     PathMatcher(nr.name).?
 
@@ -249,6 +260,8 @@ trait ImplicitPathMatcherConstruction {
    * Extracts either the complete match (if the regex doesn't contain a capture group) or
    * the capture group (if the regex contains exactly one).
    * If the regex contains more than one capture group the method throws an IllegalArgumentException.
+   *
+   * @group pathmatcherimpl
    */
   implicit def regex2PathMatcher(regex: Regex): PathMatcher1[String] = regex.groupCount match {
     case 0 ⇒ new PathMatcher1[String] {
@@ -276,18 +289,26 @@ trait ImplicitPathMatcherConstruction {
    * Creates a PathMatcher from the given Map of path segments (prefixes) to extracted values.
    * If the unmatched path starts with a segment having one of the maps keys as a prefix
    * the matcher consumes this path segment (prefix) and extracts the corresponding map value.
+   *
+   * @group pathmatcherimpl
    */
   implicit def valueMap2PathMatcher[T](valueMap: Map[String, T]): PathMatcher1[T] =
     if (valueMap.isEmpty) PathMatchers.nothingMatcher
     else valueMap.map { case (prefix, value) ⇒ stringExtractionPair2PathMatcher((prefix, value)) }.reduceLeft(_ | _)
 }
 
+/**
+ * @groupname pathmatcher Path matchers
+ * @groupprio pathmatcher 171
+ */
 trait PathMatchers {
   import PathMatcher._
 
   /**
    * Converts a path string containing slashes into a PathMatcher that interprets slashes as
    * path segment separators.
+   *
+   * @group pathmatcher
    */
   def separateOnSlashes(string: String): PathMatcher0 = {
     @tailrec def split(ix: Int = 0, matcher: PathMatcher0 = null): PathMatcher0 = {
@@ -301,6 +322,8 @@ trait PathMatchers {
 
   /**
    * A PathMatcher that matches a single slash character ('/').
+   *
+   * @group pathmatcher
    */
   object Slash extends PathMatcher0 {
     def apply(path: Path) = path match {
@@ -311,6 +334,8 @@ trait PathMatchers {
 
   /**
    * A PathMatcher that matches the very end of the requests URI path.
+   *
+   * @group pathmatcher
    */
   object PathEnd extends PathMatcher0 {
     def apply(path: Path) = path match {
@@ -324,6 +349,8 @@ trait PathMatchers {
    * unmatched part of the request's URI path as an (encoded!) String.
    * If you need access to the remaining unencoded elements of the path
    * use the `RestPath` matcher!
+   *
+   * @group pathmatcher
    */
   object Rest extends PathMatcher1[String] {
     def apply(path: Path) = Matched(Path.Empty, Tuple1(path.toString))
@@ -332,6 +359,8 @@ trait PathMatchers {
   /**
    * A PathMatcher that matches and extracts the complete remaining,
    * unmatched part of the request's URI path.
+   *
+   * @group pathmatcher
    */
   object RestPath extends PathMatcher1[Path] {
     def apply(path: Path) = Matched(Path.Empty, Tuple1(path))
@@ -341,6 +370,8 @@ trait PathMatchers {
    * A PathMatcher that efficiently matches a number of digits and extracts their (non-negative) Int value.
    * The matcher will not match 0 digits or a sequence of digits that would represent an Int value larger
    * than Int.MaxValue.
+   *
+   * @group pathmatcher
    */
   object IntNumber extends NumberMatcher[Int](Int.MaxValue, 10) {
     def fromChar(c: Char) = fromDecimalChar(c)
@@ -350,6 +381,8 @@ trait PathMatchers {
    * A PathMatcher that efficiently matches a number of digits and extracts their (non-negative) Long value.
    * The matcher will not match 0 digits or a sequence of digits that would represent an Long value larger
    * than Long.MaxValue.
+   *
+   * @group pathmatcher
    */
   object LongNumber extends NumberMatcher[Long](Long.MaxValue, 10) {
     def fromChar(c: Char) = fromDecimalChar(c)
@@ -359,6 +392,8 @@ trait PathMatchers {
    * A PathMatcher that efficiently matches a number of hex-digits and extracts their (non-negative) Int value.
    * The matcher will not match 0 digits or a sequence of digits that would represent an Int value larger
    * than Int.MaxValue.
+   *
+   * @group pathmatcher
    */
   object HexIntNumber extends NumberMatcher[Int](Int.MaxValue, 16) {
     def fromChar(c: Char) = fromHexChar(c)
@@ -368,12 +403,17 @@ trait PathMatchers {
    * A PathMatcher that efficiently matches a number of hex-digits and extracts their (non-negative) Long value.
    * The matcher will not match 0 digits or a sequence of digits that would represent an Long value larger
    * than Long.MaxValue.
+   *
+   * @group pathmatcher
    */
   object HexLongNumber extends NumberMatcher[Long](Long.MaxValue, 16) {
     def fromChar(c: Char) = fromHexChar(c)
   }
 
   // common implementation of Number matchers
+  /**
+   * @group pathmatcher
+   */
   abstract class NumberMatcher[@specialized(Int, Long) T](max: T, base: T)(implicit x: Integral[T])
     extends PathMatcher1[T] {
 
@@ -414,6 +454,8 @@ trait PathMatchers {
   /**
    * A PathMatcher that matches and extracts a Double value. The matched string representation is the pure decimal,
    * optionally signed form of a double value, i.e. without exponent.
+   *
+   * @group pathmatcher
    */
   val DoubleNumber: PathMatcher1[Double] =
     PathMatcher("""[+-]?\d*\.?\d*""".r) flatMap { string ⇒
@@ -423,6 +465,8 @@ trait PathMatchers {
 
   /**
    * A PathMatcher that matches and extracts a java.util.UUID instance.
+   *
+   * @group pathmatcher
    */
   val JavaUUID: PathMatcher1[UUID] =
     PathMatcher("""[\da-fA-F]{8}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{12}""".r) flatMap { string ⇒
@@ -433,12 +477,16 @@ trait PathMatchers {
   /**
    * A PathMatcher that always matches, doesn't consume anything and extracts nothing.
    * Serves mainly as a neutral element in PathMatcher composition.
+   *
+   * @group pathmatcher
    */
   val Neutral: PathMatcher0 = PathMatcher.provide(())
 
   /**
    * A PathMatcher that matches if the unmatched path starts with a path segment.
    * If so the path segment is extracted as a String.
+   *
+   * @group pathmatcher
    */
   object Segment extends PathMatcher1[String] {
     def apply(path: Path) = path match {
@@ -451,6 +499,8 @@ trait PathMatchers {
    * A PathMatcher that matches up to 128 remaining segments as a List[String].
    * This can also be no segments resulting in the empty list.
    * If the path has a trailing slash this slash will *not* be matched.
+   *
+   * @group pathmatcher
    */
   val Segments: PathMatcher1[List[String]] = Segments(min = 0, max = 128)
 
@@ -458,6 +508,8 @@ trait PathMatchers {
    * A PathMatcher that matches the given number of path segments (separated by slashes) as a List[String].
    * If there are more than `count` segments present the remaining ones will be left unmatched.
    * If the path has a trailing slash this slash will *not* be matched.
+   *
+   * @group pathmatcher
    */
   def Segments(count: Int): PathMatcher1[List[String]] = Segment.repeat(count, separator = Slash)
 
@@ -465,11 +517,15 @@ trait PathMatchers {
    * A PathMatcher that matches between `min` and `max` (both inclusively) path segments (separated by slashes)
    * as a List[String]. If there are more than `count` segments present the remaining ones will be left unmatched.
    * If the path has a trailing slash this slash will *not* be matched.
+   *
+   * @group pathmatcher
    */
   def Segments(min: Int, max: Int): PathMatcher1[List[String]] = Segment.repeat(min, max, separator = Slash)
 
   /**
    * A PathMatcher that never matches anything.
+   *
+   * @group pathmatcher
    */
   def nothingMatcher[L: Tuple]: PathMatcher[L] =
     new PathMatcher[L] {

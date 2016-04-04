@@ -19,6 +19,10 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
 
+/**
+ * @groupname fileandresource File and resource directives
+ * @groupprio fileandresource 70
+ */
 trait FileAndResourceDirectives {
   import CacheConditionDirectives._
   import MethodDirectives._
@@ -30,6 +34,8 @@ trait FileAndResourceDirectives {
   /**
    * Completes GET requests with the content of the given file.
    * If the file cannot be found or read the request is rejected.
+   *
+   * @group fileandresource
    */
   def getFromFile(fileName: String)(implicit resolver: ContentTypeResolver): Route =
     getFromFile(new File(fileName))
@@ -37,6 +43,8 @@ trait FileAndResourceDirectives {
   /**
    * Completes GET requests with the content of the given file.
    * If the file cannot be found or read the request is rejected.
+   *
+   * @group fileandresource
    */
   def getFromFile(file: File)(implicit resolver: ContentTypeResolver): Route =
     getFromFile(file, resolver(file.getName))
@@ -44,6 +52,8 @@ trait FileAndResourceDirectives {
   /**
    * Completes GET requests with the content of the given file.
    * If the file cannot be found or read the request is rejected.
+   *
+   * @group fileandresource
    */
   def getFromFile(file: File, contentType: ContentType): Route =
     get {
@@ -72,6 +82,8 @@ trait FileAndResourceDirectives {
   /**
    * Completes GET requests with the content of the given class-path resource.
    * If the resource cannot be found or read the Route rejects the request.
+   *
+   * @group fileandresource
    */
   def getFromResource(resourceName: String)(implicit resolver: ContentTypeResolver): Route =
     getFromResource(resourceName, resolver(resourceName))
@@ -79,6 +91,8 @@ trait FileAndResourceDirectives {
   /**
    * Completes GET requests with the content of the given resource.
    * If the resource is a directory or cannot be found or read the Route rejects the request.
+   *
+   * @group fileandresource
    */
   def getFromResource(resourceName: String, contentType: ContentType, classLoader: ClassLoader = defaultClassLoader): Route =
     if (!resourceName.endsWith("/"))
@@ -104,6 +118,8 @@ trait FileAndResourceDirectives {
   /**
    * Completes GET requests with the content of a file underneath the given directory.
    * If the file cannot be read the Route rejects the request.
+   *
+   * @group fileandresource
    */
   def getFromDirectory(directoryName: String)(implicit resolver: ContentTypeResolver): Route = {
     val base = withTrailingSlash(directoryName)
@@ -120,6 +136,8 @@ trait FileAndResourceDirectives {
   /**
    * Completes GET requests with a unified listing of the contents of all given directories.
    * The actual rendering of the directory contents is performed by the in-scope `Marshaller[DirectoryListing]`.
+   *
+   * @group fileandresource
    */
   def listDirectoryContents(directories: String*)(implicit renderer: DirectoryRenderer): Route =
     get {
@@ -147,6 +165,8 @@ trait FileAndResourceDirectives {
 
   /**
    * Same as `getFromBrowseableDirectories` with only one directory.
+   *
+   * @group fileandresource
    */
   def getFromBrowseableDirectory(directory: String)(implicit renderer: DirectoryRenderer, resolver: ContentTypeResolver): Route =
     getFromBrowseableDirectories(directory)
@@ -154,6 +174,8 @@ trait FileAndResourceDirectives {
   /**
    * Serves the content of the given directories as a file system browser, i.e. files are sent and directories
    * served as browseable listings.
+   *
+   * @group fileandresource
    */
   def getFromBrowseableDirectories(directories: String*)(implicit renderer: DirectoryRenderer, resolver: ContentTypeResolver): Route = {
     directories.map(getFromDirectory).reduceLeft(_ ~ _) ~ listDirectoryContents(directories: _*)
@@ -163,6 +185,8 @@ trait FileAndResourceDirectives {
    * Same as "getFromDirectory" except that the file is not fetched from the file system but rather from a
    * "resource directory".
    * If the requested resource is itself a directory or cannot be found or read the Route rejects the request.
+   *
+   * @group fileandresource
    */
   def getFromResourceDirectory(directoryName: String, classLoader: ClassLoader = defaultClassLoader)(implicit resolver: ContentTypeResolver): Route = {
     val base = if (directoryName.isEmpty) "" else withTrailingSlash(directoryName)

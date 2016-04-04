@@ -16,33 +16,47 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.{ Failure, Success }
 
+/**
+ * @groupname form Form field directives
+ * @groupprio form 90
+ */
 trait FormFieldDirectives extends ToNameReceptacleEnhancements {
   import FormFieldDirectives._
 
   /**
    * Extracts HTTP form fields from the request as a ``Map[String, String]``.
+   *
+   * @group form
    */
   def formFieldMap: Directive1[Map[String, String]] = _formFieldMap
 
   /**
    * Extracts HTTP form fields from the request as a ``Map[String, List[String]]``.
+   *
+   * @group form
    */
   def formFieldMultiMap: Directive1[Map[String, List[String]]] = _formFieldMultiMap
 
   /**
    * Extracts HTTP form fields from the request as a ``Seq[(String, String)]``.
+   *
+   * @group form
    */
   def formFieldSeq: Directive1[immutable.Seq[(String, String)]] = _formFieldSeq
 
   /**
    * Extracts an HTTP form field from the request.
    * Rejects the request if the defined form field matcher(s) don't match.
+   *
+   * @group form
    */
   def formField(pdm: FieldMagnet): pdm.Out = pdm()
 
   /**
    * Extracts a number of HTTP form field from the request.
    * Rejects the request if the defined form field matcher(s) don't match.
+   *
+   * @group form
    */
   def formFields(pdm: FieldMagnet): pdm.Out = pdm()
 
