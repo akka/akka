@@ -51,15 +51,17 @@ private[http] object StreamUtils {
     impl.ErrorPublisher(ex, "failed").asInstanceOf[Publisher[T]]
 
   def mapErrorTransformer(f: Throwable ⇒ Throwable): Flow[ByteString, ByteString, NotUsed] = {
-    val transformer = new PushStage[ByteString, ByteString] {
-      override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective =
-        ctx.push(element)
+    val transformer = new SimpleLinearGraphStage[ByteString] {
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+        override def onPush(): Unit = push(out, grab(in))
+        override def onUpstreamFailure(ex: Throwable): Unit = failStage(f(ex))
+        override def onPull(): Unit = pull(in)
 
-      override def onUpstreamFailure(cause: Throwable, ctx: Context[ByteString]): TerminationDirective =
-        ctx.fail(f(cause))
+        setHandlers(in, out, this)
+      }
     }
 
-    Flow[ByteString].transform(() ⇒ transformer).named("transformError")
+    Flow[ByteString].via(transformer).named("transformError")
   }
 
   def captureTermination[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit]) = {
