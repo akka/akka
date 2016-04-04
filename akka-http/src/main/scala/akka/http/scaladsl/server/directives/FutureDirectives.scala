@@ -13,11 +13,17 @@ import akka.http.scaladsl.util.FastFuture._
 
 // format: OFF
 
+/**
+ * @groupname future Future directives
+ * @groupprio future 100
+ */
 trait FutureDirectives {
 
   /**
    * "Unwraps" a `Future[T]` and runs the inner route after future
    * completion with the future's value as an extraction of type `Try[T]`.
+   *
+   * @group future
    */
   def onComplete[T](future: ⇒ Future[T]): Directive1[Try[T]] =
     Directive { inner ⇒ ctx ⇒
@@ -32,6 +38,8 @@ trait FutureDirectives {
    * ExceptionHandler.
    * If type `T` is already a Tuple it is directly expanded into the respective
    * number of extractions.
+   *
+   * @group future
    */
   def onSuccess(magnet: OnSuccessMagnet): Directive[magnet.Out] = magnet.directive
 
@@ -41,6 +49,8 @@ trait FutureDirectives {
    * If the future succeeds the request is completed using the values marshaller
    * (This directive therefore requires a marshaller for the futures type to be
    * implicitly available.)
+   *
+   * @group future
    */
   def completeOrRecoverWith(magnet: CompleteOrRecoverWithMagnet): Directive1[Throwable] = magnet.directive
 }

@@ -10,8 +10,15 @@ import akka.http.scaladsl.server.{ Directive, Directive0 }
 
 import scala.concurrent.duration.Duration
 
+/**
+ * @groupname timeout Timeout directives
+ * @groupprio timeout 160
+ */
 trait TimeoutDirectives {
 
+  /**
+   * @group timeout
+   */
   def withoutRequestTimeout: Directive0 =
     withRequestTimeout(Duration.Inf)
 
@@ -20,6 +27,8 @@ trait TimeoutDirectives {
    *
    * Due to the inherent raciness it is not guaranteed that the update will be applied before
    * the previously set timeout has expired!
+   *
+   * @group timeout
    */
   def withRequestTimeout(timeout: Duration): Directive0 =
     withRequestTimeout(timeout, None)
@@ -31,6 +40,8 @@ trait TimeoutDirectives {
    * the previously set timeout has expired!
    *
    * @param handler optional custom "timeout response" function. If left None, the default timeout HttpResponse will be used.
+   *
+   * @group timeout
    */
   def withRequestTimeout(timeout: Duration, handler: HttpRequest ⇒ HttpResponse): Directive0 =
     withRequestTimeout(timeout, Some(handler))
@@ -42,6 +53,8 @@ trait TimeoutDirectives {
    * the previously set timeout has expired!
    *
    * @param handler optional custom "timeout response" function. If left None, the default timeout HttpResponse will be used.
+   *
+   * @group timeout
    */
   def withRequestTimeout(timeout: Duration, handler: Option[HttpRequest ⇒ HttpResponse]): Directive0 =
     Directive { inner ⇒
@@ -63,6 +76,8 @@ trait TimeoutDirectives {
    *
    * Due to the inherent raciness it is not guaranteed that the update will be applied before
    * the previously set timeout has expired!
+   *
+   * @group timeout
    */
   def withRequestTimeoutResponse(handler: HttpRequest ⇒ HttpResponse): Directive0 =
     Directive { inner ⇒

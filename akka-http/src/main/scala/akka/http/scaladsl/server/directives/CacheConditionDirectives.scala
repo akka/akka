@@ -12,6 +12,10 @@ import HttpMethods._
 import StatusCodes._
 import EntityTag._
 
+/**
+ * @groupname cachecondition Cache condition directives
+ * @groupprio cachecondition 20
+ */
 trait CacheConditionDirectives {
   import BasicDirectives._
   import RouteDirectives._
@@ -26,6 +30,8 @@ trait CacheConditionDirectives {
    * Note: if you want to combine this directive with `withRangeSupport(...)` you need to put
    * it on the *outside* of the `withRangeSupport(...)` directive, i.e. `withRangeSupport(...)`
    * must be on a deeper level in your route structure in order to function correctly.
+   *
+   * @group cachecondition
    */
   def conditional(eTag: EntityTag): Directive0 = conditional(Some(eTag), None)
 
@@ -39,6 +45,8 @@ trait CacheConditionDirectives {
    * Note: if you want to combine this directive with `withRangeSupport(...)` you need to put
    * it on the *outside* of the `withRangeSupport(...)` directive, i.e. `withRangeSupport(...)`
    * must be on a deeper level in your route structure in order to function correctly.
+   *
+   * @group cachecondition
    */
   def conditional(lastModified: DateTime): Directive0 = conditional(None, Some(lastModified))
 
@@ -52,6 +60,8 @@ trait CacheConditionDirectives {
    * Note: if you want to combine this directive with `withRangeSupport(...)` you need to put
    * it on the *outside* of the `withRangeSupport(...)` directive, i.e. `withRangeSupport(...)`
    * must be on a deeper level in your route structure in order to function correctly.
+   *
+   * @group cachecondition
    */
   def conditional(eTag: EntityTag, lastModified: DateTime): Directive0 = conditional(Some(eTag), Some(lastModified))
 
@@ -65,6 +75,8 @@ trait CacheConditionDirectives {
    * Note: if you want to combine this directive with `withRangeSupport(...)` you need to put
    * it on the *outside* of the `withRangeSupport(...)` directive, i.e. `withRangeSupport(...)`
    * must be on a deeper level in your route structure in order to function correctly.
+   *
+   * @group cachecondition
    */
   def conditional(eTag: Option[EntityTag], lastModified: Option[DateTime]): Directive0 = {
     def addResponseHeaders: Directive0 =
