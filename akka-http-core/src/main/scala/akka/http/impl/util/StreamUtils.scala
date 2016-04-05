@@ -6,7 +6,6 @@ package akka.http.impl.util
 
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 import akka.NotUsed
-import akka.http.scaladsl.model.RequestEntity
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ PublisherSink, SinkModule, SourceModule }
@@ -27,39 +26,28 @@ private[http] object StreamUtils {
    * input has been read it will call `finish` once to determine the final ByteString to post to the output.
    * Empty ByteStrings are discarded.
    */
-  def byteStringTransformer(f: ByteString ⇒ ByteString, finish: () ⇒ ByteString): Stage[ByteString, ByteString] = {
-    new PushPullStage[ByteString, ByteString] {
-      override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective = {
-        val data = f(element)
-        if (data.nonEmpty) ctx.push(data)
-        else ctx.pull()
+  def byteStringTransformer(f: ByteString ⇒ ByteString, finish: () ⇒ ByteString): GraphStage[FlowShape[ByteString, ByteString]] = new SimpleLinearGraphStage[ByteString] {
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+      override def onPush(): Unit = {
+        val data = f(grab(in))
+        if (data.nonEmpty) push(out, data)
+        else pull(in)
       }
 
-      override def onPull(ctx: Context[ByteString]): SyncDirective =
-        if (ctx.isFinishing) {
-          val data = finish()
-          if (data.nonEmpty) ctx.pushAndFinish(data)
-          else ctx.finish()
-        } else ctx.pull()
+      override def onPull(): Unit = pull(in)
 
-      override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective = ctx.absorbTermination()
+      override def onUpstreamFinish(): Unit = {
+        val data = finish()
+        if (data.nonEmpty) emit(out, data)
+        completeStage()
+      }
+
+      setHandlers(in, out, this)
     }
   }
 
   def failedPublisher[T](ex: Throwable): Publisher[T] =
     impl.ErrorPublisher(ex, "failed").asInstanceOf[Publisher[T]]
-
-  def mapErrorTransformer(f: Throwable ⇒ Throwable): Flow[ByteString, ByteString, NotUsed] = {
-    val transformer = new PushStage[ByteString, ByteString] {
-      override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective =
-        ctx.push(element)
-
-      override def onUpstreamFailure(cause: Throwable, ctx: Context[ByteString]): TerminationDirective =
-        ctx.fail(f(cause))
-    }
-
-    Flow[ByteString].transform(() ⇒ transformer).named("transformError")
-  }
 
   def captureTermination[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit]) = {
     val promise = Promise[Unit]()
@@ -85,37 +73,32 @@ private[http] object StreamUtils {
   }
 
   def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString, NotUsed] = {
-    val transformer = new StatefulStage[ByteString, ByteString] {
+    val transformer = new SimpleLinearGraphStage[ByteString] {
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+        override def onPull() = pull(in)
 
-      def skipping = new State {
         var toSkip = start
+        var remaining = length
 
-        override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective =
-          if (element.length < toSkip) {
+        override def onPush(): Unit = {
+          val element = grab(in)
+          if (toSkip > 0 && element.length < toSkip) {
             // keep skipping
             toSkip -= element.length
-            ctx.pull()
+            pull(in)
           } else {
-            become(taking(length))
             // toSkip <= element.length <= Int.MaxValue
-            current.onPush(element.drop(toSkip.toInt), ctx)
+            val data = element.drop(toSkip.toInt).take(math.min(remaining, Int.MaxValue).toInt)
+            remaining -= data.size
+            push(out, data)
+            if (remaining <= 0) completeStage()
           }
-      }
-
-      def taking(initiallyRemaining: Long) = new State {
-        var remaining: Long = initiallyRemaining
-
-        override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective = {
-          val data = element.take(math.min(remaining, Int.MaxValue).toInt)
-          remaining -= data.size
-          if (remaining <= 0) ctx.pushAndFinish(data)
-          else ctx.push(data)
         }
-      }
 
-      override def initial: State = if (start > 0) skipping else taking(length)
+        setHandlers(in, out, this)
+      }
     }
-    Flow[ByteString].transform(() ⇒ transformer).named("sliceBytes")
+    Flow[ByteString].via(transformer).named("sliceBytes")
   }
 
   def limitByteChunksStage(maxBytesPerChunk: Int): GraphStage[FlowShape[ByteString, ByteString]] =
@@ -161,9 +144,6 @@ private[http] object StreamUtils {
         override def toString = "limitByteChunksStage"
       }
     }
-
-  def mapEntityError(f: Throwable ⇒ Throwable): RequestEntity ⇒ RequestEntity =
-    _.transformDataBytes(mapErrorTransformer(f))
 
   /**
    * Returns a source that can only be used once for testing purposes.
