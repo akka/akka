@@ -5,8 +5,9 @@ import akka.testkit.TestProbe;
 
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.scalatest.junit.JUnitSuite;
 
-public class StashJavaAPI {
+public class StashJavaAPI extends JUnitSuite {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

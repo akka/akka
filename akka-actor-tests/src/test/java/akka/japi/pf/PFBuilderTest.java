@@ -5,11 +5,13 @@
 package akka.japi.pf;
 
 import org.junit.Test;
+import org.scalatest.junit.JUnitSuite;
 import scala.PartialFunction;
 
 import static org.junit.Assert.*;
 
-public class PFBuilderTest {
+public class PFBuilderTest extends JUnitSuite {
+
   @Test
   public void pfbuilder_matchAny_should_infer_declared_input_type_for_lambda() {
     PartialFunction<String,Integer> pf = new PFBuilder<String,Integer>()

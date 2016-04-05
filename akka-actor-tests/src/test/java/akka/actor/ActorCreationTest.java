@@ -8,8 +8,9 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 
 import akka.japi.Creator;
+import org.scalatest.junit.JUnitSuite;
 
-public class ActorCreationTest {
+public class ActorCreationTest extends JUnitSuite {
 
   @Test
   public void testWrongCreator() {

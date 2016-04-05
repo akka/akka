@@ -4,11 +4,13 @@
 package akka.util;
 
 import org.junit.Test;
+import org.scalatest.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuiteLike;
 import scala.concurrent.duration.Duration;
 
 import static junit.framework.TestCase.assertEquals;
 
-public class ByteStringTest {
+public class ByteStringTest extends JUnitSuite {
 
   @Test
   public void testCreation() {
@@ -20,6 +22,7 @@ public class ByteStringTest {
   public void testBuilderCreation() {
     final ByteStringBuilder sb = ByteString.createBuilder();
     sb.append(ByteString.fromString("Hello"));
+    sb.append(ByteString.fromString(" "));
     sb.append(ByteString.fromString("World"));
     assertEquals(ByteString.fromString("Hello World"), sb.result());
   }

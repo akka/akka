@@ -4,9 +4,10 @@
 package akka.util;
 
 import org.junit.Test;
+import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.Duration;
 
-public class JavaDuration {
+public class JavaDuration extends JUnitSuite {
 
   @Test
   public void testCreation() {
