@@ -40,7 +40,7 @@ class QueueSinkSpec extends AkkaSpec {
       val sub = probe.expectSubscription()
       val future = queue.pull()
       val future2 = queue.pull()
-      an[IllegalStateException] shouldBe thrownBy { Await.result(future2, 300.millis) }
+      an[IllegalStateException] shouldBe thrownBy { Await.result(future2, remainingOrDefault) }
 
       sub.sendNext(1)
       future.pipeTo(testActor)
@@ -82,7 +82,7 @@ class QueueSinkSpec extends AkkaSpec {
       val sub = probe.expectSubscription()
       sub.sendError(ex)
 
-      the[Exception] thrownBy { Await.result(queue.pull(), 300.millis) } should be(ex)
+      the[Exception] thrownBy { Await.result(queue.pull(), remainingOrDefault) } should be(ex)
     }
 
     "timeout future when stream cannot provide data" in assertAllStagesStopped {
