@@ -302,7 +302,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
     val incomingConnectionsSub = {
       val rawBytesInjection = BidiFlow.fromFlows(
         Flow[SslTlsOutbound].collect[ByteString] { case SendBytes(x) ⇒ mapServerSideOutboundRawBytes(x) }
-          .transform(StreamUtils.recover { case NoErrorComplete ⇒ ByteString.empty }),
+          .recover({ case NoErrorComplete ⇒ ByteString.empty }),
         Flow[ByteString].map(SessionBytes(null, _)))
       val sink = if (autoAccept) Sink.foreach[Http.IncomingConnection](handleConnection) else Sink.fromSubscriber(incomingConnections)
       Tcp().bind(serverEndpoint.getHostString, serverEndpoint.getPort, idleTimeout = serverSettings.timeouts.idleTimeout)
