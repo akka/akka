@@ -23,9 +23,10 @@ import headers._
 /**
  * INTERNAL API
  */
-private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Server],
-                                                responseHeaderSizeHint: Int,
-                                                log: LoggingAdapter) {
+private[http] class HttpResponseRendererFactory(
+  serverHeader: Option[headers.Server],
+    responseHeaderSizeHint: Int,
+    log: LoggingAdapter) {
 
   private val renderDefaultServerHeader: Rendering ⇒ Unit =
     serverHeader match {
@@ -46,7 +47,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
       val r = new ByteArrayRendering(48)
       DateTime(now).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
       cachedBytes = r.get
-      cachedDateHeader = cachedSeconds -> cachedBytes
+      cachedDateHeader = cachedSeconds → cachedBytes
     }
     cachedBytes
   }
@@ -127,8 +128,8 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
             entity.isChunked && (!entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD) && (ctx.requestProtocol == `HTTP/1.1`)
 
           @tailrec def renderHeaders(remaining: List[HttpHeader], alwaysClose: Boolean = false,
-                                     connHeader: Connection = null, serverSeen: Boolean = false,
-                                     transferEncodingSeen: Boolean = false, dateSeen: Boolean = false): Unit =
+            connHeader: Connection = null, serverSeen: Boolean = false,
+            transferEncodingSeen: Boolean = false, dateSeen: Boolean = false): Unit =
             remaining match {
               case head :: tail ⇒ head match {
                 case x: `Content-Length` ⇒

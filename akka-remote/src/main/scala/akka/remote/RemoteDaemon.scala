@@ -48,7 +48,7 @@ private[akka] class RemoteSystemDaemon(
   terminator: ActorRef,
   _log: LoggingAdapter,
   val untrustedMode: Boolean)
-  extends VirtualPathContainer(system.provider, _path, _parent, _log) {
+    extends VirtualPathContainer(system.provider, _path, _parent, _log) {
 
   import akka.actor.SystemGuardian._
 

@@ -183,14 +183,14 @@ trait BackoffOptions {
 }
 
 private final case class BackoffOptionsImpl(
-  backoffType: BackoffType = RestartImpliesFailure,
-  childProps: Props,
-  childName: String,
-  minBackoff: FiniteDuration,
-  maxBackoff: FiniteDuration,
-  randomFactor: Double,
-  reset: Option[BackoffReset] = None,
-  supervisorStrategy: OneForOneStrategy = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider)) extends BackoffOptions {
+    backoffType: BackoffType = RestartImpliesFailure,
+    childProps: Props,
+    childName: String,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
+    randomFactor: Double,
+    reset: Option[BackoffReset] = None,
+    supervisorStrategy: OneForOneStrategy = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider)) extends BackoffOptions {
 
   val backoffReset = reset.getOrElse(AutoReset(minBackoff))
 

@@ -50,9 +50,10 @@ private object PoolSlot {
                                                                                                  v
    */
   def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
-            remoteAddress: InetSocketAddress, // TODO: remove after #16168 is cleared
-            settings: ConnectionPoolSettings)(implicit system: ActorSystem,
-                                              fm: Materializer): Graph[FanOutShape2[RequestContext, ResponseContext, RawSlotEvent], Any] =
+    remoteAddress: InetSocketAddress, // TODO: remove after #16168 is cleared
+    settings: ConnectionPoolSettings)(implicit
+    system: ActorSystem,
+    fm: Materializer): Graph[FanOutShape2[RequestContext, ResponseContext, RawSlotEvent], Any] =
     GraphDSL.create() { implicit b ⇒
       import GraphDSL.Implicits._
 
@@ -60,7 +61,8 @@ private object PoolSlot {
       val name = slotProcessorActorName.next()
       val slotProcessor = b.add {
         Flow.fromProcessor { () ⇒
-          val actor = system.actorOf(Props(new SlotProcessor(slotIx, connectionFlow, settings)).withDeploy(Deploy.local),
+          val actor = system.actorOf(
+            Props(new SlotProcessor(slotIx, connectionFlow, settings)).withDeploy(Deploy.local),
             name)
           ActorProcessor[RequestContext, List[ProcessorOut]](actor)
         }.mapConcat(conforms)
@@ -69,7 +71,8 @@ private object PoolSlot {
 
       slotProcessor ~> split.in
 
-      new FanOutShape2(slotProcessor.in,
+      new FanOutShape2(
+        slotProcessor.in,
         split.out(0).collect { case ResponseDelivery(r) ⇒ r }.outlet,
         split.out(1).collect { case r: RawSlotEvent ⇒ r }.outlet)
     }
@@ -87,8 +90,8 @@ private object PoolSlot {
    * shutting down completely).
    */
   private class SlotProcessor(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
-                              settings: ConnectionPoolSettings)(implicit fm: Materializer)
-    extends ActorSubscriber with ActorPublisher[List[ProcessorOut]] with ActorLogging {
+    settings: ConnectionPoolSettings)(implicit fm: Materializer)
+      extends ActorSubscriber with ActorPublisher[List[ProcessorOut]] with ActorLogging {
     var exposedPublisher: akka.stream.impl.ActorPublisher[Any] = _
     var inflightRequests = immutable.Queue.empty[RequestContext]
     val runnableGraph = Source.actorPublisher[HttpRequest](Props(new FlowInportActor(self)).withDeploy(Deploy.local))
@@ -131,7 +134,7 @@ private object PoolSlot {
     }
 
     def waitingForDemandFromConnection(connInport: ActorRef, connOutport: ActorRef,
-                                       firstRequest: RequestContext): Receive = {
+      firstRequest: RequestContext): Receive = {
       case ev @ (Request(_) | Cancel)     ⇒ connOutport ! ev
       case ev @ (OnComplete | OnError(_)) ⇒ connInport ! ev
       case OnNext(x)                      ⇒ throw new IllegalStateException("Unrequested RequestContext: " + x)

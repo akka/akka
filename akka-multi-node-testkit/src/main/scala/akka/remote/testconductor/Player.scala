@@ -143,7 +143,7 @@ private[akka] object ClientFSM {
  * INTERNAL API.
  */
 private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress) extends Actor
-  with LoggingFSM[ClientFSM.State, ClientFSM.Data] with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+    with LoggingFSM[ClientFSM.State, ClientFSM.Data] with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import ClientFSM._
 
   val settings = TestConductor().Settings
@@ -192,8 +192,8 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
     case Event(ToServer(msg), d @ Data(Some(channel), None)) ⇒
       channel.write(msg)
       val token = msg match {
-        case EnterBarrier(barrier, timeout) ⇒ Some(barrier -> sender())
-        case GetAddress(node)               ⇒ Some(node.name -> sender())
+        case EnterBarrier(barrier, timeout) ⇒ Some(barrier → sender())
+        case GetAddress(node)               ⇒ Some(node.name → sender())
         case _                              ⇒ None
       }
       stay using d.copy(runningOp = token)
@@ -281,7 +281,7 @@ private[akka] class PlayerHandler(
   fsm: ActorRef,
   log: LoggingAdapter,
   scheduler: Scheduler)(implicit executor: ExecutionContext)
-  extends SimpleChannelUpstreamHandler {
+    extends SimpleChannelUpstreamHandler {
 
   import ClientFSM._
 

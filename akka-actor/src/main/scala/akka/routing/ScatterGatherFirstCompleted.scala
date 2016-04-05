@@ -38,7 +38,7 @@ final case class ScatterGatherFirstCompletedRoutingLogic(within: FiniteDuration)
  */
 @SerialVersionUID(1L)
 private[akka] final case class ScatterGatherFirstCompletedRoutees(
-  routees: immutable.IndexedSeq[Routee], within: FiniteDuration) extends Routee {
+    routees: immutable.IndexedSeq[Routee], within: FiniteDuration) extends Routee {
 
   override def send(message: Any, sender: ActorRef): Unit =
     if (routees.isEmpty) {
@@ -101,7 +101,7 @@ final case class ScatterGatherFirstCompletedPool(
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
   override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
   override val usePoolDispatcher: Boolean = false)
-  extends Pool with PoolOverrideUnsetConfig[ScatterGatherFirstCompletedPool] {
+    extends Pool with PoolOverrideUnsetConfig[ScatterGatherFirstCompletedPool] {
 
   def this(config: Config) =
     this(
@@ -168,7 +168,7 @@ final case class ScatterGatherFirstCompletedGroup(
   override val paths: immutable.Iterable[String],
   within: FiniteDuration,
   override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
-  extends Group {
+    extends Group {
 
   def this(config: Config) =
     this(

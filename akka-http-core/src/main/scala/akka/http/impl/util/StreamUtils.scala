@@ -81,7 +81,7 @@ private[http] object StreamUtils {
         setHandlers(in, out, this)
       }
     }
-    source.via(transformer) -> promise.future
+    source.via(transformer) → promise.future
   }
 
   def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString, NotUsed] = {

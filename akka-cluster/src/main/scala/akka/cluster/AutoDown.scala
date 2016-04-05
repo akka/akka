@@ -34,7 +34,7 @@ private[cluster] object AutoDown {
  * able to unit test the logic without running cluster.
  */
 private[cluster] class AutoDown(autoDownUnreachableAfter: FiniteDuration)
-  extends AutoDownBase(autoDownUnreachableAfter) {
+    extends AutoDownBase(autoDownUnreachableAfter) {
 
   val cluster = Cluster(context.system)
   import cluster.InfoLogger._
@@ -125,7 +125,7 @@ private[cluster] abstract class AutoDownBase(autoDownUnreachableAfter: FiniteDur
       downOrAddPending(node)
     } else {
       val task = scheduler.scheduleOnce(autoDownUnreachableAfter, self, UnreachableTimeout(node))
-      scheduledUnreachable += (node -> task)
+      scheduledUnreachable += (node → task)
     }
   }
 

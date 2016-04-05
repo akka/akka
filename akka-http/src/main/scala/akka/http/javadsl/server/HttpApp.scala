@@ -14,8 +14,8 @@ import java.util.concurrent.CompletionStage
  * to start the server on the specified interface.
  */
 abstract class HttpApp
-  extends AllDirectives
-  with HttpServiceBase {
+    extends AllDirectives
+    with HttpServiceBase {
   def createRoute(): Route
 
   /**

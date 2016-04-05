@@ -10,8 +10,8 @@ import org.scalatest.BeforeAndAfterEach
 import akka.testkit._
 import scala.concurrent.duration._
 
-import akka.actor.{ Props, Actor, ActorRef, ActorSystem, PoisonPill}
-import akka.japi.{ Procedure}
+import akka.actor.{ Props, Actor, ActorRef, ActorSystem, PoisonPill }
+import akka.japi.{ Procedure }
 import com.typesafe.config.{ Config, ConfigFactory }
 
 object EventBusSpec {
@@ -144,7 +144,7 @@ abstract class EventBusSpec(busName: String, conf: Config = ConfigFactory.empty(
 
 object ActorEventBusSpec {
   class MyActorEventBus(protected val system: ActorSystem) extends ActorEventBus
-    with ManagedActorClassification with ActorClassifier {
+      with ManagedActorClassification with ActorClassifier {
 
     type Event = Notification
 

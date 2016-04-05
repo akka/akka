@@ -26,14 +26,15 @@ import scala.concurrent.{ Future, Promise }
 /**
  * INTERNAL API
  */
-private[stream] class ConnectionSourceStage(val tcpManager: ActorRef,
-                                            val endpoint: InetSocketAddress,
-                                            val backlog: Int,
-                                            val options: immutable.Traversable[SocketOption],
-                                            val halfClose: Boolean,
-                                            val idleTimeout: Duration,
-                                            val bindShutdownTimeout: FiniteDuration)
-  extends GraphStageWithMaterializedValue[SourceShape[StreamTcp.IncomingConnection], Future[StreamTcp.ServerBinding]] {
+private[stream] class ConnectionSourceStage(
+  val tcpManager: ActorRef,
+  val endpoint: InetSocketAddress,
+  val backlog: Int,
+  val options: immutable.Traversable[SocketOption],
+  val halfClose: Boolean,
+  val idleTimeout: Duration,
+  val bindShutdownTimeout: FiniteDuration)
+    extends GraphStageWithMaterializedValue[SourceShape[StreamTcp.IncomingConnection], Future[StreamTcp.ServerBinding]] {
   import ConnectionSourceStage._
 
   val out: Outlet[StreamTcp.IncomingConnection] = Outlet("IncomingConnections.out")
@@ -267,7 +268,8 @@ private[stream] object TcpConnectionStage {
       override def onUpstreamFailure(ex: Throwable): Unit = {
         if (connection != null) {
           if (interpreter.log.isDebugEnabled) {
-            interpreter.log.debug("Aborting tcp connection because of upstream failure: {}\n{}",
+            interpreter.log.debug(
+              "Aborting tcp connection because of upstream failure: {}\n{}",
               ex.getMessage,
               ex.getStackTrace.mkString("\n"))
           }
@@ -289,7 +291,7 @@ private[stream] object TcpConnectionStage {
  * INTERNAL API
  */
 private[stream] class IncomingConnectionStage(connection: ActorRef, remoteAddress: InetSocketAddress, halfClose: Boolean)
-  extends GraphStage[FlowShape[ByteString, ByteString]] {
+    extends GraphStage[FlowShape[ByteString, ByteString]] {
   import TcpConnectionStage._
 
   private val hasBeenCreated = new AtomicBoolean(false)
@@ -312,14 +314,15 @@ private[stream] class IncomingConnectionStage(connection: ActorRef, remoteAddres
 /**
  * INTERNAL API
  */
-private[stream] class OutgoingConnectionStage(manager: ActorRef,
-                                              remoteAddress: InetSocketAddress,
-                                              localAddress: Option[InetSocketAddress] = None,
-                                              options: immutable.Traversable[SocketOption] = Nil,
-                                              halfClose: Boolean = true,
-                                              connectTimeout: Duration = Duration.Inf)
+private[stream] class OutgoingConnectionStage(
+  manager: ActorRef,
+  remoteAddress: InetSocketAddress,
+  localAddress: Option[InetSocketAddress] = None,
+  options: immutable.Traversable[SocketOption] = Nil,
+  halfClose: Boolean = true,
+  connectTimeout: Duration = Duration.Inf)
 
-  extends GraphStageWithMaterializedValue[FlowShape[ByteString, ByteString], Future[StreamTcp.OutgoingConnection]] {
+    extends GraphStageWithMaterializedValue[FlowShape[ByteString, ByteString], Future[StreamTcp.OutgoingConnection]] {
   import TcpConnectionStage._
 
   val bytesIn: Inlet[ByteString] = Inlet("IncomingTCP.in")

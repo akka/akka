@@ -157,6 +157,9 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.leader"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.roleLeader"),
 
+      // added → alias in FSM
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.FSM.→"),
+
       // copied everything above from release-2.3 branch
 
       // final case classes

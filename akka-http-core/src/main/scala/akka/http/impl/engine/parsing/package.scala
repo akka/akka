@@ -38,7 +38,7 @@ package object parsing {
   }
 
   private[http] def logParsingError(info: ErrorInfo, log: LoggingAdapter,
-                                    setting: ParserSettings.ErrorLoggingVerbosity): Unit =
+    setting: ParserSettings.ErrorLoggingVerbosity): Unit =
     setting match {
       case ParserSettings.ErrorLoggingVerbosity.Off    ⇒ // nothing to do
       case ParserSettings.ErrorLoggingVerbosity.Simple ⇒ log.warning(info.summary)
@@ -51,8 +51,9 @@ package parsing {
   /**
    * INTERNAL API
    */
-  private[parsing] class ParsingException(val status: StatusCode,
-                                          val info: ErrorInfo) extends RuntimeException(info.formatPretty) {
+  private[parsing] class ParsingException(
+    val status: StatusCode,
+      val info: ErrorInfo) extends RuntimeException(info.formatPretty) {
     def this(status: StatusCode, summary: String = "") =
       this(status, ErrorInfo(if (summary.isEmpty) status.defaultMessage else summary))
     def this(summary: String) =

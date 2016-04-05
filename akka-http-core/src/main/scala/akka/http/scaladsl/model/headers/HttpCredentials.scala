@@ -51,7 +51,7 @@ final case class OAuth2BearerToken(token: String) extends jm.headers.OAuth2Beare
 }
 
 final case class GenericHttpCredentials(scheme: String, token: String,
-                                        params: Map[String, String] = Map.empty) extends HttpCredentials {
+    params: Map[String, String] = Map.empty) extends HttpCredentials {
   def render[R <: Rendering](r: R): r.type = {
     r ~~ scheme
     if (!token.isEmpty) r ~~ ' ' ~~ token

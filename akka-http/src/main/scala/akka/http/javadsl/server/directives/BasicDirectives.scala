@@ -169,7 +169,7 @@ abstract class BasicDirectives extends BasicDirectivesBase {
       /** Makes sure both RouteResult and Future[RouteResult] are acceptable result types. */
       def adaptResult(method: Method): (RequestContext, AnyRef) ⇒ RouteResult =
         if (returnsFuture(method)) (ctx, v) ⇒ ctx.completeWith(v.asInstanceOf[Future[RouteResult]].toJava)
-        else if (returnsCompletionStage(method)) (ctx, v) => ctx.completeWith(v.asInstanceOf[CompletionStage[RouteResult]])
+        else if (returnsCompletionStage(method)) (ctx, v) ⇒ ctx.completeWith(v.asInstanceOf[CompletionStage[RouteResult]])
         else (_, v) ⇒ v.asInstanceOf[RouteResult]
 
       val IdentityAdaptor: (RequestContext, Seq[Any]) ⇒ Seq[Any] = (_, ps) ⇒ ps

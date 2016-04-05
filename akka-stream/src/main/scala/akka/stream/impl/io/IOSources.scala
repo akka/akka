@@ -20,7 +20,7 @@ import scala.concurrent.{ Future, Promise }
  * Creates simple synchronous (Java 6 compatible) Source backed by the given file.
  */
 private[akka] final class FileSource(f: File, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
-  extends SourceModule[ByteString, Future[IOResult]](shape) {
+    extends SourceModule[ByteString, Future[IOResult]](shape) {
   require(chunkSize > 0, "chunkSize must be greater than 0")
   override def create(context: MaterializationContext) = {
     // FIXME rewrite to be based on GraphStage rather than dangerous downcasts
@@ -50,7 +50,7 @@ private[akka] final class FileSource(f: File, chunkSize: Int, val attributes: At
  * Source backed by the given input stream.
  */
 private[akka] final class InputStreamSource(createInputStream: () ⇒ InputStream, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
-  extends SourceModule[ByteString, Future[IOResult]](shape) {
+    extends SourceModule[ByteString, Future[IOResult]](shape) {
   override def create(context: MaterializationContext) = {
     val materializer = ActorMaterializer.downcast(context.materializer)
     val ioResultPromise = Promise[IOResult]()

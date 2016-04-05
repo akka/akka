@@ -39,7 +39,7 @@ object LWWMap {
 @SerialVersionUID(1L)
 final class LWWMap[A] private[akka] (
   private[akka] val underlying: ORMap[LWWRegister[A]])
-  extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
+    extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
   import LWWRegister.{ Clock, defaultClock }
 
   type T = LWWMap[A]
@@ -47,7 +47,7 @@ final class LWWMap[A] private[akka] (
   /**
    * Scala API: All entries of the map.
    */
-  def entries: Map[String, A] = underlying.entries.map { case (k, r) ⇒ k -> r.value }
+  def entries: Map[String, A] = underlying.entries.map { case (k, r) ⇒ k → r.value }
 
   /**
    * Java API: All entries of the map.

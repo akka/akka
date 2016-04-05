@@ -80,13 +80,14 @@ private[akka] object Shard {
    * If `settings.rememberEntities` is enabled the `PersistentShard`
    * subclass is used, otherwise `Shard`.
    */
-  def props(typeName: String,
-            shardId: ShardRegion.ShardId,
-            entityProps: Props,
-            settings: ClusterShardingSettings,
-            extractEntityId: ShardRegion.ExtractEntityId,
-            extractShardId: ShardRegion.ExtractShardId,
-            handOffStopMessage: Any): Props = {
+  def props(
+    typeName: String,
+    shardId: ShardRegion.ShardId,
+    entityProps: Props,
+    settings: ClusterShardingSettings,
+    extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId: ShardRegion.ExtractShardId,
+    handOffStopMessage: Any): Props = {
     if (settings.rememberEntities)
       Props(new PersistentShard(typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage))
         .withDeploy(Deploy.local)
@@ -105,13 +106,13 @@ private[akka] object Shard {
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
 private[akka] class Shard(
-  typeName: String,
-  shardId: ShardRegion.ShardId,
-  entityProps: Props,
-  settings: ClusterShardingSettings,
-  extractEntityId: ShardRegion.ExtractEntityId,
-  extractShardId: ShardRegion.ExtractShardId,
-  handOffStopMessage: Any) extends Actor with ActorLogging {
+    typeName: String,
+    shardId: ShardRegion.ShardId,
+    entityProps: Props,
+    settings: ClusterShardingSettings,
+    extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId: ShardRegion.ExtractShardId,
+    handOffStopMessage: Any) extends Actor with ActorLogging {
 
   import ShardRegion.{ handOffStopperProps, EntityId, Msg, Passivate, ShardInitialized }
   import ShardCoordinator.Internal.{ HandOff, ShardStopped }
@@ -309,7 +310,7 @@ private[akka] class PersistentShard(
   extractShardId: ShardRegion.ExtractShardId,
   handOffStopMessage: Any) extends Shard(
   typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage)
-  with PersistentActor with ActorLogging {
+    with PersistentActor with ActorLogging {
 
   import ShardRegion.{ EntityId, Msg }
   import Shard.{ State, RestartEntity, EntityStopped, EntityStarted }

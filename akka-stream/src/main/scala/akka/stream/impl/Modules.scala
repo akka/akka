@@ -108,7 +108,7 @@ private[akka] final class ActorPublisherSource[Out](props: Props, val attributes
  */
 private[akka] final class ActorRefSource[Out](
   bufferSize: Int, overflowStrategy: OverflowStrategy, val attributes: Attributes, shape: SourceShape[Out])
-  extends SourceModule[Out, ActorRef](shape) {
+    extends SourceModule[Out, ActorRef](shape) {
 
   override protected def label: String = s"ActorRefSource($bufferSize, $overflowStrategy)"
 

@@ -22,17 +22,19 @@ import akka.stream.impl.fusing.SubSource
  *
  * see: http://tools.ietf.org/html/rfc2046#section-5.1.1
  */
-private[http] final class BodyPartParser(defaultContentType: ContentType,
-                                         boundary: String,
-                                         log: LoggingAdapter,
-                                         settings: BodyPartParser.Settings)
-  extends PushPullStage[ByteString, BodyPartParser.Output] {
+private[http] final class BodyPartParser(
+  defaultContentType: ContentType,
+  boundary: String,
+  log: LoggingAdapter,
+  settings: BodyPartParser.Settings)
+    extends PushPullStage[ByteString, BodyPartParser.Output] {
   import BodyPartParser._
   import settings._
 
   require(boundary.nonEmpty, "'boundary' parameter of multipart Content-Type must be non-empty")
   require(boundary.charAt(boundary.length - 1) != ' ', "'boundary' parameter of multipart Content-Type must not end with a space char")
-  require(boundaryChar matchesAll boundary,
+  require(
+    boundaryChar matchesAll boundary,
     s"'boundary' parameter of multipart Content-Type contains illegal character '${boundaryChar.firstMismatch(boundary).get}'")
 
   sealed trait StateResult // phantom type for ensuring soundness of our parsing method setup
@@ -118,7 +120,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
     }
 
   @tailrec def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = ListBuffer[HttpHeader](),
-                                headerCount: Int = 0, cth: Option[`Content-Type`] = None): StateResult = {
+    headerCount: Int = 0, cth: Option[`Content-Type`] = None): StateResult = {
     def contentType =
       cth match {
         case Some(x) ⇒ x.contentType
@@ -161,23 +163,24 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
 
   // work-around for compiler complaining about non-tail-recursion if we inline this method
   def parseHeaderLinesAux(headers: ListBuffer[HttpHeader], headerCount: Int,
-                          cth: Option[`Content-Type`])(input: ByteString, lineStart: Int): StateResult =
+    cth: Option[`Content-Type`])(input: ByteString, lineStart: Int): StateResult =
     parseHeaderLines(input, lineStart, headers, headerCount, cth)
 
   def parseEntity(headers: List[HttpHeader], contentType: ContentType,
-                  emitPartChunk: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = {
-                    (headers, ct, bytes) ⇒
-                      emit(BodyPartStart(headers, entityParts ⇒ HttpEntity.IndefiniteLength(ct,
-                        entityParts.collect { case EntityPart(data) ⇒ data })))
-                      emit(bytes)
-                  },
-                  emitFinalPartChunk: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = {
-                    (headers, ct, bytes) ⇒
-                      emit(BodyPartStart(headers, { rest ⇒
-                        SubSource.kill(rest)
-                        HttpEntity.Strict(ct, bytes)
-                      }))
-                  })(input: ByteString, offset: Int): StateResult =
+    emitPartChunk: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = {
+      (headers, ct, bytes) ⇒
+        emit(BodyPartStart(headers, entityParts ⇒ HttpEntity.IndefiniteLength(
+          ct,
+          entityParts.collect { case EntityPart(data) ⇒ data })))
+        emit(bytes)
+    },
+    emitFinalPartChunk: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = {
+      (headers, ct, bytes) ⇒
+        emit(BodyPartStart(headers, { rest ⇒
+          SubSource.kill(rest)
+          HttpEntity.Strict(ct, bytes)
+        }))
+    })(input: ByteString, offset: Int): StateResult =
     try {
       @tailrec def rec(index: Int): StateResult = {
         val currentPartEnd = boyerMoore.nextIndex(input, index)

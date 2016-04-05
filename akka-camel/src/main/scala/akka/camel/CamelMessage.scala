@@ -288,6 +288,6 @@ case object Ack {
  * message or Exchange.getOut message, depending on the exchange pattern.
  */
 class AkkaCamelException private[akka] (cause: Throwable, val headers: Map[String, Any])
-  extends AkkaException(cause.getMessage, cause) {
+    extends AkkaException(cause.getMessage, cause) {
   def this(cause: Throwable) = this(cause, Map.empty)
 }

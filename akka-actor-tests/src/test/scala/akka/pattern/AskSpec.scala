@@ -213,7 +213,7 @@ class AskSpec extends AkkaSpec {
 
       val act = system.actorOf(Props(new Actor {
         def receive = {
-          case msg ⇒ p.ref ! sender() -> msg
+          case msg ⇒ p.ref ! sender() → msg
         }
       }))
 

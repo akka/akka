@@ -31,7 +31,7 @@ private[akka] object SerializedSuspendableExecutionContext {
  * @param context the underlying context which will be used to actually execute the submitted tasks
  */
 private[akka] final class SerializedSuspendableExecutionContext(throughput: Int)(val context: ExecutionContext)
-  extends AbstractNodeQueue[Runnable] with Runnable with ExecutionContext {
+    extends AbstractNodeQueue[Runnable] with Runnable with ExecutionContext {
   import SerializedSuspendableExecutionContext._
   require(throughput > 0, s"SerializedSuspendableExecutionContext.throughput must be greater than 0 but was $throughput")
 

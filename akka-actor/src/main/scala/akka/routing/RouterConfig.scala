@@ -3,7 +3,6 @@
  */
 package akka.routing
 
-
 import scala.collection.immutable
 import akka.ConfigurationException
 import akka.actor.ActorContext
@@ -297,9 +296,10 @@ case object FromConfig extends FromConfig {
  * (defaults to default-dispatcher).
  */
 @SerialVersionUID(1L)
-class FromConfig(override val resizer: Option[Resizer],
-                 override val supervisorStrategy: SupervisorStrategy,
-                 override val routerDispatcher: String) extends Pool {
+class FromConfig(
+  override val resizer: Option[Resizer],
+    override val supervisorStrategy: SupervisorStrategy,
+    override val routerDispatcher: String) extends Pool {
 
   def this() = this(None, Pool.defaultSupervisorStrategy, Dispatchers.DefaultDispatcherId)
 

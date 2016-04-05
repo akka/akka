@@ -53,7 +53,7 @@ private[remote] object FailureInjectorTransportAdapter {
  * INTERNAL API
  */
 private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transport, val extendedSystem: ExtendedActorSystem)
-  extends AbstractTransportAdapter(wrappedTransport)(extendedSystem.dispatcher) with AssociationEventListener {
+    extends AbstractTransportAdapter(wrappedTransport)(extendedSystem.dispatcher) with AssociationEventListener {
 
   private def rng = ThreadLocalRandom.current()
   private val log = Logging(extendedSystem, getClass.getName)
@@ -77,8 +77,9 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
     case _ ⇒ wrappedTransport.managementCommand(cmd)
   }
 
-  protected def interceptListen(listenAddress: Address,
-                                listenerFuture: Future[AssociationEventListener]): Future[AssociationEventListener] = {
+  protected def interceptListen(
+    listenAddress: Address,
+    listenerFuture: Future[AssociationEventListener]): Future[AssociationEventListener] = {
     log.warning("FailureInjectorTransport is active on this system. Gremlins might munch your packets.")
     listenerFuture.onSuccess {
       // Side effecting: As this class is not an actor, the only way to safely modify state is through volatile vars.
@@ -140,10 +141,11 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
 /**
  * INTERNAL API
  */
-private[remote] final case class FailureInjectorHandle(_wrappedHandle: AssociationHandle,
-                                                       private val gremlinAdapter: FailureInjectorTransportAdapter)
-  extends AbstractTransportAdapterHandle(_wrappedHandle, FailureInjectorSchemeIdentifier)
-  with HandleEventListener {
+private[remote] final case class FailureInjectorHandle(
+  _wrappedHandle: AssociationHandle,
+  private val gremlinAdapter: FailureInjectorTransportAdapter)
+    extends AbstractTransportAdapterHandle(_wrappedHandle, FailureInjectorSchemeIdentifier)
+    with HandleEventListener {
   import gremlinAdapter.extendedSystem.dispatcher
 
   @volatile private var upstreamListener: HandleEventListener = null

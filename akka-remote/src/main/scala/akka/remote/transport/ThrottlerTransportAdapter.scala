@@ -97,7 +97,7 @@ object ThrottlerTransportAdapter {
 
   @SerialVersionUID(1L)
   final case class TokenBucket(capacity: Int, tokensPerSecond: Double, nanoTimeOfLastSend: Long, availableTokens: Int)
-    extends ThrottleMode {
+      extends ThrottleMode {
 
     private def isAvailable(nanoTimeOfSend: Long, tokens: Int): Boolean =
       if ((tokens > capacity && availableTokens > 0)) {
@@ -232,7 +232,7 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
       val inMode = getInboundMode(naked)
       wrappedHandle.outboundThrottleMode.set(getOutboundMode(naked))
       wrappedHandle.readHandlerPromise.future map { ListenerAndMode(_, inMode) } pipeTo wrappedHandle.throttlerActor
-      handleTable ::= naked -> wrappedHandle
+      handleTable ::= naked → wrappedHandle
       statusPromise.success(wrappedHandle)
     case SetThrottle(address, direction, mode) ⇒
       val naked = nakedAddress(address)
@@ -259,7 +259,7 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
 
     case Checkin(origin, handle) ⇒
       val naked: Address = nakedAddress(origin)
-      handleTable ::= naked -> handle
+      handleTable ::= naked → handle
       setMode(naked, handle)
 
   }
@@ -364,8 +364,8 @@ private[transport] class ThrottledAssociation(
   val associationHandler: AssociationEventListener,
   val originalHandle: AssociationHandle,
   val inbound: Boolean)
-  extends Actor with LoggingFSM[ThrottledAssociation.ThrottlerState, ThrottledAssociation.ThrottlerData]
-  with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+    extends Actor with LoggingFSM[ThrottledAssociation.ThrottlerState, ThrottledAssociation.ThrottlerData]
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import ThrottledAssociation._
   import context.dispatcher
 
@@ -521,7 +521,7 @@ private[transport] class ThrottledAssociation(
  * INTERNAL API
  */
 private[transport] final case class ThrottlerHandle(_wrappedHandle: AssociationHandle, throttlerActor: ActorRef)
-  extends AbstractTransportAdapterHandle(_wrappedHandle, SchemeIdentifier) {
+    extends AbstractTransportAdapterHandle(_wrappedHandle, SchemeIdentifier) {
 
   private[transport] val outboundThrottleMode = new AtomicReference[ThrottleMode](Unthrottled)
 

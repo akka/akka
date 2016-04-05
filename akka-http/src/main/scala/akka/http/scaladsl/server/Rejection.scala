@@ -38,7 +38,7 @@ case class MissingQueryParamRejection(parameterName: String) extends Rejection
  * Signals that the request was rejected because a query parameter could not be interpreted.
  */
 case class MalformedQueryParamRejection(parameterName: String, errorMsg: String,
-                                        cause: Option[Throwable] = None) extends Rejection
+  cause: Option[Throwable] = None) extends Rejection
 
 /**
  * Rejection created by form field filters.
@@ -51,7 +51,7 @@ case class MissingFormFieldRejection(fieldName: String) extends Rejection
  * Signals that the request was rejected because a form field could not be interpreted.
  */
 case class MalformedFormFieldRejection(fieldName: String, errorMsg: String,
-                                       cause: Option[Throwable] = None) extends Rejection
+  cause: Option[Throwable] = None) extends Rejection
 
 /**
  * Rejection created by header directives.
@@ -64,7 +64,7 @@ case class MissingHeaderRejection(headerName: String) extends Rejection
  * Signals that the request was rejected because a header value is malformed.
  */
 case class MalformedHeaderRejection(headerName: String, errorMsg: String,
-                                    cause: Option[Throwable] = None) extends Rejection
+  cause: Option[Throwable] = None) extends Rejection
 
 /**
  * Rejection created by unmarshallers.
@@ -129,8 +129,9 @@ object UnacceptedResponseEncodingRejection {
  * Signals that the request was rejected because the user could not be authenticated. The reason for the rejection is
  * specified in the cause.
  */
-case class AuthenticationFailedRejection(cause: AuthenticationFailedRejection.Cause,
-                                         challenge: HttpChallenge) extends Rejection
+case class AuthenticationFailedRejection(
+  cause: AuthenticationFailedRejection.Cause,
+  challenge: HttpChallenge) extends Rejection
 
 object AuthenticationFailedRejection {
   /**

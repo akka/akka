@@ -49,8 +49,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
       val m = flow.module
       val mat =
         if (combine == Keep.left) {
-          if (IgnorableMatValComp(m)) Ignore else Transform(_ => NotUsed, Atomic(m))
-        } else Combine(combine.asInstanceOf[(Any, Any) => Any], Ignore, Atomic(m))
+          if (IgnorableMatValComp(m)) Ignore else Transform(_ ⇒ NotUsed, Atomic(m))
+        } else Combine(combine.asInstanceOf[(Any, Any) ⇒ Any], Ignore, Atomic(m))
       new Flow(CompositeModule(Set(m), m.shape, empty, empty, mat, Attributes.none))
     } else {
       val flowCopy = flow.module.carbonCopy
@@ -481,7 +481,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def mapConcat[T](f: Out ⇒ immutable.Iterable[T]): Repr[T] = statefulMapConcat(() => f)
+  def mapConcat[T](f: Out ⇒ immutable.Iterable[T]): Repr[T] = statefulMapConcat(() ⇒ f)
 
   /**
    * Transform each input element into an `Iterable` of output elements that is
@@ -1013,7 +1013,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.conflate]], [[FlowOps.limit]], [[FlowOps.limitWeighted]] [[FlowOps.batch]] [[FlowOps.batchWeighted]]
    */
-  def conflate[O2 >: Out](aggregate: (O2, O2) => O2): Repr[O2] = conflateWithSeed[O2](ConstantFun.scalaIdentityFunction)(aggregate)
+  def conflate[O2 >: Out](aggregate: (O2, O2) ⇒ O2): Repr[O2] = conflateWithSeed[O2](ConstantFun.scalaIdentityFunction)(aggregate)
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by aggregating elements into batches
@@ -1503,7 +1503,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def throttle(cost: Int, per: FiniteDuration, maximumBurst: Int,
-               costCalculation: (Out) ⇒ Int, mode: ThrottleMode): Repr[Out] =
+    costCalculation: (Out) ⇒ Int, mode: ThrottleMode): Repr[Out] =
     via(new Throttle(cost, per, maximumBurst, costCalculation, mode))
 
   /**
@@ -1567,11 +1567,10 @@ trait FlowOps[+Out, +Mat] {
   def zip[U](that: Graph[SourceShape[U], _]): Repr[(Out, U)] = via(zipGraph(that))
 
   protected def zipGraph[U, M](that: Graph[SourceShape[U], M]): Graph[FlowShape[Out @uncheckedVariance, (Out, U)], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val zip = b.add(Zip[Out, U]())
-        r ~> zip.in1
-        FlowShape(zip.in0, zip.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val zip = b.add(Zip[Out, U]())
+      r ~> zip.in1
+      FlowShape(zip.in0, zip.out)
     }
 
   /**
@@ -1590,11 +1589,10 @@ trait FlowOps[+Out, +Mat] {
     via(zipWithGraph(that)(combine))
 
   protected def zipWithGraph[Out2, Out3, M](that: Graph[SourceShape[Out2], M])(combine: (Out, Out2) ⇒ Out3): Graph[FlowShape[Out @uncheckedVariance, Out3], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val zip = b.add(ZipWith[Out, Out2, Out3](combine))
-        r ~> zip.in1
-        FlowShape(zip.in0, zip.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val zip = b.add(ZipWith[Out, Out2, Out3](combine))
+      r ~> zip.in1
+      FlowShape(zip.in0, zip.out)
     }
 
   /**
@@ -1623,13 +1621,13 @@ trait FlowOps[+Out, +Mat] {
   def interleave[U >: Out](that: Graph[SourceShape[U], _], segmentSize: Int): Repr[U] =
     via(interleaveGraph(that, segmentSize))
 
-  protected def interleaveGraph[U >: Out, M](that: Graph[SourceShape[U], M],
-                                             segmentSize: Int): Graph[FlowShape[Out @uncheckedVariance, U], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val interleave = b.add(Interleave[U](2, segmentSize))
-        r ~> interleave.in(1)
-        FlowShape(interleave.in(0), interleave.out)
+  protected def interleaveGraph[U >: Out, M](
+    that: Graph[SourceShape[U], M],
+    segmentSize: Int): Graph[FlowShape[Out @uncheckedVariance, U], M] =
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val interleave = b.add(Interleave[U](2, segmentSize))
+      r ~> interleave.in(1)
+      FlowShape(interleave.in(0), interleave.out)
     }
 
   /**
@@ -1648,11 +1646,10 @@ trait FlowOps[+Out, +Mat] {
     via(mergeGraph(that, eagerComplete))
 
   protected def mergeGraph[U >: Out, M](that: Graph[SourceShape[U], M], eagerComplete: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val merge = b.add(Merge[U](2, eagerComplete))
-        r ~> merge.in(1)
-        FlowShape(merge.in(0), merge.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val merge = b.add(Merge[U](2, eagerComplete))
+      r ~> merge.in(1)
+      FlowShape(merge.in(0), merge.out)
     }
 
   /**
@@ -1674,11 +1671,10 @@ trait FlowOps[+Out, +Mat] {
     via(mergeSortedGraph(that))
 
   protected def mergeSortedGraph[U >: Out, M](that: Graph[SourceShape[U], M])(implicit ord: Ordering[U]): Graph[FlowShape[Out @uncheckedVariance, U], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val merge = b.add(new MergeSorted[U])
-        r ~> merge.in1
-        FlowShape(merge.in0, merge.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val merge = b.add(new MergeSorted[U])
+      r ~> merge.in1
+      FlowShape(merge.in0, merge.out)
     }
 
   /**
@@ -1703,11 +1699,10 @@ trait FlowOps[+Out, +Mat] {
     via(concatGraph(that))
 
   protected def concatGraph[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2]): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val merge = b.add(Concat[U]())
-        r ~> merge.in(1)
-        FlowShape(merge.in(0), merge.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val merge = b.add(Concat[U]())
+      r ~> merge.in(1)
+      FlowShape(merge.in(0), merge.out)
     }
 
   /**
@@ -1732,11 +1727,10 @@ trait FlowOps[+Out, +Mat] {
     via(prependGraph(that))
 
   protected def prependGraph[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2]): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val merge = b.add(Concat[U]())
-        r ~> merge.in(0)
-        FlowShape(merge.in(1), merge.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val merge = b.add(Concat[U]())
+      r ~> merge.in(0)
+      FlowShape(merge.in(1), merge.out)
     }
 
   /**
@@ -1782,12 +1776,11 @@ trait FlowOps[+Out, +Mat] {
   def alsoTo(that: Graph[SinkShape[Out], _]): Repr[Out] = via(alsoToGraph(that))
 
   protected def alsoToGraph[M](that: Graph[SinkShape[Out], M]): Graph[FlowShape[Out @uncheckedVariance, Out], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        import GraphDSL.Implicits._
-        val bcast = b.add(Broadcast[Out](2))
-        bcast.out(1) ~> r
-        FlowShape(bcast.in, bcast.out(0))
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      import GraphDSL.Implicits._
+      val bcast = b.add(Broadcast[Out](2))
+      bcast.out(1) ~> r
+      FlowShape(bcast.in, bcast.out(0))
     }
 
   def withAttributes(attr: Attributes): Repr[Out]
@@ -1806,10 +1799,10 @@ trait FlowOps[+Out, +Mat] {
 }
 
 /**
-  * INTERNAL API: this trait will be changed in binary-incompatible ways for classes that are derived from it!
-  * Do not implement this interface outside the Akka code base!
-  *
-  * Binary compatibility is only maintained for callers of this trait’s interface.
+ * INTERNAL API: this trait will be changed in binary-incompatible ways for classes that are derived from it!
+ * Do not implement this interface outside the Akka code base!
+ *
+ * Binary compatibility is only maintained for callers of this trait’s interface.
  */
 trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
 
@@ -2002,12 +1995,12 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
   def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2]
 
   /**
-    * Materializes to `FlowMonitor[Out]` that allows monitoring of the the current flow. All events are propagated
-    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
-    * event, and may therefor affect performance.
-    * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
-    */
-  def monitor[Mat2]()(combine: (Mat, FlowMonitor[Out]) => Mat2): ReprMat[Out, Mat2] =
+   * Materializes to `FlowMonitor[Out]` that allows monitoring of the the current flow. All events are propagated
+   * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
+   * event, and may therefor affect performance.
+   * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
+   */
+  def monitor[Mat2]()(combine: (Mat, FlowMonitor[Out]) ⇒ Mat2): ReprMat[Out, Mat2] =
     viaMat(GraphStages.monitor)(combine)
 
   /**

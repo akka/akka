@@ -20,12 +20,13 @@ class PinnedDispatcher(
   _id: String,
   _shutdownTimeout: FiniteDuration,
   _threadPoolConfig: ThreadPoolConfig)
-  extends Dispatcher(_configurator,
-    _id,
-    Int.MaxValue,
-    Duration.Zero,
-    _threadPoolConfig.copy(corePoolSize = 1, maxPoolSize = 1),
-    _shutdownTimeout) {
+    extends Dispatcher(
+      _configurator,
+      _id,
+      Int.MaxValue,
+      Duration.Zero,
+      _threadPoolConfig.copy(corePoolSize = 1, maxPoolSize = 1),
+      _shutdownTimeout) {
 
   @volatile
   private var owner: ActorCell = _actor

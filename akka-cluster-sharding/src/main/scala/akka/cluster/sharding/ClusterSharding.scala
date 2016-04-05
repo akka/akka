@@ -167,7 +167,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   }
 
   private[akka] def requireClusterRole(role: Option[String]): Unit =
-    require(role.forall(cluster.selfRoles.contains),
+    require(
+      role.forall(cluster.selfRoles.contains),
       s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
 
   /**
@@ -274,9 +275,9 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
 
     start(typeName, entityProps, settings,
       extractEntityId = {
-        case msg if messageExtractor.entityId(msg) ne null ⇒
-          (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
-      },
+      case msg if messageExtractor.entityId(msg) ne null ⇒
+        (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
+    },
       extractShardId = msg ⇒ messageExtractor.shardId(msg),
       allocationStrategy = allocationStrategy,
       handOffStopMessage = handOffStopMessage)
@@ -369,9 +370,9 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
 
     startProxy(typeName, Option(role.orElse(null)),
       extractEntityId = {
-        case msg if messageExtractor.entityId(msg) ne null ⇒
-          (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
-      },
+      case msg if messageExtractor.entityId(msg) ne null ⇒
+        (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
+    },
       extractShardId = msg ⇒ messageExtractor.shardId(msg))
 
   }
@@ -394,12 +395,12 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
 private[akka] object ClusterShardingGuardian {
   import ShardCoordinator.ShardAllocationStrategy
   final case class Start(typeName: String, entityProps: Props, settings: ClusterShardingSettings,
-                         extractEntityId: ShardRegion.ExtractEntityId, extractShardId: ShardRegion.ExtractShardId,
-                         allocationStrategy: ShardAllocationStrategy, handOffStopMessage: Any)
-    extends NoSerializationVerificationNeeded
+    extractEntityId: ShardRegion.ExtractEntityId, extractShardId: ShardRegion.ExtractShardId,
+    allocationStrategy: ShardAllocationStrategy, handOffStopMessage: Any)
+      extends NoSerializationVerificationNeeded
   final case class StartProxy(typeName: String, settings: ClusterShardingSettings,
-                              extractEntityId: ShardRegion.ExtractEntityId, extractShardId: ShardRegion.ExtractShardId)
-    extends NoSerializationVerificationNeeded
+    extractEntityId: ShardRegion.ExtractEntityId, extractShardId: ShardRegion.ExtractShardId)
+      extends NoSerializationVerificationNeeded
   final case class Started(shardRegion: ActorRef) extends NoSerializationVerificationNeeded
 }
 
@@ -443,14 +444,16 @@ private[akka] class ClusterShardingGuardian extends Actor {
             randomFactor = 0.2).withDeploy(Deploy.local)
           val singletonSettings = settings.coordinatorSingletonSettings
             .withSingletonName("singleton").withRole(role)
-          context.actorOf(ClusterSingletonManager.props(
+          context.actorOf(
+            ClusterSingletonManager.props(
             singletonProps,
             terminationMessage = PoisonPill,
             singletonSettings).withDispatcher(context.props.dispatcher),
             name = cName)
         }
 
-        context.actorOf(ShardRegion.props(
+        context.actorOf(
+          ShardRegion.props(
           typeName = typeName,
           entityProps = entityProps,
           settings = settings,
@@ -467,7 +470,8 @@ private[akka] class ClusterShardingGuardian extends Actor {
       val cName = coordinatorSingletonManagerName(encName)
       val cPath = coordinatorPath(encName)
       val shardRegion = context.child(encName).getOrElse {
-        context.actorOf(ShardRegion.proxyProps(
+        context.actorOf(
+          ShardRegion.proxyProps(
           typeName = typeName,
           settings = settings,
           coordinatorPath = cPath,

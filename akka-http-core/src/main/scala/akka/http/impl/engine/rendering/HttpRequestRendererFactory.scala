@@ -22,9 +22,10 @@ import headers._
 /**
  * INTERNAL API
  */
-private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`User-Agent`],
-                                               requestHeaderSizeHint: Int,
-                                               log: LoggingAdapter) {
+private[http] class HttpRequestRendererFactory(
+  userAgentHeader: Option[headers.`User-Agent`],
+    requestHeaderSizeHint: Int,
+    log: LoggingAdapter) {
   import HttpRequestRendererFactory.RequestRenderingOutput
 
   def renderToSource(ctx: RequestRenderingContext): Source[ByteString, Any] = render(ctx).byteStream
@@ -47,7 +48,7 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
     def render(h: HttpHeader) = r ~~ h ~~ CrLf
 
     @tailrec def renderHeaders(remaining: List[HttpHeader], hostHeaderSeen: Boolean = false,
-                               userAgentSeen: Boolean = false, transferEncodingSeen: Boolean = false): Unit =
+      userAgentSeen: Boolean = false, transferEncodingSeen: Boolean = false): Unit =
       remaining match {
         case head :: tail ⇒ head match {
           case x: `Content-Length` ⇒

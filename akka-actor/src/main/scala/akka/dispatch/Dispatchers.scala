@@ -135,13 +135,13 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
     def simpleName = id.substring(id.lastIndexOf('.') + 1)
     idConfig(id)
       .withFallback(appConfig)
-      .withFallback(ConfigFactory.parseMap(Map("name" -> simpleName).asJava))
+      .withFallback(ConfigFactory.parseMap(Map("name" → simpleName).asJava))
       .withFallback(defaultDispatcherConfig)
   }
 
   private def idConfig(id: String): Config = {
     import scala.collection.JavaConverters._
-    ConfigFactory.parseMap(Map("id" -> id).asJava)
+    ConfigFactory.parseMap(Map("id" → id).asJava)
   }
 
   /**
@@ -180,7 +180,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
           classOf[BalancingDispatcherConfigurator].getName)
       case "PinnedDispatcher" ⇒ new PinnedDispatcherConfigurator(cfg, prerequisites)
       case fqn ⇒
-        val args = List(classOf[Config] -> cfg, classOf[DispatcherPrerequisites] -> prerequisites)
+        val args = List(classOf[Config] → cfg, classOf[DispatcherPrerequisites] → prerequisites)
         prerequisites.dynamicAccess.createInstanceFor[MessageDispatcherConfigurator](fqn, args).recover({
           case exception ⇒
             throw new ConfigurationException(
@@ -199,7 +199,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
  * of the `dispatcher()` method.
  */
 class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
-  extends MessageDispatcherConfigurator(config, prerequisites) {
+    extends MessageDispatcherConfigurator(config, prerequisites) {
 
   private val instance = new Dispatcher(
     this,
@@ -232,7 +232,7 @@ private[akka] object BalancingDispatcherConfigurator {
  * of the `dispatcher()` method.
  */
 class BalancingDispatcherConfigurator(_config: Config, _prerequisites: DispatcherPrerequisites)
-  extends MessageDispatcherConfigurator(BalancingDispatcherConfigurator.amendConfig(_config), _prerequisites) {
+    extends MessageDispatcherConfigurator(BalancingDispatcherConfigurator.amendConfig(_config), _prerequisites) {
 
   private val instance = {
     val mailboxes = prerequisites.mailboxes
@@ -282,13 +282,14 @@ class BalancingDispatcherConfigurator(_config: Config, _prerequisites: Dispatche
  * of the `dispatcher()` method.
  */
 class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
-  extends MessageDispatcherConfigurator(config, prerequisites) {
+    extends MessageDispatcherConfigurator(config, prerequisites) {
 
   private val threadPoolConfig: ThreadPoolConfig = configureExecutor() match {
     case e: ThreadPoolExecutorConfigurator ⇒ e.threadPoolConfig
     case other ⇒
       prerequisites.eventStream.publish(
-        Warning("PinnedDispatcherConfigurator",
+        Warning(
+          "PinnedDispatcherConfigurator",
           this.getClass,
           "PinnedDispatcher [%s] not configured to use ThreadPoolExecutor, falling back to default config.".format(
             config.getString("id"))))

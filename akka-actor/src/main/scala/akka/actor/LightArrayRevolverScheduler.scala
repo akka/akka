@@ -34,10 +34,11 @@ import akka.dispatch.AbstractNodeQueue
  * scheduled possibly one tick later than they could be (if checking that
  * “now() + delay &lt;= nextTick” were done).
  */
-class LightArrayRevolverScheduler(config: Config,
-                                  log: LoggingAdapter,
-                                  threadFactory: ThreadFactory)
-  extends Scheduler with Closeable {
+class LightArrayRevolverScheduler(
+  config: Config,
+  log: LoggingAdapter,
+  threadFactory: ThreadFactory)
+    extends Scheduler with Closeable {
 
   import Helpers.Requiring
   import Helpers.ConfigOps
@@ -83,9 +84,10 @@ class LightArrayRevolverScheduler(config: Config,
     }
   }
 
-  override def schedule(initialDelay: FiniteDuration,
-                        delay: FiniteDuration,
-                        runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
+  override def schedule(
+    initialDelay: FiniteDuration,
+    delay: FiniteDuration,
+    runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
     checkMaxDelay(roundUp(delay).toNanos)
     val preparedEC = executor.prepare()
     try new AtomicReference[Cancellable](InitialRepeatMarker) with Cancellable { self ⇒
@@ -215,7 +217,7 @@ class LightArrayRevolverScheduler(config: Config,
               time - start + // calculate the nanos since timer start
               (ticks * tickNanos) + // adding the desired delay
               tickNanos - 1 // rounding up
-              ) / tickNanos).toInt // and converting to slot number
+            ) / tickNanos).toInt // and converting to slot number
             // tick is an Int that will wrap around, but toInt of futureTick gives us modulo operations
             // and the difference (offset) will be correct in any case
             val offset = futureTick - tick
@@ -306,7 +308,7 @@ object LightArrayRevolverScheduler {
    * INTERNAL API
    */
   protected[actor] class TaskHolder(@volatile var task: Runnable, var ticks: Int, executionContext: ExecutionContext)
-    extends TimerTask {
+      extends TimerTask {
 
     @tailrec
     private final def extractTask(replaceWith: Runnable): Runnable =

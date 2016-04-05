@@ -6,12 +6,12 @@ package akka.http.scaladsl.server
 package directives
 
 import akka.http.javadsl.model.headers.CustomHeader
-import akka.http.scaladsl.model.headers.{ModeledCustomHeaderCompanion, ModeledCustomHeader, RawHeader}
+import akka.http.scaladsl.model.headers.{ ModeledCustomHeaderCompanion, ModeledCustomHeader, RawHeader }
 
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
-import akka.http.javadsl.{ model => jm }
+import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.server.util.ClassMagnet
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
@@ -161,13 +161,12 @@ object HeaderMagnet extends LowPriorityHeaderMagnetImplicits {
    * If possible we want to apply the special logic for [[ModeledCustomHeader]] to extract custom headers by type,
    * otherwise the default `fromUnit` is good enough (for headers that the parser emits in the right type already).
    */
-  implicit def fromUnitForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]]
-    (u: Unit)(implicit tag: ClassTag[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
+  implicit def fromUnitForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]](u: Unit)(implicit tag: ClassTag[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
     new HeaderMagnet[T] {
       override def runtimeClass = tag.runtimeClass.asInstanceOf[Class[T]]
       override def classTag = tag
       override def extractPF = {
-        case h if h.is(companion.lowercaseName) => companion.apply(h.toString)
+        case h if h.is(companion.lowercaseName) ⇒ companion.apply(h.toString)
       }
     }
 

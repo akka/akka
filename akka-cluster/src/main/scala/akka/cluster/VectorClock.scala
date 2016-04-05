@@ -67,7 +67,7 @@ private[cluster] object VectorClock {
  */
 @SerialVersionUID(1L)
 final case class VectorClock(
-  versions: TreeMap[VectorClock.Node, Long] = TreeMap.empty[VectorClock.Node, Long]) {
+    versions: TreeMap[VectorClock.Node, Long] = TreeMap.empty[VectorClock.Node, Long]) {
 
   import VectorClock._
 

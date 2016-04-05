@@ -71,7 +71,7 @@ object FSMActorSpec {
     }
 
     onTransition {
-      case Locked -> Open ⇒ transitionLatch.open
+      case Locked → Open ⇒ transitionLatch.open
     }
 
     // verify that old-style does still compile
@@ -99,7 +99,7 @@ object FSMActorSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with ImplicitSender {
+class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" → true)) with ImplicitSender {
   import FSMActorSpec._
 
   val timeout = Timeout(2 seconds)
@@ -223,7 +223,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
           case Event("stop", _) ⇒ stop()
         }
         onTransition {
-          case "not-started" -> "started" ⇒
+          case "not-started" → "started" ⇒
             for (timerName ← timerNames) setTimer(timerName, (), 10 seconds, false)
         }
         onTermination {
@@ -251,8 +251,8 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
 
     "log events and transitions if asked to do so" in {
       import scala.collection.JavaConverters._
-      val config = ConfigFactory.parseMap(Map("akka.loglevel" -> "DEBUG", "akka.actor.serialize-messages" -> "off",
-        "akka.actor.debug.fsm" -> true).asJava).withFallback(system.settings.config)
+      val config = ConfigFactory.parseMap(Map("akka.loglevel" → "DEBUG", "akka.actor.serialize-messages" → "off",
+        "akka.actor.debug.fsm" → true).asJava).withFallback(system.settings.config)
       val fsmEventSystem = ActorSystem("fsmEvent", config)
       try {
         new TestKit(fsmEventSystem) {

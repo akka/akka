@@ -136,7 +136,7 @@ object FutureRef {
 }
 
 private[akka] class PromiseRefImpl[T](val ref: ActorRef, val promise: Promise[T])
-  extends PromiseRef[T] with FutureRef[T] {
+    extends PromiseRef[T] with FutureRef[T] {
   def toFutureRef: FutureRef[T] = this
 }
 

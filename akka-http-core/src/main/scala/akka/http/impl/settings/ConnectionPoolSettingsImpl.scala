@@ -18,7 +18,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   val pipeliningLimit: Int,
   val idleTimeout: Duration,
   val connectionSettings: ClientConnectionSettings)
-  extends ConnectionPoolSettings {
+    extends ConnectionPoolSettings {
 
   require(maxConnections > 0, "max-connections must be > 0")
   require(maxRetries >= 0, "max-retries must be >= 0")

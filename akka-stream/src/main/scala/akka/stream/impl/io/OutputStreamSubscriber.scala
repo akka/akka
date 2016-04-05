@@ -25,8 +25,8 @@ private[akka] object OutputStreamSubscriber {
 
 /** INTERNAL API */
 private[akka] class OutputStreamSubscriber(os: OutputStream, completionPromise: Promise[IOResult], bufSize: Int, autoFlush: Boolean)
-  extends akka.stream.actor.ActorSubscriber
-  with ActorLogging {
+    extends akka.stream.actor.ActorSubscriber
+    with ActorLogging {
 
   override protected val requestStrategy = WatermarkRequestStrategy(highWatermark = bufSize)
 

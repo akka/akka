@@ -7,7 +7,7 @@ import org.scalatest._
 import com.typesafe.config.ConfigFactory
 
 class MetricsKitSpec extends WordSpec with Matchers with BeforeAndAfter with BeforeAndAfterAll
-  with MetricsKit {
+    with MetricsKit {
 
   import scala.concurrent.duration._
 

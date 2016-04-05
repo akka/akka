@@ -18,9 +18,10 @@ import akka.stream.Materializer
 private object PoolGateway {
 
   sealed trait State
-  final case class Running(interfaceActorRef: ActorRef,
-                           shutdownStartedPromise: Promise[Done],
-                           shutdownCompletedPromise: Promise[Done]) extends State
+  final case class Running(
+    interfaceActorRef: ActorRef,
+    shutdownStartedPromise: Promise[Done],
+    shutdownCompletedPromise: Promise[Done]) extends State
   final case class IsShutdown(shutdownCompleted: Future[Done]) extends State
   final case class NewIncarnation(gatewayFuture: Future[PoolGateway]) extends State
 }
@@ -38,9 +39,11 @@ private object PoolGateway {
  * Removal of cache entries for terminated pools is also supported, because old gateway references that
  * get reused will automatically forward requests directed at them to the latest pool incarnation from the cache.
  */
-private[http] class PoolGateway(hcps: HostConnectionPoolSetup,
-                                _shutdownStartedPromise: Promise[Done])( // constructor arg only
-                                  implicit system: ActorSystem, fm: Materializer) {
+private[http] class PoolGateway(
+  hcps: HostConnectionPoolSetup,
+    _shutdownStartedPromise: Promise[Done])( // constructor arg only
+    implicit
+    system: ActorSystem, fm: Materializer) {
   import PoolGateway._
   import fm.executionContext
 

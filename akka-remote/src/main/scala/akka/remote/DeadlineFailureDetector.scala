@@ -27,9 +27,10 @@ import akka.util.Helpers.ConfigOps
  *   purposes. It is only used for measuring intervals (duration).
  */
 class DeadlineFailureDetector(
-  val acceptableHeartbeatPause: FiniteDuration,
-  val heartbeatInterval: FiniteDuration)(
-    implicit clock: Clock) extends FailureDetector {
+    val acceptableHeartbeatPause: FiniteDuration,
+    val heartbeatInterval: FiniteDuration)(
+    implicit
+    clock: Clock) extends FailureDetector {
 
   /**
    * Constructor that reads parameters from config.

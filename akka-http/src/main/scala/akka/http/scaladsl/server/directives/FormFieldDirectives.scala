@@ -174,7 +174,7 @@ object FormFieldDirectives extends FormFieldDirectives {
     //////////////////// required formField support ////////////////////
 
     private def requiredFilter[T](fieldName: String, fu: Unmarshaller[Option[StrictForm.Field], T],
-                                  requiredValue: Any)(implicit sfu: SFU): Directive0 =
+      requiredValue: Any)(implicit sfu: SFU): Directive0 =
       extract(fieldOfForm(fieldName, fu)).flatMap {
         onComplete(_).flatMap {
           case Success(value) if value == requiredValue ⇒ pass

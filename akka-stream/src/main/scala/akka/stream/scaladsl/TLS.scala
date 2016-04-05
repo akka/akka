@@ -63,7 +63,7 @@ object TLS {
    * configured using [[SSLParameters.setEndpointIdentificationAlgorithm]].
    */
   def apply(sslContext: SSLContext, firstSession: NegotiateNewSession, role: TLSRole,
-            closing: TLSClosing = IgnoreComplete, hostInfo: Option[(String, Int)] = None): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
+    closing: TLSClosing = IgnoreComplete, hostInfo: Option[(String, Int)] = None): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
     new scaladsl.BidiFlow(TlsModule(Attributes.none, sslContext, firstSession, role, closing, hostInfo))
 
 }

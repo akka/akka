@@ -27,8 +27,8 @@ private[akka] object FileSubscriber {
 
 /** INTERNAL API */
 private[akka] class FileSubscriber(f: File, completionPromise: Promise[IOResult], bufSize: Int, openOptions: Set[StandardOpenOption])
-  extends akka.stream.actor.ActorSubscriber
-  with ActorLogging {
+    extends akka.stream.actor.ActorSubscriber
+    with ActorLogging {
 
   override protected val requestStrategy = WatermarkRequestStrategy(highWatermark = bufSize)
 

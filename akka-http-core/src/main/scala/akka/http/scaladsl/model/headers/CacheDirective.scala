@@ -18,7 +18,7 @@ object CacheDirective {
   sealed trait ResponseDirective extends CacheDirective
 
   final case class CustomCacheDirective(name: String, content: Option[String])
-    extends RequestDirective with ResponseDirective with ValueRenderable {
+      extends RequestDirective with ResponseDirective with ValueRenderable {
     def render[R <: Rendering](r: R): r.type = content match {
       case Some(s) ⇒ r ~~ name ~~ '=' ~~# s
       case None    ⇒ r ~~ name

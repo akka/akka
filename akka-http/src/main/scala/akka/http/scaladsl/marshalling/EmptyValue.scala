@@ -14,7 +14,7 @@ object EmptyValue {
     new EmptyValue[UniversalEntity](HttpEntity.Empty)
 
   implicit val emptyHeadersAndEntity: EmptyValue[(immutable.Seq[HttpHeader], UniversalEntity)] =
-    new EmptyValue[(immutable.Seq[HttpHeader], UniversalEntity)](Nil -> HttpEntity.Empty)
+    new EmptyValue[(immutable.Seq[HttpHeader], UniversalEntity)](Nil → HttpEntity.Empty)
 
   implicit val emptyResponse: EmptyValue[HttpResponse] =
     new EmptyValue[HttpResponse](HttpResponse(entity = emptyEntity.emptyValue))

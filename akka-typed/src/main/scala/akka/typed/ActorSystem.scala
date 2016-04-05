@@ -120,16 +120,16 @@ abstract class ActorSystem[-T](_name: String) extends ActorRef[T] { this: ScalaA
 
 object ActorSystem {
   private class Impl[T](_name: String, _config: Config, _cl: ClassLoader, _ec: Option[ExecutionContext], _p: Props[T])
-    extends ActorSystem[T](_name) with ScalaActorRef[T] {
+      extends ActorSystem[T](_name) with ScalaActorRef[T] {
     override private[akka] val untyped: ExtendedActorSystem = new ActorSystemImpl(_name, _config, _cl, _ec, Some(Props.untyped(_p))).start()
   }
 
   private class Wrapper(val untyped: ExtendedActorSystem) extends ActorSystem[Nothing](untyped.name) with ScalaActorRef[Nothing]
 
   def apply[T](name: String, guardianProps: Props[T],
-               config: Option[Config] = None,
-               classLoader: Option[ClassLoader] = None,
-               executionContext: Option[ExecutionContext] = None): ActorSystem[T] = {
+    config: Option[Config] = None,
+    classLoader: Option[ClassLoader] = None,
+    executionContext: Option[ExecutionContext] = None): ActorSystem[T] = {
     val cl = classLoader.getOrElse(akka.actor.ActorSystem.findClassLoader())
     val appConfig = config.getOrElse(ConfigFactory.load(cl))
     new Impl(name, appConfig, cl, executionContext, guardianProps)

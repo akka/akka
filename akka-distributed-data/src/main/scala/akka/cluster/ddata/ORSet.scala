@@ -150,11 +150,11 @@ object ORSet {
    * @see [[ORSet#merge]]
    */
   private[akka] def mergeDisjointKeys[A](keys: Set[A], elementsMap: Map[A, ORSet.Dot], vvector: VersionVector,
-                                         accumulator: Map[A, ORSet.Dot]): Map[A, ORSet.Dot] =
+    accumulator: Map[A, ORSet.Dot]): Map[A, ORSet.Dot] =
     mergeDisjointKeys(keys.iterator, elementsMap, vvector, accumulator)
 
   private def mergeDisjointKeys[A](keys: Iterator[A], elementsMap: Map[A, ORSet.Dot], vvector: VersionVector,
-                                   accumulator: Map[A, ORSet.Dot]): Map[A, ORSet.Dot] = {
+    accumulator: Map[A, ORSet.Dot]): Map[A, ORSet.Dot] = {
     keys.foldLeft(accumulator) {
       case (acc, k) ⇒
         val dots = elementsMap(k)
@@ -202,7 +202,7 @@ object ORSet {
 final class ORSet[A] private[akka] (
   private[akka] val elementsMap: Map[A, ORSet.Dot],
   private[akka] val vvector: VersionVector)
-  extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning with FastMerge {
+    extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning with FastMerge {
 
   type T = ORSet[A]
 

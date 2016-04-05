@@ -15,10 +15,10 @@ import akka.stream.stage._
  * INTERNAL API
  */
 private[akka] class ActorRefBackpressureSinkStage[In](ref: ActorRef, onInitMessage: Any,
-                                                      ackMessage: Any,
-                                                      onCompleteMessage: Any,
-                                                      onFailureMessage: (Throwable) ⇒ Any)
-  extends GraphStage[SinkShape[In]] {
+  ackMessage: Any,
+  onCompleteMessage: Any,
+  onFailureMessage: (Throwable) ⇒ Any)
+    extends GraphStage[SinkShape[In]] {
   val in: Inlet[In] = Inlet[In]("ActorRefBackpressureSink.in")
   override def initialAttributes = DefaultAttributes.actorRefWithAck
   override val shape: SinkShape[In] = SinkShape(in)

@@ -50,7 +50,7 @@ abstract class RejectionHandler {
    * Signals that the request was rejected because a query parameter could not be interpreted.
    */
   def handleMalformedQueryParamRejection(ctx: RequestContext, parameterName: String, errorMsg: String,
-                                         cause: Throwable): RouteResult = passRejection()
+    cause: Throwable): RouteResult = passRejection()
 
   /**
    * Callback called to handle rejection created by form field filters.
@@ -63,7 +63,7 @@ abstract class RejectionHandler {
    * Signals that the request was rejected because a form field could not be interpreted.
    */
   def handleMalformedFormFieldRejection(ctx: RequestContext, fieldName: String, errorMsg: String,
-                                        cause: Throwable): RouteResult = passRejection()
+    cause: Throwable): RouteResult = passRejection()
 
   /**
    * Callback called to handle rejection created by header directives.
@@ -76,7 +76,7 @@ abstract class RejectionHandler {
    * Signals that the request was rejected because a header value is malformed.
    */
   def handleMalformedHeaderRejection(ctx: RequestContext, headerName: String, errorMsg: String,
-                                     cause: Throwable): RouteResult = passRejection()
+    cause: Throwable): RouteResult = passRejection()
 
   /**
    * Callback called to handle rejection created by unmarshallers.

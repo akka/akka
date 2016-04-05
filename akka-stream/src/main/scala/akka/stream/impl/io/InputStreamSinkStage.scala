@@ -90,10 +90,11 @@ final private[stream] class InputStreamSinkStage(readTimeout: FiniteDuration) ex
  * INTERNAL API
  * InputStreamAdapter that interacts with InputStreamSinkStage
  */
-private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapterMessage],
-                                       sendToStage: (AdapterToStageMessage) ⇒ Unit,
-                                       readTimeout: FiniteDuration)
-  extends InputStream {
+private[akka] class InputStreamAdapter(
+  sharedBuffer: BlockingQueue[StreamToAdapterMessage],
+  sendToStage: (AdapterToStageMessage) ⇒ Unit,
+  readTimeout: FiniteDuration)
+    extends InputStream {
 
   var isInitialized = false
   var isActive = true
@@ -171,7 +172,7 @@ private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapt
 
   @tailrec
   private[this] def getData(arr: Array[Byte], begin: Int, length: Int,
-                            gotBytes: Int): Int = {
+    gotBytes: Int): Int = {
     grabDataChunk() match {
       case Some(data) ⇒
         val size = data.size

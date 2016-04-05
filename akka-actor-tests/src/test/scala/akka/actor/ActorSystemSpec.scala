@@ -319,7 +319,8 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     }
 
     "allow configuration of guardian supervisor strategy" in {
-      implicit val system = ActorSystem("Stop",
+      implicit val system = ActorSystem(
+        "Stop",
         ConfigFactory.parseString("akka.actor.guardian-supervisor-strategy=akka.actor.StoppingSupervisorStrategy")
           .withFallback(AkkaSpec.testConf))
       val a = system.actorOf(Props(new Actor {
@@ -339,7 +340,8 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     }
 
     "shut down when /user escalates" in {
-      implicit val system = ActorSystem("Stop",
+      implicit val system = ActorSystem(
+        "Stop",
         ConfigFactory.parseString("akka.actor.guardian-supervisor-strategy=\"akka.actor.ActorSystemSpec$Strategy\"")
           .withFallback(AkkaSpec.testConf))
       val a = system.actorOf(Props(new Actor {

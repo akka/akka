@@ -10,12 +10,12 @@ import akka.http.impl.model.JavaInitialization
 
 import language.implicitConversions
 import java.io.File
-import java.lang.{ Iterable ⇒ JIterable}
+import java.lang.{ Iterable ⇒ JIterable }
 import scala.util.control.NonFatal
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.collection.immutable
-import akka.util.{Unsafe, ByteString}
+import akka.util.{ Unsafe, ByteString }
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream._
@@ -227,7 +227,7 @@ object HttpEntity {
    * The model for the entity of a "regular" unchunked HTTP message with known, fixed data.
    */
   final case class Strict(contentType: ContentType, data: ByteString)
-    extends jm.HttpEntity.Strict with UniversalEntity {
+      extends jm.HttpEntity.Strict with UniversalEntity {
 
     override def contentLength: Long = data.length
 
@@ -284,10 +284,11 @@ object HttpEntity {
   /**
    * The model for the entity of a "regular" unchunked HTTP message with a known non-zero length.
    */
-  final case class Default(contentType: ContentType,
-                           contentLength: Long,
-                           data: Source[ByteString, Any])
-    extends jm.HttpEntity.Default with UniversalEntity {
+  final case class Default(
+    contentType: ContentType,
+    contentLength: Long,
+    data: Source[ByteString, Any])
+      extends jm.HttpEntity.Default with UniversalEntity {
     require(contentLength > 0, "contentLength must be positive (use `HttpEntity.empty(contentType)` for empty entities)")
     def isKnownEmpty = false
     override def isDefault: Boolean = true
@@ -346,7 +347,7 @@ object HttpEntity {
    * Note that this type of HttpEntity can only be used for HttpResponses.
    */
   final case class CloseDelimited(contentType: ContentType, data: Source[ByteString, Any])
-    extends jm.HttpEntity.CloseDelimited with ResponseEntity with HttpEntity.WithoutKnownLength {
+      extends jm.HttpEntity.CloseDelimited with ResponseEntity with HttpEntity.WithoutKnownLength {
     type Self = HttpEntity.CloseDelimited
 
     override def isCloseDelimited: Boolean = true
@@ -363,7 +364,7 @@ object HttpEntity {
    * Note that this type of HttpEntity can only be used for BodyParts.
    */
   final case class IndefiniteLength(contentType: ContentType, data: Source[ByteString, Any])
-    extends jm.HttpEntity.IndefiniteLength with BodyPartEntity with HttpEntity.WithoutKnownLength {
+      extends jm.HttpEntity.IndefiniteLength with BodyPartEntity with HttpEntity.WithoutKnownLength {
     type Self = HttpEntity.IndefiniteLength
 
     override def isIndefiniteLength: Boolean = true
@@ -379,7 +380,7 @@ object HttpEntity {
    * The model for the entity of a chunked HTTP message (with `Transfer-Encoding: chunked`).
    */
   final case class Chunked(contentType: ContentType, chunks: Source[ChunkStreamPart, Any])
-    extends jm.HttpEntity.Chunked with MessageEntity {
+      extends jm.HttpEntity.Chunked with MessageEntity {
 
     override def isKnownEmpty = chunks eq Source.empty
     override def contentLengthOption: Option[Long] = None
@@ -535,18 +536,18 @@ object HttpEntity {
    */
   private[http] def captureTermination[T <: HttpEntity](entity: T): (T, Future[Unit]) =
     entity match {
-      case x: HttpEntity.Strict ⇒ x.asInstanceOf[T] -> FastFuture.successful(())
+      case x: HttpEntity.Strict ⇒ x.asInstanceOf[T] → FastFuture.successful(())
       case x: HttpEntity.Default ⇒
         val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
-        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
+        x.copy(data = newData).asInstanceOf[T] → whenCompleted
       case x: HttpEntity.Chunked ⇒
         val (newChunks, whenCompleted) = StreamUtils.captureTermination(x.chunks)
-        x.copy(chunks = newChunks).asInstanceOf[T] -> whenCompleted
+        x.copy(chunks = newChunks).asInstanceOf[T] → whenCompleted
       case x: HttpEntity.CloseDelimited ⇒
         val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
-        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
+        x.copy(data = newData).asInstanceOf[T] → whenCompleted
       case x: HttpEntity.IndefiniteLength ⇒
         val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
-        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
+        x.copy(data = newData).asInstanceOf[T] → whenCompleted
     }
 }

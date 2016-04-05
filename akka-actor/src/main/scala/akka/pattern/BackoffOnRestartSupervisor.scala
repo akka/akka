@@ -22,8 +22,8 @@ private class BackoffOnRestartSupervisor(
   val reset: BackoffReset,
   randomFactor: Double,
   strategy: OneForOneStrategy)
-  extends Actor with HandleBackoff
-  with ActorLogging {
+    extends Actor with HandleBackoff
+    with ActorLogging {
 
   import context._
   import BackoffSupervisor._

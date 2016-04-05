@@ -27,7 +27,7 @@ class TransportAdapters(system: ExtendedActorSystem) extends Extension {
   val settings = RARP(system).provider.remoteSettings
 
   private val adaptersTable: Map[String, TransportAdapterProvider] = for ((name, fqn) ← settings.Adapters) yield {
-    name -> system.dynamicAccess.createInstanceFor[TransportAdapterProvider](fqn, immutable.Seq.empty).recover({
+    name → system.dynamicAccess.createInstanceFor[TransportAdapterProvider](fqn, immutable.Seq.empty).recover({
       case e ⇒ throw new IllegalArgumentException(s"Cannot instantiate transport adapter [${fqn}]", e)
     }).get
   }
@@ -64,12 +64,13 @@ trait SchemeAugmenter {
  * An adapter that wraps a transport and provides interception
  */
 abstract class AbstractTransportAdapter(protected val wrappedTransport: Transport)(implicit val ec: ExecutionContext)
-  extends Transport with SchemeAugmenter {
+    extends Transport with SchemeAugmenter {
 
   protected def maximumOverhead: Int
 
-  protected def interceptListen(listenAddress: Address,
-                                listenerFuture: Future[AssociationEventListener]): Future[AssociationEventListener]
+  protected def interceptListen(
+    listenAddress: Address,
+    listenerFuture: Future[AssociationEventListener]): Future[AssociationEventListener]
 
   protected def interceptAssociate(remoteAddress: Address, statusPromise: Promise[AssociationHandle]): Unit
 
@@ -116,14 +117,16 @@ abstract class AbstractTransportAdapter(protected val wrappedTransport: Transpor
 
 }
 
-abstract class AbstractTransportAdapterHandle(val originalLocalAddress: Address,
-                                              val originalRemoteAddress: Address,
-                                              val wrappedHandle: AssociationHandle,
-                                              val addedSchemeIdentifier: String) extends AssociationHandle
-  with SchemeAugmenter {
+abstract class AbstractTransportAdapterHandle(
+  val originalLocalAddress: Address,
+  val originalRemoteAddress: Address,
+  val wrappedHandle: AssociationHandle,
+  val addedSchemeIdentifier: String) extends AssociationHandle
+    with SchemeAugmenter {
 
   def this(wrappedHandle: AssociationHandle, addedSchemeIdentifier: String) =
-    this(wrappedHandle.localAddress,
+    this(
+      wrappedHandle.localAddress,
       wrappedHandle.remoteAddress,
       wrappedHandle,
       addedSchemeIdentifier)
@@ -138,8 +141,9 @@ object ActorTransportAdapter {
 
   final case class ListenerRegistered(listener: AssociationEventListener) extends TransportOperation
   final case class AssociateUnderlying(remoteAddress: Address, statusPromise: Promise[AssociationHandle]) extends TransportOperation
-  final case class ListenUnderlying(listenAddress: Address,
-                                    upstreamListener: Future[AssociationEventListener]) extends TransportOperation
+  final case class ListenUnderlying(
+    listenAddress: Address,
+    upstreamListener: Future[AssociationEventListener]) extends TransportOperation
   final case class DisassociateUnderlying(info: DisassociateInfo = AssociationHandle.Unknown)
     extends TransportOperation with DeadLetterSuppression
 
@@ -147,7 +151,7 @@ object ActorTransportAdapter {
 }
 
 abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorSystem)
-  extends AbstractTransportAdapter(wrappedTransport)(system.dispatcher) {
+    extends AbstractTransportAdapter(wrappedTransport)(system.dispatcher) {
 
   import ActorTransportAdapter._
 
@@ -159,8 +163,9 @@ abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorS
   private def registerManager(): Future[ActorRef] =
     (system.actorSelection("/system/transports") ? RegisterTransportActor(managerProps, managerName)).mapTo[ActorRef]
 
-  override def interceptListen(listenAddress: Address,
-                               listenerPromise: Future[AssociationEventListener]): Future[AssociationEventListener] = {
+  override def interceptListen(
+    listenAddress: Address,
+    listenerPromise: Future[AssociationEventListener]): Future[AssociationEventListener] = {
     registerManager().map { mgr ⇒
       // Side effecting: storing the manager instance in volatile var
       // This is done only once: during the initialization of the protocol stack. The variable manager is not read
@@ -182,7 +187,7 @@ abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorS
 }
 
 abstract class ActorTransportAdapterManager extends Actor
-  with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import ActorTransportAdapter.{ ListenUnderlying, ListenerRegistered }
 
   private var delayedEvents = immutable.Queue.empty[Any]

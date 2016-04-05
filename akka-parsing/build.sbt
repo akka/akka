@@ -1,4 +1,5 @@
 import akka._
+import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 AkkaBuild.defaultSettings
 Formatting.docFormatSettings

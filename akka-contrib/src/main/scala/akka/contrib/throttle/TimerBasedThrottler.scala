@@ -109,9 +109,10 @@ private[throttle] object TimerBasedThrottler {
   final case class Message(message: Any, sender: ActorRef)
 
   // The data of the FSM
-  final case class Data(target: Option[ActorRef],
-                        callsLeftInThisPeriod: Int,
-                        queue: Q[Message])
+  final case class Data(
+    target: Option[ActorRef],
+    callsLeftInThisPeriod: Int,
+    queue: Q[Message])
 }
 
 /**
@@ -277,8 +278,8 @@ class TimerBasedThrottler(var rate: Rate) extends Actor with FSM[State, Data] {
   }
 
   onTransition {
-    case Idle -> Active ⇒ startTimer(rate)
-    case Active -> Idle ⇒ stopTimer()
+    case Idle → Active ⇒ startTimer(rate)
+    case Active → Idle ⇒ stopTimer()
   }
 
   initialize()

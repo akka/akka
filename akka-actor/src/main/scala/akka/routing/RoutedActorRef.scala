@@ -29,7 +29,7 @@ private[akka] class RoutedActorRef(
   _routeeProps: Props,
   _supervisor: InternalActorRef,
   _path: ActorPath)
-  extends RepointableActorRef(_system, _routerProps, _routerDispatcher, _routerMailbox, _supervisor, _path) {
+    extends RepointableActorRef(_system, _routerProps, _routerDispatcher, _routerMailbox, _supervisor, _path) {
 
   // verify that a BalancingDispatcher is not used with a Router
   if (_routerProps.routerConfig != NoRouter && _routerDispatcher.isInstanceOf[BalancingDispatcher]) {

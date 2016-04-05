@@ -41,7 +41,7 @@ abstract class MultiNodeConfig {
    */
   def nodeConfig(roles: RoleName*)(configs: Config*): Unit = {
     val c = configs.reduceLeft(_ withFallback _)
-    _nodeConf ++= roles map { _ -> c }
+    _nodeConf ++= roles map { _ → c }
   }
 
   /**
@@ -78,7 +78,7 @@ abstract class MultiNodeConfig {
   }
 
   def deployOn(role: RoleName, deployment: String): Unit =
-    _deployments += role -> ((_deployments get role getOrElse Vector()) :+ deployment)
+    _deployments += role → ((_deployments get role getOrElse Vector()) :+ deployment)
 
   def deployOnAll(deployment: String): Unit = _allDeploy :+= deployment
 
@@ -195,9 +195,9 @@ object MultiNodeSpec {
   require(selfIndex >= 0 && selfIndex < maxNodes, "multinode.index is out of bounds: " + selfIndex)
 
   private[testkit] val nodeConfig = mapToConfig(Map(
-    "akka.actor.provider" -> "akka.remote.RemoteActorRefProvider",
-    "akka.remote.netty.tcp.hostname" -> selfName,
-    "akka.remote.netty.tcp.port" -> selfPort))
+    "akka.actor.provider" → "akka.remote.RemoteActorRefProvider",
+    "akka.remote.netty.tcp.hostname" → selfName,
+    "akka.remote.netty.tcp.port" → selfPort))
 
   private[testkit] val baseConfig: Config = ConfigFactory.parseString("""
       akka {
@@ -241,7 +241,7 @@ object MultiNodeSpec {
  * val is fine.
  */
 abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles: immutable.Seq[RoleName], deployments: RoleName ⇒ Seq[String])
-  extends TestKit(_system) with MultiNodeSpecCallbacks {
+    extends TestKit(_system) with MultiNodeSpecCallbacks {
 
   import MultiNodeSpec._
 

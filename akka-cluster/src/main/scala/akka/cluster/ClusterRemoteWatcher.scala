@@ -45,11 +45,11 @@ private[cluster] class ClusterRemoteWatcher(
   heartbeatInterval: FiniteDuration,
   unreachableReaperInterval: FiniteDuration,
   heartbeatExpectedResponseAfter: FiniteDuration)
-  extends RemoteWatcher(
-    failureDetector,
-    heartbeatInterval,
-    unreachableReaperInterval,
-    heartbeatExpectedResponseAfter) {
+    extends RemoteWatcher(
+      failureDetector,
+      heartbeatInterval,
+      unreachableReaperInterval,
+      heartbeatExpectedResponseAfter) {
 
   val cluster = Cluster(context.system)
   import cluster.selfAddress

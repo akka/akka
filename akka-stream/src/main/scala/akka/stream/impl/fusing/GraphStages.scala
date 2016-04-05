@@ -25,9 +25,10 @@ import scala.util.Try
 /**
  * INTERNAL API
  */
-private[akka] final case class GraphStageModule(shape: Shape,
-                                                attributes: Attributes,
-                                                stage: GraphStageWithMaterializedValue[Shape, Any]) extends AtomicModule {
+private[akka] final case class GraphStageModule(
+  shape: Shape,
+    attributes: Attributes,
+    stage: GraphStageWithMaterializedValue[Shape, Any]) extends AtomicModule {
   override def carbonCopy: Module = CopiedModule(shape.deepCopy(), Attributes.none, this)
 
   override def replaceShape(s: Shape): Module =
@@ -221,7 +222,7 @@ object GraphStages {
   }
 
   final class TickSource[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T)
-    extends GraphStageWithMaterializedValue[SourceShape[T], Cancellable] {
+      extends GraphStageWithMaterializedValue[SourceShape[T], Cancellable] {
     override val shape = SourceShape(Outlet[T]("TickSource.out"))
     val out = shape.out
     override def initialAttributes: Attributes = DefaultAttributes.tickSource

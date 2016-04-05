@@ -23,28 +23,28 @@ class TestActorRef[T <: Actor](
   _props: Props,
   _supervisor: ActorRef,
   name: String)
-  extends {
-    val props =
-      _props.withDispatcher(
-        if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
-        else _props.dispatcher)
-    val dispatcher = _system.dispatchers.lookup(props.dispatcher)
-    private val disregard = _supervisor match {
-      case l: LocalActorRef ⇒ l.underlying.reserveChild(name)
-      case r: RepointableActorRef ⇒ r.underlying match {
-        case u: UnstartedCell ⇒ throw new IllegalStateException("cannot attach a TestActor to an unstarted top-level actor, ensure that it is started by sending a message and observing the reply")
-        case c: ActorCell     ⇒ c.reserveChild(name)
-        case o                ⇒ _system.log.error("trying to attach child {} to unknown type of supervisor cell {}, this is not going to end well", name, o.getClass)
+    extends {
+      val props =
+        _props.withDispatcher(
+          if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
+          else _props.dispatcher)
+      val dispatcher = _system.dispatchers.lookup(props.dispatcher)
+      private val disregard = _supervisor match {
+        case l: LocalActorRef ⇒ l.underlying.reserveChild(name)
+        case r: RepointableActorRef ⇒ r.underlying match {
+          case u: UnstartedCell ⇒ throw new IllegalStateException("cannot attach a TestActor to an unstarted top-level actor, ensure that it is started by sending a message and observing the reply")
+          case c: ActorCell     ⇒ c.reserveChild(name)
+          case o                ⇒ _system.log.error("trying to attach child {} to unknown type of supervisor cell {}, this is not going to end well", name, o.getClass)
+        }
+        case s ⇒ _system.log.error("trying to attach child {} to unknown type of supervisor {}, this is not going to end well", name, s.getClass)
       }
-      case s ⇒ _system.log.error("trying to attach child {} to unknown type of supervisor {}, this is not going to end well", name, s.getClass)
-    }
-  } with LocalActorRef(
-    _system.asInstanceOf[ActorSystemImpl],
-    props,
-    dispatcher,
-    _system.mailboxes.getMailboxType(props, dispatcher.configurator.config),
-    _supervisor.asInstanceOf[InternalActorRef],
-    _supervisor.path / name) {
+    } with LocalActorRef(
+      _system.asInstanceOf[ActorSystemImpl],
+      props,
+      dispatcher,
+      _system.mailboxes.getMailboxType(props, dispatcher.configurator.config),
+      _supervisor.asInstanceOf[InternalActorRef],
+      _supervisor.path / name) {
 
   // we need to start ourselves since the creation of an actor has been split into initialization and starting
   underlying.start()
@@ -52,7 +52,7 @@ class TestActorRef[T <: Actor](
   import TestActorRef.InternalGetActor
 
   protected override def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props,
-                                      dispatcher: MessageDispatcher, supervisor: InternalActorRef): ActorCell =
+    dispatcher: MessageDispatcher, supervisor: InternalActorRef): ActorCell =
     new ActorCell(system, ref, props, dispatcher, supervisor) {
       override def autoReceiveMessage(msg: Envelope) {
         msg.message match {
@@ -149,7 +149,8 @@ object TestActorRef {
   def apply[T <: Actor](implicit t: ClassTag[T], system: ActorSystem): TestActorRef[T] = apply[T](randomName)
 
   private def dynamicCreateRecover[U]: PartialFunction[Throwable, U] = {
-    case exception ⇒ throw ActorInitializationException(null,
+    case exception ⇒ throw ActorInitializationException(
+      null,
       "Could not instantiate Actor" +
         "\nMake sure Actor is NOT defined inside a class/trait," +
         "\nif so put it outside the class/trait, f.e. in a companion object," +

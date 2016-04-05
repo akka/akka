@@ -146,7 +146,8 @@ abstract class TestResponse(_response: HttpResponse, awaitAtMost: FiniteDuration
     val lowercased = name.toRootLowerCase
     val headers = response.headers.filter(_.is(lowercased))
     if (headers.isEmpty) fail(s"Expected `$name` header was missing.")
-    else assertTrue(headers.exists(_.value == value),
+    else assertTrue(
+      headers.exists(_.value == value),
       s"`$name` header was found but had the wrong value. Found headers: ${headers.mkString(", ")}")
 
     this
