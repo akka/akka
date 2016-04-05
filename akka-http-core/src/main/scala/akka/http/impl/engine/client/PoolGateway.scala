@@ -19,7 +19,7 @@ private object PoolGateway {
 
   sealed trait State
   final case class Running(interfaceActorRef: ActorRef,
-                           shutdownStartedPromise: Promise[Done],
+                           _onShutdownStarted: () => Unit,
                            shutdownCompletedPromise: Promise[Done]) extends State
   final case class IsShutdown(shutdownCompleted: Future[Done]) extends State
   final case class NewIncarnation(gatewayFuture: Future[PoolGateway]) extends State
@@ -39,8 +39,8 @@ private object PoolGateway {
  * get reused will automatically forward requests directed at them to the latest pool incarnation from the cache.
  */
 private[http] class PoolGateway(hcps: HostConnectionPoolSetup,
-                                _shutdownStartedPromise: Promise[Done])( // constructor arg only
-                                  implicit system: ActorSystem, fm: Materializer) {
+                                _onShutdownStarted: () => Unit)(// constructor arg only
+                                                                implicit system: ActorSystem, fm: Materializer) {
   import PoolGateway._
   import fm.executionContext
 
@@ -48,7 +48,7 @@ private[http] class PoolGateway(hcps: HostConnectionPoolSetup,
     val shutdownCompletedPromise = Promise[Done]()
     val props = Props(new PoolInterfaceActor(hcps, shutdownCompletedPromise, this)).withDeploy(Deploy.local)
     val ref = system.actorOf(props, PoolInterfaceActor.name.next())
-    new AtomicReference[State](Running(ref, _shutdownStartedPromise, shutdownCompletedPromise))
+    new AtomicReference[State](Running(ref, _onShutdownStarted, shutdownCompletedPromise))
   }
 
   def currentState: Any = state.get() // enables test access
@@ -78,9 +78,9 @@ private[http] class PoolGateway(hcps: HostConnectionPoolSetup,
   // triggers a shutdown of the current pool, even if it is already a later incarnation
   @tailrec final def shutdown(): Future[Done] =
     state.get match {
-      case x @ Running(ref, shutdownStartedPromise, shutdownCompletedPromise) ⇒
+      case x @ Running(ref, onShutdownStarted, shutdownCompletedPromise) ⇒
         if (state.compareAndSet(x, IsShutdown(shutdownCompletedPromise.future))) {
-          shutdownStartedPromise.success(Done) // trigger cache removal
+          onShutdownStarted() // trigger cache removal
           ref ! PoolInterfaceActor.Shutdown
           shutdownCompletedPromise.future
         } else shutdown() // CAS loop (not a spinlock)
