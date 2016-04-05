@@ -114,7 +114,7 @@ class IncludeCode(Directive):
                 "Snippet ({}#{}) not found!".format(filename, section),
                 line=self.lineno
             )]
-        tabcounts = map(lambda l: countwhile(lambda c: c == ' ', l), nonempty)
+        tabcounts = list(map(lambda l: countwhile(lambda c: c == ' ', l), nonempty))
         tabshift = min(tabcounts) if tabcounts else 0
 
         if tabshift > 0:
