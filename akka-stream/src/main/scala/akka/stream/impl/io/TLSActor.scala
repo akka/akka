@@ -165,6 +165,22 @@ private[akka] class TLSActor(settings: ActorMaterializerSettings,
     params.setServerNames(Collections.singletonList(serverName))
   }
 
+  private def cloneSSLParameters(parameters: SSLParameters): SSLParameters = {
+    val clone = new SSLParameters()
+
+    clone.setCipherSuites(parameters.getCipherSuites)
+    clone.setProtocols(parameters.getProtocols)
+    clone.setWantClientAuth(parameters.getWantClientAuth)
+    clone.setNeedClientAuth(parameters.getNeedClientAuth)
+    clone.setEndpointIdentificationAlgorithm(parameters.getEndpointIdentificationAlgorithm)
+    clone.setAlgorithmConstraints(parameters.getAlgorithmConstraints)
+    clone.setServerNames(parameters.getServerNames)
+    clone.setSNIMatchers(parameters.getSNIMatchers)
+    clone.setUseCipherSuitesOrder(parameters.getUseCipherSuitesOrder)
+
+    clone
+  }
+
   var currentSession = engine.getSession
   applySessionParameters(firstSession)
 
@@ -178,8 +194,10 @@ private[akka] class TLSActor(settings: ActorMaterializerSettings,
       case _                        ⇒ // do nothing
     }
     params.sslParameters foreach { p ⇒
-      hostInfo foreach { case (host, _) ⇒ applySNI(host, p) }
-      engine.setSSLParameters(p)
+      //first copy the mutable SLLParameters before modifying to prevent race condition
+      val parameters = cloneSSLParameters(p)
+      hostInfo foreach { case (host, _) ⇒ applySNI(host, parameters) }
+      engine.setSSLParameters(parameters)
     }
 
     engine.beginHandshake()
