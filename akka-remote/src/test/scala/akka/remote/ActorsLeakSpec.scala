@@ -27,7 +27,7 @@ object ActorsLeakSpec {
       | akka.remote.transport-failure-detector.heartbeat-interval = 1 s
       | akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
       | akka.remote.quarantine-after-silence = 3 s
-      | akka.test.filter-leeway = 10 s
+      | akka.test.filter-leeway = 12 s
       |
       |""".stripMargin)
 
