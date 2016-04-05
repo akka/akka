@@ -315,6 +315,10 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
   val Event: FSM.Event.type = FSM.Event
   val StopEvent: FSM.StopEvent.type = FSM.StopEvent
 
+  object → {
+    def unapply[Z](in: (Z, Z)) = Some(in)
+  }
+
   /**
    * This extractor is just convenience for matching a (S, S) pair, including a
    * reminder what the new state is.
