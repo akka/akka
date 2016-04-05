@@ -6,7 +6,6 @@ package akka.http.impl.util
 
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 import akka.NotUsed
-import akka.http.scaladsl.model.RequestEntity
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ PublisherSink, SinkModule, SourceModule }
@@ -49,20 +48,6 @@ private[http] object StreamUtils {
 
   def failedPublisher[T](ex: Throwable): Publisher[T] =
     impl.ErrorPublisher(ex, "failed").asInstanceOf[Publisher[T]]
-
-  def mapErrorTransformer(f: Throwable ⇒ Throwable): Flow[ByteString, ByteString, NotUsed] = {
-    val transformer = new SimpleLinearGraphStage[ByteString] {
-      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
-        override def onPush(): Unit = push(out, grab(in))
-        override def onUpstreamFailure(ex: Throwable): Unit = failStage(f(ex))
-        override def onPull(): Unit = pull(in)
-
-        setHandlers(in, out, this)
-      }
-    }
-
-    Flow[ByteString].via(transformer).named("transformError")
-  }
 
   def captureTermination[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit]) = {
     val promise = Promise[Unit]()
@@ -159,9 +144,6 @@ private[http] object StreamUtils {
         override def toString = "limitByteChunksStage"
       }
     }
-
-  def mapEntityError(f: Throwable ⇒ Throwable): RequestEntity ⇒ RequestEntity =
-    _.transformDataBytes(mapErrorTransformer(f))
 
   /**
    * Returns a source that can only be used once for testing purposes.
