@@ -8,7 +8,6 @@ import scala.concurrent.Await
 import akka.actor.{ Props, Actor }
 import akka.testkit.{ TestLatch, ImplicitSender, DefaultTimeout, AkkaSpec }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SmallestMailboxSpec extends AkkaSpec("akka.actor.serialize-messages = off")
   with DefaultTimeout with ImplicitSender {
 

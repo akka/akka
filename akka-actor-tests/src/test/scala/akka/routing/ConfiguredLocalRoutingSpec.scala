@@ -99,7 +99,6 @@ object ConfiguredLocalRoutingSpec {
 
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.config) with DefaultTimeout with ImplicitSender {
   import ConfiguredLocalRoutingSpec._
 

@@ -22,7 +22,6 @@ object LogSourceSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class LogSourceSpec extends AkkaSpec(
   """
     akka.loglevel = INFO

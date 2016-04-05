@@ -12,7 +12,6 @@ import akka.remote.PhiAccrualFailureDetector
 import akka.util.Helpers.ConfigOps
 import akka.actor.Address
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterConfigSpec extends AkkaSpec {
 
   "Clustering" must {

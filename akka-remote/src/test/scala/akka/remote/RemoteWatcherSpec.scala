@@ -61,7 +61,6 @@ object RemoteWatcherSpec {
 
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RemoteWatcherSpec extends AkkaSpec(
   """akka {
        loglevel = INFO

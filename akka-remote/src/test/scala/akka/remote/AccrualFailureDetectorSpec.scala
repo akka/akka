@@ -9,7 +9,6 @@ import scala.collection.immutable.TreeMap
 import scala.concurrent.duration._
 import akka.remote.FailureDetector.Clock
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
 
   "An AccrualFailureDetector" must {

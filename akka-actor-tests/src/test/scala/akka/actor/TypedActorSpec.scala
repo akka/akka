@@ -202,7 +202,6 @@ object TypedActorSpec {
   class FI extends F { def f(pow: Boolean): Int = if (pow) throw new IllegalStateException("expected") else 1 }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
   with BeforeAndAfterEach with BeforeAndAfterAll with DefaultTimeout {
 
@@ -513,7 +512,6 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TypedActorRouterSpec extends AkkaSpec(TypedActorSpec.config)
   with BeforeAndAfterEach with BeforeAndAfterAll with DefaultTimeout {
 

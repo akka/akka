@@ -69,7 +69,6 @@ object DeployerSpec {
 
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
   "A Deployer" must {
 

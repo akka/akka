@@ -11,7 +11,6 @@ import akka.testkit._
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class LocalDeathWatchSpec extends AkkaSpec with ImplicitSender with DefaultTimeout with DeathWatchSpec
 
 object DeathWatchSpec {

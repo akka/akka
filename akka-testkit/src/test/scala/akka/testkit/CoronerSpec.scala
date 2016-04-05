@@ -12,7 +12,6 @@ import org.scalatest.Matchers
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class CoronerSpec extends WordSpec with Matchers {
 
   private def captureOutput[A](f: PrintStream ⇒ A): (A, String) = {

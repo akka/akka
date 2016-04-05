@@ -14,7 +14,6 @@ import akka.cluster.Metric
 import akka.cluster.NodeMetrics
 import akka.cluster.StandardMetrics._
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MetricsSelectorSpec extends WordSpec with Matchers {
 
   val abstractSelector = new CapacityMetricsSelector {

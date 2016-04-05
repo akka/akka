@@ -26,7 +26,6 @@ object JavaLoggerSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class JavaLoggerSpec extends AkkaSpec(JavaLoggerSpec.config) {
 
   val logger = logging.Logger.getLogger("akka://JavaLoggerSpec/user/log")

@@ -11,7 +11,6 @@ import org.scalatest.Matchers
 import akka.cluster.StandardMetrics._
 import scala.util.Failure
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MetricNumericConverterSpec extends WordSpec with Matchers with MetricNumericConverter {
 
   "MetricNumericConverter" must {

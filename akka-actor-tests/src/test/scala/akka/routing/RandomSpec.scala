@@ -11,7 +11,6 @@ import akka.actor.{ Props, Actor }
 import akka.testkit.{ TestLatch, ImplicitSender, DefaultTimeout, AkkaSpec }
 import akka.pattern.ask
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RandomSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
   "random pool" must {

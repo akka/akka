@@ -13,7 +13,6 @@ import akka.testkit.{ EventFilter, AkkaSpec }
 import scala.concurrent.{ Future, Await, ExecutionContext }
 import scala.concurrent.duration._
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
   def name: String
 
@@ -231,7 +230,6 @@ object CustomMailboxSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class CustomMailboxSpec extends AkkaSpec(CustomMailboxSpec.config) {
   "Dispatcher configuration" must {
     "support custom mailboxType" in {

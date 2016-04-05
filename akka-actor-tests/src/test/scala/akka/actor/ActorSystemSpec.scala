@@ -147,7 +147,6 @@ object ActorSystemSpec {
 
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSender {
 
   import ActorSystemSpec.FastActor

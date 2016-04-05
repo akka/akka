@@ -22,7 +22,6 @@ object EventBusSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class EventBusSpec(busName: String, conf: Config = ConfigFactory.empty()) extends AkkaSpec(conf) with BeforeAndAfterEach {
   type BusType <: EventBus
 

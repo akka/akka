@@ -10,7 +10,6 @@ import akka.cluster.pubsub.DistributedPubSubMediator.Internal._
 import akka.actor.Props
 import scala.collection.immutable.TreeMap
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DistributedPubSubMessageSerializerSpec extends AkkaSpec {
 
   val serializer = new DistributedPubSubMessageSerializer(system.asInstanceOf[ExtendedActorSystem])

@@ -101,7 +101,6 @@ object ActorWithStashSpec {
 
 class JavaActorWithStashSpec extends StashJavaAPI with JUnitSuiteLike
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with DefaultTimeout with BeforeAndAfterEach {
   import ActorWithStashSpec._
 

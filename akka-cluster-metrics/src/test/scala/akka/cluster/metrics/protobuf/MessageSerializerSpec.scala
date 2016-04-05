@@ -14,7 +14,6 @@ import akka.cluster.metrics.EWMA
 import akka.cluster.TestMember
 import akka.cluster.metrics.MetricsGossipEnvelope
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MessageSerializerSpec extends AkkaSpec(
   "akka.actor.provider = akka.cluster.ClusterActorRefProvider") {
 

@@ -11,7 +11,6 @@ import akka.actor.Address
 
 import java.lang.System.{ currentTimeMillis ⇒ newTimestamp }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with ImplicitSender with MetricsCollectorFactory {
 
   val collector = createMetricsCollector

@@ -21,7 +21,6 @@ object PatternSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class PatternSpec extends AkkaSpec("akka.actor.serialize-messages = off") {
   implicit val ec = system.dispatcher
   import PatternSpec._

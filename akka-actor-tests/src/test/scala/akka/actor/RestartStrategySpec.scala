@@ -16,7 +16,6 @@ import akka.testkit.TestLatch
 import scala.concurrent.duration._
 import akka.pattern.ask
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off") with DefaultTimeout {
 
   override def atStartup {

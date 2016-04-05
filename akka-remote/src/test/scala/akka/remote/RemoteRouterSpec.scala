@@ -20,7 +20,6 @@ object RemoteRouterSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RemoteRouterSpec extends AkkaSpec("""
     akka.actor.provider = "akka.remote.RemoteActorRefProvider"
     akka.remote.netty.tcp {

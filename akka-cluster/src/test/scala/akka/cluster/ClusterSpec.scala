@@ -34,7 +34,6 @@ object ClusterSpec {
   final case class GossipTo(address: Address)
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
 
   val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress

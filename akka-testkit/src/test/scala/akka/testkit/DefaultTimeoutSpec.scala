@@ -7,7 +7,6 @@ import org.scalatest.{ WordSpec, BeforeAndAfterAll }
 import org.scalatest.Matchers
 import akka.actor.ActorSystem
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DefaultTimeoutSpec
   extends WordSpec with Matchers with BeforeAndAfterAll with TestKitBase with DefaultTimeout {
 

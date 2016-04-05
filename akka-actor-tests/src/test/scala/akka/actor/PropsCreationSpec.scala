@@ -25,7 +25,6 @@ object PropsCreationSpec {
 
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class PropsCreationSpec extends AkkaSpec("akka.actor.serialize-creators = on") {
 
   import akka.actor.PropsCreationSpec._

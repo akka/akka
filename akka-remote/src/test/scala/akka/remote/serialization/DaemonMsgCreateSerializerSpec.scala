@@ -24,7 +24,6 @@ object DaemonMsgCreateSerializerSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DaemonMsgCreateSerializerSpec extends AkkaSpec {
 
   import DaemonMsgCreateSerializerSpec._
