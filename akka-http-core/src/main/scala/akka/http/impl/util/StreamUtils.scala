@@ -88,37 +88,32 @@ private[http] object StreamUtils {
   }
 
   def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString, NotUsed] = {
-    val transformer = new StatefulStage[ByteString, ByteString] {
+    val transformer = new SimpleLinearGraphStage[ByteString] {
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+        override def onPull() = pull(in)
 
-      def skipping = new State {
         var toSkip = start
+        var remaining = length
 
-        override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective =
-          if (element.length < toSkip) {
+        override def onPush(): Unit = {
+          val element = grab(in)
+          if (toSkip > 0 && element.length < toSkip) {
             // keep skipping
             toSkip -= element.length
-            ctx.pull()
+            pull(in)
           } else {
-            become(taking(length))
             // toSkip <= element.length <= Int.MaxValue
-            current.onPush(element.drop(toSkip.toInt), ctx)
+            val data = element.drop(toSkip.toInt).take(math.min(remaining, Int.MaxValue).toInt)
+            remaining -= data.size
+            push(out, data)
+            if (remaining <= 0) completeStage()
           }
-      }
-
-      def taking(initiallyRemaining: Long) = new State {
-        var remaining: Long = initiallyRemaining
-
-        override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective = {
-          val data = element.take(math.min(remaining, Int.MaxValue).toInt)
-          remaining -= data.size
-          if (remaining <= 0) ctx.pushAndFinish(data)
-          else ctx.push(data)
         }
-      }
 
-      override def initial: State = if (start > 0) skipping else taking(length)
+        setHandlers(in, out, this)
+      }
     }
-    Flow[ByteString].transform(() ⇒ transformer).named("sliceBytes")
+    Flow[ByteString].via(transformer).named("sliceBytes")
   }
 
   def limitByteChunksStage(maxBytesPerChunk: Int): GraphStage[FlowShape[ByteString, ByteString]] =
