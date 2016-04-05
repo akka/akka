@@ -7,7 +7,8 @@ package akka.http.scaladsl.coding
 import akka.NotUsed
 import akka.http.scaladsl.model._
 import akka.http.impl.util.StreamUtils
-import akka.stream.stage.Stage
+import akka.stream.FlowShape
+import akka.stream.stage.GraphStage
 import akka.util.ByteString
 import headers._
 import akka.stream.scaladsl.Flow
@@ -23,15 +24,15 @@ trait Encoder {
     else message.self
 
   def encodeData[T](t: T)(implicit mapper: DataMapper[T]): T =
-    mapper.transformDataBytes(t, Flow[ByteString].transform(newEncodeTransformer))
+    mapper.transformDataBytes(t, Flow[ByteString].via(newEncodeTransformer))
 
   def encode(input: ByteString): ByteString = newCompressor.compressAndFinish(input)
 
-  def encoderFlow: Flow[ByteString, ByteString, NotUsed] = Flow[ByteString].transform(newEncodeTransformer)
+  def encoderFlow: Flow[ByteString, ByteString, NotUsed] = Flow[ByteString].via(newEncodeTransformer)
 
   def newCompressor: Compressor
 
-  def newEncodeTransformer(): Stage[ByteString, ByteString] = {
+  def newEncodeTransformer(): GraphStage[FlowShape[ByteString, ByteString]] = {
     val compressor = newCompressor
 
     def encodeChunk(bytes: ByteString): ByteString = compressor.compressAndFlush(bytes)

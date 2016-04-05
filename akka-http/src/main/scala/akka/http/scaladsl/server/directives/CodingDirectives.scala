@@ -7,10 +7,13 @@ package directives
 
 import scala.collection.immutable
 import scala.util.control.NonFatal
-import akka.http.scaladsl.model.headers.{ HttpEncodings, HttpEncoding }
+import akka.http.scaladsl.model.headers.{ HttpEncoding, HttpEncodings }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.coding._
 import akka.http.impl.util._
+import akka.stream.impl.fusing.GraphStages
+import akka.stream.scaladsl.Flow
+import akka.util.ByteString
 
 /**
  * @groupname coding Coding directives
@@ -80,12 +83,14 @@ trait CodingDirectives {
         extractSettings flatMap { settings ⇒
           val effectiveDecoder = decoder.withMaxBytesPerChunk(settings.decodeMaxBytesPerChunk)
           mapRequest { request ⇒
-            effectiveDecoder.decode(request).mapEntity(StreamUtils.mapEntityError {
-              case NonFatal(e) ⇒
-                IllegalRequestException(
-                  StatusCodes.BadRequest,
-                  ErrorInfo("The request's encoding is corrupt", e.getMessage))
-            })
+            effectiveDecoder.decode(request).mapEntity { entity ⇒
+              entity.transformDataBytes(Flow[ByteString].recover {
+                case NonFatal(e) ⇒
+                  throw IllegalRequestException(
+                    StatusCodes.BadRequest,
+                    ErrorInfo("The request's encoding is corrupt", e.getMessage))
+              })
+            }
           }
         }
 
