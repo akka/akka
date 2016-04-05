@@ -105,12 +105,12 @@ class FlowThrottleSpec extends AkkaSpec {
     }
 
     "send elements downstream as soon as time comes" in Utils.assertAllStagesStopped {
-      val probe = Source(1 to 10).throttle(2, 500.millis, 0, Shaping).runWith(TestSink.probe[Int])
+      val probe = Source(1 to 10).throttle(2, 750.millis, 0, Shaping).runWith(TestSink.probe[Int])
         .request(5)
-      probe.receiveWithin(600.millis) should be(Seq(1, 2))
-      probe.expectNoMsg(100.millis)
+      probe.receiveWithin(900.millis) should be(Seq(1, 2))
+      probe.expectNoMsg(150.millis)
         .expectNext(3)
-        .expectNoMsg(100.millis)
+        .expectNoMsg(150.millis)
         .expectNext(4)
         .cancel()
     }
