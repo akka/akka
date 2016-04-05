@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.server
 
+import akka.http.scaladsl.server.Directives.reject
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 
@@ -18,6 +19,17 @@ trait RouteConcatenation {
    */
   implicit def enhanceRouteWithConcatenation(route: Route): RouteConcatenation.RouteWithConcatenation =
     new RouteConcatenation.RouteWithConcatenation(route: Route)
+
+  /**
+   * Tries the supplied routes in sequence, returning the result of the first route that doesn't reject the request.
+   * This is an alternative to direct usage of the infix ~ operator. The ~ can be prone to programmer error, because if
+   * it is omitted, the program will still be syntactically correct, but will not actually attempt to match multiple
+   * routes, as intended.
+   *
+   * @param routes subroutes to concatenate
+   * @return the concatenated route
+   */
+  def concat(routes: Route*): Route = routes.foldLeft[Route](reject)(_ ~ _)
 }
 
 object RouteConcatenation extends RouteConcatenation {
