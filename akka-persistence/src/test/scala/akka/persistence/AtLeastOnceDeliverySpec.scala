@@ -409,5 +409,4 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends PersistenceSpec(c
 class LeveldbAtLeastOnceDeliverySpec extends AtLeastOnceDeliverySpec(
   PersistenceSpec.config("leveldb", "AtLeastOnceDeliverySpec"))
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class InmemAtLeastOnceDeliverySpec extends AtLeastOnceDeliverySpec(PersistenceSpec.config("inmem", "AtLeastOnceDeliverySpec"))

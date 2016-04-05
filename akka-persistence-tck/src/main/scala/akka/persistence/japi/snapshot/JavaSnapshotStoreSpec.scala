@@ -5,8 +5,6 @@ package akka.persistence.japi.snapshot
 
 import akka.persistence.snapshot.{ SnapshotStoreSpec }
 import com.typesafe.config.Config
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 
 /**
  * JAVA API
@@ -19,5 +17,4 @@ import org.scalatest.junit.JUnitRunner
  *
  * @see [[akka.persistence.snapshot.SnapshotStoreSpec]]
  */
-@RunWith(classOf[JUnitRunner])
 class JavaSnapshotStoreSpec(config: Config) extends SnapshotStoreSpec(config)

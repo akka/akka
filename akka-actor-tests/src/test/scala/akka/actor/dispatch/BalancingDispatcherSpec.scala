@@ -15,7 +15,6 @@ object BalancingDispatcherSpec {
     """
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class BalancingDispatcherSpec extends AkkaSpec(BalancingDispatcherSpec.config) {
 
   val delayableActorDispatcher = "pooled-dispatcher"

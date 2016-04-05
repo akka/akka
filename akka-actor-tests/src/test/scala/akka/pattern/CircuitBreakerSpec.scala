@@ -42,7 +42,6 @@ object CircuitBreakerSpec {
     new Breaker(new CircuitBreaker(system.scheduler, 5, 200.millis.dilated, 500.millis.dilated))
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
   import CircuitBreakerSpec.TestException
   implicit def ec = system.dispatcher

@@ -42,7 +42,6 @@ object ClusterDeployerSpec {
 
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
 
   "A RemoteDeployer" must {

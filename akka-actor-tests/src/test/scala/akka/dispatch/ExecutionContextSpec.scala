@@ -12,7 +12,6 @@ import akka.actor.Actor
 import akka.testkit.TestProbe
 import akka.testkit.CallingThreadDispatcher
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
 
   "An ExecutionContext" must {

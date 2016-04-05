@@ -35,7 +35,6 @@ object FunctionRefSpec {
 
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FunctionRefSpec extends AkkaSpec with ImplicitSender {
   import FunctionRefSpec._
 

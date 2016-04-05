@@ -14,7 +14,6 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import akka.event.DefaultLoggingFilter
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.findClassLoader())) {
 
   "The default configuration file (i.e. reference.conf)" must {

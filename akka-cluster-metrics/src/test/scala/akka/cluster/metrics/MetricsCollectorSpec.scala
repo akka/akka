@@ -12,7 +12,6 @@ import scala.util.{ Try }
 import akka.testkit._
 import akka.cluster.metrics.StandardMetrics._
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MetricsCollectorSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with ImplicitSender with MetricsCollectorFactory {
 
   val collector = createMetricsCollector

@@ -41,7 +41,6 @@ object CallingThreadDispatcherModelSpec {
 
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class CallingThreadDispatcherModelSpec extends ActorModelSpec(CallingThreadDispatcherModelSpec.config) {
   import ActorModelSpec._
 

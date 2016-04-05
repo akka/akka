@@ -718,7 +718,6 @@ object SupervisorHierarchySpec {
 
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) with DefaultTimeout with ImplicitSender {
   import SupervisorHierarchySpec._
 

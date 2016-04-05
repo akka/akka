@@ -37,7 +37,6 @@ object ClusterHeartbeatSenderStateSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterHeartbeatSenderStateSpec extends WordSpec with Matchers {
   import ClusterHeartbeatSenderStateSpec._
 

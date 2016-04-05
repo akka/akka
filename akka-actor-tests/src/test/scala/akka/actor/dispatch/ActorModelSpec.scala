@@ -540,7 +540,6 @@ object DispatcherModelSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DispatcherModelSpec extends ActorModelSpec(DispatcherModelSpec.config) {
   import ActorModelSpec._
 
@@ -614,7 +613,6 @@ object BalancingDispatcherModelSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class BalancingDispatcherModelSpec extends ActorModelSpec(BalancingDispatcherModelSpec.config) {
   import ActorModelSpec._
 

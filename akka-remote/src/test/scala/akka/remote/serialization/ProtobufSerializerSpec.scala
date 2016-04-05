@@ -11,7 +11,6 @@ import akka.remote.ProtobufProtocol.MyMessage
 import akka.remote.MessageSerializer
 import akka.actor.ExtendedActorSystem
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ProtobufSerializerSpec extends AkkaSpec {
 
   val ser = SerializationExtension(system)

@@ -10,7 +10,6 @@ import akka.dispatch.Dispatchers
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterMetricsSettingsSpec extends AkkaSpec {
 
   "ClusterMetricsSettings" must {

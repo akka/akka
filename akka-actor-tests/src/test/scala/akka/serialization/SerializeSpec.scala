@@ -128,7 +128,6 @@ object SerializationTests {
     NoMessage.getClass)
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
   import SerializationTests._
 
@@ -253,7 +252,6 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerializabilityConf) {
   import SerializationTests._
   implicit val timeout = Timeout(5 seconds)
@@ -287,7 +285,6 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ReferenceSerializationSpec extends AkkaSpec(SerializationTests.mostlyReferenceSystem) {
   import SerializationTests._
 
@@ -316,7 +313,6 @@ class ReferenceSerializationSpec extends AkkaSpec(SerializationTests.mostlyRefer
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyReferenceSystem) {
 
   val ser = SerializationExtension(system)
@@ -396,7 +392,6 @@ class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyR
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class OverriddenSystemMessageSerializationSpec extends AkkaSpec(SerializationTests.systemMessageMultiSerializerConf) {
   import SerializationTests._
 
@@ -415,7 +410,6 @@ class OverriddenSystemMessageSerializationSpec extends AkkaSpec(SerializationTes
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DefaultSerializationWarningSpec extends AkkaSpec(
   ConfigFactory.parseString("akka.actor.warn-about-java-serializer-usage = on")) {
 

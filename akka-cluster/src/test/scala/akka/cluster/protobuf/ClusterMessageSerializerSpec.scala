@@ -10,7 +10,6 @@ import akka.actor.{ ExtendedActorSystem, Address }
 import collection.immutable.SortedSet
 import akka.testkit.AkkaSpec
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterMessageSerializerSpec extends AkkaSpec(
   "akka.actor.provider = akka.cluster.ClusterActorRefProvider") {
 

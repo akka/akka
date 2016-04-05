@@ -39,7 +39,6 @@ object ScatterGatherFirstCompletedSpec {
     }), "Actor:" + id)
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ScatterGatherFirstCompletedSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
   import ScatterGatherFirstCompletedSpec._
 

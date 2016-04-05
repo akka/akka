@@ -24,7 +24,6 @@ object AddressTerminatedTopicBenchSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class AddressTerminatedTopicBenchSpec extends AkkaSpec("akka.loglevel=INFO") {
   import AddressTerminatedTopicBenchSpec._
 

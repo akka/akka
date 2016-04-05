@@ -66,7 +66,6 @@ object EventStreamSpec {
   class CCATBT extends CC with ATT with BTT
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
 
   import EventStreamSpec._
