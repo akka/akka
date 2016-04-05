@@ -30,7 +30,6 @@ object LocalActorRefProviderSpec {
   """
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.config) {
   "An LocalActorRefProvider" must {
 

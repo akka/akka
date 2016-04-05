@@ -35,7 +35,6 @@ object StablePriorityDispatcherSpec {
 
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class StablePriorityDispatcherSpec extends AkkaSpec(StablePriorityDispatcherSpec.config) with DefaultTimeout {
 
   "A StablePriorityDispatcher" must {

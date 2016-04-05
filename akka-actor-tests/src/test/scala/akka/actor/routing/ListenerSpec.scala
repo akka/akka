@@ -6,7 +6,6 @@ import akka.routing._
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Await
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ListenerSpec extends AkkaSpec {
 
   "Listener" must {

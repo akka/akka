@@ -11,7 +11,6 @@ import akka.actor.SelectChildName
 import akka.actor.SelectParent
 import akka.actor.SelectChildPattern
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MessageContainerSerializerSpec extends AkkaSpec {
 
   val ser = SerializationExtension(system)

@@ -11,7 +11,6 @@ import scala.concurrent.duration._
 import akka.actor.Identify
 import akka.actor.ActorIdentity
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RouteeCreationSpec extends AkkaSpec {
 
   "Creating Routees" must {

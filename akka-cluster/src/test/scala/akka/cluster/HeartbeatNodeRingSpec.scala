@@ -8,7 +8,6 @@ import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import akka.actor.Address
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class HeartbeatNodeRingSpec extends WordSpec with Matchers {
 
   val aa = UniqueAddress(Address("akka.tcp", "sys", "aa", 2552), 1)

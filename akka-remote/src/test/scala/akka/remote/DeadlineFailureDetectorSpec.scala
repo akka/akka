@@ -8,7 +8,6 @@ import akka.testkit.AkkaSpec
 import scala.concurrent.duration._
 import akka.remote.FailureDetector.Clock
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DeadlineFailureDetectorSpec extends AkkaSpec {
 
   "A DeadlineFailureDetector" must {

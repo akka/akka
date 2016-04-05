@@ -81,7 +81,6 @@ object ActorWithBoundedStashSpec {
     """)
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorWithBoundedStashSpec extends AkkaSpec(ActorWithBoundedStashSpec.testConf) with BeforeAndAfterEach with DefaultTimeout with ImplicitSender {
   import ActorWithBoundedStashSpec._
 

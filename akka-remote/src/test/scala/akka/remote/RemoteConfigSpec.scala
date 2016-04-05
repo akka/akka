@@ -11,7 +11,6 @@ import akka.util.{ Helpers }
 import akka.util.Helpers.ConfigOps
 import akka.remote.transport.netty.{ NettyTransportSettings, SSLSettings }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RemoteConfigSpec extends AkkaSpec(
   """
     akka.actor.provider = "akka.remote.RemoteActorRefProvider"

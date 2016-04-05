@@ -11,7 +11,6 @@ import akka.testkit._
 import akka.cluster.metrics.StandardMetrics._
 import akka.cluster.Cluster
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock)
   with ImplicitSender with RedirectLogging {
 

@@ -9,7 +9,6 @@ import language.postfixOps
 import akka.actor._
 import scala.concurrent.duration._
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TestFSMRefSpec extends AkkaSpec {
 
   "A TestFSMRef" must {

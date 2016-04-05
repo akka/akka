@@ -46,7 +46,6 @@ object ConsistentHashingRouterSpec {
   final case class Msg2(key: Any, data: String)
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.config) with DefaultTimeout with ImplicitSender {
   import ConsistentHashingRouterSpec._
   implicit val ec = system.dispatcher

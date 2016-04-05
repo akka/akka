@@ -9,7 +9,6 @@ import org.scalatest.Matchers
 import akka.actor.Address
 import scala.collection.immutable.SortedSet
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class GossipSpec extends WordSpec with Matchers {
 
   import MemberStatus._

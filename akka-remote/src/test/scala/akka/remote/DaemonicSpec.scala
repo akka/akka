@@ -11,7 +11,6 @@ import java.nio.channels.ServerSocketChannel
 import java.net.InetSocketAddress
 import scala.collection.JavaConverters._
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DaemonicSpec extends AkkaSpec {
 
   def addr(sys: ActorSystem, proto: String) =

@@ -37,7 +37,6 @@ object BalancingSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class BalancingSpec extends AkkaSpec(
   """
     akka.actor.deployment {

@@ -15,7 +15,6 @@ object BroadcastSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class BroadcastSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
   "broadcast group" must {

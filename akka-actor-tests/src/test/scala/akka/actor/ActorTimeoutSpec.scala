@@ -10,7 +10,6 @@ import scala.concurrent.Await
 import akka.util.Timeout
 import akka.pattern.{ ask, AskTimeoutException }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorTimeoutSpec extends AkkaSpec {
 
   val testTimeout = 200.millis.dilated

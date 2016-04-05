@@ -133,7 +133,6 @@ object LoggerSpec {
 
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class LoggerSpec extends WordSpec with Matchers {
 
   import LoggerSpec._

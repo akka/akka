@@ -8,7 +8,6 @@ import scala.concurrent.duration._
 import akka.pattern.ask
 import scala.util.Try
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TestProbeSpec extends AkkaSpec with DefaultTimeout {
 
   "A TestProbe" must {

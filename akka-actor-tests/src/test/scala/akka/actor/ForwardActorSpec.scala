@@ -27,7 +27,6 @@ object ForwardActorSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ForwardActorSpec extends AkkaSpec {
   import ForwardActorSpec._
   implicit val ec = system.dispatcher

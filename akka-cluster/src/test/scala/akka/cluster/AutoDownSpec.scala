@@ -38,7 +38,6 @@ object AutoDownSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class AutoDownSpec extends AkkaSpec {
   import AutoDownSpec._
 

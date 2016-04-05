@@ -14,7 +14,6 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config) with ImplicitSender {
   import PersistentFSMSpec._
 

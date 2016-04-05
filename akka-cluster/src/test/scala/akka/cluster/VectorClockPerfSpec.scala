@@ -27,7 +27,6 @@ object VectorClockPerfSpec {
 
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class VectorClockPerfSpec extends WordSpec with Matchers {
   import VectorClock._
   import VectorClockPerfSpec._

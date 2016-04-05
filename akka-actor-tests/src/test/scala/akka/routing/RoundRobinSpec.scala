@@ -14,7 +14,6 @@ import akka.pattern.ask
 import akka.actor.Terminated
 import akka.actor.ActorRef
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
   def routeeSize(router: ActorRef): Int =

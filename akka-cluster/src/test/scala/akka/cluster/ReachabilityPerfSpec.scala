@@ -7,7 +7,6 @@ import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import akka.actor.Address
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ReachabilityPerfSpec extends WordSpec with Matchers {
 
   val nodesSize = sys.props.get("akka.cluster.ReachabilityPerfSpec.nodesSize").getOrElse("250").toInt
