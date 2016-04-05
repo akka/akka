@@ -4,7 +4,7 @@
 package akka.http.impl.util
 
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.testkit.AkkaSpec
 
 import scala.concurrent.Await
@@ -33,7 +33,6 @@ class StreamUtilsSpec extends AkkaSpec {
 
         Await.ready(whenCompleted, 3.seconds).value shouldBe Some(Failure(ex))
       }
-
 
       "downstream cancels" in {
         val (newSource, whenCompleted) = StreamUtils.captureTermination(Source(List(1, 2, 3)))
