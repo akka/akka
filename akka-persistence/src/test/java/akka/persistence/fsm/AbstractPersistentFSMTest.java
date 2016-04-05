@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import akka.persistence.fsm.PersistentFSM.CurrentState;
 import org.junit.Test;
+import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.Duration;
 
 import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.UserState;
@@ -40,7 +41,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.matchers.JUnitMatchers.hasItems;
 
-public class AbstractPersistentFSMTest {
+public class AbstractPersistentFSMTest extends JUnitSuite {
     private static Option<String> none = Option.none();
 
     @ClassRule

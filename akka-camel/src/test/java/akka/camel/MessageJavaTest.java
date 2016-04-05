@@ -11,6 +11,7 @@ import org.apache.camel.NoTypeConversionAvailableException;
 import org.apache.camel.converter.stream.InputStreamCache;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.scalatest.junit.JUnitSuite;
 
 import java.io.InputStream;
 import java.util.*;
@@ -20,7 +21,7 @@ import static org.junit.Assert.assertEquals;
 /**
  *
  */
-public class MessageJavaTest {
+public class MessageJavaTest extends JUnitSuite {
   private Map<String,Object> empty = new HashMap<String, Object>();
 
   @ClassRule

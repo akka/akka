@@ -9,7 +9,7 @@ import akka.Done
 import akka.stream.scaladsl._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
-import akka.stream.{ ActorMaterializer, ClosedShape }
+import akka.stream._
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 import akka.testkit.AkkaSpec
