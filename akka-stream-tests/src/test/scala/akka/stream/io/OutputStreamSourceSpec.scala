@@ -39,7 +39,7 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     the[Exception] thrownBy Await.result(f, timeout) shouldBe a[TimeoutException]
 
   def expectSuccess[T](f: Future[T], value: T) =
-    Await.result(f, timeout) should be(value)
+    Await.result(f, remainingOrDefault) should be(value)
 
   "OutputStreamSource" must {
     "read bytes from OutputStream" in assertAllStagesStopped {
