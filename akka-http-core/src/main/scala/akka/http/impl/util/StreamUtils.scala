@@ -218,25 +218,6 @@ private[http] object StreamUtils {
         throw new IllegalStateException("Value can be only set once.")
   }
 
-  // TODO: remove after #16394 is cleared
-  def recover[A, B >: A](pf: PartialFunction[Throwable, B]): () ⇒ PushPullStage[A, B] = {
-    val stage = new PushPullStage[A, B] {
-      var recovery: Option[B] = None
-      def onPush(elem: A, ctx: Context[B]): SyncDirective = ctx.push(elem)
-      def onPull(ctx: Context[B]): SyncDirective = recovery match {
-        case None    ⇒ ctx.pull()
-        case Some(x) ⇒ { recovery = null; ctx.push(x) }
-        case null    ⇒ ctx.finish()
-      }
-      override def onUpstreamFailure(cause: Throwable, ctx: Context[B]): TerminationDirective =
-        if (pf isDefinedAt cause) {
-          recovery = Some(pf(cause))
-          ctx.absorbTermination()
-        } else super.onUpstreamFailure(cause, ctx)
-    }
-    () ⇒ stage
-  }
-
   /**
    * Returns a no-op flow that materializes to a future that will be completed when the flow gets a
    * completion or error signal. It doesn't necessarily mean, though, that all of a streaming pipeline
