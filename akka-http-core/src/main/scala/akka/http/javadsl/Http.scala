@@ -12,6 +12,7 @@ import akka.http.javadsl.model.ws._
 import akka.http.javadsl.settings.{ ConnectionPoolSettings, ClientConnectionSettings, ServerSettings }
 import akka.{ NotUsed, stream }
 import akka.stream.TLSProtocol._
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import scala.concurrent.Future
 import scala.util.Try
 import akka.stream.scaladsl.Keep
@@ -656,6 +657,12 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   def setDefaultClientHttpsContext(context: HttpsConnectionContext): Unit =
     delegate.setDefaultClientHttpsContext(context.asInstanceOf[akka.http.scaladsl.HttpsConnectionContext])
+
+  def createClientHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext =
+    delegate.createClientHttpsContext(sslConfig)
+
+  def createDefaultClientHttpsContext(): HttpsConnectionContext =
+    delegate.createDefaultClientHttpsContext()
 
   private def adaptTupleFlow[T, Mat](scalaFlow: stream.scaladsl.Flow[(scaladsl.model.HttpRequest, T), (Try[scaladsl.model.HttpResponse], T), Mat]): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], Mat] = {
     implicit val _ = JavaMapping.identity[T]

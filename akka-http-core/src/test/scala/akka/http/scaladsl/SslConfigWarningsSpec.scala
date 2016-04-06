@@ -9,9 +9,9 @@ import akka.event.Logging
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
-import akka.testkit.{EventFilter, TestKit, TestProbe}
-import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest.{Matchers, WordSpec}
+import akka.testkit.{ EventFilter, TestKit, TestProbe }
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.{ Matchers, WordSpec }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -40,12 +40,12 @@ class SslConfigWarningsSpec extends WordSpec with Matchers {
       val p = TestProbe()
       system.eventStream.subscribe(p.ref, classOf[Logging.LogEvent])
 
-      EventFilter.warning(start = "Detected that Server Name Indication (SNI) is disabled globally", occurrences = 1) intercept {
+      EventFilter.warning(start = "Detected that Server Name Indication (SNI) is disabled globally ", occurrences = 1) intercept {
         Http()(system)
       }
 
       // the very big warning shall be logged only once per actor system (extension)
-      EventFilter.warning(start = "Detected that Server Name Indication (SNI) is disabled globally", occurrences = 0) intercept {
+      EventFilter.warning(start = "Detected that Server Name Indication (SNI) is disabled globally ", occurrences = 0) intercept {
         Http()(system)
       }
 
@@ -59,7 +59,7 @@ class SslConfigWarningsSpec extends WordSpec with Matchers {
       val p = TestProbe()
       system.eventStream.subscribe(p.ref, classOf[Logging.LogEvent])
 
-      val msgStart = "Detected that Hostname Verification (via ssl-config) is disabled globally for the Http extension"
+      val msgStart = "Detected that Hostname Verification is disabled globally "
 
       EventFilter.warning(start = msgStart, occurrences = 1) intercept { Http()(system) }
 

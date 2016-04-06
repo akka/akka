@@ -744,26 +744,27 @@ trait DefaultSSLContextCreation {
   private[this] def log = system.log
 
   def validateAndWarnAboutLooseSettings() = {
-    if (sslConfig.config.loose.disableHostnameVerification)
-      log.warning("Detected that Hostname Verification (via ssl-config) is disabled globally for the Http extension! " +
-        "This is very dangerous and may expose you to man-in-the-middle attacks. " +
-        "If you are forced to interact with a server that is behaving such that you must disable this setting, " +
-        "please disable it for a given connection instead, by configuring a specific HttpsConnectionContext " +
-        "for use only for the trusted target that hostname verification would have blocked.")
+    val WarningAboutGlobalLoose = "This is very dangerous and may expose you to man-in-the-middle attacks. " +
+      "If you are forced to interact with a server that is behaving such that you must disable this setting, " +
+      "please disable it for a given connection instead, by configuring a specific HttpsConnectionContext " +
+      "for use only for the trusted target that hostname verification would have blocked."
 
-    if (sslConfig.config.loose.disableSNI)
-      log.warning("Detected that Server Name Indication (SNI) is disabled globally (via ssl-config) for the Http extension! " +
-        "This is very dangerous and may expose you to man-in-the-middle attacks. " +
-        "If you are forced to interact with a server that is behaving such that you must disable this setting, " +
-        "please disable it for a given connection instead, by configuring a specific HttpsConnectionContext " +
-        "for use only for the trusted target that hostname verification would have blocked.")
+    if (sslConfig.config.loose.disableHostnameVerification)
+      log.warning("Detected that Hostname Verification is disabled globally (via ssl-config's akka.ssl-config.loose.disableHostnameVerification) for the Http extension! " +
+        WarningAboutGlobalLoose)
+
+    if (sslConfig.config.loose.disableSNI) {
+      log.warning("Detected that Server Name Indication (SNI) is disabled globally (via ssl-config's akka.ssl-config.loose.disableSNI) for the Http extension! " +
+        WarningAboutGlobalLoose)
+
+    }
   }
   // --- end of log warnings ---
 
-  final def createDefaultClientHttpsContext(): HttpsConnectionContext =
-    createDefaultClientHttpsContext(sslConfig)
+  def createDefaultClientHttpsContext(): HttpsConnectionContext =
+    createClientHttpsContext(sslConfig)
 
-  def createDefaultClientHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext = {
+  def createClientHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext = {
     val config = sslConfig.config
 
     val log = Logging(system, getClass)
