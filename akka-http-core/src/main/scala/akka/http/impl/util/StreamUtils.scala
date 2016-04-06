@@ -4,18 +4,17 @@
 
 package akka.http.impl.util
 
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
-import akka.{Done, NotUsed}
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
+import akka.NotUsed
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.impl.{PublisherSink, SinkModule, SourceModule}
+import akka.stream.impl.{ PublisherSink, SinkModule, SourceModule }
 import akka.stream.scaladsl._
 import akka.stream.stage._
-import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.util.ByteString
-import org.reactivestreams.{Processor, Publisher, Subscriber, Subscription}
+import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 
 /**
  * INTERNAL API
@@ -218,43 +217,6 @@ private[http] object StreamUtils {
     def setValue(value: T): Unit =
       if (!compareAndSet(null.asInstanceOf[T], value))
         throw new IllegalStateException("Value can be only set once.")
-  }
-
-  /**
-   * Returns a no-op flow that materializes to a future that will be completed when the flow gets a
-   * completion or error signal. It doesn't necessarily mean, though, that all of a streaming pipeline
-   * is finished, only that the part that contains this flow has finished work.
-   */
-  def identityFinishReporter[T]: Flow[T, T, Future[Done]] = {
-    object IdentityFinishReporter extends GraphStageWithMaterializedValue[FlowShape[T, T], Future[Done]] {
-      val shape = FlowShape(Inlet[T]("identityFinishReporter.in"), Outlet[T]("identityFinishReporter.out"))
-      override def toString: String = "IdentityFinishReporter"
-
-      def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
-        val promise = Promise[Done]()
-
-        val stage = new GraphStageLogic(shape) with InHandler with OutHandler {
-          override def onPush(): Unit = push(shape.out, grab(shape.in))
-
-          override def onPull(): Unit = pull(shape.in)
-
-          override def onUpstreamFailure(ex: Throwable): Unit = {
-            promise.failure(ex)
-            failStage(ex)
-          }
-
-          override def postStop(): Unit = {
-            promise.trySuccess(Done)
-          }
-
-          setHandlers(shape.in, shape.out, this)
-        }
-
-        (stage, promise.future)
-      }
-    }
-
-    Flow[T].viaMat(IdentityFinishReporter)(Keep.right)
   }
 
   /**
