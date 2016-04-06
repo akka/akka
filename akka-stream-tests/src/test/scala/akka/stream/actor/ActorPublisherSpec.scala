@@ -10,10 +10,10 @@ import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.testkit.TestEvent.Mute
 import akka.testkit.{ AkkaSpec, EventFilter, ImplicitSender, TestProbe }
-
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+import akka.actor.Stash
 
 object ActorPublisherSpec {
 
@@ -25,6 +25,12 @@ object ActorPublisherSpec {
 
   def testPublisherProps(probe: ActorRef, useTestDispatcher: Boolean = true): Props = {
     val p = Props(new TestPublisher(probe))
+    if (useTestDispatcher) p.withDispatcher("akka.test.stream-dispatcher")
+    else p
+  }
+
+  def testPublisherWithStashProps(probe: ActorRef, useTestDispatcher: Boolean = true): Props = {
+    val p = Props(new TestPublisherWithStash(probe))
     if (useTestDispatcher) p.withDispatcher("akka.test.stream-dispatcher")
     else p
   }
@@ -51,6 +57,19 @@ object ActorPublisherSpec {
       case Boom                ⇒ throw new RuntimeException("boom") with NoStackTrace
       case ThreadName          ⇒ probe ! Thread.currentThread.getName
     }
+  }
+
+  class TestPublisherWithStash(probe: ActorRef) extends TestPublisher(probe) with Stash {
+
+    override def receive = stashing
+
+    def stashing: Receive = {
+      case "unstash" ⇒
+        unstashAll()
+        context.become(super.receive)
+      case _ ⇒ stash()
+    }
+
   }
 
   def senderProps: Props = Props[Sender].withDispatcher("akka.test.stream-dispatcher")
@@ -443,6 +462,22 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
         .to(Sink.fromSubscriber(s)).run()
       ref ! ThreadName
       expectMsgType[String] should include("my-dispatcher1")
+    }
+
+    "handle stash" in {
+      val probe = TestProbe()
+      val ref = system.actorOf(testPublisherWithStashProps(probe.ref))
+      val p = ActorPublisher[String](ref)
+      val s = TestSubscriber.probe[String]()
+      p.subscribe(s)
+      s.request(2)
+      s.request(3)
+      ref ! "unstash"
+      probe.expectMsg(TotalDemand(5))
+      probe.expectMsg(TotalDemand(5))
+      s.request(4)
+      probe.expectMsg(TotalDemand(9))
+      s.cancel()
     }
 
   }
