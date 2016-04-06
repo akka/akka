@@ -226,9 +226,9 @@ private[http] object StreamUtils {
    * is finished, only that the part that contains this flow has finished work.
    */
   def identityFinishReporter[T]: Flow[T, T, Future[Unit]] = {
-    Flow[T].viaMat(new GraphStageWithMaterializedValue[FlowShape[T, T], Future[Unit]] {
+    object IdentityFinishReporter extends GraphStageWithMaterializedValue[FlowShape[T, T], Future[Unit]] {
       val shape = FlowShape(Inlet[T]("identityFinishReporter.in"), Outlet[T]("identityFinishReporter.out"))
-      override def toString: String = "UniqueKillSwitchFlow"
+      override def toString: String = "IdentityFinishReporter"
 
       def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Unit]) = {
         val promise = Promise[Unit]()
@@ -247,13 +247,14 @@ private[http] object StreamUtils {
             promise.trySuccess(())
           }
 
-          setHandler(shape.in, this)
-          setHandler(shape.out, this)
+          setHandlers(shape.in, shape.out, this)
         }
 
         (stage, promise.future)
       }
-    })(Keep.right)
+    }
+
+    Flow[T].viaMat(IdentityFinishReporter)(Keep.right)
   }
 
   /**
