@@ -8,15 +8,12 @@
     <feature name='scala' description='Scala' version='${scala.version}' resolver='(obr)'>
       <bundle start-level="15">mvn:org.scala-lang/scala-library/${scala.version}</bundle>
       <bundle start-level="15">mvn:org.scala-lang/scala-reflect/${scala.version}</bundle>
+      <bundle start-level="15">mvn:org.scala-lang.modules/scala-java8-compat_2.11/0.7.0</bundle>
     </feature>
 
     <feature name='uncommons-maths' description='Uncommons Maths' version='${uncommons-maths.version}' resolver='(obr)'>
         <!-- TODO replace this with upstream uncommons maths 1.2.3 which is OSGi enabled -->
         <bundle start-level="20">mvn:com.typesafe.akka.akka-sample-osgi-dining-hakkers/uncommons/1.2.2</bundle>
-    </feature>
-
-    <feature name='protobuf' description='Protobuf feature' version='${protobuf.version}' resolver='(obr)'>
-        <bundle start-level="20">mvn:com.google.protobuf/protobuf-java/${protobuf.version}</bundle>
     </feature>
 
     <feature name='netty' description='Netty feature' version='${netty.version}' resolver='(obr)'>
@@ -36,14 +33,14 @@
         <feature version="${scala.version}">scala</feature>
         <feature version="${netty.version}">netty</feature>
         <feature version="${uncommons-maths.version}">uncommons-maths</feature>
-        <feature version="${protobuf.version}">protobuf</feature>
         <feature version="${typesafe.config.version}">typesafe-config</feature>
         <feature version="${leveldb.version}">leveldb</feature>
+        <bundle start-level="20">mvn:com.typesafe.akka/akka-protobuf_${scala.dep.version}/${akka.version}</bundle>
         <bundle start-level="30">mvn:com.typesafe.akka/akka-actor_${scala.dep.version}/${akka.version}</bundle>
         <bundle start-level="30">mvn:com.typesafe.akka/akka-osgi_${scala.dep.version}/${akka.version}</bundle>
         <bundle start-level="30">mvn:com.typesafe.akka/akka-remote_${scala.dep.version}/${akka.version}</bundle>
         <bundle start-level="30">mvn:com.typesafe.akka/akka-cluster_${scala.dep.version}/${akka.version}</bundle>
-        <bundle start-level="30">mvn:com.typesafe.akka/akka-persistence-experimental_${scala.dep.version}/${akka.version}</bundle>
+        <bundle start-level="30">mvn:com.typesafe.akka/akka-persistence_${scala.dep.version}/${akka.version}</bundle>
         <bundle start-level="30">mvn:com.typesafe.akka/akka-slf4j_${scala.dep.version}/${akka.version}</bundle>
     </feature>
 
