@@ -18,13 +18,13 @@ Json Support via Jackson
 
 To make use of the support module, you need to add a dependency on `akka-http-jackson-experimental`.
 
-Use ``akka.http.javadsl.marshallers.jackson.Jackson.jsonAs[T]`` to create a ``RequestVal<T>`` which expects the request
-body to be of type ``application/json`` and converts it to ``T`` using Jackson.
+Use ``akka.http.javadsl.marshallers.jackson.Jackson.unmarshaller(T.class)`` to create an ``Unmarshaller<HttpEntity,T>`` which expects the request
+body (HttpEntity) to be of type ``application/json`` and converts it to ``T`` using Jackson.
 
 See `this example`__ in the sources for an example.
 
-Use ``akka.http.javadsl.marshallers.jackson.Jackson.json[T]`` to create a ``Marshaller<T>`` which can be used with
-``RequestContext.completeAs`` to convert a POJO to an HttpResponse.
+Use ``akka.http.javadsl.marshallers.jackson.Jackson.marshaller(T.class)`` to create a ``Marshaller<T,RequestEntity>`` which can be used with
+``RequestContext.complete`` or ``RouteDirectives.complete`` to convert a POJO to an HttpResponse.
 
 
 .. _jackson: https://github.com/FasterXML/jackson
