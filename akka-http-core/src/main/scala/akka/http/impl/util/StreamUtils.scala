@@ -5,7 +5,7 @@
 package akka.http.impl.util
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{PublisherSink, SinkModule, SourceModule}
@@ -225,13 +225,13 @@ private[http] object StreamUtils {
    * completion or error signal. It doesn't necessarily mean, though, that all of a streaming pipeline
    * is finished, only that the part that contains this flow has finished work.
    */
-  def identityFinishReporter[T]: Flow[T, T, Future[Unit]] = {
-    object IdentityFinishReporter extends GraphStageWithMaterializedValue[FlowShape[T, T], Future[Unit]] {
+  def identityFinishReporter[T]: Flow[T, T, Future[Done]] = {
+    object IdentityFinishReporter extends GraphStageWithMaterializedValue[FlowShape[T, T], Future[Done]] {
       val shape = FlowShape(Inlet[T]("identityFinishReporter.in"), Outlet[T]("identityFinishReporter.out"))
       override def toString: String = "IdentityFinishReporter"
 
-      def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Unit]) = {
-        val promise = Promise[Unit]()
+      def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
+        val promise = Promise[Done]()
 
         val stage = new GraphStageLogic(shape) with InHandler with OutHandler {
           override def onPush(): Unit = push(shape.out, grab(shape.in))
@@ -244,7 +244,7 @@ private[http] object StreamUtils {
           }
 
           override def postStop(): Unit = {
-            promise.trySuccess(())
+            promise.trySuccess(Done)
           }
 
           setHandlers(shape.in, shape.out, this)
