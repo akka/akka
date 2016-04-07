@@ -15,6 +15,8 @@ import akka.stream.Materializer
 import scala.concurrent.{ Future, Promise }
 
 /**
+ * INTERNAL API
+ *
  * Manages access to a host connection pool or rather: a sequence of pool incarnations.
  *
  * A host connection pool for a given [[HostConnectionPoolSetup]] is a running stream, whose outside interface is
