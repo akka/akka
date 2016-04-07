@@ -5,7 +5,7 @@
 package akka.http.scaladsl
 
 import java.net.InetSocketAddress
-import java.util.concurrent.{ CompletionStage, ConcurrentHashMap }
+import java.util.concurrent.CompletionStage
 import javax.net.ssl._
 
 import akka.actor._
