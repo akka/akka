@@ -140,6 +140,8 @@ private[http] final class PoolMasterActor extends Actor with ActorLogging {
 
 private[http] object PoolMasterActor {
 
+  val props = Props[PoolMasterActor].withDeploy(Deploy.local)
+
   sealed trait PoolInterfaceStatus
   final case class PoolInterfaceRunning(ref: ActorRef) extends PoolInterfaceStatus
   final case class PoolInterfaceShuttingDown(shutdownCompletedPromise: Promise[Done]) extends PoolInterfaceStatus

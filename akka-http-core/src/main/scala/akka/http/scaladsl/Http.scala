@@ -191,7 +191,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   // ** CLIENT ** //
 
-  private[this] val poolMasterActorRef = system.actorOf(Props(new PoolMasterActor).withDeploy(Deploy.local), "pool-master")
+  private[this] val poolMasterActorRef = system.actorOf(PoolMasterActor.props, "pool-master")
   private[this] val systemMaterializer = ActorMaterializer()
 
   /**
