@@ -589,7 +589,11 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
       case other                        ⇒ TLSPlacebo() // if it's not HTTPS, we don't enable SSL/TLS
     }
 
-  /** For testing only. */
+  /**
+   * INTERNAL API
+   *
+   * For testing only
+   */
   private[scaladsl] def poolSize: Future[Int] = {
     val sizePromise = Promise[Int]()
     poolMasterActorRef ! PoolSize(sizePromise)
