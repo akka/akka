@@ -20,7 +20,7 @@ class FlowLimitSpec extends AkkaSpec {
       val input = Range(0, 0, 1)
       val n = input.length
       val future = Source(input).limit(n).grouped(Integer.MAX_VALUE).runWith(Sink.headOption)
-      val result = Await.result(future, 300.millis)
+      val result = Await.result(future, remainingOrDefault)
       result should be(None)
     }
 
@@ -28,7 +28,7 @@ class FlowLimitSpec extends AkkaSpec {
       val input = (1 to 6)
       val n = input.length
       val future = Source(input).limit(n).grouped(Integer.MAX_VALUE).runWith(Sink.head)
-      val result = Await.result(future, 300.millis)
+      val result = Await.result(future, remainingOrDefault)
       result should be(input.toSeq)
     }
 
@@ -36,7 +36,7 @@ class FlowLimitSpec extends AkkaSpec {
       val input = (1 to 6)
       val n = input.length + 2 // n > input.length
       val future = Source(input).limit(n).grouped(Integer.MAX_VALUE).runWith(Sink.head)
-      val result = Await.result(future, 300.millis)
+      val result = Await.result(future, remainingOrDefault)
       result should be(input.toSeq)
     }
 
@@ -48,7 +48,7 @@ class FlowLimitSpec extends AkkaSpec {
       val future = Source(input).limit(n).grouped(Integer.MAX_VALUE).runWith(Sink.head)
 
       a[StreamLimitReachedException] shouldBe thrownBy {
-        Await.result(future, 300.millis)
+        Await.result(future, remainingOrDefault)
       }
     }
 
@@ -58,7 +58,7 @@ class FlowLimitSpec extends AkkaSpec {
 
       val future = Source(input).limit(n).grouped(Integer.MAX_VALUE).runWith(Sink.head)
       a[StreamLimitReachedException] shouldBe thrownBy {
-        Await.result(future, 300.millis)
+        Await.result(future, remainingOrDefault)
       }
     }
   }
