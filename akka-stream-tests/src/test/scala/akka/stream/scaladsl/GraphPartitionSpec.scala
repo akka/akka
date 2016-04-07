@@ -136,7 +136,7 @@ class GraphPartitionSpec extends AkkaSpec {
           ClosedShape
       })
 
-      val result = Await.result(g.run(), 300.millis)
+      val result = Await.result(g.run(), remainingOrDefault)
 
       result.toSet should be(input)
 

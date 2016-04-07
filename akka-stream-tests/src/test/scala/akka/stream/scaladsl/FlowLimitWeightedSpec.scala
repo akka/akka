@@ -21,7 +21,7 @@ class FlowLimitWeightedSpec extends AkkaSpec {
       val n = input.length
       def costFn(e: Int): Long = 999999L // set to an arbitrarily big value
       val future = Source(input).limitWeighted(n)(costFn).grouped(Integer.MAX_VALUE).runWith(Sink.headOption)
-      val result = Await.result(future, 300.millis)
+      val result = Await.result(future, remainingOrDefault)
       result should be(None)
     }
 
@@ -30,7 +30,7 @@ class FlowLimitWeightedSpec extends AkkaSpec {
       def costFn(e: Int): Long = 0L
       val n = 1 // must not matter since costFn always evaluates to 0
       val future = Source(input).limitWeighted(n)(costFn).grouped(Integer.MAX_VALUE).runWith(Sink.head)
-      val result = Await.result(future, 300.millis)
+      val result = Await.result(future, remainingOrDefault)
       result should be(input.toSeq)
     }
 
@@ -39,7 +39,7 @@ class FlowLimitWeightedSpec extends AkkaSpec {
       def costFn(e: Int): Long = 1L
       val n = input.length
       val future = Source(input).limitWeighted(n)(costFn).grouped(Integer.MAX_VALUE).runWith(Sink.head)
-      val result = Await.result(future, 300.millis)
+      val result = Await.result(future, remainingOrDefault)
       result should be(input.toSeq)
     }
 
@@ -48,7 +48,7 @@ class FlowLimitWeightedSpec extends AkkaSpec {
       def costFn(e: String): Long = e.length
       val n = input.flatten.length
       val future = Source(input).limitWeighted(n)(costFn).grouped(Integer.MAX_VALUE).runWith(Sink.head)
-      val result = Await.result(future, 300.millis)
+      val result = Await.result(future, remainingOrDefault)
       result should be(input.toSeq)
     }
 
@@ -59,7 +59,7 @@ class FlowLimitWeightedSpec extends AkkaSpec {
       val future = Source(input).limitWeighted(n)(costFn).grouped(Integer.MAX_VALUE).runWith(Sink.head)
 
       a[StreamLimitReachedException] shouldBe thrownBy {
-        Await.result(future, 300.millis)
+        Await.result(future, remainingOrDefault)
       }
     }
   }
