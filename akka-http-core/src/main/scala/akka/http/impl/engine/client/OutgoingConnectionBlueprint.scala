@@ -169,21 +169,17 @@ private[http] object OutgoingConnectionBlueprint {
       private def entitySubstreamStarted = entitySource ne null
       private def idle = this
       private var completionDeferred = false
+      private var completeOnMessageEnd = false
 
-      def setIdleHandlers(): Unit = {
-        if (completionDeferred) {
-          completeStage()
-        } else {
-          setHandler(in, idle)
-          setHandler(out, idle)
-        }
-      }
+      def setIdleHandlers(): Unit =
+        if (completeOnMessageEnd || completionDeferred) completeStage()
+        else setHandlers(in, out, idle)
 
       def onPush(): Unit = grab(in) match {
         case ResponseStart(statusCode, protocol, headers, entityCreator, closeRequested) ⇒
           val entity = createEntity(entityCreator) withSizeLimit parserSettings.maxContentLength
           push(out, HttpResponse(statusCode, headers, entity, protocol))
-          if (closeRequested) completeStage()
+          completeOnMessageEnd = closeRequested
 
         case MessageStartError(_, info) ⇒
           throw IllegalResponseException(info)
