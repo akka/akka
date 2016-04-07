@@ -212,7 +212,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
       val (_, _, _, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second)
       val gateway = hcp.gateway
       Await.result(gateway.poolStatus(), 1500.millis).get shouldBe a[PoolInterfaceRunning]
-      awaitCond({ Await.result(gateway.poolStatus(), 1500.millis).isEmpty }, 1500.millis)
+      awaitCond({ Await.result(gateway.poolStatus(), 1500.millis).isEmpty }, 2000.millis)
     }
 
     "transparently restart after idle shutdown" in new TestSetup() {
@@ -220,7 +220,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
       val gateway = hcp.gateway
       Await.result(gateway.poolStatus(), 1500.millis).get shouldBe a[PoolInterfaceRunning]
-      awaitCond({ Await.result(gateway.poolStatus(), 1500.millis).isEmpty }, 1500.millis)
+      awaitCond({ Await.result(gateway.poolStatus(), 1500.millis).isEmpty }, 2000.millis)
 
       requestIn.sendNext(HttpRequest(uri = "/") -> 42)
 
