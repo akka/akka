@@ -7,7 +7,6 @@ package akka.http.impl.engine.client
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import org.scalatest.Inside
-import org.scalatest.concurrent.ScalaFutures
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.util.ByteString
 import akka.event.NoLogging
@@ -111,8 +110,70 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
 
         requestsSub.sendComplete()
         netOut.expectComplete()
-        netInSub.sendComplete()
         responses.expectComplete()
+      }
+
+      "has a response with a chunked entity and Connection: close" in new TestSetup {
+        sendStandardRequest()
+
+        sendWireData(
+          """HTTP/1.1 200 OK
+            |Transfer-Encoding: chunked
+            |Connection: close
+            |
+            |""")
+        sendWireData("3\nABC\n")
+        sendWireData("4\nDEFX\n")
+        sendWireData("0\n\n")
+
+        val HttpResponse(_, _, HttpEntity.Chunked(ct, chunks), _) = expectResponse()
+        ct shouldEqual ContentTypes.`application/octet-stream`
+
+        val probe = TestSubscriber.manualProbe[ChunkStreamPart]()
+        chunks.runWith(Sink.fromSubscriber(probe))
+        val sub = probe.expectSubscription()
+        sub.request(4)
+        probe.expectNext(HttpEntity.Chunk("ABC"))
+        probe.expectNext(HttpEntity.Chunk("DEFX"))
+        probe.expectNext(HttpEntity.LastChunk)
+        probe.expectComplete()
+
+        // explicit `requestsSub.sendComplete()` not needed
+        netOut.expectComplete()
+        responses.expectComplete()
+      }
+
+      "has a request with a chunked entity and Connection: close" in new TestSetup {
+        requestsSub.sendNext(HttpRequest(
+          entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, Source(List("ABC", "DEFX").map(ByteString(_)))),
+          headers = List(Connection("close"))
+        ))
+
+        expectWireData(
+          """GET / HTTP/1.1
+            |Connection: close
+            |Host: example.com
+            |User-Agent: akka-http/test
+            |Transfer-Encoding: chunked
+            |Content-Type: text/plain; charset=UTF-8
+            |
+            |""")
+        expectWireData("3\nABC\n")
+        expectWireData("4\nDEFX\n")
+        expectWireData("0\n\n")
+
+        sendWireData(
+          """HTTP/1.1 200 OK
+            |Connection: close
+            |Content-Length: 0
+            |
+            |""")
+
+        expectResponse()
+
+        // explicit `requestsSub.sendComplete()` not needed
+        responses.expectComplete()
+        netOut.expectComplete()
       }
 
       "exhibits eager request stream completion" in new TestSetup {
@@ -759,7 +820,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
     }
 
     val (netOut, netIn) = {
-      val netOut = TestSubscriber.manualProbe[ByteString]
+      val netOut = TestSubscriber.manualProbe[ByteString]()
       val netIn = TestPublisher.manualProbe[ByteString]()
 
       RunnableGraph.fromGraph(GraphDSL.create(OutgoingConnectionBlueprint(Host("example.com"), settings, NoLogging)) { implicit b ⇒
