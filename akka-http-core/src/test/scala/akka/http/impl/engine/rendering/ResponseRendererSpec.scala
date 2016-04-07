@@ -596,7 +596,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
               case _: ResponseRenderingOutput.SwitchToWebSocket ⇒ throw new IllegalStateException("Didn't expect websocket response")
             }
             .groupedWithin(1000, 100.millis)
-            .viaMat(StreamUtils.identityFinishReporter[Seq[ByteString]])(Keep.right)
+            .watchTermination()(Keep.right)
             .toMat(Sink.head)(Keep.both).run()
 
         // we try to find out if the renderer has already flagged completion even without the upstream being completed

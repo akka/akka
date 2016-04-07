@@ -107,10 +107,10 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
                     connectionContext: ConnectionContext = defaultServerHttpContext,
                     settings: ServerSettings = ServerSettings(system),
                     log: LoggingAdapter = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
-    def handleOneConnection(incomingConnection: IncomingConnection): Future[Unit] =
+    def handleOneConnection(incomingConnection: IncomingConnection): Future[Done] =
       try
         incomingConnection.flow
-          .viaMat(StreamUtils.identityFinishReporter)(Keep.right)
+          .watchTermination()(Keep.right)
           .joinMat(handler)(Keep.left)
           .run()
       catch {
