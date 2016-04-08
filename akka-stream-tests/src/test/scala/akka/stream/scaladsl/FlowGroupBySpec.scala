@@ -4,6 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
@@ -307,6 +308,24 @@ class FlowGroupBySpec extends AkkaSpec {
       val ex = down.expectError()
       ex.getMessage should include("too many substreams")
       s1.expectError(ex)
+    }
+
+    "emit subscribe before completed" in assertAllStagesStopped {
+      val futureGroupSource =
+        Source(0 until 1)
+          .groupBy(1, elem ⇒ "all")
+          .prefixAndTail(0)
+          .map(_._2)
+          .concatSubstreams
+          .runWith(Sink.head)
+      val pub: Publisher[Int] = Await.result(futureGroupSource, 3.seconds).runWith(Sink.asPublisher(false))
+      val probe = TestSubscriber.manualProbe[Int]()
+      pub.subscribe(probe)
+      val sub = probe.expectSubscription()
+      sub.request(1)
+      probe.expectNext(0)
+      probe.expectComplete()
+
     }
 
   }

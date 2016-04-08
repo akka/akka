@@ -3,10 +3,10 @@
  */
 package akka.stream.scaladsl
 
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream.actor.ActorPublisher
-import akka.stream.impl.Stages.{ DefaultAttributes, StageModule }
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.fusing.GraphStages._
@@ -73,15 +73,6 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    */
   override def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2] =
     new Source[Out, Mat2](module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
-
-  /** INTERNAL API */
-  override private[scaladsl] def deprecatedAndThen[U](op: StageModule): Repr[U] = {
-    // No need to copy here, op is a fresh instance
-    new Source(
-      module
-        .fuse(op, shape.out, op.inPort)
-        .replaceShape(SourceShape(op.outPort)))
-  }
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
