@@ -32,7 +32,8 @@ object TwitterStreamQuickstartDocSpec {
   //#model
 
   //#tweet-source
-  val tweets: Source[Tweet, NotUsed] //#tweet-source
+  val tweets: Source[Tweet, NotUsed]
+  //#tweet-source
   = Source(
     Tweet(Author("rolandkuhn"), System.currentTimeMillis, "#akka rocks!") ::
       Tweet(Author("patriknw"), System.currentTimeMillis, "#akka !") ::
