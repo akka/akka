@@ -6,23 +6,20 @@ package akka.http.impl.engine.client
 
 import java.net.InetSocketAddress
 
-import akka.Done
-import akka.stream.BufferOverflowException
+import akka.actor._
+import akka.http.impl.engine.client.PoolFlow._
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.{ Http, HttpsConnectionContext }
+import akka.stream.actor.ActorPublisherMessage._
+import akka.stream.actor.ActorSubscriberMessage._
+import akka.stream.actor.{ ActorPublisher, ActorSubscriber, ZeroRequestStrategy }
+import akka.stream.impl.{ Buffer, SeqActorName }
+import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
+import akka.stream.{ BufferOverflowException, Materializer }
 
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
-import akka.actor._
-import akka.stream.Materializer
-import akka.stream.actor.{ ActorPublisher, ActorSubscriber, ZeroRequestStrategy }
-import akka.stream.actor.ActorPublisherMessage._
-import akka.stream.actor.ActorSubscriberMessage._
-import akka.stream.impl.{ SeqActorName, Buffer }
-import akka.stream.scaladsl.{ Keep, Flow, Sink, Source }
-import akka.http.impl.settings.HostConnectionPoolSetup
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.{ HttpsConnectionContext, Http }
-import PoolFlow._
 
 private object PoolInterfaceActor {
   final case class PoolRequest(request: HttpRequest, responsePromise: Promise[HttpResponse]) extends NoSerializationVerificationNeeded
@@ -46,12 +43,11 @@ private object PoolInterfaceActor {
  *   To the inside (i.e. the running connection pool flow) the gateway actor acts as request source
  *   (ActorPublisher) and response sink (ActorSubscriber).
  */
-private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
-                                 shutdownCompletedPromise: Promise[Done],
-                                 gateway: PoolGateway)(implicit fm: Materializer)
+private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer)
   extends ActorSubscriber with ActorPublisher[RequestContext] with ActorLogging {
   import PoolInterfaceActor._
 
+  private[this] val hcps = gateway.hcps
   private[this] val inputBuffer = Buffer[PoolRequest](hcps.setup.settings.maxOpenRequests, fm)
   private[this] var activeIdleTimeout: Option[Cancellable] = None
 
@@ -100,12 +96,10 @@ private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
 
     case OnComplete ⇒ // the pool shut down
       log.debug("Host connection pool to {}:{} has completed orderly shutdown", hcps.host, hcps.port)
-      shutdownCompletedPromise.success(Done)
       self ! PoisonPill // give potentially queued requests another chance to be forwarded back to the gateway
 
     case OnError(e) ⇒ // the pool shut down
       log.debug("Host connection pool to {}:{} has shut down with error {}", hcps.host, hcps.port, e)
-      shutdownCompletedPromise.failure(e)
       self ! PoisonPill // give potentially queued requests another chance to be forwarded back to the gateway
 
     /////////////// FROM CLIENT //////////////
@@ -127,10 +121,6 @@ private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
     case PoolRequest(request, responsePromise) ⇒
       // we have already started shutting down, i.e. this pool is not usable anymore
       // so we forward the request back to the gateway
-      // Note that this forwarding will stop when we receive completion from the pool flow
-      // (because we stop ourselves then), so there is a very small chance of a request ending
-      // up as a dead letter if the sending thread gets interrupted for a long time right before
-      // the `ref ! PoolRequest(...)` in the PoolGateway
       responsePromise.completeWith(gateway(request))
 
     case Shutdown ⇒ // signal coming in from gateway
