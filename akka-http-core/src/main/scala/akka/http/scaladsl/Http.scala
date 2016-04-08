@@ -5,12 +5,13 @@
 package akka.http.scaladsl
 
 import java.net.InetSocketAddress
-import java.util.concurrent.{ CompletionStage, ConcurrentHashMap }
+import java.util.concurrent.CompletionStage
 import javax.net.ssl._
 
 import akka.actor._
 import akka.event.{ Logging, LoggingAdapter }
 import akka.http.impl.engine.HttpConnectionTimeoutException
+import akka.http.impl.engine.client.PoolMasterActor.{ PoolSize, ShutdownAll }
 import akka.http.impl.engine.client._
 import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebSocketClientBlueprint
@@ -19,7 +20,7 @@ import akka.http.impl.util.{ MapError, StreamUtils }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgradeResponse }
-import akka.http.scaladsl.settings.{ ServerSettings, ClientConnectionSettings, ConnectionPoolSettings }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
 import akka.http.scaladsl.util.FastFuture
 import akka.{ Done, NotUsed }
 import akka.stream._
@@ -190,6 +191,9 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   // ** CLIENT ** //
 
+  private[this] val poolMasterActorRef = system.actorOf(PoolMasterActor.props, "pool-master")
+  private[this] val systemMaterializer = ActorMaterializer()
+
   /**
    * Creates a [[akka.stream.scaladsl.Flow]] representing a prospective HTTP client connection to the given endpoint.
    * Every materialization of the produced flow will attempt to establish a new outgoing connection.
@@ -321,8 +325,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    */
   private[akka] def newHostConnectionPool[T](setup: HostConnectionPoolSetup)(
     implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
-    val gatewayFuture = FastFuture.successful(new PoolGateway(setup, Promise()))
-    gatewayClientFlow(setup, gatewayFuture)
+    val gateway = new PoolGateway(poolMasterActorRef, setup, PoolGateway.newUniqueGatewayIdentifier)
+    gatewayClientFlow(setup, gateway.startPool())
   }
 
   /**
@@ -389,8 +393,9 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * object of type `T` from the application which is emitted together with the corresponding response.
    */
   private def cachedHostConnectionPool[T](setup: HostConnectionPoolSetup)(
-    implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
-    gatewayClientFlow(setup, cachedGateway(setup))
+    implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+    gatewayClientFlow(setup, sharedGateway(setup).startPool())
+  }
 
   /**
    * Creates a new "super connection pool flow", which routes incoming requests to a (cached) host connection pool
@@ -412,7 +417,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   def superPool[T](connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
                    settings: ConnectionPoolSettings = defaultConnectionPoolSettings,
                    log: LoggingAdapter = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
-    clientFlow[T](settings) { request ⇒ request -> cachedGateway(request, settings, connectionContext, log) }
+    clientFlow[T](settings) { request ⇒ request -> sharedGateway(request, settings, connectionContext, log) }
 
   /**
    * Fires a single [[akka.http.scaladsl.model.HttpRequest]] across the (cached) host connection pool for the request's
@@ -428,8 +433,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
                     settings: ConnectionPoolSettings = defaultConnectionPoolSettings,
                     log: LoggingAdapter = system.log)(implicit fm: Materializer): Future[HttpResponse] =
     try {
-      val gatewayFuture = cachedGateway(request, settings, connectionContext, log)
-      gatewayFuture.flatMap(_(request))(fm.executionContext)
+      val gateway = sharedGateway(request, settings, connectionContext, log)
+      gateway(request)
     } catch {
       case e: IllegalUriException ⇒ FastFuture.failed(e)
     }
@@ -495,12 +500,9 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * method call the respective connection pools will be restarted and not contribute to the returned future.
    */
   def shutdownAllConnectionPools(): Future[Unit] = {
-    import system.dispatcher
-
-    import scala.collection.JavaConverters._
-    val gateways = hostPoolCache.values().asScala
-    system.log.debug("Initiating orderly shutdown of all active host connections pools...")
-    Future.sequence(gateways.map(_.flatMap(_.shutdown()))).map(_ ⇒ ())
+    val shutdownCompletedPromise = Promise[Done]()
+    poolMasterActorRef ! ShutdownAll(shutdownCompletedPromise)
+    shutdownCompletedPromise.future.map(_ ⇒ ())(system.dispatcher)
   }
 
   /**
@@ -545,64 +547,37 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
       _defaultClientHttpsConnectionContext = context
     }
 
-  // every ActorSystem maintains its own connection pools
-  private[http] val hostPoolCache = new ConcurrentHashMap[HostConnectionPoolSetup, Future[PoolGateway]]
-
-  private def cachedGateway(request: HttpRequest,
-                            settings: ConnectionPoolSettings, connectionContext: ConnectionContext,
-                            log: LoggingAdapter)(implicit fm: Materializer): Future[PoolGateway] =
+  private def sharedGateway(request: HttpRequest, settings: ConnectionPoolSettings, connectionContext: ConnectionContext, log: LoggingAdapter): PoolGateway = {
     if (request.uri.scheme.nonEmpty && request.uri.authority.nonEmpty) {
       val httpsCtx = if (request.uri.scheme.equalsIgnoreCase("https")) connectionContext else ConnectionContext.noEncryption()
       val setup = ConnectionPoolSetup(settings, httpsCtx, log)
       val host = request.uri.authority.host.toString()
       val hcps = HostConnectionPoolSetup(host, request.uri.effectivePort, setup)
-      cachedGateway(hcps)
+      sharedGateway(hcps)
     } else {
       val msg = s"Cannot determine request scheme and target endpoint as ${request.method} request to ${request.uri} doesn't have an absolute URI"
       throw new IllegalUriException(ErrorInfo(msg))
     }
-
-  /** INTERNAL API */
-  private[http] def cachedGateway(setup: HostConnectionPoolSetup)(implicit fm: Materializer): Future[PoolGateway] = {
-    val gatewayPromise = Promise[PoolGateway]()
-    hostPoolCache.putIfAbsent(setup, gatewayPromise.future) match {
-      case null ⇒ // only one thread can get here at a time
-        val whenShuttingDown = Promise[Done]()
-        val gateway =
-          try new PoolGateway(setup, whenShuttingDown)
-          catch {
-            case NonFatal(e) ⇒
-              hostPoolCache.remove(setup)
-              gatewayPromise.failure(e)
-              throw e
-          }
-        val fastFuture = FastFuture.successful(gateway)
-        hostPoolCache.put(setup, fastFuture) // optimize subsequent gateway accesses
-        gatewayPromise.success(gateway) // satisfy everyone who got a hold of our promise while we were starting up
-        whenShuttingDown.future.onComplete(_ ⇒ hostPoolCache.remove(setup, fastFuture))(fm.executionContext)
-        fastFuture
-
-      case future ⇒ future // return cached instance
-    }
   }
 
-  private def gatewayClientFlow[T](hcps: HostConnectionPoolSetup,
-                                   gatewayFuture: Future[PoolGateway])(
-                                     implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
-    clientFlow[T](hcps.setup.settings)(_ -> gatewayFuture)
-      .mapMaterializedValue(_ ⇒ HostConnectionPool(hcps)(gatewayFuture))
+  private def sharedGateway(hcps: HostConnectionPoolSetup): PoolGateway =
+    new PoolGateway(poolMasterActorRef, hcps, PoolGateway.SharedGateway)(systemMaterializer)
 
-  private def clientFlow[T](settings: ConnectionPoolSettings)(f: HttpRequest ⇒ (HttpRequest, Future[PoolGateway]))(
+  private def gatewayClientFlow[T](hcps: HostConnectionPoolSetup,
+                                   gateway: PoolGateway)(
+                                     implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    clientFlow[T](hcps.setup.settings)(_ -> gateway)
+      .mapMaterializedValue(_ ⇒ HostConnectionPool(hcps)(gateway))
+
+  private def clientFlow[T](settings: ConnectionPoolSettings)(f: HttpRequest ⇒ (HttpRequest, PoolGateway))(
     implicit system: ActorSystem, fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] = {
     // a connection pool can never have more than pipeliningLimit * maxConnections requests in flight at any point
     val parallelism = settings.pipeliningLimit * settings.maxConnections
     Flow[(HttpRequest, T)].mapAsyncUnordered(parallelism) {
       case (request, userContext) ⇒
-        val (effectiveRequest, gatewayFuture) = f(request)
+        val (effectiveRequest, gateway) = f(request)
         val result = Promise[(Try[HttpResponse], T)]() // TODO: simplify to `transformWith` when on Scala 2.12
-        gatewayFuture
-          .flatMap(_(effectiveRequest))(fm.executionContext)
-          .onComplete(responseTry ⇒ result.success(responseTry -> userContext))(fm.executionContext)
+        gateway(effectiveRequest).onComplete(responseTry ⇒ result.success(responseTry -> userContext))(fm.executionContext)
         result.future
     }
   }
@@ -613,6 +588,17 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
       case hctx: HttpsConnectionContext ⇒ TLS(hctx.sslContext, hctx.firstSession, role, hostInfo = hostInfo)
       case other                        ⇒ TLSPlacebo() // if it's not HTTPS, we don't enable SSL/TLS
     }
+
+  /**
+   * INTERNAL API
+   *
+   * For testing only
+   */
+  private[scaladsl] def poolSize: Future[Int] = {
+    val sizePromise = Promise[Int]()
+    poolMasterActorRef ! PoolSize(sizePromise)
+    sizePromise.future
+  }
 }
 
 object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
@@ -717,14 +703,14 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
    * Represents a connection pool to a specific target host and pool configuration.
    */
   final case class HostConnectionPool private[http] (setup: HostConnectionPoolSetup)(
-    private[http] val gatewayFuture: Future[PoolGateway]) { // enable test access
+    private[http] val gateway: PoolGateway) { // enable test access
 
     /**
      * Asynchronously triggers the shutdown of the host connection pool.
      *
      * The produced [[scala.concurrent.Future]] is fulfilled when the shutdown has been completed.
      */
-    def shutdown()(implicit ec: ExecutionContextExecutor): Future[Done] = gatewayFuture.flatMap(_.shutdown())
+    def shutdown()(implicit ec: ExecutionContextExecutor): Future[Done] = gateway.shutdown()
 
     private[http] def toJava = new akka.http.javadsl.HostConnectionPool {
       override def setup = HostConnectionPool.this.setup
