@@ -498,6 +498,11 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * The returned [[java.util.concurrent.CompletionStage]] will be completed with value of the final
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure is signaled in the stream.
+   *
+   * If the stream is empty (i.e. completes before signalling any elements),
+   * the reduce stage will fail its downstream with a [[NoSuchElementException]],
+   * which is semantically in-line with that Scala's standard library collections
+   * do in such situations.
    */
   def runReduce[U >: Out](f: function.Function2[U, U, U], materializer: Materializer): CompletionStage[U] =
     runWith(Sink.reduce(f), materializer)
