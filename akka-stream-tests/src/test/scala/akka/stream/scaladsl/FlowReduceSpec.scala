@@ -22,6 +22,13 @@ class FlowReduceSpec extends AkkaSpec {
     val reduceFlow = Flow[Int].filter(_ ⇒ true).map(identity).reduce(_ + _).filter(_ ⇒ true).map(identity)
     val reduceSink = Sink.reduce[Int](_ + _)
 
+    def assertFailureOnEmpty[T](t: ⇒ T): Unit =
+      intercept[UnsupportedOperationException] { t }.getMessage should be("empty stream reduce")
+
+    "fail when using Source.empty.runReduce" in assertAllStagesStopped {
+      assertFailureOnEmpty(Await.result(Source.empty[Int].runReduce(_ + _), 3.seconds))
+    }
+
     "work when using Source.runReduce" in assertAllStagesStopped {
       Await.result(inputSource.runReduce(_ + _), 3.seconds) should be(expected)
     }
@@ -32,14 +39,17 @@ class FlowReduceSpec extends AkkaSpec {
 
     "work when using Sink.reduce" in assertAllStagesStopped {
       Await.result(inputSource runWith reduceSink, 3.seconds) should be(expected)
+      assertFailureOnEmpty(Await.result(Source.empty[Int] runWith reduceSink, 3.seconds))
     }
 
     "work when using Flow.reduce" in assertAllStagesStopped {
       Await.result(inputSource via reduceFlow runWith Sink.head, 3.seconds) should be(expected)
+      assertFailureOnEmpty(Await.result(Source.empty[Int] via reduceFlow runWith Sink.head, 3.seconds))
     }
 
     "work when using Source.reduce + Flow.reduce + Sink.reduce" in assertAllStagesStopped {
       Await.result(reduceSource via reduceFlow runWith reduceSink, 3.seconds) should be(expected)
+      assertFailureOnEmpty(Await.result(Source.empty[Int] via reduceFlow runWith reduceSink, 3.seconds))
     }
 
     "propagate an error" in assertAllStagesStopped {
