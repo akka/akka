@@ -1168,6 +1168,9 @@ private[stream] final class Reduce[T](f: (T, T) ⇒ T) extends SimpleLinearGraph
         pull(in)
         setHandler(in, rest)
       }
+      override def onUpstreamFinish(): Unit = {
+        failStage(new NoSuchElementException("reduce over empty stream"))
+      }
     })
     def rest = new InHandler {
       override def onPush(): Unit = {
