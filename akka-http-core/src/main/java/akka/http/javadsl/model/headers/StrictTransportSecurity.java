@@ -11,11 +11,12 @@ package akka.http.javadsl.model.headers;
 public abstract class StrictTransportSecurity extends akka.http.scaladsl.model.HttpHeader {
     public abstract long maxAge();
     public abstract boolean includeSubDomains();
+    public abstract boolean preload();
 
     public static StrictTransportSecurity create(long maxAge) {
-        return new akka.http.scaladsl.model.headers.Strict$minusTransport$minusSecurity(maxAge, false);
+        return new akka.http.scaladsl.model.headers.Strict$minusTransport$minusSecurity(maxAge, false, false);
     }
-    public static StrictTransportSecurity create(long maxAge, boolean includeSubDomains) {
-        return new akka.http.scaladsl.model.headers.Strict$minusTransport$minusSecurity(maxAge, includeSubDomains);
+    public static StrictTransportSecurity create(long maxAge, boolean includeSubDomains, boolean preload) {
+        return new akka.http.scaladsl.model.headers.Strict$minusTransport$minusSecurity(maxAge, includeSubDomains, preload);
     }
 }
