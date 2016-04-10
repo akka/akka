@@ -187,7 +187,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
   def server = rule { products ~ EOI ~> (Server(_)) }
 
   def `strict-transport-security` = rule {
-    ignoreCase("max-age=") ~ `delta-seconds` ~ optional(ws(";") ~ ignoreCase("includesubdomains") ~ push(true)) ~ EOI ~> (`Strict-Transport-Security`(_, _))
+    ignoreCase("max-age=") ~ `delta-seconds` ~ optional(ws(";") ~ ignoreCase("includesubdomains") ~ push(true)) ~ optional(ws(";") ~ ignoreCase("preload") ~ push(true)) ~ EOI ~> (`Strict-Transport-Security`(_, _, _))
   }
 
   // http://tools.ietf.org/html/rfc7230#section-3.3.1
