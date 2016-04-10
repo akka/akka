@@ -81,7 +81,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
   }
   "getFromDirectory-examples" in compileOnlySpec {
     val route =
-      path("tmp") {
+      pathPrefix("tmp") {
         getFromDirectory("/tmp")
       }
 
@@ -92,7 +92,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
   }
   "getFromResourceDirectory-examples" in compileOnlySpec {
     val route =
-      path("examples") {
+      pathPrefix("examples") {
         getFromResourceDirectory("/examples")
       }
 
