@@ -1158,31 +1158,36 @@ private[stream] final class DropWithin[T](timeout: FiniteDuration) extends Simpl
 private[stream] final class Reduce[T](f: (T, T) ⇒ T) extends SimpleLinearGraphStage[T] {
   override def initialAttributes: Attributes = DefaultAttributes.reduce
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler { self ⇒
     override def toString = s"Reduce.Logic(aggregator=$aggregator)"
+
     var aggregator: T = _
 
+    // Initial input handler
     setHandler(in, new InHandler {
       override def onPush(): Unit = {
         aggregator = grab(in)
         pull(in)
-        setHandler(in, rest)
+        setHandler(in, self)
       }
+
+      override def onUpstreamFinish(): Unit =
+        failStage(new NoSuchElementException("reduce over empty stream"))
     })
-    def rest = new InHandler {
-      override def onPush(): Unit = {
-        aggregator = f(aggregator, grab(in))
-        pull(in)
-      }
-      override def onUpstreamFinish(): Unit = {
-        push(out, aggregator)
-        completeStage()
-      }
+
+    override def onPush(): Unit = {
+      aggregator = f(aggregator, grab(in))
+      pull(in)
     }
 
-    setHandler(out, new OutHandler {
-      override def onPull(): Unit = pull(in)
-    })
+    override def onPull(): Unit = pull(in)
+
+    override def onUpstreamFinish(): Unit = {
+      push(out, aggregator)
+      completeStage()
+    }
+
+    setHandler(out, self)
   }
   override def toString = "Reduce"
 }

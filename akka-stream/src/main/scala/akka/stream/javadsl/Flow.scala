@@ -573,6 +573,11 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * Applies the given function towards its current and next value,
    * yielding the next current value.
    *
+   * If the stream is empty (i.e. completes before signalling any elements),
+   * the reduce stage will fail its downstream with a [[NoSuchElementException]],
+   * which is semantically in-line with that Scala's standard library collections
+   * do in such situations.
+   *
    * '''Emits when''' upstream completes
    *
    * '''Backpressures when''' downstream backpressures

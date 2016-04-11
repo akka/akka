@@ -245,6 +245,11 @@ object Sink {
    * The returned [[scala.concurrent.Future]] will be completed with value of the final
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure signaled in the stream.
+   *
+   * If the stream is empty (i.e. completes before signalling any elements),
+   * the reduce stage will fail its downstream with a [[NoSuchElementException]],
+   * which is semantically in-line with that Scala's standard library collections
+   * do in such situations.
    */
   def reduce[T](f: (T, T) ⇒ T): Sink[T, Future[T]] =
     Flow[T].reduce(f).toMat(Sink.head)(Keep.right).named("reduceSink")
