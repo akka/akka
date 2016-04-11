@@ -45,8 +45,33 @@ to rely on the configured default client-side ``HttpsContext``.
 If no custom ``HttpsContext`` is defined the default context uses Java's default TLS settings. Customizing the
 ``HttpsContext`` can make the Https client less secure. Understand what you are doing!
 
+Detailed configuration and workarounds
+--------------------------------------
+
+Akka HTTP relies on `Typesafe SSL-Config`_ which is a library maintained by Lightbend that makes configuring
+things related to SSL/TLS much simpler than using the raw SSL APIs provided by the JDK. Please refer to its
+documentation to learn more about it.
+
+All configuration options available to this library may be set under the ``akka.ssl-context`` configuration for Akka HTTP applications.
+
+.. note::
+  When encountering problems connecting to HTTPS hosts we highly encourage to reading up on the excellent ssl-config
+  configuration. Especially the quick start sections about `adding certificates to the trust store`_ should prove
+  very useful, for example to easily trust a self-signed certificate that applications might use in development mode.
+
+.. warning::
+  While it is possible to disable certain checks using the so called "loose" settings in SSL Config, we **strongly recommend**
+  to instead attempt to solve these issues by properly configuring TLS–for example by adding trusted keys to the keystore.
+
+  If however certain checks really need to be disabled because of misconfigured (or legacy) servers that your
+  application has to speak to, instead of disabling the checks globally (i.e. in ``application.conf``) we suggest
+  configuring the loose settings for *specific connections* that are known to need them disabled (and trusted for some other reason).
+  The pattern of doing so is documented in the folowing sub-sections.
+
+.. _adding certificates to the trust store: http://typesafehub.github.io/ssl-config/WSQuickStart.html#connecting-to-a-remote-server-over-https
+
 Hostname verification
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 Hostname verification proves that the Akka HTTP client is actually communicating with the server it intended to
 communicate with. Without this check a man-in-the-middle attack is possible. In the attack scenario, an alternative
@@ -57,9 +82,40 @@ The default ``HttpsContext`` enables hostname verification. Akka HTTP relies on 
 to implement this and security options for SSL/TLS. Hostname verification is provided by the JDK
 and used by Akka HTTP since Java 7, and on Java 6 the verification is implemented by ssl-config manually.
 
-.. note::
-  We highly recommend updating your Java runtime to the latest available release,
-  preferably JDK 8, as it includes this and many more security features related to TLS.
+For further recommended reading we would like to highlight the `fixing hostname verification blog post`_ by blog post by Will Sargent.
 
-.. _Typesafe SSL-Config: https://github.com/typesafehub/ssl-config
+.. _Typesafe SSL-Config: http://typesafehub.github.io/ssl-config
+.. _fixing hostname verification blog post: https://tersesystems.com/2014/03/23/fixing-hostname-verification/
 .. _akka.http.scaladsl.Http: @github@/akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala
+
+Server Name Indication (SNI)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+SNI is an TLS extension which aims to guard against man-in-the-middle attacks. It does so by having the client send the
+name of the virtual domain it is expecting to talk to as part of the TLS handshake.
+
+It is specified as part of `RFC 6066`_.
+
+Disabling TLS security features, at your own risk
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+  It is highly discouraged to disable any of the security features of TLS, however do acknowlage that workarounds may sometimes be needed.
+
+  Before disabling any of the features one should consider if they may be solvable *within* the TLS world,
+  for example by `trusting a certificate`_, or `configuring the trusted cipher suites`_ etc.
+
+  If disabling features is indeed desired, we recommend doing so for *specific connections*,
+  instead of globally configuring it via ``application.conf``.
+
+The following shows an example of disabling SNI for a given connection:
+
+.. includecode:: ../../code/docs/http/scaladsl/HttpsExamplesSpec.scala
+   :include: disable-sni-connection
+
+The ``badSslConfig`` is a copy of the default ``AkkaSSLConfig`` with with the slightly changed configuration to disable SNI.
+This value can be cached and used for connections which should indeed not use this feature.
+
+.. _RFC 6066: https://tools.ietf.org/html/rfc6066#page-6
+.. _trusting a certificate: http://typesafehub.github.io/ssl-config/WSQuickStart.html
+.. _configuring the trusted cipher suites: http://typesafehub.github.io/ssl-config/CipherSuites.html
