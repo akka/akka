@@ -54,6 +54,24 @@ class FlowReduceSpec extends AkkaSpec {
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
     }
 
+    "fail on empty stream using Source.runReduce" in assertAllStagesStopped {
+      val result = Source.empty[Int].runReduce(_ + _)
+      val ex = intercept[NoSuchElementException] { Await.result(result, 3.seconds) }
+      ex.getMessage should include("empty stream")
+    }
+
+    "fail on empty stream using Flow.reduce" in assertAllStagesStopped {
+      val result = Source.empty[Int].via(reduceFlow).runWith(Sink.fold(0)(_ + _))
+      val ex = intercept[NoSuchElementException] { Await.result(result, 3.seconds) }
+      ex.getMessage should include("empty stream")
+    }
+
+    "fail on empty stream using Sink.reduce" in assertAllStagesStopped {
+      val result = Source.empty[Int].runWith(reduceSink)
+      val ex = intercept[NoSuchElementException] { Await.result(result, 3.seconds) }
+      ex.getMessage should include("empty stream")
+    }
+
   }
 
 }
