@@ -20,6 +20,7 @@ import akka.util.SerializedSuspendableExecutionContext
 import akka.actor._
 import akka.routing.RandomPool
 import akka.event.Logging
+import java.nio.channels.ClosedChannelException
 
 abstract class SelectionHandlerSettings(config: Config) {
   import config._
@@ -153,12 +154,15 @@ private[io] object SelectionHandler {
     def register(channel: SelectableChannel, initialOps: Int)(implicit channelActor: ActorRef): Unit =
       execute {
         new Task {
-          def tryRun(): Unit = {
+          def tryRun(): Unit = try {
             val key = channel.register(selector, initialOps, channelActor)
             channelActor ! new ChannelRegistration {
               def enableInterest(ops: Int): Unit = enableInterestOps(key, ops)
               def disableInterest(ops: Int): Unit = disableInterestOps(key, ops)
             }
+          } catch {
+            case _: ClosedChannelException ⇒
+            // ignore, might happen if a connection is closed in the same moment as an interest is registered
           }
         }
       }
