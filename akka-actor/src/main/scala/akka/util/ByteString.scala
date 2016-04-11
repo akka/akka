@@ -528,7 +528,7 @@ object CompactByteString {
     else {
       val ar = new Array[Byte](bytes.size)
       bytes.copyToArray(ar)
-      CompactByteString(ar)
+      ByteString.ByteString1C(ar)
     }
   }
 
