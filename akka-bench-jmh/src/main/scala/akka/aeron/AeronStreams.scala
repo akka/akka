@@ -23,7 +23,8 @@ object AeronStreams {
   val channel1 = "aeron:udp?endpoint=localhost:40123"
   val channel2 = "aeron:udp?endpoint=localhost:40124"
   val throughputN = 10000000
-  val latencyN = 100000
+  val latencyRate = 10000 // per second
+  val latencyN = 10 * latencyRate
   val payload = ("0" * 100).getBytes("utf-8")
   lazy val sendTimes = new AtomicLongArray(latencyN)
 
@@ -93,6 +94,12 @@ object AeronStreams {
     // echo receiver of ping-pong latency testing
     if (args.length != 0 && args(0) == "echo-receiver")
       runEchoReceiver()
+
+    if (args(0) == "debug-receiver")
+      runDebugReceiver()
+
+    if (args(0) == "debug-sender")
+      runDebugSender()
   }
 
   def runReceiver(): Unit = {
@@ -172,7 +179,7 @@ object AeronStreams {
       .runForeach { bytes =>
         val c = count.incrementAndGet()
         val d = System.nanoTime() - sendTimes.get(c - 1)
-        if (c % 10000 == 0)
+        if (c % (latencyN / 10) == 0)
           println(s"# receive offset $c => ${d / 1000} µs") // FIXME
         histogram.recordValue(d)
         if (c == latencyN) {
@@ -192,9 +199,9 @@ object AeronStreams {
       t0 = System.nanoTime()
 
       Source(1 to latencyN)
-        .throttle(10000, 1.second, 100000, ThrottleMode.Shaping)
+        .throttle(latencyRate, 1.second, latencyRate / 10, ThrottleMode.Shaping)
         .map { n =>
-          if (n % 10000 == 0)
+          if (n % (latencyN / 10) == 0)
             println(s"# send offset $n") // FIXME
           sendTimes.set(n - 1, System.nanoTime())
           payload
@@ -205,6 +212,31 @@ object AeronStreams {
     }
 
     exit(0)
+  }
+
+  def runDebugReceiver(): Unit = {
+    import system.dispatcher
+    Source.fromGraph(new AeronSource(channel1, () => aeron))
+      .map(bytes => new String(bytes, "utf-8"))
+      .runForeach { s =>
+        println(s)
+      }.onFailure {
+        case e =>
+          e.printStackTrace
+          exit(-1)
+      }
+  }
+
+  def runDebugSender(): Unit = {
+    val fill = "0000"
+    Source(1 to 1000)
+      .throttle(1, 1.second, 1, ThrottleMode.Shaping)
+      .map { n =>
+        val s = (fill + n.toString).takeRight(4)
+        println(s)
+        s.getBytes("utf-8")
+      }
+      .runWith(new AeronSink(channel1, () => aeron))
   }
 
 }

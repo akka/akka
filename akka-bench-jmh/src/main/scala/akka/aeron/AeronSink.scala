@@ -69,6 +69,9 @@ class AeronSink(channel: String, aeron: () => Aeron) extends GraphStage[SinkShap
             println(s"# drop") // FIXME
             pull(in) // drop it
           } else if (backoffCount <= 5) {
+            // TODO Instead of using the scheduler we should handoff the task of
+            // retrying/polling to a separate thread that performs the polling for
+            // all sources/sinks and notifies back when there is some news.
             // println(s"# scheduled backoff ${6 - backoffCount}") // FIXME
             backoffCount -= 1
             if (backoffCount <= 2)

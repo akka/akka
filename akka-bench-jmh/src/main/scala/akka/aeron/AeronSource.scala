@@ -77,6 +77,9 @@ class AeronSource(channel: String, aeron: () => Aeron) extends GraphStage[Source
           if (fragmentsRead <= 0) {
             // TODO the backoff strategy should be measured and tuned
             if (backoffCount <= 0) {
+              // TODO Instead of using the scheduler we should handoff the task of
+              // retrying/polling to a separate thread that performs the polling for
+              // all sources/sinks and notifies back when there is some news.
               // println(s"# scheduled backoff ${0 - backoffCount + 1}") // FIXME
               backoffCount -= 1
               if (backoffCount <= -5)
