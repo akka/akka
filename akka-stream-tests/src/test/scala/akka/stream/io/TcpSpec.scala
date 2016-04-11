@@ -459,10 +459,6 @@ class TcpSpec extends AkkaSpec("akka.stream.materializer.subscription-timeout.ti
     }
 
     "bind and unbind correctly" in EventFilter[BindException](occurrences = 2).intercept {
-      if (Helpers.isWindows) {
-        info("On Windows unbinding is not immediate")
-        pending
-      }
       val address = temporaryServerAddress()
       val probe1 = TestSubscriber.manualProbe[Tcp.IncomingConnection]()
       val bind = Tcp(system).bind(address.getHostName, address.getPort) // TODO getHostString in Java7
