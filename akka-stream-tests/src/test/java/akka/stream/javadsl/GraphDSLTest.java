@@ -27,13 +27,13 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 
-public class FlowGraphTest extends StreamTest {
-  public FlowGraphTest() {
+public class GraphDSLTest extends StreamTest {
+  public GraphDSLTest() {
     super(actorSystemResource);
   }
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("FlowGraphTest",
+  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("GraphDSLTest",
     AkkaSpec.testConf());
 
   @SuppressWarnings("serial")
@@ -59,12 +59,12 @@ public class FlowGraphTest extends StreamTest {
   @Test
   public void mustBeAbleToUseMerge() throws Exception {
     final Flow<String, String, NotUsed> f1 =
-        Flow.of(String.class).transform(FlowGraphTest.this.<String> op()).named("f1");
+        Flow.of(String.class).transform(GraphDSLTest.this.<String> op()).named("f1");
     final Flow<String, String, NotUsed> f2 =
-        Flow.of(String.class).transform(FlowGraphTest.this.<String> op()).named("f2");
+        Flow.of(String.class).transform(GraphDSLTest.this.<String> op()).named("f2");
     @SuppressWarnings("unused")
     final Flow<String, String, NotUsed> f3 =
-        Flow.of(String.class).transform(FlowGraphTest.this.<String> op()).named("f3");
+        Flow.of(String.class).transform(GraphDSLTest.this.<String> op()).named("f3");
 
     final Source<String, NotUsed> in1 = Source.from(Arrays.asList("a", "b", "c"));
     final Source<String, NotUsed> in2 = Source.from(Arrays.asList("d", "e", "f"));
@@ -138,8 +138,8 @@ public class FlowGraphTest extends StreamTest {
             final SourceShape<Pair<String, Integer>> in = b.add(Source.from(input));
             final FanOutShape2<Pair<String, Integer>, String, Integer> unzip = b.add(Unzip.<String, Integer>create());
 
-            final SinkShape<String> out1 = b.add(FlowGraphTest.<String>createSink(probe1));
-            final SinkShape<Integer> out2 = b.add(FlowGraphTest.<Integer>createSink(probe2));
+            final SinkShape<String> out1 = b.add(GraphDSLTest.<String>createSink(probe1));
+            final SinkShape<Integer> out2 = b.add(GraphDSLTest.<Integer>createSink(probe2));
 
             b.from(in).toInlet(unzip.in());
             b.from(unzip.out0()).to(out1);
@@ -178,8 +178,8 @@ public class FlowGraphTest extends StreamTest {
               })
           );
 
-          final SinkShape<String> out1 = b.add(FlowGraphTest.<String>createSink(probe1));
-          final SinkShape<Integer> out2 = b.add(FlowGraphTest.<Integer>createSink(probe2));
+          final SinkShape<String> out1 = b.add(GraphDSLTest.<String>createSink(probe1));
+          final SinkShape<Integer> out2 = b.add(GraphDSLTest.<Integer>createSink(probe2));
 
           b.from(b.add(in)).toInlet(unzip.in());
           b.from(unzip.out0()).to(out1);
@@ -221,10 +221,10 @@ public class FlowGraphTest extends StreamTest {
               })
           );
 
-          final SinkShape<String> out1 = b.add(FlowGraphTest.<String>createSink(probe1));
-          final SinkShape<Integer> out2 = b.add(FlowGraphTest.<Integer>createSink(probe2));
-          final SinkShape<String> out3 = b.add(FlowGraphTest.<String>createSink(probe3));
-          final SinkShape<Integer> out4 = b.add(FlowGraphTest.<Integer>createSink(probe4));
+          final SinkShape<String> out1 = b.add(GraphDSLTest.<String>createSink(probe1));
+          final SinkShape<Integer> out2 = b.add(GraphDSLTest.<Integer>createSink(probe2));
+          final SinkShape<String> out3 = b.add(GraphDSLTest.<String>createSink(probe3));
+          final SinkShape<Integer> out4 = b.add(GraphDSLTest.<Integer>createSink(probe4));
 
           b.from(b.add(in)).toInlet(unzip.in());
           b.from(unzip.out0()).to(out1);

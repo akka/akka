@@ -24,7 +24,7 @@ class RecipeCollectingMetrics extends RecipeSpec {
       //      val currentLoad = loadUpdates.transform(() => new HoldWithWait)
       //
       //      val graph = GraphDSL { implicit builder =>
-      //        import FlowGraphImplicits._
+      //        import GraphDSLImplicits._
       //        val collector = ZipWith[Int, Tick, String](
       //          (load: Int, tick: Tick) => s"current load is $load")
       //

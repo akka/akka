@@ -27,14 +27,14 @@ import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
 
-public class FlowGraphDocTest extends AbstractJavaTest {
+public class GraphDSLDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
   static Materializer mat;
 
   @BeforeClass
   public static void setup() {
-    system = ActorSystem.create("FlowGraphDocTest");
+    system = ActorSystem.create("GraphDSLDocTest");
     mat = ActorMaterializer.create(system);
   }
 
@@ -47,7 +47,7 @@ public class FlowGraphDocTest extends AbstractJavaTest {
 
   @Test
   public void demonstrateBuildSimpleGraph() throws Exception {
-    //#simple-flow-graph
+    //#simple-graph-dsl
     final Source<Integer, NotUsed> in = Source.from(Arrays.asList(1, 2, 3, 4, 5));
     final Sink<List<String>, CompletionStage<List<String>>> sink = Sink.head();
     final Sink<List<Integer>, CompletionStage<List<Integer>>> sink2 = Sink.head();
@@ -72,7 +72,7 @@ public class FlowGraphDocTest extends AbstractJavaTest {
               builder.from(bcast).via(builder.add(f4)).toFanIn(merge);
               return ClosedShape.getInstance();
             }));
-    //#simple-flow-graph
+    //#simple-graph-dsl
     final List<String> list = result.run(mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
     final String[] res = list.toArray(new String[] {});
     Arrays.sort(res, null);
@@ -107,7 +107,7 @@ public class FlowGraphDocTest extends AbstractJavaTest {
 
   @Test
   public void demonstrateReusingFlowInGraph() throws Exception {
-    //#flow-graph-reusing-a-flow
+    //#graph-dsl-reusing-a-flow
     final Sink<Integer, CompletionStage<Integer>> topHeadSink = Sink.head();
     final Sink<Integer, CompletionStage<Integer>> bottomHeadSink = Sink.head();
     final Flow<Integer, Integer, NotUsed> sharedDoubler = Flow.of(Integer.class).map(elem -> elem * 2);
@@ -129,7 +129,7 @@ public class FlowGraphDocTest extends AbstractJavaTest {
           }
         )
       );
-    //#flow-graph-reusing-a-flow
+    //#graph-dsl-reusing-a-flow
     final Pair<CompletionStage<Integer>, CompletionStage<Integer>> pair = g.run(mat);
     assertEquals(Integer.valueOf(2), pair.first().toCompletableFuture().get(3, TimeUnit.SECONDS));
     assertEquals(Integer.valueOf(2), pair.second().toCompletableFuture().get(3, TimeUnit.SECONDS));
@@ -137,7 +137,7 @@ public class FlowGraphDocTest extends AbstractJavaTest {
 
   @Test
   public void demonstrateMatValue() throws Exception {
-    //#flow-graph-matvalue
+    //#graph-dsl-matvalue
     final Sink<Integer, CompletionStage<Integer>> foldSink = Sink.<Integer, Integer> fold(0, (a, b) -> {
       return a + b;
     });
@@ -152,9 +152,9 @@ public class FlowGraphDocTest extends AbstractJavaTest {
           fold.in(),
           b.from(b.materializedValue()).via(b.add(flatten)).out());
       }));
-      //#flow-graph-matvalue
+      //#graph-dsl-matvalue
 
-    //#flow-graph-matvalue-cycle
+    //#graph-dsl-matvalue-cycle
     // This cannot produce any value:
     final Source<Integer, CompletionStage<Integer>> cyclicSource = Source.fromGraph(
       GraphDSL.create(foldSink,
@@ -168,6 +168,6 @@ public class FlowGraphDocTest extends AbstractJavaTest {
         return SourceShape.of(b.from(b.materializedValue()).via(b.add(flatten)).out());
       }));
 
-    //#flow-graph-matvalue-cycle
+    //#graph-dsl-matvalue-cycle
   }
 }

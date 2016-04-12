@@ -25,7 +25,7 @@ public class CodingDirectivesTest extends JUnitRouteTest {
 
     @BeforeClass
     public static void setup() {
-        system = ActorSystem.create("FlowGraphDocTest");
+        system = ActorSystem.create("GraphDSLDocTest");
     }
 
     @AfterClass
