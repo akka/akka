@@ -15,7 +15,7 @@ Some graph operations which are common enough and fit the linear style of Flows,
 streams, such that the second one is consumed after the first one has completed), may have shorthand methods defined on
 :class:`Flow` or :class:`Source` themselves, however you should keep in mind that those are also implemented as graph junctions.
 
-.. _flow-graph-java:
+.. _graph-dsl-java:
 
 Constructing Graphs
 -------------------
@@ -51,7 +51,7 @@ Such graph is simple to translate to the Graph DSL since each linear element cor
 and each circle corresponds to either a :class:`Junction` or a :class:`Source` or :class:`Sink` if it is beginning
 or ending a :class:`Flow`.
 
-.. includecode:: ../code/docs/stream/FlowGraphDocTest.java#simple-flow-graph
+.. includecode:: ../code/docs/stream/GraphDSLDocTest.java#simple-graph-dsl
 
 .. note::
    Junction *reference equality* defines *graph node equality* (i.e. the same merge *instance* used in a GraphDSL
@@ -75,9 +75,9 @@ In the example below we prepare a graph that consists of two parallel streams,
 in which we re-use the same instance of :class:`Flow`, yet it will properly be
 materialized as two connections between the corresponding Sources and Sinks:
 
-.. includecode:: ../code/docs/stream/FlowGraphDocTest.java#flow-graph-reusing-a-flow
+.. includecode:: ../code/docs/stream/GraphDSLDocTest.java#graph-dsl-reusing-a-flow
 
-.. _partial-flow-graph-java:
+.. _partial-graph-dsl-java:
 
 Constructing and combining Partial Graphs
 -----------------------------------------
@@ -97,7 +97,7 @@ Let's imagine we want to provide users with a specialized element that given 3 i
 the greatest int value of each zipped triple. We'll want to expose 3 input ports (unconnected sources) and one output port
 (unconnected sink).
 
-.. includecode:: ../code/docs/stream/StreamPartialFlowGraphDocTest.java#simple-partial-flow-graph
+.. includecode:: ../code/docs/stream/StreamPartialGraphDSLDocTest.java#simple-partial-graph-dsl
 
 As you can see, first we construct the partial graph that describes how to compute the maximum of two input streams, then
 we reuse that twice while constructing the partial graph that extends this to three input streams,
@@ -136,12 +136,12 @@ be attached before this Source can run”.
 Refer to the example below, in which we create a Source that zips together two numbers, to see this graph
 construction in action:
 
-.. includecode:: ../code/docs/stream/StreamPartialFlowGraphDocTest.java#source-from-partial-flow-graph
+.. includecode:: ../code/docs/stream/StreamPartialGraphDSLDocTest.java#source-from-partial-graph-dsl
 
 Similarly the same can be done for a ``Sink<T>`` using ``SinkShape.of`` in which case the provided value must be an
 ``Inlet<T>``. For defining a ``Flow<T>`` we need to expose both an undefined source and sink:
 
-.. includecode:: ../code/docs/stream/StreamPartialFlowGraphDocTest.java#flow-from-partial-flow-graph
+.. includecode:: ../code/docs/stream/StreamPartialGraphDSLDocTest.java#flow-from-partial-graph-dsl
 
 Combining Sources and Sinks with simplified API
 -----------------------------------------------
@@ -150,11 +150,11 @@ There is simplified API you can use to combine sources and sinks with junctions 
 ``Merge<In>`` and ``Concat<A>`` without the need for using the Graph DSL. The combine method takes care of constructing
 the necessary graph underneath. In following example we combine two sources into one (fan-in):
 
-.. includecode:: ../code/docs/stream/StreamPartialFlowGraphDocTest.java#source-combine
+.. includecode:: ../code/docs/stream/StreamPartialGraphDSLDocTest.java#source-combine
 
 The same can be done for a ``Sink`` but in this case it will be fan-out:
 
-.. includecode:: ../code/docs/stream/StreamPartialFlowGraphDocTest.java#sink-combine
+.. includecode:: ../code/docs/stream/StreamPartialGraphDSLDocTest.java#sink-combine
 
 .. _bidi-flow-java:
 
@@ -219,12 +219,12 @@ can be used in the graph as an ordinary source or outlet, and which will eventua
 If the materialized value is needed at more than one place, it is possible to call ``materializedValue`` any number of
 times to acquire the necessary number of outlets.
 
-.. includecode:: ../code/docs/stream/FlowGraphDocTest.java#flow-graph-matvalue
+.. includecode:: ../code/docs/stream/GraphDSLDocTest.java#graph-dsl-matvalue
 
 Be careful not to introduce a cycle where the materialized value actually contributes to the materialized value.
 The following example demonstrates a case where the materialized ``CompletionStage`` of a fold is fed back to the fold itself.
 
-.. includecode:: ../code/docs/stream/FlowGraphDocTest.java#flow-graph-matvalue-cycle
+.. includecode:: ../code/docs/stream/GraphDSLDocTest.java#graph-dsl-matvalue-cycle
 
 .. _graph-cycles-java:
 

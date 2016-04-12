@@ -3,36 +3,35 @@
  */
 package docs.stream;
 
-import static org.junit.Assert.assertEquals;
-
-import java.util.*;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-
 import akka.Done;
 import akka.NotUsed;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.japi.Pair;
+import akka.stream.*;
+import akka.stream.javadsl.*;
+import akka.testkit.JavaTestKit;
 import docs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-import akka.actor.*;
-import akka.japi.Pair;
-import akka.stream.*;
-import akka.stream.javadsl.*;
-import akka.testkit.JavaTestKit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
-public class StreamPartialFlowGraphDocTest extends AbstractJavaTest {
+import static org.junit.Assert.assertEquals;
+
+public class StreamPartialGraphDSLDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
   static Materializer mat;
 
   @BeforeClass
   public static void setup() {
-    system = ActorSystem.create("StreamPartialFlowGraphDocTest");
+    system = ActorSystem.create("StreamPartialGraphDSLDocTest");
     mat = ActorMaterializer.create(system);
   }
 
@@ -45,7 +44,7 @@ public class StreamPartialFlowGraphDocTest extends AbstractJavaTest {
   
   @Test
   public void demonstrateBuildWithOpenPorts() throws Exception {
-    //#simple-partial-flow-graph
+    //#simple-partial-graph-dsl
     final Graph<FanInShape2<Integer, Integer, Integer>, NotUsed> zip =
       ZipWith.create((Integer left, Integer right) -> Math.max(left, right));
     
@@ -65,7 +64,7 @@ public class StreamPartialFlowGraphDocTest extends AbstractJavaTest {
     final RunnableGraph<CompletionStage<Integer>> g =
       RunnableGraph.<CompletionStage<Integer>>fromGraph(
         GraphDSL.create(resultSink, (builder, sink) -> {
-          // import the partial flow graph explicitly
+          // import the partial graph explicitly
           final UniformFanInShape<Integer, Integer> pm = builder.add(pickMaxOfThree);
           
           builder.from(builder.add(Source.single(1))).toInlet(pm.in(0));
@@ -76,11 +75,11 @@ public class StreamPartialFlowGraphDocTest extends AbstractJavaTest {
         }));
     
     final CompletionStage<Integer> max = g.run(mat);
-    //#simple-partial-flow-graph
+    //#simple-partial-graph-dsl
     assertEquals(Integer.valueOf(3), max.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
-    //#source-from-partial-flow-graph
+    //#source-from-partial-graph-dsl
     // first create an indefinite source of integer numbers
     class Ints implements Iterator<Integer> {
       private int next = 0;
@@ -93,11 +92,11 @@ public class StreamPartialFlowGraphDocTest extends AbstractJavaTest {
         return next++;
       }
     }
-  //#source-from-partial-flow-graph
+  //#source-from-partial-graph-dsl
   
   @Test
-  public void demonstrateBuildSourceFromPartialFlowGraphCreate() throws Exception {
-    //#source-from-partial-flow-graph
+  public void demonstrateBuildSourceFromPartialGraphDSLCreate() throws Exception {
+    //#source-from-partial-graph-dsl
     final Source<Integer, NotUsed> ints = Source.fromIterator(() -> new Ints());
     
     final Source<Pair<Integer, Integer>, NotUsed> pairs = Source.fromGraph(
@@ -114,13 +113,13 @@ public class StreamPartialFlowGraphDocTest extends AbstractJavaTest {
     
     final CompletionStage<Pair<Integer, Integer>> firstPair = 
         pairs.runWith(Sink.<Pair<Integer, Integer>>head(), mat);
-    //#source-from-partial-flow-graph
+    //#source-from-partial-graph-dsl
     assertEquals(new Pair<>(0, 1), firstPair.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
   
   @Test
-  public void demonstrateBuildFlowFromPartialFlowGraphCreate() throws Exception {
-    //#flow-from-partial-flow-graph
+  public void demonstrateBuildFlowFromPartialGraphDSLCreate() throws Exception {
+    //#flow-from-partial-graph-dsl
     final Flow<Integer, Pair<Integer, String>, NotUsed> pairs = Flow.fromGraph(GraphDSL.create(
         b -> {
           final UniformFanOutShape<Integer, Integer> bcast = b.add(Broadcast.create(2));
@@ -133,11 +132,11 @@ public class StreamPartialFlowGraphDocTest extends AbstractJavaTest {
           return FlowShape.of(bcast.in(), zip.out());
         }));
     
-    //#flow-from-partial-flow-graph
+    //#flow-from-partial-graph-dsl
     final CompletionStage<Pair<Integer, String>> matSink =
-    //#flow-from-partial-flow-graph
+    //#flow-from-partial-graph-dsl
     Source.single(1).via(pairs).runWith(Sink.<Pair<Integer, String>>head(), mat);
-    //#flow-from-partial-flow-graph
+    //#flow-from-partial-graph-dsl
 
     assertEquals(new Pair<>(1, "1"), matSink.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }

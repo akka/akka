@@ -132,7 +132,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
   "connection-stream-failure-handling" in compileOnlySpec {
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
-    import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
+    import akka.http.scaladsl.model.{ ContentTypes, HttpEntity }
     import akka.stream.ActorMaterializer
 
     implicit val system = ActorSystem()
