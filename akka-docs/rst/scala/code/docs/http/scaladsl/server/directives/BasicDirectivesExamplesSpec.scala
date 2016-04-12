@@ -4,7 +4,7 @@
 
 package docs.http.scaladsl.server.directives
 
-import java.io.File
+import java.nio.file.Paths
 
 import akka.actor.ActorSystem
 import akka.event.Logging
@@ -190,7 +190,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
       path("sample") {
         complete {
           // internally uses the configured fileIODispatcher:
-          val source = FileIO.fromFile(new File("example.json"))
+          val source = FileIO.fromPath(Paths.get("example.json"))
           HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, source))
         }
       }

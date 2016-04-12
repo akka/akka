@@ -10,12 +10,13 @@ import akka.http.impl.model.JavaInitialization
 
 import language.implicitConversions
 import java.io.File
+import java.nio.file.{ Path, Files }
 import java.lang.{ Iterable ⇒ JIterable}
 import scala.util.control.NonFatal
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.collection.immutable
-import akka.util.{Unsafe, ByteString}
+import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream._
@@ -242,11 +243,22 @@ object HttpEntity {
    *
    * If the given `chunkSize` is -1 the default chunk size is used.
    */
-  def apply(contentType: ContentType, file: File, chunkSize: Int = -1): UniversalEntity = {
-    val fileLength = file.length
+  @deprecated("Use `fromPath` instead", "2.4.5")
+  def apply(contentType: ContentType, file: File, chunkSize: Int = -1): UniversalEntity =
+    fromPath(contentType, file.toPath, chunkSize)
+
+  /**
+   * Returns either the empty entity, if the given file is empty, or a [[HttpEntity.Default]] entity
+   * consisting of a stream of [[akka.util.ByteString]] instances each containing `chunkSize` bytes
+   * (except for the final ByteString, which simply contains the remaining bytes).
+   *
+   * If the given `chunkSize` is -1 the default chunk size is used.
+   */
+  def fromPath(contentType: ContentType, file: Path, chunkSize: Int = -1): UniversalEntity = {
+    val fileLength = Files.size(file)
     if (fileLength > 0)
       HttpEntity.Default(contentType, fileLength,
-        if (chunkSize > 0) FileIO.fromFile(file, chunkSize) else FileIO.fromFile(file))
+        if (chunkSize > 0) FileIO.fromPath(file, chunkSize) else FileIO.fromPath(file))
     else empty(contentType)
   }
 
