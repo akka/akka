@@ -4,9 +4,7 @@
 
 package docs.http.scaladsl
 
-import akka.actor.{ Props, ActorRef, ActorSystem }
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
@@ -14,7 +12,6 @@ import akka.stream.scaladsl.{ Flow, Sink }
 import akka.testkit.TestActors
 import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
-import scala.io.StdIn
 import scala.language.postfixOps
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -26,6 +23,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
   val log: LoggingAdapter = null
 
   "binding-example" in compileOnlySpec {
+    import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
     import akka.stream.ActorMaterializer
     import akka.stream.scaladsl._
@@ -44,6 +42,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
   }
 
   "binding-failure-high-level-example" in compileOnlySpec {
+    import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.server.Directives._
     import akka.stream.ActorMaterializer
@@ -70,6 +69,8 @@ class HttpServerExampleSpec extends WordSpec with Matchers
   }
 
   // mock values:
+  import akka.http.scaladsl.Http
+  import akka.actor.ActorSystem
   val handleConnections: Sink[Http.IncomingConnection, Future[Http.ServerBinding]] =
     Sink.ignore.mapMaterializedValue(_ => Future.failed(new Exception("")))
 
@@ -98,6 +99,15 @@ class HttpServerExampleSpec extends WordSpec with Matchers
   }
 
   "incoming-connections-source-failure-handling" in compileOnlySpec {
+    import akka.actor.ActorSystem
+    import akka.actor.ActorRef
+    import akka.http.scaladsl.Http
+    import akka.http.scaladsl.model.HttpEntity
+    import akka.http.scaladsl.model.ContentTypes
+    import akka.http.scaladsl.server.Directives._
+    import akka.stream.ActorMaterializer
+    import scala.io.StdIn
+
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
     implicit val executionContext = system.dispatcher
@@ -120,6 +130,11 @@ class HttpServerExampleSpec extends WordSpec with Matchers
   }
 
   "connection-stream-failure-handling" in compileOnlySpec {
+    import akka.actor.ActorSystem
+    import akka.http.scaladsl.Http
+    import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
+    import akka.stream.ActorMaterializer
+
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
     implicit val executionContext = system.dispatcher
@@ -148,6 +163,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
   }
 
   "full-server-example" in compileOnlySpec {
+    import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.HttpMethods._
     import akka.http.scaladsl.model._
@@ -229,7 +245,9 @@ class HttpServerExampleSpec extends WordSpec with Matchers
   // format: OFF
 
   "high-level-server-example" in compileOnlySpec {
+    import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
+    import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
     import akka.http.scaladsl.server.Directives._
     import akka.stream.ActorMaterializer
     import scala.io.StdIn
@@ -304,9 +322,6 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     import akka.http.scaladsl.marshalling.ToResponseMarshaller
     import akka.http.scaladsl.model.StatusCodes.MovedPermanently
     import akka.http.scaladsl.server.Directives._
-    // TODO: these explicit imports are only needed in complex cases, like below; Also, not needed on Scala 2.11
-    import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
-    import akka.http.scaladsl.server.directives.FormFieldDirectives.FieldMagnet
     import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
     import akka.pattern.ask
     import akka.util.Timeout
@@ -459,15 +474,17 @@ class HttpServerExampleSpec extends WordSpec with Matchers
 
 
   object Auction {
+    import akka.actor.Props
     def props: Props = ???
   }
 
   "interact with an actor" in compileOnlySpec {
     //#actor-interaction
+    import akka.actor.ActorSystem
+    import akka.actor.Props
     import scala.concurrent.duration._
     import akka.util.Timeout
     import akka.pattern.ask
-    import akka.actor.ActorSystem
     import akka.stream.ActorMaterializer
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.server.Directives._
