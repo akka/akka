@@ -66,6 +66,10 @@ object Dependencies {
 
     // For Java 8 Conversions
     val java8Compat = "org.scala-lang.modules"       %% "scala-java8-compat"           % "0.7.0"       // Scala License
+    
+    val aeronDriver = "io.aeron"                      % "aeron-driver"                 % "0.9.5"       // ApacheV2
+    val aeronClient = "io.aeron"                      % "aeron-client"                 % "0.9.5"       // ApacheV2
+    val hdrHistogram = "org.hdrhistogram"             % "HdrHistogram"                 % "2.1.8"     // CC0
 
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
@@ -161,7 +165,7 @@ object Dependencies {
 
   val contrib = l ++= Seq(Test.junitIntf, Test.commonsIo)
 
-  val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
+  val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative, aeronDriver, aeronClient, hdrHistogram)
 
   // akka stream & http
 
