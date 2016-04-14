@@ -7,16 +7,19 @@ package akka.remote
 import akka.Done
 import akka.actor._
 import akka.dispatch.sysmsg._
-import akka.event.{ Logging, LoggingAdapter, EventStream }
+import akka.event.{ EventStream, Logging, LoggingAdapter }
 import akka.event.Logging.Error
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.pattern.pipe
+
 import scala.util.control.NonFatal
-import akka.actor.SystemGuardian.{ TerminationHookDone, TerminationHook, RegisterTerminationHook }
+import akka.actor.SystemGuardian.{ RegisterTerminationHook, TerminationHook, TerminationHookDone }
+
 import scala.util.control.Exception.Catcher
 import scala.concurrent.Future
 import akka.ConfigurationException
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.remote.artery.ArterySubsystem
 
 /**
  * INTERNAL API
@@ -179,7 +182,7 @@ private[akka] class RemoteActorRefProvider(
         d
       },
       serialization = SerializationExtension(system),
-      transport = new Remoting(system, this))
+      transport = if (remoteSettings.EnableArtery) new ArterySubsystem(system, this) else new Remoting(system, this))
 
     _internals = internals
     remotingTerminator ! internals
@@ -422,6 +425,7 @@ private[akka] class RemoteActorRefProvider(
 
   /**
    * Marks a remote system as out of sync and prevents reconnects until the quarantine timeout elapses.
+   *
    * @param address Address of the remote system to be quarantined
    * @param uid UID of the remote system, if the uid is not defined it will not be a strong quarantine but
    *   the current endpoint writer will be stopped (dropping system messages) and the address will be gated
@@ -447,6 +451,8 @@ private[akka] class RemoteActorRef private[akka] (
   props: Option[Props],
   deploy: Option[Deploy])
   extends InternalActorRef with RemoteRef {
+
+  @volatile var cachedAssociation: artery.Association = null
 
   def getChild(name: Iterator[String]): InternalActorRef = {
     val s = name.toStream
