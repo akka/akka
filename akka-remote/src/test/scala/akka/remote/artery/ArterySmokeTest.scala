@@ -11,7 +11,11 @@ object ArterySmokeTest {
   val commonConfig = """
      akka {
        actor.provider = "akka.remote.RemoteActorRefProvider"
-       remote.artery.enabled = on
+       remote.artery {
+         enabled = on
+         #transport = tcp
+         transport = aeron-udp
+       }
      }
   """
 

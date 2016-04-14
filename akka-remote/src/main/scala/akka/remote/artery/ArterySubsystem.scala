@@ -22,9 +22,11 @@ import scala.concurrent.{ Await, Future }
  * INTERNAL API
  */
 private[remote] class ArterySubsystem(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends RemoteTransport(_system, _provider) {
+  import provider.remoteSettings
+
   @volatile private[this] var address: Address = _
   @volatile private[this] var transport: Transport = _
-  @volatile private[this] var binding: Tcp.ServerBinding = _
+  @volatile private[this] var tcpBinding: Option[Tcp.ServerBinding] = None
   @volatile private[this] var materializer: Materializer = _
   override val log: LoggingAdapter = Logging(system.eventStream, getClass.getName)
 
@@ -38,27 +40,35 @@ private[remote] class ArterySubsystem(_system: ExtendedActorSystem, _provider: R
   override def start(): Unit = {
     // TODO: Configure materializer properly
     // TODO: Have a supervisor actor
-    address = Address("akka.artery", system.name, "localhost", provider.remoteSettings.ArteryPort)
+    address = Address("akka.artery", system.name, remoteSettings.ArteryHostname, remoteSettings.ArteryPort)
     materializer = ActorMaterializer()(system)
-    transport = new Transport(
-      address,
-      system,
-      provider,
-      AkkaPduProtobufCodec,
-      new DefaultMessageDispatcher(system, provider, log))
 
-    binding = Await.result(
-      Tcp(system).bindAndHandle(transport.inboundFlow, address.host.get, address.port.get)(materializer),
-      3.seconds)
+    transport = remoteSettings.ArteryTransport match {
+      case "tcp" ⇒
+        new TcpTransport(
+          address,
+          system,
+          materializer,
+          provider,
+          AkkaPduProtobufCodec,
+          new DefaultMessageDispatcher(system, provider, log))
+      case "aeron-udp" ⇒
+        new AeronTransport(
+          address,
+          system,
+          materializer,
+          provider,
+          AkkaPduProtobufCodec,
+          new DefaultMessageDispatcher(system, provider, log))
+      case unknown ⇒ throw new IllegalArgumentException(s"Unknown transport $unknown")
+    }
 
-    log.info("Artery started up with address {}", binding.localAddress)
+    transport.start()
   }
 
   override def shutdown(): Future[Done] = {
-    import system.dispatcher
-    binding.unbind().map(_ ⇒ Done).andThen {
-      case _ ⇒ transport.killSwitch.abort(new Exception("System shut down"))
-    }
+    if (transport != null) transport.shutdown()
+    else Future.successful(Done)
   }
 
   override def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = {

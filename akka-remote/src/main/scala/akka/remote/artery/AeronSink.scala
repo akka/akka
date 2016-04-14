@@ -25,7 +25,7 @@ object AeronSink {
 /**
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
  */
-class AeronSink(channel: String, aeron: () => Aeron) extends GraphStage[SinkShape[AeronSink.Bytes]] {
+class AeronSink(channel: String, aeron: () ⇒ Aeron) extends GraphStage[SinkShape[AeronSink.Bytes]] {
   import AeronSink._
 
   val in: Inlet[Bytes] = Inlet("AeronSink")
@@ -90,8 +90,8 @@ class AeronSink(channel: String, aeron: () => Aeron) extends GraphStage[SinkShap
 
       override protected def onTimer(timerKey: Any): Unit = {
         timerKey match {
-          case Backoff => publish()
-          case msg     => super.onTimer(msg)
+          case Backoff ⇒ publish()
+          case msg     ⇒ super.onTimer(msg)
         }
       }
 
