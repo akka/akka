@@ -29,15 +29,50 @@ import io.aeron.Aeron
  * INTERNAL API
  */
 // FIXME: Replace the codec with a custom made, hi-perf one
-private[remote] abstract class Transport(val localAddress: Address,
-                                         val system: ExtendedActorSystem,
-                                         val provider: RemoteActorRefProvider,
-                                         val codec: AkkaPduCodec,
-                                         val inboundDispatcher: InboundMessageDispatcher) {
+private[remote] class Transport(
+  val localAddress: Address,
+  val system: ExtendedActorSystem,
+  val materializer: Materializer,
+  val provider: RemoteActorRefProvider,
+  val codec: AkkaPduCodec,
+  val inboundDispatcher: InboundMessageDispatcher) {
 
-  val log: LoggingAdapter = Logging(system.eventStream, getClass.getName)
+  private val log: LoggingAdapter = Logging(system.eventStream, getClass.getName)
+
+  private implicit val mat = materializer
+  // TODO support port 0
+  private val inboundChannel = s"aeron:udp?endpoint=${localAddress.host.get}:${localAddress.port.get}"
+
+  private val aeron = {
+    val ctx = new Aeron.Context
+    // TODO also support external media driver
+    val driver = MediaDriver.launchEmbedded()
+    ctx.aeronDirectoryName(driver.aeronDirectoryName)
+    Aeron.connect(ctx)
+  }
+
+  def start(): Unit = {
+    Source.fromGraph(new AeronSource(inboundChannel, () ⇒ aeron))
+      .map(ByteString.apply) // TODO we should use ByteString all the way
+      .via(inboundFlow)
+      .runWith(Sink.ignore)
+  }
+
+  def shutdown(): Future[Done] = {
+    // FIXME stop the AeronSource first?
+    aeron.close()
+    Future.successful(Done)
+  }
 
   val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
+
+  def outbound(remoteAddress: Address): Sink[Send, Any] = {
+    val outboundChannel = s"aeron:udp?endpoint=${remoteAddress.host.get}:${remoteAddress.port.get}"
+    Flow.fromGraph(killSwitch.flow[Send])
+      .via(encoder)
+      .map(_.toArray) // TODO we should use ByteString all the way
+      .to(new AeronSink(outboundChannel, () ⇒ aeron))
+  }
 
   // TODO: Try out parallelized serialization (mapAsync) for performance
   val encoder: Flow[Send, ByteString, NotUsed] = Flow[Send].map { sendEnvelope ⇒
@@ -74,100 +109,4 @@ private[remote] abstract class Transport(val localAddress: Address,
       Source.maybe[ByteString].via(killSwitch.flow))
   }
 
-  def start(): Unit
-
-  def shutdown(): Future[Done]
-
-  def outbound(remoteAddress: Address): Sink[Send, Any]
-}
-
-/**
- * INTERNAL API
- */
-private[remote] class TcpTransport(
-  localAddress: Address,
-  system: ExtendedActorSystem,
-  materializer: Materializer,
-  provider: RemoteActorRefProvider,
-  codec: AkkaPduCodec,
-  inboundDispatcher: InboundMessageDispatcher)
-  extends Transport(localAddress, system, provider, codec, inboundDispatcher) {
-
-  @volatile private[this] var binding: Tcp.ServerBinding = _
-
-  override def start(): Unit = {
-    binding = Await.result(
-      Tcp(system).bindAndHandle(inboundFlow, localAddress.host.get, localAddress.port.get)(materializer),
-      3.seconds)
-    log.info("Artery TCP started up with address {}", binding.localAddress)
-  }
-
-  override def shutdown(): Future[Done] = {
-    import system.dispatcher
-    if (binding != null) {
-      binding.unbind().map(_ ⇒ Done).andThen {
-        case _ ⇒ killSwitch.abort(new Exception("System shut down"))
-      }
-    } else
-      Future.successful(Done)
-  }
-
-  override def outbound(remoteAddress: Address): Sink[Send, Any] = {
-    val remoteInetSocketAddress = new InetSocketAddress(
-      remoteAddress.host.get,
-      remoteAddress.port.get)
-
-    Flow.fromGraph(killSwitch.flow[Send])
-      .via(encoder)
-      .via(Tcp(system).outgoingConnection(remoteInetSocketAddress, halfClose = false))
-      .to(Sink.ignore)
-  }
-}
-
-/**
- * INTERNAL API
- */
-private[remote] class AeronTransport(
-  localAddress: Address,
-  system: ExtendedActorSystem,
-  materializer: Materializer,
-  provider: RemoteActorRefProvider,
-  codec: AkkaPduCodec,
-  inboundDispatcher: InboundMessageDispatcher)
-  extends Transport(localAddress, system, provider, codec, inboundDispatcher) {
-
-  private implicit val mat = materializer
-  // TODO support port 0
-  private val inboundChannel = s"aeron:udp?endpoint=${localAddress.host.get}:${localAddress.port.get}"
-
-  private val aeron = {
-    val ctx = new Aeron.Context
-    // TODO also support external media driver
-    val driver = MediaDriver.launchEmbedded()
-    ctx.aeronDirectoryName(driver.aeronDirectoryName)
-    Aeron.connect(ctx)
-  }
-
-  override def start(): Unit = {
-    Source.fromGraph(new AeronSource(inboundChannel, () ⇒ aeron))
-      .map(ByteString.apply) // TODO we should use ByteString all the way
-      .via(inboundFlow)
-      .runWith(Sink.ignore)
-  }
-
-  override def shutdown(): Future[Done] = {
-    // FIXME stop the AeronSource first?
-    aeron.close()
-    Future.successful(Done)
-  }
-
-  override def outbound(remoteAddress: Address): Sink[Send, Any] = {
-    val outboundChannel = s"aeron:udp?endpoint=${remoteAddress.host.get}:${remoteAddress.port.get}"
-    Flow.fromGraph(killSwitch.flow[Send])
-      .via(encoder)
-      .map(_.toArray) // TODO we should use ByteString all the way
-      .to(new AeronSink(outboundChannel, () ⇒ aeron))
-  }
-
-  // FIXME we don't need Framing for Aeron, since it has fragmentation
 }

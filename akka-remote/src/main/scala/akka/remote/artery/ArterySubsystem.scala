@@ -43,26 +43,14 @@ private[remote] class ArterySubsystem(_system: ExtendedActorSystem, _provider: R
     address = Address("akka.artery", system.name, remoteSettings.ArteryHostname, remoteSettings.ArteryPort)
     materializer = ActorMaterializer()(system)
 
-    transport = remoteSettings.ArteryTransport match {
-      case "tcp" ⇒
-        new TcpTransport(
-          address,
-          system,
-          materializer,
-          provider,
-          AkkaPduProtobufCodec,
-          new DefaultMessageDispatcher(system, provider, log))
-      case "aeron-udp" ⇒
-        new AeronTransport(
-          address,
-          system,
-          materializer,
-          provider,
-          AkkaPduProtobufCodec,
-          new DefaultMessageDispatcher(system, provider, log))
-      case unknown ⇒ throw new IllegalArgumentException(s"Unknown transport $unknown")
-    }
-
+    transport =
+      new Transport(
+        address,
+        system,
+        materializer,
+        provider,
+        AkkaPduProtobufCodec,
+        new DefaultMessageDispatcher(system, provider, log))
     transport.start()
   }
 
