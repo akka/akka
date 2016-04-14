@@ -22,6 +22,8 @@ final class RemoteSettings(val config: Config) {
 
   val EnableArtery: Boolean = getBoolean("akka.remote.artery.enabled")
   val ArteryPort: Int = getInt("akka.remote.artery.port")
+  val ArteryHostname: String = getString("akka.remote.artery.hostname")
+  val ArteryTransport: String = getString("akka.remote.artery.transport")
 
   val LogReceive: Boolean = getBoolean("akka.remote.log-received-messages")
 
