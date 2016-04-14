@@ -767,7 +767,13 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.package.printEvent"),
 
         // #20362 - parser private
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.model.parser.CommonRules.expires-date")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.model.parser.CommonRules.expires-date"),
+        
+        // #20319 - remove not needed "no. of persists" counter in sharding
+       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.PersistentShard.persistCount"),
+       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.PersistentShard.persistCount_="),
+       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.PersistentShardCoordinator.persistCount"),
+       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.PersistentShardCoordinator.persistCount_=")
       )
     )
   }
