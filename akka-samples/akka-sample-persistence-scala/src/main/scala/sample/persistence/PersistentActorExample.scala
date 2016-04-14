@@ -55,6 +55,6 @@ object PersistentActorExample extends App {
   persistentActor ! Cmd("buzz")
   persistentActor ! "print"
 
-  Thread.sleep(1000)
+  Thread.sleep(10000)
   system.terminate()
 }
