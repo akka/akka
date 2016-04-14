@@ -1,4 +1,4 @@
-package akka.aeron
+package akka.remote.artery
 
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
