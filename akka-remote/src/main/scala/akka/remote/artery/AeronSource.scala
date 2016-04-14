@@ -1,4 +1,4 @@
-package akka.aeron
+package akka.remote.artery
 
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
@@ -29,7 +29,7 @@ object AeronSource {
 /**
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
  */
-class AeronSource(channel: String, aeron: () => Aeron) extends GraphStage[SourceShape[AeronSource.Bytes]] {
+class AeronSource(channel: String, aeron: () ⇒ Aeron) extends GraphStage[SourceShape[AeronSource.Bytes]] {
   import AeronSource._
 
   val out: Outlet[Bytes] = Outlet("AeronSource")
@@ -47,7 +47,7 @@ class AeronSource(channel: String, aeron: () => Aeron) extends GraphStage[Source
       private val retries = 115
       private var backoffCount = retries
 
-      val receiveMessage = getAsyncCallback[Bytes] { data =>
+      val receiveMessage = getAsyncCallback[Bytes] { data ⇒
         push(out, data)
       }
 
@@ -96,8 +96,8 @@ class AeronSource(channel: String, aeron: () => Aeron) extends GraphStage[Source
 
       override protected def onTimer(timerKey: Any): Unit = {
         timerKey match {
-          case Backoff => subscriberLoop()
-          case msg     => super.onTimer(msg)
+          case Backoff ⇒ subscriberLoop()
+          case msg     ⇒ super.onTimer(msg)
         }
       }
 
