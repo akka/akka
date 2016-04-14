@@ -43,6 +43,6 @@ object SnapshotExample extends App {
   persistentActor ! "d"
   persistentActor ! "print"
 
-  Thread.sleep(1000)
+  Thread.sleep(10000)
   system.terminate()
 }
