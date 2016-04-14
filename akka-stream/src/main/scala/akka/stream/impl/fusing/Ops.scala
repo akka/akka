@@ -34,12 +34,37 @@ private[akka] final case class Map[In, Out](f: In ⇒ Out, decider: Supervision.
 /**
  * INTERNAL API
  */
-private[akka] final case class Filter[T](p: T ⇒ Boolean, decider: Supervision.Decider) extends PushStage[T, T] {
-  override def onPush(elem: T, ctx: Context[T]): SyncDirective =
-    if (p(elem)) ctx.push(elem)
-    else ctx.pull()
+private[akka] final case class Filter[T](p: T ⇒ Boolean) extends SimpleLinearGraphStage[T] {
+  override def initialAttributes: Attributes = DefaultAttributes.filter
 
-  override def decide(t: Throwable): Supervision.Directive = decider(t)
+  override def toString: String = "Filter"
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with OutHandler with InHandler {
+      override def toString = "FilterLogic"
+
+      def decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+
+      override def onPush(): Unit = {
+        try {
+          val elem = grab(in)
+          if (p(elem)) {
+            push(out, elem)
+          } else {
+            pull(in)
+          }
+        } catch {
+          case NonFatal(ex) ⇒ decider(ex) match {
+            case Supervision.Stop ⇒ failStage(ex)
+            case _                ⇒ pull(in)
+          }
+        }
+      }
+
+      override def onPull(): Unit = pull(in)
+
+      setHandlers(in, out, this)
+    }
 }
 
 /**

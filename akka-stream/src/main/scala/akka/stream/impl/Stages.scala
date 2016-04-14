@@ -153,10 +153,6 @@ private[stream] object Stages {
     override def create(attr: Attributes): Stage[T, T] = fusing.Log(name, extract, loggingAdapter, supervision(attr))
   }
 
-  final case class Filter[T](p: T ⇒ Boolean, attributes: Attributes = filter) extends SymbolicStage[T, T] {
-    override def create(attr: Attributes): Stage[T, T] = fusing.Filter(p, supervision(attr))
-  }
-
   final case class Recover[In, Out >: In](pf: PartialFunction[Throwable, Out], attributes: Attributes = recover) extends SymbolicStage[In, Out] {
     override def create(attr: Attributes): Stage[In, Out] = fusing.Recover(pf)
   }

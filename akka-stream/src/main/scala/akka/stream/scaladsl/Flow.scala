@@ -581,7 +581,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def filter(p: Out ⇒ Boolean): Repr[Out] = andThen(Filter(p))
+  def filter(p: Out ⇒ Boolean): Repr[Out] = via(Filter(p))
 
   /**
    * Only pass on those elements that NOT satisfy the given predicate.
