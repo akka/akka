@@ -107,7 +107,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(
       actor,
       http, stream, streamTests,
-      persistence, distributedData,
+      remote, persistence, distributedData,
       testkit
     ).map(_ % "compile;compile->test;provided->provided")
   ).disablePlugins(ValidatePullRequest)
