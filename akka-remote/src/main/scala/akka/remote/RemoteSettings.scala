@@ -20,6 +20,9 @@ final class RemoteSettings(val config: Config) {
   import config._
   import scala.collection.JavaConverters._
 
+  val EnableArtery: Boolean = getBoolean("akka.remote.artery.enabled")
+  val ArteryPort: Int = getInt("akka.remote.artery.port")
+
   val LogReceive: Boolean = getBoolean("akka.remote.log-received-messages")
 
   val LogSend: Boolean = getBoolean("akka.remote.log-sent-messages")
