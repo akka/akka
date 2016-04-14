@@ -79,9 +79,9 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnComplete))
     }
 
-    "implement one-to-many many-to-one chain correctly" in new OneBoundedSetup[Int](Seq(
-      Doubler(),
-      Filter((x: Int) ⇒ x != 0, stoppingDecider))) {
+    "implement one-to-many many-to-one chain correctly" in new OneBoundedSetup[Int](
+      Doubler().toGS,
+      Filter((x: Int) ⇒ x != 0)) {
 
       lastEvents() should be(Set.empty)
 
@@ -104,9 +104,9 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnComplete))
     }
 
-    "implement many-to-one one-to-many chain correctly" in new OneBoundedSetup[Int](Seq(
-      Filter((x: Int) ⇒ x != 0, stoppingDecider),
-      Doubler())) {
+    "implement many-to-one one-to-many chain correctly" in new OneBoundedSetup[Int](
+      Filter((x: Int) ⇒ x != 0),
+      Doubler().toGS) {
 
       lastEvents() should be(Set.empty)
 
@@ -147,7 +147,7 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
     }
 
     "implement take inside a chain" in new OneBoundedSetup[Int](
-      Filter((x: Int) ⇒ x != 0, stoppingDecider).toGS,
+      Filter((x: Int) ⇒ x != 0),
       takeTwo,
       Map((x: Int) ⇒ x + 1, stoppingDecider).toGS) {
 

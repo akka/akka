@@ -4,7 +4,9 @@
 package akka.stream.impl.fusing
 
 import scala.util.control.NoStackTrace
+import akka.stream.ActorAttributes._
 import akka.stream.Supervision
+import akka.stream.Supervision._
 import akka.stream.stage.Context
 import akka.stream.stage.PushPullStage
 import akka.stream.stage.Stage
@@ -284,22 +286,6 @@ class InterpreterSupervisionSpec extends AkkaSpec with GraphInterpreterSpecKit {
         downstream.requestOne() // boom
         lastEvents() should be(Set(OnError(TE), Cancel))
       }
-    }
-
-    "resume when Filter throws" in new OneBoundedSetup[Int](Seq(
-      Filter((x: Int) ⇒ if (x == 0) throw TE else true, resumingDecider))) {
-      downstream.requestOne()
-      lastEvents() should be(Set(RequestOne))
-      upstream.onNext(2)
-      lastEvents() should be(Set(OnNext(2)))
-
-      downstream.requestOne()
-      lastEvents() should be(Set(RequestOne))
-      upstream.onNext(0) // boom
-      lastEvents() should be(Set(RequestOne))
-
-      upstream.onNext(3)
-      lastEvents() should be(Set(OnNext(3)))
     }
 
     "resume when Scan throws" in new OneBoundedSetup[Int](Seq(
