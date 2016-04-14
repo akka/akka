@@ -91,9 +91,4 @@ private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, va
    */
   def quarantine(address: Address, uid: Option[Int]): Unit
 
-  /**
-   * When this method returns true, some functionality will be turned off for security purposes.
-   */
-  protected def useUntrustedMode: Boolean
-
 }

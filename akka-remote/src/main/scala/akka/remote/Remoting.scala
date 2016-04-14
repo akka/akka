@@ -227,9 +227,6 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
       s"Attempted to quarantine address [$remoteAddress] with uid [$uid] but Remoting is not running", null)
   }
 
-  // Not used anywhere only to keep compatibility with RemoteTransport interface
-  protected def useUntrustedMode: Boolean = provider.remoteSettings.UntrustedMode
-
   private[akka] def boundAddresses: Map[String, Set[Address]] = {
     transportMapping.map {
       case (scheme, transports) ⇒
