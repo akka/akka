@@ -17,6 +17,8 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.atomic.AtomicLongArray
 import akka.stream.ThrottleMode
+import akka.remote.artery.AeronSink
+import akka.remote.artery.AeronSource
 
 object AeronStreams {
 
