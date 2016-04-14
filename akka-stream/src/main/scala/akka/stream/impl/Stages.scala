@@ -169,10 +169,6 @@ private[stream] object Stages {
     override def create(attr: Attributes): Stage[T, immutable.Seq[T]] = fusing.Sliding(n, step)
   }
 
-  final case class Scan[In, Out](zero: Out, f: (Out, In) ⇒ Out, attributes: Attributes = scan) extends SymbolicStage[In, Out] {
-    override def create(attr: Attributes): Stage[In, Out] = fusing.Scan(zero, f, supervision(attr))
-  }
-
   final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out, attributes: Attributes = fold) extends SymbolicStage[In, Out] {
     override def create(attr: Attributes): Stage[In, Out] = fusing.Fold(zero, f, supervision(attr))
   }
