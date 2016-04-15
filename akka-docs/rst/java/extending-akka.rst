@@ -94,3 +94,20 @@ Use it:
 .. includecode:: code/docs/extension/SettingsExtensionDocTest.java
    :include: extension-usage-actor
 
+Library extensions
+==================
+A third part library may register it's extension for auto-loading on actor system startup by appending it to
+``akka.library-extensions`` in its ``reference.conf``.
+
+::
+
+    akka.library-extensions += "docs.extension.ExampleExtension"
+
+
+As there is no way to selectively remove such extensions, it should be used with care and only when there is no case
+where the user would ever want it disabled or have specific support for disabling such sub-features. One example where
+this could be important is in tests.
+
+.. warning::
+   The``akka.library-extensions`` must never be assigned (``= ["Extension"]``) instead of appending as this will break
+   the library-extension mechanism and make behavior depend on class path ordering.
