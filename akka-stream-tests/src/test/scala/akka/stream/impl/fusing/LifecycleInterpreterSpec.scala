@@ -128,7 +128,7 @@ class LifecycleInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
 
     "postStop when pushAndFinish called with pushAndFinish if upstream completes with pushAndFinish and downstream immediately pulls" in new OneBoundedSetup[String](
       new PushFinishStage(onPostStop = () ⇒ testActor ! "stop"),
-      Fold("", (x: String, y: String) ⇒ x + y, stoppingDecider).toGS) {
+      Fold("", (x: String, y: String) ⇒ x + y)) {
 
       lastEvents() should be(Set.empty)
 
