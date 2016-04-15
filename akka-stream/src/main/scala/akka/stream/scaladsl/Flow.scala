@@ -581,7 +581,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def filter(p: Out ⇒ Boolean): Repr[Out] = andThen(Filter(p))
+  def filter(p: Out ⇒ Boolean): Repr[Out] = via(Filter(p))
 
   /**
    * Only pass on those elements that NOT satisfy the given predicate.
@@ -772,6 +772,11 @@ trait FlowOps[+Out, +Mat] {
    * Similar to `fold` but uses first element as zero element.
    * Applies the given function towards its current and next value,
    * yielding the next current value.
+   *
+   * If the stream is empty (i.e. completes before signalling any elements),
+   * the reduce stage will fail its downstream with a [[NoSuchElementException]],
+   * which is semantically in-line with that Scala's standard library collections
+   * do in such situations.
    *
    * '''Emits when''' upstream completes
    *

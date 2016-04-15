@@ -12,6 +12,7 @@ import scala.compat.java8.OptionConverters
 
 object ConnectionContext {
   //#https-context-creation
+  // ConnectionContext
   /** Used to serve HTTPS traffic. */
   def https(sslContext: SSLContext): HttpsConnectionContext =
     scaladsl.ConnectionContext.https(sslContext)

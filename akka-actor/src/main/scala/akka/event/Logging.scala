@@ -1076,20 +1076,23 @@ trait LoggingAdapter {
   def format(t: String, arg: Any*): String = {
     val sb = new java.lang.StringBuilder(64)
     var p = 0
-    var rest = t
+    var startIndex = 0
     while (p < arg.length) {
-      val index = rest.indexOf("{}")
+      val index = t.indexOf("{}", startIndex)
       if (index == -1) {
-        sb.append(rest).append(" WARNING arguments left: ").append(arg.length - p)
-        rest = ""
+        sb.append(t.substring(startIndex, t.length))
+          .append(" WARNING arguments left: ")
+          .append(arg.length - p)
         p = arg.length
+        startIndex = t.length
       } else {
-        sb.append(rest.substring(0, index)).append(arg(p))
-        rest = rest.substring(index + 2)
+        sb.append(t.substring(startIndex, index))
+          .append(arg(p))
+        startIndex = index + 2
         p += 1
       }
     }
-    sb.append(rest).toString
+    sb.append(t.substring(startIndex, t.length)).toString
   }
 }
 

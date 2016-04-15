@@ -149,7 +149,17 @@ final case class ConsistentHashingRoutingLogic(
   def this(system: ActorSystem) =
     this(system, virtualNodesFactor = 0, hashMapping = ConsistentHashingRouter.emptyConsistentHashMapping)
 
-  private val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+  private lazy val selfAddress = {
+    // Important that this is lazy, because consistent hashing routing pool is used by SimpleDnsManager
+    // that can be activated early, before the transport defaultAddress is set in the startup.
+    // See issue #20263.
+    // If defaultAddress is not available the message will not be routed, but new attempt
+    // is performed for next message.
+    val a = ConsistentHashingRoutingLogic.defaultAddress(system)
+    if (a == null)
+      throw new IllegalStateException("defaultAddress not available yet")
+    a
+  }
   val vnodes =
     if (virtualNodesFactor == 0) system.settings.DefaultVirtualNodesFactor
     else virtualNodesFactor
@@ -201,7 +211,6 @@ final case class ConsistentHashingRoutingLogic(
         }
       } catch {
         case NonFatal(e) ⇒
-          // serialization failed
           log.warning("Couldn't route message with consistent hash key [{}] due to [{}]", hashData, e.getMessage)
           NoRoutee
       }

@@ -906,19 +906,25 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
 
   final protected def assignPort(in: InPort, subscriberOrVirtual: AnyRef): Unit = {
     subscribers.put(in, subscriberOrVirtual)
-    // Interface (unconnected) ports of the current scope will be wired when exiting the scope
-    if (!currentLayout.inPorts(in)) {
-      val publisher = publishers.get(currentLayout.upstreams(in))
-      if (publisher ne null) doSubscribe(publisher, subscriberOrVirtual)
+
+    currentLayout.upstreams.get(in) match {
+      case Some(upstream) =>
+        val publisher = publishers.get(upstream)
+        if (publisher ne null) doSubscribe(publisher, subscriberOrVirtual)
+      // Interface (unconnected) ports of the current scope will be wired when exiting the scope (or some parent scope)
+      case None =>
     }
   }
 
   final protected def assignPort(out: OutPort, publisher: Publisher[Any]): Unit = {
     publishers.put(out, publisher)
+
+    currentLayout.downstreams.get(out) match {
+      case Some(downstream) =>
+        val subscriber = subscribers.get(downstream)
+        if (subscriber ne null) doSubscribe(publisher, subscriber)
     // Interface (unconnected) ports of the current scope will be wired when exiting the scope
-    if (!currentLayout.outPorts(out)) {
-      val subscriber = subscribers.get(currentLayout.downstreams(out))
-      if (subscriber ne null) doSubscribe(publisher, subscriber)
+      case None =>
     }
   }
 
