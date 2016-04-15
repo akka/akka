@@ -45,6 +45,19 @@ to rely on the configured default client-side ``HttpsContext``.
 If no custom ``HttpsContext`` is defined the default context uses Java's default TLS settings. Customizing the
 ``HttpsContext`` can make the Https client less secure. Understand what you are doing!
 
+SSL-Config
+----------
+
+Akka HTTP heavily relies on, and delegates most configuration of any SSL/TLS related options to
+`Lightbend SSL-Config`_, which is a library specialized in providing an secure-by-default SSLContext
+and related options.
+
+Please refer to the `Lightbend SSL-Config`_ documentation for detailed documentation of all available settings.
+
+SSL Config settings used by Akka HTTP (as well as Streaming TCP) are located under the `akka.ssl-config` namespace.
+
+.. _Lightbend SSL-Config: http://typesafehub.github.io/ssl-config/
+
 Detailed configuration and workarounds
 --------------------------------------
 
