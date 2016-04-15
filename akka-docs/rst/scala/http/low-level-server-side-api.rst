@@ -155,6 +155,21 @@ optional ``httpsContext`` parameter, which can receive the HTTPS configuration i
 instance.
 If defined encryption is enabled on all accepted connections. Otherwise it is disabled (which is the default).
 
+For detailed documentation for client-side HTTPS support refer to :ref:`clientSideHTTPS`.
+
+SSL-Config
+----------
+
+Akka HTTP heavily relies on, and delegates most configuration of any SSL/TLS related options to
+`Lightbend SSL-Config`_, which is a library specialized in providing an secure-by-default SSLContext
+and related options.
+
+Please refer to the `Lightbend SSL-Config`_ documentation for detailed documentation of all available settings.
+
+SSL Config settings used by Akka HTTP (as well as Streaming TCP) are located under the `akka.ssl-config` namespace.
+
+.. _Lightbend SSL-Config: http://typesafehub.github.io/ssl-config/
+
 .. _http-server-layer-scala:
 
 Stand-Alone HTTP Layer Usage
