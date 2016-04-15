@@ -65,30 +65,27 @@ private[remote] class ArterySubsystem(_system: ExtendedActorSystem, _provider: R
 
     val association =
       if (cached ne null) cached
-      else {
-        val association = getAssociation(remoteAddress)
-        association.associate()
-        recipient.cachedAssociation = association
-        association
-      }
+      else associate(remoteAddress)
 
     association.send(message, senderOption, recipient)
   }
 
-  private def getAssociation(remoteAddress: Address): Association = {
+  private def associate(remoteAddress: Address): Association = {
     val current = associations.get(remoteAddress)
     if (current ne null) current
     else {
-      val newAssociation = new Association(materializer, remoteAddress, transport)
-      val currentAssociation = associations.putIfAbsent(remoteAddress, newAssociation)
-      if (currentAssociation eq null) {
-        newAssociation
-      } else currentAssociation
+      associations.computeIfAbsent(remoteAddress, new java.util.function.Function[Address, Association] {
+        override def apply(remoteAddress: Address): Association = {
+          val newAssociation = new Association(materializer, remoteAddress, transport)
+          newAssociation.associate() // This is a bit costly for this blocking method :(
+          newAssociation
+        }
+      })
     }
   }
 
   override def quarantine(remoteAddress: Address, uid: Option[Int]): Unit = {
-    getAssociation(remoteAddress).quarantine(uid)
+    ???
   }
 
 }
