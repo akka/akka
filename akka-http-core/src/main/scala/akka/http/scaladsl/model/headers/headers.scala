@@ -794,13 +794,12 @@ final case class Server(products: immutable.Seq[ProductVersion]) extends jm.head
 
 // https://tools.ietf.org/html/rfc6797
 object `Strict-Transport-Security` extends ModeledCompanion[`Strict-Transport-Security`] {
-  def apply(maxAge: Long, includeSubDomains: Option[Boolean], preload: Option[Boolean]) = new `Strict-Transport-Security`(maxAge, includeSubDomains.getOrElse(false), preload.getOrElse(false))
+  def apply(maxAge: Long, includeSubDomains: Option[Boolean]) = new `Strict-Transport-Security`(maxAge, includeSubDomains.getOrElse(false))
 }
-final case class `Strict-Transport-Security`(maxAge: Long, includeSubDomains: Boolean = false, preload: Boolean = false) extends jm.headers.StrictTransportSecurity with ResponseHeader {
+final case class `Strict-Transport-Security`(maxAge: Long, includeSubDomains: Boolean = false) extends jm.headers.StrictTransportSecurity with ResponseHeader {
   def renderValue[R <: Rendering](r: R): r.type = {
     r ~~ "max-age=" ~~ maxAge
     if (includeSubDomains) r ~~ "; includeSubDomains"
-    if (preload) r ~~ "; preload"
     r
   }
   protected def companion = `Strict-Transport-Security`
