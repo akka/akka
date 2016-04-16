@@ -157,20 +157,50 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
         withReturnType[UniversalEntity](Strict(tpe, abc).withoutSizeLimit)
         withReturnType[RequestEntity](Strict(tpe, abc).asInstanceOf[RequestEntity].withoutSizeLimit)
         withReturnType[ResponseEntity](Strict(tpe, abc).asInstanceOf[ResponseEntity].withoutSizeLimit)
+        withReturnType[HttpEntity](Strict(tpe, abc).asInstanceOf[HttpEntity].withoutSizeLimit)
       }
       "Default" in {
         withReturnType[Default](Default(tpe, 11, source(abc, de, fgh, ijk)).withoutSizeLimit)
         withReturnType[RequestEntity](Default(tpe, 11, source(abc, de, fgh, ijk)).asInstanceOf[RequestEntity].withoutSizeLimit)
         withReturnType[ResponseEntity](Default(tpe, 11, source(abc, de, fgh, ijk)).asInstanceOf[ResponseEntity].withoutSizeLimit)
+        withReturnType[HttpEntity](Default(tpe, 11, source(abc, de, fgh, ijk)).asInstanceOf[HttpEntity].withoutSizeLimit)
       }
       "CloseDelimited" in {
         withReturnType[CloseDelimited](CloseDelimited(tpe, source(abc, de, fgh, ijk)).withoutSizeLimit)
         withReturnType[ResponseEntity](CloseDelimited(tpe, source(abc, de, fgh, ijk)).asInstanceOf[ResponseEntity].withoutSizeLimit)
+        withReturnType[HttpEntity](CloseDelimited(tpe, source(abc, de, fgh, ijk)).asInstanceOf[HttpEntity].withoutSizeLimit)
       }
       "Chunked" in {
         withReturnType[Chunked](Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk)).withoutSizeLimit)
         withReturnType[RequestEntity](Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk)).asInstanceOf[RequestEntity].withoutSizeLimit)
         withReturnType[ResponseEntity](Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk)).asInstanceOf[ResponseEntity].withoutSizeLimit)
+        withReturnType[HttpEntity](Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk)).asInstanceOf[HttpEntity].withoutSizeLimit)
+      }
+    }
+    "support withSizeLimit" - {
+      "Strict" in {
+        HttpEntity.Empty.withSizeLimit(123L)
+        withReturnType[UniversalEntity](Strict(tpe, abc).withSizeLimit(123L))
+        withReturnType[RequestEntity](Strict(tpe, abc).asInstanceOf[RequestEntity].withSizeLimit(123L))
+        withReturnType[ResponseEntity](Strict(tpe, abc).asInstanceOf[ResponseEntity].withSizeLimit(123L))
+        withReturnType[HttpEntity](Strict(tpe, abc).asInstanceOf[HttpEntity].withSizeLimit(123L))
+      }
+      "Default" in {
+        withReturnType[Default](Default(tpe, 11, source(abc, de, fgh, ijk)).withoutSizeLimit)
+        withReturnType[RequestEntity](Default(tpe, 11, source(abc, de, fgh, ijk)).asInstanceOf[RequestEntity].withSizeLimit(123L))
+        withReturnType[ResponseEntity](Default(tpe, 11, source(abc, de, fgh, ijk)).asInstanceOf[ResponseEntity].withSizeLimit(123L))
+        withReturnType[HttpEntity](Default(tpe, 11, source(abc, de, fgh, ijk)).asInstanceOf[HttpEntity].withSizeLimit(123L))
+      }
+      "CloseDelimited" in {
+        withReturnType[CloseDelimited](CloseDelimited(tpe, source(abc, de, fgh, ijk)).withSizeLimit(123L))
+        withReturnType[ResponseEntity](CloseDelimited(tpe, source(abc, de, fgh, ijk)).asInstanceOf[ResponseEntity].withSizeLimit(123L))
+        withReturnType[HttpEntity](CloseDelimited(tpe, source(abc, de, fgh, ijk)).asInstanceOf[HttpEntity].withSizeLimit(123L))
+      }
+      "Chunked" in {
+        withReturnType[Chunked](Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk)).withSizeLimit(123L))
+        withReturnType[RequestEntity](Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk)).asInstanceOf[RequestEntity].withSizeLimit(123L))
+        withReturnType[ResponseEntity](Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk)).asInstanceOf[ResponseEntity].withSizeLimit(123L))
+        withReturnType[HttpEntity](Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk)).asInstanceOf[HttpEntity].withSizeLimit(123L))
       }
     }
   }
