@@ -742,7 +742,12 @@ object MiMa extends AutoPlugin {
 
         // #20123
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.recoverWithRetries")
-    )
+      ),
+      "2.4.4" -> Seq(
+        // #20342 HttpEntity scaladsl overrides
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.withoutSizeLimit"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.withSizeLimit")
+      )
     )
   }
 }
