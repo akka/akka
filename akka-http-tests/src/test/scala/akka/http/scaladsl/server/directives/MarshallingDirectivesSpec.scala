@@ -16,6 +16,9 @@ import spray.json.DefaultJsonProtocol._
 import MediaTypes._
 import HttpCharsets._
 import headers._
+import org.xml.sax.SAXParseException
+
+import scala.util.{ Failure, Try }
 
 class MarshallingDirectivesSpec extends RoutingSpec with Inside {
   import ScalaXmlSupport._
@@ -25,6 +28,12 @@ class MarshallingDirectivesSpec extends RoutingSpec with Inside {
     nodeSeqUnmarshaller(ContentTypeRange(`text/xml`, iso88592), `text/html`) map {
       case NodeSeq.Empty ⇒ throw Unmarshaller.NoContentException
       case x             ⇒ { val i = x.text.toInt; require(i >= 0); i }
+    }
+  implicit val TryIntUnmarshaller: FromEntityUnmarshaller[Try[Int]] =
+    IntUnmarshaller map {
+      Try(_).recoverWith {
+        case e: IllegalArgumentException ⇒ Failure(RejectionError(ValidationRejection(e.getMessage, Option(e))))
+      }
     }
 
   val `text/xxml` = MediaType.customWithFixedCharset("text", "xxml", `UTF-8`)
@@ -71,12 +80,23 @@ class MarshallingDirectivesSpec extends RoutingSpec with Inside {
         }
       }
     }
+    "unwrap a RejectionError and return its exception" in {
+      Put("/", HttpEntity(ContentType(`text/xml`, iso88592), "<int>-3</int>")) ~> {
+        entity(as[Try[Int]]) { _ ⇒ completeOk }
+      } ~> check {
+        inside(rejection) {
+          case ValidationRejection("requirement failed", Some(_: IllegalArgumentException)) ⇒
+        }
+      }
+    }
     "return a MalformedRequestContentRejection if unmarshalling failed due to a not further classified error" in {
       Put("/", HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<foo attr='illegal xml'")) ~> {
         entity(as[NodeSeq]) { _ ⇒ completeOk }
       } ~> check {
-        rejection shouldEqual MalformedRequestContentRejection(
-          "XML document structures must start and end within the same entity.", None)
+        inside(rejection) {
+          case MalformedRequestContentRejection(
+            "XML document structures must start and end within the same entity.", _: SAXParseException) ⇒
+        }
       }
     }
     "extract an Option[T] from the requests entity using the in-scope Unmarshaller" in {
