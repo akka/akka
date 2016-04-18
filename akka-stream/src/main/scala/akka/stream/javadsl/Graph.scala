@@ -302,8 +302,6 @@ object Concat {
 
 }
 
-// flow graph //
-
 object GraphDSL extends GraphCreate {
 
   /**

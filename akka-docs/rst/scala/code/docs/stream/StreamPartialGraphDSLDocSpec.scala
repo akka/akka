@@ -11,14 +11,14 @@ import akka.testkit.AkkaSpec
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
-class StreamPartialFlowGraphDocSpec extends AkkaSpec {
+class StreamPartialGraphDSLDocSpec extends AkkaSpec {
 
   implicit val ec = system.dispatcher
 
   implicit val materializer = ActorMaterializer()
 
   "build with open ports" in {
-    //#simple-partial-flow-graph
+    //#simple-partial-graph-dsl
     val pickMaxOfThree = GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
 
@@ -47,11 +47,11 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
     val max: Future[Int] = g.run()
     Await.result(max, 300.millis) should equal(3)
-    //#simple-partial-flow-graph
+    //#simple-partial-graph-dsl
   }
 
-  "build source from partial flow graph" in {
-    //#source-from-partial-flow-graph
+  "build source from partial graph" in {
+    //#source-from-partial-graph-dsl
     val pairs = Source.fromGraph(GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
 
@@ -68,12 +68,12 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
     })
 
     val firstPair: Future[(Int, Int)] = pairs.runWith(Sink.head)
-    //#source-from-partial-flow-graph
+    //#source-from-partial-graph-dsl
     Await.result(firstPair, 300.millis) should equal(1 -> 2)
   }
 
-  "build flow from partial flow graph" in {
-    //#flow-from-partial-flow-graph
+  "build flow from partial graph" in {
+    //#flow-from-partial-graph-dsl
     val pairUpWithToString =
       Flow.fromGraph(GraphDSL.create() { implicit b =>
         import GraphDSL.Implicits._
@@ -90,13 +90,13 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
         FlowShape(broadcast.in, zip.out)
       })
 
-    //#flow-from-partial-flow-graph
+    //#flow-from-partial-graph-dsl
 
     // format: OFF
     val (_, matSink: Future[(Int, String)]) =
-      //#flow-from-partial-flow-graph
+      //#flow-from-partial-graph-dsl
     pairUpWithToString.runWith(Source(List(1)), Sink.head)
-    //#flow-from-partial-flow-graph
+    //#flow-from-partial-graph-dsl
     // format: ON
 
     Await.result(matSink, 300.millis) should equal(1 -> "1")

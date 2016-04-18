@@ -58,7 +58,7 @@ class GraphFlowSpec extends AkkaSpec {
 
   }
 
-  "FlowGraphs" when {
+  "GraphDSLs" when {
     "turned into flows" should {
       "work with a Source and Sink" in {
         val probe = TestSubscriber.manualProbe[Int]()
