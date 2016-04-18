@@ -16,7 +16,7 @@ public class PathMatchers {
      * The matcher will not match 0 digits or a sequence of digits that would represent an Long value larger
      * than Long.MaxValue.
      */
-    public static final PathMatcher1<Integer> LONG_SEGMENT = PathMatchersScala.IntegerSegment();
+    public static final PathMatcher1<Long> LONG_SEGMENT = PathMatchersScala.LongSegment();
 
     /**
      * A PathMatcher that efficiently matches a number of hex-digits and extracts their (non-negative) Int value.
