@@ -393,7 +393,7 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
   import settings.tuningParameters._
 
   val cluster = Cluster(context.system)
-  val removalMargin = cluster.settings.DownRemovalMargin
+  val removalMargin = cluster.downingProvider.downRemovalMargin
 
   var state = State.empty.withRememberEntities(settings.rememberEntities)
   var rebalanceInProgress = Set.empty[ShardId]
