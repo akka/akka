@@ -57,7 +57,7 @@ abstract class RouteTest extends AllDirectives {
         securedConnection = defaultHostInfo.isSecuredConnection(),
         defaultHostHeader = defaultHostInfo.getHost().asScala)
 
-    val result = scalaRoute(new server.RequestContextImpl(effectiveRequest, NoLogging, RoutingSettings(system)))
+    val result = scalaRoute(new server.RequestContextImpl(effectiveRequest, system.log, RoutingSettings(system)))
 
     createTestRouteResult(result.awaitResult(awaitDuration))
   }
