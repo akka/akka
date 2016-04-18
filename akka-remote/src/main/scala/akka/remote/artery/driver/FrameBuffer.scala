@@ -4,7 +4,7 @@
 
 package akka.remote.artery.driver
 
-import java.nio.ByteBuffer
+import java.nio.{ ByteBuffer, ByteOrder }
 
 import akka.io.DirectByteBufferPool
 import akka.util.ByteString
@@ -13,7 +13,7 @@ import akka.util.ByteString
  * INTERNAL API
  */
 private[remote] object FrameBuffer {
-  val FrameSize = 16
+  val FrameSize = 1024
   val BufferSizeInFrames = 32
   val BufferSize = FrameSize * BufferSizeInFrames
   val BufferSizeMask = BufferSizeInFrames - 1
@@ -37,7 +37,9 @@ private[remote] final class FrameBuffer(val pool: DirectByteBufferPool) {
     if (lastAllocation == wraparound) null
     else {
       allocated(lastAllocation) = true
-      frames(lastAllocation)
+      val frame = frames(lastAllocation)
+      frame.buffer.clear()
+      frame
     }
   }
 
@@ -62,6 +64,7 @@ private[remote] final class Frame(val owner: FrameBuffer, val id: Int) {
     owner.buffer.limit(id * FrameSize + FrameSize)
     owner.buffer.slice()
   }
+  buffer.order(ByteOrder.LITTLE_ENDIAN) // Be friendly to Intel :)
 
   def release(): Unit = owner.release(this)
 
@@ -69,8 +72,7 @@ private[remote] final class Frame(val owner: FrameBuffer, val id: Int) {
     ByteString.fromByteBuffer(buffer)
   }
 
-  def putByteString(bs: ByteString): Unit = {
-    buffer.clear()
+  def writeByteString(bs: ByteString): Unit = {
     buffer.put(bs.toByteBuffer) // FIXME: toByteBuffer copies
   }
 }

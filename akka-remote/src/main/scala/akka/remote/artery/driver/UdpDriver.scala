@@ -22,7 +22,7 @@ import scala.util.control.Breaks._
  */
 private[remote] object UdpDriver {
 
-  val Debug = true
+  val Debug = false
   val SendQueueSize = 128
   val RcvQueueSize = 128
 
@@ -46,7 +46,9 @@ private[remote] object UdpDriver {
     val rcvQueue = new OneToOneConcurrentArrayQueue[Frame](RcvQueueSize)
     val readWeakupNeeded = new AtomicBoolean(false)
 
+    // Only the driver may write these
     private var wakeupCallback: AsyncCallback[Unit] = ignoreWakeup
+    var flushAndDeregister = false
 
     def setWakeupCallback(cb: AsyncCallback[Unit]): Unit = {
       // ignoreWakeup is only the initial behavior
@@ -159,8 +161,7 @@ private[remote] final class UdpDriver(listenAddress: InetSocketAddress) extends 
         callback.invoke(registrationForAddress(remoteAddress, wakeupCallback))
 
       case Deregister(registration) ⇒
-        registrations.remove(registrations.indexOf(registration))
-        addressToRegistration.remove(registration.remoteAddress)
+        registration.flushAndDeregister = true
     }
   }
 
@@ -175,6 +176,7 @@ private[remote] final class UdpDriver(listenAddress: InetSocketAddress) extends 
       registration
     } else {
       existingRegistration.setWakeupCallback(cb)
+      existingRegistration.flushAndDeregister = false
       existingRegistration
     }
   }
@@ -183,7 +185,7 @@ private[remote] final class UdpDriver(listenAddress: InetSocketAddress) extends 
     if (Debug) println("receiving")
     val address = channel.receive(dispatchBuffer).asInstanceOf[InetSocketAddress]
     if (address ne null) {
-      println("received " + address)
+      if (Debug) println("received " + address)
       backoff.reset()
       wasIoAction = true
       val registration = registrationForAddress(address, ignoreWakeup)
@@ -191,7 +193,6 @@ private[remote] final class UdpDriver(listenAddress: InetSocketAddress) extends 
       // Drop if we have no space in the FrameBuffer
       if (frame ne null) {
         dispatchBuffer.flip()
-        frame.buffer.clear()
         frame.buffer.put(dispatchBuffer)
         dispatchBuffer.clear()
         registration.rcvQueue.offer(frame)
@@ -204,25 +205,39 @@ private[remote] final class UdpDriver(listenAddress: InetSocketAddress) extends 
     val registrationsItr = registrations.iterator()
     while (registrationsItr.hasNext) {
       val registration = registrationsItr.next()
+
+      // Wake up readers that might miss writes to the SPSC queue
       if (registration.readWeakupNeeded.get() && !registration.rcvQueue.isEmpty) {
         if (Debug) println("wake up registration")
         registration.readWakeUp()
       }
-      val queue = registration.sendQueue
-      var frame = queue.peek()
-      while (frame ne null) {
-        if (Debug) println("Attempt to write")
-        frame.buffer.flip()
-        if (channel.send(frame.buffer, registration.remoteAddress) > 0) {
-          if (Debug) println("written")
-          queue.poll()
-          backoff.reset()
-          wasIoAction = true
-          frame = queue.peek()
-        } else {
-          // FIXME: Uncomsumed frame must be un-flipped
-          frame = null // Exit write loop
+
+      if (registration.flushAndDeregister && registration.sendQueue.isEmpty) {
+        registrationsItr.remove()
+        addressToRegistration.remove(registration.remoteAddress)
+      } else {
+
+        val queue = registration.sendQueue
+        var frame = queue.peek()
+
+        // Write a whole batch. Upstream flow control will ensure fairness
+        while (frame ne null) {
+          if (Debug) println("Attempt to write")
+          frame.buffer.flip()
+          if (channel.send(frame.buffer, registration.remoteAddress) > 0) {
+            if (Debug) println("written")
+            queue.poll()
+            backoff.reset()
+            wasIoAction = true
+            frame = queue.peek()
+          } else {
+            // un-flip
+            frame.buffer.position(frame.buffer.limit())
+            frame.buffer.limit(FrameBuffer.FrameSize)
+            frame = null // Exit write loop
+          }
         }
+
       }
     }
   }

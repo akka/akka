@@ -12,6 +12,7 @@ import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 
+import scala.collection.immutable
 import scala.concurrent.Promise
 
 class UdpDriverSpec extends AkkaSpec {
@@ -37,13 +38,12 @@ class UdpDriverSpec extends AkkaSpec {
 
     "work in the happy case" in {
       val frame = frameBuffer.aquire()
-      frame.putByteString(ByteString("Hello"))
+      frame.writeByteString(ByteString("Hello"))
 
       val result = source.take(1).map { frame ⇒
         frame.buffer.flip()
         val bs = frame.toByteString
         frame.release()
-        println("GOT " + bs)
         bs
       }.runWith(Sink.seq)
 
@@ -51,8 +51,80 @@ class UdpDriverSpec extends AkkaSpec {
 
       result.futureValue should ===(List(ByteString("Hello")))
 
+      frame.release()
     }
 
+    "work with a longer sequence" in {
+      // Cannot send more bytes without releasing frames
+      val Count = 32
+
+      val testData = List.tabulate(Count)(i ⇒ ByteString.fromArray(Array.fill[Byte](i + 1)(i.toByte)))
+      val testFrames = testData.map { bs ⇒
+        val frame = frameBuffer.aquire()
+        frame.writeByteString(bs)
+        frame
+      }
+
+      val result = source.take(Count).map { frame ⇒
+        frame.buffer.flip()
+        val bs = frame.toByteString
+        frame.release()
+        bs
+      }.runWith(Sink.seq)
+
+      Source(testFrames).runWith(sink)
+      result.futureValue should ===(testData)
+
+      testFrames.foreach(_.release())
+    }
+
+    "reuse registration after first received bytes to send" in {
+      val Count = 16
+
+      val testData = List.tabulate(Count)(i ⇒ ByteString.fromArray(Array.fill[Byte](i + 1)(i.toByte)))
+      val testFrames1 = testData.map { bs ⇒
+        val frame = frameBuffer.aquire()
+        frame.writeByteString(bs)
+        frame
+      }
+
+      val testFrames2 = testData.map { bs ⇒
+        val frame = frameBuffer.aquire()
+        frame.writeByteString(bs)
+        frame
+      }
+
+      // This receive will be fulfilled later
+      val (writePromise2, result2) = Source.maybe[immutable.Seq[Frame]]
+        .mapConcat(identity)
+        .via(transport2.forRemoteAddress(address1))
+        .take(Count)
+        .map { frame ⇒
+          frame.buffer.flip()
+          val bs = frame.toByteString
+          frame.release()
+          bs
+        }
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      val result1 = Source(testFrames1)
+        .via(transport1.forRemoteAddress(address2))
+        .take(Count)
+        .map { frame ⇒
+          frame.buffer.flip()
+          val bs = frame.toByteString
+          frame.release()
+          bs
+        }
+        .runWith(Sink.seq)
+
+      result2.futureValue should ===(testData)
+
+      writePromise2.success(Some(testFrames2))
+      result1.futureValue should ===(testData)
+
+    }
   }
 
   override def afterTermination(): Unit = {

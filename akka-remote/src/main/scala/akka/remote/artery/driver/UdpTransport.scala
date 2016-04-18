@@ -62,7 +62,12 @@ private[remote] class UdpTransportFlow(val driver: UdpDriver, val remoteAddress:
     override def onPush(): Unit = {
       // Might drop, but higher level flow control should prevent this
       registration.sendQueue.offer(grab(in))
+      pull(in)
     }
+
+    override def onUpstreamFinish(): Unit = ()
+
+    override def onDownstreamFinish(): Unit = ()
 
     override def onPull(): Unit = {
       if (registration ne null) {
