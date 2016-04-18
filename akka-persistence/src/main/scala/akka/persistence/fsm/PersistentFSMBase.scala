@@ -308,6 +308,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    *
    * @see [[akka.persistence.fsm.PersistentFSM#receiveRecover]]
    */
+  @deprecated("Removed from API, called internally", "2.4.5")
   private[akka] final def initialize(): Unit =
     if (currentState != null) makeTransition(currentState)
     else throw new IllegalStateException("You must call `startWith` before calling `initialize`")
