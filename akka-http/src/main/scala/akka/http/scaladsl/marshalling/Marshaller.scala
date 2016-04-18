@@ -10,6 +10,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 
+// TODO make it extend JavaDSL
 sealed abstract class Marshaller[-A, +B] {
 
   def apply(value: A)(implicit ec: ExecutionContext): Future[List[Marshalling[B]]]

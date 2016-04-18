@@ -255,12 +255,23 @@ public class PathDirectivesTest extends JUnitRouteTest {
     @Test
     public void testLongMatcher() {
         TestRoute route =
-            testRoute(
-                path(segment("bigage").slash(LONG_SEGMENT), bigAge -> complete(bigAge.toString()))
-            );
+          testRoute(
+            path(segment("bigage").slash(LONG_SEGMENT), bigAge -> complete(bigAge.toString()))
+          );
 
         route.run(HttpRequest.GET("/bigage/12345678901"))
-            .assertEntity("12345678901");
+             .assertEntity("12345678901");
+    }
+
+    @Test
+    public void testSegmentMatcher() {
+        TestRoute route =
+          testRoute(
+            path(segment("string").slash(SEGMENT), bigAge -> complete(bigAge))
+          );
+
+        route.run(HttpRequest.GET("/string/hello-it-is-me"))
+             .assertEntity("hello-it-is-me");
     }
 
     @Test
@@ -275,7 +286,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
     }
 
     @Test
-    public void testRestMatcher() {
+    public void testRemainingMatcher() {
         TestRoute route =
             testRoute(
                 path(REMAINING, remainingPath -> complete(remainingPath))

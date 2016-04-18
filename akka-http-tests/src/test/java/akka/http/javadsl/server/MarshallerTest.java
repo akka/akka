@@ -38,7 +38,7 @@ public class MarshallerTest extends JUnitRouteTest {
                     }
                 }, Marshaller.stringToEntity(), MediaTypes.TEXT_X_SPEECH);
 
-        
+
         final Function<Integer,Route> nummerHandler = integer -> completeOK(integer, numberAsNameMarshaller);
 
         TestRoute route =
@@ -92,7 +92,7 @@ public class MarshallerTest extends JUnitRouteTest {
                         )
                     )
                 );
-        
+
         route.run(HttpRequest.GET("/nummer?n=1"))
             .assertStatusCode(200)
             .assertMediaType(MediaTypes.APPLICATION_JSON)
@@ -153,7 +153,7 @@ public class MarshallerTest extends JUnitRouteTest {
                         default: return HttpResponse.create().withStatus(404);
                     }
                 });
-            
+
         final Function<Integer,Route> nummerHandler = integer -> complete(integer, numberAsJsonListMarshaller);
 
         TestRoute route =

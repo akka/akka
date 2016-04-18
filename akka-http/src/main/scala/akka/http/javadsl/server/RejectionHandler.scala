@@ -5,7 +5,6 @@ package akka.http.javadsl.server
 
 import akka.http.scaladsl.server
 import java.util.function
-import akka.http.scaladsl.server.Rejection
 import scala.reflect.ClassTag
 import scala.collection.JavaConverters._
 
