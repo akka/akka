@@ -5,11 +5,14 @@
 package akka.http.javadsl.testkit
 
 import akka.actor.ActorSystem
+import akka.event.Logging
 import akka.http.javadsl.server._
 import akka.http.scaladsl.model.HttpResponse
 import akka.stream.{ Materializer, ActorMaterializer }
+import com.typesafe.config.{ ConfigFactory, Config }
 import org.junit.rules.ExternalResource
 import org.junit.{ Assert, Rule }
+import org.scalatest.junit.{ JUnitSuiteLike, JUnitSuite }
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import akka.http.scaladsl.server.RouteResult
@@ -18,7 +21,7 @@ import akka.http.scaladsl.server.RouteResult
  * A RouteTest that uses JUnit assertions. ActorSystem and Materializer are provided as an [[org.junit.rules.ExternalResource]]
  * and their lifetime is automatically managed.
  */
-abstract class JUnitRouteTestBase extends RouteTest {
+abstract class JUnitRouteTestBase extends RouteTest with JUnitSuiteLike {
   protected def systemResource: ActorSystemResource
   implicit def system: ActorSystem = systemResource.system
   implicit def materializer: Materializer = systemResource.materializer
@@ -41,13 +44,16 @@ abstract class JUnitRouteTestBase extends RouteTest {
     }
 }
 abstract class JUnitRouteTest extends JUnitRouteTestBase {
-  private[this] val _systemResource = new ActorSystemResource
+  protected def additionalConfig: Config = ConfigFactory.empty()
+
+  private[this] val _systemResource = new ActorSystemResource(Logging.simpleName(getClass), additionalConfig)
   @Rule
   protected def systemResource: ActorSystemResource = _systemResource
 }
 
-class ActorSystemResource extends ExternalResource {
-  protected def createSystem(): ActorSystem = ActorSystem()
+class ActorSystemResource(name: String, additionalConfig: Config) extends ExternalResource {
+  protected def config = additionalConfig.withFallback(ConfigFactory.load())
+  protected def createSystem(): ActorSystem = ActorSystem(name, config)
   protected def createMaterializer(system: ActorSystem): ActorMaterializer = ActorMaterializer()(system)
 
   implicit def system: ActorSystem = _system
