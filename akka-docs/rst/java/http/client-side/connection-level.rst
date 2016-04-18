@@ -61,10 +61,7 @@ explicitly drained by attaching it to ``Sink.ignore()``.
 Timeouts
 --------
 
-Currently Akka HTTP doesn't implement client-side request timeout checking itself as this functionality can be regarded
-as a more general purpose streaming infrastructure feature.
-However, akka-stream should soon provide such a feature.
-
+Timeouts are configured in the same way for Scala and Akka. See :ref:`_http-timeouts` .
 
 .. _http-client-layer-java:
 
