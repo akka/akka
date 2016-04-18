@@ -8,7 +8,7 @@ import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Props }
 import akka.dispatch.ExecutionContexts
 import akka.japi.function
-import akka.stream.impl.StreamLayout
+import akka.stream.impl.{ SinkQueueAdapter, StreamLayout }
 import akka.stream.{ javadsl, scaladsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.compat.java8.OptionConverters._
@@ -16,7 +16,6 @@ import scala.concurrent.ExecutionContext
 import scala.util.Try
 import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters.FutureOps
-import akka.stream.impl.SinkQueueAdapter
 
 /** Java API */
 object Sink {
@@ -163,6 +162,20 @@ object Sink {
   def seq[In]: Sink[In, CompletionStage[java.util.List[In]]] = {
     import scala.collection.JavaConverters._
     new Sink(scaladsl.Sink.seq[In].mapMaterializedValue(fut ⇒ fut.map(sq ⇒ sq.asJava)(ExecutionContexts.sameThreadExecutionContext).toJava))
+  }
+
+  /**
+    * A `Sink` that counts incoming elements until upstream terminates.
+    * As upstream may be unbounded, `Flow[T].take` or the stricter `Flow[T].limit` (and their variants)
+    * may be used to ensure boundedness.
+    * Materializes into `CompletionStage` of `[[IOResult]]` containing value of the counter and information
+    * about the outcome of streaming.
+    * Standard behavior of `Long` overflowing applies.
+    *
+    * See also [[Flow.limit]], [[Flow.limitWeighted]], [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
+    */
+  def count[In]: Sink[In, CompletionStage[IOResult]] = {
+    new Sink(scaladsl.Sink.count[In].mapMaterializedValue(fut ⇒ fut.map(rs ⇒ rs)(ExecutionContexts.sameThreadExecutionContext).toJava))
   }
 
   /**
