@@ -6,7 +6,8 @@ package akka.http.javadsl.server.directives
 import java.util.Optional
 import java.util.{function => jf}
 
-import scala.compat.java8.OptionConverters._        
+import scala.compat.java8.OptionConverters
+import scala.compat.java8.OptionConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
 
 import akka.http.javadsl.model.HttpHeader
@@ -107,7 +108,8 @@ abstract class HeaderDirectives extends FutureDirectives {
     // TODO custom headers don't work yet
     // TODO needs instance of check if it's a modeled header and then magically locate companion
     D.optionalHeaderValueByType(HeaderMagnet.fromClassNormalJavaHeader(t).asInstanceOf[ScalaHeaderMagnet]) { value =>
-      inner.apply(value.asInstanceOf[Optional[T]]).delegate
+      val valueT = value.asInstanceOf[Option[T]] // we know this is safe because T <: HttpHeader
+      inner.apply(OptionConverters.toJava[T](valueT)).delegate
     }
   }
   
