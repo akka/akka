@@ -59,7 +59,7 @@ abstract class RouteTest extends AllDirectives {
 
     val result = scalaRoute(new server.RequestContextImpl(effectiveRequest, system.log, RoutingSettings(system)))
 
-    createTestRouteResult(result.awaitResult(awaitDuration))
+    createTestRouteResult(request, result.awaitResult(awaitDuration))
   }
 
   /**
@@ -73,5 +73,5 @@ abstract class RouteTest extends AllDirectives {
       def run(request: HttpRequest): TestRouteResult = runRoute(underlying, request)
     }
 
-  protected def createTestRouteResult(result: RouteResult): TestRouteResult
+  protected def createTestRouteResult(request: HttpRequest, result: RouteResult): TestRouteResult
 }

@@ -6,6 +6,7 @@ package akka.http.javadsl.testkit
 
 import akka.actor.ActorSystem
 import akka.event.Logging
+import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.server._
 import akka.http.scaladsl.model.HttpResponse
 import akka.stream.{ Materializer, ActorMaterializer }
@@ -26,10 +27,10 @@ abstract class JUnitRouteTestBase extends RouteTest with JUnitSuiteLike {
   implicit def system: ActorSystem = systemResource.system
   implicit def materializer: Materializer = systemResource.materializer
 
-  protected def createTestRouteResult(result: RouteResult): TestRouteResult =
+  protected def createTestRouteResult(request: HttpRequest, result: RouteResult): TestRouteResult =
     new TestRouteResult(result, awaitDuration)(system.dispatcher, materializer) {
       protected def assertEquals(expected: AnyRef, actual: AnyRef, message: String): Unit =
-        Assert.assertEquals(message, expected, actual)
+        reportDetails { Assert.assertEquals(message, expected, actual) }
 
       protected def assertEquals(expected: Int, actual: Int, message: String): Unit =
         Assert.assertEquals(message, expected, actual)
@@ -40,6 +41,14 @@ abstract class JUnitRouteTestBase extends RouteTest with JUnitSuiteLike {
       protected def fail(message: String): Unit = {
         Assert.fail(message)
         throw new IllegalStateException("Assertion should have failed")
+      }
+
+      def reportDetails[T](block: ⇒ T): T = {
+        try block catch {
+          case t: Throwable ⇒ throw new AssertionError(t.getMessage + "\n" +
+            "  Request was:      " + request + "\n" +
+            "  Route result was: " + result + "\n", t)
+        }
       }
     }
 }
