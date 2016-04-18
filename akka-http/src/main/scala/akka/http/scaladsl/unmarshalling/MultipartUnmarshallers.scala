@@ -97,7 +97,7 @@ trait MultipartUnmarshallers {
                     createStrict(mediaType, builder.result())
                   case _ ⇒
                     val bodyParts = entity.dataBytes
-                      .transform(() ⇒ parser)
+                      .via(parser)
                       .splitWhen(_.isInstanceOf[PartStart])
                       .buffer(100, OverflowStrategy.backpressure) // FIXME remove (#19240)
                       .prefixAndTail(1)
