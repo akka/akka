@@ -6,13 +6,15 @@ package akka.http.javadsl.server
 
 import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.RoutingJavaMapping
-import akka.http.scaladsl.marshalling.Marshalling
-import akka.http.scaladsl.unmarshalling.Unmarshaller.{EnhancedFromEntityUnmarshaller, EnhancedUnmarshaller}
-import akka.http.scaladsl.{model, unmarshalling, marshalling}
+import akka.http.scaladsl.marshalling._
+import akka.http.scaladsl.unmarshalling.{ FromRequestUnmarshaller, FromEntityUnmarshaller }
+import akka.http.scaladsl.unmarshalling.Unmarshaller.{ EnhancedFromEntityUnmarshaller, EnhancedUnmarshaller }
+import akka.http.scaladsl.{ unmarshalling, model, marshalling }
+import akka.util.ByteString
 import scala.concurrent.ExecutionContext
 import scala.annotation.varargs
 import akka.http.javadsl.model.HttpEntity
-import akka.http.scaladsl.model.ContentTypeRange
+import akka.http.scaladsl.model.{ FormData, ContentTypeRange }
 import akka.http.scaladsl
 import akka.http.javadsl.model.ContentType
 import akka.http.javadsl.model.HttpRequest
@@ -24,87 +26,103 @@ import scala.collection.JavaConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.RoutingJavaMapping._
 
-object Unmarshaller {
-  implicit def fromScala[A, B](scalaUnmarshaller: unmarshalling.Unmarshaller[A, B]) = new Unmarshaller()(scalaUnmarshaller)
+import scala.language.implicitConversions
 
-  def wrap[A, B](scalaUnmarshaller: unmarshalling.Unmarshaller[A, B]) = new Unmarshaller()(scalaUnmarshaller)
+object Unmarshaller {
+  implicit def fromScala[A, B](scalaUnmarshaller: unmarshalling.Unmarshaller[A, B]): Unmarshaller[A, B] =
+    scalaUnmarshaller
 
   /**
-   * Creates an unmarshaller from an asynchronous Java function. 
+   * Creates an unmarshaller from an asynchronous Java function.
    */
-  def async[A, B](f: java.util.function.Function[A, CompletionStage[B]]) = wrap(unmarshalling.Unmarshaller[A, B] {
-    ctx => a => f.apply(a).toScala
-  })
-  
+  def async[A, B](f: java.util.function.Function[A, CompletionStage[B]]): Unmarshaller[A, B] =
+    unmarshalling.Unmarshaller[A, B] {
+      ctx ⇒ a ⇒ f(a).toScala
+    }
+
   /**
    * Creates an unmarshaller from a Java function.
    */
-  def sync[A,B](f: java.util.function.Function[A,B]) = wrap(unmarshalling.Unmarshaller[A,B] {
-    ctx => a => scala.concurrent.Future.successful(f.apply(a))
-  })
-  
-  def entityToByteString = wrapFromHttpEntity(unmarshalling.Unmarshaller.byteStringUnmarshaller)
-  def entityToByteArray = wrapFromHttpEntity(unmarshalling.Unmarshaller.byteArrayUnmarshaller)
-  def entityToCharArray = wrapFromHttpEntity(unmarshalling.Unmarshaller.charArrayUnmarshaller)
-  def entityToString = wrapFromHttpEntity(unmarshalling.Unmarshaller.stringUnmarshaller)
-  def entityToUrlEncodedFormData = wrapFromHttpEntity(unmarshalling.Unmarshaller.defaultUrlEncodedFormDataUnmarshaller)
-  
-  def requestToEntity = wrap(unmarshalling.Unmarshaller[HttpRequest,RequestEntity] {
-    ctx => request => scala.concurrent.Future.successful(request.entity())
-  })
+  def sync[A, B](f: java.util.function.Function[A, B]): Unmarshaller[A, B] =
+    unmarshalling.Unmarshaller[A, B] {
+      ctx ⇒ a ⇒ scala.concurrent.Future.successful(f.apply(a))
+    }
+
+  // format: OFF
+  def entityToByteString: Unmarshaller[HttpEntity, ByteString]       = unmarshalling.Unmarshaller.byteStringUnmarshaller
+  def entityToByteArray: Unmarshaller[HttpEntity, Array[Byte]]       = unmarshalling.Unmarshaller.byteArrayUnmarshaller
+  def entityToCharArray: Unmarshaller[HttpEntity, Array[Char]]       = unmarshalling.Unmarshaller.charArrayUnmarshaller
+  def entityToString: Unmarshaller[HttpEntity, String]               = unmarshalling.Unmarshaller.stringUnmarshaller
+  def entityToUrlEncodedFormData: Unmarshaller[HttpEntity, FormData] = unmarshalling.Unmarshaller.defaultUrlEncodedFormDataUnmarshaller
+  // format: ON
+
+  val requestToEntity: Unmarshaller[HttpRequest, RequestEntity] =
+    unmarshalling.Unmarshaller.strict[HttpRequest, RequestEntity](_.entity)
 
   def forMediaType[B](t: MediaType, um: Unmarshaller[HttpEntity, B]): Unmarshaller[HttpEntity, B] = {
-    val x: unmarshalling.Unmarshaller[model.HttpEntity, HttpEntity] = unmarshalling.Unmarshaller.strict[model.HttpEntity, HttpEntity](_.asJava)
-    val z = x.flatMap(ex => mat => en => um.asScala(en))
-    val xx = z.forContentTypes(t.asScala)
-    wrap(xx)  // FIXME
-  }
-  
-  def forMediaTypes[B](types: java.lang.Iterable[MediaType], um:Unmarshaller[_ <: HttpEntity,B]): Unmarshaller[HttpEntity,B] = {
-    wrap(um.asScala.forContentTypes(types.asScala.toSeq.map(ContentTypeRange(_)): _*))
-  }
-  
-  def firstOf[A, B] (u1: Unmarshaller[A, B], u2: Unmarshaller[A, B]): Unmarshaller[A, B] = {
-    wrap(unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala))
-  }
-  
-  def firstOf[A, B] (u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B]): Unmarshaller[A, B] = {
-    wrap(unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala))
-  }
-  
-  def firstOf[A, B] (u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B]): Unmarshaller[A, B] = {
-    wrap(unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala, u4.asScala))
-  }
-  
-  def firstOf[A, B] (u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B], u5: Unmarshaller[A, B]): Unmarshaller[A, B] = {
-    wrap(unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala, u4.asScala, u5.asScala))
+    unmarshalling.Unmarshaller.withMaterializer[HttpEntity, B] { implicit ex ⇒
+      implicit mat ⇒ jEntity ⇒ um.asScala(jEntity)
+    }
   }
 
-  private def wrapFromHttpEntity[B](scalaUnmarshaller: unmarshalling.Unmarshaller[scaladsl.model.HttpEntity, B]) = {
-    wrap(scalaUnmarshaller.asScala)
+  def forMediaTypes[B](types: java.lang.Iterable[MediaType], um: Unmarshaller[HttpEntity, B]): Unmarshaller[HttpEntity, B] = {
+    val u: FromEntityUnmarshaller[B] = um.asScala
+    val theTypes: Seq[akka.http.scaladsl.model.ContentTypeRange] = types.asScala.toSeq.map { media ⇒
+      akka.http.scaladsl.model.ContentTypeRange(media.asScala)
+    }
+    u.forContentTypes(theTypes: _*)
   }
-    
+
+  def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B]): Unmarshaller[A, B] = {
+    unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala)
+  }
+
+  def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B]): Unmarshaller[A, B] = {
+    unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala)
+  }
+
+  def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B]): Unmarshaller[A, B] = {
+    unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala, u4.asScala)
+  }
+
+  def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B], u5: Unmarshaller[A, B]): Unmarshaller[A, B] = {
+    unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala, u4.asScala, u5.asScala)
+  }
+
+  //  implicit def asScalaToResponseMarshaller[T](um: Unmarshaller[akka.http.javadsl.model.HttpRequest, T]): FromRequestUnmarshaller[T] =
+  //    um.asScala.contramap[akka.http.scaladsl.model.HttpRequest](_.asJava)
+  //
+  //  implicit def asScalaEntityMarshaller[T](um: Unmarshaller[akka.http.javadsl.model.RequestEntity, T]): akka.http.scaladsl.marshalling.Marshaller[T, akka.http.scaladsl.model.RequestEntity] =
+  //    um.asScala.map(_.asJava)
+
+  private implicit def adaptInputToJava[JI, SI, O](um: unmarshalling.Unmarshaller[SI, O])(implicit mi: JavaMapping[JI, SI]): unmarshalling.Unmarshaller[JI, O] =
+    um.asInstanceOf[unmarshalling.Unmarshaller[JI, O]] // since guarantee provided by existence of `mi`
+
 }
+
+trait UnmarshallerBase[-A, B]
 
 /**
  * An unmarshaller transforms values of type A into type B.
  */
-// asScala is implicit so we can just write "import unmarshaller.asScala" in Scala directive implementations.
-final class Unmarshaller[A,B] private (implicit val asScala: unmarshalling.Unmarshaller[A,B]) {
+abstract class Unmarshaller[-A, B] extends UnmarshallerBase[A, B] {
   import unmarshalling.Unmarshaller._
-  import Unmarshaller.wrap
-    
-  def map[C](f: java.util.function.Function[B,C]): Unmarshaller[A, C] = wrap(asScala.map(f.apply))
-  
-  def flatMap[C](f: java.util.function.Function[B,CompletionStage[C]]): Unmarshaller[A, C] = 
-    wrap(asScala.flatMap { ctx => mat => b => f.apply(b).toScala })
-  
-  def flatMap[C](u: Unmarshaller[_ >: B,C]): Unmarshaller[A,C] =
-    wrap(asScala.flatMap { ctx => mat => b => u.asScala.apply(b)(ctx,mat) })
-    
-  def mapWithInput[C](f: java.util.function.BiFunction[A, B, C]): Unmarshaller[A, C] =
-    wrap(asScala.mapWithInput { case (a,b) => f.apply(a, b) })
 
-  def flatMapWithInput[C](f: java.util.function.BiFunction[A, B, CompletionStage[C]]): Unmarshaller[A, C] =
-    wrap(asScala.flatMapWithInput { case (a,b) => f.apply(a, b).toScala })
+  implicit def asScala: akka.http.scaladsl.unmarshalling.Unmarshaller[A, B]
+
+  // TODO not that good name, trying to avoid conflicts with map() since lambdas and scala 2.12
+  def thenMap[C](f: java.util.function.Function[B, C]): Unmarshaller[A, C] = asScala.map(f.apply)
+
+  def flatMap[C](f: java.util.function.Function[B, CompletionStage[C]]): Unmarshaller[A, C] =
+    asScala.flatMap { ctx ⇒ mat ⇒ b ⇒ f.apply(b).toScala }
+
+  def flatMap[C](u: Unmarshaller[_ >: B, C]): Unmarshaller[A, C] =
+    asScala.flatMap { ctx ⇒ mat ⇒ b ⇒ u.asScala.apply(b)(ctx, mat) }
+
+  // TODO not exposed for Java yet
+  //  def mapWithInput[C](f: java.util.function.BiFunction[A, B, C]): Unmarshaller[A, C] =
+  //    asScala.mapWithInput { case (a, b) ⇒ f.apply(a, b) }
+  //
+  //  def flatMapWithInput[C](f: java.util.function.BiFunction[A, B, CompletionStage[C]]): Unmarshaller[A, C] =
+  //    asScala.flatMapWithInput { case (a, b) ⇒ f.apply(a, b).toScala }
 }

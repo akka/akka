@@ -1,9 +1,9 @@
+/*
+ * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.http.javadsl.server
 
-import akka.http.scaladsl.unmarshalling.PredefinedFromStringUnmarshallers._
-import akka.http.scaladsl.unmarshalling
-import scala.concurrent.ExecutionContext
-import Unmarshaller.wrap
 import java.util.concurrent.CompletionStage
 
 object StringUnmarshaller {

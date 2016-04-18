@@ -24,11 +24,13 @@ import akka.http.javadsl.model.HttpHeader
 import scala.collection.JavaConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
 
+import scala.language.implicitConversions
+
 object Marshaller {
 
   import JavaMapping.Implicits._
 
-  implicit def fromScala[A, B](scalaMarshaller: marshalling.Marshaller[A, B]) = new Marshaller()(scalaMarshaller)
+  implicit def fromScala[A, B](scalaMarshaller: marshalling.Marshaller[A, B]): Marshaller[A, B] = new Marshaller()(scalaMarshaller)
 
   /**
    * Safe downcasting of the output type of the marshaller to a superclass. 
@@ -72,9 +74,8 @@ object Marshaller {
     scaladsl.marshalling.Marshaller.byteStringMarshaller(t.asScala)
   }
 
-  def opaque[A, B](f: function.Function[A, B]): Marshaller[A, B] = {
+  def opaque[A, B](f: function.Function[A, B]): Marshaller[A, B] =
     scaladsl.marshalling.Marshaller.opaque[A, B] { a => f.apply(a) }
-  }
 
   def entityToOKResponse[A](m: Marshaller[A, _ <: RequestEntity]): Marshaller[A, HttpResponse] = {
     marshalling.Marshaller.fromToEntityMarshaller[A]()(m.asScalaToEntityMarshaller)
@@ -115,8 +116,7 @@ object Marshaller {
     m.asScala.map(_.asScala)
 }
 
-// [asScala] is made implicit so we can just do "import marshaller.asScala" in scala directive implementations
-final class Marshaller[A, B] private(implicit val asScala: marshalling.Marshaller[A, B]) {
+class Marshaller[A, B] private(implicit val asScala: marshalling.Marshaller[A, B]) {
   import Marshaller.fromScala
 
   // TODO would be nice to not need this special case

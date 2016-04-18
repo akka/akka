@@ -41,12 +41,12 @@ public class JavaRouteTest extends JUnitRouteTest {
       Unmarshaller.sync(BigDecimal::new);
     
     private final Unmarshaller<HttpEntity,BigDecimal> BIG_DECIMAL_BODY =
-        Unmarshaller.entityToString() .map(BigDecimal::new);
+        Unmarshaller.entityToString().thenMap(BigDecimal::new);
     
     private final Unmarshaller<HttpEntity,UUID> UUID_FROM_JSON_BODY =
         Unmarshaller.forMediaType(MediaTypes.APPLICATION_JSON,
                          Unmarshaller.entityToString())
-                    .map(s -> {
+                    .thenMap(s -> {
                         // just a fake JSON parser, assuming it's {"id":"..."}  
                         // A real implementation could easily invoke Jackson here instead.
                         Pattern regex = Pattern.compile("\"id\":\"(.+)\"");
@@ -58,7 +58,7 @@ public class JavaRouteTest extends JUnitRouteTest {
     private final Unmarshaller<HttpEntity,UUID> UUID_FROM_XML_BODY =
         Unmarshaller.forMediaTypes(Arrays.asList(MediaTypes.TEXT_XML, MediaTypes.APPLICATION_XML),
                         Unmarshaller.entityToString())
-                    .map(s -> {
+                    .thenMap(s -> {
                         // just a fake XML parser, assuming it's <id>...</id>
                       // A real implementation could easily invoke JAXB here instead.
                         Pattern regex = Pattern.compile("<id>(.+)</id>");
@@ -76,7 +76,7 @@ public class JavaRouteTest extends JUnitRouteTest {
         MediaTypes.APPLICATION_JSON 
     );
     
-    private final Marshaller<UUID, RequestEntity> UUID_TO_XML(ContentType xmlType) { 
+    private Marshaller<UUID, RequestEntity> UUID_TO_XML(ContentType xmlType) {
         return Marshaller.byteStringMarshaller(xmlType).compose(
             (UUID u) -> ByteString.fromString("<id>" + u + "</id>")); 
     }
@@ -99,7 +99,7 @@ public class JavaRouteTest extends JUnitRouteTest {
     
     private Route uuidHeaderValue(Function<UUIDHeader, Route> inner) {
         return headerValueByName("UUID", value -> {
-            return isUUID(value) ? inner.apply(new UUIDHeader(UUID.fromString(value))) 
+            return isUUID(value) ? inner.apply(new UUIDHeader(UUID.fromString(value)))
                                  : reject(Rejections.malformedHeader("UUID", "must be a valid UUID"));
         });
     }
@@ -293,7 +293,7 @@ public class JavaRouteTest extends JUnitRouteTest {
             ),
             path("shouldnotfail", () ->
                 handleExceptions(xHandler, () ->
-                    onSuccess(() -> throwExceptionInFuture(), value -> 
+                    onSuccess(() -> throwExceptionInFuture(), value ->
                         complete("never reaches here")
                     )
                 )

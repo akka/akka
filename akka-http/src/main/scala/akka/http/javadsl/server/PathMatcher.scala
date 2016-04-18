@@ -14,7 +14,7 @@ import scala.collection.JavaConverters._
 import PathMatcher.fromScala0
 import PathMatcher.fromScala1
 import PathMatcher.fromScala2
-import PathMatchersScala.Neutral
+import PathMatchersBridge.Neutral
 import akka.http.scaladsl.server.{ PathMatcher ⇒ SPathMatcher }
 import akka.http.scaladsl.server.{ PathMatchers ⇒ SPathMatchers }
 import akka.http.javadsl.server.RegexConverters.toScala
@@ -87,7 +87,7 @@ case class PathMatcher2[T1, T2](toScala: SPathMatcher[(T1, T2)]) {
  * Contains Scala path matchers as object fields so they can be referred to from Java code.
  * @see PathMatchers for the actual Java constants to use.
  */
-private[server] object PathMatchersScala {
+private[server] object PathMatchersBridge {
   val IntegerSegment: PathMatcher1[java.lang.Integer] = fromScala1(SPathMatchers.IntNumber.map { i ⇒ i: java.lang.Integer })
   val LongSegment: PathMatcher1[java.lang.Long] = fromScala1(SPathMatchers.LongNumber.map { i ⇒ i: java.lang.Long })
   val HexIntegerSegment: PathMatcher1[java.lang.Integer] = fromScala1(SPathMatchers.HexIntNumber.map { i ⇒ i: java.lang.Integer })
