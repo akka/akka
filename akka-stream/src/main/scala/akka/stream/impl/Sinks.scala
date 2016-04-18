@@ -181,6 +181,9 @@ private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any
     new ActorRefSink[In](ref, onCompleteMessage, attr, amendShape(attr))
 }
 
+/**
+ * INTERNAL API
+ */
 private[akka] final class LastOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
 
   val in = Inlet[T]("lastOption.in")
@@ -218,6 +221,9 @@ private[akka] final class LastOptionStage[T] extends GraphStageWithMaterializedV
   override def toString: String = "LastOptionStage"
 }
 
+/**
+ * INTERNAL API
+ */
 private[akka] final class HeadOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
 
   val in = Inlet[T]("headOption.in")
@@ -250,6 +256,9 @@ private[akka] final class HeadOptionStage[T] extends GraphStageWithMaterializedV
   override def toString: String = "HeadOptionStage"
 }
 
+/**
+ * INTERNAL API
+ */
 private[akka] final class SeqStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[immutable.Seq[T]]] {
   val in = Inlet[T]("seq.in")
 
@@ -281,6 +290,48 @@ private[akka] final class SeqStage[T] extends GraphStageWithMaterializedValue[Si
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
           p.tryFailure(ex)
+          failStage(ex)
+        }
+      })
+    }
+
+    (logic, p.future)
+  }
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] final class CountStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[IOResult]] {
+  val in = Inlet[T]("count.in")
+
+  override def toString: String = "CountStage"
+
+  override val shape: SinkShape[T] = SinkShape.of(in)
+
+  override protected def initialAttributes: Attributes = DefaultAttributes.countSink
+
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+    val p: Promise[IOResult] = Promise()
+    val logic = new GraphStageLogic(shape) {
+      var count = 0L
+
+      override def preStart(): Unit = pull(in)
+
+      setHandler(in, new InHandler {
+
+        override def onPush(): Unit = {
+          count += 1
+          pull(in)
+        }
+
+        override def onUpstreamFinish(): Unit = {
+          p.trySuccess(IOResult(count, Success(Done)))
+          completeStage()
+        }
+
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          p.trySuccess(IOResult(count, Failure(ex)))
           failStage(ex)
         }
       })
