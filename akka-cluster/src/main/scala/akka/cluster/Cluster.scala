@@ -102,6 +102,10 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     new DefaultFailureDetectorRegistry(() ⇒ createFailureDetector())
   }
 
+  // needs to be lazy to allow downing provider impls to access Cluster (if not we get deadlock)
+  lazy val downingProvider: DowningProvider =
+    DowningProvider.load(settings.DowningProviderClassName, system)
+
   // ========================================================
   // ===================== WORK DAEMONS =====================
   // ========================================================

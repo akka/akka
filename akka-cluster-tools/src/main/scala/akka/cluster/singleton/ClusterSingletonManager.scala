@@ -381,7 +381,7 @@ class ClusterSingletonManager(
     s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
 
   val removalMargin =
-    if (settings.removalMargin <= Duration.Zero) cluster.settings.DownRemovalMargin
+    if (settings.removalMargin <= Duration.Zero) cluster.downingProvider.downRemovalMargin
     else settings.removalMargin
 
   val (maxHandOverRetries, maxTakeOverRetries) = {
