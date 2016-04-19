@@ -40,7 +40,7 @@ public class ExecutionDirectivesTest extends JUnitRouteTest {
             .assertEntity("The result is: 2");
 
         route.run(HttpRequest.GET("/divide?a=10&b=0"))
-            .assertStatusCode(400)
+            .assertStatusCode(StatusCodes.BAD_REQUEST)
             .assertEntity("Congratulations you provoked a division by zero!");
     }
 
@@ -58,11 +58,11 @@ public class ExecutionDirectivesTest extends JUnitRouteTest {
             );
 
         route.run(HttpRequest.GET("/"))
-            .assertStatusCode(200)
+            .assertStatusCode(StatusCodes.OK)
             .assertEntity("Successful!");
 
         route.run(HttpRequest.POST("/"))
-            .assertStatusCode(400)
+            .assertStatusCode(StatusCodes.BAD_REQUEST)
             .assertEntity("Whoopsie! Unsupported method. Supported would have been GET");
     }
 
@@ -89,10 +89,10 @@ public class ExecutionDirectivesTest extends JUnitRouteTest {
         TestRoute route = testRoute(handleRejections(rejectionHandler, () -> testRoute));
 
         route.run(HttpRequest.GET("/test"))
-                .assertStatusCode(200);
+                .assertStatusCode(StatusCodes.OK);
 
         route.run(HttpRequest.GET("/other"))
-                .assertStatusCode(429)
+                .assertStatusCode(StatusCodes.TOO_MANY_REQUESTS)
                 .assertEntity("Too many requests for busy path!");
     }
 }
