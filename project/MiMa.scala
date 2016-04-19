@@ -779,6 +779,13 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.HttpExt.setDefaultClientHttpsContext"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.createServerHttpsContext"),
 
+        // #20367 Converts DelimiterFramingStage from PushPullStage to GraphStage
+        ProblemFilters.exclude[MissingTypesProblem]("akka.stream.scaladsl.Framing$DelimiterFramingStage"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Framing#DelimiterFramingStage.onPush"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Framing#DelimiterFramingStage.onUpstreamFinish"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Framing#DelimiterFramingStage.onPull"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Framing#DelimiterFramingStage.postStop"),
+
         // #20342 HttpEntity scaladsl overrides
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.withoutSizeLimit"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.withSizeLimit"),
