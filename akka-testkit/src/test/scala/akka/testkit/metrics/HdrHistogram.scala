@@ -41,8 +41,8 @@ private[akka] class HdrHistogram(
 
   private def wrapHistogramOutOfBoundsException(value: Long, ex: ArrayIndexOutOfBoundsException): IllegalArgumentException =
     new IllegalArgumentException(s"Given value $value can not be stored in this histogram " +
-      s"(min: ${hist.getLowestTrackableValue}, max: ${hist.getHighestTrackableValue}})", ex)
+      s"(min: ${hist.getLowestDiscernibleValue}, max: ${hist.getHighestTrackableValue}})", ex)
 
-  def getData = hist.copy().getHistogramData
+  def getData = hist.copy()
 
 }
