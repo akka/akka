@@ -96,7 +96,7 @@ private[remote] class ArterySubsystem(_system: ExtendedActorSystem, _provider: R
  * Thread-safe, mutable holder for association state. Main entry point for remote destined message to a specific
  * remote address.
  */
-private[remote] class Association(
+private[akka] class Association(
   val materializer: Materializer,
   val remoteAddress: Address,
   val transport: Transport) {
@@ -113,7 +113,8 @@ private[remote] class Association(
 
   // Idempotent
   def associate(): Unit = {
-    queue = Source.queue(256, OverflowStrategy.dropBuffer).to(sink).run()(materializer)
+    if (queue eq null)
+      queue = Source.queue(256, OverflowStrategy.dropBuffer).to(sink).run()(materializer)
   }
 }
 
