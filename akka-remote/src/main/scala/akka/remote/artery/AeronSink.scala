@@ -25,7 +25,7 @@ object AeronSink {
 /**
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
  */
-class AeronSink(channel: String, aeron: () ⇒ Aeron) extends GraphStage[SinkShape[AeronSink.Bytes]] {
+class AeronSink(channel: String, aeron: Aeron) extends GraphStage[SinkShape[AeronSink.Bytes]] {
   import AeronSink._
 
   val in: Inlet[Bytes] = Inlet("AeronSink")
@@ -36,10 +36,10 @@ class AeronSink(channel: String, aeron: () ⇒ Aeron) extends GraphStage[SinkSha
 
       private val buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(128 * 1024))
       private val streamId = 10
-      private val pub = aeron().addPublication(channel, streamId)
+      private val pub = aeron.addPublication(channel, streamId)
       private val idleStrategy = new BackoffIdleStrategy(
         100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100))
-      private val retries = 120
+      private val retries = 130
 
       private var backoffCount = retries
       private var lastMsgSize = 0
@@ -68,13 +68,14 @@ class AeronSink(channel: String, aeron: () ⇒ Aeron) extends GraphStage[SinkSha
           if (backoffCount == 1) {
             println(s"# drop") // FIXME
             pull(in) // drop it
-          } else if (backoffCount <= 5) {
+          } else if (backoffCount <= 15) {
             // TODO Instead of using the scheduler we should handoff the task of
             // retrying/polling to a separate thread that performs the polling for
             // all sources/sinks and notifies back when there is some news.
-            // println(s"# scheduled backoff ${6 - backoffCount}") // FIXME
             backoffCount -= 1
-            if (backoffCount <= 2)
+            if (backoffCount <= 10)
+              println(s"# snd backoff $backoffCount") // FIXME
+            if (backoffCount <= 10)
               scheduleOnce(Backoff, 50.millis)
             else
               scheduleOnce(Backoff, 1.millis)
