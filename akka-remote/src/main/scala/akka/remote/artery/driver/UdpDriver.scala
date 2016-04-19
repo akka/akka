@@ -4,11 +4,11 @@
 
 package akka.remote.artery.driver
 
-import java.net.{ InetSocketAddress, StandardSocketOptions }
+import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.util
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 import akka.dispatch.AbstractNodeQueue
 import akka.io.DirectByteBufferPool
@@ -26,31 +26,34 @@ private[remote] object UdpDriver {
   val SendQueueSize = 128
   val RcvQueueSize = 128
 
+  val ReadWakeup = 1
+  val WriteWakeup = 2
+
   sealed trait Command
   case object Shutdown extends Command
   final case class Register(
     registrationCallback: AsyncCallback[Registration],
-    wakeupCallback: AsyncCallback[Unit],
+    wakeupCallback: AsyncCallback[Int],
     remoteAddress: InetSocketAddress) extends Command
   final case class Deregister(registration: Registration) extends Command
 
   final class CommandQueue extends AbstractNodeQueue[Command]
 
-  val ignoreWakeup = new AsyncCallback[Unit] {
-    override def invoke(t: Unit): Unit = if (Debug) println("Ignored wakeup")
+  val ignoreWakeup = new AsyncCallback[Int] {
+    override def invoke(t: Int): Unit = if (Debug) println("Ignored wakeup")
   }
 
   final class Registration(val owner: UdpDriver, val remoteAddress: InetSocketAddress) {
     val rcvBuffer = new FrameBuffer(owner.bufferPool)
     val sendQueue = new OneToOneConcurrentArrayQueue[Frame](SendQueueSize)
     val rcvQueue = new OneToOneConcurrentArrayQueue[Frame](RcvQueueSize)
-    val readWeakupNeeded = new AtomicBoolean(false)
+    val wakeupStatus = new AtomicInteger(0)
 
     // Only the driver may write these
-    private var wakeupCallback: AsyncCallback[Unit] = ignoreWakeup
+    private var wakeupCallback: AsyncCallback[Int] = ignoreWakeup
     var flushAndDeregister = false
 
-    def setWakeupCallback(cb: AsyncCallback[Unit]): Unit = {
+    def setWakeupCallback(cb: AsyncCallback[Int]): Unit = {
       // ignoreWakeup is only the initial behavior
       if (cb ne ignoreWakeup) wakeupCallback = cb
     }
@@ -66,9 +69,9 @@ private[remote] object UdpDriver {
       if (!rcvQueue.offer(frame)) rcvBuffer.release(frame)
     }
 
-    def readWakeUp(): Unit = {
-      readWeakupNeeded.set(false)
-      wakeupCallback.invoke(())
+    def wakeUp(wakeupProvided: Int): Unit = {
+      wakeupStatus.getAndAdd(-wakeupProvided)
+      wakeupCallback.invoke(wakeupProvided)
     }
   }
 
@@ -165,7 +168,7 @@ private[remote] final class UdpDriver(listenAddress: InetSocketAddress) extends 
     }
   }
 
-  private def registrationForAddress(remoteAddress: InetSocketAddress, cb: AsyncCallback[Unit]): Registration = {
+  private def registrationForAddress(remoteAddress: InetSocketAddress, cb: AsyncCallback[Int]): Registration = {
     val existingRegistration = addressToRegistration.get(remoteAddress)
 
     if (existingRegistration eq null) {
@@ -206,16 +209,16 @@ private[remote] final class UdpDriver(listenAddress: InetSocketAddress) extends 
     while (registrationsItr.hasNext) {
       val registration = registrationsItr.next()
 
-      // Wake up readers that might miss writes to the SPSC queue
-      if (registration.readWeakupNeeded.get() && !registration.rcvQueue.isEmpty) {
-        if (Debug) println("wake up registration")
-        registration.readWakeUp()
-      }
-
       if (registration.flushAndDeregister && registration.sendQueue.isEmpty) {
         registrationsItr.remove()
         addressToRegistration.remove(registration.remoteAddress)
       } else {
+
+        // Wake up readers/writers that might miss writes/reads to the SPSC queue
+        val wakeupNeeded = registration.wakeupStatus.get()
+        var wakeupProvided = 0
+        if ((wakeupNeeded & ReadWakeup) > 0 && !registration.rcvQueue.isEmpty) wakeupProvided |= ReadWakeup
+        if ((wakeupNeeded & WriteWakeup) > 0 && registration.sendQueue.remainingCapacity() > 0) wakeupProvided |= WriteWakeup
 
         val queue = registration.sendQueue
         var frame = queue.peek()
@@ -237,6 +240,8 @@ private[remote] final class UdpDriver(listenAddress: InetSocketAddress) extends 
             frame = null // Exit write loop
           }
         }
+
+        if (wakeupProvided > 0) registration.wakeUp(wakeupProvided)
 
       }
     }

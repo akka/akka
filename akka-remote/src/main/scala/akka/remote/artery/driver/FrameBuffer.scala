@@ -21,6 +21,8 @@ private[remote] object FrameBuffer {
 
 /**
  * INTERNAL API
+ *
+ * This class is not thread safe, it must be owned by a stage.
  */
 private[remote] final class FrameBuffer(val pool: DirectByteBufferPool) {
   import FrameBuffer._

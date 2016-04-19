@@ -36,11 +36,12 @@ private[remote] class UdpTransportFlow(val driver: UdpDriver, val remoteAddress:
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
     private var registration: UdpDriver.Registration = _
+    private var writeCapacity = 0
 
     override def preStart(): Unit = {
       driver.command(UdpDriver.Register(
         getAsyncCallback(onRegistered),
-        getAsyncCallback(_ ⇒ onWakeUp()),
+        getAsyncCallback(onWakeUp),
         remoteAddress))
     }
 
@@ -50,19 +51,26 @@ private[remote] class UdpTransportFlow(val driver: UdpDriver, val remoteAddress:
 
     private def onRegistered(registration: Registration): Unit = {
       this.registration = registration
+      writeCapacity = registration.sendQueue.capacity()
       pull(in)
-      onWakeUp()
+      onWakeUp(UdpDriver.ReadWakeup)
     }
 
-    private def onWakeUp(): Unit = {
-      if (UdpDriver.Debug) println("woken up")
-      if (isAvailable(out)) onPull()
+    private def onWakeUp(status: Int): Unit = {
+      if (UdpDriver.Debug) println("woken up " + status)
+      if ((status & UdpDriver.ReadWakeup) > 0 && isAvailable(out)) onPull()
+      if ((status & UdpDriver.WriteWakeup) > 0 && !isClosed(in)) {
+        writeCapacity = registration.sendQueue.remainingCapacity()
+        pull(in)
+      }
     }
 
     override def onPush(): Unit = {
-      // Might drop, but higher level flow control should prevent this
       registration.sendQueue.offer(grab(in))
-      pull(in)
+      writeCapacity -= 1
+      if (writeCapacity == 0) writeCapacity = registration.sendQueue.remainingCapacity
+      if (writeCapacity > 0) pull(in)
+      else registration.wakeupStatus.addAndGet(UdpDriver.WriteWakeup)
     }
 
     override def onUpstreamFinish(): Unit = ()
@@ -73,7 +81,7 @@ private[remote] class UdpTransportFlow(val driver: UdpDriver, val remoteAddress:
       if (registration ne null) {
         val frame = registration.rcvQueue.poll()
         if (frame ne null) push(out, frame)
-        else registration.readWeakupNeeded.set(true)
+        else registration.wakeupStatus.addAndGet(UdpDriver.ReadWakeup)
       }
     }
 
