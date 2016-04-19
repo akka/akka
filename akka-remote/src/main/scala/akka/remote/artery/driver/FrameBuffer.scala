@@ -8,13 +8,14 @@ import java.nio.{ ByteBuffer, ByteOrder }
 
 import akka.io.DirectByteBufferPool
 import akka.util.ByteString
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 
 /**
  * INTERNAL API
  */
 private[remote] object FrameBuffer {
   val FrameSize = 1024
-  val BufferSizeInFrames = 32
+  val BufferSizeInFrames = 1024
   val BufferSize = FrameSize * BufferSizeInFrames
   val BufferSizeMask = BufferSizeInFrames - 1
 }
@@ -22,32 +23,28 @@ private[remote] object FrameBuffer {
 /**
  * INTERNAL API
  *
- * This class is not thread safe, it must be owned by a stage.
  */
 private[remote] final class FrameBuffer(val pool: DirectByteBufferPool) {
   import FrameBuffer._
 
   val buffer: ByteBuffer = pool.acquire()
-  private var lastAllocation = 0
-  private val frames: Array[Frame] = Array.tabulate(BufferSizeInFrames)(new Frame(this, _))
-  private val allocated: Array[Boolean] = Array.ofDim(BufferSizeInFrames)
 
-  def aquire(): Frame = {
-    val wraparound = lastAllocation
-    lastAllocation = (lastAllocation + 1) & BufferSizeMask
-    while (allocated(lastAllocation) && lastAllocation != wraparound) lastAllocation = (lastAllocation + 1) & BufferSizeMask
-    if (lastAllocation == wraparound) null
-    else {
-      allocated(lastAllocation) = true
-      val frame = frames(lastAllocation)
+  // TODO: Bounded, array based queue, but no lazySets)
+  private val availableFrames: ManyToOneConcurrentArrayQueue[Frame] = new ManyToOneConcurrentArrayQueue[Frame](BufferSizeInFrames)
+  (0 until BufferSizeInFrames).foreach { id ⇒
+    availableFrames.add(new Frame(this, id))
+  }
+
+  def acquire(): Frame = {
+    val frame = availableFrames.poll()
+    if (frame ne null) {
       frame.buffer.clear()
-      frame
+      frame.driverReleases = false
     }
+    frame
   }
 
-  def release(frame: Frame): Unit = {
-    allocated(frame.id) = false
-  }
+  def release(frame: Frame): Unit = availableFrames.add(frame)
 
   def close(): Unit = {
     pool.release(buffer)
@@ -60,6 +57,8 @@ private[remote] final class FrameBuffer(val pool: DirectByteBufferPool) {
  */
 private[remote] final class Frame(val owner: FrameBuffer, val id: Int) {
   import FrameBuffer._
+
+  @volatile var driverReleases = false
 
   val buffer = {
     owner.buffer.position(id * FrameSize)

@@ -192,7 +192,7 @@ private[remote] final class UdpDriver(listenAddress: InetSocketAddress) extends 
       backoff.reset()
       wasIoAction = true
       val registration = registrationForAddress(address, ignoreWakeup)
-      val frame = registration.rcvBuffer.aquire()
+      val frame = registration.rcvBuffer.acquire()
       // Drop if we have no space in the FrameBuffer
       if (frame ne null) {
         dispatchBuffer.flip()
@@ -230,6 +230,7 @@ private[remote] final class UdpDriver(listenAddress: InetSocketAddress) extends 
           if (channel.send(frame.buffer, registration.remoteAddress) > 0) {
             if (Debug) println("written")
             queue.poll()
+            if (frame.driverReleases) frame.release()
             backoff.reset()
             wasIoAction = true
             frame = queue.peek()

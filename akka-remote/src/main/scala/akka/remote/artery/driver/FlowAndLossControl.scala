@@ -57,7 +57,7 @@ private[remote] final class FlowAndLossControlStage(sndFramePool: FrameBuffer) e
     private[this] var highestDeliveredInboundSeq = -1L
     private[this] val inboundBuf = Array.ofDim[ByteString](WindowSize)
 
-    private[this] var pendingAck: Frame = sndFramePool.aquire()
+    private[this] var pendingAck: Frame = sndFramePool.acquire()
 
     override def preStart(): Unit = {
       pull(fromNet)
@@ -80,8 +80,9 @@ private[remote] final class FlowAndLossControlStage(sndFramePool: FrameBuffer) e
     private def trySendAck(): Boolean = {
       if (accumulateAckRoundsLeft <= 0) {
         calculateAckNack()
+        pendingAck.driverReleases = true
         push(toNet, pendingAck)
-        pendingAck = sndFramePool.aquire()
+        pendingAck = sndFramePool.acquire()
         accumulateAckRoundsLeft = AckWaterMark
         true
       } else false
@@ -95,7 +96,7 @@ private[remote] final class FlowAndLossControlStage(sndFramePool: FrameBuffer) e
     private[this] val outboundHandler = new InHandler with OutHandler {
 
       override def onPush(): Unit = {
-        val frame = sndFramePool.aquire()
+        val frame = sndFramePool.acquire()
         val payload = grab(fromApp)
         val seq = nextUnusedOutboundSeq
         nextUnusedOutboundSeq += 1

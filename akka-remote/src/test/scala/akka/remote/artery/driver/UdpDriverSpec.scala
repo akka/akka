@@ -32,12 +32,13 @@ class UdpDriverSpec extends AkkaSpec {
   val sink: Sink[Frame, NotUsed] = transport1.forRemoteAddress(address2).to(Sink.ignore)
   val source: Source[Frame, Any] = Source.maybe[Frame].via(transport2.forRemoteAddress(address1))
 
-  val frameBuffer = new FrameBuffer(driver1.bufferPool)
+  val frameBuffer1 = new FrameBuffer(driver1.bufferPool)
+  val frameBuffer2 = new FrameBuffer(driver2.bufferPool)
 
   "Udp transport" must {
 
     "work in the happy case" in {
-      val frame = frameBuffer.aquire()
+      val frame = frameBuffer1.acquire()
       frame.writeByteString(ByteString("Hello"))
 
       val result = source.take(1).map { frame ⇒
@@ -60,7 +61,7 @@ class UdpDriverSpec extends AkkaSpec {
 
       val testData = List.tabulate(Count)(i ⇒ ByteString.fromArray(Array.fill[Byte](i + 1)(i.toByte)))
       val testFrames = testData.map { bs ⇒
-        val frame = frameBuffer.aquire()
+        val frame = frameBuffer1.acquire()
         frame.writeByteString(bs)
         frame
       }
@@ -83,13 +84,13 @@ class UdpDriverSpec extends AkkaSpec {
 
       val testData = List.tabulate(Count)(i ⇒ ByteString.fromArray(Array.fill[Byte](i + 1)(i.toByte)))
       val testFrames1 = testData.map { bs ⇒
-        val frame = frameBuffer.aquire()
+        val frame = frameBuffer1.acquire()
         frame.writeByteString(bs)
         frame
       }
 
       val testFrames2 = testData.map { bs ⇒
-        val frame = frameBuffer.aquire()
+        val frame = frameBuffer1.acquire()
         frame.writeByteString(bs)
         frame
       }
@@ -123,6 +124,27 @@ class UdpDriverSpec extends AkkaSpec {
 
       writePromise2.success(Some(testFrames2))
       result1.futureValue should ===(testData)
+
+    }
+
+    "work with many messages if flow control is added" in {
+      val Count = 10000
+      val testPayload = ByteString("Hello")
+
+      val result = Source.maybe[ByteString]
+        .via(FlowAndLossControl(frameBuffer2) join transport2.forRemoteAddress(address1)).map { bs ⇒
+          //println(bs)
+          bs
+        }
+        .take(Count)
+        .runWith(Sink.seq)
+
+      Source.repeat(testPayload)
+        .take(Count)
+        .via(FlowAndLossControl(frameBuffer1) join transport1.forRemoteAddress(address2))
+        .runWith(Sink.ignore)
+
+      result.futureValue should ===(List.fill(Count)(testPayload))
 
     }
   }
