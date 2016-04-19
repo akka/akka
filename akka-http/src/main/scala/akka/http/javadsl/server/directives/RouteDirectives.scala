@@ -50,7 +50,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    * Rejects the request with the given rejections, or with an empty set of rejections if no rejections are given.
    */
   @varargs def reject(rejection: Rejection, rejections: Rejection*): Route = RouteAdapter {
-    D.reject(rejections.map(_.asScala): _*)
+    D.reject((rejection +: rejections).map(_.asScala): _*)
   }
 
   /**
