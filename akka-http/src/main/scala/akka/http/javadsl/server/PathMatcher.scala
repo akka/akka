@@ -11,15 +11,14 @@ import java.util.regex.Pattern
 
 import scala.collection.JavaConverters._
 
-import PathMatcher.fromScala0
-import PathMatcher.fromScala1
-import PathMatcher.fromScala2
 import PathMatchersBridge.Neutral
 import akka.http.scaladsl.server.{ PathMatcher ⇒ SPathMatcher }
 import akka.http.scaladsl.server.{ PathMatchers ⇒ SPathMatchers }
 import akka.http.javadsl.server.RegexConverters.toScala
 
 class PathMatcher0(val toScala: SPathMatcher[Unit]) {
+  import PathMatcher._
+
   def slash() = fromScala0(toScala./)
 
   def slash(segment: String) = fromScala0(toScala / segment)
@@ -42,6 +41,8 @@ class PathMatcher0(val toScala: SPathMatcher[Unit]) {
 }
 
 class PathMatcher1[T](val toScala: SPathMatcher[Tuple1[T]]) {
+  import PathMatcher._
+
   def slash[T2](next: PathMatcher1[T2]) = fromScala2(toScala./(next.toScala))
   def slash() = fromScala1(toScala./)
   def slash(segment: String) = fromScala1(toScala / segment)
@@ -63,6 +64,8 @@ class PathMatcher1[T](val toScala: SPathMatcher[Tuple1[T]]) {
 }
 
 case class PathMatcher2[T1, T2](toScala: SPathMatcher[(T1, T2)]) {
+  import PathMatcher._
+
   def slash() = fromScala2(toScala./)
   def slash(segment: String) = fromScala2(toScala / segment)
   def slash(next: PathMatcher0) = fromScala2(toScala / next.toScala)
@@ -88,6 +91,8 @@ case class PathMatcher2[T1, T2](toScala: SPathMatcher[(T1, T2)]) {
  * @see PathMatchers for the actual Java constants to use.
  */
 private[server] object PathMatchersBridge {
+  import PathMatcher._
+
   val IntegerSegment: PathMatcher1[java.lang.Integer] = fromScala1(SPathMatchers.IntNumber.map { i ⇒ i: java.lang.Integer })
   val LongSegment: PathMatcher1[java.lang.Long] = fromScala1(SPathMatchers.LongNumber.map { i ⇒ i: java.lang.Long })
   val HexIntegerSegment: PathMatcher1[java.lang.Integer] = fromScala1(SPathMatchers.HexIntNumber.map { i ⇒ i: java.lang.Integer })
@@ -109,6 +114,16 @@ object PathMatcher {
    * path segment separators.
    */
   def separateOnSlashes(segments: String): PathMatcher0 = fromScala0(SPathMatchers.separateOnSlashes(segments))
+
+  /**
+   * A PathMatcher that matches a single slash character ('/').
+   */
+  def slash() = new PathMatcher0(SPathMatchers.Slash)
+
+  /**
+   * A PathMatcher that matches a single slash character ('/').
+   */
+  def pathEng() = new PathMatcher0(SPathMatchers.PathEnd)
 
   /**
    * Creates a PathMatcher that consumes (a prefix of) the first path segment
