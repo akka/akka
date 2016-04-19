@@ -265,6 +265,12 @@ if more element are emitted the sink will cancel the stream
 
 **cancels** If too many values are collected
 
+count
+^^^
+Counts incoming elements until upstream terminates. Information is available through ``IOResult`` also
+indicating if processing was successful or not. Completes or fails when upstream does. Note that counter
+inherits Long overflow behavior.
+
 foreach
 ^^^^^^^
 Invoke a given procedure for each element received. Note that it is not safe to mutate shared state from the procedure.

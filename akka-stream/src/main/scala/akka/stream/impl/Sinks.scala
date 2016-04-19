@@ -181,6 +181,9 @@ private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any
     new ActorRefSink[In](ref, onCompleteMessage, attr, amendShape(attr))
 }
 
+/**
+ * INTERNAL API
+ */
 private[akka] final class LastOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
 
   val in = Inlet[T]("lastOption.in")
@@ -189,35 +192,39 @@ private[akka] final class LastOptionStage[T] extends GraphStageWithMaterializedV
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val p: Promise[Option[T]] = Promise()
-    (new GraphStageLogic(shape) {
+    (new GraphStageLogic(shape) with InHandler {
+      setHandler(in, this)
+
+      private[this] var prev: T = null.asInstanceOf[T]
+
       override def preStart(): Unit = pull(in)
-      setHandler(in, new InHandler {
-        private[this] var prev: T = null.asInstanceOf[T]
 
-        override def onPush(): Unit = {
-          prev = grab(in)
-          pull(in)
-        }
+      override def onPush(): Unit = {
+        prev = grab(in)
+        pull(in)
+      }
 
-        override def onUpstreamFinish(): Unit = {
-          val head = prev
-          prev = null.asInstanceOf[T]
-          p.trySuccess(Option(head))
-          completeStage()
-        }
+      override def onUpstreamFinish(): Unit = {
+        val head = prev
+        prev = null.asInstanceOf[T]
+        p.trySuccess(Option(head))
+        completeStage()
+      }
 
-        override def onUpstreamFailure(ex: Throwable): Unit = {
-          prev = null.asInstanceOf[T]
-          p.tryFailure(ex)
-          failStage(ex)
-        }
-      })
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        prev = null.asInstanceOf[T]
+        p.tryFailure(ex)
+        failStage(ex)
+      }
     }, p.future)
   }
 
   override def toString: String = "LastOptionStage"
 }
 
+/**
+ * INTERNAL API
+ */
 private[akka] final class HeadOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
 
   val in = Inlet[T]("headOption.in")
@@ -226,30 +233,34 @@ private[akka] final class HeadOptionStage[T] extends GraphStageWithMaterializedV
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val p: Promise[Option[T]] = Promise()
-    (new GraphStageLogic(shape) {
+    (new GraphStageLogic(shape) with InHandler {
+      setHandler(in, this)
+
       override def preStart(): Unit = pull(in)
-      setHandler(in, new InHandler {
-        override def onPush(): Unit = {
-          p.trySuccess(Option(grab(in)))
-          completeStage()
-        }
 
-        override def onUpstreamFinish(): Unit = {
-          p.trySuccess(None)
-          completeStage()
-        }
+      override def onPush(): Unit = {
+        p.trySuccess(Option(grab(in)))
+        completeStage()
+      }
 
-        override def onUpstreamFailure(ex: Throwable): Unit = {
-          p.tryFailure(ex)
-          failStage(ex)
-        }
-      })
+      override def onUpstreamFinish(): Unit = {
+        p.trySuccess(None)
+        completeStage()
+      }
+
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        p.tryFailure(ex)
+        failStage(ex)
+      }
     }, p.future)
   }
 
   override def toString: String = "HeadOptionStage"
 }
 
+/**
+ * INTERNAL API
+ */
 private[akka] final class SeqStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[immutable.Seq[T]]] {
   val in = Inlet[T]("seq.in")
 
@@ -261,32 +272,68 @@ private[akka] final class SeqStage[T] extends GraphStageWithMaterializedValue[Si
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val p: Promise[immutable.Seq[T]] = Promise()
-    val logic = new GraphStageLogic(shape) {
+    (new GraphStageLogic(shape) with InHandler {
+      setHandler(in, this)
+
       val buf = Vector.newBuilder[T]
 
       override def preStart(): Unit = pull(in)
 
-      setHandler(in, new InHandler {
+      override def onPush(): Unit = {
+        buf += grab(in)
+        pull(in)
+      }
 
-        override def onPush(): Unit = {
-          buf += grab(in)
-          pull(in)
-        }
+      override def onUpstreamFinish(): Unit = {
+        val result = buf.result()
+        p.trySuccess(result)
+        completeStage()
+      }
 
-        override def onUpstreamFinish(): Unit = {
-          val result = buf.result()
-          p.trySuccess(result)
-          completeStage()
-        }
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        p.tryFailure(ex)
+        failStage(ex)
+      }
+    }, p.future)
+  }
+}
 
-        override def onUpstreamFailure(ex: Throwable): Unit = {
-          p.tryFailure(ex)
-          failStage(ex)
-        }
-      })
-    }
+/**
+ * INTERNAL API
+ */
+private[akka] final class CountStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[IOResult]] {
+  val in = Inlet[T]("count.in")
 
-    (logic, p.future)
+  override def toString: String = "CountStage"
+
+  override val shape: SinkShape[T] = SinkShape.of(in)
+
+  override protected def initialAttributes: Attributes = DefaultAttributes.countSink
+
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+    val p: Promise[IOResult] = Promise()
+    (new GraphStageLogic(shape) with InHandler {
+      setHandler(in, this)
+
+      var count = 0L
+
+      override def preStart(): Unit = pull(in)
+
+      override def onPush(): Unit = {
+        count += 1
+        pull(in)
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        p.trySuccess(IOResult(count, Success(Done)))
+        completeStage()
+      }
+
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        p.trySuccess(IOResult(count, Failure(ex)))
+        failStage(ex)
+      }
+    }, p.future)
   }
 }
 

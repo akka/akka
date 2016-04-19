@@ -105,6 +105,7 @@ private[stream] object Stages {
     val lastSink = name("lastSink")
     val lastOptionSink = name("lastOptionSink")
     val seqSink = name("seqSink")
+    val countSink = name("countSink")
     val publisherSink = name("publisherSink")
     val fanoutPublisherSink = name("fanoutPublisherSink")
     val ignoreSink = name("ignoreSink")

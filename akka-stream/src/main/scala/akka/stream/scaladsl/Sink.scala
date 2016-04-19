@@ -163,6 +163,18 @@ object Sink {
   def seq[T]: Sink[T, Future[immutable.Seq[T]]] = Sink.fromGraph(new SeqStage[T])
 
   /**
+   * A `Sink` that counts incoming elements until upstream terminates.
+   * As upstream may be unbounded, `Flow[T].take` or the stricter `Flow[T].limit` (and their variants)
+   * may be used to ensure boundedness.
+   * Materializes into `Future` of `[[IOResult]]` containing value of the counter and information
+   * about the outcome of streaming.
+   * Standard behavior of `Long` overflowing applies.
+   *
+   * See also [[Flow.limit]], [[Flow.limitWeighted]], [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
+   */
+  def count[T]: Sink[T, Future[IOResult]] = Sink.fromGraph(new CountStage[T])
+
+  /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].
    *
    * If `fanout` is `true`, the materialized `Publisher` will support multiple `Subscriber`s and
