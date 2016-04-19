@@ -154,12 +154,11 @@ class CacheConditionDirectivesSpec extends RoutingSpec {
     }
 
     "filter out a `Range` header if `If-Range` doesn't match the timestamp" in {
-      val range = Range(ByteRange(0, 10))
-      Get() ~> `If-Range`(timestamp - 1000) ~> range ~> {
+      Get() ~> `If-Range`(timestamp - 1000) ~> Range(ByteRange(0, 10)) ~> {
         (conditional(tag, timestamp) & optionalHeaderValueByType[Range](())) { echoComplete }
       } ~> check {
         status shouldEqual OK
-        responseAs[String].indexOf(range.toString) shouldEqual -1
+        responseAs[String] shouldEqual "None"
       }
     }
 
@@ -173,12 +172,11 @@ class CacheConditionDirectivesSpec extends RoutingSpec {
     }
 
     "filter out a `Range` header if `If-Range` doesn't match the ETag" in {
-      val range = Range(ByteRange(0, 10))
-      Get() ~> `If-Range`(EntityTag("other")) ~> range ~> {
+      Get() ~> `If-Range`(EntityTag("other")) ~> Range(ByteRange(0, 10)) ~> {
         (conditional(tag, timestamp) & optionalHeaderValueByType[Range](())) { echoComplete }
       } ~> check {
         status shouldEqual OK
-        responseAs[String].indexOf(range.toString) shouldEqual -1
+        responseAs[String] shouldEqual "None"
       }
     }
   }
