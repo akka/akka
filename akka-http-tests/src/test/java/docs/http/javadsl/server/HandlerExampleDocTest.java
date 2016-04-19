@@ -4,7 +4,6 @@
 
 package docs.http.javadsl.server;
 
-import static akka.http.javadsl.server.PathMatcher.segment;
 import static akka.http.javadsl.server.PathMatchers.*;
 
 import java.util.concurrent.CompletableFuture;
@@ -24,199 +23,199 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 
 public class HandlerExampleDocTest extends JUnitRouteTest {
-    @Test
-    public void testSimpleHandler() {
-        //#simple-handler-example-full
-        class TestHandler extends akka.http.javadsl.server.AllDirectives {
-            //#simple-handler
-            Route handlerString = extractMethod(method ->
-                extractUri(uri ->
-                    complete(String.format("This was a %s request to %s", method, uri))
-                )
-            );
-            
-            Route handlerResponse = extractMethod(method ->
-                extractUri(uri -> {
-                    // with full control over the returned HttpResponse:
-                    final HttpResponse response = HttpResponse.create()
-                        .withEntity(String.format("Accepted %s request to %s", method, uri))
-                        .withStatus(StatusCodes.ACCEPTED);
-                    return complete(response);
-                })
-            ); 
-            //#simple-handler
+  @Test
+  public void testSimpleHandler() {
+    //#simple-handler-example-full
+    class TestHandler extends akka.http.javadsl.server.AllDirectives {
+      //#simple-handler
+      Route handlerString = extractMethod(method ->
+        extractUri(uri ->
+          complete(String.format("This was a %s request to %s", method, uri))
+        )
+      );
 
-            Route createRoute() {
-                return route(
-                    get(() ->
-                        handlerString
-                    ),
-                    post(() ->
-                        path("abc", () -> 
-                            handlerResponse
-                        )
-                    )
-                );
-            }
-        }
+      Route handlerResponse = extractMethod(method ->
+        extractUri(uri -> {
+          // with full control over the returned HttpResponse:
+          final HttpResponse response = HttpResponse.create()
+                                                    .withEntity(String.format("Accepted %s request to %s", method, uri))
+                                                    .withStatus(StatusCodes.ACCEPTED);
+          return complete(response);
+        })
+      );
+      //#simple-handler
 
-        // actual testing code
-        TestRoute r = testRoute(new TestHandler().createRoute());
-        r.run(HttpRequest.GET("/test"))
-            .assertStatusCode(200)
-            .assertEntity("This was a GET request to http://example.com/test");
-
-        r.run(HttpRequest.POST("/test"))
-            .assertStatusCode(404);
-
-        r.run(HttpRequest.POST("/abc"))
-            .assertStatusCode(202)
-            .assertEntity("Accepted POST request to http://example.com/abc");
-        //#simple-handler-example-full
+      Route createRoute() {
+        return route(
+          get(() ->
+            handlerString
+          ),
+          post(() ->
+            path("abc", () ->
+              handlerResponse
+            )
+          )
+        );
+      }
     }
 
-    @Test
-    public void testCalculator() {
-        //#handler2-example-full
-        class TestHandler extends akka.http.javadsl.server.AllDirectives {
+    // actual testing code
+    TestRoute r = testRoute(new TestHandler().createRoute());
+    r.run(HttpRequest.GET("/test"))
+     .assertStatusCode(200)
+     .assertEntity("This was a GET request to http://example.com/test");
 
-            final Route multiplyXAndYParam = 
-                parameter(StringUnmarshallers.INTEGER, "x", x ->
-                    parameter(StringUnmarshallers.INTEGER, "y", y ->
-                        complete("x * y = " + (x * y))
-                    )
-                );
-            
-            final Route pathMultiply = 
-                path(INTEGER_SEGMENT.slash(INTEGER_SEGMENT), (x, y) ->
-                    complete("x * y = " + (x * y))
-                );
-            
-            Route subtract(int x, int y) {
-                return complete("x - y = " + (x - y));
-            }
+    r.run(HttpRequest.POST("/test"))
+     .assertStatusCode(404);
 
-            //#handler2
+    r.run(HttpRequest.POST("/abc"))
+     .assertStatusCode(202)
+     .assertEntity("Accepted POST request to http://example.com/abc");
+    //#simple-handler-example-full
+  }
 
-            Route createRoute() {
-                return route(
-                    get(() ->
-                        pathPrefix("calculator", () -> route(
-                            path("multiply", () ->
-                                multiplyXAndYParam
-                            ),
-                            pathPrefix("path-multiply", () ->
-                                pathMultiply
-                            ),
-                            // handle by lifting method
-                            path(segment("subtract").slash(INTEGER_SEGMENT).slash(INTEGER_SEGMENT), this::subtract)
-                        ))
-                    )
-                );
-            }
-        }
+  @Test
+  public void testCalculator() {
+    //#handler2-example-full
+    class TestHandler extends akka.http.javadsl.server.AllDirectives {
 
-        // actual testing code
-        TestRoute r = testRoute(new TestHandler().createRoute());
-        r.run(HttpRequest.GET("/calculator/multiply?x=12&y=42"))
-            .assertStatusCode(200)
-            .assertEntity("x * y = 504");
+      final Route multiplyXAndYParam =
+        parameter(StringUnmarshallers.INTEGER, "x", x ->
+          parameter(StringUnmarshallers.INTEGER, "y", y ->
+            complete("x * y = " + (x * y))
+          )
+        );
 
-        r.run(HttpRequest.GET("/calculator/path-multiply/23/5"))
-            .assertStatusCode(200)
-            .assertEntity("x * y = 115");
-        
-        r.run(HttpRequest.GET("/calculator/subtract?x=42&y=12"))
-        .assertStatusCode(200)
-        .assertEntity("x - y = 30");
-        //#handler2-example-full
+      final Route pathMultiply =
+        path(integerSegment().slash(integerSegment()), (x, y) ->
+          complete("x * y = " + (x * y))
+        );
+
+      Route subtract(int x, int y) {
+        return complete("x - y = " + (x - y));
+      }
+
+      //#handler2
+
+      Route createRoute() {
+        return route(
+          get(() ->
+            pathPrefix("calculator", () -> route(
+              path("multiply", () ->
+                multiplyXAndYParam
+              ),
+              pathPrefix("path-multiply", () ->
+                pathMultiply
+              ),
+              // handle by lifting method
+              path(segment("subtract").slash(integerSegment()).slash(integerSegment()), this::subtract)
+            ))
+          )
+        );
+      }
     }
 
-    @Test
-    public void testDeferredResultAsyncHandler() {
-        //#async-example-full
-        //#async-service-definition
-        class CalculatorService {
-            public CompletionStage<Integer> multiply(final int x, final int y) {
-                return CompletableFuture.supplyAsync(() -> x * y);
-            }
+    // actual testing code
+    TestRoute r = testRoute(new TestHandler().createRoute());
+    r.run(HttpRequest.GET("/calculator/multiply?x=12&y=42"))
+     .assertStatusCode(200)
+     .assertEntity("x * y = 504");
 
-            public CompletionStage<Integer> add(final int x, final int y) {
-                return CompletableFuture.supplyAsync(() -> x + y);
-            }
-        }
-        //#async-service-definition
+    r.run(HttpRequest.GET("/calculator/path-multiply/23/5"))
+     .assertStatusCode(200)
+     .assertEntity("x * y = 115");
 
-        class TestHandler extends akka.http.javadsl.server.AllDirectives {
-            
-            /** 
-             * Returns a route that applies the (required) request parameters "x" and "y", as integers, to
-             * the inner function.
-             */
-            Route paramXY(BiFunction<Integer,Integer,Route> inner) {
-                return 
-                    parameter(StringUnmarshallers.INTEGER, "x", x ->
-                        parameter(StringUnmarshallers.INTEGER, "y", y ->
-                            inner.apply(x, y)
-                        )
-                    );
-            }
-            
+    r.run(HttpRequest.GET("/calculator/subtract?x=42&y=12"))
+     .assertStatusCode(200)
+     .assertEntity("x - y = 30");
+    //#handler2-example-full
+  }
 
-            //#async-handler-1
-            // would probably be injected or passed at construction time in real code
-            CalculatorService calculatorService = new CalculatorService();
-            
-            public CompletionStage<Route> multiplyAsync(Executor ctx, int x, int y) {
-                CompletionStage<Integer> result = calculatorService.multiply(x, y);
-                return result.thenApplyAsync(product -> complete("x * y = " + product), ctx);
-            }
-            
-            Route multiplyAsyncRoute =
-                extractExecutionContext(ctx -> 
-                    path("multiply", () ->
-                        paramXY((x, y) -> 
-                            onSuccess(() -> multiplyAsync(ctx, x, y), Function.identity())
-                        )
-                    )
-                );
-            //#async-handler-1
+  @Test
+  public void testDeferredResultAsyncHandler() {
+    //#async-example-full
+    //#async-service-definition
+    class CalculatorService {
+      public CompletionStage<Integer> multiply(final int x, final int y) {
+        return CompletableFuture.supplyAsync(() -> x * y);
+      }
 
-              //#async-handler-2
-              
-            public Route addAsync(int x, int y) {
-                CompletionStage<Integer> result = calculatorService.add(x, y);
-                
-                return onSuccess(() -> result, sum -> complete("x + y = " + sum));
-            }
-            
-            Route addAsyncRoute =
-                path("add", () ->
-                    paramXY(this::addAsync) 
-                );
-            //#async-handler-2
-
-            Route createRoute() {
-                return route(
-                    get(() ->
-                        pathPrefix("calculator", () -> route(
-                            multiplyAsyncRoute,
-                            addAsyncRoute
-                        ))
-                    )
-                );
-            }
-        }
-
-        // testing code
-        TestRoute r = testRoute(new TestHandler().createRoute());
-        r.run(HttpRequest.GET("/calculator/multiply?x=12&y=42"))
-            .assertStatusCode(200)
-            .assertEntity("x * y = 504");
-
-        r.run(HttpRequest.GET("/calculator/add?x=23&y=5"))
-            .assertStatusCode(200)
-            .assertEntity("x + y = 28");
-        //#async-example-full
+      public CompletionStage<Integer> add(final int x, final int y) {
+        return CompletableFuture.supplyAsync(() -> x + y);
+      }
     }
+    //#async-service-definition
+
+    class TestHandler extends akka.http.javadsl.server.AllDirectives {
+
+      /**
+       * Returns a route that applies the (required) request parameters "x" and "y", as integers, to
+       * the inner function.
+       */
+      Route paramXY(BiFunction<Integer, Integer, Route> inner) {
+        return
+          parameter(StringUnmarshallers.INTEGER, "x", x ->
+            parameter(StringUnmarshallers.INTEGER, "y", y ->
+              inner.apply(x, y)
+            )
+          );
+      }
+
+
+      //#async-handler-1
+      // would probably be injected or passed at construction time in real code
+      CalculatorService calculatorService = new CalculatorService();
+
+      public CompletionStage<Route> multiplyAsync(Executor ctx, int x, int y) {
+        CompletionStage<Integer> result = calculatorService.multiply(x, y);
+        return result.thenApplyAsync(product -> complete("x * y = " + product), ctx);
+      }
+
+      Route multiplyAsyncRoute =
+        extractExecutionContext(ctx ->
+          path("multiply", () ->
+            paramXY((x, y) ->
+              onSuccess(() -> multiplyAsync(ctx, x, y), Function.identity())
+            )
+          )
+        );
+      //#async-handler-1
+
+      //#async-handler-2
+
+      public Route addAsync(int x, int y) {
+        CompletionStage<Integer> result = calculatorService.add(x, y);
+
+        return onSuccess(() -> result, sum -> complete("x + y = " + sum));
+      }
+
+      Route addAsyncRoute =
+        path("add", () ->
+          paramXY(this::addAsync)
+        );
+      //#async-handler-2
+
+      Route createRoute() {
+        return route(
+          get(() ->
+            pathPrefix("calculator", () -> route(
+              multiplyAsyncRoute,
+              addAsyncRoute
+            ))
+          )
+        );
+      }
+    }
+
+    // testing code
+    TestRoute r = testRoute(new TestHandler().createRoute());
+    r.run(HttpRequest.GET("/calculator/multiply?x=12&y=42"))
+     .assertStatusCode(200)
+     .assertEntity("x * y = 504");
+
+    r.run(HttpRequest.GET("/calculator/add?x=23&y=5"))
+     .assertStatusCode(200)
+     .assertEntity("x + y = 28");
+    //#async-example-full
+  }
 }

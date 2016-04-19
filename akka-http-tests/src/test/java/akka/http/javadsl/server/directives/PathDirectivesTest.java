@@ -4,9 +4,6 @@
 
 package akka.http.javadsl.server.directives;
 
-import static akka.http.javadsl.server.PathMatcher.segment;
-import static akka.http.javadsl.server.PathMatcher.separateOnSlashes;
-import static akka.http.javadsl.server.PathMatcher.slash;
 import static akka.http.javadsl.server.PathMatchers.*;
 
 import org.junit.Test;
@@ -72,11 +69,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
   public void testSegment() {
     TestRoute route =
       testRoute(
-        pathPrefix("hey", () ->
-          path(name ->
-            complete(name)
-          )
-        )
+        pathPrefix("hey", () -> path(name -> complete(name) ) )
       );
 
     route.run(HttpRequest.GET("/hey/jude"))
@@ -184,7 +177,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
   public void testPathSuffix() {
     TestRoute route =
       testRoute(
-        pathSuffix(PathMatchers.SLASH.concat(segment("abc")), () -> extractUnmatchedPath(s -> complete(s)))
+        pathSuffix(PathMatchers.slash().concat(segment("abc")), () -> extractUnmatchedPath(s -> complete(s)))
       );
 
     route.run(HttpRequest.GET("/test/abc/"))
@@ -221,7 +214,22 @@ public class PathDirectivesTest extends JUnitRouteTest {
   public void testIntegerMatcher() {
     TestRoute route =
       testRoute(
-        path(segment("age").slash(INTEGER_SEGMENT), value -> complete(value.toString()))
+        path(segment("age").slash(integerSegment()), value -> complete(value.toString()))
+      );
+
+    route.run(HttpRequest.GET("/age/38"))
+         .assertEntity("38");
+
+    route.run(HttpRequest.GET("/age/abc"))
+         .assertStatusCode(404);
+  }
+
+  @Test
+  public void testIntegerConcatMatcher() {
+    TestRoute route =
+      testRoute(
+        // this is testing that we can express the same path using slash() and concat() as with nexting inside slash()
+        path(segment("age").slash().concat(integerSegment()), value -> complete(value.toString()))
       );
 
     route.run(HttpRequest.GET("/age/38"))
@@ -238,7 +246,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
 
     TestRoute route =
       testRoute(
-        path(segment("multiply").slash(INTEGER_SEGMENT).slash("with").slash(INTEGER_SEGMENT), (x, y) ->
+        path(segment("multiply").slash(integerSegment()).slash("with").slash(integerSegment()), (x, y) ->
           complete(String.format("%d * %d = %d", x, y, x * y))
         )
       );
@@ -251,7 +259,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
   public void testHexIntegerMatcher() {
     TestRoute route =
       testRoute(
-        path(segment("color").slash(HEX_INTEGER_SEGMENT), color -> complete(color.toString()))
+        path(segment("color").slash(hexIntegerSegment()), color -> complete(color.toString()))
       );
 
     route.run(HttpRequest.GET("/color/a0c2ef"))
@@ -262,7 +270,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
   public void testLongMatcher() {
     TestRoute route =
       testRoute(
-        path(segment("bigage").slash(LONG_SEGMENT), bigAge -> complete(bigAge.toString()))
+        path(segment("bigage").slash(longSegment()), bigAge -> complete(bigAge.toString()))
       );
 
     route.run(HttpRequest.GET("/bigage/12345678901"))
@@ -273,7 +281,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
   public void testSegmentMatcher() {
     TestRoute route =
       testRoute(
-        path(segment("string").slash(SEGMENT), bigAge -> complete(bigAge))
+        path(segment("string").slash(segment()), bigAge -> complete(bigAge))
       );
 
     route.run(HttpRequest.GET("/string/hello-it-is-me"))
@@ -284,7 +292,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
   public void testHexLongMatcher() {
     TestRoute route =
       testRoute(
-        path(segment("code").slash(HEX_LONG_SEGMENT), code -> complete(code.toString()))
+        path(segment("code").slash(hexLongSegment()), code -> complete(code.toString()))
       );
 
     route.run(HttpRequest.GET("/code/a0b1c2d3e4f5"))
@@ -295,7 +303,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
   public void testRemainingMatcher() {
     TestRoute route =
       testRoute(
-        path(REMAINING, remainingPath -> complete(remainingPath))
+        path(remaining(), remainingPath -> complete(remainingPath))
       );
 
     route.run(HttpRequest.GET("/pets/afdaoisd/asda/sfasfasf/asf"))
@@ -307,7 +315,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
     TestRoute route =
       testRoute(
         pathPrefix("pets", () ->
-          path(REMAINING, remainingPath -> complete(remainingPath)))
+          path(remaining(), remainingPath -> complete(remainingPath)))
       );
 
     route.run(HttpRequest.GET("/pets/afdaoisd/asda/sfasfasf/asf"))
@@ -318,7 +326,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
   public void testUUIDMatcher() {
     TestRoute route =
       testRoute(
-        path(segment("by-uuid").slash(UUID_SEGMENT), uuid -> complete(uuid.toString()))
+        path(segment("by-uuid").slash(uuidSegment()), uuid -> complete(uuid.toString()))
       );
 
     route.run(HttpRequest.GET("/by-uuid/6ba7b811-9dad-11d1-80b4-00c04fd430c8"))
@@ -329,7 +337,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
   public void testSegmentsMatcher() {
     TestRoute route =
       testRoute(
-        path(segment("pets").slash(SEGMENTS), segments -> complete(segments.toString()))
+        path(segment("pets").slash(segments()), segments -> complete(segments.toString()))
       );
 
     route.run(HttpRequest.GET("/pets/cat/dog"))
