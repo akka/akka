@@ -174,9 +174,9 @@ abstract class PathDirectives extends ParameterDirectives {
   }
 
   /**
-   * Applies the given [[PathMatcher]] to a suffix of the remaining unmatchedPath of the [[RequestContext]].
-   * If matched the value extracted by the [[PathMatcher]] is extracted and the matched parts of the path are consumed.
-   * Note that, for efficiency reasons, the given [[PathMatcher]] must match the desired suffix in reversed-segment
+   * Applies the given [[akka.http.scaladsl.server.PathMatcher]] to a suffix of the remaining unmatchedPath of the [[akka.http.javadsl.server.RequestContext]].
+   * If matched the value extracted by the [[akka.http.javadsl.server.PathMatcher]] is extracted and the matched parts of the path are consumed.
+   * Note that, for efficiency reasons, the given [[akka.http.javadsl.server.PathMatcher]] must match the desired suffix in reversed-segment
    * order, i.e. `pathSuffix("baz" / "bar")` would match `/foo/bar/baz`!
    */
   def pathSuffix(segment: String, inner: Supplier[Route]): Route = RouteAdapter {
