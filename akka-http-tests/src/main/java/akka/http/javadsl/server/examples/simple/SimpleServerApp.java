@@ -6,6 +6,8 @@ package akka.http.javadsl.server.examples.simple;
 
 //#https-http-app
 
+import static akka.http.javadsl.server.PathMatchers.integerSegment;
+import static akka.http.javadsl.server.PathMatchers.segment;
 import static akka.http.javadsl.server.StringUnmarshallers.INTEGER;
 import akka.http.javadsl.ConnectionContext;
 import akka.http.javadsl.Http;
@@ -27,8 +29,11 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import akka.actor.ActorSystem;
+import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.server.AllDirectives;
+import akka.http.javadsl.server.PathMatchers;
+import akka.http.javadsl.server.Route;
 import akka.stream.ActorMaterializer;
 
 public class SimpleServerApp extends AllDirectives { // or import Directives.*
@@ -71,10 +76,10 @@ public class SimpleServerApp extends AllDirectives { // or import Directives.*
           )
         ),
         // matches paths like this: /multiply/{x}/{y}
-        path(segment("multiply").slash(INTEGER_SEGMENT).slash(INTEGER_SEGMENT),
+        path(PathMatchers.segment("multiply").slash(integerSegment()).slash(integerSegment()),
           this::multiply
         ),
-        path(segment("multiplyAsync").slash(INTEGER_SEGMENT).slash(INTEGER_SEGMENT), (x, y) ->
+        path(PathMatchers.segment("multiplyAsync").slash(integerSegment()).slash(integerSegment()), (x, y) ->
           extractExecutionContext(ctx ->
             onSuccess(() -> multiplyAsync(ctx, x, y), Function.identity())
           )
