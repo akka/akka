@@ -6,7 +6,7 @@ package akka.stream.javadsl
 import akka.{ NotUsed, Done }
 import akka.event.LoggingAdapter
 import akka.japi.{ function, Pair }
-import akka.stream.impl.{ConstantFun, StreamLayout}
+import akka.stream.impl.{ ConstantFun, StreamLayout }
 import akka.stream._
 import akka.stream.stage.Stage
 import org.reactivestreams.Processor
@@ -1594,8 +1594,9 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.completionTimeout(timeout))
 
   /**
-   * If the time between two processed elements exceed the provided timeout, the stream is failed
-   * with a [[java.util.concurrent.TimeoutException]].
+   * If the time between two processed elements exceeds the provided timeout, the stream is failed
+   * with a [[java.util.concurrent.TimeoutException]]. The timeout is checked periodically,
+   * so the resolution of the check is one period (equals to timeout value).
    *
    * '''Emits when''' upstream emits an element
    *
@@ -1609,7 +1610,23 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.idleTimeout(timeout))
 
   /**
-   * Injects additional elements if the upstream does not emit for a configured amount of time. In other words, this
+    * If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
+    * the stream is failed with a [[java.util.concurrent.TimeoutException]]. The timeout is checked periodically,
+    * so the resolution of the check is one period (equals to timeout value).
+    *
+    * '''Emits when''' upstream emits an element
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' upstream completes or fails if timeout elapses between element emission and downstream demand.
+    *
+    * '''Cancels when''' downstream cancels
+    */
+  def backpressureTimeout(timeout: FiniteDuration): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.backpressureTimeout(timeout))
+
+  /**
+   * Injects additional elements if upstream does not emit for a configured amount of time. In other words, this
    * stage attempts to maintains a base rate of emitted elements towards the downstream.
    *
    * If the downstream backpressures then no element is injected until downstream demand arrives. Injected elements
@@ -1726,9 +1743,9 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   /**
    * Delays the initial element by the specified duration.
    *
-   * '''Emits when''' upstream emits an element if the initial delay already elapsed
+   * '''Emits when''' upstream emits an element if the initial delay is already elapsed
    *
-   * '''Backpressures when''' downstream backpressures or initial delay not yet elapsed
+   * '''Backpressures when''' downstream backpressures or initial delay is not yet elapsed
    *
    * '''Completes when''' upstream completes
    *
