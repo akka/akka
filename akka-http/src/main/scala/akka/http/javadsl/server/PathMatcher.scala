@@ -99,7 +99,6 @@ private[server] object PathMatchersBridge {
   val Slash = new PathMatcher0(SPathMatchers.Slash)
   val PathEnd = new PathMatcher0(SPathMatchers.PathEnd)
   val Remaining = new PathMatcher1[String](SPathMatchers.Remaining)
-  val RemainingPath = new PathMatcher1[String](SPathMatchers.RemainingPath)
   val Segment = new PathMatcher1[String](SPathMatchers.Segment)
   val Segments = new PathMatcher1[JList[String]](SPathMatchers.Segments.map(_.asJava))
 }

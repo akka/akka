@@ -69,12 +69,6 @@ public class PathMatchers {
     public static final PathMatcher1<String> REMAINING = PathMatchersBridge.Remaining();
 
     /**
-     * A PathMatcher that matches and extracts the complete remaining,
-     * unmatched part of the request's URI path.
-     */
-    public static final PathMatcher1<String> REMAINING_PATH = PathMatchersBridge.RemainingPath();
-
-    /**
      * A PathMatcher that matches if the unmatched path starts with a path segment.
      * If so the path segment is extracted as a String.
      */
