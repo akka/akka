@@ -305,6 +305,17 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
 
   import akka.http.scaladsl.model.StatusCodes._
 
+  "the Remaining path matcher" should {
+    "extract complete path if nothing previously consumed" in {
+      val route = path(Remaining) { echoComplete }
+      Get("/pets/afdaoisd/asda/sfasfasf/asf") ~> route ~> check { responseAs[String] shouldEqual "pets/afdaoisd/asda/sfasfasf/asf" }
+    }
+    "extract remaining path when parts of path already matched" in {
+      val route = path("pets" / Remaining) { echoComplete }
+      Get("/pets/afdaoisd/asda/sfasfasf/asf") ~> route ~> check { responseAs[String] shouldEqual "afdaoisd/asda/sfasfasf/asf" }
+    }
+  }
+
   "the `redirectToTrailingSlashIfMissing` directive" should {
     val route = redirectToTrailingSlashIfMissing(Found) { completeOk }
 
