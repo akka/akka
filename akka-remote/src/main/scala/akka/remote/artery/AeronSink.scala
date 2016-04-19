@@ -74,8 +74,6 @@ class AeronSink(channel: String, aeron: Aeron) extends GraphStage[SinkShape[Aero
             // all sources/sinks and notifies back when there is some news.
             backoffCount -= 1
             if (backoffCount <= 10)
-              println(s"# snd backoff $backoffCount") // FIXME
-            if (backoffCount <= 10)
               scheduleOnce(Backoff, 50.millis)
             else
               scheduleOnce(Backoff, 1.millis)
