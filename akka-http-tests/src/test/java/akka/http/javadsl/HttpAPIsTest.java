@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.http.javadsl.client;
+package akka.http.javadsl;
 
 import akka.event.LoggingAdapter;
 import akka.http.javadsl.*;
@@ -15,17 +15,18 @@ import akka.stream.javadsl.Flow;
 import org.junit.Test;
 
 import javax.net.ssl.SSLContext;
-
-import static akka.http.javadsl.ConnectHttp.*;
-import static akka.http.javadsl.ConnectHttp.toHostHttps;
-
 import java.util.concurrent.CompletionStage;
+
+import static akka.http.javadsl.ConnectHttp.toHost;
+import static akka.http.javadsl.ConnectHttp.toHostHttps;
 
 @SuppressWarnings("ConstantConditions")
 public class HttpAPIsTest extends JUnitRouteTest {
 
   @Test
-  public void compileOnlyTest() {}
+  public void placeholderCompileTimeOnlyTest() {
+    // fails if there are no test cases
+  }
 
   @SuppressWarnings("unused")
   public void compileOnly() throws Exception {
