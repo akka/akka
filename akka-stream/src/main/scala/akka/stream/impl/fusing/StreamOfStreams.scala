@@ -258,7 +258,7 @@ final class GroupBy[T, K](maxSubstreams: Int, f: T ⇒ K) extends GraphStage[Flo
             if (hasNextElement) {
               activeSubstreamsMap(nextElement._1).substreamSource.push(nextElement._2)
               nextElement = null
-            } else pull(in)
+            } else tryPull(in)
         }
       }
 
@@ -340,24 +340,26 @@ final class GroupBy[T, K](maxSubstreams: Int, f: T ⇒ K) extends GraphStage[Flo
         closedSubstreams += key
       }
 
+      private def checkForCompletion(): Unit = {
+        if (isClosed(in) && !hasNextForSubSource) {
+          completeSubStream()
+          completeWholeStage()
+        }
+      }
+
       override def onPull(): Unit = {
         cancelTimer(key)
         if (firstPush) {
           substreamSource.push(firstElement)
           firstPush = false
           setKeepGoing(false)
-          if (isClosed(in) && !hasNextForSubSource) {
-            completeSubStream()
-            completeWholeStage()
-          }
+          checkForCompletion()
         } else if (hasNextForSubSource) {
           substreamSource.push(nextElement._2)
           nextElement = null
+          checkForCompletion()
         } else if (needToPull) pull(in)
-        else if (isClosed(in)) {
-          completeSubStream()
-          completeWholeStage()
-        }
+        else checkForCompletion()
       }
 
       override def onDownstreamFinish(): Unit = {
