@@ -99,7 +99,10 @@ private[akka] object IteratorInterpreter {
 /**
  * INTERNAL API
  */
-private[akka] class IteratorInterpreter[I, O](val input: Iterator[I], val ops: Seq[PushPullStage[_, _]]) {
+private[akka] class IteratorInterpreter[I, O](
+  val input: Iterator[I],
+  val stages: Seq[GraphStageWithMaterializedValue[FlowShape[_, _], Any]]) {
+
   import akka.stream.impl.fusing.IteratorInterpreter._
 
   private val upstream = IteratorUpstream(input)
@@ -109,31 +112,30 @@ private[akka] class IteratorInterpreter[I, O](val input: Iterator[I], val ops: S
     import GraphInterpreter.Boundary
 
     var i = 0
-    val length = ops.length
-    val attributes = Array.fill[Attributes](ops.length)(Attributes.none)
+    val length = stages.length
+    val attributes = Array.fill[Attributes](length)(Attributes.none)
     val ins = Array.ofDim[Inlet[_]](length + 1)
     val inOwners = Array.ofDim[Int](length + 1)
     val outs = Array.ofDim[Outlet[_]](length + 1)
     val outOwners = Array.ofDim[Int](length + 1)
-    val stages = Array.ofDim[GraphStageWithMaterializedValue[Shape, Any]](length)
+    val stagesArray = Array.ofDim[GraphStageWithMaterializedValue[Shape, Any]](length)
 
-    ins(ops.length) = null
-    inOwners(ops.length) = Boundary
+    ins(length) = null
+    inOwners(length) = Boundary
     outs(0) = null
     outOwners(0) = Boundary
 
-    val opsIterator = ops.iterator
-    while (opsIterator.hasNext) {
-      val op = opsIterator.next().asInstanceOf[Stage[Any, Any]]
-      val stage = new PushPullGraphStage((_) ⇒ op, Attributes.none)
-      stages(i) = stage
+    val stagesIterator = stages.iterator
+    while (stagesIterator.hasNext) {
+      val stage = stagesIterator.next()
+      stagesArray(i) = stage
       ins(i) = stage.shape.in
       inOwners(i) = i
       outs(i + 1) = stage.shape.out
       outOwners(i + 1) = i
       i += 1
     }
-    val assembly = new GraphAssembly(stages, attributes, ins, inOwners, outs, outOwners)
+    val assembly = new GraphAssembly(stagesArray, attributes, ins, inOwners, outs, outOwners)
 
     val (inHandlers, outHandlers, logics) =
       assembly.materialize(Attributes.none, assembly.stages.map(_.module), new ju.HashMap, _ ⇒ ())
@@ -148,7 +150,7 @@ private[akka] class IteratorInterpreter[I, O](val input: Iterator[I], val ops: S
       fuzzingMode = false,
       null)
     interpreter.attachUpstreamBoundary(0, upstream)
-    interpreter.attachDownstreamBoundary(ops.length, downstream)
+    interpreter.attachDownstreamBoundary(length, downstream)
     interpreter.init(null)
   }
 
