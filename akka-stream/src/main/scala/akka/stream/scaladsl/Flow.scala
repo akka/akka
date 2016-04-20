@@ -616,9 +616,9 @@ trait FlowOps[+Out, +Mat] {
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
-   * returns false for the first time. Due to input buffering some elements may have been
-   * requested from upstream publishers that will then not be processed downstream
-   * of this step.
+   * returns false for the first time,
+   * Due to input buffering some elements may have been requested from upstream publishers
+   * that will then not be processed downstream of this step.
    *
    * The stream will be completed without producing any elements if predicate is false for
    * the first stream element.
@@ -627,13 +627,34 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Backpressures when''' downstream backpressures
    *
-   * '''Completes when''' predicate returned false or upstream completes
+   * '''Completes when''' predicate returned false (or 1 after predicate returns false if `inclusive` or upstream completes
    *
    * '''Cancels when''' predicate returned false or downstream cancels
    *
    * See also [[FlowOps.limit]], [[FlowOps.limitWeighted]]
    */
-  def takeWhile(p: Out ⇒ Boolean): Repr[Out] = via(TakeWhile(p))
+  def takeWhile(p: Out ⇒ Boolean): Repr[Out] = takeWhile(p, false)
+
+  /**
+   * Terminate processing (and cancel the upstream publisher) after predicate
+   * returns false for the first time, including the first failed element iff inclusive is true
+   * Due to input buffering some elements may have been requested from upstream publishers
+   * that will then not be processed downstream of this step.
+   *
+   * The stream will be completed without producing any elements if predicate is false for
+   * the first stream element.
+   *
+   * '''Emits when''' the predicate is true
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' predicate returned false (or 1 after predicate returns false if `inclusive` or upstream completes
+   *
+   * '''Cancels when''' predicate returned false or downstream cancels
+   *
+   * See also [[FlowOps.limit]], [[FlowOps.limitWeighted]]
+   */
+  def takeWhile(p: Out ⇒ Boolean, inclusive: Boolean): Repr[Out] = via(TakeWhile(p, inclusive))
 
   /**
    * Discard elements at the beginning of the stream while predicate is true.
