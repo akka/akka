@@ -310,9 +310,7 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
   abstract class OneBoundedSetup[T](_ops: GraphStageWithMaterializedValue[Shape, Any]*) extends Builder {
     val ops = _ops.toArray
 
-    def this(op: Seq[Stage[_, _]], dummy: Int = 42) = {
-      this(op.map(_.toGS): _*)
-    }
+    def this(op: Seq[Stage[_, _]], dummy: Int = 42) = this(op.map(_.toGS): _*)
 
     val upstream = new UpstreamOneBoundedProbe[T]
     val downstream = new DownstreamOneBoundedPortProbe[T]

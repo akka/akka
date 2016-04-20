@@ -294,33 +294,47 @@ private[akka] final case class Drop[T](count: Long) extends SimpleLinearGraphSta
 /**
  * INTERNAL API
  */
-private[akka] final case class Scan[In, Out](zero: Out, f: (Out, In) ⇒ Out, decider: Supervision.Decider) extends PushPullStage[In, Out] {
-  private var aggregator = zero
-  private var pushedZero = false
+private[akka] final case class Scan[In, Out](zero: Out, f: (Out, In) ⇒ Out) extends GraphStage[FlowShape[In, Out]] {
+  override val shape = FlowShape[In, Out](Inlet("Scan.in"), Outlet("Scan.out"))
 
-  override def onPush(elem: In, ctx: Context[Out]): SyncDirective = {
-    if (pushedZero) {
-      aggregator = f(aggregator, elem)
-      ctx.push(aggregator)
-    } else {
-      aggregator = f(zero, elem)
-      ctx.push(zero)
+  override def initialAttributes: Attributes = DefaultAttributes.scan
+  override def toString: String = "Scan"
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with InHandler with OutHandler {
+      self ⇒
+
+      private var aggregator = zero
+      private lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+
+      import Supervision.{ Stop, Resume, Restart }
+      import shape.{ in, out }
+
+      // Initial behavior makes sure that the zero gets flushed if upstream is empty
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = {
+          push(out, aggregator)
+          setHandlers(in, out, self)
+        }
+      })
+      setHandler(in, totallyIgnorantInput)
+
+      override def onPull(): Unit = pull(in)
+      override def onPush(): Unit = {
+        try {
+          aggregator = f(aggregator, grab(in))
+          push(out, aggregator)
+        } catch {
+          case NonFatal(ex) ⇒ decider(ex) match {
+            case Resume ⇒ if (!hasBeenPulled(in)) pull(in)
+            case Stop   ⇒ failStage(ex)
+            case Restart ⇒
+              aggregator = zero
+              push(out, aggregator)
+          }
+        }
+      }
     }
-  }
-
-  override def onPull(ctx: Context[Out]): SyncDirective =
-    if (!pushedZero) {
-      pushedZero = true
-      if (ctx.isFinishing) ctx.pushAndFinish(aggregator) else ctx.push(aggregator)
-    } else ctx.pull()
-
-  override def onUpstreamFinish(ctx: Context[Out]): TerminationDirective =
-    if (pushedZero) ctx.finish()
-    else ctx.absorbTermination()
-
-  override def decide(t: Throwable): Supervision.Directive = decider(t)
-
-  override def restart(): Scan[In, Out] = copy()
 }
 
 /**
