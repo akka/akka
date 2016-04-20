@@ -12,4 +12,5 @@ Akka HTTP
    low-level-server-side-api
    routing-dsl/index
    client-side/index
+   server-side-https-support
    migration-from-spray
