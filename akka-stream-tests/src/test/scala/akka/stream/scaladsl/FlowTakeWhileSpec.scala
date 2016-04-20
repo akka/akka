@@ -43,6 +43,13 @@ class FlowTakeWhileSpec extends StreamSpec {
         .expectComplete()
     }
 
+    "emit the element that caused the predicate to return false and then no more with inclusive set" in assertAllStagesStopped {
+      Source(1 to 10).takeWhile(_ < 3, true).runWith(TestSink.probe[Int])
+        .request(4)
+        .expectNext(1, 2, 3)
+        .expectComplete()
+    }
+
   }
 
 }
