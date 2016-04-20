@@ -30,7 +30,7 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
       //#simple-handler
       Route handlerString = extractMethod(method ->
         extractUri(uri ->
-          complete(String.format("This was a %s request to %s", method, uri))
+          complete(String.format("This was a %s request to %s", method.name(), uri))
         )
       );
 
@@ -38,8 +38,8 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
         extractUri(uri -> {
           // with full control over the returned HttpResponse:
           final HttpResponse response = HttpResponse.create()
-                                                    .withEntity(String.format("Accepted %s request to %s", method, uri))
-                                                    .withStatus(StatusCodes.ACCEPTED);
+            .withEntity(String.format("Accepted %s request to %s", method.name(), uri))
+            .withStatus(StatusCodes.ACCEPTED);
           return complete(response);
         })
       );
@@ -62,15 +62,15 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
     // actual testing code
     TestRoute r = testRoute(new TestHandler().createRoute());
     r.run(HttpRequest.GET("/test"))
-     .assertStatusCode(200)
-     .assertEntity("This was a GET request to http://example.com/test");
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("This was a GET request to http://example.com/test");
 
     r.run(HttpRequest.POST("/test"))
-     .assertStatusCode(404);
+      .assertStatusCode(StatusCodes.NOT_FOUND);
 
     r.run(HttpRequest.POST("/abc"))
-     .assertStatusCode(202)
-     .assertEntity("Accepted POST request to http://example.com/abc");
+      .assertStatusCode(StatusCodes.ACCEPTED)
+      .assertEntity("Accepted POST request to http://example.com/abc");
     //#simple-handler-example-full
   }
 
@@ -118,16 +118,16 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
     // actual testing code
     TestRoute r = testRoute(new TestHandler().createRoute());
     r.run(HttpRequest.GET("/calculator/multiply?x=12&y=42"))
-     .assertStatusCode(200)
-     .assertEntity("x * y = 504");
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("x * y = 504");
 
     r.run(HttpRequest.GET("/calculator/path-multiply/23/5"))
-     .assertStatusCode(200)
-     .assertEntity("x * y = 115");
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("x * y = 115");
 
-    r.run(HttpRequest.GET("/calculator/subtract?x=42&y=12"))
-     .assertStatusCode(200)
-     .assertEntity("x - y = 30");
+    r.run(HttpRequest.GET("/calculator/subtract/42/12"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("x - y = 30");
     //#handler2-example-full
   }
 
@@ -210,12 +210,12 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
     // testing code
     TestRoute r = testRoute(new TestHandler().createRoute());
     r.run(HttpRequest.GET("/calculator/multiply?x=12&y=42"))
-     .assertStatusCode(200)
-     .assertEntity("x * y = 504");
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("x * y = 504");
 
     r.run(HttpRequest.GET("/calculator/add?x=23&y=5"))
-     .assertStatusCode(200)
-     .assertEntity("x + y = 28");
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("x + y = 28");
     //#async-example-full
   }
 }

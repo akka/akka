@@ -157,7 +157,7 @@ abstract class SecurityDirectives extends SchemeDirectives {
   def authenticateOAuth2Async[T](realm: String, authenticator: JFunction[Optional[ProvidedCredentials], CompletionStage[Optional[T]]], 
                                 inner: JFunction[T, Route]): Route = RouteAdapter {
     D.extractExecutionContext { implicit ctx =>
-      D.authenticateBasicAsync(realm, c => authenticator.apply(toJava(c)).toScala.map(_.asScala)) { t =>
+      D.authenticateOAuth2Async(realm, c => authenticator.apply(toJava(c)).toScala.map(_.asScala)) { t =>
         inner.apply(t).delegate
       }
     }
@@ -174,7 +174,7 @@ abstract class SecurityDirectives extends SchemeDirectives {
   def authenticateOAuth2AsyncOptional[T](realm: String, authenticator: JFunction[Optional[ProvidedCredentials], CompletionStage[Optional[T]]],
                                          inner: JFunction[Optional[T], Route]): Route = RouteAdapter {
     D.extractExecutionContext { implicit ctx =>
-      D.authenticateBasicAsync(realm, c => authenticator.apply(toJava(c)).toScala.map(_.asScala)).optional { t =>
+      D.authenticateOAuth2Async(realm, c => authenticator.apply(toJava(c)).toScala.map(_.asScala)).optional { t =>
         inner.apply(t.asJava).delegate
       }
     }
