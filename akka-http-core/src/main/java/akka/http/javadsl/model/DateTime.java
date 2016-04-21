@@ -99,6 +99,16 @@ public abstract class DateTime {
     }
 
     /**
+     * Creates a new `DateTime` that represents the point in time the given number of ms earlier.
+     */
+    public abstract DateTime minus(long millis);
+
+    /**
+     * Creates a new `DateTime` that represents the point in time the given number of ms later.
+     */
+    public abstract DateTime plus(long millis);
+
+    /**
      * Returns a new DateTime instance parsed from IsoDateTimeString as Some(dateTime). Returns None if
      * parsing has failed.
      */
