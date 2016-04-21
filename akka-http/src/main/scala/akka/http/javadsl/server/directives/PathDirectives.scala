@@ -78,9 +78,9 @@ abstract class PathDirectives extends ParameterDirectives {
   }
 
   /**
-   * Applies the given [[PathMatcher]] to the remaining unmatched path after consuming a leading slash.
+   * Matches a prefix to the remaining unmatched path after consuming a leading slash.
    * The matcher has to match the remaining path completely.
-   * If matched the value extracted by the [[PathMatcher]] is extracted on the directive level.
+   * If matched the value matching the prefix is extracted on the directive level.
    */
   def path(segment: String, inner: Supplier[Route]): Route = RouteAdapter {
     D.path(segment) { inner.get.delegate }
@@ -88,6 +88,12 @@ abstract class PathDirectives extends ParameterDirectives {
   def path(inner: java.util.function.Function[String, Route]): Route = RouteAdapter {
     D.path(PathMatchers.Segment) { element ⇒ inner.apply(element).delegate }
   }
+
+  /**
+   * Applies the given [[PathMatcher0]] to the remaining unmatched path after consuming a leading slash.
+   * The matcher has to match the remaining path completely.
+   * If matched the value extracted by the [[PathMatcher0]] is extracted on the directive level.
+   */
   def path(p: PathMatcher0, inner: Supplier[Route]): Route = RouteAdapter {
     D.path(p.toScala) { inner.get.delegate }
   }
@@ -99,9 +105,9 @@ abstract class PathDirectives extends ParameterDirectives {
   }
 
   /**
-   * Applies the given [[PathMatcher]] to a prefix of the remaining unmatched path after consuming a leading slash.
+   * Matches a prefix to the remaining unmatched path after consuming a leading slash.
    * The matcher has to match a prefix of the remaining path.
-   * If matched the value extracted by the PathMatcher is extracted on the directive level.
+   * If matched the value matching the prefix is extracted on the directive level.
    */
   def pathPrefix(segment: String, inner: Supplier[Route]): Route = RouteAdapter {
     D.pathPrefix(segment) { inner.get.delegate }
@@ -109,6 +115,12 @@ abstract class PathDirectives extends ParameterDirectives {
   def pathPrefix(inner: java.util.function.Function[String, Route]): Route = RouteAdapter {
     D.pathPrefix(PathMatchers.Segment) { element ⇒ inner.apply(element).delegate }
   }
+
+  /**
+   * Applies the given [[PathMatcher0]] to the remaining unmatched path after consuming a leading slash.
+   * The matcher has to match a prefix of the remaining path.
+   * If matched the value extracted by the PathMatcher is extracted on the directive level.
+   */
   def pathPrefix(p: PathMatcher0, inner: Supplier[Route]): Route = RouteAdapter {
     D.pathPrefix(p.toScala) { inner.get.delegate }
   }
@@ -121,7 +133,7 @@ abstract class PathDirectives extends ParameterDirectives {
 
   /**
    * Applies the given matcher directly to a prefix of the unmatched path of the
-   * [[RequestContext]] (i.e. without implicitly consuming a leading slash).
+   * [[akka.http.javadsl.server.RequestContext]] (i.e. without implicitly consuming a leading slash).
    * The matcher has to match a prefix of the remaining path.
    * If matched the value extracted by the PathMatcher is extracted on the directive level.
    */
@@ -139,7 +151,7 @@ abstract class PathDirectives extends ParameterDirectives {
   }
 
   /**
-   * Checks whether the unmatchedPath of the [[RequestContext]] has a prefix matched by the
+   * Checks whether the unmatchedPath of the [[akka.http.javadsl.server.RequestContext]] has a prefix matched by the
    * given PathMatcher. In analogy to the `pathPrefix` directive a leading slash is implied.
    */
   def pathPrefixTest(segment: String, inner: Supplier[Route]): Route = RouteAdapter {
@@ -156,7 +168,7 @@ abstract class PathDirectives extends ParameterDirectives {
   }
 
   /**
-   * Checks whether the unmatchedPath of the [[RequestContext]] has a prefix matched by the
+   * Checks whether the unmatchedPath of the [[akka.http.javadsl.server.RequestContext]] has a prefix matched by the
    * given PathMatcher. However, as opposed to the `pathPrefix` directive the matched path is not
    * actually "consumed".
    */
@@ -175,8 +187,8 @@ abstract class PathDirectives extends ParameterDirectives {
 
   /**
    * Applies the given [[akka.http.scaladsl.server.PathMatcher]] to a suffix of the remaining unmatchedPath of the [[akka.http.javadsl.server.RequestContext]].
-   * If matched the value extracted by the [[akka.http.javadsl.server.PathMatcher]] is extracted and the matched parts of the path are consumed.
-   * Note that, for efficiency reasons, the given [[akka.http.javadsl.server.PathMatcher]] must match the desired suffix in reversed-segment
+   * If matched the value extracted by the [[akka.http.javadsl.server.PathMatcher0]] is extracted and the matched parts of the path are consumed.
+   * Note that, for efficiency reasons, the given [[akka.http.javadsl.server.PathMatcher0]] must match the desired suffix in reversed-segment
    * order, i.e. `pathSuffix("baz" / "bar")` would match `/foo/bar/baz`!
    */
   def pathSuffix(segment: String, inner: Supplier[Route]): Route = RouteAdapter {
@@ -193,7 +205,7 @@ abstract class PathDirectives extends ParameterDirectives {
   }
 
   /**
-   * Checks whether the unmatchedPath of the [[RequestContext]] has a suffix matched by the
+   * Checks whether the unmatchedPath of the [[akka.http.javadsl.server.RequestContext]] has a suffix matched by the
    * given PathMatcher. However, as opposed to the pathSuffix directive the matched path is not
    * actually "consumed".
    * Note that, for efficiency reasons, the given PathMatcher must match the desired suffix in reversed-segment
