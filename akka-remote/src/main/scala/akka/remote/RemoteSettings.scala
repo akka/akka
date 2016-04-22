@@ -15,6 +15,7 @@ import akka.event.Logging
 import akka.event.Logging.LogLevel
 import akka.ConfigurationException
 import java.util.Locale
+import java.net.InetAddress
 
 final class RemoteSettings(val config: Config) {
   import config._
@@ -22,7 +23,11 @@ final class RemoteSettings(val config: Config) {
 
   val EnableArtery: Boolean = getBoolean("akka.remote.artery.enabled")
   val ArteryPort: Int = getInt("akka.remote.artery.port")
-  val ArteryHostname: String = getString("akka.remote.artery.hostname")
+  val ArteryHostname: String = getString("akka.remote.artery.hostname") match {
+    case "" | "<getHostAddress>" ⇒ InetAddress.getLocalHost.getHostAddress
+    case "<getHostName>"         ⇒ InetAddress.getLocalHost.getHostName
+    case other                   ⇒ other
+  }
 
   val LogReceive: Boolean = getBoolean("akka.remote.log-received-messages")
 

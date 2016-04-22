@@ -1,4 +1,4 @@
-package akka.aeron
+package akka.remote.artery
 
 import scala.concurrent.duration._
 import akka.actor.ActorSystem
@@ -17,10 +17,13 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.atomic.AtomicLongArray
 import akka.stream.ThrottleMode
-import akka.remote.artery.AeronSink
-import akka.remote.artery.AeronSource
+import org.agrona.ErrorHandler
+import io.aeron.AvailableImageHandler
+import io.aeron.UnavailableImageHandler
+import io.aeron.Image
+import io.aeron.AvailableImageHandler
 
-object AeronStreams {
+object AeronStreamsApp {
 
   val channel1 = "aeron:udp?endpoint=localhost:40123"
   val channel2 = "aeron:udp?endpoint=localhost:40124"
@@ -32,7 +35,27 @@ object AeronStreams {
 
   lazy val aeron = {
     val ctx = new Aeron.Context
-    val driver = MediaDriver.launchEmbedded()
+    ctx.errorHandler(new ErrorHandler {
+      override def onError(cause: Throwable) {
+        println(s"# Aeron onError " + cause) // FIXME
+      }
+    })
+    ctx.availableImageHandler(new AvailableImageHandler {
+      override def onAvailableImage(img: Image): Unit = {
+        println(s"onAvailableImage from ${img.sourceIdentity} session ${img.sessionId}")
+      }
+    })
+    ctx.unavailableImageHandler(new UnavailableImageHandler {
+      override def onUnavailableImage(img: Image): Unit = {
+        println(s"onUnavailableImage from ${img.sourceIdentity} session ${img.sessionId}")
+      }
+    })
+
+    val driverContext = new MediaDriver.Context
+    driverContext.clientLivenessTimeoutNs(SECONDS.toNanos(10))
+    driverContext.imageLivenessTimeoutNs(SECONDS.toNanos(10))
+    driverContext.driverTimeoutMs(SECONDS.toNanos(10))
+    val driver = MediaDriver.launchEmbedded(driverContext)
     ctx.aeronDirectoryName(driver.aeronDirectoryName)
     Aeron.connect(ctx)
   }
@@ -111,12 +134,12 @@ object AeronStreams {
     var t0 = System.nanoTime()
     var count = 0L
     var payloadSize = 0L
-    Source.fromGraph(new AeronSource(channel1, () => aeron))
-      .map { bytes =>
+    Source.fromGraph(new AeronSource(channel1, aeron))
+      .map { bytes ⇒
         r.onMessage(1, bytes.length)
         bytes
       }
-      .runForeach { bytes =>
+      .runForeach { bytes ⇒
         count += 1
         if (count == 1) {
           t0 = System.nanoTime()
@@ -126,7 +149,7 @@ object AeronStreams {
           printTotal(throughputN, "receive", t0, payloadSize)
         }
       }.onFailure {
-        case e =>
+        case e ⇒
           e.printStackTrace
           exit(-1)
       }
@@ -138,30 +161,30 @@ object AeronStreams {
     val r = reporter
     val t0 = System.nanoTime()
     Source(1 to throughputN)
-      .map { n =>
+      .map { n ⇒
         if (n == throughputN) {
           exit(0)
           printTotal(throughputN, "send", t0, payload.length)
         }
         n
       }
-      .map { _ =>
+      .map { _ ⇒
         r.onMessage(1, payload.length)
         payload
       }
-      .runWith(new AeronSink(channel1, () => aeron))
+      .runWith(new AeronSink(channel1, aeron))
   }
 
   def runEchoReceiver(): Unit = {
     // just echo back on channel2
     reporterExecutor.execute(reporter)
     val r = reporter
-    Source.fromGraph(new AeronSource(channel1, () => aeron))
-      .map { bytes =>
+    Source.fromGraph(new AeronSource(channel1, aeron))
+      .map { bytes ⇒
         r.onMessage(1, bytes.length)
         bytes
       }
-      .runWith(new AeronSink(channel2, () => aeron))
+      .runWith(new AeronSink(channel2, aeron))
   }
 
   def runEchoSender(): Unit = {
@@ -173,12 +196,12 @@ object AeronStreams {
     var repeat = 3
     val count = new AtomicInteger
     var t0 = System.nanoTime()
-    Source.fromGraph(new AeronSource(channel2, () => aeron))
-      .map { bytes =>
+    Source.fromGraph(new AeronSource(channel2, aeron))
+      .map { bytes ⇒
         r.onMessage(1, bytes.length)
         bytes
       }
-      .runForeach { bytes =>
+      .runForeach { bytes ⇒
         val c = count.incrementAndGet()
         val d = System.nanoTime() - sendTimes.get(c - 1)
         if (c % (latencyN / 10) == 0)
@@ -189,7 +212,7 @@ object AeronStreams {
           barrier.await() // this is always the last party
         }
       }.onFailure {
-        case e =>
+        case e ⇒
           e.printStackTrace
           exit(-1)
       }
@@ -202,13 +225,13 @@ object AeronStreams {
 
       Source(1 to latencyN)
         .throttle(latencyRate, 1.second, latencyRate / 10, ThrottleMode.Shaping)
-        .map { n =>
+        .map { n ⇒
           if (n % (latencyN / 10) == 0)
             println(s"# send offset $n") // FIXME
           sendTimes.set(n - 1, System.nanoTime())
           payload
         }
-        .runWith(new AeronSink(channel1, () => aeron))
+        .runWith(new AeronSink(channel1, aeron))
 
       barrier.await()
     }
@@ -218,12 +241,12 @@ object AeronStreams {
 
   def runDebugReceiver(): Unit = {
     import system.dispatcher
-    Source.fromGraph(new AeronSource(channel1, () => aeron))
-      .map(bytes => new String(bytes, "utf-8"))
-      .runForeach { s =>
+    Source.fromGraph(new AeronSource(channel1, aeron))
+      .map(bytes ⇒ new String(bytes, "utf-8"))
+      .runForeach { s ⇒
         println(s)
       }.onFailure {
-        case e =>
+        case e ⇒
           e.printStackTrace
           exit(-1)
       }
@@ -233,12 +256,12 @@ object AeronStreams {
     val fill = "0000"
     Source(1 to 1000)
       .throttle(1, 1.second, 1, ThrottleMode.Shaping)
-      .map { n =>
+      .map { n ⇒
         val s = (fill + n.toString).takeRight(4)
         println(s)
         s.getBytes("utf-8")
       }
-      .runWith(new AeronSink(channel1, () => aeron))
+      .runWith(new AeronSink(channel1, aeron))
   }
 
 }
