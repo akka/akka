@@ -87,10 +87,10 @@ object MaxThroughputSpec extends MultiNodeConfig {
     }
   }
 
-  def senderProps(target: ActorRef, testSettings: TestSettings): Props =
-    Props(new Sender(target, testSettings))
+  def senderProps(target: ActorRef, testSettings: TestSettings, plotRef: ActorRef): Props =
+    Props(new Sender(target, testSettings, plotRef))
 
-  class Sender(target: ActorRef, testSettings: TestSettings) extends Actor {
+  class Sender(target: ActorRef, testSettings: TestSettings, plotRef: ActorRef) extends Actor {
     import testSettings._
     val payload = ("0" * testSettings.payloadSize).getBytes("utf-8")
     var startTime = 0L
@@ -126,15 +126,17 @@ object MaxThroughputSpec extends MultiNodeConfig {
 
       case EndResult(totalReceived) ⇒
         val took = NANOSECONDS.toMillis(System.nanoTime - startTime)
-        val throughtput = (totalReceived * 1000.0 / took).toInt
+        val throughput = (totalReceived * 1000.0 / took)
         println(
           s"=== MaxThroughput ${self.path.name}: " +
-            s"throughtput $throughtput msg/s, " +
+            f"throughput ${throughput}%.03g msg/s, " +
+            f"${throughput * payloadSize}%.03g bytes/s, " +
             s"dropped ${totalMessages - totalReceived}, " +
             s"max round-trip $maxRoundTripMillis ms, " +
             s"burst size $burstSize, " +
             s"payload size $payloadSize, " +
             s"$took ms to deliver $totalReceived messages")
+        plotRef ! PlotResult().add(testName, throughput * payloadSize / 1024 / 1024)
         context.stop(self)
     }
 
@@ -176,6 +178,8 @@ abstract class MaxThroughputSpec
 
   val totalMessagesFactor = system.settings.config.getDouble("akka.test.MaxThroughputSpec.totalMessagesFactor")
 
+  var plot = PlotResult()
+
   def adjustedTotalMessages(n: Long): Long = (n * totalMessagesFactor).toLong
 
   override def initialParticipants = roles.size
@@ -196,6 +200,9 @@ abstract class MaxThroughputSpec
 
   override def afterAll(): Unit = {
     reporterExecutor.shutdown()
+    runOn(first) {
+      println(plot.csv(system.name))
+    }
     super.afterAll()
   }
 
@@ -246,18 +253,25 @@ abstract class MaxThroughputSpec
 
     runOn(first) {
       enterBarrier(receiverName + "-started")
+      val ignore = TestProbe()
       val senders = for (n ← 1 to senderReceiverPairs) yield {
         val receiver = identifyReceiver(receiverName + n)
-        val snd = system.actorOf(senderProps(receiver, testSettings), testName + "-snd" + n)
-        val p = TestProbe()
-        p.watch(snd)
+        val plotProbe = TestProbe()
+        val snd = system.actorOf(senderProps(receiver, testSettings, plotProbe.ref),
+          testName + "-snd" + n)
+        val terminationProbe = TestProbe()
+        terminationProbe.watch(snd)
         snd ! Run
-        (snd, p)
+        (snd, terminationProbe, plotProbe)
       }
       senders.foreach {
-        case (snd, p) ⇒
-          val t = if (snd == senders.head._1) barrierTimeout else 10.seconds
-          p.expectTerminated(snd, t)
+        case (snd, terminationProbe, plotProbe) ⇒
+          if (snd == senders.head._1) {
+            terminationProbe.expectTerminated(snd, barrierTimeout)
+            val plotResult = plotProbe.expectMsgType[PlotResult]
+            plot = plot.addAll(plotResult)
+          } else
+            terminationProbe.expectTerminated(snd, 10.seconds)
       }
       enterBarrier(testName + "-done")
     }

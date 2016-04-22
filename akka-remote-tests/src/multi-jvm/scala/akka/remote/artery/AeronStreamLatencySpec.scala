@@ -7,9 +7,7 @@ import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLongArray
-
 import scala.concurrent.duration._
-
 import akka.actor._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
@@ -23,6 +21,7 @@ import com.typesafe.config.ConfigFactory
 import io.aeron.Aeron
 import io.aeron.driver.MediaDriver
 import org.HdrHistogram.Histogram
+import java.util.concurrent.atomic.AtomicBoolean
 
 object AeronStreamLatencySpec extends MultiNodeConfig {
   val first = role("first")
@@ -73,6 +72,8 @@ abstract class AeronStreamLatencySpec
   val totalMessagesFactor = system.settings.config.getDouble("akka.test.AeronStreamLatencySpec.totalMessagesFactor")
   val repeatCount = system.settings.config.getInt("akka.test.AeronStreamLatencySpec.repeatCount")
 
+  var plots = LatencyPlots()
+
   val aeron = {
     val ctx = new Aeron.Context
     val driver = MediaDriver.launchEmbedded()
@@ -104,10 +105,15 @@ abstract class AeronStreamLatencySpec
 
   override def afterAll(): Unit = {
     reporterExecutor.shutdown()
+    runOn(first) {
+      println(plots.plot50.csv(system.name + "50"))
+      println(plots.plot90.csv(system.name + "90"))
+      println(plots.plot99.csv(system.name + "99"))
+    }
     super.afterAll()
   }
 
-  def printTotal(testName: String, payloadSize: Long, histogram: Histogram): Unit = {
+  def printTotal(testName: String, payloadSize: Long, histogram: Histogram, lastRepeat: Boolean): Unit = {
     import scala.collection.JavaConverters._
     val percentiles = histogram.percentiles(5)
     def percentile(p: Double): Double =
@@ -122,6 +128,14 @@ abstract class AeronStreamLatencySpec
       f"99%%ile: ${percentile(99.0)}%.0f µs, ")
     println("Histogram of RTT latencies in microseconds.")
     histogram.outputPercentileDistribution(System.out, 1000.0)
+
+    // only use the last repeat for the plots
+    if (lastRepeat) {
+      plots = plots.copy(
+        plot50 = plots.plot50.add(testName, percentile(50.0)),
+        plot90 = plots.plot90.add(testName, percentile(90.0)),
+        plot99 = plots.plot99.add(testName, percentile(99.0)))
+    }
   }
 
   val scenarios = List(
@@ -159,6 +173,7 @@ abstract class AeronStreamLatencySpec
       val rep = reporter(testName)
       val barrier = new CyclicBarrier(2)
       val count = new AtomicInteger
+      val lastRepeat = new AtomicBoolean(false)
       Source.fromGraph(new AeronSource(channel(first), aeron))
         .runForeach { bytes ⇒
           if (bytes.length != payloadSize) throw new IllegalArgumentException("Invalid message")
@@ -167,7 +182,7 @@ abstract class AeronStreamLatencySpec
           val d = System.nanoTime() - sendTimes.get(c - 1)
           histogram.recordValue(d)
           if (c == totalMessages) {
-            printTotal(testName, bytes.length, histogram)
+            printTotal(testName, bytes.length, histogram, lastRepeat.get)
             barrier.await() // this is always the last party
           }
         }
@@ -175,6 +190,7 @@ abstract class AeronStreamLatencySpec
       for (n ← 1 to repeat) {
         histogram.reset()
         count.set(0)
+        lastRepeat.set(n == repeat)
 
         Source(1 to totalMessages)
           .throttle(messageRate, 1.second, math.max(messageRate / 10, 1), ThrottleMode.Shaping)

@@ -68,6 +68,7 @@ object AeronStreamMaxThroughputSpec extends MultiNodeConfig {
       acc
     }
   }
+
 }
 
 class AeronStreamMaxThroughputSpecMultiJvmNode1 extends AeronStreamMaxThroughputSpec
@@ -80,6 +81,8 @@ abstract class AeronStreamMaxThroughputSpec
   import AeronStreamMaxThroughputSpec._
 
   val totalMessagesFactor = system.settings.config.getDouble("akka.test.AeronStreamMaxThroughputSpec.totalMessagesFactor")
+
+  var plot = PlotResult()
 
   val aeron = {
     val ctx = new Aeron.Context
@@ -114,15 +117,20 @@ abstract class AeronStreamMaxThroughputSpec
 
   override def afterAll(): Unit = {
     reporterExecutor.shutdown()
+    runOn(second) {
+      println(plot.csv(system.name))
+    }
     super.afterAll()
   }
 
   def printTotal(testName: String, total: Long, startTime: Long, payloadSize: Long): Unit = {
     val d = (System.nanoTime - startTime).nanos.toMillis
+    val throughput = 1000.0 * total / d
     println(f"=== AeronStreamMaxThroughput $testName: " +
-      f"${1000.0 * total / d}%.03g msg/s, ${1000.0 * total * payloadSize / d}%.03g bytes/s, " +
+      f"${throughput}%.03g msg/s, ${throughput * payloadSize}%.03g bytes/s, " +
       s"payload size $payloadSize, " +
       s"$d ms to deliver $total messages")
+    plot = plot.add(testName, throughput * payloadSize / 1024 / 1024)
   }
 
   val scenarios = List(

@@ -93,11 +93,11 @@ object LatencySpec extends MultiNodeConfig {
   }
 
   def receiverProps(reporter: RateReporter, settings: TestSettings, totalMessages: Int,
-                    sendTimes: AtomicLongArray, histogram: Histogram): Props =
-    Props(new Receiver(reporter, settings, totalMessages, sendTimes, histogram))
+                    sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef): Props =
+    Props(new Receiver(reporter, settings, totalMessages, sendTimes, histogram, plotsRef))
 
   class Receiver(reporter: RateReporter, settings: TestSettings, totalMessages: Int,
-                 sendTimes: AtomicLongArray, histogram: Histogram) extends Actor {
+                 sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef) extends Actor {
     import settings._
 
     var count = 0
@@ -130,6 +130,12 @@ object LatencySpec extends MultiNodeConfig {
         f"99%%ile: ${percentile(99.0)}%.0f µs, ")
       println("Histogram of RTT latencies in microseconds.")
       histogram.outputPercentileDistribution(System.out, 1000.0)
+
+      val plots = LatencyPlots(
+        PlotResult().add(testName, percentile(50.0)),
+        PlotResult().add(testName, percentile(90.0)),
+        PlotResult().add(testName, percentile(99.0)))
+      plotsRef ! plots
     }
   }
 
@@ -152,6 +158,8 @@ abstract class LatencySpec
 
   val totalMessagesFactor = system.settings.config.getDouble("akka.test.LatencySpec.totalMessagesFactor")
   val repeatCount = system.settings.config.getInt("akka.test.LatencySpec.repeatCount")
+
+  var plots = LatencyPlots()
 
   val aeron = {
     val ctx = new Aeron.Context
@@ -184,6 +192,11 @@ abstract class LatencySpec
 
   override def afterAll(): Unit = {
     reporterExecutor.shutdown()
+    runOn(first) {
+      println(plots.plot50.csv(system.name + "50"))
+      println(plots.plot90.csv(system.name + "90"))
+      println(plots.plot99.csv(system.name + "99"))
+    }
     super.afterAll()
   }
 
@@ -226,12 +239,13 @@ abstract class LatencySpec
       val rep = reporter(testName)
 
       val echo = identifyEcho()
+      val plotProbe = TestProbe()
 
       for (n ← 1 to repeat) {
         echo ! Reset
         expectMsg(Reset)
         histogram.reset()
-        val receiver = system.actorOf(receiverProps(rep, testSettings, totalMessages, sendTimes, histogram))
+        val receiver = system.actorOf(receiverProps(rep, testSettings, totalMessages, sendTimes, histogram, plotProbe.ref))
 
         Source(1 to totalMessages)
           .throttle(messageRate, 1.second, math.max(messageRate / 10, 1), ThrottleMode.Shaping)
@@ -242,6 +256,14 @@ abstract class LatencySpec
 
         watch(receiver)
         expectTerminated(receiver, ((totalMessages / messageRate) + 10).seconds)
+        val p = plotProbe.expectMsgType[LatencyPlots]
+        // only use the last repeat for the plots
+        if (n == repeat) {
+          plots = plots.copy(
+            plot50 = plots.plot50.addAll(p.plot50),
+            plot90 = plots.plot90.addAll(p.plot90),
+            plot99 = plots.plot99.addAll(p.plot99))
+        }
       }
 
       rep.halt()
