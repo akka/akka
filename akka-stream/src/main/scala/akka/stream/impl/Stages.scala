@@ -69,6 +69,8 @@ private[stream] object Stages {
     val broadcast = name("broadcast")
     val balance = name("balance")
     val zip = name("zip")
+    val zipN = name("zipN")
+    val zipWithN = name("zipWithN")
     val unzip = name("unzip")
     val concat = name("concat")
     val repeat = name("repeat")

@@ -414,6 +414,24 @@ object Source {
     })
 
   /**
+   * Combine the elements of multiple streams into a stream of sequences.
+   */
+  def zipN[T](sources: immutable.Seq[Source[T, _]]): Source[immutable.Seq[T], NotUsed] = zipWithN(ConstantFun.scalaIdentityFunction[immutable.Seq[T]])(sources).addAttributes(DefaultAttributes.zipN)
+
+  /*
+   * Combine the elements of multiple streams into a stream of sequences using a combiner function.
+   */
+  def zipWithN[T, O](zipper: immutable.Seq[T] ⇒ O)(sources: immutable.Seq[Source[T, _]]): Source[O, NotUsed] = {
+    val source = sources match {
+      case immutable.Seq()       ⇒ empty[O]
+      case immutable.Seq(source) ⇒ source.map(t ⇒ zipper(immutable.Seq(t))).mapMaterializedValue(_ ⇒ NotUsed)
+      case s1 +: s2 +: ss        ⇒ combine(s1, s2, ss: _*)(ZipWithN(zipper))
+    }
+
+    source.addAttributes(DefaultAttributes.zipWithN)
+  }
+
+  /**
    * Creates a `Source` that is materialized as an [[akka.stream.SourceQueue]].
    * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
    * otherwise they will be buffered until request for demand is received. Elements in the buffer will be discarded

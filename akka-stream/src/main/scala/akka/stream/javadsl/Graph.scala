@@ -244,6 +244,45 @@ object Zip {
 }
 
 /**
+ * Combine the elements of multiple streams into a stream of lists.
+ *
+ * A `ZipN` has a `n` input ports and one `out` port
+ *
+ * '''Emits when''' all of the inputs has an element available
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' any upstream completes
+ *
+ * '''Cancels when''' downstream cancels
+ */
+object ZipN {
+  def create[A](n: Int): Graph[UniformFanInShape[A, java.util.List[A]], NotUsed] = {
+    ZipWithN.create(ConstantFun.javaIdentityFunction[java.util.List[A]], n)
+  }
+}
+
+/**
+ * Combine the elements of multiple streams into a stream of lists using a combiner function.
+ *
+ * A `ZipWithN` has a `n` input ports and one `out` port
+ *
+ * '''Emits when''' all of the inputs has an element available
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' any upstream completes
+ *
+ * '''Cancels when''' downstream cancels
+ */
+object ZipWithN {
+  def create[A, O](zipper: function.Function[java.util.List[A], O], n: Int): Graph[UniformFanInShape[A, O], NotUsed] = {
+    import scala.collection.JavaConverters._
+    scaladsl.ZipWithN[A, O](seq => zipper.apply(seq.asJava))(n)
+  }
+}
+
+/**
  * Takes a stream of pair elements and splits each pair to two output streams.
  *
  * An `Unzip` has one `in` port and one `left` and one `right` output port.
