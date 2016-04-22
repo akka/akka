@@ -14,20 +14,11 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.junit.Test;
-
-import akka.http.javadsl.model.ContentType;
-import akka.http.javadsl.model.ContentTypes;
-import akka.http.javadsl.model.HttpCharsets;
-import akka.http.javadsl.model.HttpEntity;
-import akka.http.javadsl.model.HttpRequest;
-import akka.http.javadsl.model.HttpResponse;
-import akka.http.javadsl.model.MediaRanges;
-import akka.http.javadsl.model.MediaTypes;
-import akka.http.javadsl.model.RequestEntity;
-import akka.http.javadsl.model.StatusCodes;
+import akka.http.javadsl.model.*;
 import akka.http.javadsl.model.headers.Accept;
 import akka.http.javadsl.model.headers.RawHeader;
+import org.junit.Test;
+
 import akka.http.javadsl.testkit.JUnitRouteTest;
 //FIXME discuss how to provide a javadsl.CustomHeader where render() is either pre-implemented or trivial to write in Java
 import akka.http.scaladsl.model.headers.CustomHeader;
@@ -40,31 +31,31 @@ public class JavaRouteTest extends JUnitRouteTest {
     Unmarshaller.sync(BigDecimal::new);
 
   private final Unmarshaller<HttpEntity, BigDecimal> BIG_DECIMAL_BODY =
-    Unmarshaller.entityToString().thenMap(BigDecimal::new);
+    Unmarshaller.entityToString().thenApply(BigDecimal::new);
 
   private final Unmarshaller<HttpEntity, UUID> UUID_FROM_JSON_BODY =
     Unmarshaller.forMediaType(MediaTypes.APPLICATION_JSON,
       Unmarshaller.entityToString())
-                .thenMap(s -> {
-                  // just a fake JSON parser, assuming it's {"id":"..."}
-                  // A real implementation could easily invoke Jackson here instead.
-                  Pattern regex = Pattern.compile("\"id\":\"(.+)\"");
-                  Matcher matcher = regex.matcher(s);
-                  matcher.find();
-                  return UUID.fromString(matcher.group(1));
-                });
+      .thenApply(s -> {
+        // just a fake JSON parser, assuming it's {"id":"..."}
+        // A real implementation could easily invoke Jackson here instead.
+        Pattern regex = Pattern.compile("\"id\":\"(.+)\"");
+        Matcher matcher = regex.matcher(s);
+        matcher.find();
+        return UUID.fromString(matcher.group(1));
+      });
 
   private final Unmarshaller<HttpEntity, UUID> UUID_FROM_XML_BODY =
     Unmarshaller.forMediaTypes(Arrays.asList(MediaTypes.TEXT_XML, MediaTypes.APPLICATION_XML),
       Unmarshaller.entityToString())
-                .thenMap(s -> {
-                  // just a fake XML parser, assuming it's <id>...</id>
-                  // A real implementation could easily invoke JAXB here instead.
-                  Pattern regex = Pattern.compile("<id>(.+)</id>");
-                  Matcher matcher = regex.matcher(s);
-                  matcher.find();
-                  return UUID.fromString(matcher.group(1));
-                });
+      .thenApply(s -> {
+        // just a fake XML parser, assuming it's <id>...</id>
+        // A real implementation could easily invoke JAXB here instead.
+        Pattern regex = Pattern.compile("<id>(.+)</id>");
+        Matcher matcher = regex.matcher(s);
+        matcher.find();
+        return UUID.fromString(matcher.group(1));
+      });
 
   private final Unmarshaller<HttpEntity, UUID> UUID_FROM_BODY =
     Unmarshaller.firstOf(UUID_FROM_JSON_BODY, UUID_FROM_XML_BODY);
@@ -136,57 +127,57 @@ public class JavaRouteTest extends JUnitRouteTest {
   }
 
   @Test
-  public void path_can_match_uuid() {
+  public void pathCanMatchUuid() {
     runRoute(route, HttpRequest.GET("/documents/359e4920-a6a2-4614-9355-113165d600fb"))
       .assertEntity("document 359e4920-a6a2-4614-9355-113165d600fb");
   }
 
   @Test
-  public void path_can_match_element() {
+  public void pathCanMatchElement() {
     runRoute(route, HttpRequest.GET("/people/john"))
       .assertEntity("person john");
   }
 
   @Test
-  public void param_is_extracted() {
+  public void paramIsExtracted() {
     runRoute(route, HttpRequest.GET("/cookies?amount=5"))
       .assertEntity("cookies 5");
   }
 
   @Test
-  public void required_param_causes_rejection_when_missing() {
+  public void requiredParamCausesRejectionWhenMissing() {
     // The rejection on "amount" appears twice because we have two route alternatives both requiring it.
     runRouteUnSealed(route, HttpRequest.GET("/cookies"))
       .assertRejections(Rejections.missingQueryParam("amount"), Rejections.missingQueryParam("amount"));
   }
 
   @Test
-  public void wrong_param_type_causes_next_route_to_be_evaluated() {
+  public void wrongParamTypeCausesNextRouteToBeEvaluated() {
     runRoute(route, HttpRequest.GET("/cookies?amount=one"))
       .assertEntity("cookies (string) one");
   }
 
   @Test
-  public void required_param_causes_404_on_sealed_route() {
+  public void requiredParamCauses404OnSealedRoute() {
     runRoute(route, HttpRequest.GET("/cookies"))
       .assertStatusCode(StatusCodes.NOT_FOUND)
       .assertEntity("Request is missing required query parameter 'amount'");
   }
 
   @Test
-  public void custom_param_type_can_be_extracted() {
+  public void customParamTypeCanBeExtracted() {
     runRoute(route, HttpRequest.GET("/cakes?amount=5"))
       .assertEntity("cakes 5");
   }
 
   @Test
-  public void entity_can_be_unmarshalled() {
+  public void entityCanBeUnmarshalled() {
     runRoute(route, HttpRequest.POST("/bigdecimal").withEntity("1234"))
       .assertEntity("body 1234");
   }
 
   @Test
-  public void entity_can_be_unmarshalled_when_picking_json_unmarshaller() {
+  public void entityCanBeUnmarshalledWhenPickingJsonUnmarshaller() {
     runRoute(route, HttpRequest
       .PUT("/uuid")
       .withEntity(ContentTypes.create(MediaTypes.APPLICATION_JSON),
@@ -195,67 +186,68 @@ public class JavaRouteTest extends JUnitRouteTest {
   }
 
   @Test
-  public void entity_can_be_unmarshalled_when_picking_xml_unmarshaller() {
+  public void entityCanBeUnmarshalledWhenPickingXmlUnmarshaller() {
     runRoute(route, HttpRequest
       .PUT("/uuid")
-      .withEntity(ContentTypes.create(MediaTypes.APPLICATION_XML, HttpCharsets.UTF_8),
-        "<id>76b38659-1dec-4ee6-86d0-9ca787bf578c</id>"))
+      .withEntity(
+        ContentTypes.create(MediaTypes.APPLICATION_XML, HttpCharsets.UTF_8),
+        "<?xml version=\"1.0\"?><id>76b38659-1dec-4ee6-86d0-9ca787bf578c</id>"))
       .assertEntity("uuid 76b38659-1dec-4ee6-86d0-9ca787bf578c");
   }
 
   @Test
-  public void entity_can_be_marshalled_when_json_is_accepted() {
+  public void entityCanBeMarshalledWhenJsonIsAccepted() {
     runRoute(route, HttpRequest.GET("/uuid").addHeader(Accept.create(MediaRanges.create(MediaTypes.APPLICATION_JSON))))
       .assertEntity("{\"id\":\"80a05eee-652e-4458-9bee-19b69dbe1dee\"}")
       .assertContentType(MediaTypes.APPLICATION_JSON.toContentType());
   }
 
   @Test
-  public void entity_can_be_marshalled_when_xml_is_accepted() {
+  public void entityCanBeMarshalledWhenXmlIsAccepted() {
     runRoute(route, HttpRequest.GET("/uuid").addHeader(Accept.create(MediaRanges.create(MediaTypes.TEXT_XML))))
       .assertEntity("<id>80a05eee-652e-4458-9bee-19b69dbe1dee</id>")
       .assertContentType(MediaTypes.TEXT_XML.toContentType(HttpCharsets.UTF_8));
   }
 
   @Test
-  public void request_is_rejected_if_no_marshaller_fits_accepted_type() {
+  public void requestIsRejectedIfNoMarshallerFitsAcceptedType() {
     runRoute(route, HttpRequest.GET("/uuid").addHeader(Accept.create(MediaRanges.create(MediaTypes.TEXT_PLAIN))))
       .assertStatusCode(StatusCodes.NOT_ACCEPTABLE);
   }
 
   @Test
-  public void first_marshaller_is_picked_and_status_code_applied_if_no_accept_header_present() {
+  public void firstMarshallerIsPickedAndStatusCodeAppliedIfNoAcceptHeaderPresent() {
     runRoute(route, HttpRequest.GET("/uuid"))
       .assertContentType(MediaTypes.APPLICATION_JSON.toContentType())
       .assertStatusCode(StatusCodes.FOUND);
   }
 
   @Test
-  public void exception_handlers_are_applied_even_if_the_route_throws_in_future() {
+  public void exceptionHandlersAreAppliedEvenIfTheRouteThrowsInFuture() {
     runRoute(route, HttpRequest.GET("/shouldnotfail"))
       .assertEntity("no problem!");
   }
 
   @Test
-  public void route_with_required_header_fails_when_header_is_absent() {
+  public void routeWithRequiredHeaderFailsWhenHeaderIsAbsent() {
     runRouteUnSealed(route, HttpRequest.GET("/requiredheader"))
       .assertRejections(Rejections.missingHeader("UUID"));
   }
 
   @Test
-  public void route_with_required_header_fails_when_header_is_malformed() {
+  public void routeWithRequiredHeaderFailsWhenHeaderIsMalformed() {
     runRouteUnSealed(route, HttpRequest.GET("/requiredheader").addHeader(RawHeader.create("UUID", "monkeys")))
       .assertRejections(Rejections.malformedHeader("UUID", "must be a valid UUID"));
   }
 
   @Test
-  public void route_with_required_header_succeeds_when_header_is_present_as_RawHeader() {
+  public void routeWithRequiredHeaderSucceedsWhenHeaderIsPresentAsRawHeader() {
     runRoute(route, HttpRequest.GET("/requiredheader").addHeader(RawHeader.create("UUID", "98610fcb-7b19-4639-8dfa-08db8ac19320")))
       .assertEntity("has header: 98610fcb-7b19-4639-8dfa-08db8ac19320");
   }
 
   @Test
-  public void route_with_required_header_succeeds_when_header_is_present_as_custom_type() {
+  public void routeWithRequiredHeaderSucceedsWhenHeaderIsPresentAsCustomType() {
     runRoute(route, HttpRequest.GET("/requiredheader").addHeader(new UUIDHeader(UUID.fromString("98610fcb-7b19-4639-8dfa-08db8ac19320"))))
       .assertEntity("has header: 98610fcb-7b19-4639-8dfa-08db8ac19320");
   }
@@ -279,12 +271,12 @@ public class JavaRouteTest extends JUnitRouteTest {
       path(segment("number").slash(integerSegment()), i ->
         complete("you said: " + (i * i))
       ),
-      path("documents", () ->
+      pathPrefix("documents", () ->
         path(uuidSegment(), id ->
           complete("document " + id)
         )
       ),
-      path("people", () ->
+      pathPrefix("people", () ->
         path(name ->
           complete("person " + name)
         )

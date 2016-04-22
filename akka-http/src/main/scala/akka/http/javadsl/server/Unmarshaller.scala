@@ -7,24 +7,29 @@ package akka.http.javadsl.server
 import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.RoutingJavaMapping
 import akka.http.scaladsl.marshalling._
-import akka.http.scaladsl.unmarshalling.{ FromRequestUnmarshaller, FromEntityUnmarshaller }
-import akka.http.scaladsl.unmarshalling.Unmarshaller.{ EnhancedFromEntityUnmarshaller, EnhancedUnmarshaller }
-import akka.http.scaladsl.{ unmarshalling, model, marshalling }
+import akka.http.scaladsl.unmarshalling.{ FromEntityUnmarshaller, FromRequestUnmarshaller }
+import akka.http.scaladsl.unmarshalling.Unmarshaller.{ EnhancedFromEntityUnmarshaller, EnhancedUnmarshaller, UnsupportedContentTypeException }
+import akka.http.scaladsl.{ marshalling, model, unmarshalling }
 import akka.util.ByteString
+import akka.http.scaladsl.util.FastFuture
+import akka.http.scaladsl.util.FastFuture._
 import scala.concurrent.ExecutionContext
 import scala.annotation.varargs
 import akka.http.javadsl.model.HttpEntity
-import akka.http.scaladsl.model.{ FormData, ContentTypeRange }
+import akka.http.scaladsl.model.{ ContentTypeRange, ContentTypes, FormData }
 import akka.http.scaladsl
 import akka.http.javadsl.model.ContentType
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.RequestEntity
 import akka.http.javadsl.model.MediaType
 import java.util.concurrent.CompletionStage
+
 import scala.compat.java8.FutureConverters._
 import scala.collection.JavaConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.RoutingJavaMapping._
+import akka.http.scaladsl.util.FastFuture
+import akka.stream.Materializer
 
 import scala.language.implicitConversions
 
@@ -61,7 +66,13 @@ object Unmarshaller {
 
   def forMediaType[B](t: MediaType, um: Unmarshaller[HttpEntity, B]): Unmarshaller[HttpEntity, B] = {
     unmarshalling.Unmarshaller.withMaterializer[HttpEntity, B] { implicit ex ⇒
-      implicit mat ⇒ jEntity ⇒ um.asScala(jEntity)
+      implicit mat ⇒ jEntity ⇒ {
+        val entity = jEntity.asScala
+        val mediaType = t.asScala
+        if (entity.contentType == ContentTypes.NoContentType || mediaType.matches(entity.contentType.mediaType)) {
+          um.asScala(entity)
+        } else FastFuture.failed(UnsupportedContentTypeException(ContentTypeRange(t.toRange.asScala)))
+      }
     }
   }
 
@@ -110,8 +121,13 @@ abstract class Unmarshaller[-A, B] extends UnmarshallerBase[A, B] {
 
   implicit def asScala: akka.http.scaladsl.unmarshalling.Unmarshaller[A, B]
 
-  // TODO not that good name, trying to avoid conflicts with map() since lambdas and scala 2.12
-  def thenMap[C](f: java.util.function.Function[B, C]): Unmarshaller[A, C] = asScala.map(f.apply)
+  def unmarshall(a: A, ec: ExecutionContext, mat: Materializer): CompletionStage[B] = asScala.apply(a)(ec, mat).toJava
+
+  /**
+   * Transform the result `B` of this unmarshaller to a `C` producing a marshaller that turns `A`s into `C`s
+   * @return A new marshaller that can unmarshall instances of `A` into instances of `C`
+   */
+  def thenApply[C](f: java.util.function.Function[B, C]): Unmarshaller[A, C] = asScala.map(f.apply)
 
   def flatMap[C](f: java.util.function.Function[B, CompletionStage[C]]): Unmarshaller[A, C] =
     asScala.flatMap { ctx ⇒ mat ⇒ b ⇒ f.apply(b).toScala }

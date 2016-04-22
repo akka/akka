@@ -37,7 +37,7 @@ public class Jackson {
 
   public static <T> Unmarshaller<HttpEntity, T> unmarshaller(ObjectMapper mapper, Class<T> expectedType) {
     return Unmarshaller.forMediaType(MediaTypes.APPLICATION_JSON, Unmarshaller.entityToString())
-                       .thenMap(s -> fromJSON(mapper, s, expectedType));
+                       .thenApply(s -> fromJSON(mapper, s, expectedType));
   }
 
   private static String toJSON(ObjectMapper mapper, Object object) {
