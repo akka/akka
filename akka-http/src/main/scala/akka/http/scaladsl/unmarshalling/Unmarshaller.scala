@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.unmarshalling
 
+import akka.event.Logging
 import akka.stream.Materializer
 
 import scala.util.control.{ NoStackTrace, NonFatal }
@@ -140,6 +141,15 @@ object Unmarshaller
    */
   final case class UnsupportedContentTypeException(supported: Set[ContentTypeRange])
     extends RuntimeException(supported.mkString("Unsupported Content-Type, supported: ", ", ", ""))
+
+  /** Order of parameters (`right` first, `left` second) is intentional, since that's the order we evaluate them in. */
+  final case class EitherUnmarshallingException(
+    rightClass: Class[_], right: Throwable,
+    leftClass: Class[_], left: Throwable)
+    extends RuntimeException(
+      s"Failed to unmarshal Either[${Logging.simpleName(leftClass)}, ${Logging.simpleName(rightClass)}] (attempted ${Logging.simpleName(rightClass)} first). " +
+        s"Right failure: ${right.getMessage}, " +
+        s"Left failure: ${left.getMessage}")
 
   object UnsupportedContentTypeException {
     def apply(supported: ContentTypeRange*): UnsupportedContentTypeException = UnsupportedContentTypeException(Set(supported: _*))
