@@ -24,12 +24,17 @@ import akka.event.LoggingAdapter
 import akka.event.Logging
 import io.aeron.driver.MediaDriver
 import io.aeron.Aeron
+import org.agrona.ErrorHandler
+import io.aeron.AvailableImageHandler
+import io.aeron.Image
+import io.aeron.UnavailableImageHandler
+import io.aeron.exceptions.ConductorServiceTimeoutException
 
 /**
  * INTERNAL API
  */
 // FIXME: Replace the codec with a custom made, hi-perf one
-private[remote] class Transport(
+private[akka] class Transport(
   val localAddress: Address,
   val system: ExtendedActorSystem,
   val materializer: Materializer,
@@ -45,14 +50,47 @@ private[remote] class Transport(
 
   private val aeron = {
     val ctx = new Aeron.Context
+
+    ctx.availableImageHandler(new AvailableImageHandler {
+      override def onAvailableImage(img: Image): Unit = {
+        if (log.isDebugEnabled)
+          log.debug(s"onAvailableImage from ${img.sourceIdentity} session ${img.sessionId}")
+      }
+    })
+    ctx.unavailableImageHandler(new UnavailableImageHandler {
+      override def onUnavailableImage(img: Image): Unit = {
+        if (log.isDebugEnabled)
+          log.debug(s"onUnavailableImage from ${img.sourceIdentity} session ${img.sessionId}")
+        // FIXME we should call FragmentAssembler.freeSessionBuffer when image is unavailable
+      }
+    })
+    ctx.errorHandler(new ErrorHandler {
+      override def onError(cause: Throwable): Unit = {
+        cause match {
+          case e: ConductorServiceTimeoutException ⇒
+            // Timeout between service calls
+            log.error(cause, s"Aeron ServiceTimeoutException, ${cause.getMessage}")
+
+          case _ ⇒
+            log.error(cause, s"Aeron error, ${cause.getMessage}")
+        }
+      }
+    })
     // TODO also support external media driver
-    val driver = MediaDriver.launchEmbedded()
+    val driverContext = new MediaDriver.Context
+    // FIXME settings from config
+    driverContext.clientLivenessTimeoutNs(SECONDS.toNanos(10))
+    driverContext.imageLivenessTimeoutNs(SECONDS.toNanos(10))
+    driverContext.driverTimeoutMs(SECONDS.toNanos(10))
+    val driver = MediaDriver.launchEmbedded(driverContext)
+
     ctx.aeronDirectoryName(driver.aeronDirectoryName)
     Aeron.connect(ctx)
   }
 
   def start(): Unit = {
-    Source.fromGraph(new AeronSource(inboundChannel, () ⇒ aeron))
+    Source.fromGraph(new AeronSource(inboundChannel, aeron))
+      .async // FIXME use dedicated dispatcher for AeronSource
       .map(ByteString.apply) // TODO we should use ByteString all the way
       .via(inboundFlow)
       .runWith(Sink.ignore)
@@ -71,7 +109,7 @@ private[remote] class Transport(
     Flow.fromGraph(killSwitch.flow[Send])
       .via(encoder)
       .map(_.toArray) // TODO we should use ByteString all the way
-      .to(new AeronSink(outboundChannel, () ⇒ aeron))
+      .to(new AeronSink(outboundChannel, aeron))
   }
 
   // TODO: Try out parallelized serialization (mapAsync) for performance

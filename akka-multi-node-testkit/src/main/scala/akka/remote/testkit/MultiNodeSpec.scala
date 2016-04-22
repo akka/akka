@@ -196,6 +196,7 @@ object MultiNodeSpec {
 
   private[testkit] val nodeConfig = mapToConfig(Map(
     "akka.actor.provider" -> "akka.remote.RemoteActorRefProvider",
+    "akka.remote.artery.hostname" -> selfName,
     "akka.remote.netty.tcp.hostname" -> selfName,
     "akka.remote.netty.tcp.port" -> selfPort))
 

@@ -132,7 +132,7 @@ object AkkaBuild extends Build {
   lazy val remoteTests = Project(
     id = "akka-remote-tests",
     base = file("akka-remote-tests"),
-    dependencies = Seq(actorTests % "test->test", multiNodeTestkit)
+    dependencies = Seq(actorTests % "test->test", remote % "test->test", multiNodeTestkit)
   ) configs (MultiJvm)
 
   lazy val cluster = Project(
