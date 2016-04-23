@@ -228,7 +228,7 @@ private[http] object HttpServerBluePrint {
       case x ⇒ x
     }
 
-    Flow[SessionBytes].transform(() ⇒
+    Flow[SessionBytes].via(
       // each connection uses a single (private) request parser instance for all its requests
       // which builds a cache of all header instances seen on that connection
       rootParser.createShallowCopy().stage).named("rootParser")
