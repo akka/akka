@@ -115,20 +115,20 @@ class FlowRecoverWithSpec extends AkkaSpec {
 
     "terminate with exception after set number of retries" in assertAllStagesStopped {
       Source(1 to 3).map { a ⇒ if (a == 3) throw new IndexOutOfBoundsException() else a }
-      .recoverWithRetries(3, {
-        case t: Throwable ⇒
-          Source(List(11, 22)).concat(Source.failed(ex))
-      }).runWith(TestSink.probe[Int])
-      .request(2)
-      .expectNextN(List(1, 2))
-      .request(2)
-      .expectNextN(List(11, 22))
-      .request(2)
-      .expectNextN(List(11, 22))
-      .request(2)
-      .expectNextN(List(11, 22))
-      .request(1)
-      .expectError(ex)
+        .recoverWithRetries(3, {
+          case t: Throwable ⇒
+            Source(List(11, 22)).concat(Source.failed(ex))
+        }).runWith(TestSink.probe[Int])
+        .request(2)
+        .expectNextN(List(1, 2))
+        .request(2)
+        .expectNextN(List(11, 22))
+        .request(2)
+        .expectNextN(List(11, 22))
+        .request(2)
+        .expectNextN(List(11, 22))
+        .request(1)
+        .expectError(ex)
     }
   }
 }
