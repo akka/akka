@@ -508,6 +508,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   /**
    * Gets the current default server-side [[ConnectionContext]] – defaults to plain HTTP.
+   * Can be modified using [[setDefaultServerHttpContext]], and will then apply for servers bound after that call has completed.
    */
   def defaultServerHttpContext: ConnectionContext =
     synchronized {
@@ -520,7 +521,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * Sets the default server-side [[ConnectionContext]].
    * If it is an instance of [[HttpsConnectionContext]] then the server will be bound using HTTPS.
    */
-  def setDefaultClientHttpsContext(context: ConnectionContext): Unit =
+  def setDefaultServerHttpContext(context: ConnectionContext): Unit =
     synchronized {
       _defaultServerConnectionContext = context
     }
@@ -763,6 +764,13 @@ trait DefaultSSLContextCreation {
 
   def createDefaultClientHttpsContext(): HttpsConnectionContext =
     createClientHttpsContext(sslConfig)
+
+  // currently the same configuration as client by default, however we should tune this for server-side apropriately (!)
+  def createServerHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext = {
+    log.warning("Automatic server-side configuration is not supported yet, will attempt to use client-side settings. " +
+      "Instead it is recommended to construct the Servers HttpsConnectionContext manually (via SSLContext).")
+    createClientHttpsContext(sslConfig)
+  }
 
   def createClientHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext = {
     val config = sslConfig.config

@@ -125,7 +125,7 @@ Disabling TLS security features, at your own risk
 
 The following shows an example of disabling SNI for a given connection:
 
-.. includecode:: ../../code/docs/http/scaladsl/HttpsExamplesSpec.scala
+.. includecode:: ../../code/docs/http/javadsl/HttpsExamplesDocTest.java
    :include: disable-sni-connection
 
 The ``badSslConfig`` is a copy of the default ``AkkaSSLConfig`` with with the slightly changed configuration to disable SNI.
