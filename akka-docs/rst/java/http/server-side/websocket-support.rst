@@ -122,5 +122,5 @@ The handling code itself will be the same as with using the low-level API.
 
 See the `full routing example`_.
 
-.. _example: @github@/akka-docs-dev/rst/java/code/docs/http/javadsl/server/WebSocketCoreExample.java
-.. _full routing example: @github@/akka-docs-dev/rst/java/code/docs/http/javadsl/server/WebSocketRoutingExample.java
+.. _example: @github@/akka-docs/rst/java/code/docs/http/javadsl/server/WebSocketCoreExample.java
+.. _full routing example: @github@/akka-docs/rst/java/code/docs/http/javadsl/server/WebSocketCoreExample.java
