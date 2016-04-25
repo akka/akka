@@ -11,6 +11,7 @@ import akka.http.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.NotUsed
+import akka.http.javadsl.settings.{ ParserSettings, RoutingSettings }
 
 /**
  * In the Java DSL, a Route can only consist of combinations of the built-in directives. A Route can not be
@@ -37,6 +38,21 @@ trait Route {
   private[http] def delegate: scaladsl.server.Route
 
   def flow(system: ActorSystem, materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed]
+
+  /**
+   * "Seals" a route by wrapping it with default exception handling and rejection conversion.
+   */
   def seal(system: ActorSystem, materializer: Materializer): Route
+
+  /**
+   * "Seals" a route by wrapping it with explicit exception handling and rejection conversion.
+   */
+  def seal(routingSettings: RoutingSettings,
+           parserSettings: ParserSettings,
+           rejectionHandler: RejectionHandler,
+           exceptionHandler: ExceptionHandler,
+           system: ActorSystem,
+           materializer: Materializer): Route
+
   def orElse(alternative: Route): Route
 }

@@ -8,7 +8,6 @@ import scala.annotation.varargs
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
-
 import akka.actor.ActorSystem
 import akka.event.NoLogging
 import akka.http.impl.util.AddFutureAwaitResult
@@ -19,8 +18,7 @@ import akka.http.javadsl.server.AllDirectives
 import akka.http.javadsl.server.Directives
 import akka.http.javadsl.server.Route
 import akka.http.scaladsl.server
-import akka.http.scaladsl.server.{ Route ⇒ ScalaRoute }
-import akka.http.scaladsl.server.RouteResult
+import akka.http.scaladsl.server.{ ExceptionHandler, RequestContextImpl, RouteResult, Route ⇒ ScalaRoute }
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.stream.Materializer
 
@@ -57,8 +55,13 @@ abstract class RouteTest extends AllDirectives {
         securedConnection = defaultHostInfo.isSecuredConnection(),
         defaultHostHeader = defaultHostInfo.getHost().asScala)
 
-    val result = scalaRoute(new server.RequestContextImpl(effectiveRequest, system.log, RoutingSettings(system)))
+    // this will give us the default exception handler
+    val sealedExceptionHandler = ExceptionHandler.seal(null)
 
+    val semiSealedRoute = // sealed for exceptions but not for rejections
+      akka.http.scaladsl.server.Directives.handleExceptions(sealedExceptionHandler)(scalaRoute)
+
+    val result = semiSealedRoute(new server.RequestContextImpl(effectiveRequest, system.log, RoutingSettings(system)))
     createTestRouteResult(request, result.awaitResult(awaitDuration))
   }
 
