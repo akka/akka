@@ -26,6 +26,8 @@ import akka.stream.KillSwitches
 import akka.Done
 import org.agrona.IoUtil
 import java.io.File
+import java.io.File
+import io.aeron.CncFileDescriptor
 
 object AeronStreamLatencySpec extends MultiNodeConfig {
   val first = role("first")
@@ -79,6 +81,9 @@ abstract class AeronStreamLatencySpec
   var plots = LatencyPlots()
 
   val driver = MediaDriver.launchEmbedded()
+
+  val stats =
+    new AeronStat(AeronStat.mapCounters(new File(driver.aeronDirectoryName, CncFileDescriptor.CNC_FILE)))
 
   val aeron = {
     val ctx = new Aeron.Context
@@ -150,6 +155,11 @@ abstract class AeronStreamLatencySpec
         plot90 = plots.plot90.add(testName, percentile(90.0)),
         plot99 = plots.plot99.add(testName, percentile(99.0)))
     }
+  }
+
+  def printStats(side: String): Unit = {
+    println(side + " stats:")
+    stats.print(System.out)
   }
 
   val scenarios = List(
@@ -236,6 +246,7 @@ abstract class AeronStreamLatencySpec
       rep.halt()
     }
 
+    printStats(myself.name)
     enterBarrier("after-" + testName)
   }
 

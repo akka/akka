@@ -23,6 +23,8 @@ import io.aeron.UnavailableImageHandler
 import io.aeron.Image
 import io.aeron.AvailableImageHandler
 import akka.actor.ExtendedActorSystem
+import java.io.File
+import io.aeron.CncFileDescriptor
 
 object AeronStreamsApp {
 
@@ -33,6 +35,18 @@ object AeronStreamsApp {
   val latencyN = 10 * latencyRate
   val payload = ("0" * 100).getBytes("utf-8")
   lazy val sendTimes = new AtomicLongArray(latencyN)
+
+  lazy val driver = {
+    val driverContext = new MediaDriver.Context
+    driverContext.clientLivenessTimeoutNs(SECONDS.toNanos(10))
+    driverContext.imageLivenessTimeoutNs(SECONDS.toNanos(10))
+    driverContext.driverTimeoutMs(SECONDS.toNanos(10))
+    MediaDriver.launchEmbedded(driverContext)
+  }
+
+  lazy val stats = {
+    new AeronStat(AeronStat.mapCounters(new File(driver.aeronDirectoryName, CncFileDescriptor.CNC_FILE)))
+  }
 
   lazy val aeron = {
     val ctx = new Aeron.Context
@@ -52,11 +66,6 @@ object AeronStreamsApp {
       }
     })
 
-    val driverContext = new MediaDriver.Context
-    driverContext.clientLivenessTimeoutNs(SECONDS.toNanos(10))
-    driverContext.imageLivenessTimeoutNs(SECONDS.toNanos(10))
-    driverContext.driverTimeoutMs(SECONDS.toNanos(10))
-    val driver = MediaDriver.launchEmbedded(driverContext)
     ctx.aeronDirectoryName(driver.aeronDirectoryName)
     Aeron.connect(ctx)
   }
@@ -132,6 +141,9 @@ object AeronStreamsApp {
 
     if (args(0) == "debug-sender")
       runDebugSender()
+
+    if (args.length >= 2 && args(1) == "stats")
+      runStats()
   }
 
   def runReceiver(): Unit = {
@@ -257,6 +269,7 @@ object AeronStreamsApp {
           e.printStackTrace
           exit(-1)
       }
+
   }
 
   def runDebugSender(): Unit = {
@@ -269,6 +282,10 @@ object AeronStreamsApp {
         s.getBytes("utf-8")
       }
       .runWith(new AeronSink(channel1, aeron, taskRunner))
+  }
+
+  def runStats(): Unit = {
+    Source.tick(10.second, 10.second, "tick").runForeach { _ ⇒ stats.print(System.out) }
   }
 
 }

@@ -20,6 +20,8 @@ import com.typesafe.config.ConfigFactory
 import io.aeron.Aeron
 import io.aeron.driver.MediaDriver
 import akka.stream.KillSwitches
+import java.io.File
+import io.aeron.CncFileDescriptor
 
 object AeronStreamMaxThroughputSpec extends MultiNodeConfig {
   val first = role("first")
@@ -82,9 +84,13 @@ abstract class AeronStreamMaxThroughputSpec
 
   var plot = PlotResult()
 
+  val driver = MediaDriver.launchEmbedded()
+
+  val stats =
+    new AeronStat(AeronStat.mapCounters(new File(driver.aeronDirectoryName, CncFileDescriptor.CNC_FILE)))
+
   val aeron = {
     val ctx = new Aeron.Context
-    val driver = MediaDriver.launchEmbedded()
     ctx.aeronDirectoryName(driver.aeronDirectoryName)
     Aeron.connect(ctx)
   }
@@ -139,6 +145,11 @@ abstract class AeronStreamMaxThroughputSpec
     plot = plot.add(testName, throughput * payloadSize / 1024 / 1024)
   }
 
+  def printStats(side: String): Unit = {
+    println(side + " stats:")
+    stats.print(System.out)
+  }
+
   val scenarios = List(
     TestSettings(
       testName = "size-100",
@@ -183,6 +194,7 @@ abstract class AeronStreamMaxThroughputSpec
       enterBarrier(receiverName + "-started")
       Await.ready(done, barrierTimeout)
       rep.halt()
+      printStats("receiver")
       enterBarrier(testName + "-done")
     }
 
@@ -195,7 +207,9 @@ abstract class AeronStreamMaxThroughputSpec
         .map { n ⇒ payload }
         .runWith(new AeronSink(channel(second), aeron, taskRunner))
 
+      printStats("sender")
       enterBarrier(testName + "-done")
+
     }
 
     enterBarrier("after-" + testName)
