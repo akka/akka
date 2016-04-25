@@ -11,7 +11,7 @@ import scala.concurrent.duration.Duration
 import akka.actor.Address
 import akka.actor.AddressFromURIString
 import akka.dispatch.Dispatchers
-import akka.util.Helpers.{Requiring, ConfigOps, toRootLowerCase}
+import akka.util.Helpers.{ Requiring, ConfigOps, toRootLowerCase }
 
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util.immutableSeq

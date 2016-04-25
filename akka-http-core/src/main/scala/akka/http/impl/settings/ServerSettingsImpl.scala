@@ -77,7 +77,7 @@ object ServerSettingsImpl extends SettingsCompanion[ServerSettingsImpl]("akka.ht
     c getInt "backlog",
     SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
     defaultHostHeader =
-      HttpHeader.parse("Host", c getString "default-host-header") match {
+      HttpHeader.parse("Host", c getString "default-host-header", ParserSettings(root)) match {
         case HttpHeader.ParsingResult.Ok(x: Host, Nil) ⇒ x
         case result ⇒
           val info = result.errors.head.withSummary("Configured `default-host-header` is illegal")

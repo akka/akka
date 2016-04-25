@@ -7,7 +7,7 @@ import com.typesafe.config.Config
 import scala.concurrent.duration._
 import akka.util.Timeout
 import scala.collection.immutable
-import akka.util.Helpers.{ConfigOps, Requiring, toRootLowerCase}
+import akka.util.Helpers.{ ConfigOps, Requiring, toRootLowerCase }
 import akka.japi.Util._
 import akka.actor.Props
 import akka.event.Logging

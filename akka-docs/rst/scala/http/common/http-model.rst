@@ -348,3 +348,22 @@ provided to parse (or render to) Strings or byte arrays.
   and can override them if needed. This is useful, since both ``client`` and ``host-connection-pool`` APIs,
   such as the Client API ``Http().outgoingConnection`` or the Host Connection Pool APIs ``Http().singleRequest`` or ``Http().superPool``,
   usually need the same settings, however the ``server`` most likely has a very different set of settings.
+
+.. _registeringCustomMediaTypes:
+
+Registering Custom Media Types
+------------------------------
+
+Akka HTTP `predefines`_ most commonly encoutered media types and emits them in their well-typed form while parsing http messages.
+Sometimes you may want to define a custom media type and inform the parser infrastructure about how to handle these custom
+media types, e.g. that ``application/custom`` is to be treated as ``NonBinary`` with ``WithFixedCharset``. To achieve this you
+need to register the custom media type in the server's settings by configuring ``ParserSettings`` like this:
+
+.. includecode:: ../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/CustomMediaTypesSpec.scala
+   :include: application-custom
+
+You may also want to read about MediaType `Registration trees`_, in order to register your vendor specific media types
+in the right style / place.
+
+.. _Registration trees: https://en.wikipedia.org/wiki/Media_type#Registration_trees
+.. _predefines: https://github.com/akka/akka/blob/master/akka-http-core/src/main/scala/akka/http/scaladsl/model/MediaType.scala#L297

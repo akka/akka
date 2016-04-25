@@ -258,6 +258,8 @@ object MediaType {
 }
 
 object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
+  type FindCustom = (String, String) => Option[MediaType]
+
   private[this] var extensionMap = Map.empty[String, MediaType]
 
   def forExtensionOption(ext: String): Option[MediaType] = extensionMap.get(ext.toLowerCase)
