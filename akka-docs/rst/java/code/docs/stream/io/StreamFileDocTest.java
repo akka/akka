@@ -3,7 +3,9 @@
  */
 package docs.stream.io;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.io.IOException;
 import java.util.concurrent.CompletionStage;
 
@@ -47,13 +49,13 @@ public class StreamFileDocTest extends AbstractJavaTest {
 
   {
     //#file-source
-    final File file = new File("example.csv");
+    final Path file = Paths.get("example.csv");
     //#file-source
   }
 
   @Test
   public void demonstrateMaterializingBytesWritten() throws IOException {
-    final File file = File.createTempFile(getClass().getName(), ".tmp");
+    final Path file = Files.createTempFile(getClass().getName(), ".tmp");
 
     try {
       //#file-source
@@ -61,27 +63,27 @@ public class StreamFileDocTest extends AbstractJavaTest {
         Sink.<ByteString> foreach(chunk -> System.out.println(chunk.utf8String()));
 
       CompletionStage<IOResult> ioResult =
-        FileIO.fromFile(file)
+        FileIO.fromPath(file)
           .to(printlnSink)
           .run(mat);
       //#file-source
     } finally {
-      file.delete();
+      Files.delete(file);
     }
   }
 
   @Test
   public void demonstrateSettingDispatchersInCode() throws IOException {
-    final File file = File.createTempFile(getClass().getName(), ".tmp");
+    final Path file = Files.createTempFile(getClass().getName(), ".tmp");
 
     try {
       Sink<ByteString, CompletionStage<IOResult>> fileSink =
       //#custom-dispatcher-code
-      FileIO.toFile(file)
+      FileIO.toPath(file)
         .withAttributes(ActorAttributes.dispatcher("custom-blocking-io-dispatcher"));
       //#custom-dispatcher-code
     } finally {
-      file.delete();
+      Files.delete(file);
     }
   }
 
