@@ -179,13 +179,28 @@ object Sink {
    * the fastest [[org.reactivestreams.Subscriber]] can be ahead of the slowest one before slowing
    * the processing down due to back pressure.
    *
-   * If `fanout` is `false` then the materialized `Publisher` will only support a single `Subscriber` and
+   * If `fanout` is `false` than the materialized `Publisher` will only support a single `Subscriber` and
    * reject any additional `Subscriber`s.
    */
   def asPublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
-    new Sink(
-      if (fanout) new FanoutPublisherSink[T](DefaultAttributes.fanoutPublisherSink, shape("FanoutPublisherSink"))
-      else new PublisherSink[T](DefaultAttributes.publisherSink, shape("PublisherSink")))
+    if (fanout) Sink.fromGraph(new CancellablePublisherSink[T](false)).named("FanoutPublisherSink")
+    else new Sink(new PublisherSink[T](DefaultAttributes.publisherSink, shape("PublisherSink")))
+
+  /**
+   * A `Sink` that materializes into a [[org.reactivestreams.Publisher]] with additional cancel method.
+   * The difference from [[Sink.asPublisher]] is that sink is still doing backpressure without publishers
+   * connected and does not finalize stream when last publisher cancels. It completes state when cancel
+   * is called or complete came from upsream.
+   *
+   * The materialized `Publisher` will support multiple `Subscriber`s and
+   * the size of the `inputBuffer` configured for this stage becomes the maximum number of elements that
+   * the fastest [[org.reactivestreams.Subscriber]] can be ahead of the slowest one before slowing
+   * the processing down due to back pressure.
+   *
+   * @see [[#asPublisher]]
+   */
+  def asCancellablePublisher[T](): Sink[T, CancellablePublisher[T]] =
+    Sink.fromGraph(new CancellablePublisherSink[T](true))
 
   /**
    * A `Sink` that will consume the stream and discard the elements.

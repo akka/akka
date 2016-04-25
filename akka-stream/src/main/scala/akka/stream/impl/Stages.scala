@@ -128,6 +128,7 @@ object Stages {
     val actorSubscriberSink = name("actorSubscriberSink")
     val queueSink = name("queueSink")
     val lazySink = name("lazySink")
+    val cancellablePublisherSink = name("cancellablePublisherSink")
     val outputStreamSink = name("outputStreamSink") and IODispatcher
     val inputStreamSink = name("inputStreamSink") and IODispatcher
     val fileSink = name("fileSink") and IODispatcher

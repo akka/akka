@@ -89,8 +89,7 @@ object GraphInterpreter {
     val outOwnerId: Int,
     val outOwner:   GraphStageLogic,
     var inHandler:  InHandler,
-    var outHandler: OutHandler
-  ) {
+    var outHandler: OutHandler) {
     var portState: Int = InReady
     var slot: Any = Empty
 
@@ -207,8 +206,7 @@ object GraphInterpreter {
           outOwner = if (outOwners(i) == Boundary) null else logics(outOwners(i)),
           outOwnerId = outOwners(i),
           inHandler = null,
-          outHandler = null
-        )
+          outHandler = null)
 
         if (ins(i) ne null) {
           val logic = logics(inOwners(i))

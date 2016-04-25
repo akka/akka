@@ -68,15 +68,15 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
   protected def requestFromUpstream(elements: Long): Unit
 
   /**
-   * called before `shutdown()` if the stream is *not* being regularly completed
-   * but shut-down due to the last subscriber having canceled its subscription
+   * Called  when the last subscriber having canceled its subscription.
+   * Must return true if need to proceed after all subscriptions cancelled.
    */
-  protected def cancelUpstream(): Unit
+  protected def shutdownWhenNoMoreSubscriptions(): Boolean
 
   /**
-   * called when the spi.Publisher/Processor is ready to be shut down
+   * Called when the stage is ready to be shut down. Upstream has been already closed
    */
-  protected def shutdown(completed: Boolean): Unit
+  protected def shutdown(): Unit
 
   /**
    * Use to register a subscriber
@@ -204,7 +204,6 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
         }
       endOfStream = Completed
       subscriptions = completeDoneSubscriptions(subscriptions)
-      if (subscriptions.isEmpty) shutdown(completed = true)
     } // else ignore, we need to be idempotent
   }
 
@@ -220,11 +219,13 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
   /**
    * Register a new subscriber.
    */
-  protected def registerSubscriber(subscriber: Subscriber[_ >: T]): Unit = endOfStream match {
-    case NotReached if subscriptions.exists(_.subscriber == subscriber) ⇒ ReactiveStreamsCompliance.rejectDuplicateSubscriber(subscriber)
-    case NotReached ⇒ addSubscription(subscriber)
-    case Completed if buffer.nonEmpty ⇒ addSubscription(subscriber)
-    case eos ⇒ eos(subscriber)
+  protected def registerSubscriber(subscriber: Subscriber[_ >: T]): Unit = {
+    endOfStream match {
+      case NotReached if subscriptions.exists(_.subscriber == subscriber) ⇒ ReactiveStreamsCompliance.rejectDuplicateSubscriber(subscriber)
+      case NotReached ⇒ addSubscription(subscriber)
+      case Completed if buffer.nonEmpty ⇒ addSubscription(subscriber)
+      case eos ⇒ eos(subscriber)
+    }
   }
 
   private def addSubscription(subscriber: Subscriber[_ >: T]): Unit = {
@@ -258,10 +259,8 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
       subscription.active = false
       if (subscriptions.isEmpty) {
         if (endOfStream eq NotReached) {
-          endOfStream = ShutDown
-          cancelUpstream()
-        }
-        shutdown(completed = false)
+          if (shutdownWhenNoMoreSubscriptions()) endOfStream = ShutDown
+        } else shutdown()
       } else requestFromUpstreamIfRequired() // we might have removed a "blocking" subscriber and can continue now
     } // else ignore, we need to be idempotent
   }
