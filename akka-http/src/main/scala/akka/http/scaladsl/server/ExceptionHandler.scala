@@ -45,9 +45,7 @@ object ExceptionHandler {
         ctx.complete((status, info.format(settings.verboseErrorMessages)))
       }
       case NonFatal(e) ⇒ ctx ⇒ {
-        println("NON FATAL HANDLED = " + ctx.request)
         ctx.log.error(e, "Error during processing of request {}", ctx.request)
-        Thread.sleep(1000)
         ctx.complete(InternalServerError)
       }
     }
