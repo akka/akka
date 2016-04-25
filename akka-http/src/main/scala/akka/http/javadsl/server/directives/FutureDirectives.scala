@@ -17,15 +17,26 @@ import akka.http.javadsl.server.Route
 import akka.http.scaladsl.server.directives.{ FutureDirectives ⇒ D }
 
 abstract class FutureDirectives extends FormFieldDirectives {
+
+  /**
+   * "Unwraps" a `CompletionStage<T>` and runs the inner route after future
+   * completion with the future's value as an extraction of type `Try<T>`.
+   */
   def onComplete[T](f: Supplier[CompletionStage[T]], inner: JFunction[Try[T], Route]) = RouteAdapter {
     D.onComplete(f.get.toScala.recover(unwrapCompletionException)) { value ⇒
-      inner.apply(value).delegate
+      inner(value).delegate
     }
   }
 
+  /**
+   * "Unwraps" a `CompletionStage<T>` and runs the inner route after stage
+   * completion with the stage's value as an extraction of type `T`.
+   * If the stage fails its failure Throwable is bubbled up to the nearest
+   * ExceptionHandler.
+   */
   def onSuccess[T](f: Supplier[CompletionStage[T]], inner: JFunction[T, Route]) = RouteAdapter {
     D.onSuccess(f.get.toScala.recover(unwrapCompletionException)) { value ⇒
-      inner.apply(value).delegate
+      inner(value).delegate
     }
   }
 
