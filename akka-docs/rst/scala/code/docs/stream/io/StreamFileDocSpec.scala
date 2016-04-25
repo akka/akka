@@ -3,10 +3,10 @@
  */
 package docs.stream.io
 
-import java.io.File
+import java.nio.file.{ Files, Paths }
 
 import akka.stream._
-import akka.stream.scaladsl.{ FileIO, Sink, Source }
+import akka.stream.scaladsl.{ FileIO, Sink }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.util.ByteString
@@ -22,9 +22,9 @@ class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
   // silence sysout
   def println(s: String) = ()
 
-  val file = File.createTempFile(getClass.getName, ".tmp")
+  val file = Files.createTempFile(getClass.getName, ".tmp")
 
-  override def afterTermination() = file.delete()
+  override def afterTermination() = Files.delete(file)
 
   {
     //#file-source
@@ -35,7 +35,7 @@ class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   {
     //#file-source
-    val file = new File("example.csv")
+    val file = Paths.get("example.csv")
     //#file-source
   }
 
@@ -46,7 +46,7 @@ class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
     //#file-source
 
-    val foreach: Future[IOResult] = FileIO.fromFile(file)
+    val foreach: Future[IOResult] = FileIO.fromPath(file)
       .to(Sink.ignore)
       .run()
     //#file-source
@@ -54,7 +54,7 @@ class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   "configure dispatcher in code" in {
     //#custom-dispatcher-code
-    FileIO.fromFile(file)
+    FileIO.fromPath(file)
       .withAttributes(ActorAttributes.dispatcher("custom-blocking-io-dispatcher"))
     //#custom-dispatcher-code
   }
