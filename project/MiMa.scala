@@ -744,6 +744,10 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.recoverWithRetries")
       ),
       "2.4.4" -> Seq(
+        // #20371, missing method and typo in another one making it impossible to use HTTPs via setting default HttpsConnectionContext
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.HttpExt.setDefaultClientHttpsContext"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.createServerHttpsContext"),
+        
         // #20342 HttpEntity scaladsl overrides
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.withoutSizeLimit"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.withSizeLimit"),

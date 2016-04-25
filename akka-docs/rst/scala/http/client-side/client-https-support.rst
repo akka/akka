@@ -3,7 +3,7 @@
 Client-Side HTTPS Support
 =========================
 
-Akka HTTP supports TLS encryption on the client-side as well as on the :ref:`server-side <serverSideHTTPS>`.
+Akka HTTP supports TLS encryption on the client-side as well as on the :ref:`server-side <serverSideHTTPS-scala>`.
 
 .. warning:
 

@@ -640,12 +640,18 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   def shutdownAllConnectionPools(): CompletionStage[Unit] = delegate.shutdownAllConnectionPools().toJava
 
   /**
-   * Gets the default
-   *
-   * @return
+   * Gets the current default server-side [[ConnectionContext]] – defaults to plain HTTP.
+   * Can be modified using [[setDefaultServerHttpContext]], and will then apply for servers bound after that call has completed.
    */
   def defaultServerHttpContext: ConnectionContext =
     delegate.defaultServerHttpContext
+
+  /**
+   * Sets the default server-side [[ConnectionContext]].
+   * If it is an instance of [[HttpsConnectionContext]] then the server will be bound using HTTPS.
+   */
+  def setDefaultServerHttpContext(context: ConnectionContext): Unit =
+    delegate.setDefaultServerHttpContext(context.asScala)
 
   /**
    * Gets the current default client-side [[ConnectionContext]].
@@ -656,7 +662,10 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Sets the default client-side [[ConnectionContext]].
    */
   def setDefaultClientHttpsContext(context: HttpsConnectionContext): Unit =
-    delegate.setDefaultClientHttpsContext(context.asInstanceOf[akka.http.scaladsl.HttpsConnectionContext])
+    delegate.setDefaultClientHttpsContext(context.asScala)
+
+  def createServerHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext =
+    delegate.createServerHttpsContext(sslConfig)
 
   def createClientHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext =
     delegate.createClientHttpsContext(sslConfig)

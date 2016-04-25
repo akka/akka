@@ -11,7 +11,8 @@ This means that, if you have trouble achieving something using a high-level API,
 it done with a low-level API, which offers more flexibility but might require you to write more application code.
 
 Philosophy
----------------
+----------
+
 Akka HTTP has been driven with a clear focus on providing tools for building integration layers rather than application cores. As such it regards itself as a suite of libraries rather than a framework.
 
 A framework, as we’d like to think of the term, gives you a “frame”, in which you build your application. It comes with a lot of decisions already pre-made and provides a foundation including support structures that lets you get started and deliver results quickly. In a way a framework is like a skeleton onto which you put the “flesh” of your application in order to have it come alive. As such frameworks work best if you choose them before you start application development and try to stick to the frameworks “way of doing things” as you go along.
