@@ -12,6 +12,7 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.scaladsl.settings.ConnectionPoolSettings;
 import akka.japi.Function;
 import akka.stream.javadsl.Flow;
+import org.junit.Test;
 
 import javax.net.ssl.SSLContext;
 
@@ -22,6 +23,9 @@ import java.util.concurrent.CompletionStage;
 
 @SuppressWarnings("ConstantConditions")
 public class HttpAPIsTest extends JUnitRouteTest {
+
+  @Test
+  public void compileOnlyTest() {}
 
   @SuppressWarnings("unused")
   public void compileOnly() throws Exception {
