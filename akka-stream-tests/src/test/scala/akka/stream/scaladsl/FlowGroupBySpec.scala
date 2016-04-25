@@ -121,6 +121,16 @@ class FlowGroupBySpec extends AkkaSpec {
         .sortBy(_.head) should ===(List(List("Aaa", "Abb"), List("Bcc"), List("Cdd", "Cee")))
     }
 
+    "fail when key function return null" in {
+      val down = Source(List("Aaa", "Abb", "Bcc", "Cdd", "Cee"))
+        .groupBy(3, e ⇒ if (e.startsWith("A")) null else e.substring(0, 1))
+        .grouped(10)
+        .mergeSubstreams
+        .runWith(TestSink.probe[Seq[String]])
+      down.request(1)
+      down.expectError()
+    }
+
     "accept cancellation of substreams" in assertAllStagesStopped {
       new SubstreamsSupport(groupCount = 2) {
         StreamPuppet(getSubFlow(1).runWith(Sink.asPublisher(false))).cancel()

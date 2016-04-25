@@ -1190,6 +1190,8 @@ trait FlowOps[+Out, +Mat] {
    * is [[akka.stream.Supervision.Resume]] or [[akka.stream.Supervision.Restart]]
    * the element is dropped and the stream and substreams continue.
    *
+   * Function `f`  MUST NOT return `null`. This will throw exception and trigger supervision decision mechanism.
+   *
    * '''Emits when''' an element for which the grouping function returns a group that has not yet been created.
    * Emits the new group
    *
