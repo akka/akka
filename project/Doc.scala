@@ -134,7 +134,7 @@ object Unidoc extends AutoPlugin {
   override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
     genjavadocExtraSettings ++ Seq(
       scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true",
-      unidocGenjavadocVersion in Global := "0.9",
+      unidocGenjavadocVersion in Global := "0.10",
       // FIXME: see #18056
       sources in(Genjavadoc, doc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
     )
