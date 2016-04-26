@@ -302,6 +302,19 @@ class SourceSpec extends AkkaSpec with DefaultTimeout {
     }
   }
 
+  "Cycle Source" must {
+
+    "continuously generate the same sequence" in {
+      val expected = Seq(1, 2, 3, 1, 2, 3, 1, 2, 3)
+      Source.cycle(() ⇒ List(1, 2, 3).iterator).grouped(9).runWith(Sink.head).futureValue should ===(expected)
+    }
+
+    "throw an exception in case of empty iterator" in {
+      val empty = Iterator.empty
+      assert(Source.cycle(() ⇒ empty).runWith(Sink.head).failed.futureValue.isInstanceOf[IllegalArgumentException])
+    }
+  }
+
   "A Source" must {
     "suitably override attribute handling methods" in {
       import Attributes._
