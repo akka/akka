@@ -16,7 +16,7 @@ object Dependencies {
   val junitVersion = "4.12"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.7"), // "2.12.0-M4"
+    crossScalaVersions := Seq("2.11.8"), // "2.12.0-M4"
     scalaVersion := crossScalaVersions.value.head,
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.7"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.11.6"),
