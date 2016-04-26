@@ -20,9 +20,9 @@ object MiMa extends AutoPlugin {
 
   def akkaPreviousArtifacts(projectName: String, organization: String, scalaBinaryVersion: String): Set[sbt.ModuleID] = {
     val versions = {
-      val akka23Versions = Seq("2.3.11", "2.3.12", "2.3.13", "2.3.14")
+      val akka23Versions = Seq("2.3.11", "2.3.12", "2.3.13", "2.3.14", "2.3.15")
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
-      val akka24StreamVersions = Seq("2.4.2")
+      val akka24StreamVersions = Seq("2.4.2", "2.4.3", "2.4.4")
       val akka24NewArtifacts = Seq(
         "akka-cluster-sharding",
         "akka-cluster-tools",
@@ -604,7 +604,7 @@ object MiMa extends AutoPlugin {
       "2.3.11" -> Seq(
         ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorCell.clearActorFields") // #17805, incompatibility with 2.4.x fixed in 2.3.12
       ),
-      "2.3.14" -> bcIssuesBetween23and24,
+      "2.3.15" -> bcIssuesBetween23and24,
       "2.4.0" -> Seq(
         FilterAnyProblem("akka.remote.transport.ProtocolStateActor"),
 
@@ -714,12 +714,18 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedAbstractMethodProblem]("akka.persistence.Eventsourced#ProcessingState.onWriteMessageComplete"),
 
         // #19390 Add flow monitor
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.monitor"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.monitor")
+      ),
+      "2.4.3" -> Seq(
+        // internal api
+        FilterAnyProblemStartingWith("akka.stream.impl"),
+        FilterAnyProblemStartingWith("akka.http.impl"),
 
         // #20214
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.createClientHttpsContext"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.validateAndWarnAboutLooseSettings"),
-
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.validateAndWarnAboutLooseSettings")
+      ),
+      "2.4.4" -> Seq(
         // #20080, #20081 remove race condition on HTTP client
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.gatewayFuture"),
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.Http#HostConnectionPool.copy"),
@@ -740,21 +746,25 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.engine.client.PoolGateway$NewIncarnation"),
         ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.engine.client.PoolGateway$State"),
 
-        // #20123
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.recoverWithRetries")
-      ),
-      "2.4.4" -> Seq(
         // #20371, missing method and typo in another one making it impossible to use HTTPs via setting default HttpsConnectionContext
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.HttpExt.setDefaultClientHttpsContext"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.createServerHttpsContext"),
-        
+
         // #20342 HttpEntity scaladsl overrides
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.withoutSizeLimit"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.withSizeLimit"),
 
         // #20293 Use JDK7 NIO Path instead of File
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage#MessageTransformations.withEntity"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.withEntity")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.withEntity"),
+
+        // #20123
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.recoverWithRetries"),
+
+        // internal api
+        FilterAnyProblemStartingWith("akka.stream.impl"),
+        FilterAnyProblemStartingWith("akka.http.impl.engine.parsing.BodyPartParser"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.package.printEvent")
       )
     )
   }
