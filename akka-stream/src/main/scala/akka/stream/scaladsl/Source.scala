@@ -209,6 +209,17 @@ object Source {
     })
 
   /**
+   * Create [[Source]] that will continually produce given elements in specified order.
+   *
+   * Start a new 'cycled' `Source` from the given elements. The producer stream of elements
+   * will continue infinitely by repeating the sequence of elements provided by function parameter.
+   */
+  def cycle[T](f: () ⇒ Iterator[T]): Source[T, NotUsed] = {
+    val iterator = Iterator.continually { val i = f(); if (i.isEmpty) throw new IllegalArgumentException("empty iterator") else i }.flatten
+    fromIterator(() ⇒ iterator).withAttributes(DefaultAttributes.cycledSource)
+  }
+
+  /**
    * A graph with the shape of a source logically is a source, this method makes
    * it so also in type.
    */
