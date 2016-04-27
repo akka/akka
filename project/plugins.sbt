@@ -31,9 +31,6 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.6.2")
 
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.3")
 
-// stats reporting
-libraryDependencies += "com.timgroup" % "java-statsd-client" % "2.0.0"
-
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.0-RC1")
 
 // for advanced PR validation features

@@ -12,7 +12,7 @@ import com.typesafe.config.Config
 import java.util
 import scala.util.matching.Regex
 import scala.collection.mutable
-import akka.testkit.metrics.reporter.{ GraphiteClient, AkkaGraphiteReporter, AkkaConsoleReporter }
+import akka.testkit.metrics.reporter.AkkaConsoleReporter
 import org.scalatest.Notifying
 import scala.reflect.ClassTag
 
@@ -24,7 +24,6 @@ import scala.reflect.ClassTag
  * This trait instead aims to give an high level overview as well as data for trend-analysis of long running tests.
  *
  * Reporting defaults to `ConsoleReporter`.
- * In order to send registry to Graphite run sbt with the following property: `-Dakka.registry.reporting.0=graphite`.
  */
 private[akka] trait MetricsKit extends MetricsKitOps {
   this: Notifying ⇒
@@ -61,23 +60,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
       }
     }
 
-    def configureGraphiteReporter() {
-      if (settings.Reporters.contains("graphite")) {
-        note(s"MetricsKit: Graphite reporter enabled, sending metrics to: ${settings.GraphiteReporter.Host}:${settings.GraphiteReporter.Port}")
-        val address = new InetSocketAddress(settings.GraphiteReporter.Host, settings.GraphiteReporter.Port)
-        val graphite = new GraphiteClient(address)
-        val akkaGraphiteReporter = new AkkaGraphiteReporter(registry, settings.GraphiteReporter.Prefix, graphite, settings.GraphiteReporter.Verbose)
-
-        if (settings.GraphiteReporter.ScheduledReportInterval > Duration.Zero) {
-          akkaGraphiteReporter.start(settings.GraphiteReporter.ScheduledReportInterval.toMillis, TimeUnit.MILLISECONDS)
-        }
-
-        reporters ::= akkaGraphiteReporter
-      }
-    }
-
     configureConsoleReporter()
-    configureGraphiteReporter()
   }
 
   /**
@@ -216,15 +199,6 @@ private[akka] class MetricsKitSettings(config: Config) {
   import akka.util.Helpers._
 
   val Reporters = config.getStringList("akka.test.metrics.reporters")
-
-  object GraphiteReporter {
-    val Prefix = config.getString("akka.test.metrics.reporter.graphite.prefix")
-    lazy val Host = config.getString("akka.test.metrics.reporter.graphite.host").requiring(v ⇒ !v.trim.isEmpty, "akka.test.metrics.reporter.graphite.host was used but was empty!")
-    val Port = config.getInt("akka.test.metrics.reporter.graphite.port")
-    val Verbose = config.getBoolean("akka.test.metrics.reporter.graphite.verbose")
-
-    val ScheduledReportInterval = config.getMillisDuration("akka.test.metrics.reporter.graphite.scheduled-report-interval")
-  }
 
   object ConsoleReporter {
     val ScheduledReportInterval = config.getMillisDuration("akka.test.metrics.reporter.console.scheduled-report-interval")
