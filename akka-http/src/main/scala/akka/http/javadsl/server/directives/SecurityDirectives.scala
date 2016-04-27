@@ -5,18 +5,16 @@ package akka.http.javadsl.server.directives
 
 import java.util.Optional
 import java.util.concurrent.CompletionStage
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{Function => JFunction}
 import java.util.function.Supplier
 
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
-
 import akka.http.javadsl.model.headers.HttpChallenge
 import akka.http.javadsl.model.headers.HttpCredentials
-import akka.http.javadsl.server.Route
+import akka.http.javadsl.server.{RequestContext, Route}
 import akka.http.scaladsl
-
-import akka.http.scaladsl.server.{ Directives ⇒ D }
+import akka.http.scaladsl.server.{AuthorizationFailedRejection, Directives => D}
 
 object SecurityDirectives {
   /**
@@ -216,8 +214,6 @@ abstract class SecurityDirectives extends SchemeDirectives {
       }
     }
   }
-  
-  // TODO authorize with request context
 
   /**
    * Applies the given authorization check to the request.
@@ -229,7 +225,14 @@ abstract class SecurityDirectives extends SchemeDirectives {
     }
   }
 
-  // TODO authorizeAsync with request context
+  /**
+   * Applies the given authorization check to the request.
+   * If the check fails the route is rejected with an [[akka.http.javadsl.server.AuthorizationFailedRejection]].
+   */
+  @CorrespondsTo("authorize")
+  def authorizeWithRequestContext(check: akka.japi.function.Function[RequestContext, Boolean], inner: Supplier[Route]): Route = RouteAdapter {
+    D.authorize(rc => check(RequestContext.wrap(rc)))(inner.get().delegate)
+  }
 
   /**
    * Applies the given authorization check to the request.
@@ -239,6 +242,16 @@ abstract class SecurityDirectives extends SchemeDirectives {
     D.authorizeAsync(check.get().toScala) {
       inner.get().delegate
     }
+  }
+
+  /**
+   * Asynchronous version of [[authorize]].
+   * If the [[CompletionStage]] fails or is completed with `false`
+   * authorization fails and the route is rejected with an [[akka.http.javadsl.server.AuthorizationFailedRejection]].
+   */
+  @CorrespondsTo("authorizeAsync")
+  def authorizeAsyncWithRequestContext(check: akka.japi.function.Function[RequestContext, CompletionStage[Boolean]], inner: Supplier[Route]): Route = RouteAdapter {
+    D.authorizeAsync(rc => check(RequestContext.wrap(rc)).toScala)(inner.get().delegate)
   }
 
   /**
