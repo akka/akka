@@ -88,8 +88,11 @@ private[akka] class Transport(
     Aeron.connect(ctx)
   }
 
+  private val taskRunner = new TaskRunner(system)
+
   def start(): Unit = {
-    Source.fromGraph(new AeronSource(inboundChannel, aeron))
+    taskRunner.start()
+    Source.fromGraph(new AeronSource(inboundChannel, aeron, taskRunner))
       .async // FIXME use dedicated dispatcher for AeronSource
       .map(ByteString.apply) // TODO we should use ByteString all the way
       .via(inboundFlow)
@@ -98,6 +101,7 @@ private[akka] class Transport(
 
   def shutdown(): Future[Done] = {
     // FIXME stop the AeronSource first?
+    taskRunner.stop()
     aeron.close()
     Future.successful(Done)
   }
@@ -109,7 +113,7 @@ private[akka] class Transport(
     Flow.fromGraph(killSwitch.flow[Send])
       .via(encoder)
       .map(_.toArray) // TODO we should use ByteString all the way
-      .to(new AeronSink(outboundChannel, aeron))
+      .to(new AeronSink(outboundChannel, aeron, taskRunner))
   }
 
   // TODO: Try out parallelized serialization (mapAsync) for performance

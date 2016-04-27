@@ -5,11 +5,9 @@ package akka.remote.artery
 
 import java.net.InetAddress
 import java.util.concurrent.Executors
-
 import scala.collection.AbstractIterator
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import akka.actor._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
@@ -19,9 +17,9 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-
 import io.aeron.Aeron
 import io.aeron.driver.MediaDriver
+import akka.stream.KillSwitches
 
 object AeronStreamMaxThroughputSpec extends MultiNodeConfig {
   val first = role("first")
@@ -91,6 +89,12 @@ abstract class AeronStreamMaxThroughputSpec
     Aeron.connect(ctx)
   }
 
+  val taskRunner = {
+    val r = new TaskRunner(system.asInstanceOf[ExtendedActorSystem])
+    r.start()
+    r
+  }
+
   lazy implicit val mat = ActorMaterializer()(system)
   import system.dispatcher
 
@@ -117,6 +121,8 @@ abstract class AeronStreamMaxThroughputSpec
 
   override def afterAll(): Unit = {
     reporterExecutor.shutdown()
+    taskRunner.stop()
+    aeron.close()
     runOn(second) {
       println(plot.csv(system.name))
     }
@@ -156,7 +162,9 @@ abstract class AeronStreamMaxThroughputSpec
       var t0 = System.nanoTime()
       var count = 0L
       val done = TestLatch(1)
-      Source.fromGraph(new AeronSource(channel(second), aeron))
+      val killSwitch = KillSwitches.shared(testName)
+      Source.fromGraph(new AeronSource(channel(second), aeron, taskRunner))
+        .via(killSwitch.flow)
         .runForeach { bytes ⇒
           rep.onMessage(1, bytes.length)
           count += 1
@@ -165,6 +173,7 @@ abstract class AeronStreamMaxThroughputSpec
           } else if (count == totalMessages) {
             printTotal(testName, totalMessages, t0, payloadSize)
             done.countDown()
+            killSwitch.shutdown()
           }
         }.onFailure {
           case e ⇒
@@ -184,7 +193,7 @@ abstract class AeronStreamMaxThroughputSpec
       val t0 = System.nanoTime()
       Source.fromIterator(() ⇒ iterate(1, totalMessages))
         .map { n ⇒ payload }
-        .runWith(new AeronSink(channel(second), aeron))
+        .runWith(new AeronSink(channel(second), aeron, taskRunner))
 
       enterBarrier(testName + "-done")
     }
