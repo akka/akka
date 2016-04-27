@@ -6,9 +6,11 @@ package akka.http.javadsl
 import java.util.{ Collection ⇒ JCollection, Optional }
 import javax.net.ssl.{ SSLContext, SSLParameters }
 import akka.http.scaladsl
+import akka.japi.Util
 import akka.stream.TLSClientAuth
 
 import scala.compat.java8.OptionConverters
+import scala.collection.JavaConverters._
 
 object ConnectionContext {
   //#https-context-creation
@@ -23,7 +25,12 @@ object ConnectionContext {
             enabledProtocols: Optional[JCollection[String]],
             clientAuth: Optional[TLSClientAuth],
             sslParameters: Optional[SSLParameters]) =
-    scaladsl.ConnectionContext.https(sslContext, sslParameters = OptionConverters.toScala(sslParameters))
+    scaladsl.ConnectionContext.https(
+      sslContext,
+      OptionConverters.toScala(enabledCipherSuites).map(Util.immutableSeq(_)),
+      OptionConverters.toScala(enabledProtocols).map(Util.immutableSeq(_)),
+      OptionConverters.toScala(clientAuth),
+      OptionConverters.toScala(sslParameters))
   //#https-context-creation
 
   /** Used to serve HTTP traffic. */
