@@ -61,12 +61,20 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   def `quoted-cpair` = `quoted-pair`
 
   // ******************************************************************************************
+  // http://tools.ietf.org/html/rfc7234#section-5.3
+  // ******************************************************************************************
+
+  def `expire-date`: Rule1[DateTime] = rule {
+    (`HTTP-date` | zeroOrMore(ANY) ~ push(DateTime.MinValue)) ~ OWS
+  }
+
+  // ******************************************************************************************
   // http://tools.ietf.org/html/rfc7231#section-7.1.1.1
   // but more lenient where we have already seen differing implementations in the field
   // ******************************************************************************************
 
   def `HTTP-date`: Rule1[DateTime] = rule {
-    (`IMF-fixdate` | `asctime-date` | '0' ~ push(DateTime.MinValue)) ~ OWS
+    (`IMF-fixdate` | `asctime-date`) ~ OWS
   }
 
   def `IMF-fixdate` = rule { // mixture of the spec-ed `IMF-fixdate` and `rfc850-date`
@@ -251,7 +259,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   }
 
   def `expires-av` = rule {
-    ignoreCase("expires=") ~ OWS ~ `HTTP-date` ~> { (c: HttpCookie, dt: DateTime) ⇒ c.copy(expires = Some(dt)) }
+    ignoreCase("expires=") ~ OWS ~ `expire-date` ~> { (c: HttpCookie, dt: DateTime) ⇒ c.copy(expires = Some(dt)) }
   }
 
   def `max-age-av` = rule {
