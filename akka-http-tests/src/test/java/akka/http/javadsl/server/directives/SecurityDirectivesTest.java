@@ -7,7 +7,6 @@ package akka.http.javadsl.server.directives;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
 import akka.http.javadsl.model.StatusCodes;
 import org.junit.Test;
 
@@ -19,6 +18,8 @@ import akka.http.javadsl.model.headers.Authorization;
 import akka.http.javadsl.model.headers.BasicHttpCredentials;
 import akka.http.javadsl.model.headers.HttpChallenge;
 import akka.http.javadsl.testkit.*;
+
+import static akka.http.javadsl.server.PathMatchers.*;
 
 public class SecurityDirectivesTest extends JUnitRouteTest {
 
@@ -54,6 +55,18 @@ public class SecurityDirectivesTest extends JUnitRouteTest {
       ),
       path("oauthSecure", () ->
         authenticateOAuth2Async("test-realm", this::authenticateToken, this::securedRoute)
+      ),
+      path(segment("authorize").slash(integerSegment()), (n) ->
+        authorize(() -> n == 1, () -> complete("authorized"))
+      ),
+      path(segment("authorizeAsync").slash(integerSegment()), (n) ->
+        authorizeAsync(() -> CompletableFuture.completedFuture(n == 1), () -> complete("authorized"))
+      ),
+      path(segment("authorizeWithRequestContext").slash(integerSegment()), (n) ->
+        authorizeWithRequestContext((ctx) -> n == 1, () -> complete("authorized"))
+      ),
+      path(segment("authorizeAsyncWithRequestContext").slash(integerSegment()), (n) ->
+        authorizeAsyncWithRequestContext((ctx) -> CompletableFuture.completedFuture(n == 1), () -> complete("authorized"))
       )
     );
 
@@ -132,4 +145,47 @@ public class SecurityDirectivesTest extends JUnitRouteTest {
       .assertStatusCode(StatusCodes.OK)
       .assertEntity("Identified as " + auth.credentials().token() + "!");
   }
+
+  @Test
+  public void testAuthorize() {
+    route.run(HttpRequest.GET("/authorize/1"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("authorized");
+
+    route.run(HttpRequest.GET("/authorize/0"))
+      .assertStatusCode(StatusCodes.FORBIDDEN);
+  }
+
+  @Test
+  public void testAuthorizeAsync() {
+    route.run(HttpRequest.GET("/authorizeAsync/1"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("authorized");
+
+    route.run(HttpRequest.GET("/authorizeAsync/0"))
+      .assertStatusCode(StatusCodes.FORBIDDEN);
+  }
+
+  @Test
+  public void testAuthorizeWithRequestContext() {
+    route.run(HttpRequest.GET("/authorizeWithRequestContext/1"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("authorized");
+
+    route.run(HttpRequest.GET("/authorizeWithRequestContext/0"))
+      .assertStatusCode(StatusCodes.FORBIDDEN);
+  }
+
+
+  @Test
+  public void testAuthorizeAsyncWithRequestContext() {
+    route.run(HttpRequest.GET("/authorizeAsyncWithRequestContext/1"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("authorized");
+
+    route.run(HttpRequest.GET("/authorizeAsyncWithRequestContext/0"))
+      .assertStatusCode(StatusCodes.FORBIDDEN);
+
+  }
+
 }
