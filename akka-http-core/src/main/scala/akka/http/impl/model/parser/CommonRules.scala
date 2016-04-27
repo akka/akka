@@ -64,7 +64,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   // http://tools.ietf.org/html/rfc7234#section-5.3
   // ******************************************************************************************
 
-  def `expire-date`: Rule1[DateTime] = rule {
+  def `expires-date`: Rule1[DateTime] = rule {
     (`HTTP-date` | zeroOrMore(ANY) ~ push(DateTime.MinValue)) ~ OWS
   }
 
@@ -259,7 +259,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   }
 
   def `expires-av` = rule {
-    ignoreCase("expires=") ~ OWS ~ `expire-date` ~> { (c: HttpCookie, dt: DateTime) ⇒ c.copy(expires = Some(dt)) }
+    ignoreCase("expires=") ~ OWS ~ `expires-date` ~> { (c: HttpCookie, dt: DateTime) ⇒ c.copy(expires = Some(dt)) }
   }
 
   def `max-age-av` = rule {
