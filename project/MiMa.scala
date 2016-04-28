@@ -764,7 +764,10 @@ object MiMa extends AutoPlugin {
         // internal api
         FilterAnyProblemStartingWith("akka.stream.impl"),
         FilterAnyProblemStartingWith("akka.http.impl.engine.parsing.BodyPartParser"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.package.printEvent")
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.package.printEvent"),
+
+        // #20362 - parser private
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.model.parser.CommonRules.expires-date")
       )
     )
   }
