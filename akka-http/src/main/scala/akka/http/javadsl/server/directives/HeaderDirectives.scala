@@ -6,14 +6,19 @@ package akka.http.javadsl.server.directives
 import java.util.Optional
 import java.util.{function => jf}
 
+import akka.actor.ReflectiveDynamicAccess
+
 import scala.compat.java8.OptionConverters
 import scala.compat.java8.OptionConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
-
 import akka.http.javadsl.model.HttpHeader
 import akka.http.javadsl.server.Route
-import akka.http.scaladsl.server.directives.{HeaderDirectives => D, HeaderMagnet}
-import akka.http.scaladsl.server.util.ClassMagnet
+import akka.http.scaladsl.model.headers.{ModeledCustomHeader, ModeledCustomHeaderCompanion}
+import akka.http.scaladsl.server.directives.{HeaderMagnet, BasicDirectives => B, HeaderDirectives => D}
+import akka.stream.ActorMaterializer
+
+import scala.reflect.ClassTag
+import scala.util.{Failure, Success}
 
 /**
  * FIXME When implementing custom headers in Java, just extend akka.http.scaladsl.model.headers.CustomHeader,
@@ -61,10 +66,31 @@ abstract class HeaderDirectives extends FutureDirectives {
    * If no header with a matching type is found the request is rejected with a [[akka.http.javadsl.server.MissingHeaderRejection]].
    */
   def headerValueByType[T <: HttpHeader](t: Class[T], inner: jf.Function[T, Route]) = RouteAdapter {
-    // TODO custom headers don't work yet
-    // TODO needs instance of check if it's a modeled header and then magically locate companion
-    D.headerValueByType(HeaderMagnet.fromClassNormalJavaHeader(t)) { value =>
-      inner.apply(value).delegate
+
+    if (classOf[ModeledCustomHeader[_]].isAssignableFrom(t)) {
+      // figure out the modeled header companion and use that to parse the header
+      val refl = new ReflectiveDynamicAccess(getClass.getClassLoader)
+      val magnet: HeaderMagnet[_] =
+        refl.getObjectFor[ModeledCustomHeaderCompanion[_]](t.getName) match {
+          case Success(companion) =>
+            new HeaderMagnet[T] {
+              override def classTag = ClassTag(t)
+              override def runtimeClass = t
+              override def extractPF = {
+                case h if h.is(companion.lowercaseName) => companion.apply(h.toString).asInstanceOf[T]
+              }
+            }
+          case Failure(ex) => throw new RuntimeException(s"Failed to find or access the ModeledCustomHeaderCompanion for [${t.getName}]", ex)
+        }
+
+      D.headerValueByType(magnet) { value =>
+        inner.apply(value.asInstanceOf[T]).delegate
+      }
+
+    } else {
+      D.headerValueByType(HeaderMagnet.fromClassNormalJavaHeader(t)) { value =>
+        inner.apply(value).delegate
+      }
     }
   }
   

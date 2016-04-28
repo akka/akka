@@ -167,38 +167,15 @@ public class HeaderDirectivesTest extends JUnitRouteTest {
       .assertEntity("false");
   }
 
-
-  public static class ShoeHeader extends ModeledCustomHeader {
-
-    private final String value;
-    private final Long shoeSize;
-
-    public ShoeHeader(String value, Long shoeSize) {
-      this.value = value;
-      this.shoeSize = shoeSize;
-    }
-
-    @Override
-    public String name() {
-      return "X-Shoe";
-    }
-
-    @Override
-    public String value() {
-      return value + "-" + shoeSize;
-    }
-
-  }
-
   @Test
   public void testValueByTypeHandlesCustomHeaders() {
-    TestRoute route = testRoute(headerValueByType(ShoeHeader.class,
-      (ShoeHeader m) -> complete(m.value())));
+    TestRoute route = testRoute(headerValueByType(SampleCustomHeader.class,
+      (SampleCustomHeader m) -> complete(m.value())));
 
     route
-      .run(HttpRequest.create().addHeader(new ShoeHeader("boots", 42L)))
+      .run(HttpRequest.create().addHeader(RawHeader.create("X-Sample-Custom-Header", "such header")))
       .assertStatusCode(StatusCodes.OK)
-      .assertEntity("boots-42");
+      .assertEntity("X-Sample-Custom-Header: such header");
 
     route
       .run(HttpRequest.create())
