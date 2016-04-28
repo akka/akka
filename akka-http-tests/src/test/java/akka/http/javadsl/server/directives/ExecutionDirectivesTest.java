@@ -18,81 +18,82 @@ import akka.http.scaladsl.server.MethodRejection;
 import akka.http.scaladsl.server.Rejection;
 
 public class ExecutionDirectivesTest extends JUnitRouteTest {
-    @Test
-    public void testCatchExceptionThrownFromHandler() {
-        Route divide = 
-            path("divide", () ->
-                parameter(StringUnmarshallers.INTEGER, "a", a ->
-                    parameter(StringUnmarshallers.INTEGER, "b", b ->
-                        complete("The result is: " + (a / b)))));
-            
+  @Test
+  public void testCatchExceptionThrownFromHandler() {
+    Route divide =
+      path("divide", () ->
+        parameter(StringUnmarshallers.INTEGER, "a", a ->
+          parameter(StringUnmarshallers.INTEGER, "b", b ->
+            complete("The result is: " + (a / b)))));
 
-        ExceptionHandler handleDivByZero = ExceptionHandler.newBuilder()
-            .match(ArithmeticException.class, t -> complete(StatusCodes.BAD_REQUEST, "Congratulations you provoked a division by zero!"))
-            .build();
 
-        TestRoute route =
-            testRoute(
-                handleExceptions(handleDivByZero, () -> divide)
-            );
+    ExceptionHandler handleDivByZero = ExceptionHandler.newBuilder()
+      .match(ArithmeticException.class, t -> complete(StatusCodes.BAD_REQUEST, "Congratulations you provoked a division by zero!"))
+      .build();
 
-        route.run(HttpRequest.GET("/divide?a=10&b=5"))
-            .assertEntity("The result is: 2");
+    TestRoute route =
+      testRoute(
+        handleExceptions(handleDivByZero, () -> divide)
+      );
 
-        route.run(HttpRequest.GET("/divide?a=10&b=0"))
-            .assertStatusCode(StatusCodes.BAD_REQUEST)
-            .assertEntity("Congratulations you provoked a division by zero!");
+    route.run(HttpRequest.GET("/divide?a=10&b=5"))
+      .assertEntity("The result is: 2");
+
+    route.run(HttpRequest.GET("/divide?a=10&b=0"))
+      .assertStatusCode(StatusCodes.BAD_REQUEST)
+      .assertEntity("Congratulations you provoked a division by zero!");
+  }
+
+  @Test
+  public void testHandleMethodRejection() {
+    RejectionHandler rejectionHandler = RejectionHandler.newBuilder()
+      .handle(MethodRejection.class, r -> complete(StatusCodes.BAD_REQUEST, "Whoopsie! Unsupported method. Supported would have been " + r.supported().value()))
+      .build();
+
+    TestRoute route =
+      testRoute(
+        handleRejections(rejectionHandler, () ->
+          get(() -> complete("Successful!"))
+        )
+      );
+
+    route.run(HttpRequest.GET("/"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("Successful!");
+
+    route.run(HttpRequest.POST("/"))
+      .assertStatusCode(StatusCodes.BAD_REQUEST)
+      .assertEntity("Whoopsie! Unsupported method. Supported would have been GET");
+  }
+
+  public static final class TooManyRequestsRejection implements Rejection {
+    final public String message;
+
+    TooManyRequestsRejection(String message) {
+      this.message = message;
     }
+  }
 
-    @Test
-    public void testHandleMethodRejection() {
-        RejectionHandler rejectionHandler = RejectionHandler.newBuilder()
-            .handle(MethodRejection.class, r -> complete(StatusCodes.BAD_REQUEST, "Whoopsie! Unsupported method. Supported would have been " + r.supported().value()))
-            .build();
+  private final Route testRoute = extractUri(uri -> {
+    if (uri.path().startsWith("/test"))
+      return complete("Successful!");
+    else
+      return reject(new TooManyRequestsRejection("Too many requests for busy path!"));
+  });
 
-        TestRoute route =
-            testRoute(
-               handleRejections(rejectionHandler, () ->
-                   get(() -> complete("Successful!"))
-               )
-            );
+  @Test
+  public void testHandleCustomRejection() {
+    RejectionHandler rejectionHandler = RejectionHandler.newBuilder()
+      .handle(TooManyRequestsRejection.class, rej -> complete(StatusCodes.TOO_MANY_REQUESTS, rej.message))
+      .build();
 
-        route.run(HttpRequest.GET("/"))
-            .assertStatusCode(StatusCodes.OK)
-            .assertEntity("Successful!");
+    TestRoute route = testRoute(handleRejections(rejectionHandler, () -> testRoute));
 
-        route.run(HttpRequest.POST("/"))
-            .assertStatusCode(StatusCodes.BAD_REQUEST)
-            .assertEntity("Whoopsie! Unsupported method. Supported would have been GET");
-    }
+    route.run(HttpRequest.GET("/test"))
+      .assertStatusCode(StatusCodes.OK);
 
-    public static final class TooManyRequestsRejection implements Rejection {
-        final public String message;
-        TooManyRequestsRejection(String message) {
-            this.message = message;
-        }
-    }
-
-    private final Route testRoute = extractUri(uri -> {
-        if (uri.path().startsWith("/test"))
-            return complete("Successful!");
-        else
-            return reject(new TooManyRequestsRejection("Too many requests for busy path!"));
-    });
-
-    @Test
-    public void testHandleCustomRejection() {
-        RejectionHandler rejectionHandler = RejectionHandler.newBuilder()
-            .handle(TooManyRequestsRejection.class, rej -> complete(StatusCodes.TOO_MANY_REQUESTS, rej.message))
-            .build();
-
-        TestRoute route = testRoute(handleRejections(rejectionHandler, () -> testRoute));
-
-        route.run(HttpRequest.GET("/test"))
-                .assertStatusCode(StatusCodes.OK);
-
-        route.run(HttpRequest.GET("/other"))
-                .assertStatusCode(StatusCodes.TOO_MANY_REQUESTS)
-                .assertEntity("Too many requests for busy path!");
-    }
+    route.run(HttpRequest.GET("/other"))
+      .assertStatusCode(StatusCodes.TOO_MANY_REQUESTS)
+      .assertEntity("Too many requests for busy path!");
+  }
 }
