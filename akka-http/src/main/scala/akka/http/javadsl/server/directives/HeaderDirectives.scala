@@ -60,38 +60,35 @@ abstract class HeaderDirectives extends FutureDirectives {
   }
 
   /**
-   * FIXME: WARNING: Custom headers don't work yet with this directive!
-   *
    * Extracts the first HTTP request header of the given type.
    * If no header with a matching type is found the request is rejected with a [[akka.http.javadsl.server.MissingHeaderRejection]].
    */
   def headerValueByType[T <: HttpHeader](t: Class[T], inner: jf.Function[T, Route]) = RouteAdapter {
 
-    if (classOf[ModeledCustomHeader[_]].isAssignableFrom(t)) {
+    def magnetForModeledCustomHeader(clazz: Class[T]): HeaderMagnet[T] = {
       // figure out the modeled header companion and use that to parse the header
       val refl = new ReflectiveDynamicAccess(getClass.getClassLoader)
-      val magnet: HeaderMagnet[_] =
-        refl.getObjectFor[ModeledCustomHeaderCompanion[_]](t.getName) match {
-          case Success(companion) =>
-            new HeaderMagnet[T] {
-              override def classTag = ClassTag(t)
-              override def runtimeClass = t
-              override def extractPF = {
-                case h if h.is(companion.lowercaseName) => companion.apply(h.toString).asInstanceOf[T]
-              }
+      refl.getObjectFor[ModeledCustomHeaderCompanion[_]](t.getName) match {
+        case Success(companion) =>
+          new HeaderMagnet[T] {
+            override def classTag = ClassTag(t)
+            override def runtimeClass = t
+            override def extractPF = {
+              case h if h.is(companion.lowercaseName) => companion.apply(h.toString).asInstanceOf[T]
             }
-          case Failure(ex) => throw new RuntimeException(s"Failed to find or access the ModeledCustomHeaderCompanion for [${t.getName}]", ex)
-        }
-
-      D.headerValueByType(magnet) { value =>
-        inner.apply(value.asInstanceOf[T]).delegate
-      }
-
-    } else {
-      D.headerValueByType(HeaderMagnet.fromClassNormalJavaHeader(t)) { value =>
-        inner.apply(value).delegate
+          }
+        case Failure(ex) => throw new RuntimeException(s"Failed to find or access the ModeledCustomHeaderCompanion for [${t.getName}]", ex)
       }
     }
+
+    val magnet: HeaderMagnet[T] =
+      if (classOf[ModeledCustomHeader[_]].isAssignableFrom(t)) magnetForModeledCustomHeader(t)
+      else HeaderMagnet.fromClassNormalJavaHeader(t)
+
+    D.headerValueByType(magnet) { value =>
+      inner.apply(value).delegate
+    }
+
   }
   
   /**
