@@ -3,11 +3,9 @@
  */
 package akka.http.javadsl.server.directives;
 
-import akka.http.impl.util.Rendering;
 import akka.http.javadsl.model.HttpHeader;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
-import akka.http.javadsl.model.Uri;
 import akka.http.javadsl.model.headers.*;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
@@ -170,35 +168,37 @@ public class HeaderDirectivesTest extends JUnitRouteTest {
   }
 
 
-  public static class MyHeader extends ModeledCustomHeader {
+  public static class ShoeHeader extends ModeledCustomHeader {
 
     private final String value;
+    private final Long shoeSize;
 
-    public MyHeader(String value) {
+    public ShoeHeader(String value, Long shoeSize) {
       this.value = value;
+      this.shoeSize = shoeSize;
     }
 
     @Override
     public String name() {
-      return "X-My-Header";
+      return "X-Shoe";
     }
 
     @Override
     public String value() {
-      return value;
+      return value + "-" + shoeSize;
     }
 
   }
 
   @Test
   public void testValueByTypeHandlesCustomHeaders() {
-    TestRoute route = testRoute(headerValueByType(MyHeader.class,
-      (MyHeader m) -> complete(m.value())));
+    TestRoute route = testRoute(headerValueByType(ShoeHeader.class,
+      (ShoeHeader m) -> complete(m.value())));
 
     route
-      .run(HttpRequest.create().addHeader(new MyHeader("such-value")))
+      .run(HttpRequest.create().addHeader(new ShoeHeader("boots", 42L)))
       .assertStatusCode(StatusCodes.OK)
-      .assertEntity("such-value");
+      .assertEntity("boots-42");
 
     route
       .run(HttpRequest.create())

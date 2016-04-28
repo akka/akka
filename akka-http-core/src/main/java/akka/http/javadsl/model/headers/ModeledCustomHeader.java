@@ -3,7 +3,10 @@
  */
 package akka.http.javadsl.model.headers;
 
+import akka.http.impl.util.EnhancedString;
 import akka.http.impl.util.Rendering;
+
+import java.util.Locale;
 
 public abstract class ModeledCustomHeader extends CustomHeader {
 
@@ -25,6 +28,6 @@ public abstract class ModeledCustomHeader extends CustomHeader {
 
   @Override
   public String lowercaseName() {
-    return name().toLowerCase();
+    return new EnhancedString(name()).toRootLowerCase();
   }
 }
