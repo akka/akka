@@ -23,7 +23,7 @@ class HeaderSpec extends FreeSpec with Matchers {
       }
       "failing parse run" in {
         val Left(List(ErrorInfo(summary, detail))) = headers.`Last-Modified`.parseFromValueString("abc")
-        summary shouldEqual "Illegal HTTP header 'Last-Modified': Invalid input 'a', expected IMF-fixdate or asctime-date (line 1, column 1)"
+        summary shouldEqual "Illegal HTTP header 'Last-Modified': Invalid input 'a', expected IMF-fixdate, asctime-date or '0' (line 1, column 1)"
         detail shouldEqual
           """abc
             |^""".stripMarginWithNewline("\n")
