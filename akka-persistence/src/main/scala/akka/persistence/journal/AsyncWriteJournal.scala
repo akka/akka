@@ -9,6 +9,7 @@ import scala.concurrent.duration._
 import akka.actor._
 import akka.pattern.pipe
 import akka.persistence._
+import akka.util.Helpers.toRootLowerCase
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
@@ -36,7 +37,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
   }
 
   private val replayFilterMode: ReplayFilter.Mode =
-    config.getString("replay-filter.mode").toLowerCase(Locale.ROOT) match {
+    toRootLowerCase(config.getString("replay-filter.mode")) match {
       case "off"                   ⇒ ReplayFilter.Disabled
       case "repair-by-discard-old" ⇒ ReplayFilter.RepairByDiscardOld
       case "fail"                  ⇒ ReplayFilter.Fail

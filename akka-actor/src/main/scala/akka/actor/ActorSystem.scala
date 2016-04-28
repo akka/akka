@@ -13,6 +13,7 @@ import akka.dispatch._
 import akka.japi.Util.immutableSeq
 import akka.actor.dungeon.ChildrenContainer
 import akka.util._
+import akka.util.Helpers.toRootLowerCase
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.{ Duration }
@@ -180,7 +181,7 @@ object ActorSystem {
     final val LoggingFilter: String = getString("akka.logging-filter")
     final val LoggerStartTimeout: Timeout = Timeout(config.getMillisDuration("akka.logger-startup-timeout"))
     final val LogConfigOnStart: Boolean = config.getBoolean("akka.log-config-on-start")
-    final val LogDeadLetters: Int = config.getString("akka.log-dead-letters").toLowerCase(Locale.ROOT) match {
+    final val LogDeadLetters: Int = toRootLowerCase(config.getString("akka.log-dead-letters")) match {
       case "off" | "false" ⇒ 0
       case "on" | "true"   ⇒ Int.MaxValue
       case _               ⇒ config.getInt("akka.log-dead-letters")
