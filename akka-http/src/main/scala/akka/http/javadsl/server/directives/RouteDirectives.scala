@@ -10,6 +10,7 @@ import akka.http.javadsl.RoutingJavaMapping
 import akka.http.scaladsl.server._
 import akka.japi.Util
 
+import scala.collection.immutable.Seq
 import scala.annotation.varargs
 import scala.collection.JavaConverters._
 
