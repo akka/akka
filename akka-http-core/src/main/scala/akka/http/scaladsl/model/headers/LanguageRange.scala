@@ -56,7 +56,7 @@ object LanguageRange {
   def apply(language: Language, qValue: Float): LanguageRange = One(language, qValue)
 
   JavaInitialization.initializeStaticFieldWith(
-    `*`, classOf[jm.headers.HttpOriginRange].getField("ALL"))
+    `*`, classOf[jm.headers.LanguageRange].getField("ALL"))
 
 }
 
