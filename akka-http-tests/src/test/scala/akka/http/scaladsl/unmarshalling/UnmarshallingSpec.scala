@@ -28,6 +28,13 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
     }
   }
 
+  "The PredefinedFromStringUnmarshallers" - {
+    "booleanUnmarshaller should unmarshal '1' => true '0' => false" in {
+      Unmarshal("1").to[Boolean] should evaluateTo(true)
+      Unmarshal("0").to[Boolean] should evaluateTo(false)
+    }
+  }
+
   "The GenericUnmarshallers" - {
     implicit val rawInt: FromEntityUnmarshaller[Int] = Unmarshaller(implicit ex ⇒ bs ⇒ bs.toStrict(1.second).map(_.data.utf8String.toInt))
     implicit val rawlong: FromEntityUnmarshaller[Long] = Unmarshaller(implicit ex ⇒ bs ⇒ bs.toStrict(1.second).map(_.data.utf8String.toLong))
