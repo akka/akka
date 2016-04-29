@@ -21,6 +21,3 @@ Note that it's not required to wrap this directive with ``get`` as this directiv
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FileAndResourceDirectivesExamplesSpec.scala
-   :snippet: listDirectoryContents-examples

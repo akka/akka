@@ -17,7 +17,3 @@ For more information about the WebSocket support, see :ref:`server-side-websocke
 Example
 -------
 TODO: Add example snippet.
-
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala
-   :snippet: greeter-service

@@ -2,20 +2,10 @@
 
 authenticateOAuth2
 ==================
-
-Signature
----------
-
-.. includecode:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala#authenticator
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
-   :snippet: authenticateOAuth2
+Wraps the inner route with OAuth Bearer Token authentication support using a given ``AuthenticatorPF<T>``
 
 Description
 -----------
-Wraps the inner route with OAuth Bearer Token authentication support using a given ``AuthenticatorPF[T]``
-
 Provides support for extracting the so-called "*Bearer Token*" from the :class:`Authorization` HTTP Header,
 which is used to initiate an OAuth2 authorization.
 
@@ -23,7 +13,7 @@ which is used to initiate an OAuth2 authorization.
   This directive does not implement the complete OAuth2 protocol, but instead enables implementing it,
   by extracting the needed token from the HTTP headers.
 
-Given a function returning ``Some[T]`` upon successful authentication and ``None`` otherwise,
+Given a function returning ``Some<T>`` upon successful authentication and ``None`` otherwise,
 respectively applies the inner route or rejects the request with a :class:`AuthenticationFailedRejection` rejection,
 which by default is mapped to an ``401 Unauthorized`` response.
 

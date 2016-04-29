@@ -16,6 +16,3 @@ See :ref:`-extract-java-` and :ref:`ProvideDirectives-java` for an overview of s
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: 0extractLog

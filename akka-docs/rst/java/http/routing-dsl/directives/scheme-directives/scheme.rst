@@ -3,13 +3,6 @@
 scheme
 ======
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala
-   :snippet: scheme
-
 Description
 -----------
 Rejects a request if its Uri scheme does not match a given one.
@@ -26,7 +19,3 @@ For simply extracting the scheme name, see the :ref:`-extractScheme-java-` direc
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/SchemeDirectivesExamplesSpec.scala
-   :snippet: example-2
-

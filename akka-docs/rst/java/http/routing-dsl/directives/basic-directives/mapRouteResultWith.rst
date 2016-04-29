@@ -17,6 +17,3 @@ See :ref:`Result Transformation Directives-java` for similar directives.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: mapRouteResultWith-0

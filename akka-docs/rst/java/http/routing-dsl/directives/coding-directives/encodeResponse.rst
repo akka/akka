@@ -15,8 +15,5 @@ If the ``Accept-Encoding`` header is missing or empty or specifies an encoding o
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
-   :snippet: "encodeResponse"
 
 .. _RFC7231: http://tools.ietf.org/html/rfc7231#section-5.3.4

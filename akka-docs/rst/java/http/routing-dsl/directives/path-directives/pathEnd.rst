@@ -3,14 +3,6 @@
 pathEnd
 =======
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala
-   :snippet: pathEnd
-
-
 Description
 -----------
 Only passes the request to its inner route if the unmatched path of the ``RequestContext`` is empty, i.e. the request
@@ -24,6 +16,3 @@ inner-level to discriminate "path already fully matched" from other alternatives
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
-   :snippet: pathEnd-

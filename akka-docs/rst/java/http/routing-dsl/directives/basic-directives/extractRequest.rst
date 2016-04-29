@@ -14,6 +14,3 @@ directives. See :ref:`Request Directives-java`.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: extractRequest-example

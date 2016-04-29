@@ -16,9 +16,9 @@ To use the high-level API you need to add a dependency to the ``akka-http-experi
    overview
    routes
    directives/index
-   request-vals/index
-   handlers
    marshalling
+   exception-handling
+   rejections
    testkit
    json-support
    

@@ -3,14 +3,6 @@
 failWith
 ========
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala
-   :snippet: failWith
-
-
 Description
 -----------
 Bubbles up the given error through the route structure where it is dealt with by the closest ``handleExceptions``
@@ -33,6 +25,3 @@ exception.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala
-   :snippet: failwith-examples

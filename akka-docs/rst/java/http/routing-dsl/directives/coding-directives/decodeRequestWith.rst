@@ -11,6 +11,3 @@ Decodes the incoming request if it is encoded with one of the given encoders. If
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
-   :snippet: decodeRequestWith

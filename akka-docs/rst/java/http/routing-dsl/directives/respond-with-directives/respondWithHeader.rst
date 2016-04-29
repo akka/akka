@@ -23,6 +23,3 @@ See also :ref:`-respondWithHeaders-java-` if you'd like to add more than one hea
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala
-   :snippet: respondWithHeader-0

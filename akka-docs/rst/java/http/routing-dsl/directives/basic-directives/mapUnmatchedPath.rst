@@ -15,6 +15,3 @@ Use ``extractUnmatchedPath`` for extracting the current value of the unmatched p
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: mapUnmatchedPath-example

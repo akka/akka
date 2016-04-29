@@ -85,9 +85,9 @@ structure that forms a tree. When a request comes in it is injected into this tr
 all the branches in a depth-first manner until either some node completes it or it is fully rejected.
 
 Consider this schematic example. In place of directiveA, directiveB, etc., you can just imagine any of the available
-directives, e.g. matching a particular path, header or request parameter.
+directives, e.g. matching a particular path, header or request parameter.::
 
-import static akka.http.javadsl.server.Directives.*;
+  import static akka.http.javadsl.server.Directives.*;
 
   val route =
     directiveA(route(() ->
@@ -103,7 +103,7 @@ import static akka.http.javadsl.server.Directives.*;
       directiveE(
         ... // route 4
       )
-    ))
+    ));
 
 Here five directives form a routing tree.
 

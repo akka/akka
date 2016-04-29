@@ -20,9 +20,6 @@ For more details refer to :ref:`-getFromBrowseableDirectory-java-`.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FileAndResourceDirectivesExamplesSpec.scala
-   :snippet: getFromBrowseableDirectory-examples
 
 
 Default file listing page example
