@@ -1,4 +1,4 @@
-.. _-authenticateOrRejectWithChallenge-:
+.. _-authenticateOrRejectWithChallenge-java-:
 
 authenticateOrRejectWithChallenge
 =================================

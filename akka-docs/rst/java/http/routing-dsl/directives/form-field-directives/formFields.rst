@@ -1,4 +1,4 @@
-.. _-formFields-:
+.. _-formFields-java-:
 
 formFields
 ==========
@@ -36,14 +36,14 @@ as required, optional, or repeated, or to filter requests where a form field has
     require value of field "color" to be ``"blue"`` and extract nothing
 ``"amount".as[Int]``
     extract value of field "amount" as ``Int``, you need a matching implicit ``Unmarshaller`` in scope for that to work
-    (see also :ref:`http-unmarshalling-scala`)
+    (see also :ref:`http-unmarshalling-java`)
 ``"amount".as(unmarshaller)``
     extract value of field "amount" with an explicit ``Unmarshaller``
 ``"distance".*``
     extract multiple occurrences of field "distance" as ``Iterable[String]``
 ``"distance".as[Int].*``
     extract multiple occurrences of field "distance" as ``Iterable[Int]``, you need a matching implicit ``Unmarshaller`` in scope for that to work
-    (see also :ref:`http-unmarshalling-scala`)
+    (see also :ref:`http-unmarshalling-java`)
 ``"distance".as(unmarshaller).*``
     extract multiple occurrences of field "distance" with an explicit ``Unmarshaller``
 
@@ -52,9 +52,9 @@ instance.
 
 Requests missing a required field or field value will be rejected with an appropriate rejection.
 
-There's also a singular version, :ref:`-formField-`.
+There's also a singular version, :ref:`-formField-java-`.
 
-Query parameters can be handled in a similar way, see :ref:`-parameters-`.
+Query parameters can be handled in a similar way, see :ref:`-parameters-java-`.
 
 Unmarshalling
 -------------

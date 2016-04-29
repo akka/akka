@@ -1,4 +1,4 @@
-.. _-logRequest-:
+.. _-logRequest-java-:
 
 logRequest
 ==========

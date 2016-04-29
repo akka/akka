@@ -1,4 +1,4 @@
-.. _-mapResponseEntity-:
+.. _-mapResponseEntity-java-:
 
 mapResponseEntity
 =================

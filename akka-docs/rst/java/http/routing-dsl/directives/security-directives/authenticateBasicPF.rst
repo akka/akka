@@ -1,4 +1,4 @@
-.. _-authenticateBasicPF-:
+.. _-authenticateBasicPF-java-:
 
 authenticateBasicPF
 ===================
@@ -18,15 +18,15 @@ Wraps the inner route with Http Basic authentication support using a given ``Aut
 
 Provides support for handling `HTTP Basic Authentication`_.
 
-Refer to :ref:`-authenticateBasic-` for a detailed description of this directive.
+Refer to :ref:`-authenticateBasic-java-` for a detailed description of this directive.
 
 Its semantics are equivalent to ``authenticateBasicPF`` 's, where not handling a case in the Partial Function (PF)
 leaves the request to be rejected with a :class:`AuthenticationFailedRejection` rejection.
 
-Longer-running authentication tasks (like looking up credentials in a database) should use :ref:`-authenticateBasicAsync-`
-or :ref:`-authenticateBasicPFAsync-` if you prefer to use the ``PartialFunction`` syntax.
+Longer-running authentication tasks (like looking up credentials in a database) should use :ref:`-authenticateBasicAsync-java-`
+or :ref:`-authenticateBasicPFAsync-java-` if you prefer to use the ``PartialFunction`` syntax.
 
-See :ref:`credentials-and-timing-attacks-scala` for details about verifying the secret.
+See :ref:`credentials-and-timing-attacks-java` for details about verifying the secret.
 
 .. warning::
   Make sure to use basic authentication only over SSL/TLS because credentials are transferred in plaintext.

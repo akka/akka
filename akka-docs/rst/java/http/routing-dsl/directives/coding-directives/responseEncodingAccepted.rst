@@ -1,4 +1,4 @@
-.. _-responseEncodingAccepted-:
+.. _-responseEncodingAccepted-java-:
 
 responseEncodingAccepted
 ========================

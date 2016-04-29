@@ -1,4 +1,4 @@
-.. _-setCookie-:
+.. _-setCookie-java-:
 
 setCookie
 =========
@@ -14,7 +14,7 @@ Description
 -----------
 Adds a header to the response to request the update of the cookie with the given name on the client.
 
-Use the :ref:`-deleteCookie-` directive to delete a cookie.
+Use the :ref:`-deleteCookie-java-` directive to delete a cookie.
 
 
 Example

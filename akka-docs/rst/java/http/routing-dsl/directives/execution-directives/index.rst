@@ -1,4 +1,4 @@
-.. _ExecutionDirectives:
+.. _ExecutionDirectives-java:
 
 ExecutionDirectives
 ===================

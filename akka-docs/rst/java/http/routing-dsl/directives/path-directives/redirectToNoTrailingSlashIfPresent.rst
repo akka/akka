@@ -1,4 +1,4 @@
-.. _-redirectToNoTrailingSlashIfPresent-:
+.. _-redirectToNoTrailingSlashIfPresent-java-:
 
 redirectToNoTrailingSlashIfPresent
 ==================================
@@ -25,7 +25,7 @@ for the re-directed-to route to match.
 
 A good read on the subject of how to deal with trailing slashes is available on `Google Webmaster Central - To Slash or not to Slash`_.
 
-See also :ref:`-redirectToTrailingSlashIfMissing-` for the opposite behaviour.
+See also :ref:`-redirectToTrailingSlashIfMissing-java-` for the opposite behaviour.
 
 .. _Google Webmaster Central - To Slash or not to Slash: http://googlewebmastercentral.blogspot.de/2010/04/to-slash-or-not-to-slash.html
 
@@ -36,4 +36,4 @@ TODO: Add example snippet.
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
    :snippet: redirectToNoTrailingSlashIfPresent-0
 
-See also :ref:`-redirectToTrailingSlashIfMissing-` which achieves the opposite - redirecting paths in case they do *not* have a trailing slash.
+See also :ref:`-redirectToTrailingSlashIfMissing-java-` which achieves the opposite - redirecting paths in case they do *not* have a trailing slash.

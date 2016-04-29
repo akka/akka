@@ -1,4 +1,4 @@
-.. _-logRequestResult-:
+.. _-logRequestResult-java-:
 
 logRequestResult
 ================
@@ -23,9 +23,9 @@ Description
 -----------
 Logs both, the request and the response.
 
-This directive is a combination of :ref:`-logRequest-` and :ref:`-logResult-`.
+This directive is a combination of :ref:`-logRequest-java-` and :ref:`-logResult-java-`.
 
-See :ref:`-logRequest-` for the general description how these directives work.
+See :ref:`-logRequest-java-` for the general description how these directives work.
 
 Example
 -------

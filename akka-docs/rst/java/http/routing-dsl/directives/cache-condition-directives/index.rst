@@ -1,4 +1,4 @@
-.. _CacheConditionDirectives:
+.. _CacheConditionDirectives-java:
 
 CacheConditionDirectives
 ========================

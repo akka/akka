@@ -1,4 +1,4 @@
-.. _-requestEntityEmpty-:
+.. _-requestEntityEmpty-java-:
 
 requestEntityEmpty
 ==================
@@ -17,7 +17,7 @@ A filter that checks if the request entity is empty and only then passes process
 Otherwise, the request is rejected.
 
 
-See also :ref:`-requestEntityPresent-` for the opposite effect.
+See also :ref:`-requestEntityPresent-java-` for the opposite effect.
 
 
 Example

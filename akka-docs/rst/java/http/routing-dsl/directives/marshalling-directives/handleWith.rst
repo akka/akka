@@ -1,4 +1,4 @@
-.. _-handleWith-:
+.. _-handleWith-java-:
 
 handleWith
 ==========
@@ -28,7 +28,7 @@ to a given function without requiring any akka-http-specific functionality.
 calls ``complete`` when the function passed to ``handleWith`` returns. Using ``produce`` you
 must explicity call the completion function passed from the ``produce`` function.
 
-See :ref:`marshalling <http-marshalling-scala>` and :ref:`unmarshalling <http-unmarshalling-scala>` for guidance
+See :ref:`marshalling <http-marshalling-java>` and :ref:`unmarshalling <http-unmarshalling-java>` for guidance
 on marshalling entities with akka-http.
 
 Examples

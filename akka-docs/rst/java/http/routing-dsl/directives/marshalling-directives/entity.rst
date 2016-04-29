@@ -1,4 +1,4 @@
-.. _-entity-:
+.. _-entity-java-:
 
 entity
 ======
@@ -19,7 +19,7 @@ The ``entity`` method will either pass the ``value`` to the inner route or map t
 
 The ``entity`` directive works in conjuction with ``as`` and ``akka.http.scaladsl.unmarshalling`` to
 convert some serialized "wire format" value into a higher-level object structure.  
-:ref:`The unmarshalling documentation <http-unmarshalling-scala>` explains this process in detail.
+:ref:`The unmarshalling documentation <http-unmarshalling-java>` explains this process in detail.
 This directive simplifies extraction and error handling to the specified type from the request.
 
 An unmarshaller will return a ``Left(exception)`` in the case of an error.  This is converted to a

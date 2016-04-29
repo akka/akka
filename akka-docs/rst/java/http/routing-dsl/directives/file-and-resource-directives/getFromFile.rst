@@ -1,4 +1,4 @@
-.. _-getFromFile-:
+.. _-getFromFile-java-:
 
 getFromFile
 ===========
@@ -15,12 +15,12 @@ Description
 
 Allows exposing a file to be streamed to the client issuing the request.
 
-The ``unmatchedPath`` (see :ref:`-extractUnmatchedPath-`) of the ``RequestContext`` is first transformed by
+The ``unmatchedPath`` (see :ref:`-extractUnmatchedPath-java-`) of the ``RequestContext`` is first transformed by
 the given ``pathRewriter`` function, before being appended to the given directory name to build the final file name.
 
-To files from a given directory use :ref:`-getFromDirectory-`.
-To serve browsable directory listings use :ref:`-getFromBrowseableDirectories-`.
-To serve files from a classpath directory use :ref:`-getFromResourceDirectory-` instead.
+To files from a given directory use :ref:`-getFromDirectory-java-`.
+To serve browsable directory listings use :ref:`-getFromBrowseableDirectories-java-`.
+To serve files from a classpath directory use :ref:`-getFromResourceDirectory-java-` instead.
 
 Note that it's not required to wrap this directive with ``get`` as this directive will only respond to ``GET`` requests.
 

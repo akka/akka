@@ -1,4 +1,4 @@
-.. _-headerValueByName-:
+.. _-headerValueByName-java-:
 
 headerValueByName
 =================
@@ -18,7 +18,7 @@ The name can be given as a ``String`` or as a ``Symbol``. If no header with a ma
 is rejected with a ``MissingHeaderRejection``.
 
 If the header is expected to be missing in some cases or to customize
-handling when the header is missing use the :ref:`-optionalHeaderValueByName-` directive instead.
+handling when the header is missing use the :ref:`-optionalHeaderValueByName-java-` directive instead.
 
 Example
 -------

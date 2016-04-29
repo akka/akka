@@ -1,4 +1,4 @@
-.. _-optionalHeaderValueByType-:
+.. _-optionalHeaderValueByType-java-:
 
 optionalHeaderValueByType
 =========================
@@ -19,7 +19,7 @@ Description
 -----------
 Optionally extracts the value of the HTTP request header of the given type.
 
-The ``optionalHeaderValueByType`` directive is similar to the :ref:`-headerValueByType-` directive but always extracts
+The ``optionalHeaderValueByType`` directive is similar to the :ref:`-headerValueByType-java-` directive but always extracts
 an ``Option`` value instead of rejecting the request if no matching header could be found.
 
 .. note::
@@ -27,7 +27,7 @@ an ``Option`` value instead of rejecting the request if no matching header could
   and provide a companion extending ``ModeledCustomHeaderCompanion``, otherwise the routing
   infrastructure does now know where to search for the needed companion and header name.
 
-  To learn more about defining custom headers, read: :ref:`custom-headers-scala`.
+  To learn more about defining custom headers, read: :ref:`custom-headers-java`.
 
 Example
 -------

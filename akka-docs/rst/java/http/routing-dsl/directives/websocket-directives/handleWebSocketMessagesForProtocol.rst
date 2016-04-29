@@ -1,4 +1,4 @@
-.. _-handleWebSocketMessagesForProtocol-:
+.. _-handleWebSocketMessagesForProtocol-java-:
 
 handleWebSocketMessagesForProtocol
 ==================================
@@ -23,7 +23,7 @@ either rejected with an ``ExpectedWebSocketRequestRejection`` or an ``Unsupporte
 To support several subprotocols, for example at the same path, several instances of ``handleWebSocketMessagesForProtocol`` can
 be chained using ``~`` as you can see in the below example.
 
-For more information about the WebSocket support, see :ref:`server-side-websocket-support-scala`.
+For more information about the WebSocket support, see :ref:`server-side-websocket-support-java`.
 
 Example
 -------

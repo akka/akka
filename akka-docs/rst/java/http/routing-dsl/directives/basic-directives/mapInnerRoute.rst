@@ -1,4 +1,4 @@
-.. _-mapInnerRoute-:
+.. _-mapInnerRoute-java-:
 
 mapInnerRoute
 =============

@@ -24,7 +24,16 @@ Here's the complete example rewritten using the composable high-level API:
 .. includecode:: ../../code/docs/http/javadsl/server/HighLevelServerExample.java
   :include: high-level-server-example
 
-For learning how to work with the Routing DSL you should first understand the concept of :ref:`routes-java`.
+The core of the Routing DSL becomes available with a single import::
+
+    import akka.http.javadsl.server.Directives.*;
+
+Or by extending the ``akka.http.javadsl.server.AllDirectives`` class which brings together all directives into a single class
+for easier access::
+
+   extends AllDirectives
+
+Of course it is possible to directly import only the directives you need (i.e. ``WebSocketDirectives`` etc).
 
 .. _DRY: http://en.wikipedia.org/wiki/Don%27t_repeat_yourself
 

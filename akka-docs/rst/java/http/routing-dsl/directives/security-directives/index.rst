@@ -1,4 +1,4 @@
-.. _SecurityDirectives:
+.. _SecurityDirectives-java:
 
 SecurityDirectives
 ==================
@@ -21,7 +21,7 @@ SecurityDirectives
    extractCredentials
 
 
-.. _authentication-vs-authorization-scala:
+.. _authentication-vs-authorization-java:
 
 Authentication vs. Authorization
 --------------------------------
@@ -67,7 +67,7 @@ as defined in `RFC 6750`_, and allow users to validate and complete the protocol
 .. _RFC 6750: https://tools.ietf.org/html/rfc6750
 
 
-.. _credentials-and-timing-attacks-scala:
+.. _credentials-and-timing-attacks-java:
 
 Credentials and password timing attacks
 ---------------------------------------
