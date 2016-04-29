@@ -3,19 +3,12 @@
 optionalHeaderValuePF
 =====================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala
-   :snippet: optionalHeaderValuePF
-
 Description
 -----------
 Calls the specified partial function with the first request header the function is ``isDefinedAt`` and extracts the
 result of calling the function.
 
-The ``optionalHeaderValuePF`` directive is similar to the :ref:`-headerValuePF-java-` directive but always extracts an ``Option``
+The ``optionalHeaderValuePF`` directive is similar to the :ref:`-headerValuePF-java-` directive but always extracts an ``Optional``
 value instead of rejecting the request if no matching header could be found.
 
 Example

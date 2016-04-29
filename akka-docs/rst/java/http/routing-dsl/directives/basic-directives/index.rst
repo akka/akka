@@ -30,7 +30,7 @@ a single value or a tuple of values.
   * :ref:`-tprovide-java-`
 
 
-.. _Request Transforming Directives:
+.. _Request Transforming Directives-java:
 
 Transforming the Request(Context)
 ---------------------------------
@@ -45,7 +45,7 @@ Transforming the Request(Context)
   * :ref:`-withSettings-java-`
 
 
-.. _Response Transforming Directives:
+.. _Response Transforming Directives-java:
 
 Transforming the Response
 -------------------------
@@ -119,8 +119,6 @@ Alphabetically
    provide
    recoverRejections
    recoverRejectionsWith
-   textract
-   tprovide
    withExecutionContext
    withMaterializer
    withLog

@@ -3,13 +3,6 @@
 cookie
 ======
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CookieDirectives.scala
-   :snippet: cookie
-
 Description
 -----------
 Extracts a cookie with a given name from a request or otherwise rejects the request with a ``MissingCookieRejection`` if

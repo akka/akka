@@ -3,13 +3,6 @@
 optionalCookie
 ==============
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CookieDirectives.scala
-   :snippet: optionalCookie
-
 Description
 -----------
 Extracts an optional cookie with a given name from a request.

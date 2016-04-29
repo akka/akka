@@ -119,7 +119,7 @@ A directive can do one or more of the following:
 * Transform the incoming ``RequestContext`` before passing it on to its inner route (i.e. modify the request)
 * Filter the ``RequestContext`` according to some logic, i.e. only pass on certain requests and reject others
 * Extract values from the ``RequestContext`` and make them available to its inner route as "extractions"
-* Chain some logic into the :ref:`RouteResult-java` future transformation chain (i.e. modify the response or rejection)
+* Chain some logic into the :class:`RouteResult` future transformation chain (i.e. modify the response or rejection)
 * Complete the request
 
 This means a ``Directive`` completely wraps the functionality of its inner route and can apply arbitrarily complex

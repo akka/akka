@@ -3,13 +3,6 @@
 completeWith
 ============
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala
-   :snippet: completeWith[T]
-
 Description
 -----------
 Uses the marshaller for a given type to produce a completion function that is passed to its

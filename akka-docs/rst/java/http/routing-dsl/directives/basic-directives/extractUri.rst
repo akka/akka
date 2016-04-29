@@ -3,13 +3,6 @@
 extractUri
 ==========
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala
-   :snippet: extractUri
-
 Description
 -----------
 Access the full URI of the request.

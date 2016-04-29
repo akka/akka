@@ -3,24 +3,17 @@
 mapRouteResultPF
 ================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala
-   :snippet: mapRouteResultPF
-
 Description
 -----------
 *Partial Function* version of :ref:`-mapRouteResult-java-`.
 
 Changes the message the inner route sends to the responder.
 
-The ``mapRouteResult`` directive is used as a building block for :ref:`Custom Directives` to transform the
-:ref:`RouteResult-java` coming back from the inner route. It's similar to the :ref:`-mapRouteResult-java-` directive but allows to
+The ``mapRouteResult`` directive is used as a building block for :ref:`Custom Directives-java` to transform the
+:class:`RouteResult` coming back from the inner route. It's similar to the :ref:`-mapRouteResult-java-` directive but allows to
 specify a partial function that doesn't have to handle all potential ``RouteResult`` instances.
 
-See :ref:`Result Transformation Directives` for similar directives.
+See :ref:`Result Transformation Directives-java` for similar directives.
 
 Example
 -------
