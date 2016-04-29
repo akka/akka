@@ -9,7 +9,7 @@ Wraps the inner route with Http Basic authentication support using a given ``Aut
 
 Provides support for handling `HTTP Basic Authentication`_.
 
-Given a function returning ``Some[T]`` upon successful authentication and ``None`` otherwise,
+Given a function returning an ``Optional<T>`` with a value upon successful authentication and an empty ``Optional<T>`` otherwise,
 respectively applies the inner route or rejects the request with a :class:`AuthenticationFailedRejection` rejection,
 which by default is mapped to an ``401 Unauthorized`` response.
 

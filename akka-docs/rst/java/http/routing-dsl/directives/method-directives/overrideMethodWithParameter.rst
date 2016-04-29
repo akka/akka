@@ -19,6 +19,6 @@ This directive is useful for:
 
 Example
 -------
+TODO add example snippet:
 
-.. 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java#overrideMethodWithParameter-0
+.. includecode:: ../../../../code/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java#overrideMethodWithParameter

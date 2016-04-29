@@ -3,13 +3,6 @@
 selectPreferredLanguage
 =======================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MiscDirectives.scala
-   :snippet: selectPreferredLanguage
-
 Description
 -----------
 Inspects the request's ``Accept-Language`` header and determines,

@@ -3,13 +3,6 @@
 extractClientIP
 ===============
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MiscDirectives.scala
-   :snippet: extractClientIP
-
 Description
 -----------
 Provides the value of ``X-Forwarded-For``, ``Remote-Address``, or ``X-Real-IP`` headers as an instance of ``HttpIp``.

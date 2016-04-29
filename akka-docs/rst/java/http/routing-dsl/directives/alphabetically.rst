@@ -150,7 +150,6 @@ Directive                                        Description
 :ref:`-parameter-java-`                          Extracts a query parameter value from the request
 :ref:`-parameterMap-java-`                       Extracts the request's query parameters as a ``Map[String, String]``
 :ref:`-parameterMultiMap-java-`                  Extracts the request's query parameters as a ``Map[String, List[String]]``
-:ref:`-parameters-java-`                         Extracts a number of query parameter values from the request
 :ref:`-parameterSeq-java-`                       Extracts the request's query parameters as a ``Seq[(String, String)]``
 :ref:`-pass-java-`                               Always simply passes the request on to its inner route, i.e. doesn't do
                                                  anything, neither with the request nor the response

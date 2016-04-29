@@ -5,15 +5,6 @@ authenticateOAuth2PFAsync
 
 Wraps the inner route with OAuth Bearer Token authentication support using a given ``AsyncAuthenticatorPF[T]``.
 
-Signature
----------
-
-.. includecode:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala#authenticator
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
-   :snippet: authenticateOAuth2PFAsync
-
 Description
 -----------
 

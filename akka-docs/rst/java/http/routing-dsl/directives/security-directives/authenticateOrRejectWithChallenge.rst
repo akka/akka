@@ -2,20 +2,10 @@
 
 authenticateOrRejectWithChallenge
 =================================
-
-Signature
----------
-
-.. includecode:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala#authentication-result
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
-   :snippet: authenticateOrRejectWithChallenge
+Lifts an authenticator function into a directive.
 
 Description
 -----------
-Lifts an authenticator function into a directive.
-
 This directive allows implementing the low level challange-response type of authentication that some services may require.
 
 More details about challenge-response authentication are available in the `RFC 2617`_, `RFC 7616`_ and `RFC 7617`_.
