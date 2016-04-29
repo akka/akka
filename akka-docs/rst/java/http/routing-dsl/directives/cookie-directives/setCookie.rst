@@ -3,13 +3,6 @@
 setCookie
 =========
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CookieDirectives.scala
-   :snippet: setCookie
-
 Description
 -----------
 Adds a header to the response to request the update of the cookie with the given name on the client.

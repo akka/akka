@@ -3,19 +3,12 @@
 entity
 ======
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala
-   :snippet: entity
-
 Description
 -----------
 Unmarshalls the request entity to the given type and passes it to its inner Route.  An unmarshaller
 returns an ``Either`` with ``Right(value)`` if successful or ``Left(exception)`` for a failure.
 The ``entity`` method will either pass the ``value`` to the inner route or map the ``exception`` to a
-``akka.http.scaladsl.server.Rejection``.
+:class:``akka.http.javadsl.server.Rejection``.
 
 The ``entity`` directive works in conjuction with ``as`` and ``akka.http.scaladsl.unmarshalling`` to
 convert some serialized "wire format" value into a higher-level object structure.  

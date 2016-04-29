@@ -3,13 +3,6 @@
 uploadedFile
 ============
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileUploadDirectives.scala
-   :snippet: uploadedFile
-
 Description
 -----------
 Streams the contents of a file uploaded as a multipart form into a temporary file on disk and provides the file and

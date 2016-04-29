@@ -52,7 +52,6 @@ abstract class CodingDirectives extends CacheConditionDirectives {
    *
    * If [encoders] is empty, no encoding is performed.
    */
-  // TODO #19882: provide Java API for creating Encoder, by extracting a Java interface from the Scala trait
   def encodeResponseWith(coders: java.lang.Iterable[Coder], inner: Supplier[Route]): Route = RouteAdapter {
     coders.asScala.toList match {
       case head :: tail ⇒
@@ -68,7 +67,6 @@ abstract class CodingDirectives extends CacheConditionDirectives {
    * Decodes the incoming request using the given Decoder.
    * If the request encoding doesn't match the request is rejected with an `UnsupportedRequestEncodingRejection`.
    */
-  // TODO #19882: provide Java API for creating Decoder, by extracting a Java interface from the Scala trait
   def decodeRequestWith(coder: Coder, inner: Supplier[Route]): Route = RouteAdapter {
     D.decodeRequestWith(coder._underlyingScalaCoder) {
       inner.get.delegate

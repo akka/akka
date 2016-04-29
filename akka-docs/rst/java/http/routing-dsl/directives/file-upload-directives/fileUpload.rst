@@ -3,13 +3,6 @@
 fileUpload
 ==========
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileUploadDirectives.scala
-   :snippet: fileUpload
-
 Description
 -----------
 Simple access to the stream of bytes for a file uploaded as a multipart form together with metadata

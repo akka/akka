@@ -3,13 +3,6 @@
 headerValuePF
 =============
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala
-   :snippet: headerValuePF
-
 Description
 -----------
 Calls the specified partial function with the first request header the function is ``isDefinedAt`` and extracts the

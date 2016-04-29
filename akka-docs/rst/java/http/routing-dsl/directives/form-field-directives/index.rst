@@ -7,7 +7,6 @@ FormFieldDirectives
    :maxdepth: 1
 
    formField
-   formFields
    formFieldSeq
    formFieldMap
    formFieldMultiMap

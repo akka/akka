@@ -3,19 +3,13 @@
 completeOrRecoverWith
 =====================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FutureDirectives.scala
-   :snippet: completeOrRecoverWith
-
 Description
 -----------
-If the ``Future[T]`` succeeds the request is completed using the value's marshaller (this directive therefore
-requires a marshaller for the future's parameter type to be implicitly available). The execution of the inner
-route passed to this directive is only executed if the given future completed with a failure,
-exposing the reason of failure as a extraction of type ``Throwable``.
+"Unwraps" a `CompletionStage<T>` and runs the inner route when the stage has failed
+with the stage's failure exception as an extraction of type ``Throwable``.
+If the completion stage succeeds the request is completed using the values marshaller
+(This directive therefore requires a marshaller for the completion stage value type to be
+provided.)
 
 To handle the successful case manually as well, use the :ref:`-onComplete-java-` directive, instead.
 
