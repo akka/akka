@@ -3,18 +3,9 @@
 authenticateBasicPFAsync
 ========================
 
-Signature
----------
-
-.. includecode:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala#async-authenticator-pf
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
-   :snippet: authenticateBasicPFAsync
-
 Description
 -----------
-Wraps the inner route with Http Basic authentication support using a given ``AsyncAuthenticatorPF[T]``.
+Wraps the inner route with Http Basic authentication support using a given ``AsyncAuthenticatorPF<T>``.
 
 Provides support for handling `HTTP Basic Authentication`_.
 

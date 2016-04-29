@@ -3,18 +3,6 @@
 authenticateBasic
 =================
 
-Signature
----------
-
-TODO: Add example snippet.
-
-.. 
-.. includecode:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala#authenticator
-
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
-   :snippet: authenticateBasic
-
 Description
 -----------
 Wraps the inner route with Http Basic authentication support using a given ``Authenticator[T]``.
