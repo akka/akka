@@ -167,7 +167,7 @@ trait LowPriorityHeaderMagnetImplicits {
      new HeaderMagnet[T] {
        override def classTag: ClassTag[T] = ClassTag(clazz)
        override def runtimeClass: Class[T] = clazz
-       override def extractPF: PartialFunction[HttpHeader, T] = { case x: T if runtimeClass.isAssignableFrom(x.getClass) => x }
+       override def extractPF: PartialFunction[HttpHeader, T] = { case x if runtimeClass.isAssignableFrom(x.getClass) => x.asInstanceOf[T] }
      }
 
   implicit def fromUnitNormalHeader[T <: HttpHeader](u: Unit)(implicit tag: ClassTag[T]): HeaderMagnet[T] =
@@ -177,6 +177,6 @@ trait LowPriorityHeaderMagnetImplicits {
     new HeaderMagnet[T] {
       val classTag: ClassTag[T] = tag
       val runtimeClass: Class[T] = tag.runtimeClass.asInstanceOf[Class[T]]
-      val extractPF: PartialFunction[Any, T] = { case x: T if runtimeClass.isAssignableFrom(x.getClass) ⇒ x }
+      val extractPF: PartialFunction[Any, T] = { case x if runtimeClass.isAssignableFrom(x.getClass) ⇒ x.asInstanceOf[T] }
     }
 }
