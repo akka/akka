@@ -15,6 +15,3 @@ See :ref:`exception-handling-java` for general information about options for han
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ExecutionDirectivesExamplesSpec.scala
-   :snippet: handleExceptions

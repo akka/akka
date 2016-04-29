@@ -21,6 +21,3 @@ See :ref:`-recoverRejections-java-` (the synchronous equivalent of this directiv
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: recoverRejectionsWith

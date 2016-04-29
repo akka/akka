@@ -3,14 +3,6 @@
 pathSingleSlash
 ===============
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala
-   :snippet: pathSingleSlash
-
-
 Description
 -----------
 Only passes the request to its inner route if the unmatched path of the ``RequestContext``
@@ -23,6 +15,3 @@ This directive is a simple alias for ``pathPrefix(PathEnd)`` and is mostly used 
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
-   :snippet: pathSingleSlash-

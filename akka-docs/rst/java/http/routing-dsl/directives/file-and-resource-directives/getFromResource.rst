@@ -6,7 +6,7 @@ getFromResource
 Description
 -----------
 
-Completes GET requests with the content of the given classpath resource.
+Completes ``GET`` requests with the content of the given classpath resource.
 
 For details refer to :ref:`-getFromFile-java-` which works the same way but obtaining the file from the filesystem
 instead of the applications classpath.
@@ -16,6 +16,3 @@ Note that it's not required to wrap this directive with ``get`` as this directiv
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FileAndResourceDirectivesExamplesSpec.scala
-   :snippet: getFromResource-examples

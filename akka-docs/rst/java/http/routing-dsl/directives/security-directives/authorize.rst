@@ -2,18 +2,10 @@
 
 authorize
 =========
-
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
-   :snippet: authorize
+Applies the given authorization check to the request.
 
 Description
 -----------
-Applies the given authorization check to the request.
-
 The user-defined authorization check can either be supplied as a ``=> Boolean`` value which is calculated
 just from information out of the lexical scope, or as a function ``RequestContext => Boolean`` which can also
 take information from the request itself into account.
@@ -33,6 +25,3 @@ See also :ref:`-authorize-java-` for the asynchronous version of this directive.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala
-   :snippet: 0authorize-0

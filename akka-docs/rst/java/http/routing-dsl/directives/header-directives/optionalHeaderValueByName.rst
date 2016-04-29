@@ -13,6 +13,3 @@ an ``Optional`` value instead of rejecting the request if no matching header cou
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
-   :snippet: optionalHeaderValueByName-0

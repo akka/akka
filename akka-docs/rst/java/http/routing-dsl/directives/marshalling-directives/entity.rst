@@ -32,26 +32,12 @@ Examples
 
 The following example uses ``spray-json`` to unmarshall a json request into a simple ``Person`` 
 class.  It utilizes ``SprayJsonSupport`` via the ``PersonJsonSupport`` object as the in-scope unmarshaller.
-TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
-   :snippet: person-case-class
-TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
-   :snippet: person-json-support
 
-TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
-   :snippet: example-entity-with-json
+TODO: Add example snippets.
 
 It is also possible to use the ``entity`` directive to obtain raw ``JsValue`` ( spray-json_ ) objects, by simply using
 ``as[JsValue]``, or any other JSON type for which you have marshallers in-scope.
-TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
-   :snippet: example-entity-with-raw-json
 
+TODO: Add example snippet.
 
 .. _spray-json: https://github.com/spray/spray-json

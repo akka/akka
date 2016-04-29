@@ -3,14 +3,6 @@
 rejectEmptyResponse
 ===================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MiscDirectives.scala
-   :snippet: rejectEmptyResponse
-
-
 Description
 -----------
 Replaces a response with no content with an empty rejection.
@@ -22,6 +14,3 @@ usually marshalled to an empty but successful result. In many cases ``None`` sho
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
-  :snippet: rejectEmptyResponse-example

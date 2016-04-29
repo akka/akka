@@ -52,9 +52,9 @@ instance.
 
 Requests missing a required field or field value will be rejected with an appropriate rejection.
 
-There's also a singular version, :ref:`-formField-`.
+There's also a singular version, :ref:`-formField-scala-`.
 
-Query parameters can be handled in a similar way, see :ref:`-parameters-`.
+Query parameters can be handled in a similar way, see :ref:`-parameters-scala-`.
 
 Unmarshalling
 -------------

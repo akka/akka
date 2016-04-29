@@ -120,4 +120,30 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
         "This HEAD request, clearly is not a GET!");
     //#extractMethod
   }
+  
+  @Test
+  public void testOverrideMethodWithParameter() {
+    //#overrideMethodWithParameter
+
+    final Route route = route(
+        overrideMethodWithParameter("method", () -> 
+          route(
+            get(() -> complete("This looks like a GET request.")),
+            post(() -> complete("This looks like a POST request."))
+          )
+        )
+    );
+
+    
+    // tests:
+    testRoute(route).run(HttpRequest.GET("/?method=POST")).assertEntity(
+        "This looks like a POST request.");
+
+    testRoute(route).run(HttpRequest.POST("/?method=get"))
+        .assertEntity("This looks like a GET request.");
+
+    testRoute(route).run(HttpRequest.GET("/?method=hallo")).assertEntity(
+        "This HEAD request, clearly is not a GET!");
+    //#overrideMethodWithParameter
+  }
 }

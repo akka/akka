@@ -3,14 +3,6 @@
 rawPathPrefixTest
 =================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala
-   :snippet: rawPathPrefixTest
-
-
 Description
 -----------
 Checks whether the unmatched path of the ``RequestContext`` has a prefix matched by the given ``PathMatcher``.
@@ -33,6 +25,3 @@ from the URI. If the match fails the request is rejected with an :ref:`empty rej
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
-   :snippet: rawPathPrefixTest-

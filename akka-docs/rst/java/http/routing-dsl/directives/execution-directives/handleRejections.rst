@@ -14,6 +14,3 @@ See :ref:`rejections-java` for general information about options for handling re
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ExecutionDirectivesExamplesSpec.scala
-   :snippet: handleRejections

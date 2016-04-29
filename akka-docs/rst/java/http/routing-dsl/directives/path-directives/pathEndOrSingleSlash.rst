@@ -3,14 +3,6 @@
 pathEndOrSingleSlash
 ====================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala
-   :snippet: pathEndOrSingleSlash
-
-
 Description
 -----------
 Only passes the request to its inner route if the unmatched path of the ``RequestContext`` is either empty
@@ -25,6 +17,3 @@ It is equivalent to ``pathEnd | pathSingleSlash`` but slightly more efficient.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
-   :snippet: pathEndOrSingleSlash-

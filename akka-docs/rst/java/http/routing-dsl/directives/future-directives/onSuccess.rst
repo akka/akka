@@ -15,6 +15,3 @@ To handle the ``Failure`` case manually as well, use :ref:`-onComplete-java-`, i
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala
-   :snippet: onSuccess

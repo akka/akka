@@ -18,8 +18,5 @@ response encoding is used. Otherwise the request is rejected.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
-   :snippet: encodeResponseWith
 
 .. _RFC7231: http://tools.ietf.org/html/rfc7231#section-5.3.4

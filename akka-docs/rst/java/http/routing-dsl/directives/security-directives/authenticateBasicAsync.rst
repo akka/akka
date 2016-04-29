@@ -2,16 +2,15 @@
 
 authenticateBasicAsync
 ======================
+Wraps the inner route with Http Basic authentication support using a given ``AsyncAuthenticator<T>``.
 
 Description
 -----------
-Wraps the inner route with Http Basic authentication support using a given ``AsyncAuthenticator[T]``.
-
-This variant of the :ref:`-authenticateBasic-java-` directive returns a ``Future[Option[T]]`` which allows freeing up the routing
+This variant of the :ref:`-authenticateBasic-java-` directive returns a ``Future<Optional<T>>`` which allows freeing up the routing
 layer of Akka HTTP, freeing it for other requests. It should be used whenever an authentication is expected to take
 a longer amount of time (e.g. looking up the user in a database).
 
-In case the returned option is ``None`` the request is rejected with a :class:`AuthenticationFailedRejection`,
+In case the returned option is an empty ``Optional`` the request is rejected with a :class:`AuthenticationFailedRejection`,
 which by default is mapped to an ``401 Unauthorized`` response.
 
 Standard HTTP-based authentication which uses the ``WWW-Authenticate`` header containing challenge data and
@@ -27,6 +26,3 @@ See :ref:`credentials-and-timing-attacks-java` for details about verifying the s
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala
-   :snippet: authenticateBasicAsync-0
