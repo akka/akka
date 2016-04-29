@@ -1,4 +1,4 @@
-.. _FileUploadDirectives:
+.. _FileUploadDirectives-java:
 
 FileUploadDirectives
 ====================

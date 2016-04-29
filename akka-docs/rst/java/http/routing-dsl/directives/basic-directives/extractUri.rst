@@ -1,4 +1,4 @@
-.. _-extractUri-:
+.. _-extractUri-java-:
 
 extractUri
 ==========
@@ -14,7 +14,7 @@ Description
 -----------
 Access the full URI of the request.
 
-Use :ref:`SchemeDirectives`, :ref:`HostDirectives`, :ref:`PathDirectives`,  and :ref:`ParameterDirectives` for more
+Use :ref:`SchemeDirectives-java`, :ref:`HostDirectives-java`, :ref:`PathDirectives-java`,  and :ref:`ParameterDirectives-java` for more
 targeted access to parts of the URI.
 
 Example

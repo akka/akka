@@ -1,4 +1,4 @@
-.. _-mapRouteResult-:
+.. _-mapRouteResult-java-:
 
 mapRouteResult
 ==============
@@ -15,7 +15,7 @@ Description
 Changes the message the inner route sends to the responder.
 
 The ``mapRouteResult`` directive is used as a building block for :ref:`Custom Directives` to transform the
-:ref:`RouteResult` coming back from the inner route.
+:ref:`RouteResult-java` coming back from the inner route.
 
 See :ref:`Result Transformation Directives` for similar directives.
 

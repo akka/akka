@@ -1,4 +1,4 @@
-.. _-formFieldSeq-:
+.. _-formFieldSeq-java-:
 
 formFieldSeq
 ============
@@ -16,7 +16,7 @@ Extracts all HTTP form fields at once in the original order as (name, value) tup
 
 This directive can be used if the exact order of form fields is important or if parameters can occur several times.
 
-See :ref:`-formFields-` for an in-depth description.
+See :ref:`-formFields-java-` for an in-depth description.
 
 Warning
 -------

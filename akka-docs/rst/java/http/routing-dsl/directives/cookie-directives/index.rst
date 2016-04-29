@@ -1,4 +1,4 @@
-.. _CookieDirectives:
+.. _CookieDirectives-java:
 
 CookieDirectives
 ================

@@ -1,4 +1,4 @@
-.. _-mapSettings-:
+.. _-mapSettings-java-:
 
 mapSettings
 ===========
@@ -15,7 +15,7 @@ Description
 
 Transforms the ``RoutingSettings`` with a ``RoutingSettings ⇒ RoutingSettings`` function.
 
-See also :ref:`-withSettings-` or :ref:`-extractSettings-`.
+See also :ref:`-withSettings-java-` or :ref:`-extractSettings-java-`.
 
 Example
 -------

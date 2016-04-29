@@ -1,4 +1,4 @@
-.. _RespondWithDirectives:
+.. _RespondWithDirectives-java:
 
 RespondWithDirectives
 =====================

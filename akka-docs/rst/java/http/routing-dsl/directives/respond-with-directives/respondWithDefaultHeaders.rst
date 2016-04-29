@@ -1,4 +1,4 @@
-.. _-respondWithDefaultHeaders-:
+.. _-respondWithDefaultHeaders-java-:
 
 respondWithDefaultHeaders
 =========================
@@ -22,7 +22,7 @@ potentially adding the given ``HttpHeader`` instances to the headers list.
 A header is only added if there is no header instance with the same name (case insensitively) already present in the
 response.
 
-See also :ref:`-respondWithDefaultHeader-` if you'd like to add only a single header.
+See also :ref:`-respondWithDefaultHeader-java-` if you'd like to add only a single header.
 
 
 Example
@@ -42,4 +42,4 @@ TODO: Add example snippet.
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala
    :snippet: respondWithDefaultHeader-0
 
-See the :ref:`-respondWithDefaultHeader-` directive for an example with only one header.
+See the :ref:`-respondWithDefaultHeader-java-` directive for an example with only one header.

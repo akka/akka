@@ -1,4 +1,4 @@
-.. _-pathEndOrSingleSlash-:
+.. _-pathEndOrSingleSlash-java-:
 
 pathEndOrSingleSlash
 ====================

@@ -1,4 +1,4 @@
-.. _-conditional-:
+.. _-conditional-java-:
 
 conditional
 ===========
@@ -33,7 +33,7 @@ it is usually used quite deep down in the route structure (i.e. close to the lea
 targeted by the request has already been established and the respective ETag/Last-Modified values can be determined.
 
 
-The :ref:`FileAndResourceDirectives` internally use the ``conditional`` directive for ETag and Last-Modified support
+The :ref:`FileAndResourceDirectives-java` internally use the ``conditional`` directive for ETag and Last-Modified support
 (if the ``akka.http.routing.file-get-conditional`` setting is enabled).
 
 __ http://tools.ietf.org/html/draft-ietf-httpbis-p4-conditional-26#section-6

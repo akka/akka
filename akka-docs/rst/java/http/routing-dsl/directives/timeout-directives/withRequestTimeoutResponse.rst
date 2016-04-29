@@ -1,4 +1,4 @@
-.. _-withRequestTimeoutResponse-:
+.. _-withRequestTimeoutResponse-java-:
 
 withRequestTimeoutResponse
 ==========================
@@ -15,7 +15,7 @@ Description
 
 Allows customising the ``HttpResponse`` that will be sent to clients in case of a :ref:`request-timeout`.
 
-See also :ref:`-withRequestTimeout-` or :ref:`-withoutRequestTimeout-` if interested in dynamically changing the timeout
+See also :ref:`-withRequestTimeout-java-` or :ref:`-withoutRequestTimeout-java-` if interested in dynamically changing the timeout
 for a given route instead.
 
 .. warning::

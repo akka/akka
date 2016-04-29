@@ -1,4 +1,4 @@
-.. _-recoverRejections-:
+.. _-recoverRejections-java-:
 
 recoverRejections
 =================
@@ -14,13 +14,13 @@ Description
 -----------
 
 **Low level directive** – unless you're sure you need to be working on this low-level you might instead
-want to try the :ref:`-handleRejections-` directive which provides a nicer DSL for building rejection handlers.
+want to try the :ref:`-handleRejections-java-` directive which provides a nicer DSL for building rejection handlers.
 
 Transforms rejections from the inner route with an ``immutable.Seq[Rejection] ⇒ RouteResult`` function.
 A ``RouteResult`` is either a ``Complete(HttpResponse(...))`` or rejections ``Rejected(rejections)``.
 
 .. note::
-  To learn more about how and why rejections work read the :ref:`rejections-scala` section of the documentation.
+  To learn more about how and why rejections work read the :ref:`rejections-java` section of the documentation.
 
 Example
 -------

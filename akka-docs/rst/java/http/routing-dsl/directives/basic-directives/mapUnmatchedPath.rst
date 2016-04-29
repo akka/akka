@@ -1,4 +1,4 @@
-.. _-mapUnmatchedPath-:
+.. _-mapUnmatchedPath-java-:
 
 mapUnmatchedPath
 ================

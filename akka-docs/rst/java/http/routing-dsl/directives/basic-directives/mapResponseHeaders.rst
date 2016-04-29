@@ -1,4 +1,4 @@
-.. _-mapResponseHeaders-:
+.. _-mapResponseHeaders-java-:
 
 mapResponseHeaders
 ==================

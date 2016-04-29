@@ -1,4 +1,4 @@
-.. _WebSocketDirectives:
+.. _WebSocketDirectives-java:
 
 WebSocketDirectives
 ===================

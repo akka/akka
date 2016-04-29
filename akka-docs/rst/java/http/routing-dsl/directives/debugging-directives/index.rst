@@ -1,4 +1,4 @@
-.. _DebuggingDirectives:
+.. _DebuggingDirectives-java:
 
 DebuggingDirectives
 ===================

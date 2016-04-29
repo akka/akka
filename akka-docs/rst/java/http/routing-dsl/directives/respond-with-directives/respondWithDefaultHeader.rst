@@ -1,4 +1,4 @@
-.. _-respondWithDefaultHeader-:
+.. _-respondWithDefaultHeader-java-:
 
 respondWithDefaultHeader
 ========================
@@ -22,7 +22,7 @@ potentially adding the given ``HttpHeader`` instance to the headers list.
 The header is only added if there is no header instance with the same name (case insensitively) already present in the
 response.
 
-See also :ref:`-respondWithDefaultHeaders-`  if you'd like to add more than one header.
+See also :ref:`-respondWithDefaultHeaders-java-`  if you'd like to add more than one header.
 
 Example
 -------

@@ -1,4 +1,4 @@
-.. _-redirectToTrailingSlashIfMissing-:
+.. _-redirectToTrailingSlashIfMissing-java-:
 
 redirectToTrailingSlashIfMissing
 ================================
@@ -23,7 +23,7 @@ or refuses to for security reasons, automatically follow redirects.
 Please note that the inner paths **MUST** end with an explicit trailing slash (e.g. ``"things"./``) for the
 re-directed-to route to match.
 
-See also :ref:`-redirectToNoTrailingSlashIfPresent-` for the opposite behaviour.
+See also :ref:`-redirectToNoTrailingSlashIfPresent-java-` for the opposite behaviour.
 
 Example
 -------
@@ -32,4 +32,4 @@ TODO: Add example snippet.
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
    :snippet: redirectToTrailingSlashIfMissing-0
 
-See also :ref:`-redirectToNoTrailingSlashIfPresent-` which achieves the opposite - redirecting paths in case they do have a trailing slash.
+See also :ref:`-redirectToNoTrailingSlashIfPresent-java-` which achieves the opposite - redirecting paths in case they do have a trailing slash.

@@ -1,4 +1,4 @@
-.. _-getFromBrowseableDirectory-:
+.. _-getFromBrowseableDirectory-java-:
 
 getFromBrowseableDirectory
 ==========================
@@ -22,7 +22,7 @@ Use ``getFromBrowseableDirectory`` to serve only one directory.
 
 Use ``getFromDirectory`` if directory browsing isn't required.
 
-For more details refer to :ref:`-getFromBrowseableDirectory-`.
+For more details refer to :ref:`-getFromBrowseableDirectory-java-`.
 
 Example
 -------

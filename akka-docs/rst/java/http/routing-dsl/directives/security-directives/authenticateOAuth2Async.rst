@@ -1,4 +1,4 @@
-.. _-authenticateOAuth2Async-:
+.. _-authenticateOAuth2Async-java-:
 
 authenticateOAuth2Async
 =======================
@@ -27,9 +27,9 @@ Given a function returning ``Some[T]`` upon successful authentication and ``None
 respectively applies the inner route or rejects the request with a :class:`AuthenticationFailedRejection` rejection,
 which by default is mapped to an ``401 Unauthorized`` response.
 
-See also :ref:`-authenticateOAuth2-` if the authorization operation is rather quick, and does not have to execute asynchronously.
+See also :ref:`-authenticateOAuth2-java-` if the authorization operation is rather quick, and does not have to execute asynchronously.
 
-See :ref:`credentials-and-timing-attacks-scala` for details about verifying the secret.
+See :ref:`credentials-and-timing-attacks-java` for details about verifying the secret.
 
 For more information on how OAuth2 works see `RFC 6750`_.
 
@@ -39,5 +39,5 @@ For more information on how OAuth2 works see `RFC 6750`_.
 Example
 -------
 
-Usage in code is exactly the same as :ref:`-authenticateBasicAsync-`,
+Usage in code is exactly the same as :ref:`-authenticateBasicAsync-java-`,
 with the difference that one must validate the token as OAuth2 dictates (which is currently not part of Akka HTTP itself).

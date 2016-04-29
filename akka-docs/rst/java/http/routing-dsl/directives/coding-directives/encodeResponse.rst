@@ -1,4 +1,4 @@
-.. _-encodeResponse-:
+.. _-encodeResponse-java-:
 
 encodeResponse
 ==============

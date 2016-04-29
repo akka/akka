@@ -1,4 +1,4 @@
-.. _-mapRouteResultFuture-:
+.. _-mapRouteResultFuture-java-:
 
 mapRouteResultFuture
 ====================
@@ -13,9 +13,9 @@ TODO: Add example snippet.
 Description
 -----------
 
-Asynchronous version of :ref:`-mapRouteResult-`.
+Asynchronous version of :ref:`-mapRouteResult-java-`.
 
-It's similar to :ref:`-mapRouteResultWith-`, however it's ``Future[RouteResult] ⇒ Future[RouteResult]``
+It's similar to :ref:`-mapRouteResultWith-java-`, however it's ``Future[RouteResult] ⇒ Future[RouteResult]``
 instead of ``RouteResult ⇒ Future[RouteResult]`` which may be useful when combining multiple transformantions
 and / or wanting to ``recover`` from a failed route result.
 

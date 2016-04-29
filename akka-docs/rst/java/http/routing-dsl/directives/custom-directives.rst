@@ -25,9 +25,9 @@ TODO: Add example snippet.
 .. includecode2:: ../../../code/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala
    :snippet: labeling
 
-Another example is the :ref:`MethodDirectives` which are simply instances of a preconfigured :ref:`-method-` directive.
+Another example is the :ref:`MethodDirectives-java` which are simply instances of a preconfigured :ref:`-method-java-` directive.
 The low-level directives that most often form the basis of higher-level “named configuration” directives are grouped
-together in the :ref:`BasicDirectives` trait.
+together in the :ref:`BasicDirectives-java` trait.
 
 
 Transforming Directives

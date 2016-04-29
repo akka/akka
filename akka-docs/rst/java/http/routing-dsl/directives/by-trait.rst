@@ -8,40 +8,40 @@ All predefined directives are organized into traits that form one part of the ov
 Directives filtering or extracting from the request
 ---------------------------------------------------
 
-:ref:`MethodDirectives`
+:ref:`MethodDirectives-java`
   Filter and extract based on the request method.
 
-:ref:`HeaderDirectives`
+:ref:`HeaderDirectives-java`
   Filter and extract based on request headers.
 
-:ref:`PathDirectives`
+:ref:`PathDirectives-java`
   Filter and extract from the request URI path.
 
-:ref:`HostDirectives`
+:ref:`HostDirectives-java`
   Filter and extract based on the target host.
 
-:ref:`ParameterDirectives`, :ref:`FormFieldDirectives`
+:ref:`ParameterDirectives-java`, :ref:`FormFieldDirectives-java`
   Filter and extract based on query parameters or form fields.
 
-:ref:`CodingDirectives`
+:ref:`CodingDirectives-java`
   Filter and decode compressed request content.
 
-:ref:`MarshallingDirectives`
+:ref:`MarshallingDirectives-java`
   Extract the request entity.
 
-:ref:`SchemeDirectives`
+:ref:`SchemeDirectives-java`
   Filter and extract based on the request scheme.
 
-:ref:`SecurityDirectives`
+:ref:`SecurityDirectives-java`
   Handle authentication data from the request.
 
-:ref:`CookieDirectives`
+:ref:`CookieDirectives-java`
   Filter and extract cookies.
 
-:ref:`BasicDirectives` and :ref:`MiscDirectives`
+:ref:`BasicDirectives-java` and :ref:`MiscDirectives-java`
   Directives handling request properties.
 
-:ref:`FileUploadDirectives`
+:ref:`FileUploadDirectives-java`
   Handle file uploads.
 
 
@@ -50,31 +50,31 @@ Directives filtering or extracting from the request
 Directives creating or transforming the response
 ------------------------------------------------
 
-:ref:`CacheConditionDirectives`
+:ref:`CacheConditionDirectives-java`
   Support for conditional requests (``304 Not Modified`` responses).
 
-:ref:`CookieDirectives`
+:ref:`CookieDirectives-java`
   Set, modify, or delete cookies.
 
-:ref:`CodingDirectives`
+:ref:`CodingDirectives-java`
   Compress responses.
 
-:ref:`FileAndResourceDirectives`
+:ref:`FileAndResourceDirectives-java`
   Deliver responses from files and resources.
 
-:ref:`RangeDirectives`
+:ref:`RangeDirectives-java`
   Support for range requests (``206 Partial Content`` responses).
 
-:ref:`RespondWithDirectives`
+:ref:`RespondWithDirectives-java`
   Change response properties.
 
-:ref:`RouteDirectives`
+:ref:`RouteDirectives-java`
   Complete or reject a request with a response.
 
-:ref:`BasicDirectives` and :ref:`MiscDirectives`
+:ref:`BasicDirectives-java` and :ref:`MiscDirectives-java`
   Directives handling or transforming response properties.
 
-:ref:`TimeoutDirectives`
+:ref:`TimeoutDirectives-java`
   Configure request timeouts and automatic timeout responses.
 
 
