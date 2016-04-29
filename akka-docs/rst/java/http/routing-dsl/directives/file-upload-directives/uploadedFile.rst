@@ -1,4 +1,4 @@
-.. _-uploadedFile-:
+.. _-uploadedFile-java-:
 
 uploadedFile
 ============
@@ -21,7 +21,7 @@ one will be used and the subsequent ones ignored.
 
 .. note::
    This directive will stream contents of the request into a file, however one can not start processing these
-   until the file has been written completely. For streaming APIs it is preferred to use the :ref:`-fileUpload-`
+   until the file has been written completely. For streaming APIs it is preferred to use the :ref:`-fileUpload-java-`
    directive, as it allows for streaming handling of the incoming data bytes.
 
 

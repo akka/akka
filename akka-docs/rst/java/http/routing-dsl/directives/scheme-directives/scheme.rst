@@ -1,4 +1,4 @@
-.. _-scheme-:
+.. _-scheme-java-:
 
 scheme
 ======
@@ -21,7 +21,7 @@ A typical use case for the ``scheme`` directive would be to reject requests comi
 http instead of https, or to redirect such requests to the matching https URI with a
 ``MovedPermanently``.
 
-For simply extracting the scheme name, see the :ref:`-extractScheme-` directive.
+For simply extracting the scheme name, see the :ref:`-extractScheme-java-` directive.
 
 Example
 -------

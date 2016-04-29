@@ -1,4 +1,4 @@
-.. _SchemeDirectives:
+.. _SchemeDirectives-java:
 
 SchemeDirectives
 ================

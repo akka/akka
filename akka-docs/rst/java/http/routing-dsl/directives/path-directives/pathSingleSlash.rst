@@ -1,4 +1,4 @@
-.. _-pathSingleSlash-:
+.. _-pathSingleSlash-java-:
 
 pathSingleSlash
 ===============

@@ -1,4 +1,4 @@
-.. _-parameter-:
+.. _-parameter-java-:
 
 parameter
 =========
@@ -14,7 +14,7 @@ Description
 -----------
 Extracts a *query* parameter value from the request.
 
-See :ref:`-parameters-` for a detailed description of this directive.
+See :ref:`-parameters-java-` for a detailed description of this directive.
 
 See :ref:`which-parameter-directive` to understand when to use which directive.
 

@@ -1,4 +1,4 @@
-.. _TimeoutDirectives:
+.. _TimeoutDirectives-java:
 
 TimeoutDirectives
 =================

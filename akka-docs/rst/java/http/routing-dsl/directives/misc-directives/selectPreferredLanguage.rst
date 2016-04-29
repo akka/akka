@@ -1,4 +1,4 @@
-.. _-selectPreferredLanguage-:
+.. _-selectPreferredLanguage-java-:
 
 selectPreferredLanguage
 =======================

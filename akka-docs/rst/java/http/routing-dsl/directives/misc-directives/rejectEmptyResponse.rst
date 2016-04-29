@@ -1,4 +1,4 @@
-.. _-rejectEmptyResponse-:
+.. _-rejectEmptyResponse-java-:
 
 rejectEmptyResponse
 ===================

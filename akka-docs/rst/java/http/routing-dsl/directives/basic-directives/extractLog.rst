@@ -1,4 +1,4 @@
-.. _-extractLog-:
+.. _-extractLog-java-:
 
 extractLog
 ==========
@@ -18,7 +18,7 @@ Extracts a :class:`LoggingAdapter` from the request context which can be used fo
 The ``extractLog`` directive is used for providing logging to routes, such that they don't have to depend on
 closing over a logger provided in the class body.
 
-See :ref:`-extract-` and :ref:`ProvideDirectives` for an overview of similar directives.
+See :ref:`-extract-java-` and :ref:`ProvideDirectives-java` for an overview of similar directives.
 
 Example
 -------

@@ -1,4 +1,4 @@
-.. _FutureDirectives:
+.. _FutureDirectives-java:
 
 FuturesDirectives
 =================

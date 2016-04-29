@@ -1,4 +1,4 @@
-.. _-textract-:
+.. _-textract-java-:
 
 textract
 ========
@@ -16,12 +16,12 @@ Extracts a tuple of values from the request context and provides them to the inn
 
 
 The ``textract`` directive is used as a building block for :ref:`Custom Directives` to extract data from the
-``RequestContext`` and provide it to the inner route. To extract just one value use the :ref:`-extract-` directive. To
-provide a constant value independent of the ``RequestContext`` use the :ref:`-tprovide-` directive instead.
+``RequestContext`` and provide it to the inner route. To extract just one value use the :ref:`-extract-java-` directive. To
+provide a constant value independent of the ``RequestContext`` use the :ref:`-tprovide-java-` directive instead.
 
-See :ref:`ProvideDirectives` for an overview of similar directives.
+See :ref:`ProvideDirectives-java` for an overview of similar directives.
 
-See also :ref:`-extract-` for extracting a single value.
+See also :ref:`-extract-java-` for extracting a single value.
 
 
 Example

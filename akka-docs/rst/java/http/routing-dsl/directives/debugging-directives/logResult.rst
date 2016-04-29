@@ -1,4 +1,4 @@
-.. _-logResult-:
+.. _-logResult-java-:
 
 logResult
 =========
@@ -23,9 +23,9 @@ Description
 -----------
 Logs the response.
 
-See :ref:`-logRequest-` for the general description how these directives work. This directive is different
+See :ref:`-logRequest-java-` for the general description how these directives work. This directive is different
 as it requires a ``LoggingMagnet[Any => Unit]``. Instead of just logging ``HttpResponses``, ``logResult`` is able to
-log any :ref:`RouteResult` coming back from the inner route.
+log any :ref:`RouteResult-java` coming back from the inner route.
 
 Use ``logRequest`` for logging the request, or ``logRequestResult`` for logging both.
 

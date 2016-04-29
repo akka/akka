@@ -1,4 +1,4 @@
-.. _-headerValueByType-:
+.. _-headerValueByType-java-:
 
 headerValueByType
 =================
@@ -23,14 +23,14 @@ The ``headerValueByType`` directive finds a header of the given type in the list
 the given type is found the request is rejected with a ``MissingHeaderRejection``.
 
 If the header is expected to be missing in some cases or to customize handling when the header
-is missing use the :ref:`-optionalHeaderValueByType-` directive instead.
+is missing use the :ref:`-optionalHeaderValueByType-java-` directive instead.
 
 .. note::
   Custom headers will only be matched by this directive if they extend ``ModeledCustomHeader``
   and provide a companion extending ``ModeledCustomHeaderCompanion``, otherwise the routing
   infrastructure does now know where to search for the needed companion and header name.
 
-  To learn more about defining custom headers, read: :ref:`custom-headers-scala`.
+  To learn more about defining custom headers, read: :ref:`custom-headers-java`.
 
 Example
 -------

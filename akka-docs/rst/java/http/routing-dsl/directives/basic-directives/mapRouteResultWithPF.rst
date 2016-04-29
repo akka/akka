@@ -1,4 +1,4 @@
-.. _-mapRouteResultWithPF-:
+.. _-mapRouteResultWithPF-java-:
 
 mapRouteResultWithPF
 ====================
@@ -13,12 +13,12 @@ TODO: Add example snippet.
 Description
 -----------
 
-Asynchronous variant of :ref:`-mapRouteResultPF-`.
+Asynchronous variant of :ref:`-mapRouteResultPF-java-`.
 
 Changes the message the inner route sends to the responder.
 
 The ``mapRouteResult`` directive is used as a building block for :ref:`Custom Directives` to transform the
-:ref:`RouteResult` coming back from the inner route.
+:ref:`RouteResult-java` coming back from the inner route.
 
 See :ref:`Result Transformation Directives` for similar directives.
 

@@ -1,4 +1,4 @@
-.. _RangeDirectives:
+.. _RangeDirectives-java:
 
 RangeDirectives
 ===============

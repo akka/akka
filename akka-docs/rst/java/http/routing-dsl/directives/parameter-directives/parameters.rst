@@ -1,4 +1,4 @@
-.. _-parameters-:
+.. _-parameters-java-:
 
 parameters
 ==========
@@ -36,14 +36,14 @@ as required, optional, or repeated, or to filter requests where a parameter has 
     require value of parameter "color" to be ``"blue"`` and extract nothing
 ``"amount".as[Int]``
     extract value of parameter "amount" as ``Int``, you need a matching ``Deserializer`` in scope for that to work
-    (see also :ref:`http-unmarshalling-scala`)
+    (see also :ref:`http-unmarshalling-java`)
 ``"amount".as(deserializer)``
     extract value of parameter "amount" with an explicit ``Deserializer``
 ``"distance".*``
     extract multiple occurrences of parameter "distance" as ``Iterable[String]``
 ``"distance".as[Int].*``
     extract multiple occurrences of parameter "distance" as ``Iterable[Int]``, you need a matching ``Deserializer`` in scope for that to work
-    (see also :ref:`http-unmarshalling-scala`)
+    (see also :ref:`http-unmarshalling-java`)
 ``"distance".as(deserializer).*``
     extract multiple occurrences of parameter "distance" with an explicit ``Deserializer``
 
@@ -52,7 +52,7 @@ instance.
 
 Requests missing a required parameter or parameter value will be rejected with an appropriate rejection.
 
-There's also a singular version, :ref:`-parameter-`. Form fields can be handled in a similar way, see ``formFields``. If
+There's also a singular version, :ref:`-parameter-java-`. Form fields can be handled in a similar way, see ``formFields``. If
 you want unified handling for both query parameters and form fields, see ``anyParams``.
 
 Examples

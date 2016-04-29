@@ -1,4 +1,4 @@
-.. _-cancelRejections-:
+.. _-cancelRejections-java-:
 
 cancelRejections
 ================
@@ -16,11 +16,11 @@ Description
 Adds a ``TransformationRejection`` cancelling all rejections created by the inner route for which
 the condition argument function returns ``true``.
 
-See also :ref:`-cancelRejection-`, for canceling a specific rejection.
+See also :ref:`-cancelRejection-java-`, for canceling a specific rejection.
 
-Read :ref:`rejections-scala` to learn more about rejections.
+Read :ref:`rejections-java` to learn more about rejections.
 
-For more advanced handling of rejections refer to the :ref:`-handleRejections-` directive
+For more advanced handling of rejections refer to the :ref:`-handleRejections-java-` directive
 which provides a nicer DSL for building rejection handlers.
 
 Example

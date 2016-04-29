@@ -1,4 +1,4 @@
-.. _-authenticateBasic-:
+.. _-authenticateBasic-java-:
 
 authenticateBasic
 =================
@@ -25,13 +25,13 @@ Given a function returning ``Some[T]`` upon successful authentication and ``None
 respectively applies the inner route or rejects the request with a :class:`AuthenticationFailedRejection` rejection,
 which by default is mapped to an ``401 Unauthorized`` response.
 
-Longer-running authentication tasks (like looking up credentials in a database) should use the :ref:`-authenticateBasicAsync-`
+Longer-running authentication tasks (like looking up credentials in a database) should use the :ref:`-authenticateBasicAsync-java-`
 variant of this directive which allows it to run without blocking routing layer of Akka HTTP, freeing it for other requests.
 
 Standard HTTP-based authentication which uses the ``WWW-Authenticate`` header containing challenge data and
 ``Authorization`` header for receiving credentials is implemented in subclasses of ``HttpAuthenticator``.
 
-See :ref:`credentials-and-timing-attacks-scala` for details about verifying the secret.
+See :ref:`credentials-and-timing-attacks-java` for details about verifying the secret.
 
 .. warning::
   Make sure to use basic authentication only over SSL/TLS because credentials are transferred in plaintext.

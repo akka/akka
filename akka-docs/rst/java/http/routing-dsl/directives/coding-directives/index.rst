@@ -1,4 +1,4 @@
-.. _CodingDirectives:
+.. _CodingDirectives-java:
 
 CodingDirectives
 ================

@@ -1,10 +1,10 @@
-.. _HeaderDirectives:
+.. _HeaderDirectives-java:
 
 HeaderDirectives
 ================
 
 Header directives can be used to extract header values from the request. To change
-response headers use one of the :ref:`RespondWithDirectives`.
+response headers use one of the :ref:`RespondWithDirectives-java`.
 
 .. toctree::
    :maxdepth: 1

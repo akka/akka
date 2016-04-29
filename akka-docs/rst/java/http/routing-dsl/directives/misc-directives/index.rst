@@ -1,4 +1,4 @@
-.. _MiscDirectives:
+.. _MiscDirectives-java:
 
 MiscDirectives
 ==============

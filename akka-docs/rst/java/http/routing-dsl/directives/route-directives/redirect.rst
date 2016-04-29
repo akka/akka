@@ -1,4 +1,4 @@
-.. _-redirect-:
+.. _-redirect-java-:
 
 redirect
 ========

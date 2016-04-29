@@ -1,4 +1,4 @@
-.. _-handleRejections-:
+.. _-handleRejections-java-:
 
 handleRejections
 ================
@@ -16,7 +16,7 @@ Description
 Using this directive is an alternative to using a global implicitly defined ``RejectionHandler`` that
 applies to the complete route.
 
-See :ref:`rejections-scala` for general information about options for handling rejections.
+See :ref:`rejections-java` for general information about options for handling rejections.
 
 Example
 -------

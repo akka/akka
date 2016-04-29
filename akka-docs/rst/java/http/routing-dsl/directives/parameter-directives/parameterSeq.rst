@@ -1,4 +1,4 @@
-.. _-parameterSeq-:
+.. _-parameterSeq-java-:
 
 parameterSeq
 ============
