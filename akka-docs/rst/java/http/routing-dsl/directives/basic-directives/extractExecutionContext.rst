@@ -3,17 +3,10 @@
 extractExecutionContext
 =======================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala
-   :snippet: extractExecutionContext
-
 Description
 -----------
 
-Extracts the ``ExecutionContext`` from the ``RequestContext``.
+Extracts the ``ExecutionContextExecutor`` from the ``RequestContext``.
 
 See :ref:`-withExecutionContext-java-` to see how to customise the execution context provided for an inner route.
 

@@ -3,13 +3,6 @@
 onComplete
 ==========
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FutureDirectives.scala
-   :snippet: onComplete
-
 Description
 -----------
 Evaluates its parameter of type ``Future[T]``, and once the ``Future`` has been completed, extracts its

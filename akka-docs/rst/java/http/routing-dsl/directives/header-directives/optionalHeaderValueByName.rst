@@ -3,13 +3,6 @@
 optionalHeaderValueByName
 =========================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala
-   :snippet: optionalHeaderValueByName
-
 Description
 -----------
 Optionally extracts the value of the HTTP request header with the given name.

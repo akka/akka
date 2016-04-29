@@ -3,13 +3,6 @@
 headerValueByName
 =================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala
-   :snippet: headerValueByName
-
 Description
 -----------
 Extracts the value of the HTTP request header with the given name.

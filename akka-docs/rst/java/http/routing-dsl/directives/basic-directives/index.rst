@@ -30,7 +30,7 @@ a single value or a tuple of values.
   * :ref:`-tprovide-java-`
 
 
-.. _Request Transforming Directives:
+.. _Request Transforming Directives-java:
 
 Transforming the Request(Context)
 ---------------------------------
@@ -45,7 +45,7 @@ Transforming the Request(Context)
   * :ref:`-withSettings-java-`
 
 
-.. _Response Transforming Directives:
+.. _Response Transforming Directives-java:
 
 Transforming the Response
 -------------------------
@@ -69,7 +69,7 @@ These directives allow to transform the RouteResult of the inner route.
   * :ref:`-cancelRejections-java-`
   * :ref:`-mapRejections-java-`
   * :ref:`-mapRouteResult-java-`
-  * :ref:`-mapRouteResultFuture-java-`
+  * :ref:`-mapRouteResultStage-java-`
   * :ref:`-mapRouteResultPF-java-`
   * :ref:`-mapRouteResultWith-java-`
   * :ref:`-mapRouteResultWithPF-java-`
@@ -109,7 +109,7 @@ Alphabetically
    mapResponseEntity
    mapResponseHeaders
    mapRouteResult
-   mapRouteResultFuture
+   mapRouteResultStage
    mapRouteResultPF
    mapRouteResultWith
    mapRouteResultWithPF
@@ -119,8 +119,6 @@ Alphabetically
    provide
    recoverRejections
    recoverRejectionsWith
-   textract
-   tprovide
    withExecutionContext
    withMaterializer
    withLog

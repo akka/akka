@@ -3,13 +3,6 @@
 entity
 ======
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala
-   :snippet: entity
-
 Description
 -----------
 Unmarshalls the request entity to the given type and passes it to its inner Route.  An unmarshaller

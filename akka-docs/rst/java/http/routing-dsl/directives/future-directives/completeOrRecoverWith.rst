@@ -3,13 +3,6 @@
 completeOrRecoverWith
 =====================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FutureDirectives.scala
-   :snippet: completeOrRecoverWith
-
 Description
 -----------
 If the ``Future[T]`` succeeds the request is completed using the value's marshaller (this directive therefore

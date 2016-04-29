@@ -3,13 +3,6 @@
 getFromFile
 ===========
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileAndResourceDirectives.scala
-   :snippet: getFromFile
-
 Description
 -----------
 

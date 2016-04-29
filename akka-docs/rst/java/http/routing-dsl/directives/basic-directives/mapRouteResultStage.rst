@@ -1,0 +1,23 @@
+.. _-mapRouteResultStage-java-:
+
+mapRouteResultStage
+===================
+
+Description
+-----------
+
+Asynchronous version of :ref:`-mapRouteResult-java-`.
+
+It's similar to :ref:`-mapRouteResultWith-java-`, however it's
+``Function<CompletionStage<RouteResult>, CompletionStage<RouteResult>>``
+instead of ``Function<RouteResult, CompletionStage<RouteResult>>`` which may be useful when
+combining multiple transformations and / or wanting to ``recover`` from a failed route result.
+
+See :ref:`Result Transformation Directives-java` for similar directives.
+
+Example
+-------
+TODO: Add example snippet.
+.. 
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
+   :snippet: mapRouteResultStage
