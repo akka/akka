@@ -1399,7 +1399,8 @@ final class RecoverWith[T, M](maximumRetries: Int, pf: PartialFunction[Throwable
       if ((maximumRetries == RecoverWith.InfiniteRetries || attempt < maximumRetries) && pf.isDefinedAt(ex)) {
         switchTo(pf(ex))
         attempt += 1
-      } else
+      }
+      else
         failStage(ex)
 
     def switchTo(source: Graph[SourceShape[T], M]): Unit = {

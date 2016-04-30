@@ -219,13 +219,11 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
   /**
    * Register a new subscriber.
    */
-  protected def registerSubscriber(subscriber: Subscriber[_ >: T]): Unit = {
-    endOfStream match {
-      case NotReached if subscriptions.exists(_.subscriber == subscriber) ⇒ ReactiveStreamsCompliance.rejectDuplicateSubscriber(subscriber)
-      case NotReached ⇒ addSubscription(subscriber)
-      case Completed if buffer.nonEmpty ⇒ addSubscription(subscriber)
-      case eos ⇒ eos(subscriber)
-    }
+  protected def registerSubscriber(subscriber: Subscriber[_ >: T]): Unit = endOfStream match {
+    case NotReached if subscriptions.exists(_.subscriber == subscriber) ⇒ ReactiveStreamsCompliance.rejectDuplicateSubscriber(subscriber)
+    case NotReached ⇒ addSubscription(subscriber)
+    case Completed if buffer.nonEmpty ⇒ addSubscription(subscriber)
+    case eos ⇒ eos(subscriber)
   }
 
   private def addSubscription(subscriber: Subscriber[_ >: T]): Unit = {
