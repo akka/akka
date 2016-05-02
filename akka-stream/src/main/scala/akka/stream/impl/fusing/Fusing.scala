@@ -3,15 +3,16 @@
  */
 package akka.stream.impl.fusing
 
-import java.{ util ⇒ ju }
+import java.{util => ju}
 import java.util.Arrays
+
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
 import scala.annotation.tailrec
 import akka.stream._
 import akka.stream.Attributes.AsyncBoundary
-import akka.stream.Fusing.{ FusedGraph, StructuralInfo }
+import akka.stream.Fusing.{FusedGraph, StructuralInfo}
 import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.impl.StreamLayout
 import akka.stream.impl.StreamLayout._
@@ -29,9 +30,9 @@ private[stream] object Fusing {
    */
   def aggressive[S <: Shape, M](g: Graph[S, M]): FusedGraph[S, M] =
     g match {
-      case fg: FusedGraph[_, _]      ⇒ fg
+      case fg: FusedGraph[_, _] ⇒ fg
       case FusedGraph(module, shape) => FusedGraph(module, shape)
-      case _                         ⇒ doAggressive(g)
+      case _ ⇒ doAggressive(g)
     }
 
   private def doAggressive[S <: Shape, M](g: Graph[S, M]): FusedGraph[S, M] = {
@@ -137,7 +138,7 @@ private[stream] object Fusing {
     val downs = struct.downstreams
     val outGroup = struct.outGroup
     while (it.hasNext) it.next() match {
-      case copy @ CopiedModule(shape, attr, gsm: GraphStageModule) ⇒
+      case copy@CopiedModule(shape, attr, gsm: GraphStageModule) ⇒
         stages(pos) = gsm.stage
         matValIDs(pos) = copy
         attributes(pos) = attr and gsm.attributes
@@ -218,11 +219,11 @@ private[stream] object Fusing {
     // FIXME attributes should contain some naming info and async boundary where needed
     val firstModule = group.iterator.next() match {
       case c: CopiedModule => c
-      case _               => throw new IllegalArgumentException("unexpected module structure")
+      case _ => throw new IllegalArgumentException("unexpected module structure")
     }
     val async = if (isAsync(firstModule)) Attributes(AsyncBoundary) else Attributes.none
     val disp = dispatcher(firstModule) match {
-      case None    ⇒ Attributes.none
+      case None ⇒ Attributes.none
       case Some(d) ⇒ Attributes(d)
     }
     val attr = async and disp
@@ -261,9 +262,9 @@ private[stream] object Fusing {
     def log(msg: String): Unit = println("  " * indent + msg)
     val async = m match {
       case _: GraphStageModule ⇒ m.attributes.contains(AsyncBoundary)
-      case _: GraphModule      ⇒ m.attributes.contains(AsyncBoundary)
-      case _ if m.isAtomic     ⇒ true // non-GraphStage atomic or has AsyncBoundary
-      case _                   ⇒ m.attributes.contains(AsyncBoundary)
+      case _: GraphModule ⇒ m.attributes.contains(AsyncBoundary)
+      case _ if m.isAtomic ⇒ true // non-GraphStage atomic or has AsyncBoundary
+      case _ ⇒ m.attributes.contains(AsyncBoundary)
     }
     if (Debug) log(s"entering ${m.getClass} (hash=${struct.hash(m)}, async=$async, name=${m.attributes.nameLifted}, dispatcher=${dispatcher(m)})")
     val localGroup =
@@ -277,7 +278,7 @@ private[stream] object Fusing {
           if (Debug) log(s"dissolving graph module ${m.toString.replace("\n", "\n" + "  " * indent)}")
           val attributes = inheritedAttributes and m.attributes
           gm.matValIDs.flatMap(sub ⇒ descend(sub, attributes, struct, localGroup, indent + 1))(collection.breakOut)
-        case gm @ GraphModule(_, oldShape, _, mvids) ⇒
+        case gm@GraphModule(_, oldShape, _, mvids) ⇒
           /*
            * Importing a GraphModule that has an AsyncBoundary attribute is a little more work:
            *
@@ -305,7 +306,7 @@ private[stream] object Fusing {
                 val o = oldIn.next()
                 val n = newIn.next()
                 findInArray(o, oldIns) match {
-                  case -1  ⇒ // nothing to do
+                  case -1 ⇒ // nothing to do
                   case idx ⇒ oldIns(idx) = n
                 }
               }
@@ -316,7 +317,7 @@ private[stream] object Fusing {
                 val o = oldOut.next()
                 val n = newOut.next()
                 findInArray(o, oldOuts) match {
-                  case -1  ⇒ // nothing to do
+                  case -1 ⇒ // nothing to do
                   case idx ⇒ oldOuts(idx) = n
                 }
               }
@@ -351,8 +352,8 @@ private[stream] object Fusing {
         case CopiedModule(shape, _, copyOf) ⇒
           val ret =
             descend(copyOf, attributes, struct, localGroup, indent + 1) match {
-              case xs @ (_, mat) :: _ ⇒ (m -> mat) :: xs
-              case _                  ⇒ throw new IllegalArgumentException("cannot happen")
+              case xs@(_, mat) :: _ ⇒ (m -> mat) :: xs
+              case _ ⇒ throw new IllegalArgumentException("cannot happen")
             }
           struct.rewire(copyOf.shape, shape, indent)
           ret
@@ -374,7 +375,7 @@ private[stream] object Fusing {
           // don’t do wirings twice
           val oldDownstreams = m match {
             case f: FusedModule ⇒ f.info.downstreams.toSet
-            case _              ⇒ m.downstreams.toSet
+            case _ ⇒ m.downstreams.toSet
           }
           val down = m.subModules.foldLeft(oldDownstreams)((set, m) ⇒ set -- m.downstreams)
           down.foreach {
@@ -390,8 +391,8 @@ private[stream] object Fusing {
             val ms = c.copyOf.asInstanceOf[GraphStageModule].stage.asInstanceOf[MaterializedValueSource[Any]]
             val mapped = ms.computation match {
               case Atomic(sub) ⇒ subMat(sub)
-              case Ignore      => Ignore
-              case other       ⇒ matNodeMapping.get(other)
+              case Ignore => Ignore
+              case other ⇒ matNodeMapping.get(other)
             }
             if (Debug) log(s"materialized value source: ${c.copyOf} -> $mapped")
             require(mapped != null, s"mismatch:\n  ${ms.computation}\n  ${m.materializedValueComputation}")
@@ -418,22 +419,42 @@ private[stream] object Fusing {
    * descend().
    */
   private def rewriteMat(subMat: Predef.Map[Module, MaterializedValueNode], mat: MaterializedValueNode,
-                         mapping: ju.Map[MaterializedValueNode, MaterializedValueNode]): MaterializedValueNode =
-    mat match {
-      case Atomic(sub) ⇒
-        val ret = subMat(sub)
-        mapping.put(mat, ret)
-        ret
-      case Combine(f, left, right) ⇒
-        val ret = Combine(f, rewriteMat(subMat, left, mapping), rewriteMat(subMat, right, mapping))
-        mapping.put(mat, ret)
-        ret
-      case Transform(f, dep) ⇒
-        val ret = Transform(f, rewriteMat(subMat, dep, mapping))
-        mapping.put(mat, ret)
-        ret
-      case Ignore ⇒ Ignore
+                         mapping: ju.Map[MaterializedValueNode, MaterializedValueNode]): MaterializedValueNode = {
+
+    import scala.util.control.TailCalls._
+    def loop(mat: MaterializedValueNode): TailRec[MaterializedValueNode] = {
+      mat match {
+
+        case Combine(f, left, right) ⇒
+          for {
+            rewrittenLeft <- tailcall(loop(left))
+            rewrittenRight <- tailcall(loop(right))
+          } yield {
+            val ret = Combine(f, rewrittenLeft, rewrittenRight)
+            mapping.put(mat, ret)
+            ret
+          }
+
+        case Atomic(module) ⇒
+          val ret = subMat(module)
+          mapping.put(mat, ret)
+          done(ret)
+
+        case Transform(f, dep) ⇒
+          tailcall(loop(dep)).map { rewrittenDep =>
+            val ret = Transform(f, rewrittenDep)
+            mapping.put(mat, ret)
+            ret
+          }
+
+        case Ignore ⇒ done(Ignore)
+
+      }
     }
+
+    loop(mat).result
+  }
+
 
   private implicit class NonNull[T](val x: T) extends AnyVal {
     def nonNull(msg: String): T =

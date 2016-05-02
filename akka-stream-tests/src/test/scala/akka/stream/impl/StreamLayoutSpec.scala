@@ -3,9 +3,10 @@
  */
 package akka.stream.impl
 
+import akka.{ Done, NotUsed }
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
-import org.reactivestreams.{ Subscription, Subscriber, Publisher }
+import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import akka.stream._
 
 class StreamLayoutSpec extends AkkaSpec {
@@ -112,15 +113,14 @@ class StreamLayoutSpec extends AkkaSpec {
 
     val tooDeepForStack = 50000
 
-    "fail fusing when value computation is too complex" in {
+    "work when there are many materialized value computations" in {
       // this tests that the canary in to coal mine actually works
       val g = (1 to tooDeepForStack)
         .foldLeft(Flow[Int].mapMaterializedValue(_ ⇒ 1)) { (flow, i) ⇒
           flow.mapMaterializedValue(x ⇒ x + i)
         }
-      a[StackOverflowError] shouldBe thrownBy {
-        Fusing.aggressive(g)
-      }
+      val done = Source.single(1).via(Flow.fromGraph(Fusing.aggressive(g))).toMat(Sink.ignore)(Keep.right).run()
+      done.futureValue should ===(Done)
     }
 
     "not fail materialization when building a large graph with simple computation" when {
