@@ -169,6 +169,7 @@ object StreamLayout {
     /**
      * Fuses this Module to `that` Module by wiring together `from` and `to`,
      * retaining the materialized value of `this` in the result
+     *
      * @param that a Module to fuse with
      * @param from the data source to wire
      * @param to the data sink to wire
@@ -181,6 +182,7 @@ object StreamLayout {
      * Fuses this Module to `that` Module by wiring together `from` and `to`,
      * transforming the materialized values of `this` and `that` using the
      * provided function `f`
+     *
      * @param that a Module to fuse with
      * @param from the data source to wire
      * @param to the data sink to wire
@@ -241,6 +243,7 @@ object StreamLayout {
      * Creates a new Module which is `this` Module composed with `that` Module,
      * using the given function `f` to compose the materialized value of `this` with
      * the materialized value of `that`.
+     *
      * @param that a Module to be composed with (cannot be itself)
      * @param f a function which combines the materialized values
      * @tparam A the type of the materialized value of `this`
@@ -887,13 +890,24 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
   protected def materializeAtomic(atomic: AtomicModule, effectiveAttributes: Attributes, matVal: ju.Map[Module, Any]): Unit
 
   private def resolveMaterialized(matNode: MaterializedValueNode, matVal: ju.Map[Module, Any], spaces: Int): Any = {
-    if (MaterializerSession.Debug) println(" " * spaces + matNode)
-    val ret = matNode match {
-      case Atomic(m)          ⇒ matVal.get(m)
-      case Combine(f, d1, d2) ⇒ f(resolveMaterialized(d1, matVal, spaces + 2), resolveMaterialized(d2, matVal, spaces + 2))
-      case Transform(f, d)    ⇒ f(resolveMaterialized(d, matVal, spaces + 2))
-      case Ignore             ⇒ NotUsed
+
+    import scala.util.control.TailCalls._
+    def loop(mat: MaterializedValueNode, spaces: Int): TailRec[Any] = {
+      if (MaterializerSession.Debug) println(" " * spaces + mat)
+      mat match {
+        case Atomic(m)          ⇒ done(matVal.get(m))
+        case Combine(f, d1, d2) ⇒
+          for {
+            l <- tailcall(loop(d1, spaces + 2))
+            r <- tailcall(loop(d2, spaces + 2))
+          } yield f(l, r)
+        case Transform(f, d)    ⇒ tailcall(loop(d, spaces + 2)).map(f)
+        case Ignore             ⇒ done(NotUsed)
+      }
     }
+
+
+    val ret = loop(matNode, spaces).result
     if (MaterializerSession.Debug) println(" " * spaces + s"result = $ret")
     matValSrc.remove(matNode) match {
       case null ⇒ // nothing to do
