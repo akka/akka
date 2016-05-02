@@ -213,6 +213,11 @@ class LightArrayRevolverScheduler(config: Config,
   protected def clock(): Long = System.nanoTime
 
   /**
+   * Replaceable for testing.
+   */
+  protected def startTick: Int = 0
+
+  /**
    * Overridable for tests
    */
   protected def getShutdownTimeout: FiniteDuration = ShutdownTimeout
@@ -336,7 +341,8 @@ class LightArrayRevolverScheduler(config: Config,
 
   @volatile private var timerThread: Thread = threadFactory.newThread(new Runnable {
 
-    var tick = 0
+    var tick = startTick
+    var totalTick: Long = tick // tick count that doesn't wrap around, used for calculating sleep time
     val wheel = Array.fill(WheelSize)(new TaskQueue)
 
     private def clearAll(): immutable.Seq[TimerTask] = {
@@ -397,7 +403,7 @@ class LightArrayRevolverScheduler(config: Config,
 
     @tailrec final def nextTick(): Unit = {
       val time = clock()
-      val sleepTime = start + (tick * tickNanos) - time
+      val sleepTime = start + (totalTick * tickNanos) - time
 
       if (sleepTime > 0) {
         // check the queue before taking a nap
@@ -424,6 +430,7 @@ class LightArrayRevolverScheduler(config: Config,
         wheel(bucket) = putBack
 
         tick += 1
+        totalTick += 1
       }
       stopped.get match {
         case null ⇒ nextTick()
