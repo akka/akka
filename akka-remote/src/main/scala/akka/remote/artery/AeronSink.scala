@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.remote.artery
 
 import java.nio.ByteBuffer
@@ -16,7 +19,6 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import io.aeron.Aeron
 import io.aeron.Publication
-import org.agrona.concurrent.BackoffIdleStrategy
 import org.agrona.concurrent.UnsafeBuffer
 
 object AeronSink {
@@ -62,41 +64,25 @@ class AeronSink(channel: String, aeron: Aeron, taskRunner: TaskRunner) extends G
       private val buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(128 * 1024))
       private val streamId = 10
       private val pub = aeron.addPublication(channel, streamId)
-      private val spinning = 1000
-      private val yielding = 0
-      private val parking = 0
-      private val idleStrategy = new BackoffIdleStrategy(
-        spinning, yielding, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100))
-      private val idleStrategyRetries = spinning + yielding + parking
 
-      private var backoffCount = idleStrategyRetries
+      private val spinning = 1000
+      private var backoffCount = spinning
       private var lastMsgSize = 0
       private var lastMsgSizeRef = new AtomicInteger // used in the external backoff task
-      private var registration: Registration = null
-      private var activate: Activate = null
+      private val addOfferTask: Add = Add(offerTask(pub, buffer, lastMsgSizeRef, getAsyncCallback(_ ⇒ onOfferSuccess())))
 
-      override def preStart(): Unit = {
-        taskRunner.command(Register(
-          getAsyncCallback(onRegistered),
-          offerTask(pub, buffer, lastMsgSizeRef, getAsyncCallback(_ ⇒ onOfferSuccess()))))
-      }
+      override def preStart(): Unit = pull(in)
 
       override def postStop(): Unit = {
+        taskRunner.command(Remove(addOfferTask.task))
         pub.close()
-      }
-
-      private def onRegistered(registration: Registration): Unit = {
-        this.registration = registration
-        activate = Activate(registration)
-        pull(in)
       }
 
       // InHandler
       override def onPush(): Unit = {
         val msg = grab(in)
         buffer.putBytes(0, msg);
-        idleStrategy.reset()
-        backoffCount = idleStrategyRetries
+        backoffCount = spinning
         lastMsgSize = msg.length
         publish()
       }
@@ -108,12 +94,11 @@ class AeronSink(channel: String, aeron: Aeron, taskRunner: TaskRunner) extends G
         if (result < 0) {
           backoffCount -= 1
           if (backoffCount > 0) {
-            idleStrategy.idle()
             publish() // recursive
           } else {
             // delegate backoff to shared TaskRunner
             lastMsgSizeRef.set(lastMsgSize)
-            taskRunner.command(activate)
+            taskRunner.command(addOfferTask)
           }
         } else {
           onOfferSuccess()

@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.remote.artery
 
 import java.util.concurrent.TimeUnit
@@ -21,7 +24,6 @@ import org.agrona.DirectBuffer
 import org.agrona.concurrent.BackoffIdleStrategy
 
 object AeronSource {
-  import TaskRunner.Registration
   type Bytes = Array[Byte]
 
   private def pollTask(sub: Subscription, handler: MessageHandler, onMessage: AsyncCallback[Bytes]): () ⇒ Boolean = {
@@ -78,36 +80,21 @@ class AeronSource(channel: String, aeron: Aeron, taskRunner: TaskRunner) extends
         spinning, yielding, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100))
       private val idleStrategyRetries = spinning + yielding + parking
       private var backoffCount = idleStrategyRetries
-      private var registration: Registration = null
-      private var activate: Activate = null
 
       // the fragmentHandler is called from `poll` in same thread, i.e. no async callback is needed
       private val messageHandler = new MessageHandler
-
-      override def preStart(): Unit = {
-        taskRunner.command(Register(
-          getAsyncCallback(onRegistered),
-          pollTask(sub, messageHandler, getAsyncCallback(onMessage))))
-      }
+      private val addPollTask: Add = Add(pollTask(sub, messageHandler, getAsyncCallback(onMessage)))
 
       override def postStop(): Unit = {
         sub.close()
-        taskRunner.command(Deregister(registration))
-      }
-
-      private def onRegistered(registration: Registration): Unit = {
-        this.registration = registration
-        activate = Activate(registration)
-        if (isAvailable(out))
-          subscriberLoop() // onPull was done before we got the registration
+        taskRunner.command(Remove(addPollTask.task))
       }
 
       // OutHandler
       override def onPull(): Unit = {
         idleStrategy.reset()
         backoffCount = idleStrategyRetries
-        if (registration ne null)
-          subscriberLoop()
+        subscriberLoop()
       }
 
       @tailrec private def subscriberLoop(): Unit = {
@@ -128,7 +115,7 @@ class AeronSource(channel: String, aeron: Aeron, taskRunner: TaskRunner) extends
             subscriberLoop() // recursive
           } else {
             // delegate backoff to shared TaskRunner
-            taskRunner.command(activate)
+            taskRunner.command(addPollTask)
           }
         }
       }

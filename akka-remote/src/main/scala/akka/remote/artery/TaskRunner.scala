@@ -4,40 +4,91 @@
 package akka.remote.artery
 
 import java.util.concurrent.TimeUnit
-
 import scala.util.control.NonFatal
-
 import akka.actor.ExtendedActorSystem
-
 import akka.dispatch.AbstractNodeQueue
 import akka.event.Logging
-import akka.stream.stage.AsyncCallback
 import org.agrona.concurrent.BackoffIdleStrategy
+import scala.annotation.tailrec
+import scala.reflect.ClassTag
 
-object TaskRunner {
+/**
+ * INTERNAL API
+ */
+private[akka] object TaskRunner {
 
-  final class Registration(val task: () ⇒ Boolean) {
-    private[TaskRunner] var active = false
-  }
-
+  type Task = () ⇒ Boolean
   sealed trait Command
   case object Shutdown extends Command
-  final case class Register(
-    registrationCallback: AsyncCallback[Registration],
-    task: () ⇒ Boolean) extends Command
-  final case class Deregister(registration: Registration) extends Command
-  final case class Activate(registration: Registration) extends Command
+  final case class Add(task: Task) extends Command
+  final case class Remove(task: Task) extends Command
 
   final class CommandQueue extends AbstractNodeQueue[Command]
+
+  /**
+   * A specialized collection with allocation free add, remove and iterate of
+   * elements. The order of the elements is not important.
+   */
+  private final class ArrayBag[T <: AnyRef: ClassTag] {
+    private var elements = Array.ofDim[T](16)
+
+    def add(e: T): Unit = {
+      val size = elements.length
+      @tailrec def tryAdd(i: Int): Unit = {
+        if (i == size) {
+          doubleCapacity()
+          elements(i) = e
+        } else if (elements(i) eq null)
+          elements(i) = e
+        else
+          tryAdd(i + 1) //recursive
+      }
+      tryAdd(0)
+    }
+
+    def remove(e: T): Unit = {
+      val size = elements.length
+      @tailrec def tryRemove(i: Int): Unit = {
+        if (i == size)
+          () // not found
+        else if (elements(i) == e)
+          elements(i) = null.asInstanceOf[T]
+        else
+          tryRemove(i + 1) //recursive
+      }
+      tryRemove(0)
+    }
+
+    /**
+     * All elements as an array for efficient iteration.
+     * The elements can be `null`.
+     */
+    def all: Array[T] = elements
+
+    private def doubleCapacity(): Unit = {
+      val newCapacity = elements.length << 1
+      if (newCapacity < 0)
+        throw new IllegalStateException("Sorry, too big")
+      val a = Array.ofDim[T](newCapacity)
+      System.arraycopy(elements, 0, a, 0, elements.length)
+      elements = a
+    }
+
+    override def toString(): String =
+      elements.filterNot(_ eq null).mkString("[", ",", "]")
+  }
 }
 
-class TaskRunner(system: ExtendedActorSystem) extends Runnable {
+/**
+ * INTERNAL API
+ */
+private[akka] class TaskRunner(system: ExtendedActorSystem) extends Runnable {
   import TaskRunner._
 
   private val log = Logging(system, getClass)
   private[this] var running = false
   private[this] val cmdQueue = new CommandQueue
-  private[this] val registrations = new java.util.ArrayList[Registration]()
+  private[this] val tasks = new ArrayBag[Task]
 
   // TODO the backoff strategy should be measured and tuned
   private val spinning = 2000000
@@ -78,22 +129,20 @@ class TaskRunner(system: ExtendedActorSystem) extends Runnable {
   }
 
   private def executeTasks(): Unit = {
+    val elements = tasks.all
     var i = 0
-    val size = registrations.size
+    val size = elements.length
     while (i < size) {
-      val reg = registrations.get(i)
-      if (reg.active) {
-        try {
-          if (reg.task()) {
-            reg.active = false
-            reset = true
-          }
-        } catch {
-          case NonFatal(e) ⇒
-            log.error(e, "Task failed")
-            reg.active = false
-            registrations.remove(reg)
+      val task = elements(i)
+      if (task ne null) try {
+        if (task()) {
+          tasks.remove(task)
+          reset = true
         }
+      } catch {
+        case NonFatal(e) ⇒
+          log.error(e, "Task failed")
+          tasks.remove(task)
       }
       i += 1
     }
@@ -101,17 +150,10 @@ class TaskRunner(system: ExtendedActorSystem) extends Runnable {
 
   private def processCommand(cmd: Command): Unit = {
     cmd match {
-      case null          ⇒ // no command
-      case Activate(reg) ⇒ reg.active = true
-      case Shutdown      ⇒ running = false
-      case Register(callback, task) ⇒
-        val reg = new Registration(task)
-        registrations.add(reg)
-        callback.invoke(reg)
-
-      case Deregister(registration) ⇒
-        // FIXME do we need flush?
-        registrations.remove(registration)
+      case null         ⇒ // no command
+      case Add(task)    ⇒ tasks.add(task)
+      case Remove(task) ⇒ tasks.remove(task)
+      case Shutdown     ⇒ running = false
     }
   }
 
