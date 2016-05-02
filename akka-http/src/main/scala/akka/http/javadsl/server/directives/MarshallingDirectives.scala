@@ -13,7 +13,7 @@ import akka.http.scaladsl.server.directives.{ MarshallingDirectives ⇒ D }
 abstract class MarshallingDirectives extends HostDirectives {
   /**
    * Unmarshalls the request using the given unmarshaller, and passes the result to [inner].
-   * If there is a problem with unmarshalling the request is rejected with the [[Rejection]]
+   * If there is a problem with unmarshalling the request is rejected with the [[akka.http.javadsl.server.Rejection]]
    * produced by the unmarshaller.
    */
   def request[T](unmarshaller: Unmarshaller[_ >: HttpRequest, T],
@@ -25,7 +25,7 @@ abstract class MarshallingDirectives extends HostDirectives {
 
   /**
    * Unmarshalls the requests entity using the given unmarshaller, and passes the result to [inner].
-   * If there is a problem with unmarshalling the request is rejected with the [[Rejection]]
+   * If there is a problem with unmarshalling the request is rejected with the [[akka.http.javadsl.server.Rejection]]
    * produced by the unmarshaller.
    */
   def entity[T](unmarshaller: Unmarshaller[_ >: HttpEntity, T],
@@ -34,6 +34,8 @@ abstract class MarshallingDirectives extends HostDirectives {
       inner.apply(value).delegate
     }
   }
+
+
 
   // If you want the raw entity, use BasicDirectives.extractEntity
 }

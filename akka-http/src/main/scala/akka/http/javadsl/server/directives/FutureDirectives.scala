@@ -5,16 +5,16 @@ package akka.http.javadsl.server.directives
 
 import java.util.concurrent.CompletionException
 import java.util.concurrent.CompletionStage
-import java.util.function.{ Function ⇒ JFunction }
-
+import java.util.function.{Function => JFunction}
 import java.util.function.Supplier
 
-import scala.compat.java8.FutureConverters._
-import scala.concurrent.ExecutionContext.Implicits.global // only to unwrap the CompletionException
-import scala.util.Try
+import akka.http.javadsl.model.RequestEntity
 
-import akka.http.javadsl.server.Route
-import akka.http.scaladsl.server.directives.{ FutureDirectives ⇒ D }
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Try
+import akka.http.javadsl.server.{Marshaller, Route}
+import akka.http.scaladsl.server.directives.{CompleteOrRecoverWithMagnet, FutureDirectives => D}
 
 abstract class FutureDirectives extends FormFieldDirectives {
 
@@ -38,6 +38,18 @@ abstract class FutureDirectives extends FormFieldDirectives {
     D.onSuccess(f.get.toScala.recover(unwrapCompletionException)) { value ⇒
       inner(value).delegate
     }
+  }
+
+  /**
+   * "Unwraps" a `CompletionStage<T>` and runs the inner route when the stage has failed
+   * with the stage's failure exception as an extraction of type `Throwable`.
+   * If the completion stage succeeds the request is completed using the values marshaller
+   * (This directive therefore requires a marshaller for the completion stage value type to be
+   * provided.)
+   */
+  def completeOrRecoverWith[T](f: Supplier[CompletionStage[T]], marshaller: Marshaller[T, RequestEntity], inner: JFunction[Throwable, Route]): Route = RouteAdapter {
+    val magnet = CompleteOrRecoverWithMagnet(f.get.toScala)(Marshaller.asScalaEntityMarshaller(marshaller))
+    D.completeOrRecoverWith(magnet) { ex => inner(ex).delegate }
   }
 
   // TODO: This might need to be raised as an issue to scala-java8-compat instead.

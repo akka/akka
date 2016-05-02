@@ -140,7 +140,7 @@ abstract class BasicDirectives {
     D.recoverRejections(rs ⇒ f.apply(rs.asJava)) { inner.get.delegate }
   }
 
-  def recoverRejectionsWith(f: JFunction[JIterable[Rejection], ConvertCompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
+  def recoverRejectionsWith(f: JFunction[JIterable[Rejection], CompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
     D.recoverRejectionsWith(rs ⇒ f.apply(rs.asJava).asScala) { inner.get.delegate }
   }
 

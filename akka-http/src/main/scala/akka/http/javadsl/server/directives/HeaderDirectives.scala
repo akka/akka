@@ -20,13 +20,9 @@ import akka.stream.ActorMaterializer
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
 
-/**
- * FIXME When implementing custom headers in Java, just extend akka.http.scaladsl.model.headers.CustomHeader,
- * since the java API's CustomHeader class does not implement render().
- */
 abstract class HeaderDirectives extends FutureDirectives {
 
-  type ScalaHeaderMagnet = HeaderMagnet[akka.http.scaladsl.model.HttpHeader]
+  private type ScalaHeaderMagnet = HeaderMagnet[akka.http.scaladsl.model.HttpHeader]
 
   /**
    * Extracts an HTTP header value using the given function. If the function result is undefined for all headers the
