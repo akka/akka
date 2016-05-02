@@ -360,11 +360,11 @@ Inspecting cluster sharding state
 ---------------------------------
 Two requests to inspect the cluster state are available:
 
-``ClusterShard.getShardRegionStateInstance`` which will return a ``ClusterShard.ShardRegionState`` that contains
+``ShardRegion.getShardRegionStateInstance`` which will return a ``ShardRegion.ShardRegionState`` that contains
 the identifiers of the shards running in a Region and what entities are alive for each of them.
 
-``ClusterShard.getClusterShardingStatsInstance`` which will query all the regions in the cluster and return
-a ``ClusterShard.ClusterShardingStats`` containing the identifiers of the shards running in each region and a count
+``ShardRegion.GetClusterShardingStats`` which will query all the regions in the cluster and return
+a ``ShardRegion.ClusterShardingStats`` containing the identifiers of the shards running in each region and a count
 of entities that are alive in each shard.
 
 The purpose of these messages is testing and monitoring, they are not provided to give access to
