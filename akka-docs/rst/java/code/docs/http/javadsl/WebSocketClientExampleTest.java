@@ -22,6 +22,9 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 @SuppressWarnings("unused")
@@ -80,6 +83,87 @@ public class WebSocketClientExampleTest {
 
     //#single-WebSocket-request
   }
+
+  // compile only test
+  public void halfClosedWebSocketClosingExample() {
+
+    ActorSystem system = ActorSystem.create();
+    Materializer materializer = ActorMaterializer.create(system);
+    Http http = Http.get(system);
+
+    //#half-closed-WebSocket-closing
+
+    // we may expect to be able to to just tail
+    // the server websocket output like this
+    Flow<Message, Message, NotUsed> flow =
+      Flow.fromSinkAndSource(
+        Sink.foreach(System.out::println),
+        Source.empty());
+
+    http.singleWebSocketRequest(
+      WebSocketRequest.create("ws://example.com:8080/some/path"),
+      flow,
+      materializer);
+
+    //#half-closed-WebSocket-closing
+  }
+
+  public void halfClosedWebSocketWorkingExample() {
+    ActorSystem system = ActorSystem.create();
+    Materializer materializer = ActorMaterializer.create(system);
+    Http http = Http.get(system);
+
+    //#half-closed-WebSocket-working
+
+    // using Source.maybe materializes into a completable future
+    // which will allow us to complete the source later
+    Flow<Message, Message, CompletableFuture<Optional<Message>>> flow =
+      Flow.fromSinkAndSourceMat(
+        Sink.foreach(System.out::println),
+        Source.maybe(),
+        Keep.right());
+
+    Pair<CompletionStage<WebSocketUpgradeResponse>, CompletableFuture<Optional<Message>>> pair =
+      http.singleWebSocketRequest(
+        WebSocketRequest.create("ws://example.com:8080/some/path"),
+        flow,
+        materializer);
+
+    // at some later time we want to disconnect
+    pair.second().complete(Optional.empty());
+    //#half-closed-WebSocket-working
+  }
+
+  public void halfClosedWebSocketFiniteWorkingExample() {
+    ActorSystem system = ActorSystem.create();
+    Materializer materializer = ActorMaterializer.create(system);
+    Http http = Http.get(system);
+
+    //#half-closed-WebSocket-finite
+
+    // emit "one" and then "two" and then keep the source from completing
+    Source<Message, CompletableFuture<Optional<Message>>> source =
+      Source.from(Arrays.<Message>asList(TextMessage.create("one"), TextMessage.create("two")))
+        .concatMat(Source.maybe(), Keep.right());
+
+    Flow<Message, Message, CompletableFuture<Optional<Message>>> flow =
+      Flow.fromSinkAndSourceMat(
+        Sink.foreach(System.out::println),
+        source,
+        Keep.right());
+
+    Pair<CompletionStage<WebSocketUpgradeResponse>, CompletableFuture<Optional<Message>>> pair =
+      http.singleWebSocketRequest(
+        WebSocketRequest.create("ws://example.com:8080/some/path"),
+        flow,
+        materializer);
+
+    // at some later time we want to disconnect
+    pair.second().complete(Optional.empty());
+    //#half-closed-WebSocket-finite
+  }
+
+
 
   // compile time only test
   public void testAuthorizedSingleWebSocketRequest() {
