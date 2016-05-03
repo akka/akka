@@ -179,13 +179,8 @@ abstract class LatencySpec
   }
 
   lazy val reporterExecutor = Executors.newFixedThreadPool(1)
-  def reporter(name: String): RateReporter = {
-    val r = new RateReporter(SECONDS.toNanos(1), new RateReporter.Reporter {
-      override def onReport(messagesPerSec: Double, bytesPerSec: Double, totalMessages: Long, totalBytes: Long): Unit = {
-        println(name + ": %.03g msgs/sec, %.03g bytes/sec, totals %d messages %d MB".format(
-          messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024)))
-      }
-    })
+  def reporter(name: String): TestRateReporter = {
+    val r = new TestRateReporter(name)
     reporterExecutor.execute(r)
     r
   }

@@ -114,13 +114,8 @@ abstract class AeronStreamMaxThroughputSpec
   }
 
   lazy val reporterExecutor = Executors.newFixedThreadPool(1)
-  def reporter(name: String): RateReporter = {
-    val r = new RateReporter(SECONDS.toNanos(1), new RateReporter.Reporter {
-      override def onReport(messagesPerSec: Double, bytesPerSec: Double, totalMessages: Long, totalBytes: Long): Unit = {
-        println(name + ": %.03g msgs/sec, %.03g bytes/sec, totals %d messages %d MB".format(
-          messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024)))
-      }
-    })
+  def reporter(name: String): TestRateReporter = {
+    val r = new TestRateReporter(name)
     reporterExecutor.execute(r)
     r
   }
@@ -139,7 +134,7 @@ abstract class AeronStreamMaxThroughputSpec
     val d = (System.nanoTime - startTime).nanos.toMillis
     val throughput = 1000.0 * total / d
     println(f"=== AeronStreamMaxThroughput $testName: " +
-      f"${throughput}%.03g msg/s, ${throughput * payloadSize}%.03g bytes/s, " +
+      f"${throughput}%,.0f msg/s, ${throughput * payloadSize}%,.0f bytes/s, " +
       s"payload size $payloadSize, " +
       s"$d ms to deliver $total messages")
     plot = plot.add(testName, throughput * payloadSize / 1024 / 1024)
