@@ -22,6 +22,10 @@ import io.aeron.Aeron
 import io.aeron.driver.MediaDriver
 import org.HdrHistogram.Histogram
 import java.util.concurrent.atomic.AtomicBoolean
+import akka.stream.KillSwitches
+import akka.Done
+import org.agrona.IoUtil
+import java.io.File
 
 object AeronStreamLatencySpec extends MultiNodeConfig {
   val first = role("first")
@@ -74,11 +78,18 @@ abstract class AeronStreamLatencySpec
 
   var plots = LatencyPlots()
 
+  val driver = MediaDriver.launchEmbedded()
+
   val aeron = {
     val ctx = new Aeron.Context
-    val driver = MediaDriver.launchEmbedded()
     ctx.aeronDirectoryName(driver.aeronDirectoryName)
     Aeron.connect(ctx)
+  }
+
+  val taskRunner = {
+    val r = new TaskRunner(system.asInstanceOf[ExtendedActorSystem])
+    r.start()
+    r
   }
 
   lazy implicit val mat = ActorMaterializer()(system)
@@ -105,6 +116,9 @@ abstract class AeronStreamLatencySpec
 
   override def afterAll(): Unit = {
     reporterExecutor.shutdown()
+    taskRunner.stop()
+    aeron.close()
+    IoUtil.delete(new File(driver.aeronDirectoryName), true)
     runOn(first) {
       println(plots.plot50.csv(system.name + "50"))
       println(plots.plot90.csv(system.name + "90"))
@@ -164,7 +178,7 @@ abstract class AeronStreamLatencySpec
     import testSettings._
 
     runOn(first) {
-      val payload = ("0" * payloadSize).getBytes("utf-8")
+      val payload = ("1" * payloadSize).getBytes("utf-8")
       // by default run for 2 seconds, but can be adjusted with the totalMessagesFactor
       val totalMessages = (2 * messageRate * totalMessagesFactor).toInt
       val sendTimes = new AtomicLongArray(totalMessages)
@@ -174,18 +188,33 @@ abstract class AeronStreamLatencySpec
       val barrier = new CyclicBarrier(2)
       val count = new AtomicInteger
       val lastRepeat = new AtomicBoolean(false)
-      Source.fromGraph(new AeronSource(channel(first), aeron))
+      val killSwitch = KillSwitches.shared(testName)
+      val started = TestProbe()
+      val startMsg = "0".getBytes("utf-8")
+      Source.fromGraph(new AeronSource(channel(first), aeron, taskRunner))
+        .via(killSwitch.flow)
         .runForeach { bytes ⇒
-          if (bytes.length != payloadSize) throw new IllegalArgumentException("Invalid message")
-          rep.onMessage(1, payloadSize)
-          val c = count.incrementAndGet()
-          val d = System.nanoTime() - sendTimes.get(c - 1)
-          histogram.recordValue(d)
-          if (c == totalMessages) {
-            printTotal(testName, bytes.length, histogram, lastRepeat.get)
-            barrier.await() // this is always the last party
+          if (bytes.length == 1 && bytes(0) == startMsg(0))
+            started.ref ! Done
+          else {
+            if (bytes.length != payloadSize) throw new IllegalArgumentException("Invalid message")
+            rep.onMessage(1, payloadSize)
+            val c = count.incrementAndGet()
+            val d = System.nanoTime() - sendTimes.get(c - 1)
+            histogram.recordValue(d)
+            if (c == totalMessages) {
+              printTotal(testName, bytes.length, histogram, lastRepeat.get)
+              barrier.await() // this is always the last party
+            }
           }
         }
+
+      within(10.seconds) {
+        Source(1 to 50).map(_ ⇒ startMsg)
+          .throttle(1, 200.milliseconds, 1, ThrottleMode.Shaping)
+          .runWith(new AeronSink(channel(second), aeron, taskRunner))
+        started.expectMsg(Done)
+      }
 
       for (n ← 1 to repeat) {
         histogram.reset()
@@ -198,11 +227,12 @@ abstract class AeronStreamLatencySpec
             sendTimes.set(n - 1, System.nanoTime())
             payload
           }
-          .runWith(new AeronSink(channel(second), aeron))
+          .runWith(new AeronSink(channel(second), aeron, taskRunner))
 
         barrier.await((totalMessages / messageRate) + 10, SECONDS)
       }
 
+      killSwitch.shutdown()
       rep.halt()
     }
 
@@ -214,8 +244,8 @@ abstract class AeronStreamLatencySpec
     "start echo" in {
       runOn(second) {
         // just echo back
-        Source.fromGraph(new AeronSource(channel(second), aeron))
-          .runWith(new AeronSink(channel(first), aeron))
+        Source.fromGraph(new AeronSource(channel(second), aeron, taskRunner))
+          .runWith(new AeronSink(channel(first), aeron, taskRunner))
       }
       enterBarrier("echo-started")
     }

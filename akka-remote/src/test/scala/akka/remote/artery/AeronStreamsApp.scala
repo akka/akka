@@ -22,6 +22,7 @@ import io.aeron.AvailableImageHandler
 import io.aeron.UnavailableImageHandler
 import io.aeron.Image
 import io.aeron.AvailableImageHandler
+import akka.actor.ExtendedActorSystem
 
 object AeronStreamsApp {
 
@@ -62,6 +63,12 @@ object AeronStreamsApp {
 
   lazy val system = ActorSystem("AeronStreams")
   lazy implicit val mat = ActorMaterializer()(system)
+
+  lazy val taskRunner = {
+    val r = new TaskRunner(system.asInstanceOf[ExtendedActorSystem])
+    r.start()
+    r
+  }
 
   lazy val reporter = new RateReporter(SECONDS.toNanos(1), new RateReporter.Reporter {
     override def onReport(messagesPerSec: Double, bytesPerSec: Double, totalMessages: Long, totalBytes: Long): Unit = {
@@ -134,7 +141,7 @@ object AeronStreamsApp {
     var t0 = System.nanoTime()
     var count = 0L
     var payloadSize = 0L
-    Source.fromGraph(new AeronSource(channel1, aeron))
+    Source.fromGraph(new AeronSource(channel1, aeron, taskRunner))
       .map { bytes ⇒
         r.onMessage(1, bytes.length)
         bytes
@@ -172,19 +179,19 @@ object AeronStreamsApp {
         r.onMessage(1, payload.length)
         payload
       }
-      .runWith(new AeronSink(channel1, aeron))
+      .runWith(new AeronSink(channel1, aeron, taskRunner))
   }
 
   def runEchoReceiver(): Unit = {
     // just echo back on channel2
     reporterExecutor.execute(reporter)
     val r = reporter
-    Source.fromGraph(new AeronSource(channel1, aeron))
+    Source.fromGraph(new AeronSource(channel1, aeron, taskRunner))
       .map { bytes ⇒
         r.onMessage(1, bytes.length)
         bytes
       }
-      .runWith(new AeronSink(channel2, aeron))
+      .runWith(new AeronSink(channel2, aeron, taskRunner))
   }
 
   def runEchoSender(): Unit = {
@@ -196,7 +203,7 @@ object AeronStreamsApp {
     var repeat = 3
     val count = new AtomicInteger
     var t0 = System.nanoTime()
-    Source.fromGraph(new AeronSource(channel2, aeron))
+    Source.fromGraph(new AeronSource(channel2, aeron, taskRunner))
       .map { bytes ⇒
         r.onMessage(1, bytes.length)
         bytes
@@ -231,7 +238,7 @@ object AeronStreamsApp {
           sendTimes.set(n - 1, System.nanoTime())
           payload
         }
-        .runWith(new AeronSink(channel1, aeron))
+        .runWith(new AeronSink(channel1, aeron, taskRunner))
 
       barrier.await()
     }
@@ -241,7 +248,7 @@ object AeronStreamsApp {
 
   def runDebugReceiver(): Unit = {
     import system.dispatcher
-    Source.fromGraph(new AeronSource(channel1, aeron))
+    Source.fromGraph(new AeronSource(channel1, aeron, taskRunner))
       .map(bytes ⇒ new String(bytes, "utf-8"))
       .runForeach { s ⇒
         println(s)
@@ -261,7 +268,7 @@ object AeronStreamsApp {
         println(s)
         s.getBytes("utf-8")
       }
-      .runWith(new AeronSink(channel1, aeron))
+      .runWith(new AeronSink(channel1, aeron, taskRunner))
   }
 
 }
