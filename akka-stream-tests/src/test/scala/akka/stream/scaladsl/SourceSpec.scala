@@ -322,4 +322,51 @@ class SourceSpec extends AkkaSpec with DefaultTimeout {
     }
   }
 
+  "Java Stream source" must {
+    import scala.compat.java8.FunctionConverters._
+    import java.util.stream.{ Stream, IntStream }
+
+    def javaStreamInts = IntStream.iterate(1, { i: Int ⇒ i + 1 }.asJava)
+
+    "work with Java collections" in {
+      val list = new java.util.LinkedList[Integer]()
+      list.add(0)
+      list.add(1)
+      list.add(2)
+
+      StreamConverters.fromJavaStream(() ⇒ list.stream()).map(_.intValue).runWith(Sink.seq).futureValue should ===(List(0, 1, 2))
+    }
+
+    "work with primitive streams" in {
+      StreamConverters.fromJavaStream(() ⇒ IntStream.rangeClosed(1, 10)).map(_.intValue).runWith(Sink.seq).futureValue should ===(1 to 10)
+    }
+
+    "work with an empty stream" in {
+      StreamConverters.fromJavaStream(() ⇒ Stream.empty[Int]()).runWith(Sink.seq).futureValue should ===(Nil)
+    }
+
+    "work with an infinite stream" in {
+      StreamConverters.fromJavaStream(() ⇒ javaStreamInts).take(1000).runFold(0)(_ + _).futureValue should ===(500500)
+    }
+
+    "work with a filtered stream" in {
+      StreamConverters.fromJavaStream(() ⇒ javaStreamInts.filter({ i: Int ⇒ i % 2 == 0 }.asJava))
+        .take(1000).runFold(0)(_ + _).futureValue should ===(1001000)
+    }
+
+    "properly report errors during iteration" in {
+      import akka.stream.testkit.Utils.TE
+      // Filtering is lazy on Java Stream
+
+      val failyFilter: Int ⇒ Boolean = i ⇒ throw TE("failing filter")
+
+      a[TE] must be thrownBy {
+        Await.result(
+          StreamConverters.fromJavaStream(() ⇒ javaStreamInts.filter(failyFilter.asJava)).runWith(Sink.ignore),
+          3.seconds)
+      }
+    }
+
+  }
+
 }
