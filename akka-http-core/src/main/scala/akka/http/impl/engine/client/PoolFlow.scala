@@ -78,7 +78,7 @@ private object PoolFlow {
       val conductor = b.add(PoolConductor(maxConnections, pipeliningLimit, log))
       val slots = Vector
         .tabulate(maxConnections)(PoolSlot(_, connectionFlow, remoteAddress, settings))
-        .map(b.add(_))
+        .map(b.add)
       val responseMerge = b.add(Merge[ResponseContext](maxConnections))
       val slotEventMerge = b.add(Merge[PoolSlot.RawSlotEvent](maxConnections))
 

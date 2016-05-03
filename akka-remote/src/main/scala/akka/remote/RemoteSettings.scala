@@ -7,13 +7,12 @@ import com.typesafe.config.Config
 import scala.concurrent.duration._
 import akka.util.Timeout
 import scala.collection.immutable
-import akka.util.Helpers.{ConfigOps, Requiring, toRootLowerCase}
+import akka.util.Helpers.{ ConfigOps, Requiring, toRootLowerCase }
 import akka.japi.Util._
 import akka.actor.Props
 import akka.event.Logging
 import akka.event.Logging.LogLevel
 import akka.ConfigurationException
-import java.util.Locale
 
 final class RemoteSettings(val config: Config) {
   import config._
