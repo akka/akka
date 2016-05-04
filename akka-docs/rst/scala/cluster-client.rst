@@ -33,6 +33,16 @@ The ``ClusterClientReceptionist`` provides methods for registration of actors th
 should be reachable from the client. Messages are wrapped in ``ClusterClient.Send``,
 ``ClusterClient.SendToAll`` or ``ClusterClient.Publish``.
 
+Both the ``ClusterClient`` and the ``ClusterClientReceptionist`` emit events that can be subscribed to.
+The ``ClusterClient`` sends out notifications in relation to having received a list of contact points
+from the ``ClusterClientReceptionist``. One use of this list might be for the client to record its
+contact points. A client that is restarted could then use this information to supersede any previously
+configured contact points.
+
+The ``ClusterClientReceptionist`` sends out notifications in relation to having received contact
+from a ``ClusterClient``. This notification enables the server containing the receptionist to become aware of
+what clients are connected.
+
 **1. ClusterClient.Send**
 
 The message will be delivered to one recipient with a matching path, if any such
@@ -111,6 +121,19 @@ It is recommended to load the extension when the actor system is started by defi
 ``akka.extensions`` configuration property::
 
    akka.extensions = ["akka.cluster.client.ClusterClientReceptionist"]
+
+Events
+------
+As mentioned earlier, both the ``ClusterClient`` and ``ClusterClientReceptionist`` emit events that can be subscribed to.
+The following code snippet declares an actor that will receive notifications on contact points (addresses to the available
+receptionists), as they become available. The code illustrates subscribing to the events and receiving the ``ClusterClient``
+initial state.
+
+.. includecode:: ../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala#clientEventsListener
+
+Similarly we can have an actor that behaves in a similar fashion for learning what cluster clients contact a ``ClusterClientReceptionist``:
+
+.. includecode:: ../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala#receptionistEventsListener
 
 Dependencies
 ------------
