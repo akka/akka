@@ -96,7 +96,7 @@ class WebSocketClientExampleSpec extends WordSpec with Matchers with CompileOnly
     //#half-closed-WebSocket-closing-example
   }
 
-  "half-closed-WebSocket-closing-example" in compileOnlySpec {
+  "half-closed-WebSocket-working-example" in compileOnlySpec {
     import akka.{ Done, NotUsed }
     import akka.http.scaladsl.Http
     import akka.stream.ActorMaterializer
