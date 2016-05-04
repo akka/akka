@@ -11,13 +11,13 @@ import com.typesafe.sslconfig.akka.AkkaSSLConfig
 /**
  * INTERNAL API.
  */
-private[akka] final case class TlsModule(plainIn: Inlet[SslTlsOutbound], plainOut: Outlet[SslTlsInbound],
-                                         cipherIn: Inlet[ByteString], cipherOut: Outlet[ByteString],
-                                         shape: Shape, attributes: Attributes,
-                                         sslContext:   SSLContext,
-                                         sslConfig:    Option[AkkaSSLConfig],
-                                         firstSession: NegotiateNewSession,
-                                         role:         TLSRole, closing: TLSClosing, hostInfo: Option[(String, Int)]) extends AtomicModule {
+final case class TlsModule(plainIn: Inlet[SslTlsOutbound], plainOut: Outlet[SslTlsInbound],
+                           cipherIn: Inlet[ByteString], cipherOut: Outlet[ByteString],
+                           shape: Shape, attributes: Attributes,
+                           sslContext:   SSLContext,
+                           sslConfig:    Option[AkkaSSLConfig],
+                           firstSession: NegotiateNewSession,
+                           role:         TLSRole, closing: TLSClosing, hostInfo: Option[(String, Int)]) extends AtomicModule {
 
   override def withAttributes(att: Attributes): TlsModule = copy(attributes = att)
   override def carbonCopy: TlsModule =
@@ -35,7 +35,7 @@ private[akka] final case class TlsModule(plainIn: Inlet[SslTlsOutbound], plainOu
 /**
  * INTERNAL API.
  */
-private[akka] object TlsModule {
+object TlsModule {
   def apply(attributes: Attributes, sslContext: SSLContext, sslConfig: Option[AkkaSSLConfig], firstSession: NegotiateNewSession, role: TLSRole, closing: TLSClosing, hostInfo: Option[(String, Int)]): TlsModule = {
     val name = attributes.nameOrDefault(s"StreamTls($role)")
     val cipherIn = Inlet[ByteString](s"$name.cipherIn")

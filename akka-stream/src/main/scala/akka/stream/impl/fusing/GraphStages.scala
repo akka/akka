@@ -25,7 +25,7 @@ import scala.util.Try
 /**
  * INTERNAL API
  */
-private[akka] final case class GraphStageModule(
+final case class GraphStageModule(
   shape:      Shape,
   attributes: Attributes,
   stage:      GraphStageWithMaterializedValue[Shape, Any]) extends AtomicModule {
@@ -50,7 +50,7 @@ object GraphStages {
   /**
    * INTERNAL API
    */
-  private[akka] abstract class SimpleLinearGraphStage[T] extends GraphStage[FlowShape[T, T]] {
+  abstract class SimpleLinearGraphStage[T] extends GraphStage[FlowShape[T, T]] {
     val in = Inlet[T](Logging.simpleName(this) + ".in")
     val out = Outlet[T](Logging.simpleName(this) + ".out")
     override val shape = FlowShape(in, out)
@@ -77,7 +77,7 @@ object GraphStages {
   /**
    * INTERNAL API
    */
-  private[stream] final class Detacher[T] extends GraphStage[FlowShape[T, T]] {
+  final class Detacher[T] extends GraphStage[FlowShape[T, T]] {
     val in = Inlet[T]("Detacher.in")
     val out = Outlet[T]("Detacher.out")
     override def initialAttributes = DefaultAttributes.detacher
@@ -288,7 +288,7 @@ object GraphStages {
     override def toString: String = s"MaterializedValueSource($computation)"
   }
 
-  private[stream] final class SingleSource[T](val elem: T) extends GraphStage[SourceShape[T]] {
+  final class SingleSource[T](val elem: T) extends GraphStage[SourceShape[T]] {
     override def initialAttributes: Attributes = DefaultAttributes.singleSource
     ReactiveStreamsCompliance.requireNonNullElement(elem)
     val out = Outlet[T]("single.out")
@@ -304,7 +304,7 @@ object GraphStages {
     override def toString: String = s"SingleSource($elem)"
   }
 
-  private[stream] final class FutureSource[T](val future: Future[T]) extends GraphStage[SourceShape[T]] {
+  final class FutureSource[T](val future: Future[T]) extends GraphStage[SourceShape[T]] {
     ReactiveStreamsCompliance.requireNonNullElement(future)
     val shape = SourceShape(Outlet[T]("future.out"))
     val out = shape.out

@@ -34,7 +34,7 @@ sealed trait Stage[-In, +Out]
 /**
  * INTERNAL API
  */
-private[stream] object AbstractStage {
+object AbstractStage {
 
   private class PushPullGraphLogic[In, Out](
     private val shape: FlowShape[In, Out],

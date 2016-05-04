@@ -27,7 +27,7 @@ import scala.compat.java8.FutureConverters._
  * an “atomic” source, e.g. from a collection or a file. Materialization turns a Source into
  * a Reactive Streams `Publisher` (at least conceptually).
  */
-final class Source[+Out, +Mat](private[stream] override val module: Module)
+final class Source[+Out, +Mat](override val module: Module)
   extends FlowOpsMat[Out, Mat] with Graph[SourceShape[Out], Mat] {
 
   override type Repr[+O] = Source[O, Mat @uncheckedVariance]
@@ -170,7 +170,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
 
 object Source {
   /** INTERNAL API */
-  private[stream] def shape[T](name: String): SourceShape[T] = SourceShape(Outlet(name + ".out"))
+  def shape[T](name: String): SourceShape[T] = SourceShape(Outlet(name + ".out"))
 
   /**
    * Helper to create [[Source]] from `Publisher`.

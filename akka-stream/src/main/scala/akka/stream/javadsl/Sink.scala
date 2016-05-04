@@ -258,7 +258,7 @@ object Sink {
 final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[In], Mat] {
 
   override def shape: SinkShape[In] = delegate.shape
-  private[stream] def module: StreamLayout.Module = delegate.module
+  def module: StreamLayout.Module = delegate.module
 
   override def toString: String = delegate.toString
 
