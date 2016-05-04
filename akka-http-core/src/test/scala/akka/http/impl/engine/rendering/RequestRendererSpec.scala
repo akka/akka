@@ -140,8 +140,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
     "proper render a chunked" - {
 
       "PUT request with empty chunk stream and custom Content-Type" in new TestSetup() {
-        pending // Disabled until #15981 is fixed
-        HttpRequest(PUT, "/abc/xyz", entity = Chunked(ContentTypes.`text/plain(UTF-8)`, source())) should renderTo {
+        HttpRequest(PUT, "/abc/xyz", entity = Chunked(ContentTypes.`text/plain(UTF-8)`, Source.empty)) should renderTo {
           """PUT /abc/xyz HTTP/1.1
             |Host: test.com:8080
             |User-Agent: akka-http/1.0.0
