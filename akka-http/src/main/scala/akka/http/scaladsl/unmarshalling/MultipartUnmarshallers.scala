@@ -9,8 +9,8 @@ import akka.http.scaladsl.settings.ParserSettings
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import akka.util.ByteString
-import akka.event.{ NoLogging, LoggingAdapter }
-import akka.stream.ActorMaterializer
+import akka.event.{LoggingAdapter, NoLogging}
+import akka.stream.{ActorMaterializer, ActorMaterializerHelper}
 import akka.stream.impl.fusing.IteratorInterpreter
 import akka.stream.scaladsl._
 import akka.http.impl.engine.parsing.BodyPartParser
@@ -75,7 +75,7 @@ trait MultipartUnmarshallers {
               FastFuture.failed(new RuntimeException("Content-Type with a multipart media type must have a 'boundary' parameter"))
             case Some(boundary) ⇒
               import BodyPartParser._
-              val effectiveParserSettings = Option(parserSettings).getOrElse(ParserSettings(ActorMaterializer.downcast(mat).system))
+              val effectiveParserSettings = Option(parserSettings).getOrElse(ParserSettings(ActorMaterializerHelper.downcast(mat).system))
               val parser = new BodyPartParser(defaultContentType, boundary, log, effectiveParserSettings)
               FastFuture.successful {
                 entity match {

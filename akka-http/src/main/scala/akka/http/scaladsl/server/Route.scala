@@ -5,12 +5,12 @@
 package akka.http.scaladsl.server
 
 import akka.NotUsed
-import akka.http.scaladsl.settings.{ RoutingSettings, ParserSettings }
-import akka.stream.{ ActorMaterializer, Materializer }
+import akka.http.scaladsl.settings.{ParserSettings, RoutingSettings}
+import akka.stream.{ActorMaterializer, ActorMaterializerHelper, Materializer}
 
-import scala.concurrent.{ ExecutionContextExecutor, Future }
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import akka.stream.scaladsl.Flow
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.util.FastFuture._
 
 object Route {
@@ -66,7 +66,7 @@ object Route {
 
     {
       implicit val executionContext = effectiveEC // overrides parameter
-      val effectiveParserSettings = if (parserSettings ne null) parserSettings else ParserSettings(ActorMaterializer.downcast(materializer).system)
+      val effectiveParserSettings = if (parserSettings ne null) parserSettings else ParserSettings(ActorMaterializerHelper.downcast(materializer).system)
 
       val sealedRoute = seal(route)
       request ⇒

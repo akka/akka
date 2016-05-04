@@ -94,7 +94,7 @@ private[akka] final class MaybeSource[Out](val attributes: Attributes, shape: So
 private[akka] final class ActorPublisherSource[Out](props: Props, val attributes: Attributes, shape: SourceShape[Out]) extends SourceModule[Out, ActorRef](shape) {
 
   override def create(context: MaterializationContext) = {
-    val publisherRef = ActorMaterializer.downcast(context.materializer).actorOf(context, props)
+    val publisherRef = ActorMaterializerHelper.downcast(context.materializer).actorOf(context, props)
     (akka.stream.actor.ActorPublisher[Out](publisherRef), publisherRef)
   }
 
@@ -113,7 +113,7 @@ private[akka] final class ActorRefSource[Out](
   override protected def label: String = s"ActorRefSource($bufferSize, $overflowStrategy)"
 
   override def create(context: MaterializationContext) = {
-    val mat = ActorMaterializer.downcast(context.materializer)
+    val mat = ActorMaterializerHelper.downcast(context.materializer)
     val ref = mat.actorOf(context, ActorRefSourceActor.props(bufferSize, overflowStrategy, mat.settings))
     (akka.stream.actor.ActorPublisher[Out](ref), ref)
   }

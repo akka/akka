@@ -801,7 +801,7 @@ private[impl] class VirtualPublisher[T] extends AtomicReference[AnyRef] with Pub
 /**
  * INERNAL API
  */
-private[stream] object MaterializerSession {
+object MaterializerSession {
   class MaterializationPanic(cause: Throwable) extends RuntimeException("Materialization aborted.", cause) with NoStackTrace
 
   final val Debug = false
@@ -810,7 +810,7 @@ private[stream] object MaterializerSession {
 /**
  * INTERNAL API
  */
-private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Module, val initialAttributes: Attributes) {
+abstract class MaterializerSession(val topLevel: StreamLayout.Module, val initialAttributes: Attributes) {
   import StreamLayout._
 
   // the contained maps store either Subscriber[Any] or VirtualPublisher, but the type system cannot express that
@@ -839,7 +839,7 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
   // Enters a copied module and establishes a scope that prevents internals to leak out and interfere with copies
   // of the same module.
   // We don't store the enclosing CopiedModule itself as state since we don't use it anywhere else than exit and enter
-  private def enterScope(enclosing: CopiedModule): Unit = {
+  protected def enterScope(enclosing: CopiedModule): Unit = {
     if (MaterializerSession.Debug) println(f"entering scope [${System.identityHashCode(enclosing)}%08x]")
     subscribersStack ::= new ju.HashMap
     publishersStack ::= new ju.HashMap
@@ -851,7 +851,7 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
   // them to the copied ports instead of the original ones (since there might be multiple copies of the same module
   // leading to port identity collisions)
   // We don't store the enclosing CopiedModule itself as state since we don't use it anywhere else than exit and enter
-  private def exitScope(enclosing: CopiedModule): Unit = {
+  protected def exitScope(enclosing: CopiedModule): Unit = {
     if (MaterializerSession.Debug) println(f"exiting scope [${System.identityHashCode(enclosing)}%08x]")
     val scopeSubscribers = subscribers
     val scopePublishers = publishers
@@ -969,7 +969,7 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
     ret
   }
 
-  final protected def assignPort(in: InPort, subscriberOrVirtual: AnyRef): Unit = {
+  protected def assignPort(in: InPort, subscriberOrVirtual: AnyRef): Unit = {
     subscribers.put(in, subscriberOrVirtual)
 
     currentLayout.upstreams.get(in) match {
@@ -981,7 +981,7 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
     }
   }
 
-  final protected def assignPort(out: OutPort, publisher: Publisher[Any]): Unit = {
+  protected def assignPort(out: OutPort, publisher: Publisher[Any]): Unit = {
     publishers.put(out, publisher)
 
     currentLayout.downstreams.get(out) match {

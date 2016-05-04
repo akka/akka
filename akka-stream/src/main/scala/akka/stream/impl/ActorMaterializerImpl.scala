@@ -3,25 +3,58 @@
  */
 package akka.stream.impl
 
-import java.util.concurrent.atomic.{ AtomicBoolean }
+import java.util.concurrent.atomic.AtomicBoolean
 import java.{ util ⇒ ju }
+
 import akka.NotUsed
 import akka.actor._
-import akka.event.Logging
+import akka.event.{ Logging, LoggingAdapter }
 import akka.dispatch.Dispatchers
 import akka.pattern.ask
 import akka.stream._
-import akka.stream.impl.StreamLayout.{ Module, AtomicModule }
+import akka.stream.impl.StreamLayout.{ AtomicModule, Module }
 import akka.stream.impl.fusing.{ ActorGraphInterpreter, GraphModule }
 import akka.stream.impl.io.TLSActor
 import akka.stream.impl.io.TlsModule
 import org.reactivestreams._
+
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Await, ExecutionContextExecutor }
 import akka.stream.impl.fusing.GraphStageModule
 import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
 import akka.stream.impl.fusing.Fusing
 import akka.stream.impl.fusing.GraphInterpreterShell
+
+/**
+ * ExtendedActorMaterializer used by subtypes which materializer using GraphInterpreterShell
+ */
+abstract class ExtendedActorMaterializer extends ActorMaterializer {
+
+  override def withNamePrefix(name: String): ExtendedActorMaterializer
+
+  /**
+   * INTERNAL API
+   */
+  def materialize[Mat](
+    _runnableGraph: Graph[ClosedShape, Mat],
+    subflowFuser:   GraphInterpreterShell ⇒ ActorRef): Mat
+
+  /**
+   * INTERNAL API
+   */
+  def actorOf(context: MaterializationContext, props: Props): ActorRef
+
+  /**
+   * INTERNAL API
+   */
+  override def logger: LoggingAdapter
+
+  /**
+   * INTERNAL API
+   */
+  override def supervisor: ActorRef
+
+}
 
 /**
  * INTERNAL API
@@ -32,7 +65,7 @@ private[akka] case class ActorMaterializerImpl(
   dispatchers:           Dispatchers,
   supervisor:            ActorRef,
   haveShutDown:          AtomicBoolean,
-  flowNames:             SeqActorName) extends ActorMaterializer {
+  flowNames:             SeqActorName) extends ExtendedActorMaterializer {
   import akka.stream.impl.Stages._
   private val _logger = Logging.getLogger(system, this)
   override def logger = _logger
@@ -79,7 +112,7 @@ private[akka] case class ActorMaterializerImpl(
   override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat]): Mat =
     materialize(_runnableGraph, null)
 
-  private[stream] def materialize[Mat](
+  override def materialize[Mat](
     _runnableGraph: Graph[ClosedShape, Mat],
     subflowFuser:   GraphInterpreterShell ⇒ ActorRef): Mat = {
     val runnableGraph =
@@ -213,7 +246,7 @@ private[akka] case class ActorMaterializerImpl(
 
 }
 
-private[akka] class SubFusingActorMaterializerImpl(val delegate: ActorMaterializerImpl, registerShell: GraphInterpreterShell ⇒ ActorRef) extends Materializer {
+private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMaterializer, registerShell: GraphInterpreterShell ⇒ ActorRef) extends Materializer {
   override def executionContext: ExecutionContextExecutor = delegate.executionContext
 
   override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat = delegate.materialize(runnable, registerShell)
@@ -223,7 +256,7 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ActorMaterializ
   override def schedulePeriodically(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable =
     delegate.schedulePeriodically(initialDelay, interval, task)
 
-  def withNamePrefix(name: String): SubFusingActorMaterializerImpl =
+  override def withNamePrefix(name: String): SubFusingActorMaterializerImpl =
     new SubFusingActorMaterializerImpl(delegate.withNamePrefix(name), registerShell)
 }
 

@@ -5,7 +5,7 @@ package akka.stream
 
 import java.util.Locale
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.{ AtomicBoolean }
+import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, ExtendedActorSystem, Props }
 import akka.event.LoggingAdapter
@@ -16,6 +16,7 @@ import com.typesafe.config.Config
 
 import scala.concurrent.duration._
 import akka.japi.function
+import akka.stream.impl.fusing.GraphInterpreterShell
 
 import scala.util.control.NoStackTrace
 
@@ -126,6 +127,12 @@ object ActorMaterializer {
     system
   }
 
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] object ActorMaterializerHelper {
   /**
    * INTERNAL API
    */
@@ -163,21 +170,23 @@ abstract class ActorMaterializer extends Materializer {
   def isShutdown: Boolean
 
   /**
-   * INTERNAL API: this might become public later
+   * INTERNAL API
    */
   private[akka] def actorOf(context: MaterializationContext, props: Props): ActorRef
 
   /**
    * INTERNAL API
    */
-  private[akka] def system: ActorSystem
+  def system: ActorSystem
 
   /**
    * INTERNAL API
    */
   private[akka] def logger: LoggingAdapter
 
-  /** INTERNAL API */
+  /**
+   * INTERNAL API
+   */
   private[akka] def supervisor: ActorRef
 
 }

@@ -3,10 +3,10 @@
  */
 package akka.stream.impl
 
+import akka.stream._
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
-import org.reactivestreams.{ Subscription, Subscriber, Publisher }
-import akka.stream._
+import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
 import scala.concurrent.duration._
 
