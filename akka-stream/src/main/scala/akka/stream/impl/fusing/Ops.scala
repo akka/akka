@@ -922,7 +922,7 @@ private[akka] final case class Log[T](name: String, extract: T ⇒ Any,
     log = logAdapter match {
       case Some(l) ⇒ l
       case _ ⇒
-        val mat = try ActorMaterializer.downcast(ctx.materializer)
+        val mat = try ActorMaterializerHelper.downcast(ctx.materializer)
         catch {
           case ex: Exception ⇒
             throw new RuntimeException("Log stage can only provide LoggingAdapter when used with ActorMaterializer! " +
@@ -984,7 +984,7 @@ private[akka] object Log {
     override def getClazz(t: LifecycleContext): Class[_] = classOf[Materializer]
 
     override def genString(t: LifecycleContext): String = {
-      try s"$DefaultLoggerName(${ActorMaterializer.downcast(t.materializer).supervisor.path})"
+      try s"$DefaultLoggerName(${ActorMaterializerHelper.downcast(t.materializer).supervisor.path})"
       catch {
         case ex: Exception ⇒ LogSource.fromString.genString(DefaultLoggerName)
       }

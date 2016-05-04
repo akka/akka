@@ -73,11 +73,10 @@ private[akka] object NoMaterializer extends Materializer {
 }
 
 /**
- * INTERNAL API: this might become public later
  *
  * Context parameter to the `create` methods of sources and sinks.
  */
-private[akka] case class MaterializationContext(
+case class MaterializationContext(
   materializer:        Materializer,
   effectiveAttributes: Attributes,
   stageName:           String)

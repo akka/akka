@@ -609,7 +609,7 @@ private[http] object HttpServerBluePrint {
       })
 
       private var activeTimers = 0
-      private def timeout = ActorMaterializer.downcast(materializer).settings.subscriptionTimeoutSettings.timeout
+      private def timeout = ActorMaterializerHelper.downcast(materializer).settings.subscriptionTimeoutSettings.timeout
       private def addTimeout(s: SubscriptionTimeout): Unit = {
         if (activeTimers == 0) setKeepGoing(true)
         activeTimers += 1

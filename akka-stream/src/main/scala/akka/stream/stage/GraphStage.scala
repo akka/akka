@@ -900,7 +900,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final protected def getStageActor(receive: ((ActorRef, Any)) ⇒ Unit): StageActor = {
     _stageActor match {
       case null ⇒
-        val actorMaterializer = ActorMaterializer.downcast(interpreter.materializer)
+        val actorMaterializer = ActorMaterializerHelper.downcast(interpreter.materializer)
         _stageActor = new StageActor(actorMaterializer, getAsyncCallback, receive)
         _stageActor
       case existing ⇒
