@@ -13,7 +13,7 @@ import scala.util.{ Failure, Success, Try }
 /**
  * INTERNAL API
  */
-private[akka] final class Unfold[S, E](s: S, f: S ⇒ Option[(S, E)]) extends GraphStage[SourceShape[E]] {
+final class Unfold[S, E](s: S, f: S ⇒ Option[(S, E)]) extends GraphStage[SourceShape[E]] {
   val out: Outlet[E] = Outlet("Unfold.out")
   override val shape: SourceShape[E] = SourceShape(out)
   override def initialAttributes: Attributes = DefaultAttributes.unfold
@@ -36,7 +36,7 @@ private[akka] final class Unfold[S, E](s: S, f: S ⇒ Option[(S, E)]) extends Gr
 /**
  * INTERNAL API
  */
-private[akka] final class UnfoldAsync[S, E](s: S, f: S ⇒ Future[Option[(S, E)]]) extends GraphStage[SourceShape[E]] {
+final class UnfoldAsync[S, E](s: S, f: S ⇒ Future[Option[(S, E)]]) extends GraphStage[SourceShape[E]] {
   val out: Outlet[E] = Outlet("UnfoldAsync.out")
   override val shape: SourceShape[E] = SourceShape(out)
   override def initialAttributes: Attributes = DefaultAttributes.unfoldAsync

@@ -22,8 +22,8 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-private[stream] final case class GraphModule(assembly: GraphAssembly, shape: Shape, attributes: Attributes,
-                                             matValIDs: Array[Module]) extends AtomicModule {
+final case class GraphModule(assembly: GraphAssembly, shape: Shape, attributes: Attributes,
+                             matValIDs: Array[Module]) extends AtomicModule {
 
   override def withAttributes(newAttr: Attributes): Module = copy(attributes = newAttr)
 
@@ -44,7 +44,7 @@ private[stream] final case class GraphModule(assembly: GraphAssembly, shape: Sha
 /**
  * INTERNAL API
  */
-private[stream] object ActorGraphInterpreter {
+object ActorGraphInterpreter {
   trait BoundaryEvent extends DeadLetterSuppression with NoSerializationVerificationNeeded {
     def shell: GraphInterpreterShell
   }
@@ -526,7 +526,7 @@ final class GraphInterpreterShell(
 /**
  * INTERNAL API
  */
-private[stream] class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor with ActorLogging {
+class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor with ActorLogging {
   import ActorGraphInterpreter._
 
   var activeInterpreters = Set.empty[GraphInterpreterShell]
