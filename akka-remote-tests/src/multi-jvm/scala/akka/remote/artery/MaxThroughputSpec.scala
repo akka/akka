@@ -129,8 +129,8 @@ object MaxThroughputSpec extends MultiNodeConfig {
         val throughput = (totalReceived * 1000.0 / took)
         println(
           s"=== MaxThroughput ${self.path.name}: " +
-            f"throughput ${throughput}%.03g msg/s, " +
-            f"${throughput * payloadSize}%.03g bytes/s, " +
+            f"throughput ${throughput}%,.0f msg/s, " +
+            f"${throughput * payloadSize}%,.0f bytes/s, " +
             s"dropped ${totalMessages - totalReceived}, " +
             s"max round-trip $maxRoundTripMillis ms, " +
             s"burst size $burstSize, " +
@@ -187,13 +187,8 @@ abstract class MaxThroughputSpec
   def remoteSettings = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].remoteSettings
 
   lazy val reporterExecutor = Executors.newFixedThreadPool(1)
-  def reporter(name: String): RateReporter = {
-    val r = new RateReporter(SECONDS.toNanos(1), new RateReporter.Reporter {
-      override def onReport(messagesPerSec: Double, bytesPerSec: Double, totalMessages: Long, totalBytes: Long): Unit = {
-        println(name + ": %.03g msgs/sec, %.03g bytes/sec, totals %d messages %d MB".format(
-          messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024)))
-      }
-    })
+  def reporter(name: String): TestRateReporter = {
+    val r = new TestRateReporter(name)
     reporterExecutor.execute(r)
     r
   }

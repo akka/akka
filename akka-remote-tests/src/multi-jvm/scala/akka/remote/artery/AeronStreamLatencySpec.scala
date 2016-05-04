@@ -26,6 +26,8 @@ import akka.stream.KillSwitches
 import akka.Done
 import org.agrona.IoUtil
 import java.io.File
+import java.io.File
+import io.aeron.CncFileDescriptor
 
 object AeronStreamLatencySpec extends MultiNodeConfig {
   val first = role("first")
@@ -80,6 +82,9 @@ abstract class AeronStreamLatencySpec
 
   val driver = MediaDriver.launchEmbedded()
 
+  val stats =
+    new AeronStat(AeronStat.mapCounters(new File(driver.aeronDirectoryName, CncFileDescriptor.CNC_FILE)))
+
   val aeron = {
     val ctx = new Aeron.Context
     ctx.aeronDirectoryName(driver.aeronDirectoryName)
@@ -103,13 +108,8 @@ abstract class AeronStreamLatencySpec
   }
 
   lazy val reporterExecutor = Executors.newFixedThreadPool(1)
-  def reporter(name: String): RateReporter = {
-    val r = new RateReporter(SECONDS.toNanos(1), new RateReporter.Reporter {
-      override def onReport(messagesPerSec: Double, bytesPerSec: Double, totalMessages: Long, totalBytes: Long): Unit = {
-        println(name + ": %.03g msgs/sec, %.03g bytes/sec, totals %d messages %d MB".format(
-          messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024)))
-      }
-    })
+  def reporter(name: String): TestRateReporter = {
+    val r = new TestRateReporter(name)
     reporterExecutor.execute(r)
     r
   }
@@ -150,6 +150,11 @@ abstract class AeronStreamLatencySpec
         plot90 = plots.plot90.add(testName, percentile(90.0)),
         plot99 = plots.plot99.add(testName, percentile(99.0)))
     }
+  }
+
+  def printStats(side: String): Unit = {
+    println(side + " stats:")
+    stats.print(System.out)
   }
 
   val scenarios = List(
@@ -236,6 +241,7 @@ abstract class AeronStreamLatencySpec
       rep.halt()
     }
 
+    printStats(myself.name)
     enterBarrier("after-" + testName)
   }
 
