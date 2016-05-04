@@ -568,10 +568,23 @@ private[akka] final case class Buffer[T](size: Int, overflowStrategy: OverflowSt
 /**
  * INTERNAL API
  */
-private[akka] final case class Completed[T]() extends PushPullStage[T, T] {
-  override def onPush(elem: T, ctx: Context[T]): SyncDirective = ctx.finish()
+private[akka] final case class Completed[T]() extends GraphStage[FlowShape[T, T]] {
 
-  override def onPull(ctx: Context[T]): SyncDirective = ctx.finish()
+  val out: Outlet[T] = Outlet("Completed.out")
+  val in: Inlet[T] = Inlet("Completed.in")
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+
+    override def onPush(): Unit = { completeStage() }
+
+    override def onPull(): Unit = { completeStage() }
+
+    setHandlers(in, out, this)
+
+  }
+
+  val shape: FlowShape[T, T] = FlowShape.of(in, out)
+
 }
 
 /**
