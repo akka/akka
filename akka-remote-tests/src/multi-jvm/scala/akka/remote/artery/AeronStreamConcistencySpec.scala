@@ -55,9 +55,10 @@ abstract class AeronStreamConsistencySpec
 
   import AeronStreamConsistencySpec._
 
+  val driver = MediaDriver.launchEmbedded()
+
   val aeron = {
     val ctx = new Aeron.Context
-    val driver = MediaDriver.launchEmbedded()
     ctx.aeronDirectoryName(driver.aeronDirectoryName)
     Aeron.connect(ctx)
   }
@@ -78,9 +79,12 @@ abstract class AeronStreamConsistencySpec
     s"aeron:udp?endpoint=${a.host.get}:${aeronPort(roleName)}"
   }
 
+  val streamId = 1
+
   override def afterAll(): Unit = {
     taskRunner.stop()
     aeron.close()
+    driver.close()
     super.afterAll()
   }
 
@@ -89,8 +93,8 @@ abstract class AeronStreamConsistencySpec
     "start echo" in {
       runOn(second) {
         // just echo back
-        Source.fromGraph(new AeronSource(channel(second), aeron, taskRunner))
-          .runWith(new AeronSink(channel(first), aeron, taskRunner))
+        Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner))
+          .runWith(new AeronSink(channel(first), streamId, aeron, taskRunner))
       }
       enterBarrier("echo-started")
     }
@@ -103,7 +107,7 @@ abstract class AeronStreamConsistencySpec
         val killSwitch = KillSwitches.shared("test")
         val started = TestProbe()
         val startMsg = "0".getBytes("utf-8")
-        Source.fromGraph(new AeronSource(channel(first), aeron, taskRunner))
+        Source.fromGraph(new AeronSource(channel(first), streamId, aeron, taskRunner))
           .via(killSwitch.flow)
           .runForeach { bytes ⇒
             if (bytes.length == 1 && bytes(0) == startMsg(0))
@@ -124,14 +128,14 @@ abstract class AeronStreamConsistencySpec
         within(10.seconds) {
           Source(1 to 100).map(_ ⇒ startMsg)
             .throttle(1, 200.milliseconds, 1, ThrottleMode.Shaping)
-            .runWith(new AeronSink(channel(second), aeron, taskRunner))
+            .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner))
           started.expectMsg(Done)
         }
 
         Source(1 to totalMessages)
           .throttle(10000, 1.second, 1000, ThrottleMode.Shaping)
           .map { n ⇒ n.toString.getBytes("utf-8") }
-          .runWith(new AeronSink(channel(second), aeron, taskRunner))
+          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner))
 
         Await.ready(done, 20.seconds)
         killSwitch.shutdown()

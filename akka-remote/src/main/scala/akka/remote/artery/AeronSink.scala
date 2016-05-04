@@ -51,7 +51,7 @@ object AeronSink {
 /**
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
  */
-class AeronSink(channel: String, aeron: Aeron, taskRunner: TaskRunner) extends GraphStage[SinkShape[AeronSink.Bytes]] {
+class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRunner) extends GraphStage[SinkShape[AeronSink.Bytes]] {
   import AeronSink._
   import TaskRunner._
 
@@ -62,7 +62,6 @@ class AeronSink(channel: String, aeron: Aeron, taskRunner: TaskRunner) extends G
     new GraphStageLogic(shape) with InHandler {
 
       private val buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(128 * 1024))
-      private val streamId = 10
       private val pub = aeron.addPublication(channel, streamId)
 
       private val spinning = 1000

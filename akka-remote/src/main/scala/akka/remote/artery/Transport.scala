@@ -5,6 +5,8 @@
 package akka.remote.artery
 
 import scala.concurrent.duration._
+import akka.actor.Props
+import scala.concurrent.duration._
 import java.net.InetSocketAddress
 import java.nio.ByteOrder
 import akka.NotUsed
@@ -29,6 +31,28 @@ import io.aeron.AvailableImageHandler
 import io.aeron.Image
 import io.aeron.UnavailableImageHandler
 import io.aeron.exceptions.ConductorServiceTimeoutException
+import akka.actor.LocalRef
+import akka.actor.InternalActorRef
+import akka.dispatch.sysmsg.SystemMessage
+import akka.actor.PossiblyHarmful
+import akka.actor.RepointableRef
+import akka.actor.ActorSelectionMessage
+import akka.remote.RemoteRef
+import akka.actor.ActorSelection
+import akka.actor.ActorRef
+import akka.stream.scaladsl.Keep
+
+/**
+ * INTERNAL API
+ */
+private[akka] object Transport {
+  // FIXME avoid allocating this envelope?
+  final case class InboundEnvelope(
+    recipient: InternalActorRef,
+    recipientAddress: Address,
+    message: AnyRef,
+    senderOption: Option[ActorRef])
+}
 
 /**
  * INTERNAL API
@@ -39,14 +63,37 @@ private[akka] class Transport(
   val system: ExtendedActorSystem,
   val materializer: Materializer,
   val provider: RemoteActorRefProvider,
-  val codec: AkkaPduCodec,
-  val inboundDispatcher: InboundMessageDispatcher) {
+  val codec: AkkaPduCodec) {
+  import Transport._
 
   private val log: LoggingAdapter = Logging(system.eventStream, getClass.getName)
+  private val remoteDaemon = provider.remoteDaemon
 
   private implicit val mat = materializer
   // TODO support port 0
   private val inboundChannel = s"aeron:udp?endpoint=${localAddress.host.get}:${localAddress.port.get}"
+  private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
+  private val systemMessageStreamId = 1
+  private val ordinaryStreamId = 3
+
+  private val systemMessageResendInterval: FiniteDuration = 1.second // FIXME config
+
+  private var systemMessageReplyJunction: SystemMessageReplyJunction.Junction = _
+
+  // Need an ActorRef that is passed in the `SystemMessageEnvelope.ackReplyTo`.
+  // Those messages are not actually handled by this actor, but intercepted by the
+  // SystemMessageReplyJunction stage.
+  private val systemMessageReplyRecepient = system.systemActorOf(Props.empty, "systemMessageReplyTo")
+
+  private val driver = {
+    // TODO also support external media driver
+    val driverContext = new MediaDriver.Context
+    // FIXME settings from config
+    driverContext.clientLivenessTimeoutNs(SECONDS.toNanos(10))
+    driverContext.imageLivenessTimeoutNs(SECONDS.toNanos(10))
+    driverContext.driverTimeoutMs(SECONDS.toNanos(10))
+    MediaDriver.launchEmbedded(driverContext)
+  }
 
   private val aeron = {
     val ctx = new Aeron.Context
@@ -76,13 +123,6 @@ private[akka] class Transport(
         }
       }
     })
-    // TODO also support external media driver
-    val driverContext = new MediaDriver.Context
-    // FIXME settings from config
-    driverContext.clientLivenessTimeoutNs(SECONDS.toNanos(10))
-    driverContext.imageLivenessTimeoutNs(SECONDS.toNanos(10))
-    driverContext.driverTimeoutMs(SECONDS.toNanos(10))
-    val driver = MediaDriver.launchEmbedded(driverContext)
 
     ctx.aeronDirectoryName(driver.aeronDirectoryName)
     Aeron.connect(ctx)
@@ -92,7 +132,13 @@ private[akka] class Transport(
 
   def start(): Unit = {
     taskRunner.start()
-    Source.fromGraph(new AeronSource(inboundChannel, aeron, taskRunner))
+    systemMessageReplyJunction = Source.fromGraph(new AeronSource(inboundChannel, systemMessageStreamId, aeron, taskRunner))
+      .async // FIXME use dedicated dispatcher for AeronSource
+      .map(ByteString.apply) // TODO we should use ByteString all the way
+      .viaMat(inboundSystemMessageFlow)(Keep.right)
+      .to(Sink.ignore)
+      .run()
+    Source.fromGraph(new AeronSource(inboundChannel, ordinaryStreamId, aeron, taskRunner))
       .async // FIXME use dedicated dispatcher for AeronSource
       .map(ByteString.apply) // TODO we should use ByteString all the way
       .via(inboundFlow)
@@ -103,17 +149,26 @@ private[akka] class Transport(
     // FIXME stop the AeronSource first?
     taskRunner.stop()
     aeron.close()
+    driver.close()
     Future.successful(Done)
   }
 
   val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
 
   def outbound(remoteAddress: Address): Sink[Send, Any] = {
-    val outboundChannel = s"aeron:udp?endpoint=${remoteAddress.host.get}:${remoteAddress.port.get}"
     Flow.fromGraph(killSwitch.flow[Send])
       .via(encoder)
       .map(_.toArray) // TODO we should use ByteString all the way
-      .to(new AeronSink(outboundChannel, aeron, taskRunner))
+      .to(new AeronSink(outboundChannel(remoteAddress), ordinaryStreamId, aeron, taskRunner))
+  }
+
+  def outboundSystemMessage(remoteAddress: Address): Sink[Send, Any] = {
+    Flow.fromGraph(killSwitch.flow[Send])
+      .via(new SystemMessageDelivery(systemMessageReplyJunction, systemMessageResendInterval,
+        localAddress, remoteAddress, systemMessageReplyRecepient))
+      .via(encoder)
+      .map(_.toArray) // TODO we should use ByteString all the way
+      .to(new AeronSink(outboundChannel(remoteAddress), systemMessageStreamId, aeron, taskRunner))
   }
 
   // TODO: Try out parallelized serialization (mapAsync) for performance
@@ -141,14 +196,86 @@ private[akka] class Transport(
         pdu
       }
 
-  val messageDispatcher: Sink[AkkaPduCodec.Message, Any] = Sink.foreach[AkkaPduCodec.Message] { m ⇒
-    inboundDispatcher.dispatch(m.recipient, m.recipientAddress, m.serializedMessage, m.senderOption)
+  val messageDispatcher: Sink[InboundEnvelope, Future[Done]] = Sink.foreach[InboundEnvelope] { m ⇒
+    dispatchInboundMessage(m.recipient, m.recipientAddress, m.message, m.senderOption)
   }
+
+  val deserializer: Flow[AkkaPduCodec.Message, InboundEnvelope, NotUsed] =
+    Flow[AkkaPduCodec.Message].map { m ⇒
+      InboundEnvelope(
+        m.recipient,
+        m.recipientAddress,
+        MessageSerializer.deserialize(system, m.serializedMessage),
+        m.senderOption)
+    }
 
   val inboundFlow: Flow[ByteString, ByteString, NotUsed] = {
     Flow.fromSinkAndSource(
-      decoder.to(messageDispatcher),
+      decoder.via(deserializer).to(messageDispatcher),
       Source.maybe[ByteString].via(killSwitch.flow))
+  }
+
+  val inboundSystemMessageFlow: Flow[ByteString, ByteString, SystemMessageReplyJunction.Junction] = {
+    Flow.fromSinkAndSourceMat(
+      decoder.via(deserializer)
+        .via(new SystemMessageAcker(localAddress))
+        .viaMat(new SystemMessageReplyJunction)(Keep.right)
+        .to(messageDispatcher),
+      Source.maybe[ByteString].via(killSwitch.flow))((a, b) ⇒ a)
+  }
+
+  private def dispatchInboundMessage(recipient: InternalActorRef,
+                                     recipientAddress: Address,
+                                     message: AnyRef,
+                                     senderOption: Option[ActorRef]): Unit = {
+
+    import provider.remoteSettings._
+
+    val sender: ActorRef = senderOption.getOrElse(system.deadLetters)
+    val originalReceiver = recipient.path
+
+    def msgLog = s"RemoteMessage: [$message] to [$recipient]<+[$originalReceiver] from [$sender()]"
+
+    recipient match {
+
+      case `remoteDaemon` ⇒
+        if (UntrustedMode) log.debug("dropping daemon message in untrusted mode")
+        else {
+          if (LogReceive) log.debug("received daemon message {}", msgLog)
+          remoteDaemon ! message
+        }
+
+      case l @ (_: LocalRef | _: RepointableRef) if l.isLocal ⇒
+        if (LogReceive) log.debug("received local message {}", msgLog)
+        message match {
+          case sel: ActorSelectionMessage ⇒
+            if (UntrustedMode && (!TrustedSelectionPaths.contains(sel.elements.mkString("/", "/", "")) ||
+              sel.msg.isInstanceOf[PossiblyHarmful] || l != provider.rootGuardian))
+              log.debug("operating in UntrustedMode, dropping inbound actor selection to [{}], " +
+                "allow it by adding the path to 'akka.remote.trusted-selection-paths' configuration",
+                sel.elements.mkString("/", "/", ""))
+            else
+              // run the receive logic for ActorSelectionMessage here to make sure it is not stuck on busy user actor
+              ActorSelection.deliverSelection(l, sender, sel)
+          case msg: PossiblyHarmful if UntrustedMode ⇒
+            log.debug("operating in UntrustedMode, dropping inbound PossiblyHarmful message of type [{}]", msg.getClass.getName)
+          case msg: SystemMessage ⇒ l.sendSystemMessage(msg)
+          case msg                ⇒ l.!(msg)(sender)
+        }
+
+      case r @ (_: RemoteRef | _: RepointableRef) if !r.isLocal && !UntrustedMode ⇒
+        if (LogReceive) log.debug("received remote-destined message {}", msgLog)
+        if (provider.transport.addresses(recipientAddress))
+          // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
+          r.!(message)(sender)
+        else
+          log.error("dropping message [{}] for non-local recipient [{}] arriving at [{}] inbound addresses are [{}]",
+            message.getClass, r, recipientAddress, provider.transport.addresses.mkString(", "))
+
+      case r ⇒ log.error("dropping message [{}] for unknown recipient [{}] arriving at [{}] inbound addresses are [{}]",
+        message.getClass, r, recipientAddress, provider.transport.addresses.mkString(", "))
+
+    }
   }
 
 }

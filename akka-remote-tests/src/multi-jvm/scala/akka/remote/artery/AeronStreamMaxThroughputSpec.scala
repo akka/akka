@@ -113,6 +113,8 @@ abstract class AeronStreamMaxThroughputSpec
     s"aeron:udp?endpoint=${a.host.get}:${aeronPort(roleName)}"
   }
 
+  val streamId = 1
+
   lazy val reporterExecutor = Executors.newFixedThreadPool(1)
   def reporter(name: String): TestRateReporter = {
     val r = new TestRateReporter(name)
@@ -124,6 +126,7 @@ abstract class AeronStreamMaxThroughputSpec
     reporterExecutor.shutdown()
     taskRunner.stop()
     aeron.close()
+    driver.close()
     runOn(second) {
       println(plot.csv(system.name))
     }
@@ -169,7 +172,7 @@ abstract class AeronStreamMaxThroughputSpec
       var count = 0L
       val done = TestLatch(1)
       val killSwitch = KillSwitches.shared(testName)
-      Source.fromGraph(new AeronSource(channel(second), aeron, taskRunner))
+      Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner))
         .via(killSwitch.flow)
         .runForeach { bytes ⇒
           rep.onMessage(1, bytes.length)
@@ -200,7 +203,7 @@ abstract class AeronStreamMaxThroughputSpec
       val t0 = System.nanoTime()
       Source.fromIterator(() ⇒ iterate(1, totalMessages))
         .map { n ⇒ payload }
-        .runWith(new AeronSink(channel(second), aeron, taskRunner))
+        .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner))
 
       printStats("sender")
       enterBarrier(testName + "-done")

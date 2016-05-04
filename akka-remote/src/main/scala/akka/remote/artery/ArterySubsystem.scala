@@ -5,7 +5,6 @@
 package akka.remote.artery
 
 import java.util.concurrent.ConcurrentHashMap
-
 import akka.actor.{ ActorRef, Address, ExtendedActorSystem }
 import akka.event.{ Logging, LoggingAdapter }
 import akka.remote.EndpointManager.Send
@@ -14,9 +13,9 @@ import akka.remote.{ DefaultMessageDispatcher, RemoteActorRef, RemoteActorRefPro
 import akka.stream.scaladsl.{ Sink, Source, SourceQueueWithComplete, Tcp }
 import akka.stream.{ ActorMaterializer, Materializer, OverflowStrategy }
 import akka.{ Done, NotUsed }
-
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
+import akka.dispatch.sysmsg.SystemMessage
 
 /**
  * INTERNAL API
@@ -49,8 +48,7 @@ private[remote] class ArterySubsystem(_system: ExtendedActorSystem, _provider: R
         system,
         materializer,
         provider,
-        AkkaPduProtobufCodec,
-        new DefaultMessageDispatcher(system, provider, log))
+        AkkaPduProtobufCodec)
     transport.start()
   }
 
@@ -100,13 +98,24 @@ private[akka] class Association(
   val materializer: Materializer,
   val remoteAddress: Address,
   val transport: Transport) {
+
   @volatile private[this] var queue: SourceQueueWithComplete[Send] = _
-  private[this] val sink: Sink[Send, Any] = transport.outbound(remoteAddress)
+  @volatile private[this] var systemMessageQueue: SourceQueueWithComplete[Send] = _
 
   def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = {
     // TODO: lookup subchannel
     // FIXME: Use a different envelope than the old Send, but make sure the new is handled by deadLetters properly
-    queue.offer(Send(message, senderOption, recipient, None))
+    message match {
+      case _: SystemMessage | _: SystemMessageDelivery.SystemMessageReply ⇒
+        implicit val ec = materializer.executionContext
+        systemMessageQueue.offer(Send(message, senderOption, recipient, None)).onFailure {
+          case e ⇒
+            // FIXME proper error handling, and quarantining
+            println(s"# System message dropped, due to $e") // FIXME
+        }
+      case _ ⇒
+        queue.offer(Send(message, senderOption, recipient, None))
+    }
   }
 
   def quarantine(uid: Option[Int]): Unit = ()
@@ -114,7 +123,11 @@ private[akka] class Association(
   // Idempotent
   def associate(): Unit = {
     if (queue eq null)
-      queue = Source.queue(256, OverflowStrategy.dropBuffer).to(sink).run()(materializer)
+      queue = Source.queue(256, OverflowStrategy.dropBuffer)
+        .to(transport.outbound(remoteAddress)).run()(materializer)
+    if (systemMessageQueue eq null)
+      systemMessageQueue = Source.queue(256, OverflowStrategy.dropBuffer)
+        .to(transport.outboundSystemMessage(remoteAddress)).run()(materializer)
   }
 }
 
