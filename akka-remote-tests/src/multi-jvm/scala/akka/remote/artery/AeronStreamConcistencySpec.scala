@@ -4,6 +4,7 @@
 package akka.remote.artery
 
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.Done
@@ -22,6 +23,8 @@ import io.aeron.driver.MediaDriver
 import akka.actor.ExtendedActorSystem
 import org.agrona.IoUtil
 import java.io.File
+
+import akka.util.ByteString
 
 object AeronStreamConsistencySpec extends MultiNodeConfig {
   val first = role("first")
@@ -65,6 +68,8 @@ abstract class AeronStreamConsistencySpec
     r
   }
 
+  val pool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
+
   lazy implicit val mat = ActorMaterializer()(system)
   import system.dispatcher
 
@@ -90,8 +95,8 @@ abstract class AeronStreamConsistencySpec
     "start echo" in {
       runOn(second) {
         // just echo back
-        Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner))
-          .runWith(new AeronSink(channel(first), streamId, aeron, taskRunner))
+        Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool))
+          .runWith(new AeronSink(channel(first), streamId, aeron, taskRunner, pool))
       }
       enterBarrier("echo-started")
     }
@@ -104,35 +109,47 @@ abstract class AeronStreamConsistencySpec
         val killSwitch = KillSwitches.shared("test")
         val started = TestProbe()
         val startMsg = "0".getBytes("utf-8")
-        Source.fromGraph(new AeronSource(channel(first), streamId, aeron, taskRunner))
+        Source.fromGraph(new AeronSource(channel(first), streamId, aeron, taskRunner, pool))
           .via(killSwitch.flow)
-          .runForeach { bytes ⇒
+          .runForeach { envelope ⇒
+            val bytes = ByteString.fromByteBuffer(envelope.byteBuffer)
             if (bytes.length == 1 && bytes(0) == startMsg(0))
               started.ref ! Done
             else {
               val c = count.incrementAndGet()
-              val x = new String(bytes, "utf-8").toInt
+              val x = new String(bytes.toArray, "utf-8").toInt
               if (x != c) {
                 throw new IllegalArgumentException(s"# wrong message $x expected $c")
               }
               if (c == totalMessages)
                 done.countDown()
             }
+            pool.release(envelope)
           }.onFailure {
             case e ⇒ e.printStackTrace
           }
 
         within(10.seconds) {
-          Source(1 to 100).map(_ ⇒ startMsg)
+          Source(1 to 100).map { _ ⇒
+            val envelope = pool.acquire()
+            envelope.byteBuffer.put(startMsg)
+            envelope.byteBuffer.flip()
+            envelope
+          }
             .throttle(1, 200.milliseconds, 1, ThrottleMode.Shaping)
-            .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner))
+            .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool))
           started.expectMsg(Done)
         }
 
         Source(1 to totalMessages)
           .throttle(10000, 1.second, 1000, ThrottleMode.Shaping)
-          .map { n ⇒ n.toString.getBytes("utf-8") }
-          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner))
+          .map { n ⇒
+            val envelope = pool.acquire()
+            envelope.byteBuffer.put(n.toString.getBytes("utf-8"))
+            envelope.byteBuffer.flip()
+            envelope
+          }
+          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool))
 
         Await.ready(done, 20.seconds)
         killSwitch.shutdown()

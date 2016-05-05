@@ -246,6 +246,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val maxRestarts = 5 // FIXME config
   private val restartCounter = new RestartCounter(maxRestarts, restartTimeout)
 
+  val envelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
+  // FIXME: Compression table must be owned by each channel instead
+  // of having a global one
+  val compression = new Compression(system)
+
   override def start(): Unit = {
     startMediaDriver()
     startAeron()
@@ -318,9 +323,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def runInboundControlStream(): Unit = {
-    val (c, completed) = Source.fromGraph(new AeronSource(inboundChannel, controlStreamId, aeron, taskRunner))
+    val (c, completed) = Source.fromGraph(new AeronSource(inboundChannel, controlStreamId, aeron, taskRunner, envelopePool))
       .async // FIXME measure
-      .map(ByteString.apply) // TODO we should use ByteString all the way
       .viaMat(inboundControlFlow)(Keep.right)
       .toMat(Sink.ignore)(Keep.both)
       .run()(materializer)
@@ -357,9 +361,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def runInboundOrdinaryMessagesStream(): Unit = {
-    val completed = Source.fromGraph(new AeronSource(inboundChannel, ordinaryStreamId, aeron, taskRunner))
+    val completed = Source.fromGraph(new AeronSource(inboundChannel, ordinaryStreamId, aeron, taskRunner, envelopePool))
       .async // FIXME measure
-      .map(ByteString.apply) // TODO we should use ByteString all the way
       .via(inboundFlow)
       .runWith(Sink.ignore)(materializer)
 
@@ -437,8 +440,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     Flow.fromGraph(killSwitch.flow[Send])
       .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval))
       .via(encoder)
-      .map(_.toArray) // TODO we should use ByteString all the way
-      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), ordinaryStreamId, aeron, taskRunner))(Keep.right)
+      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), ordinaryStreamId, aeron, taskRunner, envelopePool))(Keep.right)
   }
 
   def outboundControl(outboundContext: OutboundContext): Sink[Send, (OutboundControlIngress, Future[Done])] = {
@@ -447,10 +449,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .via(new SystemMessageDelivery(outboundContext, systemMessageResendInterval, remoteSettings.SysMsgBufferSize))
       .viaMat(new OutboundControlJunction(outboundContext))(Keep.right)
       .via(encoder)
-      .map(_.toArray) // TODO we should use ByteString all the way
-      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), controlStreamId, aeron, taskRunner))(Keep.both)
-
-    // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
+      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), controlStreamId, aeron, taskRunner, envelopePool))(Keep.both)
 
     // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
   }
@@ -458,59 +457,27 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   // FIXME hack until real envelopes, encoding originAddress in sender :)
   private val dummySender = system.systemActorOf(Props.empty, "dummy")
 
-  // TODO: Try out parallelized serialization (mapAsync) for performance
-  val encoder: Flow[Send, ByteString, NotUsed] = Flow[Send].map { sendEnvelope ⇒
-    val pdu: ByteString = codec.constructMessage(
-      sendEnvelope.recipient.localAddressToUse,
-      sendEnvelope.recipient,
-      Serialization.currentTransportInformation.withValue(Serialization.Information(localAddress.address, system)) {
-        MessageSerializer.serialize(system, sendEnvelope.message.asInstanceOf[AnyRef])
-      },
-      if (sendEnvelope.senderOption.isDefined) sendEnvelope.senderOption else Some(dummySender), // FIXME: hack until real envelopes
-      seqOption = Some(SeqNo(localAddress.uid)), // FIXME: hack until real envelopes
-      ackOption = None)
-
-    // TODO: Drop unserializable messages
-    // TODO: Drop oversized messages
-    (new ByteStringBuilder).putInt(pdu.size)(ByteOrder.LITTLE_ENDIAN).result() ++ pdu
-  }
-
-  val decoder: Flow[ByteString, AkkaPduCodec.Message, NotUsed] =
-    Framing.lengthField(4, maximumFrameLength = 256000)
-      .map { frame ⇒
-        // TODO: Drop unserializable messages
-        val pdu = codec.decodeMessage(frame.drop(4), provider, localAddress.address)._2.get
-        pdu
-      }
+  val encoder: Flow[Send, EnvelopeBuffer, NotUsed] =
+    Flow.fromGraph(new Encoder(this, compression))
 
   val messageDispatcherSink: Sink[InboundEnvelope, Future[Done]] = Sink.foreach[InboundEnvelope] { m ⇒
     messageDispatcher.dispatch(m.recipient, m.recipientAddress, m.message, m.senderOption)
   }
 
-  val deserializer: Flow[AkkaPduCodec.Message, InboundEnvelope, NotUsed] =
-    Flow[AkkaPduCodec.Message].map { m ⇒
-      InboundEnvelope(
-        m.recipient,
-        m.recipientAddress,
-        MessageSerializer.deserialize(system, m.serializedMessage),
-        if (m.senderOption.get.path.name == "dummy") None else m.senderOption, // FIXME hack until real envelopes
-        UniqueAddress(m.senderOption.get.path.address, m.seq.rawValue.toInt)) // FIXME hack until real envelopes
-    }
+  val decoder = Flow.fromGraph(new Decoder(this, compression))
 
-  val inboundFlow: Flow[ByteString, ByteString, NotUsed] = {
+  val inboundFlow: Flow[EnvelopeBuffer, ByteString, NotUsed] = {
     Flow.fromSinkAndSource(
       decoder
-        .via(deserializer)
         .via(new InboundHandshake(this, inControlStream = false))
         .via(new InboundQuarantineCheck(this))
         .to(messageDispatcherSink),
       Source.maybe[ByteString].via(killSwitch.flow))
   }
 
-  val inboundControlFlow: Flow[ByteString, ByteString, ControlMessageSubject] = {
+  val inboundControlFlow: Flow[EnvelopeBuffer, ByteString, ControlMessageSubject] = {
     Flow.fromSinkAndSourceMat(
       decoder
-        .via(deserializer)
         .via(new InboundHandshake(this, inControlStream = true))
         .via(new InboundQuarantineCheck(this))
         .viaMat(new InboundControlJunction)(Keep.right)
@@ -521,10 +488,18 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
 }
 
-object ArteryTransport {
+/**
+ * INTERNAL API
+ */
+private[remote] object ArteryTransport {
+
+  val Version = 0
+  val MaximumFrameSize = 1024 * 1024
+  val MaximumPooledBuffers = 256
 
   /**
    * Internal API
+   *
    * @return A port that is hopefully available
    */
   private[remote] def autoSelectPort(hostname: String): Int = {
