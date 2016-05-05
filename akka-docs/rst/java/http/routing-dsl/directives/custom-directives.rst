@@ -1,7 +1,8 @@
-.. _Custom Directives:
+.. _Custom Directives-java:
 
 Custom Directives
 =================
+TODO update to Java APIs
 
 Part of the power of akka-http directives comes from the ease with which it’s possible to define
 custom directives at differing levels of abstraction.

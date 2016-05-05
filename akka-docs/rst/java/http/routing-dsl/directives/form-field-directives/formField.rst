@@ -3,14 +3,6 @@
 formField
 =========
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FormFieldDirectives.scala
-   :snippet: formField
-
-Description
 -----------
 Allows extracting a single Form field sent in the request.
 

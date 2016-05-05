@@ -3,13 +3,6 @@
 handleWith
 ==========
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala
-   :snippet: handleWith
-
 Description
 -----------
 Completes the request using the given function. The input to the function is produced with

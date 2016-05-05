@@ -3,13 +3,6 @@
 headerValue
 ===========
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala
-   :snippet: headerValue
-
 Description
 -----------
 Traverses the list of request headers with the specified function and extracts the first value the function returns as

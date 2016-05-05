@@ -3,17 +3,10 @@
 formFieldMultiMap
 =================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FormFieldDirectives.scala
-   :snippet: formFieldMultiMap
-
 Description
 -----------
 
-Extracts all HTTP form fields at once as a multi-map of type ``Map[String, List[String]`` mapping
+Extracts all HTTP form fields at once as a multi-map of type ``Map<String, <List<String>>`` mapping
 a form name to a list of all its values.
 
 This directive can be used if form fields can occur several times.
@@ -25,7 +18,7 @@ See :ref:`-formFields-java-` for an in-depth description.
 Warning
 -------
 Use of this directive can result in performance degradation or even in ``OutOfMemoryError`` s.
-See :ref:`-formFieldSeq-java-` for details.
+See :ref:`-formFieldList-java-` for details.
 
 Example
 -------

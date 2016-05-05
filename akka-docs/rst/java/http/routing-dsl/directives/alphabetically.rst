@@ -70,7 +70,7 @@ Directive                                   Description
 :ref:`-formFieldMultiMap-java-`                  Extracts a number of HTTP form field from the request as
                                             a ``Map[String, List[String]``
 :ref:`-formFields-java-`                         Extracts a number of HTTP form field from the request
-:ref:`-formFieldSeq-java-`                       Extracts a number of HTTP form field from the request as
+:ref:`-formFieldList-java-`                       Extracts a number of HTTP form field from the request as
                                             a ``Seq[(String, String)]``
 :ref:`-get-java-`                                Rejects all non-GET requests
 :ref:`-getFromBrowseableDirectories-java-`       Serves the content of the given directories as a file-system browser, i.e.
@@ -119,7 +119,7 @@ Directive                                   Description
                                             ``immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]`` function
 :ref:`-mapRouteResult-java-`                     Transforms the ``RouteResult`` with a ``RouteResult ⇒ RouteResult``
                                             function
-:ref:`-mapRouteResultFuture-java-`               Transforms the ``RouteResult`` future with a
+:ref:`-mapRouteResultStage-java-`               Transforms the ``RouteResult`` future with a
                                             ``Future[RouteResult] ⇒ Future[RouteResult]`` function
 :ref:`-mapRouteResultPF-java-`                   Transforms the ``RouteResult`` with a
                                             ``PartialFunction[RouteResult, RouteResult]``

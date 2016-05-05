@@ -3,17 +3,10 @@
 mapSettings
 ===========
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala
-   :snippet: mapSettings
-
 Description
 -----------
 
-Transforms the ``RoutingSettings`` with a ``RoutingSettings ⇒ RoutingSettings`` function.
+Transforms the ``RoutingSettings`` with a ``Function<RoutingSettings, RoutingSettings>``.
 
 See also :ref:`-withSettings-java-` or :ref:`-extractSettings-java-`.
 

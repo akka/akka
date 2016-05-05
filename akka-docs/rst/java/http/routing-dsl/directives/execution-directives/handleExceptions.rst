@@ -3,13 +3,6 @@
 handleExceptions
 ================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ExecutionDirectives.scala
-   :snippet: handleExceptions
-
 Description
 -----------
 Catches exceptions thrown by the inner route and handles them using the specified ``ExceptionHandler``.
