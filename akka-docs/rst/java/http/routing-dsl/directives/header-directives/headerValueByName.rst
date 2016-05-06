@@ -15,6 +15,3 @@ handling when the header is missing use the :ref:`-optionalHeaderValueByName-jav
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
-   :snippet: headerValueByName-0

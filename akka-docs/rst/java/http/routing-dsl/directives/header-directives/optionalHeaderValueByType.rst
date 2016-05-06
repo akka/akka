@@ -16,9 +16,8 @@ an ``Optional`` value instead of rejecting the request if no matching header cou
 
   To learn more about defining custom headers, read: :ref:`custom-headers`.
 
+.. warning:: 
+
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
-   :snippet: optionalHeaderValueByType-0

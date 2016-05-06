@@ -17,6 +17,3 @@ Use ``logResult`` for logging the response, or ``logRequestResult`` for logging 
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala
-   :snippet: logRequest-0

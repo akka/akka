@@ -14,6 +14,3 @@ Use the :ref:`-optionalCookie-java-` directive instead if you want to support mi
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CookieDirectivesExamplesSpec.scala
-   :snippet: cookie

@@ -15,6 +15,3 @@ See :ref:`-extract-java-` to learn more about how extractions work.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: extractExecutionContext-0

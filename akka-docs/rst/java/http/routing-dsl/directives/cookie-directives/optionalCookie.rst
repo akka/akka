@@ -13,6 +13,3 @@ Use the :ref:`-cookie-java-` directive instead if the inner route does not handl
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CookieDirectivesExamplesSpec.scala
-   :snippet: optionalCookie

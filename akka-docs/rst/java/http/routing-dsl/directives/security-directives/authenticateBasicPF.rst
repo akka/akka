@@ -2,20 +2,10 @@
 
 authenticateBasicPF
 ===================
-
-Signature
----------
-
-.. includecode:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala#authenticator-pf
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
-   :snippet: authenticateBasicPF
+Wraps the inner route with Http Basic authentication support using a given ``AuthenticatorPF<T>``.
 
 Description
 -----------
-Wraps the inner route with Http Basic authentication support using a given ``AuthenticatorPF[T]``.
-
 Provides support for handling `HTTP Basic Authentication`_.
 
 Refer to :ref:`-authenticateBasic-java-` for a detailed description of this directive.
@@ -36,6 +26,3 @@ See :ref:`credentials-and-timing-attacks-java` for details about verifying the s
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala
-   :snippet: authenticateBasicPF-0

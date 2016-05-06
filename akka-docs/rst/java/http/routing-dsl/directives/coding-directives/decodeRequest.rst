@@ -10,8 +10,4 @@ Decompresses the incoming request if it is ``gzip`` or ``deflate`` compressed. U
 
 Example
 -------
-
 ..TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
-   :snippet: "decodeRequest"

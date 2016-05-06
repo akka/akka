@@ -3,14 +3,6 @@
 path
 ====
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala
-   :snippet: path
-
-
 Description
 -----------
 Matches the complete unmatched path of the ``RequestContext`` against the given ``PathMatcher``, potentially extracts
@@ -36,6 +28,3 @@ If the match fails the request is rejected with an :ref:`empty rejection set <em
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
-  :snippet: path-example

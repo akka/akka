@@ -14,6 +14,3 @@ See :ref:`Response Transforming Directives-java` for similar directives.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: mapResponseEntity

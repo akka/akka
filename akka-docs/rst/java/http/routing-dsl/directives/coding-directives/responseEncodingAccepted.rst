@@ -11,6 +11,3 @@ Passes the request to the inner route if the request accepts the argument encodi
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
-  :snippet: responseEncodingAccepted

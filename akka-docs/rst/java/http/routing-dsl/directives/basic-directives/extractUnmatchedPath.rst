@@ -16,6 +16,3 @@ Use ``mapUnmatchedPath`` to change the value of the unmatched path.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: extractUnmatchedPath-example

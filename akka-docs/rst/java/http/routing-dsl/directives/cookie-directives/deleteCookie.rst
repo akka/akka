@@ -12,6 +12,3 @@ Use the :ref:`-setCookie-java-` directive to update a cookie.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CookieDirectivesExamplesSpec.scala
-   :snippet: deleteCookie

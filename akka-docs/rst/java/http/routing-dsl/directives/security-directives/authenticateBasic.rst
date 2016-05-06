@@ -2,26 +2,13 @@
 
 authenticateBasic
 =================
-
-Signature
----------
-
-TODO: Add example snippet.
-
-.. 
-.. includecode:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala#authenticator
-
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
-   :snippet: authenticateBasic
+Wraps the inner route with Http Basic authentication support using a given ``Authenticator<T>``.
 
 Description
 -----------
-Wraps the inner route with Http Basic authentication support using a given ``Authenticator[T]``.
-
 Provides support for handling `HTTP Basic Authentication`_.
 
-Given a function returning ``Some[T]`` upon successful authentication and ``None`` otherwise,
+Given a function returning an ``Optional<T>`` with a value upon successful authentication and an empty ``Optional<T>`` otherwise,
 respectively applies the inner route or rejects the request with a :class:`AuthenticationFailedRejection` rejection,
 which by default is mapped to an ``401 Unauthorized`` response.
 
@@ -41,6 +28,3 @@ See :ref:`credentials-and-timing-attacks-java` for details about verifying the s
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala
-   :snippet: authenticateBasic-0

@@ -14,6 +14,3 @@ It is possible to override the settings for specific sub-routes by using the :re
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: extractSettings-examples

@@ -16,6 +16,3 @@ See :ref:`Request Transforming Directives-java` for an overview of similar direc
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: mapRequestContext

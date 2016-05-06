@@ -24,9 +24,9 @@ Understanding Specific Marshalling Directives
 ======================================= =======================================
 directive                               behavior
 ======================================= =======================================
-:ref:`-completeWith-java-`                   Uses a marshaller for a given type to produce a completion function for an inner route. Used in conjuction with *instanceOf* to format responses.
-:ref:`-entity-java-`                         Unmarshalls the request entity to the given type and passes it to its inner route.  Used in conjection with *as* to convert requests to objects.
-:ref:`-handleWith-java-`                     Completes a request with a given function, using an in-scope unmarshaller for an input and in-scope marshaller for the output.
+:ref:`-completeWith-java-`              Uses a marshaller for a given type to produce a completion function for an inner route. Used in conjuction with *instanceOf* to format responses.
+:ref:`-entity-java-`                    Unmarshalls the request entity to the given type and passes it to its inner route.  Used in conjection with *as* to convert requests to objects.
+:ref:`-handleWith-java-`                Completes a request with a given function, using an in-scope unmarshaller for an input and in-scope marshaller for the output.
 ======================================= =======================================
 
 

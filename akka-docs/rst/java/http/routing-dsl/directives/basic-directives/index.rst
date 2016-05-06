@@ -25,9 +25,7 @@ a single value or a tuple of values.
   * :ref:`-extractSettings-java-`
   * :ref:`-extractUnmatchedPath-java-`
   * :ref:`-extractUri-java-`
-  * :ref:`-textract-java-`
   * :ref:`-provide-java-`
-  * :ref:`-tprovide-java-`
 
 
 .. _Request Transforming Directives-java:

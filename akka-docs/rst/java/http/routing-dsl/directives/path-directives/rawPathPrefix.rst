@@ -3,14 +3,6 @@
 rawPathPrefix
 =============
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala
-   :snippet: rawPathPrefix
-
-
 Description
 -----------
 Matches and consumes a prefix of the unmatched path of the ``RequestContext`` against the given ``PathMatcher``,
@@ -30,6 +22,3 @@ the URI. If the match fails the request is rejected with an :ref:`empty rejectio
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
-   :snippet: rawPathPrefix-

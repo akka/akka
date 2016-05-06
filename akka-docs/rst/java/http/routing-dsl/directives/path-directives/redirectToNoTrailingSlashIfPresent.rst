@@ -3,13 +3,6 @@
 redirectToNoTrailingSlashIfPresent
 ==================================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala
-   :snippet: redirectToNoTrailingSlashIfPresent
-
 Description
 -----------
 If the requested path does end with a trailing ``/`` character,
@@ -32,8 +25,5 @@ See also :ref:`-redirectToTrailingSlashIfMissing-java-` for the opposite behavio
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
-   :snippet: redirectToNoTrailingSlashIfPresent-0
 
 See also :ref:`-redirectToTrailingSlashIfMissing-java-` which achieves the opposite - redirecting paths in case they do *not* have a trailing slash.

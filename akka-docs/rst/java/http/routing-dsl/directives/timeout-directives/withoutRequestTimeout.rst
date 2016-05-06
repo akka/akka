@@ -3,13 +3,6 @@
 withoutRequestTimeout
 =====================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/TimeoutDirectives.scala
-   :snippet: withoutRequestTimeout
-
 Description
 -----------
 
@@ -28,6 +21,3 @@ For more information about various timeouts in Akka HTTP see :ref:`http-timeouts
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/TimeoutDirectivesExamplesSpec.scala
-   :snippet: withoutRequestTimeout

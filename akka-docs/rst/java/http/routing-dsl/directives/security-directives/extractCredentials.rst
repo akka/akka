@@ -3,13 +3,6 @@
 extractCredentials
 ==================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
-   :snippet: extractCredentials
-
 Description
 -----------
 
@@ -21,6 +14,3 @@ See :ref:`credentials-and-timing-attacks-java` for details about verifying the s
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala
-   :snippet: 0extractCredentials

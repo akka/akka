@@ -20,6 +20,3 @@ can cause performance issues or even an ``OutOfMemoryError`` s.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala
-   :snippet: formFieldSeq

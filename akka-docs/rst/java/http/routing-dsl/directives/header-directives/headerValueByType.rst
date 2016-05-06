@@ -22,6 +22,3 @@ is missing use the :ref:`-optionalHeaderValueByType-java-` directive instead.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
-   :snippet: headerValueByType-0

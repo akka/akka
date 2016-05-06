@@ -2,8 +2,10 @@
 
 head
 ====
-
 Matches requests with HTTP method ``HEAD``.
+
+Description
+-----------
 
 This directive filters the incoming request by its HTTP method. Only requests with
 method ``HEAD`` are passed on to the inner route. All others are rejected with a

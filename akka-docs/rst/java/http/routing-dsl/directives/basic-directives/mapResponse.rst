@@ -15,13 +15,7 @@ See also :ref:`-mapResponseHeaders-java-` or :ref:`-mapResponseEntity-java-` for
 Example: Override status
 ------------------------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: 0mapResponse
 
 Example: Default to empty JSON response on errors
 -------------------------------------------------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: 1mapResponse-advanced

@@ -17,19 +17,18 @@ ParameterDirectives
 When to use which parameter directive?
 --------------------------------------
 
-Usually, you want to use the high-level :ref:`-parameters-java-` directive. When you need
+Usually, you want to use the high-level :ref:`-parameter-java-` directive. When you need
 more low-level access you can use the table below to decide which directive
 to use which shows properties of different parameter directives.
 
-========================== ====== ======== =====
-directive                  level  ordering multi
-========================== ====== ======== =====
+=============================== ====== ======== =====
+directive                       level  ordering multi
+=============================== ====== ======== =====
 :ref:`-parameter-java-`         high   no       no
-:ref:`-parameters-java-`        high   no       yes
 :ref:`-parameterMap-java-`      low    no       no
 :ref:`-parameterMultiMap-java-` low    no       yes
-:ref:`-parameterSeq-java-`      low    yes      yes
-========================== ====== ======== =====
+:ref:`-parameterList-java-`      low    yes      yes
+=============================== ====== ======== =====
 
 level
     high-level parameter directives extract subset of all parameters by name and allow conversions

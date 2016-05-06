@@ -3,13 +3,6 @@
 handleWebSocketMessagesForProtocol
 ==================================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/WebSocketDirectives.scala
-   :snippet: handleWebSocketMessagesForProtocol
-
 Description
 -----------
 Handles WebSocket requests with the given handler if the given subprotocol is offered in the ``Sec-WebSocket-Protocol``
@@ -28,6 +21,3 @@ For more information about the WebSocket support, see :ref:`server-side-websocke
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala
-   :snippet: handle-multiple-protocols

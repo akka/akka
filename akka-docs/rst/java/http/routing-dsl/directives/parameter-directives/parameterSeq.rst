@@ -1,14 +1,7 @@
-.. _-parameterSeq-java-:
+.. _-parameterList-java-:
 
-parameterSeq
-============
-
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ParameterDirectives.scala
-   :snippet: parameterSeq
+parameterList
+=============
 
 Description
 -----------
@@ -21,6 +14,3 @@ See :ref:`which-parameter-directive` to understand when to use which directive.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
-   :snippet: parameterSeq

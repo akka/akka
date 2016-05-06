@@ -2,25 +2,14 @@
 
 parameter
 =========
-
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ParameterDirectives.scala
-   :snippet: parameter
+Extracts a *query* parameter value from the request.
 
 Description
 -----------
-Extracts a *query* parameter value from the request.
-
-See :ref:`-parameters-java-` for a detailed description of this directive.
+See :ref:`-parameter-java-` for a detailed description of this directive.
 
 See :ref:`which-parameter-directive` to understand when to use which directive.
 
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
-   :snippet: example-1

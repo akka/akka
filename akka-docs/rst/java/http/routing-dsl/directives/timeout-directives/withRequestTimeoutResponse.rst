@@ -3,13 +3,6 @@
 withRequestTimeoutResponse
 ==========================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/TimeoutDirectives.scala
-   :snippet: withRequestTimeoutResponse
-
 Description
 -----------
 
@@ -31,6 +24,3 @@ To learn more about various timeouts in Akka HTTP and how to configure them see 
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/TimeoutDirectivesExamplesSpec.scala
-   :snippet: withRequestTimeoutResponse

@@ -20,6 +20,3 @@ See also :ref:`-headerValuePF-java-` for a nicer syntactic alternative.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
-   :snippet: headerValue-0
