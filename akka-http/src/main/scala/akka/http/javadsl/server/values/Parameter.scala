@@ -26,7 +26,6 @@ trait Parameter[T] extends RequestVal[T] {
 
 /**
  * A collection of predefined parameters.
- * FIXME: add tests, see #16437
  */
 object Parameters {
   import akka.http.scaladsl.common.ToNameReceptacleEnhancements._

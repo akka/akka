@@ -4,8 +4,6 @@
 
 package akka.http.impl.engine.client
 
-import java.net.InetSocketAddress
-
 import akka.actor._
 import akka.http.impl.engine.client.PoolFlow._
 import akka.http.scaladsl.model._
@@ -66,10 +64,9 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
       case _                                    ⇒ Http().outgoingConnection(host, port, None, settings.connectionSettings, setup.log)
     }
 
-    val poolFlow = PoolFlow(
-      Flow[HttpRequest].viaMat(connectionFlow)(Keep.right),
-      new InetSocketAddress(host, port), settings, setup.log)
-      .named("PoolFlow")
+    val poolFlow =
+      PoolFlow(Flow[HttpRequest].viaMat(connectionFlow)(Keep.right), settings, setup.log)
+        .named("PoolFlow")
 
     Source.fromPublisher(ActorPublisher(self)).via(poolFlow).runWith(Sink.fromSubscriber(ActorSubscriber[ResponseContext](self)))
   }
