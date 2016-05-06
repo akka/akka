@@ -11,11 +11,10 @@ import scala.concurrent.duration.Duration
 import akka.actor.Address
 import akka.actor.AddressFromURIString
 import akka.dispatch.Dispatchers
-import akka.util.Helpers.{Requiring, ConfigOps, toRootLowerCase}
+import akka.util.Helpers.{ Requiring, ConfigOps, toRootLowerCase }
 
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util.immutableSeq
-import java.util.Locale
 
 final class ClusterSettings(val config: Config, val systemName: String) {
 
@@ -98,7 +97,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val MinNrOfMembersOfRole: Map[String, Int] = {
     import scala.collection.JavaConverters._
     cc.getConfig("role").root.asScala.collect {
-      case (key, value: ConfigObject) ⇒ (key -> value.toConfig.getInt("min-nr-of-members"))
+      case (key, value: ConfigObject) ⇒ key -> value.toConfig.getInt("min-nr-of-members")
     }.toMap
   }
   val JmxEnabled: Boolean = cc.getBoolean("jmx.enabled")

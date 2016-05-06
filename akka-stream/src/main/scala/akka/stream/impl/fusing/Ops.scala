@@ -9,7 +9,7 @@ import akka.stream.Attributes.{ InputBuffer, LogLevels }
 import akka.stream.OverflowStrategies._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ Buffer ⇒ BufferImpl, ReactiveStreamsCompliance }
-import akka.stream.scaladsl.{ SourceQueue, Source }
+import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
 import scala.annotation.tailrec
@@ -212,11 +212,11 @@ private[akka] final case class Recover[T](pf: PartialFunction[Throwable, T]) ext
 
     override def onPull(): Unit = {
       recovered match {
-        case Some(elem) ⇒ {
+        case Some(elem) ⇒
           push(out, elem)
           completeStage()
-        }
-        case None ⇒ pull(in)
+        case None ⇒
+          pull(in)
       }
     }
 
@@ -749,7 +749,7 @@ private[akka] final class Expand[In, Out](extrapolate: In ⇒ Iterator[Out]) ext
     setHandler(out, new OutHandler {
       override def onPull(): Unit = {
         if (iterator.hasNext) {
-          if (expanded == false) {
+          if (!expanded) {
             expanded = true
             if (isClosed(in)) {
               push(out, iterator.next())
@@ -818,7 +818,7 @@ private[akka] final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Fut
         if (buffer.isEmpty) {
           if (isClosed(in)) completeStage()
           else if (!hasBeenPulled(in)) pull(in)
-        } else if (buffer.peek.elem == NotYetThere) {
+        } else if (buffer.peek().elem == NotYetThere) {
           if (todo < parallelism && !hasBeenPulled(in)) tryPull(in)
         } else buffer.dequeue().elem match {
           case Success(elem) ⇒

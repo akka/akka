@@ -4,8 +4,6 @@
 
 package akka.http.impl.engine.client
 
-import java.net.InetSocketAddress
-
 import akka.actor._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
@@ -50,7 +48,6 @@ private object PoolSlot {
                                                                                                  v
    */
   def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
-            remoteAddress: InetSocketAddress, // TODO: remove after #16168 is cleared
             settings: ConnectionPoolSettings)(implicit system: ActorSystem,
                                               fm: Materializer): Graph[FanOutShape2[RequestContext, ResponseContext, RawSlotEvent], Any] =
     GraphDSL.create() { implicit b ⇒
@@ -63,7 +60,7 @@ private object PoolSlot {
           val actor = system.actorOf(Props(new SlotProcessor(slotIx, connectionFlow, settings)).withDeploy(Deploy.local),
             name)
           ActorProcessor[RequestContext, List[ProcessorOut]](actor)
-        }.mapConcat(conforms)
+        }.mapConcat(identity)
       }
       val split = b.add(Broadcast[ProcessorOut](2))
 
@@ -183,7 +180,7 @@ private object PoolSlot {
         } else {
           inflightRequests.map { rc ⇒
             if (rc.retriesLeft == 0) {
-              val reason = error.fold[Throwable](new UnexpectedDisconnectException("Unexpected disconnect"))(conforms)
+              val reason = error.fold[Throwable](new UnexpectedDisconnectException("Unexpected disconnect"))(identity)
               connInport ! ActorPublisherMessage.Cancel
               ResponseDelivery(ResponseContext(rc, Failure(reason)))
             } else SlotEvent.RetryRequest(rc.copy(retriesLeft = rc.retriesLeft - 1))

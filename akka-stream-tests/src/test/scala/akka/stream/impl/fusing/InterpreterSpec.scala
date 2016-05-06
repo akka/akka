@@ -600,7 +600,7 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
         setHandlers(in, out, this)
       }
 
-    override val shape: FlowShape[T, T] =  FlowShape(in, out)
+    override val shape: FlowShape[T, T] = FlowShape(in, out)
   }
 
   private[akka] final case class KeepGoing[T]() extends GraphStage[FlowShape[T, T]] {
