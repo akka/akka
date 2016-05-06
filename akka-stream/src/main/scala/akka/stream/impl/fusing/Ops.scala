@@ -568,28 +568,6 @@ private[akka] final case class Buffer[T](size: Int, overflowStrategy: OverflowSt
 /**
  * INTERNAL API
  */
-private[akka] final case class Completed[T]() extends GraphStage[FlowShape[T, T]] {
-
-  val out: Outlet[T] = Outlet("Completed.out")
-  val in: Inlet[T] = Inlet("Completed.in")
-
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
-
-    override def onPush(): Unit = { completeStage() }
-
-    override def onPull(): Unit = { completeStage() }
-
-    setHandlers(in, out, this)
-
-  }
-
-  val shape: FlowShape[T, T] = FlowShape.of(in, out)
-
-}
-
-/**
- * INTERNAL API
- */
 private[akka] final case class Batch[In, Out](max: Long, costFn: In ⇒ Long, seed: In ⇒ Out, aggregate: (Out, In) ⇒ Out)
   extends GraphStage[FlowShape[In, Out]] {
 
