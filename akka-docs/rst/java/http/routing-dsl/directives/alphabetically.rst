@@ -1,4 +1,4 @@
-.. _Predefined Directives:
+.. _Predefined Directives-java:
 
 Predefined Directives (alphabetically)
 ======================================
@@ -50,7 +50,6 @@ Directive                                        Description
 :ref:`-formField-java-`                          Extracts an HTTP form field from the request
 :ref:`-formFieldMap-java-`                       Extracts a number of HTTP form field from the request as a ``Map<String, String>``
 :ref:`-formFieldMultiMap-java-`                  Extracts a number of HTTP form field from the request as a ``Map<String, List<String>``
-:ref:`-formFields-java-`                         Extracts a number of HTTP form field from the request
 :ref:`-formFieldList-java-`                      Extracts a number of HTTP form field from the request as a ``List<Pair<String, String>>``
 :ref:`-get-java-`                                Rejects all non-GET requests
 :ref:`-getFromBrowseableDirectories-java-`       Serves the content of the given directories as a file-system browser, i.e. files are sent and directories served as browseable listings

@@ -2,7 +2,7 @@
 
 parameterMap
 ============
-Extracts all parameters at once as a ``Map[String, String]`` mapping parameter names to parameter values.
+Extracts all parameters at once as a ``Map<String, String>`` mapping parameter names to parameter values.
 
 Description
 -----------

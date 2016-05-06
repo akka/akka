@@ -1,15 +1,13 @@
 .. _-formFieldList-java-:
 
-formFieldSeq
-============
+formFieldList
+=============
 
 Description
 -----------
-Extracts all HTTP form fields at once in the original order as (name, value) tuples of type ``(String, String)``.
+Extracts all HTTP form fields at once in the original order as (name, value) tuples of type ``Map.Entry<String, String>``.
 
 This directive can be used if the exact order of form fields is important or if parameters can occur several times.
-
-See :ref:`-formFields-java-` for an in-depth description.
 
 Warning
 -------

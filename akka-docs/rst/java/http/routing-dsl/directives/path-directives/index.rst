@@ -18,4 +18,4 @@ PathDirectives
    rawPathPrefixTest
    redirectToNoTrailingSlashIfPresent
    redirectToTrailingSlashIfMissing
-   ../../path-matchers
+   ../path-directives

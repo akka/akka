@@ -9,10 +9,9 @@ ParameterDirectives
    parameter
    parameterMap
    parameterMultiMap
-   parameters
    parameterSeq
 
-.. _which-parameter-directive:
+.. _which-parameter-directive-java:
 
 When to use which parameter directive?
 --------------------------------------
@@ -27,7 +26,7 @@ directive                       level  ordering multi
 :ref:`-parameter-java-`         high   no       no
 :ref:`-parameterMap-java-`      low    no       no
 :ref:`-parameterMultiMap-java-` low    no       yes
-:ref:`-parameterList-java-`      low    yes      yes
+:ref:`-parameterList-java-`     low    yes      yes
 =============================== ====== ======== =====
 
 level

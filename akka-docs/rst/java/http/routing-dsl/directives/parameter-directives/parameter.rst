@@ -8,7 +8,7 @@ Description
 -----------
 See :ref:`-parameter-java-` for a detailed description of this directive.
 
-See :ref:`which-parameter-directive` to understand when to use which directive.
+See :ref:`which-parameter-directive-java` to understand when to use which directive.
 
 Example
 -------
