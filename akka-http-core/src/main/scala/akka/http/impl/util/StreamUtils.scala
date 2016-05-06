@@ -6,7 +6,6 @@ package akka.http.impl.util
 
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 import akka.NotUsed
-import akka.http.scaladsl.model.RequestEntity
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ PublisherSink, SinkModule, SourceModule }
@@ -14,6 +13,7 @@ import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.util.ByteString
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
+
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 
 /**
@@ -27,88 +27,77 @@ private[http] object StreamUtils {
    * input has been read it will call `finish` once to determine the final ByteString to post to the output.
    * Empty ByteStrings are discarded.
    */
-  def byteStringTransformer(f: ByteString ⇒ ByteString, finish: () ⇒ ByteString): Stage[ByteString, ByteString] = {
-    new PushPullStage[ByteString, ByteString] {
-      override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective = {
-        val data = f(element)
-        if (data.nonEmpty) ctx.push(data)
-        else ctx.pull()
+  def byteStringTransformer(f: ByteString ⇒ ByteString, finish: () ⇒ ByteString): GraphStage[FlowShape[ByteString, ByteString]] = new SimpleLinearGraphStage[ByteString] {
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+      override def onPush(): Unit = {
+        val data = f(grab(in))
+        if (data.nonEmpty) push(out, data)
+        else pull(in)
       }
 
-      override def onPull(ctx: Context[ByteString]): SyncDirective =
-        if (ctx.isFinishing) {
-          val data = finish()
-          if (data.nonEmpty) ctx.pushAndFinish(data)
-          else ctx.finish()
-        } else ctx.pull()
+      override def onPull(): Unit = pull(in)
 
-      override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective = ctx.absorbTermination()
+      override def onUpstreamFinish(): Unit = {
+        val data = finish()
+        if (data.nonEmpty) emit(out, data)
+        completeStage()
+      }
+
+      setHandlers(in, out, this)
     }
   }
 
   def failedPublisher[T](ex: Throwable): Publisher[T] =
     impl.ErrorPublisher(ex, "failed").asInstanceOf[Publisher[T]]
 
-  def mapErrorTransformer(f: Throwable ⇒ Throwable): Flow[ByteString, ByteString, NotUsed] = {
-    val transformer = new PushStage[ByteString, ByteString] {
-      override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective =
-        ctx.push(element)
-
-      override def onUpstreamFailure(cause: Throwable, ctx: Context[ByteString]): TerminationDirective =
-        ctx.fail(f(cause))
-    }
-
-    Flow[ByteString].transform(() ⇒ transformer).named("transformError")
-  }
-
   def captureTermination[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit]) = {
     val promise = Promise[Unit]()
-    val transformer = new PushStage[T, T] {
-      def onPush(element: T, ctx: Context[T]) = ctx.push(element)
-      override def onUpstreamFinish(ctx: Context[T]) = {
-        promise.success(())
-        super.onUpstreamFinish(ctx)
-      }
-      override def onUpstreamFailure(cause: Throwable, ctx: Context[T]) = {
-        promise.failure(cause)
-        ctx.fail(cause)
+    val transformer = new SimpleLinearGraphStage[T] {
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+        override def onPush(): Unit = push(out, grab(in))
+
+        override def onPull(): Unit = pull(in)
+
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          promise.failure(ex)
+          failStage(ex)
+        }
+
+        override def postStop(): Unit = {
+          promise.trySuccess(())
+        }
+
+        setHandlers(in, out, this)
       }
     }
-    source.transform(() ⇒ transformer) -> promise.future
+    source.via(transformer) -> promise.future
   }
 
   def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString, NotUsed] = {
-    val transformer = new StatefulStage[ByteString, ByteString] {
+    val transformer = new SimpleLinearGraphStage[ByteString] {
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+        override def onPull() = pull(in)
 
-      def skipping = new State {
         var toSkip = start
+        var remaining = length
 
-        override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective =
-          if (element.length < toSkip) {
-            // keep skipping
-            toSkip -= element.length
-            ctx.pull()
-          } else {
-            become(taking(length))
-            // toSkip <= element.length <= Int.MaxValue
-            current.onPush(element.drop(toSkip.toInt), ctx)
+        override def onPush(): Unit = {
+          val element = grab(in)
+          if (toSkip >= element.length)
+            pull(in)
+          else {
+            val data = element.drop(toSkip.toInt).take(math.min(remaining, Int.MaxValue).toInt)
+            remaining -= data.size
+            push(out, data)
+            if (remaining <= 0) completeStage()
           }
-      }
-
-      def taking(initiallyRemaining: Long) = new State {
-        var remaining: Long = initiallyRemaining
-
-        override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective = {
-          val data = element.take(math.min(remaining, Int.MaxValue).toInt)
-          remaining -= data.size
-          if (remaining <= 0) ctx.pushAndFinish(data)
-          else ctx.push(data)
+          toSkip -= element.length
         }
-      }
 
-      override def initial: State = if (start > 0) skipping else taking(length)
+        setHandlers(in, out, this)
+      }
     }
-    Flow[ByteString].transform(() ⇒ transformer).named("sliceBytes")
+    Flow[ByteString].via(transformer).named("sliceBytes")
   }
 
   def limitByteChunksStage(maxBytesPerChunk: Int): GraphStage[FlowShape[ByteString, ByteString]] =
@@ -154,9 +143,6 @@ private[http] object StreamUtils {
         override def toString = "limitByteChunksStage"
       }
     }
-
-  def mapEntityError(f: Throwable ⇒ Throwable): RequestEntity ⇒ RequestEntity =
-    _.transformDataBytes(mapErrorTransformer(f))
 
   /**
    * Returns a source that can only be used once for testing purposes.
@@ -229,65 +215,6 @@ private[http] object StreamUtils {
     def setValue(value: T): Unit =
       if (!compareAndSet(null.asInstanceOf[T], value))
         throw new IllegalStateException("Value can be only set once.")
-  }
-
-  // TODO: remove after #16394 is cleared
-  def recover[A, B >: A](pf: PartialFunction[Throwable, B]): () ⇒ PushPullStage[A, B] = {
-    val stage = new PushPullStage[A, B] {
-      var recovery: Option[B] = None
-      def onPush(elem: A, ctx: Context[B]): SyncDirective = ctx.push(elem)
-      def onPull(ctx: Context[B]): SyncDirective = recovery match {
-        case None    ⇒ ctx.pull()
-        case Some(x) ⇒ { recovery = null; ctx.push(x) }
-        case null    ⇒ ctx.finish()
-      }
-      override def onUpstreamFailure(cause: Throwable, ctx: Context[B]): TerminationDirective =
-        if (pf isDefinedAt cause) {
-          recovery = Some(pf(cause))
-          ctx.absorbTermination()
-        } else super.onUpstreamFailure(cause, ctx)
-    }
-    () ⇒ stage
-  }
-
-  /**
-   * Returns a no-op flow that materializes to a future that will be completed when the flow gets a
-   * completion or error signal. It doesn't necessarily mean, though, that all of a streaming pipeline
-   * is finished, only that the part that contains this flow has finished work.
-   */
-  def identityFinishReporter[T]: Flow[T, T, Future[Unit]] = {
-    // copy from Sink.foreach
-    def newForeachStage(): (PushStage[T, T], Future[Unit]) = {
-      val promise = Promise[Unit]()
-
-      val stage = new PushStage[T, T] {
-        override def onPush(elem: T, ctx: Context[T]): SyncDirective = ctx.push(elem)
-
-        override def onUpstreamFailure(cause: Throwable, ctx: Context[T]): TerminationDirective = {
-          promise.failure(cause)
-          ctx.fail(cause)
-        }
-
-        override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = {
-          promise.success(())
-          ctx.finish()
-        }
-
-        override def onDownstreamFinish(ctx: Context[T]): TerminationDirective = {
-          promise.success(())
-          ctx.finish()
-        }
-
-        override def decide(cause: Throwable): Supervision.Directive = {
-          // supervision will be implemented by #16916
-          promise.tryFailure(cause)
-          super.decide(cause)
-        }
-      }
-
-      (stage, promise.future)
-    }
-    Flow[T].transformMaterializing(newForeachStage)
   }
 
   /**

@@ -14,7 +14,6 @@ import scala.concurrent.duration._
 import akka.actor.DeadLetter
 import akka.pattern.ask
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class AkkaSpecSpec extends WordSpec with Matchers {
 
   "An AkkaSpec" must {

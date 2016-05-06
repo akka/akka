@@ -7,6 +7,7 @@ package akka.camel;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 import org.junit.ClassRule;
+import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import akka.actor.ActorSystem;
@@ -19,7 +20,7 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.*;
 
-public class ConsumerJavaTest {
+public class ConsumerJavaTest extends JUnitSuite {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

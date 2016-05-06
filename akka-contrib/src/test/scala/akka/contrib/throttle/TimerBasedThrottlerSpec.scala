@@ -12,8 +12,6 @@ import akka.actor.Props
 import akka.testkit.TestKit
 import akka.testkit.ImplicitSender
 import akka.contrib.throttle.Throttler._
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.WordSpecLike
 import org.scalatest.Matchers
 import org.scalatest.BeforeAndAfterAll
@@ -33,7 +31,6 @@ object TimerBasedThrottlerSpec {
   //#demo-code
 }
 
-@RunWith(classOf[JUnitRunner])
 class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSpec")) with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll {
 

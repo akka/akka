@@ -10,11 +10,17 @@ import akka.event.LoggingAdapter
 import akka.http.scaladsl.model._
 import akka.http.javadsl
 
+/**
+ * @groupname debugging Debugging directives
+ * @groupprio debugging 40
+ */
 trait DebuggingDirectives {
   import BasicDirectives._
 
   /**
    * Produces a log entry for every incoming request.
+   *
+   * @group debugging
    */
   def logRequest(magnet: LoggingMagnet[HttpRequest ⇒ Unit]): Directive0 =
     extractRequestContext.flatMap { ctx ⇒
@@ -24,6 +30,8 @@ trait DebuggingDirectives {
 
   /**
    * Produces a log entry for every [[RouteResult]].
+   *
+   * @group debugging
    */
   def logResult(magnet: LoggingMagnet[RouteResult ⇒ Unit]): Directive0 =
     extractRequestContext.flatMap { ctx ⇒
@@ -35,6 +43,8 @@ trait DebuggingDirectives {
 
   /**
    * Produces a log entry for every incoming request and [[RouteResult]].
+   *
+   * @group debugging
    */
   def logRequestResult(magnet: LoggingMagnet[HttpRequest ⇒ RouteResult ⇒ Unit]): Directive0 =
     extractRequestContext.flatMap { ctx ⇒

@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 import akka.actor.Cancellable
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
+import akka.stream.FlowMonitorState._
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.impl.Stages.DefaultAttributes
@@ -114,109 +115,6 @@ object GraphStages {
   private val _detacher = new Detacher[Any]
   def detacher[T]: GraphStage[FlowShape[T, T]] = _detacher.asInstanceOf[GraphStage[FlowShape[T, T]]]
 
-  final class Breaker(callback: Breaker.Operation ⇒ Unit) {
-    import Breaker._
-    def complete(): Unit = callback(Complete)
-    def cancel(): Unit = callback(Cancel)
-    def fail(ex: Throwable): Unit = callback(Fail(ex))
-    def completeAndCancel(): Unit = callback(CompleteAndCancel)
-    def failAndCancel(ex: Throwable): Unit = callback(FailAndCancel(ex))
-  }
-
-  object Breaker extends GraphStageWithMaterializedValue[FlowShape[Any, Any], Future[Breaker]] {
-    sealed trait Operation
-    case object Complete extends Operation
-    case object Cancel extends Operation
-    case class Fail(ex: Throwable) extends Operation
-    case object CompleteAndCancel extends Operation
-    case class FailAndCancel(ex: Throwable) extends Operation
-
-    override val initialAttributes = Attributes.name("breaker")
-    override val shape = FlowShape(Inlet[Any]("breaker.in"), Outlet[Any]("breaker.out"))
-    override def toString: String = "Breaker"
-
-    override def createLogicAndMaterializedValue(attr: Attributes) = {
-      val promise = Promise[Breaker]
-
-      val logic = new GraphStageLogic(shape) {
-
-        passAlong(shape.in, shape.out)
-        setHandler(shape.out, eagerTerminateOutput)
-
-        override def preStart(): Unit = {
-          pull(shape.in)
-          promise.success(new Breaker(getAsyncCallback[Operation] {
-            case Complete          ⇒ complete(shape.out)
-            case Cancel            ⇒ cancel(shape.in)
-            case Fail(ex)          ⇒ fail(shape.out, ex)
-            case CompleteAndCancel ⇒ completeStage()
-            case FailAndCancel(ex) ⇒ failStage(ex)
-          }.invoke))
-        }
-      }
-
-      (logic, promise.future)
-    }
-  }
-
-  def breaker[T]: Graph[FlowShape[T, T], Future[Breaker]] = Breaker.asInstanceOf[Graph[FlowShape[T, T], Future[Breaker]]]
-
-  object BidiBreaker extends GraphStageWithMaterializedValue[BidiShape[Any, Any, Any, Any], Future[Breaker]] {
-    import Breaker._
-
-    override val initialAttributes = Attributes.name("breaker")
-    override val shape = BidiShape(
-      Inlet[Any]("breaker.in1"), Outlet[Any]("breaker.out1"),
-      Inlet[Any]("breaker.in2"), Outlet[Any]("breaker.out2"))
-    override def toString: String = "BidiBreaker"
-
-    override def createLogicAndMaterializedValue(attr: Attributes) = {
-      val promise = Promise[Breaker]
-
-      val logic = new GraphStageLogic(shape) {
-
-        setHandler(shape.in1, new InHandler {
-          override def onPush(): Unit = push(shape.out1, grab(shape.in1))
-          override def onUpstreamFinish(): Unit = complete(shape.out1)
-          override def onUpstreamFailure(ex: Throwable): Unit = fail(shape.out1, ex)
-        })
-        setHandler(shape.in2, new InHandler {
-          override def onPush(): Unit = push(shape.out2, grab(shape.in2))
-          override def onUpstreamFinish(): Unit = complete(shape.out2)
-          override def onUpstreamFailure(ex: Throwable): Unit = fail(shape.out2, ex)
-        })
-        setHandler(shape.out1, new OutHandler {
-          override def onPull(): Unit = pull(shape.in1)
-          override def onDownstreamFinish(): Unit = cancel(shape.in1)
-        })
-        setHandler(shape.out2, new OutHandler {
-          override def onPull(): Unit = pull(shape.in2)
-          override def onDownstreamFinish(): Unit = cancel(shape.in2)
-        })
-
-        override def preStart(): Unit = {
-          promise.success(new Breaker(getAsyncCallback[Operation] {
-            case Complete ⇒
-              complete(shape.out1)
-              complete(shape.out2)
-            case Cancel ⇒
-              cancel(shape.in1)
-              cancel(shape.in2)
-            case Fail(ex) ⇒
-              fail(shape.out1, ex)
-              fail(shape.out2, ex)
-            case CompleteAndCancel ⇒ completeStage()
-            case FailAndCancel(ex) ⇒ failStage(ex)
-          }.invoke))
-        }
-      }
-
-      (logic, promise.future)
-    }
-  }
-
-  def bidiBreaker[T1, T2]: Graph[BidiShape[T1, T1, T2, T2], Future[Breaker]] = BidiBreaker.asInstanceOf[Graph[BidiShape[T1, T1, T2, T2], Future[Breaker]]]
-
   private object TerminationWatcher extends GraphStageWithMaterializedValue[FlowShape[Any, Any], Future[Done]] {
     val in = Inlet[Any]("terminationWatcher.in")
     val out = Outlet[Any]("terminationWatcher.out")
@@ -255,6 +153,72 @@ object GraphStages {
 
   def terminationWatcher[T]: GraphStageWithMaterializedValue[FlowShape[T, T], Future[Done]] =
     TerminationWatcher.asInstanceOf[GraphStageWithMaterializedValue[FlowShape[T, T], Future[Done]]]
+
+  private class FlowMonitorImpl[T] extends AtomicReference[Any](Initialized) with FlowMonitor[T] {
+    override def state = get match {
+      case s: StreamState[_] ⇒ s.asInstanceOf[StreamState[T]]
+      case msg               ⇒ Received(msg.asInstanceOf[T])
+    }
+  }
+
+  private class MonitorFlow[T] extends GraphStageWithMaterializedValue[FlowShape[T, T], FlowMonitor[T]] {
+    val in = Inlet[T]("FlowMonitor.in")
+    val out = Outlet[T]("FlowMonitor.out")
+    val shape = FlowShape.of(in, out)
+
+    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, FlowMonitor[T]) = {
+      val monitor: FlowMonitorImpl[T] = new FlowMonitorImpl[T]
+
+      val logic: GraphStageLogic = new GraphStageLogic(shape) {
+        setHandler(in, new InHandler {
+          override def onPush(): Unit = {
+            val msg = grab(in)
+            push(out, msg)
+            monitor.set(if (msg.isInstanceOf[StreamState[_]]) Received(msg) else msg)
+          }
+          override def onUpstreamFinish(): Unit = {
+            super.onUpstreamFinish()
+            monitor.set(Finished)
+          }
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            super.onUpstreamFailure(ex)
+            monitor.set(Failed(ex))
+          }
+        })
+        setHandler(out, new OutHandler {
+          override def onPull(): Unit = pull(in)
+          override def onDownstreamFinish(): Unit = {
+            super.onDownstreamFinish()
+            monitor.set(Finished)
+          }
+        })
+
+        override def toString = "MonitorFlowLogic"
+      }
+
+      (logic, monitor)
+    }
+
+    override def toString = "MonitorFlow"
+  }
+
+  def monitor[T]: GraphStageWithMaterializedValue[FlowShape[T, T], FlowMonitor[T]] =
+    new MonitorFlow[T]
+
+  private object TickSource {
+    class TickSourceCancellable(cancelled: AtomicBoolean) extends Cancellable {
+      private val cancelPromise = Promise[Done]()
+
+      def cancelFuture: Future[Done] = cancelPromise.future
+
+      override def cancel(): Boolean = {
+        if (!isCancelled) cancelPromise.trySuccess(Done)
+        true
+      }
+
+      override def isCancelled: Boolean = cancelled.get()
+    }
+  }
 
   final class TickSource[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T)
     extends GraphStageWithMaterializedValue[SourceShape[T], Cancellable] {

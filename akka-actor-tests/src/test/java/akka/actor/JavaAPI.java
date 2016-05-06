@@ -20,13 +20,14 @@ import akka.testkit.TestProbe;
 
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.scalatest.junit.JUnitSuite;
 import scala.Option;
 
 import java.util.Optional;
 
 import static org.junit.Assert.*;
 
-public class JavaAPI {
+public class JavaAPI extends JUnitSuite {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("JavaAPI",

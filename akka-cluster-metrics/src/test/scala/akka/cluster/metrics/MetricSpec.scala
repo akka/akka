@@ -13,7 +13,6 @@ import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import java.lang.System.{ currentTimeMillis ⇒ newTimestamp }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MetricNumericConverterSpec extends WordSpec with Matchers with MetricNumericConverter {
 
   "MetricNumericConverter" must {
@@ -52,7 +51,6 @@ class MetricNumericConverterSpec extends WordSpec with Matchers with MetricNumer
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class NodeMetricsSpec extends WordSpec with Matchers {
 
   val node1 = Address("akka.tcp", "sys", "a", 2554)
@@ -130,7 +128,6 @@ class NodeMetricsSpec extends WordSpec with Matchers {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MetricsGossipSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with ImplicitSender with MetricsCollectorFactory {
 
   val collector = createMetricsCollector
@@ -233,7 +230,6 @@ class MetricsGossipSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with Impl
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MetricValuesSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollectorFactory {
   import akka.cluster.metrics.StandardMetrics._
 

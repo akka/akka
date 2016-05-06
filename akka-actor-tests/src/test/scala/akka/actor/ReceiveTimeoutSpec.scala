@@ -16,7 +16,6 @@ object ReceiveTimeoutSpec {
   case object TransperentTick extends NotInfluenceReceiveTimeout
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ReceiveTimeoutSpec extends AkkaSpec {
   import ReceiveTimeoutSpec._
 

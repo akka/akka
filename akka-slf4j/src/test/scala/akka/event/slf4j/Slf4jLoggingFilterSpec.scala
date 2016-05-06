@@ -67,7 +67,6 @@ object Slf4jLoggingFilterSpec {
 
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class Slf4jLoggingFilterSpec extends AkkaSpec(Slf4jLoggingFilterSpec.config) with BeforeAndAfterEach {
   import Slf4jLoggingFilterSpec._
 

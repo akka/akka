@@ -140,7 +140,6 @@ object EventBusDocSpec {
 
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class EventBusDocSpec extends AkkaSpec {
   import EventBusDocSpec._
 

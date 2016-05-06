@@ -13,6 +13,10 @@ import scala.util.{ Failure, Success }
 import akka.stream.scaladsl._
 import akka.http.javadsl
 
+/**
+ * @groupname fileupload File upload directives
+ * @groupprio fileupload 80
+ */
 trait FileUploadDirectives {
 
   import BasicDirectives._
@@ -25,6 +29,8 @@ trait FileUploadDirectives {
    * If there is an error writing to disk the request will be failed with the thrown exception, if there is no such
    * field the request will be rejected, if there are multiple file parts with the same name, the first one will be
    * used and the subsequent ones ignored.
+   *
+   * @group fileupload
    */
   def uploadedFile(fieldName: String): Directive1[(FileInfo, File)] =
     extractRequestContext.flatMap { ctx ⇒
@@ -56,6 +62,8 @@ trait FileUploadDirectives {
    * for streaming the file contents somewhere. If there is no such field the request will be rejected,
    * if there are multiple file parts with the same name, the first one will be used and the subsequent
    * ones ignored.
+   *
+   * @group fileupload
    */
   def fileUpload(fieldName: String): Directive1[(FileInfo, Source[ByteString, Any])] =
     entity(as[Multipart.FormData]).flatMap { formData ⇒

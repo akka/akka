@@ -7,10 +7,11 @@ import akka.testkit.AkkaJUnitActorSystemResource;
 import org.junit.*;
 import akka.testkit.AkkaSpec;
 import com.typesafe.config.ConfigFactory;
+import org.scalatest.junit.JUnitSuite;
 
 import static org.junit.Assert.*;
 
-public class JavaExtension {
+public class JavaExtension extends JUnitSuite {
 
   static class TestExtensionId extends AbstractExtensionId<TestExtension> implements ExtensionIdProvider {
     public final static TestExtensionId TestExtensionProvider = new TestExtensionId();

@@ -27,7 +27,6 @@ object TailChoppingSpec {
     }), "Actor:" + id)
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TailChoppingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
   import TailChoppingSpec._
 

@@ -16,6 +16,10 @@ import akka.util.ByteString
 import akka.stream.SourceShape
 import akka.stream.OverflowStrategy
 
+/**
+ * @groupname range Range directives
+ * @groupprio range 180
+ */
 trait RangeDirectives {
   import akka.http.scaladsl.server.directives.BasicDirectives._
   import akka.http.scaladsl.server.directives.RouteDirectives._
@@ -33,6 +37,8 @@ trait RangeDirectives {
    * on a higher level in your route structure in order to function correctly.
    *
    * @see [[https://tools.ietf.org/html/rfc7233]]
+   *
+   * @group range
    */
   def withRangeSupport: Directive0 =
     extractRequestContext.flatMap { ctx ⇒

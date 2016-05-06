@@ -30,11 +30,11 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
     (classOf[scala.collection.immutable.Iterable[_]],   classOf[java.lang.Iterable[_]]) ::
       (classOf[scala.collection.Iterator[_]],           classOf[java.util.Iterator[_]]) ::
       (classOf[scala.collection.Seq[_]],                classOf[java.util.List[_]]) ::
+      (classOf[scala.collection.immutable.Seq[_]],      classOf[java.util.List[_]]) ::
       (classOf[scala.collection.immutable.Set[_]],      classOf[java.util.Set[_]]) ::
       (classOf[Boolean],                                classOf[akka.stream.javadsl.AsPublisher]) ::
       (classOf[scala.Function0[_]],                     classOf[akka.japi.function.Creator[_]]) ::
       (classOf[scala.Function0[_]],                     classOf[java.util.concurrent.Callable[_]]) ::
-      (classOf[scala.Function0[_]],                     classOf[akka.japi.function.Creator[_]]) ::
       (classOf[scala.Function1[_, Unit]],               classOf[akka.japi.function.Procedure[_]]) ::
       (classOf[scala.Function1[_, _]],                  classOf[akka.japi.function.Function[_, _]]) ::
       (classOf[akka.stream.scaladsl.Source[_, _]],      classOf[akka.stream.javadsl.Source[_, _]]) ::

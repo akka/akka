@@ -3,14 +3,13 @@
  */
 package akka.cluster
 
-import akka.actor.Actor
+import akka.ConfigurationException
+import akka.actor.{ Actor, ActorSystem, Address, Cancellable, Props, Scheduler }
+
 import scala.concurrent.duration.FiniteDuration
-import akka.actor.Props
 import akka.cluster.ClusterEvent._
-import akka.actor.Cancellable
+
 import scala.concurrent.duration.Duration
-import akka.actor.Address
-import akka.actor.Scheduler
 
 /**
  * INTERNAL API
@@ -21,6 +20,24 @@ private[cluster] object AutoDown {
     Props(classOf[AutoDown], autoDownUnreachableAfter)
 
   final case class UnreachableTimeout(node: UniqueAddress)
+}
+
+/**
+ * Used when no custom provider is configured and 'auto-down-unreachable-after' is enabled.
+ */
+final class AutoDowning(system: ActorSystem) extends DowningProvider {
+
+  private def clusterSettings = Cluster(system).settings
+
+  override def downRemovalMargin: FiniteDuration = clusterSettings.DownRemovalMargin
+
+  override def downingActorProps: Option[Props] =
+    clusterSettings.AutoDownUnreachableAfter match {
+      case d: FiniteDuration ⇒ Some(AutoDown.props(d))
+      case _ ⇒
+        // I don't think this can actually happen
+        throw new ConfigurationException("AutoDowning downing provider selected but 'akka.cluster.auto-down-unreachable-after' not set")
+    }
 }
 
 /**

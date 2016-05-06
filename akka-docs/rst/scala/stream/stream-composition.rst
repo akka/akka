@@ -286,9 +286,9 @@ Attributes
 We have seen that we can use ``named()`` to introduce a nesting level in the fluid DSL (and also explicit nesting by using
 ``create()`` from :class:`GraphDSL`). Apart from having the effect of adding a nesting level, ``named()`` is actually
 a shorthand for calling ``withAttributes(Attributes.name("someName"))``. Attributes provide a way to fine-tune certain
-aspects of the materialized running entity. For example buffer sizes can be controlled via attributes (see
-:ref:`stream-buffers-scala`). When it comes to hierarchic composition, attributes are inherited by nested modules,
-unless they override them with a custom value.
+aspects of the materialized running entity. For example buffer sizes for asynchronous stages can be controlled via
+attributes (see :ref:`async-stream-buffers-scala`). When it comes to hierarchic composition, attributes are inherited
+by nested modules, unless they override them with a custom value.
 
 The code below, a modification of an earlier example sets the ``inputBuffer`` attribute on certain modules, but not
 on others:

@@ -76,7 +76,6 @@ object FutureSpec {
 
 class JavaFutureSpec extends JavaFutureTests with JUnitSuiteLike
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with DefaultTimeout {
   import FutureSpec._
   implicit val ec: ExecutionContext = system.dispatcher

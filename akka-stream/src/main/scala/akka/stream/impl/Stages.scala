@@ -62,6 +62,14 @@ private[stream] object Stages {
     val processorWithKey = name("processorWithKey")
     val identityOp = name("identityOp")
 
+    val initial = name("initial")
+    val completion = name("completion")
+    val idle = name("idle")
+    val idleTimeoutBidi = name("idleTimeoutBidi")
+    val delayInitial = name("delayInitial")
+    val idleInject = name("idleInject")
+    val backpressureTimeout = name("backpressureTimeout")
+
     val merge = name("merge")
     val mergePreferred = name("mergePreferred")
     val flattenMerge = name("flattenMerge")
@@ -69,6 +77,8 @@ private[stream] object Stages {
     val broadcast = name("broadcast")
     val balance = name("balance")
     val zip = name("zip")
+    val zipN = name("zipN")
+    val zipWithN = name("zipWithN")
     val unzip = name("unzip")
     val concat = name("concat")
     val repeat = name("repeat")
@@ -80,6 +90,7 @@ private[stream] object Stages {
 
     val publisherSource = name("publisherSource")
     val iterableSource = name("iterableSource")
+    val cycledSource = name("cycledSource")
     val futureSource = name("futureSource")
     val tickSource = name("tickSource")
     val singleSource = name("singleSource")
@@ -95,6 +106,11 @@ private[stream] object Stages {
     val inputStreamSource = name("inputStreamSource") and IODispatcher
     val outputStreamSource = name("outputStreamSource") and IODispatcher
     val fileSource = name("fileSource") and IODispatcher
+    val unfoldResourceSource = name("unfoldResourceSource") and IODispatcher
+    val unfoldResourceSourceAsync = name("unfoldResourceSourceAsync") and IODispatcher
+    val asJavaStream = name("asJavaStream") and IODispatcher
+    val javaCollectorParallelUnordered = name("javaCollectorParallelUnordered")
+    val javaCollector = name("javaCollector")
 
     val subscriberSink = name("subscriberSink")
     val cancelledSink = name("cancelledSink")
@@ -112,7 +128,8 @@ private[stream] object Stages {
     val queueSink = name("queueSink")
     val outputStreamSink = name("outputStreamSink") and IODispatcher
     val inputStreamSink = name("inputStreamSink") and IODispatcher
-    val fileSink = name("fileSource") and IODispatcher
+    val fileSink = name("fileSink") and IODispatcher
+    val fromJavaStream = name("fromJavaStream")
   }
 
   import DefaultAttributes._
@@ -151,25 +168,9 @@ private[stream] object Stages {
     override def create(attr: Attributes): Stage[T, T] = fusing.Log(name, extract, loggingAdapter, supervision(attr))
   }
 
-  final case class Filter[T](p: T ⇒ Boolean, attributes: Attributes = filter) extends SymbolicStage[T, T] {
-    override def create(attr: Attributes): Stage[T, T] = fusing.Filter(p, supervision(attr))
-  }
-
-  final case class Collect[In, Out](pf: PartialFunction[In, Out], attributes: Attributes = collect) extends SymbolicStage[In, Out] {
-    override def create(attr: Attributes): Stage[In, Out] = fusing.Collect(pf, supervision(attr))
-  }
-
-  final case class Recover[In, Out >: In](pf: PartialFunction[Throwable, Out], attributes: Attributes = recover) extends SymbolicStage[In, Out] {
-    override def create(attr: Attributes): Stage[In, Out] = fusing.Recover(pf)
-  }
-
   final case class Grouped[T](n: Int, attributes: Attributes = grouped) extends SymbolicStage[T, immutable.Seq[T]] {
     require(n > 0, "n must be greater than 0")
     override def create(attr: Attributes): Stage[T, immutable.Seq[T]] = fusing.Grouped(n)
-  }
-
-  final case class LimitWeighted[T](max: Long, weightFn: T ⇒ Long, attributes: Attributes = limitWeighted) extends SymbolicStage[T, T] {
-    override def create(attr: Attributes): Stage[T, T] = fusing.LimitWeighted(max, weightFn)
   }
 
   final case class Sliding[T](n: Int, step: Int, attributes: Attributes = sliding) extends SymbolicStage[T, immutable.Seq[T]] {
@@ -177,18 +178,6 @@ private[stream] object Stages {
     require(step > 0, "step must be greater than 0")
 
     override def create(attr: Attributes): Stage[T, immutable.Seq[T]] = fusing.Sliding(n, step)
-  }
-
-  final case class TakeWhile[T](p: T ⇒ Boolean, attributes: Attributes = takeWhile) extends SymbolicStage[T, T] {
-    override def create(attr: Attributes): Stage[T, T] = fusing.TakeWhile(p, supervision(attr))
-  }
-
-  final case class DropWhile[T](p: T ⇒ Boolean, attributes: Attributes = dropWhile) extends SymbolicStage[T, T] {
-    override def create(attr: Attributes): Stage[T, T] = fusing.DropWhile(p, supervision(attr))
-  }
-
-  final case class Scan[In, Out](zero: Out, f: (Out, In) ⇒ Out, attributes: Attributes = scan) extends SymbolicStage[In, Out] {
-    override def create(attr: Attributes): Stage[In, Out] = fusing.Scan(zero, f, supervision(attr))
   }
 
   final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out, attributes: Attributes = fold) extends SymbolicStage[In, Out] {

@@ -7,7 +7,7 @@ import akka.event.LoggingAdapter
 import akka.stream._
 import akka.Done
 import akka.stream.impl.Stages.{ DirectProcessor, StageModule }
-import akka.stream.impl.StreamLayout.{ Module }
+import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.stream.impl.fusing._
 import akka.stream.stage.AbstractStage.{ PushPullGraphStage, PushPullGraphStageWithMaterializedValue }
@@ -16,7 +16,7 @@ import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.concurrent.duration.{ FiniteDuration }
+import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 import akka.stream.impl.fusing.FlattenMerge
 
@@ -375,7 +375,10 @@ final case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Mo
 /**
  * Scala API: Operations offered by Sources and Flows with a free output side: the DSL flows left-to-right only.
  *
- * INTERNAL API: extending this trait is not supported under the binary compatibility rules for Akka.
+ * INTERNAL API: this trait will be changed in binary-incompatible ways for classes that are derived from it!
+ * Do not implement this interface outside the Akka code base!
+ *
+ * Binary compatibility is only maintained for callers of this trait’s interface.
  */
 trait FlowOps[+Out, +Mat] {
   import akka.stream.impl.Stages._
@@ -422,7 +425,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def recover[T >: Out](pf: PartialFunction[Throwable, T]): Repr[T] = andThen(Recover(pf))
+  def recover[T >: Out](pf: PartialFunction[Throwable, T]): Repr[T] = via(Recover(pf))
 
   /**
    * RecoverWith allows to switch to alternative Source on flow failure. It will stay in effect after
@@ -442,8 +445,31 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
+  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recoverWith[T >: Out](pf: PartialFunction[Throwable, Graph[SourceShape[T], NotUsed]]): Repr[T] =
-    via(new RecoverWith(pf))
+    via(new RecoverWith(-1, pf))
+
+  /**
+    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
+    * a failure has been recovered up to `attempts` number of times so that each time there is a failure
+    * it is fed into the `pf` and a new Source may be materialized. Note that if you pass in 0, this won't
+    * attempt to recover at all. Passing in a negative number will behave exactly the same as  `recoverWith`.
+    *
+    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+    *
+    * '''Emits when''' element is available from the upstream or upstream is failed and element is available
+    * from alternative Source
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+    *
+    * '''Cancels when''' downstream cancels
+    *
+    */
+  def recoverWithRetries[T >: Out](attempts: Int, pf: PartialFunction[Throwable, Graph[SourceShape[T], NotUsed]]): Repr[T] =
+    via(new RecoverWith(attempts, pf))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -578,7 +604,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def filter(p: Out ⇒ Boolean): Repr[Out] = andThen(Filter(p))
+  def filter(p: Out ⇒ Boolean): Repr[Out] = via(Filter(p))
 
   /**
    * Only pass on those elements that NOT satisfy the given predicate.
@@ -613,7 +639,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.limit]], [[FlowOps.limitWeighted]]
    */
-  def takeWhile(p: Out ⇒ Boolean): Repr[Out] = andThen(TakeWhile(p))
+  def takeWhile(p: Out ⇒ Boolean): Repr[Out] = via(TakeWhile(p))
 
   /**
    * Discard elements at the beginning of the stream while predicate is true.
@@ -627,7 +653,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def dropWhile(p: Out ⇒ Boolean): Repr[Out] = andThen(DropWhile(p))
+  def dropWhile(p: Out ⇒ Boolean): Repr[Out] = via(DropWhile(p))
 
   /**
    * Transform this stream by applying the given partial function to each of the elements
@@ -642,7 +668,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def collect[T](pf: PartialFunction[Out, T]): Repr[T] = andThen(Collect(pf))
+  def collect[T](pf: PartialFunction[Out, T]): Repr[T] = via(Collect(pf))
 
   /**
    * Chunk up this stream into groups of the given size, with the last group
@@ -705,7 +731,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.take]], [[FlowOps.takeWithin]], [[FlowOps.takeWhile]]
    */
-  def limitWeighted[T](max: Long)(costFn: Out ⇒ Long): Repr[Out] = andThen(LimitWeighted(max, costFn))
+  def limitWeighted[T](max: Long)(costFn: Out ⇒ Long): Repr[Out] = via(LimitWeighted(max, costFn))
 
   /**
    * Apply a sliding window over the stream and return the windows as groups of elements, with the last group
@@ -742,7 +768,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def scan[T](zero: T)(f: (T, Out) ⇒ T): Repr[T] = andThen(Scan(zero, f))
+  def scan[T](zero: T)(f: (T, Out) ⇒ T): Repr[T] = via(Scan(zero, f))
 
   /**
    * Similar to `scan` but only emits its result when the upstream completes,
@@ -769,6 +795,11 @@ trait FlowOps[+Out, +Mat] {
    * Similar to `fold` but uses first element as zero element.
    * Applies the given function towards its current and next value,
    * yielding the next current value.
+   *
+   * If the stream is empty (i.e. completes before signalling any elements),
+   * the reduce stage will fail its downstream with a [[NoSuchElementException]],
+   * which is semantically in-line with that Scala's standard library collections
+   * do in such situations.
    *
    * '''Emits when''' upstream completes
    *
@@ -1407,8 +1438,9 @@ trait FlowOps[+Out, +Mat] {
   def completionTimeout(timeout: FiniteDuration): Repr[Out] = via(new Timers.Completion[Out](timeout))
 
   /**
-   * If the time between two processed elements exceed the provided timeout, the stream is failed
-   * with a [[scala.concurrent.TimeoutException]].
+   * If the time between two processed elements exceeds the provided timeout, the stream is failed
+   * with a [[scala.concurrent.TimeoutException]]. The timeout is checked periodically,
+   * so the resolution of the check is one period (equals to timeout value).
    *
    * '''Emits when''' upstream emits an element
    *
@@ -1421,7 +1453,22 @@ trait FlowOps[+Out, +Mat] {
   def idleTimeout(timeout: FiniteDuration): Repr[Out] = via(new Timers.Idle[Out](timeout))
 
   /**
-   * Injects additional elements if the upstream does not emit for a configured amount of time. In other words, this
+    * If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
+    * the stream is failed with a [[scala.concurrent.TimeoutException]]. The timeout is checked periodically,
+    * so the resolution of the check is one period (equals to timeout value).
+    *
+    * '''Emits when''' upstream emits an element
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' upstream completes or fails if timeout elapses between element emission and downstream demand.
+    *
+    * '''Cancels when''' downstream cancels
+    */
+  def backpressureTimeout(timeout: FiniteDuration): Repr[Out] = via(new Timers.BackpressureTimeout[Out](timeout))
+
+  /**
+   * Injects additional elements if upstream does not emit for a configured amount of time. In other words, this
    * stage attempts to maintains a base rate of emitted elements towards the downstream.
    *
    * If the downstream backpressures then no element is injected until downstream demand arrives. Injected elements
@@ -1479,6 +1526,13 @@ trait FlowOps[+Out, +Mat] {
    * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
    * to their cost minus available tokens, meeting the target rate.
    *
+   * It is recommended to use non-zero burst sizes as they improve both performance and throttling precision by allowing
+   * the implementation to avoid using the scheduler when input rates fall below the enforced limit and to reduce
+   * most of the inaccuracy caused by the scheduler resolution (which is in the range of milliseconds).
+   *
+   * Throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
+   * enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
+   *
    * Parameter `mode` manages behaviour when upstream is faster than throttle rate:
    *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
    *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate. Enforcing
@@ -1513,9 +1567,9 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Delays the initial element by the specified duration.
    *
-   * '''Emits when''' upstream emits an element if the initial delay already elapsed
+   * '''Emits when''' upstream emits an element if the initial delay is already elapsed
    *
-   * '''Backpressures when''' downstream backpressures or initial delay not yet elapsed
+   * '''Backpressures when''' downstream backpressures or initial delay is not yet elapsed
    *
    * '''Completes when''' upstream completes
    *
@@ -1796,7 +1850,10 @@ trait FlowOps[+Out, +Mat] {
 }
 
 /**
- * INTERNAL API: extending this trait is not supported under the binary compatibility rules for Akka.
+  * INTERNAL API: this trait will be changed in binary-incompatible ways for classes that are derived from it!
+  * Do not implement this interface outside the Akka code base!
+  *
+  * Binary compatibility is only maintained for callers of this trait’s interface.
  */
 trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
 
@@ -1987,6 +2044,15 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * Transform the materialized value of this graph, leaving all other properties as they were.
    */
   def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2]
+
+  /**
+    * Materializes to `FlowMonitor[Out]` that allows monitoring of the the current flow. All events are propagated
+    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
+    * event, and may therefor affect performance.
+    * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
+    */
+  def monitor[Mat2]()(combine: (Mat, FlowMonitor[Out]) => Mat2): ReprMat[Out, Mat2] =
+    viaMat(GraphStages.monitor)(combine)
 
   /**
    * INTERNAL API.

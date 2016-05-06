@@ -6,11 +6,12 @@ package akka.stream.scaladsl
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, ThrottleMode }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.testkit.AkkaSpec
+
+import scala.concurrent.Await
 
 class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
 
@@ -133,6 +134,13 @@ class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
       def script = Script((TestConfig.RandomTestRange.map { _ ⇒ val x, y, z = random.nextInt(); Seq(x, y, z) -> Seq(immutable.Seq(x, y, z)) }
         :+ { val x = random.nextInt(); Seq(x) -> Seq(immutable.Seq(x)) }): _*)
       TestConfig.RandomTestRange foreach (_ ⇒ runScript(script, settings)(_.groupedWithin(3, 10.minutes)))
+    }
+
+    "group with small groups with backpressure" in {
+      Source(1 to 10)
+        .groupedWithin(1, 1.day)
+        .throttle(1, 110.millis, 0, ThrottleMode.Shaping)
+        .runWith(Sink.seq).futureValue should ===((1 to 10).map(List(_)))
     }
 
   }

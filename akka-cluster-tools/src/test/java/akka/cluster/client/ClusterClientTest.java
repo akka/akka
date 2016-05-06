@@ -18,8 +18,9 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.testkit.AkkaJUnitActorSystemResource;
+import org.scalatest.junit.JUnitSuite;
 
-public class ClusterClientTest {
+public class ClusterClientTest extends JUnitSuite {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

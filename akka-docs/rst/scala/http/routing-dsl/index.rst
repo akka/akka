@@ -97,3 +97,7 @@ and split each line before we send it to an actor for further processing:
 .. includecode2:: ../../code/docs/http/scaladsl/server/FileUploadExamplesSpec.scala
    :snippet: stream-csv-upload
 
+Configuring Server-side HTTPS
+-----------------------------
+
+For detailed documentation about configuring and using HTTPS on the server-side refer to :ref:`serverSideHTTPS-scala`.

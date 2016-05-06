@@ -9,11 +9,10 @@ import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 
 import scala.collection.immutable
-import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
-import akka.stream.Attributes
+import scala.concurrent.{ Await, Future }
 
-class FlowGraphDocSpec extends AkkaSpec {
+class GraphDSLDocSpec extends AkkaSpec {
 
   implicit val ec = system.dispatcher
 
@@ -21,7 +20,7 @@ class FlowGraphDocSpec extends AkkaSpec {
 
   "build simple graph" in {
     //format: OFF
-    //#simple-flow-graph
+    //#simple-graph-dsl
     val g = RunnableGraph.fromGraph(GraphDSL.create() { implicit builder: GraphDSL.Builder[NotUsed] =>
       import GraphDSL.Implicits._
       val in = Source(1 to 10)
@@ -36,7 +35,7 @@ class FlowGraphDocSpec extends AkkaSpec {
       bcast ~> f4 ~> merge
       ClosedShape
     })
-    //#simple-flow-graph
+    //#simple-graph-dsl
     //format: ON
 
     //#simple-graph-run
@@ -64,17 +63,17 @@ class FlowGraphDocSpec extends AkkaSpec {
   }
 
   "reusing a flow in a graph" in {
-    //#flow-graph-reusing-a-flow
+    //#graph-dsl-reusing-a-flow
 
     val topHeadSink = Sink.head[Int]
     val bottomHeadSink = Sink.head[Int]
     val sharedDoubler = Flow[Int].map(_ * 2)
 
-    //#flow-graph-reusing-a-flow
+    //#graph-dsl-reusing-a-flow
 
     // format: OFF
     val g =
-    //#flow-graph-reusing-a-flow
+    //#graph-dsl-reusing-a-flow
     RunnableGraph.fromGraph(GraphDSL.create(topHeadSink, bottomHeadSink)((_, _)) { implicit builder =>
       (topHS, bottomHS) =>
       import GraphDSL.Implicits._
@@ -85,7 +84,7 @@ class FlowGraphDocSpec extends AkkaSpec {
       broadcast.out(1) ~> sharedDoubler ~> bottomHS.in
       ClosedShape
     })
-    //#flow-graph-reusing-a-flow
+    //#graph-dsl-reusing-a-flow
     // format: ON
     val (topFuture, bottomFuture) = g.run()
     Await.result(topFuture, 300.millis) shouldEqual 2
@@ -94,7 +93,7 @@ class FlowGraphDocSpec extends AkkaSpec {
 
   "building a reusable component" in {
 
-    //#flow-graph-components-shape
+    //#graph-dsl-components-shape
     // A shape represents the input and output ports of a reusable
     // processing module
     case class PriorityWorkerPoolShape[In, Out](
@@ -126,9 +125,9 @@ class FlowGraphDocSpec extends AkkaSpec {
         PriorityWorkerPoolShape[In, Out](inlets(0).as[In], inlets(1).as[In], outlets(0).as[Out])
       }
     }
-    //#flow-graph-components-shape
+    //#graph-dsl-components-shape
 
-    //#flow-graph-components-create
+    //#graph-dsl-components-create
     object PriorityWorkerPool {
       def apply[In, Out](
         worker: Flow[In, Out, Any],
@@ -161,11 +160,11 @@ class FlowGraphDocSpec extends AkkaSpec {
       }
 
     }
-    //#flow-graph-components-create
+    //#graph-dsl-components-create
 
     def println(s: Any): Unit = ()
 
-    //#flow-graph-components-use
+    //#graph-dsl-components-use
     val worker1 = Flow[String].map("step 1 " + _)
     val worker2 = Flow[String].map("step 2 " + _)
 
@@ -184,11 +183,10 @@ class FlowGraphDocSpec extends AkkaSpec {
       priorityPool2.resultsOut ~> Sink.foreach(println)
       ClosedShape
     }).run()
-    //#flow-graph-components-use
+    //#graph-dsl-components-use
 
-    //#flow-graph-components-shape2
-    import FanInShape.Name
-    import FanInShape.Init
+    //#graph-dsl-components-shape2
+    import FanInShape.{ Init, Name }
 
     class PriorityWorkerPoolShape2[In, Out](_init: Init[Out] = Name("PriorityWorkerPool"))
       extends FanInShape[Out](_init) {
@@ -198,23 +196,23 @@ class FlowGraphDocSpec extends AkkaSpec {
       val priorityJobsIn = newInlet[In]("priorityJobsIn")
       // Outlet[Out] with name "out" is automatically created
     }
-    //#flow-graph-components-shape2
+    //#graph-dsl-components-shape2
 
   }
 
   "access to materialized value" in {
-    //#flow-graph-matvalue
+    //#graph-dsl-matvalue
     import GraphDSL.Implicits._
     val foldFlow: Flow[Int, Int, Future[Int]] = Flow.fromGraph(GraphDSL.create(Sink.fold[Int, Int](0)(_ + _)) {
       implicit builder ⇒
         fold ⇒
           FlowShape(fold.in, builder.materializedValue.mapAsync(4)(identity).outlet)
     })
-    //#flow-graph-matvalue
+    //#graph-dsl-matvalue
 
     Await.result(Source(1 to 10).via(foldFlow).runWith(Sink.head), 3.seconds) should ===(55)
 
-    //#flow-graph-matvalue-cycle
+    //#graph-dsl-matvalue-cycle
     import GraphDSL.Implicits._
     // This cannot produce any value:
     val cyclicFold: Source[Int, Future[Int]] = Source.fromGraph(GraphDSL.create(Sink.fold[Int, Int](0)(_ + _)) {
@@ -228,7 +226,7 @@ class FlowGraphDocSpec extends AkkaSpec {
           builder.materializedValue.mapAsync(4)(identity) ~> fold
           SourceShape(builder.materializedValue.mapAsync(4)(identity).outlet)
     })
-    //#flow-graph-matvalue-cycle
+    //#graph-dsl-matvalue-cycle
   }
 
 }

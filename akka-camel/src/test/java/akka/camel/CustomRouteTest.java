@@ -7,6 +7,7 @@ import akka.camel.javaapi.UntypedProducerActor;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.util.Timeout;
 import org.junit.*;
+import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.Await;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.duration.Duration;
@@ -19,7 +20,7 @@ import org.apache.camel.component.mock.MockEndpoint;
 
 import java.util.concurrent.TimeUnit;
 
-public class CustomRouteTest {
+public class CustomRouteTest extends JUnitSuite {
 
   @Rule
   public AkkaJUnitActorSystemResource actorSystemResource =

@@ -102,6 +102,10 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     new DefaultFailureDetectorRegistry(() ⇒ createFailureDetector())
   }
 
+  // needs to be lazy to allow downing provider impls to access Cluster (if not we get deadlock)
+  lazy val downingProvider: DowningProvider =
+    DowningProvider.load(settings.DowningProviderClassName, system)
+
   // ========================================================
   // ===================== WORK DAEMONS =====================
   // ========================================================
@@ -258,6 +262,9 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * An actor system can only join a cluster once. Additional attempts will be ignored.
    * When it has successfully joined it must be restarted to be able to join another
    * cluster or to join the same cluster again.
+   *
+   * The name of the [[akka.actor.ActorSystem]] must be the same for all members of a
+   * cluster.
    */
   def join(address: Address): Unit =
     clusterCore ! ClusterUserAction.JoinTo(fillLocal(address))

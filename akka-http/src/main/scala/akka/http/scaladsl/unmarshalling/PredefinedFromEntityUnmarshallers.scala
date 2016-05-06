@@ -8,6 +8,8 @@ import akka.util.ByteString
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model._
 
+import scala.concurrent.Future
+
 trait PredefinedFromEntityUnmarshallers extends MultipartUnmarshallers {
 
   implicit def byteStringUnmarshaller: FromEntityUnmarshaller[ByteString] =

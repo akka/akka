@@ -66,7 +66,7 @@ public abstract class DateTime {
     public abstract String weekdayStr();
 
     /**
-     * Returns the the month as a 3 letter abbreviation:
+     * Returns the month as a 3 letter abbreviation:
      * `Jan`, `Feb`, `Mar`, `Apr`, `May`, `Jun`, `Jul`, `Aug`, `Sep`, `Oct`, `Nov` or `Dec`
      */
     public abstract String monthStr();

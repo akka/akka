@@ -14,7 +14,7 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
     akka.actor.serialize-creators = on
     """) with ImplicitSender {
 
-  val addresses = temporaryServerAddresses(3, udp = true)
+  val addresses = temporaryServerAddresses(5, udp = true)
 
   def bindUdp(address: InetSocketAddress, handler: ActorRef): ActorRef = {
     val commander = TestProbe()
@@ -67,6 +67,27 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
       server ! Udp.Send(data2, clientAddress)
 
       expectMsgType[UdpConnected.Received].data should ===(data2)
+    }
+
+    "be able to unbind and bind again successfully" in {
+      val serverAddress = addresses(3)
+      val clientAddress = addresses(4)
+      val server1 = bindUdp(serverAddress, testActor)
+
+      val data1 = ByteString("test")
+      val client = connectUdp(Some(clientAddress), serverAddress, testActor)
+
+      client ! UdpConnected.Send(data1)
+      expectMsgType[Udp.Received].data should ===(data1)
+
+      server1 ! Udp.Unbind
+      expectMsg(Udp.Unbound)
+
+      // Reusing the address
+      val server2 = bindUdp(serverAddress, testActor)
+
+      client ! UdpConnected.Send(data1)
+      expectMsgType[Udp.Received].data should ===(data1)
     }
 
   }

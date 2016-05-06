@@ -6,24 +6,27 @@ package akka.http.impl.engine.client
 
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
-import java.nio.channels.{ SocketChannel, ServerSocketChannel }
+import java.nio.channels.{ ServerSocketChannel, SocketChannel }
 import java.util.concurrent.atomic.AtomicInteger
+
+import akka.http.impl.engine.client.PoolMasterActor.PoolInterfaceRunning
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
+import akka.http.impl.util.{ SingletonException, StreamUtils }
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
+import akka.http.scaladsl.{ Http, TestUtils }
+import akka.stream.ActorMaterializer
+import akka.stream.TLSProtocol._
+import akka.stream.scaladsl._
+import akka.stream.testkit.{ TestPublisher, TestSubscriber }
+import akka.testkit.AkkaSpec
+import akka.util.ByteString
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
-import akka.util.ByteString
-import akka.http.scaladsl.{ TestUtils, Http }
-import akka.http.impl.util.{ SingletonException, StreamUtils }
-import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
-import akka.stream.{ ActorMaterializer }
-import akka.stream.TLSProtocol._
-import akka.stream.testkit.{ TestPublisher, TestSubscriber }
-import akka.stream.scaladsl._
-import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.model._
-import akka.testkit.AkkaSpec
 
 class ConnectionPoolSpec extends AkkaSpec("""
     akka.loggers = []
@@ -207,20 +210,17 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
     "automatically shutdown after configured timeout periods" in new TestSetup() {
       val (_, _, _, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second)
-      val gateway = Await.result(hcp.gatewayFuture, 500.millis)
-      val PoolGateway.Running(_, shutdownStartedPromise, shutdownCompletedPromise) = gateway.currentState
-      shutdownStartedPromise.isCompleted shouldEqual false
-      shutdownCompletedPromise.isCompleted shouldEqual false
-      Await.result(shutdownStartedPromise.future, 1500.millis) // verify shutdown start (after idle)
-      Await.result(shutdownCompletedPromise.future, 1500.millis) // verify shutdown completed
+      val gateway = hcp.gateway
+      Await.result(gateway.poolStatus(), 1500.millis).get shouldBe a[PoolInterfaceRunning]
+      awaitCond({ Await.result(gateway.poolStatus(), 1500.millis).isEmpty }, 2000.millis)
     }
 
     "transparently restart after idle shutdown" in new TestSetup() {
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second)
 
-      val gateway = Await.result(hcp.gatewayFuture, 500.millis)
-      val PoolGateway.Running(_, _, shutdownCompletedPromise) = gateway.currentState
-      Await.result(shutdownCompletedPromise.future, 1500.millis) // verify shutdown completed
+      val gateway = hcp.gateway
+      Await.result(gateway.poolStatus(), 1500.millis).get shouldBe a[PoolInterfaceRunning]
+      awaitCond({ Await.result(gateway.poolStatus(), 1500.millis).isEmpty }, 2000.millis)
 
       requestIn.sendNext(HttpRequest(uri = "/") -> 42)
 
@@ -302,7 +302,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
     val incomingConnectionsSub = {
       val rawBytesInjection = BidiFlow.fromFlows(
         Flow[SslTlsOutbound].collect[ByteString] { case SendBytes(x) ⇒ mapServerSideOutboundRawBytes(x) }
-          .transform(StreamUtils.recover { case NoErrorComplete ⇒ ByteString.empty }),
+          .recover({ case NoErrorComplete ⇒ ByteString.empty }),
         Flow[ByteString].map(SessionBytes(null, _)))
       val sink = if (autoAccept) Sink.foreach[Http.IncomingConnection](handleConnection) else Sink.fromSubscriber(incomingConnections)
       Tcp().bind(serverEndpoint.getHostString, serverEndpoint.getPort, idleTimeout = serverSettings.timeouts.idleTimeout)

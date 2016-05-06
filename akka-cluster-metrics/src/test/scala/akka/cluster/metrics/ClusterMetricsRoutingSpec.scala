@@ -9,7 +9,6 @@ import org.scalatest.Matchers
 import akka.actor.Address
 import akka.cluster.metrics.StandardMetrics._
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MetricsSelectorSpec extends WordSpec with Matchers {
 
   val factor = 0.3 // TODO read from reference.conf

@@ -64,8 +64,13 @@ private[stream] class ConnectionSourceStage(val tcpManager: ActorRef,
             listener = sender
             stageActor.watch(listener)
             if (isAvailable(out)) listener ! ResumeAccepting(1)
-            val target = self
-            bindingPromise.success(ServerBinding(localAddress)(() ⇒ { target ! Unbind; unbindPromise.future }))
+            val thisStage = self
+            bindingPromise.success(ServerBinding(localAddress)(() ⇒ {
+              // Beware, sender must be explicit since stageActor.ref will be invalid to access after the stage
+              // stopped.
+              thisStage.tell(Unbind, thisStage)
+              unbindPromise.future
+            }))
           case f: CommandFailed ⇒
             val ex = BindFailedException
             bindingPromise.failure(ex)

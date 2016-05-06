@@ -19,7 +19,6 @@ import scala.util.control.NonFatal
  * by any network node. Therefore we assume here that the initialization of
  * the ActorSystem with the use of remoting will intentionally fail.
  */
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RemoteInitErrorSpec extends FlatSpec with Matchers {
   val conf = ConfigFactory.parseString(
     """

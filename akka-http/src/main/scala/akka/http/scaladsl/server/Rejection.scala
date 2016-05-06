@@ -132,7 +132,7 @@ final case class TooManyRangesRejection(maxRanges: Int)
  * Note that semantic issues with the request content (e.g. because some parameter was out of range)
  * will usually trigger a `ValidationRejection` instead.
  */
-final case class MalformedRequestContentRejection(message: String, cause: Option[Throwable] = None)
+final case class MalformedRequestContentRejection(message: String, cause: Throwable) extends Rejection
   extends jserver.MalformedRequestContentRejection with RejectionWithCause
 
 /**

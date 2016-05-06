@@ -26,7 +26,6 @@ object ClusterDomainEventPublisherSpec {
     """
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublisherSpec.config)
   with BeforeAndAfterEach with ImplicitSender {
 

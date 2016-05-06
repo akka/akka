@@ -12,7 +12,6 @@ object HotSwapSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class HotSwapSpec extends AkkaSpec with ImplicitSender {
   import HotSwapSpec.Becomer
 

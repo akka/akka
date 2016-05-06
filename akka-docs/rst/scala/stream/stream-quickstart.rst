@@ -167,7 +167,7 @@ which will be responsible for materializing and running the streams we are about
 .. includecode:: ../code/docs/stream/TwitterStreamQuickstartDocSpec.scala#materializer-setup
 
 The :class:`ActorMaterializer` can optionally take :class:`ActorMaterializerSettings` which can be used to define
-materialization properties, such as default buffer sizes (see also :ref:`stream-buffers-scala`), the dispatcher to
+materialization properties, such as default buffer sizes (see also :ref:`async-stream-buffers-scala`), the dispatcher to
 be used by the pipeline etc. These can be overridden with ``withAttributes`` on :class:`Flow`, :class:`Source`, :class:`Sink` and :class:`Graph`.
 
 Let's assume we have a stream of tweets readily available. In Akka this is expressed as a :class:`Source[Out, M]`:
@@ -238,7 +238,7 @@ at the expense of not reading as familiarly as collection transformations.
 
 Graphs are constructed using :class:`GraphDSL` like this:
 
-.. includecode:: ../code/docs/stream/TwitterStreamQuickstartDocSpec.scala#flow-graph-broadcast
+.. includecode:: ../code/docs/stream/TwitterStreamQuickstartDocSpec.scala#graph-dsl-broadcast
 
 As you can see, inside the :class:`GraphDSL` we use an implicit graph builder ``b`` to mutably construct the graph
 using the ``~>`` "edge operator" (also read as "connect" or "via" or "to"). The operator is provided implicitly

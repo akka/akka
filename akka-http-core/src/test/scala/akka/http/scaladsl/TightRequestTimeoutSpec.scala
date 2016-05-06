@@ -59,9 +59,6 @@ class TightRequestTimeoutSpec extends WordSpec with Matchers with BeforeAndAfter
       val response = Http().singleRequest(HttpRequest(uri = s"http://$hostname:$port/")).futureValue
       response.status should ===(StatusCodes.ServiceUnavailable) // the timeout response
 
-      p.expectMsgPF(hint = "Expected truncation error") {
-        case Logging.Error(_, _, _, msg: String) if msg contains "Inner stream finished before inputs completed." ⇒ ()
-      }
       p.expectNoMsg(1.second) // here the double push might happen
 
       binding.flatMap(_.unbind()).futureValue

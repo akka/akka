@@ -157,14 +157,6 @@ private[akka] class TLSActor(settings: ActorMaterializerSettings,
     e
   }
 
-  // since setting a custom HostnameVerified (in JDK8, update 60 still) disables SNI
-  // see here: https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#SNIExamples
-  // resolves: https://github.com/akka/akka/issues/19287
-  private def applySNI(hostname: String, params: SSLParameters): Unit = {
-    val serverName = new SNIHostName(hostname)
-    params.setServerNames(Collections.singletonList(serverName))
-  }
-
   var currentSession = engine.getSession
   applySessionParameters(firstSession)
 
@@ -177,10 +169,9 @@ private[akka] class TLSActor(settings: ActorMaterializerSettings,
       case Some(TLSClientAuth.Need) ⇒ engine.setNeedClientAuth(true)
       case _                        ⇒ // do nothing
     }
-    params.sslParameters foreach { p ⇒
-      hostInfo foreach { case (host, _) ⇒ applySNI(host, p) }
-      engine.setSSLParameters(p)
-    }
+
+    // configure Server Name Indication unless ssl-config disabled it (in which case we already logged many warnings)
+    applySNI(params)
 
     engine.beginHandshake()
     lastHandshakeStatus = engine.getHandshakeStatus
@@ -476,4 +467,31 @@ private[akka] class TLSActor(settings: ActorMaterializerSettings,
     if (tracing) log.debug(s"STOP Outbound Closed: ${engine.isOutboundDone} Inbound closed: ${engine.isInboundDone}")
     context.stop(self)
   }
+
+  // Additional ssl-config related setup
+
+  // since setting a custom HostnameVerified (in JDK8, update 60 still) disables SNI
+  // see here: https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#SNIExamples
+  // resolves: https://github.com/akka/akka/issues/19287
+  private def applySNI(params: NegotiateNewSession): Unit = for {
+    sslParams ← params.sslParameters
+    (hostname, _) ← hostInfo
+    if !sslConfig.config.loose.disableSNI
+  } yield {
+    // first copy the *mutable* SLLParameters before modifying to prevent race condition in `setServerNames`
+    val clone = new SSLParameters()
+    clone.setCipherSuites(sslParams.getCipherSuites)
+    clone.setProtocols(sslParams.getProtocols)
+    clone.setWantClientAuth(sslParams.getWantClientAuth)
+    clone.setNeedClientAuth(sslParams.getNeedClientAuth)
+    clone.setEndpointIdentificationAlgorithm(sslParams.getEndpointIdentificationAlgorithm)
+    clone.setAlgorithmConstraints(sslParams.getAlgorithmConstraints)
+    clone.setSNIMatchers(sslParams.getSNIMatchers)
+    clone.setUseCipherSuitesOrder(sslParams.getUseCipherSuitesOrder)
+
+    // apply the changes
+    clone.setServerNames(Collections.singletonList(new SNIHostName(hostname)))
+    engine.setSSLParameters(clone)
+  }
+
 }

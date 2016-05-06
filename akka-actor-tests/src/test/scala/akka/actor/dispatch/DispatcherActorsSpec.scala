@@ -7,7 +7,6 @@ import akka.testkit.AkkaSpec
 /**
  * Tests the behavior of the executor based event driven dispatcher when multiple actors are being dispatched on it.
  */
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DispatcherActorsSpec extends AkkaSpec {
   class SlowActor(finishedCounter: CountDownLatch) extends Actor {
 

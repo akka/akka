@@ -975,6 +975,6 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
 
   val trace = false // set to `true` for debugging purposes
   def printEvent[T](marker: String): Flow[T, T, NotUsed] =
-    if (trace) akka.http.impl.util.printEvent(marker)
+    if (trace) Flow[T].log(marker)
     else Flow[T]
 }

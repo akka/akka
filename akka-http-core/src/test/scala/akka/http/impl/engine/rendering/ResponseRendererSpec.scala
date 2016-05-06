@@ -258,9 +258,8 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
 
     "a chunked response" - {
       "with empty entity" in new TestSetup() {
-        pending // Disabled until #15981 is fixed
         HttpResponse(200, List(Age(30)),
-          Chunked(ContentTypes.NoContentType, source())) should renderTo {
+          Chunked(ContentTypes.NoContentType, Source.empty)) should renderTo {
             """HTTP/1.1 200 OK
               |Age: 30
               |Server: akka-http/1.0.0
@@ -271,9 +270,8 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       }
 
       "with empty entity but non-default Content-Type" in new TestSetup() {
-        pending // Disabled until #15981 is fixed
         HttpResponse(200, List(Age(30)),
-          Chunked(ContentTypes.`application/json`, source())) should renderTo {
+          Chunked(ContentTypes.`application/json`, Source.empty)) should renderTo {
             """HTTP/1.1 200 OK
               |Age: 30
               |Server: akka-http/1.0.0
@@ -596,7 +594,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
               case _: ResponseRenderingOutput.SwitchToWebSocket ⇒ throw new IllegalStateException("Didn't expect websocket response")
             }
             .groupedWithin(1000, 100.millis)
-            .viaMat(StreamUtils.identityFinishReporter[Seq[ByteString]])(Keep.right)
+            .watchTermination()(Keep.right)
             .toMat(Sink.head)(Keep.both).run()
 
         // we try to find out if the renderer has already flagged completion even without the upstream being completed

@@ -16,6 +16,10 @@ import akka.http.scaladsl.server.util.ClassMagnet
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
 
+/**
+ * @groupname header Header directives
+ * @groupprio header 110
+ */
 trait HeaderDirectives {
   import BasicDirectives._
   import RouteDirectives._
@@ -24,6 +28,8 @@ trait HeaderDirectives {
    * Extracts an HTTP header value using the given function. If the function result is undefined for all headers the
    * request is rejected with an empty rejection set. If the given function throws an exception the request is rejected
    * with a [[akka.http.scaladsl.server.MalformedHeaderRejection]].
+   *
+   * @group header
    */
   def headerValue[T](f: HttpHeader ⇒ Option[T]): Directive1[T] = {
     val protectedF: HttpHeader ⇒ Option[Either[Rejection, T]] = header ⇒
@@ -42,18 +48,24 @@ trait HeaderDirectives {
   /**
    * Extracts an HTTP header value using the given partial function. If the function is undefined for all headers the
    * request is rejected with an empty rejection set.
+   *
+   * @group header
    */
   def headerValuePF[T](pf: PartialFunction[HttpHeader, T]): Directive1[T] = headerValue(pf.lift)
 
   /**
    * Extracts the value of the first HTTP request header with the given name.
    * If no header with a matching name is found the request is rejected with a [[akka.http.scaladsl.server.MissingHeaderRejection]].
+   *
+   * @group header
    */
   def headerValueByName(headerName: Symbol): Directive1[String] = headerValueByName(headerName.name)
 
   /**
    * Extracts the value of the HTTP request header with the given name.
    * If no header with a matching name is found the request is rejected with a [[akka.http.scaladsl.server.MissingHeaderRejection]].
+   *
+   * @group header
    */
   def headerValueByName(headerName: String): Directive1[String] =
     headerValue(optionalValue(headerName.toLowerCase)) | reject(MissingHeaderRejection(headerName))
@@ -64,6 +76,8 @@ trait HeaderDirectives {
    *
    * Custom headers will only be matched by this directive if they extend [[ModeledCustomHeader]]
    * and provide a companion extending [[ModeledCustomHeaderCompanion]].
+   *
+   * @group header
    */
   def headerValueByType[T](magnet: HeaderMagnet[T]): Directive1[T] =
     headerValuePF(magnet.extractPF) | reject(MissingHeaderRejection(magnet.runtimeClass.getSimpleName))
@@ -73,6 +87,8 @@ trait HeaderDirectives {
    * Extracts an optional HTTP header value using the given function.
    * If the given function throws an exception the request is rejected
    * with a [[akka.http.scaladsl.server.MalformedHeaderRejection]].
+   *
+   * @group header
    */
   def optionalHeaderValue[T](f: HttpHeader ⇒ Option[T]): Directive1[Option[T]] =
     headerValue(f).map(Some(_): Option[T]).recoverPF {
@@ -84,18 +100,24 @@ trait HeaderDirectives {
    * Extracts an optional HTTP header value using the given partial function.
    * If the given function throws an exception the request is rejected
    * with a [[akka.http.scaladsl.server.MalformedHeaderRejection]].
+   *
+   * @group header
    */
   def optionalHeaderValuePF[T](pf: PartialFunction[HttpHeader, T]): Directive1[Option[T]] =
     optionalHeaderValue(pf.lift)
 
   /**
    * Extracts the value of the optional HTTP request header with the given name.
+   *
+   * @group header
    */
   def optionalHeaderValueByName(headerName: Symbol): Directive1[Option[String]] =
     optionalHeaderValueByName(headerName.name)
 
   /**
    * Extracts the value of the optional HTTP request header with the given name.
+   *
+   * @group header
    */
   def optionalHeaderValueByName(headerName: String): Directive1[Option[String]] = {
     val lowerCaseName = headerName.toLowerCase
@@ -109,6 +131,8 @@ trait HeaderDirectives {
    *
    * Custom headers will only be matched by this directive if they extend [[ModeledCustomHeader]]
    * and provide a companion extending [[ModeledCustomHeaderCompanion]].
+   *
+   * @group header
    */
   def optionalHeaderValueByType[T <: HttpHeader](magnet: HeaderMagnet[T]): Directive1[Option[T]] =
     optionalHeaderValuePF(magnet.extractPF)

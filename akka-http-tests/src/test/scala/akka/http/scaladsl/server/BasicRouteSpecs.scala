@@ -35,6 +35,42 @@ class BasicRouteSpecs extends RoutingSpec {
     }
   }
 
+  "routes created by the 'sequence' directive" should {
+    "reject with zero arguments, since no routes were matched" in {
+      Get() ~> {
+        concat()
+      } ~> check { rejections shouldEqual Seq() }
+    }
+    "yield the first sub route if it succeeded" in {
+      Get() ~> {
+        concat(
+          get { complete("first") },
+          get { complete("second") })
+      } ~> check { responseAs[String] shouldEqual "first" }
+    }
+    "yield the second sub route if the first did not succeed" in {
+      Get() ~> {
+        concat(
+          post { complete("first") },
+          get { complete("second") })
+      } ~> check { responseAs[String] shouldEqual "second" }
+    }
+    "collect rejections from both sub routes" in {
+      Delete() ~> {
+        concat(
+          get { completeOk },
+          put { completeOk })
+      } ~> check { rejections shouldEqual Seq(MethodRejection(GET), MethodRejection(PUT)) }
+    }
+    "clear rejections that have already been 'overcome' by previous directives" in {
+      Put() ~> {
+        concat(
+          put { parameter('yeah) { echoComplete } },
+          get { completeOk })
+      } ~> check { rejection shouldEqual MissingQueryParamRejection("yeah") }
+    }
+  }
+
   "Route conjunction" should {
     val stringDirective = provide("The cat")
     val intDirective = provide(42)

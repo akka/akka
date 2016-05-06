@@ -40,7 +40,7 @@ class QueueSinkSpec extends AkkaSpec {
       val sub = probe.expectSubscription()
       val future = queue.pull()
       val future2 = queue.pull()
-      an[IllegalStateException] shouldBe thrownBy { Await.result(future2, 300.millis) }
+      an[IllegalStateException] shouldBe thrownBy { Await.result(future2, remainingOrDefault) }
 
       sub.sendNext(1)
       future.pipeTo(testActor)
@@ -82,7 +82,7 @@ class QueueSinkSpec extends AkkaSpec {
       val sub = probe.expectSubscription()
       sub.sendError(ex)
 
-      the[Exception] thrownBy { Await.result(queue.pull(), 300.millis) } should be(ex)
+      the[Exception] thrownBy { Await.result(queue.pull(), remainingOrDefault) } should be(ex)
     }
 
     "timeout future when stream cannot provide data" in assertAllStagesStopped {
@@ -131,6 +131,17 @@ class QueueSinkSpec extends AkkaSpec {
       queue.pull() pipeTo testActor
       expectMsg(None)
 
+    }
+
+    "cancel upstream on cancel" in assertAllStagesStopped {
+      val queue = Source.repeat(1).runWith(Sink.queue())
+      queue.pull()
+      queue.cancel()
+    }
+
+    "be able to cancel upstream right away" in assertAllStagesStopped {
+      val queue = Source.repeat(1).runWith(Sink.queue())
+      queue.cancel()
     }
 
     "work with one element buffer" in assertAllStagesStopped {

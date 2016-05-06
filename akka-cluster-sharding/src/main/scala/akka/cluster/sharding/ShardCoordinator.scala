@@ -393,7 +393,7 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
   import settings.tuningParameters._
 
   val cluster = Cluster(context.system)
-  val removalMargin = cluster.settings.DownRemovalMargin
+  val removalMargin = cluster.downingProvider.downRemovalMargin
 
   var state = State.empty.withRememberEntities(settings.rememberEntities)
   var rebalanceInProgress = Set.empty[ShardId]
@@ -729,8 +729,6 @@ class PersistentShardCoordinator(typeName: String, settings: ClusterShardingSett
 
   override def snapshotPluginId: String = settings.snapshotPluginId
 
-  var persistCount = 0
-
   override def receiveRecover: Receive = {
     case evt: DomainEvent ⇒
       log.debug("receiveRecover {}", evt)
@@ -793,8 +791,7 @@ class PersistentShardCoordinator(typeName: String, settings: ClusterShardingSett
   }
 
   def saveSnapshotWhenNeeded(): Unit = {
-    persistCount += 1
-    if (persistCount % snapshotAfter == 0) {
+    if (lastSequenceNr % snapshotAfter == 0 && lastSequenceNr != 0) {
       log.debug("Saving snapshot, sequence number [{}]", snapshotSequenceNr)
       saveSnapshot(state)
     }

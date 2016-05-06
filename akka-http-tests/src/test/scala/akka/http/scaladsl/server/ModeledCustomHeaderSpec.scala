@@ -4,39 +4,33 @@
 
 package akka.http.scaladsl.server
 
-import akka.http.scaladsl.model.{ HttpHeader, StatusCodes }
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.server.directives.HeaderMagnet
 
-import scala.concurrent.Future
 import scala.util.{ Success, Failure, Try }
 
 object ModeledCustomHeaderSpec {
 
   //#modeled-api-key-custom-header
   final class ApiTokenHeader(token: String) extends ModeledCustomHeader[ApiTokenHeader] {
-    def renderInRequests = false
-    def renderInResponses = false
+    override def renderInRequests = false
+    override def renderInResponses = false
     override val companion = ApiTokenHeader
     override def value: String = token
   }
   object ApiTokenHeader extends ModeledCustomHeaderCompanion[ApiTokenHeader] {
-    def renderInRequests = false
-    def renderInResponses = false
     override val name = "apiKey"
     override def parse(value: String) = Try(new ApiTokenHeader(value))
   }
   //#modeled-api-key-custom-header
 
   final class DifferentHeader(token: String) extends ModeledCustomHeader[DifferentHeader] {
-    def renderInRequests = false
-    def renderInResponses = false
+    override def renderInRequests = false
+    override def renderInResponses = false
     override val companion = DifferentHeader
     override def value = token
   }
   object DifferentHeader extends ModeledCustomHeaderCompanion[DifferentHeader] {
-    def renderInRequests = false
-    def renderInResponses = false
     override val name = "different"
     override def parse(value: String) =
       if (value contains " ") Failure(new Exception("Contains illegal whitespace!"))

@@ -45,7 +45,18 @@ object ActorPublisherMessage {
    * more elements.
    * @param n number of requested elements
    */
-  final case class Request(n: Long) extends ActorPublisherMessage with NoSerializationVerificationNeeded
+  final case class Request(n: Long) extends ActorPublisherMessage with NoSerializationVerificationNeeded {
+    private var processed = false
+    /**
+     * INTERNAL API: needed for stash support
+     */
+    private[akka] def markProcessed(): Unit = processed = true
+
+    /**
+     * INTERNAL API: needed for stash support
+     */
+    private[akka] def isProcessed(): Boolean = processed
+  }
 
   /**
    * This message is delivered to the [[ActorPublisher]] actor when the stream subscriber cancels the
@@ -111,7 +122,6 @@ object ActorPublisherMessage {
  * failure, completed or canceled.
  */
 trait ActorPublisher[T] extends Actor {
-  import akka.stream.actor.ActorPublisherMessage._
   import ActorPublisher.Internal._
   import ActorPublisherMessage._
   import ReactiveStreamsCompliance._
@@ -256,15 +266,21 @@ trait ActorPublisher[T] extends Actor {
    * INTERNAL API
    */
   protected[akka] override def aroundReceive(receive: Receive, msg: Any): Unit = msg match {
-    case Request(n) ⇒
-      if (n < 1) {
-        if (lifecycleState == Active)
-          onError(numberOfElementsInRequestMustBePositiveException)
+    case req @ Request(n) ⇒
+      if (req.isProcessed()) {
+        // it's an unstashed Request, demand is already handled
+        super.aroundReceive(receive, req)
       } else {
-        demand += n
-        if (demand < 0)
-          demand = Long.MaxValue // Long overflow, Reactive Streams Spec 3:17: effectively unbounded
-        super.aroundReceive(receive, msg)
+        if (n < 1) {
+          if (lifecycleState == Active)
+            onError(numberOfElementsInRequestMustBePositiveException)
+        } else {
+          demand += n
+          if (demand < 0)
+            demand = Long.MaxValue // Long overflow, Reactive Streams Spec 3:17: effectively unbounded
+          req.markProcessed()
+          super.aroundReceive(receive, req)
+        }
       }
 
     case Subscribe(sub: Subscriber[_]) ⇒
@@ -293,8 +309,11 @@ trait ActorPublisher[T] extends Actor {
       }
 
     case Cancel ⇒
-      cancelSelf()
-      super.aroundReceive(receive, msg)
+      if (lifecycleState != Canceled) {
+        // possible to receive again in case of stash
+        cancelSelf()
+        super.aroundReceive(receive, msg)
+      }
 
     case SubscriptionTimeoutExceeded ⇒
       if (!scheduledSubscriptionTimeout.isCancelled) {
@@ -392,7 +411,7 @@ private[akka] object ActorPublisherState extends ExtensionId[ActorPublisherState
 
   override def get(system: ActorSystem): ActorPublisherState = super.get(system)
 
-  override def lookup = ActorPublisherState
+  override def lookup() = ActorPublisherState
 
   override def createExtension(system: ExtendedActorSystem): ActorPublisherState =
     new ActorPublisherState

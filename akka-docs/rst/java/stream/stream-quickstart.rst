@@ -168,7 +168,7 @@ which will be responsible for materializing and running the streams we are about
 .. includecode:: ../code/docs/stream/TwitterStreamQuickstartDocTest.java#materializer-setup
 
 The :class:`ActorMaterializer` can optionally take :class:`ActorMaterializerSettings` which can be used to define
-materialization properties, such as default buffer sizes (see also :ref:`stream-buffers-java`), the dispatcher to
+materialization properties, such as default buffer sizes (see also :ref:`async-stream-buffers-java`), the dispatcher to
 be used by the pipeline etc. These can be overridden with ``withAttributes`` on :class:`Flow`, :class:`Source`, :class:`Sink` and :class:`Graph`.
 
 Let's assume we have a stream of tweets readily available. In Akka this is expressed as a :class:`Source<Out, M>`:
@@ -243,7 +243,7 @@ at the expense of not reading as familiarly as collection transformations.
 
 Graphs are constructed using :class:`GraphDSL` like this:
 
-.. includecode:: ../code/docs/stream/TwitterStreamQuickstartDocTest.java#flow-graph-broadcast
+.. includecode:: ../code/docs/stream/TwitterStreamQuickstartDocTest.java#graph-dsl-broadcast
 
 As you can see, we use graph builder ``b`` to construct the graph using ``UniformFanOutShape`` and ``Flow`` s.
 
@@ -257,7 +257,7 @@ Both :class:`Graph` and :class:`RunnableGraph` are *immutable, thread-safe, and 
 A graph can also have one of several other shapes, with one or more unconnected ports. Having unconnected ports
 expresses a graph that is a *partial graph*. Concepts around composing and nesting graphs in large structures are
 explained in detail in :ref:`composition-java`. It is also possible to wrap complex computation graphs
-as Flows, Sinks or Sources, which will be explained in detail in :ref:`partial-flow-graph-java`.
+as Flows, Sinks or Sources, which will be explained in detail in :ref:`partial-graph-dsl-java`.
 
 
 Back-pressure in action

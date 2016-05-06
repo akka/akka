@@ -38,7 +38,7 @@ object Scaladoc extends AutoPlugin {
 
   def scaladocOptions(ver: String, base: File): List[String] = {
     val urlString = GitHub.url(ver) + "/€{FILE_PATH}.scala"
-    val opts = List("-implicits", "-doc-source-url", urlString, "-sourcepath", base.getAbsolutePath)
+    val opts = List("-implicits", "-groups", "-doc-source-url", urlString, "-sourcepath", base.getAbsolutePath)
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
 
@@ -134,7 +134,7 @@ object Unidoc extends AutoPlugin {
   override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
     genjavadocExtraSettings ++ Seq(
       scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true",
-      unidocGenjavadocVersion in Global := "0.9",
+      unidocGenjavadocVersion in Global := "0.10",
       // FIXME: see #18056
       sources in(Genjavadoc, doc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
     )

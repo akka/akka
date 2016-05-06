@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl.model
 
+import java.io.File
+import java.nio.file.Path
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.Optional
 
@@ -107,7 +109,10 @@ sealed trait HttpMessage extends jm.HttpMessage {
     withEntity(HttpEntity(contentType.asInstanceOf[ContentType.NonBinary], string))
   def withEntity(contentType: jm.ContentType, bytes: Array[Byte]): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], bytes))
   def withEntity(contentType: jm.ContentType, bytes: ByteString): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], bytes))
-  def withEntity(contentType: jm.ContentType, file: java.io.File): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], file))
+
+  @deprecated("Use withEntity(ContentType, Path) instead", "2.4.5")
+  def withEntity(contentType: jm.ContentType, file: File): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], file))
+  def withEntity(contentType: jm.ContentType, file: Path): Self = withEntity(HttpEntity.fromPath(contentType.asInstanceOf[ContentType], file))
 
   import collection.JavaConverters._
   /** Java API */

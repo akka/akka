@@ -5,6 +5,7 @@ import akka.actor.ActorSystem;
 
 import akka.japi.*;
 import org.junit.ClassRule;
+import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.Promise;
@@ -22,7 +23,7 @@ import static akka.japi.Util.classTag;
 
 import akka.testkit.AkkaSpec;
 
-public class JavaFutureTests {
+public class JavaFutureTests extends JUnitSuite {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

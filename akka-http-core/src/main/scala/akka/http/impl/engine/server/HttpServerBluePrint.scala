@@ -228,7 +228,7 @@ private[http] object HttpServerBluePrint {
       case x ⇒ x
     }
 
-    Flow[SessionBytes].transform(() ⇒
+    Flow[SessionBytes].via(
       // each connection uses a single (private) request parser instance for all its requests
       // which builds a cache of all header instances seen on that connection
       rootParser.createShallowCopy().stage).named("rootParser")
@@ -276,9 +276,11 @@ private[http] object HttpServerBluePrint {
         override def onUpstreamFinish() = complete(requestOut)
         override def onUpstreamFailure(ex: Throwable) = fail(requestOut, ex)
         def emitTimeoutResponse(response: (TimeoutAccess, HttpResponse)) =
-          if (openTimeouts.head eq response._1) {
+          // the application response might has already arrived after we scheduled the timeout response (which is close but ok)
+          // or current head (same reason) is not for response the timeout has been scheduled for
+          if (openTimeouts.headOption.exists(_ eq response._1)) {
             emit(responseOut, response._2, () ⇒ completeStage())
-          } // else the application response arrived after we scheduled the timeout response, which is close but ok
+          }
       })
       // TODO: provide and use default impl for simply connecting an input and an output port as we do here
       setHandler(requestOut, new OutHandler {
@@ -385,7 +387,10 @@ private[http] object HttpServerBluePrint {
               messageEndPending = false
               push(requestPrepOut, MessageEnd)
             case MessageStartError(status, info) ⇒ finishWithIllegalRequestError(status, info)
-            case x                               ⇒ push(requestPrepOut, x)
+            case x: EntityStreamError if messageEndPending && openRequests.isEmpty =>
+              // client terminated the connection after receiving an early response to 100-continue
+              completeStage()
+            case x ⇒ push(requestPrepOut, x)
           }
         override def onUpstreamFinish() =
           if (openRequests.isEmpty) completeStage()
@@ -395,7 +400,7 @@ private[http] object HttpServerBluePrint {
       setHandler(requestPrepOut, new OutHandler {
         def onPull(): Unit =
           if (oneHundredContinueResponsePending) pullSuppressed = true
-          else pull(requestParsingIn)
+          else if (!hasBeenPulled(requestParsingIn)) pull(requestParsingIn)
         override def onDownstreamFinish() = cancel(requestParsingIn)
       })
 
@@ -417,6 +422,9 @@ private[http] object HttpServerBluePrint {
           emit(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
             pullHttpResponseIn)
           if (close) complete(responseCtxOut)
+          // when the client closes the connection, we need to pull onc more time to get the
+          // request parser to complete
+          if (close && isEarlyResponse) pull(requestParsingIn)
         }
         override def onUpstreamFinish() =
           if (openRequests.isEmpty && isClosed(requestParsingIn)) completeStage()

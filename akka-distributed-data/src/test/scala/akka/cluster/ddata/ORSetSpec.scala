@@ -12,7 +12,6 @@ import akka.cluster.ddata.Replicator.Changed
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ORSetSpec extends WordSpec with Matchers {
 
   val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
