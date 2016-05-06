@@ -48,7 +48,7 @@ private[http] class RejectionHandlerWrapper(javaHandler: server.RejectionHandler
         case TooManyRangesRejection(maxRanges) ⇒
           handleTooManyRangesRejection(ctx, maxRanges)
         case MalformedRequestContentRejection(message, cause) ⇒
-          handleMalformedRequestContentRejection(ctx, message, cause.orNull)
+          handleMalformedRequestContentRejection(ctx, message, cause)
         case RequestEntityExpectedRejection ⇒
           handleRequestEntityExpectedRejection(ctx)
         case UnacceptedResponseContentTypeRejection(supported) ⇒
