@@ -22,53 +22,22 @@ which could (and often should) happen asynchronously.
 
 With the :ref:`-complete-java-` directive this becomes even shorter::
 
-    val route = complete("yeah")
+    Route route = complete("yeah");
 
-These three ways of writing this ``Route`` are fully equivalent, the created ``route`` will behave identically in all
-cases.
+Writing multiple routes that are tried as alternatives (in-order of definition), is as simple as using the ``route(route1, route2)``,
+method::
 
-Let's look at a slightly more complicated example to highlight one important point in particular.
-Consider these two routes::
+    Route routes = route(
+      pathSingleSlash(() ->
+        getFromResource("web/calculator.html")
+      ),
+      path("hello", () -> complete("World!))
+    );
 
-    val a: Route = {
-      println("MARK")
-      ctx => ctx.complete("yeah")
-    }
 
-    val b: Route = { ctx =>
-      println("MARK")
-      ctx.complete("yeah")
-    }
-
-The difference between ``a`` and ``b`` is when the ``println`` statement is executed.
-In the case of ``a`` it is executed *once*, when the route is constructed, whereas in the case of ``b`` it is executed
-every time the route is *run*.
-
-Using the :ref:`-complete-java-` directive the same effects are achieved like this::
-
-    val a = {
-      println("MARK")
-      complete("yeah")
-    }
-
-    val b = complete {
-      println("MARK")
-      "yeah"
-    }
-
-This works because the argument to the :ref:`-complete-java-` directive is evaluated *by-name*, i.e. it is re-evaluated
-every time the produced route is run.
-
-Let's take things one step further::
-
-    val route: Route = { ctx =>
-      if (ctx.request.method == HttpMethods.GET)
-        ctx.complete("Received GET")
-      else
-        ctx.complete("Received something else")
-    }
-
-Using the :ref:`-get-java-` and :ref:`-complete-java-` directives we can write this route like this::
+You could also simply define a "catch all" completion by providing it as the last route to attempt to match.
+In the example below we use the ``get()`` (one of the :ref:`method-directives-java`) to match all incoming ``GET``
+requests for that route, and all other requests will be routed towards the other "catch all" route, that completes the route. 
 
     val route =
       get {
@@ -76,35 +45,20 @@ Using the :ref:`-get-java-` and :ref:`-complete-java-` directives we can write t
       } ~
       complete("Received something else")
 
-Again, the produced routes will behave identically in all cases.
-
-Note that, if you wish, you can also mix the two styles of route creation::
-
-    val route =
-      get { ctx =>
-        ctx.complete("Received GET")
-      } ~
-      complete("Received something else")
-
-Here, the inner route of the :ref:`-get-java-` directive is written as an explicit function literal.
-
-However, as you can see from these examples, building routes with directives rather than "manually" results in code that
-is a lot more concise and as such more readable and maintainable. In addition it provides for better composability (as
-you will see in the coming sections). So, when using Akka HTTP's Routing DSL you should almost never have to fall back
-to creating routes via ``Route`` function literals that directly manipulate the :ref:`RequestContext-java`.
-
+If no route matches a given request, a default ``404 Not Found`` response will be returned as response.
 
 Structure
 ---------
 
 The general anatomy of a directive is as follows::
 
-    name(arguments) { extractions =>
+    directiveName(arguments [, ...], (extractions [, ...]) -> {
       ... // inner route
-    }
+    })
 
 It has a name, zero or more arguments and optionally an inner route (The :ref:`RouteDirectives-java` are special in that they
 are always used at the leaf-level and as such cannot have inner routes).
+
 Additionally directives can "extract" a number of values and make them available to their inner routes as function
 arguments. When seen "from the outside" a directive with its inner route form an expression of type ``Route``.
 

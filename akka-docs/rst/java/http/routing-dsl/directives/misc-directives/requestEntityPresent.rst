@@ -14,6 +14,3 @@ See also :ref:`-requestEntityEmpty-java-` for the opposite effect.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
-  :snippet: requestEntityEmptyPresent-example

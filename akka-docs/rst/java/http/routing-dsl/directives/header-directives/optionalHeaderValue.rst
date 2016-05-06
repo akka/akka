@@ -14,6 +14,3 @@ value instead of rejecting the request if no matching header could be found.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
-   :snippet: optionalHeaderValue-0

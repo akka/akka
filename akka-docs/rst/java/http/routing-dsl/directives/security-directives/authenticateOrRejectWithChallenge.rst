@@ -17,6 +17,3 @@ More details about challenge-response authentication are available in the `RFC 2
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala
-   :snippet: authenticateOrRejectWithChallenge-0

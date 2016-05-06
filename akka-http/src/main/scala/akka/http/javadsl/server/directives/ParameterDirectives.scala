@@ -51,7 +51,7 @@ abstract class ParameterDirectives extends MiscDirectives {
         inner.apply(value.asJava).delegate
       })
   }
-  
+
   @CorrespondsTo("parameter")
   def parameterOrDefault[T](t: Unmarshaller[String, T], defaultValue: T, name: String, inner: java.util.function.Function[T, Route]): Route = {
     import t.asScala

@@ -3,14 +3,6 @@
 respondWithDefaultHeader
 ========================
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RespondWithDirectives.scala
-   :snippet: respondWithDefaultHeader
-
-
 Description
 -----------
 Adds a given HTTP header to all responses coming back from its inner route only if a header with the same name doesn't
@@ -27,6 +19,3 @@ See also :ref:`-respondWithDefaultHeaders-java-`  if you'd like to add more than
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala
-   :snippet: respondWithDefaultHeader-0

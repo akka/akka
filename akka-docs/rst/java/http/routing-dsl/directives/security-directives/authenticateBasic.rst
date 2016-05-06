@@ -2,11 +2,10 @@
 
 authenticateBasic
 =================
+Wraps the inner route with Http Basic authentication support using a given ``Authenticator<T>``.
 
 Description
 -----------
-Wraps the inner route with Http Basic authentication support using a given ``Authenticator[T]``.
-
 Provides support for handling `HTTP Basic Authentication`_.
 
 Given a function returning an ``Optional<T>`` with a value upon successful authentication and an empty ``Optional<T>`` otherwise,
@@ -29,6 +28,3 @@ See :ref:`credentials-and-timing-attacks-java` for details about verifying the s
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala
-   :snippet: authenticateBasic-0

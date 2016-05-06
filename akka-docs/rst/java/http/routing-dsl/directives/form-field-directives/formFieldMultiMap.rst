@@ -23,6 +23,3 @@ See :ref:`-formFieldList-java-` for details.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala
-   :snippet: formFieldMultiMap

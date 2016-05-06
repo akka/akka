@@ -3,14 +3,6 @@
 reject
 ======
 
-Signature
----------
-TODO: Add example snippet.
-.. 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala
-   :snippet: reject
-
-
 Description
 -----------
 Explicitly rejects the request optionally using the given rejection(s).
@@ -28,6 +20,3 @@ modifier for "filtering out" certain cases.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala
-   :snippet: reject-examples

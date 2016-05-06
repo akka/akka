@@ -14,6 +14,3 @@ See :ref:`-logRequest-java-` for the general description how these directives wo
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala
-   :snippet: logRequestResult

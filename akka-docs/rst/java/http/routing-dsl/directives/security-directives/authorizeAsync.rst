@@ -26,6 +26,3 @@ See also :ref:`-authorize-java-` for the synchronous version of this directive.
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala
-   :snippet: 0authorizeAsync

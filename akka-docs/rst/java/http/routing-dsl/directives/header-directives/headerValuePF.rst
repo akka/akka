@@ -17,6 +17,3 @@ If the function is not defined for any header the request is rejected as "NotFou
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
-   :snippet: headerValuePF-0

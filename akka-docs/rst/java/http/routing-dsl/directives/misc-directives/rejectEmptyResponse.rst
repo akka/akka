@@ -14,6 +14,3 @@ usually marshalled to an empty but successful result. In many cases ``None`` sho
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
-  :snippet: rejectEmptyResponse-example

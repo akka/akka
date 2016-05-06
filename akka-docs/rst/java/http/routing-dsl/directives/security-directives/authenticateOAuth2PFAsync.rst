@@ -2,12 +2,10 @@
 
 authenticateOAuth2PFAsync
 =========================
-
-Wraps the inner route with OAuth Bearer Token authentication support using a given ``AsyncAuthenticatorPF[T]``.
+Wraps the inner route with OAuth Bearer Token authentication support using a given ``AsyncAuthenticatorPF<T>``.
 
 Description
 -----------
-
 Provides support for extracting the so-called "*Bearer Token*" from the :class:`Authorization` HTTP Header,
 which is used to initiate an OAuth2 authorization.
 

@@ -12,6 +12,3 @@ Otherwise, rejects the request with a ``ValidationRejection`` containing the giv
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
-  :snippet: validate-example

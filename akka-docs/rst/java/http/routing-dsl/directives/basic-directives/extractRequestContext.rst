@@ -17,6 +17,3 @@ See also :ref:`-extractRequest-java-` if only interested in the :class:`HttpRequ
 Example
 -------
 TODO: Add example snippet.
-.. 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: extractRequestContext-example
