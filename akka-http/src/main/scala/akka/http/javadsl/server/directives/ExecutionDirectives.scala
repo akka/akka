@@ -19,7 +19,6 @@ abstract class ExecutionDirectives extends DebuggingDirectives {
       inner.get.delegate
     })
 
-
   /**
    * Transforms rejections produced by its inner route using the given
    * [[akka.http.scaladsl.server.RejectionHandler]].

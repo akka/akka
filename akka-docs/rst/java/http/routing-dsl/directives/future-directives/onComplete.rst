@@ -5,8 +5,9 @@ onComplete
 
 Description
 -----------
-Evaluates its parameter of type ``Future[T]``, and once the ``Future`` has been completed, extracts its
-result as a value of type ``Try[T]`` and passes it to the inner route.
+Evaluates its parameter of type ``CompletionStage<T>``, and once it has been completed, extracts its
+result as a value of type ``Try<T>`` and passes it to the inner route. A ``Try<T>`` can either be a ``Success`` containing
+the ``T`` value or a ``Failure`` containing the ``Throwable``.
 
 To handle the ``Failure`` case automatically and only work with the result value, use :ref:`-onSuccess-java-`.
 

@@ -15,10 +15,9 @@ is missing use the :ref:`-optionalHeaderValueByType-java-` directive instead.
 
 .. note::
   Custom headers will only be matched by this directive if they extend ``ModeledCustomHeader``
-  and provide a companion extending ``ModeledCustomHeaderCompanion``, otherwise the routing
-  infrastructure does now know where to search for the needed companion and header name.
+  from the Scala DSL and there is currently no API for the Java DSL (Ticket #20415)
 
-  To learn more about defining custom headers, read: :ref:`custom-headers-java`.
+  To learn more about defining custom headers, read: :ref:`custom-headers`.
 
 Example
 -------

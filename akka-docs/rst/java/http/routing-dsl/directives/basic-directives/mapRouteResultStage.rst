@@ -1,7 +1,7 @@
-.. _-mapRouteResultStage-java-:
+.. _-mapRouteResultFuture-java-:
 
-mapRouteResultStage
-===================
+mapRouteResultFuture
+====================
 
 Description
 -----------
@@ -20,4 +20,4 @@ Example
 TODO: Add example snippet.
 .. 
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: mapRouteResultStage
+   :snippet: mapRouteResultFuture

@@ -8,14 +8,13 @@ Description
 Optionally extracts the value of the HTTP request header of the given type.
 
 The ``optionalHeaderValueByType`` directive is similar to the :ref:`-headerValueByType-java-` directive but always extracts
-an ``Option`` value instead of rejecting the request if no matching header could be found.
+an ``Optional`` value instead of rejecting the request if no matching header could be found.
 
 .. note::
   Custom headers will only be matched by this directive if they extend ``ModeledCustomHeader``
-  and provide a companion extending ``ModeledCustomHeaderCompanion``, otherwise the routing
-  infrastructure does now know where to search for the needed companion and header name.
+  from the Scala DSL and there is currently no API for the Java DSL (Ticket #20415)
 
-  To learn more about defining custom headers, read: :ref:`custom-headers-java`.
+  To learn more about defining custom headers, read: :ref:`custom-headers`.
 
 Example
 -------

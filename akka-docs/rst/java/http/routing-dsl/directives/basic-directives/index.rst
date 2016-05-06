@@ -69,7 +69,7 @@ These directives allow to transform the RouteResult of the inner route.
   * :ref:`-cancelRejections-java-`
   * :ref:`-mapRejections-java-`
   * :ref:`-mapRouteResult-java-`
-  * :ref:`-mapRouteResultStage-java-`
+  * :ref:`-mapRouteResultFuture-java-`
   * :ref:`-mapRouteResultPF-java-`
   * :ref:`-mapRouteResultWith-java-`
   * :ref:`-mapRouteResultWithPF-java-`
@@ -109,7 +109,7 @@ Alphabetically
    mapResponseEntity
    mapResponseHeaders
    mapRouteResult
-   mapRouteResultStage
+   mapRouteResultFuture
    mapRouteResultPF
    mapRouteResultWith
    mapRouteResultWithPF
