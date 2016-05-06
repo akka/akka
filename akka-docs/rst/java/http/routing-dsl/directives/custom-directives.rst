@@ -23,6 +23,12 @@ The basic technique is explained in the chapter about Composing Directives, wher
 .. includecode2:: ../../../code/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java
    :snippet: labeling
 
+Multiple directives can be nested to produce a single directive out of multiple like this:
+
+.. includecode2:: ../../../code/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java
+   :snippet: composition
+
+
 Another example is the :ref:`MethodDirectives-java` which are simply instances of a preconfigured :ref:`-method-java-` directive.
 The low-level directives that most often form the basis of higher-level “named configuration” directives are grouped
 together in the :ref:`BasicDirectives-java` trait.

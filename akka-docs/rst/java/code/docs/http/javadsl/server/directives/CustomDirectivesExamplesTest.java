@@ -16,16 +16,19 @@ import java.util.function.Function;
 
 public class CustomDirectivesExamplesTest extends JUnitRouteTest {
 
-  //#labeling
+  //#labeling-1
   public Route getOrPut(Supplier<Route> inner) {
     return get(inner).orElse(put(inner));
   }
-  //#labeling
+  //#
 
   @Test
   public void testLabeling() {
     // tests:
+
+    //#labeling-2
     Route route = getOrPut(() -> complete("ok"));
+    //#
 
     testRoute(route).run(HttpRequest.GET("/"))
       .assertStatusCode(StatusCodes.OK);
@@ -60,8 +63,8 @@ public class CustomDirectivesExamplesTest extends JUnitRouteTest {
     ADMIN
   }
 
-  //#composition
-
+  //#composition-1
+  // the composed custom directive
   /**
    * @param authenticate A function returns a set of roles for the credentials of a user
    * @param inner Inner route to execute if the provided credentials has the given role
@@ -79,13 +82,14 @@ public class CustomDirectivesExamplesTest extends JUnitRouteTest {
       });
     });
   }
-  //#composition
+  //#
 
   @Test
   public void testComposition() {
     // tests:
 
-    // #composition
+    //#composition-2
+    // a function for authentication
     Function<MyCredentials, Set<MyRole>> authLogic =
       (credentials) -> {
         if (credentials.userId.equals("admin") && credentials.safeSecretVerification("secret"))
@@ -94,12 +98,13 @@ public class CustomDirectivesExamplesTest extends JUnitRouteTest {
           return Collections.emptySet();
       };
 
+    // and then using the custom route
     Route route = get(() ->
       path("admin", () ->
         headerBasedAuth(authLogic, MyRole.ADMIN, () -> complete(StatusCodes.OK, "admin stuff"))
       )
     );
-    // #composition
+    //#
 
 
     testRoute(route).run(HttpRequest.GET("/admin"))
