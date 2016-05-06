@@ -131,14 +131,21 @@ object KillSwitches {
  * to the switch. Depending on whether the [[KillSwitch]] is a [[UniqueKillSwitch]] or a [[SharedKillSwitch]] one or
  * multiple streams might be linked with the switch. For details see the documentation of the concrete subclasses of
  * this interface.
+ *
+ * @groupname killswitch kill switch
+ * @groupprio killswitch 80
  */
 trait KillSwitch {
   /**
    * After calling [[KillSwitch#shutdown()]] the linked [[Graph]]s of [[FlowShape]] are completed normally.
+   *
+   * @group killswitch
    */
   def shutdown(): Unit
   /**
    * After calling [[KillSwitch#abort()]] the linked [[Graph]]s of [[FlowShape]] are failed.
+   *
+   * @group killswitch
    */
   def abort(ex: Throwable): Unit
 }

@@ -120,6 +120,9 @@ object ActorPublisherMessage {
  *
  * If the actor is stopped the stream will be completed, unless it was not already terminated with
  * failure, completed or canceled.
+ *
+ * @groupname actorpublisher Actor publisher
+ * @groupprio 70
  */
 trait ActorPublisher[T] extends Actor {
   import ActorPublisher.Internal._
@@ -138,6 +141,8 @@ trait ActorPublisher[T] extends Actor {
    * MUST react by performing all necessary cleanup and stopping itself.
    *
    * Use this feature in order to avoid leaking actors when you suspect that this Publisher may never get subscribed to by some Subscriber.
+   *
+   * @group actorpublisher
    */
   def subscriptionTimeout: Duration = Duration.Inf
 
@@ -147,6 +152,8 @@ trait ActorPublisher[T] extends Actor {
    * call [[#onComplete]] and [[#onError]] in this state. It is
    * allowed to call [[#onNext]] in this state when [[#totalDemand]]
    * is greater than zero.
+   *
+   * @group actorpublisher
    */
   final def isActive: Boolean = lifecycleState == Active || lifecycleState == PreSubscriber
 
@@ -154,18 +161,24 @@ trait ActorPublisher[T] extends Actor {
    * Total number of requested elements from the stream subscriber.
    * This actor automatically keeps tracks of this amount based on
    * incoming request messages and outgoing `onNext`.
+   *
+   * @group actorpublisher
    */
   final def totalDemand: Long = demand
 
   /**
    * The terminal state after calling [[#onComplete]]. It is not allowed to
    * call [[#onNext]], [[#onError]], and [[#onComplete]] in this state.
+   *
+   * @group actorpublisher
    */
   final def isCompleted: Boolean = lifecycleState == Completed
 
   /**
    * The terminal state after calling [[#onError]]. It is not allowed to
    * call [[#onNext]], [[#onError]], and [[#onComplete]] in this state.
+   *
+   * @group actorpublisher
    */
   final def isErrorEmitted: Boolean = lifecycleState.isInstanceOf[ErrorEmitted]
 
@@ -173,6 +186,8 @@ trait ActorPublisher[T] extends Actor {
    * The state after the stream subscriber has canceled the subscription.
    * It is allowed to call [[#onNext]], [[#onError]], and [[#onComplete]] in
    * this state, but the calls will not perform anything.
+   *
+   * @group actorpublisher
    */
   final def isCanceled: Boolean = lifecycleState == Canceled
 
@@ -181,6 +196,8 @@ trait ActorPublisher[T] extends Actor {
    * as have been requested by the stream subscriber. This amount can be inquired with
    * [[#totalDemand]]. It is only allowed to use `onNext` when `isActive` and `totalDemand > 0`,
    * otherwise `onNext` will throw `IllegalStateException`.
+   *
+   * @group actorpublisher
    */
   def onNext(element: T): Unit = lifecycleState match {
     case Active | PreSubscriber | CompleteThenStop ⇒
@@ -200,6 +217,8 @@ trait ActorPublisher[T] extends Actor {
   /**
    * Complete the stream. After that you are not allowed to
    * call [[#onNext]], [[#onError]] and [[#onComplete]].
+   *
+   * @group actorpublisher
    */
   def onComplete(): Unit = lifecycleState match {
     case Active | PreSubscriber ⇒
@@ -221,6 +240,8 @@ trait ActorPublisher[T] extends Actor {
    * When [[#onComplete]] is called before any [[Subscriber]] has had the chance to subscribe
    * to this [[ActorPublisher]] the completion signal (and therefore stopping of the Actor as well)
    * will be delayed until such [[Subscriber]] arrives.
+   *
+   * @group actorpublisher
    */
   def onCompleteThenStop(): Unit = lifecycleState match {
     case Active | PreSubscriber ⇒
@@ -233,6 +254,8 @@ trait ActorPublisher[T] extends Actor {
   /**
    * Terminate the stream with failure. After that you are not allowed to
    * call [[#onNext]], [[#onError]] and [[#onComplete]].
+   *
+   * @group actorpublisher
    */
   def onError(cause: Throwable): Unit = lifecycleState match {
     case Active | PreSubscriber ⇒
@@ -253,6 +276,8 @@ trait ActorPublisher[T] extends Actor {
    * When [[#onError]] is called before any [[Subscriber]] has had the chance to subscribe
    * to this [[ActorPublisher]] the error signal (and therefore stopping of the Actor as well)
    * will be delayed until such [[Subscriber]] arrives.
+   *
+   * @group actorpublisher
    */
   def onErrorThenStop(cause: Throwable): Unit = lifecycleState match {
     case Active | PreSubscriber ⇒
@@ -264,6 +289,8 @@ trait ActorPublisher[T] extends Actor {
 
   /**
    * INTERNAL API
+   *
+   * @group actorpublisher
    */
   protected[akka] override def aroundReceive(receive: Receive, msg: Any): Unit = msg match {
     case req @ Request(n) ⇒
@@ -324,7 +351,11 @@ trait ActorPublisher[T] extends Actor {
     case _ ⇒
       super.aroundReceive(receive, msg)
   }
-
+  
+  /**
+   *
+   * @group actorpublisher
+   */
   private def cancelSelf() {
     lifecycleState = Canceled
     demand = 0
@@ -333,6 +364,8 @@ trait ActorPublisher[T] extends Actor {
 
   /**
    * INTERNAL API
+   *
+   * @group actorpublisher
    */
   override protected[akka] def aroundPreStart(): Unit = {
     super.aroundPreStart()
@@ -348,6 +381,8 @@ trait ActorPublisher[T] extends Actor {
 
   /**
    * INTERNAL API
+   *
+   * @group actorpublisher
    */
   protected[akka] override def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
     // some state must survive restart
@@ -357,6 +392,8 @@ trait ActorPublisher[T] extends Actor {
 
   /**
    * INTERNAL API
+   *
+   * @group actorpublisher
    */
   protected[akka] override def aroundPostRestart(reason: Throwable): Unit = {
     state.get(self) foreach { s ⇒
@@ -371,6 +408,8 @@ trait ActorPublisher[T] extends Actor {
 
   /**
    * INTERNAL API
+   *
+   * @group actorpublisher
    */
   protected[akka] override def aroundPostStop(): Unit = {
     state.remove(self)

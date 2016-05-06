@@ -39,6 +39,9 @@ object ActorSubscriberMessage {
 
 /**
  * An [[ActorSubscriber]] defines a `RequestStrategy` to control the stream back pressure.
+ *
+ * @groupname rqueststrategy actor subscriber
+ * @groupprio rqueststrategy 50
  */
 trait RequestStrategy {
   /**
@@ -49,6 +52,8 @@ trait RequestStrategy {
    *   have been requested from upstream but not received yet
    * @return demand of more elements from the stream, returning 0 means that no
    *   more elements will be requested for now
+   *
+   * @group rqueststrategy
    */
   def requestDemand(remainingRequested: Int): Int
 }
@@ -158,6 +163,9 @@ abstract class MaxInFlightRequestStrategy(max: Int) extends RequestStrategy {
  * together with [[ZeroRequestStrategy]] or some other strategy. In that case
  * you must also call [[#request]] when the actor is started or when it is ready, otherwise
  * it will not receive any elements.
+ *
+ * @groupname actorsubscriber actor subcriber
+ * @groupprio actorsubscriber 100
  */
 trait ActorSubscriber extends Actor {
   import ActorSubscriber._
@@ -174,6 +182,8 @@ trait ActorSubscriber extends Actor {
 
   /**
    * INTERNAL API
+   *
+   * @group actorsubscriber
    */
   protected[akka] override def aroundReceive(receive: Receive, msg: Any): Unit = msg match {
     case _: OnNext ⇒
@@ -204,6 +214,8 @@ trait ActorSubscriber extends Actor {
 
   /**
    * INTERNAL API
+   *
+   * @group actorsubscriber
    */
   protected[akka] override def aroundPreStart(): Unit = {
     super.aroundPreStart()
@@ -212,6 +224,8 @@ trait ActorSubscriber extends Actor {
 
   /**
    * INTERNAL API
+   *
+   * @group actorsubscriber
    */
   protected[akka] override def aroundPostRestart(reason: Throwable): Unit = {
     state.get(self) foreach { s ⇒
@@ -227,6 +241,8 @@ trait ActorSubscriber extends Actor {
 
   /**
    * INTERNAL API
+   *
+   * @group actorsubscriber
    */
   protected[akka] override def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
     // some state must survive restart
@@ -236,6 +252,8 @@ trait ActorSubscriber extends Actor {
 
   /**
    * INTERNAL API
+   *
+   * @group actorsubscriber
    */
   protected[akka] override def aroundPostStop(): Unit = {
     state.remove(self)
@@ -245,6 +263,8 @@ trait ActorSubscriber extends Actor {
 
   /**
    * Request a number of elements from upstream.
+   *
+   * @group actorsubscriber
    */
   protected def request(elements: Long): Unit =
     if (elements > 0 && !_canceled) {
@@ -260,6 +280,8 @@ trait ActorSubscriber extends Actor {
    * The [[ActorSubscriber]] will be stopped immediately after signaling cancellation.
    * In case the upstream subscription has not yet arrived the Actor will stay alive
    * until a subscription arrives, cancel it and then stop itself.
+   *
+   * @group actorsubscriber
    */
   protected def cancel(): Unit =
     if (!_canceled) {
@@ -275,9 +297,15 @@ trait ActorSubscriber extends Actor {
   /**
    * The number of stream elements that have already been requested from upstream
    * but not yet received.
+   *
+   * @group actorsubscriber
    */
   protected def remainingRequested: Int = longToIntMax(requested)
 
+ /**
+   *
+   * @group actorsubscriber
+  */ 
   private def longToIntMax(n: Long): Int =
     if (n > Int.MaxValue) Int.MaxValue
     else n.toInt
