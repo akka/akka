@@ -20,14 +20,14 @@ Usually, you want to use the high-level :ref:`-parameter-java-` directive. When 
 more low-level access you can use the table below to decide which directive
 to use which shows properties of different parameter directives.
 
-=============================== ====== ======== =====
-directive                       level  ordering multi
-=============================== ====== ======== =====
-:ref:`-parameter-java-`         high   no       no
-:ref:`-parameterMap-java-`      low    no       no
-:ref:`-parameterMultiMap-java-` low    no       yes
+================================ ====== ======== =====
+directive                        level  ordering multi
+================================ ====== ======== =====
+:ref:`-parameter-java-`          high   no       no
+:ref:`-parameterMap-java-`       low    no       no
+:ref:`-parameterMultiMap-java-`  low    no       yes
 :ref:`-parameterList-java-`     low    yes      yes
-=============================== ====== ======== =====
+================================ ====== ======== =====
 
 level
     high-level parameter directives extract subset of all parameters by name and allow conversions
@@ -39,3 +39,6 @@ ordering
 
 multi
     multiple values per parameter name are possible
+
+.. note::
+  If you need to extract multiple parameters, apply the ``parameter`` directive multiple times.

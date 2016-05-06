@@ -20,7 +20,6 @@ To use the high-level API you need to add a dependency to the ``akka-http-experi
    exception-handling
    rejections
    testkit
-   json-support
    
 Handling HTTP Server failures in the High-Level API
 ---------------------------------------------------
