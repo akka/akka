@@ -11,6 +11,9 @@ import akka.stream.stage._
 
 /**
  * Provides operations needed to implement the `timed` DSL
+ *
+ * @groupname timedops Timed Ops
+ * @groupprio timedops 30
  */
 private[akka] trait TimedOps {
 
@@ -20,6 +23,8 @@ private[akka] trait TimedOps {
    * INTERNAL API
    *
    * Measures time from receiving the first element and completion events - one for each subscriber of this `Flow`.
+   *
+   * @group timedops
    */
   def timed[I, O, Mat, Mat2](source: Source[I, Mat], measuredOps: Source[I, Mat] ⇒ Source[O, Mat2], onComplete: FiniteDuration ⇒ Unit): Source[O, Mat2] = {
     val ctx = new TimedFlowContext
@@ -34,6 +39,8 @@ private[akka] trait TimedOps {
    * INTERNAL API
    *
    * Measures time from receiving the first element and completion events - one for each subscriber of this `Flow`.
+   *
+   * @group timedops
    */
   def timed[I, O, Out, Mat, Mat2](flow: Flow[I, O, Mat], measuredOps: Flow[I, O, Mat] ⇒ Flow[I, Out, Mat2], onComplete: FiniteDuration ⇒ Unit): Flow[I, Out, Mat2] = {
     // todo is there any other way to provide this for Flow, without duplicating impl?
@@ -52,6 +59,8 @@ private[akka] trait TimedOps {
  * INTERNAL API
  *
  * Provides operations needed to implement the `timedIntervalBetween` DSL
+ * @groupname timedintervalbetweenops Timed Interval Between Ops
+ * @groupprio timedintervalbetweenops 40
  */
 private[akka] trait TimedIntervalBetweenOps {
 
@@ -59,6 +68,8 @@ private[akka] trait TimedIntervalBetweenOps {
 
   /**
    * Measures rolling interval between immediately subsequent `matching(o: O)` elements.
+   *
+   * @group timedintervalbetweenops
    */
   def timedIntervalBetween[O, Mat](source: Source[O, Mat], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Source[O, Mat] = {
     val timedInterval = Flow[O].transform(() ⇒ new TimedInterval[O](matching, onInterval)).named("timedInterval")
@@ -67,6 +78,8 @@ private[akka] trait TimedIntervalBetweenOps {
 
   /**
    * Measures rolling interval between immediately subsequent `matching(o: O)` elements.
+   *
+   * @group timedintervalbetweenops
    */
   def timedIntervalBetween[I, O, Mat](flow: Flow[I, O, Mat], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Flow[I, O, Mat] = {
     val timedInterval = Flow[O].transform(() ⇒ new TimedInterval[O](matching, onInterval)).named("timedInterval")
