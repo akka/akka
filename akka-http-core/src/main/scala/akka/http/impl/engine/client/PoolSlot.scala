@@ -9,7 +9,7 @@ import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
 import akka.stream._
 import akka.stream.actor._
-import akka.stream.impl.{ ActorProcessor, ExposedPublisher, SeqActorName, SubscribePending }
+import akka.stream.impl.{ ActorProcessor, ConstantFun, ExposedPublisher, SeqActorName, SubscribePending }
 import akka.stream.scaladsl._
 
 import scala.collection.immutable
@@ -60,7 +60,7 @@ private object PoolSlot {
           val actor = system.actorOf(Props(new SlotProcessor(slotIx, connectionFlow, settings)).withDeploy(Deploy.local),
             name)
           ActorProcessor[RequestContext, List[ProcessorOut]](actor)
-        }.mapConcat(identity)
+        }.mapConcat(ConstantFun.scalaIdentityFunction)
       }
       val split = b.add(Broadcast[ProcessorOut](2))
 
@@ -180,7 +180,7 @@ private object PoolSlot {
         } else {
           inflightRequests.map { rc ⇒
             if (rc.retriesLeft == 0) {
-              val reason = error.fold[Throwable](new UnexpectedDisconnectException("Unexpected disconnect"))(identity)
+              val reason = error.fold[Throwable](new UnexpectedDisconnectException("Unexpected disconnect"))(ConstantFun.scalaIdentityFunction)
               connInport ! ActorPublisherMessage.Cancel
               ResponseDelivery(ResponseContext(rc, Failure(reason)))
             } else SlotEvent.RetryRequest(rc.copy(retriesLeft = rc.retriesLeft - 1))
