@@ -122,7 +122,6 @@ object ActorPublisherMessage {
  * failure, completed or canceled.
  */
 trait ActorPublisher[T] extends Actor {
-  import akka.stream.actor.ActorPublisherMessage._
   import ActorPublisher.Internal._
   import ActorPublisherMessage._
   import ReactiveStreamsCompliance._
@@ -412,7 +411,7 @@ private[akka] object ActorPublisherState extends ExtensionId[ActorPublisherState
 
   override def get(system: ActorSystem): ActorPublisherState = super.get(system)
 
-  override def lookup = ActorPublisherState
+  override def lookup() = ActorPublisherState
 
   override def createExtension(system: ExtendedActorSystem): ActorPublisherState =
     new ActorPublisherState

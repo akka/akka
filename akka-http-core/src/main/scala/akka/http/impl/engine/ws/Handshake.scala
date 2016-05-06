@@ -80,7 +80,7 @@ private[http] object Handshake {
       val protocol = find[`Sec-WebSocket-Protocol`]
       val clientSupportedSubprotocols = protocol.toList.flatMap(_.protocols)
       // Extension support is optional in WS and currently unsupported.
-      // FIXME See #18709
+      // TODO See #18709
       // val extensions = find[`Sec-WebSocket-Extensions`]
 
       if (upgrade.exists(_.hasWebSocket) &&

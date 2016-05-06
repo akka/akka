@@ -763,7 +763,7 @@ object MiMa extends AutoPlugin {
 
         // internal api
         FilterAnyProblemStartingWith("akka.stream.impl"),
-        FilterAnyProblemStartingWith("akka.http.impl.engine.parsing.BodyPartParser"),
+        FilterAnyProblemStartingWith("akka.http.impl"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.package.printEvent"),
 
         // #20362 - parser private
