@@ -1,4 +1,4 @@
-.. _http-model-scala:
+.. _http-model-java:
 
 HTTP Model
 ==========
@@ -13,7 +13,7 @@ Overview
 Since akka-http-core provides the central HTTP data structures you will find the following import in quite a
 few places around the code base (and probably your own code as well):
 
-.. includecode:: ../../code/docs/http/scaladsl/ModelSpec.scala
+.. includecode:: ../../code/docs/http/javadsl/ModelDocTest.java
    :include: import-model
 
 This brings all of the most relevant types in scope, mainly:
@@ -50,7 +50,7 @@ An ``HttpRequest`` consists of
 
 Here are some examples how to construct an ``HttpRequest``:
 
-.. includecode:: ../../code/docs/http/scaladsl/ModelSpec.scala
+.. includecode:: ../../code/docs/http/javadsl/ModelDocTest.java
    :include: construct-request
 
 All parameters of ``HttpRequest.apply`` have default values set, so ``headers`` for example don't need to be specified
@@ -93,21 +93,21 @@ HttpEntity.Strict
 
 HttpEntity.Default
   The general, unchunked HTTP/1.1 message entity.
-  It has a known length and presents its data as a ``Source[ByteString]`` which can be only materialized once.
+  It has a known length and presents its data as a ``Source<ByteString>`` which can be only materialized once.
   It is an error if the provided source doesn't produce exactly as many bytes as specified.
   The distinction of ``Strict`` and ``Default`` is an API-only one. One the wire, both kinds of entities look the same.
 
 
 HttpEntity.Chunked
   The model for HTTP/1.1 `chunked content`__ (i.e. sent with ``Transfer-Encoding: chunked``).
-  The content length is unknown and the individual chunks are presented as a ``Source[HttpEntity.ChunkStreamPart]``.
+  The content length is unknown and the individual chunks are presented as a ``Source<HttpEntity.ChunkStreamPart>``.
   A ``ChunkStreamPart`` is either a non-empty ``Chunk`` or a ``LastChunk`` containing optional trailer headers.
   The stream consists of zero or more ``Chunked`` parts and can be terminated by an optional ``LastChunk`` part.
 
 
 HttpEntity.CloseDelimited
   An unchunked entity of unknown length that is implicitly delimited by closing the connection (``Connection: close``).
-  The content data are presented as a ``Source[ByteString]``.
+  The content data are presented as a ``Source<ByteString>``.
   Since the connection must be closed after sending an entity of this type it can only be used on the server-side for
   sending a response.
   Also, the main purpose of ``CloseDelimited`` entities is compatibility with HTTP/1.0 peers, which do not support
@@ -134,7 +134,7 @@ The ``HttpEntity`` companion object contains several helper constructors to crea
 You can pattern match over the subtypes of ``HttpEntity`` if you want to provide special handling for each of the
 subtypes. However, in many cases a recipient of an ``HttpEntity`` doesn't care about of which subtype an entity is
 (and how data is transported exactly on the HTTP layer). Therefore, the general method ``HttpEntity.dataBytes`` is
-provided which returns a ``Source[ByteString, Any]`` that allows access to the data of an entity regardless of its
+provided which returns a ``Source<ByteString, Any>`` that allows access to the data of an entity regardless of its
 concrete subtype.
 
 .. note::
@@ -217,7 +217,7 @@ header across persistent HTTP connections.
 
 .. _RFC 7230: http://tools.ietf.org/html/rfc7230#section-3.3.3
 
-.. _header-model-scala:
+.. _header-model-java:
 
 Header Model
 ------------
@@ -257,7 +257,7 @@ Transfer-Encoding
   response will not be rendered onto the wire and trigger a warning being logged instead!
 
 Content-Length
-  The content length of a message is modelled via its :ref:`HttpEntity`. As such no ``Content-Length`` header will ever
+  The content length of a message is modelled via its :ref:`HttpEntity-java`. As such no ``Content-Length`` header will ever
   be part of a message's ``header`` sequence.
   Similarly, a ``Content-Length`` header instance that is explicitly added to the ``headers`` of a request or
   response will not be rendered onto the wire and trigger a warning being logged instead!
@@ -294,40 +294,17 @@ Strict-Transport-Security
 
 __ @github@/akka-http-core/src/test/scala/akka/http/impl/engine/rendering/ResponseRendererSpec.scala#L422
 
-.. _custom-headers-scala:
+.. _custom-headers-java:
 
 Custom Headers
 --------------
 
-Sometimes you may need to model a custom header type which is not part of HTTP and still be able to use it
-as convienient as is possible with the built-in types.
+Defining custom headers is currently not supported in Java, however custom headers defined in ScalaDSL are
+understood and matched properly by JavaDSL route directives.
 
-Because of the number of ways one may interact with headers (i.e. try to match a ``CustomHeader`` against a ``RawHeader``
-or the other way around etc), a helper trait for custom Header types and their companions classes are provided by Akka HTTP.
-Thanks to extending :class:`ModeledCustomHeader` instead of the plain ``CustomHeader`` such header can be matched
+Ticket tracking the resolution of this limitation is: `issue #20415 <https://github.com/akka/akka/issues/20415>`_.
 
-.. includecode:: ../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala
-   :include: modeled-api-key-custom-header
-
-Which allows the this CustomHeader to be used in the following scenarios:
-
-.. includecode:: ../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala
-   :include: matching-examples
-
-Including usage within the header directives like in the following :ref:`-headerValuePF-` example:
-
-.. includecode:: ../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala
-   :include: matching-in-routes
-
-One can also directly extend :class:`CustomHeader` which requires less boilerplate, however that has the downside of
-matching against :class:`RawHeader` instances not working out-of-the-box, thus limiting its usefulnes in the routing layer
-of Akka HTTP. For only rendering such header however it would be enough.
-
-.. note::
-  When defining custom headers, prefer to extend :class:`ModeledCustomHeader` instead of :class:`CustomHeader` directly
-  as it will automatically make your header abide all the expected pattern matching semantics one is accustomed to
-  when using built-in types (such as matching a custom header against a ``RawHeader`` as is often the case in routing
-  layers of Akka HTTP applications).
+For declaring custom headers in Scala, refer to :ref:`custom-headers-scala`.
 
 Parsing / Rendering
 -------------------

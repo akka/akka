@@ -144,7 +144,7 @@ trait TooManyRangesRejection extends Rejection {
  */
 trait MalformedRequestContentRejection extends Rejection {
   def message: String
-  def getCause: Optional[Throwable]
+  def getCause: Throwable
 }
 
 /**
@@ -330,10 +330,8 @@ object Rejections {
 
   def tooManyRanges(maxRanges: Int) = TooManyRangesRejection(maxRanges)
 
-  def malformedRequestContent(message: String) =
-    MalformedRequestContentRejection(message)
-  def malformedRequestContent(message: String, cause: Optional[Throwable]) =
-    MalformedRequestContentRejection(message, cause.asScala)
+  def malformedRequestContent(message: String, cause: Throwable) =
+    MalformedRequestContentRejection(message, cause)
 
   def requestEntityExpected = RequestEntityExpectedRejection
 

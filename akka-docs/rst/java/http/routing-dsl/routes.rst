@@ -5,7 +5,7 @@ Routes
 
 The "Route" is the central concept of Akka HTTP's Routing DSL. All the structures you build with the DSL, no matter
 whether they consists of a single line or span several hundred lines, are functions turning a ``RequestContext`` into 
-a ``CompletionStage[RouteResult]``.
+a ``CompletionStage<RouteResult>``.
 
 A ``Route`` itself is a function that operates on a ``RequestContext`` and returns a ``RouteResult``. The
 ``RequestContext`` is a data structure that contains the current request and auxiliary data like the so far unmatched

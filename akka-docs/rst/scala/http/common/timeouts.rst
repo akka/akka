@@ -1,4 +1,4 @@
-.. _http-timeouts:
+.. _http-timeouts-scala:
 
 Akka HTTP Timeouts
 ==================
@@ -32,7 +32,7 @@ independently for each of those using the following keys::
 Server timeouts
 ---------------
 
-.. _request-timeout:
+.. _request-timeout-scala:
 
 Request timeout
 ^^^^^^^^^^^^^^^
