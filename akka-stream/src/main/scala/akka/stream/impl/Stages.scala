@@ -62,6 +62,14 @@ private[stream] object Stages {
     val processorWithKey = name("processorWithKey")
     val identityOp = name("identityOp")
 
+    val initial = name("initial")
+    val completion = name("completion")
+    val idle = name("idle")
+    val idleTimeoutBidi = name("idleTimeoutBidi")
+    val delayInitial = name("delayInitial")
+    val idleInject = name("idleInject")
+    val backpressureTimeout = name("backpressureTimeout")
+
     val merge = name("merge")
     val mergePreferred = name("mergePreferred")
     val flattenMerge = name("flattenMerge")

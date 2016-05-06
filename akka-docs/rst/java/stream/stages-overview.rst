@@ -996,6 +996,90 @@ merging. The maximum number of merged sources has to be specified.
 **completes** when upstream completes and all consumed substreams complete
 
 
+Time aware stages
+-----------------
+
+Those stages operate taking time into consideration.
+
+initialTimeout
+^^^^^^^^^^^^^^
+If the first element has not passed through this stage before the provided timeout, the stream is failed
+with a ``TimeoutException``.
+
+**emits** when upstream emits an element
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes or fails if timeout elapses before first element arrives
+
+**cancels** when downstream cancels
+
+completionTimeout
+^^^^^^^^^^^^^^^^^
+If the completion of the stream does not happen until the provided timeout, the stream is failed
+with a ``TimeoutException``.
+
+**emits** when upstream emits an element
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes or fails if timeout elapses before upstream completes
+
+**cancels** when downstream cancels
+
+idleTimeout
+^^^^^^^^^^^
+If the time between two processed elements exceeds the provided timeout, the stream is failed
+with a ``TimeoutException``. The timeout is checked periodically, so the resolution of the
+check is one period (equals to timeout value).
+
+**emits** when upstream emits an element
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes or fails if timeout elapses between two emitted elements
+
+**cancels** when downstream cancels
+
+backpressureTimeout
+^^^^^^^^^^^^^^^^^^^
+If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
+the stream is failed with a ``TimeoutException``. The timeout is checked periodically, so the resolution of the
+check is one period (equals to timeout value).
+
+**emits** when upstream emits an element
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes or fails if timeout elapses between element emission and downstream demand.
+
+**cancels** when downstream cancels
+
+keepAlive
+^^^^^^^^^
+Injects additional (configured) elements if upstream does not emit for a configured amount of time.
+
+**emits** when upstream emits an element or if the upstream was idle for the configured period
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes
+
+**cancels** when downstream cancels
+
+initialDelay
+^^^^^^^^^^^^
+Delays the initial element by the specified duration.
+
+**emits** when upstream emits an element if the initial delay is already elapsed
+
+**backpressures** when downstream backpressures or initial delay is not yet elapsed
+
+**completes** when upstream completes
+
+**cancels** when downstream cancels
+
+
 Fan-in stages
 -------------
 
