@@ -128,7 +128,9 @@ class FlowGroupBySpec extends AkkaSpec {
         .mergeSubstreams
         .runWith(TestSink.probe[Seq[String]])
       down.request(1)
-      down.expectError()
+      val ex = down.expectError()
+      ex.getMessage.indexOf("Key cannot be null") should not be (-1)
+      ex.isInstanceOf[IllegalArgumentException] should be(true)
     }
 
     "accept cancellation of substreams" in assertAllStagesStopped {
@@ -322,7 +324,7 @@ class FlowGroupBySpec extends AkkaSpec {
 
     "emit subscribe before completed" in assertAllStagesStopped {
       val futureGroupSource =
-        Source(0 until 1)
+        Source.single(0)
           .groupBy(1, elem ⇒ "all")
           .prefixAndTail(0)
           .map(_._2)

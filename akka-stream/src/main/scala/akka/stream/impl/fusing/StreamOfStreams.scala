@@ -19,6 +19,7 @@ import scala.annotation.tailrec
 import akka.stream.impl.PublisherSource
 import akka.stream.impl.CancellingSubscriber
 import akka.stream.impl.{ Buffer ⇒ BufferImpl }
+import scala.collection.JavaConversions._
 
 /**
  * INTERNAL API
@@ -210,7 +211,7 @@ final class PrefixAndTail[T](n: Int) extends GraphStage[FlowShape[T, (immutable.
 /**
  * INTERNAL API
  */
-final class GroupBy[T, K](maxSubstreams: Int, f: T ⇒ K) extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
+final class GroupBy[T, K](maxSubstreams: Int, keyFor: T ⇒ K) extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
   val in: Inlet[T] = Inlet("GroupBy.in")
   val out: Outlet[Source[T, NotUsed]] = Outlet("GroupBy.out")
   override val shape: FlowShape[T, Source[T, NotUsed]] = FlowShape(in, out)
@@ -219,26 +220,34 @@ final class GroupBy[T, K](maxSubstreams: Int, f: T ⇒ K) extends GraphStage[Flo
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with OutHandler with InHandler {
     parent ⇒
     lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
-    private val activeSubstreamsMap = mutable.Map.empty[Any, SubstreamSource]
-    private val closedSubstreams = mutable.Set[Any]()
+    private val activeSubstreamsMap = new java.util.HashMap[Any, SubstreamSource]()
+    private val closedSubstreams = new java.util.HashSet[Any]()
     private var timeout: FiniteDuration = _
     private var substreamWaitingToBePushed: Option[SubstreamSource] = None
-    private var nextElement: (K, T) = null
+    private var nextElementKey: K = null.asInstanceOf[K]
+    private var nextElementValue: T = null.asInstanceOf[T]
     private var _nextId = 0
+    private val substreamsJustStared = new java.util.HashSet[Any]()
+    private var firstPushCounter: Int = 0
 
     private def nextId(): Long = { _nextId += 1; _nextId }
 
-    private def hasNextElement = nextElement ne null
+    private def hasNextElement = nextElementKey != null
 
-    private def completeWholeStage(): Boolean =
-      if (activeSubstreamsMap.isEmpty || (!hasNextElement && !activeSubstreamsMap.values.exists(_.firstPush))) {
-        activeSubstreamsMap.values.foreach(_.complete())
+    private def clearNextElement(): Unit = {
+      nextElementKey = null.asInstanceOf[K]
+      nextElementValue = null.asInstanceOf[T]
+    }
+
+    private def tryCompleteAll(): Boolean =
+      if (activeSubstreamsMap.isEmpty || (!hasNextElement && firstPushCounter == 0)) {
+        for (value ← activeSubstreamsMap.values()) value.complete()
         completeStage()
         true
       } else false
 
     private def fail(ex: Throwable): Unit = {
-      activeSubstreamsMap.values.foreach(_.fail(ex))
+      for (value ← activeSubstreamsMap.values()) value.fail(ex)
       failStage(ex)
     }
 
@@ -254,8 +263,11 @@ final class GroupBy[T, K](maxSubstreams: Int, f: T ⇒ K) extends GraphStage[Flo
           substreamWaitingToBePushed = None
         case None ⇒
           if (hasNextElement) {
-            activeSubstreamsMap(nextElement._1).push(nextElement._2)
-            nextElement = null
+            val subSubstreamSource = activeSubstreamsMap.get(nextElementKey)
+            if (subSubstreamSource.isAvailable) {
+              subSubstreamSource.push(nextElementValue)
+              clearNextElement()
+            }
           } else tryPull(in)
       }
     }
@@ -265,102 +277,103 @@ final class GroupBy[T, K](maxSubstreams: Int, f: T ⇒ K) extends GraphStage[Flo
     override def onDownstreamFinish(): Unit =
       if (activeSubstreamsMap.isEmpty) completeStage() else setKeepGoing(true)
 
-    override def onPush(): Unit = {
+    override def onPush(): Unit = try {
       val elem = grab(in)
-      val key: K = try {
-        val k = f(elem)
-        require(k != null, "Key cannot be null")
-        k
-      } catch {
-        case NonFatal(ex) ⇒
-          decider(ex) match {
-            case Supervision.Stop                         ⇒ fail(ex)
-            case Supervision.Resume | Supervision.Restart ⇒ if (!hasBeenPulled(in)) pull(in)
-          }
-          null.asInstanceOf[K]
-      }
-
-      if (key != null) {
-        activeSubstreamsMap.get(key) match {
-          case Some(substreamSource) ⇒
-            if (substreamSource.isAvailable) substreamSource.push(elem)
-            else nextElement = key -> elem
-          case None ⇒
-            if (activeSubstreamsMap.size == maxSubstreams)
-              fail(new IllegalStateException(s"Cannot open substream for key '$key': too many substreams open"))
-            else if (closedSubstreams(key) && !hasBeenPulled(in)) pull(in)
-            else runSubstream(key, elem)
+      val key = keyFor(elem)
+      require(key != null, "Key cannot be null")
+      val substreamSource = activeSubstreamsMap.get(key)
+      if (substreamSource != null) {
+        if (substreamSource.isAvailable) substreamSource.push(elem)
+        else {
+          nextElementKey = key
+          nextElementValue = elem
         }
+      } else {
+        if (activeSubstreamsMap.size == maxSubstreams)
+          fail(new IllegalStateException(s"Cannot open substream for key '$key': too many substreams open"))
+        else if (closedSubstreams.contains(key) && !hasBeenPulled(in))
+          pull(in)
+        else runSubstream(key, elem)
       }
+    } catch {
+      case NonFatal(ex) ⇒
+        decider(ex) match {
+          case Supervision.Stop                         ⇒ fail(ex)
+          case Supervision.Resume | Supervision.Restart ⇒ if (!hasBeenPulled(in)) pull(in)
+        }
     }
 
     override def onUpstreamFinish(): Unit = {
-      if (!completeWholeStage()) setKeepGoing(true)
+      if (!tryCompleteAll()) setKeepGoing(true)
     }
 
     private def runSubstream(key: K, value: T): Unit = {
       val substreamSource = new SubstreamSource("GroupBySource " + nextId, key, value)
-
-      activeSubstreamsMap += key -> substreamSource
-
+      activeSubstreamsMap.put(key, substreamSource)
+      firstPushCounter += 1
       if (isAvailable(out)) {
         push(out, Source.fromGraph(substreamSource.source))
         scheduleOnce(key, timeout)
         substreamWaitingToBePushed = None
       } else {
         setKeepGoing(true)
+        substreamsJustStared.add(substreamSource)
         substreamWaitingToBePushed = Some(substreamSource)
       }
     }
 
     override protected def onTimer(timerKey: Any): Unit = {
-      activeSubstreamsMap.get(timerKey).foreach(substreamSource ⇒ {
+      val substreamSource = activeSubstreamsMap.get(timerKey)
+      if (substreamSource != null) {
         substreamSource.timeout(timeout)
-        closedSubstreams += timerKey
-        activeSubstreamsMap -= timerKey
-      })
-      if (isClosed(in)) completeWholeStage()
+        closedSubstreams.add(timerKey)
+        activeSubstreamsMap.remove(timerKey)
+        if (isClosed(in)) tryCompleteAll()
+      }
     }
 
     setHandlers(in, out, this)
 
-    private class SubstreamSource(name: String, val key: K, val firstElement: T) extends SubSourceOutlet[T](name) {
-      var firstPush: Boolean = true
+    private class SubstreamSource(name: String, val key: K, var firstElement: T) extends SubSourceOutlet[T](name) with OutHandler {
+      def firstPush(): Boolean = firstElement != null
+      def hasNextForSubSource = hasNextElement && nextElementKey == key
+      private def completeSubStream(): Unit = {
+        complete()
+        activeSubstreamsMap.remove(key)
+        closedSubstreams.add(key)
+      }
 
-      setHandler(new OutHandler {
-        def hasNextForSubSource = hasNextElement && nextElement._1 == key
-        private def completeSubStream(): Unit = {
-          complete()
-          activeSubstreamsMap -= key
-          closedSubstreams += key
-        }
-
-        private def completeHandler(): Unit = {
-          if (parent.isClosed(in) && !hasNextForSubSource) {
-            completeSubStream()
-            completeWholeStage()
-          }
-        }
-
-        override def onPull(): Unit = {
-          cancelTimer(key)
-          if (firstPush) {
-            push(firstElement)
-            firstPush = false
-            setKeepGoing(false)
-          } else if (hasNextForSubSource) {
-            push(nextElement._2)
-            nextElement = null
-          } else if (needToPull) pull(in)
-          completeHandler()
-        }
-
-        override def onDownstreamFinish(): Unit = {
-          if (hasNextElement && nextElement._1 == key) nextElement = null
+      private def tryCompleteHandler(): Unit = {
+        if (parent.isClosed(in) && !hasNextForSubSource) {
           completeSubStream()
-          if (parent.isClosed(in)) completeWholeStage() else if (needToPull) pull(in)
+          tryCompleteAll()
         }
-      })
+      }
+
+      override def onPull(): Unit = {
+        cancelTimer(key)
+        if (firstPush) {
+          firstPushCounter -= 1
+          push(firstElement)
+          firstElement = null.asInstanceOf[T]
+          substreamsJustStared.remove(this)
+          if (substreamsJustStared.isEmpty) setKeepGoing(false)
+        } else if (hasNextForSubSource) {
+          push(nextElementValue)
+          clearNextElement()
+        } else if (needToPull) pull(in)
+
+        tryCompleteHandler()
+      }
+
+      override def onDownstreamFinish(): Unit = {
+        if (hasNextElement && nextElementKey == key) clearNextElement()
+        if (firstPush()) firstPushCounter -= 1
+        completeSubStream()
+        if (parent.isClosed(in)) tryCompleteAll() else if (needToPull) pull(in)
+      }
+
+      setHandler(this)
     }
   }
 

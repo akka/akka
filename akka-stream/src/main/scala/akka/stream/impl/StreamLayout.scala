@@ -940,8 +940,8 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
 /**
   * INTERNAL API
   */
-private[akka] final case class ProcessorModule[In, Out, Mat](val p: () ⇒ (Processor[In, Out], Mat),
-                                               attributes: Attributes = DefaultAttributes.processor) extends StreamLayout.AtomicModule {
+private[akka] final case class ProcessorModule[In, Out, Mat](val createProcessor: () ⇒ (Processor[In, Out], Mat),
+                                                             attributes: Attributes = DefaultAttributes.processor) extends StreamLayout.AtomicModule {
   val inPort = Inlet[In]("ProcessorModule.in")
   val outPort = Outlet[Out]("ProcessorModule.out")
   override val shape = new FlowShape(inPort, outPort)

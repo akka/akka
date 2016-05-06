@@ -113,7 +113,7 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
             matVal.put(atomic, mat)
 
           case stage: ProcessorModule[_, _, _] ⇒
-            val (processor, mat) = stage.p()
+            val (processor, mat) = stage.createProcessor()
             assignPort(stage.inPort, processor)
             assignPort(stage.outPort, processor.asInstanceOf[Publisher[Any]])
             matVal.put(atomic, mat)
