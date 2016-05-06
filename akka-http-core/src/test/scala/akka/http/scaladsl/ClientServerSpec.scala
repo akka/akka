@@ -447,6 +447,37 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         connSourceSub.cancel()
       }
     }
+
+    "receive an empty response as unlimited size entity" in Utils.assertAllStagesStopped {
+      new TestSetup {
+        val (clientOut, clientIn) = openNewClientConnection()
+        val (serverIn, serverOut) = acceptConnection()
+
+        val clientOutSub = clientOut.expectSubscription()
+        clientOutSub.sendNext(HttpRequest(uri = "/empty"))
+        clientOutSub.sendComplete()
+
+        val serverInSub = serverIn.expectSubscription()
+        serverInSub.request(1)
+        serverIn.expectNext().uri shouldEqual Uri(s"http://$hostname:$port/empty")
+
+        val serverOutSub = serverOut.expectSubscription()
+        serverOutSub.expectRequest()
+        serverOutSub.sendNext(HttpResponse(StatusCodes.OK, List(RawHeader("X-Res-Type", "EMPTY")), HttpEntity.Default(ContentTypes.`text/plain(UTF-8)`, 0L, Source.empty[ByteString])))
+
+        val clientInSub = clientIn.expectSubscription()
+        clientInSub.request(1)
+        val response = clientIn.expectNext()
+        val unlimitedEmptyFut = response.entity.withSizeLimit(-1).dataBytes.runFold(ByteString(""))(_ ++ _)
+        Await.result(unlimitedEmptyFut, 100.millis).utf8String shouldEqual ""
+
+        serverIn.expectComplete()
+        serverOutSub.expectCancellation()
+        clientIn.expectComplete()
+
+        connSourceSub.cancel()
+      }
+    }
   }
 
   override def afterAll() = {
