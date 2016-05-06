@@ -61,7 +61,7 @@ object AeronSource {
 /**
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
  */
-class AeronSource(channel: String, aeron: Aeron, taskRunner: TaskRunner) extends GraphStage[SourceShape[AeronSource.Bytes]] {
+class AeronSource(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRunner) extends GraphStage[SourceShape[AeronSource.Bytes]] {
   import AeronSource._
   import TaskRunner._
 
@@ -71,7 +71,6 @@ class AeronSource(channel: String, aeron: Aeron, taskRunner: TaskRunner) extends
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with OutHandler {
 
-      private val streamId = 10
       private val sub = aeron.addSubscription(channel, streamId)
       private val spinning = 1000
       private val yielding = 0

@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.remote.artery
 
 import scala.concurrent.duration._
@@ -30,6 +33,7 @@ object AeronStreamsApp {
 
   val channel1 = "aeron:udp?endpoint=localhost:40123"
   val channel2 = "aeron:udp?endpoint=localhost:40124"
+  val streamId = 1
   val throughputN = 10000000
   val latencyRate = 10000 // per second
   val latencyN = 10 * latencyRate
@@ -153,7 +157,7 @@ object AeronStreamsApp {
     var t0 = System.nanoTime()
     var count = 0L
     var payloadSize = 0L
-    Source.fromGraph(new AeronSource(channel1, aeron, taskRunner))
+    Source.fromGraph(new AeronSource(channel1, streamId, aeron, taskRunner))
       .map { bytes ⇒
         r.onMessage(1, bytes.length)
         bytes
@@ -191,19 +195,19 @@ object AeronStreamsApp {
         r.onMessage(1, payload.length)
         payload
       }
-      .runWith(new AeronSink(channel1, aeron, taskRunner))
+      .runWith(new AeronSink(channel1, streamId, aeron, taskRunner))
   }
 
   def runEchoReceiver(): Unit = {
     // just echo back on channel2
     reporterExecutor.execute(reporter)
     val r = reporter
-    Source.fromGraph(new AeronSource(channel1, aeron, taskRunner))
+    Source.fromGraph(new AeronSource(channel1, streamId, aeron, taskRunner))
       .map { bytes ⇒
         r.onMessage(1, bytes.length)
         bytes
       }
-      .runWith(new AeronSink(channel2, aeron, taskRunner))
+      .runWith(new AeronSink(channel2, streamId, aeron, taskRunner))
   }
 
   def runEchoSender(): Unit = {
@@ -215,7 +219,7 @@ object AeronStreamsApp {
     var repeat = 3
     val count = new AtomicInteger
     var t0 = System.nanoTime()
-    Source.fromGraph(new AeronSource(channel2, aeron, taskRunner))
+    Source.fromGraph(new AeronSource(channel2, streamId, aeron, taskRunner))
       .map { bytes ⇒
         r.onMessage(1, bytes.length)
         bytes
@@ -250,7 +254,7 @@ object AeronStreamsApp {
           sendTimes.set(n - 1, System.nanoTime())
           payload
         }
-        .runWith(new AeronSink(channel1, aeron, taskRunner))
+        .runWith(new AeronSink(channel1, streamId, aeron, taskRunner))
 
       barrier.await()
     }
@@ -260,7 +264,7 @@ object AeronStreamsApp {
 
   def runDebugReceiver(): Unit = {
     import system.dispatcher
-    Source.fromGraph(new AeronSource(channel1, aeron, taskRunner))
+    Source.fromGraph(new AeronSource(channel1, streamId, aeron, taskRunner))
       .map(bytes ⇒ new String(bytes, "utf-8"))
       .runForeach { s ⇒
         println(s)
@@ -281,7 +285,7 @@ object AeronStreamsApp {
         println(s)
         s.getBytes("utf-8")
       }
-      .runWith(new AeronSink(channel1, aeron, taskRunner))
+      .runWith(new AeronSink(channel1, streamId, aeron, taskRunner))
   }
 
   def runStats(): Unit = {
