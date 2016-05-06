@@ -276,9 +276,11 @@ private[http] object HttpServerBluePrint {
         override def onUpstreamFinish() = complete(requestOut)
         override def onUpstreamFailure(ex: Throwable) = fail(requestOut, ex)
         def emitTimeoutResponse(response: (TimeoutAccess, HttpResponse)) =
-          if (openTimeouts.head eq response._1) {
+          // the application response might has already arrived after we scheduled the timeout response (which is close but ok)
+          // or current head (same reason) is not for response the timeout has been scheduled for
+          if (openTimeouts.headOption.exists(_ eq response._1)) {
             emit(responseOut, response._2, () ⇒ completeStage())
-          } // else the application response arrived after we scheduled the timeout response, which is close but ok
+          }
       })
       // TODO: provide and use default impl for simply connecting an input and an output port as we do here
       setHandler(requestOut, new OutHandler {
