@@ -36,14 +36,16 @@ method::
 
 
 You could also simply define a "catch all" completion by providing it as the last route to attempt to match.
-In the example below we use the ``get()`` (one of the :ref:`method-directives-java`) to match all incoming ``GET``
-requests for that route, and all other requests will be routed towards the other "catch all" route, that completes the route. 
+In the example below we use the ``get()`` (one of the :ref:`MethodDirectives-java`) to match all incoming ``GET``
+requests for that route, and all other requests will be routed towards the other "catch all" route, that completes the route::
 
-    val route =
-      get {
-        complete("Received GET")
-      } ~
-      complete("Received something else")
+    Route route =
+      get(
+        () -> complete("Received GET")
+      ).orElse(
+        () -> complete("Received something else")
+      )
+
 
 If no route matches a given request, a default ``404 Not Found`` response will be returned as response.
 
@@ -82,6 +84,8 @@ transformations, both (or either) on the request and on the response side.
 
 Composing Directives
 --------------------
+
+TODO rewrite for Java API
 
 .. note:: Gotcha: forgetting the ``~`` (tilde) character in between directives can often result in perfectly valid
   Scala code that compiles but lead to your composed directive only containing the up to where ``~`` is missing.
@@ -142,31 +146,3 @@ is in fact the most readable one.
 
 Still, the purpose of the exercise presented here is to show you how flexible directives can be and how you can
 use their power to define your web service behavior at the level of abstraction that is right for **your** application.
-
-
-Type Safety of Directives
--------------------------
-
-When you combine directives with the ``|`` and ``&`` operators the routing DSL makes sure that all extractions work as
-expected and logical constraints are enforced at compile-time.
-
-For example you cannot ``|`` a directive producing an extraction with one that doesn't::
-
-    val route = path("order" / IntNumber) | get // doesn't compile
-
-Also the number of extractions and their types have to match up::
-
-    val route = path("order" / IntNumber) | path("order" / DoubleNumber)   // doesn't compile
-    val route = path("order" / IntNumber) | parameter('order.as[Int])      // ok
-
-When you combine directives producing extractions with the ``&`` operator all extractions will be properly gathered up::
-
-    val order = path("order" / IntNumber) & parameters('oem, 'expired ?)
-    val route =
-      order { (orderId, oem, expired) =>
-        ...
-      }
-
-Directives offer a great way of constructing your web service logic from small building blocks in a plug and play
-fashion while maintaining DRYness and full type-safety. If the large range of :ref:`Predefined Directives` does not
-fully satisfy your needs you can also very easily create :ref:`Custom Directives`.

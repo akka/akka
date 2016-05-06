@@ -56,7 +56,7 @@ the parts of a response or the list of rejections:
   * :ref:`-mapResponseHeaders-java-`
 
 
-.. _Result Transformation Directives:
+.. _Result Transformation Directives-java:
 
 Transforming the RouteResult
 ----------------------------

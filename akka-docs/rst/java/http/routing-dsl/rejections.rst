@@ -29,7 +29,7 @@ Predefined Rejections
 
 A rejection encapsulates a specific reason why a route was not able to handle a request. It is modeled as an object of
 type ``Rejection``. Akka HTTP comes with a set of `predefined rejections`__, which are used by the many
-:ref:`predefined directives <Predefined Directives>`.
+:ref:`predefined directives <Predefined Directives-java>`.
 
 Rejections are gathered up over the course of a Route evaluation and finally converted to ``HttpResponse`` replies by
 the :ref:`-handleRejections-` directive if there was no way for the request to be completed.
@@ -37,7 +37,7 @@ the :ref:`-handleRejections-` directive if there was no way for the request to b
 __ @github@/akka-http/src/main/scala/akka/http/scaladsl/server/Rejection.scala
 
 
-.. _The RejectionHandler:
+.. _The RejectionHandler-java:
 
 The RejectionHandler
 --------------------
@@ -82,7 +82,7 @@ So, for the example above the ``RejectionHandler`` will be presented with only a
 containing nothing but the ``UnsupportedRequestEncodingRejection``.
 
 
-.. _Empty Rejections:
+.. _Empty Rejections-java:
 
 Empty Rejections
 ----------------
