@@ -1,43 +1,31 @@
-.. _akka-http-spray-json:
+.. _json-support-java:
 
-JSON Support
+Json Support
 ============
 
-Akka HTTP's :ref:`marshalling <http-marshalling-common>` and :ref:`unmarshalling <http-unmarshalling-scala>`
-infrastructure makes it rather easy to seamlessly support specific wire representations of your data objects, like JSON,
-XML or even binary encodings.
+akka-http provides support to convert application-domain objects from and to JSON using jackson_ in an
+extra artifact.
 
-For JSON Akka HTTP currently provides support for `spray-json`_ right out of the box through it's
-``akka-http-spray-json`` module.
-
-Other JSON libraries are supported by the community.
+Integration with other JSON libraries may be supported by the community.
 See `the list of current community extensions for Akka HTTP`_.
 
 .. _`the list of current community extensions for Akka HTTP`: http://akka.io/community/#extensions-to-akka-http
 
-spray-json Support
-------------------
+.. _json-jackson-support-java:
 
-The SprayJsonSupport_ trait provides a ``FromEntityUnmarshaller[T]`` and ``ToEntityMarshaller[T]`` for every type ``T``
-that an implicit ``spray.json.RootJsonReader`` and/or ``spray.json.RootJsonWriter`` (respectively) is available for.
+Json Support via Jackson
+------------------------
 
-This is how you enable automatic support for (un)marshalling from and to JSON with `spray-json`_:
+To make use of the support module, you need to add a dependency on `akka-http-jackson-experimental`.
 
-1. Add a library dependency onto ``"com.typesafe.akka" %% "akka-http-spray-json-experimental" % "@version@"``.
+Use ``akka.http.javadsl.marshallers.jackson.Jackson.unmarshaller(T.class)`` to create an ``Unmarshaller<HttpEntity,T>`` which expects the request
+body (HttpEntity) to be of type ``application/json`` and converts it to ``T`` using Jackson.
 
-2. ``import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._`` or mix in the
-   ``akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport`` trait.
+See `this example`__ in the sources for an example.
 
-3. Provide a ``RootJsonFormat[T]`` for your type and bring it into scope.
-   Check out the `spray-json`_ documentation for more info on how to do this.
-
-Once you have done this (un)marshalling between JSON and your type ``T`` should work nicely and transparently.
-
-.. includecode:: ../../code/docs/http/scaladsl/SprayJsonExampleSpec.scala
-  :include: example
-
-To learn more about how spray-json works please refer to its `documentation <https://github.com/spray/spray-json>`_.
+Use ``akka.http.javadsl.marshallers.jackson.Jackson.marshaller(T.class)`` to create a ``Marshaller<T,RequestEntity>`` which can be used with
+``RequestContext.complete`` or ``RouteDirectives.complete`` to convert a POJO to an HttpResponse.
 
 
-.. _spray-json: https://github.com/spray/spray-json
-.. _SprayJsonSupport: @github@/akka-http-marshallers-scala/akka-http-spray-json/src/main/scala/akka/http/scaladsl/marshallers/sprayjson/SprayJsonSupport.scala
+.. _jackson: https://github.com/FasterXML/jackson
+__ @github@/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java

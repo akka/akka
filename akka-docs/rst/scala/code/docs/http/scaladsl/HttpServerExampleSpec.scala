@@ -499,7 +499,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
               parameter("bid".as[Int], "user") { (bid, user) =>
                 // place a bid, fire-and-forget
                 auction ! Bid(user, bid)
-                complete(StatusCodes.Accepted, "bid placed")
+                complete((StatusCodes.Accepted, "bid placed"))
               }
             }
             get {

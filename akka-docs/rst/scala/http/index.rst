@@ -13,3 +13,4 @@ Akka HTTP
    routing-dsl/index
    client-side/index
    migration-from-spray
+   migration-from-old-http-javadsl
