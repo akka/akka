@@ -119,7 +119,7 @@ Directive                                   Description
                                             ``immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]`` function
 :ref:`-mapRouteResult-java-`                     Transforms the ``RouteResult`` with a ``RouteResult ⇒ RouteResult``
                                             function
-:ref:`-mapRouteResultStage-java-`               Transforms the ``RouteResult`` future with a
+:ref:`-mapRouteResultFuture-java-`               Transforms the ``RouteResult`` future with a
                                             ``Future[RouteResult] ⇒ Future[RouteResult]`` function
 :ref:`-mapRouteResultPF-java-`                   Transforms the ``RouteResult`` with a
                                             ``PartialFunction[RouteResult, RouteResult]``

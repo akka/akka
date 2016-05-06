@@ -6,7 +6,7 @@ extractExecutionContext
 Description
 -----------
 
-Extracts the ``ExecutionContextExecutor`` from the ``RequestContext``.
+Extracts the ``ExecutionContext`` from the ``RequestContext``.
 
 See :ref:`-withExecutionContext-java-` to see how to customise the execution context provided for an inner route.
 

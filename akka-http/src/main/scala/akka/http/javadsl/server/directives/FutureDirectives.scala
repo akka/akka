@@ -5,7 +5,7 @@ package akka.http.javadsl.server.directives
 
 import java.util.concurrent.CompletionException
 import java.util.concurrent.CompletionStage
-import java.util.function.{Function => JFunction}
+import java.util.function.{ Function ⇒ JFunction }
 import java.util.function.Supplier
 
 import akka.http.javadsl.model.RequestEntity
@@ -13,8 +13,8 @@ import akka.http.javadsl.model.RequestEntity
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Try
-import akka.http.javadsl.server.{Marshaller, Route}
-import akka.http.scaladsl.server.directives.{CompleteOrRecoverWithMagnet, FutureDirectives => D}
+import akka.http.javadsl.server.{ Marshaller, Route }
+import akka.http.scaladsl.server.directives.{ CompleteOrRecoverWithMagnet, FutureDirectives ⇒ D }
 
 abstract class FutureDirectives extends FormFieldDirectives {
 
@@ -49,7 +49,7 @@ abstract class FutureDirectives extends FormFieldDirectives {
    */
   def completeOrRecoverWith[T](f: Supplier[CompletionStage[T]], marshaller: Marshaller[T, RequestEntity], inner: JFunction[Throwable, Route]): Route = RouteAdapter {
     val magnet = CompleteOrRecoverWithMagnet(f.get.toScala)(Marshaller.asScalaEntityMarshaller(marshaller))
-    D.completeOrRecoverWith(magnet) { ex => inner(ex).delegate }
+    D.completeOrRecoverWith(magnet) { ex ⇒ inner(ex).delegate }
   }
 
   // TODO: This might need to be raised as an issue to scala-java8-compat instead.

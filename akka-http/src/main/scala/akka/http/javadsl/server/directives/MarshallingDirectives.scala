@@ -35,7 +35,5 @@ abstract class MarshallingDirectives extends HostDirectives {
     }
   }
 
-
-
   // If you want the raw entity, use BasicDirectives.extractEntity
 }
