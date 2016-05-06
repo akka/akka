@@ -33,13 +33,17 @@ object MiMa extends AutoPlugin {
       )
       val akka242NewArtifacts = Seq(
         "akka-stream",
-        "akka-stream-testkit",
-        "akka-http-core",
-        "akka-http-experimental",
-        "akka-http-testkit",
-        "akka-http-jackson-experimental",
-        "akka-http-spray-json-experimental",
-        "akka-http-xml-experimental"
+        "akka-http-core"
+        
+        // note: we do not guarantee bin-compat for testkits
+        // "akka-http-testkit",
+        // "akka-stream-testkit",
+        
+        // TODO enable once not experimental anymore
+        // "akka-http-experimental",
+        // "akka-http-jackson-experimental",
+        // "akka-http-spray-json-experimental",
+        // "akka-http-xml-experimental"
       )
       scalaBinaryVersion match {
         case "2.11" if !(akka24NewArtifacts ++ akka242NewArtifacts).contains(projectName) => akka23Versions ++ akka24NoStreamVersions ++ akka24StreamVersions
@@ -794,6 +798,10 @@ object MiMa extends AutoPlugin {
 
         // #20131 - flow combinator
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.backpressureTimeout"),
+        
+        // #20470 - new JavaDSL for Akka HTTP
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.DateTime.plus"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.DateTime.minus"),
 
         // #20257 Snapshots with PersistentFSM (experimental feature)
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.serialization.MessageFormats#PersistentStateChangeEventOrBuilder.getTimeoutNanos"),

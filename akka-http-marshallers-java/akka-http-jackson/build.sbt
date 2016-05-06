@@ -7,3 +7,4 @@ OSGi.httpJackson
 Dependencies.httpJackson
 
 enablePlugins(ScaladocNoVerificationOfDiagrams)
+disablePlugins(MimaPlugin) // still experimental

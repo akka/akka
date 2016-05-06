@@ -14,8 +14,8 @@ See also :ref:`-mapResponseHeaders-java-` or :ref:`-mapResponseEntity-java-` for
 
 Example: Override status
 ------------------------
-TODO: Add example snippet.
+TODO: Example snippets for JavaDSL are subject to community contributions! Help us complete the docs, read more about it here: `write example snippets for Akka HTTP Java DSL #20466 <https://github.com/akka/akka/issues/20466>`_.
 
 Example: Default to empty JSON response on errors
 -------------------------------------------------
-TODO: Add example snippet.
+TODO: Example snippets for JavaDSL are subject to community contributions! Help us complete the docs, read more about it here: `write example snippets for Akka HTTP Java DSL #20466 <https://github.com/akka/akka/issues/20466>`_.

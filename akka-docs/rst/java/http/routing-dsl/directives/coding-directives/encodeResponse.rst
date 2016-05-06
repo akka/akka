@@ -14,6 +14,6 @@ If the ``Accept-Encoding`` header is missing or empty or specifies an encoding o
 
 Example
 -------
-TODO: Add example snippet.
+TODO: Example snippets for JavaDSL are subject to community contributions! Help us complete the docs, read more about it here: `write example snippets for Akka HTTP Java DSL #20466 <https://github.com/akka/akka/issues/20466>`_.
 
 .. _RFC7231: http://tools.ietf.org/html/rfc7231#section-5.3.4
