@@ -582,6 +582,16 @@ object Logging {
   }
 
   /**
+    * Obtain LoggingAdapter with MDC support for the given actor.
+    * Don't use it outside its specific Actor as it isn't thread safe
+    */
+  def getLogger(logSource: AbstractActor): DiagnosticLoggingAdapter = {
+    val (str, clazz) = LogSource.fromAnyRef(logSource)
+    val system = logSource.getContext().system.asInstanceOf[ExtendedActorSystem]
+    new BusLogging(system.eventStream, str, clazz, system.logFilter) with DiagnosticLoggingAdapter
+  }
+
+  /**
    * Artificial exception injected into Error events if no Throwable is
    * supplied; used for getting a stack dump of error locations.
    */
