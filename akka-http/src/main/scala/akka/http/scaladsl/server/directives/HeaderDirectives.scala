@@ -167,7 +167,7 @@ object HeaderMagnet extends LowPriorityHeaderMagnetImplicits {
       override def runtimeClass = tag.runtimeClass.asInstanceOf[Class[T]]
       override def classTag = tag
       override def extractPF = {
-        case h if h.is(companion.lowercaseName) => companion.apply(h.toString)
+        case h if h.is(companion.lowercaseName) => companion.apply(h.value)
       }
     }
 
