@@ -77,7 +77,7 @@ as shown here the Akka HTTP model defines a number of subclasses of ``HttpEntity
 stream of bytes.
 
 
-.. _HttpEntity:
+.. _HttpEntity-scala:
 
 HttpEntity
 ----------
@@ -257,7 +257,7 @@ Transfer-Encoding
   response will not be rendered onto the wire and trigger a warning being logged instead!
 
 Content-Length
-  The content length of a message is modelled via its :ref:`HttpEntity`. As such no ``Content-Length`` header will ever
+  The content length of a message is modelled via its :ref:`HttpEntity-scala`. As such no ``Content-Length`` header will ever
   be part of a message's ``header`` sequence.
   Similarly, a ``Content-Length`` header instance that is explicitly added to the ``headers`` of a request or
   response will not be rendered onto the wire and trigger a warning being logged instead!

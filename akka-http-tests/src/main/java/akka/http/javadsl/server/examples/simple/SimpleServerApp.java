@@ -6,16 +6,23 @@ package akka.http.javadsl.server.examples.simple;
 
 //#https-http-app
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
-import static akka.http.javadsl.server.Unmarshaller.entityToString;
-import com.typesafe.config.ConfigFactory;
+import akka.http.javadsl.ConnectHttp;
+import akka.http.javadsl.ConnectionContext;
+import akka.http.javadsl.Http;
+import akka.http.javadsl.HttpsConnectionContext;
+import akka.http.javadsl.model.HttpRequest;
+import akka.http.javadsl.model.HttpResponse;
+import akka.http.javadsl.server.*;
+import akka.stream.ActorMaterializer;
+import akka.stream.javadsl.Flow;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManagerFactory;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.concurrent.CompletableFuture;
@@ -24,13 +31,8 @@ import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import akka.actor.ActorSystem;
-import akka.http.javadsl.ConnectHttp;
-import akka.http.javadsl.Http;
-import akka.http.javadsl.server.AllDirectives;
-import akka.http.javadsl.server.PathMatchers;
-import akka.http.javadsl.server.Route;
-import akka.stream.ActorMaterializer;
+import static akka.http.javadsl.server.PathMatchers.integerSegment;
+import static akka.http.javadsl.server.Unmarshaller.entityToString;
 
 public class SimpleServerApp extends AllDirectives { // or import Directives.*
 
@@ -44,8 +46,8 @@ public class SimpleServerApp extends AllDirectives { // or import Directives.*
   }
 
   public Route createRoute() {
-    Route addHandler = parameter(INTEGER, "x", x ->
-      parameter(INTEGER, "y", y -> {
+    Route addHandler = parameter(StringUnmarshallers.INTEGER, "x", x ->
+      parameter(StringUnmarshallers.INTEGER, "y", y -> {
         int result = x + y;
         return complete(String.format("%d + %d = %d", x, y, result));
       })
@@ -65,8 +67,8 @@ public class SimpleServerApp extends AllDirectives { // or import Directives.*
         // matches paths like this: /add?x=42&y=23
         path("add", () -> addHandler),
         path("subtract", () ->
-          parameter(INTEGER, "x", x ->
-            parameter(INTEGER, "y", y ->
+          parameter(StringUnmarshallers.INTEGER, "x", x ->
+            parameter(StringUnmarshallers.INTEGER, "y", y ->
               subtractHandler.apply(x, y)
             )
           )
@@ -94,12 +96,16 @@ public class SimpleServerApp extends AllDirectives { // or import Directives.*
 
   public static void main(String[] args) throws IOException {
     final ActorSystem system = ActorSystem.create("SimpleServerApp");
+    final ActorMaterializer materializer = ActorMaterializer.create(system);
     final Http http = Http.get(system);
 
     boolean useHttps = false; // pick value from anywhere
     useHttps(system, http, useHttps);
 
-    new SimpleServerApp().bindRoute("localhost", 8080, system);
+    final SimpleServerApp app = new SimpleServerApp();
+    final Flow<HttpRequest, HttpResponse, NotUsed> flow = app.createRoute().flow(system, materializer);
+    
+    Http.get(system).bindAndHandle(flow, ConnectHttp.toHost("localhost", 8080), materializer);
 
     System.out.println("Type RETURN to exit");
     System.in.read();

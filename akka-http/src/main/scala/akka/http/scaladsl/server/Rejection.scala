@@ -29,7 +29,7 @@ import scala.compat.java8.OptionConverters
  */
 trait Rejection extends akka.http.javadsl.server.Rejection
 
-trait RejectionWithCause extends Rejection {
+trait RejectionWithOptionalCause extends Rejection {
   final def getCause: Optional[Throwable] = OptionConverters.toJava(cause)
   def cause: Option[Throwable]
 }
@@ -60,7 +60,7 @@ final case class MissingQueryParamRejection(parameterName: String)
  * Signals that the request was rejected because a query parameter could not be interpreted.
  */
 final case class MalformedQueryParamRejection(parameterName: String, errorMsg: String, cause: Option[Throwable] = None)
-  extends jserver.MalformedQueryParamRejection with RejectionWithCause
+  extends jserver.MalformedQueryParamRejection with RejectionWithOptionalCause
 
 /**
  * Rejection created by form field filters.
@@ -74,7 +74,7 @@ final case class MissingFormFieldRejection(fieldName: String)
  * Signals that the request was rejected because a form field could not be interpreted.
  */
 final case class MalformedFormFieldRejection(fieldName: String, errorMsg: String, cause: Option[Throwable] = None)
-  extends jserver.MalformedFormFieldRejection with RejectionWithCause
+  extends jserver.MalformedFormFieldRejection with RejectionWithOptionalCause
 
 /**
  * Rejection created by header directives.
@@ -88,7 +88,7 @@ final case class MissingHeaderRejection(headerName: String)
  * Signals that the request was rejected because a header value is malformed.
  */
 final case class MalformedHeaderRejection(headerName: String, errorMsg: String, cause: Option[Throwable] = None)
-  extends jserver.MalformedHeaderRejection with RejectionWithCause
+  extends jserver.MalformedHeaderRejection with RejectionWithOptionalCause
 
 /**
  * Rejection created by unmarshallers.
@@ -132,8 +132,8 @@ final case class TooManyRangesRejection(maxRanges: Int)
  * Note that semantic issues with the request content (e.g. because some parameter was out of range)
  * will usually trigger a `ValidationRejection` instead.
  */
-final case class MalformedRequestContentRejection(message: String, cause: Throwable) extends Rejection
-  extends jserver.MalformedRequestContentRejection with RejectionWithCause
+final case class MalformedRequestContentRejection(message: String, cause: Throwable)
+  extends jserver.MalformedRequestContentRejection with Rejection { override def getCause: Throwable = cause }
 
 /**
  * Rejection created by unmarshallers.
@@ -224,7 +224,7 @@ final case class UnsupportedWebSocketSubprotocolRejection(supportedProtocol: Str
  * It signals that an expected value was semantically invalid.
  */
 final case class ValidationRejection(message: String, cause: Option[Throwable] = None)
-  extends jserver.ValidationRejection with RejectionWithCause
+  extends jserver.ValidationRejection with RejectionWithOptionalCause
 
 /**
  * A special Rejection that serves as a container for a transformation function on rejections.
