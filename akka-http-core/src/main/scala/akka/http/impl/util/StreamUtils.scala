@@ -83,17 +83,15 @@ private[http] object StreamUtils {
 
         override def onPush(): Unit = {
           val element = grab(in)
-          if (toSkip > 0 && element.length < toSkip) {
-            // keep skipping
-            toSkip -= element.length
+          if (toSkip >= element.length)
             pull(in)
-          } else {
-            // toSkip <= element.length <= Int.MaxValue
+          else {
             val data = element.drop(toSkip.toInt).take(math.min(remaining, Int.MaxValue).toInt)
             remaining -= data.size
             push(out, data)
             if (remaining <= 0) completeStage()
           }
+          toSkip -= element.length
         }
 
         setHandlers(in, out, this)

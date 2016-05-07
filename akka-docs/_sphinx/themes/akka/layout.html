@@ -18,7 +18,6 @@
 {% set css_files = css_files + ['_static/base.css'] %}
 {% set css_files = css_files + ['_static/docs.css'] %}
 {% set css_files = css_files + ['http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700'] %}
-{% set css_files = css_files + ['https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css'] %}
 
 {# do not display relbars #}
 {% block relbar1 %}{% endblock %}
@@ -51,7 +50,7 @@
       ga('tsTracker.require', 'linker');
       ga('tsTracker.linker:autoLink', ['lightbend.com','playframework.com','scala-lang.org','scaladays.org','spray.io','akka.io','scala-sbt.org','scala-ide.org']);
       ga('tsTracker.send', 'pageview');
-      
+
       (function() {
           var didInit = false;
           function initMunchkin() {
@@ -84,13 +83,13 @@
       <div class="container">
         <div class="navbar-logo">
           <a href="http://akka.io"><img class="svg-logo" src="{{ pathto('_static/akka_full_color.svg', 1) }}" /></a>
-        </div>    
+        </div>
         <ul class="nav">
           <li><a href="http://akka.io/docs">Documentation</a></li>
           <li><a href="http://akka.io/faq">FAQ</a></li>
           <li><a href="http://akka.io/downloads">Download</a></li>
           <li><a href="http://groups.google.com/group/akka-user">Mailing List</a></li>
-          <li><a href="http://github.com/akka/akka">Code</a></li>           
+          <li><a href="http://github.com/akka/akka">Code</a></li>
           <li><a href="http://www.lightbend.com/how/subscription">Commercial Support</a></li>
         </ul>
       </div>
@@ -107,7 +106,7 @@
       <div class="container">
         <div class="row">
           <div class="span12">
-            <ul class="breadcrumb">           
+            <ul class="breadcrumb">
               <li>
                 {%- if next %}
                  <span class="divider">|</span> <a href="{{ next.link|e }}">{{ next.title }}</a> <span class="divider">»</span>
@@ -118,7 +117,7 @@
               </li>
               <li>
                 {%- if prev %}
-                <span class="divider">«</span> <a href="{{ prev.link|e }}">{{ prev.title }}</a> <span class="divider">|</span> 
+                <span class="divider">«</span> <a href="{{ prev.link|e }}">{{ prev.title }}</a> <span class="divider">|</span>
                 {%- endif %}
               </li>
               <li style="float: left">
@@ -146,13 +145,13 @@
                 <div id="scroller">
                   <div id="toc"></div>
                 </div>
-              </div>            
+              </div>
             {%- endif -%}
           </div>
         </div>
       </div>
     </div>
-  </div>  
+  </div>
   {%- block akkafooter %}
   <div class="footer">
   <div class="container">
@@ -168,8 +167,8 @@
       <li><h5>Contribute</h5></li>
       <li><a href="http://akka.io/community">Community Projects</a></li>
       <li><a href="http://github.com/akka/akka">Source Code</a></li>
-      <li><a href="http://groups.google.com/group/akka-user">Mailing List</a></li>      
-      <li><a href="http://doc.akka.io/docs/akka/current/project/issue-tracking.html">Report a Bug</a></li>      
+      <li><a href="http://groups.google.com/group/akka-user">Mailing List</a></li>
+      <li><a href="http://doc.akka.io/docs/akka/current/project/issue-tracking.html">Report a Bug</a></li>
     </ul>
     <ul>
       <li><h5>Company</h5></li>
@@ -187,7 +186,7 @@
     </p>
     <p style="float: right; font-size: 12px;">
       Last updated: {{ last_updated }}
-    </p>          
+    </p>
   </div>
 </div>
 {%- if include_analytics %}
@@ -219,10 +218,8 @@
     indexName: 'akka_io',
     inputSelector: '#search',
     algoliaOptions: {
-      hitsPerPage: 10,
-      facetFilters: '[' +
-      '["language:' + lang + '","language:general"]' +
-      ',"version:2.4.2"]'
+      hitsPerPage: 5,
+      facetFilters: '[' + '["language:' + lang + '","language:general"]' + ',"version:' + version + '"]'
     }
   });
 

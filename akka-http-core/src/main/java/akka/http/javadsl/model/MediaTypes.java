@@ -6,7 +6,6 @@ package akka.http.javadsl.model;
 
 import akka.http.impl.util.Util;
 import akka.http.scaladsl.model.MediaTypes$;
-
 import java.util.Optional;
 
 /**
@@ -187,12 +186,23 @@ public final class MediaTypes {
     public static final MediaType.Binary VIDEO_X_SGI_MOVIE = akka.http.scaladsl.model.MediaTypes.video$divx$minussgi$minusmovie();
     public static final MediaType.Binary VIDEO_WEBM = akka.http.scaladsl.model.MediaTypes.video$divwebm();
 
+    public static final MediaType.Compressibility COMPRESSIBLE = akka.http.scaladsl.model.MediaType.Compressible$.MODULE$;
+    public static final MediaType.Compressibility NOT_COMPRESSIBLE = akka.http.scaladsl.model.MediaType.NotCompressible$.MODULE$;
+    public static final MediaType.Compressibility GZIPPED = akka.http.scaladsl.model.MediaType.Gzipped$.MODULE$;
+
     public static MediaType.Binary applicationBinary(String subType, boolean compressible, String... fileExtensions) {
         akka.http.scaladsl.model.MediaType.Compressibility comp = compressible ?
                 akka.http.scaladsl.model.MediaType.Compressible$.MODULE$ : akka.http.scaladsl.model.MediaType.NotCompressible$.MODULE$;
 
-        scala.collection.immutable.List<String> fileEx =
-                scala.collection.JavaConversions.asScalaBuffer(java.util.Arrays.asList(fileExtensions)).toList();
+        scala.collection.immutable.Seq<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions));
+
+        return akka.http.scaladsl.model.MediaType.applicationBinary(subType, comp, fileEx);
+    }
+
+    public static MediaType.Binary applicationBinary(String subType, MediaType.Compressibility compressibility, String... fileExtensions) {
+         akka.http.scaladsl.model.MediaType.Compressibility comp = (akka.http.scaladsl.model.MediaType.Compressibility) compressibility;
+
+        scala.collection.immutable.Seq<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions));
 
         return akka.http.scaladsl.model.MediaType.applicationBinary(subType, comp, fileEx);
     }
@@ -200,15 +210,13 @@ public final class MediaTypes {
     public static MediaType.WithFixedCharset applicationWithFixedCharset(String subType, HttpCharset charset, String... fileExtensions) {
         akka.http.scaladsl.model.HttpCharset cs = (akka.http.scaladsl.model.HttpCharset) charset;
 
-        scala.collection.immutable.List<String> fileEx =
-                scala.collection.JavaConversions.asScalaBuffer(java.util.Arrays.asList(fileExtensions)).toList();
+        scala.collection.immutable.Seq<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions));
 
         return akka.http.scaladsl.model.MediaType.applicationWithFixedCharset(subType, cs, fileEx);
     }
 
     public static MediaType.WithOpenCharset applicationWithOpenCharset(String subType, String... fileExtensions) {
-        scala.collection.immutable.List<String> fileEx =
-                scala.collection.JavaConversions.asScalaBuffer(java.util.Arrays.asList(fileExtensions)).toList();
+        scala.collection.immutable.Seq<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions));
 
         return akka.http.scaladsl.model.MediaType.applicationWithOpenCharset(subType, fileEx);
     }
@@ -217,8 +225,15 @@ public final class MediaTypes {
         akka.http.scaladsl.model.MediaType.Compressibility comp = compressible ?
                 akka.http.scaladsl.model.MediaType.Compressible$.MODULE$ : akka.http.scaladsl.model.MediaType.NotCompressible$.MODULE$;
 
-        scala.collection.immutable.List<String> fileEx =
-                scala.collection.JavaConversions.asScalaBuffer(java.util.Arrays.asList(fileExtensions)).toList();
+        scala.collection.immutable.Seq<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions));
+
+        return akka.http.scaladsl.model.MediaType.audio(subType, comp, fileEx);
+    }
+
+    public static MediaType.Binary audio(String subType, MediaType.Compressibility compressibility, String... fileExtensions) {
+        akka.http.scaladsl.model.MediaType.Compressibility comp = (akka.http.scaladsl.model.MediaType.Compressibility) compressibility;
+
+        scala.collection.immutable.Seq<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions));
 
         return akka.http.scaladsl.model.MediaType.audio(subType, comp, fileEx);
     }
@@ -227,8 +242,15 @@ public final class MediaTypes {
         akka.http.scaladsl.model.MediaType.Compressibility comp = compressible ?
                 akka.http.scaladsl.model.MediaType.Compressible$.MODULE$ : akka.http.scaladsl.model.MediaType.NotCompressible$.MODULE$;
 
-        scala.collection.immutable.List<String> fileEx =
-                scala.collection.JavaConversions.asScalaBuffer(java.util.Arrays.asList(fileExtensions)).toList();
+        scala.collection.immutable.Seq<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions));
+
+        return akka.http.scaladsl.model.MediaType.image(subType, comp, fileEx);
+    }
+
+    public static MediaType.Binary image(String subType, MediaType.Compressibility compressibility, String... fileExtensions) {
+        akka.http.scaladsl.model.MediaType.Compressibility comp = (akka.http.scaladsl.model.MediaType.Compressibility) compressibility;
+
+        scala.collection.immutable.Seq<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions));
 
         return akka.http.scaladsl.model.MediaType.image(subType, comp, fileEx);
     }
@@ -237,15 +259,21 @@ public final class MediaTypes {
         akka.http.scaladsl.model.MediaType.Compressibility comp = compressible ?
                 akka.http.scaladsl.model.MediaType.Compressible$.MODULE$ : akka.http.scaladsl.model.MediaType.NotCompressible$.MODULE$;
 
-        scala.collection.immutable.List<String> fileEx =
-                scala.collection.JavaConversions.asScalaBuffer(java.util.Arrays.asList(fileExtensions)).toList();
+        scala.collection.immutable.Seq<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions));
+
+        return akka.http.scaladsl.model.MediaType.message(subType, comp, fileEx);
+    }
+
+    public static MediaType.Binary message(String subType, MediaType.Compressibility compressibility, String... fileExtensions) {
+        akka.http.scaladsl.model.MediaType.Compressibility comp = (akka.http.scaladsl.model.MediaType.Compressibility) compressibility;
+
+        scala.collection.immutable.Seq<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions));
 
         return akka.http.scaladsl.model.MediaType.message(subType, comp, fileEx);
     }
 
     public static MediaType.WithOpenCharset text(String subType, String... fileExtensions) {
-        scala.collection.immutable.List<String> fileEx =
-                scala.collection.JavaConversions.asScalaBuffer(java.util.Arrays.asList(fileExtensions)).toList();
+        scala.collection.immutable.Seq<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions));
 
         return akka.http.scaladsl.model.MediaType.text(subType, fileEx);
     }
@@ -254,8 +282,15 @@ public final class MediaTypes {
         akka.http.scaladsl.model.MediaType.Compressibility comp = compressible ?
                 akka.http.scaladsl.model.MediaType.Compressible$.MODULE$ : akka.http.scaladsl.model.MediaType.NotCompressible$.MODULE$;
 
-        scala.collection.immutable.List<String> fileEx =
-                scala.collection.JavaConversions.asScalaBuffer(java.util.Arrays.asList(fileExtensions)).toList();
+        scala.collection.immutable.Seq<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions));
+
+        return akka.http.scaladsl.model.MediaType.video(subType, comp, fileEx);
+    }
+
+    public static MediaType.Binary video(String subType, MediaType.Compressibility compressibility, String... fileExtensions) {
+        akka.http.scaladsl.model.MediaType.Compressibility comp = (akka.http.scaladsl.model.MediaType.Compressibility) compressibility;
+
+        scala.collection.immutable.Seq<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions));
 
         return akka.http.scaladsl.model.MediaType.video(subType, comp, fileEx);
     }
@@ -266,8 +301,17 @@ public final class MediaTypes {
         akka.http.scaladsl.model.MediaType.Compressibility comp = compressible ?
                 akka.http.scaladsl.model.MediaType.Compressible$.MODULE$ : akka.http.scaladsl.model.MediaType.NotCompressible$.MODULE$;
 
-        scala.collection.immutable.List<String> fileEx =
-                scala.collection.JavaConversions.asScalaBuffer(java.util.Arrays.asList(fileExtensions)).toList();
+        scala.collection.immutable.List<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions)).toList();
+
+        scala.collection.immutable.Map<String, String> p = Util.convertMapToScala(params);
+
+        return akka.http.scaladsl.model.MediaType.customBinary(mainType, subType, comp, fileEx, p, allowArbitrarySubtypes);
+    }
+
+    public static MediaType.Binary customBinary(String mainType, String subType, MediaType.Compressibility compressibility, java.util.Map<String, String> params, boolean allowArbitrarySubtypes, String... fileExtensions) {
+        akka.http.scaladsl.model.MediaType.Compressibility comp = (akka.http.scaladsl.model.MediaType.Compressibility) compressibility;
+
+        scala.collection.immutable.List<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions)).toList();
 
         scala.collection.immutable.Map<String, String> p = Util.convertMapToScala(params);
 
@@ -277,8 +321,7 @@ public final class MediaTypes {
     public static MediaType.WithFixedCharset customWithFixedCharset(String mainType, String subType, HttpCharset charset, java.util.Map<String, String> params, boolean allowArbitrarySubtypes, String... fileExtensions) {
         akka.http.scaladsl.model.HttpCharset cs = (akka.http.scaladsl.model.HttpCharset) charset;
 
-        scala.collection.immutable.List<String> fileEx =
-                scala.collection.JavaConversions.asScalaBuffer(java.util.Arrays.asList(fileExtensions)).toList();
+        scala.collection.immutable.List<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions)).toList();
 
         scala.collection.immutable.Map<String, String> p = Util.convertMapToScala(params);
 
@@ -286,8 +329,7 @@ public final class MediaTypes {
     }
 
     public static MediaType.WithOpenCharset customWithOpenCharset(String mainType, String subType, java.util.Map<String, String> params, boolean allowArbitrarySubtypes, String... fileExtensions) {
-        scala.collection.immutable.List<String> fileEx =
-                scala.collection.JavaConversions.asScalaBuffer(java.util.Arrays.asList(fileExtensions)).toList();
+        scala.collection.immutable.List<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions)).toList();
 
         scala.collection.immutable.Map<String, String> p = Util.convertMapToScala(params);
 
@@ -306,8 +348,16 @@ public final class MediaTypes {
     public static MediaType custom(String value, boolean binary, boolean compressible) {
         akka.http.scaladsl.model.MediaType.Compressibility comp = compressible ?
                 akka.http.scaladsl.model.MediaType.Compressible$.MODULE$ : akka.http.scaladsl.model.MediaType.NotCompressible$.MODULE$;
-        return akka.http.scaladsl.model.MediaType.custom(value, binary, comp , 
-            akka.http.scaladsl.model.MediaType.custom$default$4());
+
+        return akka.http.scaladsl.model.MediaType.custom(value, binary, comp ,
+                akka.http.scaladsl.model.MediaType.custom$default$4());
+    }
+
+    public static MediaType custom(String value, boolean binary, MediaType.Compressibility compressibility) {
+        akka.http.scaladsl.model.MediaType.Compressibility comp = (akka.http.scaladsl.model.MediaType.Compressibility) compressibility;
+
+        return akka.http.scaladsl.model.MediaType.custom(value, binary, comp ,
+                akka.http.scaladsl.model.MediaType.custom$default$4());
     }
 
     /**

@@ -24,7 +24,7 @@ If the check returns ``true`` the request is passed on to the inner route unchan
 In a common use-case you would check if a user (e.g. supplied by any of the ``authenticate*`` family of directives,
 e.g. :ref:`-authenticateBasic-`) is allowed to access the inner routes, e.g. by checking if the user has the needed permissions.
 
-See also :ref:`-authorize-` for the asynchronous version of this directive.
+See also :ref:`-authorizeAsync-` for the asynchronous version of this directive.
 
 .. note::
   See also :ref:`authentication-vs-authorization-scala` to understand the differences between those.

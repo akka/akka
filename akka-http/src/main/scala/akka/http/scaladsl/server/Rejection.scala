@@ -99,7 +99,7 @@ case class TooManyRangesRejection(maxRanges: Int) extends Rejection
  * Note that semantic issues with the request content (e.g. because some parameter was out of range)
  * will usually trigger a `ValidationRejection` instead.
  */
-case class MalformedRequestContentRejection(message: String, cause: Option[Throwable] = None) extends Rejection
+case class MalformedRequestContentRejection(message: String, cause: Throwable) extends Rejection
 
 /**
  * Rejection created by unmarshallers.

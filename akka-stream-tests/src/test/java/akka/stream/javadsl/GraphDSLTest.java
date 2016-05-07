@@ -27,13 +27,13 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 
-public class FlowGraphTest extends StreamTest {
-  public FlowGraphTest() {
+public class GraphDSLTest extends StreamTest {
+  public GraphDSLTest() {
     super(actorSystemResource);
   }
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("FlowGraphTest",
+  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("GraphDSLTest",
     AkkaSpec.testConf());
 
   @SuppressWarnings("serial")
@@ -59,12 +59,12 @@ public class FlowGraphTest extends StreamTest {
   @Test
   public void mustBeAbleToUseMerge() throws Exception {
     final Flow<String, String, NotUsed> f1 =
-        Flow.of(String.class).transform(FlowGraphTest.this.<String> op()).named("f1");
+        Flow.of(String.class).transform(GraphDSLTest.this.<String> op()).named("f1");
     final Flow<String, String, NotUsed> f2 =
-        Flow.of(String.class).transform(FlowGraphTest.this.<String> op()).named("f2");
+        Flow.of(String.class).transform(GraphDSLTest.this.<String> op()).named("f2");
     @SuppressWarnings("unused")
     final Flow<String, String, NotUsed> f3 =
-        Flow.of(String.class).transform(FlowGraphTest.this.<String> op()).named("f3");
+        Flow.of(String.class).transform(GraphDSLTest.this.<String> op()).named("f3");
 
     final Source<String, NotUsed> in1 = Source.from(Arrays.asList("a", "b", "c"));
     final Source<String, NotUsed> in2 = Source.from(Arrays.asList("d", "e", "f"));
@@ -86,7 +86,7 @@ public class FlowGraphTest extends StreamTest {
     final Publisher<String> pub = source.runWith(publisher, materializer);
     final CompletionStage<List<String>> all = Source.fromPublisher(pub).limit(100).runWith(Sink.<String>seq(), materializer);
 
-    final List<String> result = all.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    final List<String> result = all.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<String>(result));
   }
 
@@ -138,8 +138,8 @@ public class FlowGraphTest extends StreamTest {
             final SourceShape<Pair<String, Integer>> in = b.add(Source.from(input));
             final FanOutShape2<Pair<String, Integer>, String, Integer> unzip = b.add(Unzip.<String, Integer>create());
 
-            final SinkShape<String> out1 = b.add(FlowGraphTest.<String>createSink(probe1));
-            final SinkShape<Integer> out2 = b.add(FlowGraphTest.<Integer>createSink(probe2));
+            final SinkShape<String> out1 = b.add(GraphDSLTest.<String>createSink(probe1));
+            final SinkShape<Integer> out2 = b.add(GraphDSLTest.<Integer>createSink(probe2));
 
             b.from(in).toInlet(unzip.in());
             b.from(unzip.out0()).to(out1);
@@ -178,8 +178,8 @@ public class FlowGraphTest extends StreamTest {
               })
           );
 
-          final SinkShape<String> out1 = b.add(FlowGraphTest.<String>createSink(probe1));
-          final SinkShape<Integer> out2 = b.add(FlowGraphTest.<Integer>createSink(probe2));
+          final SinkShape<String> out1 = b.add(GraphDSLTest.<String>createSink(probe1));
+          final SinkShape<Integer> out2 = b.add(GraphDSLTest.<Integer>createSink(probe2));
 
           b.from(b.add(in)).toInlet(unzip.in());
           b.from(unzip.out0()).to(out1);
@@ -189,7 +189,7 @@ public class FlowGraphTest extends StreamTest {
       }
     )).run(materializer);
 
-    Duration d = Duration.create(300, TimeUnit.MILLISECONDS);
+    Duration d = Duration.create(3, TimeUnit.SECONDS);
 
     Object output1 = probe1.receiveOne(d);
     Object output2 = probe2.receiveOne(d);
@@ -221,10 +221,10 @@ public class FlowGraphTest extends StreamTest {
               })
           );
 
-          final SinkShape<String> out1 = b.add(FlowGraphTest.<String>createSink(probe1));
-          final SinkShape<Integer> out2 = b.add(FlowGraphTest.<Integer>createSink(probe2));
-          final SinkShape<String> out3 = b.add(FlowGraphTest.<String>createSink(probe3));
-          final SinkShape<Integer> out4 = b.add(FlowGraphTest.<Integer>createSink(probe4));
+          final SinkShape<String> out1 = b.add(GraphDSLTest.<String>createSink(probe1));
+          final SinkShape<Integer> out2 = b.add(GraphDSLTest.<Integer>createSink(probe2));
+          final SinkShape<String> out3 = b.add(GraphDSLTest.<String>createSink(probe3));
+          final SinkShape<Integer> out4 = b.add(GraphDSLTest.<Integer>createSink(probe4));
 
           b.from(b.add(in)).toInlet(unzip.in());
           b.from(unzip.out0()).to(out1);
@@ -235,7 +235,7 @@ public class FlowGraphTest extends StreamTest {
         }
       })).run(materializer);
 
-    Duration d = Duration.create(300, TimeUnit.MILLISECONDS);
+    Duration d = Duration.create(3, TimeUnit.SECONDS);
 
     Object output1 = probe1.receiveOne(d);
     Object output2 = probe2.receiveOne(d);
@@ -269,7 +269,59 @@ public class FlowGraphTest extends StreamTest {
         return ClosedShape.getInstance();
     })).run(materializer);
 
-    final Integer result = future.toCompletableFuture().get(300, TimeUnit.MILLISECONDS);
+    final Integer result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertEquals(11, (int) result);
+  }
+
+  @Test
+  public void mustBeAbleToUseZipN() throws Exception {
+    final Source<Integer, NotUsed> in1 = Source.single(1);
+    final Source<Integer, NotUsed> in2 = Source.single(10);
+
+    final Graph<UniformFanInShape<Integer, List<Integer>>, NotUsed> sumZip = ZipN.create(2);
+
+    final CompletionStage<List<Integer>> future = RunnableGraph.fromGraph(GraphDSL.create(Sink.<List<Integer>>head(),
+      (b, out) -> {
+        final UniformFanInShape<Integer, List<Integer>> zip = b.add(sumZip);
+        b.from(b.add(in1)).toInlet(zip.in(0));
+        b.from(b.add(in2)).toInlet(zip.in(1));
+        b.from(zip.out()).to(out);
+        return ClosedShape.getInstance();
+    })).run(materializer);
+
+    final List<Integer> result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    assertEquals(Arrays.asList(1, 10), result);
+  }
+
+  @Test
+  public void mustBeAbleToUseZipWithN() throws Exception {
+    final Source<Integer, NotUsed> in1 = Source.single(1);
+    final Source<Integer, NotUsed> in2 = Source.single(10);
+
+    final Graph<UniformFanInShape<Integer, Integer>, NotUsed> sumZip = ZipWithN.create(
+      new Function<List<Integer>, Integer>() {
+        @Override public Integer apply(List<Integer> list) throws Exception {
+          Integer sum = 0;
+
+          for(Integer i : list) {
+            sum += i;
+          }
+
+          return sum;
+        }
+    }, 2);
+
+    final CompletionStage<Integer> future = RunnableGraph.fromGraph(GraphDSL.create(Sink.<Integer>head(),
+      (b, out) -> {
+        final UniformFanInShape<Integer, Integer> zip = b.add(sumZip);
+        b.from(b.add(in1)).toInlet(zip.in(0));
+        b.from(b.add(in2)).toInlet(zip.in(1));
+        b.from(zip.out()).to(out);
+        return ClosedShape.getInstance();
+    })).run(materializer);
+
+    final Integer result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(11, (int) result);
   }
 
@@ -298,7 +350,7 @@ public class FlowGraphTest extends StreamTest {
         return ClosedShape.getInstance();
     })).run(materializer);
 
-    final Integer result = future.toCompletableFuture().get(300, TimeUnit.MILLISECONDS);
+    final Integer result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(1111, (int) result);
   }
 
@@ -315,7 +367,7 @@ public class FlowGraphTest extends StreamTest {
         return ClosedShape.getInstance();
     })).run(materializer);
 
-    final Integer result = future.toCompletableFuture().get(300, TimeUnit.MILLISECONDS);
+    final Integer result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(1, (int) result);
 
     probe.expectMsg(1);

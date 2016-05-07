@@ -3,16 +3,8 @@
  */
 package akka
 
+import sbt.Keys._
 import sbt._
-import Keys._
-
-import com.timgroup.statsd.{StatsDClientErrorHandler, NonBlockingStatsDClient}
-import sbt.testing.{TestSelector, Status, Event}
-import scala.util.Try
-import java.io.{InputStreamReader, BufferedReader, DataOutputStream, OutputStreamWriter}
-import java.net.{InetAddress, URLEncoder, HttpURLConnection, Socket}
-import com.typesafe.sbt.SbtGit
-import com.typesafe.sbt.SbtGit.GitKeys._
 
 object TestExtras {
 

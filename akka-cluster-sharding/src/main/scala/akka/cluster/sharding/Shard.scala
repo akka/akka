@@ -321,8 +321,6 @@ private[akka] class PersistentShard(
 
   override def snapshotPluginId: String = settings.snapshotPluginId
 
-  var persistCount = 0
-
   // would be initialized after recovery completed
   override def initialized(): Unit = {}
 
@@ -334,8 +332,7 @@ private[akka] class PersistentShard(
   }
 
   def saveSnapshotWhenNeeded(): Unit = {
-    persistCount += 1
-    if (persistCount % snapshotAfter == 0) {
+    if (lastSequenceNr % snapshotAfter == 0 && lastSequenceNr != 0) {
       log.debug("Saving snapshot, sequence number [{}]", snapshotSequenceNr)
       saveSnapshot(state)
     }

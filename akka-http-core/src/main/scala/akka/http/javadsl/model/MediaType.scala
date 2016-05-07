@@ -30,6 +30,9 @@ object MediaType {
   trait Multipart extends WithOpenCharset {
   }
 
+  trait Compressibility {
+    def compressible: Boolean
+  }
 }
 
 trait MediaType {

@@ -483,7 +483,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     def multiParse(parser: HttpRequestParser)(input: Seq[String]): Seq[Either[RequestOutput, StrictEqualHttpRequest]] =
       Source(input.toList)
         .map(bytes ⇒ SessionBytes(TLSPlacebo.dummySession, ByteString(bytes)))
-        .transform(() ⇒ parser.stage).named("parser")
+        .via(parser.stage).named("parser")
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
         .prefixAndTail(1)
         .collect {

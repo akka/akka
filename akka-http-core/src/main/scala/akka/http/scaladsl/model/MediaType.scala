@@ -251,7 +251,7 @@ object MediaType {
       withParams(if (boundary.isEmpty) params - "boundary" else params.updated("boundary", boundary))
   }
 
-  sealed abstract class Compressibility(val compressible: Boolean)
+  sealed class Compressibility(val compressible: Boolean) extends jm.MediaType.Compressibility
   case object Compressible extends Compressibility(compressible = true)
   case object NotCompressible extends Compressibility(compressible = false)
   case object Gzipped extends Compressibility(compressible = false)

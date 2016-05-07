@@ -33,10 +33,11 @@ trait MarshallingDirectives {
       import ctx.materializer
       onComplete(um(ctx.request)) flatMap {
         case Success(value) ⇒ provide(value)
+        case Failure(RejectionError(r)) ⇒ reject(r)
         case Failure(Unmarshaller.NoContentException) ⇒ reject(RequestEntityExpectedRejection)
         case Failure(Unmarshaller.UnsupportedContentTypeException(x)) ⇒ reject(UnsupportedRequestContentTypeRejection(x))
         case Failure(x: IllegalArgumentException) ⇒ reject(ValidationRejection(x.getMessage.nullAsEmpty, Some(x)))
-        case Failure(x) ⇒ reject(MalformedRequestContentRejection(x.getMessage.nullAsEmpty, Option(x.getCause)))
+        case Failure(x) ⇒ reject(MalformedRequestContentRejection(x.getMessage.nullAsEmpty, x))
       }
     } & cancelRejections(RequestEntityExpectedRejection.getClass, classOf[UnsupportedRequestContentTypeRejection])
 

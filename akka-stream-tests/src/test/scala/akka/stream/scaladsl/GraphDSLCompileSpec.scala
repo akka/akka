@@ -8,13 +8,13 @@ import akka.stream.testkit._
 import akka.stream.stage._
 import akka.testkit.AkkaSpec
 
-object FlowGraphCompileSpec {
+object GraphDSLCompileSpec {
   class Fruit
   class Apple extends Fruit
 }
 
-class FlowGraphCompileSpec extends AkkaSpec {
-  import FlowGraphCompileSpec._
+class GraphDSLCompileSpec extends AkkaSpec {
+  import GraphDSLCompileSpec._
 
   implicit val materializer = ActorMaterializer()
 

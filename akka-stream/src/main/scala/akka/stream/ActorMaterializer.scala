@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.{ AtomicBoolean }
 
 import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, ExtendedActorSystem, Props }
 import akka.event.LoggingAdapter
+import akka.util.Helpers.toRootLowerCase
 import akka.stream.ActorMaterializerSettings.defaultMaxFixedBufferSize
 import akka.stream.impl._
 import com.typesafe.config.Config
@@ -477,7 +478,7 @@ object StreamSubscriptionTimeoutSettings {
   def apply(config: Config): StreamSubscriptionTimeoutSettings = {
     val c = config.getConfig("subscription-timeout")
     StreamSubscriptionTimeoutSettings(
-      mode = c.getString("mode").toLowerCase(Locale.ROOT) match {
+      mode = toRootLowerCase(c.getString("mode")) match {
         case "no" | "off" | "false" | "noop" ⇒ NoopTermination
         case "warn"                          ⇒ WarnTermination
         case "cancel"                        ⇒ CancelTermination

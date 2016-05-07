@@ -3,8 +3,7 @@
  */
 package akka.stream.io
 
-import java.io.File
-import java.nio.file.StandardOpenOption
+import java.nio.file.{ Files, Path, StandardOpenOption }
 import akka.actor.ActorSystem
 import akka.stream.impl.ActorMaterializerImpl
 import akka.stream.impl.StreamSupervisor
@@ -15,8 +14,7 @@ import akka.stream.testkit.Utils._
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.ActorAttributes
-import akka.util.ByteString
-import akka.util.Timeout
+import akka.util.{ ByteString, Timeout }
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -40,11 +38,11 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   val TestByteStrings = TestLines.map(ByteString(_))
 
-  "SynchronousFile Sink" must {
+  "FileSink" must {
     "write lines to a file" in assertAllStagesStopped {
       targetFile { f ⇒
         val completion = Source(TestByteStrings)
-          .runWith(FileIO.toFile(f))
+          .runWith(FileIO.toPath(f))
 
         val result = Await.result(completion, 3.seconds)
         result.count should equal(6006)
@@ -55,7 +53,7 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
     "create new file if not exists" in assertAllStagesStopped {
       targetFile({ f ⇒
         val completion = Source(TestByteStrings)
-          .runWith(FileIO.toFile(f))
+          .runWith(FileIO.toPath(f))
 
         val result = Await.result(completion, 3.seconds)
         result.count should equal(6006)
@@ -68,7 +66,7 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
         def write(lines: List[String]) =
           Source(lines)
             .map(ByteString(_))
-            .runWith(FileIO.toFile(f))
+            .runWith(FileIO.toPath(f))
 
         val completion1 = write(TestLines)
         Await.result(completion1, 3.seconds)
@@ -87,7 +85,7 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
         def write(lines: List[String] = TestLines) =
           Source(lines)
             .map(ByteString(_))
-            .runWith(FileIO.toFile(f, Set(StandardOpenOption.APPEND)))
+            .runWith(FileIO.toPath(f, Set(StandardOpenOption.APPEND)))
 
         val completion1 = write()
         val result1 = Await.result(completion1, 3.seconds)
@@ -96,8 +94,8 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
         val completion2 = write(lastWrite)
         val result2 = Await.result(completion2, 3.seconds)
 
-        f.length() should ===(result1.count + result2.count)
-        checkFileContents(f, TestLines.mkString("") + lastWrite.mkString("") + "\n")
+        Files.size(f) should ===(result1.count + result2.count)
+        checkFileContents(f, TestLines.mkString("") + lastWrite.mkString(""))
       }
     }
 
@@ -106,10 +104,10 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
         val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
         val materializer = ActorMaterializer()(sys)
         try {
-          Source.fromIterator(() ⇒ Iterator.continually(TestByteStrings.head)).runWith(FileIO.toFile(f))(materializer)
+          Source.fromIterator(() ⇒ Iterator.continually(TestByteStrings.head)).runWith(FileIO.toPath(f))(materializer)
 
           materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
-          val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSource").get
+          val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSink").get
           assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
         } finally shutdown(sys)
       }
@@ -125,7 +123,7 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
         try {
           Source.fromIterator(() ⇒ Iterator.continually(TestByteStrings.head))
-            .to(FileIO.toFile(f))
+            .to(FileIO.toPath(f))
             .withAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher"))
             .run()(materializer)
 
@@ -138,17 +136,15 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   }
 
-  private def targetFile(block: File ⇒ Unit, create: Boolean = true) {
-    val targetFile = File.createTempFile("synchronous-file-sink", ".tmp")
-    if (!create) targetFile.delete()
-    try block(targetFile) finally targetFile.delete()
+  private def targetFile(block: Path ⇒ Unit, create: Boolean = true) {
+    val targetFile = Files.createTempFile("synchronous-file-sink", ".tmp")
+    if (!create) Files.delete(targetFile)
+    try block(targetFile) finally Files.delete(targetFile)
   }
 
-  def checkFileContents(f: File, contents: String): Unit = {
-    val s = scala.io.Source.fromFile(f)
-    val out = s.getLines().mkString("\n") + "\n"
-    s.close()
-    out should ===(contents)
+  def checkFileContents(f: Path, contents: String): Unit = {
+    val out = Files.readAllBytes(f)
+    new String(out) should ===(contents)
   }
 
 }

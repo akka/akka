@@ -209,6 +209,17 @@ object Source {
     })
 
   /**
+   * Create [[Source]] that will continually produce given elements in specified order.
+   *
+   * Start a new 'cycled' `Source` from the given elements. The producer stream of elements
+   * will continue infinitely by repeating the sequence of elements provided by function parameter.
+   */
+  def cycle[T](f: () ⇒ Iterator[T]): Source[T, NotUsed] = {
+    val iterator = Iterator.continually { val i = f(); if (i.isEmpty) throw new IllegalArgumentException("empty iterator") else i }.flatten
+    fromIterator(() ⇒ iterator).withAttributes(DefaultAttributes.cycledSource)
+  }
+
+  /**
    * A graph with the shape of a source logically is a source, this method makes
    * it so also in type.
    */
@@ -373,13 +384,13 @@ object Source {
    * if there is no demand from downstream. When `bufferSize` is 0 the `overflowStrategy` does
    * not matter.
    *
-   * The stream can be completed successfully by sending the actor reference an [[akka.actor.Status.Success]]
-   * message in which case already buffered elements will be signaled before signaling completion,
-   * or by sending a [[akka.actor.PoisonPill]] in which case completion will be signaled immediately.
+   * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]]
+   * (whose content will be ignored) in which case already buffered elements will be signaled before signaling
+   * completion, or by sending [[akka.actor.PoisonPill]] in which case completion will be signaled immediately.
    *
-   * The stream can be completed with failure by sending [[akka.actor.Status.Failure]] to the
+   * The stream can be completed with failure by sending a [[akka.actor.Status.Failure]] to the
    * actor reference. In case the Actor is still draining its internal buffer (after having received
-   * an [[akka.actor.Status.Success]]) before signaling completion and it receives a [[akka.actor.Status.Failure]],
+   * a [[akka.actor.Status.Success]]) before signaling completion and it receives a [[akka.actor.Status.Failure]],
    * the failure will be signaled downstream immediately (instead of the completion signal).
    *
    * The actor will be stopped when the stream is completed, failed or canceled from downstream,
@@ -412,6 +423,24 @@ object Source {
 
       combineRest(2, rest.iterator)
     })
+
+  /**
+   * Combine the elements of multiple streams into a stream of sequences.
+   */
+  def zipN[T](sources: immutable.Seq[Source[T, _]]): Source[immutable.Seq[T], NotUsed] = zipWithN(ConstantFun.scalaIdentityFunction[immutable.Seq[T]])(sources).addAttributes(DefaultAttributes.zipN)
+
+  /*
+   * Combine the elements of multiple streams into a stream of sequences using a combiner function.
+   */
+  def zipWithN[T, O](zipper: immutable.Seq[T] ⇒ O)(sources: immutable.Seq[Source[T, _]]): Source[O, NotUsed] = {
+    val source = sources match {
+      case immutable.Seq()       ⇒ empty[O]
+      case immutable.Seq(source) ⇒ source.map(t ⇒ zipper(immutable.Seq(t))).mapMaterializedValue(_ ⇒ NotUsed)
+      case s1 +: s2 +: ss        ⇒ combine(s1, s2, ss: _*)(ZipWithN(zipper))
+    }
+
+    source.addAttributes(DefaultAttributes.zipWithN)
+  }
 
   /**
    * Creates a `Source` that is materialized as an [[akka.stream.SourceQueue]].

@@ -3,6 +3,9 @@
  */
 package akka.stream.scaladsl
 
+import java.util.{ Spliterators, Spliterator }
+import java.util.stream.StreamSupport
+
 import akka.{ Done, NotUsed }
 import akka.dispatch.ExecutionContexts
 import akka.actor.{ Status, ActorRef, Props }
@@ -15,7 +18,8 @@ import akka.stream.{ javadsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.duration.Duration.Inf
+import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
 /**
@@ -326,8 +330,8 @@ object Sink {
   }
 
   /**
-   * Creates a `Sink` that is materialized as an [[akka.stream.SinkQueue]].
-   * [[akka.stream.SinkQueue.pull]] method is pulling element from the stream and returns ``Future[Option[T]]``.
+   * Creates a `Sink` that is materialized as an [[akka.stream.scaladsl.SinkQueue]].
+   * [[akka.stream.scaladsl.SinkQueue.pull]] method is pulling element from the stream and returns ``Future[Option[T]]``.
    * `Future` completes when element is available.
    *
    * Before calling pull method second time you need to wait until previous Future completes.
@@ -337,11 +341,11 @@ object Sink {
    * upstream and then stop back pressure.  You can configure size of input
    * buffer by using [[Sink.withAttributes]] method.
    *
-   * For stream completion you need to pull all elements from [[akka.stream.SinkQueue]] including last None
+   * For stream completion you need to pull all elements from [[akka.stream.scaladsl.SinkQueue]] including last None
    * as completion marker
    *
-   * @see [[akka.stream.SinkQueue]]
+   * @see [[akka.stream.scaladsl.SinkQueueWithCancel]]
    */
-  def queue[T](): Sink[T, SinkQueue[T]] =
+  def queue[T](): Sink[T, SinkQueueWithCancel[T]] =
     Sink.fromGraph(new QueueSink())
 }

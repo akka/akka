@@ -59,7 +59,7 @@ The Akka build includes a special task called `validatePullRequest` which invest
 then running tests only on those projects.
 
 For example changing something in `akka-http-core` would cause tests to be run in all projects which depend on it
-(e.g. `akka-http-core-tests`, `akka-http-marshallers-*`, `akka-docs` etc.).
+(e.g. `akka-http-tests`, `akka-http-marshallers-*`, `akka-docs` etc.).
 
 To use the task simply type, and the output should include entries like shown below:
 

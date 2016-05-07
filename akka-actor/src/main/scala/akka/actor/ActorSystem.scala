@@ -13,6 +13,7 @@ import akka.dispatch._
 import akka.japi.Util.immutableSeq
 import akka.actor.dungeon.ChildrenContainer
 import akka.util._
+import akka.util.Helpers.toRootLowerCase
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.{ Duration }
@@ -180,7 +181,7 @@ object ActorSystem {
     final val LoggingFilter: String = getString("akka.logging-filter")
     final val LoggerStartTimeout: Timeout = Timeout(config.getMillisDuration("akka.logger-startup-timeout"))
     final val LogConfigOnStart: Boolean = config.getBoolean("akka.log-config-on-start")
-    final val LogDeadLetters: Int = config.getString("akka.log-dead-letters").toLowerCase(Locale.ROOT) match {
+    final val LogDeadLetters: Int = toRootLowerCase(config.getString("akka.log-dead-letters")) match {
       case "off" | "false" ⇒ 0
       case "on" | "true"   ⇒ Int.MaxValue
       case _               ⇒ config.getInt("akka.log-dead-letters")
@@ -216,26 +217,7 @@ object ActorSystem {
 
   }
 
-  /**
-   * INTERNAL API
-   */
-  private[akka] def findClassLoader(): ClassLoader = {
-    def findCaller(get: Int ⇒ Class[_]): ClassLoader =
-      Iterator.from(2 /*is the magic number, promise*/ ).map(get) dropWhile { c ⇒
-        c != null &&
-          (c.getName.startsWith("akka.actor.ActorSystem") ||
-            c.getName.startsWith("scala.Option") ||
-            c.getName.startsWith("scala.collection.Iterator") ||
-            c.getName.startsWith("akka.util.Reflect"))
-      } next () match {
-        case null ⇒ getClass.getClassLoader
-        case c    ⇒ c.getClassLoader
-      }
-
-    Option(Thread.currentThread.getContextClassLoader) orElse
-      (Reflect.getCallerClass map findCaller) getOrElse
-      getClass.getClassLoader
-  }
+  private[akka] def findClassLoader(): ClassLoader = Reflect.findClassLoader()
 }
 
 /**
@@ -779,14 +761,26 @@ private[akka] class ActorSystemImpl(
   def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean = findExtension(ext) != null
 
   private def loadExtensions() {
-    immutableSeq(settings.config.getStringList("akka.extensions")) foreach { fqcn ⇒
-      dynamicAccess.getObjectFor[AnyRef](fqcn) recoverWith { case _ ⇒ dynamicAccess.createInstanceFor[AnyRef](fqcn, Nil) } match {
-        case Success(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup())
-        case Success(p: ExtensionId[_])      ⇒ registerExtension(p)
-        case Success(other)                  ⇒ log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)
-        case Failure(problem)                ⇒ log.error(problem, "While trying to load extension [{}], skipping...", fqcn)
+    /**
+     * @param throwOnLoadFail Throw exception when an extension fails to load (needed for backwards compatibility)
+     */
+    def loadExtensions(key: String, throwOnLoadFail: Boolean): Unit = {
+      immutableSeq(settings.config.getStringList(key)) foreach { fqcn ⇒
+        dynamicAccess.getObjectFor[AnyRef](fqcn) recoverWith { case _ ⇒ dynamicAccess.createInstanceFor[AnyRef](fqcn, Nil) } match {
+          case Success(p: ExtensionIdProvider)  ⇒ registerExtension(p.lookup())
+          case Success(p: ExtensionId[_])       ⇒ registerExtension(p)
+          case Success(other)⇒
+            if (!throwOnLoadFail) log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)
+            else throw new RuntimeException(s"[$fqcn] is not an 'ExtensionIdProvider' or 'ExtensionId'")
+          case Failure(problem)                 ⇒
+            if (!throwOnLoadFail) log.error(problem, "While trying to load extension [{}], skipping...", fqcn)
+            else throw new RuntimeException(s"While trying to load extension [$fqcn]", problem)
+        }
       }
     }
+
+    loadExtensions("akka.library-extensions", throwOnLoadFail = true)
+    loadExtensions("akka.extensions", throwOnLoadFail = false)
   }
 
   override def toString: String = lookupRoot.path.root.address.toString

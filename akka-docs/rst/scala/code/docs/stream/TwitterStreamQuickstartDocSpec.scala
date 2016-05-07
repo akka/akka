@@ -31,9 +31,11 @@ object TwitterStreamQuickstartDocSpec {
   val akka = Hashtag("#akka")
   //#model
 
+  // format: OFF
   //#tweet-source
   val tweets: Source[Tweet, NotUsed]
   //#tweet-source
+  // format: ON
   = Source(
     Tweet(Author("rolandkuhn"), System.currentTimeMillis, "#akka rocks!") ::
       Tweet(Author("patriknw"), System.currentTimeMillis, "#akka !") ::
@@ -104,10 +106,10 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
   }
 
   trait HiddenDefinitions {
-    //#flow-graph-broadcast
+    //#graph-dsl-broadcast
     val writeAuthors: Sink[Author, Unit] = ???
     val writeHashtags: Sink[Hashtag, Unit] = ???
-    //#flow-graph-broadcast
+    //#graph-dsl-broadcast
   }
 
   "simple broadcast" in {
@@ -115,7 +117,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     val writeHashtags: Sink[Hashtag, Future[Done]] = Sink.ignore
 
     // format: OFF
-    //#flow-graph-broadcast
+    //#graph-dsl-broadcast
     val g = RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
 
@@ -126,7 +128,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
       ClosedShape
     })
     g.run()
-    //#flow-graph-broadcast
+    //#graph-dsl-broadcast
     // format: ON
   }
 

@@ -243,7 +243,7 @@ at the expense of not reading as familiarly as collection transformations.
 
 Graphs are constructed using :class:`GraphDSL` like this:
 
-.. includecode:: ../code/docs/stream/TwitterStreamQuickstartDocTest.java#flow-graph-broadcast
+.. includecode:: ../code/docs/stream/TwitterStreamQuickstartDocTest.java#graph-dsl-broadcast
 
 As you can see, we use graph builder ``b`` to construct the graph using ``UniformFanOutShape`` and ``Flow`` s.
 
@@ -257,7 +257,7 @@ Both :class:`Graph` and :class:`RunnableGraph` are *immutable, thread-safe, and 
 A graph can also have one of several other shapes, with one or more unconnected ports. Having unconnected ports
 expresses a graph that is a *partial graph*. Concepts around composing and nesting graphs in large structures are
 explained in detail in :ref:`composition-java`. It is also possible to wrap complex computation graphs
-as Flows, Sinks or Sources, which will be explained in detail in :ref:`partial-flow-graph-java`.
+as Flows, Sinks or Sources, which will be explained in detail in :ref:`partial-graph-dsl-java`.
 
 
 Back-pressure in action

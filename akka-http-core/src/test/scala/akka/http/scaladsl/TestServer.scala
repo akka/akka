@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl
 
+import javax.net.ssl.SSLContext
+
 import akka.NotUsed
 
 import scala.concurrent.duration._

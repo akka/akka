@@ -16,7 +16,7 @@ master_doc = 'index'
 exclude_patterns = ['_build', 'pending', 'disabled']
 
 project = u'Akka'
-copyright = u'2011-2015, Lightbend Inc'
+copyright = u'2011-2016, Lightbend Inc'
 version = '@version@'
 release = '@version@'
 

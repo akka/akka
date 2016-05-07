@@ -568,8 +568,6 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                 matchEvent(Leave.class, (event, data) -> stop())
                 .event(GetCurrentCart.class, (event, data) -> stay().replying(data))
             );
-
-            initialize();
             //#customer-fsm-body
         }
 
