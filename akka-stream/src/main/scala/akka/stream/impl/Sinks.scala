@@ -573,7 +573,13 @@ final private[stream] class CancellablePublisherSink[T](drainWhenNoSubscribers: 
           case CancellablePublisherSink.Subscribe(subscriber)             ⇒ registerSubscriber(subscriber.asInstanceOf[Subscriber[_ >: T]])
           case CancellablePublisherSink.RequestMore(subscriber, elements) ⇒ moreRequested(subscriber, elements)
           case CancellablePublisherSink.Cancel(subscription)              ⇒ unregisterSubscription(subscription)
-          case CancellablePublisherSink.CancelPublisher                   ⇒ onUpstreamFinish()
+          case CancellablePublisherSink.CancelPublisher ⇒
+            completeDownstream()
+            completeStage()
+            if (!cursors.isEmpty) {
+              upstreamCompleted = true
+              setKeepGoing(true)
+            }
         }
 
       override def onPush(): Unit = {
