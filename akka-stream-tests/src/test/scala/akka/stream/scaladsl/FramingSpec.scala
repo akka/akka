@@ -44,6 +44,7 @@ class FramingSpec extends AkkaSpec {
             val newChunk = rechunkBuffer.take(nextChunkSize)
             rechunkBuffer = rechunkBuffer.drop(nextChunkSize)
             if (isClosed(in) && rechunkBuffer.isEmpty) completeStage()
+            else push(out, newChunk)
           }
         }
 
@@ -58,12 +59,13 @@ class FramingSpec extends AkkaSpec {
 
         override def onUpstreamFinish(): Unit = {
           if (rechunkBuffer.isEmpty) completeStage()
-          else completeStage()
+          else if (isAvailable(out))
+            onPull()
         }
       }
   }
 
-  val rechunk = Flow[ByteString] via (new Rechunker).named("rechunker")
+  val rechunk = Flow[ByteString] via new Rechunker().named("rechunker")
 
   "Delimiter bytes based framing" must {
 
