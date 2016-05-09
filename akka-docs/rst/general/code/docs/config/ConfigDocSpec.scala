@@ -46,6 +46,12 @@ class ConfigDocSpec extends WordSpec with Matchers {
     "/actorC/*" {
       dispatcher = my-dispatcher
     }
+
+    # all descendants of '/user/actorC' (direct children, and their children recursively)
+    # have a dedicated dispatcher
+    "/actorC/**" {
+      dispatcher = my-dispatcher
+    }
     
     # '/user/actorD/actorE' has a special priority mailbox
     /actorD/actorE {
