@@ -89,7 +89,7 @@ trait WSProbe {
   def inProbe: TestSubscriber.Probe[Message]
 
   /**
-   * The underlying probe for the ingoing side of this probe. Can be used if the methods
+   * The underlying probe for the outgoing side of this probe. Can be used if the methods
    * on WSProbe don't allow fine enough control over the message flow.
    */
   def outProbe: TestPublisher.Probe[Message]
