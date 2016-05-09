@@ -63,7 +63,7 @@ class FramingSpec extends AkkaSpec {
       }
   }
 
-  val rechunk = Flow[ByteString].transform(() ⇒ new Rechunker).named("rechunker")
+  val rechunk = Flow[ByteString] via (new Rechunker).named("rechunker")
 
   "Delimiter bytes based framing" must {
 
