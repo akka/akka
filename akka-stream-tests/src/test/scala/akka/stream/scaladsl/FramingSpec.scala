@@ -28,6 +28,7 @@ class FramingSpec extends AkkaSpec {
 
     val out: Outlet[ByteString] = Outlet("Rechunker.out")
     val in: Inlet[ByteString] = Inlet("Rechunker.in")
+
     override val shape: FlowShape[ByteString, ByteString] = FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -62,6 +63,8 @@ class FramingSpec extends AkkaSpec {
           else if (isAvailable(out))
             onPull()
         }
+
+        setHandlers(in, out, this)
       }
   }
 
