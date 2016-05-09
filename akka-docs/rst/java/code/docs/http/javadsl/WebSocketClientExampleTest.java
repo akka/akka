@@ -136,23 +136,23 @@ public class WebSocketClientExampleTest {
 
   public void halfClosedWebSocketFiniteWorkingExample() {
     final ActorSystem system = ActorSystem.create();
-    Materializer materializer = ActorMaterializer.create(system);
-    Http http = Http.get(system);
+    final Materializer materializer = ActorMaterializer.create(system);
+    final Http http = Http.get(system);
 
     //#half-closed-WebSocket-finite
 
     // emit "one" and then "two" and then keep the source from completing
-    Source<Message, CompletableFuture<Optional<Message>>> source =
+    final Source<Message, CompletableFuture<Optional<Message>>> source =
       Source.from(Arrays.<Message>asList(TextMessage.create("one"), TextMessage.create("two")))
         .concatMat(Source.maybe(), Keep.right());
 
-    Flow<Message, Message, CompletableFuture<Optional<Message>>> flow =
+    final Flow<Message, Message, CompletableFuture<Optional<Message>>> flow =
       Flow.fromSinkAndSourceMat(
         Sink.foreach(System.out::println),
         source,
         Keep.right());
 
-    Pair<CompletionStage<WebSocketUpgradeResponse>, CompletableFuture<Optional<Message>>> pair =
+    final Pair<CompletionStage<WebSocketUpgradeResponse>, CompletableFuture<Optional<Message>>> pair =
       http.singleWebSocketRequest(
         WebSocketRequest.create("ws://example.com:8080/some/path"),
         flow,
