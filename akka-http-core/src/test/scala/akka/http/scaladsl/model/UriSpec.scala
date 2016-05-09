@@ -382,7 +382,7 @@ class UriSpec extends WordSpec with Matchers {
 
       // empty host
       Uri("http://:8000/foo") shouldEqual Uri("http", Authority(Host.Empty, 8000), Path / "foo")
-      Uri("http://:80/foo") shouldEqual Uri("http", Authority.Empty, Path / "foo")
+      Uri("http://:80/foo") shouldEqual Uri("http", Authority(Host.Empty, 80), Path / "foo")
     }
 
     "properly complete a normalization cycle" in {
@@ -596,13 +596,20 @@ class UriSpec extends WordSpec with Matchers {
     }
 
     "return the correct effective port" in {
-      80 shouldEqual Uri("http://host/").effectivePort
-      21 shouldEqual Uri("ftp://host/").effectivePort
-      9090 shouldEqual Uri("http://host:9090/").effectivePort
-      443 shouldEqual Uri("https://host/").effectivePort
+      Uri("http://host/").effectivePort shouldEqual 80
+      Uri("ftp://host/").effectivePort shouldEqual 21
+      Uri("http://host:9090/").effectivePort shouldEqual 9090
+      Uri("https://host/").effectivePort shouldEqual 443
 
-      4450 shouldEqual Uri("https://host/").withPort(4450).effectivePort
-      4450 shouldEqual Uri("https://host:3030/").withPort(4450).effectivePort
+      Uri("https://host/").withPort(4450).effectivePort shouldEqual 4450
+      Uri("https://host:3030/").withPort(4450).effectivePort shouldEqual 4450
+    }
+
+    "return the correct authority port" in {
+      Uri("example.com").withPort(0).authority.port shouldEqual 0
+      Uri("example.com").withPort(80).authority.port shouldEqual 80
+      Uri("http://example.com").withPort(80).authority.port shouldEqual 0
+      Uri("http://example.com").withPort(9000).authority.port shouldEqual 9000
     }
 
     "properly render as HTTP request target origin forms" in {

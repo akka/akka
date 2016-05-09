@@ -43,13 +43,11 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
   def queryString(charset: Charset = UTF8): Option[String] = rawQueryString.map(s ⇒ decode(s, charset))
 
   /**
-   * INTERNAL API
-   *
    * The effective port of this Uri given the currently set authority and scheme values.
    * If the authority has an explicitly set port (i.e. a non-zero port value) then this port
    * is the effective port. Otherwise the default port for the current scheme is returned.
    */
-  private[akka] def effectivePort: Int = if (authority.port != 0) authority.port else defaultPorts(scheme)
+  def effectivePort: Int = if (authority.port != 0) authority.port else defaultPorts(scheme)
 
   /**
    * Returns a copy of this Uri with the given components.
@@ -307,6 +305,10 @@ object Uri {
 
   def httpScheme(securedConnection: Boolean = false) = if (securedConnection) "https" else "http"
 
+  /**
+   * @param port A port number that may be `0` to signal the default port of for scheme.
+   *             In general what you want is not the value of this field but [[Uri.effectivePort]].
+   */
   final case class Authority(host: Host, port: Int = 0, userinfo: String = "") {
     def isEmpty = equals(Authority.Empty)
     def nonEmpty = !isEmpty
