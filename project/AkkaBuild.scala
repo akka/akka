@@ -30,7 +30,7 @@ object AkkaBuild extends Build {
 
   val enableMiMa = true
 
-  val parallelExecutionByDefault = false // TODO: enable this once we're sure it doesn not break things
+  val parallelExecutionByDefault = false // TODO: enable this once we're sure it does not break things
 
   lazy val buildSettings = Dependencies.Versions ++ Seq(
     organization        := "com.typesafe.akka",
@@ -42,26 +42,72 @@ object AkkaBuild extends Build {
     UnidocRoot.akkaSettings ++
     Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
-      Dist.distExclude := Seq(actorTests.id, docs.id, samples.id, osgi.id),
+      Dist.distExclude := Seq(
+        actorTests.id,
+        benchJmh.id,
+        docs.id,
+        httpTests.id,
+        persistenceShared.id,
+        remoteTests.id,
+        samples.id,
+        streamTests.id,
+        streamTestsTck.id,
+        osgi.id
+      ),
       S3.host in S3.upload := "downloads.typesafe.com.s3.amazonaws.com",
       S3.progress in S3.upload := true,
       mappings in S3.upload <<= (Release.releaseDirectory, version) map { (d, v) =>
         val downloads = d / "downloads"
         val archivesPathFinder = downloads * s"*$v.zip"
-        archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
+        archivesPathFinder.get.map(file => file -> ("akka/" + file.getName))
       }
     )
+
+  lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
+    actor,
+    actorTests,
+    agent,
+    benchJmh,
+    camel,
+    cluster,
+    clusterMetrics,
+    clusterSharding,
+    clusterTools,
+    contrib,
+    distributedData,
+    docs,
+    http,
+    httpCore,
+    httpJackson,
+    httpSprayJson,
+    httpTestkit,
+    httpTests,
+    httpXml,
+    kernel,
+    multiNodeTestkit,
+    osgi,
+    parsing,
+    persistence,
+    persistenceQuery,
+    persistenceShared,
+    persistenceTck,
+    protobuf,
+    remote,
+    remoteTests,
+    samples,
+    slf4j,
+    stream,
+    streamTestkit,
+    streamTests,
+    streamTestsTck,
+    testkit,
+    typed
+  )
 
   lazy val root = Project(
     id = "akka",
     base = file("."),
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel,
-      cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
-      slf4j, agent, persistence, persistenceQuery, persistenceTck, persistenceShared,
-      kernel, osgi, docs, contrib, samples, multiNodeTestkit, benchJmh, typed, protobuf,
-      stream, streamTestkit, streamTests, streamTestsTck, parsing,
-      httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests, httpTestkit
-    )
+    aggregate = aggregatedProjects
   ).settings(rootSettings: _*)
 
   lazy val akkaScalaNightly = Project(
@@ -69,13 +115,7 @@ object AkkaBuild extends Build {
     base = file("akka-scala-nightly"),
     // remove dependencies that we have to build ourselves (Scala STM)
     // samples don't work with dbuild right now
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel,
-      cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
-      slf4j, persistence, persistenceQuery, persistenceTck, persistenceShared,
-      kernel, osgi, contrib, multiNodeTestkit, benchJmh, typed, protobuf,
-      stream, streamTestkit, streamTests, streamTestsTck, parsing,
-      httpCore, http, httpSprayJson, httpXml, httpJackson, httpTests, httpTestkit
-    )
+    aggregate = aggregatedProjects diff List(agent, docs, samples)
   ).disablePlugins(ValidatePullRequest, MimaPlugin)
 
   lazy val actor = Project(
@@ -133,25 +173,25 @@ object AkkaBuild extends Build {
     id = "akka-remote-tests",
     base = file("akka-remote-tests"),
     dependencies = Seq(actorTests % "test->test", multiNodeTestkit)
-  ) configs (MultiJvm)
+  ).configs(MultiJvm)
 
   lazy val cluster = Project(
     id = "akka-cluster",
     base = file("akka-cluster"),
     dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test")
-  ) configs (MultiJvm)
+  ).configs(MultiJvm)
 
   lazy val clusterMetrics = Project(
     id = "akka-cluster-metrics",
     base = file("akka-cluster-metrics"),
     dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm", slf4j % "test->compile")
-  ) configs (MultiJvm)
+  ).configs(MultiJvm)
 
   lazy val clusterTools = Project(
     id = "akka-cluster-tools",
     base = file("akka-cluster-tools"),
     dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm")
-  ) configs (MultiJvm)
+  ).configs(MultiJvm)
 
   lazy val clusterSharding = Project(
     id = "akka-cluster-sharding",
@@ -162,13 +202,13 @@ object AkkaBuild extends Build {
     //      provided.
     dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm",
         persistence % "compile;test->provided", distributedData % "provided;test", clusterTools)
-  ) configs (MultiJvm)
+  ).configs(MultiJvm)
 
   lazy val distributedData = Project(
     id = "akka-distributed-data-experimental",
     base = file("akka-distributed-data"),
     dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm")
-  ) configs (MultiJvm)
+  ).configs(MultiJvm)
 
   lazy val slf4j = Project(
     id = "akka-slf4j",
@@ -337,7 +377,7 @@ object AkkaBuild extends Build {
     id = "akka-contrib",
     base = file("akka-contrib"),
     dependencies = Seq(remote, remoteTests % "test->test", cluster, clusterTools, persistence % "compile;test->provided")
-  ) configs (MultiJvm)
+  ).configs(MultiJvm)
 
   lazy val samplesSettings = parentSettings ++ ActivatorDist.settings
 
@@ -531,47 +571,6 @@ object AkkaBuild extends Build {
      javacOptions in test ++= Seq("-Xdoclint:none"),
      javacOptions in doc ++= Seq("-Xdoclint:none")
    )
-
-  def akkaPreviousArtifacts(id: String): Def.Initialize[Set[sbt.ModuleID]] = Def.setting {
-    if (enableMiMa) {
-      val versions = {
-        val akka23Versions = Seq("2.3.11", "2.3.12", "2.3.13", "2.3.14")
-        val akka24Versions = Seq("2.4.0", "2.4.1", "2.4.2")
-        val akka24NewArtifacts = Seq(
-          "akka-cluster-sharding",
-          "akka-cluster-tools",
-          "akka-cluster-metrics",
-          "akka-persistence",
-          "akka-distributed-data-experimental",
-          "akka-persistence-query-experimental"
-        )
-        scalaBinaryVersion.value match {
-          case "2.11" if !akka24NewArtifacts.contains(id) => akka23Versions ++ akka24Versions
-          case _ => akka24Versions // Only Akka 2.4.x for scala > than 2.11
-        }
-      }
-
-      // check against all binary compatible artifacts
-      versions.map(organization.value %% id % _).toSet
-    }
-    else Set.empty
-  }
-
-  def akkaStreamAndHttpPreviousArtifacts(id: String): Def.Initialize[Set[sbt.ModuleID]] = Def.setting {
-    if (enableMiMa) {
-      val versions = {
-          val akka24Versions = Seq("2.4.2")
-          val akka24NewArtifacts = Seq(
-            "akka-http-core"
-          )
-
-          akka24Versions
-        }
-
-        // check against all binary compatible artifacts
-        versions.map(organization.value %% id % _).toSet
-    } else Set.empty
-  }
 
   def loadSystemProperties(fileName: String): Unit = {
     import scala.collection.JavaConverters._
