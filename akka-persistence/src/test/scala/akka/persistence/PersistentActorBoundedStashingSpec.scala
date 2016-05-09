@@ -66,8 +66,11 @@ class SteppingInMemPersistentActorBoundedStashingSpec(strategyConfig: String)
     system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*Cmd.*")))
   }
 
-  override def beforeEach(): Unit =
+  override def beforeEach(): Unit = {
+    super.beforeEach()
+
     system.eventStream.subscribe(testActor, classOf[DeadLetter])
+  }
 
   override def afterEach(): Unit =
     system.eventStream.unsubscribe(testActor, classOf[DeadLetter])
@@ -82,6 +85,14 @@ class ThrowExceptionStrategyPersistentActorBoundedStashingSpec
       awaitAssert(SteppingInmemJournal.getRef("persistence-bounded-stash"), 3.seconds)
       val journal = SteppingInmemJournal.getRef("persistence-bounded-stash")
 
+      def checkMessagesAreInOrder(messages: Seq[DeadLetter], seq: Int): Unit = {
+        messages.foldLeft(seq) {
+          case (i, m) ⇒
+            m should be(DeadLetter(Cmd(`i`), `testActor`, `persistentActor`))
+            i + 1
+        }
+      }
+
       // initial read highest
       SteppingInmemJournal.step(journal)
 
@@ -90,11 +101,19 @@ class ThrowExceptionStrategyPersistentActorBoundedStashingSpec
 
       //internal stash overflow
       1 to (2 * capacity) foreach (persistentActor ! Cmd(_))
-      //after PA stopped, all stashed messages forward to deadletters
-      1 to capacity foreach (i ⇒ expectMsg(DeadLetter(Cmd(i), testActor, persistentActor)))
-      //non-stashed messages
-      (capacity + 2) to (2 * capacity) foreach (i ⇒ expectMsg(DeadLetter(Cmd(i), testActor, persistentActor)))
 
+      //after PA stopped, all stashed messages forward to deadletters
+      //the message triggering the overflow is lost, so we get one less message than we sent
+      val messages: Seq[DeadLetter] = 1 until (2 * capacity) map { _ ⇒ expectMsgType[DeadLetter] }
+
+      //if the mailbox of the PA happens to close before we manage to send all messages, then those
+      //messages can get sent to deadletters before or mixed with the stashed ones so we need to partition them
+      val (stashed, nonStashed) = messages.partition {
+        case DeadLetter(Cmd(i: Int), `testActor`, `persistentActor`) ⇒ i <= capacity
+      }
+
+      checkMessagesAreInOrder(stashed, 1)
+      checkMessagesAreInOrder(nonStashed, capacity + 2)
     }
   }
 }
