@@ -3,37 +3,32 @@
  */
 package akka.remote.artery
 
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 
-import akka.Done
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import akka.NotUsed
-import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
+import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
 import akka.actor.InternalActorRef
 import akka.actor.PoisonPill
-import akka.actor.Props
 import akka.actor.RootActorPath
-import akka.actor.Stash
+import akka.remote.AddressUidExtension
 import akka.remote.EndpointManager.Send
 import akka.remote.RemoteActorRef
+import akka.remote.UniqueAddress
 import akka.remote.artery.SystemMessageDelivery._
-import akka.remote.artery.Transport.InboundEnvelope
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.stream.stage.AsyncCallback
-import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
@@ -60,86 +55,60 @@ object SystemMessageDeliverySpec {
   val configB = ConfigFactory.parseString(s"akka.remote.artery.port = $portB")
     .withFallback(commonConfig)
 
-  class TestReplyJunction(sendCallbackTo: ActorRef) extends SystemMessageReplyJunction.Junction {
+  class ManualReplyInboundContext(
+    replyProbe: ActorRef,
+    localAddress: UniqueAddress,
+    replySubject: TestReplySubject) extends TestInboundContext(localAddress, replySubject) {
 
-    def addReplyInterest(filter: InboundEnvelope ⇒ Boolean, replyCallback: AsyncCallback[SystemMessageReply]): Future[Done] = {
-      sendCallbackTo ! replyCallback
-      Future.successful(Done)
+    private var lastReply: Option[(Address, ControlMessage)] = None
+
+    override def sendReply(to: Address, message: ControlMessage) = {
+      lastReply = Some((to, message))
+      replyProbe ! message
     }
 
-    override def removeReplyInterest(callback: AsyncCallback[SystemMessageReply]): Unit = ()
-
-    override def stopped: Future[Done] = Promise[Done]().future
-  }
-
-  def replyConnectorProps(dropRate: Double): Props =
-    Props(new ReplyConnector(dropRate))
-
-  class ReplyConnector(dropRate: Double) extends Actor with Stash {
-    override def receive = {
-      case callback: AsyncCallback[SystemMessageReply] @unchecked ⇒
-        context.become(active(callback))
-        unstashAll()
-      case _ ⇒ stash()
-    }
-
-    def active(callback: AsyncCallback[SystemMessageReply]): Receive = {
-      case reply: SystemMessageReply ⇒
-        if (ThreadLocalRandom.current().nextDouble() >= dropRate)
-          callback.invoke(reply)
+    def deliverLastReply(): Unit = {
+      lastReply.foreach { case (to, message) ⇒ super.sendReply(to, message) }
+      lastReply = None
     }
   }
-
 }
 
 class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commonConfig) with ImplicitSender {
   import SystemMessageDeliverySpec._
 
-  val addressA = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+  val addressA = UniqueAddress(
+    system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
+    AddressUidExtension(system).addressUid)
   val systemB = ActorSystem("systemB", configB)
-  val addressB = systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
-  val rootB = RootActorPath(addressB)
+  val addressB = UniqueAddress(
+    systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
+    AddressUidExtension(systemB).addressUid)
+  val rootB = RootActorPath(addressB.address)
   val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
   implicit val mat = ActorMaterializer(matSettings)(system)
 
   override def afterTermination(): Unit = shutdown(systemB)
 
-  def setupManualCallback(ackRecipient: ActorRef, resendInterval: FiniteDuration,
-                          dropSeqNumbers: Vector[Long], sendCount: Int): (TestSubscriber.Probe[String], AsyncCallback[SystemMessageReply]) = {
-    val callbackProbe = TestProbe()
-    val replyJunction = new TestReplyJunction(callbackProbe.ref)
-
-    val sink =
-      send(sendCount, resendInterval, replyJunction, ackRecipient)
-        .via(drop(dropSeqNumbers))
-        .via(inbound)
-        .map(_.message.asInstanceOf[String])
-        .runWith(TestSink.probe)
-
-    val callback = callbackProbe.expectMsgType[AsyncCallback[SystemMessageReply]]
-    (sink, callback)
-  }
-
-  def send(sendCount: Int, resendInterval: FiniteDuration, replyJunction: SystemMessageReplyJunction.Junction,
-           ackRecipient: ActorRef): Source[Send, NotUsed] = {
+  private def send(sendCount: Int, resendInterval: FiniteDuration, outboundContext: OutboundContext): Source[Send, NotUsed] = {
     val remoteRef = null.asInstanceOf[RemoteActorRef] // not used
     Source(1 to sendCount)
       .map(n ⇒ Send("msg-" + n, None, remoteRef, None))
-      .via(new SystemMessageDelivery(replyJunction, resendInterval, addressA, addressB, ackRecipient))
+      .via(new SystemMessageDelivery(outboundContext, resendInterval))
   }
 
-  def inbound: Flow[Send, InboundEnvelope, NotUsed] = {
+  private def inbound(inboundContext: InboundContext): Flow[Send, InboundEnvelope, NotUsed] = {
     val recipient = null.asInstanceOf[InternalActorRef] // not used
     Flow[Send]
       .map {
         case Send(sysEnv: SystemMessageEnvelope, _, _, _) ⇒
-          InboundEnvelope(recipient, addressB, sysEnv, None)
+          InboundEnvelope(recipient, addressB.address, sysEnv, None)
       }
       .async
-      .via(new SystemMessageAcker(addressB))
+      .via(new SystemMessageAcker(inboundContext))
   }
 
-  def drop(dropSeqNumbers: Vector[Long]): Flow[Send, Send, NotUsed] = {
+  private def drop(dropSeqNumbers: Vector[Long]): Flow[Send, Send, NotUsed] = {
     Flow[Send]
       .statefulMapConcat(() ⇒ {
         var dropping = dropSeqNumbers
@@ -156,7 +125,7 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commo
       })
   }
 
-  def randomDrop[T](dropRate: Double): Flow[T, T, NotUsed] = Flow[T].mapConcat { elem ⇒
+  private def randomDrop[T](dropRate: Double): Flow[T, T, NotUsed] = Flow[T].mapConcat { elem ⇒
     if (ThreadLocalRandom.current().nextDouble() < dropRate) Nil
     else List(elem)
   }
@@ -177,83 +146,108 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commo
     }
 
     "be resent when some in the middle are lost" in {
-      val ackRecipient = TestProbe()
-      val (sink, replyCallback) =
-        setupManualCallback(ackRecipient.ref, resendInterval = 60.seconds, dropSeqNumbers = Vector(3L, 4L), sendCount = 5)
+      val replyProbe = TestProbe()
+      val replySubject = new TestReplySubject
+      val inboundContextB = new ManualReplyInboundContext(replyProbe.ref, addressB, replySubject)
+      val inboundContextA = new TestInboundContext(addressB, replySubject)
+      val outboundContextA = inboundContextA.association(addressB.address)
+
+      val sink = send(sendCount = 5, resendInterval = 60.seconds, outboundContextA)
+        .via(drop(dropSeqNumbers = Vector(3L, 4L)))
+        .via(inbound(inboundContextB))
+        .map(_.message.asInstanceOf[String])
+        .runWith(TestSink.probe)
 
       sink.request(100)
       sink.expectNext("msg-1")
       sink.expectNext("msg-2")
-      ackRecipient.expectMsg(Ack(1L, addressB))
-      ackRecipient.expectMsg(Ack(2L, addressB))
+      replyProbe.expectMsg(Ack(1L, addressB))
+      replyProbe.expectMsg(Ack(2L, addressB))
       // 3 and 4 was dropped
-      ackRecipient.expectMsg(Nack(2L, addressB))
+      replyProbe.expectMsg(Nack(2L, addressB))
       sink.expectNoMsg(100.millis) // 3 was dropped
-      replyCallback.invoke(Nack(2L, addressB))
+      inboundContextB.deliverLastReply()
       // resending 3, 4, 5
       sink.expectNext("msg-3")
-      ackRecipient.expectMsg(Ack(3L, addressB))
+      replyProbe.expectMsg(Ack(3L, addressB))
       sink.expectNext("msg-4")
-      ackRecipient.expectMsg(Ack(4L, addressB))
+      replyProbe.expectMsg(Ack(4L, addressB))
       sink.expectNext("msg-5")
-      ackRecipient.expectMsg(Ack(5L, addressB))
-      ackRecipient.expectNoMsg(100.millis)
-      replyCallback.invoke(Ack(5L, addressB))
+      replyProbe.expectMsg(Ack(5L, addressB))
+      replyProbe.expectNoMsg(100.millis)
+      inboundContextB.deliverLastReply()
       sink.expectComplete()
     }
 
     "be resent when first is lost" in {
-      val ackRecipient = TestProbe()
-      val (sink, replyCallback) =
-        setupManualCallback(ackRecipient.ref, resendInterval = 60.seconds, dropSeqNumbers = Vector(1L), sendCount = 3)
+      val replyProbe = TestProbe()
+      val replySubject = new TestReplySubject
+      val inboundContextB = new ManualReplyInboundContext(replyProbe.ref, addressB, replySubject)
+      val inboundContextA = new TestInboundContext(addressB, replySubject)
+      val outboundContextA = inboundContextA.association(addressB.address)
+
+      val sink = send(sendCount = 3, resendInterval = 60.seconds, outboundContextA)
+        .via(drop(dropSeqNumbers = Vector(1L)))
+        .via(inbound(inboundContextB))
+        .map(_.message.asInstanceOf[String])
+        .runWith(TestSink.probe)
 
       sink.request(100)
-      ackRecipient.expectMsg(Nack(0L, addressB)) // from receiving 2
-      ackRecipient.expectMsg(Nack(0L, addressB)) // from receiving 3
+      replyProbe.expectMsg(Nack(0L, addressB)) // from receiving 2
+      replyProbe.expectMsg(Nack(0L, addressB)) // from receiving 3
       sink.expectNoMsg(100.millis) // 1 was dropped
-      replyCallback.invoke(Nack(0L, addressB))
-      replyCallback.invoke(Nack(0L, addressB))
+      inboundContextB.deliverLastReply() // it's ok to not delivery all nacks
       // resending 1, 2, 3
       sink.expectNext("msg-1")
-      ackRecipient.expectMsg(Ack(1L, addressB))
+      replyProbe.expectMsg(Ack(1L, addressB))
       sink.expectNext("msg-2")
-      ackRecipient.expectMsg(Ack(2L, addressB))
+      replyProbe.expectMsg(Ack(2L, addressB))
       sink.expectNext("msg-3")
-      ackRecipient.expectMsg(Ack(3L, addressB))
-      replyCallback.invoke(Ack(3L, addressB))
+      replyProbe.expectMsg(Ack(3L, addressB))
+      inboundContextB.deliverLastReply()
       sink.expectComplete()
     }
 
     "be resent when last is lost" in {
-      val ackRecipient = TestProbe()
-      val (sink, replyCallback) =
-        setupManualCallback(ackRecipient.ref, resendInterval = 1.second, dropSeqNumbers = Vector(3L), sendCount = 3)
+      val replyProbe = TestProbe()
+      val replySubject = new TestReplySubject
+      val inboundContextB = new ManualReplyInboundContext(replyProbe.ref, addressB, replySubject)
+      val inboundContextA = new TestInboundContext(addressB, replySubject)
+      val outboundContextA = inboundContextA.association(addressB.address)
+
+      val sink = send(sendCount = 3, resendInterval = 1.seconds, outboundContextA)
+        .via(drop(dropSeqNumbers = Vector(3L)))
+        .via(inbound(inboundContextB))
+        .map(_.message.asInstanceOf[String])
+        .runWith(TestSink.probe)
 
       sink.request(100)
       sink.expectNext("msg-1")
-      ackRecipient.expectMsg(Ack(1L, addressB))
-      replyCallback.invoke(Ack(1L, addressB))
+      replyProbe.expectMsg(Ack(1L, addressB))
+      inboundContextB.deliverLastReply()
       sink.expectNext("msg-2")
-      ackRecipient.expectMsg(Ack(2L, addressB))
-      replyCallback.invoke(Ack(2L, addressB))
+      replyProbe.expectMsg(Ack(2L, addressB))
+      inboundContextB.deliverLastReply()
       sink.expectNoMsg(200.millis) // 3 was dropped
       // resending 3 due to timeout
       sink.expectNext("msg-3")
-      ackRecipient.expectMsg(Ack(3L, addressB))
-      replyCallback.invoke(Ack(3L, addressB))
+      replyProbe.expectMsg(Ack(3L, addressB))
+      inboundContextB.deliverLastReply()
       sink.expectComplete()
     }
 
     "deliver all during stress and random dropping" in {
       val N = 10000
       val dropRate = 0.1
-      val replyConnector = system.actorOf(replyConnectorProps(dropRate))
-      val replyJunction = new TestReplyJunction(replyConnector)
+      val replySubject = new TestReplySubject
+      val inboundContextB = new TestInboundContext(addressB, replySubject, replyDropRate = dropRate)
+      val inboundContextA = new TestInboundContext(addressB, replySubject)
+      val outboundContextA = inboundContextA.association(addressB.address)
 
       val output =
-        send(N, 1.second, replyJunction, replyConnector)
+        send(N, 1.second, outboundContextA)
           .via(randomDrop(dropRate))
-          .via(inbound)
+          .via(inbound(inboundContextB))
           .map(_.message.asInstanceOf[String])
           .runWith(Sink.seq)
 
@@ -263,14 +257,16 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commo
     "deliver all during throttling and random dropping" in {
       val N = 500
       val dropRate = 0.1
-      val replyConnector = system.actorOf(replyConnectorProps(dropRate))
-      val replyJunction = new TestReplyJunction(replyConnector)
+      val replySubject = new TestReplySubject
+      val inboundContextB = new TestInboundContext(addressB, replySubject, replyDropRate = dropRate)
+      val inboundContextA = new TestInboundContext(addressB, replySubject)
+      val outboundContextA = inboundContextA.association(addressB.address)
 
       val output =
-        send(N, 1.second, replyJunction, replyConnector)
+        send(N, 1.second, outboundContextA)
           .throttle(200, 1.second, 10, ThrottleMode.shaping)
           .via(randomDrop(dropRate))
-          .via(inbound)
+          .via(inbound(inboundContextB))
           .map(_.message.asInstanceOf[String])
           .runWith(Sink.seq)
 

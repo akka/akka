@@ -6,26 +6,21 @@ package akka.remote.artery
 import java.util.ArrayDeque
 
 import scala.annotation.tailrec
-import scala.concurrent.Future
-import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
 import akka.Done
-import akka.actor.ActorRef
-import akka.actor.Address
 import akka.remote.EndpointManager.Send
-import akka.remote.artery.Transport.InboundEnvelope
+import akka.remote.UniqueAddress
+import akka.remote.artery.ReplyJunction.ReplyObserver
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
 import akka.stream.Outlet
-import akka.stream.stage.AsyncCallback
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
-import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.stream.stage.TimerGraphStageLogic
@@ -35,10 +30,10 @@ import akka.stream.stage.TimerGraphStageLogic
  */
 private[akka] object SystemMessageDelivery {
   // FIXME serialization of these messages
-  final case class SystemMessageEnvelope(message: AnyRef, seqNo: Long, ackReplyTo: ActorRef)
-  sealed trait SystemMessageReply
-  final case class Ack(seq: Long, from: Address) extends SystemMessageReply
-  final case class Nack(seq: Long, from: Address) extends SystemMessageReply
+  // FIXME ackReplyTo should not be needed
+  final case class SystemMessageEnvelope(message: AnyRef, seqNo: Long, ackReplyTo: UniqueAddress)
+  final case class Ack(seqNo: Long, from: UniqueAddress) extends Reply
+  final case class Nack(seqNo: Long, from: UniqueAddress) extends Reply
 
   private case object ResendTick
 }
@@ -47,49 +42,42 @@ private[akka] object SystemMessageDelivery {
  * INTERNAL API
  */
 private[akka] class SystemMessageDelivery(
-  replyJunction: SystemMessageReplyJunction.Junction,
-  resendInterval: FiniteDuration,
-  localAddress: Address,
-  remoteAddress: Address,
-  ackRecipient: ActorRef)
+  outboundContext: OutboundContext,
+  resendInterval: FiniteDuration)
   extends GraphStage[FlowShape[Send, Send]] {
 
   import SystemMessageDelivery._
-  import SystemMessageReplyJunction._
 
   val in: Inlet[Send] = Inlet("SystemMessageDelivery.in")
   val out: Outlet[Send] = Outlet("SystemMessageDelivery.out")
   override val shape: FlowShape[Send, Send] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new TimerGraphStageLogic(shape) with InHandler with OutHandler {
+    new TimerGraphStageLogic(shape) with InHandler with OutHandler with ReplyObserver {
 
-      var registered = false
-      var seqNo = 0L // sequence number for the first message will be 1
-      val unacknowledged = new ArrayDeque[Send]
-      var resending = new ArrayDeque[Send]
-      var resendingFromSeqNo = -1L
-      var stopping = false
+      private var replyObserverAttached = false
+      private var seqNo = 0L // sequence number for the first message will be 1
+      private val unacknowledged = new ArrayDeque[Send]
+      private var resending = new ArrayDeque[Send]
+      private var resendingFromSeqNo = -1L
+      private var stopping = false
+
+      private def localAddress = outboundContext.localAddress
+      private def remoteAddress = outboundContext.remoteAddress
 
       override def preStart(): Unit = {
         this.schedulePeriodically(ResendTick, resendInterval)
-        def filter(env: InboundEnvelope): Boolean =
-          env.message match {
-            case Ack(_, from) if from == remoteAddress  ⇒ true
-            case Nack(_, from) if from == remoteAddress ⇒ true
-            case _                                      ⇒ false
-          }
 
         implicit val ec = materializer.executionContext
-        replyJunction.addReplyInterest(filter, ackCallback).foreach {
+        outboundContext.replySubject.attach(this).foreach {
           getAsyncCallback[Done] { _ ⇒
-            registered = true
+            replyObserverAttached = true
             if (isAvailable(out))
               pull(in) // onPull from downstream already called
           }.invoke
         }
 
-        replyJunction.stopped.onComplete {
+        outboundContext.replySubject.stopped.onComplete {
           getAsyncCallback[Try[Done]] {
             // FIXME quarantine
             case Success(_)     ⇒ completeStage()
@@ -99,7 +87,7 @@ private[akka] class SystemMessageDelivery(
       }
 
       override def postStop(): Unit = {
-        replyJunction.removeReplyInterest(ackCallback)
+        outboundContext.replySubject.detach(this)
       }
 
       override def onUpstreamFinish(): Unit = {
@@ -118,16 +106,24 @@ private[akka] class SystemMessageDelivery(
             }
         }
 
-      val ackCallback = getAsyncCallback[SystemMessageReply] { reply ⇒
-        reply match {
-          case Ack(n, _) ⇒
-            ack(n)
-          case Nack(n, _) ⇒
-            ack(n)
-            if (n > resendingFromSeqNo)
-              resending = unacknowledged.clone()
-            tryResend()
+      // ReplyObserver, external call
+      override def reply(inboundEnvelope: InboundEnvelope): Unit = {
+        inboundEnvelope.message match {
+          case ack: Ack   ⇒ if (ack.from.address == remoteAddress) ackCallback.invoke(ack)
+          case nack: Nack ⇒ if (nack.from.address == remoteAddress) nackCallback.invoke(nack)
+          case _          ⇒ // not interested
         }
+      }
+
+      private val ackCallback = getAsyncCallback[Ack] { reply ⇒
+        ack(reply.seqNo)
+      }
+
+      private val nackCallback = getAsyncCallback[Nack] { reply ⇒
+        ack(reply.seqNo)
+        if (reply.seqNo > resendingFromSeqNo)
+          resending = unacknowledged.clone()
+        tryResend()
       }
 
       private def ack(n: Long): Unit = {
@@ -155,7 +151,7 @@ private[akka] class SystemMessageDelivery(
       // InHandler
       override def onPush(): Unit = {
         grab(in) match {
-          case s @ Send(reply: SystemMessageReply, _, _, _) ⇒
+          case s @ Send(reply: ControlMessage, _, _, _) ⇒
             // pass through
             if (isAvailable(out))
               push(out, s)
@@ -166,7 +162,7 @@ private[akka] class SystemMessageDelivery(
 
           case s @ Send(msg: AnyRef, _, _, _) ⇒
             seqNo += 1
-            val sendMsg = s.copy(message = SystemMessageEnvelope(msg, seqNo, ackRecipient))
+            val sendMsg = s.copy(message = SystemMessageEnvelope(msg, seqNo, localAddress))
             // FIXME quarantine if unacknowledged is full
             unacknowledged.offer(sendMsg)
             if (resending.isEmpty && isAvailable(out))
@@ -180,7 +176,7 @@ private[akka] class SystemMessageDelivery(
 
       // OutHandler
       override def onPull(): Unit = {
-        if (registered) { // otherwise it will be pulled after replyJunction.addReplyInterest
+        if (replyObserverAttached) { // otherwise it will be pulled after attached
           if (resending.isEmpty && !hasBeenPulled(in) && !stopping)
             pull(in)
           else
@@ -195,7 +191,7 @@ private[akka] class SystemMessageDelivery(
 /**
  * INTERNAL API
  */
-private[akka] class SystemMessageAcker(localAddress: Address) extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
+private[akka] class SystemMessageAcker(inboundContext: InboundContext) extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
   import SystemMessageDelivery._
 
   val in: Inlet[InboundEnvelope] = Inlet("SystemMessageAcker.in")
@@ -207,20 +203,22 @@ private[akka] class SystemMessageAcker(localAddress: Address) extends GraphStage
 
       var seqNo = 1L
 
+      def localAddress = inboundContext.localAddress
+
       // InHandler
       override def onPush(): Unit = {
         grab(in) match {
           case env @ InboundEnvelope(_, _, sysEnv @ SystemMessageEnvelope(_, n, ackReplyTo), _) ⇒
             if (n == seqNo) {
-              ackReplyTo.tell(Ack(n, localAddress), ActorRef.noSender)
+              inboundContext.sendReply(ackReplyTo.address, Ack(n, localAddress))
               seqNo += 1
               val unwrapped = env.copy(message = sysEnv.message)
               push(out, unwrapped)
             } else if (n < seqNo) {
-              ackReplyTo.tell(Ack(n, localAddress), ActorRef.noSender)
+              inboundContext.sendReply(ackReplyTo.address, Ack(n, localAddress))
               pull(in)
             } else {
-              ackReplyTo.tell(Nack(seqNo - 1, localAddress), ActorRef.noSender)
+              inboundContext.sendReply(ackReplyTo.address, Nack(seqNo - 1, localAddress))
               pull(in)
             }
           case env ⇒
@@ -237,74 +235,3 @@ private[akka] class SystemMessageAcker(localAddress: Address) extends GraphStage
     }
 }
 
-/**
- * INTERNAL API
- */
-private[akka] object SystemMessageReplyJunction {
-  import SystemMessageDelivery._
-
-  trait Junction {
-    def addReplyInterest(filter: InboundEnvelope ⇒ Boolean, replyCallback: AsyncCallback[SystemMessageReply]): Future[Done]
-    def removeReplyInterest(callback: AsyncCallback[SystemMessageReply]): Unit
-    def stopped: Future[Done]
-  }
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class SystemMessageReplyJunction
-  extends GraphStageWithMaterializedValue[FlowShape[InboundEnvelope, InboundEnvelope], SystemMessageReplyJunction.Junction] {
-  import SystemMessageReplyJunction._
-  import SystemMessageDelivery._
-
-  val in: Inlet[InboundEnvelope] = Inlet("SystemMessageReplyJunction.in")
-  val out: Outlet[InboundEnvelope] = Outlet("SystemMessageReplyJunction.out")
-  override val shape: FlowShape[InboundEnvelope, InboundEnvelope] = FlowShape(in, out)
-
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    val logic = new GraphStageLogic(shape) with InHandler with OutHandler with Junction {
-
-      private var replyHandlers: Vector[(InboundEnvelope ⇒ Boolean, AsyncCallback[SystemMessageReply])] = Vector.empty
-      private val stoppedPromise = Promise[Done]()
-
-      override def postStop(): Unit = stoppedPromise.success(Done)
-
-      // InHandler
-      override def onPush(): Unit = {
-        grab(in) match {
-          case env @ InboundEnvelope(_, _, reply: SystemMessageReply, _) ⇒
-            replyHandlers.foreach {
-              case (f, callback) ⇒
-                if (f(env))
-                  callback.invoke(reply)
-            }
-            pull(in)
-          case env ⇒
-            push(out, env)
-        }
-      }
-
-      // OutHandler
-      override def onPull(): Unit = pull(in)
-
-      override def addReplyInterest(filter: InboundEnvelope ⇒ Boolean, replyCallback: AsyncCallback[SystemMessageReply]): Future[Done] = {
-        val p = Promise[Done]()
-        getAsyncCallback[Unit](_ ⇒ {
-          replyHandlers :+= (filter -> replyCallback)
-          p.success(Done)
-        }).invoke(())
-        p.future
-      }
-
-      override def removeReplyInterest(callback: AsyncCallback[SystemMessageReply]): Unit = {
-        replyHandlers = replyHandlers.filterNot { case (_, c) ⇒ c == callback }
-      }
-
-      override def stopped: Future[Done] = stoppedPromise.future
-
-      setHandlers(in, out, this)
-    }
-    (logic, logic)
-  }
-}
