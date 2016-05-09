@@ -4293,6 +4293,16 @@ public final class MessageFormats {
      */
     akka.protobuf.ByteString
         getTimeoutBytes();
+
+    // optional int64 timeoutNanos = 3;
+    /**
+     * <code>optional int64 timeoutNanos = 3;</code>
+     */
+    boolean hasTimeoutNanos();
+    /**
+     * <code>optional int64 timeoutNanos = 3;</code>
+     */
+    long getTimeoutNanos();
   }
   /**
    * Protobuf type {@code PersistentStateChangeEvent}
@@ -4353,6 +4363,11 @@ public final class MessageFormats {
             case 18: {
               bitField0_ |= 0x00000002;
               timeout_ = input.readBytes();
+              break;
+            }
+            case 24: {
+              bitField0_ |= 0x00000004;
+              timeoutNanos_ = input.readInt64();
               break;
             }
           }
@@ -4481,9 +4496,26 @@ public final class MessageFormats {
       }
     }
 
+    // optional int64 timeoutNanos = 3;
+    public static final int TIMEOUTNANOS_FIELD_NUMBER = 3;
+    private long timeoutNanos_;
+    /**
+     * <code>optional int64 timeoutNanos = 3;</code>
+     */
+    public boolean hasTimeoutNanos() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>optional int64 timeoutNanos = 3;</code>
+     */
+    public long getTimeoutNanos() {
+      return timeoutNanos_;
+    }
+
     private void initFields() {
       stateIdentifier_ = "";
       timeout_ = "";
+      timeoutNanos_ = 0L;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -4507,6 +4539,9 @@ public final class MessageFormats {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeBytes(2, getTimeoutBytes());
       }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeInt64(3, timeoutNanos_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -4523,6 +4558,10 @@ public final class MessageFormats {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += akka.protobuf.CodedOutputStream
           .computeBytesSize(2, getTimeoutBytes());
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeInt64Size(3, timeoutNanos_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -4644,6 +4683,8 @@ public final class MessageFormats {
         bitField0_ = (bitField0_ & ~0x00000001);
         timeout_ = "";
         bitField0_ = (bitField0_ & ~0x00000002);
+        timeoutNanos_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -4680,6 +4721,10 @@ public final class MessageFormats {
           to_bitField0_ |= 0x00000002;
         }
         result.timeout_ = timeout_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.timeoutNanos_ = timeoutNanos_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -4705,6 +4750,9 @@ public final class MessageFormats {
           bitField0_ |= 0x00000002;
           timeout_ = other.timeout_;
           onChanged();
+        }
+        if (other.hasTimeoutNanos()) {
+          setTimeoutNanos(other.getTimeoutNanos());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -4885,6 +4933,39 @@ public final class MessageFormats {
         return this;
       }
 
+      // optional int64 timeoutNanos = 3;
+      private long timeoutNanos_ ;
+      /**
+       * <code>optional int64 timeoutNanos = 3;</code>
+       */
+      public boolean hasTimeoutNanos() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional int64 timeoutNanos = 3;</code>
+       */
+      public long getTimeoutNanos() {
+        return timeoutNanos_;
+      }
+      /**
+       * <code>optional int64 timeoutNanos = 3;</code>
+       */
+      public Builder setTimeoutNanos(long value) {
+        bitField0_ |= 0x00000004;
+        timeoutNanos_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int64 timeoutNanos = 3;</code>
+       */
+      public Builder clearTimeoutNanos() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        timeoutNanos_ = 0L;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:PersistentStateChangeEvent)
     }
 
@@ -4894,6 +4975,774 @@ public final class MessageFormats {
     }
 
     // @@protoc_insertion_point(class_scope:PersistentStateChangeEvent)
+  }
+
+  public interface PersistentFSMSnapshotOrBuilder
+      extends akka.protobuf.MessageOrBuilder {
+
+    // required string stateIdentifier = 1;
+    /**
+     * <code>required string stateIdentifier = 1;</code>
+     */
+    boolean hasStateIdentifier();
+    /**
+     * <code>required string stateIdentifier = 1;</code>
+     */
+    java.lang.String getStateIdentifier();
+    /**
+     * <code>required string stateIdentifier = 1;</code>
+     */
+    akka.protobuf.ByteString
+        getStateIdentifierBytes();
+
+    // required .PersistentPayload data = 2;
+    /**
+     * <code>required .PersistentPayload data = 2;</code>
+     */
+    boolean hasData();
+    /**
+     * <code>required .PersistentPayload data = 2;</code>
+     */
+    akka.persistence.serialization.MessageFormats.PersistentPayload getData();
+    /**
+     * <code>required .PersistentPayload data = 2;</code>
+     */
+    akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder getDataOrBuilder();
+
+    // optional int64 timeoutNanos = 3;
+    /**
+     * <code>optional int64 timeoutNanos = 3;</code>
+     */
+    boolean hasTimeoutNanos();
+    /**
+     * <code>optional int64 timeoutNanos = 3;</code>
+     */
+    long getTimeoutNanos();
+  }
+  /**
+   * Protobuf type {@code PersistentFSMSnapshot}
+   */
+  public static final class PersistentFSMSnapshot extends
+      akka.protobuf.GeneratedMessage
+      implements PersistentFSMSnapshotOrBuilder {
+    // Use PersistentFSMSnapshot.newBuilder() to construct.
+    private PersistentFSMSnapshot(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private PersistentFSMSnapshot(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final PersistentFSMSnapshot defaultInstance;
+    public static PersistentFSMSnapshot getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public PersistentFSMSnapshot getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final akka.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final akka.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private PersistentFSMSnapshot(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 10: {
+              bitField0_ |= 0x00000001;
+              stateIdentifier_ = input.readBytes();
+              break;
+            }
+            case 18: {
+              akka.persistence.serialization.MessageFormats.PersistentPayload.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                subBuilder = data_.toBuilder();
+              }
+              data_ = input.readMessage(akka.persistence.serialization.MessageFormats.PersistentPayload.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(data_);
+                data_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000002;
+              break;
+            }
+            case 24: {
+              bitField0_ |= 0x00000004;
+              timeoutNanos_ = input.readInt64();
+              break;
+            }
+          }
+        }
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new akka.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final akka.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.persistence.serialization.MessageFormats.internal_static_PersistentFSMSnapshot_descriptor;
+    }
+
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.persistence.serialization.MessageFormats.internal_static_PersistentFSMSnapshot_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot.class, akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot.Builder.class);
+    }
+
+    public static akka.protobuf.Parser<PersistentFSMSnapshot> PARSER =
+        new akka.protobuf.AbstractParser<PersistentFSMSnapshot>() {
+      public PersistentFSMSnapshot parsePartialFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
+        return new PersistentFSMSnapshot(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public akka.protobuf.Parser<PersistentFSMSnapshot> getParserForType() {
+      return PARSER;
+    }
+
+    private int bitField0_;
+    // required string stateIdentifier = 1;
+    public static final int STATEIDENTIFIER_FIELD_NUMBER = 1;
+    private java.lang.Object stateIdentifier_;
+    /**
+     * <code>required string stateIdentifier = 1;</code>
+     */
+    public boolean hasStateIdentifier() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>required string stateIdentifier = 1;</code>
+     */
+    public java.lang.String getStateIdentifier() {
+      java.lang.Object ref = stateIdentifier_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          stateIdentifier_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string stateIdentifier = 1;</code>
+     */
+    public akka.protobuf.ByteString
+        getStateIdentifierBytes() {
+      java.lang.Object ref = stateIdentifier_;
+      if (ref instanceof java.lang.String) {
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        stateIdentifier_ = b;
+        return b;
+      } else {
+        return (akka.protobuf.ByteString) ref;
+      }
+    }
+
+    // required .PersistentPayload data = 2;
+    public static final int DATA_FIELD_NUMBER = 2;
+    private akka.persistence.serialization.MessageFormats.PersistentPayload data_;
+    /**
+     * <code>required .PersistentPayload data = 2;</code>
+     */
+    public boolean hasData() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>required .PersistentPayload data = 2;</code>
+     */
+    public akka.persistence.serialization.MessageFormats.PersistentPayload getData() {
+      return data_;
+    }
+    /**
+     * <code>required .PersistentPayload data = 2;</code>
+     */
+    public akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder getDataOrBuilder() {
+      return data_;
+    }
+
+    // optional int64 timeoutNanos = 3;
+    public static final int TIMEOUTNANOS_FIELD_NUMBER = 3;
+    private long timeoutNanos_;
+    /**
+     * <code>optional int64 timeoutNanos = 3;</code>
+     */
+    public boolean hasTimeoutNanos() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>optional int64 timeoutNanos = 3;</code>
+     */
+    public long getTimeoutNanos() {
+      return timeoutNanos_;
+    }
+
+    private void initFields() {
+      stateIdentifier_ = "";
+      data_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
+      timeoutNanos_ = 0L;
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      if (!hasStateIdentifier()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasData()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!getData().isInitialized()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(akka.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeBytes(1, getStateIdentifierBytes());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeMessage(2, data_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeInt64(3, timeoutNanos_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeBytesSize(1, getStateIdentifierBytes());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeMessageSize(2, data_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeInt64Size(3, timeoutNanos_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(byte[] data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(
+        byte[] data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseDelimitedFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(
+        akka.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code PersistentFSMSnapshot}
+     */
+    public static final class Builder extends
+        akka.protobuf.GeneratedMessage.Builder<Builder>
+       implements akka.persistence.serialization.MessageFormats.PersistentFSMSnapshotOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.persistence.serialization.MessageFormats.internal_static_PersistentFSMSnapshot_descriptor;
+      }
+
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.persistence.serialization.MessageFormats.internal_static_PersistentFSMSnapshot_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot.class, akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot.Builder.class);
+      }
+
+      // Construct using akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getDataFieldBuilder();
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        stateIdentifier_ = "";
+        bitField0_ = (bitField0_ & ~0x00000001);
+        if (dataBuilder_ == null) {
+          data_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
+        } else {
+          dataBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
+        timeoutNanos_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000004);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public akka.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.persistence.serialization.MessageFormats.internal_static_PersistentFSMSnapshot_descriptor;
+      }
+
+      public akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot getDefaultInstanceForType() {
+        return akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot.getDefaultInstance();
+      }
+
+      public akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot build() {
+        akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot buildPartial() {
+        akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot result = new akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.stateIdentifier_ = stateIdentifier_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        if (dataBuilder_ == null) {
+          result.data_ = data_;
+        } else {
+          result.data_ = dataBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.timeoutNanos_ = timeoutNanos_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(akka.protobuf.Message other) {
+        if (other instanceof akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot) {
+          return mergeFrom((akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot other) {
+        if (other == akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot.getDefaultInstance()) return this;
+        if (other.hasStateIdentifier()) {
+          bitField0_ |= 0x00000001;
+          stateIdentifier_ = other.stateIdentifier_;
+          onChanged();
+        }
+        if (other.hasData()) {
+          mergeData(other.getData());
+        }
+        if (other.hasTimeoutNanos()) {
+          setTimeoutNanos(other.getTimeoutNanos());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        if (!hasStateIdentifier()) {
+          
+          return false;
+        }
+        if (!hasData()) {
+          
+          return false;
+        }
+        if (!getData().isInitialized()) {
+          
+          return false;
+        }
+        return true;
+      }
+
+      public Builder mergeFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      // required string stateIdentifier = 1;
+      private java.lang.Object stateIdentifier_ = "";
+      /**
+       * <code>required string stateIdentifier = 1;</code>
+       */
+      public boolean hasStateIdentifier() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required string stateIdentifier = 1;</code>
+       */
+      public java.lang.String getStateIdentifier() {
+        java.lang.Object ref = stateIdentifier_;
+        if (!(ref instanceof java.lang.String)) {
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
+              .toStringUtf8();
+          stateIdentifier_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string stateIdentifier = 1;</code>
+       */
+      public akka.protobuf.ByteString
+          getStateIdentifierBytes() {
+        java.lang.Object ref = stateIdentifier_;
+        if (ref instanceof String) {
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          stateIdentifier_ = b;
+          return b;
+        } else {
+          return (akka.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string stateIdentifier = 1;</code>
+       */
+      public Builder setStateIdentifier(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        stateIdentifier_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string stateIdentifier = 1;</code>
+       */
+      public Builder clearStateIdentifier() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        stateIdentifier_ = getDefaultInstance().getStateIdentifier();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string stateIdentifier = 1;</code>
+       */
+      public Builder setStateIdentifierBytes(
+          akka.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        stateIdentifier_ = value;
+        onChanged();
+        return this;
+      }
+
+      // required .PersistentPayload data = 2;
+      private akka.persistence.serialization.MessageFormats.PersistentPayload data_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
+      private akka.protobuf.SingleFieldBuilder<
+          akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder> dataBuilder_;
+      /**
+       * <code>required .PersistentPayload data = 2;</code>
+       */
+      public boolean hasData() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required .PersistentPayload data = 2;</code>
+       */
+      public akka.persistence.serialization.MessageFormats.PersistentPayload getData() {
+        if (dataBuilder_ == null) {
+          return data_;
+        } else {
+          return dataBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>required .PersistentPayload data = 2;</code>
+       */
+      public Builder setData(akka.persistence.serialization.MessageFormats.PersistentPayload value) {
+        if (dataBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          data_ = value;
+          onChanged();
+        } else {
+          dataBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /**
+       * <code>required .PersistentPayload data = 2;</code>
+       */
+      public Builder setData(
+          akka.persistence.serialization.MessageFormats.PersistentPayload.Builder builderForValue) {
+        if (dataBuilder_ == null) {
+          data_ = builderForValue.build();
+          onChanged();
+        } else {
+          dataBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /**
+       * <code>required .PersistentPayload data = 2;</code>
+       */
+      public Builder mergeData(akka.persistence.serialization.MessageFormats.PersistentPayload value) {
+        if (dataBuilder_ == null) {
+          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+              data_ != akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance()) {
+            data_ =
+              akka.persistence.serialization.MessageFormats.PersistentPayload.newBuilder(data_).mergeFrom(value).buildPartial();
+          } else {
+            data_ = value;
+          }
+          onChanged();
+        } else {
+          dataBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /**
+       * <code>required .PersistentPayload data = 2;</code>
+       */
+      public Builder clearData() {
+        if (dataBuilder_ == null) {
+          data_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
+          onChanged();
+        } else {
+          dataBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+      /**
+       * <code>required .PersistentPayload data = 2;</code>
+       */
+      public akka.persistence.serialization.MessageFormats.PersistentPayload.Builder getDataBuilder() {
+        bitField0_ |= 0x00000002;
+        onChanged();
+        return getDataFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>required .PersistentPayload data = 2;</code>
+       */
+      public akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder getDataOrBuilder() {
+        if (dataBuilder_ != null) {
+          return dataBuilder_.getMessageOrBuilder();
+        } else {
+          return data_;
+        }
+      }
+      /**
+       * <code>required .PersistentPayload data = 2;</code>
+       */
+      private akka.protobuf.SingleFieldBuilder<
+          akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder> 
+          getDataFieldBuilder() {
+        if (dataBuilder_ == null) {
+          dataBuilder_ = new akka.protobuf.SingleFieldBuilder<
+              akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder>(
+                  data_,
+                  getParentForChildren(),
+                  isClean());
+          data_ = null;
+        }
+        return dataBuilder_;
+      }
+
+      // optional int64 timeoutNanos = 3;
+      private long timeoutNanos_ ;
+      /**
+       * <code>optional int64 timeoutNanos = 3;</code>
+       */
+      public boolean hasTimeoutNanos() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional int64 timeoutNanos = 3;</code>
+       */
+      public long getTimeoutNanos() {
+        return timeoutNanos_;
+      }
+      /**
+       * <code>optional int64 timeoutNanos = 3;</code>
+       */
+      public Builder setTimeoutNanos(long value) {
+        bitField0_ |= 0x00000004;
+        timeoutNanos_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int64 timeoutNanos = 3;</code>
+       */
+      public Builder clearTimeoutNanos() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        timeoutNanos_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:PersistentFSMSnapshot)
+    }
+
+    static {
+      defaultInstance = new PersistentFSMSnapshot(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:PersistentFSMSnapshot)
   }
 
   private static akka.protobuf.Descriptors.Descriptor
@@ -4926,6 +5775,11 @@ public final class MessageFormats {
   private static
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_PersistentStateChangeEvent_fieldAccessorTable;
+  private static akka.protobuf.Descriptors.Descriptor
+    internal_static_PersistentFSMSnapshot_descriptor;
+  private static
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_PersistentFSMSnapshot_fieldAccessorTable;
 
   public static akka.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -4949,10 +5803,13 @@ public final class MessageFormats {
       "verySnapshot.UnconfirmedDelivery\032c\n\023Unco" +
       "nfirmedDelivery\022\022\n\ndeliveryId\030\001 \002(\003\022\023\n\013d" +
       "estination\030\002 \002(\t\022#\n\007payload\030\003 \002(\0132\022.Pers" +
-      "istentPayload\"F\n\032PersistentStateChangeEv" +
+      "istentPayload\"\\\n\032PersistentStateChangeEv" +
       "ent\022\027\n\017stateIdentifier\030\001 \002(\t\022\017\n\007timeout\030" +
-      "\002 \001(\tB\"\n\036akka.persistence.serializationH" +
-      "\001"
+      "\002 \001(\t\022\024\n\014timeoutNanos\030\003 \001(\003\"h\n\025Persisten" +
+      "tFSMSnapshot\022\027\n\017stateIdentifier\030\001 \002(\t\022 \n" +
+      "\004data\030\002 \002(\0132\022.PersistentPayload\022\024\n\014timeo" +
+      "utNanos\030\003 \001(\003B\"\n\036akka.persistence.serial",
+      "izationH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -4994,7 +5851,13 @@ public final class MessageFormats {
           internal_static_PersistentStateChangeEvent_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_PersistentStateChangeEvent_descriptor,
-              new java.lang.String[] { "StateIdentifier", "Timeout", });
+              new java.lang.String[] { "StateIdentifier", "Timeout", "TimeoutNanos", });
+          internal_static_PersistentFSMSnapshot_descriptor =
+            getDescriptor().getMessageTypes().get(5);
+          internal_static_PersistentFSMSnapshot_fieldAccessorTable = new
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_PersistentFSMSnapshot_descriptor,
+              new java.lang.String[] { "StateIdentifier", "Data", "TimeoutNanos", });
           return null;
         }
       };

@@ -380,9 +380,9 @@ object Source {
    * The strategy [[akka.stream.OverflowStrategy.backpressure]] is not supported, and an
    * IllegalArgument("Backpressure overflowStrategy not supported") will be thrown if it is passed as argument.
    *
-   * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped
-   * if there is no demand from downstream. When `bufferSize` is 0 the `overflowStrategy` does
-   * not matter.
+   * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped if there is no demand
+   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter. An async boundary is added after
+   * this Source; as such, it is never safe to assume the downstream will always generate demand.
    *
    * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]]
    * (whose content will be ignored) in which case already buffered elements will be signaled before signaling
@@ -395,6 +395,8 @@ object Source {
    *
    * The actor will be stopped when the stream is completed, failed or canceled from downstream,
    * i.e. you can watch it to get notified when that happens.
+   *
+   * See also [[akka.stream.javadsl.Source.queue]].
    *
    * @param bufferSize The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer

@@ -105,8 +105,7 @@ class ModeledCustomHeaderSpec extends RoutingSpec {
 
     "be able to extract in routing DSL via headerValueByType" in {
       val routes = headerValueByType[ApiTokenHeader]() { token ⇒
-        val ApiTokenHeader(t) = token
-        complete(s"extracted> $t")
+        complete(s"extracted> $token")
       }
 
       Get().withHeaders(RawHeader("apiKey", "TheKey")) ~> routes ~> check {

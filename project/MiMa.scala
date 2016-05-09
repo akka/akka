@@ -788,7 +788,14 @@ object MiMa extends AutoPlugin {
         
         // #20470 - new JavaDSL for Akka HTTP
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.DateTime.plus"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.DateTime.minus")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.DateTime.minus"),
+
+        // #20257 Snapshots with PersistentFSM (experimental feature)
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.serialization.MessageFormats#PersistentStateChangeEventOrBuilder.getTimeoutNanos"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.serialization.MessageFormats#PersistentStateChangeEventOrBuilder.hasTimeoutNanos"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.fsm.PersistentFSM.saveStateSnapshot"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.fsm.PersistentFSM.akka$persistence$fsm$PersistentFSM$$currentStateTimeout"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.fsm.PersistentFSM.akka$persistence$fsm$PersistentFSM$$currentStateTimeout_=")
       )
     )
   }
