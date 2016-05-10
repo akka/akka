@@ -271,7 +271,7 @@ object AkkaBuild extends Build {
   lazy val httpTests = Project(
     id = "akka-http-tests",
     base = file("akka-http-tests"),
-    dependencies = Seq(httpTestkit % "test", testkit % "test->test", httpSprayJson, httpXml, httpJackson)
+    dependencies = Seq(httpTestkit % "test", streamTestkit % "test->test", testkit % "test->test", httpSprayJson, httpXml, httpJackson)
   )
 
   lazy val httpMarshallersScala = Project(
