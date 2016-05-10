@@ -133,7 +133,7 @@ class TimeoutsSpec extends AkkaSpec {
   "BackpressureTimeout" must {
 
     "pass through elements unmodified" in assertAllStagesStopped {
-      Await.result(Source(1 to 100).backpressureTimeout(1.second).grouped(200).runWith(Sink.head), 3.seconds) should === (1 to 100)
+      Await.result(Source(1 to 100).backpressureTimeout(1.second).grouped(200).runWith(Sink.head), 3.seconds) should ===(1 to 100)
     }
 
     "succeed if subscriber demand arrives" in assertAllStagesStopped {
@@ -203,7 +203,7 @@ class TimeoutsSpec extends AkkaSpec {
 
       Thread.sleep(3000)
 
-      subscriber.expectError().getMessage should === ("No demand signalled in the last 1 second.")
+      subscriber.expectError().getMessage should ===("No demand signalled in the last 1 second.")
     }
 
     "throw if subscriber never generate demand" in assertAllStagesStopped {
@@ -218,7 +218,7 @@ class TimeoutsSpec extends AkkaSpec {
 
       Thread.sleep(3000)
 
-      subscriber.expectError().getMessage should === ("No demand signalled in the last 1 second.")
+      subscriber.expectError().getMessage should ===("No demand signalled in the last 1 second.")
     }
 
     "not throw if publisher completes without fulfilling subscriber's demand" in assertAllStagesStopped {

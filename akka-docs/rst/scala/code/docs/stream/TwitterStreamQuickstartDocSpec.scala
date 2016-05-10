@@ -31,12 +31,13 @@ object TwitterStreamQuickstartDocSpec {
   val akka = Hashtag("#akka")
   //#model
 
-  // format: OFF
-  //#tweet-source
-  val tweets: Source[Tweet, NotUsed]
-  //#tweet-source
-  // format: ON
-  = Source(
+  abstract class TweetSourceDecl {
+    //#tweet-source
+    val tweets: Source[Tweet, NotUsed]
+    //#tweet-source
+  }
+
+  val tweets: Source[Tweet, NotUsed] = Source(
     Tweet(Author("rolandkuhn"), System.currentTimeMillis, "#akka rocks!") ::
       Tweet(Author("patriknw"), System.currentTimeMillis, "#akka !") ::
       Tweet(Author("bantonsson"), System.currentTimeMillis, "#akka !") ::
