@@ -10,6 +10,8 @@ import akka.testkit.TestActors;
 import org.junit.Test;
 
 import akka.japi.Creator;
+import akka.japi.pf.ReceiveBuilder;
+
 import org.scalatest.junit.JUnitSuite;
 
 public class ActorCreationTest extends JUnitSuite {
@@ -67,6 +69,78 @@ public class ActorCreationTest extends JUnitSuite {
     @Override
     public UntypedActor create() throws Exception {
       return null;
+    }
+  }
+
+  public static class TestActor extends AbstractActor {
+    public static Props propsUsingLamda(Integer magicNumber) {
+      // You need to specify the actual type of the returned actor
+      // since Java 8 lambdas have some runtime type information erased
+      return Props.create(TestActor.class, () -> new TestActor(magicNumber));
+    }
+
+    public static Props propsUsingLamdaWithoutClass(Integer magicNumber) {
+      return Props.create(() -> new TestActor(magicNumber));
+    }
+
+    @SuppressWarnings("unused")
+    private final Integer magicNumber;
+
+    TestActor(Integer magicNumber) {
+      this.magicNumber = magicNumber;
+    }
+  }
+
+  public static class UntypedTestActor extends UntypedActor {
+
+    public static Props propsUsingCreator(final int magicNumber) {
+      // You need to specify the actual type of the returned actor
+      // since runtime type information erased
+      return Props.create(UntypedTestActor.class, new Creator<UntypedTestActor>() {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public UntypedTestActor create() throws Exception {
+          return new UntypedTestActor(magicNumber);
+        }
+      });
+    }
+
+    public static Props propsUsingCreatorWithoutClass(final int magicNumber) {
+      return Props.create(new Creator<UntypedTestActor>() {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public UntypedTestActor create() throws Exception {
+          return new UntypedTestActor(magicNumber);
+        }
+      });
+    }
+
+    private static final Creator<UntypedTestActor> staticCreator = new Creator<UntypedTestActor>() {
+      private static final long serialVersionUID = 1L;
+
+      @Override
+      public UntypedTestActor create() throws Exception {
+        return new UntypedTestActor(12);
+      }
+    };
+
+    public static Props propsUsingStaticCreator(final int magicNumber) {
+
+
+
+      return Props.create(staticCreator);
+    }
+
+    final int magicNumber;
+
+    UntypedTestActor(int magicNumber) {
+      this.magicNumber = magicNumber;
+    }
+
+    @Override
+    public void onReceive(Object msg) {
     }
   }
 
@@ -181,5 +255,37 @@ public class ActorCreationTest extends JUnitSuite {
       assertEquals("cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level", e.getMessage());
     }
   }
+
+  @Test
+  public void testRightPropsUsingLambda() {
+    final Props p = TestActor.propsUsingLamda(17);
+    assertEquals(TestActor.class, p.actorClass());
+  }
+
+  @Test
+  public void testWrongPropsUsingLambdaWithoutClass() {
+    final Props p = TestActor.propsUsingLamda(17);
+    assertEquals(TestActor.class, p.actorClass());
+    try {
+      TestActor.propsUsingLamdaWithoutClass(17);
+      fail("Should have detected lambda erasure, and thrown");
+    } catch (IllegalArgumentException e) {
+      assertEquals("erased Creator types are unsupported, use Props.create(actorClass, creator) instead",
+          e.getMessage());
+    }
+  }
+
+  @Test
+  public void testRightPropsUsingCreator() {
+    final Props p = UntypedTestActor.propsUsingCreator(17);
+    assertEquals(UntypedTestActor.class, p.actorClass());
+  }
+
+  @Test
+  public void testPropsUsingCreatorWithoutClass() {
+    final Props p = UntypedTestActor.propsUsingCreatorWithoutClass(17);
+    assertEquals(UntypedTestActor.class, p.actorClass());
+  }
+
 
 }
