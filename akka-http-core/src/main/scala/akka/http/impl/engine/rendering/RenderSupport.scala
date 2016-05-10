@@ -15,6 +15,9 @@ import akka.http.scaladsl.model._
 import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 
+import akka.stream.stage.{ Context, GraphStage, SyncDirective, TerminationDirective }
+import akka.stream._
+import akka.stream.scaladsl.{ Sink, Source, Flow, Keep }
 /**
  * INTERNAL API
  */
@@ -54,19 +57,34 @@ private object RenderSupport {
   }
 
   object ChunkTransformer {
-    val flow = Flow[ChunkStreamPart].transform(() ⇒ new ChunkTransformer).named("renderChunks")
+    val chunkTransformer = Flow.fromGraph(new ChunkTransformer)
+    val flow = Flow[ChunkStreamPart].via(chunkTransformer).named("renderChunks")
   }
 
-  class ChunkTransformer extends StatefulStage[HttpEntity.ChunkStreamPart, ByteString] {
-    override def initial = new State {
-      override def onPush(chunk: HttpEntity.ChunkStreamPart, ctx: Context[ByteString]): SyncDirective = {
-        val bytes = renderChunk(chunk)
-        if (chunk.isLastChunk) ctx.pushAndFinish(bytes)
-        else ctx.push(bytes)
+  class ChunkTransformer extends GraphStage[FlowShape[HttpEntity.ChunkStreamPart, ByteString]] {
+    val out: Outlet[ByteString] = Outlet("ChunkTransformer.out")
+    val in: Inlet[HttpEntity.ChunkStreamPart] = Inlet("ChunkTransformer.in")
+    val shape: FlowShape[HttpEntity.ChunkStreamPart, ByteString] = FlowShape.of(in, out)
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+      new GraphStageLogic(shape) {
+        setHandler(in, new InHandler {
+          override def onPush(): Unit = {
+            val chunk = grab(in)
+            val bytes = renderChunk(chunk)
+            if (chunk.isLastChunk) completeStage()
+          }
+        })
+
+        setHandler(out, new OutHandler {
+          override def onPull(): Unit = pull(in)
+        })
       }
+
+    override def onUpstreamFinish(): Unit = {
+      //terminationEmit(Iterator.single(defaultLastChunkBytes), out)
+      //completeStage()
     }
-    override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective =
-      terminationEmit(Iterator.single(defaultLastChunkBytes), ctx)
   }
 
   object CheckContentLengthTransformer {
