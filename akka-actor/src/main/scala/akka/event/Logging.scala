@@ -572,6 +572,12 @@ object Logging {
   }
 
   /**
+    * Obtain LoggingAdapter with MDC support for the given actor.
+    * Don't use it outside its specific Actor as it isn't thread safe
+    */
+  def getLogger(logSource: Actor): DiagnosticLoggingAdapter = apply(logSource)
+
+  /**
    * Obtain LoggingAdapter with MDC support for the given actor.
    * Don't use it outside its specific Actor as it isn't thread safe
    */
