@@ -239,13 +239,18 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
 
       msgs1.foreach(_.second.open()) //process two messages
 
+      // make sure some time passes inbetween
+      Thread.sleep(100)
+
       // wait for routees to update their mail boxes
       msgs2.foreach(l ⇒ Await.ready(l.first, timeout.duration))
 
       resizer.reportMessageCount(router.routees, router.msgs.size)
 
       val after = System.nanoTime()
-      resizer.performanceLog(2).toMillis shouldBe ((before - after).nanos.toMillis / 2 +- 1)
+      val millisPassed = (after - before) / 1000000
+      val tenPercent = millisPassed / 10
+      resizer.performanceLog(2).toMillis shouldBe (millisPassed / 2 +- tenPercent)
 
       router.close()
     }
@@ -266,15 +271,20 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
 
       msgs1.foreach(_.second.open()) //process two messages
 
+      // make sure some time passes inbetween
+      Thread.sleep(100)
+
       // wait for routees to update their mail boxes
       msgs2.foreach(l ⇒ Await.ready(l.first, timeout.duration))
 
       resizer.reportMessageCount(router.routees, router.msgs.size)
 
       val after = System.nanoTime()
-      val newSpeed = (before - after).nanos.toMillis / 2
+      val millisPassed = (after - before) / 1000000
+      val tenPercent = millisPassed / 10
+      val newSpeed = millisPassed / 2
 
-      resizer.performanceLog(2).toMillis shouldBe ((newSpeed + oldSpeed) / 2 +- 1)
+      resizer.performanceLog(2).toMillis shouldBe ((newSpeed + oldSpeed) / 2 +- tenPercent)
 
       router.close()
     }
