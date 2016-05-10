@@ -7,7 +7,7 @@ package docs.http.scaladsl.server.directives
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.`Content-Type`
-import akka.http.scaladsl.server.{Route, ValidationRejection}
+import akka.http.scaladsl.server.{ Route, ValidationRejection }
 import akka.testkit.EventFilter
 import docs.http.scaladsl.server.RoutingSpec
 
