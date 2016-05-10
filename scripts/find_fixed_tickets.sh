@@ -1,4 +1,10 @@
 #!/bin/bash
+#
+# Finds fixed tickets in repository
+#
+# This script takes Organization, Repository, Github username, Password as inputs.
+# It writes all the closed tickets in "closed-issues.txt" file.
+#
 read -p "Organization: " ORG; read -p "Repository: " REPO; read -p "Github username: " USER; read -s -p "Password: " PASS
 CLOSED_FILE="closed-issues.txt"
 if [[ ! -e $CLOSED_FILE ]]; then
