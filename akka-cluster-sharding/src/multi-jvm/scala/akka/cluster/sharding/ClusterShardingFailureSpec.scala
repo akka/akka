@@ -147,7 +147,7 @@ abstract class ClusterShardingFailureSpec(config: ClusterShardingFailureSpecConf
 
       runOn(first, second) {
         system.actorSelection(node(controller) / "user" / "store") ! Identify(None)
-        val sharedStore = expectMsgType[ActorIdentity].ref.get
+        val sharedStore = expectMsgType[ActorIdentity](10.seconds).ref.get
         SharedLeveldbJournal.setStore(sharedStore, system)
       }
 

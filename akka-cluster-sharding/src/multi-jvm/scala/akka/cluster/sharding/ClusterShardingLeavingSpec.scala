@@ -156,7 +156,7 @@ abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConf
       enterBarrier("peristence-started")
 
       system.actorSelection(node(first) / "user" / "store") ! Identify(None)
-      val sharedStore = expectMsgType[ActorIdentity].ref.get
+      val sharedStore = expectMsgType[ActorIdentity](10.seconds).ref.get
       SharedLeveldbJournal.setStore(sharedStore, system)
 
       enterBarrier("after-1")
