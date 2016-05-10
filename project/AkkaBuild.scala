@@ -42,18 +42,6 @@ object AkkaBuild extends Build {
     UnidocRoot.akkaSettings ++
     Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
-      Dist.distExclude := Seq(
-        actorTests.id,
-        benchJmh.id,
-        docs.id,
-        httpTests.id,
-        persistenceShared.id,
-        remoteTests.id,
-        samples.id,
-        streamTests.id,
-        streamTestsTck.id,
-        osgi.id
-      ),
       S3.host in S3.upload := "downloads.typesafe.com.s3.amazonaws.com",
       S3.progress in S3.upload := true,
       mappings in S3.upload <<= (Release.releaseDirectory, version) map { (d, v) =>
