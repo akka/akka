@@ -59,7 +59,7 @@ object MetricsBasedResizerSpec {
     def close(): Unit = msgs.foreach(_.open())
 
     def sendToAll(await: Boolean): Seq[Latches] = {
-      val sentMessages = (0 until routees.length).map(i ⇒ mockSend(await, routeeIdx = i))
+      val sentMessages = routees.indices.map(i ⇒ mockSend(await, routeeIdx = i))
       sentMessages
     }
 
@@ -234,7 +234,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
       val msgs1 = router.sendToAll(await = true)
       val msgs2 = router.sendToAll(await = false) //make sure the routees are still busy after the first batch of messages get processed.
 
-      val before = LocalDateTime.now
+      val before = System.nanoTime()
       resizer.reportMessageCount(router.routees, router.msgs.size) //updates the records
 
       msgs1.foreach(_.second.open()) //process two messages
@@ -244,8 +244,8 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
 
       resizer.reportMessageCount(router.routees, router.msgs.size)
 
-      val after = LocalDateTime.now
-      resizer.performanceLog(2).toMillis shouldBe (java.time.Duration.between(before, after).toMillis / 2 +- 1)
+      val after = System.nanoTime()
+      resizer.performanceLog(2).toMillis shouldBe ((before - after).nanos.toMillis / 2 +- 1)
 
       router.close()
     }
@@ -261,7 +261,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
       val msgs1 = router.sendToAll(await = true)
       val msgs2 = router.sendToAll(await = false) //make sure the routees are still busy after the first batch of messages get processed.
 
-      val before = LocalDateTime.now
+      val before = System.nanoTime()
       resizer.reportMessageCount(router.routees, router.msgs.size) //updates the records
 
       msgs1.foreach(_.second.open()) //process two messages
@@ -271,8 +271,8 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
 
       resizer.reportMessageCount(router.routees, router.msgs.size)
 
-      val after = LocalDateTime.now
-      val newSpeed = java.time.Duration.between(before, after).toMillis / 2
+      val after = System.nanoTime()
+      val newSpeed = (before - after).nanos.toMillis / 2
 
       resizer.performanceLog(2).toMillis shouldBe ((newSpeed + oldSpeed) / 2 +- 1)
 
