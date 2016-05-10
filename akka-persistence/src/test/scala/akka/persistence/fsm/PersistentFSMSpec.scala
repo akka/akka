@@ -444,7 +444,7 @@ object PersistentFSMSpec {
             reportActor ! ShoppingCardDiscarded
             saveStateSnapshot()
         }
-        //#customer-snapshot-example
+      //#customer-snapshot-example
       case Event(GetCurrentCart, data) ⇒
         stay replying data
       case Event(StateTimeout, _) ⇒
