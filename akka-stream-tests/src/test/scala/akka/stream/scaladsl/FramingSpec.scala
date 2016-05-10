@@ -44,8 +44,10 @@ class FramingSpec extends AkkaSpec {
               else ThreadLocalRandom.current().nextInt(0, rechunkBuffer.size + 1)
             val newChunk = rechunkBuffer.take(nextChunkSize)
             rechunkBuffer = rechunkBuffer.drop(nextChunkSize)
-            if (isClosed(in) && rechunkBuffer.isEmpty) completeStage()
-            else push(out, newChunk)
+            if (isClosed(in) && rechunkBuffer.isEmpty) {
+              push(out, newChunk)
+              completeStage()
+            } else push(out, newChunk)
           }
         }
 
