@@ -32,9 +32,9 @@ object TwitterStreamQuickstartDocSpec {
   //#model
 
   abstract class TweetSourceDecl {
-  //#tweet-source
+    //#tweet-source
     val tweets: Source[Tweet, NotUsed]
-   //#tweet-source
+    //#tweet-source
   }
 
   val tweets: Source[Tweet, NotUsed] = Source(

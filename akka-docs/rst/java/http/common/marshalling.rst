@@ -1,7 +1,8 @@
-.. _http-marshalling-common:
+.. _http-marshalling-java:
 
 Marshalling
 ===========
+TODO overhaul for Java
 
 "Marshalling" is the process of converting a higher-level (object) structure into some kind of lower-level
 representation, often a "wire format". Other popular names for it are "Serialization" or "Pickling".
@@ -160,5 +161,6 @@ request using the :ref:`Routing DSL <http-high-level-server-side-api>`.
 However, you can also use the marshalling infrastructure directly if you wish, which can be useful for example in tests.
 The best entry point for this is the ``akka.http.scaladsl.marshalling.Marshal`` object, which you can use like this:
 
-.. includecode2:: ../../code/docs/http/scaladsl/MarshalSpec.scala
+.. TODO rewrite for Java
+.. .. includecode2:: ../../code/docs/http/scaladsl/MarshalSpec.scala
    :snippet: use marshal

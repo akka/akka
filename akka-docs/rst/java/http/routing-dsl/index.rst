@@ -51,6 +51,8 @@ in the :ref:`exception-handling-java` section of the documtnation. You can use t
 
 File uploads
 ^^^^^^^^^^^^
+TODO not possible in Java DSL since there
+
 For high level directives to handle uploads see the :ref:`FileUploadDirectives-java`.
 
 Handling a simple file upload from for example a browser form with a `file` input can be done
@@ -61,13 +63,10 @@ those streams both for the file and for the form fields.
 Here is a simple example which just dumps the uploaded file into a temporary file on disk, collects
 some form fields and saves an entry to a fictive database:
 
-.. includecode2:: ../../code/docs/http/scaladsl/server/FileUploadExamplesSpec.scala
-   :snippet: simple-upload
+TODO missing example 1
 
 You can transform the uploaded files as they arrive rather than storing then in a temporary file as
 in the previous example. In this example we accept any number of ``.csv`` files, parse those into lines
 and split each line before we send it to an actor for further processing:
 
-.. includecode2:: ../../code/docs/http/scaladsl/server/FileUploadExamplesSpec.scala
-   :snippet: stream-csv-upload
-   
+TODO missing example 2

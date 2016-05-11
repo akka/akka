@@ -1,4 +1,4 @@
-.. _http-scala-common-java:
+.. _http-java-common:
 
 Common Abstractions (Client- and Server-Side)
 =============================================
@@ -13,10 +13,9 @@ which are specific to one side only.
 .. toctree::
    :maxdepth: 2
 
-   http-model
+   ../http-model
    marshalling
    unmarshalling
    de-coding
    json-support
-   xml-support
    timeouts
