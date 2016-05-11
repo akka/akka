@@ -1,4 +1,4 @@
-.. _-parameters-:
+.. _-parameters-scala-:
 
 parameters
 ==========

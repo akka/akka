@@ -65,8 +65,7 @@ them. This is because some route structure produce several "reasons" why a reque
 
 Take this route structure for example:
 
-.. includecode2:: ../../code/docs/http/scaladsl/server/RejectionHandlerExamplesSpec.scala
-   :snippet: example-1
+TODO missing sample
 
 For uncompressed POST requests this route structure would initially yield two rejections:
 
@@ -102,8 +101,7 @@ Customizing Rejection Handling
 If you'd like to customize the way certain rejections are handled you'll have to write a custom
 :ref:`RejectionHandler <The RejectionHandler>`. Here is an example:
 
-.. includecode2:: ../../code/docs/http/scaladsl/server/RejectionHandlerExamplesSpec.scala
-   :snippet: custom-handler-example
+TODO missing sample
 
 The easiest way to construct a ``RejectionHandler`` is via the ``RejectionHandler.Builder`` that Akka HTTP provides.
 After having created a new ``Builder`` instance with ``RejectionHandler.newBuilder()``

@@ -1,4 +1,4 @@
-.. _http-marshalling-common:
+.. _http-marshalling-scala:
 
 Marshalling
 ===========

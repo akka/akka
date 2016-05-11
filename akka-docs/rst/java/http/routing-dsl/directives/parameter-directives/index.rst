@@ -26,7 +26,7 @@ directive                        level  ordering multi
 :ref:`-parameter-java-`          high   no       no
 :ref:`-parameterMap-java-`       low    no       no
 :ref:`-parameterMultiMap-java-`  low    no       yes
-:ref:`-parameterList-java-`     low    yes      yes
+:ref:`-parameterList-java-`      low    yes      yes
 ================================ ====== ======== =====
 
 level

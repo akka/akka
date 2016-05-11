@@ -136,12 +136,12 @@ Directive                                        Description
 :ref:`-setCookie-java-`                          Adds a ``Set-Cookie`` response header with the given cookies
 :ref:`-uploadedFile-java-`                       Streams one uploaded file from a multipart request to a file on disk
 :ref:`-validate-java-`                           Checks a given condition before running its inner route
-:ref:`-withoutRequestTimeout-java-`              Disables :ref:`request timeouts <request-timeout>` for a given route.
+:ref:`-withoutRequestTimeout-java-`              Disables :ref:`request timeouts <request-timeout-java>` for a given route.
 :ref:`-withExecutionContext-java-`               Runs its inner route with the given alternative ``ExecutionContext``
 :ref:`-withMaterializer-java-`                   Runs its inner route with the given alternative ``Materializer``
 :ref:`-withLog-java-`                            Runs its inner route with the given alternative ``LoggingAdapter``
 :ref:`-withRangeSupport-java-`                   Adds ``Accept-Ranges: bytes`` to responses to GET requests, produces partial responses if the initial request contained a valid ``Range`` header
-:ref:`-withRequestTimeout-java-`                 Configures the :ref:`request timeouts <request-timeout>` for a given route.
+:ref:`-withRequestTimeout-java-`                 Configures the :ref:`request timeouts <request-timeout-java>` for a given route.
 :ref:`-withRequestTimeoutResponse-java-`         Prepares the ``HttpResponse`` that is emitted if a request timeout is triggered. ``RequestContext => RequestContext`` function
 :ref:`-withSettings-java-`                       Runs its inner route with the given alternative ``RoutingSettings``
 ================================================ ============================================================================
