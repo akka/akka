@@ -33,11 +33,10 @@ object MiMa extends AutoPlugin {
       )
       val akka242NewArtifacts = Seq(
         "akka-stream",
-        "akka-http-core"
+        "akka-http-core",
         
-        // note: we do not guarantee bin-compat for testkits
-        // "akka-http-testkit",
-        // "akka-stream-testkit",
+        "akka-http-testkit",
+        "akka-stream-testkit"
         
         // TODO enable once not experimental anymore
         // "akka-http-experimental",
@@ -820,6 +819,10 @@ object MiMa extends AutoPlugin {
         // #20470 - new JavaDSL for Akka HTTP
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.DateTime.plus"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.DateTime.minus"),
+        
+        // #20214
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.createClientHttpsContext"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.validateAndWarnAboutLooseSettings"),
 
         // #20257 Snapshots with PersistentFSM (experimental feature)
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.serialization.MessageFormats#PersistentStateChangeEventOrBuilder.getTimeoutNanos"),

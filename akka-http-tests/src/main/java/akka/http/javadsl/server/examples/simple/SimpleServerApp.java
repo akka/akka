@@ -8,6 +8,8 @@ package akka.http.javadsl.server.examples.simple;
 
 import akka.NotUsed;
 import static akka.http.javadsl.server.PathMatchers.segment;
+
+import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.ConnectionContext;
 import akka.http.javadsl.Http;
