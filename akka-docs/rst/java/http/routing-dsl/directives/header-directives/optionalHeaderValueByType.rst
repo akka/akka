@@ -14,9 +14,7 @@ an ``Optional`` value instead of rejecting the request if no matching header cou
   Custom headers will only be matched by this directive if they extend ``ModeledCustomHeader``
   from the Scala DSL and there is currently no API for the Java DSL (Ticket #20415)
 
-  To learn more about defining custom headers, read: :ref:`custom-headers`.
-
-.. warning:: 
+  To learn more about defining custom headers, read: :ref:`custom-headers-scala`.
 
 Example
 -------

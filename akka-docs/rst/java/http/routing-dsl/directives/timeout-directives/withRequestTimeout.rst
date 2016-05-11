@@ -29,7 +29,7 @@ See also :ref:`-withRequestTimeoutResponse-java-` if only looking to customise t
   It is recommended to use a larger statically configured timeout (think of it as a "safety net" against programming errors
   or malicious attackers) and if needed tighten it using the directives – not the other way around.
 
-For more information about various timeouts in Akka HTTP see :ref:`http-timeouts`.
+For more information about various timeouts in Akka HTTP see :ref:`http-timeouts-java`.
 
 Example
 -------

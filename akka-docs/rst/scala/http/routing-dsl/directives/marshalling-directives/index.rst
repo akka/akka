@@ -6,7 +6,7 @@ Marshalling Directives
 Marshalling directives work in conjunction with ``akka.http.scaladsl.marshalling`` and ``akka.http.scaladsl.unmarshalling`` to convert
 a request entity to a specific type or a type to a response.
 
-See :ref:`marshalling <http-marshalling-common>` and :ref:`unmarshalling <http-unmarshalling-scala>` for specific
+See :ref:`marshalling <http-marshalling-scala>` and :ref:`unmarshalling <http-unmarshalling-scala>` for specific
 serialization (also known as pickling) guidance.
 
 Marshalling directives usually rely on an in-scope implicit marshaller to handle conversion.  

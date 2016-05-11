@@ -16,7 +16,7 @@ inner route.  You can use it to decouple marshaller resolution from request comp
 
 The ``completeWith`` directive works in conjuction with ``instanceOf`` and ``spray.httpx.marshalling``
 to convert higher-level (object) structure into some lower-level serialized "wire format".
-:ref:`The marshalling documentation <http-marshalling-common>` explains this process in detail.
+:ref:`The marshalling documentation <http-marshalling-scala>` explains this process in detail.
 This directive simplifies exposing types to clients via a route while providing some
 form of access to the current context.
 

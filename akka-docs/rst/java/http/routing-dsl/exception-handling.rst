@@ -7,7 +7,7 @@ Exceptions thrown during route execution bubble up through the route structure t
 :ref:`-handleExceptions-java-` directive or the top of your route structure.
 
 Similarly to the way that :ref:`rejections-java` are handled the :ref:`-handleExceptions-java-` directive delegates the actual job
-of converting an exception to its argument, an ExceptionHandler__. 
+of converting an exception to its argument, an ``ExceptionHandler``.
 
 An ``ExceptionHandler`` is a partial function, so it can choose which exceptions it would like to handle and
 which not. Unhandled exceptions will simply continue to bubble up in the route structure.

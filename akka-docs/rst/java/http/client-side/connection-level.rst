@@ -61,7 +61,7 @@ explicitly drained by attaching it to ``Sink.ignore()``.
 Timeouts
 --------
 
-Timeouts are configured in the same way for Scala and Akka. See :ref:`_http-timeouts` .
+Timeouts are configured in the same way for Scala and Akka. See :ref:`_http-timeouts-java` .
 
 .. _http-client-layer-java:
 

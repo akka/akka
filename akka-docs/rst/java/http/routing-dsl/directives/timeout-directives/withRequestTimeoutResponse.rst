@@ -6,7 +6,7 @@ withRequestTimeoutResponse
 Description
 -----------
 
-Allows customising the ``HttpResponse`` that will be sent to clients in case of a :ref:`request-timeout`.
+Allows customising the ``HttpResponse`` that will be sent to clients in case of a :ref:`request-timeout-java`.
 
 See also :ref:`-withRequestTimeout-java-` or :ref:`-withoutRequestTimeout-java-` if interested in dynamically changing the timeout
 for a given route instead.
@@ -19,7 +19,7 @@ for a given route instead.
   In practice this can only be a problem with very tight timeouts, so with default settings
   of request timeouts being measured in seconds it shouldn't be a problem in reality (though certainly a possibility still).
 
-To learn more about various timeouts in Akka HTTP and how to configure them see :ref:`http-timeouts`.
+To learn more about various timeouts in Akka HTTP and how to configure them see :ref:`http-timeouts-java`.
 
 Example
 -------
