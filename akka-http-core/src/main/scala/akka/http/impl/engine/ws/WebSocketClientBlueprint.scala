@@ -53,7 +53,7 @@ object WebSocketClientBlueprint {
     val valve = StreamUtils.OneTimeValve()
 
     val (initialRequest, key) = Handshake.Client.buildRequest(uri, extraHeaders, subprotocol.toList, settings.websocketRandomFactory())
-    val hostHeader = Host(uri.authority)
+    val hostHeader = Host(uri.authority.normalizedFor(uri.scheme))
     val renderedInitialRequest =
       HttpRequestRendererFactory.renderStrict(RequestRenderingContext(initialRequest, hostHeader), settings, log)
 

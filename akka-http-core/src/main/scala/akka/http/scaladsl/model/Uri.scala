@@ -208,7 +208,7 @@ object Uri {
 
   /**
    * Creates a new Uri instance from the given components.
-   * All components are verified and normalized.
+   * All components are verified and normalized except the authority which is kept as provided.
    * If the given combination of components does not constitute a valid URI as defined by
    * http://tools.ietf.org/html/rfc3986 the method throws an `IllegalUriException`.
    */
@@ -217,7 +217,7 @@ object Uri {
     val p = verifyPath(path, scheme, authority.host)
     create(
       scheme = normalizeScheme(scheme),
-      authority = authority.normalizedFor(scheme),
+      authority = authority,
       path = if (scheme.isEmpty) p else collapseDotSegments(p),
       queryString = queryString,
       fragment = fragment)
@@ -275,8 +275,11 @@ object Uri {
    * If strict is `false`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    * If the given string is not a valid URI the method throws an `IllegalUriException`.
    */
-  def normalize(uri: ParserInput, charset: Charset = UTF8, mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): String =
-    UriRendering.renderUri(new StringRendering, apply(uri, charset, mode), charset).get
+  def normalize(uri: ParserInput, charset: Charset = UTF8, mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): String = {
+    val parsed = apply(uri, charset, mode)
+    val normalized = parsed.copy(authority = parsed.authority.normalizedFor(parsed.scheme))
+    UriRendering.renderUri(new StringRendering, normalized, charset).get
+  }
 
   /**
    * Converts a set of URI components to an "effective HTTP request URI" as defined by
@@ -744,7 +747,7 @@ object Uri {
 
   private[http] def create(scheme: String, userinfo: String, host: Host, port: Int, path: Path, queryString: Option[String],
                            fragment: Option[String]): Uri =
-    create(scheme, Authority(host, normalizePort(port, scheme), userinfo), path, queryString, fragment)
+    create(scheme, Authority(host, port, userinfo), path, queryString, fragment)
 
   private[http] def create(scheme: String, authority: Authority, path: Path, queryString: Option[String],
                            fragment: Option[String]): Uri =
