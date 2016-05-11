@@ -9,21 +9,30 @@ import scala.PartialFunction;
 /**
  * A builder for {@link scala.PartialFunction}.
  *
- * @param <F> the input type, that this PartialFunction will be applied to
- * @param <T> the return type, that the results of the application will have
+ * @param <A> the input type, that this PartialFunction will be applied to
+ * @param <B> the return type, that the results of the application will have
  *
  * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
-abstract class AbstractPFBuilder<F, T> {
+abstract class AbstractPFBuilder<A, B> {
 
-  protected PartialFunction<F, T> statements = null;
+  protected PartialFunction<A, B> statements = null;
 
-  protected void addStatement(PartialFunction<F, T> statement) {
-    if (statements == null)
-      statements = statement;
+  protected void addStatement(FI.TypedPredicate<? super A> predicate, FI.Apply<? super A, ? extends B> apply) {
+    if (statements == null) {
+      statements = new CaseStatement<A,B>(predicate, apply);
+    }
     else
-      statements = statements.orElse(statement);
+      statements = statements.orElse(new CaseStatement<A,B>(predicate, apply));
   }
+
+  protected void addUnitStatement(FI.TypedPredicate<? super A> predicate, FI.UnitApply<? super A> apply) {
+      if (statements == null) {
+        statements = new CaseStatement<A,B>(predicate, a -> { apply.apply(a); return null; });
+      }
+      else
+        statements = statements.orElse(new CaseStatement<A,B>(predicate, a -> { apply.apply(a); return null; }));
+    }
 
   /**
    * Build a {@link scala.PartialFunction} from this builder.
@@ -31,9 +40,9 @@ abstract class AbstractPFBuilder<F, T> {
    *
    * @return  a PartialFunction for this builder.
    */
-  public PartialFunction<F, T> build() {
-    PartialFunction<F, T> empty = CaseStatement.empty();
-    PartialFunction<F, T> statements = this.statements;
+  public PartialFunction<A, B> build() {
+    PartialFunction<A, B> empty = CaseStatement.empty();
+    PartialFunction<A, B> statements = this.statements;
 
     this.statements = null;
     if (statements == null)

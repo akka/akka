@@ -10,18 +10,10 @@ private[pf] object CaseStatement {
   def empty[F, T](): PartialFunction[F, T] = PartialFunction.empty
 }
 
-private[pf] class CaseStatement[-F, +P, T](predicate: Predicate, apply: Apply[P, T])
-  extends PartialFunction[F, T] {
+private[pf] class CaseStatement[-A, +B](predicate: FI.TypedPredicate[_ >: A], apply: FI.Apply[_ >: A, _ <: B])
+  extends PartialFunction[A, B] {
 
-  override def isDefinedAt(o: F) = predicate.defined(o)
+  override def isDefinedAt(a: A): Boolean = predicate.defined(a)
 
-  override def apply(o: F) = apply.apply(o.asInstanceOf[P])
-}
-
-private[pf] class UnitCaseStatement[F, P](predicate: Predicate, apply: UnitApply[P])
-  extends PartialFunction[F, Unit] {
-
-  override def isDefinedAt(o: F) = predicate.defined(o)
-
-  override def apply(o: F) = apply.apply(o.asInstanceOf[P])
+  override def apply(a: A): B = apply.apply(a)
 }

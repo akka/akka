@@ -14,11 +14,11 @@ import scala.runtime.BoxedUnit;
  * This is a specialized version of {@link UnitMatch} to map java
  * void methods to {@link scala.runtime.BoxedUnit}.
  *
- * @param <I> the input type, that this PartialFunction will be applied to
+ * @param <A> the input type, that this PartialFunction will be applied to
  *
  * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
-public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
+public class UnitMatch<A> extends AbstractMatch<A, BoxedUnit> {
 
   /**
    * Convenience function to create a {@link UnitPFBuilder} with the first
@@ -29,8 +29,10 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
    * @return a builder with the case statement added
    * @see UnitPFBuilder#match(Class, FI.UnitApply)
    */
-  public static <F, P> UnitPFBuilder<F> match(final Class<? extends P> type, FI.UnitApply<? extends P> apply) {
-    return new UnitPFBuilder<F>().match(type, apply);
+  public static <A, P extends A> UnitPFBuilder<A> match(
+          Class<P> type,
+          FI.UnitApply<? super P> apply) {
+    return new UnitPFBuilder<A>().match(type, apply);
   }
 
   /**
@@ -43,12 +45,29 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
    * @return a builder with the case statement added
    * @see UnitPFBuilder#match(Class, FI.TypedPredicate, FI.UnitApply)
    */
-  public static <F, P> UnitPFBuilder<F> match(final Class<? extends P> type,
-                                              final FI.TypedPredicate<? extends P> predicate,
-                                              final FI.UnitApply<? extends P> apply) {
-    return new UnitPFBuilder<F>().match(type, predicate, apply);
+  public static <A, P extends A> UnitPFBuilder<A> match(
+          Class<P> type,
+          FI.TypedPredicate<? super P> predicate,
+          FI.UnitApply<? super P> apply) {
+    return new UnitPFBuilder<A>().match(type, predicate, apply);
   }
 
+  /**
+   * Convenience function to create a {@link UnitPFBuilder} with the first
+   * case statement added.
+   *
+   * @param predicate a predicate that will be evaluated on the argument if the type matches
+   * @param apply     an action to apply to the argument if the predicate matches
+   * @return a builder with the case statement added
+   * @see UnitPFBuilder#match(FI.TypedPredicate, FI.UnitApply)
+   */
+  public static <A> UnitPFBuilder<A> match(
+          FI.TypedPredicate<? super A> predicate,
+          FI.UnitApply<? super A> apply) {
+    return new UnitPFBuilder<A>().match(predicate, apply);
+  }
+  
+  
   /**
    * Convenience function to create a {@link UnitPFBuilder} with the first
    * case statement added.
@@ -58,9 +77,8 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
    * @return a builder with the case statement added
    * @see UnitPFBuilder#matchEquals(Object, FI.UnitApply)
    */
-  public static <F, P> UnitPFBuilder<F> matchEquals(final P object,
-                                                    final FI.UnitApply<P> apply) {
-    return new UnitPFBuilder<F>().matchEquals(object, apply);
+  public static <A> UnitPFBuilder<A> matchEquals(A object, FI.UnitApply<? super A> apply) {
+    return new UnitPFBuilder<A>().matchEquals(object, apply);
   }
 
   /**
@@ -73,10 +91,11 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
    * @return a builder with the case statement added
    * @see UnitPFBuilder#matchEquals(Object, FI.UnitApply)
    */
-  public static <F, P> UnitPFBuilder<F> matchEquals(final P object,
-                                                    final FI.TypedPredicate<P> predicate,
-                                                    final FI.UnitApply<P> apply) {
-    return new UnitPFBuilder<F>().matchEquals(object, predicate, apply);
+  public static <A> UnitPFBuilder<A> matchEquals(
+          A object, 
+          FI.TypedPredicate<? super A> predicate, 
+          FI.UnitApply<? super A> apply) {
+    return new UnitPFBuilder<A>().matchEquals(object, predicate, apply);
   }
 
   /**
@@ -87,8 +106,8 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
    * @return a builder with the case statement added
    * @see UnitPFBuilder#matchAny(FI.UnitApply)
    */
-  public static <F> UnitPFBuilder<F> matchAny(final FI.UnitApply<Object> apply) {
-    return new UnitPFBuilder<F>().matchAny(apply);
+  public static <A> UnitPFBuilder<A> matchAny(final FI.UnitApply<? super A> apply) {
+    return new UnitPFBuilder<A>().matchAny(apply);
   }
 
   /**
@@ -97,11 +116,11 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
    * @param builder a builder representing the partial function
    * @return a {@link UnitMatch} that can be reused
    */
-  public static <F> UnitMatch<F> create(UnitPFBuilder<F> builder) {
-    return new UnitMatch<F>(builder.build());
+  public static <A> UnitMatch<A> create(UnitPFBuilder<A> builder) {
+    return new UnitMatch<A>(builder.build());
   }
 
-  private UnitMatch(PartialFunction<I, BoxedUnit> statements) {
+  private UnitMatch(PartialFunction<A, BoxedUnit> statements) {
     super(statements);
   }
 
@@ -117,7 +136,7 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
    * @param i the argument to apply the match to
    * @throws scala.MatchError if there is no match
    */
-  public void match(I i) throws MatchError {
+  public void match(A i) throws MatchError {
     statements.apply(i);
   }
 }

@@ -4,15 +4,17 @@
 
 package akka.japi;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.scalatest.junit.JUnitSuite;
+
+import scala.MatchError;
 import akka.japi.pf.FI;
 import akka.japi.pf.Match;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
-import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
-import scala.MatchError;
-
-import static org.junit.Assert.*;
 
 public class MatchBuilderTest extends JUnitSuite {
 
@@ -21,7 +23,9 @@ public class MatchBuilderTest extends JUnitSuite {
 
   @Test
   public void shouldPassBasicMatchTest() {
-    Match<Object, Double> pf = Match.create(Match.match(Integer.class, new FI.Apply<Integer, Double>() {
+    
+      
+    Match<Object, Double> pf = Match.create(Match.<Object,Double>newBuilder().match(Integer.class, new FI.Apply<Integer, Double>() {
       @Override
       public Double apply(Integer integer) {
         return integer * 10.0;
@@ -51,7 +55,7 @@ public class MatchBuilderTest extends JUnitSuite {
 
   @Test
   public void shouldHandleMatchOnGenericClass() {
-    Match<Object, String> pf = Match.create(Match.match(GenericClass.class, new FI.Apply<GenericClass<String>, String>() {
+    Match<Object, String> pf = Match.create(Match.match(new FI.Apply<GenericClass<String>, String>() {
       @Override
       public String apply(GenericClass<String> stringGenericClass) {
         return stringGenericClass.val;
@@ -64,7 +68,7 @@ public class MatchBuilderTest extends JUnitSuite {
 
   @Test
   public void shouldHandleMatchWithPredicateOnGenericClass() {
-    Match<Object, String> pf = Match.create(Match.match(GenericClass.class, new FI.TypedPredicate<GenericClass<String>>() {
+    Match<Object, String> pf = Match.create(Match.<Object,String>newBuilder().match(new FI.TypedPredicate<GenericClass<String>>() {
       @Override
       public boolean defined(GenericClass<String> genericClass) {
         return !genericClass.val.isEmpty();

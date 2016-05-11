@@ -10,17 +10,17 @@ import scala.PartialFunction;
  * Version of {@link scala.PartialFunction} that can be built during
  * runtime from Java.
  *
- * @param <I> the input type, that this PartialFunction will be applied to
- * @param <R> the return type, that the results of the application will have
+ * @param <A> the input type, that this PartialFunction will be applied to
+ * @param <B> the return type, that the results of the application will have
  *
  * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
-class AbstractMatch<I, R> {
+class AbstractMatch<A, B> {
 
-  protected final PartialFunction<I, R> statements;
+  protected final PartialFunction<A, B> statements;
 
-  AbstractMatch(PartialFunction<I, R> statements) {
-    PartialFunction<I, R> empty = CaseStatement.empty();
+  AbstractMatch(PartialFunction<A, B> statements) {
+    PartialFunction<A, B> empty = CaseStatement.empty();
     if (statements == null)
       this.statements = empty;
     else
@@ -32,7 +32,7 @@ class AbstractMatch<I, R> {
    *
    * @return  a partial function representation ot his {@link Match}
    */
-  public PartialFunction<I, R> asPF() {
+  public PartialFunction<A, B> asPF() {
     return statements;
   }
 }
