@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 import akka.Done
 import akka.remote.EndpointManager.Send
 import akka.remote.UniqueAddress
-import akka.remote.artery.ReplyJunction.ReplyObserver
+import akka.remote.artery.InboundReplyJunction.ReplyObserver
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet

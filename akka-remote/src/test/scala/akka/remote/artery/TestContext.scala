@@ -6,11 +6,11 @@ package akka.remote.artery
 import akka.remote.UniqueAddress
 import akka.actor.Address
 import scala.concurrent.Future
-import akka.remote.artery.ReplyJunction.ReplySubject
+import akka.remote.artery.InboundReplyJunction.ReplySubject
 import akka.remote.RemoteActorRef
 import scala.concurrent.Promise
 import akka.Done
-import akka.remote.artery.ReplyJunction.ReplyObserver
+import akka.remote.artery.InboundReplyJunction.ReplyObserver
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ThreadLocalRandom

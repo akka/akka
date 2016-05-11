@@ -23,7 +23,7 @@ import akka.remote.RemoteActorRef
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteTransport
 import akka.remote.UniqueAddress
-import akka.remote.artery.ReplyJunction.ReplySubject
+import akka.remote.artery.InboundReplyJunction.ReplySubject
 import akka.remote.transport.AkkaPduCodec
 import akka.remote.transport.AkkaPduProtobufCodec
 import akka.serialization.Serialization
@@ -47,6 +47,7 @@ import io.aeron.exceptions.ConductorServiceTimeoutException
 import org.agrona.ErrorHandler
 import org.agrona.IoUtil
 import java.io.File
+import akka.remote.artery.OutboundReplyJunction.OutboundReplyIngress
 
 /**
  * INTERNAL API
@@ -72,7 +73,7 @@ private[akka] trait InboundContext {
    * An inbound stage can send reply message to the origin
    * address with this method.
    */
-  def sendReply(to: Address, message: ControlMessage): Unit
+  def sendReply(to: Address, message: ControlMessage): Unit // FIXME rename to sendControl
 
   /**
    * Lookup the outbound association for a given address.
@@ -112,7 +113,7 @@ private[akka] trait OutboundContext {
    * An outbound stage can listen to reply messages
    * via this observer subject.
    */
-  def replySubject: ReplySubject
+  def replySubject: ReplySubject // FIXME rename to controlSubject
 
   // FIXME we should be able to Send without a recipient ActorRef
   def dummyRecipient: RemoteActorRef
@@ -146,7 +147,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   // TODO support port 0
   private def inboundChannel = s"aeron:udp?endpoint=${localAddress.address.host.get}:${localAddress.address.port.get}"
   private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
-  private val systemMessageStreamId = 1
+  private val systemMessageStreamId = 1 // FIXME rename to controlStreamId
   private val ordinaryStreamId = 3
   private val taskRunner = new TaskRunner(system)
 
@@ -241,9 +242,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   // InboundContext
-  override def sendReply(to: Address, message: ControlMessage) = {
-    send(message, None, association(to).dummyRecipient)
-  }
+  override def sendReply(to: Address, message: ControlMessage) =
+    association(to).outboundReplyIngress.sendControlMessage(message)
 
   override def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = {
     val cached = recipient.cachedAssociation
@@ -282,10 +282,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .to(new AeronSink(outboundChannel(outboundContext.remoteAddress), ordinaryStreamId, aeron, taskRunner))
   }
 
-  def outboundSystemMessage(outboundContext: OutboundContext): Sink[Send, Any] = {
+  def outboundSystemMessage(outboundContext: OutboundContext): Sink[Send, OutboundReplyIngress] = {
     Flow.fromGraph(killSwitch.flow[Send])
       .via(new OutboundHandshake(outboundContext))
       .via(new SystemMessageDelivery(outboundContext, systemMessageResendInterval))
+      .viaMat(new OutboundReplyJunction(outboundContext))(Keep.right)
       .via(encoder)
       .map(_.toArray) // TODO we should use ByteString all the way
       .to(new AeronSink(outboundChannel(outboundContext.remoteAddress), systemMessageStreamId, aeron, taskRunner))
@@ -338,13 +339,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       Source.maybe[ByteString].via(killSwitch.flow))
   }
 
+  // FIXME rename to controlFlow
   val inboundSystemMessageFlow: Flow[ByteString, ByteString, ReplySubject] = {
     Flow.fromSinkAndSourceMat(
       decoder
         .via(deserializer)
         .via(new InboundHandshake(this))
         .via(new SystemMessageAcker(this))
-        .viaMat(new ReplyJunction)(Keep.right)
+        .viaMat(new InboundReplyJunction)(Keep.right)
         .to(messageDispatcherSink),
       Source.maybe[ByteString].via(killSwitch.flow))((a, b) ⇒ a)
   }

@@ -14,7 +14,7 @@ import scala.util.Try
 import akka.Done
 import akka.remote.EndpointManager.Send
 import akka.remote.UniqueAddress
-import akka.remote.artery.ReplyJunction.ReplyObserver
+import akka.remote.artery.InboundReplyJunction.ReplyObserver
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
@@ -151,15 +151,6 @@ private[akka] class SystemMessageDelivery(
       // InHandler
       override def onPush(): Unit = {
         grab(in) match {
-          case s @ Send(reply: ControlMessage, _, _, _) ⇒
-            // pass through
-            if (isAvailable(out))
-              push(out, s)
-            else {
-              // it's ok to drop the replies, but we can try
-              resending.offer(s)
-            }
-
           case s @ Send(msg: AnyRef, _, _, _) ⇒
             seqNo += 1
             val sendMsg = s.copy(message = SystemMessageEnvelope(msg, seqNo, localAddress))

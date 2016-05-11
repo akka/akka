@@ -5,20 +5,20 @@ package akka.remote.artery
 
 import scala.concurrent.Future
 import scala.concurrent.Promise
-
 import akka.actor.ActorRef
 import akka.actor.Address
-
 import akka.actor.RootActorPath
 import akka.dispatch.sysmsg.SystemMessage
 import akka.remote.EndpointManager.Send
 import akka.remote.RemoteActorRef
 import akka.remote.UniqueAddress
-import akka.remote.artery.ReplyJunction.ReplySubject
+import akka.remote.artery.InboundReplyJunction.ReplySubject
 import akka.stream.Materializer
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.SourceQueueWithComplete
+import akka.remote.artery.OutboundReplyJunction.OutboundReplyIngress
+import akka.stream.scaladsl.Keep
 
 /**
  * INTERNAL API
@@ -34,6 +34,13 @@ private[akka] class Association(
 
   @volatile private[this] var queue: SourceQueueWithComplete[Send] = _
   @volatile private[this] var systemMessageQueue: SourceQueueWithComplete[Send] = _
+  @volatile private[this] var _outboundReplyIngress: OutboundReplyIngress = _
+
+  def outboundReplyIngress: OutboundReplyIngress = {
+    if (_outboundReplyIngress eq null)
+      throw new IllegalStateException("outboundReplyIngress not initialized yet")
+    _outboundReplyIngress
+  }
 
   override def localAddress: UniqueAddress = transport.localAddress
 
@@ -49,7 +56,7 @@ private[akka] class Association(
     // TODO: lookup subchannel
     // FIXME: Use a different envelope than the old Send, but make sure the new is handled by deadLetters properly
     message match {
-      case _: SystemMessage | _: Reply ⇒
+      case _: SystemMessage ⇒
         implicit val ec = materializer.executionContext
         systemMessageQueue.offer(Send(message, senderOption, recipient, None)).onFailure {
           case e ⇒
@@ -73,8 +80,12 @@ private[akka] class Association(
     if (queue eq null)
       queue = Source.queue(256, OverflowStrategy.dropBuffer)
         .to(transport.outbound(this)).run()(materializer)
-    if (systemMessageQueue eq null)
-      systemMessageQueue = Source.queue(256, OverflowStrategy.dropBuffer)
-        .to(transport.outboundSystemMessage(this)).run()(materializer)
+    if (systemMessageQueue eq null) {
+      val (q, control) = Source.queue(256, OverflowStrategy.dropBuffer)
+        .toMat(transport.outboundSystemMessage(this))(Keep.both)
+        .run()(materializer)
+      systemMessageQueue = q
+      _outboundReplyIngress = control
+    }
   }
 }
