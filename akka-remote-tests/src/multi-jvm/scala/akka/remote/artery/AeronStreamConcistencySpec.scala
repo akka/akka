@@ -20,6 +20,8 @@ import com.typesafe.config.ConfigFactory
 import io.aeron.Aeron
 import io.aeron.driver.MediaDriver
 import akka.actor.ExtendedActorSystem
+import org.agrona.IoUtil
+import java.io.File
 
 object AeronStreamConsistencySpec extends MultiNodeConfig {
   val first = role("first")
@@ -85,6 +87,7 @@ abstract class AeronStreamConsistencySpec
     taskRunner.stop()
     aeron.close()
     driver.close()
+    IoUtil.delete(new File(driver.aeronDirectoryName), true)
     super.afterAll()
   }
 

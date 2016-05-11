@@ -19,7 +19,7 @@ import scala.util.control.Exception.Catcher
 import scala.concurrent.Future
 import akka.ConfigurationException
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.remote.artery.ArterySubsystem
+import akka.remote.artery.ArteryTransport
 
 /**
  * INTERNAL API
@@ -182,7 +182,7 @@ private[akka] class RemoteActorRefProvider(
         d
       },
       serialization = SerializationExtension(system),
-      transport = if (remoteSettings.EnableArtery) new ArterySubsystem(system, this) else new Remoting(system, this))
+      transport = if (remoteSettings.EnableArtery) new ArteryTransport(system, this) else new Remoting(system, this))
 
     _internals = internals
     remotingTerminator ! internals
