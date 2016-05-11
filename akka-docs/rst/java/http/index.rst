@@ -36,7 +36,8 @@ akka-http-jackson
    server-side/websocket-support
    routing-dsl/index
    client-side/index
-   server-side-https-support
+   common/index
    configuration
+   server-side-https-support
 
 .. _jackson: https://github.com/FasterXML/jackson

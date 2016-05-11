@@ -3,6 +3,9 @@
 extractMethod
 =============
 
+Description
+-----------
+
 Extracts the :class:`HttpMethod` from the request context and provides it for use for other directives explicitly.
 
 Example

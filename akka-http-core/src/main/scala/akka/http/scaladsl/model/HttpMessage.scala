@@ -12,6 +12,7 @@ import java.util.Optional
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
+import scala.compat.java8.OptionConverters._
 import scala.reflect.{ classTag, ClassTag }
 import akka.parboiled2.CharUtils
 import akka.stream.Materializer
@@ -20,8 +21,7 @@ import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.util.FastFuture._
 import headers._
-
-import scala.compat.java8.OptionConverters._
+import akka.http.impl.util.JavaMapping.Implicits._
 
 /**
  * Common base class of HttpRequest and HttpResponse.

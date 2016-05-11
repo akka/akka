@@ -17,19 +17,19 @@ ParameterDirectives
 When to use which parameter directive?
 --------------------------------------
 
-Usually, you want to use the high-level :ref:`-parameters-` directive. When you need
+Usually, you want to use the high-level :ref:`-parameters-scala-` directive. When you need
 more low-level access you can use the table below to decide which directive
 to use which shows properties of different parameter directives.
 
-========================== ====== ======== =====
-directive                  level  ordering multi
-========================== ====== ======== =====
-:ref:`-parameter-`         high   no       no
-:ref:`-parameters-`        high   no       yes
-:ref:`-parameterMap-`      low    no       no
-:ref:`-parameterMultiMap-` low    no       yes
-:ref:`-parameterSeq-`      low    yes      yes
-========================== ====== ======== =====
+================================ ====== ======== =====
+directive                        level  ordering multi
+================================ ====== ======== =====
+:ref:`-parameter-`               high   no       no
+:ref:`-parameters-scala-`        high   no       yes
+:ref:`-parameterMap-`            low    no       no
+:ref:`-parameterMultiMap-`       low    no       yes
+:ref:`-parameterSeq-`            low    yes      yes
+================================ ====== ======== =====
 
 level
     high-level parameter directives extract subset of all parameters by name and allow conversions

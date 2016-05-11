@@ -4,42 +4,62 @@
 
 package akka.http.javadsl.server.directives
 
-import akka.http.javadsl.model.{ HttpMethods, HttpMethod }
+import java.util.function
+
+import akka.http.javadsl.model.HttpMethod
 import akka.http.javadsl.server.Route
-import akka.http.impl.server.RouteStructure
+import akka.http.impl.util.JavaMapping.Implicits._
+import akka.http.javadsl.RoutingJavaMapping._
 
-import scala.annotation.varargs
+import akka.http.scaladsl.server.directives.{ MethodDirectives ⇒ D }
 
-abstract class MethodDirectives extends HostDirectives {
-  /** Handles the inner routes if the incoming request is a GET request, rejects the request otherwise */
-  @varargs
-  def get(innerRoute: Route, moreInnerRoutes: Route*): Route = method(HttpMethods.GET, innerRoute, moreInnerRoutes: _*)
+abstract class MethodDirectives extends MarshallingDirectives {
+  def delete(inner: function.Supplier[Route]): Route = RouteAdapter {
+    D.delete { inner.get.delegate }
+  }
 
-  /** Handles the inner routes if the incoming request is a POST request, rejects the request otherwise */
-  @varargs
-  def post(innerRoute: Route, moreInnerRoutes: Route*): Route = method(HttpMethods.POST, innerRoute, moreInnerRoutes: _*)
+  def get(inner: function.Supplier[Route]): Route = RouteAdapter {
+    D.get { inner.get.delegate }
+  }
 
-  /** Handles the inner routes if the incoming request is a PUT request, rejects the request otherwise */
-  @varargs
-  def put(innerRoute: Route, moreInnerRoutes: Route*): Route = method(HttpMethods.PUT, innerRoute, moreInnerRoutes: _*)
+  def head(inner: function.Supplier[Route]): Route = RouteAdapter {
+    D.head { inner.get.delegate }
+  }
 
-  /** Handles the inner routes if the incoming request is a DELETE request, rejects the request otherwise */
-  @varargs
-  def delete(innerRoute: Route, moreInnerRoutes: Route*): Route = method(HttpMethods.DELETE, innerRoute, moreInnerRoutes: _*)
+  def options(inner: function.Supplier[Route]): Route = RouteAdapter {
+    D.options { inner.get.delegate }
+  }
+  def patch(inner: function.Supplier[Route]): Route = RouteAdapter {
+    D.patch { inner.get.delegate }
+  }
+  def post(inner: function.Supplier[Route]): Route = RouteAdapter {
+    D.post { inner.get.delegate }
+  }
+  def put(inner: function.Supplier[Route]): Route = RouteAdapter {
+    D.put { inner.get.delegate }
+  }
 
-  /** Handles the inner routes if the incoming request is a HEAD request, rejects the request otherwise */
-  @varargs
-  def head(innerRoute: Route, moreInnerRoutes: Route*): Route = method(HttpMethods.HEAD, innerRoute, moreInnerRoutes: _*)
+  def extractMethod(inner: function.Function[HttpMethod, Route]) = RouteAdapter {
+    D.extractMethod { m ⇒
+      inner.apply(m).delegate
+    }
+  }
 
-  /** Handles the inner routes if the incoming request is a OPTIONS request, rejects the request otherwise */
-  @varargs
-  def options(innerRoute: Route, moreInnerRoutes: Route*): Route = method(HttpMethods.OPTIONS, innerRoute, moreInnerRoutes: _*)
+  def method(method: HttpMethod, inner: function.Supplier[Route]): Route = RouteAdapter {
+    D.method(method.asScala) { inner.get.delegate }
+  }
 
-  /** Handles the inner routes if the incoming request is a PATCH request, rejects the request otherwise */
-  @varargs
-  def patch(innerRoute: Route, moreInnerRoutes: Route*): Route = method(HttpMethods.PATCH, innerRoute, moreInnerRoutes: _*)
+  /**
+   * Changes the HTTP method of the request to the value of the specified query string parameter. If the query string
+   * parameter is not specified this directive has no effect. If the query string is specified as something that is not
+   * a HTTP method, then this directive completes the request with a `501 Not Implemented` response.
+   *
+   * This directive is useful for:
+   *  - Use in combination with JSONP (JSONP only supports GET)
+   *  - Supporting older browsers that lack support for certain HTTP methods. E.g. IE8 does not support PATCH
+   */
+  def overrideMethodWithParameter(paramName: String, inner: function.Supplier[Route]): Route = RouteAdapter {
+    D.overrideMethodWithParameter(paramName) { inner.get.delegate }
+  }
 
-  /** Handles the inner routes if the incoming request is a request with the given method, rejects the request otherwise */
-  @varargs
-  def method(method: HttpMethod, innerRoute: Route, moreInnerRoutes: Route*): Route = RouteStructure.MethodFilter(method)(innerRoute, moreInnerRoutes.toList)
 }
