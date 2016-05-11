@@ -12,7 +12,7 @@ Signature
 Description
 -----------
 
-Allows customising the ``HttpResponse`` that will be sent to clients in case of a :ref:`request-timeout`.
+Allows customising the ``HttpResponse`` that will be sent to clients in case of a :ref:`request-timeout-scala`.
 
 See also :ref:`-withRequestTimeout-` or :ref:`-withoutRequestTimeout-` if interested in dynamically changing the timeout
 for a given route instead.

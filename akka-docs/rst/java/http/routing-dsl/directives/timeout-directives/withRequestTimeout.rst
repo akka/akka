@@ -6,7 +6,7 @@ withRequestTimeout
 Description
 -----------
 
-This directive enables "late" (during request processing) control over the :ref:`request-timeout` feature in Akka HTTP.
+This directive enables "late" (during request processing) control over the :ref:`request-timeout-java` feature in Akka HTTP.
 
 The timeout can be either loosened or made more tight using this directive, however one should be aware that it is
 inherently racy (which may especially show with very tight timeouts) since a timeout may already have been triggered
