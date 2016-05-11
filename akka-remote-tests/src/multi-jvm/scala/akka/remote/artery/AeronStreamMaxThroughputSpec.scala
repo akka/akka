@@ -22,6 +22,7 @@ import io.aeron.driver.MediaDriver
 import akka.stream.KillSwitches
 import java.io.File
 import io.aeron.CncFileDescriptor
+import org.agrona.IoUtil
 
 object AeronStreamMaxThroughputSpec extends MultiNodeConfig {
   val first = role("first")
@@ -127,6 +128,7 @@ abstract class AeronStreamMaxThroughputSpec
     taskRunner.stop()
     aeron.close()
     driver.close()
+    IoUtil.delete(new File(driver.aeronDirectoryName), true)
     runOn(second) {
       println(plot.csv(system.name))
     }
