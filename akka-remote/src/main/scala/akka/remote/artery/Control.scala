@@ -155,6 +155,7 @@ private[akka] class OutboundControlJunction(outboundContext: OutboundContext)
       import OutboundControlJunction._
 
       private val sendControlMessageCallback = getAsyncCallback[ControlMessage](internalSendControlMessage)
+      private val maxControlMessageBufferSize: Int = 1024 // FIXME config
       private val buffer = new ArrayDeque[Send]
 
       override def preStart(): Unit = {
@@ -180,8 +181,13 @@ private[akka] class OutboundControlJunction(outboundContext: OutboundContext)
       private def internalSendControlMessage(message: ControlMessage): Unit = {
         if (buffer.isEmpty && isAvailable(out))
           push(out, wrap(message))
-        else
+        else if (buffer.size < maxControlMessageBufferSize)
           buffer.offer(wrap(message))
+        else {
+          // it's alright to drop control messages
+          // FIXME we need that stage logging support
+          println(s"dropping control message ${message.getClass.getName} due to full buffer")
+        }
       }
 
       private def wrap(message: ControlMessage): Send =
