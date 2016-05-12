@@ -59,7 +59,7 @@ object MetricsBasedResizerSpec {
     def close(): Unit = msgs.foreach(_.open())
 
     def sendToAll(await: Boolean): Seq[Latches] = {
-      val sentMessages = (0 until routees.length).map(i ⇒ mockSend(await, routeeIdx = i))
+      val sentMessages = routees.indices.map(i ⇒ mockSend(await, routeeIdx = i))
       sentMessages
     }
 
@@ -234,18 +234,23 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
       val msgs1 = router.sendToAll(await = true)
       val msgs2 = router.sendToAll(await = false) //make sure the routees are still busy after the first batch of messages get processed.
 
-      val before = LocalDateTime.now
+      val before = System.nanoTime()
       resizer.reportMessageCount(router.routees, router.msgs.size) //updates the records
 
       msgs1.foreach(_.second.open()) //process two messages
+
+      // make sure some time passes inbetween
+      Thread.sleep(100)
 
       // wait for routees to update their mail boxes
       msgs2.foreach(l ⇒ Await.ready(l.first, timeout.duration))
 
       resizer.reportMessageCount(router.routees, router.msgs.size)
 
-      val after = LocalDateTime.now
-      resizer.performanceLog(2).toMillis shouldBe (java.time.Duration.between(before, after).toMillis / 2 +- 1)
+      val after = System.nanoTime()
+      val millisPassed = (after - before) / 1000000
+      val tenPercent = millisPassed / 10
+      resizer.performanceLog(2).toMillis shouldBe (millisPassed / 2 +- tenPercent)
 
       router.close()
     }
@@ -261,20 +266,25 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
       val msgs1 = router.sendToAll(await = true)
       val msgs2 = router.sendToAll(await = false) //make sure the routees are still busy after the first batch of messages get processed.
 
-      val before = LocalDateTime.now
+      val before = System.nanoTime()
       resizer.reportMessageCount(router.routees, router.msgs.size) //updates the records
 
       msgs1.foreach(_.second.open()) //process two messages
+
+      // make sure some time passes inbetween
+      Thread.sleep(100)
 
       // wait for routees to update their mail boxes
       msgs2.foreach(l ⇒ Await.ready(l.first, timeout.duration))
 
       resizer.reportMessageCount(router.routees, router.msgs.size)
 
-      val after = LocalDateTime.now
-      val newSpeed = java.time.Duration.between(before, after).toMillis / 2
+      val after = System.nanoTime()
+      val millisPassed = (after - before) / 1000000
+      val tenPercent = millisPassed / 10
+      val newSpeed = millisPassed / 2
 
-      resizer.performanceLog(2).toMillis shouldBe ((newSpeed + oldSpeed) / 2 +- 1)
+      resizer.performanceLog(2).toMillis shouldBe ((newSpeed + oldSpeed) / 2 +- tenPercent)
 
       router.close()
     }
