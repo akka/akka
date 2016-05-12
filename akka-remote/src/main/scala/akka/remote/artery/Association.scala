@@ -5,20 +5,20 @@ package akka.remote.artery
 
 import scala.concurrent.Future
 import scala.concurrent.Promise
-
 import akka.actor.ActorRef
 import akka.actor.Address
-
 import akka.actor.RootActorPath
 import akka.dispatch.sysmsg.SystemMessage
 import akka.remote.EndpointManager.Send
 import akka.remote.RemoteActorRef
 import akka.remote.UniqueAddress
-import akka.remote.artery.ReplyJunction.ReplySubject
+import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.stream.Materializer
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.SourceQueueWithComplete
+import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
+import akka.stream.scaladsl.Keep
 
 /**
  * INTERNAL API
@@ -30,10 +30,17 @@ private[akka] class Association(
   val transport: ArteryTransport,
   val materializer: Materializer,
   override val remoteAddress: Address,
-  override val replySubject: ReplySubject) extends OutboundContext {
+  override val controlSubject: ControlMessageSubject) extends OutboundContext {
 
   @volatile private[this] var queue: SourceQueueWithComplete[Send] = _
   @volatile private[this] var systemMessageQueue: SourceQueueWithComplete[Send] = _
+  @volatile private[this] var _outboundControlIngress: OutboundControlIngress = _
+
+  def outboundControlIngress: OutboundControlIngress = {
+    if (_outboundControlIngress eq null)
+      throw new IllegalStateException("outboundControlIngress not initialized yet")
+    _outboundControlIngress
+  }
 
   override def localAddress: UniqueAddress = transport.localAddress
 
@@ -49,7 +56,7 @@ private[akka] class Association(
     // TODO: lookup subchannel
     // FIXME: Use a different envelope than the old Send, but make sure the new is handled by deadLetters properly
     message match {
-      case _: SystemMessage | _: Reply ⇒
+      case _: SystemMessage ⇒
         implicit val ec = materializer.executionContext
         systemMessageQueue.offer(Send(message, senderOption, recipient, None)).onFailure {
           case e ⇒
@@ -73,8 +80,12 @@ private[akka] class Association(
     if (queue eq null)
       queue = Source.queue(256, OverflowStrategy.dropBuffer)
         .to(transport.outbound(this)).run()(materializer)
-    if (systemMessageQueue eq null)
-      systemMessageQueue = Source.queue(256, OverflowStrategy.dropBuffer)
-        .to(transport.outboundSystemMessage(this)).run()(materializer)
+    if (systemMessageQueue eq null) {
+      val (q, control) = Source.queue(256, OverflowStrategy.dropBuffer)
+        .toMat(transport.outboundControl(this))(Keep.both)
+        .run()(materializer)
+      systemMessageQueue = q
+      _outboundControlIngress = control
+    }
   }
 }
