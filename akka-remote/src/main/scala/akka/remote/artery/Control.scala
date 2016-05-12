@@ -32,35 +32,45 @@ trait ControlMessage
 /**
  * INTERNAL API
  */
-private[akka] object InboundReplyJunction {
+private[akka] object InboundControlJunction {
 
-  // FIXME rename all Reply stuff to Control or ControlMessage
-
-  private[akka] trait ReplySubject {
-    def attach(observer: ReplyObserver): Future[Done]
-    def detach(observer: ReplyObserver): Unit
+  /**
+   * Observer subject for inbound control messages.
+   * Interested observers can attach themselves to the
+   * subject to get notification of incoming control
+   * messages.
+   */
+  private[akka] trait ControlMessageSubject {
+    def attach(observer: ControlMessageObserver): Future[Done]
+    def detach(observer: ControlMessageObserver): Unit
     def stopped: Future[Done]
   }
 
-  private[akka] trait ReplyObserver {
-    def reply(inboundEnvelope: InboundEnvelope): Unit
+  private[akka] trait ControlMessageObserver {
+
+    /**
+     * Notification of incoming control message. The message
+     * of the envelope is always a `ControlMessage`.
+     */
+    def notify(inboundEnvelope: InboundEnvelope): Unit
   }
 
-  private[InboundReplyJunction] sealed trait CallbackMessage
-  private[InboundReplyJunction] final case class Attach(observer: ReplyObserver, done: Promise[Done])
+  // messages for the CallbackWrapper
+  private[InboundControlJunction] sealed trait CallbackMessage
+  private[InboundControlJunction] final case class Attach(observer: ControlMessageObserver, done: Promise[Done])
     extends CallbackMessage
-  private[InboundReplyJunction] final case class Dettach(observer: ReplyObserver) extends CallbackMessage
+  private[InboundControlJunction] final case class Dettach(observer: ControlMessageObserver) extends CallbackMessage
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class InboundReplyJunction
-  extends GraphStageWithMaterializedValue[FlowShape[InboundEnvelope, InboundEnvelope], InboundReplyJunction.ReplySubject] {
-  import InboundReplyJunction._
+private[akka] class InboundControlJunction
+  extends GraphStageWithMaterializedValue[FlowShape[InboundEnvelope, InboundEnvelope], InboundControlJunction.ControlMessageSubject] {
+  import InboundControlJunction._
 
-  val in: Inlet[InboundEnvelope] = Inlet("InboundReplyJunction.in")
-  val out: Outlet[InboundEnvelope] = Outlet("InboundReplyJunction.out")
+  val in: Inlet[InboundEnvelope] = Inlet("InboundControlJunction.in")
+  val out: Outlet[InboundEnvelope] = Outlet("InboundControlJunction.out")
   override val shape: FlowShape[InboundEnvelope, InboundEnvelope] = FlowShape(in, out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
@@ -68,14 +78,14 @@ private[akka] class InboundReplyJunction
     // FIXME see issue #20503 related to CallbackWrapper, we might implement this in a better way
     val logic = new GraphStageLogic(shape) with CallbackWrapper[CallbackMessage] with InHandler with OutHandler {
 
-      private var replyObservers: Vector[ReplyObserver] = Vector.empty
+      private var observers: Vector[ControlMessageObserver] = Vector.empty
 
       private val callback = getAsyncCallback[CallbackMessage] {
         case Attach(observer, done) ⇒
-          replyObservers :+= observer
+          observers :+= observer
           done.success(Done)
         case Dettach(observer) ⇒
-          replyObservers = replyObservers.filterNot(_ == observer)
+          observers = observers.filterNot(_ == observer)
       }
 
       override def preStart(): Unit = {
@@ -87,8 +97,8 @@ private[akka] class InboundReplyJunction
       // InHandler
       override def onPush(): Unit = {
         grab(in) match {
-          case env @ InboundEnvelope(_, _, reply: Reply, _) ⇒
-            replyObservers.foreach(_.reply(env))
+          case env @ InboundEnvelope(_, _, _: ControlMessage, _) ⇒
+            observers.foreach(_.notify(env))
             pull(in)
           case env ⇒
             push(out, env)
@@ -102,29 +112,29 @@ private[akka] class InboundReplyJunction
     }
 
     // materialized value
-    val replySubject: ReplySubject = new ReplySubject {
-      override def attach(observer: ReplyObserver): Future[Done] = {
+    val controlSubject: ControlMessageSubject = new ControlMessageSubject {
+      override def attach(observer: ControlMessageObserver): Future[Done] = {
         val p = Promise[Done]()
         logic.invoke(Attach(observer, p))
         p.future
       }
 
-      override def detach(observer: ReplyObserver): Unit =
+      override def detach(observer: ControlMessageObserver): Unit =
         logic.invoke(Dettach(observer))
 
       override def stopped: Future[Done] =
         stoppedPromise.future
     }
 
-    (logic, replySubject)
+    (logic, controlSubject)
   }
 }
 
 /**
  * INTERNAL API
  */
-private[akka] object OutboundReplyJunction {
-  trait OutboundReplyIngress {
+private[akka] object OutboundControlJunction {
+  trait OutboundControlIngress {
     def sendControlMessage(message: ControlMessage): Unit
   }
 }
@@ -132,17 +142,17 @@ private[akka] object OutboundReplyJunction {
 /**
  * INTERNAL API
  */
-private[akka] class OutboundReplyJunction(outboundContext: OutboundContext)
-  extends GraphStageWithMaterializedValue[FlowShape[Send, Send], OutboundReplyJunction.OutboundReplyIngress] {
-  import OutboundReplyJunction._
-  val in: Inlet[Send] = Inlet("OutboundReplyJunction.in")
-  val out: Outlet[Send] = Outlet("OutboundReplyJunction.out")
+private[akka] class OutboundControlJunction(outboundContext: OutboundContext)
+  extends GraphStageWithMaterializedValue[FlowShape[Send, Send], OutboundControlJunction.OutboundControlIngress] {
+  import OutboundControlJunction._
+  val in: Inlet[Send] = Inlet("OutboundControlJunction.in")
+  val out: Outlet[Send] = Outlet("OutboundControlJunction.out")
   override val shape: FlowShape[Send, Send] = FlowShape(in, out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     // FIXME see issue #20503 related to CallbackWrapper, we might implement this in a better way
     val logic = new GraphStageLogic(shape) with CallbackWrapper[ControlMessage] with InHandler with OutHandler {
-      import OutboundReplyJunction._
+      import OutboundControlJunction._
 
       private val sendControlMessageCallback = getAsyncCallback[ControlMessage](internalSendControlMessage)
       private val buffer = new ArrayDeque[Send]
@@ -181,12 +191,12 @@ private[akka] class OutboundReplyJunction(outboundContext: OutboundContext)
     }
 
     // materialized value
-    val outboundReplyIngress = new OutboundReplyIngress {
+    val outboundControlIngress = new OutboundControlIngress {
       override def sendControlMessage(message: ControlMessage): Unit =
         logic.invoke(message)
     }
 
-    (logic, outboundReplyIngress)
+    (logic, outboundControlIngress)
   }
 
 }
