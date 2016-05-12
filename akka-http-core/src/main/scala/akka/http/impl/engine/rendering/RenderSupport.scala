@@ -67,24 +67,22 @@ private object RenderSupport {
     val shape: FlowShape[HttpEntity.ChunkStreamPart, ByteString] = FlowShape.of(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-      new GraphStageLogic(shape) {
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = {
-            val chunk = grab(in)
-            val bytes = renderChunk(chunk)
-            if (chunk.isLastChunk) completeStage()
-          }
-        })
+      new GraphStageLogic(shape) with InHandler with OutHandler {
+        override def onPush(): Unit = {
+          val chunk = grab(in)
+          val bytes = renderChunk(chunk)
+          if (chunk.isLastChunk) completeStage()
+          else push(out, bytes)
+        }
 
-        setHandler(out, new OutHandler {
-          override def onPull(): Unit = pull(in)
-        })
+        override def onPull(): Unit = pull(in)
+
+        override def onUpstreamFinish(): Unit = {
+          emit(out, defaultLastChunkBytes)
+          completeStage()
+        }
+        setHandlers(in, out, this)
       }
-
-    override def onUpstreamFinish(): Unit = {
-      //terminationEmit(Iterator.single(defaultLastChunkBytes), out)
-      //completeStage()
-    }
   }
 
   object CheckContentLengthTransformer {
