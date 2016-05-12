@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 import akka.Done
 import akka.remote.EndpointManager.Send
 import akka.remote.UniqueAddress
-import akka.remote.artery.InboundReplyJunction.ReplyObserver
+import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
@@ -29,7 +29,7 @@ private[akka] object OutboundHandshake {
 
   private sealed trait HandshakeState
   private case object Start extends HandshakeState
-  private case object ReplyObserverAttached extends HandshakeState
+  private case object ControlMessageObserverAttached extends HandshakeState
   private case object ReqInProgress extends HandshakeState
   private case object Completed extends HandshakeState
 
@@ -46,7 +46,7 @@ private[akka] class OutboundHandshake(outboundContext: OutboundContext) extends 
   override val shape: FlowShape[Send, Send] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new TimerGraphStageLogic(shape) with InHandler with OutHandler with ReplyObserver {
+    new TimerGraphStageLogic(shape) with InHandler with OutHandler with ControlMessageObserver {
       import OutboundHandshake._
 
       private val timeout: FiniteDuration = 10.seconds // FIXME config
@@ -59,13 +59,13 @@ private[akka] class OutboundHandshake(outboundContext: OutboundContext) extends 
           handshakeState = Completed
         } else {
           implicit val ec = materializer.executionContext
-          outboundContext.replySubject.attach(this).foreach {
+          outboundContext.controlSubject.attach(this).foreach {
             getAsyncCallback[Done] { _ ⇒
               if (handshakeState != Completed) {
                 if (isAvailable(out))
                   pushHandshakeReq()
                 else
-                  handshakeState = ReplyObserverAttached
+                  handshakeState = ControlMessageObserverAttached
               }
             }.invoke
           }
@@ -85,7 +85,7 @@ private[akka] class OutboundHandshake(outboundContext: OutboundContext) extends 
       }
 
       override def postStop(): Unit = {
-        outboundContext.replySubject.detach(this)
+        outboundContext.controlSubject.detach(this)
       }
 
       // InHandler
@@ -99,9 +99,9 @@ private[akka] class OutboundHandshake(outboundContext: OutboundContext) extends 
       override def onPull(): Unit = {
         handshakeState match {
           case Completed ⇒ pull(in)
-          case ReplyObserverAttached ⇒
+          case ControlMessageObserverAttached ⇒
             pushHandshakeReq()
-          case Start         ⇒ // will push HandshakeReq when ReplyObserver is attached
+          case Start         ⇒ // will push HandshakeReq when ControlMessageObserver is attached
           case ReqInProgress ⇒ // will pull when handshake reply is received
         }
       }
@@ -115,7 +115,7 @@ private[akka] class OutboundHandshake(outboundContext: OutboundContext) extends 
       private def handshakeCompleted(): Unit = {
         handshakeState = Completed
         cancelTimer(HandshakeTimeout)
-        outboundContext.replySubject.detach(this)
+        outboundContext.controlSubject.detach(this)
       }
 
       override protected def onTimer(timerKey: Any): Unit =
@@ -125,8 +125,8 @@ private[akka] class OutboundHandshake(outboundContext: OutboundContext) extends 
               s"Handshake with [$remoteAddress] did not complete within ${timeout.toMillis} ms"))
         }
 
-      // ReplyObserver, external call
-      override def reply(inboundEnvelope: InboundEnvelope): Unit = {
+      // ControlMessageObserver, external call
+      override def notify(inboundEnvelope: InboundEnvelope): Unit = {
         inboundEnvelope.message match {
           case rsp: HandshakeRsp ⇒
             if (rsp.from.address == remoteAddress) {
@@ -165,7 +165,7 @@ private[akka] class InboundHandshake(inboundContext: InboundContext) extends Gra
         grab(in) match {
           case InboundEnvelope(_, _, HandshakeReq(from), _) ⇒
             inboundContext.association(from.address).completeRemoteAddress(from)
-            inboundContext.sendReply(from.address, HandshakeRsp(inboundContext.localAddress))
+            inboundContext.sendControl(from.address, HandshakeRsp(inboundContext.localAddress))
             pull(in)
           case other ⇒
             push(out, other)

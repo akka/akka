@@ -14,7 +14,7 @@ import scala.util.Try
 import akka.Done
 import akka.remote.EndpointManager.Send
 import akka.remote.UniqueAddress
-import akka.remote.artery.InboundReplyJunction.ReplyObserver
+import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
@@ -53,7 +53,7 @@ private[akka] class SystemMessageDelivery(
   override val shape: FlowShape[Send, Send] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new TimerGraphStageLogic(shape) with InHandler with OutHandler with ReplyObserver {
+    new TimerGraphStageLogic(shape) with InHandler with OutHandler with ControlMessageObserver {
 
       private var replyObserverAttached = false
       private var seqNo = 0L // sequence number for the first message will be 1
@@ -69,7 +69,7 @@ private[akka] class SystemMessageDelivery(
         this.schedulePeriodically(ResendTick, resendInterval)
 
         implicit val ec = materializer.executionContext
-        outboundContext.replySubject.attach(this).foreach {
+        outboundContext.controlSubject.attach(this).foreach {
           getAsyncCallback[Done] { _ ⇒
             replyObserverAttached = true
             if (isAvailable(out))
@@ -77,7 +77,7 @@ private[akka] class SystemMessageDelivery(
           }.invoke
         }
 
-        outboundContext.replySubject.stopped.onComplete {
+        outboundContext.controlSubject.stopped.onComplete {
           getAsyncCallback[Try[Done]] {
             // FIXME quarantine
             case Success(_)     ⇒ completeStage()
@@ -87,7 +87,7 @@ private[akka] class SystemMessageDelivery(
       }
 
       override def postStop(): Unit = {
-        outboundContext.replySubject.detach(this)
+        outboundContext.controlSubject.detach(this)
       }
 
       override def onUpstreamFinish(): Unit = {
@@ -106,8 +106,8 @@ private[akka] class SystemMessageDelivery(
             }
         }
 
-      // ReplyObserver, external call
-      override def reply(inboundEnvelope: InboundEnvelope): Unit = {
+      // ControlMessageObserver, external call
+      override def notify(inboundEnvelope: InboundEnvelope): Unit = {
         inboundEnvelope.message match {
           case ack: Ack   ⇒ if (ack.from.address == remoteAddress) ackCallback.invoke(ack)
           case nack: Nack ⇒ if (nack.from.address == remoteAddress) nackCallback.invoke(nack)
@@ -201,15 +201,15 @@ private[akka] class SystemMessageAcker(inboundContext: InboundContext) extends G
         grab(in) match {
           case env @ InboundEnvelope(_, _, sysEnv @ SystemMessageEnvelope(_, n, ackReplyTo), _) ⇒
             if (n == seqNo) {
-              inboundContext.sendReply(ackReplyTo.address, Ack(n, localAddress))
+              inboundContext.sendControl(ackReplyTo.address, Ack(n, localAddress))
               seqNo += 1
               val unwrapped = env.copy(message = sysEnv.message)
               push(out, unwrapped)
             } else if (n < seqNo) {
-              inboundContext.sendReply(ackReplyTo.address, Ack(n, localAddress))
+              inboundContext.sendControl(ackReplyTo.address, Ack(n, localAddress))
               pull(in)
             } else {
-              inboundContext.sendReply(ackReplyTo.address, Nack(seqNo - 1, localAddress))
+              inboundContext.sendControl(ackReplyTo.address, Nack(seqNo - 1, localAddress))
               pull(in)
             }
           case env ⇒

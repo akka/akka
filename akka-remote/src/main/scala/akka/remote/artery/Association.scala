@@ -12,12 +12,12 @@ import akka.dispatch.sysmsg.SystemMessage
 import akka.remote.EndpointManager.Send
 import akka.remote.RemoteActorRef
 import akka.remote.UniqueAddress
-import akka.remote.artery.InboundReplyJunction.ReplySubject
+import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.stream.Materializer
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.SourceQueueWithComplete
-import akka.remote.artery.OutboundReplyJunction.OutboundReplyIngress
+import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.stream.scaladsl.Keep
 
 /**
@@ -30,16 +30,16 @@ private[akka] class Association(
   val transport: ArteryTransport,
   val materializer: Materializer,
   override val remoteAddress: Address,
-  override val replySubject: ReplySubject) extends OutboundContext {
+  override val controlSubject: ControlMessageSubject) extends OutboundContext {
 
   @volatile private[this] var queue: SourceQueueWithComplete[Send] = _
   @volatile private[this] var systemMessageQueue: SourceQueueWithComplete[Send] = _
-  @volatile private[this] var _outboundReplyIngress: OutboundReplyIngress = _
+  @volatile private[this] var _outboundControlIngress: OutboundControlIngress = _
 
-  def outboundReplyIngress: OutboundReplyIngress = {
-    if (_outboundReplyIngress eq null)
-      throw new IllegalStateException("outboundReplyIngress not initialized yet")
-    _outboundReplyIngress
+  def outboundControlIngress: OutboundControlIngress = {
+    if (_outboundControlIngress eq null)
+      throw new IllegalStateException("outboundControlIngress not initialized yet")
+    _outboundControlIngress
   }
 
   override def localAddress: UniqueAddress = transport.localAddress
@@ -82,10 +82,10 @@ private[akka] class Association(
         .to(transport.outbound(this)).run()(materializer)
     if (systemMessageQueue eq null) {
       val (q, control) = Source.queue(256, OverflowStrategy.dropBuffer)
-        .toMat(transport.outboundSystemMessage(this))(Keep.both)
+        .toMat(transport.outboundControl(this))(Keep.both)
         .run()(materializer)
       systemMessageQueue = q
-      _outboundReplyIngress = control
+      _outboundControlIngress = control
     }
   }
 }

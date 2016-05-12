@@ -58,17 +58,17 @@ object SystemMessageDeliverySpec {
   class ManualReplyInboundContext(
     replyProbe: ActorRef,
     localAddress: UniqueAddress,
-    replySubject: TestReplySubject) extends TestInboundContext(localAddress, replySubject) {
+    controlSubject: TestControlMessageSubject) extends TestInboundContext(localAddress, controlSubject) {
 
     private var lastReply: Option[(Address, ControlMessage)] = None
 
-    override def sendReply(to: Address, message: ControlMessage) = {
+    override def sendControl(to: Address, message: ControlMessage) = {
       lastReply = Some((to, message))
       replyProbe ! message
     }
 
     def deliverLastReply(): Unit = {
-      lastReply.foreach { case (to, message) ⇒ super.sendReply(to, message) }
+      lastReply.foreach { case (to, message) ⇒ super.sendControl(to, message) }
       lastReply = None
     }
   }
@@ -147,9 +147,9 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commo
 
     "be resent when some in the middle are lost" in {
       val replyProbe = TestProbe()
-      val replySubject = new TestReplySubject
-      val inboundContextB = new ManualReplyInboundContext(replyProbe.ref, addressB, replySubject)
-      val inboundContextA = new TestInboundContext(addressB, replySubject)
+      val controlSubject = new TestControlMessageSubject
+      val inboundContextB = new ManualReplyInboundContext(replyProbe.ref, addressB, controlSubject)
+      val inboundContextA = new TestInboundContext(addressB, controlSubject)
       val outboundContextA = inboundContextA.association(addressB.address)
 
       val sink = send(sendCount = 5, resendInterval = 60.seconds, outboundContextA)
@@ -181,9 +181,9 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commo
 
     "be resent when first is lost" in {
       val replyProbe = TestProbe()
-      val replySubject = new TestReplySubject
-      val inboundContextB = new ManualReplyInboundContext(replyProbe.ref, addressB, replySubject)
-      val inboundContextA = new TestInboundContext(addressB, replySubject)
+      val controlSubject = new TestControlMessageSubject
+      val inboundContextB = new ManualReplyInboundContext(replyProbe.ref, addressB, controlSubject)
+      val inboundContextA = new TestInboundContext(addressB, controlSubject)
       val outboundContextA = inboundContextA.association(addressB.address)
 
       val sink = send(sendCount = 3, resendInterval = 60.seconds, outboundContextA)
@@ -210,9 +210,9 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commo
 
     "be resent when last is lost" in {
       val replyProbe = TestProbe()
-      val replySubject = new TestReplySubject
-      val inboundContextB = new ManualReplyInboundContext(replyProbe.ref, addressB, replySubject)
-      val inboundContextA = new TestInboundContext(addressB, replySubject)
+      val controlSubject = new TestControlMessageSubject
+      val inboundContextB = new ManualReplyInboundContext(replyProbe.ref, addressB, controlSubject)
+      val inboundContextA = new TestInboundContext(addressB, controlSubject)
       val outboundContextA = inboundContextA.association(addressB.address)
 
       val sink = send(sendCount = 3, resendInterval = 1.seconds, outboundContextA)
@@ -239,9 +239,9 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commo
     "deliver all during stress and random dropping" in {
       val N = 10000
       val dropRate = 0.1
-      val replySubject = new TestReplySubject
-      val inboundContextB = new TestInboundContext(addressB, replySubject, replyDropRate = dropRate)
-      val inboundContextA = new TestInboundContext(addressB, replySubject)
+      val controlSubject = new TestControlMessageSubject
+      val inboundContextB = new TestInboundContext(addressB, controlSubject, replyDropRate = dropRate)
+      val inboundContextA = new TestInboundContext(addressB, controlSubject)
       val outboundContextA = inboundContextA.association(addressB.address)
 
       val output =
@@ -257,9 +257,9 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commo
     "deliver all during throttling and random dropping" in {
       val N = 500
       val dropRate = 0.1
-      val replySubject = new TestReplySubject
-      val inboundContextB = new TestInboundContext(addressB, replySubject, replyDropRate = dropRate)
-      val inboundContextA = new TestInboundContext(addressB, replySubject)
+      val controlSubject = new TestControlMessageSubject
+      val inboundContextB = new TestInboundContext(addressB, controlSubject, replyDropRate = dropRate)
+      val inboundContextA = new TestInboundContext(addressB, controlSubject)
       val outboundContextA = inboundContextA.association(addressB.address)
 
       val output =
