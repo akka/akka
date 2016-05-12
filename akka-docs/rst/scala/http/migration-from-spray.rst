@@ -8,3 +8,4 @@ Migration Guide from spray
 - ``respondWithMediaType`` was considered an anti-pattern in spray and is not ported to Akka HTTP.
   Instead users should rely on content type negotiation as Akka HTTP implements it.
   More information here: https://github.com/akka/akka/issues/18625
+- :ref:`registeringCustomMediaTypes` changed from Spray in order not to rely on global state.
