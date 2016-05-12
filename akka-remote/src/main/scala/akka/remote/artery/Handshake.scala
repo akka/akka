@@ -40,7 +40,7 @@ private[akka] object OutboundHandshake {
 /**
  * INTERNAL API
  */
-private[akka] class OutboundHandshake(outboundContext: OutboundContext) extends GraphStage[FlowShape[Send, Send]] {
+private[akka] class OutboundHandshake(outboundContext: OutboundContext, timeout: FiniteDuration) extends GraphStage[FlowShape[Send, Send]] {
   val in: Inlet[Send] = Inlet("OutboundHandshake.in")
   val out: Outlet[Send] = Outlet("OutboundHandshake.out")
   override val shape: FlowShape[Send, Send] = FlowShape(in, out)
@@ -49,7 +49,6 @@ private[akka] class OutboundHandshake(outboundContext: OutboundContext) extends 
     new TimerGraphStageLogic(shape) with InHandler with OutHandler with ControlMessageObserver {
       import OutboundHandshake._
 
-      private val timeout: FiniteDuration = 10.seconds // FIXME config
       private var handshakeState: HandshakeState = Start
 
       private def remoteAddress = outboundContext.remoteAddress
