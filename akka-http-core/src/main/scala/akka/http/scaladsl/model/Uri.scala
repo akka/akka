@@ -43,13 +43,11 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
   def queryString(charset: Charset = UTF8): Option[String] = rawQueryString.map(s ⇒ decode(s, charset))
 
   /**
-   * INTERNAL API
-   *
    * The effective port of this Uri given the currently set authority and scheme values.
    * If the authority has an explicitly set port (i.e. a non-zero port value) then this port
    * is the effective port. Otherwise the default port for the current scheme is returned.
    */
-  private[akka] def effectivePort: Int = if (authority.port != 0) authority.port else defaultPorts(scheme)
+  def effectivePort: Int = if (authority.port != 0) authority.port else defaultPorts(scheme)
 
   /**
    * Returns a copy of this Uri with the given components.
@@ -210,7 +208,7 @@ object Uri {
 
   /**
    * Creates a new Uri instance from the given components.
-   * All components are verified and normalized.
+   * All components are verified and normalized except the authority which is kept as provided.
    * If the given combination of components does not constitute a valid URI as defined by
    * http://tools.ietf.org/html/rfc3986 the method throws an `IllegalUriException`.
    */
@@ -219,7 +217,7 @@ object Uri {
     val p = verifyPath(path, scheme, authority.host)
     create(
       scheme = normalizeScheme(scheme),
-      authority = authority.normalizedFor(scheme),
+      authority = authority,
       path = if (scheme.isEmpty) p else collapseDotSegments(p),
       queryString = queryString,
       fragment = fragment)
@@ -277,8 +275,11 @@ object Uri {
    * If strict is `false`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    * If the given string is not a valid URI the method throws an `IllegalUriException`.
    */
-  def normalize(uri: ParserInput, charset: Charset = UTF8, mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): String =
-    UriRendering.renderUri(new StringRendering, apply(uri, charset, mode), charset).get
+  def normalize(uri: ParserInput, charset: Charset = UTF8, mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): String = {
+    val parsed = apply(uri, charset, mode)
+    val normalized = parsed.copy(authority = parsed.authority.normalizedFor(parsed.scheme))
+    UriRendering.renderUri(new StringRendering, normalized, charset).get
+  }
 
   /**
    * Converts a set of URI components to an "effective HTTP request URI" as defined by
@@ -307,6 +308,10 @@ object Uri {
 
   def httpScheme(securedConnection: Boolean = false) = if (securedConnection) "https" else "http"
 
+  /**
+   * @param port A port number that may be `0` to signal the default port of for scheme.
+   *             In general what you want is not the value of this field but [[Uri.effectivePort]].
+   */
   final case class Authority(host: Host, port: Int = 0, userinfo: String = "") {
     def isEmpty = equals(Authority.Empty)
     def nonEmpty = !isEmpty
@@ -742,7 +747,7 @@ object Uri {
 
   private[http] def create(scheme: String, userinfo: String, host: Host, port: Int, path: Path, queryString: Option[String],
                            fragment: Option[String]): Uri =
-    create(scheme, Authority(host, normalizePort(port, scheme), userinfo), path, queryString, fragment)
+    create(scheme, Authority(host, port, userinfo), path, queryString, fragment)
 
   private[http] def create(scheme: String, authority: Authority, path: Path, queryString: Option[String],
                            fragment: Option[String]): Uri =
