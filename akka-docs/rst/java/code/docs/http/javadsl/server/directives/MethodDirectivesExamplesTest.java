@@ -143,7 +143,8 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
         .assertEntity("This looks like a GET request.");
 
     testRoute(route).run(HttpRequest.GET("/?method=hallo")).assertEntity(
-        "This HEAD request, clearly is not a GET!");
+        "The server either does not recognize the request method, or it lacks the ability to fulfill the request.");
+    
     //#overrideMethodWithParameter
   }
 }
