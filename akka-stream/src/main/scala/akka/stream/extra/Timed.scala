@@ -25,6 +25,7 @@ private[akka] trait TimedOps {
    *
    * Measures time from receiving the first element and completion events - one for each subscriber of this `Flow`.
    */
+  @deprecated("Moved to the akka/akka-stream-contrib project", since = "2.4.5")
   def timed[I, O, Mat, Mat2](source: Source[I, Mat], measuredOps: Source[I, Mat] ⇒ Source[O, Mat2], onComplete: FiniteDuration ⇒ Unit): Source[O, Mat2] = {
     val ctx = new TimedFlowContext
 
@@ -39,6 +40,7 @@ private[akka] trait TimedOps {
    *
    * Measures time from receiving the first element and completion events - one for each subscriber of this `Flow`.
    */
+  @deprecated("Moved to the akka/akka-stream-contrib project", since = "2.4.5")
   def timed[I, O, Out, Mat, Mat2](flow: Flow[I, O, Mat], measuredOps: Flow[I, O, Mat] ⇒ Flow[I, Out, Mat2], onComplete: FiniteDuration ⇒ Unit): Flow[I, Out, Mat2] = {
     // todo is there any other way to provide this for Flow, without duplicating impl?
     // they do share a super-type (FlowOps), but all operations of FlowOps return path dependant type
@@ -64,6 +66,7 @@ private[akka] trait TimedIntervalBetweenOps {
   /**
    * Measures rolling interval between immediately subsequent `matching(o: O)` elements.
    */
+  @deprecated("Moved to the akka/akka-stream-contrib project", since = "2.4.5")
   def timedIntervalBetween[O, Mat](source: Source[O, Mat], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Source[O, Mat] = {
     val timedInterval = Flow[O].via(new TimedInterval[O](matching, onInterval)).named("timedInterval")
     source.via(timedInterval)
@@ -72,12 +75,14 @@ private[akka] trait TimedIntervalBetweenOps {
   /**
    * Measures rolling interval between immediately subsequent `matching(o: O)` elements.
    */
+  @deprecated("Moved to the akka/akka-stream-contrib project", since = "2.4.5")
   def timedIntervalBetween[I, O, Mat](flow: Flow[I, O, Mat], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Flow[I, O, Mat] = {
     val timedInterval = Flow[O].via(new TimedInterval[O](matching, onInterval)).named("timedInterval")
     flow.via(timedInterval)
   }
 }
 
+@deprecated("Moved to the akka/akka-stream-contrib project", since = "2.4.5")
 object Timed extends TimedOps with TimedIntervalBetweenOps {
 
   // todo needs java DSL
