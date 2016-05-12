@@ -193,12 +193,13 @@ case class DefaultOptimalSizeExploringResizer(
 
     val fullyUtilized = utilized == currentSize
 
-    val newUnderutilizationStreak = if (fullyUtilized)
-      None
-    else
-      Some(UnderUtilizationStreak(
-        record.underutilizationStreak.fold(now)(_.start),
-        Math.max(record.underutilizationStreak.fold(0)(_.highestUtilization), utilized)))
+    val newUnderutilizationStreak =
+      if (fullyUtilized)
+        None
+      else
+        Some(UnderUtilizationStreak(
+          record.underutilizationStreak.fold(now)(_.start),
+          Math.max(record.underutilizationStreak.fold(0)(_.highestUtilization), utilized)))
 
     val newPerformanceLog: PerformanceLog =
       if (fullyUtilized && record.underutilizationStreak.isEmpty && record.checkTime > 0) {
