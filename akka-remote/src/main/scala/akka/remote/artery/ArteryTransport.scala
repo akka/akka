@@ -23,7 +23,7 @@ import akka.remote.RemoteActorRef
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteTransport
 import akka.remote.UniqueAddress
-import akka.remote.artery.ReplyJunction.ReplySubject
+import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.transport.AkkaPduCodec
 import akka.remote.transport.AkkaPduProtobufCodec
 import akka.serialization.Serialization
@@ -47,6 +47,7 @@ import io.aeron.exceptions.ConductorServiceTimeoutException
 import org.agrona.ErrorHandler
 import org.agrona.IoUtil
 import java.io.File
+import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 
 /**
  * INTERNAL API
@@ -69,10 +70,10 @@ private[akka] trait InboundContext {
   def localAddress: UniqueAddress
 
   /**
-   * An inbound stage can send reply message to the origin
+   * An inbound stage can send control message, e.g. a reply, to the origin
    * address with this method.
    */
-  def sendReply(to: Address, message: ControlMessage): Unit
+  def sendControl(to: Address, message: ControlMessage): Unit
 
   /**
    * Lookup the outbound association for a given address.
@@ -109,10 +110,10 @@ private[akka] trait OutboundContext {
   def completeRemoteAddress(a: UniqueAddress): Unit
 
   /**
-   * An outbound stage can listen to reply messages
+   * An outbound stage can listen to control messages
    * via this observer subject.
    */
-  def replySubject: ReplySubject
+  def controlSubject: ControlMessageSubject
 
   // FIXME we should be able to Send without a recipient ActorRef
   def dummyRecipient: RemoteActorRef
@@ -129,7 +130,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   @volatile private[this] var _localAddress: UniqueAddress = _
   override def localAddress: UniqueAddress = _localAddress
   @volatile private[this] var materializer: Materializer = _
-  @volatile private[this] var replySubject: ReplySubject = _
+  @volatile private[this] var controlSubject: ControlMessageSubject = _
   @volatile private[this] var messageDispatcher: MessageDispatcher = _
   @volatile private[this] var driver: MediaDriver = _
   @volatile private[this] var aeron: Aeron = _
@@ -146,7 +147,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   // TODO support port 0
   private def inboundChannel = s"aeron:udp?endpoint=${localAddress.address.host.get}:${localAddress.address.port.get}"
   private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
-  private val systemMessageStreamId = 1
+  private val controlStreamId = 1
   private val ordinaryStreamId = 3
   private val taskRunner = new TaskRunner(system)
 
@@ -214,10 +215,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def runInboundFlows(): Unit = {
-    replySubject = Source.fromGraph(new AeronSource(inboundChannel, systemMessageStreamId, aeron, taskRunner))
+    controlSubject = Source.fromGraph(new AeronSource(inboundChannel, controlStreamId, aeron, taskRunner))
       .async // FIXME measure
       .map(ByteString.apply) // TODO we should use ByteString all the way
-      .viaMat(inboundSystemMessageFlow)(Keep.right)
+      .viaMat(inboundControlFlow)(Keep.right)
       .to(Sink.ignore)
       .run()(materializer)
 
@@ -241,9 +242,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   // InboundContext
-  override def sendReply(to: Address, message: ControlMessage) = {
-    send(message, None, association(to).dummyRecipient)
-  }
+  override def sendControl(to: Address, message: ControlMessage) =
+    association(to).outboundControlIngress.sendControlMessage(message)
 
   override def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = {
     val cached = recipient.cachedAssociation
@@ -262,7 +262,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     else {
       associations.computeIfAbsent(remoteAddress, new JFunction[Address, Association] {
         override def apply(remoteAddress: Address): Association = {
-          val newAssociation = new Association(ArteryTransport.this, materializer, remoteAddress, replySubject)
+          val newAssociation = new Association(ArteryTransport.this, materializer, remoteAddress, controlSubject)
           newAssociation.associate() // This is a bit costly for this blocking method :(
           newAssociation
         }
@@ -282,13 +282,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .to(new AeronSink(outboundChannel(outboundContext.remoteAddress), ordinaryStreamId, aeron, taskRunner))
   }
 
-  def outboundSystemMessage(outboundContext: OutboundContext): Sink[Send, Any] = {
+  def outboundControl(outboundContext: OutboundContext): Sink[Send, OutboundControlIngress] = {
     Flow.fromGraph(killSwitch.flow[Send])
       .via(new OutboundHandshake(outboundContext))
       .via(new SystemMessageDelivery(outboundContext, systemMessageResendInterval))
+      .viaMat(new OutboundControlJunction(outboundContext))(Keep.right)
       .via(encoder)
       .map(_.toArray) // TODO we should use ByteString all the way
-      .to(new AeronSink(outboundChannel(outboundContext.remoteAddress), systemMessageStreamId, aeron, taskRunner))
+      .to(new AeronSink(outboundChannel(outboundContext.remoteAddress), controlStreamId, aeron, taskRunner))
   }
 
   // TODO: Try out parallelized serialization (mapAsync) for performance
@@ -338,13 +339,13 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       Source.maybe[ByteString].via(killSwitch.flow))
   }
 
-  val inboundSystemMessageFlow: Flow[ByteString, ByteString, ReplySubject] = {
+  val inboundControlFlow: Flow[ByteString, ByteString, ControlMessageSubject] = {
     Flow.fromSinkAndSourceMat(
       decoder
         .via(deserializer)
         .via(new InboundHandshake(this))
         .via(new SystemMessageAcker(this))
-        .viaMat(new ReplyJunction)(Keep.right)
+        .viaMat(new InboundControlJunction)(Keep.right)
         .to(messageDispatcherSink),
       Source.maybe[ByteString].via(killSwitch.flow))((a, b) ⇒ a)
   }

@@ -6,31 +6,31 @@ package akka.remote.artery
 import akka.remote.UniqueAddress
 import akka.actor.Address
 import scala.concurrent.Future
-import akka.remote.artery.ReplyJunction.ReplySubject
+import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.RemoteActorRef
 import scala.concurrent.Promise
 import akka.Done
-import akka.remote.artery.ReplyJunction.ReplyObserver
+import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ThreadLocalRandom
 
 private[akka] class TestInboundContext(
   override val localAddress: UniqueAddress,
-  val replySubject: TestReplySubject = new TestReplySubject,
+  val controlSubject: TestControlMessageSubject = new TestControlMessageSubject,
   replyDropRate: Double = 0.0) extends InboundContext {
 
   private val associations = new ConcurrentHashMap[Address, OutboundContext]
 
-  def sendReply(to: Address, message: ControlMessage) = {
+  def sendControl(to: Address, message: ControlMessage) = {
     if (ThreadLocalRandom.current().nextDouble() >= replyDropRate)
-      replySubject.sendReply(InboundEnvelope(null, to, message, None))
+      controlSubject.sendControl(InboundEnvelope(null, to, message, None))
   }
 
   def association(remoteAddress: Address): OutboundContext =
     associations.get(remoteAddress) match {
       case null ⇒
-        val a = new TestOutboundContext(localAddress, remoteAddress, replySubject)
+        val a = new TestOutboundContext(localAddress, remoteAddress, controlSubject)
         associations.putIfAbsent(remoteAddress, a) match {
           case null     ⇒ a
           case existing ⇒ existing
@@ -39,13 +39,13 @@ private[akka] class TestInboundContext(
     }
 
   protected def createAssociation(remoteAddress: Address): OutboundContext =
-    new TestOutboundContext(localAddress, remoteAddress, replySubject)
+    new TestOutboundContext(localAddress, remoteAddress, controlSubject)
 }
 
 private[akka] class TestOutboundContext(
   override val localAddress: UniqueAddress,
   override val remoteAddress: Address,
-  override val replySubject: TestReplySubject) extends OutboundContext {
+  override val controlSubject: TestControlMessageSubject) extends OutboundContext {
 
   private val _uniqueRemoteAddress = Promise[UniqueAddress]()
   def uniqueRemoteAddress: Future[UniqueAddress] = _uniqueRemoteAddress.future
@@ -56,24 +56,24 @@ private[akka] class TestOutboundContext(
 
 }
 
-private[akka] class TestReplySubject extends ReplySubject {
+private[akka] class TestControlMessageSubject extends ControlMessageSubject {
 
-  private var replyObservers = new CopyOnWriteArrayList[ReplyObserver]
+  private var observers = new CopyOnWriteArrayList[ControlMessageObserver]
 
-  override def attach(observer: ReplyObserver): Future[Done] = {
-    replyObservers.add(observer)
+  override def attach(observer: ControlMessageObserver): Future[Done] = {
+    observers.add(observer)
     Future.successful(Done)
   }
 
-  override def detach(observer: ReplyObserver): Unit = {
-    replyObservers.remove(observer)
+  override def detach(observer: ControlMessageObserver): Unit = {
+    observers.remove(observer)
   }
 
   override def stopped: Future[Done] = Promise[Done]().future
 
-  def sendReply(env: InboundEnvelope): Unit = {
-    val iter = replyObservers.iterator()
+  def sendControl(env: InboundEnvelope): Unit = {
+    val iter = observers.iterator()
     while (iter.hasNext())
-      iter.next().reply(env)
+      iter.next().notify(env)
   }
 }
