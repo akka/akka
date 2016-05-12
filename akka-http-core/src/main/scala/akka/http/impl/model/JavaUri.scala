@@ -21,7 +21,7 @@ case class JavaUri(uri: sm.Uri) extends jm.Uri {
 
   def scheme(): String = uri.scheme
   def host(): jm.Host = uri.authority.host
-  def port(): Int = uri.authority.port
+  def port(): Int = uri.effectivePort
   def userInfo(): String = uri.authority.userinfo
 
   def path(): String = uri.path.toString
