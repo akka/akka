@@ -26,29 +26,14 @@ import java.util.concurrent.TimeUnit;
 
 public class CodingDirectivesTest extends JUnitRouteTest {
 
-    static ActorSystem system;
-
-    @BeforeClass
-    public static void setup() {
-        system = ActorSystem.create("GraphDSLDocTest");
-    }
-
-    @AfterClass
-    public static void tearDown() throws Exception {
-        Await.result(system.terminate(), Duration.Inf());
-        system = null;
-    }
-
-    final ActorMaterializer mat = ActorMaterializer.create(system);
-
-    @Test
-    public void testAutomaticEncodingWhenNoEncodingRequested() throws Exception {
-        TestRoute route =
-            testRoute(
-                encodeResponse(() ->
-                    complete("TestString")
-                )
-            );
+  @Test
+  public void testAutomaticEncodingWhenNoEncodingRequested() throws Exception {
+    TestRoute route =
+      testRoute(
+        encodeResponse(() ->
+          complete("TestString")
+        )
+      );
 
     TestRouteResult response = route.run(HttpRequest.create());
     response
