@@ -251,7 +251,7 @@ trait ImplicitPathMatcherConstruction {
   /**
    * @group pathmatcherimpl
    */
-  implicit def stringNameOptionReceptacle2PathMatcher(nr: NameOptionReceptacle[String]): PathMatcher0 =
+  implicit def _stringNameOptionReceptacle2PathMatcher(nr: NameOptionReceptacle[String]): PathMatcher0 =
     PathMatcher(nr.name).?
 
   /**
