@@ -1,18 +1,19 @@
 /**
  * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.cluster
+package akka.cluster.artery
 
-import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.testkit._
-import scala.concurrent.duration._
 import java.util.concurrent.atomic.AtomicReference
+
+import akka.actor.{ Actor, Props }
+import akka.cluster.ClusterEvent.{ CurrentClusterState, MemberEvent }
+import akka.cluster.{ Member, MultiNodeClusterSpec }
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
+import akka.testkit._
+import com.typesafe.config.ConfigFactory
+
 import scala.collection.immutable.SortedSet
-import akka.actor.Props
-import akka.actor.Actor
 
 object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -24,12 +25,42 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
   // Note that this test uses default configuration,
   // not MultiNodeClusterSpec.clusterConfig
   commonConfig(ConfigFactory.parseString("""
-    akka.actor.provider = akka.cluster.ClusterActorRefProvider
-    akka.loggers = ["akka.testkit.TestEventListener"]
-    akka.loglevel = INFO
-    akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.failure-detector.monitored-by-nr-of-members = 3
+    akka {
+      actor {
+        provider = akka.cluster.ClusterActorRefProvider
+        serialize-creators = false
+        serialize-messages = false
+      }
+      loggers = ["akka.testkit.TestEventListener"]
+      loglevel = INFO
+      remote {
+        log-remote-lifecycle-events = off
+        artery {
+          enabled = on
+        }
+      }
+      cluster.failure-detector.monitored-by-nr-of-members = 3
+    }
     """))
+
+  val rolesAndPorts =
+    Map(
+      first -> 20501, // TODO yeah, we should have support for dynamic port assignment
+      second -> 20502,
+      third -> 20503,
+      fourth -> 20504,
+      fifth -> 20505)
+
+  for {
+    (role, port) ← rolesAndPorts
+  } {
+    nodeConfig(role) {
+      ConfigFactory.parseString(s"""
+      akka.remote.artery.port = $port
+      """)
+    }
+  }
+
 }
 
 class SunnyWeatherMultiJvmNode1 extends SunnyWeatherSpec
@@ -43,7 +74,6 @@ abstract class SunnyWeatherSpec
   with MultiNodeClusterSpec {
 
   import SunnyWeatherMultiJvmSpec._
-  import ClusterEvent._
 
   "A normal cluster" must {
     "be healthy" taggedAs LongRunningTest in {
