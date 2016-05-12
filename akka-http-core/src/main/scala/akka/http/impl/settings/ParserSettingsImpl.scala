@@ -6,9 +6,10 @@ package akka.http.impl.settings
 
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.settings.ParserSettings.{ ErrorLoggingVerbosity, CookieParsingMode }
+import akka.stream.impl.ConstantFun
 import com.typesafe.config.Config
 import scala.collection.JavaConverters._
-import akka.http.scaladsl.model.{ StatusCode, HttpMethod, Uri }
+import akka.http.scaladsl.model._
 import akka.http.impl.util._
 
 /** INTERNAL API */
@@ -29,7 +30,8 @@ private[akka] final case class ParserSettingsImpl(
   headerValueCacheLimits: Map[String, Int],
   includeTlsSessionInfoHeader: Boolean,
   customMethods: String ⇒ Option[HttpMethod],
-  customStatusCodes: Int ⇒ Option[StatusCode])
+  customStatusCodes: Int ⇒ Option[StatusCode],
+  customMediaTypes: MediaTypes.FindCustom)
   extends akka.http.scaladsl.settings.ParserSettings {
 
   require(maxUriLength > 0, "max-uri-length must be > 0")
@@ -52,9 +54,9 @@ private[akka] final case class ParserSettingsImpl(
 
 object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.http.parsing") {
 
-  // for equality
-  private[this] val noCustomMethods: String ⇒ Option[HttpMethod] = _ ⇒ None
-  private[this] val noCustomStatusCodes: Int ⇒ Option[StatusCode] = _ ⇒ None
+  private[this] val noCustomMethods: String ⇒ Option[HttpMethod] = ConstantFun.scalaAnyToNone
+  private[this] val noCustomStatusCodes: Int ⇒ Option[StatusCode] = ConstantFun.scalaAnyToNone
+  private[this] val noCustomMediaTypes: (String, String) ⇒ Option[MediaType] = ConstantFun.scalaAnyTwoToNone
 
   def fromSubConfig(root: Config, inner: Config) = {
     val c = inner.withFallback(root.getConfig(prefix))
@@ -77,7 +79,8 @@ object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.ht
       cacheConfig.entrySet.asScala.map(kvp ⇒ kvp.getKey -> cacheConfig.getInt(kvp.getKey))(collection.breakOut),
       c getBoolean "tls-session-info-header",
       noCustomMethods,
-      noCustomStatusCodes)
+      noCustomStatusCodes,
+      noCustomMediaTypes)
   }
 
 }

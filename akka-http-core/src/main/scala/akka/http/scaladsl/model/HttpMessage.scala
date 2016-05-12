@@ -84,7 +84,12 @@ sealed trait HttpMessage extends jm.HttpMessage {
   /** Returns the first header of the given type if there is one */
   def header[T <: jm.HttpHeader: ClassTag]: Option[T] = {
     val erasure = classTag[T].runtimeClass
-    headers.find(erasure.isInstance).asInstanceOf[Option[T]]
+    headers.find(erasure.isInstance).asInstanceOf[Option[T]] match {
+      case header: Some[T] => header
+      case _ if erasure == classOf[`Content-Type`] => Some(entity.contentType).asInstanceOf[Option[T]]
+      case _ => None
+    }
+
   }
 
   /**

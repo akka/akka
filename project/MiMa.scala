@@ -757,9 +757,22 @@ object MiMa extends AutoPlugin {
         // #20293 Use JDK7 NIO Path instead of File
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage#MessageTransformations.withEntity"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.withEntity"),
-
+        
+        // #20401 custom media types registering
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.model.parser.CommonActions.customMediaTypes"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.model.parser.HeaderParser.Settings"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.model.parser.HeaderParser#Settings.customMediaTypes"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.engine.parsing.HttpHeaderParser#Settings.customMediaTypes"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ParserSettingsImpl.apply"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ParserSettingsImpl.copy"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ParserSettingsImpl.this"),
+        
         // #20123
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.recoverWithRetries"),
+
+        // #20379 Allow registering custom media types
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.getCustomMediaTypes"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ParserSettings.customMediaTypes"),
 
         // internal api
         FilterAnyProblemStartingWith("akka.stream.impl"),
