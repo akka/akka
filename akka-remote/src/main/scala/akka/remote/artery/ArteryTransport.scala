@@ -363,15 +363,15 @@ object ArteryTransport {
 
   /**
    * Internal API
-   * @param hostname
    * @return A port that is hopefully available
    */
-  private[artery] def autoSelectPort(hostname: String): Int = {
+  private[remote] def autoSelectPort(hostname: String): Int = {
     val socket = DatagramChannel.open().socket()
     socket.bind(new InetSocketAddress(hostname, 0))
     val port = socket.getLocalPort
     socket.close()
     port
   }
+
 }
 

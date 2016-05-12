@@ -158,7 +158,7 @@ abstract class LatencySpec
 
   def channel(roleName: RoleName) = {
     val a = node(roleName).address
-    s"aeron:udp?endpoint=${a.host.get}:${aeronPort(roleName)}"
+    s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
   }
 
   lazy val reporterExecutor = Executors.newFixedThreadPool(1)
