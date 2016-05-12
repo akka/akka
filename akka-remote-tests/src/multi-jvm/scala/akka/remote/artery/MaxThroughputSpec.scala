@@ -36,27 +36,10 @@ object MaxThroughputSpec extends MultiNodeConfig {
          }
          remote.artery {
            enabled = on
+           port = 0
          }
        }
        """)))
-
-  def aeronPort(roleName: RoleName): Int =
-    roleName match {
-      case `first`  ⇒ 20501 // TODO yeah, we should have support for dynamic port assignment
-      case `second` ⇒ 20502
-    }
-
-  nodeConfig(first) {
-    ConfigFactory.parseString(s"""
-      akka.remote.artery.port = ${aeronPort(first)}
-      """)
-  }
-
-  nodeConfig(second) {
-    ConfigFactory.parseString(s"""
-      akka.remote.artery.port = ${aeronPort(second)}
-      """)
-  }
 
   case object Run
   sealed trait Echo extends DeadLetterSuppression

@@ -37,29 +37,12 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
         log-remote-lifecycle-events = off
         artery {
           enabled = on
+          port = 0
         }
       }
       cluster.failure-detector.monitored-by-nr-of-members = 3
     }
     """))
-
-  val rolesAndPorts =
-    Map(
-      first -> 20501, // TODO yeah, we should have support for dynamic port assignment
-      second -> 20502,
-      third -> 20503,
-      fourth -> 20504,
-      fifth -> 20505)
-
-  for {
-    (role, port) ← rolesAndPorts
-  } {
-    nodeConfig(role) {
-      ConfigFactory.parseString(s"""
-      akka.remote.artery.port = $port
-      """)
-    }
-  }
 
 }
 

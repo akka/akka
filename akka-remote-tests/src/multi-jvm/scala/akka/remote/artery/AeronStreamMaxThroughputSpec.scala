@@ -46,12 +46,6 @@ object AeronStreamMaxThroughputSpec extends MultiNodeConfig {
        }
        """)))
 
-  def aeronPort(roleName: RoleName): Int =
-    roleName match {
-      case `first`  ⇒ 20511 // TODO yeah, we should have support for dynamic port assignment
-      case `second` ⇒ 20512
-    }
-
   final case class TestSettings(
     testName: String,
     totalMessages: Long,
@@ -111,7 +105,7 @@ abstract class AeronStreamMaxThroughputSpec
 
   def channel(roleName: RoleName) = {
     val a = node(roleName).address
-    s"aeron:udp?endpoint=${a.host.get}:${aeronPort(roleName)}"
+    s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
   }
 
   val streamId = 1
