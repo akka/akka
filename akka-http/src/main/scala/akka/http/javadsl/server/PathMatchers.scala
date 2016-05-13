@@ -46,11 +46,6 @@ object PathMatchers {
   def slash(): PathMatcher0 = Slash
 
   /**
-   * A PathMatcher that matches a single slash character ('/').
-   */
-  def pathEng(): PathMatcher0 = new PathMatcher0(SPathMatchers.PathEnd)
-
-  /**
    * Creates a PathMatcher that consumes (a prefix of) the first path segment
    * (if the path begins with a segment).
    */
@@ -134,6 +129,12 @@ object PathMatchers {
    * unmatched part of the request's URI path as an (encoded!) String.
    */
   def remaining: PathMatcher1[String] = Remaining
+
+  /**
+   * A PathMatcher that matches and extracts the complete remaining,
+   * unmatched part of the request's URI path.
+   */
+  def remainingPath: PathMatcher1[Path] = RemainingPath
 
   /**
    * A PathMatcher that matches if the unmatched path starts with a path segment.
