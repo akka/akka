@@ -8,6 +8,7 @@ import javax.net.ssl.{ SSLContext, SSLParameters }
 import akka.http.scaladsl
 import akka.japi.Util
 import akka.stream.TLSClientAuth
+import akka.http.impl.util.JavaMapping.Implicits._
 
 import scala.compat.java8.OptionConverters
 import scala.collection.JavaConverters._

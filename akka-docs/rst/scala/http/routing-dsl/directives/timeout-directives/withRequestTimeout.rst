@@ -12,7 +12,7 @@ Signature
 Description
 -----------
 
-This directive enables "late" (during request processing) control over the :ref:`request-timeout` feature in Akka HTTP.
+This directive enables "late" (during request processing) control over the :ref:`request-timeout-scala` feature in Akka HTTP.
 
 The timeout can be either loosened or made more tight using this directive, however one should be aware that it is
 inherently racy (which may especially show with very tight timeouts) since a timeout may already have been triggered
@@ -35,7 +35,7 @@ See also :ref:`-withRequestTimeoutResponse-` if only looking to customise the ti
   It is recommended to use a larger statically configured timeout (think of it as a "safety net" against programming errors
   or malicious attackers) and if needed tighten it using the directives – not the other way around.
 
-For more information about various timeouts in Akka HTTP see :ref:`http-timeouts`.
+For more information about various timeouts in Akka HTTP see :ref:`http-timeouts-scala`.
 
 Example
 -------

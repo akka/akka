@@ -33,13 +33,16 @@ object MiMa extends AutoPlugin {
       )
       val akka242NewArtifacts = Seq(
         "akka-stream",
-        "akka-stream-testkit",
         "akka-http-core",
-        "akka-http-experimental",
+        
         "akka-http-testkit",
-        "akka-http-jackson-experimental",
-        "akka-http-spray-json-experimental",
-        "akka-http-xml-experimental"
+        "akka-stream-testkit"
+        
+        // TODO enable once not experimental anymore
+        // "akka-http-experimental",
+        // "akka-http-jackson-experimental",
+        // "akka-http-spray-json-experimental",
+        // "akka-http-xml-experimental"
       )
       scalaBinaryVersion match {
         case "2.11" if !(akka24NewArtifacts ++ akka242NewArtifacts).contains(projectName) => akka23Versions ++ akka24NoStreamVersions ++ akka24StreamVersions
@@ -705,20 +708,38 @@ object MiMa extends AutoPlugin {
         // #19849 content negotiation fixes
         ProblemFilters.exclude[FinalClassProblem]("akka.http.scaladsl.marshalling.Marshal$UnacceptableResponseContentTypeException"),
 
+        // #20009 internal and shouldn't have been public
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.QueueSource.completion"),
+
+        // #20015 simplify materialized value computation tree
+        ProblemFilters.exclude[FinalMethodProblem]("akka.stream.impl.StreamLayout#AtomicModule.subModules"),
+        ProblemFilters.exclude[FinalMethodProblem]("akka.stream.impl.StreamLayout#AtomicModule.downstreams"),
+        ProblemFilters.exclude[FinalMethodProblem]("akka.stream.impl.StreamLayout#AtomicModule.upstreams"),
+        ProblemFilters.exclude[FinalMethodProblem]("akka.stream.impl.Stages#DirectProcessor.toString"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.MaterializerSession.materializeAtomic"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.impl.MaterializerSession.materializeAtomic"),
+        ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.Stages$StageModule"),
+        ProblemFilters.exclude[FinalMethodProblem]("akka.stream.impl.Stages#GroupBy.toString"),
+        ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.FlowModule"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.FlowModule.subModules"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.impl.FlowModule.label"),
+        ProblemFilters.exclude[FinalClassProblem]("akka.stream.impl.fusing.GraphModule"),
+
         // #15947 catch mailbox creation failures
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.RepointableActorRef.point"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.Dispatch.initWithFailure"),
+
+        // #19877 Source.queue termination support
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.SourceQueueAdapter.this"),
 
         // #19828
         ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.persistence.Eventsourced#ProcessingState.onWriteMessageComplete"),
         ProblemFilters.exclude[ReversedAbstractMethodProblem]("akka.persistence.Eventsourced#ProcessingState.onWriteMessageComplete"),
 
         // #19390 Add flow monitor
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.monitor")
-      ),
-      "2.4.3" -> Seq(
-        // internal api
-        FilterAnyProblemStartingWith("akka.stream.impl"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.monitor"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$TickSource$"),
+        
         FilterAnyProblemStartingWith("akka.http.impl"),
 
         // #20214
@@ -794,6 +815,14 @@ object MiMa extends AutoPlugin {
 
         // #20131 - flow combinator
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.backpressureTimeout"),
+        
+        // #20470 - new JavaDSL for Akka HTTP
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.DateTime.plus"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.DateTime.minus"),
+        
+        // #20214
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.createClientHttpsContext"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.validateAndWarnAboutLooseSettings"),
 
         // #20257 Snapshots with PersistentFSM (experimental feature)
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.serialization.MessageFormats#PersistentStateChangeEventOrBuilder.getTimeoutNanos"),

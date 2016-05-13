@@ -1,41 +1,31 @@
 /*
  * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
  */
+package akka.http.javadsl.server.directives
 
-package akka.http.javadsl.server
-package directives
+import akka.http.javadsl.server.ExceptionHandler
+import akka.http.javadsl.server.RejectionHandler
+import akka.http.javadsl.server.Route
+import akka.http.scaladsl.server.directives.{ ExecutionDirectives ⇒ D }
 
-import akka.http.impl.server.RouteStructure
-
-import scala.annotation.varargs
-import scala.reflect.ClassTag
-
-abstract class ExecutionDirectives extends CookieDirectives {
-  /**
-   * Handles exceptions in the inner routes using the specified handler.
-   */
-  @varargs
-  def handleExceptions(handler: ExceptionHandler, innerRoute: Route, moreInnerRoutes: Route*): Route =
-    RouteStructure.HandleExceptions(handler)(innerRoute, moreInnerRoutes.toList)
+abstract class ExecutionDirectives extends DebuggingDirectives {
 
   /**
-   * Handles rejections in the inner routes using the specified handler.
+   * Transforms exceptions thrown during evaluation of its inner route using the given
+   * [[akka.http.javadsl.server.ExceptionHandler]].
    */
-  @varargs
-  def handleRejections(handler: RejectionHandler, innerRoute: Route, moreInnerRoutes: Route*): Route =
-    RouteStructure.HandleRejections(handler)(innerRoute, moreInnerRoutes.toList)
+  def handleExceptions(handler: ExceptionHandler, inner: java.util.function.Supplier[Route]) = RouteAdapter(
+    D.handleExceptions(handler.asScala) {
+      inner.get.delegate
+    })
 
   /**
-   * Handles rejections of the given type in the inner routes using the specified handler.
+   * Transforms rejections produced by its inner route using the given
+   * [[akka.http.scaladsl.server.RejectionHandler]].
    */
-  @varargs
-  def handleRejections[T](tClass: Class[T], handler: Handler1[T], innerRoute: Route, moreInnerRoutes: Route*): Route =
-    RouteStructure.HandleRejections(new RejectionHandler {
-      implicit def tTag: ClassTag[T] = ClassTag(tClass)
-      override def handleCustomRejection(ctx: RequestContext, rejection: CustomRejection): RouteResult =
-        rejection match {
-          case t: T ⇒ handler.apply(ctx, t)
-          case _    ⇒ passRejection()
-        }
-    })(innerRoute, moreInnerRoutes.toList)
+  def handleRejections(handler: RejectionHandler, inner: java.util.function.Supplier[Route]) = RouteAdapter(
+    D.handleRejections(handler.asScala) {
+      inner.get.delegate
+    })
+
 }

@@ -163,6 +163,15 @@ object HeaderMagnet extends LowPriorityHeaderMagnetImplicits {
    */
   implicit def fromUnitForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]]
     (u: Unit)(implicit tag: ClassTag[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
+      fromClassTagForModeledCustomHeader[T, H](tag, companion)
+
+
+  implicit def fromClassForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]]
+    (clazz: Class[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
+      fromClassTagForModeledCustomHeader(ClassTag(clazz), companion)
+
+  implicit def fromClassTagForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]]
+    (tag: ClassTag[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
     new HeaderMagnet[T] {
       override def runtimeClass = tag.runtimeClass.asInstanceOf[Class[T]]
       override def classTag = tag
@@ -174,10 +183,24 @@ object HeaderMagnet extends LowPriorityHeaderMagnetImplicits {
 }
 
 trait LowPriorityHeaderMagnetImplicits {
-  implicit def fromUnit[T <: HttpHeader](u: Unit)(implicit tag: ClassTag[T]): HeaderMagnet[T] =
+  implicit def fromClassNormalHeader[T <: HttpHeader](clazz: Class[T]): HeaderMagnet[T] =
+    fromClassTagNormalHeader(ClassTag(clazz))
+
+  // TODO DRY?
+  implicit def fromClassNormalJavaHeader[T <: akka.http.javadsl.model.HttpHeader](clazz: Class[T]): HeaderMagnet[T] =
+     new HeaderMagnet[T] {
+       override def classTag: ClassTag[T] = ClassTag(clazz)
+       override def runtimeClass: Class[T] = clazz
+       override def extractPF: PartialFunction[HttpHeader, T] = { case x if runtimeClass.isAssignableFrom(x.getClass) => x.asInstanceOf[T] }
+     }
+
+  implicit def fromUnitNormalHeader[T <: HttpHeader](u: Unit)(implicit tag: ClassTag[T]): HeaderMagnet[T] =
+    fromClassTagNormalHeader(tag)
+
+  implicit def fromClassTagNormalHeader[T <: HttpHeader](tag: ClassTag[T]): HeaderMagnet[T] =
     new HeaderMagnet[T] {
       val classTag: ClassTag[T] = tag
       val runtimeClass: Class[T] = tag.runtimeClass.asInstanceOf[Class[T]]
-      val extractPF: PartialFunction[Any, T] = { case x: T ⇒ x }
+      val extractPF: PartialFunction[Any, T] = { case x if runtimeClass.isAssignableFrom(x.getClass) ⇒ x.asInstanceOf[T] }
     }
 }

@@ -118,7 +118,7 @@ Streaming Request/Response Entities
 
 Streaming of HTTP message entities is supported through subclasses of ``HttpEntity``. The application needs to be able
 to deal with streamed entities when receiving a request as well as, in many cases, when constructing responses.
-See :ref:`HttpEntity` for a description of the alternatives.
+See :ref:`HttpEntity-scala` for a description of the alternatives.
 
 If you rely on the :ref:`http-marshalling-scala` and/or :ref:`http-unmarshalling-scala` facilities provided by
 Akka HTTP then the conversion of custom types to and from streamed entities can be quite convenient.

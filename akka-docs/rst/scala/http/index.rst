@@ -14,3 +14,4 @@ Akka HTTP
    client-side/index
    server-side-https-support
    migration-from-spray
+   migration-from-old-http-javadsl

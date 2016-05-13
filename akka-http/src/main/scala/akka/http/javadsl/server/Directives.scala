@@ -4,20 +4,26 @@
 
 package akka.http.javadsl.server
 
-import akka.http.javadsl.server.directives._
-import scala.collection.immutable
+import akka.http.impl.util.JavaMapping
+import akka.http.javadsl.server.directives.TimeoutDirectives
 
-abstract class AllDirectives extends WebSocketDirectives
+import scala.annotation.varargs
+
+abstract class AllDirectives extends TimeoutDirectives
 
 /**
- *
+ * INTERNAL API
  */
 object Directives extends AllDirectives {
-  /**
-   * INTERNAL API
-   */
-  private[http] def custom(f: (Route, immutable.Seq[Route]) ⇒ Route): Directive =
-    new AbstractDirective {
-      def createRoute(first: Route, others: Array[Route]): Route = f(first, others.toList)
-    }
+  import JavaMapping.Implicits._
+  import akka.http.javadsl.RoutingJavaMapping._
+
+  // These are repeated here since sometimes (?) the Scala compiler won't actually generate java-compatible
+  // signatures for varargs methods, making them show up as Seq<Object> instead of T... in Java.
+
+  @varargs override def route(alternatives: Route*): Route =
+    super.route(alternatives: _*)
+
+  @varargs override def getFromBrowseableDirectories(directories: String*): Route =
+    super.getFromBrowseableDirectories(directories: _*)
 }
