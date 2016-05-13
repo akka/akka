@@ -6,22 +6,19 @@ package akka.cluster.client
 import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
-import akka.actor.Actor
-import akka.actor.ActorPath
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
-import akka.actor.Props
+import akka.actor.{ Actor, ActorPath, ActorRef, ActorSystem, Address, ExtendedActorSystem, NoSerializationVerificationNeeded, Props }
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent._
+import akka.cluster.client.ClusterClientSpec.TestClientListener.LatestContactPoints
+import akka.cluster.client.ClusterClientSpec.TestReceptionistListener.LatestClusterClients
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
-import akka.actor.Address
 import akka.cluster.pubsub._
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.util.Timeout
+
 import scala.concurrent.Await
 
 object ClusterClientSpec extends MultiNodeConfig {
@@ -38,8 +35,12 @@ object ClusterClientSpec extends MultiNodeConfig {
     akka.cluster.auto-down-unreachable-after = 0s
     akka.cluster.client.heartbeat-interval = 1s
     akka.cluster.client.acceptable-heartbeat-pause = 3s
+    akka.cluster.client.refresh-contacts-interval = 1s
     # number-of-contacts must be >= 4 because we shutdown all but one in the end
     akka.cluster.client.receptionist.number-of-contacts = 4
+    akka.cluster.client.receptionist.heartbeat-interval = 10s
+    akka.cluster.client.receptionist.acceptable-heartbeat-pause = 10s
+    akka.cluster.client.receptionist.failure-detection-interval = 1s
     akka.test.filter-leeway = 10s
     """))
 
@@ -63,6 +64,83 @@ object ClusterClientSpec extends MultiNodeConfig {
     }
   }
 
+  //#clientEventsListener
+  class ClientListener(targetClient: ActorRef) extends Actor {
+    override def preStart(): Unit =
+      targetClient ! SubscribeContactPoints
+
+    def receive: Receive =
+      receiveWithContactPoints(Set.empty)
+
+    def receiveWithContactPoints(contactPoints: Set[ActorPath]): Receive = {
+      case ContactPoints(cps) ⇒
+        context.become(receiveWithContactPoints(cps))
+      // Now do something with the up-to-date "cps"
+      case ContactPointAdded(cp) ⇒
+        context.become(receiveWithContactPoints(contactPoints + cp))
+      // Now do something with an up-to-date "contactPoints + cp"
+      case ContactPointRemoved(cp) ⇒
+        context.become(receiveWithContactPoints(contactPoints - cp))
+      // Now do something with an up-to-date "contactPoints - cp"
+    }
+  }
+  //#clientEventsListener
+
+  object TestClientListener {
+    case object GetLatestContactPoints
+    case class LatestContactPoints(contactPoints: Set[ActorPath]) extends NoSerializationVerificationNeeded
+  }
+
+  class TestClientListener(targetClient: ActorRef) extends ClientListener(targetClient) {
+
+    import TestClientListener._
+
+    override def receiveWithContactPoints(contactPoints: Set[ActorPath]): Receive = {
+      case GetLatestContactPoints ⇒
+        sender() ! LatestContactPoints(contactPoints)
+      case msg: Any ⇒
+        super.receiveWithContactPoints(contactPoints)(msg)
+    }
+  }
+
+  //#receptionistEventsListener
+  class ReceptionistListener(targetReceptionist: ActorRef) extends Actor {
+    override def preStart(): Unit =
+      targetReceptionist ! SubscribeClusterClients
+
+    def receive: Receive =
+      receiveWithClusterClients(Set.empty)
+
+    def receiveWithClusterClients(clusterClients: Set[ActorRef]): Receive = {
+      case ClusterClients(cs) ⇒
+        context.become(receiveWithClusterClients(cs))
+      // Now do something with the up-to-date "c"
+      case ClusterClientUp(c) ⇒
+        context.become(receiveWithClusterClients(clusterClients + c))
+      // Now do something with an up-to-date "clusterClients + c"
+      case ClusterClientUnreachable(c) ⇒
+        context.become(receiveWithClusterClients(clusterClients - c))
+      // Now do something with an up-to-date "clusterClients - c"
+    }
+  }
+  //#receptionistEventsListener
+
+  object TestReceptionistListener {
+    case object GetLatestClusterClients
+    case class LatestClusterClients(clusterClients: Set[ActorRef]) extends NoSerializationVerificationNeeded
+  }
+
+  class TestReceptionistListener(targetReceptionist: ActorRef) extends ReceptionistListener(targetReceptionist) {
+
+    import TestReceptionistListener._
+
+    override def receiveWithClusterClients(clusterClients: Set[ActorRef]): Receive = {
+      case GetLatestClusterClients ⇒
+        sender() ! LatestClusterClients(clusterClients)
+      case msg: Any ⇒
+        super.receiveWithClusterClients(clusterClients)(msg)
+    }
+  }
 }
 
 class ClusterClientMultiJvmNode1 extends ClusterClientSpec
@@ -185,6 +263,50 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       enterBarrier("after-3")
     }
 
+    "report events" in within(15 seconds) {
+      runOn(client) {
+        implicit val timeout = Timeout(1.second.dilated)
+        val c = Await.result(system.actorSelection("/user/client").resolveOne(), timeout.duration)
+        val l = system.actorOf(Props(classOf[TestClientListener], c), "reporter-client-listener")
+
+        val expectedContacts = Set(first, second, third, fourth).map(node(_) / "system" / "receptionist")
+        within(10.seconds) {
+          awaitAssert {
+            val probe = TestProbe()
+            l.tell(TestClientListener.GetLatestContactPoints, probe.ref)
+            probe.expectMsgType[LatestContactPoints].contactPoints should ===(expectedContacts)
+          }
+        }
+      }
+
+      enterBarrier("reporter-client-listener-tested")
+
+      runOn(first, second, third) {
+        // Only run this test on a node that knows about our client. It could be that no node knows
+        // but there isn't a means of expressing that at least one of the nodes needs to pass the test.
+        implicit val timeout = Timeout(2.seconds.dilated)
+        val r = ClusterClientReceptionist(system).underlying
+        r ! GetClusterClients
+        val cps = expectMsgType[ClusterClients]
+        if (cps.clusterClients.exists(_.path.name == "client")) {
+          log.info("Testing that the receptionist has just one client")
+          val l = system.actorOf(Props(classOf[TestReceptionistListener], r), "reporter-receptionist-listener")
+
+          val c = Await.result(system.actorSelection(node(client) / "user" / "client").resolveOne(), timeout.duration)
+          val expectedClients = Set(c)
+          within(10.seconds) {
+            awaitAssert {
+              val probe = TestProbe()
+              l.tell(TestReceptionistListener.GetLatestClusterClients, probe.ref)
+              probe.expectMsgType[LatestClusterClients].clusterClients should ===(expectedClients)
+            }
+          }
+        }
+      }
+
+      enterBarrier("after-6")
+    }
+
     "re-establish connection to another receptionist when server is shutdown" in within(30 seconds) {
       runOn(first, second, third, fourth) {
         val service2 = system.actorOf(Props(classOf[TestService], testActor), "service2")
@@ -218,6 +340,20 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       receiveWhile(2 seconds) {
         case "hi again" ⇒
         case other      ⇒ fail("unexpected message: " + other)
+      }
+      enterBarrier("verifed-4")
+      runOn(client) {
+        // Locate the test listener from a previous test and see that it agrees
+        // with what the client is telling it about what receptionists are alive
+        val l = system.actorSelection("/user/reporter-client-listener")
+        val expectedContacts = remainingServerRoleNames.map(node(_) / "system" / "receptionist")
+        within(10.seconds) {
+          awaitAssert {
+            val probe = TestProbe()
+            l.tell(TestClientListener.GetLatestContactPoints, probe.ref)
+            probe.expectMsgType[LatestContactPoints].contactPoints should ===(expectedContacts)
+          }
+        }
       }
       enterBarrier("after-4")
     }
