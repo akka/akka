@@ -30,7 +30,6 @@ object HandshakeRestartReceiverSpec extends MultiNodeConfig {
          actor.provider = "akka.remote.RemoteActorRefProvider"
          remote.artery {
            enabled = on
-           port = 0
          }
        }
        """)))

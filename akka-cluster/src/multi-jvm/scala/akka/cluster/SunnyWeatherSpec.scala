@@ -36,7 +36,6 @@ class SunnyWeatherMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
     """
     akka.remote.artery {
       enabled = on
-      port = 0
     }
     """
 

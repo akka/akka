@@ -36,7 +36,6 @@ object MaxThroughputSpec extends MultiNodeConfig {
          }
          remote.artery {
            enabled = on
-           port = 0
          }
        }
        """)))
