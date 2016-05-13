@@ -10,9 +10,7 @@ import scala.concurrent.duration._
 
 import akka.NotUsed
 import akka.actor.ActorIdentity
-import akka.actor.ActorRef
 import akka.actor.ActorSystem
-import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
 import akka.actor.InternalActorRef
@@ -84,7 +82,7 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commo
     Flow[Send]
       .map {
         case Send(sysEnv: SystemMessageEnvelope, _, _, _) ⇒
-          InboundEnvelope(recipient, addressB.address, sysEnv, None)
+          InboundEnvelope(recipient, addressB.address, sysEnv, None, addressA)
       }
       .async
       .via(new SystemMessageAcker(inboundContext))

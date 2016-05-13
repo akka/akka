@@ -25,7 +25,7 @@ private[akka] class MessageDispatcher(
   provider: RemoteActorRefProvider) {
 
   private val remoteDaemon = provider.remoteDaemon
-  private val log = Logging(system.eventStream, getClass.getName)
+  private val log = Logging(system, getClass.getName)
 
   def dispatch(recipient: InternalActorRef,
                recipientAddress: Address,

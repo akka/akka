@@ -3,21 +3,18 @@
  */
 package akka.remote.artery
 
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit.NANOSECONDS
+import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import akka.actor._
-import akka.remote.RemoteActorRefProvider
+import akka.remote.AddressUidExtension
+import akka.remote.RARP
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-import java.net.InetAddress
-import scala.concurrent.Await
-import akka.remote.RARP
-import akka.remote.AddressUidExtension
 
 object HandshakeRestartReceiverSpec extends MultiNodeConfig {
   val first = role("first")
@@ -77,7 +74,7 @@ abstract class HandshakeRestartReceiverSpec
 
         val secondAddress = node(second).address
         val secondAssociation = RARP(system).provider.transport.asInstanceOf[ArteryTransport].association(secondAddress)
-        val secondUniqueRemoteAddress = Await.result(secondAssociation.uniqueRemoteAddress, 3.seconds)
+        val secondUniqueRemoteAddress = Await.result(secondAssociation.associationState.uniqueRemoteAddress, 3.seconds)
         secondUniqueRemoteAddress.address should ===(secondAddress)
         secondUniqueRemoteAddress.uid should ===(secondUid)
 
@@ -93,7 +90,10 @@ abstract class HandshakeRestartReceiverSpec
         }
         val (secondUid2, subject2) = identifyWithUid(secondRootPath, "subject2")
         secondUid2 should !==(secondUid)
-        // FIXME verify that UID in association was replaced (not implemented yet)
+        val secondUniqueRemoteAddress2 = Await.result(secondAssociation.associationState.uniqueRemoteAddress, 3.seconds)
+        secondUniqueRemoteAddress2.uid should ===(secondUid2)
+        secondUniqueRemoteAddress2.address should ===(secondAddress)
+        secondUniqueRemoteAddress2 should !==(secondUniqueRemoteAddress)
 
         subject2 ! "shutdown"
       }

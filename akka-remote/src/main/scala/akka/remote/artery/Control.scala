@@ -3,20 +3,22 @@
  */
 package akka.remote.artery
 
+import java.util.ArrayDeque
+
 import scala.concurrent.Future
 import scala.concurrent.Promise
+
 import akka.Done
+import akka.remote.EndpointManager.Send
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
 import akka.stream.Outlet
+import akka.stream.stage.CallbackWrapper
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
-import akka.remote.EndpointManager.Send
-import java.util.ArrayDeque
-import akka.stream.stage.CallbackWrapper
 
 /**
  * Marker trait for reply messages
@@ -97,7 +99,7 @@ private[akka] class InboundControlJunction
       // InHandler
       override def onPush(): Unit = {
         grab(in) match {
-          case env @ InboundEnvelope(_, _, _: ControlMessage, _) ⇒
+          case env @ InboundEnvelope(_, _, _: ControlMessage, _, _) ⇒
             observers.foreach(_.notify(env))
             pull(in)
           case env ⇒
