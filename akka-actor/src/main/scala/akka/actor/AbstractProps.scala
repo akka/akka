@@ -5,12 +5,12 @@
 package akka.actor
 
 import java.lang.reflect.{ Modifier, ParameterizedType, TypeVariable }
-
 import akka.japi.Creator
 import akka.util.Reflect
-
 import scala.annotation.varargs
 import scala.language.existentials
+import scala.annotation.tailrec
+import java.lang.reflect.Constructor
 
 /**
  *
@@ -41,8 +41,8 @@ private[akka] trait AbstractProps {
    */
   def create[T <: Actor](creator: Creator[T]): Props = {
     val cc = creator.getClass
-    if ((cc.getEnclosingClass ne null) && (cc.getModifiers & Modifier.STATIC) == 0)
-      throw new IllegalArgumentException("cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level")
+    checkCreatorClosingOver(cc)
+
     val ac = classOf[Actor]
     val coc = classOf[Creator[_]]
     val actorClass = Reflect.findMarker(cc, coc) match {
@@ -64,5 +64,52 @@ private[akka] trait AbstractProps {
    */
   def create[T <: Actor](actorClass: Class[T], creator: Creator[T]): Props = {
     create(classOf[CreatorConsumer], actorClass, creator)
+  }
+
+  private def checkCreatorClosingOver(clazz: Class[_]): Unit = {
+    val enclosingClass = clazz.getEnclosingClass
+
+    def hasDeclaredConstructorWithEmptyParams(declaredConstructors: Array[Constructor[_]]): Boolean = {
+      @tailrec def loop(i: Int): Boolean = {
+        if (i == declaredConstructors.length) false
+        else {
+          if (declaredConstructors(i).getParameterCount == 0)
+            true
+          else
+            loop(i + 1) // recur
+        }
+      }
+      loop(0)
+    }
+
+    def hasDeclaredConstructorWithEnclosingClassParam(declaredConstructors: Array[Constructor[_]]): Boolean = {
+      @tailrec def loop(i: Int): Boolean = {
+        if (i == declaredConstructors.length) false
+        else {
+          val c = declaredConstructors(i)
+          if (c.getParameterCount >= 1 && c.getParameterTypes()(i) == enclosingClass)
+            true
+          else
+            loop(i + 1) // recur
+        }
+      }
+      loop(0)
+    }
+
+    def hasValidConstructor: Boolean = {
+      val constructorsLength = clazz.getConstructors.length
+      if (constructorsLength > 0)
+        true
+      else {
+        val decl = clazz.getDeclaredConstructors
+        // the hasDeclaredConstructorWithEnclosingClassParam check is for supporting `new Creator<SomeActor> {`
+        // which was supported in versions before 2.4.5
+        hasDeclaredConstructorWithEmptyParams(decl) || !hasDeclaredConstructorWithEnclosingClassParam(decl)
+      }
+    }
+
+    if ((enclosingClass ne null) && !hasValidConstructor)
+      throw new IllegalArgumentException(
+        "cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level")
   }
 }
