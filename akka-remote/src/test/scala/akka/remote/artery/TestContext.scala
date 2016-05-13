@@ -14,6 +14,7 @@ import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ThreadLocalRandom
+import akka.actor.ActorRef
 
 private[akka] class TestInboundContext(
   override val localAddress: UniqueAddress,
@@ -75,5 +76,24 @@ private[akka] class TestControlMessageSubject extends ControlMessageSubject {
     val iter = observers.iterator()
     while (iter.hasNext())
       iter.next().notify(env)
+  }
+
+}
+
+private[akka] class ManualReplyInboundContext(
+  replyProbe: ActorRef,
+  localAddress: UniqueAddress,
+  controlSubject: TestControlMessageSubject) extends TestInboundContext(localAddress, controlSubject) {
+
+  private var lastReply: Option[(Address, ControlMessage)] = None
+
+  override def sendControl(to: Address, message: ControlMessage) = {
+    lastReply = Some((to, message))
+    replyProbe ! message
+  }
+
+  def deliverLastReply(): Unit = {
+    lastReply.foreach { case (to, message) ⇒ super.sendControl(to, message) }
+    lastReply = None
   }
 }

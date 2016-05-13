@@ -142,7 +142,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private val codec: AkkaPduCodec = AkkaPduProtobufCodec
   private val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
-  private val systemMessageResendInterval: FiniteDuration = 1.second // FIXME config
+
+  // FIXME config
+  private val systemMessageResendInterval: FiniteDuration = 1.second
+  private val handshakeTimeout: FiniteDuration = 10.seconds
 
   // TODO support port 0
   private def inboundChannel = s"aeron:udp?endpoint=${localAddress.address.host.get}:${localAddress.address.port.get}"
@@ -276,7 +279,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   def outbound(outboundContext: OutboundContext): Sink[Send, Any] = {
     Flow.fromGraph(killSwitch.flow[Send])
-      .via(new OutboundHandshake(outboundContext))
+      .via(new OutboundHandshake(outboundContext, handshakeTimeout))
       .via(encoder)
       .map(_.toArray) // TODO we should use ByteString all the way
       .to(new AeronSink(outboundChannel(outboundContext.remoteAddress), ordinaryStreamId, aeron, taskRunner))
@@ -284,7 +287,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   def outboundControl(outboundContext: OutboundContext): Sink[Send, OutboundControlIngress] = {
     Flow.fromGraph(killSwitch.flow[Send])
-      .via(new OutboundHandshake(outboundContext))
+      .via(new OutboundHandshake(outboundContext, handshakeTimeout))
       .via(new SystemMessageDelivery(outboundContext, systemMessageResendInterval))
       .viaMat(new OutboundControlJunction(outboundContext))(Keep.right)
       .via(encoder)

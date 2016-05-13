@@ -54,24 +54,6 @@ object SystemMessageDeliverySpec {
 
   val configB = ConfigFactory.parseString(s"akka.remote.artery.port = $portB")
     .withFallback(commonConfig)
-
-  class ManualReplyInboundContext(
-    replyProbe: ActorRef,
-    localAddress: UniqueAddress,
-    controlSubject: TestControlMessageSubject) extends TestInboundContext(localAddress, controlSubject) {
-
-    private var lastReply: Option[(Address, ControlMessage)] = None
-
-    override def sendControl(to: Address, message: ControlMessage) = {
-      lastReply = Some((to, message))
-      replyProbe ! message
-    }
-
-    def deliverLastReply(): Unit = {
-      lastReply.foreach { case (to, message) ⇒ super.sendControl(to, message) }
-      lastReply = None
-    }
-  }
 }
 
 class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commonConfig) with ImplicitSender {
