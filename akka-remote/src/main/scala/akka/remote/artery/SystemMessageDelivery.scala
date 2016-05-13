@@ -199,7 +199,7 @@ private[akka] class SystemMessageAcker(inboundContext: InboundContext) extends G
       // InHandler
       override def onPush(): Unit = {
         grab(in) match {
-          case env @ InboundEnvelope(_, _, sysEnv @ SystemMessageEnvelope(_, n, ackReplyTo), _) ⇒
+          case env @ InboundEnvelope(_, _, sysEnv @ SystemMessageEnvelope(_, n, ackReplyTo), _, _) ⇒
             if (n == seqNo) {
               inboundContext.sendControl(ackReplyTo.address, Ack(n, localAddress))
               seqNo += 1

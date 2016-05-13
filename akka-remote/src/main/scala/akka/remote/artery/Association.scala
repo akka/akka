@@ -3,22 +3,27 @@
  */
 package akka.remote.artery
 
-import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.util.Success
 import akka.actor.ActorRef
 import akka.actor.Address
 import akka.actor.RootActorPath
 import akka.dispatch.sysmsg.SystemMessage
+import akka.event.Logging
 import akka.remote.EndpointManager.Send
 import akka.remote.RemoteActorRef
 import akka.remote.UniqueAddress
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
+import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.stream.Materializer
 import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.SourceQueueWithComplete
-import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
-import akka.stream.scaladsl.Keep
+import akka.util.Unsafe
+import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * INTERNAL API
@@ -30,27 +35,79 @@ private[akka] class Association(
   val transport: ArteryTransport,
   val materializer: Materializer,
   override val remoteAddress: Address,
-  override val controlSubject: ControlMessageSubject) extends OutboundContext {
+  override val controlSubject: ControlMessageSubject)
+  extends AbstractAssociation with OutboundContext {
+
+  private val log = Logging(transport.system, getClass.getName)
 
   @volatile private[this] var queue: SourceQueueWithComplete[Send] = _
-  @volatile private[this] var systemMessageQueue: SourceQueueWithComplete[Send] = _
+  @volatile private[this] var controlQueue: SourceQueueWithComplete[Send] = _
   @volatile private[this] var _outboundControlIngress: OutboundControlIngress = _
+  private val materializing = new CountDownLatch(1)
 
   def outboundControlIngress: OutboundControlIngress = {
-    if (_outboundControlIngress eq null)
-      throw new IllegalStateException("outboundControlIngress not initialized yet")
-    _outboundControlIngress
+    if (_outboundControlIngress ne null)
+      _outboundControlIngress
+    else {
+      // materialization not completed yet
+      materializing.await(10, TimeUnit.SECONDS)
+      if (_outboundControlIngress eq null)
+        throw new IllegalStateException("outboundControlIngress not initialized yet")
+      _outboundControlIngress
+    }
   }
 
   override def localAddress: UniqueAddress = transport.localAddress
 
-  // FIXME we also need to be able to switch to new uid
-  private val _uniqueRemoteAddress = Promise[UniqueAddress]()
-  override def uniqueRemoteAddress: Future[UniqueAddress] = _uniqueRemoteAddress.future
-  override def completeRemoteAddress(a: UniqueAddress): Unit = {
-    require(a.address == remoteAddress, s"Wrong UniqueAddress got [$a.address], expected [$remoteAddress]")
-    _uniqueRemoteAddress.trySuccess(a)
+  /**
+   * Holds reference to shared state of Association - *access only via helper methods*
+   */
+  @volatile
+  private[this] var _sharedStateDoNotCallMeDirectly: AssociationState =
+    new AssociationState(incarnation = 1, uniqueRemoteAddressPromise = Promise())
+
+  /**
+   * Helper method for access to underlying state via Unsafe
+   *
+   * @param oldState Previous state
+   * @param newState Next state on transition
+   * @return Whether the previous state matched correctly
+   */
+  @inline
+  private[this] def swapState(oldState: AssociationState, newState: AssociationState): Boolean =
+    Unsafe.instance.compareAndSwapObject(this, AbstractAssociation.sharedStateOffset, oldState, newState)
+
+  /**
+   * @return Reference to current shared state
+   */
+  def associationState: AssociationState =
+    Unsafe.instance.getObjectVolatile(this, AbstractAssociation.sharedStateOffset).asInstanceOf[AssociationState]
+
+  override def completeHandshake(peer: UniqueAddress): Unit = {
+    require(remoteAddress == peer.address,
+      s"wrong remote address in completeHandshake, got ${peer.address}, expected ${remoteAddress}")
+    val current = associationState
+    current.uniqueRemoteAddressPromise.trySuccess(peer)
+    current.uniqueRemoteAddress.value match {
+      case Some(Success(`peer`)) ⇒ // our value
+      case _ ⇒
+        val newState = new AssociationState(incarnation = current.incarnation + 1, Promise.successful(peer))
+        if (swapState(current, newState)) {
+          current.uniqueRemoteAddress.value match {
+            case Some(Success(old)) ⇒
+              log.debug("Incarnation {} of association to [{}] with new UID [{}] (old UID [{}])",
+                newState.incarnation, peer.address, peer.uid, old.uid)
+              quarantine(Some(old.uid))
+            case _ ⇒ // Failed, nothing to do
+          }
+          // if swap failed someone else completed before us, and that is fine
+        }
+    }
   }
+
+  // OutboundContext
+  override def sendControl(message: ControlMessage): Unit =
+    outboundControlIngress.sendControlMessage(message)
 
   def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = {
     // TODO: lookup subchannel
@@ -58,7 +115,7 @@ private[akka] class Association(
     message match {
       case _: SystemMessage ⇒
         implicit val ec = materializer.executionContext
-        systemMessageQueue.offer(Send(message, senderOption, recipient, None)).onFailure {
+        controlQueue.offer(Send(message, senderOption, recipient, None)).onFailure {
           case e ⇒
             // FIXME proper error handling, and quarantining
             println(s"# System message dropped, due to $e") // FIXME
@@ -72,20 +129,30 @@ private[akka] class Association(
   override val dummyRecipient: RemoteActorRef =
     transport.provider.resolveActorRef(RootActorPath(remoteAddress) / "system" / "dummy").asInstanceOf[RemoteActorRef]
 
-  def quarantine(uid: Option[Int]): Unit = ()
+  def quarantine(uid: Option[Int]): Unit = {
+    // FIXME implement
+    log.error("Association to [{}] with UID [{}] is irrecoverably failed. Quarantining address.",
+      remoteAddress, uid.getOrElse("unknown"))
+  }
 
   // Idempotent
   def associate(): Unit = {
     // FIXME detect and handle stream failure, e.g. handshake timeout
-    if (queue eq null)
-      queue = Source.queue(256, OverflowStrategy.dropBuffer)
-        .to(transport.outbound(this)).run()(materializer)
-    if (systemMessageQueue eq null) {
+
+    // it's important to materialize the outboundControl stream first,
+    // so that outboundControlIngress is ready when stages for all streams start
+    if (controlQueue eq null) {
       val (q, control) = Source.queue(256, OverflowStrategy.dropBuffer)
         .toMat(transport.outboundControl(this))(Keep.both)
         .run()(materializer)
-      systemMessageQueue = q
+      controlQueue = q
       _outboundControlIngress = control
+      // stage in the control stream may access the outboundControlIngress before returned here
+      // using CountDownLatch to make sure that materialization is completed before accessing outboundControlIngress
+      materializing.countDown()
+
+      queue = Source.queue(256, OverflowStrategy.dropBuffer)
+        .to(transport.outbound(this)).run()(materializer)
     }
   }
 }
