@@ -4,10 +4,8 @@
 package akka.remote.artery
 
 import java.util.ArrayDeque
-
 import scala.concurrent.Future
 import scala.concurrent.Promise
-
 import akka.Done
 import akka.remote.EndpointManager.Send
 import akka.stream.Attributes
@@ -19,17 +17,24 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
+import akka.remote.UniqueAddress
 
 /**
- * Marker trait for reply messages
+ * INTERNAL API: Marker trait for reply messages
  */
-trait Reply extends ControlMessage
+private[akka] trait Reply extends ControlMessage
 
 /**
+ * INTERNAL API
  * Marker trait for control messages that can be sent via the system message sub-channel
  * but don't need full reliable delivery. E.g. `HandshakeReq` and `Reply`.
  */
-trait ControlMessage
+private[akka] trait ControlMessage
+
+/**
+ * INTERNAL API
+ */
+private[akka] final case class Quarantined(from: UniqueAddress, to: UniqueAddress) extends ControlMessage // FIXME serialization
 
 /**
  * INTERNAL API

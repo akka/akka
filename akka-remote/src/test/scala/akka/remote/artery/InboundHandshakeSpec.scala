@@ -52,7 +52,7 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
 
     "send HandshakeRsp as reply to HandshakeReq" in {
       val replyProbe = TestProbe()
-      val inboundContext = new ManualReplyInboundContext(replyProbe.ref, addressB, new TestControlMessageSubject)
+      val inboundContext = new TestInboundContext(addressB, controlProbe = Some(replyProbe.ref))
       val (upstream, downstream) = setupStream(inboundContext)
 
       downstream.request(10)
@@ -77,9 +77,9 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       downstream.cancel()
     }
 
-    "send HandshakeReq as when receiving message from unknown (receiving system restarted)" in {
+    "send HandshakeReq when receiving message from unknown (receiving system restarted)" in {
       val replyProbe = TestProbe()
-      val inboundContext = new ManualReplyInboundContext(replyProbe.ref, addressB, new TestControlMessageSubject)
+      val inboundContext = new TestInboundContext(addressB, controlProbe = Some(replyProbe.ref))
       val (upstream, downstream) = setupStream(inboundContext)
 
       downstream.request(10)

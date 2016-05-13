@@ -159,7 +159,7 @@ private[akka] class InboundHandshake(inboundContext: InboundContext, inControlSt
       private def isKnownOrigin(originAddress: UniqueAddress): Boolean = {
         // FIXME these association lookups are probably too costly for each message, need local cache or something
         val associationState = inboundContext.association(originAddress.address).associationState
-        associationState.uniqueRemoteAddress.value match {
+        associationState.uniqueRemoteAddressValue() match {
           case Some(Success(a)) if a.uid == originAddress.uid ⇒ true
           case x ⇒ false
         }

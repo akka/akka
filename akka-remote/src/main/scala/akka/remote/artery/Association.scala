@@ -3,6 +3,7 @@
  */
 package akka.remote.artery
 
+import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.util.Success
 import akka.actor.ActorRef
@@ -24,6 +25,8 @@ import akka.util.Unsafe
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import akka.actor.ActorSelectionMessage
+import akka.remote.artery.SystemMessageDelivery.ClearSystemMessageDelivery
 
 /**
  * INTERNAL API
@@ -39,6 +42,7 @@ private[akka] class Association(
   extends AbstractAssociation with OutboundContext {
 
   private val log = Logging(transport.system, getClass.getName)
+  private val controlQueueSize = transport.provider.remoteSettings.SysMsgBufferSize
 
   @volatile private[this] var queue: SourceQueueWithComplete[Send] = _
   @volatile private[this] var controlQueue: SourceQueueWithComplete[Send] = _
@@ -63,8 +67,7 @@ private[akka] class Association(
    * Holds reference to shared state of Association - *access only via helper methods*
    */
   @volatile
-  private[this] var _sharedStateDoNotCallMeDirectly: AssociationState =
-    new AssociationState(incarnation = 1, uniqueRemoteAddressPromise = Promise())
+  private[this] var _sharedStateDoNotCallMeDirectly: AssociationState = AssociationState()
 
   /**
    * Helper method for access to underlying state via Unsafe
@@ -88,17 +91,17 @@ private[akka] class Association(
       s"wrong remote address in completeHandshake, got ${peer.address}, expected ${remoteAddress}")
     val current = associationState
     current.uniqueRemoteAddressPromise.trySuccess(peer)
-    current.uniqueRemoteAddress.value match {
+    current.uniqueRemoteAddressValue() match {
       case Some(Success(`peer`)) ⇒ // our value
       case _ ⇒
-        val newState = new AssociationState(incarnation = current.incarnation + 1, Promise.successful(peer))
+        val newState = current.newIncarnation(Promise.successful(peer))
         if (swapState(current, newState)) {
-          current.uniqueRemoteAddress.value match {
+          current.uniqueRemoteAddressValue() match {
             case Some(Success(old)) ⇒
               log.debug("Incarnation {} of association to [{}] with new UID [{}] (old UID [{}])",
                 newState.incarnation, peer.address, peer.uid, old.uid)
-              quarantine(Some(old.uid))
-            case _ ⇒ // Failed, nothing to do
+            case _ ⇒
+            // Failed, nothing to do
           }
           // if swap failed someone else completed before us, and that is fine
         }
@@ -110,29 +113,68 @@ private[akka] class Association(
     outboundControlIngress.sendControlMessage(message)
 
   def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = {
-    // TODO: lookup subchannel
-    // FIXME: Use a different envelope than the old Send, but make sure the new is handled by deadLetters properly
-    message match {
-      case _: SystemMessage ⇒
-        implicit val ec = materializer.executionContext
-        controlQueue.offer(Send(message, senderOption, recipient, None)).onFailure {
-          case e ⇒
-            // FIXME proper error handling, and quarantining
-            println(s"# System message dropped, due to $e") // FIXME
-        }
-      case _ ⇒
-        queue.offer(Send(message, senderOption, recipient, None))
-    }
+    // allow ActorSelectionMessage to pass through quarantine, to be able to establish interaction with new system
+    // FIXME where is that ActorSelectionMessage check in old remoting?
+    if (message.isInstanceOf[ActorSelectionMessage] || !associationState.isQuarantined() || message.isInstanceOf[ClearSystemMessageDelivery.type]) {
+      // FIXME: Use a different envelope than the old Send, but make sure the new is handled by deadLetters properly
+      message match {
+        case _: SystemMessage | ClearSystemMessageDelivery ⇒
+          implicit val ec = materializer.executionContext
+          controlQueue.offer(Send(message, senderOption, recipient, None)).onFailure {
+            case e ⇒
+              quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
+          }
+        case _ ⇒
+          queue.offer(Send(message, senderOption, recipient, None))
+      }
+    } else if (log.isDebugEnabled)
+      log.debug("Dropping message to quarantined system {}", remoteAddress)
   }
 
   // FIXME we should be able to Send without a recipient ActorRef
   override val dummyRecipient: RemoteActorRef =
     transport.provider.resolveActorRef(RootActorPath(remoteAddress) / "system" / "dummy").asInstanceOf[RemoteActorRef]
 
-  def quarantine(uid: Option[Int]): Unit = {
-    // FIXME implement
-    log.error("Association to [{}] with UID [{}] is irrecoverably failed. Quarantining address.",
-      remoteAddress, uid.getOrElse("unknown"))
+  // OutboundContext
+  override def quarantine(reason: String): Unit = {
+    val uid = associationState.uniqueRemoteAddressValue() match {
+      case Some(Success(a)) ⇒ Some(a.uid)
+      case _                ⇒ None
+    }
+    quarantine(reason, uid)
+  }
+
+  @tailrec final def quarantine(reason: String, uid: Option[Int]): Unit = {
+    uid match {
+      case Some(u) ⇒
+        val current = associationState
+        current.uniqueRemoteAddressValue() match {
+          case Some(Success(peer)) if peer.uid == u ⇒
+            if (!current.isQuarantined(u)) {
+              val newState = current.newQuarantined()
+              if (swapState(current, newState)) {
+                // quarantine state change was performed
+                log.warning("Association to [{}] with UID [{}] is irrecoverably failed. Quarantining address. {}",
+                  remoteAddress, u, reason)
+                // end delivery of system messages to that incarnation after this point
+                send(ClearSystemMessageDelivery, None, dummyRecipient)
+                // try to tell the other system that we have quarantined it
+                sendControl(Quarantined(localAddress, peer))
+              } else
+                quarantine(reason, uid) // recursive
+            }
+          case Some(Success(peer)) ⇒
+            log.debug("Quarantine of [{}] ignored due to non-matching UID, quarantine requested for [{}] but current is [{}]. {}",
+              remoteAddress, u, peer.uid, reason)
+          case None ⇒
+            log.debug("Quarantine of [{}] ignored because handshake not completed, quarantine request was for old incarnation. {}",
+              remoteAddress, reason)
+        }
+      case None ⇒
+        // FIXME should we do something more, old impl used gating?
+        log.warning("Quarantine of [{}] ignored because unknown UID", remoteAddress)
+    }
+
   }
 
   // Idempotent
@@ -142,7 +184,7 @@ private[akka] class Association(
     // it's important to materialize the outboundControl stream first,
     // so that outboundControlIngress is ready when stages for all streams start
     if (controlQueue eq null) {
-      val (q, control) = Source.queue(256, OverflowStrategy.dropBuffer)
+      val (q, control) = Source.queue(controlQueueSize, OverflowStrategy.backpressure)
         .toMat(transport.outboundControl(this))(Keep.both)
         .run()(materializer)
       controlQueue = q

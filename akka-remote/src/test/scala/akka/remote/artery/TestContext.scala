@@ -54,7 +54,7 @@ private[akka] class TestOutboundContext(
   val controlProbe: Option[ActorRef] = None) extends OutboundContext {
 
   // access to this is synchronized (it's a test utility)
-  private var _associationState = new AssociationState(1, Promise())
+  private var _associationState = AssociationState()
 
   override def associationState: AssociationState = synchronized {
     _associationState
@@ -65,8 +65,12 @@ private[akka] class TestOutboundContext(
     _associationState.uniqueRemoteAddress.value match {
       case Some(Success(`peer`)) ⇒ // our value
       case _ ⇒
-        _associationState = new AssociationState(incarnation = _associationState.incarnation + 1, Promise.successful(peer))
+        _associationState = _associationState.newIncarnation(Promise.successful(peer))
     }
+  }
+
+  override def quarantine(reason: String): Unit = synchronized {
+    _associationState = _associationState.newQuarantined()
   }
 
   override def sendControl(message: ControlMessage) = {
