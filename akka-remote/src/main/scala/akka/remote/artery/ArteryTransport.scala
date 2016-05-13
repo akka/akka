@@ -13,7 +13,6 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
-
 import akka.Done
 import akka.NotUsed
 import akka.actor.ActorRef
@@ -25,12 +24,16 @@ import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.remote.AddressUidExtension
 import akka.remote.EndpointManager.Send
+import akka.remote.EventPublisher
 import akka.remote.MessageSerializer
 import akka.remote.RemoteActorRef
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteTransport
+import akka.remote.RemotingLifecycleEvent
 import akka.remote.SeqNo
+import akka.remote.ThisActorSystemQuarantinedEvent
 import akka.remote.UniqueAddress
+import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.remote.transport.AkkaPduCodec
@@ -55,6 +58,7 @@ import io.aeron.driver.MediaDriver
 import io.aeron.exceptions.ConductorServiceTimeoutException
 import org.agrona.ErrorHandler
 import org.agrona.IoUtil
+import scala.util.Try
 import java.io.File
 import java.net.InetSocketAddress
 import java.nio.channels.DatagramChannel
@@ -92,17 +96,57 @@ private[akka] trait InboundContext {
    * Lookup the outbound association for a given address.
    */
   def association(remoteAddress: Address): OutboundContext
+
 }
 
-final class AssociationState(
+/**
+ * INTERNAL API
+ */
+private[akka] object AssociationState {
+  def apply(): AssociationState =
+    new AssociationState(incarnation = 1, uniqueRemoteAddressPromise = Promise(), quarantined = Set.empty)
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] final class AssociationState(
   val incarnation: Int,
-  val uniqueRemoteAddressPromise: Promise[UniqueAddress]) {
+  val uniqueRemoteAddressPromise: Promise[UniqueAddress],
+  val quarantined: Set[Long]) {
 
   /**
    * Full outbound address with UID for this association.
    * Completed when by the handshake.
    */
   def uniqueRemoteAddress: Future[UniqueAddress] = uniqueRemoteAddressPromise.future
+
+  def uniqueRemoteAddressValue(): Option[Try[UniqueAddress]] = {
+    // FIXME we should cache access to uniqueRemoteAddress.value (avoid allocations), used in many places
+    uniqueRemoteAddress.value
+  }
+
+  def newIncarnation(remoteAddressPromise: Promise[UniqueAddress]): AssociationState =
+    new AssociationState(incarnation + 1, remoteAddressPromise, quarantined)
+
+  def newQuarantined(): AssociationState =
+    uniqueRemoteAddressPromise.future.value match {
+      case Some(Success(a)) ⇒
+        new AssociationState(incarnation, uniqueRemoteAddressPromise, quarantined = quarantined + a.uid)
+      case _ ⇒ this
+    }
+
+  def isQuarantined(): Boolean = {
+    uniqueRemoteAddressValue match {
+      case Some(Success(a)) ⇒ isQuarantined(a.uid)
+      case _                ⇒ false // handshake not completed yet
+    }
+  }
+
+  def isQuarantined(uid: Long): Boolean = {
+    // FIXME does this mean boxing (allocation) because of Set[Long]? Use specialized Set. LongMap?
+    quarantined(uid)
+  }
 
   override def toString(): String = {
     val a = uniqueRemoteAddressPromise.future.value match {
@@ -133,6 +177,8 @@ private[akka] trait OutboundContext {
   def associationState: AssociationState
 
   def completeHandshake(peer: UniqueAddress): Unit
+
+  def quarantine(reason: String): Unit
 
   /**
    * An inbound stage can send control message, e.g. a HandshakeReq, to the remote
@@ -166,10 +212,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   @volatile private[this] var driver: MediaDriver = _
   @volatile private[this] var aeron: Aeron = _
 
-  override val log: LoggingAdapter = Logging(system, getClass.getName)
   override def defaultAddress: Address = localAddress.address
   override def addresses: Set[Address] = Set(defaultAddress)
   override def localAddressForRemote(remote: Address): Address = defaultAddress
+  override val log: LoggingAdapter = Logging(system, getClass.getName)
+  private val eventPublisher = new EventPublisher(system, log, remoteSettings.RemoteLifecycleEventsLogLevel)
 
   private val codec: AkkaPduCodec = AkkaPduProtobufCodec
   private val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
@@ -252,6 +299,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def runInboundFlows(): Unit = {
+    // control stream
     controlSubject = Source.fromGraph(new AeronSource(inboundChannel, controlStreamId, aeron, taskRunner))
       .async // FIXME measure
       .map(ByteString.apply) // TODO we should use ByteString all the way
@@ -259,6 +307,20 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .to(Sink.ignore)
       .run()(materializer)
 
+    controlSubject.attach(new ControlMessageObserver {
+      override def notify(inboundEnvelope: InboundEnvelope): Unit = {
+        inboundEnvelope.message match {
+          case Quarantined(from, to) if to == localAddress ⇒
+            val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress.address, from.address)
+            publishLifecycleEvent(lifecycleEvent)
+            // quarantine the other system from here
+            association(from.address).quarantine(lifecycleEvent.toString, Some(from.uid))
+          case _ ⇒ // not interesting
+        }
+      }
+    })
+
+    // ordinary messages stream
     Source.fromGraph(new AeronSource(inboundChannel, ordinaryStreamId, aeron, taskRunner))
       .async // FIXME measure
       .map(ByteString.apply) // TODO we should use ByteString all the way
@@ -307,8 +369,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     }
   }
 
+  private def publishLifecycleEvent(event: RemotingLifecycleEvent): Unit =
+    eventPublisher.notifyListeners(event)
+
   override def quarantine(remoteAddress: Address, uid: Option[Int]): Unit =
-    association(remoteAddress).quarantine(uid)
+    association(remoteAddress).quarantine(reason = "", uid) // FIXME change the method signature (old remoting) to include reason?
 
   def outbound(outboundContext: OutboundContext): Sink[Send, Any] = {
     Flow.fromGraph(killSwitch.flow[Send])
@@ -321,11 +386,13 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   def outboundControl(outboundContext: OutboundContext): Sink[Send, OutboundControlIngress] = {
     Flow.fromGraph(killSwitch.flow[Send])
       .via(new OutboundHandshake(outboundContext, handshakeTimeout))
-      .via(new SystemMessageDelivery(outboundContext, systemMessageResendInterval))
+      .via(new SystemMessageDelivery(outboundContext, systemMessageResendInterval, remoteSettings.SysMsgBufferSize))
       .viaMat(new OutboundControlJunction(outboundContext))(Keep.right)
       .via(encoder)
       .map(_.toArray) // TODO we should use ByteString all the way
       .to(new AeronSink(outboundChannel(outboundContext.remoteAddress), controlStreamId, aeron, taskRunner))
+
+    // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
   }
 
   // FIXME hack until real envelopes, encoding originAddress in sender :)
@@ -375,6 +442,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       decoder
         .via(deserializer)
         .via(new InboundHandshake(this, inControlStream = false))
+        .via(new InboundQuarantineCheck(this))
         .to(messageDispatcherSink),
       Source.maybe[ByteString].via(killSwitch.flow))
   }
@@ -384,6 +452,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       decoder
         .via(deserializer)
         .via(new InboundHandshake(this, inControlStream = true))
+        .via(new InboundQuarantineCheck(this))
         .viaMat(new InboundControlJunction)(Keep.right)
         .via(new SystemMessageAcker(this))
         .to(messageDispatcherSink),

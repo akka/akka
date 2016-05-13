@@ -55,9 +55,11 @@ abstract class HandshakeRestartReceiverSpec
     super.afterAll()
   }
 
-  def identifyWithUid(rootPath: ActorPath, actorName: String): (Int, ActorRef) = {
-    system.actorSelection(rootPath / "user" / actorName) ! "identify"
-    expectMsgType[(Int, ActorRef)]
+  def identifyWithUid(rootPath: ActorPath, actorName: String, timeout: FiniteDuration = remainingOrDefault): (Int, ActorRef) = {
+    within(timeout) {
+      system.actorSelection(rootPath / "user" / actorName) ! "identify"
+      expectMsgType[(Int, ActorRef)]
+    }
   }
 
   "Artery Handshake" must {
@@ -70,7 +72,7 @@ abstract class HandshakeRestartReceiverSpec
 
       runOn(first) {
         val secondRootPath = node(second)
-        val (secondUid, _) = identifyWithUid(secondRootPath, "subject")
+        val (secondUid, _) = identifyWithUid(secondRootPath, "subject", 5.seconds)
 
         val secondAddress = node(second).address
         val secondAssociation = RARP(system).provider.transport.asInstanceOf[ArteryTransport].association(secondAddress)
@@ -83,14 +85,13 @@ abstract class HandshakeRestartReceiverSpec
 
         within(30.seconds) {
           awaitAssert {
-            within(1.second) {
-              identifyWithUid(secondRootPath, "subject2")
-            }
+            identifyWithUid(secondRootPath, "subject2", 1.second)
           }
         }
         val (secondUid2, subject2) = identifyWithUid(secondRootPath, "subject2")
         secondUid2 should !==(secondUid)
         val secondUniqueRemoteAddress2 = Await.result(secondAssociation.associationState.uniqueRemoteAddress, 3.seconds)
+        println(s"# ${secondAssociation.associationState} secondUid $secondUid $secondUid2") // FIXME
         secondUniqueRemoteAddress2.uid should ===(secondUid2)
         secondUniqueRemoteAddress2.address should ===(secondAddress)
         secondUniqueRemoteAddress2 should !==(secondUniqueRemoteAddress)

@@ -74,7 +74,7 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commo
     val remoteRef = null.asInstanceOf[RemoteActorRef] // not used
     Source(1 to sendCount)
       .map(n ⇒ Send("msg-" + n, None, remoteRef, None))
-      .via(new SystemMessageDelivery(outboundContext, resendInterval))
+      .via(new SystemMessageDelivery(outboundContext, resendInterval, maxBufferSize = 1000))
   }
 
   private def inbound(inboundContext: InboundContext): Flow[Send, InboundEnvelope, NotUsed] = {
