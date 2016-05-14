@@ -313,7 +313,14 @@ private[remote] object EndpointManager {
     def registerWritableEndpointUid(remoteAddress: Address, uid: Int): Unit = {
       addressToWritable.get(remoteAddress) match {
         case Some(Pass(ep, _, refuseUid)) ⇒ addressToWritable += remoteAddress -> Pass(ep, Some(uid), refuseUid)
-        case other                        ⇒ // the GotUid might have lost the race with some failure
+        case other                        ⇒
+      }
+    }
+
+    def registerWritableEndpointRefuseUid(remoteAddress: Address, refuseUid: Int): Unit = {
+      addressToWritable.get(remoteAddress) match {
+        case Some(Pass(ep, uid, _)) ⇒ addressToWritable += remoteAddress -> Pass(ep, uid, Some(refuseUid))
+        case other                  ⇒
       }
     }
 
@@ -548,12 +555,24 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
             "address cannot be quarantined without knowing the UID, gating instead for {} ms.",
             address, settings.RetryGateClosedFor.toMillis)
           endpoints.markAsFailed(endpoint, Deadline.now + settings.RetryGateClosedFor)
-        case (Some(Pass(endpoint, Some(currentUid), _)), Some(quarantineUid)) if currentUid == quarantineUid ⇒
-          context.stop(endpoint)
-        case _ ⇒
-        // Do nothing, because either:
-        // A: we don't know yet the UID of the writer, it will be checked against current quarantine state later
-        // B: we know the UID, but it does not match with the UID to be quarantined
+        case (Some(Pass(endpoint, uidOption, refuseUidOption)), Some(quarantineUid)) ⇒
+          uidOption match {
+            case Some(`quarantineUid`) ⇒
+              endpoints.markAsQuarantined(address, quarantineUid, Deadline.now + settings.QuarantineDuration)
+              eventPublisher.notifyListeners(QuarantinedEvent(address, quarantineUid))
+              context.stop(endpoint)
+            // or it does not match with the UID to be quarantined
+            case None if !refuseUidOption.contains(quarantineUid) ⇒
+              // the quarantine uid may be got fresh by cluster gossip, so update refuseUid for late handle when the writer got uid
+              endpoints.registerWritableEndpointRefuseUid(address, quarantineUid)
+            case _ ⇒ //the quarantine uid has lost the race with some failure, do nothing
+          }
+        case (Some(Quarantined(uid, _)), Some(quarantineUid)) if uid == quarantineUid ⇒ // the UID to be quarantined already exists, do nothing
+        case (_, Some(quarantineUid)) ⇒
+          // the current state is gated or quarantined, and we know the UID, update
+          endpoints.markAsQuarantined(address, quarantineUid, Deadline.now + settings.QuarantineDuration)
+          eventPublisher.notifyListeners(QuarantinedEvent(address, quarantineUid))
+        case _ ⇒ // the current state is gated or quarantined, and we don't know the UID, do nothing.
       }
 
       // Stop inbound read-only associations
@@ -589,11 +608,6 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
             if (drop) handle.disassociate()
             !drop
           }
-      }
-
-      uidToQuarantineOption foreach { uid ⇒
-        endpoints.markAsQuarantined(address, uid, Deadline.now + settings.QuarantineDuration)
-        eventPublisher.notifyListeners(QuarantinedEvent(address, uid))
       }
 
     case s @ Send(message, senderOption, recipientRef, _) ⇒
@@ -639,8 +653,16 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case EndpointWriter.TookOver(endpoint, handle) ⇒
       removePendingReader(takingOverFrom = endpoint, withHandle = handle)
     case ReliableDeliverySupervisor.GotUid(uid, remoteAddress) ⇒
-      endpoints.registerWritableEndpointUid(remoteAddress, uid)
-      handleStashedInbound(sender(), writerIsIdle = false)
+      endpoints.writableEndpointWithPolicyFor(remoteAddress) match {
+        case Some(Pass(endpoint, _, refuseUidOption)) ⇒
+          if (refuseUidOption.contains(uid)) {
+            endpoints.markAsQuarantined(remoteAddress, uid, Deadline.now + settings.QuarantineDuration)
+            eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, uid))
+            context.stop(endpoint)
+          } else endpoints.registerWritableEndpointUid(remoteAddress, uid)
+          handleStashedInbound(sender(), writerIsIdle = false)
+        case _ ⇒ // the GotUid might have lost the race with some failure
+      }
     case ReliableDeliverySupervisor.Idle ⇒
       handleStashedInbound(sender(), writerIsIdle = true)
     case Prune ⇒
