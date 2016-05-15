@@ -71,14 +71,16 @@ private object RenderSupport {
         override def onPush(): Unit = {
           val chunk = grab(in)
           val bytes = renderChunk(chunk)
-          if (chunk.isLastChunk) completeStage()
-          else push(out, bytes)
+          if (chunk.isLastChunk) {
+            push(out, bytes)
+            completeStage()
+          } else push(out, bytes)
         }
 
         override def onPull(): Unit = pull(in)
 
         override def onUpstreamFinish(): Unit = {
-          emit(out, defaultLastChunkBytes)
+          emitMultiple(out, Iterator.single(defaultLastChunkBytes))
           completeStage()
         }
         setHandlers(in, out, this)
