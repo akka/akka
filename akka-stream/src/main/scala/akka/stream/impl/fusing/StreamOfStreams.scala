@@ -253,7 +253,8 @@ final class GroupBy[T, K](maxSubstreams: Int, keyFor: T ⇒ K) extends GraphStag
 
     private def needToPull: Boolean = !(hasBeenPulled(in) || isClosed(in) || hasNextElement)
 
-    override def preStart(): Unit = timeout = ActorMaterializer.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
+    override def preStart(): Unit =
+      timeout = ActorMaterializer.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
 
     override def onPull(): Unit = {
       substreamWaitingToBePushed match {
