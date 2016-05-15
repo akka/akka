@@ -408,9 +408,9 @@ object Replicator {
   sealed trait DeleteResponse[A <: ReplicatedData] {
     def key: Key[A]
   }
-  final case class DeleteSuccess[A <: ReplicatedData](key: Key[A]) extends DeleteResponse[A]
-  final case class ReplicationDeleteFailure[A <: ReplicatedData](key: Key[A]) extends DeleteResponse[A]
-  final case class DataDeleted[A <: ReplicatedData](key: Key[A])
+  final case class DeleteSuccess[A <: ReplicatedData](key: Key[A], request: Option[Any] = None) extends DeleteResponse[A]
+  final case class ReplicationDeleteFailure[A <: ReplicatedData](key: Key[A], request: Option[Any] = None) extends DeleteResponse[A]
+  final case class DataDeleted[A <: ReplicatedData](key: Key[A], request: Option[Any] = None)
     extends RuntimeException with NoStackTrace with DeleteResponse[A] {
     override def toString: String = s"DataDeleted [$key]"
   }
@@ -827,7 +827,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     log.debug("Received Get for key [{}], local data [{}]", key, localValue)
     if (isLocalGet(consistency)) {
       val reply = localValue match {
-        case Some(DataEnvelope(DeletedData, _)) ⇒ DataDeleted(key)
+        case Some(DataEnvelope(DeletedData, _)) ⇒ DataDeleted(key, req)
         case Some(DataEnvelope(data, _))        ⇒ GetSuccess(key, req)(data)
         case None                               ⇒ NotFound(key, req)
       }
@@ -855,7 +855,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val localValue = getData(key.id)
     Try {
       localValue match {
-        case Some(DataEnvelope(DeletedData, _)) ⇒ throw new DataDeleted(key)
+        case Some(DataEnvelope(DeletedData, _)) ⇒ throw new DataDeleted(key, req)
         case Some(envelope @ DataEnvelope(existing, _)) ⇒
           existing.merge(modify(Some(existing)).asInstanceOf[existing.T])
         case None ⇒ modify(None)
@@ -1368,11 +1368,11 @@ private[akka] class WriteAggregator(
 
   def reply(ok: Boolean): Unit = {
     if (ok && envelope.data == DeletedData)
-      replyTo.tell(DeleteSuccess(key), context.parent)
+      replyTo.tell(DeleteSuccess(key, req), context.parent)
     else if (ok)
       replyTo.tell(UpdateSuccess(key, req), context.parent)
     else if (envelope.data == DeletedData)
-      replyTo.tell(ReplicationDeleteFailure(key), context.parent)
+      replyTo.tell(ReplicationDeleteFailure(key, req), context.parent)
     else
       replyTo.tell(UpdateTimeout(key, req), context.parent)
     context.stop(self)
@@ -1468,7 +1468,7 @@ private[akka] class ReadAggregator(
   def waitReadRepairAck(envelope: Replicator.Internal.DataEnvelope): Receive = {
     case ReadRepairAck ⇒
       val replyMsg =
-        if (envelope.data == DeletedData) DataDeleted(key)
+        if (envelope.data == DeletedData) DataDeleted(key, req)
         else GetSuccess(key, req)(envelope.data)
       replyTo.tell(replyMsg, context.parent)
       context.stop(self)
