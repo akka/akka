@@ -22,7 +22,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.impl.engine.rendering.BodyPartRenderer
 import akka.http.javadsl.{ model ⇒ jm }
 import FastFuture._
-import scala.compat.java8.OptionConverters._
+import akka.http.impl.util.JavaMapping.Implicits._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
 

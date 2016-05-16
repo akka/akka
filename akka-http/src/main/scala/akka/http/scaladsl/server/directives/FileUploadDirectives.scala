@@ -11,6 +11,7 @@ import akka.util.ByteString
 import scala.concurrent.Future
 import scala.util.{ Failure, Success }
 import akka.stream.scaladsl._
+import akka.http.javadsl
 
 /**
  * @groupname fileupload File upload directives
@@ -95,4 +96,8 @@ object FileUploadDirectives extends FileUploadDirectives
  * @param fileName User specified name of the uploaded file
  * @param contentType Content type of the file
  */
-final case class FileInfo(fieldName: String, fileName: String, contentType: ContentType)
+final case class FileInfo(fieldName: String, fileName: String, contentType: ContentType) extends javadsl.server.directives.FileInfo {
+  override def getFieldName = fieldName
+  override def getFileName = fileName
+  override def getContentType = contentType
+}

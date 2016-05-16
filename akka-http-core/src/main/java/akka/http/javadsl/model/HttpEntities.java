@@ -8,7 +8,6 @@ import java.io.File;
 import java.nio.file.Path;
 
 import akka.http.impl.util.JavaAccessors;
-import akka.http.scaladsl.model.HttpEntity;
 import akka.http.scaladsl.model.HttpEntity$;
 import akka.util.ByteString;
 import akka.stream.javadsl.Source;
@@ -72,7 +71,7 @@ public final class HttpEntities {
     }
 
     public static HttpEntity.Chunked create(ContentType contentType, Source<ByteString, Object> data) {
-        return HttpEntity.Chunked$.MODULE$.fromData((akka.http.scaladsl.model.ContentType) contentType, data.asScala());
+        return akka.http.scaladsl.model.HttpEntity.Chunked$.MODULE$.fromData((akka.http.scaladsl.model.ContentType) contentType, data.asScala());
     }
 
     public static HttpEntity.CloseDelimited createCloseDelimited(ContentType contentType, Source<ByteString, Object> data) {

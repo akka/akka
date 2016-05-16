@@ -2,8 +2,10 @@
 
 delete
 ======
-
 Matches requests with HTTP method ``DELETE``.
+
+Description
+-----------
 
 This directive filters an incoming request by its HTTP method. Only requests with
 method ``DELETE`` are passed on to the inner route. All others are rejected with a
