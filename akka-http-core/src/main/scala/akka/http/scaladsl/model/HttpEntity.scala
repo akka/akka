@@ -24,7 +24,7 @@ import akka.{ NotUsed, stream }
 import akka.http.scaladsl.model.ContentType.{ NonBinary, Binary }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model ⇒ jm }
-import akka.http.impl.util.StreamUtils
+import akka.http.impl.util.{JavaMapping, StreamUtils}
 import akka.http.impl.util.JavaMapping.Implicits._
 
 import scala.compat.java8.OptionConverters._
@@ -196,6 +196,12 @@ sealed trait ResponseEntity extends HttpEntity with jm.ResponseEntity {
 
   def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): ResponseEntity
 }
+
+object ResponseEntity {
+  implicit def fromJava(entity: akka.http.javadsl.model.ResponseEntity)(implicit m: JavaMapping[akka.http.javadsl.model.ResponseEntity, ResponseEntity]): ResponseEntity =
+    JavaMapping.toScala(entity)
+}
+
 /* An entity that can be used for requests, responses, and body parts */
 sealed trait UniversalEntity extends jm.UniversalEntity with MessageEntity with BodyPartEntity {
   def withContentType(contentType: ContentType): UniversalEntity

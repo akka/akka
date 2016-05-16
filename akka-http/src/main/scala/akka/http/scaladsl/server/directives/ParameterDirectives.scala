@@ -5,6 +5,8 @@
 package akka.http.scaladsl.server
 package directives
 
+import akka.http.javadsl.server.directives.CorrespondsTo
+
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success }
