@@ -22,6 +22,7 @@ class SprayJsonCompactMarshalSpec extends WordSpec with Matchers {
 
     // use it wherever json (un)marshalling is needed
     class MyJsonService extends Directives {
+      import CompactPrintedItem._
 
       // format: OFF
       val route =
