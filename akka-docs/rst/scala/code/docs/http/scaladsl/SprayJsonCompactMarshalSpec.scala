@@ -28,8 +28,8 @@ class SprayJsonCompactMarshalSpec extends WordSpec with Matchers {
         get {
           pathSingleSlash {
             complete {
-              // should complete with spray.json.JsValue = {"name":"Akka","id":42}
-              CompactPrintedItem("thing", 42) // will render as JSON
+              // should complete with spray.json.JsValue = {"name":"akka","id":42}
+              CompactPrintedItem("akka", 42) // will render as JSON
             }
           }
         }
