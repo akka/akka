@@ -4,6 +4,7 @@
 package docs.http.scaladsl
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.server.Directives
 import org.scalatest.{Matchers, WordSpec}
 
 class SprayJsonCompactMarshalSpec extends WordSpec with Matchers {
@@ -19,7 +20,21 @@ class SprayJsonCompactMarshalSpec extends WordSpec with Matchers {
       implicit val itemFormat = jsonFormat2(Item.apply)
     }
 
-    Item("Akka", 6).toJson
-    // yields res0: spray.json.JsValue = {"name":"Akka","age":25}
+    // use it wherever json (un)marshalling is needed
+    class MyJsonService extends Directives {
+
+      // format: OFF
+      val route =
+        get {
+          pathSingleSlash {
+            complete {
+              // should complete with spray.json.JsValue = {"name":"Akka","id":42}
+              Item("thing", 42) // will render as JSON
+            }
+          }
+        }
+      // format: ON
+      //#
+    }
   }
 }
