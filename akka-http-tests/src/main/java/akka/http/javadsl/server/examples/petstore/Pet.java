@@ -4,27 +4,25 @@
 
 package akka.http.javadsl.server.examples.petstore;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Pet {
-    private int id;
-    private String name;
+  private final int id;
+  private final String name;
 
-    private Pet(){}
-    public Pet(int id, String name) {
-        this.id = id;
-        this.name = name;
-    }
+  @JsonCreator
+  public Pet(@JsonProperty("id") int id, @JsonProperty("name") String name) {
+    this.id = id;
+    this.name = name;
+  }
 
-    public int getId() {
-        return id;
-    }
-    public void setId(int id) {
-        this.id = id;
-    }
+  public int getId() {
+    return id;
+  }
 
-    public String getName() {
-        return name;
-    }
-    public void setName(String name) {
-        this.name = name;
-    }
+  public String getName() {
+    return name;
+  }
+
 }

@@ -64,7 +64,7 @@ Directive                                   Description
 :ref:`-failWith-`                           Bubbles the given error up the response chain where it is dealt with by the
                                             closest :ref:`-handleExceptions-` directive and its ``ExceptionHandler``
 :ref:`-fileUpload-`                         Provides a stream of an uploaded file from a multipart request
-:ref:`-formField-`                          Extracts an HTTP form field from the request
+:ref:`-formField-scala-`                    Extracts an HTTP form field from the request
 :ref:`-formFieldMap-`                       Extracts a number of HTTP form field from the request as
                                             a ``Map[String, String]``
 :ref:`-formFieldMultiMap-`                  Extracts a number of HTTP form field from the request as
@@ -150,7 +150,7 @@ Directive                                   Description
 :ref:`-parameter-`                          Extracts a query parameter value from the request
 :ref:`-parameterMap-`                       Extracts the request's query parameters as a ``Map[String, String]``
 :ref:`-parameterMultiMap-`                  Extracts the request's query parameters as a ``Map[String, List[String]]``
-:ref:`-parameters-`                         Extracts a number of query parameter values from the request
+:ref:`-parameters-scala-`                   Extracts a number of query parameter values from the request
 :ref:`-parameterSeq-`                       Extracts the request's query parameters as a ``Seq[(String, String)]``
 :ref:`-pass-`                               Always simply passes the request on to its inner route, i.e. doesn't do
                                             anything, neither with the request nor the response
@@ -211,13 +211,13 @@ Directive                                   Description
 :ref:`-tprovide-`                           Injects a given tuple of values into a directive
 :ref:`-uploadedFile-`                       Streams one uploaded file from a multipart request to a file on disk
 :ref:`-validate-`                           Checks a given condition before running its inner route
-:ref:`-withoutRequestTimeout-`              Disables :ref:`request timeouts <request-timeout>` for a given route.
+:ref:`-withoutRequestTimeout-`              Disables :ref:`request timeouts <request-timeout-scala>` for a given route.
 :ref:`-withExecutionContext-`               Runs its inner route with the given alternative ``ExecutionContext``
 :ref:`-withMaterializer-`                   Runs its inner route with the given alternative ``Materializer``
 :ref:`-withLog-`                            Runs its inner route with the given alternative ``LoggingAdapter``
 :ref:`-withRangeSupport-`                   Adds ``Accept-Ranges: bytes`` to responses to GET requests, produces partial
                                             responses if the initial request contained a valid ``Range`` header
-:ref:`-withRequestTimeout-`                 Configures the :ref:`request timeouts <request-timeout>` for a given route.
+:ref:`-withRequestTimeout-`                 Configures the :ref:`request timeouts <request-timeout-scala>` for a given route.
 :ref:`-withRequestTimeoutResponse-`         Prepares the ``HttpResponse`` that is emitted if a request timeout is triggered.
                                             ``RequestContext => RequestContext`` function
 :ref:`-withSettings-`                       Runs its inner route with the given alternative ``RoutingSettings``

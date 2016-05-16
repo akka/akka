@@ -13,12 +13,17 @@ import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.scaladsl.model._
 
-trait Unmarshaller[-A, B] {
+trait Unmarshaller[-A, B] extends akka.http.javadsl.server.Unmarshaller[A, B] {
+
+  implicit final def asScala: Unmarshaller[A, B] = this
 
   def apply(value: A)(implicit ec: ExecutionContext, materializer: Materializer): Future[B]
 
   def transform[C](f: ExecutionContext ⇒ Materializer ⇒ Future[B] ⇒ Future[C]): Unmarshaller[A, C] =
     Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat ⇒ a ⇒ f(ec)(mat)(this(a)) }
+
+  //  def contramap[I](f: I ⇒ A): Unmarshaller[I, B] =
+  //    Unmarshaller.strict(i ⇒ f(i)).flatMap(ec ⇒ mat ⇒ apply(_)(ec, mat))
 
   def map[C](f: B ⇒ C): Unmarshaller[A, C] =
     transform(implicit ec ⇒ _ ⇒ _.fast map f)
@@ -110,8 +115,6 @@ object Unmarshaller
             } else FastFuture.failed(UnsupportedContentTypeException(ranges: _*))
       }
 
-    // TODO: move back into the [[EnhancedFromEntityUnmarshaller]] value class after the upgrade to Scala 2.11,
-    // Scala 2.10 suffers from this bug: https://issues.scala-lang.org/browse/SI-8018
     private def barkAtUnsupportedContentTypeException(ranges: Seq[ContentTypeRange],
                                                       newContentType: ContentType): PartialFunction[Throwable, Nothing] = {
       case UnsupportedContentTypeException(supported) ⇒ throw new IllegalStateException(

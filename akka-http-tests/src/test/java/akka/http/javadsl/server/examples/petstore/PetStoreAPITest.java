@@ -7,73 +7,81 @@ package akka.http.javadsl.server.examples.petstore;
 import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.MediaTypes;
+import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.testkit.*;
+
 import static org.junit.Assert.*;
 
 import akka.http.javadsl.testkit.TestRoute;
+
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class PetStoreAPITest extends JUnitRouteTest {
-    @Test
-    public void testGetPet() {
-        TestResponse response = createRoute().run(HttpRequest.GET("/pet/1"));
+  @Test
+  public void testGetPet() {
+    TestRouteResult response = createRoute().run(HttpRequest.GET("/pet/1"));
 
-        response
-            .assertStatusCode(200)
-            .assertMediaType("application/json");
+    response
+      .assertStatusCode(StatusCodes.OK)
+      .assertMediaType("application/json");
 
-        Pet pet = response.entityAs(Jackson.jsonAs(Pet.class));
-        assertEquals("cat", pet.getName());
-        assertEquals(1, pet.getId());
-    }
-    @Test
-    public void testGetMissingPet() {
-        createRoute().run(HttpRequest.GET("/pet/999"))
-            .assertStatusCode(404);
-    }
-    @Test
-    public void testPutPet() {
-        HttpRequest request =
-            HttpRequest.PUT("/pet/1")
-                .withEntity(MediaTypes.APPLICATION_JSON.toContentType(), "{\"id\": 1, \"name\": \"giraffe\"}");
+    Pet pet = response.entity(Jackson.unmarshaller(Pet.class));
+    assertEquals("cat", pet.getName());
+    assertEquals(1, pet.getId());
+  }
 
-        TestResponse response = createRoute().run(request);
+  @Test
+  public void testGetMissingPet() {
+    createRoute().run(HttpRequest.GET("/pet/999"))
+      .assertStatusCode(StatusCodes.NOT_FOUND);
+  }
 
-        response.assertStatusCode(200);
+  @Test
+  public void testPutPet() {
+    HttpRequest request =
+      HttpRequest.PUT("/pet/1")
+        .withEntity(MediaTypes.APPLICATION_JSON.toContentType(), "{\"id\": 1, \"name\": \"giraffe\"}");
 
-        Pet pet = response.entityAs(Jackson.jsonAs(Pet.class));
-        assertEquals("giraffe", pet.getName());
-        assertEquals(1, pet.getId());
-    }
-    @Test
-    public void testDeletePet() {
-        Map<Integer, Pet> data = createData();
+    TestRouteResult response = createRoute().run(request);
 
-        HttpRequest request = HttpRequest.DELETE("/pet/0");
+    response.assertStatusCode(StatusCodes.OK);
 
-        createRoute(data).run(request)
-            .assertStatusCode(200);
+    Pet pet = response.entity(Jackson.unmarshaller(Pet.class));
+    assertEquals("giraffe", pet.getName());
+    assertEquals(1, pet.getId());
+  }
 
-        // test actual deletion from data store
-        assertFalse(data.containsKey(0));
-    }
+  @Test
+  public void testDeletePet() {
+    Map<Integer, Pet> data = createData();
 
-    private TestRoute createRoute() {
-        return createRoute(createData());
-    }
-    private TestRoute createRoute(Map<Integer, Pet> pets) {
-        return testRoute(PetStoreExample.appRoute(pets));
-    }
-    private Map<Integer, Pet> createData() {
-        Map<Integer, Pet> pets = new HashMap<Integer, Pet>();
-        Pet dog = new Pet(0, "dog");
-        Pet cat = new Pet(1, "cat");
-        pets.put(0, dog);
-        pets.put(1, cat);
+    HttpRequest request = HttpRequest.DELETE("/pet/0");
 
-        return pets;
-    }
+    createRoute(data).run(request)
+      .assertStatusCode(StatusCodes.OK);
+
+    // test actual deletion from data store
+    assertFalse(data.containsKey(0));
+  }
+
+  private TestRoute createRoute() {
+    return createRoute(createData());
+  }
+
+  private TestRoute createRoute(Map<Integer, Pet> pets) {
+    return testRoute(PetStoreExample.appRoute(pets));
+  }
+
+  private Map<Integer, Pet> createData() {
+    Map<Integer, Pet> pets = new HashMap<Integer, Pet>();
+    Pet dog = new Pet(0, "dog");
+    Pet cat = new Pet(1, "cat");
+    pets.put(0, dog);
+    pets.put(1, cat);
+
+    return pets;
+  }
 }

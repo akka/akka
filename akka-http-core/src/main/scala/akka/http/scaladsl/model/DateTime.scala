@@ -42,6 +42,17 @@ final case class DateTime private (year: Int, // the year
    */
   def -(millis: Long): DateTime = DateTime(clicks - millis)
 
+
+  /**
+   * Creates a new `DateTime` that represents the point in time the given number of ms earlier.
+   */
+  def minus(millis: Long): DateTime = this - millis
+
+  /**
+   * Creates a new `DateTime` that represents the point in time the given number of ms later.
+   */
+  def plus(millis: Long): DateTime = this + millis
+
   /**
    * `yyyy-mm-ddThh:mm:ss`
    */
