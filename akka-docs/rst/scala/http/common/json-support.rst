@@ -38,6 +38,9 @@ Once you have done this (un)marshalling between JSON and your type ``T`` should 
    ``implicit def sprayJsonMarshallerConverter[T](writer: RootJsonWriter[T])(implicit printer: JsonPrinter = PrettyPrinter): ToEntityMarshaller[T]``.
    Alternately to marshal your types to compact printed json, bring a ``CompactPrinter`` in scope to perform implicit conversion.
 
+.. includecode:: ../../code/docs/http/scaladsl/SprayJsonCompactMarshalSpec.scala
+   :include: example
+
 To learn more about how spray-json works please refer to its `documentation <https://github.com/spray/spray-json>`_.
 
 
