@@ -243,14 +243,15 @@ final case class ValidationRejection(message: String, cause: Option[Throwable] =
  * 3. A TransformationRejection holding a function filtering out the MethodRejection
  *
  * so that in the end the RejectionHandler will only see one rejection (the ValidationRejection), because the
- * MethodRejection added by the get` directive is canceled by the `put` directive (since the HTTP method
+ * MethodRejection added by the `get` directive is canceled by the `put` directive (since the HTTP method
  * did indeed match eventually).
  */
 final case class TransformationRejection(transform: immutable.Seq[Rejection] ⇒ immutable.Seq[Rejection])
   extends jserver.TransformationRejection with Rejection {
   override def getTransform = new Function[Iterable[jserver.Rejection], Iterable[jserver.Rejection]] {
     override def apply(t: Iterable[jserver.Rejection]): Iterable[jserver.Rejection] =
-      transform(Util.immutableSeq(t).map(x ⇒ x.asScala)).map(_.asJava).asJava // TODO "asJavaDeep" and optimise?
+      // explicit collects instead of implicits is because of unidoc failing compilation on .asScala and .asJava here
+      transform(Util.immutableSeq(t).collect { case r: Rejection ⇒ r }).collect[jserver.Rejection, Seq[jserver.Rejection]] { case j: jserver.Rejection ⇒ j }.asJava // TODO "asJavaDeep" and optimise?
   }
 }
 
