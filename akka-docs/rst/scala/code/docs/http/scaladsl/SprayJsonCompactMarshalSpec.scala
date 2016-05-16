@@ -14,10 +14,10 @@ class SprayJsonCompactMarshalSpec extends WordSpec with Matchers {
     import spray.json._
 
     // domain model
-    final case class Item(name: String, id: Long)
-    object Item extends DefaultJsonProtocol with SprayJsonSupport {
+    final case class CompactPrintedItem(name: String, id: Long)
+    object CompactPrintedItem extends DefaultJsonProtocol with SprayJsonSupport {
       implicit val printer = CompactPrinter
-      implicit val itemFormat = jsonFormat2(Item.apply)
+      implicit val itemFormat = jsonFormat2(CompactPrintedItem.apply)
     }
 
     // use it wherever json (un)marshalling is needed
@@ -29,7 +29,7 @@ class SprayJsonCompactMarshalSpec extends WordSpec with Matchers {
           pathSingleSlash {
             complete {
               // should complete with spray.json.JsValue = {"name":"Akka","id":42}
-              Item("thing", 42) // will render as JSON
+              CompactPrintedItem("thing", 42) // will render as JSON
             }
           }
         }
