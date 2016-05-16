@@ -250,7 +250,8 @@ final case class TransformationRejection(transform: immutable.Seq[Rejection] ⇒
   extends jserver.TransformationRejection with Rejection {
   override def getTransform = new Function[Iterable[jserver.Rejection], Iterable[jserver.Rejection]] {
     override def apply(t: Iterable[jserver.Rejection]): Iterable[jserver.Rejection] =
-      transform(Util.immutableSeq(t).map(x ⇒ x.asScala)).map(_.asJava).asJava // TODO "asJavaDeep" and optimise?
+      // explicit casts is because of unidoc fails compilation on .asScala and .asJava here
+      transform(Util.immutableSeq(t).map(_.asInstanceOf[Rejection])).map(_.asInstanceOf[jserver.Rejection]).asJava // TODO "asJavaDeep" and optimise?
   }
 }
 
