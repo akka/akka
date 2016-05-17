@@ -13,6 +13,7 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
+import scala.util.Try
 import akka.Done
 import akka.NotUsed
 import akka.actor.ActorRef
@@ -39,6 +40,7 @@ import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.remote.transport.AkkaPduCodec
 import akka.remote.transport.AkkaPduProtobufCodec
 import akka.serialization.Serialization
+import akka.stream.AbruptTerminationException
 import akka.stream.ActorMaterializer
 import akka.stream.KillSwitches
 import akka.stream.Materializer
@@ -50,6 +52,8 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.util.ByteStringBuilder
+import akka.util.Helpers.ConfigOps
+import akka.util.Helpers.Requiring
 import io.aeron.Aeron
 import io.aeron.AvailableImageHandler
 import io.aeron.Image
@@ -58,7 +62,6 @@ import io.aeron.driver.MediaDriver
 import io.aeron.exceptions.ConductorServiceTimeoutException
 import org.agrona.ErrorHandler
 import org.agrona.IoUtil
-import scala.util.Try
 import java.io.File
 import java.net.InetSocketAddress
 import java.nio.channels.DatagramChannel
@@ -156,6 +159,7 @@ private[akka] final class AssociationState(
     }
     s"AssociationState($incarnation, $a)"
   }
+
 }
 
 /**
@@ -220,10 +224,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private val codec: AkkaPduCodec = AkkaPduProtobufCodec
   private val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
+  @volatile private[this] var _shutdown = false
 
   // FIXME config
   private val systemMessageResendInterval: FiniteDuration = 1.second
-  private val handshakeTimeout: FiniteDuration = 10.seconds
+  private val handshakeRetryInterval: FiniteDuration = 1.second
+  private val handshakeTimeout: FiniteDuration =
+    system.settings.config.getMillisDuration("akka.remote.handshake-timeout").requiring(_ > Duration.Zero,
+      "handshake-timeout must be > 0")
 
   private def inboundChannel = s"aeron:udp?endpoint=${localAddress.address.host.get}:${localAddress.address.port.get}"
   private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
@@ -233,6 +241,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   // FIXME: This does locking on putIfAbsent, we need something smarter
   private[this] val associations = new ConcurrentHashMap[Address, Association]()
+
+  private val restartTimeout: FiniteDuration = 5.seconds // FIXME config
+  private val maxRestarts = 5 // FIXME config
+  private val restartCounter = new RestartCounter(maxRestarts, restartTimeout)
 
   override def start(): Unit = {
     startMediaDriver()
@@ -252,7 +264,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
     messageDispatcher = new MessageDispatcher(system, provider)
 
-    runInboundFlows()
+    runInboundStreams()
   }
 
   private def startMediaDriver(): Unit = {
@@ -298,14 +310,19 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     aeron = Aeron.connect(ctx)
   }
 
-  private def runInboundFlows(): Unit = {
-    // control stream
-    controlSubject = Source.fromGraph(new AeronSource(inboundChannel, controlStreamId, aeron, taskRunner))
+  private def runInboundStreams(): Unit = {
+    runInboundControlStream()
+    runInboundOrdinaryMessagesStream()
+  }
+
+  private def runInboundControlStream(): Unit = {
+    val (c, completed) = Source.fromGraph(new AeronSource(inboundChannel, controlStreamId, aeron, taskRunner))
       .async // FIXME measure
       .map(ByteString.apply) // TODO we should use ByteString all the way
       .viaMat(inboundControlFlow)(Keep.right)
-      .to(Sink.ignore)
+      .toMat(Sink.ignore)(Keep.both)
       .run()(materializer)
+    controlSubject = c
 
     controlSubject.attach(new ControlMessageObserver {
       override def notify(inboundEnvelope: InboundEnvelope): Unit = {
@@ -321,14 +338,51 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     })
 
     // ordinary messages stream
-    Source.fromGraph(new AeronSource(inboundChannel, ordinaryStreamId, aeron, taskRunner))
+    controlSubject.attach(new ControlMessageObserver {
+      override def notify(inboundEnvelope: InboundEnvelope): Unit = {
+        inboundEnvelope.message match {
+          case Quarantined(from, to) if to == localAddress ⇒
+            val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress.address, from.address)
+            publishLifecycleEvent(lifecycleEvent)
+            // quarantine the other system from here
+            association(from.address).quarantine(lifecycleEvent.toString, Some(from.uid))
+          case _ ⇒ // not interesting
+        }
+      }
+    })
+
+    attachStreamRestart("Inbound control stream", completed, () ⇒ runInboundControlStream())
+  }
+
+  private def runInboundOrdinaryMessagesStream(): Unit = {
+    val completed = Source.fromGraph(new AeronSource(inboundChannel, ordinaryStreamId, aeron, taskRunner))
       .async // FIXME measure
       .map(ByteString.apply) // TODO we should use ByteString all the way
       .via(inboundFlow)
       .runWith(Sink.ignore)(materializer)
+
+    attachStreamRestart("Inbound message stream", completed, () ⇒ runInboundOrdinaryMessagesStream())
+  }
+
+  private def attachStreamRestart(streamName: String, streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
+    implicit val ec = materializer.executionContext
+    streamCompleted.onFailure {
+      case _: AbruptTerminationException ⇒ // ActorSystem shutdown
+      case cause ⇒
+        if (!isShutdown)
+          if (restartCounter.restart()) {
+            log.error(cause, "{} failed. Restarting it.", streamName)
+            restart()
+          } else {
+            log.error(cause, "{} failed and restarted {} times within {} seconds. Terminating system.",
+              streamName, maxRestarts, restartTimeout.toSeconds)
+            system.terminate()
+          }
+    }
   }
 
   override def shutdown(): Future[Done] = {
+    _shutdown = true
     killSwitch.shutdown()
     if (taskRunner != null) taskRunner.stop()
     if (aeron != null) aeron.close()
@@ -339,6 +393,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     }
     Future.successful(Done)
   }
+
+  private[remote] def isShutdown(): Boolean = _shutdown
 
   // InboundContext
   override def sendControl(to: Address, message: ControlMessage) =
@@ -375,22 +431,24 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def quarantine(remoteAddress: Address, uid: Option[Int]): Unit =
     association(remoteAddress).quarantine(reason = "", uid) // FIXME change the method signature (old remoting) to include reason?
 
-  def outbound(outboundContext: OutboundContext): Sink[Send, Any] = {
+  def outbound(outboundContext: OutboundContext): Sink[Send, Future[Done]] = {
     Flow.fromGraph(killSwitch.flow[Send])
-      .via(new OutboundHandshake(outboundContext, handshakeTimeout))
+      .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval))
       .via(encoder)
       .map(_.toArray) // TODO we should use ByteString all the way
-      .to(new AeronSink(outboundChannel(outboundContext.remoteAddress), ordinaryStreamId, aeron, taskRunner))
+      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), ordinaryStreamId, aeron, taskRunner))(Keep.right)
   }
 
-  def outboundControl(outboundContext: OutboundContext): Sink[Send, OutboundControlIngress] = {
+  def outboundControl(outboundContext: OutboundContext): Sink[Send, (OutboundControlIngress, Future[Done])] = {
     Flow.fromGraph(killSwitch.flow[Send])
-      .via(new OutboundHandshake(outboundContext, handshakeTimeout))
+      .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval))
       .via(new SystemMessageDelivery(outboundContext, systemMessageResendInterval, remoteSettings.SysMsgBufferSize))
       .viaMat(new OutboundControlJunction(outboundContext))(Keep.right)
       .via(encoder)
       .map(_.toArray) // TODO we should use ByteString all the way
-      .to(new AeronSink(outboundChannel(outboundContext.remoteAddress), controlStreamId, aeron, taskRunner))
+      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), controlStreamId, aeron, taskRunner))(Keep.both)
+
+    // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
 
     // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
   }
