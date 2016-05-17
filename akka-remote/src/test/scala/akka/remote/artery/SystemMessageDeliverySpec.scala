@@ -195,7 +195,7 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commo
       val inboundContextA = new TestInboundContext(addressB, controlSubject)
       val outboundContextA = inboundContextA.association(addressB.address)
 
-      val sink = send(sendCount = 3, resendInterval = 1.seconds, outboundContextA)
+      val sink = send(sendCount = 3, resendInterval = 2.seconds, outboundContextA)
         .via(drop(dropSeqNumbers = Vector(3L)))
         .via(inbound(inboundContextB))
         .map(_.message.asInstanceOf[String])
@@ -211,8 +211,11 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commo
       sink.expectNoMsg(200.millis) // 3 was dropped
       // resending 3 due to timeout
       sink.expectNext("msg-3")
-      replyProbe.expectMsg(Ack(3L, addressB))
+      replyProbe.expectMsg(4.seconds, Ack(3L, addressB))
+      // continue resending
+      replyProbe.expectMsg(4.seconds, Ack(3L, addressB))
       inboundContextB.deliverLastReply()
+      replyProbe.expectNoMsg(2200.millis)
       sink.expectComplete()
     }
 

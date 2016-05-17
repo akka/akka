@@ -69,8 +69,6 @@ private[akka] class SystemMessageDelivery(
       private def remoteAddress = outboundContext.remoteAddress
 
       override def preStart(): Unit = {
-        this.schedulePeriodically(ResendTick, resendInterval)
-
         implicit val ec = materializer.executionContext
         outboundContext.controlSubject.attach(this).foreach {
           getAsyncCallback[Done] { _ ⇒
@@ -107,6 +105,8 @@ private[akka] class SystemMessageDelivery(
               resending = unacknowledged.clone()
               tryResend()
             }
+            if (!unacknowledged.isEmpty)
+              scheduleOnce(ResendTick, resendInterval)
         }
 
       // ControlMessageObserver, external call
@@ -140,6 +140,9 @@ private[akka] class SystemMessageDelivery(
         if (!unacknowledged.isEmpty &&
           unacknowledged.peek().message.asInstanceOf[SystemMessageEnvelope].seqNo <= ackedSeqNo) {
           unacknowledged.removeFirst()
+          if (unacknowledged.isEmpty)
+            cancelTimer(resendInterval)
+
           if (stopping && unacknowledged.isEmpty)
             completeStage()
           else
@@ -163,6 +166,7 @@ private[akka] class SystemMessageDelivery(
               seqNo += 1
               val sendMsg = s.copy(message = SystemMessageEnvelope(msg, seqNo, localAddress))
               unacknowledged.offer(sendMsg)
+              scheduleOnce(ResendTick, resendInterval)
               if (resending.isEmpty && isAvailable(out))
                 push(out, sendMsg)
               else {
@@ -182,6 +186,7 @@ private[akka] class SystemMessageDelivery(
         unacknowledged.clear()
         resending.clear()
         resendingFromSeqNo = -1L
+        cancelTimer(resendInterval)
       }
 
       // OutHandler
