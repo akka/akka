@@ -52,7 +52,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "FlowGraphs" must {
+  "GraphDSLs" must {
 
     "support broadcast - merge layouts" in {
       val resultFuture = RunnableGraph.fromGraph(GraphDSL.create(Sink.head[Seq[Int]]) { implicit b ⇒

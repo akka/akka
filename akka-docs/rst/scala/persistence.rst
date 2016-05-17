@@ -796,6 +796,18 @@ Here is how everything is wired together:
 
 .. includecode:: ../../../akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala#customer-apply-event
 
+``andThen`` can be used to define actions which will be executed following event's persistence - convenient for "side effects" like sending a message or logging.
+Notice that actions defined in ``andThen`` block are not executed on recovery:
+
+.. includecode:: ../../../akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala#customer-andthen-example
+
+A snapshot of state data can be persisted by calling the ``saveStateSnapshot()`` method:
+
+.. includecode:: ../../../akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala#customer-snapshot-example
+
+On recovery state data is initialized according to the latest available snapshot, then the remaining domain events are replayed, triggering the
+``applyEvent`` method.
+
 .. _storage-plugins:
 
 Storage plugins

@@ -21,9 +21,17 @@ private[akka] object ConstantFun {
 
   def scalaIdentityFunction[T]: T ⇒ T = conforms
 
+  def scalaAnyToNone[A, B]: A ⇒ Option[B] = none
+  def scalaAnyTwoToNone[A, B, C]: (A, B) ⇒ Option[C] = two2none
+  def javaAnyToNone[A, B]: A ⇒ Option[B] = none
+
   val zeroLong = (_: Any) ⇒ 0L
 
   val oneLong = (_: Any) ⇒ 1L
 
   val oneInt = (_: Any) ⇒ 1
+
+  val none = (_: Any) ⇒ None
+
+  val two2none = (_: Any, _: Any) ⇒ None
 }

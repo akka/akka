@@ -17,7 +17,7 @@ trait RouteConcatenation {
   /**
    * @group concat
    */
-  implicit def enhanceRouteWithConcatenation(route: Route): RouteConcatenation.RouteWithConcatenation =
+  implicit def _enhanceRouteWithConcatenation(route: Route): RouteConcatenation.RouteWithConcatenation =
     new RouteConcatenation.RouteWithConcatenation(route: Route)
 
   /**

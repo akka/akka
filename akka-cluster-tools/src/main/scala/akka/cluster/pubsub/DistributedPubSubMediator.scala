@@ -540,6 +540,8 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
 
       if (routees.nonEmpty)
         Router(routingLogic, routees).route(wrapIfNeeded(msg), sender())
+      else
+        sendToDeadLetters(msg)
 
     case SendToAll(path, msg, skipSenderNode) ⇒
       publish(path, msg, skipSenderNode)
@@ -679,13 +681,17 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
       sender() ! count
   }
 
+  private def sendToDeadLetters(msg: Any) = context.system.deadLetters ! DeadLetter(msg, sender(), context.self)
+
   def publish(path: String, msg: Any, allButSelf: Boolean = false): Unit = {
-    for {
+    val refs = for {
       (address, bucket) ← registry
       if !(allButSelf && address == selfAddress) // if we should skip sender() node and current address == self address => skip
       valueHolder ← bucket.content.get(path)
       ref ← valueHolder.ref
-    } ref forward msg
+    } yield ref
+    if (refs.isEmpty) sendToDeadLetters(msg)
+    else refs.foreach(_.forward(msg))
   }
 
   def publishToEachGroup(path: String, msg: Any): Unit = {
@@ -698,12 +704,15 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
       ref ← valueHolder.routee
     } yield (key, ref)).groupBy(_._1).values
 
-    val wrappedMsg = SendToOneSubscriber(msg)
-    groups foreach {
-      group ⇒
-        val routees = group.map(_._2).toVector
-        if (routees.nonEmpty)
-          Router(routingLogic, routees).route(wrappedMsg, sender())
+    if (groups.isEmpty) sendToDeadLetters(msg)
+    else {
+      val wrappedMsg = SendToOneSubscriber(msg)
+      groups foreach {
+        group ⇒
+          val routees = group.map(_._2).toVector
+          if (routees.nonEmpty)
+            Router(routingLogic, routees).route(wrappedMsg, sender())
+      }
     }
   }
 

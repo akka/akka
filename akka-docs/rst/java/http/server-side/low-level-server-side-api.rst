@@ -134,25 +134,6 @@ Connection will also be closed if request entity has been cancelled (e.g. by att
 or consumed only partially (e.g. by using ``take`` combinator). In order to prevent this behaviour entity should be
 explicitly drained by attaching it to ``Sink.ignore()``.
 
-
-.. _serverSideHTTPS-java:
-
-Server-Side HTTPS Support
--------------------------
-
-Akka HTTP supports TLS encryption on the server-side as well as on the :ref:`client-side <clientSideHTTPS-java>`.
-
-The central vehicle for configuring encryption is the ``HttpsConnectionContext``, which can be created using
-the static method ``ConnectionContext.https`` which is defined like this:
-
-.. includecode:: /../../akka-http-core/src/main/scala/akka/http/javadsl/ConnectionContext.scala
-   :include: https-context-creation
-
-On the server-side the ``bind``, and ``bindAndHandleXXX`` methods of the `akka.http.javadsl.Http`_ extension define an
-optional ``httpsContext`` parameter, which can receive the HTTPS configuration in the form of an ``HttpsContext``
-instance.
-If defined encryption is enabled on all accepted connections. Otherwise it is disabled (which is the default).
-
 .. _http-server-layer-java:
 
 Stand-Alone HTTP Layer Usage

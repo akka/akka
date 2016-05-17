@@ -251,13 +251,15 @@ object MediaType {
       withParams(if (boundary.isEmpty) params - "boundary" else params.updated("boundary", boundary))
   }
 
-  sealed abstract class Compressibility(val compressible: Boolean)
+  sealed class Compressibility(val compressible: Boolean) extends jm.MediaType.Compressibility
   case object Compressible extends Compressibility(compressible = true)
   case object NotCompressible extends Compressibility(compressible = false)
   case object Gzipped extends Compressibility(compressible = false)
 }
 
 object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
+  type FindCustom = (String, String) => Option[MediaType]
+
   private[this] var extensionMap = Map.empty[String, MediaType]
 
   def forExtensionOption(ext: String): Option[MediaType] = extensionMap.get(ext.toLowerCase)

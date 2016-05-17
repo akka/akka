@@ -6,7 +6,6 @@ package akka
 import sbt._
 import sbt.Keys._
 import sbt.classpath.ClasspathUtilities
-import sbt.Project.Initialize
 import java.io.File
 import com.typesafe.sbt.site.SphinxSupport.{ generate, Sphinx }
 import sbtunidoc.Plugin._
@@ -14,54 +13,52 @@ import sbtunidoc.Plugin._
 object Dist {
   case class DistSources(depJars: Seq[File], libJars: Seq[File], srcJars: Seq[File], docJars: Seq[File], api: File, docs: File)
 
-  val distExclude = SettingKey[Seq[String]]("dist-exclude")
+  val distDirectory = SettingKey[File]("dist-directory")
+  val distUnzipped = SettingKey[File]("dist-unzipped")
+  val distFile = SettingKey[File]("dist-file")
+
   val distAllClasspaths = TaskKey[Seq[Classpath]]("dist-all-classpaths")
   val distDependencies = TaskKey[Seq[File]]("dist-dependencies")
   val distLibJars = TaskKey[Seq[File]]("dist-lib-jars")
   val distSrcJars = TaskKey[Seq[File]]("dist-src-jars")
   val distDocJars = TaskKey[Seq[File]]("dist-doc-jars")
   val distSources = TaskKey[DistSources]("dist-sources")
-  val distDirectory = SettingKey[File]("dist-directory")
-  val distUnzipped = SettingKey[File]("dist-unzipped")
-  val distFile = SettingKey[File]("dist-file")
   val dist = TaskKey[File]("dist", "Create a zipped distribution of everything.")
 
   lazy val settings: Seq[Setting[_]] = Seq(
-    distExclude := Seq.empty,
-    distAllClasspaths <<= (thisProjectRef, buildStructure, distExclude) flatMap aggregated(dependencyClasspath.task in Compile),
+    distAllClasspaths <<= (thisProjectRef, buildStructure) flatMap aggregated(dependencyClasspath in Compile),
     distDependencies <<= distAllClasspaths map { _.flatten.map(_.data).filter(ClasspathUtilities.isArchive).distinct },
-    distLibJars <<= (thisProjectRef, buildStructure, distExclude) flatMap aggregated(packageBin.task in Compile),
-    distSrcJars <<= (thisProjectRef, buildStructure, distExclude) flatMap aggregated(packageSrc.task in Compile),
-    distDocJars <<= (thisProjectRef, buildStructure, distExclude) flatMap aggregated(packageDoc.task in Compile),
+    distLibJars <<= (thisProjectRef, buildStructure) flatMap aggregated(packageBin in Compile),
+    distSrcJars <<= (thisProjectRef, buildStructure) flatMap aggregated(packageSrc in Compile),
+    distDocJars <<= (thisProjectRef, buildStructure) flatMap aggregated(packageDoc in Compile),
     distSources <<= (distDependencies, distLibJars,  distSrcJars, distDocJars, doc in ScalaUnidoc, generate in Sphinx in docsProject) map DistSources,
     distDirectory <<= crossTarget / "dist",
     distUnzipped <<= distDirectory / "unzipped",
-    distFile <<= (distDirectory, version, scalaBinaryVersion) { (dir, v, sbv) => 
+    distFile <<= (distDirectory, version, scalaBinaryVersion) { (dir, v, sbv) =>
       dir / ("akka_" + sbv + "-" + v + ".zip") },
     dist <<= distTask
   )
 
   def docsProject: ProjectReference = LocalProject(AkkaBuild.docs.id)
 
-  def aggregated[T](task: SettingKey[Task[T]])(projectRef: ProjectRef, structure: Load.BuildStructure, exclude: Seq[String]): Task[Seq[T]] = {
-    val projects = aggregatedProjects(projectRef, structure, exclude)
-    projects flatMap { task in LocalProject(_) get structure.data } join
+  def aggregated[T](task: TaskKey[T])(projectRef: ProjectRef, structure: BuildStructure): Task[Seq[T]] = {
+    val projects = aggregatedProjects(projectRef, structure, task.scope)
+    projects flatMap { task in _ get structure.data } join
   }
 
-  def aggregatedProjects(projectRef: ProjectRef, structure: Load.BuildStructure, exclude: Seq[String]): Seq[String] = {
+  def aggregatedProjects(projectRef: ProjectRef, structure: BuildStructure, scope: Scope): Seq[ProjectRef] = {
     val aggregate = Project.getProject(projectRef, structure).toSeq.flatMap(_.aggregate)
     aggregate flatMap { ref =>
-      if (exclude contains ref.project) Seq.empty
-      else ref.project +: aggregatedProjects(ref, structure, exclude)
+      if (!(publishArtifact in ref in scope get structure.data getOrElse false)) Nil
+      else ref +: aggregatedProjects(ref, structure, scope)
     }
   }
 
-  def distTask: Initialize[Task[File]] = {
+  def distTask: Def.Initialize[Task[File]] = {
     (baseDirectory, distSources, distUnzipped, version, distFile, streams) map {
       (projectBase, allSources, unzipped, version, zipFile, s) => {
         val base = unzipped / ("akka-" + version)
         val distBase = projectBase / "akka-kernel" / "src" / "main" / "dist"
-        val deploy = base / "deploy"
         val doc = base / "doc" / "akka"
         val api = doc / "api"
         val docs = doc / "docs"
@@ -85,7 +82,7 @@ object Dist {
   }
 
   def copyDirectory(source: File, target: File, overwrite: Boolean = false, preserveLastModified: Boolean = false, setExecutable: Boolean = false): Set[File] = {
-    val sources = (source ***) x rebase(source, target)
+    val sources = (source ***) pair rebase(source, target)
     copyMapped(sources, overwrite, preserveLastModified, setExecutable)
   }
 
@@ -113,7 +110,7 @@ object Dist {
 
   def zip(source: File, target: File): File = {
     val files = source ** -DirectoryFilter
-    val sources = files x relativeTo(source)
+    val sources = files pair relativeTo(source)
     IO.zip(sources, target)
     target
   }

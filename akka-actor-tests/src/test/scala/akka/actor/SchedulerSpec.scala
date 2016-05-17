@@ -480,6 +480,33 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       }
     }
 
+    "correctly wrap around ticks" in {
+      val numEvents = 40
+      val targetTicks = Int.MaxValue - numEvents + 20
+
+      withScheduler(_startTick = Int.MaxValue - 100) { (sched, driver) ⇒
+        implicit def ec = localEC
+        import driver._
+
+        val start = step / 2
+
+        wakeUp(step * targetTicks)
+        probe.expectMsgType[Long]
+
+        val nums = 0 until numEvents
+        nums foreach (i ⇒ sched.scheduleOnce(start + step * i, testActor, "hello-" + i))
+        expectNoMsg(step)
+        wakeUp(step)
+        expectWait(step)
+
+        nums foreach { i ⇒
+          wakeUp(step)
+          expectMsg("hello-" + i)
+          expectWait(step)
+        }
+      }
+    }
+
     "reliably reject jobs when shutting down" in {
       withScheduler() { (sched, driver) ⇒
         import system.dispatcher
@@ -515,7 +542,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
     def reportFailure(t: Throwable) { t.printStackTrace() }
   }
 
-  def withScheduler(start: Long = 0L, config: Config = ConfigFactory.empty)(thunk: (Scheduler with Closeable, Driver) ⇒ Unit): Unit = {
+  def withScheduler(start: Long = 0L, _startTick: Int = 0, config: Config = ConfigFactory.empty)(thunk: (Scheduler with Closeable, Driver) ⇒ Unit): Unit = {
     import akka.actor.{ LightArrayRevolverScheduler ⇒ LARS }
     val lbq = new AtomicReference[LinkedBlockingQueue[Long]](new LinkedBlockingQueue[Long])
     val prb = TestProbe()
@@ -540,6 +567,8 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
             case _: InterruptedException ⇒ Thread.currentThread.interrupt()
           }
         }
+
+        override protected def startTick: Int = _startTick
       }
     val driver = new Driver {
       def wakeUp(d: FiniteDuration) = lbq.get match {

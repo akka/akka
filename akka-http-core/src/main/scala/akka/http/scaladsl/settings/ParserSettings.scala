@@ -9,7 +9,8 @@ import java.util.function.Function
 
 import akka.http.impl.settings.ParserSettingsImpl
 import akka.http.impl.util._
-import akka.http.scaladsl.model.{ HttpMethod, StatusCode, Uri }
+import akka.http.javadsl.model
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.{ settings ⇒ js }
 import com.typesafe.config.Config
 
@@ -37,6 +38,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   def includeTlsSessionInfoHeader: Boolean
   def customMethods: String ⇒ Option[HttpMethod]
   def customStatusCodes: Int ⇒ Option[StatusCode]
+  def customMediaTypes: MediaTypes.FindCustom
 
   /* Java APIs */
   override def getCookieParsingMode: js.ParserSettings.CookieParsingMode = cookieParsingMode
@@ -60,6 +62,10 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   }
   override def getCustomStatusCodes = new Function[Int, Optional[akka.http.javadsl.model.StatusCode]] {
     override def apply(t: Int) = OptionConverters.toJava(customStatusCodes(t))
+  }
+  override def getCustomMediaTypes = new akka.japi.function.Function2[String, String, Optional[akka.http.javadsl.model.MediaType]] {
+    override def apply(mainType: String, subType: String): Optional[model.MediaType] =
+      OptionConverters.toJava(customMediaTypes(mainType, subType))
   }
 
   // ---
@@ -89,6 +95,10 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   def withCustomStatusCodes(codes: StatusCode*): ParserSettings = {
     val map = codes.map(c ⇒ c.intValue -> c).toMap
     self.copy(customStatusCodes = map.get)
+  }
+  def withCustomMediaTypes(types: MediaType*): ParserSettings = {
+    val map = types.map(c ⇒ (c.mainType, c.subType) -> c).toMap
+    self.copy(customMediaTypes = (main, sub) ⇒ map.get((main, sub)))
   }
 }
 

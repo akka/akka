@@ -279,6 +279,9 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     "Expires" in {
       "Expires: Wed, 13 Jul 2011 08:12:31 GMT" =!= Expires(DateTime(2011, 7, 13, 8, 12, 31))
       "Expires: 0" =!= Expires(DateTime.MinValue).renderedTo("Wed, 01 Jan 1800 00:00:00 GMT")
+      "Expires: -1" =!= Expires(DateTime.MinValue).renderedTo("Wed, 01 Jan 1800 00:00:00 GMT")
+      "Expires: " =!= Expires(DateTime.MinValue).renderedTo("Wed, 01 Jan 1800 00:00:00 GMT")
+      "Expires: batman" =!= Expires(DateTime.MinValue).renderedTo("Wed, 01 Jan 1800 00:00:00 GMT")
     }
 
     "Host" in {
@@ -505,9 +508,13 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         ErrorInfo("Illegal HTTP header 'Set-Cookie': Illegal weekday in date 2014-12-13T00:42:55", "is 'Mon' but should be 'Sat'")
 
       "Set-Cookie: lang=; Expires=xxxx" =!=
+        `Set-Cookie`(HttpCookie("lang", "", expires = Some(DateTime.MinValue)))
+        .renderedTo("lang=; Expires=Wed, 01 Jan 1800 00:00:00 GMT")
+
+      "Set-Cookie: lang=; domain=----" =!=
         ErrorInfo(
-          "Illegal HTTP header 'Set-Cookie': Invalid input 'x', expected OWS or HTTP-date (line 1, column 16)",
-          "lang=; Expires=xxxx\n               ^")
+          "Illegal HTTP header 'Set-Cookie': Invalid input '-', expected OWS or domain-value (line 1, column 15)",
+          "lang=; domain=----\n              ^")
 
       // extra examples from play
       "Set-Cookie: PLAY_FLASH=\"success=found\"; Path=/; HTTPOnly" =!=

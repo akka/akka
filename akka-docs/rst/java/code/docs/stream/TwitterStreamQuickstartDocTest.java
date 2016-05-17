@@ -275,10 +275,10 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
   }
 
   static abstract class HiddenDefinitions {
-    //#flow-graph-broadcast
+    //#graph-dsl-broadcast
     Sink<Author, NotUsed> writeAuthors;
     Sink<Hashtag, NotUsed> writeHashtags;
-    //#flow-graph-broadcast
+    //#graph-dsl-broadcast
   }
 
   @Test
@@ -286,7 +286,7 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
     final Sink<Author, CompletionStage<Done>> writeAuthors = Sink.ignore();
     final Sink<Hashtag, CompletionStage<Done>> writeHashtags = Sink.ignore();
 
-    //#flow-graph-broadcast
+    //#graph-dsl-broadcast
     RunnableGraph.fromGraph(GraphDSL.create(b -> {
       final UniformFanOutShape<Tweet, Tweet> bcast = b.add(Broadcast.create(2));
       final FlowShape<Tweet, Author> toAuthor =
@@ -300,7 +300,7 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
                                  b.from(bcast).via(toTags).to(hashtags);
       return ClosedShape.getInstance();
     })).run(mat);
-    //#flow-graph-broadcast
+    //#graph-dsl-broadcast
   }
 
   long slowComputation(Tweet t) {

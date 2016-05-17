@@ -88,7 +88,7 @@ public class SnapshotExample {
     persistentActor.tell("d", null);
     persistentActor.tell("print", null);
 
-    Thread.sleep(1000);
+    Thread.sleep(10000);
     system.terminate();
   }
 }

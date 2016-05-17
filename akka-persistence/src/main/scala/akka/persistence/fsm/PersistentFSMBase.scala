@@ -301,15 +301,15 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
     handleEvent = stateFunction orElse handleEventDefault
 
   /**
-   * Verify existence of initial state and setup timers. This should be the
-   * last call within the constructor, or [[akka.actor.Actor#preStart]] and
-   * [[akka.actor.Actor#postRestart]].
+   * Verify existence of initial state and setup timers. Used in [[akka.persistence.fsm.PersistentFSM]]
+   * on recovery.
    *
    * An initial `currentState -> currentState` notification will be triggered by calling this method.
    *
-   * @see [[#startWith]]
+   * @see [[akka.persistence.fsm.PersistentFSM#receiveRecover]]
    */
-  final def initialize(): Unit =
+  @deprecated("Removed from API, called internally", "2.4.5")
+  private[akka] final def initialize(): Unit =
     if (currentState != null) makeTransition(currentState)
     else throw new IllegalStateException("You must call `startWith` before calling `initialize`")
 

@@ -43,5 +43,12 @@ message AtLeastOnceDeliverySnapshot {
 
 message PersistentStateChangeEvent {
   required string stateIdentifier = 1;
-  optional string timeout = 2;
+  optional string timeout = 2; //not used in new records from 2.4.5
+  optional int64 timeoutNanos = 3;
+}
+
+message PersistentFSMSnapshot {
+  required string stateIdentifier = 1;
+  required PersistentPayload data = 2;
+  optional int64 timeoutNanos = 3;
 }

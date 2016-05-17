@@ -3,68 +3,86 @@
 Directives
 ==========
 
-A directive is a wrapper for a route or a list of alternative routes that adds one or more of the following
-functionality to its nested route(s):
-
-* it filters the request and lets only matching requests pass (e.g. the `get` directive lets only GET-requests pass)
-* it modifies the request or the ``RequestContext`` (e.g. the `path` directives filters on the unmatched path and then
-  passes an updated ``RequestContext`` unmatched path)
-* it modifies the response coming out of the nested route
-
-akka-http provides a set of predefined directives for various tasks. You can access them by either extending from
-``akka.http.javadsl.server.AllDirectives`` or by importing them statically with
-``import static akka.http.javadsl.server.Directives.*;``.
-
-These classes of directives are currently defined:
-
-BasicDirectives
-  Contains methods to create routes that complete with a static values or allow specifying :ref:`handlers-java` to
-  process a request.
-
-CacheConditionDirectives
-  Contains a single directive ``conditional`` that wraps its inner route with support for Conditional Requests as defined
-  by `RFC 7234`_.
-
-CodingDirectives
-  Contains directives to decode compressed requests and encode responses.
-
-CookieDirectives
-  Contains a single directive ``setCookie`` to aid adding a cookie to a response.
-
-ExecutionDirectives
-  Contains directives to deal with exceptions that occurred during routing.
-
-FileAndResourceDirectives
-  Contains directives to serve resources from files on the file system or from the classpath.
-
-HostDirectives
-  Contains directives to filter on the ``Host`` header of the incoming request.
-
-MethodDirectives
-  Contains directives to filter on the HTTP method of the incoming request.
-
-MiscDirectives
-  Contains directives that validate a request by user-defined logic.
-
-:ref:`path-directives-java`
-  Contains directives to match and filter on the URI path of the incoming request.
-
-RangeDirectives
-  Contains a single directive ``withRangeSupport`` that adds support for retrieving partial responses.
-
-SchemeDirectives
-  Contains a single directive ``scheme`` to filter requests based on the URI scheme (http vs. https).
-
-WebSocketDirectives
-  Contains directives to support answering WebSocket requests.
-
-TODO this page should be rewritten as the corresponding Scala page
+A "Directive" is a small building block used for creating arbitrarily complex :ref:`route structures <Routes>`.
+Akka HTTP already pre-defines a large number of directives and you can easily construct your own:
 
 .. toctree::
-  :maxdepth: 1
+   :maxdepth: 1
 
-  path-directives
-  method-directives/index
-  host-directives/index
+   alphabetically
+   by-trait
+   custom-directives
 
-.. _`RFC 7234`: http://tools.ietf.org/html/rfc7234
+
+Basics
+------
+
+:ref:`Routes-java` effectively are simply highly specialised functions that take a ``RequestContext`` and eventually ``complete`` it, 
+which could (and often should) happen asynchronously.
+
+With the :ref:`-complete-java-` directive this becomes even shorter::
+
+    Route route = complete("yeah");
+
+Writing multiple routes that are tried as alternatives (in-order of definition), is as simple as using the ``route(route1, route2)``,
+method::
+
+    Route routes = route(
+      pathSingleSlash(() ->
+        getFromResource("web/calculator.html")
+      ),
+      path("hello", () -> complete("World!))
+    );
+
+
+You could also simply define a "catch all" completion by providing it as the last route to attempt to match.
+In the example below we use the ``get()`` (one of the :ref:`MethodDirectives-java`) to match all incoming ``GET``
+requests for that route, and all other requests will be routed towards the other "catch all" route, that completes the route::
+
+    Route route =
+      get(
+        () -> complete("Received GET")
+      ).orElse(
+        () -> complete("Received something else")
+      )
+
+
+If no route matches a given request, a default ``404 Not Found`` response will be returned as response.
+
+Structure
+---------
+
+The general anatomy of a directive is as follows::
+
+    directiveName(arguments [, ...], (extractions [, ...]) -> {
+      ... // inner route
+    })
+
+It has a name, zero or more arguments and optionally an inner route (The :ref:`RouteDirectives-java` are special in that they
+are always used at the leaf-level and as such cannot have inner routes).
+
+Additionally directives can "extract" a number of values and make them available to their inner routes as function
+arguments. When seen "from the outside" a directive with its inner route form an expression of type ``Route``.
+
+
+What Directives do
+------------------
+
+A directive can do one or more of the following:
+
+.. rst-class:: wide
+
+* Transform the incoming ``RequestContext`` before passing it on to its inner route (i.e. modify the request)
+* Filter the ``RequestContext`` according to some logic, i.e. only pass on certain requests and reject others
+* Extract values from the ``RequestContext`` and make them available to its inner route as "extractions"
+* Chain some logic into the :class:`RouteResult` future transformation chain (i.e. modify the response or rejection)
+* Complete the request
+
+This means a ``Directive`` completely wraps the functionality of its inner route and can apply arbitrarily complex
+transformations, both (or either) on the request and on the response side.
+
+
+Composing Directives
+--------------------
+
+TODO rewrite for Java API

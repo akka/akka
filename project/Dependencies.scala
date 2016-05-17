@@ -12,18 +12,29 @@ object Dependencies {
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
   lazy val scalaStmVersion = settingKey[String]("The version of ScalaSTM to use.")
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
+  lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
   val junitVersion = "4.12"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.7"), // "2.12.0-M3"
+    crossScalaVersions := Seq("2.11.8"), // "2.12.0-M4"
     scalaVersion := crossScalaVersions.value.head,
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.7"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.11.6"),
-    scalaTestVersion := (
-      if (scalaVersion.value == "2.12.0-M2") "2.2.5-M2"
-      else if (scalaVersion.value == "2.12.0-M3") "2.2.5-M3"
-      else "2.2.4"
-    )
+    scalaTestVersion := {
+      scalaVersion.value match {
+        case "2.12.0-M1" => "2.2.5-M1"
+        case "2.12.0-M2" => "2.2.5-M2"
+        case "2.12.0-M3" => "2.2.5-M3"
+        case "2.12.0-M4" => "2.2.6"
+        case _ => "2.2.4"
+      }
+    },
+    java8CompatVersion := {
+      scalaVersion.value match {
+        case "2.12.0-M4" => "0.8.0-RC1"
+        case _ => "0.7.0"
+      }
+    }
   )
 
   object Compile {
@@ -53,19 +64,19 @@ object Dependencies {
     val reactiveStreams = "org.reactivestreams"       % "reactive-streams"             % "1.0.0" // CC0
 
     // ssl-config
-    val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % "0.1.3" // ApacheV2
+    val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % "0.2.1"       // ApacheV2
 
     // For akka-http spray-json support
     val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.2"       // ApacheV2
 
     // For akka-http-jackson support
-    val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % "2.7.2"       // ApacheV2
+    val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % "2.7.4"       // ApacheV2
 
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
 
     // For Java 8 Conversions
-    val java8Compat = "org.scala-lang.modules"       %% "scala-java8-compat"           % "0.7.0"       // Scala License
+    val java8Compat = Def.setting {"org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value} // Scala License
     
     val aeronDriver = "io.aeron"                      % "aeron-driver"                 % "0.9.7"       // ApacheV2
     val aeronClient = "io.aeron"                      % "aeron-client"                 % "0.9.7"       // ApacheV2
@@ -122,7 +133,7 @@ object Dependencies {
   // TODO check if `l ++=` everywhere expensive?
   val l = libraryDependencies
 
-  val actor = l ++= Seq(config, java8Compat)
+  val actor = l ++= Seq(config, java8Compat.value)
 
   val testkit = l ++= Seq(Test.junit, Test.scalatest.value) ++ Test.metricsAll
 
@@ -169,11 +180,10 @@ object Dependencies {
   // akka stream & http
 
   lazy val httpCore = l ++= Seq(
-    java8Compat,
     Test.sprayJson, // for WS Autobahn test metadata
     Test.junitIntf, Test.junit, Test.scalatest.value)
 
-  lazy val http = l ++= Seq(java8Compat)
+  lazy val http = l ++= Nil
 
   // special, since it also includes a compiler plugin
   lazy val parsing = Seq(

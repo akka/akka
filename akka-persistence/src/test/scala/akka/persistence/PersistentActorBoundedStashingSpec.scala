@@ -66,8 +66,11 @@ class SteppingInMemPersistentActorBoundedStashingSpec(strategyConfig: String)
     system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*Cmd.*")))
   }
 
-  override def beforeEach(): Unit =
+  override def beforeEach(): Unit = {
+    super.beforeEach()
+
     system.eventStream.subscribe(testActor, classOf[DeadLetter])
+  }
 
   override def afterEach(): Unit =
     system.eventStream.unsubscribe(testActor, classOf[DeadLetter])
@@ -89,12 +92,15 @@ class ThrowExceptionStrategyPersistentActorBoundedStashingSpec
       persistentActor ! Cmd("a")
 
       //internal stash overflow
-      1 to (2 * capacity) foreach (persistentActor ! Cmd(_))
-      //after PA stopped, all stashed messages forward to deadletters
-      1 to capacity foreach (i ⇒ expectMsg(DeadLetter(Cmd(i), testActor, persistentActor)))
-      //non-stashed messages
-      (capacity + 2) to (2 * capacity) foreach (i ⇒ expectMsg(DeadLetter(Cmd(i), testActor, persistentActor)))
+      1 to (capacity + 1) foreach (persistentActor ! Cmd(_))
 
+      //after PA stopped, all stashed messages forward to deadletters
+      //the message triggering the overflow is lost, so we get one less message than we sent
+      1 to capacity foreach (i ⇒ expectMsg(DeadLetter(Cmd(i), testActor, persistentActor)))
+
+      // send another message to the now dead actor and make sure that it goes to dead letters
+      persistentActor ! Cmd(capacity + 2)
+      expectMsg(DeadLetter(Cmd(capacity + 2), testActor, persistentActor))
     }
   }
 }

@@ -37,8 +37,7 @@ class FlowScanSpec extends AkkaSpec {
     }
 
     "Scan empty" in assertAllStagesStopped {
-      val v = Vector.empty[Int]
-      scan(Source(v)) should be(v.scan(0)(_ + _))
+      scan(Source.empty[Int]) should be(Vector.empty[Int].scan(0)(_ + _))
     }
 
     "emit values promptly" in {
@@ -46,7 +45,7 @@ class FlowScanSpec extends AkkaSpec {
       Await.result(f, 1.second) should ===(Seq(0, 1))
     }
 
-    "fail properly" in {
+    "restart properly" in {
       import ActorAttributes._
       val scan = Flow[Int].scan(0) { (old, current) ⇒
         require(current > 0)
@@ -54,6 +53,16 @@ class FlowScanSpec extends AkkaSpec {
       }.withAttributes(supervisionStrategy(Supervision.restartingDecider))
       Source(List(1, 3, -1, 5, 7)).via(scan).runWith(TestSink.probe)
         .toStrict(1.second) should ===(Seq(0, 1, 4, 0, 5, 12))
+    }
+
+    "resume properly" in {
+      import ActorAttributes._
+      val scan = Flow[Int].scan(0) { (old, current) ⇒
+        require(current > 0)
+        old + current
+      }.withAttributes(supervisionStrategy(Supervision.resumingDecider))
+      Source(List(1, 3, -1, 5, 7)).via(scan).runWith(TestSink.probe)
+        .toStrict(1.second) should ===(Seq(0, 1, 4, 9, 16))
     }
   }
 }

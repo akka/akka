@@ -7,14 +7,12 @@ import com.typesafe.config.Config
 import scala.concurrent.duration._
 import akka.util.Timeout
 import scala.collection.immutable
-import akka.util.Helpers.ConfigOps
-import akka.util.Helpers.Requiring
+import akka.util.Helpers.{ ConfigOps, Requiring, toRootLowerCase }
 import akka.japi.Util._
 import akka.actor.Props
 import akka.event.Logging
 import akka.event.Logging.LogLevel
 import akka.ConfigurationException
-import java.util.Locale
 import java.net.InetAddress
 
 final class RemoteSettings(val config: Config) {
@@ -38,7 +36,7 @@ final class RemoteSettings(val config: Config) {
   val TrustedSelectionPaths: Set[String] =
     immutableSeq(getStringList("akka.remote.trusted-selection-paths")).toSet
 
-  val RemoteLifecycleEventsLogLevel: LogLevel = getString("akka.remote.log-remote-lifecycle-events").toLowerCase(Locale.ROOT) match {
+  val RemoteLifecycleEventsLogLevel: LogLevel = toRootLowerCase(getString("akka.remote.log-remote-lifecycle-events")) match {
     case "on" ⇒ Logging.DebugLevel
     case other ⇒ Logging.levelFor(other) match {
       case Some(level) ⇒ level

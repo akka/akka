@@ -129,6 +129,9 @@ final class ClusterShardingSettings(
   def withTuningParameters(tuningParameters: ClusterShardingSettings.TuningParameters): ClusterShardingSettings =
     copy(tuningParameters = tuningParameters)
 
+  def withStateStoreMode(stateStoreMode: String): ClusterShardingSettings =
+    copy(stateStoreMode = stateStoreMode)
+
   /**
    * The `role` of the `ClusterSingletonManagerSettings` is not used. The `role` of the
    * coordinator singleton will be the same as the `role` of `ClusterShardingSettings`.

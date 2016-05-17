@@ -3,7 +3,7 @@
  */
 package docs.stream;
 
-import java.io.File;
+import java.nio.file.Paths;
 import java.math.BigInteger;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -56,7 +56,7 @@ public class QuickStartDocTest {
     final CompletionStage<IOResult> result =
       factorials
         .map(num -> ByteString.fromString(num.toString() + "\n"))
-        .runWith(FileIO.toFile(new File("factorials.txt")), materializer);
+        .runWith(FileIO.toPath(Paths.get("factorials.txt")), materializer);
     //#transform-source
 
     //#use-transformed-sink
@@ -81,7 +81,7 @@ public class QuickStartDocTest {
   public Sink<String, CompletionStage<IOResult>> lineSink(String filename) {
     return Flow.of(String.class)
       .map(s -> ByteString.fromString(s.toString() + "\n"))
-      .toMat(FileIO.toFile(new File(filename)), Keep.right());
+      .toMat(FileIO.toPath(Paths.get(filename)), Keep.right());
   }
   //#transform-sink
   

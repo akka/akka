@@ -11,4 +11,5 @@ testOptions += Tests.Argument(TestFrameworks.JUnit, "--ignore-runners=")
 scalacOptions in Compile  += "-language:_"
 mainClass in run in Test := Some("akka.http.javadsl.SimpleServerApp")
 
+enablePlugins(ScaladocNoVerificationOfDiagrams)
 disablePlugins(MimaPlugin)

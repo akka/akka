@@ -13,7 +13,7 @@ class GraphPartialSpec extends AkkaSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "FlowFlowGraph.partial" must {
+  "GraphDSL.partial" must {
     import GraphDSL.Implicits._
 
     "be able to build and reuse simple partial graphs" in {

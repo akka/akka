@@ -3,8 +3,10 @@
  */
 package akka.stream.scaladsl
 
+import akka.NotUsed
 import akka.stream._
 import akka.stream.testkit._
+
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -168,6 +170,32 @@ class GraphMatValueSpec extends AkkaSpec {
         }
 
       }
+    }
+
+    "with Identity Flow optimization even if ports are wired in an arbitrary higher nesting level" in {
+      val mat2 = ActorMaterializer(ActorMaterializerSettings(system).withAutoFusing(false))
+
+      val subflow = GraphDSL.create() { implicit b ⇒
+        import GraphDSL.Implicits._
+        val zip = b.add(Zip[String, String]())
+        val bc = b.add(Broadcast[String](2))
+
+        bc.out(0) ~> zip.in0
+        bc.out(1) ~> zip.in1
+
+        FlowShape(bc.in, zip.out)
+      }.named("nestedFlow")
+
+      val nest1 = Flow[String].via(subflow)
+      val nest2 = Flow[String].via(nest1)
+      val nest3 = Flow[String].via(nest2)
+      val nest4 = Flow[String].via(nest3)
+
+      //fails
+      val matValue = Source(List("")).via(nest4).to(Sink.ignore).run()(mat2)
+
+      matValue should ===(NotUsed)
+
     }
   }
 }

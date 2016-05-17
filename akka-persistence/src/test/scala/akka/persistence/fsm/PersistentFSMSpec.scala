@@ -5,7 +5,7 @@
 package akka.persistence.fsm
 
 import akka.actor._
-import akka.persistence.{ PersistentActor, RecoveryCompleted, PersistenceSpec }
+import akka.persistence._
 import akka.persistence.fsm.PersistentFSM._
 import akka.testkit._
 import com.typesafe.config.Config
@@ -248,9 +248,6 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       fsmRef ! GetCurrentCart
       fsmRef ! AddItem(coat)
       fsmRef ! GetCurrentCart
-      fsmRef ! Buy
-      fsmRef ! GetCurrentCart
-      fsmRef ! Leave
 
       expectMsg(EmptyShoppingCart)
 
@@ -258,8 +255,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       expectMsg(NonEmptyShoppingCart(List(shirt, shoes)))
       expectMsg(NonEmptyShoppingCart(List(shirt, shoes, coat)))
 
-      expectMsg(NonEmptyShoppingCart(List(shirt, shoes, coat)))
-
+      fsmRef ! PoisonPill
       expectTerminated(fsmRef)
 
       val persistentEventsStreamer = system.actorOf(PersistentEventsStreamer.props(persistenceId, testActor))
@@ -273,15 +269,67 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       expectMsg(ItemAdded(Item("3", "Coat", 119.99F)))
       expectMsgType[StateChangeEvent] //because a timeout is defined, State Change is persisted
 
-      expectMsg(OrderExecuted)
-      expectMsgType[StateChangeEvent]
+      watch(persistentEventsStreamer)
+      persistentEventsStreamer ! PoisonPill
+      expectTerminated(persistentEventsStreamer)
+    }
+
+    "persist snapshot" in {
+      val persistenceId = name
+
+      val fsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, dummyReportActorRef))
+      watch(fsmRef)
+
+      val shirt = Item("1", "Shirt", 59.99F)
+      val shoes = Item("2", "Shoes", 89.99F)
+      val coat = Item("3", "Coat", 119.99F)
+
+      fsmRef ! GetCurrentCart
+      fsmRef ! AddItem(shirt)
+      fsmRef ! GetCurrentCart
+      fsmRef ! AddItem(shoes)
+      fsmRef ! GetCurrentCart
+      fsmRef ! AddItem(coat)
+      fsmRef ! GetCurrentCart
+      fsmRef ! Buy
+      fsmRef ! GetCurrentCart
+
+      expectMsg(EmptyShoppingCart)
+
+      expectMsg(NonEmptyShoppingCart(List(shirt)))
+      expectMsg(NonEmptyShoppingCart(List(shirt, shoes)))
+      expectMsg(NonEmptyShoppingCart(List(shirt, shoes, coat)))
+
+      expectMsg(NonEmptyShoppingCart(List(shirt, shoes, coat)))
+      expectNoMsg(1 second)
+
+      fsmRef ! PoisonPill
+      expectTerminated(fsmRef)
+
+      //Check that PersistentFSM recovers in the correct state
+      val recoveredFsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, dummyReportActorRef))
+      recoveredFsmRef ! GetCurrentCart
+      expectMsg(NonEmptyShoppingCart(List(shirt, shoes, coat)))
+
+      watch(recoveredFsmRef)
+      recoveredFsmRef ! PoisonPill
+      expectTerminated(recoveredFsmRef)
+
+      //Check that PersistentFSM uses snapshot during recovery
+      val persistentEventsStreamer = system.actorOf(PersistentEventsStreamer.props(persistenceId, testActor))
+
+      expectMsgPF() {
+        case SnapshotOffer(SnapshotMetadata(name, _, timestamp), PersistentFSMSnapshot(stateIdentifier, cart, None)) ⇒
+          stateIdentifier should ===(Paid.identifier)
+          cart should ===(NonEmptyShoppingCart(List(shirt, shoes, coat)))
+          timestamp should be > 0L
+      }
 
       watch(persistentEventsStreamer)
       persistentEventsStreamer ! PoisonPill
       expectTerminated(persistentEventsStreamer)
     }
   }
-
 }
 
 object PersistentFSMSpec {
@@ -379,14 +427,24 @@ object PersistentFSMSpec {
       case Event(AddItem(item), _) ⇒
         stay applying ItemAdded(item) forMax (1 seconds)
       case Event(Buy, _) ⇒
+        //#customer-andthen-example
         goto(Paid) applying OrderExecuted andThen {
-          case NonEmptyShoppingCart(items) ⇒ reportActor ! PurchaseWasMade(items)
-          case EmptyShoppingCart           ⇒ // do nothing...
+          case NonEmptyShoppingCart(items) ⇒
+            reportActor ! PurchaseWasMade(items)
+            //#customer-andthen-example
+            saveStateSnapshot()
+          case EmptyShoppingCart ⇒ saveStateSnapshot()
+          //#customer-andthen-example
         }
+      //#customer-andthen-example
       case Event(Leave, _) ⇒
+        //#customer-snapshot-example
         stop applying OrderDiscarded andThen {
-          case _ ⇒ reportActor ! ShoppingCardDiscarded
+          case _ ⇒
+            reportActor ! ShoppingCardDiscarded
+            saveStateSnapshot()
         }
+      //#customer-snapshot-example
       case Event(GetCurrentCart, data) ⇒
         stay replying data
       case Event(StateTimeout, _) ⇒

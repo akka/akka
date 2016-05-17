@@ -4,13 +4,15 @@
 package docs.http.scaladsl
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.headers.{ BasicHttpCredentials, Authorization }
+import akka.http.scaladsl.model.headers.{ Authorization, BasicHttpCredentials }
+import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
 
-class WebSocketClientExampleSpec extends WordSpec with Matchers {
+import scala.concurrent.Promise
 
-  "singleWebSocket-request-example" in {
-    pending // compile-time only test
+class WebSocketClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
+
+  "singleWebSocket-request-example" in compileOnlySpec {
     //#single-WebSocket-request
     import akka.{ Done, NotUsed }
     import akka.http.scaladsl.Http
@@ -64,8 +66,103 @@ class WebSocketClientExampleSpec extends WordSpec with Matchers {
     //#single-WebSocket-request
   }
 
-  "authorized-singleWebSocket-request-example" in {
-    pending // compile-time only test
+  "half-closed-WebSocket-closing-example" in compileOnlySpec {
+    import akka.{ Done, NotUsed }
+    import akka.http.scaladsl.Http
+    import akka.stream.ActorMaterializer
+    import akka.stream.scaladsl._
+    import akka.http.scaladsl.model._
+    import akka.http.scaladsl.model.ws._
+
+    import scala.concurrent.Future
+
+    implicit val system = ActorSystem()
+    implicit val materializer = ActorMaterializer()
+    import system.dispatcher
+
+    //#half-closed-WebSocket-closing-example
+
+    // we may expect to be able to to just tail
+    // the server websocket output like this
+    val flow: Flow[Message, Message, NotUsed] =
+      Flow.fromSinkAndSource(
+        Sink.foreach(println),
+        Source.empty)
+
+    Http().singleWebSocketRequest(
+      WebSocketRequest("ws://example.com:8080/some/path"),
+      flow)
+
+    //#half-closed-WebSocket-closing-example
+  }
+
+  "half-closed-WebSocket-working-example" in compileOnlySpec {
+    import akka.{ Done, NotUsed }
+    import akka.http.scaladsl.Http
+    import akka.stream.ActorMaterializer
+    import akka.stream.scaladsl._
+    import akka.http.scaladsl.model._
+    import akka.http.scaladsl.model.ws._
+
+    import scala.concurrent.Future
+
+    implicit val system = ActorSystem()
+    implicit val materializer = ActorMaterializer()
+    import system.dispatcher
+
+    //#half-closed-WebSocket-working-example
+
+    // using Source.maybe materializes into a promise
+    // which will allow us to complete the source later
+    val flow: Flow[Message, Message, Promise[Option[Message]]] =
+      Flow.fromSinkAndSourceMat(
+        Sink.foreach[Message](println),
+        Source.maybe[Message])(Keep.right)
+
+    val (upgradeResponse, promise) =
+      Http().singleWebSocketRequest(
+        WebSocketRequest("ws://example.com:8080/some/path"),
+        flow)
+
+    // at some later time we want to disconnect
+    promise.success(None)
+    //#half-closed-WebSocket-working-example
+  }
+
+  "half-closed-WebSocket-finite-working-example" in compileOnlySpec {
+    import akka.{ Done, NotUsed }
+    import akka.http.scaladsl.Http
+    import akka.stream.ActorMaterializer
+    import akka.stream.scaladsl._
+    import akka.http.scaladsl.model._
+    import akka.http.scaladsl.model.ws._
+
+    import scala.concurrent.Future
+
+    implicit val system = ActorSystem()
+    implicit val materializer = ActorMaterializer()
+    import system.dispatcher
+
+    //#half-closed-WebSocket-finite-working-example
+
+    // using emit "one" and "two" and then keep the connection open
+    val flow: Flow[Message, Message, Promise[Option[Message]]] =
+      Flow.fromSinkAndSourceMat(
+        Sink.foreach[Message](println),
+        Source(List(TextMessage("one"), TextMessage("two")))
+          .concatMat(Source.maybe[Message])(Keep.right))(Keep.right)
+
+    val (upgradeResponse, promise) =
+      Http().singleWebSocketRequest(
+        WebSocketRequest("ws://example.com:8080/some/path"),
+        flow)
+
+    // at some later time we want to disconnect
+    promise.success(None)
+    //#half-closed-WebSocket-finite-working-example
+  }
+
+  "authorized-singleWebSocket-request-example" in compileOnlySpec {
     import akka.NotUsed
     import akka.http.scaladsl.Http
     import akka.stream.ActorMaterializer
@@ -88,9 +185,7 @@ class WebSocketClientExampleSpec extends WordSpec with Matchers {
     //#authorized-single-WebSocket-request
   }
 
-  "WebSocketClient-flow-example" in {
-    pending // compile-time only test
-
+  "WebSocketClient-flow-example" in compileOnlySpec {
     //#WebSocket-client-flow
     import akka.Done
     import akka.http.scaladsl.Http
