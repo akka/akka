@@ -3,10 +3,19 @@
  */
 package akka.remote.artery
 
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+
 import scala.annotation.tailrec
+import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
 import scala.util.Success
+
+import akka.Done
 import akka.actor.ActorRef
+import akka.actor.ActorSelectionMessage
 import akka.actor.Address
 import akka.actor.RootActorPath
 import akka.dispatch.sysmsg.SystemMessage
@@ -16,17 +25,15 @@ import akka.remote.RemoteActorRef
 import akka.remote.UniqueAddress
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
+import akka.remote.artery.OutboundHandshake.HandshakeTimeoutException
+import akka.remote.artery.SystemMessageDelivery.ClearSystemMessageDelivery
+import akka.stream.AbruptTerminationException
 import akka.stream.Materializer
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.SourceQueueWithComplete
 import akka.util.Unsafe
-import java.util.concurrent.locks.ReentrantLock
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import akka.actor.ActorSelectionMessage
-import akka.remote.artery.SystemMessageDelivery.ClearSystemMessageDelivery
 
 /**
  * INTERNAL API
@@ -44,10 +51,14 @@ private[akka] class Association(
   private val log = Logging(transport.system, getClass.getName)
   private val controlQueueSize = transport.provider.remoteSettings.SysMsgBufferSize
 
+  private val restartTimeout: FiniteDuration = 5.seconds // FIXME config
+  private val maxRestarts = 5 // FIXME config
+  private val restartCounter = new RestartCounter(maxRestarts, restartTimeout)
+
   @volatile private[this] var queue: SourceQueueWithComplete[Send] = _
   @volatile private[this] var controlQueue: SourceQueueWithComplete[Send] = _
   @volatile private[this] var _outboundControlIngress: OutboundControlIngress = _
-  private val materializing = new CountDownLatch(1)
+  @volatile private[this] var materializing = new CountDownLatch(1)
 
   def outboundControlIngress: OutboundControlIngress = {
     if (_outboundControlIngress ne null)
@@ -115,7 +126,7 @@ private[akka] class Association(
   def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = {
     // allow ActorSelectionMessage to pass through quarantine, to be able to establish interaction with new system
     // FIXME where is that ActorSelectionMessage check in old remoting?
-    if (message.isInstanceOf[ActorSelectionMessage] || !associationState.isQuarantined() || message.isInstanceOf[ClearSystemMessageDelivery.type]) {
+    if (message.isInstanceOf[ActorSelectionMessage] || !associationState.isQuarantined() || message == ClearSystemMessageDelivery) {
       // FIXME: Use a different envelope than the old Send, but make sure the new is handled by deadLetters properly
       message match {
         case _: SystemMessage | ClearSystemMessageDelivery ⇒
@@ -179,22 +190,55 @@ private[akka] class Association(
 
   // Idempotent
   def associate(): Unit = {
-    // FIXME detect and handle stream failure, e.g. handshake timeout
-
-    // it's important to materialize the outboundControl stream first,
-    // so that outboundControlIngress is ready when stages for all streams start
     if (controlQueue eq null) {
-      val (q, control) = Source.queue(controlQueueSize, OverflowStrategy.backpressure)
-        .toMat(transport.outboundControl(this))(Keep.both)
-        .run()(materializer)
-      controlQueue = q
-      _outboundControlIngress = control
-      // stage in the control stream may access the outboundControlIngress before returned here
-      // using CountDownLatch to make sure that materialization is completed before accessing outboundControlIngress
-      materializing.countDown()
+      // it's important to materialize the outboundControl stream first,
+      // so that outboundControlIngress is ready when stages for all streams start
+      runOutboundControlStream()
+      runOutboundOrdinaryMessagesStream()
+    }
+  }
 
-      queue = Source.queue(256, OverflowStrategy.dropBuffer)
-        .to(transport.outbound(this)).run()(materializer)
+  private def runOutboundControlStream(): Unit = {
+    // stage in the control stream may access the outboundControlIngress before returned here
+    // using CountDownLatch to make sure that materialization is completed before accessing outboundControlIngress
+    materializing = new CountDownLatch(1)
+    val (q, (control, completed)) = Source.queue(controlQueueSize, OverflowStrategy.backpressure)
+      .toMat(transport.outboundControl(this))(Keep.both)
+      .run()(materializer)
+    controlQueue = q
+    _outboundControlIngress = control
+    materializing.countDown()
+    attachStreamRestart("Outbound control stream", completed, cause ⇒ {
+      runOutboundControlStream()
+      cause match {
+        case _: HandshakeTimeoutException ⇒ // ok, quarantine not possible without UID
+        case _                            ⇒ quarantine("Outbound control stream restarted")
+      }
+    })
+  }
+
+  private def runOutboundOrdinaryMessagesStream(): Unit = {
+    val (q, completed) = Source.queue(256, OverflowStrategy.dropBuffer)
+      .toMat(transport.outbound(this))(Keep.both)
+      .run()(materializer)
+    queue = q
+    attachStreamRestart("Outbound message stream", completed, _ ⇒ runOutboundOrdinaryMessagesStream())
+  }
+
+  private def attachStreamRestart(streamName: String, streamCompleted: Future[Done], restart: Throwable ⇒ Unit): Unit = {
+    implicit val ec = materializer.executionContext
+    streamCompleted.onFailure {
+      case _: AbruptTerminationException ⇒ // ActorSystem shutdown
+      case cause ⇒
+        if (!transport.isShutdown)
+          if (restartCounter.restart()) {
+            log.error(cause, "{} failed. Restarting it.", streamName)
+            restart(cause)
+          } else {
+            log.error(cause, "{} failed and restarted {} times within {} seconds. Terminating system.",
+              streamName, maxRestarts, restartTimeout.toSeconds)
+            transport.system.terminate()
+          }
     }
   }
 }

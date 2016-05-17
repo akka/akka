@@ -3,10 +3,9 @@
  */
 package akka.remote.artery
 
-import java.util.concurrent.TimeoutException
-
 import scala.concurrent.duration._
 import scala.util.Success
+import scala.util.control.NoStackTrace
 
 import akka.remote.EndpointManager.Send
 import akka.remote.UniqueAddress
@@ -24,6 +23,13 @@ import akka.stream.stage.TimerGraphStageLogic
  * INTERNAL API
  */
 private[akka] object OutboundHandshake {
+
+  /**
+   * Stream is failed with this exception if the handshake is not completed
+   * within the handshake timeout.
+   */
+  class HandshakeTimeoutException(msg: String) extends RuntimeException(msg) with NoStackTrace
+
   // FIXME serialization for these messages
   final case class HandshakeReq(from: UniqueAddress) extends ControlMessage
   final case class HandshakeRsp(from: UniqueAddress) extends Reply
@@ -34,13 +40,16 @@ private[akka] object OutboundHandshake {
   private case object Completed extends HandshakeState
 
   private case object HandshakeTimeout
+  private case object HandshakeRetryTick
 
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class OutboundHandshake(outboundContext: OutboundContext, timeout: FiniteDuration) extends GraphStage[FlowShape[Send, Send]] {
+private[akka] class OutboundHandshake(outboundContext: OutboundContext, timeout: FiniteDuration, retryInterval: FiniteDuration)
+  extends GraphStage[FlowShape[Send, Send]] {
+
   val in: Inlet[Send] = Inlet("OutboundHandshake.in")
   val out: Outlet[Send] = Outlet("OutboundHandshake.out")
   override val shape: FlowShape[Send, Send] = FlowShape(in, out)
@@ -68,8 +77,6 @@ private[akka] class OutboundHandshake(outboundContext: OutboundContext, timeout:
               }
             }.invoke
           }
-
-          scheduleOnce(HandshakeTimeout, timeout)
         }
       }
 
@@ -87,21 +94,29 @@ private[akka] class OutboundHandshake(outboundContext: OutboundContext, timeout:
           case Start ⇒
             // will pull when handshake reply is received (uniqueRemoteAddress completed)
             handshakeState = ReqInProgress
-            outboundContext.sendControl(HandshakeReq(outboundContext.localAddress))
+            scheduleOnce(HandshakeTimeout, timeout)
+            schedulePeriodically(HandshakeRetryTick, retryInterval)
+            sendHandshakeReq()
           case ReqInProgress ⇒ // will pull when handshake reply is received
         }
       }
 
+      private def sendHandshakeReq(): Unit =
+        outboundContext.sendControl(HandshakeReq(outboundContext.localAddress))
+
       private def handshakeCompleted(): Unit = {
         handshakeState = Completed
+        cancelTimer(HandshakeRetryTick)
         cancelTimer(HandshakeTimeout)
       }
 
       override protected def onTimer(timerKey: Any): Unit =
         timerKey match {
+          case HandshakeRetryTick ⇒
+            sendHandshakeReq()
           case HandshakeTimeout ⇒
             // FIXME would it make sense to retry a few times before failing?
-            failStage(new TimeoutException(
+            failStage(new HandshakeTimeoutException(
               s"Handshake with [${outboundContext.remoteAddress}] did not complete within ${timeout.toMillis} ms"))
         }
 

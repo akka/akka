@@ -4,18 +4,23 @@
 package akka.remote.artery
 
 import java.nio.ByteBuffer
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.annotation.tailrec
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
+import akka.Done
 import akka.stream.Attributes
 import akka.stream.Inlet
 import akka.stream.SinkShape
 import akka.stream.stage.AsyncCallback
-import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.InHandler
 import io.aeron.Aeron
 import io.aeron.Publication
@@ -51,18 +56,22 @@ object AeronSink {
 /**
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
  */
-class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRunner) extends GraphStage[SinkShape[AeronSink.Bytes]] {
+class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRunner)
+  extends GraphStageWithMaterializedValue[SinkShape[AeronSink.Bytes], Future[Done]] {
   import AeronSink._
   import TaskRunner._
 
   val in: Inlet[Bytes] = Inlet("AeronSink")
   override val shape: SinkShape[Bytes] = SinkShape(in)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with InHandler {
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
+    val completed = Promise[Done]()
+    val logic = new GraphStageLogic(shape) with InHandler {
 
       private val buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(128 * 1024))
       private val pub = aeron.addPublication(channel, streamId)
+
+      private var completedValue: Try[Done] = Success(Done)
 
       private val spinning = 1000
       private var backoffCount = spinning
@@ -80,6 +89,7 @@ class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRu
       override def postStop(): Unit = {
         taskRunner.command(Remove(addOfferTask.task))
         pub.close()
+        completed.complete(completedValue)
       }
 
       // InHandler
@@ -124,6 +134,15 @@ class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRu
           super.onUpstreamFinish()
       }
 
+      override def onUpstreamFailure(cause: Throwable): Unit = {
+        completedValue = Failure(cause)
+        super.onUpstreamFailure(cause)
+      }
+
       setHandler(in, this)
     }
+
+    (logic, completed.future)
+  }
+
 }

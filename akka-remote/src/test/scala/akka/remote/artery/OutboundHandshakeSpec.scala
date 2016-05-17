@@ -3,8 +3,6 @@
  */
 package akka.remote.artery
 
-import java.util.concurrent.TimeoutException
-
 import scala.concurrent.duration._
 
 import akka.actor.Address
@@ -12,6 +10,7 @@ import akka.remote.EndpointManager.Send
 import akka.remote.RemoteActorRef
 import akka.remote.UniqueAddress
 import akka.remote.artery.OutboundHandshake.HandshakeReq
+import akka.remote.artery.OutboundHandshake.HandshakeTimeoutException
 import akka.remote.artery.SystemMessageDelivery._
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
@@ -32,11 +31,12 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
   val addressA = UniqueAddress(Address("akka.artery", "sysA", "hostA", 1001), 1)
   val addressB = UniqueAddress(Address("akka.artery", "sysB", "hostB", 1002), 2)
 
-  private def setupStream(outboundContext: OutboundContext, timeout: FiniteDuration = 5.seconds): (TestPublisher.Probe[String], TestSubscriber.Probe[Any]) = {
+  private def setupStream(outboundContext: OutboundContext, timeout: FiniteDuration = 5.seconds,
+                          retryInterval: FiniteDuration = 10.seconds): (TestPublisher.Probe[String], TestSubscriber.Probe[Any]) = {
     val destination = null.asInstanceOf[RemoteActorRef] // not used
     TestSource.probe[String]
       .map(msg ⇒ Send(msg, None, destination, None))
-      .via(new OutboundHandshake(outboundContext, timeout))
+      .via(new OutboundHandshake(outboundContext, timeout, retryInterval))
       .map { case Send(msg, _, _, _) ⇒ msg }
       .toMat(TestSink.probe[Any])(Keep.both)
       .run()
@@ -60,7 +60,20 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       val (upstream, downstream) = setupStream(outboundContext, timeout = 200.millis)
 
       downstream.request(1)
-      downstream.expectError().getClass should be(classOf[TimeoutException])
+      downstream.expectError().getClass should be(classOf[HandshakeTimeoutException])
+    }
+
+    "retry HandshakeReq" in {
+      val controlProbe = TestProbe()
+      val inboundContext = new TestInboundContext(localAddress = addressA, controlProbe = Some(controlProbe.ref))
+      val outboundContext = inboundContext.association(addressB.address)
+      val (upstream, downstream) = setupStream(outboundContext, retryInterval = 100.millis)
+
+      downstream.request(10)
+      controlProbe.expectMsg(HandshakeReq(addressA))
+      controlProbe.expectMsg(HandshakeReq(addressA))
+      controlProbe.expectMsg(HandshakeReq(addressA))
+      downstream.cancel()
     }
 
     "not deliver messages from upstream until handshake completed" in {
