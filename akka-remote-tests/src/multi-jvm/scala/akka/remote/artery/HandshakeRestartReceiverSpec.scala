@@ -34,24 +34,6 @@ object HandshakeRestartReceiverSpec extends MultiNodeConfig {
        }
        """)))
 
-  def aeronPort(roleName: RoleName): Int =
-    roleName match {
-      case `first`  ⇒ 20531 // TODO yeah, we should have support for dynamic port assignment
-      case `second` ⇒ 20532
-    }
-
-  nodeConfig(first) {
-    ConfigFactory.parseString(s"""
-      akka.remote.artery.port = ${aeronPort(first)}
-      """)
-  }
-
-  nodeConfig(second) {
-    ConfigFactory.parseString(s"""
-      akka.remote.artery.port = ${aeronPort(second)}
-      """)
-  }
-
   class Subject extends Actor {
     def receive = {
       case "shutdown" ⇒ context.system.terminate()

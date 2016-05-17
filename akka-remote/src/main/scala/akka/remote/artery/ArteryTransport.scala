@@ -6,6 +6,7 @@ package akka.remote.artery
 import java.nio.ByteOrder
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.{ Function ⇒ JFunction }
+
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import akka.Done
@@ -47,6 +48,9 @@ import io.aeron.exceptions.ConductorServiceTimeoutException
 import org.agrona.ErrorHandler
 import org.agrona.IoUtil
 import java.io.File
+import java.net.InetSocketAddress
+import java.nio.channels.DatagramChannel
+
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 
 /**
@@ -147,7 +151,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val systemMessageResendInterval: FiniteDuration = 1.second
   private val handshakeTimeout: FiniteDuration = 10.seconds
 
-  // TODO support port 0
   private def inboundChannel = s"aeron:udp?endpoint=${localAddress.address.host.get}:${localAddress.address.port.get}"
   private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
   private val controlStreamId = 1
@@ -162,10 +165,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     startAeron()
     taskRunner.start()
 
+    val port =
+      if (remoteSettings.ArteryPort == 0) ArteryTransport.autoSelectPort(remoteSettings.ArteryHostname)
+      else remoteSettings.ArteryPort
+
     // TODO: Configure materializer properly
     // TODO: Have a supervisor actor
     _localAddress = UniqueAddress(
-      Address("akka.artery", system.name, remoteSettings.ArteryHostname, remoteSettings.ArteryPort),
+      Address("akka.artery", system.name, remoteSettings.ArteryHostname, port),
       AddressUidExtension(system).addressUid)
     materializer = ActorMaterializer()(system)
 
@@ -351,6 +358,22 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         .viaMat(new InboundControlJunction)(Keep.right)
         .to(messageDispatcherSink),
       Source.maybe[ByteString].via(killSwitch.flow))((a, b) ⇒ a)
+  }
+
+}
+
+object ArteryTransport {
+
+  /**
+   * Internal API
+   * @return A port that is hopefully available
+   */
+  private[remote] def autoSelectPort(hostname: String): Int = {
+    val socket = DatagramChannel.open().socket()
+    socket.bind(new InetSocketAddress(hostname, 0))
+    val port = socket.getLocalPort
+    socket.close()
+    port
   }
 
 }

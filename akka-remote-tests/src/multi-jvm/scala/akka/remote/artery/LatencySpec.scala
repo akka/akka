@@ -55,24 +55,6 @@ object LatencySpec extends MultiNodeConfig {
        }
        """)))
 
-  def aeronPort(roleName: RoleName): Int =
-    roleName match {
-      case `first`  ⇒ 20501 // TODO yeah, we should have support for dynamic port assignment
-      case `second` ⇒ 20502
-    }
-
-  nodeConfig(first) {
-    ConfigFactory.parseString(s"""
-      akka.remote.artery.port = ${aeronPort(first)}
-      """)
-  }
-
-  nodeConfig(second) {
-    ConfigFactory.parseString(s"""
-      akka.remote.artery.port = ${aeronPort(second)}
-      """)
-  }
-
   final case object Reset
 
   def echoProps(): Props =
@@ -175,7 +157,7 @@ abstract class LatencySpec
 
   def channel(roleName: RoleName) = {
     val a = node(roleName).address
-    s"aeron:udp?endpoint=${a.host.get}:${aeronPort(roleName)}"
+    s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
   }
 
   lazy val reporterExecutor = Executors.newFixedThreadPool(1)
