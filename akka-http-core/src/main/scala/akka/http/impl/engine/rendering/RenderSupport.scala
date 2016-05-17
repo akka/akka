@@ -57,8 +57,9 @@ private object RenderSupport {
   }
 
   object ChunkTransformer {
-    val chunkTransformer = Flow.fromGraph(new ChunkTransformer)
-    val flow = Flow[ChunkStreamPart].via(chunkTransformer).named("renderChunks")
+    //val chunkTransformer = Flow.fromGraph(new ChunkTransformer)
+    //val flow = Flow[ChunkStreamPart].via(chunkTransformer).named("renderChunks")
+    val flow = Flow.fromGraph(new ChunkTransformer).named("renderChunks")
   }
 
   class ChunkTransformer extends GraphStage[FlowShape[HttpEntity.ChunkStreamPart, ByteString]] {
@@ -80,7 +81,7 @@ private object RenderSupport {
         override def onPull(): Unit = pull(in)
 
         override def onUpstreamFinish(): Unit = {
-          emitMultiple(out, Iterator.single(defaultLastChunkBytes))
+          emit(out, defaultLastChunkBytes)
           completeStage()
         }
         setHandlers(in, out, this)
