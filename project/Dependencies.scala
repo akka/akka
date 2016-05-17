@@ -77,6 +77,9 @@ object Dependencies {
 
     // For Java 8 Conversions
     val java8Compat = Def.setting {"org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value} // Scala License
+    
+    val aeronDriver = "io.aeron"                      % "aeron-driver"                 % "0.9.7"       // ApacheV2
+    val aeronClient = "io.aeron"                      % "aeron-client"                 % "0.9.7"       // ApacheV2
 
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
@@ -136,7 +139,7 @@ object Dependencies {
 
   val actorTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.commonsCodec, Test.commonsMath, Test.mockito, Test.scalacheck.value, Test.junitIntf)
 
-  val remote = l ++= Seq(netty, uncommonsMath, Test.junit, Test.scalatest.value)
+  val remote = l ++= Seq(netty, uncommonsMath, aeronDriver, aeronClient, Test.junit, Test.scalatest.value)
 
   val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.scalaXml)
 
