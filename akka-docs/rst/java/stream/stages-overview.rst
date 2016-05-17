@@ -47,6 +47,17 @@ Stream a single object repeatedly
 
 **completes** never
 
+cycle
+^^^^^
+Stream iterator in cycled manner. Internally new iterator is being created to cycle the one provided via argument meaning
+when original iterator runs out of elements process will start all over again from the beginning of the iterator
+provided by the evaluation of provided parameter. If method argument provides empty iterator stream will be terminated with
+exception.
+
+**emits** the next value returned from cycled iterator
+
+**completes** never
+
 tick
 ^^^^
 A periodical repetition of an arbitrary object. Delay of first tick is specified
@@ -196,6 +207,22 @@ Integration with Reactive Streams, materializes into a ``org.reactivestreams.Sub
 fromPublisher
 ^^^^^^^^^^^^^
 Integration with Reactive Streams, subscribes to a ``org.reactivestreams.Publisher``.
+
+zipN
+^^^^
+Combine the elements of multiple streams into a stream of sequences.
+
+**emits** when all of the inputs has an element available
+
+**completes** when any upstream completes
+
+zipWithN
+^^^^^^^^
+Combine the elements of multiple streams into a stream of sequences using a combiner function.
+
+**emits** when all of the inputs has an element available
+
+**completes** when any upstream completes
 
 
 
@@ -420,10 +447,47 @@ The ``InputStream`` will be closed when the ``Source`` is canceled from its down
 asOutputStream
 ^^^^^^^^^^^^^^
 Create a source that materializes into an ``OutputStream``. When bytes are written to the ``OutputStream`` they
-are emitted from the source
+are emitted from the source.
 
 The ``OutputStream`` will no longer be writable when the ``Source`` has been canceled from its downstream, and
 closing the ``OutputStream`` will complete the ``Source``.
+
+asJavaStream
+^^^^^^^^^^^^
+Create a sink which materializes into Java 8 ``Stream`` that can be run to trigger demand through the sink.
+Elements emitted through the stream will be available for reading through the Java 8 ``Stream``.
+
+The Java 8 a ``Stream`` will be ended when the stream flowing into this ``Sink`` completes, and closing the Java
+``Stream`` will cancel the inflow of this ``Sink``. Java ``Stream`` throws exception in case reactive stream failed.
+
+Be aware that Java 8 ``Stream`` blocks current thread while waiting on next element from downstream.
+
+fromJavaStream
+^^^^^^^^^^^^^^
+Create a source that wraps Java 8 ``Stream``. ``Source`` uses a stream iterator to get all its elements and send them
+downstream on demand.
+
+javaCollector
+^^^^^^^^^^^^^
+Create a sink which materializes into a ``CompletionStage`` which will be completed with a result of the Java 8 ``Collector``
+transformation and reduction operations. This allows usage of Java 8 streams transformations for reactive streams.
+The ``Collector`` will trigger demand downstream. Elements emitted through the stream will be accumulated into a mutable
+result container, optionally transformed into a final representation after all input elements have been processed.
+The ``Collector`` can also do reduction at the end. Reduction processing is performed sequentially
+
+Note that a flow can be materialized multiple times, so the function producing the ``Collector`` must be able
+to handle multiple invocations.
+
+javaCollectorParallelUnordered
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Create a sink which materializes into a ``CompletionStage`` which will be completed with a result of the Java 8 Collector
+transformation and reduction operations. This allows usage of Java 8 streams transformations for reactive streams.
+The ``Collector`` will trigger demand downstream.. Elements emitted through the stream will be accumulated into a mutable
+result container, optionally transformed into a final representation after all input elements have been processed.
+The ``Collector`` can also do reduction at the end. Reduction processing is performed in parallel based on graph ``Balance``.
+
+Note that a flow can be materialized multiple times, so the function producing the ``Collector`` must be able
+to handle multiple invocations.
 
 File IO Sinks and Sources
 -------------------------
@@ -930,6 +994,90 @@ merging. The maximum number of merged sources has to be specified.
 **backpressures** when downstream backpressures
 
 **completes** when upstream completes and all consumed substreams complete
+
+
+Time aware stages
+-----------------
+
+Those stages operate taking time into consideration.
+
+initialTimeout
+^^^^^^^^^^^^^^
+If the first element has not passed through this stage before the provided timeout, the stream is failed
+with a ``TimeoutException``.
+
+**emits** when upstream emits an element
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes or fails if timeout elapses before first element arrives
+
+**cancels** when downstream cancels
+
+completionTimeout
+^^^^^^^^^^^^^^^^^
+If the completion of the stream does not happen until the provided timeout, the stream is failed
+with a ``TimeoutException``.
+
+**emits** when upstream emits an element
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes or fails if timeout elapses before upstream completes
+
+**cancels** when downstream cancels
+
+idleTimeout
+^^^^^^^^^^^
+If the time between two processed elements exceeds the provided timeout, the stream is failed
+with a ``TimeoutException``. The timeout is checked periodically, so the resolution of the
+check is one period (equals to timeout value).
+
+**emits** when upstream emits an element
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes or fails if timeout elapses between two emitted elements
+
+**cancels** when downstream cancels
+
+backpressureTimeout
+^^^^^^^^^^^^^^^^^^^
+If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
+the stream is failed with a ``TimeoutException``. The timeout is checked periodically, so the resolution of the
+check is one period (equals to timeout value).
+
+**emits** when upstream emits an element
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes or fails if timeout elapses between element emission and downstream demand.
+
+**cancels** when downstream cancels
+
+keepAlive
+^^^^^^^^^
+Injects additional (configured) elements if upstream does not emit for a configured amount of time.
+
+**emits** when upstream emits an element or if the upstream was idle for the configured period
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes
+
+**cancels** when downstream cancels
+
+initialDelay
+^^^^^^^^^^^^
+Delays the initial element by the specified duration.
+
+**emits** when upstream emits an element if the initial delay is already elapsed
+
+**backpressures** when downstream backpressures or initial delay is not yet elapsed
+
+**completes** when upstream completes
+
+**cancels** when downstream cancels
 
 
 Fan-in stages

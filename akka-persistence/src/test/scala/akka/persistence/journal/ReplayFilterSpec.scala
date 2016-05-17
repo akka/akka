@@ -16,6 +16,9 @@ class ReplayFilterSpec extends AkkaSpec with ImplicitSender {
   val writerB = "writer-B"
   val writerC = "writer-C"
 
+  val n1 = ReplayedMessage(PersistentRepr("a", 13, "p1", "", writerUuid = PersistentRepr.Undefined))
+  val n2 = ReplayedMessage(PersistentRepr("b", 14, "p1", "", writerUuid = PersistentRepr.Undefined))
+
   val m1 = ReplayedMessage(PersistentRepr("a", 13, "p1", "", writerUuid = writerA))
   val m2 = ReplayedMessage(PersistentRepr("b", 14, "p1", "", writerUuid = writerA))
   val m3 = ReplayedMessage(PersistentRepr("c", 15, "p1", "", writerUuid = writerA))
@@ -33,6 +36,23 @@ class ReplayFilterSpec extends AkkaSpec with ImplicitSender {
 
       expectMsg(m1)
       expectMsg(m2)
+      expectMsg(m3)
+      expectMsg(successMsg)
+
+      watch(filter)
+      expectTerminated(filter)
+    }
+
+    "pass on all replayed messages (when previously no writer id was given, but now is) and then stop" in {
+      val filter = system.actorOf(ReplayFilter.props(
+        testActor, mode = RepairByDiscardOld, windowSize = 2, maxOldWriters = 10, debugEnabled = true))
+      filter ! n1
+      filter ! n2
+      filter ! m3
+      filter ! successMsg
+
+      expectMsg(n1)
+      expectMsg(n2)
       expectMsg(m3)
       expectMsg(successMsg)
 

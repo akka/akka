@@ -12,7 +12,7 @@ import akka.stream.impl.StreamLayout
 import akka.stream.{ javadsl, scaladsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.compat.java8.OptionConverters._
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ Future, ExecutionContext }
 import scala.util.Try
 import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters.FutureOps
@@ -36,6 +36,11 @@ object Sink {
    * The returned [[java.util.concurrent.CompletionStage]] will be completed with value of the final
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure signaled in the stream.
+   *
+   * If the stream is empty (i.e. completes before signalling any elements),
+   * the reduce stage will fail its downstream with a [[NoSuchElementException]],
+   * which is semantically in-line with that Scala's standard library collections
+   * do in such situations.
    */
   def reduce[In](f: function.Function2[In, In, In]): Sink[In, CompletionStage[In]] =
     new Sink(scaladsl.Sink.reduce[In](f.apply).toCompletionStage())
@@ -224,8 +229,8 @@ object Sink {
   }
 
   /**
-   * Creates a `Sink` that is materialized as an [[akka.stream.SinkQueue]].
-   * [[akka.stream.SinkQueue.pull]] method is pulling element from the stream and returns ``CompletionStage[Option[T]]``.
+   * Creates a `Sink` that is materialized as an [[akka.stream.javadsl.SinkQueue]].
+   * [[akka.stream.javadsl.SinkQueue.pull]] method is pulling element from the stream and returns ``CompletionStage[Option[T]]``.
    * `CompletionStage` completes when element is available.
    *
    * Before calling pull method second time you need to wait until previous CompletionStage completes.
@@ -235,12 +240,12 @@ object Sink {
    * upstream and then stop back pressure.  You can configure size of input
    * buffer by using [[Sink.withAttributes]] method.
    *
-   * For stream completion you need to pull all elements from [[akka.stream.SinkQueue]] including last None
+   * For stream completion you need to pull all elements from [[akka.stream.javadsl.SinkQueue]] including last None
    * as completion marker
    *
-   * @see [[akka.stream.SinkQueue]]
+   * @see [[akka.stream.javadsl.SinkQueueWithCancel]]
    */
-  def queue[T](): Sink[T, SinkQueue[T]] =
+  def queue[T](): Sink[T, SinkQueueWithCancel[T]] =
     new Sink(scaladsl.Sink.queue[T]().mapMaterializedValue(new SinkQueueAdapter(_)))
 }
 

@@ -19,33 +19,6 @@ import akka.util.Switch
 import akka.util.Helpers.ConfigOps
 import scala.util.control.NoStackTrace
 
-class JavaExtensionSpec extends JavaExtension with JUnitSuiteLike
-
-object TestExtension extends ExtensionId[TestExtension] with ExtensionIdProvider {
-  def lookup = this
-  def createExtension(s: ExtendedActorSystem) = new TestExtension(s)
-}
-
-// Dont't place inside ActorSystemSpec object, since it will not be garbage collected and reference to system remains
-class TestExtension(val system: ExtendedActorSystem) extends Extension
-
-object FailingTestExtension extends ExtensionId[FailingTestExtension] with ExtensionIdProvider {
-  def lookup = this
-  def createExtension(s: ExtendedActorSystem) = new FailingTestExtension(s)
-
-  class TestException extends IllegalArgumentException("ERR") with NoStackTrace
-}
-
-// Dont't place inside ActorSystemSpec object, since it will not be garbage collected and reference to system remains
-class FailingTestExtension(val system: ExtendedActorSystem) extends Extension {
-  // first time the actor is created
-  val ref = system.actorOf(Props.empty, "uniqueName")
-  // but the extension initialization fails
-  // second time it will throw exception when trying to create actor with same name,
-  // but we want to see the first exception every time
-  throw new FailingTestExtension.TestException
-}
-
 object ActorSystemSpec {
 
   class Waves extends Actor {
@@ -140,7 +113,6 @@ object ActorSystemSpec {
   }
 
   val config = s"""
-      akka.extensions = ["akka.actor.TestExtension"]
       slow {
         type="${classOf[SlowDispatcher].getName}"
       }"""
@@ -175,23 +147,6 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
     "allow valid names" in {
       shutdown(ActorSystem("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"))
-    }
-
-    "support extensions" in {
-      // TestExtension is configured and should be loaded at startup
-      system.hasExtension(TestExtension) should ===(true)
-      TestExtension(system).system should ===(system)
-      system.extension(TestExtension).system should ===(system)
-    }
-
-    "handle extensions that fail to initialize" in {
-      intercept[FailingTestExtension.TestException] {
-        FailingTestExtension(system)
-      }
-      // same exception should be reported next time
-      intercept[FailingTestExtension.TestException] {
-        FailingTestExtension(system)
-      }
     }
 
     "log dead letters" in {

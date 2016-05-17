@@ -295,7 +295,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     def rawParse(requestMethod: HttpMethod, input: String*): Source[Either[ResponseOutput, HttpResponse], NotUsed] =
       Source(input.toList)
         .map(bytes ⇒ SessionBytes(TLSPlacebo.dummySession, ByteString(bytes)))
-        .transform(() ⇒ newParserStage(requestMethod)).named("parser")
+        .via(newParserStage(requestMethod)).named("parser")
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
         .prefixAndTail(1)
         .collect {

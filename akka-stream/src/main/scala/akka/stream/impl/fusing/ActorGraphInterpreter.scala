@@ -389,12 +389,15 @@ private[stream] final class GraphInterpreterShell(
         case ExposedPublisher(_, id, publisher) ⇒
           outputs(id).exposedPublisher(publisher)
           publishersPending -= 1
-          if (canShutDown) _isTerminated = true
+          if (canShutDown) interpreterCompleted = true
         case OnSubscribe(_, _, sub) ⇒
           tryCancel(sub)
           subscribesPending -= 1
-          if (canShutDown) _isTerminated = true
+          if (canShutDown) interpreterCompleted = true
         case Abort(_) ⇒
+          // Not waiting anymore, leak is unlikely due to the timeout we have waited
+          publishersPending = 0
+          subscribesPending = 0
           tryAbort(new TimeoutException("Streaming actor has been already stopped processing (normally), but not all of its " +
             s"inputs or outputs have been subscribed in [${settings.subscriptionTimeoutSettings.timeout}}]. Aborting actor now."))
         case _ ⇒ // Ignore, there is nothing to do anyway
@@ -448,8 +451,8 @@ private[stream] final class GraphInterpreterShell(
     }
   }
 
-  private var _isTerminated = false
-  def isTerminated: Boolean = _isTerminated
+  private var interpreterCompleted = false
+  def isTerminated: Boolean = interpreterCompleted && canShutDown
 
   private def canShutDown: Boolean = subscribesPending + publishersPending == 0
 
@@ -469,7 +472,7 @@ private[stream] final class GraphInterpreterShell(
       val remainingQuota = interpreter.execute(Math.min(actorEventLimit, shellEventLimit))
       if (interpreter.isCompleted) {
         // Cannot stop right away if not completely subscribed
-        if (canShutDown) _isTerminated = true
+        if (canShutDown) interpreterCompleted = true
         else {
           waitingForShutdown = true
           mat.scheduleOnce(settings.subscriptionTimeoutSettings.timeout, new Runnable {
@@ -493,19 +496,27 @@ private[stream] final class GraphInterpreterShell(
    *  - a new error is encountered
    */
   def tryAbort(ex: Throwable): Unit = {
+    val reason = ex match {
+      case s: SpecViolation ⇒
+        new IllegalStateException("Shutting down because of violation of the Reactive Streams specification.", s)
+      case _ ⇒ ex
+    }
+
     // This should handle termination while interpreter is running. If the upstream have been closed already this
-    // call has no effect and therefore do the right thing: nothing.
+    // call has no effect and therefore does the right thing: nothing.
     try {
-      inputs.foreach(_.onInternalError(ex))
+      inputs.foreach(_.onInternalError(reason))
       interpreter.execute(abortLimit)
       interpreter.finish()
     } catch {
       case NonFatal(_) ⇒
+      // We are already handling an abort caused by an error, there is nothing we can do with new errors caused
+      // by the abort itself. We just give up here.
     } finally {
-      _isTerminated = true
+      interpreterCompleted = true
       // Will only have an effect if the above call to the interpreter failed to emit a proper failure to the downstream
       // otherwise this will have no effect
-      outputs.foreach(_.fail(ex))
+      outputs.foreach(_.fail(reason))
       inputs.foreach(_.cancel())
     }
   }
@@ -590,7 +601,11 @@ private[stream] class ActorGraphInterpreter(_initial: GraphInterpreterShell) ext
   private def processEvent(b: BoundaryEvent): Unit = {
     val shell = b.shell
     if (!shell.isTerminated && (shell.isInitialized || tryInit(shell))) {
-      currentLimit = shell.receive(b, currentLimit)
+      try currentLimit = shell.receive(b, currentLimit)
+      catch {
+        case NonFatal(e) ⇒ shell.tryAbort(e)
+      }
+
       if (shell.isTerminated) {
         activeInterpreters -= shell
         if (activeInterpreters.isEmpty && newShells.isEmpty) context.stop(self)

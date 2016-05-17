@@ -59,7 +59,7 @@ class AskSpec extends AkkaSpec {
       implicit val timeout = Timeout(0 seconds)
       val echo = system.actorOf(Props(new Actor { def receive = { case x ⇒ sender() ! x } }))
       val f = echo ? "foo"
-      val expectedMsg = "Timeout length must not be negative, question not sent to [%s]. Sender[null] sent the message of type \"java.lang.String\"." format echo
+      val expectedMsg = "Timeout length must be positive, question not sent to [%s]. Sender[null] sent the message of type \"java.lang.String\"." format echo
       intercept[IllegalArgumentException] {
         Await.result(f, timeout.duration)
       }.getMessage should ===(expectedMsg)
@@ -69,7 +69,7 @@ class AskSpec extends AkkaSpec {
       implicit val timeout = Timeout(-1000 seconds)
       val echo = system.actorOf(Props(new Actor { def receive = { case x ⇒ sender() ! x } }))
       val f = echo ? "foo"
-      val expectedMsg = "Timeout length must not be negative, question not sent to [%s]. Sender[null] sent the message of type \"java.lang.String\"." format echo
+      val expectedMsg = "Timeout length must be positive, question not sent to [%s]. Sender[null] sent the message of type \"java.lang.String\"." format echo
       intercept[IllegalArgumentException] {
         Await.result(f, timeout.duration)
       }.getMessage should ===(expectedMsg)

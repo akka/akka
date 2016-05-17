@@ -238,7 +238,7 @@ at the expense of not reading as familiarly as collection transformations.
 
 Graphs are constructed using :class:`GraphDSL` like this:
 
-.. includecode:: ../code/docs/stream/TwitterStreamQuickstartDocSpec.scala#flow-graph-broadcast
+.. includecode:: ../code/docs/stream/TwitterStreamQuickstartDocSpec.scala#graph-dsl-broadcast
 
 As you can see, inside the :class:`GraphDSL` we use an implicit graph builder ``b`` to mutably construct the graph
 using the ``~>`` "edge operator" (also read as "connect" or "via" or "to"). The operator is provided implicitly

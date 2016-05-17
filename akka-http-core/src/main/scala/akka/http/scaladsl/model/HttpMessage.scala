@@ -4,12 +4,15 @@
 
 package akka.http.scaladsl.model
 
+import java.io.File
+import java.nio.file.Path
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.Optional
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
+import scala.compat.java8.OptionConverters._
 import scala.reflect.{ classTag, ClassTag }
 import akka.parboiled2.CharUtils
 import akka.stream.Materializer
@@ -18,8 +21,7 @@ import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.util.FastFuture._
 import headers._
-
-import scala.compat.java8.OptionConverters._
+import akka.http.impl.util.JavaMapping.Implicits._
 
 /**
  * Common base class of HttpRequest and HttpResponse.
@@ -82,7 +84,12 @@ sealed trait HttpMessage extends jm.HttpMessage {
   /** Returns the first header of the given type if there is one */
   def header[T <: jm.HttpHeader: ClassTag]: Option[T] = {
     val erasure = classTag[T].runtimeClass
-    headers.find(erasure.isInstance).asInstanceOf[Option[T]]
+    headers.find(erasure.isInstance).asInstanceOf[Option[T]] match {
+      case header: Some[T] => header
+      case _ if erasure == classOf[`Content-Type`] => Some(entity.contentType).asInstanceOf[Option[T]]
+      case _ => None
+    }
+
   }
 
   /**
@@ -107,7 +114,10 @@ sealed trait HttpMessage extends jm.HttpMessage {
     withEntity(HttpEntity(contentType.asInstanceOf[ContentType.NonBinary], string))
   def withEntity(contentType: jm.ContentType, bytes: Array[Byte]): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], bytes))
   def withEntity(contentType: jm.ContentType, bytes: ByteString): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], bytes))
-  def withEntity(contentType: jm.ContentType, file: java.io.File): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], file))
+
+  @deprecated("Use withEntity(ContentType, Path) instead", "2.4.5")
+  def withEntity(contentType: jm.ContentType, file: File): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], file))
+  def withEntity(contentType: jm.ContentType, file: Path): Self = withEntity(HttpEntity.fromPath(contentType.asInstanceOf[ContentType], file))
 
   import collection.JavaConverters._
   /** Java API */

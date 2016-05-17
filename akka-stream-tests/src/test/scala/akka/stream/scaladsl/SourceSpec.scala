@@ -15,6 +15,7 @@ import akka.stream.testkit._
 import akka.NotUsed
 import akka.testkit.EventFilter
 import akka.testkit.AkkaSpec
+import scala.collection.immutable
 
 class SourceSpec extends AkkaSpec with DefaultTimeout {
 
@@ -93,7 +94,7 @@ class SourceSpec extends AkkaSpec with DefaultTimeout {
       c.expectNoMsg(300.millis)
 
       subs.cancel()
-      Await.result(f.future, 500.millis) shouldEqual None
+      Await.result(f.future, 3.seconds) shouldEqual None
     }
 
     "allow external triggering of empty completion" in Utils.assertAllStagesStopped {
@@ -105,7 +106,7 @@ class SourceSpec extends AkkaSpec with DefaultTimeout {
       // external cancellation
       neverPromise.trySuccess(None) shouldEqual true
 
-      Await.result(counterFuture, 500.millis) shouldEqual 0
+      Await.result(counterFuture, 3.seconds) shouldEqual 0
     }
 
     "allow external triggering of non-empty completion" in Utils.assertAllStagesStopped {
@@ -117,7 +118,7 @@ class SourceSpec extends AkkaSpec with DefaultTimeout {
       // external cancellation
       neverPromise.trySuccess(Some(6)) shouldEqual true
 
-      Await.result(counterFuture, 500.millis) shouldEqual 6
+      Await.result(counterFuture, 3.seconds) shouldEqual 6
     }
 
     "allow external triggering of onError" in Utils.assertAllStagesStopped {
@@ -129,7 +130,7 @@ class SourceSpec extends AkkaSpec with DefaultTimeout {
       // external cancellation
       neverPromise.failure(new Exception("Boom") with NoStackTrace)
 
-      val ready = Await.ready(counterFuture, 500.millis)
+      val ready = Await.ready(counterFuture, 3.seconds)
       val Failure(ex) = ready.value.get
       ex.getMessage should include("Boom")
     }
@@ -138,11 +139,11 @@ class SourceSpec extends AkkaSpec with DefaultTimeout {
 
   "Composite Source" must {
     "merge from many inputs" in {
-      val probes = Seq.fill(5)(TestPublisher.manualProbe[Int]())
+      val probes = immutable.Seq.fill(5)(TestPublisher.manualProbe[Int]())
       val source = Source.asSubscriber[Int]
       val out = TestSubscriber.manualProbe[Int]
 
-      val s = Source.fromGraph(GraphDSL.create(source, source, source, source, source)(Seq(_, _, _, _, _)) { implicit b ⇒
+      val s = Source.fromGraph(GraphDSL.create(source, source, source, source, source)(immutable.Seq(_, _, _, _, _)) { implicit b ⇒
         (i0, i1, i2, i3, i4) ⇒
           import GraphDSL.Implicits._
           val m = b.add(Merge[Int](5))
@@ -171,7 +172,7 @@ class SourceSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "combine from many inputs with simplified API" in {
-      val probes = Seq.fill(3)(TestPublisher.manualProbe[Int]())
+      val probes = immutable.Seq.fill(3)(TestPublisher.manualProbe[Int]())
       val source = for (i ← 0 to 2) yield Source.fromPublisher(probes(i))
       val out = TestSubscriber.manualProbe[Int]
 
@@ -193,7 +194,7 @@ class SourceSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "combine from two inputs with simplified API" in {
-      val probes = Seq.fill(2)(TestPublisher.manualProbe[Int]())
+      val probes = immutable.Seq.fill(2)(TestPublisher.manualProbe[Int]())
       val source = Source.fromPublisher(probes(0)) :: Source.fromPublisher(probes(1)) :: Nil
       val out = TestSubscriber.manualProbe[Int]
 
@@ -268,7 +269,49 @@ class SourceSpec extends AkkaSpec with DefaultTimeout {
       Source.fromIterator(() ⇒ Iterator.iterate(false)(!_))
         .grouped(10)
         .runWith(Sink.head)
-        .futureValue should ===(Seq(false, true, false, true, false, true, false, true, false, true))
+        .futureValue should ===(immutable.Seq(false, true, false, true, false, true, false, true, false, true))
+    }
+  }
+
+  "ZipN Source" must {
+    "properly zipN" in {
+      val sources = immutable.Seq(
+        Source(List(1, 2, 3)),
+        Source(List(10, 20, 30)),
+        Source(List(100, 200, 300)))
+
+      Source.zipN(sources)
+        .runWith(Sink.seq)
+        .futureValue should ===(immutable.Seq(
+          immutable.Seq(1, 10, 100),
+          immutable.Seq(2, 20, 200),
+          immutable.Seq(3, 30, 300)))
+    }
+  }
+
+  "ZipWithN Source" must {
+    "properly zipWithN" in {
+      val sources = immutable.Seq(
+        Source(List(1, 2, 3)),
+        Source(List(10, 20, 30)),
+        Source(List(100, 200, 300)))
+
+      Source.zipWithN[Int, Int](_.sum)(sources)
+        .runWith(Sink.seq)
+        .futureValue should ===(immutable.Seq(111, 222, 333))
+    }
+  }
+
+  "Cycle Source" must {
+
+    "continuously generate the same sequence" in {
+      val expected = Seq(1, 2, 3, 1, 2, 3, 1, 2, 3)
+      Source.cycle(() ⇒ List(1, 2, 3).iterator).grouped(9).runWith(Sink.head).futureValue should ===(expected)
+    }
+
+    "throw an exception in case of empty iterator" in {
+      val empty = Iterator.empty
+      assert(Source.cycle(() ⇒ empty).runWith(Sink.head).failed.futureValue.isInstanceOf[IllegalArgumentException])
     }
   }
 
@@ -277,6 +320,53 @@ class SourceSpec extends AkkaSpec with DefaultTimeout {
       import Attributes._
       val s: Source[Int, NotUsed] = Source.single(42).async.addAttributes(none).named("")
     }
+  }
+
+  "Java Stream source" must {
+    import scala.compat.java8.FunctionConverters._
+    import java.util.stream.{ Stream, IntStream }
+
+    def javaStreamInts = IntStream.iterate(1, { i: Int ⇒ i + 1 }.asJava)
+
+    "work with Java collections" in {
+      val list = new java.util.LinkedList[Integer]()
+      list.add(0)
+      list.add(1)
+      list.add(2)
+
+      StreamConverters.fromJavaStream(() ⇒ list.stream()).map(_.intValue).runWith(Sink.seq).futureValue should ===(List(0, 1, 2))
+    }
+
+    "work with primitive streams" in {
+      StreamConverters.fromJavaStream(() ⇒ IntStream.rangeClosed(1, 10)).map(_.intValue).runWith(Sink.seq).futureValue should ===(1 to 10)
+    }
+
+    "work with an empty stream" in {
+      StreamConverters.fromJavaStream(() ⇒ Stream.empty[Int]()).runWith(Sink.seq).futureValue should ===(Nil)
+    }
+
+    "work with an infinite stream" in {
+      StreamConverters.fromJavaStream(() ⇒ javaStreamInts).take(1000).runFold(0)(_ + _).futureValue should ===(500500)
+    }
+
+    "work with a filtered stream" in {
+      StreamConverters.fromJavaStream(() ⇒ javaStreamInts.filter({ i: Int ⇒ i % 2 == 0 }.asJava))
+        .take(1000).runFold(0)(_ + _).futureValue should ===(1001000)
+    }
+
+    "properly report errors during iteration" in {
+      import akka.stream.testkit.Utils.TE
+      // Filtering is lazy on Java Stream
+
+      val failyFilter: Int ⇒ Boolean = i ⇒ throw TE("failing filter")
+
+      a[TE] must be thrownBy {
+        Await.result(
+          StreamConverters.fromJavaStream(() ⇒ javaStreamInts.filter(failyFilter.asJava)).runWith(Sink.ignore),
+          3.seconds)
+      }
+    }
+
   }
 
 }

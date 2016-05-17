@@ -236,7 +236,7 @@ trait ImplicitPathMatcherConstruction {
    *
    * @group pathmatcherimpl
    */
-  implicit def stringExtractionPair2PathMatcher[T](tuple: (String, T)): PathMatcher1[T] =
+  implicit def _stringExtractionPair2PathMatcher[T](tuple: (String, T)): PathMatcher1[T] =
     PathMatcher(tuple._1 :: Path.Empty, Tuple1(tuple._2))
 
   /**
@@ -245,13 +245,13 @@ trait ImplicitPathMatcherConstruction {
    *
    * @group pathmatcherimpl
    */
-  implicit def segmentStringToPathMatcher(segment: String): PathMatcher0 =
+  implicit def _segmentStringToPathMatcher(segment: String): PathMatcher0 =
     PathMatcher(segment :: Path.Empty, ())
 
   /**
    * @group pathmatcherimpl
    */
-  implicit def stringNameOptionReceptacle2PathMatcher(nr: NameOptionReceptacle[String]): PathMatcher0 =
+  implicit def _stringNameOptionReceptacle2PathMatcher(nr: NameOptionReceptacle[String]): PathMatcher0 =
     PathMatcher(nr.name).?
 
   /**
@@ -263,7 +263,7 @@ trait ImplicitPathMatcherConstruction {
    *
    * @group pathmatcherimpl
    */
-  implicit def regex2PathMatcher(regex: Regex): PathMatcher1[String] = regex.groupCount match {
+  implicit def _regex2PathMatcher(regex: Regex): PathMatcher1[String] = regex.groupCount match {
     case 0 ⇒ new PathMatcher1[String] {
       def apply(path: Path) = path match {
         case Path.Segment(segment, tail) ⇒ regex findPrefixOf segment match {
@@ -292,9 +292,9 @@ trait ImplicitPathMatcherConstruction {
    *
    * @group pathmatcherimpl
    */
-  implicit def valueMap2PathMatcher[T](valueMap: Map[String, T]): PathMatcher1[T] =
+  implicit def _valueMap2PathMatcher[T](valueMap: Map[String, T]): PathMatcher1[T] =
     if (valueMap.isEmpty) PathMatchers.nothingMatcher
-    else valueMap.map { case (prefix, value) ⇒ stringExtractionPair2PathMatcher((prefix, value)) }.reduceLeft(_ | _)
+    else valueMap.map { case (prefix, value) ⇒ _stringExtractionPair2PathMatcher((prefix, value)) }.reduceLeft(_ | _)
 }
 
 /**
@@ -348,11 +348,11 @@ trait PathMatchers {
    * A PathMatcher that matches and extracts the complete remaining,
    * unmatched part of the request's URI path as an (encoded!) String.
    * If you need access to the remaining unencoded elements of the path
-   * use the `RestPath` matcher!
+   * use the `RemainingPath` matcher!
    *
    * @group pathmatcher
    */
-  object Rest extends PathMatcher1[String] {
+  object Remaining extends PathMatcher1[String] {
     def apply(path: Path) = Matched(Path.Empty, Tuple1(path.toString))
   }
 
@@ -362,7 +362,7 @@ trait PathMatchers {
    *
    * @group pathmatcher
    */
-  object RestPath extends PathMatcher1[Path] {
+  object RemainingPath extends PathMatcher1[Path] {
     def apply(path: Path) = Matched(Path.Empty, Tuple1(path))
   }
 

@@ -63,3 +63,14 @@ trait SinkQueue[T] {
    */
   def pull(): CompletionStage[Optional[T]]
 }
+
+/**
+ * This trait adds cancel support to [[SinkQueue]].
+ */
+trait SinkQueueWithCancel[T] extends SinkQueue[T] {
+  /**
+   * Cancel the stream.
+   */
+  def cancel(): Unit
+}
+

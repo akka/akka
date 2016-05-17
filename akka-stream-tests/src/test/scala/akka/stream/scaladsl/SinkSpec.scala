@@ -3,22 +3,28 @@
  */
 package akka.stream.scaladsl
 
+import java.util
+import java.util.function
+import java.util.function.{ BinaryOperator, BiConsumer, Supplier, ToIntFunction }
+import java.util.stream.Collector.Characteristics
+import java.util.stream.{ Collector, Collectors }
 import akka.stream._
+import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import org.scalactic.ConversionCheckedTripleEquals
+import akka.testkit.DefaultTimeout
 import org.scalatest.concurrent.ScalaFutures
-import scala.concurrent.Future
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import akka.testkit.AkkaSpec
 
-class SinkSpec extends AkkaSpec {
+class SinkSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
 
   import GraphDSL.Implicits._
 
   implicit val materializer = ActorMaterializer()
 
   "A Sink" must {
-
     "be composable without importing modules" in {
       val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
       val sink = Sink.fromGraph(GraphDSL.create() { implicit b ⇒
@@ -133,4 +139,129 @@ class SinkSpec extends AkkaSpec {
     }
   }
 
+  "Java collector Sink" must {
+    import scala.compat.java8.FunctionConverters._
+
+    class TestCollector(_supplier: () ⇒ Supplier[Array[Int]],
+                        _accumulator: () ⇒ BiConsumer[Array[Int], Int],
+                        _combiner: () ⇒ BinaryOperator[Array[Int]],
+                        _finisher: () ⇒ function.Function[Array[Int], Int]) extends Collector[Int, Array[Int], Int] {
+      override def supplier(): Supplier[Array[Int]] = _supplier()
+      override def combiner(): BinaryOperator[Array[Int]] = _combiner()
+      override def finisher(): function.Function[Array[Int], Int] = _finisher()
+      override def accumulator(): BiConsumer[Array[Int], Int] = _accumulator()
+      override def characteristics(): util.Set[Characteristics] = util.Collections.emptySet()
+    }
+
+    val intIdentity: ToIntFunction[Int] = new ToIntFunction[Int] {
+      override def applyAsInt(value: Int): Int = value
+    }
+
+    def supplier(): Supplier[Array[Int]] = new Supplier[Array[Int]] {
+      override def get(): Array[Int] = Array.ofDim(1)
+    }
+    def accumulator(): BiConsumer[Array[Int], Int] = new BiConsumer[Array[Int], Int] {
+      override def accept(a: Array[Int], b: Int): Unit = a(0) = intIdentity.applyAsInt(b)
+    }
+
+    def combiner(): BinaryOperator[Array[Int]] = new BinaryOperator[Array[Int]] {
+      override def apply(a: Array[Int], b: Array[Int]): Array[Int] = {
+        a(0) += b(0); a
+      }
+    }
+    def finisher(): function.Function[Array[Int], Int] = new function.Function[Array[Int], Int] {
+      override def apply(a: Array[Int]): Int = a(0)
+    }
+
+    "work in the happy case" in {
+      Source(1 to 100).map(_.toString).runWith(StreamConverters.javaCollector(() ⇒ Collectors.joining(", ")))
+        .futureValue should ===((1 to 100).mkString(", "))
+    }
+
+    "work parallelly in the happy case" in {
+      Source(1 to 100).runWith(StreamConverters
+        .javaCollectorParallelUnordered(4)(
+          () ⇒ Collectors.summingInt[Int](intIdentity)))
+        .futureValue should ===(5050)
+    }
+
+    "be reusable" in {
+      val sink = StreamConverters.javaCollector[Int, Integer](() ⇒ Collectors.summingInt[Int](intIdentity))
+      Source(1 to 4).runWith(sink).futureValue should ===(10)
+
+      // Collector has state so it preserves all previous elements that went though
+      Source(4 to 6).runWith(sink).futureValue should ===(15)
+    }
+
+    "be reusable with parallel version" in {
+      val sink = StreamConverters.javaCollectorParallelUnordered(4)(() ⇒ Collectors.summingInt[Int](intIdentity))
+
+      Source(1 to 4).runWith(sink).futureValue should ===(10)
+      Source(4 to 6).runWith(sink).futureValue should ===(15)
+    }
+
+    "fail if getting the supplier fails" in {
+      def failedSupplier(): Supplier[Array[Int]] = throw TE("")
+      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
+        () ⇒ new TestCollector(failedSupplier, accumulator, combiner, finisher)))
+      a[TE] shouldBe thrownBy {
+        Await.result(future, 300.millis)
+      }
+    }
+
+    "fail if the supplier fails" in {
+      def failedSupplier(): Supplier[Array[Int]] = new Supplier[Array[Int]] {
+        override def get(): Array[Int] = throw TE("")
+      }
+      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
+        () ⇒ new TestCollector(failedSupplier, accumulator, combiner, finisher)))
+      a[TE] shouldBe thrownBy {
+        Await.result(future, 300.millis)
+      }
+    }
+
+    "fail if getting the accumulator fails" in {
+      def failedAccumulator(): BiConsumer[Array[Int], Int] = throw TE("")
+
+      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
+        () ⇒ new TestCollector(supplier, failedAccumulator, combiner, finisher)))
+      a[TE] shouldBe thrownBy {
+        Await.result(future, 300.millis)
+      }
+    }
+
+    "fail if the accumulator fails" in {
+      def failedAccumulator(): BiConsumer[Array[Int], Int] = new BiConsumer[Array[Int], Int] {
+        override def accept(a: Array[Int], b: Int): Unit = throw TE("")
+      }
+
+      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
+        () ⇒ new TestCollector(supplier, failedAccumulator, combiner, finisher)))
+      a[TE] shouldBe thrownBy {
+        Await.result(future, 300.millis)
+      }
+    }
+
+    "fail if getting the finisher fails" in {
+      def failedFinisher(): function.Function[Array[Int], Int] = throw TE("")
+
+      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
+        () ⇒ new TestCollector(supplier, accumulator, combiner, failedFinisher)))
+      a[TE] shouldBe thrownBy {
+        Await.result(future, 300.millis)
+      }
+    }
+
+    "fail if the finisher fails" in {
+      def failedFinisher(): function.Function[Array[Int], Int] = new function.Function[Array[Int], Int] {
+        override def apply(a: Array[Int]): Int = throw TE("")
+      }
+      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
+        () ⇒ new TestCollector(supplier, accumulator, combiner, failedFinisher)))
+      a[TE] shouldBe thrownBy {
+        Await.result(future, 300.millis)
+      }
+    }
+
+  }
 }

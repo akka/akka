@@ -10,6 +10,6 @@ contained in incoming requests as well as extracting its value for usage in inne
    :maxdepth: 1
 
    host
-   extractHost
+   extractHostName
 
    

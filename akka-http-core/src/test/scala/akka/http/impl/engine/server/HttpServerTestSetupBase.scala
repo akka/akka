@@ -71,4 +71,13 @@ abstract class HttpServerTestSetupBase {
   def send(string: String): Unit = send(ByteString(string.stripMarginWithNewline("\r\n"), "UTF8"))
 
   def closeNetworkInput(): Unit = netIn.sendComplete()
+
+  def shutdownBlueprint(): Unit = {
+    netIn.sendComplete()
+    requests.expectComplete()
+
+    responses.sendComplete()
+    netOut.expectBytes(ByteString("HTT")) // ???
+    netOut.expectComplete()
+  }
 }

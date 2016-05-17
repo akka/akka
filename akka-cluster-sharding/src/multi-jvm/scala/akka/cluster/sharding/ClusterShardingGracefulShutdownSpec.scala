@@ -157,7 +157,7 @@ abstract class ClusterShardingGracefulShutdownSpec(config: ClusterShardingGracef
 
       runOn(first, second) {
         system.actorSelection(node(first) / "user" / "store") ! Identify(None)
-        val sharedStore = expectMsgType[ActorIdentity].ref.get
+        val sharedStore = expectMsgType[ActorIdentity](10.seconds).ref.get
         SharedLeveldbJournal.setStore(sharedStore, system)
       }
 

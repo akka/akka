@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl.model
 
+import akka.http.scaladsl.settings.ParserSettings
+
 import scala.util.{ Success, Failure }
 import akka.parboiled2.ParseError
 import akka.http.impl.util.ToStringRenderable
