@@ -144,6 +144,39 @@ public class ActorCreationTest extends JUnitSuite {
     }
   }
 
+  static final class StrategySupervisor {
+    final PriceProcessorCreator priceProcessorCreator = new PriceProcessorCreator(this);
+    final Props props = Props.create(priceProcessorCreator);
+  }
+
+  static abstract class AbstractProcessor extends UntypedActor {
+  }
+
+  public static class PriceProcessor extends AbstractProcessor {
+    final StrategySupervisor supervisor;
+
+    PriceProcessor(StrategySupervisor supervisor) {
+      this.supervisor = supervisor;
+    }
+
+    public void onReceive(Object msg) {
+    }
+  }
+
+  static final class PriceProcessorCreator implements Creator<AbstractProcessor> {
+
+    final StrategySupervisor supervisor;
+
+    protected PriceProcessorCreator(StrategySupervisor supervisor) {
+      this.supervisor = supervisor;
+    }
+
+    @Override
+    public AbstractProcessor create() {
+      return new PriceProcessor(supervisor);
+    }
+  }
+
   @Test
   public void testWrongAnonymousInPlaceCreator() {
     try {
@@ -285,6 +318,12 @@ public class ActorCreationTest extends JUnitSuite {
   public void testPropsUsingCreatorWithoutClass() {
     final Props p = UntypedTestActor.propsUsingCreatorWithoutClass(17);
     assertEquals(UntypedTestActor.class, p.actorClass());
+  }
+
+  @Test
+  public void testPriceProcessorCreator() {
+    final StrategySupervisor strategySupervisor = new StrategySupervisor();
+    assertEquals(AbstractProcessor.class, strategySupervisor.props.actorClass());
   }
 
 
