@@ -57,68 +57,82 @@ object WebSocketClientBlueprint {
     val renderedInitialRequest =
       HttpRequestRendererFactory.renderStrict(RequestRenderingContext(initialRequest, hostHeader), settings, log)
 
-    class UpgradeStage extends StatefulStage[ByteString, ByteString] {
-      type State = StageState[ByteString, ByteString]
+    //from here
+    class UpgradeStage extends GraphStage[FlowShape[ByteString, ByteString]] {
 
-      def initial: State = parsingResponse
+      val out: Outlet[ByteString] = Outlet("UpgradeStage.out")
+      val in: Inlet[ByteString] = Inlet("UpgradeStage.in")
 
-      def parsingResponse: State = new State {
-        // a special version of the parser which only parses one message and then reports the remaining data
-        // if some is available
-        val parser = new HttpResponseParser(settings.parserSettings, HttpHeaderParser(settings.parserSettings)()) {
-          var first = true
-          override def handleInformationalResponses = false
-          override protected def parseMessage(input: ByteString, offset: Int): StateResult = {
-            if (first) {
-              first = false
-              super.parseMessage(input, offset)
-            } else {
-              emit(RemainingBytes(input.drop(offset)))
-              terminate()
+      override val shape: FlowShape[ByteString, ByteString] = FlowShape(in, out)
+
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+        new GraphStageLogic(shape) with InHandler with OutHandler {
+
+          def initial: InHandler = parsingResponse
+
+          def parsingResponse: InHandler = new InHandler {
+            // a special version of the parser which only parses one message and then reports the remaining data
+            // if some is available
+            val parser = new HttpResponseParser(settings.parserSettings, HttpHeaderParser(settings.parserSettings)()) {
+              var first = true
+              override def handleInformationalResponses = false
+              override protected def parseMessage(input: ByteString, offset: Int): Unit = {
+                if (first) {
+                  first = false
+                  super.parseMessage(input, offset)
+                } else {
+                  emit(RemainingBytes(input.drop(offset)))
+                  terminate()
+                }
+              }
+            }
+            parser.setContextForNextResponse(HttpResponseParser.ResponseContext(HttpMethods.GET, None))
+
+            def onPush(): Unit = {
+              val elem = grab(in)
+              parser.parseBytes(elem) match {
+                case NeedMoreData ⇒ pull(in)
+                case ResponseStart(status, protocol, headers, entity, close) ⇒
+                  val response = HttpResponse(status, headers, protocol = protocol)
+                  Handshake.Client.validateResponse(response, subprotocol.toList, key) match {
+                    case Right(NegotiatedWebSocketSettings(protocol)) ⇒
+                      result.success(ValidUpgrade(response, protocol))
+
+                      become(transparent)
+                      valve.open()
+
+                      val parseResult = parser.onPull()
+                      require(parseResult == ParserOutput.MessageEnd, s"parseResult should be MessageEnd but was $parseResult")
+                      parser.onPull() match {
+                        case NeedMoreData          ⇒ pull(in)
+                        case RemainingBytes(bytes) ⇒ push(out, bytes)
+                        case other ⇒
+                          throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
+                      }
+                    case Left(problem) ⇒
+                      result.success(InvalidUpgradeResponse(response, s"WebSocket server at $uri returned $problem"))
+                      failStage(new IllegalArgumentException(s"WebSocket upgrade did not finish because of '$problem'"))
+                  }
+                case other ⇒
+                  throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
+              }
             }
           }
-        }
-        parser.setContextForNextResponse(HttpResponseParser.ResponseContext(HttpMethods.GET, None))
 
-        def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective = {
-          parser.parseBytes(elem) match {
-            case NeedMoreData ⇒ ctx.pull()
-            case ResponseStart(status, protocol, headers, entity, close) ⇒
-              val response = HttpResponse(status, headers, protocol = protocol)
-              Handshake.Client.validateResponse(response, subprotocol.toList, key) match {
-                case Right(NegotiatedWebSocketSettings(protocol)) ⇒
-                  result.success(ValidUpgrade(response, protocol))
-
-                  become(transparent)
-                  valve.open()
-
-                  val parseResult = parser.onPull()
-                  require(parseResult == ParserOutput.MessageEnd, s"parseResult should be MessageEnd but was $parseResult")
-                  parser.onPull() match {
-                    case NeedMoreData          ⇒ ctx.pull()
-                    case RemainingBytes(bytes) ⇒ ctx.push(bytes)
-                    case other ⇒
-                      throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
-                  }
-                case Left(problem) ⇒
-                  result.success(InvalidUpgradeResponse(response, s"WebSocket server at $uri returned $problem"))
-                  ctx.fail(new IllegalArgumentException(s"WebSocket upgrade did not finish because of '$problem'"))
-              }
-            case other ⇒
-              throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
+          def transparent: InHandler = new InHandler {
+            val elem = grab(in)
+            def onPush(): Unit = push(out, elem)
           }
+          setHandlers(in, out, this)
         }
-      }
-
-      def transparent: State = new State {
-        def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective = ctx.push(elem)
-      }
     }
+
+    //to here
 
     BidiFlow.fromGraph(GraphDSL.create() { implicit b ⇒
       import GraphDSL.Implicits._
 
-      val networkIn = b.add(Flow[ByteString].transform(() ⇒ new UpgradeStage))
+      val networkIn = b.add(Flow[ByteString].via(new UpgradeStage))
       val wsIn = b.add(Flow[ByteString])
 
       val handshakeRequestSource = b.add(Source.single(renderedInitialRequest) ++ valve.source)
