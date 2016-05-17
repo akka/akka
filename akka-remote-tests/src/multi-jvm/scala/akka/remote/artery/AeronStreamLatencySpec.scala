@@ -52,12 +52,6 @@ object AeronStreamLatencySpec extends MultiNodeConfig {
        }
        """)))
 
-  def aeronPort(roleName: RoleName): Int =
-    roleName match {
-      case `first`  ⇒ 20521 // TODO yeah, we should have support for dynamic port assignment
-      case `second` ⇒ 20522
-    }
-
   final case class TestSettings(
     testName: String,
     messageRate: Int, // msg/s
@@ -104,7 +98,7 @@ abstract class AeronStreamLatencySpec
 
   def channel(roleName: RoleName) = {
     val a = node(roleName).address
-    s"aeron:udp?endpoint=${a.host.get}:${aeronPort(roleName)}"
+    s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
   }
 
   val streamId = 1
