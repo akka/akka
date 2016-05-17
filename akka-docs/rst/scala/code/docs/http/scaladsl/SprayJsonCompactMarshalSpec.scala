@@ -15,14 +15,14 @@ class SprayJsonCompactMarshalSpec extends WordSpec with Matchers {
 
     // domain model
     final case class CompactPrintedItem(name: String, id: Long)
-    object CompactPrintedItem extends DefaultJsonProtocol with SprayJsonSupport {
+
+    trait CompactJsonFormatSupport extends DefaultJsonProtocol with SprayJsonSupport {
       implicit val printer = CompactPrinter
-      implicit val compactPrintedItemFormat = jsonFormat2(CompactPrintedItem.apply)
+      implicit val compactPrintedItemFormat = jsonFormat2(CompactPrintedItem)
     }
 
     // use it wherever json (un)marshalling is needed
-    class MyJsonService extends Directives {
-      import CompactPrintedItem._
+    class MyJsonService extends Directives with CompactJsonFormatSupport{
 
       // format: OFF
       val route =
