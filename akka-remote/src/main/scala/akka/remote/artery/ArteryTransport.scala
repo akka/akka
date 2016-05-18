@@ -50,8 +50,7 @@ import akka.stream.scaladsl.Framing
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.util.ByteString
-import akka.util.ByteStringBuilder
+import akka.util.{ ByteString, ByteStringBuilder, WildcardTree }
 import akka.util.Helpers.ConfigOps
 import akka.util.Helpers.Requiring
 import io.aeron.Aeron
@@ -68,6 +67,7 @@ import java.nio.channels.DatagramChannel
 
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 
+import scala.collection.JavaConverters._
 /**
  * INTERNAL API
  */
@@ -233,10 +233,19 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     system.settings.config.getMillisDuration("akka.remote.handshake-timeout").requiring(_ > Duration.Zero,
       "handshake-timeout must be > 0")
 
+  private val largeMessageDestinations =
+    system.settings.config.getStringList("akka.remote.artery.large-message-destinations").asScala.foldLeft(WildcardTree[NotUsed]()) { (tree, entry) ⇒
+      val segments = entry.split('/').tail
+      tree.insert(segments.iterator, NotUsed)
+    }
+  private val largeMessageDestinationsEnabled = largeMessageDestinations.children.nonEmpty
+  private val largeMessageDestinationsBufferSize = 1024 * 2000
+
   private def inboundChannel = s"aeron:udp?endpoint=${localAddress.address.host.get}:${localAddress.address.port.get}"
   private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
   private val controlStreamId = 1
   private val ordinaryStreamId = 3
+  private val largeStreamId = 4
   private val taskRunner = new TaskRunner(system)
 
   // FIXME: This does locking on putIfAbsent, we need something smarter
@@ -320,6 +329,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def runInboundStreams(): Unit = {
     runInboundControlStream()
     runInboundOrdinaryMessagesStream()
+    if (largeMessageDestinationsEnabled) {
+      runInboundLargeMessagesStream()
+    }
   }
 
   private def runInboundControlStream(): Unit = {
@@ -367,6 +379,19 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .runWith(Sink.ignore)(materializer)
 
     attachStreamRestart("Inbound message stream", completed, () ⇒ runInboundOrdinaryMessagesStream())
+  }
+
+  private def runInboundLargeMessagesStream(): Unit = {
+    if (largeMessageDestinationsEnabled) {
+      // TODO just cargo-cult programming here
+      val completed = Source.fromGraph(new AeronSource(inboundChannel, largeStreamId, aeron, taskRunner))
+        .async // FIXME measure
+        .map(ByteString.apply) // TODO we should use ByteString all the way
+        .via(inboundLargeFlow)
+        .runWith(Sink.ignore)(materializer)
+
+      attachStreamRestart("Inbound large message stream", completed, () ⇒ runInboundLargeMessagesStream())
+    }
   }
 
   private def attachStreamRestart(streamName: String, streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
@@ -422,7 +447,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     else {
       associations.computeIfAbsent(remoteAddress, new JFunction[Address, Association] {
         override def apply(remoteAddress: Address): Association = {
-          val newAssociation = new Association(ArteryTransport.this, materializer, remoteAddress, controlSubject)
+          val newAssociation = new Association(ArteryTransport.this, materializer, remoteAddress, controlSubject, largeMessageDestinationsEnabled, largeMessageDestinations)
           newAssociation.associate() // This is a bit costly for this blocking method :(
           newAssociation
         }
@@ -441,6 +466,16 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval))
       .via(encoder)
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), ordinaryStreamId, aeron, taskRunner, envelopePool))(Keep.right)
+  }
+
+  def outboundLarge(outboundContext: OutboundContext): Sink[Send, Future[Done]] = {
+    // TODO not sure about this, just cargo culting here
+    Flow.fromGraph(killSwitch.flow[Send])
+      .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval))
+      .via(encoder)
+      .map(_.toArray) // TODO we should use ByteString all the way
+      .map { bytes ⇒ println("sending large bytes: " + bytes.length); bytes }
+      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), largeStreamId, aeron, taskRunner, largeMessageDestinationsBufferSize))(Keep.right)
   }
 
   def outboundControl(outboundContext: OutboundContext): Sink[Send, (OutboundControlIngress, Future[Done])] = {
