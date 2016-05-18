@@ -27,3 +27,22 @@ message Selection {
   required PatternType type = 1;
   optional string matcher = 2;
 }
+
+message Identify {
+  required Payload messageId = 1;
+}
+
+message ActorIdentity {
+  required Payload correlationId = 1;
+  optional ActorRef ref = 2;
+}
+
+message ActorRef {
+  required string path = 1;
+}
+
+message Payload {
+  required bytes enclosedMessage = 1;
+  required int32 serializerId = 2;
+  optional bytes messageManifest = 4;
+}

@@ -130,6 +130,117 @@ class TimeoutsSpec extends AkkaSpec {
 
   }
 
+  "BackpressureTimeout" must {
+
+    "pass through elements unmodified" in assertAllStagesStopped {
+      Await.result(Source(1 to 100).backpressureTimeout(1.second).grouped(200).runWith(Sink.head), 3.seconds) should ===(1 to 100)
+    }
+
+    "succeed if subscriber demand arrives" in assertAllStagesStopped {
+      val subscriber = TestSubscriber.probe[Int]()
+
+      Source(1 to 4)
+        .backpressureTimeout(1.second)
+        .runWith(Sink.fromSubscriber(subscriber))
+
+      for (i ← 1 to 3) {
+        subscriber.requestNext(i)
+        subscriber.expectNoMsg(250.millis)
+      }
+
+      subscriber.requestNext(4)
+      subscriber.expectComplete()
+    }
+
+    "not throw if publisher is less frequent than timeout" in assertAllStagesStopped {
+      val publisher = TestPublisher.probe[String]()
+      val subscriber = TestSubscriber.probe[String]()
+
+      Source.fromPublisher(publisher)
+        .backpressureTimeout(1.second)
+        .runWith(Sink.fromSubscriber(subscriber))
+
+      subscriber.request(2)
+
+      subscriber.expectNoMsg(1.second)
+      publisher.sendNext("Quick Msg")
+      subscriber.expectNext("Quick Msg")
+
+      subscriber.expectNoMsg(3.seconds)
+      publisher.sendNext("Slow Msg")
+      subscriber.expectNext("Slow Msg")
+
+      publisher.sendComplete()
+      subscriber.expectComplete()
+    }
+
+    "not throw if publisher won't perform emission ever" in assertAllStagesStopped {
+      val publisher = TestPublisher.probe[String]()
+      val subscriber = TestSubscriber.probe[String]()
+
+      Source.fromPublisher(publisher)
+        .backpressureTimeout(1.second)
+        .runWith(Sink.fromSubscriber(subscriber))
+
+      subscriber.request(16)
+      subscriber.expectNoMsg(2.second)
+
+      publisher.sendComplete()
+      subscriber.expectComplete()
+    }
+
+    "throw if subscriber won't generate demand on time" in assertAllStagesStopped {
+      val publisher = TestPublisher.probe[Int]()
+      val subscriber = TestSubscriber.probe[Int]()
+
+      Source.fromPublisher(publisher)
+        .backpressureTimeout(1.second)
+        .runWith(Sink.fromSubscriber(subscriber))
+
+      subscriber.request(1)
+      publisher.sendNext(1)
+      subscriber.expectNext(1)
+
+      Thread.sleep(3000)
+
+      subscriber.expectError().getMessage should ===("No demand signalled in the last 1 second.")
+    }
+
+    "throw if subscriber never generate demand" in assertAllStagesStopped {
+      val publisher = TestPublisher.probe[Int]()
+      val subscriber = TestSubscriber.probe[Int]()
+
+      Source.fromPublisher(publisher)
+        .backpressureTimeout(1.second)
+        .runWith(Sink.fromSubscriber(subscriber))
+
+      subscriber.expectSubscription()
+
+      Thread.sleep(3000)
+
+      subscriber.expectError().getMessage should ===("No demand signalled in the last 1 second.")
+    }
+
+    "not throw if publisher completes without fulfilling subscriber's demand" in assertAllStagesStopped {
+      val publisher = TestPublisher.probe[Int]()
+      val subscriber = TestSubscriber.probe[Int]()
+
+      Source.fromPublisher(publisher)
+        .backpressureTimeout(1.second)
+        .runWith(Sink.fromSubscriber(subscriber))
+
+      subscriber.request(2)
+      publisher.sendNext(1)
+      subscriber.expectNext(1)
+
+      subscriber.expectNoMsg(2.second)
+
+      publisher.sendComplete()
+      subscriber.expectComplete()
+    }
+
+  }
+
   "IdleTimeoutBidi" must {
 
     "not signal error in simple loopback case and pass through elements unmodified" in assertAllStagesStopped {

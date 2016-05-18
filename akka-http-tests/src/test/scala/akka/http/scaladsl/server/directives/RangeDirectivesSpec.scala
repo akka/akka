@@ -23,7 +23,8 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
   def bytes(length: Byte) = Array.tabulate[Byte](length)(_.toByte)
 
   "The `withRangeSupport` directive" should {
-    def completeWithRangedBytes(length: Byte) = wrs(complete(bytes(length)))
+    def completeWithRangedBytes(length: Byte) =
+      wrs(complete(HttpEntity.Default(ContentTypes.`application/octet-stream`, length, Source(bytes(length).map(ByteString(_)).toVector))))
 
     "return an Accept-Ranges(bytes) header for GET requests" in {
       Get() ~> { wrs { complete("any") } } ~> check {

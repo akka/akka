@@ -4,7 +4,6 @@
 
 package akka.http.impl.engine.client
 
-import java.net.InetSocketAddress
 import akka.NotUsed
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 
@@ -69,7 +68,7 @@ private object PoolFlow {
 
   */
   def apply(connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
-            remoteAddress: InetSocketAddress, settings: ConnectionPoolSettings, log: LoggingAdapter)(
+            settings: ConnectionPoolSettings, log: LoggingAdapter)(
               implicit system: ActorSystem, fm: Materializer): Flow[RequestContext, ResponseContext, NotUsed] =
     Flow.fromGraph(GraphDSL.create[FlowShape[RequestContext, ResponseContext]]() { implicit b ⇒
       import settings._
@@ -77,8 +76,8 @@ private object PoolFlow {
 
       val conductor = b.add(PoolConductor(maxConnections, pipeliningLimit, log))
       val slots = Vector
-        .tabulate(maxConnections)(PoolSlot(_, connectionFlow, remoteAddress, settings))
-        .map(b.add(_))
+        .tabulate(maxConnections)(PoolSlot(_, connectionFlow, settings))
+        .map(b.add)
       val responseMerge = b.add(Merge[ResponseContext](maxConnections))
       val slotEventMerge = b.add(Merge[PoolSlot.RawSlotEvent](maxConnections))
 

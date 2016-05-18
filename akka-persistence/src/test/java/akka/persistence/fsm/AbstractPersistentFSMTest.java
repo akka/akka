@@ -532,17 +532,25 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                         stay().applying(new ItemAdded(event.getItem()))
                            .forMax(Duration.create(1, TimeUnit.SECONDS)))
                 .event(Buy.class,
+                    //#customer-andthen-example
                     (event, data) ->
                         goTo(UserState.PAID).applying(OrderExecuted.INSTANCE)
-                            .andThen(exec(cart ->
-                                reportActor.tell(new PurchaseWasMade(cart.getItems()), self()))
-                            ))
+                            .andThen(exec(cart -> {
+                                reportActor.tell(new PurchaseWasMade(cart.getItems()), self());
+                                //#customer-andthen-example
+                                saveStateSnapshot();
+                                //#customer-andthen-example
+                            })))
+                    //#customer-andthen-example
                 .event(Leave.class,
+                    //#customer-snapshot-example
                     (event, data) ->
                         stop().applying(OrderDiscarded.INSTANCE)
-                            .andThen(exec(cart ->
-                               reportActor.tell(ShoppingCardDiscarded.INSTANCE, self())
-                            )))
+                            .andThen(exec(cart -> {
+                                reportActor.tell(ShoppingCardDiscarded.INSTANCE, self());
+                                saveStateSnapshot();
+                            })))
+                    //#customer-snapshot-example
                 .event(GetCurrentCart.class, (event, data) -> stay().replying(data))
                 .event(StateTimeout$.class,
                     (event, data) ->
@@ -568,8 +576,6 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                 matchEvent(Leave.class, (event, data) -> stop())
                 .event(GetCurrentCart.class, (event, data) -> stay().replying(data))
             );
-
-            initialize();
             //#customer-fsm-body
         }
 

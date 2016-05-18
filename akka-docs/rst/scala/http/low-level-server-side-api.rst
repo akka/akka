@@ -118,7 +118,7 @@ Streaming Request/Response Entities
 
 Streaming of HTTP message entities is supported through subclasses of ``HttpEntity``. The application needs to be able
 to deal with streamed entities when receiving a request as well as, in many cases, when constructing responses.
-See :ref:`HttpEntity` for a description of the alternatives.
+See :ref:`HttpEntity-scala` for a description of the alternatives.
 
 If you rely on the :ref:`http-marshalling-scala` and/or :ref:`http-unmarshalling-scala` facilities provided by
 Akka HTTP then the conversion of custom types to and from streamed entities can be quite convenient.
@@ -136,24 +136,10 @@ Connection will also be closed if request entity has been cancelled (e.g. by att
 or consumed only partially (e.g. by using ``take`` combinator). In order to prevent this behaviour entity should be
 explicitly drained by attaching it to ``Sink.ignore``.
 
+Configuring Server-side HTTPS
+-----------------------------
 
-.. _serverSideHTTPS:
-
-Server-Side HTTPS Support
--------------------------
-
-Akka HTTP supports TLS encryption on the server-side as well as on the :ref:`client-side <clientSideHTTPS>`.
-
-The central vehicle for configuring encryption is the ``HttpsConnectionContext``, which can be created using
-the static method ``ConnectionContext.https`` which is defined like this:
-
-.. includecode:: /../../akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala
-   :include: https-context-creation
-
-On the server-side the ``bind``, and ``bindAndHandleXXX`` methods of the `akka.http.scaladsl.Http`_ extension define an
-optional ``httpsContext`` parameter, which can receive the HTTPS configuration in the form of an ``HttpsContext``
-instance.
-If defined encryption is enabled on all accepted connections. Otherwise it is disabled (which is the default).
+For detailed documentation about configuring and using HTTPS on the server-side refer to :ref:`serverSideHTTPS-scala`.
 
 .. _http-server-layer-scala:
 
@@ -262,3 +248,4 @@ anyway, which is a reasonable default for such problems.
 In order to learn more about handling exceptions in the actual routing layer, which is where your application code
 comes into the picture, refer to :ref:`exception-handling-scala` which focuses explicitly on explaining how exceptions
 thrown in routes can be handled and transformed into :class:`HttpResponse` s with apropriate error codes and human-readable failure descriptions.
+

@@ -7,14 +7,15 @@ package akka.config
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
+import akka.event.DefaultLoggingFilter
 import akka.event.Logging.DefaultLogger
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
+import org.scalatest.Assertions
 
 import scala.concurrent.duration._
-import akka.event.DefaultLoggingFilter
 
-class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.findClassLoader())) {
+class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.findClassLoader())) with Assertions {
 
   "The default configuration file (i.e. reference.conf)" must {
     "contain all configuration properties for akka-actor that are used in code with their correct defaults" in {

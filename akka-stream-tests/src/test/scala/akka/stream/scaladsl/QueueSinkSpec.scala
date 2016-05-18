@@ -133,6 +133,17 @@ class QueueSinkSpec extends AkkaSpec {
 
     }
 
+    "cancel upstream on cancel" in assertAllStagesStopped {
+      val queue = Source.repeat(1).runWith(Sink.queue())
+      queue.pull()
+      queue.cancel()
+    }
+
+    "be able to cancel upstream right away" in assertAllStagesStopped {
+      val queue = Source.repeat(1).runWith(Sink.queue())
+      queue.cancel()
+    }
+
     "work with one element buffer" in assertAllStagesStopped {
       val sink = Sink.queue[Int]().withAttributes(inputBuffer(1, 1))
       val probe = TestPublisher.manualProbe[Int]()

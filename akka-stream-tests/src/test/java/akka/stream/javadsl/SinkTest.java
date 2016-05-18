@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import akka.NotUsed;
 import akka.japi.function.Function;
@@ -66,6 +67,14 @@ public class SinkTest extends StreamTest {
     probe.expectMsgEquals(2);
     probe.expectMsgEquals(3);
     probe.expectMsgEquals("done");
+  }
+
+  @Test
+  public void mustBeAbleToUseCollector() throws Exception {
+    final List<Integer> list = Arrays.asList(1, 2, 3);
+    final Sink<Integer, CompletionStage<List<Integer>>> collectorSink = StreamConverters.javaCollector(Collectors::toList);
+    CompletionStage<List<Integer>> result = Source.from(list).runWith(collectorSink, materializer);
+    assertEquals(list, result.toCompletableFuture().get(1, TimeUnit.SECONDS));
   }
 
   @Test

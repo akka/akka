@@ -15,7 +15,7 @@ Some graph operations which are common enough and fit the linear style of Flows,
 streams, such that the second one is consumed after the first one has completed), may have shorthand methods defined on
 :class:`Flow` or :class:`Source` themselves, however you should keep in mind that those are also implemented as graph junctions.
 
-.. _flow-graph-scala:
+.. _graph-dsl-scala:
 
 Constructing Graphs
 -------------------
@@ -52,7 +52,7 @@ and each circle corresponds to either a :class:`Junction` or a :class:`Source` o
 or ending a :class:`Flow`. Junctions must always be created with defined type parameters, as otherwise the ``Nothing`` type
 will be inferred.
 
-.. includecode:: ../code/docs/stream/FlowGraphDocSpec.scala#simple-flow-graph
+.. includecode:: ../code/docs/stream/GraphDSLDocSpec.scala#simple-graph-dsl
 
 .. note::
    Junction *reference equality* defines *graph node equality* (i.e. the same merge *instance* used in a GraphDSL
@@ -80,9 +80,9 @@ In the example below we prepare a graph that consists of two parallel streams,
 in which we re-use the same instance of :class:`Flow`, yet it will properly be
 materialized as two connections between the corresponding Sources and Sinks:
 
-.. includecode:: ../code/docs/stream/FlowGraphDocSpec.scala#flow-graph-reusing-a-flow
+.. includecode:: ../code/docs/stream/GraphDSLDocSpec.scala#graph-dsl-reusing-a-flow
 
-.. _partial-flow-graph-scala:
+.. _partial-graph-dsl-scala:
 
 Constructing and combining Partial Graphs
 -----------------------------------------
@@ -103,7 +103,7 @@ Let's imagine we want to provide users with a specialized element that given 3 i
 the greatest int value of each zipped triple. We'll want to expose 3 input ports (unconnected sources) and one output port
 (unconnected sink).
 
-.. includecode:: ../code/docs/stream/StreamPartialFlowGraphDocSpec.scala#simple-partial-flow-graph
+.. includecode:: ../code/docs/stream/StreamPartialGraphDSLDocSpec.scala#simple-partial-graph-dsl
 
 As you can see, first we construct the partial graph that contains all the zipping and comparing of stream
 elements. This partial graph will have three inputs and one output, wherefore we use the :class:`UniformFanInShape`.
@@ -143,12 +143,12 @@ from the function passed in . The single outlet must be provided to the ``Source
 Refer to the example below, in which we create a Source that zips together two numbers, to see this graph
 construction in action:
 
-.. includecode:: ../code/docs/stream/StreamPartialFlowGraphDocSpec.scala#source-from-partial-flow-graph
+.. includecode:: ../code/docs/stream/StreamPartialGraphDSLDocSpec.scala#source-from-partial-graph-dsl
 
 Similarly the same can be done for a ``Sink[T]``, using ``SinkShape.of`` in which case the provided value
 must be an ``Inlet[T]``. For defining a ``Flow[T]`` we need to expose both an inlet and an outlet:
 
-.. includecode:: ../code/docs/stream/StreamPartialFlowGraphDocSpec.scala#flow-from-partial-flow-graph
+.. includecode:: ../code/docs/stream/StreamPartialGraphDSLDocSpec.scala#flow-from-partial-graph-dsl
 
 Combining Sources and Sinks with simplified API
 -----------------------------------------------
@@ -157,11 +157,11 @@ There is a simplified API you can use to combine sources and sinks with junction
 ``Merge[In]`` and ``Concat[A]`` without the need for using the Graph DSL. The combine method takes care of constructing
 the necessary graph underneath. In following example we combine two sources into one (fan-in):
 
-.. includecode:: ../code/docs/stream/StreamPartialFlowGraphDocSpec.scala#source-combine
+.. includecode:: ../code/docs/stream/StreamPartialGraphDSLDocSpec.scala#source-combine
 
 The same can be done for a ``Sink[T]`` but in this case it will be fan-out:
 
-.. includecode:: ../code/docs/stream/StreamPartialFlowGraphDocSpec.scala#sink-combine
+.. includecode:: ../code/docs/stream/StreamPartialGraphDSLDocSpec.scala#sink-combine
 
 Building reusable Graph components
 ----------------------------------
@@ -178,7 +178,7 @@ where jobs of higher priority can be sent.
 Altogether, our junction will have two input ports of type ``I`` (for the normal and priority jobs) and an output port
 of type ``O``. To represent this interface, we need to define a custom :class:`Shape`. The following lines show how to do that.
 
-.. includecode:: ../code/docs/stream/FlowGraphDocSpec.scala#flow-graph-components-shape
+.. includecode:: ../code/docs/stream/GraphDSLDocSpec.scala#graph-dsl-components-shape
 
 .. _predefined-shapes:
 
@@ -198,20 +198,20 @@ boilerplate:
 Since our shape has two input ports and one output port, we can just use the :class:`FanInShape` DSL to define
 our custom shape:
 
-.. includecode:: ../code/docs/stream/FlowGraphDocSpec.scala#flow-graph-components-shape2
+.. includecode:: ../code/docs/stream/GraphDSLDocSpec.scala#graph-dsl-components-shape2
 
 Now that we have a :class:`Shape` we can wire up a Graph that represents
 our worker pool. First, we will merge incoming normal and priority jobs using ``MergePreferred``, then we will send the jobs
 to a ``Balance`` junction which will fan-out to a configurable number of workers (flows), finally we merge all these
 results together and send them out through our only output port. This is expressed by the following code:
 
-.. includecode:: ../code/docs/stream/FlowGraphDocSpec.scala#flow-graph-components-create
+.. includecode:: ../code/docs/stream/GraphDSLDocSpec.scala#graph-dsl-components-create
 
 All we need to do now is to use our custom junction in a graph. The following code simulates some simple workers
 and jobs using plain strings and prints out the results. Actually we used *two* instances of our worker pool junction
 using ``add()`` twice.
 
-.. includecode:: ../code/docs/stream/FlowGraphDocSpec.scala#flow-graph-components-use
+.. includecode:: ../code/docs/stream/GraphDSLDocSpec.scala#graph-dsl-components-use
 
 .. _bidi-flow-scala:
 
@@ -276,12 +276,12 @@ can be used in the graph as an ordinary source or outlet, and which will eventua
 If the materialized value is needed at more than one place, it is possible to call ``materializedValue`` any number of
 times to acquire the necessary number of outlets.
 
-.. includecode:: ../code/docs/stream/FlowGraphDocSpec.scala#flow-graph-matvalue
+.. includecode:: ../code/docs/stream/GraphDSLDocSpec.scala#graph-dsl-matvalue
 
 Be careful not to introduce a cycle where the materialized value actually contributes to the materialized value.
 The following example demonstrates a case where the materialized ``Future`` of a fold is fed back to the fold itself.
 
-.. includecode:: ../code/docs/stream/FlowGraphDocSpec.scala#flow-graph-matvalue-cycle
+.. includecode:: ../code/docs/stream/GraphDSLDocSpec.scala#graph-dsl-matvalue-cycle
 
 .. _graph-cycles-scala:
 

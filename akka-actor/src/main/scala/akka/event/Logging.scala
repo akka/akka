@@ -11,6 +11,7 @@ import akka.actor.ActorSystem.Settings
 import akka.actor._
 import akka.dispatch.RequiresMessageQueue
 import akka.util.ReentrantGuard
+import akka.util.Helpers.toRootLowerCase
 import akka.{ AkkaException, ConfigurationException }
 
 import scala.annotation.implicitNotFound
@@ -442,7 +443,7 @@ object Logging {
    * valid inputs are upper or lowercase (not mixed) versions of:
    * "error", "warning", "info" and "debug"
    */
-  def levelFor(s: String): Option[LogLevel] = s.toLowerCase(Locale.ROOT) match {
+  def levelFor(s: String): Option[LogLevel] = toRootLowerCase(s) match {
     case "off"     ⇒ Some(OffLevel)
     case "error"   ⇒ Some(ErrorLevel)
     case "warning" ⇒ Some(WarningLevel)
@@ -569,6 +570,12 @@ object Logging {
     val (str, clazz) = LogSource.fromAnyRef(logSource)
     new BusLogging(bus, str, clazz)
   }
+
+  /**
+    * Obtain LoggingAdapter with MDC support for the given actor.
+    * Don't use it outside its specific Actor as it isn't thread safe
+    */
+  def getLogger(logSource: Actor): DiagnosticLoggingAdapter = apply(logSource)
 
   /**
    * Obtain LoggingAdapter with MDC support for the given actor.
@@ -1076,20 +1083,23 @@ trait LoggingAdapter {
   def format(t: String, arg: Any*): String = {
     val sb = new java.lang.StringBuilder(64)
     var p = 0
-    var rest = t
+    var startIndex = 0
     while (p < arg.length) {
-      val index = rest.indexOf("{}")
+      val index = t.indexOf("{}", startIndex)
       if (index == -1) {
-        sb.append(rest).append(" WARNING arguments left: ").append(arg.length - p)
-        rest = ""
+        sb.append(t.substring(startIndex, t.length))
+          .append(" WARNING arguments left: ")
+          .append(arg.length - p)
         p = arg.length
+        startIndex = t.length
       } else {
-        sb.append(rest.substring(0, index)).append(arg(p))
-        rest = rest.substring(index + 2)
+        sb.append(t.substring(startIndex, index))
+          .append(arg(p))
+        startIndex = index + 2
         p += 1
       }
     }
-    sb.append(rest).toString
+    sb.append(t.substring(startIndex, t.length)).toString
   }
 }
 

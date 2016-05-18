@@ -62,3 +62,13 @@ trait SinkQueue[T] {
    */
   def pull(): Future[Option[T]]
 }
+
+/**
+ * This trait adds cancel support to [[SinkQueue]].
+ */
+trait SinkQueueWithCancel[T] extends SinkQueue[T] {
+  /**
+   * Cancel the stream. This method returns right away without waiting for actual finalizing stream.
+   */
+  def cancel(): Unit
+}

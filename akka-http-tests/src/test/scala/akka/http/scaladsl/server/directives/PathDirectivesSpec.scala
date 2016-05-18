@@ -259,20 +259,20 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
 
   "PathMatchers" should {
     {
-      val test = testFor(path(Rest.tmap { case Tuple1(s) ⇒ Tuple1(s.split('-').toList) }) { echoComplete })
+      val test = testFor(path(Remaining.tmap { case Tuple1(s) ⇒ Tuple1(s.split('-').toList) }) { echoComplete })
       "support the hmap modifier in accept [/yes-no]" in test("List(yes, no)")
     }
     {
-      val test = testFor(path(Rest.map(_.split('-').toList)) { echoComplete })
+      val test = testFor(path(Remaining.map(_.split('-').toList)) { echoComplete })
       "support the map modifier in accept [/yes-no]" in test("List(yes, no)")
     }
     {
-      val test = testFor(path(Rest.tflatMap { case Tuple1(s) ⇒ Some(s).filter("yes" ==).map(x ⇒ Tuple1(x)) }) { echoComplete })
+      val test = testFor(path(Remaining.tflatMap { case Tuple1(s) ⇒ Some(s).filter("yes" ==).map(x ⇒ Tuple1(x)) }) { echoComplete })
       "support the hflatMap modifier in accept [/yes]" in test("yes")
       "support the hflatMap modifier in reject [/blub]" in test()
     }
     {
-      val test = testFor(path(Rest.flatMap(s ⇒ Some(s).filter("yes" ==))) { echoComplete })
+      val test = testFor(path(Remaining.flatMap(s ⇒ Some(s).filter("yes" ==))) { echoComplete })
       "support the flatMap modifier in accept [/yes]" in test("yes")
       "support the flatMap modifier reject [/blub]" in test()
     }
@@ -304,6 +304,17 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
   }
 
   import akka.http.scaladsl.model.StatusCodes._
+
+  "the Remaining path matcher" should {
+    "extract complete path if nothing previously consumed" in {
+      val route = path(Remaining) { echoComplete }
+      Get("/pets/afdaoisd/asda/sfasfasf/asf") ~> route ~> check { responseAs[String] shouldEqual "pets/afdaoisd/asda/sfasfasf/asf" }
+    }
+    "extract remaining path when parts of path already matched" in {
+      val route = path("pets" / Remaining) { echoComplete }
+      Get("/pets/afdaoisd/asda/sfasfasf/asf") ~> route ~> check { responseAs[String] shouldEqual "afdaoisd/asda/sfasfasf/asf" }
+    }
+  }
 
   "the `redirectToTrailingSlashIfMissing` directive" should {
     val route = redirectToTrailingSlashIfMissing(Found) { completeOk }

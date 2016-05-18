@@ -19,6 +19,7 @@ import akka.http.scaladsl.model._
 import headers._
 import HttpProtocols._
 import ParserOutput._
+import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 
 /**
  * INTERNAL API
@@ -40,21 +41,32 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
     if (settings.includeTlsSessionInfoHeader && tlsSessionInfoHeader != null) ListBuffer(tlsSessionInfoHeader)
     else ListBuffer()
 
-  def isTerminated = terminated
+  // Note that this GraphStage mutates the HttpMessageParser instance, use with caution.
+  val stage = new GraphStage[FlowShape[SessionBytes, Output]] {
+    val in: Inlet[SessionBytes] = Inlet("HttpMessageParser.in")
+    val out: Outlet[Output] = Outlet("HttpMessageParser.out")
+    override val shape: FlowShape[SessionBytes, Output] = FlowShape(in, out)
 
-  val stage: PushPullStage[SessionBytes, Output] =
-    new PushPullStage[SessionBytes, Output] {
-      def onPush(input: SessionBytes, ctx: Context[Output]) = handleParserOutput(self.parseSessionBytes(input), ctx)
-      def onPull(ctx: Context[Output]) = handleParserOutput(self.onPull(), ctx)
-      private def handleParserOutput(output: Output, ctx: Context[Output]): SyncDirective =
-        output match {
-          case StreamEnd    ⇒ ctx.finish()
-          case NeedMoreData ⇒ ctx.pull()
-          case x            ⇒ ctx.push(x)
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+      new GraphStageLogic(shape) with InHandler with OutHandler {
+        override def onPush(): Unit = handleParserOutput(self.parseSessionBytes(grab(in)))
+        override def onPull(): Unit = handleParserOutput(self.onPull())
+
+        override def onUpstreamFinish(): Unit =
+          if (self.onUpstreamFinish()) completeStage()
+          else if (isAvailable(out)) handleParserOutput(self.onPull())
+
+        private def handleParserOutput(output: Output): Unit = {
+          output match {
+            case StreamEnd    ⇒ completeStage()
+            case NeedMoreData ⇒ pull(in)
+            case x            ⇒ push(out, x)
+          }
         }
-      override def onUpstreamFinish(ctx: Context[Output]): TerminationDirective =
-        if (self.onUpstreamFinish()) ctx.finish() else ctx.absorbTermination()
-    }
+
+        setHandlers(in, out, this)
+      }
+  }
 
   final def parseSessionBytes(input: SessionBytes): Output = {
     if (input.session ne lastSession) {
@@ -268,7 +280,7 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
       math.signum(offset - input.length) match {
         case -1 ⇒
           val remaining = input.drop(offset)
-          (more ⇒ next(remaining ++ more, 0))
+          more ⇒ next(remaining ++ more, 0)
         case 0 ⇒ next(_, 0)
         case 1 ⇒ throw new IllegalStateException
       }

@@ -10,7 +10,7 @@ Consider this example:
 .. includecode2:: ../../code/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala
    :snippet: example-1
 
-Here the :ref:`-parameters-` directives is employed to extract three ``Int`` values, which are then used to construct an
+Here the :ref:`-parameters-scala-` directives is employed to extract three ``Int`` values, which are then used to construct an
 instance of the ``Color`` case class. So far so good. However, if the model classes we'd like to work with have more
 than just a few parameters the overhead introduced by capturing the arguments as extractions only to feed them into the
 model class constructor directly afterwards can somewhat clutter up your route definitions.

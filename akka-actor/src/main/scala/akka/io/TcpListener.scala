@@ -4,14 +4,16 @@
 
 package akka.io
 
-import java.nio.channels.{ SocketChannel, SelectionKey, ServerSocketChannel }
+import java.nio.channels.{ SelectionKey, ServerSocketChannel, SocketChannel }
 import java.net.InetSocketAddress
+
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import akka.actor._
 import akka.io.SelectionHandler._
 import akka.io.Tcp._
-import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.util.Helpers
 
 /**
  * INTERNAL API
@@ -96,6 +98,8 @@ private[io] class TcpListener(selectorRouter: ActorRef,
     case Unbind ⇒
       log.debug("Unbinding endpoint {}", localAddress)
       channel.close()
+      // see https://github.com/akka/akka/issues/20282
+      if (Helpers.isWindows) registration.enableInterest(1)
       sender() ! Unbound
       log.debug("Unbound endpoint {}, stopping listener", localAddress)
       context.stop(self)

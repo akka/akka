@@ -22,7 +22,6 @@ import akka.testkit.EventFilter
 import akka.testkit.AkkaSpec
 
 class TcpSpec extends AkkaSpec("akka.stream.materializer.subscription-timeout.timeout = 2s") with TcpHelper {
-  var demand = 0L
 
   "Outgoing TCP stream" must {
 
@@ -459,10 +458,6 @@ class TcpSpec extends AkkaSpec("akka.stream.materializer.subscription-timeout.ti
     }
 
     "bind and unbind correctly" in EventFilter[BindException](occurrences = 2).intercept {
-      if (Helpers.isWindows) {
-        info("On Windows unbinding is not immediate")
-        pending
-      }
       val address = temporaryServerAddress()
       val probe1 = TestSubscriber.manualProbe[Tcp.IncomingConnection]()
       val bind = Tcp(system).bind(address.getHostName, address.getPort) // TODO getHostString in Java7
@@ -534,6 +529,29 @@ class TcpSpec extends AkkaSpec("akka.stream.materializer.subscription-timeout.ti
       a[StreamTcpException] should be thrownBy {
         Await.result(rejected, 5.seconds) should ===(100)
       }
+    }
+
+    "not thrown on unbind after system has been shut down" in {
+      val sys2 = ActorSystem("shutdown-test-system")
+      val mat2 = ActorMaterializer()(sys2)
+
+      try {
+        val address = temporaryServerAddress()
+
+        val bindingFuture = Tcp().bindAndHandle(Flow[ByteString], address.getHostName, address.getPort)(mat2)
+
+        // Ensure server is running
+        Await.ready(bindingFuture, 3.seconds)
+        // and is possible to communicate with
+        Await.result(
+          Source.single(ByteString(0)).via(Tcp().outgoingConnection(address)).runWith(Sink.ignore),
+          3.seconds)
+
+        Await.result(sys2.terminate(), 3.seconds)
+
+        val binding = Await.result(bindingFuture, 3.seconds)
+        Await.result(binding.unbind(), 3.seconds)
+      } finally sys2.terminate()
     }
   }
 

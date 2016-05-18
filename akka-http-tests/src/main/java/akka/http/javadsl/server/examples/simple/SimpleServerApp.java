@@ -4,94 +4,154 @@
 
 package akka.http.javadsl.server.examples.simple;
 
-import akka.actor.ActorSystem;
-import akka.http.javadsl.server.*;
-import akka.http.javadsl.server.values.Parameter;
-import akka.http.javadsl.server.values.Parameters;
-import akka.http.javadsl.server.values.PathMatcher;
-import akka.http.javadsl.server.values.PathMatchers;
+//#https-http-app
 
+import akka.NotUsed;
+import static akka.http.javadsl.server.PathMatchers.segment;
+
+import akka.actor.ActorSystem;
+import akka.http.javadsl.ConnectHttp;
+import akka.http.javadsl.ConnectionContext;
+import akka.http.javadsl.Http;
+import akka.http.javadsl.HttpsConnectionContext;
+import akka.http.javadsl.model.HttpRequest;
+import akka.http.javadsl.model.HttpResponse;
+import akka.http.javadsl.server.*;
+import akka.stream.ActorMaterializer;
+import akka.stream.javadsl.Flow;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.IOException;
-import java.util.concurrent.Callable;
+import java.io.InputStream;
+import java.security.*;
+import java.security.cert.CertificateException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
-public class SimpleServerApp extends HttpApp {
-    static Parameter<Integer> x = Parameters.intValue("x");
-    static Parameter<Integer> y = Parameters.intValue("y");
+import static akka.http.javadsl.server.PathMatchers.integerSegment;
+import static akka.http.javadsl.server.Unmarshaller.entityToString;
 
-    static PathMatcher<Integer> xSegment = PathMatchers.intValue();
-    static PathMatcher<Integer> ySegment = PathMatchers.intValue();
+public class SimpleServerApp extends AllDirectives { // or import Directives.*
 
-    static RequestVal<String> bodyAsName = RequestVals.entityAs(Unmarshallers.String());
+  public Route multiply(int x, int y) {
+    int result = x * y;
+    return complete(String.format("%d * %d = %d", x, y, result));
+  }
 
-    public static RouteResult multiply(RequestContext ctx, int x, int y) {
-        int result = x * y;
-        return ctx.complete(String.format("%d * %d = %d", x, y, result));
+  public CompletionStage<Route> multiplyAsync(Executor ctx, int x, int y) {
+    return CompletableFuture.supplyAsync(() -> multiply(x, y), ctx);
+  }
+
+  public Route createRoute() {
+    Route addHandler = parameter(StringUnmarshallers.INTEGER, "x", x ->
+      parameter(StringUnmarshallers.INTEGER, "y", y -> {
+        int result = x + y;
+        return complete(String.format("%d + %d = %d", x, y, result));
+      })
+    );
+
+    BiFunction<Integer, Integer, Route> subtractHandler = (x, y) -> {
+      int result = x - y;
+      return complete(String.format("%d - %d = %d", x, y, result));
+    };
+
+    return
+      route(
+        // matches the empty path
+        pathSingleSlash(() ->
+          getFromResource("web/calculator.html")
+        ),
+        // matches paths like this: /add?x=42&y=23
+        path("add", () -> addHandler),
+        path("subtract", () ->
+          parameter(StringUnmarshallers.INTEGER, "x", x ->
+            parameter(StringUnmarshallers.INTEGER, "y", y ->
+              subtractHandler.apply(x, y)
+            )
+          )
+        ),
+        // matches paths like this: /multiply/{x}/{y}
+        path(PathMatchers.segment("multiply").slash(integerSegment()).slash(integerSegment()),
+          this::multiply
+        ),
+        path(PathMatchers.segment("multiplyAsync").slash(integerSegment()).slash(integerSegment()), (x, y) ->
+          extractExecutionContext(ctx ->
+            onSuccess(() -> multiplyAsync(ctx, x, y), Function.identity())
+          )
+        ),
+        post(() ->
+          path("hello", () ->
+            entity(entityToString(), body ->
+              complete("Hello " + body + "!")
+            )
+          )
+        )
+      );
+  }
+
+  // ** STARTING THE SERVER ** //
+
+  public static void main(String[] args) throws IOException {
+    final ActorSystem system = ActorSystem.create("SimpleServerApp");
+    final ActorMaterializer materializer = ActorMaterializer.create(system);
+    final Http http = Http.get(system);
+
+    boolean useHttps = false; // pick value from anywhere
+    useHttps(system, http, useHttps);
+
+    final SimpleServerApp app = new SimpleServerApp();
+    final Flow<HttpRequest, HttpResponse, NotUsed> flow = app.createRoute().flow(system, materializer);
+    
+    Http.get(system).bindAndHandle(flow, ConnectHttp.toHost("localhost", 8080), materializer);
+
+    System.out.println("Type RETURN to exit");
+    System.in.read();
+    system.terminate();
+  }
+
+  // ** CONFIGURING ADDITIONAL SETTINGS ** //
+
+  public static void useHttps(ActorSystem system, Http http, boolean useHttps) {
+    if (useHttps) {
+
+      HttpsConnectionContext https = null;
+      try {
+        // initialise the keystore
+        // !!! never put passwords into code !!!
+        final char[] password = new char[]{'a', 'b', 'c', 'd', 'e', 'f'};
+
+        final KeyStore ks = KeyStore.getInstance("PKCS12");
+        final InputStream keystore = SimpleServerApp.class.getClassLoader().getResourceAsStream("httpsDemoKeys/keys/server.p12");
+        if (keystore == null) {
+          throw new RuntimeException("Keystore required!");
+        }
+        ks.load(keystore, password);
+
+        final KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
+        keyManagerFactory.init(ks, password);
+
+        final TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+        tmf.init(ks);
+
+        final SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(), SecureRandom.getInstanceStrong());
+
+        https = ConnectionContext.https(sslContext);
+
+      } catch (NoSuchAlgorithmException | KeyManagementException e) {
+        system.log().error("Exception while configuring HTTPS.", e);
+      } catch (CertificateException | KeyStoreException | UnrecoverableKeyException | IOException e) {
+        system.log().error("Exception while ", e);
+      }
+
+      http.setDefaultServerHttpContext(https);
     }
-    public static CompletionStage<RouteResult> multiplyAsync(final RequestContext ctx, final int x, final int y) {
-        return CompletableFuture.supplyAsync(() -> multiply(ctx, x, y), ctx.executionContext());
-    }
+  }
 
-    @Override
-    public Route createRoute() {
-        Handler addHandler = new Handler() {
-            @Override
-            public RouteResult apply(RequestContext ctx) {
-                int xVal = x.get(ctx);
-                int yVal = y.get(ctx);
-                int result = xVal + yVal;
-                return ctx.complete(String.format("%d + %d = %d", xVal, yVal, result));
-            }
-        };
-        Handler2<Integer, Integer> subtractHandler = new Handler2<Integer, Integer>() {
-            public RouteResult apply(RequestContext ctx, Integer xVal, Integer yVal) {
-                int result = xVal - yVal;
-                return ctx.complete(String.format("%d - %d = %d", xVal, yVal, result));
-            }
-        };
-        Handler1<String> helloPostHandler =
-            new Handler1<String>() {
-                @Override
-                public RouteResult apply(RequestContext ctx, String s) {
-                    return ctx.complete("Hello " + s + "!");
-                }
-            };
-        return
-            route(
-                // matches the empty path
-                pathSingleSlash().route(
-                    getFromResource("web/calculator.html")
-                ),
-                // matches paths like this: /add?x=42&y=23
-                path("add").route(
-                    handleWith(addHandler, x, y)
-                ),
-                path("subtract").route(
-                    handleWith2(x, y, subtractHandler)
-                ),
-                // matches paths like this: /multiply/{x}/{y}
-                path("multiply", xSegment, ySegment).route(
-                    // bind handler by reflection
-                    handleReflectively(SimpleServerApp.class, "multiply", xSegment, ySegment)
-                ),
-                path("multiplyAsync", xSegment, ySegment).route(
-                    // bind async handler by reflection
-                    handleReflectively(SimpleServerApp.class, "multiplyAsync", xSegment, ySegment)
-                ),
-                post(
-                    path("hello").route(
-                        handleWith1(bodyAsName, helloPostHandler)
-                    )
-                )
-            );
-    }
-
-    public static void main(String[] args) throws IOException {
-        ActorSystem system = ActorSystem.create();
-        new SimpleServerApp().bindRoute("localhost", 8080, system);
-        System.out.println("Type RETURN to exit");
-        System.in.read();
-        system.terminate();
-    }
 }
+//#

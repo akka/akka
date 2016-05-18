@@ -121,7 +121,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
   }
 
   // http://tools.ietf.org/html/rfc7234#section-5.3
-  def `expires` = rule { `HTTP-date` ~ EOI ~> (Expires(_)) }
+  def `expires` = rule { `expires-date` ~ EOI ~> (Expires(_)) }
 
   // http://tools.ietf.org/html/rfc7230#section-5.4
   // We don't accept scoped IPv6 addresses as they should not appear in the Host header,
@@ -187,7 +187,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
   def server = rule { products ~ EOI ~> (Server(_)) }
 
   def `strict-transport-security` = rule {
-    ignoreCase("max-age=") ~ `delta-seconds` ~ optional(ws(";") ~ ignoreCase("includesubdomains") ~ push(true)) ~ EOI ~> (`Strict-Transport-Security`(_, _))
+    ignoreCase("max-age=") ~ `delta-seconds` ~ optional(ws(";") ~ ignoreCase("includesubdomains") ~ push(true)) ~ zeroOrMore(ws(";") ~ token0) ~ EOI ~> (`Strict-Transport-Security`(_, _))
   }
 
   // http://tools.ietf.org/html/rfc7230#section-3.3.1

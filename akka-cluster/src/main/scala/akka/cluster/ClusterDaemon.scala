@@ -57,6 +57,7 @@ private[cluster] object InternalClusterAction {
 
   /**
    * Command to join the cluster. Sent when a node wants to join another node (the receiver).
+   *
    * @param node the node that wants to join the cluster
    */
   @SerialVersionUID(1L)
@@ -64,6 +65,7 @@ private[cluster] object InternalClusterAction {
 
   /**
    * Reply to Join
+   *
    * @param from the sender node in the cluster, i.e. the node that received the Join command
    */
   @SerialVersionUID(1L)
@@ -293,10 +295,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   override def preStart(): Unit = {
     context.system.eventStream.subscribe(self, classOf[QuarantinedEvent])
 
-    AutoDownUnreachableAfter match {
-      case d: FiniteDuration ⇒
-        context.actorOf(AutoDown.props(d) withDispatcher (context.props.dispatcher), name = "autoDown")
-      case _ ⇒ // auto-down is disabled
+    cluster.downingProvider.downingActorProps.foreach { props ⇒
+      val propsWithDispatcher =
+        if (props.dispatcher == Deploy.NoDispatcherGiven) props.withDispatcher(context.props.dispatcher)
+        else props
+
+      context.actorOf(propsWithDispatcher, name = "downingProvider")
     }
 
     if (seedNodes.isEmpty)

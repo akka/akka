@@ -127,7 +127,7 @@ public class PersistentActorExample {
         persistentActor.tell(new Cmd("buzz"), null);
         persistentActor.tell("print", null);
 
-        Thread.sleep(1000);
+        Thread.sleep(10000);
         system.terminate();
     }
 }

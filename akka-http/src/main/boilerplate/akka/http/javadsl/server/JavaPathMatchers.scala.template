@@ -1,0 +1,204 @@
+/*
+ * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ */
+package akka.http.javadsl.server
+
+import java.util.List
+import java.util.function.{BiFunction, Function}
+import akka.http.scaladsl.server.{ PathMatcher ⇒ SPathMatcher }
+import akka.http.scaladsl.server.{ PathMatchers ⇒ SPathMatchers }
+import akka.http.scaladsl.server.PathMatcher
+import java.util.{ List ⇒ JList }
+import java.util.UUID
+import java.util.function.BiFunction
+import java.util.function.{ Function ⇒ JFunction }
+import akka.japi.function._
+import java.util.regex.Pattern
+import scala.collection.JavaConverters._
+
+import akka.http.scaladsl.server.PathMatcher
+import java.util.{List => JList}
+
+import scala.language.implicitConversions
+
+object JavaPathMatchers {
+
+  /* This is a workaround for sbt-boilerplate being limited with 2 as the max distance between number and generated number */
+  type PathMatcherTwoMoreThan1[A, B, T1] = PathMatcher3[A, B, T1]
+  type PathMatcherTwoMoreThan2[A, B, T1, T2] = PathMatcher4[A, B, T1, T2]
+  type PathMatcherTwoMoreThan3[A, B, T1, T2, T3] = PathMatcher5[A, B, T1, T2, T3]
+  type PathMatcherTwoMoreThan4[A, B, T1, T2, T3, T4] = PathMatcher6[A, B, T1, T2, T3, T4]
+  type PathMatcherTwoMoreThan5[A, B, T1, T2, T3, T4, T5] = PathMatcher7[A, B, T1, T2, T3, T4, T5]
+  type PathMatcherTwoMoreThan6[A, B, T1, T2, T3, T4, T5, T6] = PathMatcher8[A, B, T1, T2, T3, T4, T5, T6]
+  type PathMatcherTwoMoreThan7[A, B, T1, T2, T3, T4, T5, T6, T7] = PathMatcher9[A, B, T1, T2, T3, T4, T5, T6, T7]
+  type PathMatcherTwoMoreThan8[A, B, T1, T2, T3, T4, T5, T6, T7, T8] = PathMatcher10[A, B, T1, T2, T3, T4, T5, T6, T7, T8]
+  type PathMatcherTwoMoreThan9[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9] = PathMatcher11[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9]
+  type PathMatcherTwoMoreThan10[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10] = PathMatcher12[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]
+  type PathMatcherTwoMoreThan11[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11] = PathMatcher13[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]
+  type PathMatcherTwoMoreThan12[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12] = PathMatcher14[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]
+  type PathMatcherTwoMoreThan13[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13] = PathMatcher15[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]
+  type PathMatcherTwoMoreThan14[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14] = PathMatcher16[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14]
+  type PathMatcherTwoMoreThan15[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15] = PathMatcher17[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15]
+  type PathMatcherTwoMoreThan16[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16] = PathMatcher18[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16]
+  type PathMatcherTwoMoreThan17[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17] = PathMatcher19[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17]
+  type PathMatcherTwoMoreThan18[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18] = PathMatcher20[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18]
+  type PathMatcherTwoMoreThan19[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19] = PathMatcher21[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19]
+  type PathMatcherTwoMoreThan20[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20] = PathMatcher22[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20]
+
+  /** INTERNAL API */
+  private[server] implicit def fromScala0(scalaMatcher: SPathMatcher[Unit]): PathMatcher0 =
+    new PathMatcher0(scalaMatcher)
+
+  [..22#/** INTERNAL API */
+  private[server] def fromScala1[[#T1#]](scalaMatcher: SPathMatcher[Tuple1[[#T1#]]]): PathMatcher1[[#T1#]] =
+    new PathMatcher1(scalaMatcher)
+  #
+  ]
+
+
+  [..20#/** INTERNAL API */
+  private[server] def fromScalaTwoMoreThan1[A, B, [#T1#]](scalaMatcher: SPathMatcher[(A, B, [#T1#])]) =
+    new PathMatcherTwoMoreThan1[A, B, [#T1#]](scalaMatcher)
+  #
+  ]
+
+}
+
+/**
+ * A PathMatcher tries to match a prefix of a given string and returns either a PathMatcher.Matched instance
+ * if matched, otherwise PathMatchers.Unmatched.
+ */
+// Generated class, do not edit in place, but edit template instead.
+final class PathMatcher0(val toScala: SPathMatcher[Unit]) {
+  import JavaPathMatchers._
+
+  def slash() = fromScala0(toScala./)
+
+  def slash(segment: String)                   : PathMatcher0         = fromScala0(toScala / segment)
+  def slash(next: PathMatcher0)                : PathMatcher0         = fromScala0(toScala / next.toScala)
+  def slash[T](next: PathMatcher1[T])          : PathMatcher1[T]      = fromScala1(toScala / next.toScala)
+  def slash[T1, T2](next: PathMatcher2[T1, T2]): PathMatcher2[T1, T2] = fromScala2(toScala / next.toScala)
+
+  def concat(segment: String)                   : PathMatcher0         = fromScala0(toScala ~ segment)
+  def concat(next: PathMatcher0)                : PathMatcher0         = fromScala0(toScala ~ next.toScala)
+  def concat[T](next: PathMatcher1[T])          : PathMatcher1[T]      = fromScala1(toScala ~ next.toScala)
+  def concat[T1, T2](next: PathMatcher2[T1, T2]): PathMatcher2[T1, T2] = fromScala2(toScala ~ next.toScala)
+
+  def orElse(segment: String) = fromScala0(toScala | segment)
+  def orElse(alternative: PathMatcher0) = fromScala0(toScala | alternative.toScala)
+
+  def invert = fromScala0(!toScala)
+
+  def repeat(min: Int, max: Int): PathMatcher0 = repeat(min, max, SPathMatchers.Neutral)
+  def repeat(min: Int, max: Int, separator: PathMatcher0): PathMatcher0 = fromScala0(toScala.repeat(min, max, separator.toScala))
+
+}
+
+/**
+ * A PathMatcher tries to match a prefix of a given string and returns either a PathMatcher.Matched instance
+ * if matched, otherwise PathMatchers.Unmatched.
+ */
+// Generated class, do not edit in place, but edit template instead.
+final class PathMatcher1[T1](val toScala: SPathMatcher[Tuple1[T1]]) {
+  import JavaPathMatchers._
+
+  def slash()                                  : PathMatcher1[T1]         = fromScala1(toScala./)
+  def slash(segment: String)                   : PathMatcher1[T1]         = fromScala1(toScala / segment)
+  def slash(next: PathMatcher0)                : PathMatcher1[T1]         = fromScala1(toScala./(next.toScala))
+  def slash[N](next: PathMatcher1[N])           = fromScala2(toScala / next.toScala)
+  def slash[N1, N2](next: PathMatcher2[N1, N2]) = fromScalaTwoMoreThan1(toScala / next.toScala)
+
+  def concat(segment: String)                   : PathMatcher1[T1]         = fromScala1(toScala ~ segment)
+  def concat(next: PathMatcher0)                : PathMatcher1[T1]         = fromScala1(toScala ~ next.toScala)
+  def concat[N](next: PathMatcher1[N])           = fromScala2(toScala ~ next.toScala)
+  def concat[N1, N2](next: PathMatcher2[N1, N2]) = fromScalaTwoMoreThan1(toScala ~ next.toScala)
+
+  def orElse(alternative: PathMatcher1[T1]) = fromScala1(toScala | alternative.toScala)
+
+  def invert = fromScala0(!toScala)
+
+  def repeat(min: Int, max: Int): PathMatcher1[JList[T1]] = repeat(min, max, SPathMatchers.Neutral)
+  def repeat(min: Int, max: Int, separator: PathMatcher0): PathMatcher1[JList[T1]] =
+    fromScala1(toScala.repeat(min, max, separator.toScala).map(_.asJava))
+
+  def map[U](f: JFunction[T1, U]) =
+    fromScala1(toScala.map(t ⇒ f.apply(t)))
+}
+
+[2..20#/**
+ * A PathMatcher tries to match a prefix of a given string and returns either a PathMatcher.Matched instance
+ * if matched, otherwise PathMatchers.Unmatched.
+ */
+// Generated class, do not edit in place, but edit template instead.
+final class PathMatcher1[[#T1#]](val toScala: SPathMatcher[Tuple1[[#T1#]]]) {
+  import JavaPathMatchers._
+
+  def slash()                                  : PathMatcher1[[#T1#]]         = fromScala1(toScala./)
+  def slash(segment: String)                   : PathMatcher1[[#T1#]]         = fromScala1(toScala / segment)
+  def slash(next: PathMatcher##0)                : PathMatcher1[[#T1#]]         = fromScala1(toScala./(next.toScala))
+  def slash[N](next: PathMatcher##1[N])                   = fromScalaTwoMoreThan0(toScala / next.toScala)
+  def slash[[..2#N1#]](next: PathMatcher##2[[..2#N1#]]) = fromScalaTwoMoreThan1(toScala / next.toScala)
+
+  def concat(segment: String)                   : PathMatcher1[[#T1#]]         = fromScala1(toScala ~ segment)
+  def concat(next: PathMatcher##0)                : PathMatcher1[[#T1#]]         = fromScala1(toScala ~ next.toScala)
+  def concat[N](next: PathMatcher##1[N])          : PathMatcher2[[#T1#], N]      = fromScalaTwoMoreThan0(toScala ~ next.toScala)
+  def concat[[..2#N1#]](next: PathMatcher##2[[..2#N1#]]) = fromScalaTwoMoreThan1(toScala ~ next.toScala)
+
+  def orElse(alternative: PathMatcher1[[#T1#]]) = fromScala1(toScala | alternative.toScala)
+
+  def invert = fromScala##0(!toScala)
+
+}
+#
+]
+
+/* The last 21 and 22 are special as we are not able to generate slash/concat for them (would need to add more params) */
+
+/**
+ * A PathMatcher tries to match a prefix of a given string and returns either a PathMatcher.Matched instance
+ * if matched, otherwise PathMatchers.Unmatched.
+ *
+ * It is not possible to append more matchers with keeping their values as parameters (due to limit of Tuple22).
+ */
+// Generated class, do not edit in place, but edit template instead.
+final class PathMatcher21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21](val toScala: SPathMatcher[Tuple21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21]]) {
+  import JavaPathMatchers._
+
+  def slash()                         : PathMatcher21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21]         = fromScala21(toScala./)
+  def slash(segment: String)          : PathMatcher21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21]         = fromScala21(toScala / segment)
+  def slash(next: PathMatcher0)       : PathMatcher21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21]         = fromScala21(toScala./(next.toScala))
+  def slash[N](next: PathMatcher1[N]) = fromScala22(toScala / next.toScala)
+
+  def concat(segment: String)                   : PathMatcher21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21]         = fromScala21(toScala ~ segment)
+  def concat(next: PathMatcher0)                : PathMatcher21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21]         = fromScala21(toScala ~ next.toScala)
+  def concat[N](next: PathMatcher1[N]) = fromScala22(toScala ~ next.toScala)
+
+  def orElse(alternative: PathMatcher21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21]) = fromScala21(toScala | alternative.toScala)
+
+  def invert = fromScala0(!toScala)
+
+}
+
+
+/**
+ * A PathMatcher tries to match a prefix of a given string and returns either a PathMatcher.Matched instance
+ * if matched, otherwise PathMatchers.Unmatched.
+ *
+ * It is not possible to append more matchers with keeping their values as parameters (due to limit of Tuple22).
+ */
+// Generated class, do not edit in place, but edit template instead.
+final class PathMatcher22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22](val toScala: SPathMatcher[Tuple22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22]]) {
+  import JavaPathMatchers._
+
+  def slash()                                  : PathMatcher22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22]         = fromScala22(toScala./)
+  def slash(segment: String)                   : PathMatcher22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22]         = fromScala22(toScala / segment)
+  def slash(next: PathMatcher0)                : PathMatcher22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22]         = fromScala22(toScala./(next.toScala))
+
+  def concat(segment: String)                   : PathMatcher22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22]         = fromScala22(toScala ~ segment)
+  def concat(next: PathMatcher0)                : PathMatcher22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22]         = fromScala22(toScala ~ next.toScala)
+
+  def orElse(alternative: PathMatcher22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22]) = fromScala22(toScala | alternative.toScala)
+
+  def invert = fromScala0(!toScala)
+
+}

@@ -3,6 +3,7 @@
  */
 package akka.util
 
+import java.util.Comparator
 import org.scalatest.Matchers
 import scala.concurrent.Future
 import akka.testkit.AkkaSpec
@@ -12,7 +13,9 @@ import akka.testkit.DefaultTimeout
 
 class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
   implicit val ec = system.dispatcher
-  private def emptyIndex = new Index[String, Int](100, _ compareTo _)
+  private def emptyIndex = new Index[String, Int](100, new Comparator[Int] {
+    override def compare(a: Int, b: Int): Int = Integer.compare(a, b)
+  })
 
   private def indexWithValues = {
     val index = emptyIndex
@@ -92,7 +95,9 @@ class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
       index.isEmpty should ===(true)
     }
     "be able to be accessed in parallel" in {
-      val index = new Index[Int, Int](100, _ compareTo _)
+      val index = new Index[Int, Int](100, new Comparator[Int] {
+        override def compare(a: Int, b: Int): Int = Integer.compare(a, b)
+      })
       val nrOfTasks = 10000
       val nrOfKeys = 10
       val nrOfValues = 10

@@ -30,9 +30,8 @@ Other path matchers defined in ``PathMatchers`` match the end of the path (``Pat
 (``PathMatchers.SLASH``), or nothing at all (``PathMatchers.NEUTRAL``).
 
 Many path matchers are hybrids that can both match (by using them with one of the PathDirectives) and extract values,
-i.e. they are :ref:`request-vals-java`. Extracting a path matcher value (i.e. using it with ``handleWithX``) is only
-allowed if it nested inside a path directive that uses that path matcher and so specifies at which position the value
-should be extracted from the path.
+Extracting a path matcher value (i.e. using it with ``handleWithX``) is only allowed if it nested inside a path
+directive that uses that path matcher and so specifies at which position the value should be extracted from the path.
 
 Predefined path matchers allow extraction of various types of values:
 

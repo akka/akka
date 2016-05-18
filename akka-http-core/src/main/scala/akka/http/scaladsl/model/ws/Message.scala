@@ -11,7 +11,7 @@ import akka.util.ByteString
 /**
  * The ADT for WebSocket messages. A message can either be a binary or a text message.
  */
-sealed trait Message
+sealed trait Message // FIXME: Why don't we extend akka.http.javadsl.model.ws.Message here?
 
 /**
  * Represents a WebSocket text message. A text message can either be a [[TextMessage.Strict]] in which case

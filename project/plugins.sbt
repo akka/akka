@@ -1,7 +1,5 @@
 resolvers += Classpaths.typesafeResolver
 
-resolvers += "jgit-repo" at "http://download.eclipse.org/jgit/maven"
-
 // need this to resolve http://jcenter.bintray.com/org/jenkins-ci/jenkins/1.26/
 // which is used by plugin "org.kohsuke" % "github-api" % "1.68"
 resolvers += "Bintray Jcenter" at "https://jcenter.bintray.com/"
@@ -25,12 +23,9 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-s3" % "0.5")
 
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.3.3")
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.6.2")
+addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "0.2.2")
 
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.3")
-
-// stats reporting
-libraryDependencies += "com.timgroup" % "java-statsd-client" % "2.0.0"
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.0-RC1")
 

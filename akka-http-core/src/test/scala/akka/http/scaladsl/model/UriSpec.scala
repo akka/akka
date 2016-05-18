@@ -382,7 +382,7 @@ class UriSpec extends WordSpec with Matchers {
 
       // empty host
       Uri("http://:8000/foo") shouldEqual Uri("http", Authority(Host.Empty, 8000), Path / "foo")
-      Uri("http://:80/foo") shouldEqual Uri("http", Authority.Empty, Path / "foo")
+      Uri("http://:80/foo") shouldEqual Uri("http", Authority(Host.Empty, 80), Path / "foo")
     }
 
     "properly complete a normalization cycle" in {
@@ -571,38 +571,55 @@ class UriSpec extends WordSpec with Matchers {
     }
 
     "provide sugar for fluent transformations" in {
-      val uri = Uri("http://host:80/path?query#fragment")
+      val uri = Uri("http://host/path?query#fragment")
+      val explicitDefault = Uri("http://host:80/path?query#fragment")
       val nonDefaultUri = Uri("http://host:6060/path?query#fragment")
 
       uri.withScheme("https") shouldEqual Uri("https://host/path?query#fragment")
+      explicitDefault.withScheme("https") shouldEqual Uri("https://host:80/path?query#fragment")
       nonDefaultUri.withScheme("https") shouldEqual Uri("https://host:6060/path?query#fragment")
 
       uri.withAuthority(Authority(Host("other"), 3030)) shouldEqual Uri("http://other:3030/path?query#fragment")
       uri.withAuthority(Host("other"), 3030) shouldEqual Uri("http://other:3030/path?query#fragment")
       uri.withAuthority("other", 3030) shouldEqual Uri("http://other:3030/path?query#fragment")
 
-      uri.withHost(Host("other")) shouldEqual Uri("http://other:80/path?query#fragment")
-      uri.withHost("other") shouldEqual Uri("http://other:80/path?query#fragment")
+      uri.withHost(Host("other")) shouldEqual Uri("http://other/path?query#fragment")
+      explicitDefault.withHost(Host("other")) shouldEqual Uri("http://other:80/path?query#fragment")
+      uri.withHost("other") shouldEqual Uri("http://other/path?query#fragment")
+      explicitDefault.withHost("other") shouldEqual Uri("http://other:80/path?query#fragment")
       uri.withPort(90) shouldEqual Uri("http://host:90/path?query#fragment")
+      explicitDefault.withPort(90) shouldEqual Uri("http://host:90/path?query#fragment")
 
       uri.withPath(Path("/newpath")) shouldEqual Uri("http://host/newpath?query#fragment")
-      uri.withUserInfo("someInfo") shouldEqual Uri("http://someInfo@host:80/path?query#fragment")
+      explicitDefault.withPath(Path("/newpath")) shouldEqual Uri("http://host:80/newpath?query#fragment")
 
-      uri.withQuery(Query("param1" -> "value1")) shouldEqual Uri("http://host:80/path?param1=value1#fragment")
-      uri.withQuery(Query(Map("param1" -> "value1"))) shouldEqual Uri("http://host:80/path?param1=value1#fragment")
-      uri.withRawQueryString("param1=value1") shouldEqual Uri("http://host:80/path?param1=value1#fragment")
+      uri.withUserInfo("someInfo") shouldEqual Uri("http://someInfo@host/path?query#fragment")
+      explicitDefault.withUserInfo("someInfo") shouldEqual Uri("http://someInfo@host:80/path?query#fragment")
 
-      uri.withFragment("otherFragment") shouldEqual Uri("http://host:80/path?query#otherFragment")
+      uri.withQuery(Query("param1" -> "value1")) shouldEqual Uri("http://host/path?param1=value1#fragment")
+      uri.withQuery(Query(Map("param1" -> "value1"))) shouldEqual Uri("http://host/path?param1=value1#fragment")
+      uri.withRawQueryString("param1=value1") shouldEqual Uri("http://host/path?param1=value1#fragment")
+
+      uri.withFragment("otherFragment") shouldEqual Uri("http://host/path?query#otherFragment")
     }
 
     "return the correct effective port" in {
-      80 shouldEqual Uri("http://host/").effectivePort
-      21 shouldEqual Uri("ftp://host/").effectivePort
-      9090 shouldEqual Uri("http://host:9090/").effectivePort
-      443 shouldEqual Uri("https://host/").effectivePort
+      Uri("http://host/").effectivePort shouldEqual 80
+      Uri("ftp://host/").effectivePort shouldEqual 21
+      Uri("http://host:9090/").effectivePort shouldEqual 9090
+      Uri("https://host/").effectivePort shouldEqual 443
 
-      4450 shouldEqual Uri("https://host/").withPort(4450).effectivePort
-      4450 shouldEqual Uri("https://host:3030/").withPort(4450).effectivePort
+      Uri("https://host/").withPort(4450).effectivePort shouldEqual 4450
+      Uri("https://host:3030/").withPort(4450).effectivePort shouldEqual 4450
+    }
+
+    "keep the specified authority port" in {
+      Uri("example.com").withPort(0).authority.port shouldEqual 0
+      Uri("example.com").withPort(80).authority.port shouldEqual 80
+      Uri("http://example.com").withPort(80).authority.port shouldEqual 80
+      Uri("http://example.com").withPort(0).authority.port shouldEqual 0
+      Uri("https://example.com").withPort(0).authority.port shouldEqual 0
+      Uri("https://example.com").withPort(443).authority.port shouldEqual 443
     }
 
     "properly render as HTTP request target origin forms" in {
