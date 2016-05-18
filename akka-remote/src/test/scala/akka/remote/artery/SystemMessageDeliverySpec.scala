@@ -10,9 +10,7 @@ import scala.concurrent.duration._
 
 import akka.NotUsed
 import akka.actor.ActorIdentity
-import akka.actor.ActorRef
 import akka.actor.ActorSystem
-import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
 import akka.actor.InternalActorRef
@@ -32,37 +30,32 @@ import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
-import akka.testkit.SocketUtil
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 
 object SystemMessageDeliverySpec {
 
-  val Seq(portA, portB) = SocketUtil.temporaryServerAddresses(2, "localhost", udp = true).map(_.getPort)
-
-  val commonConfig = ConfigFactory.parseString(s"""
+  val config = ConfigFactory.parseString(s"""
      akka {
        actor.provider = "akka.remote.RemoteActorRefProvider"
        remote.artery.enabled = on
        remote.artery.hostname = localhost
-       remote.artery.port = $portA
+       remote.artery.port = 0
      }
      akka.actor.serialize-creators = off
      akka.actor.serialize-messages = off
   """)
 
-  val configB = ConfigFactory.parseString(s"akka.remote.artery.port = $portB")
-    .withFallback(commonConfig)
 }
 
-class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commonConfig) with ImplicitSender {
+class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.config) with ImplicitSender {
   import SystemMessageDeliverySpec._
 
   val addressA = UniqueAddress(
     system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
     AddressUidExtension(system).addressUid)
-  val systemB = ActorSystem("systemB", configB)
+  val systemB = ActorSystem("systemB", system.settings.config)
   val addressB = UniqueAddress(
     systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
     AddressUidExtension(systemB).addressUid)
@@ -76,7 +69,7 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commo
     val remoteRef = null.asInstanceOf[RemoteActorRef] // not used
     Source(1 to sendCount)
       .map(n ⇒ Send("msg-" + n, None, remoteRef, None))
-      .via(new SystemMessageDelivery(outboundContext, resendInterval))
+      .via(new SystemMessageDelivery(outboundContext, resendInterval, maxBufferSize = 1000))
   }
 
   private def inbound(inboundContext: InboundContext): Flow[Send, InboundEnvelope, NotUsed] = {
@@ -84,7 +77,7 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commo
     Flow[Send]
       .map {
         case Send(sysEnv: SystemMessageEnvelope, _, _, _) ⇒
-          InboundEnvelope(recipient, addressB.address, sysEnv, None)
+          InboundEnvelope(recipient, addressB.address, sysEnv, None, addressA)
       }
       .async
       .via(new SystemMessageAcker(inboundContext))
@@ -197,7 +190,7 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commo
       val inboundContextA = new TestInboundContext(addressB, controlSubject)
       val outboundContextA = inboundContextA.association(addressB.address)
 
-      val sink = send(sendCount = 3, resendInterval = 1.seconds, outboundContextA)
+      val sink = send(sendCount = 3, resendInterval = 2.seconds, outboundContextA)
         .via(drop(dropSeqNumbers = Vector(3L)))
         .via(inbound(inboundContextB))
         .map(_.message.asInstanceOf[String])
@@ -213,8 +206,11 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commo
       sink.expectNoMsg(200.millis) // 3 was dropped
       // resending 3 due to timeout
       sink.expectNext("msg-3")
-      replyProbe.expectMsg(Ack(3L, addressB))
+      replyProbe.expectMsg(4.seconds, Ack(3L, addressB))
+      // continue resending
+      replyProbe.expectMsg(4.seconds, Ack(3L, addressB))
       inboundContextB.deliverLastReply()
+      replyProbe.expectNoMsg(2200.millis)
       sink.expectComplete()
     }
 

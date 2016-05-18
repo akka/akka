@@ -35,6 +35,8 @@ private[akka] object SystemMessageDelivery {
   final case class Ack(seqNo: Long, from: UniqueAddress) extends Reply
   final case class Nack(seqNo: Long, from: UniqueAddress) extends Reply
 
+  final case object ClearSystemMessageDelivery
+
   private case object ResendTick
 }
 
@@ -43,7 +45,8 @@ private[akka] object SystemMessageDelivery {
  */
 private[akka] class SystemMessageDelivery(
   outboundContext: OutboundContext,
-  resendInterval: FiniteDuration)
+  resendInterval: FiniteDuration,
+  maxBufferSize: Int)
   extends GraphStage[FlowShape[Send, Send]] {
 
   import SystemMessageDelivery._
@@ -66,8 +69,6 @@ private[akka] class SystemMessageDelivery(
       private def remoteAddress = outboundContext.remoteAddress
 
       override def preStart(): Unit = {
-        this.schedulePeriodically(ResendTick, resendInterval)
-
         implicit val ec = materializer.executionContext
         outboundContext.controlSubject.attach(this).foreach {
           getAsyncCallback[Done] { _ ⇒
@@ -104,6 +105,8 @@ private[akka] class SystemMessageDelivery(
               resending = unacknowledged.clone()
               tryResend()
             }
+            if (!unacknowledged.isEmpty)
+              scheduleOnce(ResendTick, resendInterval)
         }
 
       // ControlMessageObserver, external call
@@ -120,22 +123,26 @@ private[akka] class SystemMessageDelivery(
       }
 
       private val nackCallback = getAsyncCallback[Nack] { reply ⇒
-        ack(reply.seqNo)
-        if (reply.seqNo > resendingFromSeqNo)
-          resending = unacknowledged.clone()
-        tryResend()
+        if (reply.seqNo <= seqNo) {
+          ack(reply.seqNo)
+          if (reply.seqNo > resendingFromSeqNo)
+            resending = unacknowledged.clone()
+          tryResend()
+        }
       }
 
       private def ack(n: Long): Unit = {
-        if (n > seqNo)
-          throw new IllegalArgumentException(s"Unexpected ack $n, when highest sent seqNo is $seqNo")
-        clearUnacknowledged(n)
+        if (n <= seqNo)
+          clearUnacknowledged(n)
       }
 
       @tailrec private def clearUnacknowledged(ackedSeqNo: Long): Unit = {
         if (!unacknowledged.isEmpty &&
           unacknowledged.peek().message.asInstanceOf[SystemMessageEnvelope].seqNo <= ackedSeqNo) {
           unacknowledged.removeFirst()
+          if (unacknowledged.isEmpty)
+            cancelTimer(resendInterval)
+
           if (stopping && unacknowledged.isEmpty)
             completeStage()
           else
@@ -151,18 +158,35 @@ private[akka] class SystemMessageDelivery(
       // InHandler
       override def onPush(): Unit = {
         grab(in) match {
+          case s @ Send(ClearSystemMessageDelivery, _, _, _) ⇒
+            clear()
+            pull(in)
           case s @ Send(msg: AnyRef, _, _, _) ⇒
-            seqNo += 1
-            val sendMsg = s.copy(message = SystemMessageEnvelope(msg, seqNo, localAddress))
-            // FIXME quarantine if unacknowledged is full
-            unacknowledged.offer(sendMsg)
-            if (resending.isEmpty && isAvailable(out))
-              push(out, sendMsg)
-            else {
-              resending.offer(sendMsg)
-              tryResend()
+            if (unacknowledged.size < maxBufferSize) {
+              seqNo += 1
+              val sendMsg = s.copy(message = SystemMessageEnvelope(msg, seqNo, localAddress))
+              unacknowledged.offer(sendMsg)
+              scheduleOnce(ResendTick, resendInterval)
+              if (resending.isEmpty && isAvailable(out))
+                push(out, sendMsg)
+              else {
+                resending.offer(sendMsg)
+                tryResend()
+              }
+            } else {
+              // buffer overflow
+              outboundContext.quarantine(reason = s"System message delivery buffer overflow, size [$maxBufferSize]")
+              pull(in)
             }
         }
+      }
+
+      private def clear(): Unit = {
+        seqNo = 0L // sequence number for the first message will be 1
+        unacknowledged.clear()
+        resending.clear()
+        resendingFromSeqNo = -1L
+        cancelTimer(resendInterval)
       }
 
       // OutHandler
@@ -199,7 +223,7 @@ private[akka] class SystemMessageAcker(inboundContext: InboundContext) extends G
       // InHandler
       override def onPush(): Unit = {
         grab(in) match {
-          case env @ InboundEnvelope(_, _, sysEnv @ SystemMessageEnvelope(_, n, ackReplyTo), _) ⇒
+          case env @ InboundEnvelope(_, _, sysEnv @ SystemMessageEnvelope(_, n, ackReplyTo), _, _) ⇒
             if (n == seqNo) {
               inboundContext.sendControl(ackReplyTo.address, Ack(n, localAddress))
               seqNo += 1

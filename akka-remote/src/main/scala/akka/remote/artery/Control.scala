@@ -3,31 +3,38 @@
  */
 package akka.remote.artery
 
+import java.util.ArrayDeque
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import akka.Done
+import akka.remote.EndpointManager.Send
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
 import akka.stream.Outlet
+import akka.stream.stage.CallbackWrapper
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
-import akka.remote.EndpointManager.Send
-import java.util.ArrayDeque
-import akka.stream.stage.CallbackWrapper
+import akka.remote.UniqueAddress
 
 /**
- * Marker trait for reply messages
+ * INTERNAL API: Marker trait for reply messages
  */
-trait Reply extends ControlMessage
+private[akka] trait Reply extends ControlMessage
 
 /**
+ * INTERNAL API
  * Marker trait for control messages that can be sent via the system message sub-channel
  * but don't need full reliable delivery. E.g. `HandshakeReq` and `Reply`.
  */
-trait ControlMessage
+private[akka] trait ControlMessage
+
+/**
+ * INTERNAL API
+ */
+private[akka] final case class Quarantined(from: UniqueAddress, to: UniqueAddress) extends ControlMessage // FIXME serialization
 
 /**
  * INTERNAL API
@@ -97,7 +104,7 @@ private[akka] class InboundControlJunction
       // InHandler
       override def onPush(): Unit = {
         grab(in) match {
-          case env @ InboundEnvelope(_, _, _: ControlMessage, _) ⇒
+          case env @ InboundEnvelope(_, _, _: ControlMessage, _, _) ⇒
             observers.foreach(_.notify(env))
             pull(in)
           case env ⇒
@@ -155,6 +162,7 @@ private[akka] class OutboundControlJunction(outboundContext: OutboundContext)
       import OutboundControlJunction._
 
       private val sendControlMessageCallback = getAsyncCallback[ControlMessage](internalSendControlMessage)
+      private val maxControlMessageBufferSize: Int = 1024 // FIXME config
       private val buffer = new ArrayDeque[Send]
 
       override def preStart(): Unit = {
@@ -180,8 +188,13 @@ private[akka] class OutboundControlJunction(outboundContext: OutboundContext)
       private def internalSendControlMessage(message: ControlMessage): Unit = {
         if (buffer.isEmpty && isAvailable(out))
           push(out, wrap(message))
-        else
+        else if (buffer.size < maxControlMessageBufferSize)
           buffer.offer(wrap(message))
+        else {
+          // it's alright to drop control messages
+          // FIXME we need that stage logging support
+          println(s"dropping control message ${message.getClass.getName} due to full buffer")
+        }
       }
 
       private def wrap(message: ControlMessage): Send =
