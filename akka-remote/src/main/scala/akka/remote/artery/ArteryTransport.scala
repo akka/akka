@@ -265,6 +265,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     messageDispatcher = new MessageDispatcher(system, provider)
 
     runInboundStreams()
+
+    log.info("Remoting started; listening on address: {}", defaultAddress)
   }
 
   private def startMediaDriver(): Unit = {
