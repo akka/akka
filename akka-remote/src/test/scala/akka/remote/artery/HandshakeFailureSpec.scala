@@ -13,14 +13,15 @@ import com.typesafe.config.ConfigFactory
 
 object HandshakeFailureSpec {
 
-  val Seq(portA, portB) = SocketUtil.temporaryServerAddresses(2, "localhost", udp = true).map(_.getPort)
+  // need the port before systemB is started
+  val portB = SocketUtil.temporaryServerAddress("localhost", udp = true).getPort
 
   val commonConfig = ConfigFactory.parseString(s"""
      akka {
        actor.provider = "akka.remote.RemoteActorRefProvider"
        remote.artery.enabled = on
        remote.artery.hostname = localhost
-       remote.artery.port = $portA
+       remote.artery.port = 0
        remote.handshake-timeout = 2s
      }
   """)
@@ -47,7 +48,6 @@ class HandshakeFailureSpec extends AkkaSpec(HandshakeFailureSpec.commonConfig) w
 
       within(10.seconds) {
         awaitAssert {
-          println(s"# identify $sel") // FIXME
           sel ! "hello2"
           expectMsg(1.second, "hello2")
         }

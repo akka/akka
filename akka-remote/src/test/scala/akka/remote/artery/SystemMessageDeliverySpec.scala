@@ -30,37 +30,32 @@ import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
-import akka.testkit.SocketUtil
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 
 object SystemMessageDeliverySpec {
 
-  val Seq(portA, portB) = SocketUtil.temporaryServerAddresses(2, "localhost", udp = true).map(_.getPort)
-
-  val commonConfig = ConfigFactory.parseString(s"""
+  val config = ConfigFactory.parseString(s"""
      akka {
        actor.provider = "akka.remote.RemoteActorRefProvider"
        remote.artery.enabled = on
        remote.artery.hostname = localhost
-       remote.artery.port = $portA
+       remote.artery.port = 0
      }
      akka.actor.serialize-creators = off
      akka.actor.serialize-messages = off
   """)
 
-  val configB = ConfigFactory.parseString(s"akka.remote.artery.port = $portB")
-    .withFallback(commonConfig)
 }
 
-class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.commonConfig) with ImplicitSender {
+class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.config) with ImplicitSender {
   import SystemMessageDeliverySpec._
 
   val addressA = UniqueAddress(
     system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
     AddressUidExtension(system).addressUid)
-  val systemB = ActorSystem("systemB", configB)
+  val systemB = ActorSystem("systemB", system.settings.config)
   val addressB = UniqueAddress(
     systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
     AddressUidExtension(systemB).addressUid)

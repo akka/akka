@@ -45,24 +45,6 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
       akka.remote.artery.enabled = on
                               """)))
 
-  def aeronPort(roleName: RoleName): Int =
-    roleName match {
-      case `first`  ⇒ 20541 // TODO yeah, we should have support for dynamic port assignment
-      case `second` ⇒ 20542
-    }
-
-  nodeConfig(first) {
-    ConfigFactory.parseString(s"""
-      akka.remote.artery.port = ${aeronPort(first)}
-      """)
-  }
-
-  nodeConfig(second) {
-    ConfigFactory.parseString(s"""
-      akka.remote.artery.port = ${aeronPort(second)}
-      """)
-  }
-
   class Subject extends Actor {
     def receive = {
       case "shutdown" ⇒ context.system.terminate()

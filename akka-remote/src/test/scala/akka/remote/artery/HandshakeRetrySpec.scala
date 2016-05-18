@@ -13,14 +13,15 @@ import com.typesafe.config.ConfigFactory
 
 object HandshakeRetrySpec {
 
-  val Seq(portA, portB) = SocketUtil.temporaryServerAddresses(2, "localhost", udp = true).map(_.getPort)
+  // need the port before systemB is started
+  val portB = SocketUtil.temporaryServerAddress("localhost", udp = true).getPort
 
   val commonConfig = ConfigFactory.parseString(s"""
      akka {
        actor.provider = "akka.remote.RemoteActorRefProvider"
        remote.artery.enabled = on
        remote.artery.hostname = localhost
-       remote.artery.port = $portA
+       remote.artery.port = 0
        remote.handshake-timeout = 10s
      }
   """)
