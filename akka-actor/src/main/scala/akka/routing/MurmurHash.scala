@@ -68,11 +68,11 @@ object MurmurHash {
   /**
    * Incorporates a new value into an existing hash.
    *
-   * @param   hash the prior hash value
-   * @param  value the new value to incorporate
-   * @param magicA a magic integer from the stream
-   * @param magicB a magic integer from a different stream
-   * @return the updated hash value
+   * @param   hash    the prior hash value
+   * @param  value    the new value to incorporate
+   * @param magicA    a magic integer from the stream
+   * @param magicB    a magic integer from a different stream
+   * @return          the updated hash value
    */
   def extendHash(hash: Int, value: Int, magicA: Int, magicB: Int): Int =
     (hash ^ rotl(value * magicA, 11) * magicB) * 3 + visibleMixer
@@ -127,8 +127,8 @@ object MurmurHash {
 
   /**
    * Compute a hash that is symmetric in its arguments--that is,
-   * where the order of appearance of elements does not matter.
-   * This is useful for hashing sets, for example.
+   *  where the order of appearance of elements does not matter.
+   *  This is useful for hashing sets, for example.
    */
   def symmetricHash[T](xs: TraversableOnce[T], seed: Int): Int = {
     var a, b, n = 0

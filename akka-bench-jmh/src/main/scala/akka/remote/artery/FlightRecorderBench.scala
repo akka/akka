@@ -6,8 +6,9 @@ package akka.remote.artery
 import java.io.File
 import java.nio.channels.FileChannel
 import java.nio.file.StandardOpenOption
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import java.util.concurrent.TimeUnit
+
 import org.openjdk.jmh.annotations.{ OperationsPerInvocation, _ }
 
 @State(Scope.Benchmark)

@@ -2,17 +2,20 @@ package akka.remote.artery
 
 import java.nio.{ ByteBuffer, ByteOrder }
 
+import akka.actor._
+import akka.remote.artery.compress.CompressionTestUtils
 import akka.testkit.AkkaSpec
-import akka.util.ByteString
+import akka.util.{ OptionVal, ByteString }
 
 class EnvelopeBufferSpec extends AkkaSpec {
+  import CompressionTestUtils._
 
-  object TestCompressor extends LiteralCompressionTable {
-    val refToIdx = Map(
-      "compressable0" → 0,
-      "compressable1" → 1,
-      "reallylongcompressablestring" → 2)
-    val idxToRef = refToIdx.map(_.swap)
+  object TestCompressor extends InboundCompression with OutboundCompression {
+    val refToIdx: Map[ActorRef, Int] = Map(
+      minimalRef("compressable0") → 0,
+      minimalRef("compressable1") → 1,
+      minimalRef("reallylongcompressablestring") → 2)
+    val idxToRef: Map[Int, ActorRef] = refToIdx.map(_.swap)
 
     val serializerToIdx = Map(
       "serializer0" → 0,
@@ -24,15 +27,20 @@ class EnvelopeBufferSpec extends AkkaSpec {
       "manifest1" → 1)
     val idxToManifest = manifestToIdx.map(_.swap)
 
-    override def compressActorRef(ref: String): Int = refToIdx.getOrElse(ref, -1)
-    override def decompressActorRef(idx: Int): String = idxToRef(idx)
+    override def allocateActorRefCompressionId(ref: ActorRef, id: Int): Unit = ??? // dynamic allocating not implemented here
+    override def compressActorRef(ref: ActorRef): Int = refToIdx.getOrElse(ref, -1)
+    override def hitActorRef(address: Address, ref: ActorRef): Unit = ()
+    override def decompressActorRef(idx: Int): OptionVal[ActorRef] = OptionVal.Some(idxToRef(idx))
+
+    override def allocateClassManifestCompressionId(manifest: String, id: Int): Unit = ??? // dynamic allocating not implemented here
     override def compressClassManifest(manifest: String): Int = manifestToIdx.getOrElse(manifest, -1)
-    override def decompressClassManifest(idx: Int): String = idxToManifest(idx)
+    override def hitClassManifest(address: Address, manifest: String): Unit = ()
+    override def decompressClassManifest(idx: Int) = OptionVal.Some(idxToManifest(idx))
   }
 
   "EnvelopeBuffer" must {
-    val headerIn = HeaderBuilder(TestCompressor)
-    val headerOut = HeaderBuilder(TestCompressor)
+    val headerIn = HeaderBuilder.bothWays(TestCompressor, TestCompressor)
+    val headerOut = HeaderBuilder.bothWays(TestCompressor, TestCompressor)
 
     val byteBuffer = ByteBuffer.allocate(1024).order(ByteOrder.LITTLE_ENDIAN)
     val envelope = new EnvelopeBuffer(byteBuffer)
@@ -41,8 +49,8 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerIn.version = 1
       headerIn.uid = 42
       headerIn.serializer = 4
-      headerIn.senderActorRef = "compressable0"
-      headerIn.recipientActorRef = "compressable1"
+      headerIn.senderActorRef = minimalRef("compressable0")
+      headerIn.recipientActorRef = minimalRef("compressable1")
       headerIn.manifest = "manifest1"
 
       envelope.writeHeader(headerIn)
@@ -54,8 +62,8 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerOut.version should ===(1)
       headerOut.uid should ===(42)
       headerOut.serializer should ===(4)
-      headerOut.senderActorRef should ===("compressable0")
-      headerOut.recipientActorRef should ===("compressable1")
+      headerOut.senderActorRefPath should ===("akka://EnvelopeBufferSpec/compressable0")
+      headerOut.recipientActorRefPath should ===("akka://EnvelopeBufferSpec/compressable1")
       headerOut.manifest should ===("manifest1")
     }
 
@@ -63,14 +71,14 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerIn.version = 1
       headerIn.uid = 42
       headerIn.serializer = 4
-      headerIn.senderActorRef = "uncompressable0"
-      headerIn.recipientActorRef = "uncompressable11"
+      headerIn.senderActorRef = minimalRef("uncompressable0")
+      headerIn.recipientActorRef = minimalRef("uncompressable11")
       headerIn.manifest = "uncompressable3333"
 
       val expectedHeaderLength =
         EnvelopeBuffer.LiteralsSectionOffset + // Constant header part
-          2 + headerIn.senderActorRef.length + // Length field + literal
-          2 + headerIn.recipientActorRef.length + // Length field + literal
+          2 + headerIn.senderActorRefPath.length + // Length field + literal
+          2 + headerIn.recipientActorRefPath.length + // Length field + literal
           2 + headerIn.manifest.length // Length field + literal
 
       envelope.writeHeader(headerIn)
@@ -82,8 +90,8 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerOut.version should ===(1)
       headerOut.uid should ===(42)
       headerOut.serializer should ===(4)
-      headerOut.senderActorRef should ===("uncompressable0")
-      headerOut.recipientActorRef should ===("uncompressable11")
+      headerOut.senderActorRefPath should ===("akka://EnvelopeBufferSpec/uncompressable0")
+      headerOut.recipientActorRefPath should ===("akka://EnvelopeBufferSpec/uncompressable11")
       headerOut.manifest should ===("uncompressable3333")
     }
 
@@ -91,14 +99,14 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerIn.version = 1
       headerIn.uid = 42
       headerIn.serializer = 4
-      headerIn.senderActorRef = "reallylongcompressablestring"
-      headerIn.recipientActorRef = "uncompressable1"
+      headerIn.senderActorRef = minimalRef("reallylongcompressablestring")
+      headerIn.recipientActorRef = minimalRef("uncompressable1")
       headerIn.manifest = "manifest1"
 
       envelope.writeHeader(headerIn)
       envelope.byteBuffer.position() should ===(
         EnvelopeBuffer.LiteralsSectionOffset +
-          2 + headerIn.recipientActorRef.length)
+          2 + headerIn.recipientActorRefPath.length)
 
       envelope.byteBuffer.flip()
       envelope.parseHeader(headerOut)
@@ -106,21 +114,21 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerOut.version should ===(1)
       headerOut.uid should ===(42)
       headerOut.serializer should ===(4)
-      headerOut.senderActorRef should ===("reallylongcompressablestring")
-      headerOut.recipientActorRef should ===("uncompressable1")
+      headerOut.senderActorRefPath should ===("akka://EnvelopeBufferSpec/reallylongcompressablestring")
+      headerOut.recipientActorRefPath should ===("akka://EnvelopeBufferSpec/uncompressable1")
       headerOut.manifest should ===("manifest1")
 
       headerIn.version = 3
       headerIn.uid = Long.MinValue
       headerIn.serializer = -1
-      headerIn.senderActorRef = "uncompressable0"
-      headerIn.recipientActorRef = "reallylongcompressablestring"
+      headerIn.senderActorRef = minimalRef("uncompressable0")
+      headerIn.recipientActorRef = minimalRef("reallylongcompressablestring")
       headerIn.manifest = "longlonglongliteralmanifest"
 
       envelope.writeHeader(headerIn)
       envelope.byteBuffer.position() should ===(
         EnvelopeBuffer.LiteralsSectionOffset +
-          2 + headerIn.senderActorRef.length +
+          2 + headerIn.senderActorRefPath.length +
           2 + headerIn.manifest.length)
 
       envelope.byteBuffer.flip()
@@ -129,8 +137,8 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerOut.version should ===(3)
       headerOut.uid should ===(Long.MinValue)
       headerOut.serializer should ===(-1)
-      headerOut.senderActorRef should ===("uncompressable0")
-      headerOut.recipientActorRef should ===("reallylongcompressablestring")
+      headerOut.senderActorRefPath should ===("akka://EnvelopeBufferSpec/uncompressable0")
+      headerOut.recipientActorRefPath should ===("akka://EnvelopeBufferSpec/reallylongcompressablestring")
       headerOut.manifest should ===("longlonglongliteralmanifest")
     }
 
@@ -140,8 +148,8 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerIn.version = 1
       headerIn.uid = 42
       headerIn.serializer = 4
-      headerIn.senderActorRef = "reallylongcompressablestring"
-      headerIn.recipientActorRef = "uncompressable1"
+      headerIn.senderActorRef = minimalRef("reallylongcompressablestring")
+      headerIn.recipientActorRef = minimalRef("uncompressable1")
       headerIn.manifest = "manifest1"
 
       envelope.writeHeader(headerIn)
@@ -153,8 +161,8 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerOut.version should ===(1)
       headerOut.uid should ===(42)
       headerOut.serializer should ===(4)
-      headerOut.senderActorRef should ===("reallylongcompressablestring")
-      headerOut.recipientActorRef should ===("uncompressable1")
+      headerOut.senderActorRefPath should ===("akka://EnvelopeBufferSpec/reallylongcompressablestring")
+      headerOut.recipientActorRefPath should ===("akka://EnvelopeBufferSpec/uncompressable1")
       headerOut.manifest should ===("manifest1")
 
       ByteString.fromByteBuffer(envelope.byteBuffer) should ===(payload)

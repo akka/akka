@@ -1,18 +1,45 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.remote.artery.compress
 
-import akka.actor.ActorRef
+import akka.actor.{ ActorRef, Address }
+import akka.remote.UniqueAddress
+import akka.remote.artery.ControlMessage
 
+// FIXME serialization 
+/** INTERNAL API */
 object CompressionProtocol {
 
-  // TODO do we bind into ActorRef or keep it "could be anything"?
+  /** INTERNAL API */
+  sealed trait CompressionMessage
 
-  /** Sent by the "receiving" node after allocating a compression id to a given [[akka.actor.ActorRef]] */
-  final case class CompressionAdvertisement(ref: ActorRef, id: Long)
+  /**
+   * INTERNAL API
+   * Sent by the "receiving" node after allocating a compression id to a given [[akka.actor.ActorRef]]
+   */
+  private[remote] final case class ActorRefCompressionAdvertisement(from: UniqueAddress, ref: ActorRef, id: Int)
+    extends ControlMessage with CompressionMessage
 
-  // technically revoking compression would also be interesting, but more advanced, not doing it for now
-  // locally we'll do it anyway since "node went away, can clean up all compressions for it"
+  /**
+   * INTERNAL API
+   * Sent by the "receiving" node after allocating a compression id to a given class manifest
+   */
+  private[remote] final case class ClassManifestCompressionAdvertisement(from: UniqueAddress, manifest: String, id: Int)
+    extends ControlMessage with CompressionMessage
+
+  /** INTERNAL API */
+  private[akka] object Events {
+    /** INTERNAL API */
+    private[akka] sealed trait Event
+
+    /** INTERNAL API */
+    final case class HeavyHitterDetected(key: Any, id: Int, count: Long) extends Event
+
+    /** INTERNAL API */
+    final case class ReceivedCompressionAdvertisement(from: UniqueAddress, key: Any, id: Int) extends Event
+
+  }
+
 }
