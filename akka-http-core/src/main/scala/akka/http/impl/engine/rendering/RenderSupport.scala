@@ -57,8 +57,6 @@ private object RenderSupport {
   }
 
   object ChunkTransformer {
-    //val chunkTransformer = Flow.fromGraph(new ChunkTransformer)
-    //val flow = Flow[ChunkStreamPart].via(chunkTransformer).named("renderChunks")
     val flow = Flow.fromGraph(new ChunkTransformer).named("renderChunks")
   }
 
@@ -72,10 +70,8 @@ private object RenderSupport {
         override def onPush(): Unit = {
           val chunk = grab(in)
           val bytes = renderChunk(chunk)
-          if (chunk.isLastChunk) {
-            push(out, bytes)
-            completeStage()
-          } else push(out, bytes)
+          push(out, bytes)
+          if (chunk.isLastChunk) completeStage()
         }
 
         override def onPull(): Unit = pull(in)
