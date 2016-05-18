@@ -89,6 +89,20 @@ object Source {
     new Source(scaladsl.Source.fromIterator(() ⇒ f.create().asScala))
 
   /**
+   * Helper to create 'cycled' [[Source]] from iterator provider.
+   * Example usage:
+   *
+   * {{{
+   * Source.cycle(() -> Arrays.asList(1, 2, 3).iterator());
+   * }}}
+   *
+   * Start a new 'cycled' `Source` from the given elements. The producer stream of elements
+   * will continue infinitely by repeating the sequence of elements provided by function parameter.
+   */
+  def cycle[O](f: function.Creator[java.util.Iterator[O]]): javadsl.Source[O, NotUsed] =
+    new Source(scaladsl.Source.cycle(() ⇒ f.create().asScala))
+
+  /**
    * Helper to create [[Source]] from `Iterable`.
    * Example usage:
    * {{{
@@ -234,18 +248,23 @@ object Source {
    * The strategy [[akka.stream.OverflowStrategy.backpressure]] is not supported, and an
    * IllegalArgument("Backpressure overflowStrategy not supported") will be thrown if it is passed as argument.
    *
-   * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped
-   * if there is no demand from downstream. When `bufferSize` is 0 the `overflowStrategy` does
-   * not matter.
+   * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped if there is no demand
+   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter. An async boundary is added after
+   * this Source; as such, it is never safe to assume the downstream will always generate demand.
    *
-   * The stream can be completed successfully by sending [[akka.actor.PoisonPill]] or
-   * [[akka.actor.Status.Success]] to the actor reference.
+   * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]]
+   * (whose content will be ignored) in which case already buffered elements will be signaled before signaling
+   * completion, or by sending [[akka.actor.PoisonPill]] in which case completion will be signaled immediately.
    *
-   * The stream can be completed with failure by sending [[akka.actor.Status.Failure]] to the
-   * actor reference.
+   * The stream can be completed with failure by sending a [[akka.actor.Status.Failure]] to the
+   * actor reference. In case the Actor is still draining its internal buffer (after having received
+   * a [[akka.actor.Status.Success]]) before signaling completion and it receives a [[akka.actor.Status.Failure]],
+   * the failure will be signaled downstream immediately (instead of the completion signal).
    *
    * The actor will be stopped when the stream is completed, failed or canceled from downstream,
    * i.e. you can watch it to get notified when that happens.
+   *
+   * See also [[akka.stream.javadsl.Source.queue]].
    *
    * @param bufferSize The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
@@ -269,9 +288,24 @@ object Source {
    */
   def combine[T, U](first: Source[T, _ <: Any], second: Source[T, _ <: Any], rest: java.util.List[Source[T, _ <: Any]],
                     strategy: function.Function[java.lang.Integer, _ <: Graph[UniformFanInShape[T, U], NotUsed]]): Source[U, NotUsed] = {
-    import scala.collection.JavaConverters._
-    val seq = if (rest != null) rest.asScala.map(_.asScala) else Seq()
+    val seq = if (rest != null) Util.immutableSeq(rest).map(_.asScala) else immutable.Seq()
     new Source(scaladsl.Source.combine(first.asScala, second.asScala, seq: _*)(num ⇒ strategy.apply(num)))
+  }
+
+  /**
+   * Combine the elements of multiple streams into a stream of lists.
+   */
+  def zipN[T](sources: java.util.List[Source[T, _ <: Any]]): Source[java.util.List[T], NotUsed] = {
+    val seq = if (sources != null) Util.immutableSeq(sources).map(_.asScala) else immutable.Seq()
+    new Source(scaladsl.Source.zipN(seq).map(_.asJava))
+  }
+
+  /*
+   * Combine the elements of multiple streams into a stream of lists using a combiner function.
+   */
+  def zipWithN[T, O](zipper: function.Function[java.util.List[T], O], sources: java.util.List[Source[T, _ <: Any]]): Source[O, NotUsed] = {
+    val seq = if (sources != null) Util.immutableSeq(sources).map(_.asScala) else immutable.Seq()
+    new Source(scaladsl.Source.zipWithN[T, O](seq => zipper.apply(seq.asJava))(seq))
   }
 
   /**
@@ -498,6 +532,11 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * The returned [[java.util.concurrent.CompletionStage]] will be completed with value of the final
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure is signaled in the stream.
+   *
+   * If the stream is empty (i.e. completes before signalling any elements),
+   * the reduce stage will fail its downstream with a [[NoSuchElementException]],
+   * which is semantically in-line with that Scala's standard library collections
+   * do in such situations.
    */
   def runReduce[U >: Out](f: function.Function2[U, U, U], materializer: Materializer): CompletionStage[U] =
     runWith(Sink.reduce(f), materializer)
@@ -813,6 +852,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * '''Cancels when''' downstream cancels
    */
+  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recover[T >: Out](pf: PartialFunction[Throwable, T]): javadsl.Source[T, Mat] =
     new Source(delegate.recover(pf))
 
@@ -837,6 +877,28 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
   def recoverWith[T >: Out](pf: PartialFunction[Throwable, _ <: Graph[SourceShape[T], NotUsed]]): Source[T, Mat @uncheckedVariance] =
     new Source(delegate.recoverWith(pf))
 
+
+  /**
+    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
+    * a failure has been recovered up to `attempts` number of times so that each time there is a failure
+    * it is fed into the `pf` and a new Source may be materialized. Note that if you pass in 0, this won't
+    * attempt to recover at all. Passing in a negative number will behave exactly the same as  `recoverWith`.
+    *
+    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+    *
+    * '''Emits when''' element is available from the upstream or upstream is failed and element is available
+    * from alternative Source
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+    *
+    * '''Cancels when''' downstream cancels
+    *
+    */
+  def recoverWithRetries[T >: Out](attempts: Int, pf: PartialFunction[Throwable, _ <: Graph[SourceShape[T], NotUsed]]): Source[T, Mat @uncheckedVariance]  =
+    new Source(delegate.recoverWithRetries(attempts, pf))
   /**
    * Transform each input element into an `Iterable` of output elements that is
    * then flattened into the output stream.
@@ -1749,8 +1811,9 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.completionTimeout(timeout))
 
   /**
-   * If the time between two processed elements exceed the provided timeout, the stream is failed
-   * with a [[java.util.concurrent.TimeoutException]].
+   * If the time between two processed elements exceeds the provided timeout, the stream is failed
+   * with a [[java.util.concurrent.TimeoutException]]. The timeout is checked periodically,
+   * so the resolution of the check is one period (equals to timeout value).
    *
    * '''Emits when''' upstream emits an element
    *
@@ -1764,7 +1827,23 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.idleTimeout(timeout))
 
   /**
-   * Injects additional elements if the upstream does not emit for a configured amount of time. In other words, this
+    * If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
+    * the stream is failed with a [[java.util.concurrent.TimeoutException]]. The timeout is checked periodically,
+    * so the resolution of the check is one period (equals to timeout value).
+    *
+    * '''Emits when''' upstream emits an element
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' upstream completes or fails if timeout elapses between element emission and downstream demand.
+    *
+    * '''Cancels when''' downstream cancels
+    */
+  def backpressureTimeout(timeout: FiniteDuration): javadsl.Source[Out, Mat] =
+    new Source(delegate.backpressureTimeout(timeout))
+
+  /**
+   * Injects additional elements if upstream does not emit for a configured amount of time. In other words, this
    * stage attempts to maintains a base rate of emitted elements towards the downstream.
    *
    * If the downstream backpressures then no element is injected until downstream demand arrives. Injected elements
@@ -1881,9 +1960,9 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
   /**
    * Delays the initial element by the specified duration.
    *
-   * '''Emits when''' upstream emits an element if the initial delay already elapsed
+   * '''Emits when''' upstream emits an element if the initial delay is already elapsed
    *
-   * '''Backpressures when''' downstream backpressures or initial delay not yet elapsed
+   * '''Backpressures when''' downstream backpressures or initial delay is not yet elapsed
    *
    * '''Completes when''' upstream completes
    *

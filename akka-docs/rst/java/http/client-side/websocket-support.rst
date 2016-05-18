@@ -21,6 +21,10 @@ the connected WebSocket stream. If the connection fails, for example with a ``40
 HTTP result can be found in ``WebSocketUpgradeResponse.response``
 
 
+.. note::
+   Make sure to read and understand the section about :ref:`half-closed-client-websockets-java` as the behavior
+   when using WebSockets for one-way communication may not be what you would expect.
+
 Message
 -------
 Messages sent and received over a WebSocket can be either :class:`TextMessage` s or :class:`BinaryMessage` s and each
@@ -83,4 +87,42 @@ underlying TCP interface. The same scenarios as described for regular HTTP reque
 
 The returned layer forms a ``BidiFlow<Message, SslTlsOutbound, SslTlsInbound, Message, CompletionStage<WebSocketUpgradeResponse>>``.
 
+.. _half-closed-client-websockets-java:
+
+
+Half-Closed WebSockets
+----------------------
+The Akka HTTP WebSocket API does not support half-closed connections which means that if the either stream completes the
+entire connection is closed (after a "Closing Handshake" has been exchanged or a timeout of 3 seconds has passed).
+This may lead to unexpected behavior, for example if we are trying to only consume messages coming from the server,
+like this:
+
+.. includecode:: ../../code/docs/http/javadsl/WebSocketClientExampleTest.java
+   :include: half-closed-WebSocket-closing
+
+This will in fact quickly close the connection because of the ``Source.empty`` being completed immediately when the
+stream is materialized. To solve this you can make sure to not complete the outgoing source by using for example
+``Source.maybe`` like this:
+
+.. includecode:: ../../code/docs/http/javadsl/WebSocketClientExampleTest.java
+   :include: half-closed-WebSocket-working
+
+This will keep the outgoing source from completing, but without emitting any elements until the ``CompletableFuture`` is manually
+completed which makes the ``Source`` complete and the connection to close.
+
+The same problem holds true if emitting a finite number of elements, as soon as the last element is reached the ``Source``
+will close and cause the connection to close. To avoid that you can concatenate ``Source.maybe`` to the finite stream:
+
+.. includecode:: ../../code/docs/http/javadsl/WebSocketClientExampleTest.java
+   :include: half-closed-WebSocket-finite
+
+Scenarios that exist with the two streams in a WebSocket and possible ways to deal with it:
+
+=========================================== ================================================================================
+Scenario                                    Possible solution
+=========================================== ================================================================================
+Two-way communication                       ``Flow.fromSinkAndSource``, or ``Flow.map`` for a request-response protocol
+Infinite incoming stream, no outgoing       ``Flow.fromSinkAndSource(someSink, Source.maybe())``
+Infinite outgoing stream, no incoming       ``Flow.fromSinkAndSource(Sink.ignore(), yourSource)``
+=========================================== ================================================================================
 

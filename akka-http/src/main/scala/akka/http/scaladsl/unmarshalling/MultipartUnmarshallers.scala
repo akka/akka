@@ -10,7 +10,7 @@ import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import akka.util.ByteString
 import akka.event.{ NoLogging, LoggingAdapter }
-import akka.stream.{ActorMaterializer, OverflowStrategy}
+import akka.stream.ActorMaterializer
 import akka.stream.impl.fusing.IteratorInterpreter
 import akka.stream.scaladsl._
 import akka.http.impl.engine.parsing.BodyPartParser
@@ -97,9 +97,8 @@ trait MultipartUnmarshallers {
                     createStrict(mediaType, builder.result())
                   case _ ⇒
                     val bodyParts = entity.dataBytes
-                      .transform(() ⇒ parser)
+                      .via(parser)
                       .splitWhen(_.isInstanceOf[PartStart])
-                      .buffer(100, OverflowStrategy.backpressure) // FIXME remove (#19240)
                       .prefixAndTail(1)
                       .collect {
                         case (Seq(BodyPartStart(headers, createEntity)), entityParts) ⇒

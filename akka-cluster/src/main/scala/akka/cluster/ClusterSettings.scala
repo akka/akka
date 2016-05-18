@@ -6,15 +6,15 @@ package akka.cluster
 import scala.collection.immutable
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigObject
+
 import scala.concurrent.duration.Duration
 import akka.actor.Address
 import akka.actor.AddressFromURIString
 import akka.dispatch.Dispatchers
-import akka.util.Helpers.Requiring
-import akka.util.Helpers.ConfigOps
+import akka.util.Helpers.{ Requiring, ConfigOps, toRootLowerCase }
+
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util.immutableSeq
-import java.util.Locale
 
 final class ClusterSettings(val config: Config, val systemName: String) {
 
@@ -38,7 +38,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val SeedNodeTimeout: FiniteDuration = cc.getMillisDuration("seed-node-timeout")
   val RetryUnsuccessfulJoinAfter: Duration = {
     val key = "retry-unsuccessful-join-after"
-    cc.getString(key).toLowerCase(Locale.ROOT) match {
+    toRootLowerCase(cc.getString(key)) match {
       case "off" ⇒ Duration.Undefined
       case _     ⇒ cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s, or off")
     }
@@ -52,26 +52,40 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val UnreachableNodesReaperInterval: FiniteDuration = cc.getMillisDuration("unreachable-nodes-reaper-interval")
   val PublishStatsInterval: Duration = {
     val key = "publish-stats-interval"
-    cc.getString(key).toLowerCase(Locale.ROOT) match {
+    toRootLowerCase(cc.getString(key)) match {
       case "off" ⇒ Duration.Undefined
       case _     ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
   }
 
+  // specific to the [[akka.cluster.DefaultDowningProvider]]
   val AutoDownUnreachableAfter: Duration = {
     val key = "auto-down-unreachable-after"
-    cc.getString(key).toLowerCase(Locale.ROOT) match {
+    toRootLowerCase(cc.getString(key)) match {
       case "off" ⇒ Duration.Undefined
       case _     ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
   }
 
+  /**
+   * @deprecated Specific to [[akka.cluster.AutoDown]] should not be used anywhere else, instead
+   *   ``Cluster.downingProvider.downRemovalMargin`` should be used as it allows the downing provider to decide removal
+   *   margins
+   */
+  @deprecated("Use Cluster.downingProvider.downRemovalMargin", since = "2.4.5")
   val DownRemovalMargin: FiniteDuration = {
     val key = "down-removal-margin"
-    cc.getString(key).toLowerCase(Locale.ROOT) match {
+    toRootLowerCase(cc.getString(key)) match {
       case "off" ⇒ Duration.Zero
       case _     ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
+  }
+
+  val DowningProviderClassName: String = {
+    val name = cc.getString("downing-provider-class")
+    if (name.nonEmpty) name
+    else if (AutoDownUnreachableAfter.isFinite()) classOf[AutoDowning].getName
+    else classOf[NoDowning].getName
   }
 
   val AllowWeaklyUpMembers = cc.getBoolean("allow-weakly-up-members")
@@ -83,7 +97,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val MinNrOfMembersOfRole: Map[String, Int] = {
     import scala.collection.JavaConverters._
     cc.getConfig("role").root.asScala.collect {
-      case (key, value: ConfigObject) ⇒ (key -> value.toConfig.getInt("min-nr-of-members"))
+      case (key, value: ConfigObject) ⇒ key -> value.toConfig.getInt("min-nr-of-members")
     }.toMap
   }
   val JmxEnabled: Boolean = cc.getBoolean("jmx.enabled")

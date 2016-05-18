@@ -3,11 +3,10 @@
  */
 package akka.stream.tck
 
-import java.io.{ File, FileWriter }
+import java.nio.file.Files
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.stream.scaladsl.FileIO
-import akka.stream.scaladsl.{ Sink }
+import akka.stream.scaladsl.{ Sink, FileIO }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.testkit.{ EventFilter, TestEvent }
@@ -28,21 +27,22 @@ class FilePublisherTest extends AkkaPublisherVerification[ByteString] {
   }
 
   val file = {
-    val f = File.createTempFile("file-source-tck", ".tmp")
+    val f = Files.createTempFile("file-source-tck", ".tmp")
     val chunk = "x" * ChunkSize
-    val fw = new FileWriter(f)
+
+    val fw = Files.newBufferedWriter(f)
     for (i ← 1 to Elements) fw.append(chunk)
     fw.close()
     f
   }
 
   def createPublisher(elements: Long): Publisher[ByteString] =
-    FileIO.fromFile(file, chunkSize = 512)
+    FileIO.fromPath(file, chunkSize = 512)
       .take(elements)
       .runWith(Sink.asPublisher(false))
 
   @AfterClass
-  def after = file.delete()
+  def after() = Files.delete(file)
 
   override def maxElementsFromPublisher(): Long = Elements
 }

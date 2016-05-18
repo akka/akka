@@ -1,4 +1,4 @@
-.. _http-scala-common:
+.. _http-scala-common-scala:
 
 Common Abstractions (Client- and Server-Side)
 =============================================

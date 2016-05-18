@@ -7,6 +7,7 @@ package akka.http.impl.model.parser
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.settings.ParserSettings.CookieParsingMode
 import akka.http.scaladsl.model.headers.HttpCookiePair
+import akka.stream.impl.ConstantFun
 import scala.util.control.NonFatal
 import akka.http.impl.util.SingletonException
 import akka.parboiled2._
@@ -16,7 +17,10 @@ import akka.http.scaladsl.model._
 /**
  * INTERNAL API.
  */
-private[http] class HeaderParser(val input: ParserInput, settings: HeaderParser.Settings = HeaderParser.DefaultSettings) extends Parser with DynamicRuleHandler[HeaderParser, HttpHeader :: HNil]
+private[http] class HeaderParser(
+  val input: ParserInput,
+  settings: HeaderParser.Settings = HeaderParser.DefaultSettings)
+  extends Parser with DynamicRuleHandler[HeaderParser, HttpHeader :: HNil]
   with CommonRules
   with AcceptCharsetHeader
   with AcceptEncodingHeader
@@ -32,6 +36,8 @@ private[http] class HeaderParser(val input: ParserInput, settings: HeaderParser.
   with StringBuilding
   with WebSocketHeaders {
   import CharacterClasses._
+
+  override def customMediaTypes = settings.customMediaTypes
 
   // http://www.rfc-editor.org/errata_search.php?rfc=7230 errata id 4189
   def `header-field-value`: Rule1[String] = rule {
@@ -161,15 +167,19 @@ private[http] object HeaderParser {
   abstract class Settings {
     def uriParsingMode: Uri.ParsingMode
     def cookieParsingMode: ParserSettings.CookieParsingMode
+    def customMediaTypes: MediaTypes.FindCustom
   }
   def Settings(uriParsingMode: Uri.ParsingMode = Uri.ParsingMode.Relaxed,
-               cookieParsingMode: ParserSettings.CookieParsingMode = ParserSettings.CookieParsingMode.RFC6265): Settings = {
+               cookieParsingMode: ParserSettings.CookieParsingMode = ParserSettings.CookieParsingMode.RFC6265,
+               customMediaTypes: MediaTypes.FindCustom = ConstantFun.scalaAnyTwoToNone): Settings = {
     val _uriParsingMode = uriParsingMode
     val _cookieParsingMode = cookieParsingMode
+    val _customMediaTypes = customMediaTypes
 
     new Settings {
       def uriParsingMode: Uri.ParsingMode = _uriParsingMode
       def cookieParsingMode: CookieParsingMode = _cookieParsingMode
+      def customMediaTypes: MediaTypes.FindCustom = _customMediaTypes
     }
   }
   val DefaultSettings: Settings = Settings()

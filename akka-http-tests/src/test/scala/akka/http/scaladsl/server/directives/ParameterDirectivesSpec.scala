@@ -122,6 +122,14 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
         parameter('really.as[Boolean]) { echoComplete }
       } ~> check { responseAs[String] shouldEqual "false" }
     }
+    "extract numeric parameter value as Boolean" in {
+      Get("/?really=1") ~> {
+        parameter('really.as[Boolean]) { echoComplete }
+      } ~> check { responseAs[String] shouldEqual "true" }
+      Get("/?really=0") ~> {
+        parameter('really.as[Boolean]) { echoComplete }
+      } ~> check { responseAs[String] shouldEqual "false" }
+    }
     "extract optional parameter values as Boolean" in {
       Get() ~> {
         parameter('really.as[Boolean] ? false) { echoComplete }

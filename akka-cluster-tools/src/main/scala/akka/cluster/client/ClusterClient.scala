@@ -4,6 +4,7 @@
 package akka.cluster.client
 
 import java.net.URLEncoder
+
 import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.actor.Actor
@@ -11,10 +12,10 @@ import akka.actor.ActorIdentity
 import akka.actor.ActorLogging
 import akka.actor.ActorPath
 import akka.actor.ActorRef
-import akka.actor.ActorSelection
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.Cancellable
+import akka.actor.DeadLetterSuppression
 import akka.actor.Deploy
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
@@ -24,6 +25,7 @@ import akka.actor.Identify
 import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.Props
 import akka.actor.ReceiveTimeout
+import akka.actor.Terminated
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.cluster.Member
@@ -33,9 +35,10 @@ import akka.japi.Util.immutableSeq
 import akka.routing.ConsistentHash
 import akka.routing.MurmurHash
 import com.typesafe.config.Config
-import akka.actor.DeadLetterSuppression
 import akka.remote.DeadlineFailureDetector
 import akka.dispatch.Dispatchers
+
+import scala.collection.immutable.{ HashMap, HashSet }
 
 object ClusterClientSettings {
   /**
@@ -171,6 +174,80 @@ final class ClusterClientSettings(
       heartbeatInterval, acceptableHeartbeatPause, bufferSize, reconnectTimeout)
 }
 
+/**
+ * Declares a super type for all events emitted by the `ClusterClient`
+ * in relation to contact points being added or removed.
+ */
+sealed trait ContactPointChange {
+  val contactPoint: ActorPath
+}
+
+/**
+ * Emitted to a subscriber when contact points have been
+ * received by the ClusterClient and a new one has been added.
+ */
+final case class ContactPointAdded(override val contactPoint: ActorPath) extends ContactPointChange
+
+/**
+ * Emitted to a subscriber when contact points have been
+ * received by the ClusterClient and a new one has been added.
+ */
+final case class ContactPointRemoved(override val contactPoint: ActorPath) extends ContactPointChange
+
+sealed abstract class SubscribeContactPoints
+/**
+ * Subscribe to a cluster client's contact point changes where
+ * it is guaranteed that a sender receives the initial state
+ * of contact points prior to any events in relation to them
+ * changing.
+ * The sender will automatically become unsubscribed when it
+ * terminates.
+ */
+case object SubscribeContactPoints extends SubscribeContactPoints {
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
+}
+
+sealed abstract class UnsubscribeContactPoints
+/**
+ * Explicitly unsubscribe from contact point change events.
+ */
+case object UnsubscribeContactPoints extends UnsubscribeContactPoints {
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
+}
+
+sealed abstract class GetContactPoints
+/**
+ * Get the contact points known to this client. A ``ContactPoints`` message
+ * will be replied.
+ */
+case object GetContactPoints extends GetContactPoints {
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
+}
+
+/**
+ * The reply to ``GetContactPoints``.
+ *
+ * @param contactPoints The presently known list of contact points.
+ */
+final case class ContactPoints(contactPoints: Set[ActorPath]) {
+  import scala.collection.JavaConverters._
+
+  /**
+   * Java API
+   */
+  def getContactPoints: java.util.Set[ActorPath] =
+    contactPoints.asJava
+}
+
 object ClusterClient {
 
   /**
@@ -254,10 +331,16 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
 
   val failureDetector = new DeadlineFailureDetector(acceptableHeartbeatPause, heartbeatInterval)
 
-  val initialContactsSel: immutable.IndexedSeq[ActorSelection] =
-    initialContacts.map(context.actorSelection).toVector
+  var contactPaths: HashSet[ActorPath] =
+    initialContacts.to[HashSet]
+  val initialContactsSel =
+    contactPaths.map(context.actorSelection)
   var contacts = initialContactsSel
   sendGetContacts()
+
+  var contactPathsPublished = HashSet.empty[ActorPath]
+
+  var subscribers = Vector.empty[ActorRef]
 
   import context.dispatcher
   val heartbeatTask = context.system.scheduler.schedule(
@@ -280,7 +363,7 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
     refreshContactsTask foreach { _.cancel() }
   }
 
-  def receive = establishing
+  def receive = establishing orElse contactPointMessages
 
   def establishing: Actor.Receive = {
     val connectTimerCancelable = settings.reconnectTimeout.map { timeout ⇒
@@ -290,14 +373,16 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
     {
       case Contacts(contactPoints) ⇒
         if (contactPoints.nonEmpty) {
-          contacts = contactPoints.map(context.actorSelection)
-          contacts foreach { _ ! Identify(None) }
+          contactPaths = contactPoints.map(ActorPath.fromString).to[HashSet]
+          contacts = contactPaths.map(context.actorSelection)
+          contacts foreach { _ ! Identify(Array.emptyByteArray) }
         }
+        publishContactPoints()
       case ActorIdentity(_, Some(receptionist)) ⇒
         log.info("Connected to [{}]", receptionist.path)
         scheduleRefreshContactsTick(refreshContactsInterval)
         sendBuffered(receptionist)
-        context.become(active(receptionist))
+        context.become(active(receptionist) orElse contactPointMessages)
         connectTimerCancelable.foreach(_.cancel())
         failureDetector.heartbeat()
       case ActorIdentity(_, None) ⇒ // ok, use another instead
@@ -328,7 +413,7 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
         log.info("Lost contact with [{}], restablishing connection", receptionist)
         sendGetContacts()
         scheduleRefreshContactsTick(establishingGetContactsInterval)
-        context.become(establishing)
+        context.become(establishing orElse contactPointMessages)
         failureDetector.heartbeat()
       } else
         receptionist ! Heartbeat
@@ -338,15 +423,33 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
       receptionist ! GetContacts
     case Contacts(contactPoints) ⇒
       // refresh of contacts
-      if (contactPoints.nonEmpty)
-        contacts = contactPoints.map(context.actorSelection)
+      if (contactPoints.nonEmpty) {
+        contactPaths = contactPoints.map(ActorPath.fromString).to[HashSet]
+        contacts = contactPaths.map(context.actorSelection)
+      }
+      publishContactPoints()
     case _: ActorIdentity ⇒ // ok, from previous establish, already handled
+  }
+
+  def contactPointMessages: Actor.Receive = {
+    case SubscribeContactPoints ⇒
+      val subscriber = sender()
+      subscriber ! ContactPoints(contactPaths)
+      subscribers :+= subscriber
+      context.watch(subscriber)
+    case UnsubscribeContactPoints ⇒
+      val subscriber = sender()
+      subscribers = subscribers.filterNot(_ == subscriber)
+    case Terminated(subscriber) ⇒
+      self.tell(UnsubscribeContactPoints, subscriber)
+    case GetContactPoints ⇒
+      sender() ! ContactPoints(contactPaths)
   }
 
   def sendGetContacts(): Unit = {
     val sendTo =
       if (contacts.isEmpty) initialContactsSel
-      else if (contacts.size == 1) (initialContactsSel union contacts)
+      else if (contacts.size == 1) initialContactsSel union contacts
       else contacts
     if (log.isDebugEnabled)
       log.debug(s"""Sending GetContacts to [${sendTo.mkString(",")}]""")
@@ -372,12 +475,24 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
       receptionist.tell(msg, snd)
     }
   }
+
+  def publishContactPoints(): Unit = {
+    for (cp ← contactPaths if !contactPathsPublished.contains(cp)) {
+      val contactPointAdded = ContactPointAdded(cp)
+      subscribers.foreach(_ ! contactPointAdded)
+    }
+    for (cp ← contactPathsPublished if !contactPaths.contains(cp)) {
+      val contactPointRemoved = ContactPointRemoved(cp)
+      subscribers.foreach(_ ! contactPointRemoved)
+    }
+    contactPathsPublished = contactPaths
+  }
 }
 
 object ClusterClientReceptionist extends ExtensionId[ClusterClientReceptionist] with ExtensionIdProvider {
   override def get(system: ActorSystem): ClusterClientReceptionist = super.get(system)
 
-  override def lookup = ClusterClientReceptionist
+  override def lookup() = ClusterClientReceptionist
 
   override def createExtension(system: ExtendedActorSystem): ClusterClientReceptionist =
     new ClusterClientReceptionist(system)
@@ -456,6 +571,13 @@ final class ClusterClientReceptionist(system: ExtendedActorSystem) extends Exten
         .withDispatcher(dispatcher), name)
     }
   }
+
+  /**
+   * Returns the underlying receptionist actor, particularly so that its
+   * events can be observed via subscribe/unsubscribe.
+   */
+  def underlying: ActorRef =
+    receptionist
 }
 
 object ClusterReceptionistSettings {
@@ -474,7 +596,10 @@ object ClusterReceptionistSettings {
     new ClusterReceptionistSettings(
       role = roleOption(config.getString("role")),
       numberOfContacts = config.getInt("number-of-contacts"),
-      responseTunnelReceiveTimeout = config.getDuration("response-tunnel-receive-timeout", MILLISECONDS).millis)
+      responseTunnelReceiveTimeout = config.getDuration("response-tunnel-receive-timeout", MILLISECONDS).millis,
+      heartbeatInterval = config.getDuration("heartbeat-interval", MILLISECONDS).millis,
+      acceptableHeartbeatPause = config.getDuration("acceptable-heartbeat-pause", MILLISECONDS).millis,
+      failureDetectionInterval = config.getDuration("failure-detection-interval", MILLISECONDS).millis)
 
   /**
    * Java API: Create settings from the default configuration
@@ -518,18 +643,142 @@ final class ClusterReceptionistSettings(
   def withResponseTunnelReceiveTimeout(responseTunnelReceiveTimeout: FiniteDuration): ClusterReceptionistSettings =
     copy(responseTunnelReceiveTimeout = responseTunnelReceiveTimeout)
 
+  def withHeartbeat(
+    heartbeatInterval: FiniteDuration,
+    acceptableHeartbeatPause: FiniteDuration,
+    failureDetectionInterval: FiniteDuration): ClusterReceptionistSettings =
+    copy(
+      heartbeatInterval = heartbeatInterval,
+      acceptableHeartbeatPause = acceptableHeartbeatPause,
+      failureDetectionInterval = failureDetectionInterval)
+
+  // BEGIN BINARY COMPATIBILITY
+  // The following is required in order to maintain binary
+  // compatibility with 2.4. Post 2.4, the following 3 properties should
+  // be moved to the class's constructor, and the following section of code
+  // should be removed entirely.
+  // TODO: ADDRESS FOR v.2.5
+
+  def heartbeatInterval: FiniteDuration =
+    _heartbeatInterval
+  def acceptableHeartbeatPause: FiniteDuration =
+    _acceptableHeartbeatPause
+  def failureDetectionInterval: FiniteDuration =
+    _failureDetectionInterval
+
+  private var _heartbeatInterval: FiniteDuration = 2.seconds
+  private var _acceptableHeartbeatPause: FiniteDuration = 13.seconds
+  private var _failureDetectionInterval: FiniteDuration = 2.second
+
+  def this(
+    role: Option[String],
+    numberOfContacts: Int,
+    responseTunnelReceiveTimeout: FiniteDuration,
+    heartbeatInterval: FiniteDuration,
+    acceptableHeartbeatPause: FiniteDuration,
+    failureDetectionInterval: FiniteDuration) = {
+    this(role, numberOfContacts, responseTunnelReceiveTimeout)
+    this._heartbeatInterval = heartbeatInterval
+    this._acceptableHeartbeatPause = acceptableHeartbeatPause
+    this._failureDetectionInterval = failureDetectionInterval
+  }
+
+  // END BINARY COMPATIBILITY
+
   private def copy(
     role: Option[String] = role,
     numberOfContacts: Int = numberOfContacts,
-    responseTunnelReceiveTimeout: FiniteDuration = responseTunnelReceiveTimeout): ClusterReceptionistSettings =
-    new ClusterReceptionistSettings(role, numberOfContacts, responseTunnelReceiveTimeout)
-
+    responseTunnelReceiveTimeout: FiniteDuration = responseTunnelReceiveTimeout,
+    heartbeatInterval: FiniteDuration = heartbeatInterval,
+    acceptableHeartbeatPause: FiniteDuration = acceptableHeartbeatPause,
+    failureDetectionInterval: FiniteDuration = failureDetectionInterval): ClusterReceptionistSettings =
+    new ClusterReceptionistSettings(
+      role,
+      numberOfContacts,
+      responseTunnelReceiveTimeout,
+      heartbeatInterval,
+      acceptableHeartbeatPause,
+      failureDetectionInterval)
 }
 
 /**
  * Marker trait for remote messages with special serializer.
  */
 sealed trait ClusterClientMessage extends Serializable
+
+/**
+ * Declares a super type for all events emitted by the `ClusterReceptionist`.
+ * in relation to cluster clients being interacted with.
+ */
+sealed trait ClusterClientInteraction {
+  val clusterClient: ActorRef
+}
+
+/**
+ * Emitted to the Akka event stream when a cluster client has interacted with
+ * a receptionist.
+ */
+final case class ClusterClientUp(override val clusterClient: ActorRef) extends ClusterClientInteraction
+
+/**
+ * Emitted to the Akka event stream when a cluster client was previously connected
+ * but then not seen for some time.
+ */
+final case class ClusterClientUnreachable(override val clusterClient: ActorRef) extends ClusterClientInteraction
+
+sealed abstract class SubscribeClusterClients
+/**
+ * Subscribe to a cluster receptionist's client interactions where
+ * it is guaranteed that a sender receives the initial state
+ * of contact points prior to any events in relation to them
+ * changing.
+ * The sender will automatically become unsubscribed when it
+ * terminates.
+ */
+case object SubscribeClusterClients extends SubscribeClusterClients {
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
+}
+
+sealed abstract class UnsubscribeClusterClients
+/**
+ * Explicitly unsubscribe from client interaction events.
+ */
+case object UnsubscribeClusterClients extends UnsubscribeClusterClients {
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
+}
+
+sealed abstract class GetClusterClients
+/**
+ * Get the cluster clients known to this receptionist. A ``ClusterClients`` message
+ * will be replied.
+ */
+case object GetClusterClients extends GetClusterClients {
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
+}
+
+/**
+ * The reply to ``GetClusterClients``.
+ *
+ * @param clusterClients The presently known list of cluster clients.
+ */
+final case class ClusterClients(clusterClients: Set[ActorRef]) {
+  import scala.collection.JavaConverters._
+
+  /**
+   * Java API
+   */
+  def getClusterClients: java.util.Set[ActorRef] =
+    clusterClients.asJava
+}
 
 object ClusterReceptionist {
 
@@ -555,6 +804,7 @@ object ClusterReceptionist {
     case object HeartbeatRsp extends ClusterClientMessage with DeadLetterSuppression
     @SerialVersionUID(1L)
     case object Ping extends DeadLetterSuppression
+    case object CheckDeadlines
 
     /**
      * Replies are tunneled via this actor, child of the receptionist, to avoid
@@ -609,12 +859,12 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
   import cluster.selfAddress
 
   require(role.forall(cluster.selfRoles.contains),
-    s"This cluster member [${selfAddress}] doesn't have the role [$role]")
+    s"This cluster member [$selfAddress] doesn't have the role [$role]")
 
   var nodes: immutable.SortedSet[Address] = {
     def hashFor(node: Address): Int = node match {
       // cluster node identifier is the host and port of the address; protocol and system is assumed to be the same
-      case Address(_, _, Some(host), Some(port)) ⇒ MurmurHash.stringHash(s"${host}:${port}")
+      case Address(_, _, Some(host), Some(port)) ⇒ MurmurHash.stringHash(s"$host:$port")
       case _ ⇒
         throw new IllegalStateException(s"Unexpected address without host/port: [$node]")
     }
@@ -628,6 +878,17 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
   val virtualNodesFactor = 10
   var consistentHash: ConsistentHash[Address] = ConsistentHash(nodes, virtualNodesFactor)
 
+  var clientInteractions = HashMap.empty[ActorRef, DeadlineFailureDetector]
+  var clientsPublished = HashSet.empty[ActorRef]
+
+  var subscribers = Vector.empty[ActorRef]
+
+  val checkDeadlinesTask = context.system.scheduler.schedule(
+    failureDetectionInterval,
+    failureDetectionInterval,
+    self,
+    CheckDeadlines)(context.dispatcher)
+
   override def preStart(): Unit = {
     super.preStart()
     require(!cluster.isTerminated, "Cluster node must not be terminated")
@@ -637,6 +898,7 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
   override def postStop(): Unit = {
     super.postStop()
     cluster unsubscribe self
+    checkDeadlinesTask.cancel()
   }
 
   def matchingRole(m: Member): Boolean = role.forall(m.hasRole)
@@ -659,6 +921,7 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
     case Heartbeat ⇒
       if (verboseHeartbeat) log.debug("Heartbeat from client [{}]", sender().path)
       sender() ! HeartbeatRsp
+      updateClientInteractions(sender())
 
     case GetContacts ⇒
       // Consistent hashing is used to ensure that the reply to GetContacts
@@ -682,6 +945,7 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
         if (log.isDebugEnabled)
           log.debug("Client [{}] gets contactPoints [{}]", sender().path, contacts.contactPoints.mkString(","))
         sender() ! contacts
+        updateClientInteractions(sender())
       }
 
     case state: CurrentClusterState ⇒
@@ -703,7 +967,53 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
       }
 
     case _: MemberEvent ⇒ // not of interest
+
+    case SubscribeClusterClients ⇒
+      val subscriber = sender()
+      subscriber ! ClusterClients(clientInteractions.keySet.to[HashSet])
+      subscribers :+= subscriber
+      context.watch(subscriber)
+
+    case UnsubscribeClusterClients ⇒
+      val subscriber = sender()
+      subscribers = subscribers.filterNot(_ == subscriber)
+
+    case Terminated(subscriber) ⇒
+      self.tell(UnsubscribeClusterClients, subscriber)
+
+    case GetClusterClients ⇒
+      sender() ! ClusterClients(clientInteractions.keySet.to[HashSet])
+
+    case CheckDeadlines ⇒
+      clientInteractions = clientInteractions.filter {
+        case (_, failureDetector) ⇒
+          failureDetector.isAvailable
+      }
+      publishClientsUnreachable()
   }
 
+  def updateClientInteractions(client: ActorRef): Unit =
+    clientInteractions.get(client) match {
+      case Some(failureDetector) ⇒
+        failureDetector.heartbeat()
+      case None ⇒
+        val failureDetector = new DeadlineFailureDetector(acceptableHeartbeatPause, heartbeatInterval)
+        failureDetector.heartbeat()
+        clientInteractions = clientInteractions + (client -> failureDetector)
+        log.debug("Received new contact from [{}]", client.path)
+        val clusterClientUp = ClusterClientUp(client)
+        subscribers.foreach(_ ! clusterClientUp)
+        clientsPublished = clientInteractions.keySet.to[HashSet]
+    }
+
+  def publishClientsUnreachable(): Unit = {
+    val publishableClients = clientInteractions.keySet.to[HashSet]
+    for (c ← clientsPublished if !publishableClients.contains(c)) {
+      log.debug("Lost contact with [{}]", c.path)
+      val clusterClientUnreachable = ClusterClientUnreachable(c)
+      subscribers.foreach(_ ! clusterClientUnreachable)
+    }
+    clientsPublished = publishableClients
+  }
 }
 

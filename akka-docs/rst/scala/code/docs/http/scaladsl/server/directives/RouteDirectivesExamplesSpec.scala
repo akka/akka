@@ -4,7 +4,9 @@
 
 package docs.http.scaladsl.server.directives
 
+import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.`Content-Type`
 import akka.http.scaladsl.server.{ Route, ValidationRejection }
 import akka.testkit.EventFilter
 import docs.http.scaladsl.server.RoutingSpec
@@ -17,9 +19,21 @@ class RouteDirectivesExamplesSpec extends RoutingSpec {
         complete(HttpResponse(entity = "foo"))
       } ~
         path("b") {
-          complete((StatusCodes.Created, "bar"))
+          complete(StatusCodes.OK)
         } ~
-        (path("c") & complete("baz")) // `&` also works with `complete` as the 2nd argument
+        path("c") {
+          complete(StatusCodes.Created, "bar")
+        } ~
+        path("d") {
+          complete(201, "bar")
+        } ~
+        path("e") {
+          complete(StatusCodes.Created, List(`Content-Type`(`text/plain(UTF-8)`)), "bar")
+        } ~
+        path("f") {
+          complete(201, List(`Content-Type`(`text/plain(UTF-8)`)), "bar")
+        } ~
+        (path("g") & complete("baz")) // `&` also works with `complete` as the 2nd argument
 
     // tests:
     Get("/a") ~> route ~> check {
@@ -28,11 +42,33 @@ class RouteDirectivesExamplesSpec extends RoutingSpec {
     }
 
     Get("/b") ~> route ~> check {
+      status shouldEqual StatusCodes.OK
+      responseAs[String] shouldEqual "OK"
+    }
+
+    Get("/c") ~> route ~> check {
       status shouldEqual StatusCodes.Created
       responseAs[String] shouldEqual "bar"
     }
 
-    Get("/c") ~> route ~> check {
+    Get("/d") ~> route ~> check {
+      status shouldEqual StatusCodes.Created
+      responseAs[String] shouldEqual "bar"
+    }
+
+    Get("/e") ~> route ~> check {
+      status shouldEqual StatusCodes.Created
+      header[`Content-Type`] shouldEqual Some(`Content-Type`(`text/plain(UTF-8)`))
+      responseAs[String] shouldEqual "bar"
+    }
+
+    Get("/f") ~> route ~> check {
+      status shouldEqual StatusCodes.Created
+      header[`Content-Type`] shouldEqual Some(`Content-Type`(`text/plain(UTF-8)`))
+      responseAs[String] shouldEqual "bar"
+    }
+
+    Get("/g") ~> route ~> check {
       status shouldEqual StatusCodes.OK
       responseAs[String] shouldEqual "baz"
     }

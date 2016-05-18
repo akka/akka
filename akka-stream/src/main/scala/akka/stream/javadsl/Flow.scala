@@ -6,7 +6,7 @@ package akka.stream.javadsl
 import akka.{ NotUsed, Done }
 import akka.event.LoggingAdapter
 import akka.japi.{ function, Pair }
-import akka.stream.impl.{ConstantFun, StreamLayout}
+import akka.stream.impl.{ ConstantFun, StreamLayout }
 import akka.stream._
 import akka.stream.stage.Stage
 import org.reactivestreams.Processor
@@ -573,6 +573,11 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * Applies the given function towards its current and next value,
    * yielding the next current value.
    *
+   * If the stream is empty (i.e. completes before signalling any elements),
+   * the reduce stage will fail its downstream with a [[NoSuchElementException]],
+   * which is semantically in-line with that Scala's standard library collections
+   * do in such situations.
+   *
    * '''Emits when''' upstream completes
    *
    * '''Backpressures when''' downstream backpressures
@@ -790,8 +795,31 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * '''Cancels when''' downstream cancels
    *
    */
+  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recoverWith[T >: Out](pf: PartialFunction[Throwable, _ <: Graph[SourceShape[T], NotUsed]]): javadsl.Flow[In, T, Mat @uncheckedVariance] =
     new Flow(delegate.recoverWith(pf))
+
+  /**
+    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
+    * a failure has been recovered up to `attempts` number of times so that each time there is a failure
+    * it is fed into the `pf` and a new Source may be materialized. Note that if you pass in 0, this won't
+    * attempt to recover at all. Passing in a negative number will behave exactly the same as  `recoverWith`.
+    *
+    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+    *
+    * '''Emits when''' element is available from the upstream or upstream is failed and element is available
+    * from alternative Source
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+    *
+    * '''Cancels when''' downstream cancels
+    *
+    */
+  def recoverWithRetries[T >: Out](attempts: Int, pf: PartialFunction[Throwable, _ <: Graph[SourceShape[T], NotUsed]]): javadsl.Flow[In, T, Mat @uncheckedVariance] =
+    new Flow(delegate.recoverWithRetries(attempts, pf))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after the given
@@ -1566,8 +1594,9 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.completionTimeout(timeout))
 
   /**
-   * If the time between two processed elements exceed the provided timeout, the stream is failed
-   * with a [[java.util.concurrent.TimeoutException]].
+   * If the time between two processed elements exceeds the provided timeout, the stream is failed
+   * with a [[java.util.concurrent.TimeoutException]]. The timeout is checked periodically,
+   * so the resolution of the check is one period (equals to timeout value).
    *
    * '''Emits when''' upstream emits an element
    *
@@ -1581,7 +1610,23 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.idleTimeout(timeout))
 
   /**
-   * Injects additional elements if the upstream does not emit for a configured amount of time. In other words, this
+    * If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
+    * the stream is failed with a [[java.util.concurrent.TimeoutException]]. The timeout is checked periodically,
+    * so the resolution of the check is one period (equals to timeout value).
+    *
+    * '''Emits when''' upstream emits an element
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' upstream completes or fails if timeout elapses between element emission and downstream demand.
+    *
+    * '''Cancels when''' downstream cancels
+    */
+  def backpressureTimeout(timeout: FiniteDuration): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.backpressureTimeout(timeout))
+
+  /**
+   * Injects additional elements if upstream does not emit for a configured amount of time. In other words, this
    * stage attempts to maintains a base rate of emitted elements towards the downstream.
    *
    * If the downstream backpressures then no element is injected until downstream demand arrives. Injected elements
@@ -1698,9 +1743,9 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   /**
    * Delays the initial element by the specified duration.
    *
-   * '''Emits when''' upstream emits an element if the initial delay already elapsed
+   * '''Emits when''' upstream emits an element if the initial delay is already elapsed
    *
-   * '''Backpressures when''' downstream backpressures or initial delay not yet elapsed
+   * '''Backpressures when''' downstream backpressures or initial delay is not yet elapsed
    *
    * '''Completes when''' upstream completes
    *

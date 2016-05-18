@@ -3,8 +3,8 @@
  */
 package akka.stream.impl.io
 
-import java.io.{ File, OutputStream }
-import java.nio.file.StandardOpenOption
+import java.io.OutputStream
+import java.nio.file.{ Path, StandardOpenOption }
 import akka.stream.IOResult
 import akka.stream.impl.SinkModule
 import akka.stream.impl.StreamLayout.Module
@@ -16,10 +16,10 @@ import scala.concurrent.{ Future, Promise }
 
 /**
  * INTERNAL API
- * Creates simple synchronous (Java 6 compatible) Sink which writes all incoming elements to the given file
+ * Creates simple synchronous Sink which writes all incoming elements to the given file
  * (creating it before hand if necessary).
  */
-private[akka] final class FileSink(f: File, options: Set[StandardOpenOption], val attributes: Attributes, shape: SinkShape[ByteString])
+private[akka] final class FileSink(f: Path, options: Set[StandardOpenOption], val attributes: Attributes, shape: SinkShape[ByteString])
   extends SinkModule[ByteString, Future[IOResult]](shape) {
 
   override protected def label: String = s"FileSink($f, $options)"
@@ -45,8 +45,7 @@ private[akka] final class FileSink(f: File, options: Set[StandardOpenOption], va
 
 /**
  * INTERNAL API
- * Creates simple synchronous (Java 6 compatible) Sink which writes all incoming elements to the given file
- * (creating it before hand if necessary).
+ * Creates simple synchronous Sink which writes all incoming elements to the output stream.
  */
 private[akka] final class OutputStreamSink(createOutput: () ⇒ OutputStream, val attributes: Attributes, shape: SinkShape[ByteString], autoFlush: Boolean)
   extends SinkModule[ByteString, Future[IOResult]](shape) {

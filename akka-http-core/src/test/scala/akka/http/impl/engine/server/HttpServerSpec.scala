@@ -22,6 +22,7 @@ import headers._
 import HttpEntity._
 import MediaTypes._
 import HttpMethods._
+import Utils.assertAllStagesStopped
 import akka.testkit.AkkaSpec
 
 class HttpServerSpec extends AkkaSpec(
@@ -31,17 +32,18 @@ class HttpServerSpec extends AkkaSpec(
   implicit val materializer = ActorMaterializer()
 
   "The server implementation" should {
-
-    "deliver an empty request as soon as all headers are received" in new TestSetup {
+    "deliver an empty request as soon as all headers are received" in assertAllStagesStopped(new TestSetup {
       send("""GET / HTTP/1.1
              |Host: example.com
              |
              |""")
 
       expectRequest() shouldEqual HttpRequest(uri = "http://example.com/", headers = List(Host("example.com")))
-    }
 
-    "deliver a request as soon as all headers are received" in new TestSetup {
+      shutdownBlueprint()
+    })
+
+    "deliver a request as soon as all headers are received" in assertAllStagesStopped(new TestSetup {
       send("""POST / HTTP/1.1
              |Host: example.com
              |Content-Length: 12
@@ -63,9 +65,11 @@ class HttpServerSpec extends AkkaSpec(
           dataProbe.expectNext(ByteString("ghijk"))
           dataProbe.expectNoMsg(50.millis)
       }
-    }
 
-    "deliver an error response as soon as a parsing error occurred" in new TestSetup {
+      shutdownBlueprint()
+    })
+
+    "deliver an error response as soon as a parsing error occurred" in assertAllStagesStopped(new TestSetup {
       send("""GET / HTTP/1.2
              |Host: example.com
              |
@@ -82,9 +86,12 @@ class HttpServerSpec extends AkkaSpec(
           |Content-Length: 74
           |
           |The server does not support the HTTP protocol version used in the request.""")
-    }
 
-    "report an invalid Chunked stream" in new TestSetup {
+      netOut.expectComplete()
+      netIn.sendComplete()
+    })
+
+    "report an invalid Chunked stream" in assertAllStagesStopped(new TestSetup {
       send("""POST / HTTP/1.1
              |Host: example.com
              |Transfer-Encoding: chunked
@@ -120,9 +127,12 @@ class HttpServerSpec extends AkkaSpec(
               |
               |Illegal character 'g' in chunk start""")
       }
-    }
 
-    "deliver the request entity as it comes in strictly for an immediately completed Strict entity" in new TestSetup {
+      netOut.expectComplete()
+      netIn.sendComplete()
+    })
+
+    "deliver the request entity as it comes in strictly for an immediately completed Strict entity" in assertAllStagesStopped(new TestSetup {
       send("""POST /strict HTTP/1.1
              |Host: example.com
              |Content-Length: 12
@@ -135,9 +145,11 @@ class HttpServerSpec extends AkkaSpec(
           uri = "http://example.com/strict",
           headers = List(Host("example.com")),
           entity = HttpEntity.Strict(ContentTypes.`application/octet-stream`, ByteString("abcdefghijkl")))
-    }
 
-    "deliver the request entity as it comes in for a Default entity" in new TestSetup {
+      shutdownBlueprint()
+    })
+
+    "deliver the request entity as it comes in for a Default entity" in assertAllStagesStopped(new TestSetup {
       send("""POST / HTTP/1.1
              |Host: example.com
              |Content-Length: 12
@@ -156,9 +168,11 @@ class HttpServerSpec extends AkkaSpec(
           dataProbe.expectNext(ByteString("ghijk"))
           dataProbe.expectNoMsg(50.millis)
       }
-    }
 
-    "deliver the request entity as it comes in for a chunked entity" in new TestSetup {
+      shutdownBlueprint()
+    })
+
+    "deliver the request entity as it comes in for a chunked entity" in assertAllStagesStopped(new TestSetup {
       send("""POST / HTTP/1.1
              |Host: example.com
              |Transfer-Encoding: chunked
@@ -179,9 +193,10 @@ class HttpServerSpec extends AkkaSpec(
           dataProbe.expectNext(Chunk(ByteString("ghi")))
           dataProbe.expectNoMsg(50.millis)
       }
-    }
+      shutdownBlueprint()
+    })
 
-    "deliver the second message properly after a Strict entity" in new TestSetup {
+    "deliver the second message properly after a Strict entity" in assertAllStagesStopped(new TestSetup {
       send("""POST /strict HTTP/1.1
              |Host: example.com
              |Content-Length: 12
@@ -207,9 +222,10 @@ class HttpServerSpec extends AkkaSpec(
           uri = "http://example.com/next-strict",
           headers = List(Host("example.com")),
           entity = HttpEntity.Strict(ContentTypes.`application/octet-stream`, ByteString("mnopqrstuvwx")))
-    }
+      shutdownBlueprint()
+    })
 
-    "deliver the second message properly after a Default entity" in new TestSetup {
+    "deliver the second message properly after a Default entity" in assertAllStagesStopped(new TestSetup {
       send("""POST / HTTP/1.1
              |Host: example.com
              |Content-Length: 12
@@ -242,9 +258,10 @@ class HttpServerSpec extends AkkaSpec(
         case HttpRequest(POST, _, _, HttpEntity.Strict(_, data), _) ⇒
           data shouldEqual ByteString("abcde")
       }
-    }
+      shutdownBlueprint()
+    })
 
-    "deliver the second message properly after a Chunked entity" in new TestSetup {
+    "deliver the second message properly after a Chunked entity" in assertAllStagesStopped(new TestSetup {
       send("""POST /chunked HTTP/1.1
              |Host: example.com
              |Transfer-Encoding: chunked
@@ -280,9 +297,10 @@ class HttpServerSpec extends AkkaSpec(
         case HttpRequest(POST, _, _, HttpEntity.Strict(_, data), _) ⇒
           data shouldEqual ByteString("abcde")
       }
-    }
+      shutdownBlueprint()
+    })
 
-    "close the request entity stream when the entity is complete for a Default entity" in new TestSetup {
+    "close the request entity stream when the entity is complete for a Default entity" in assertAllStagesStopped(new TestSetup {
       send("""POST / HTTP/1.1
              |Host: example.com
              |Content-Length: 12
@@ -301,9 +319,10 @@ class HttpServerSpec extends AkkaSpec(
           dataProbe.expectNext(ByteString("ghijkl"))
           dataProbe.expectComplete()
       }
-    }
+      shutdownBlueprint()
+    })
 
-    "close the request entity stream when the entity is complete for a Chunked entity" in new TestSetup {
+    "close the request entity stream when the entity is complete for a Chunked entity" in assertAllStagesStopped(new TestSetup {
       send("""POST / HTTP/1.1
              |Host: example.com
              |Transfer-Encoding: chunked
@@ -325,9 +344,10 @@ class HttpServerSpec extends AkkaSpec(
           dataProbe.expectNext(LastChunk)
           dataProbe.expectComplete()
       }
-    }
+      shutdownBlueprint()
+    })
 
-    "close the connection if request entity stream has been cancelled" in new TestSetup {
+    "close the connection if request entity stream has been cancelled" in assertAllStagesStopped(new TestSetup {
       // two chunks sent by client
       send("""POST / HTTP/1.1
              |Host: example.com
@@ -353,9 +373,10 @@ class HttpServerSpec extends AkkaSpec(
           // connection closes once requested elements are consumed
           netIn.expectCancellation()
       }
-    }
+      shutdownBlueprint()
+    })
 
-    "proceed to next request once previous request's entity has beed drained" in new TestSetup {
+    "proceed to next request once previous request's entity has beed drained" in assertAllStagesStopped(new TestSetup {
       def twice(action: => Unit): Unit = { action; action }
 
       twice {
@@ -372,9 +393,10 @@ class HttpServerSpec extends AkkaSpec(
         val whenComplete = expectRequest().entity.dataBytes.runWith(Sink.ignore)
         whenComplete.futureValue should be(akka.Done)
       }
-    }
+      shutdownBlueprint()
+    })
 
-    "report a truncated entity stream on the entity data stream and the main stream for a Default entity" in new TestSetup {
+    "report a truncated entity stream on the entity data stream and the main stream for a Default entity" in assertAllStagesStopped(new TestSetup {
       send("""POST / HTTP/1.1
              |Host: example.com
              |Content-Length: 12
@@ -391,9 +413,10 @@ class HttpServerSpec extends AkkaSpec(
           closeNetworkInput()
           dataProbe.expectError().getMessage shouldEqual "Entity stream truncation"
       }
-    }
+      shutdownBlueprint()
+    })
 
-    "report a truncated entity stream on the entity data stream and the main stream for a Chunked entity" in new TestSetup {
+    "report a truncated entity stream on the entity data stream and the main stream for a Chunked entity" in assertAllStagesStopped(new TestSetup {
       send("""POST / HTTP/1.1
              |Host: example.com
              |Transfer-Encoding: chunked
@@ -412,27 +435,30 @@ class HttpServerSpec extends AkkaSpec(
           closeNetworkInput()
           dataProbe.expectError().getMessage shouldEqual "Entity stream truncation"
       }
-    }
+      shutdownBlueprint()
+    })
 
-    "translate HEAD request to GET request when transparent-head-requests are enabled" in new TestSetup {
+    "translate HEAD request to GET request when transparent-head-requests are enabled" in assertAllStagesStopped(new TestSetup {
       override def settings = ServerSettings(system).withTransparentHeadRequests(true)
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
              |""")
       expectRequest() shouldEqual HttpRequest(GET, uri = "http://example.com/", headers = List(Host("example.com")))
-    }
+      shutdownBlueprint()
+    })
 
-    "keep HEAD request when transparent-head-requests are disabled" in new TestSetup {
+    "keep HEAD request when transparent-head-requests are disabled" in assertAllStagesStopped(new TestSetup {
       override def settings = ServerSettings(system).withTransparentHeadRequests(false)
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
              |""")
       expectRequest() shouldEqual HttpRequest(HEAD, uri = "http://example.com/", headers = List(Host("example.com")))
-    }
+      shutdownBlueprint()
+    })
 
-    "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with Strict)" in new TestSetup {
+    "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with Strict)" in assertAllStagesStopped(new TestSetup {
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
@@ -449,9 +475,12 @@ class HttpServerSpec extends AkkaSpec(
                |
                |""")
       }
-    }
 
-    "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with Default)" in new TestSetup {
+      netIn.sendComplete()
+      netOut.expectComplete()
+    })
+
+    "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with Default)" in assertAllStagesStopped(new TestSetup {
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
@@ -471,9 +500,12 @@ class HttpServerSpec extends AkkaSpec(
                |
                |""")
       }
-    }
 
-    "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with CloseDelimited)" in new TestSetup {
+      netIn.sendComplete()
+      netOut.expectComplete()
+    })
+
+    "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with CloseDelimited)" in assertAllStagesStopped(new TestSetup {
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
@@ -494,9 +526,12 @@ class HttpServerSpec extends AkkaSpec(
       }
       // No close should happen here since this was a HEAD request
       netOut.expectNoBytes(50.millis)
-    }
 
-    "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with Chunked)" in new TestSetup {
+      netIn.sendComplete()
+      netOut.expectComplete()
+    })
+
+    "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with Chunked)" in assertAllStagesStopped(new TestSetup {
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
@@ -516,9 +551,12 @@ class HttpServerSpec extends AkkaSpec(
                |
                |""")
       }
-    }
 
-    "respect Connection headers of HEAD requests if transparent-head-requests is enabled" in new TestSetup {
+      netIn.sendComplete()
+      netOut.expectComplete()
+    })
+
+    "respect Connection headers of HEAD requests if transparent-head-requests is enabled" in assertAllStagesStopped(new TestSetup {
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |Connection: close
@@ -533,9 +571,11 @@ class HttpServerSpec extends AkkaSpec(
           netOut.expectBytes(1)
       }
       netOut.expectComplete()
-    }
 
-    "produce a `100 Continue` response when requested by a `Default` entity" in new TestSetup {
+      netIn.sendComplete()
+    })
+
+    "produce a `100 Continue` response when requested by a `Default` entity" in assertAllStagesStopped(new TestSetup {
       send("""POST / HTTP/1.1
              |Host: example.com
              |Expect: 100-continue
@@ -570,9 +610,12 @@ class HttpServerSpec extends AkkaSpec(
               |
               |Yeah""")
       }
-    }
 
-    "produce a `100 Continue` response when requested by a `Chunked` entity" in new TestSetup {
+      netIn.sendComplete()
+      netOut.expectComplete()
+    })
+
+    "produce a `100 Continue` response when requested by a `Chunked` entity" in assertAllStagesStopped(new TestSetup {
       send("""POST / HTTP/1.1
              |Host: example.com
              |Expect: 100-continue
@@ -612,10 +655,14 @@ class HttpServerSpec extends AkkaSpec(
               |
               |Yeah""")
       }
-    }
 
-    "render a closing response instead of `100 Continue` if request entity is not requested" in new TestSetup {
-      send("""POST / HTTP/1.1
+      netIn.sendComplete()
+      netOut.expectComplete()
+    })
+
+    "render a closing response instead of `100 Continue` if request entity is not requested" in assertAllStagesStopped(new TestSetup {
+      send(
+        """POST / HTTP/1.1
              |Host: example.com
              |Expect: 100-continue
              |Content-Length: 16
@@ -634,9 +681,14 @@ class HttpServerSpec extends AkkaSpec(
               |
               |Yeah""")
       }
-    }
 
-    "render a 500 response on response stream errors from the application" in new TestSetup {
+      // client then closes the connection
+      netIn.sendComplete()
+      requests.expectComplete() // this should happen, but never does
+      netOut.expectComplete()
+    })
+
+    "render a 500 response on response stream errors from the application" in assertAllStagesStopped(new TestSetup {
       send("""GET / HTTP/1.1
              |Host: example.com
              |
@@ -655,9 +707,12 @@ class HttpServerSpec extends AkkaSpec(
           |Content-Length: 0
           |
           |""")
-    }
 
-    "correctly consume and render large requests and responses" in new TestSetup {
+      netIn.sendComplete()
+      netOut.expectComplete()
+    })
+
+    "correctly consume and render large requests and responses" in assertAllStagesStopped(new TestSetup {
       send("""POST / HTTP/1.1
              |Host: example.com
              |Content-Length: 100000
@@ -693,18 +748,19 @@ class HttpServerSpec extends AkkaSpec(
       requests.request(1)
       requests.expectComplete()
       netOut.expectComplete()
-    }
+    })
 
-    "deliver a request with a non-RFC3986 request-target" in new TestSetup {
+    "deliver a request with a non-RFC3986 request-target" in assertAllStagesStopped(new TestSetup {
       send("""GET //foo HTTP/1.1
              |Host: example.com
              |
              |""")
 
       expectRequest() shouldEqual HttpRequest(uri = "http://example.com//foo", headers = List(Host("example.com")))
-    }
+      shutdownBlueprint()
+    })
 
-    "use default-host-header for HTTP/1.0 requests" in new TestSetup {
+    "use default-host-header for HTTP/1.0 requests" in assertAllStagesStopped(new TestSetup {
       send("""GET /abc HTTP/1.0
              |
              |""")
@@ -712,9 +768,11 @@ class HttpServerSpec extends AkkaSpec(
       expectRequest() shouldEqual HttpRequest(uri = "http://example.com/abc", protocol = HttpProtocols.`HTTP/1.0`)
 
       override def settings: ServerSettings = super.settings.withDefaultHostHeader(Host("example.com"))
-    }
 
-    "fail an HTTP/1.0 request with 400 if no default-host-header is set" in new TestSetup {
+      shutdownBlueprint()
+    })
+
+    "fail an HTTP/1.0 request with 400 if no default-host-header is set" in assertAllStagesStopped(new TestSetup {
       send("""GET /abc HTTP/1.0
              |
              |""")
@@ -730,9 +788,12 @@ class HttpServerSpec extends AkkaSpec(
            |Content-Length: 41
            |
            |Request is missing required `Host` header""")
-    }
 
-    "support remote-address-header" in new TestSetup {
+      netIn.sendComplete()
+      netOut.expectComplete()
+    })
+
+    "support remote-address-header" in assertAllStagesStopped(new TestSetup {
       lazy val theAddress = InetAddress.getByName("127.5.2.1")
 
       override def remoteAddress: Option[InetSocketAddress] =
@@ -748,11 +809,13 @@ class HttpServerSpec extends AkkaSpec(
 
       val request = expectRequest()
       request.headers should contain(`Remote-Address`(RemoteAddress(theAddress, Some(8080))))
-    }
+
+      shutdownBlueprint()
+    })
 
     "support request timeouts" which {
 
-      "are defined via the config" in new RequestTimeoutTestSetup(10.millis) {
+      "are defined via the config" in assertAllStagesStopped(new RequestTimeoutTestSetup(10.millis) {
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
         expectRequest().header[`Timeout-Access`] shouldBe defined
         expectResponseWithWipedDate(
@@ -764,9 +827,12 @@ class HttpServerSpec extends AkkaSpec(
             |
             |The server was not able to produce a timely response to your request.
             |Please try again in a short while!""")
-      }
 
-      "are programmatically increased (not expiring)" in new RequestTimeoutTestSetup(10.millis) {
+        netIn.sendComplete()
+        netOut.expectComplete()
+      })
+
+      "are programmatically increased (not expiring)" in assertAllStagesStopped(new RequestTimeoutTestSetup(10.millis) {
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
         expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(50.millis))
         netOut.expectNoBytes(30.millis)
@@ -778,9 +844,12 @@ class HttpServerSpec extends AkkaSpec(
             |Content-Length: 0
             |
             |""")
-      }
 
-      "are programmatically increased (expiring)" in new RequestTimeoutTestSetup(10.millis) {
+        netIn.sendComplete()
+        netOut.expectComplete()
+      })
+
+      "are programmatically increased (expiring)" in assertAllStagesStopped(new RequestTimeoutTestSetup(10.millis) {
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
         expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(50.millis))
         netOut.expectNoBytes(30.millis)
@@ -793,9 +862,12 @@ class HttpServerSpec extends AkkaSpec(
             |
             |The server was not able to produce a timely response to your request.
             |Please try again in a short while!""")
-      }
 
-      "are programmatically decreased" in new RequestTimeoutTestSetup(50.millis) {
+        netIn.sendComplete()
+        netOut.expectComplete()
+      })
+
+      "are programmatically decreased" in assertAllStagesStopped(new RequestTimeoutTestSetup(50.millis) {
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
         expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(10.millis))
         val mark = System.nanoTime()
@@ -809,9 +881,12 @@ class HttpServerSpec extends AkkaSpec(
             |The server was not able to produce a timely response to your request.
             |Please try again in a short while!""")
         (System.nanoTime() - mark) should be < (40 * 1000000L)
-      }
 
-      "have a programmatically set timeout handler" in new RequestTimeoutTestSetup(400.millis) {
+        netIn.sendComplete()
+        netOut.expectComplete()
+      })
+
+      "have a programmatically set timeout handler" in assertAllStagesStopped(new RequestTimeoutTestSetup(400.millis) {
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
         val timeoutResponse = HttpResponse(StatusCodes.InternalServerError, entity = "OOPS!")
         expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateHandler(_ ⇒ timeoutResponse))
@@ -823,10 +898,13 @@ class HttpServerSpec extends AkkaSpec(
             |Content-Length: 5
             |
             |OOPS!""")
-      }
+
+        netIn.sendComplete()
+        netOut.expectComplete()
+      })
     }
 
-    "add `Connection: close` to early responses" in new TestSetup {
+    "add `Connection: close` to early responses" in assertAllStagesStopped(new TestSetup {
       send("""POST / HTTP/1.1
              |Host: example.com
              |Content-Length: 100000
@@ -849,7 +927,7 @@ class HttpServerSpec extends AkkaSpec(
       netIn.sendComplete()
       requests.expectComplete()
       netOut.expectComplete()
-    }
+    })
 
     "support request length verification" which afterWord("is defined via") {
 

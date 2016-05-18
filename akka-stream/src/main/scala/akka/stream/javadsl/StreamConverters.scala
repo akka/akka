@@ -4,15 +4,17 @@
 package akka.stream.javadsl
 
 import java.io.{ InputStream, OutputStream }
+import java.util.stream.Collector
 import akka.japi.function
 import akka.stream.{ scaladsl, javadsl }
 import akka.stream.IOResult
 import akka.util.ByteString
 import scala.concurrent.duration.FiniteDuration
 import java.util.concurrent.CompletionStage
+import akka.NotUsed
 
 /**
- * Converters for interacting with the blocking `java.io` streams APIs
+ * Converters for interacting with the blocking `java.io` streams APIs and Java 8 Streams
  */
 object StreamConverters {
   /**
@@ -22,7 +24,7 @@ object StreamConverters {
    * and a possible exception if IO operation was not completed successfully.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * This method uses no auto flush for the [[java.io.OutputStream]] @see [[#fromOutputStream(function.Creator, Boolean)]] if you want to override it.
    *
@@ -40,7 +42,7 @@ object StreamConverters {
    * and a possible exception if IO operation was not completed successfully.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * The [[OutputStream]] will be closed when the stream flowing into this [[Sink]] is completed. The [[Sink]]
    * will cancel the stream when the [[OutputStream]] is no longer writable.
@@ -61,7 +63,7 @@ object StreamConverters {
    * This Sink is intended for inter-operation with legacy APIs since it is inherently blocking.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * The [[InputStream]] will be closed when the stream flowing into this [[Sink]] completes, and
    * closing the [[InputStream]] will cancel this [[Sink]].
@@ -75,7 +77,7 @@ object StreamConverters {
    * This Sink is intended for inter-operation with legacy APIs since it is inherently blocking.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * The [[InputStream]] will be closed when the stream flowing into this [[Sink]] completes, and
    * closing the [[InputStream]] will cancel this [[Sink]].
@@ -91,7 +93,7 @@ object StreamConverters {
    * except the final element, which will be up to `chunkSize` in size.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * It materializes a [[CompletionStage]] containing the number of bytes read from the source file upon completion.
    *
@@ -106,7 +108,7 @@ object StreamConverters {
    * except the last element, which will be up to 8192 in size.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * It materializes a [[CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
    * and a possible exception if IO operation was not completed successfully.
@@ -122,7 +124,7 @@ object StreamConverters {
    * This Source is intended for inter-operation with legacy APIs since it is inherently blocking.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * The created [[OutputStream]] will be closed when the [[Source]] is cancelled, and closing the [[OutputStream]]
    * will complete this [[Source]].
@@ -140,12 +142,66 @@ object StreamConverters {
    * This Source is intended for inter-operation with legacy APIs since it is inherently blocking.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * The created [[OutputStream]] will be closed when the [[Source]] is cancelled, and closing the [[OutputStream]]
    * will complete this [[Source]].
    */
   def asOutputStream(): javadsl.Source[ByteString, OutputStream] =
     new Source(scaladsl.StreamConverters.asOutputStream())
+
+
+  /**
+    * Creates a sink which materializes into Java 8 ``Stream`` that can be run to trigger demand through the sink.
+    * Elements emitted through the stream will be available for reading through the Java 8 ``Stream``.
+    *
+    * The Java 8 ``Stream`` will be ended when the stream flowing into this ``Sink`` completes, and closing the Java
+    * ``Stream`` will cancel the inflow of this ``Sink``.
+    *
+    * Java 8 ``Stream`` throws exception in case reactive stream failed.
+    *
+    * Be aware that Java ``Stream`` blocks current thread while waiting on next element from downstream.
+    * As it is interacting wit blocking API the implementation runs on a separate dispatcher
+    * configured through the ``akka.stream.blocking-io-dispatcher``.
+    */
+  def asJavaStream[T](): Sink[T, java.util.stream.Stream[T]] = new Sink(scaladsl.StreamConverters.asJavaStream())
+
+  /**
+    * Creates a source that wraps a Java 8 ``Stream``. ``Source`` uses a stream iterator to get all its
+    * elements and send them downstream on demand.
+    *
+    * Example usage: `Source.fromJavaStream(() -> IntStream.rangeClosed(1, 10))`
+    *
+    * You can use [[Source.async]] to create asynchronous boundaries between synchronous java stream
+    * and the rest of flow.
+    */
+  def fromJavaStream[O, S <: java.util.stream.BaseStream[O, S]](stream: function.Creator[java.util.stream.BaseStream[O, S]]): javadsl.Source[O, NotUsed] =
+    new Source(scaladsl.StreamConverters.fromJavaStream(stream.create))
+
+  /**
+    * Creates a sink which materializes into a ``CompletionStage`` which will be completed with a result of the Java 8 ``Collector``
+    * transformation and reduction operations. This allows usage of Java 8 streams transformations for reactive streams.
+    * The Collector`` will trigger demand downstream. Elements emitted through the stream will be accumulated into a mutable
+    * result container, optionally transformed into a final representation after all input elements have been processed.
+    * The ``Collector`` can also do reduction at the end. Reduction processing is performed sequentially
+    *
+    * Note that a flow can be materialized multiple times, so the function producing the ``Collector`` must be able
+    * to handle multiple invocations.
+    */
+  def javaCollector[T, R](collector: function.Creator[Collector[T, _ <: Any, R]]): Sink[T, CompletionStage[R]] =
+    new Sink(scaladsl.StreamConverters.javaCollector[T, R](() ⇒ collector.create()).toCompletionStage())
+
+  /**
+    * Creates a sink which materializes into a ``CompletionStage`` which will be completed with a result of the Java 8 ``Collector``
+    * transformation and reduction operations. This allows usage of Java 8 streams transformations for reactive streams.
+    * The ``Collector`` will trigger demand downstream. Elements emitted through the stream will be accumulated into a mutable
+    * result container, optionally transformed into a final representation after all input elements have been processed.
+    * ``Collector`` can also do reduction at the end. Reduction processing is performed in parallel based on graph ``Balance``.
+    *
+    * Note that a flow can be materialized multiple times, so the function producing the ``Collector`` must be able
+    * to handle multiple invocations.
+    */
+  def javaCollectorParallelUnordered[T, R](parallelism: Int)(collector: function.Creator[Collector[T, _ <: Any, R]]): Sink[T, CompletionStage[R]] =
+    new Sink(scaladsl.StreamConverters.javaCollectorParallelUnordered[T, R](parallelism)(() ⇒ collector.create()).toCompletionStage())
 
 }

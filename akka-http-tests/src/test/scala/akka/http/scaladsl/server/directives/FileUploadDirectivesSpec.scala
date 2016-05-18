@@ -4,12 +4,18 @@
 
 package akka.http.scaladsl.server.directives
 
-import java.io.{ FileInputStream, File }
+import java.io.{ File, FileInputStream }
+
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.{ MissingFormFieldRejection, RoutingSpec }
+import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.util.ByteString
+import scala.concurrent.duration._
 
 class FileUploadDirectivesSpec extends RoutingSpec {
+
+  // tests touches filesystem, so reqs may take longer than the default of 1.second to complete
+  implicit val routeTimeout = RouteTestTimeout(3.seconds)
 
   "the uploadedFile directive" should {
 

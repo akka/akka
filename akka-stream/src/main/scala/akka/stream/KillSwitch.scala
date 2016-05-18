@@ -159,7 +159,7 @@ trait KillSwitch {
  * It is also possible to individually cancel, complete or fail upstream and downstream parts by calling the corresponding
  * methods.
  */
-final class UniqueKillSwitch private[stream] (private val promise: Promise[Done]) {
+final class UniqueKillSwitch private[stream] (private val promise: Promise[Done]) extends KillSwitch {
 
   /**
    * After calling [[UniqueKillSwitch#shutdown()]] the running instance of the [[Graph]] of [[FlowShape]] that materialized to the
@@ -200,7 +200,7 @@ final class UniqueKillSwitch private[stream] (private val promise: Promise[Done]
  *
  * This class is thread-safe, the instance can be passed safely among threads and its methods may be invoked concurrently.
  */
-final class SharedKillSwitch private[stream] (val name: String) {
+final class SharedKillSwitch private[stream] (val name: String) extends KillSwitch {
   private[this] val shutdownPromise = Promise[Done]
   private[this] val _flow: Graph[FlowShape[Any, Any], SharedKillSwitch] = new SharedKillSwitchFlow
 

@@ -5,6 +5,7 @@
 package akka.http.impl.util
 
 import java.io.File
+import java.nio.file.Path
 
 import JavaMapping.Implicits._
 import akka.http.javadsl.model._
@@ -28,4 +29,8 @@ object JavaAccessors {
   /** INTERNAL API */
   def HttpEntity(contentType: ContentType, file: File): UniversalEntity =
     model.HttpEntity(contentType.asScala, file)
+
+  /** INTERNAL API */
+  def HttpEntity(contentType: ContentType, file: Path): UniversalEntity =
+    model.HttpEntity.fromPath(contentType.asScala, file)
 }

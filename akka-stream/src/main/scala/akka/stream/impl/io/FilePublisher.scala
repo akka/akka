@@ -3,9 +3,9 @@
  */
 package akka.stream.impl.io
 
-import java.io.File
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
+import java.nio.file.Path
 
 import akka.Done
 import akka.actor.{ Deploy, ActorLogging, DeadLetterSuppression, Props }
@@ -20,7 +20,7 @@ import scala.util.control.NonFatal
 
 /** INTERNAL API */
 private[akka] object FilePublisher {
-  def props(f: File, completionPromise: Promise[IOResult], chunkSize: Int, initialBuffer: Int, maxBuffer: Int) = {
+  def props(f: Path, completionPromise: Promise[IOResult], chunkSize: Int, initialBuffer: Int, maxBuffer: Int) = {
     require(chunkSize > 0, s"chunkSize must be > 0 (was $chunkSize)")
     require(initialBuffer > 0, s"initialBuffer must be > 0 (was $initialBuffer)")
     require(maxBuffer >= initialBuffer, s"maxBuffer must be >= initialBuffer (was $maxBuffer)")
@@ -35,7 +35,7 @@ private[akka] object FilePublisher {
 }
 
 /** INTERNAL API */
-private[akka] final class FilePublisher(f: File, completionPromise: Promise[IOResult], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
+private[akka] final class FilePublisher(f: Path, completionPromise: Promise[IOResult], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
   extends akka.stream.actor.ActorPublisher[ByteString] with ActorLogging {
   import FilePublisher._
 
@@ -49,7 +49,7 @@ private[akka] final class FilePublisher(f: File, completionPromise: Promise[IORe
 
   override def preStart() = {
     try {
-      chan = FileChannel.open(f.toPath, FilePublisher.Read)
+      chan = FileChannel.open(f, FilePublisher.Read)
     } catch {
       case ex: Exception ⇒
         onErrorThenStop(ex)

@@ -111,4 +111,4 @@ requests to run against a route using `WS` which can be used to provide a mock W
 testing of the WebSocket handler's behavior if the request was accepted.
 
 
-.. _example: @github@/akka-docs-dev/rst/scala/code/docs/http/scaladsl/server/WebSocketExampleSpec.scala
+.. _example: @github@/akka-docs/rst/scala/code/docs/http/scaladsl/server/WebSocketExampleSpec.scala
