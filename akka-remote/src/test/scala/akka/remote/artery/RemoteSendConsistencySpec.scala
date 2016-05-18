@@ -7,31 +7,24 @@ import scala.concurrent.duration._
 import akka.actor.{ Actor, ActorIdentity, ActorSystem, Deploy, ExtendedActorSystem, Identify, Props, RootActorPath }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import com.typesafe.config.ConfigFactory
-import RemoteSendConsistencySpec._
 import akka.actor.Actor.Receive
-import akka.testkit.SocketUtil
 
 object RemoteSendConsistencySpec {
 
-  val Seq(portA, portB) = SocketUtil.temporaryServerAddresses(2, "localhost", udp = true).map(_.getPort)
-
-  val commonConfig = ConfigFactory.parseString(s"""
+  val config = ConfigFactory.parseString(s"""
      akka {
        actor.provider = "akka.remote.RemoteActorRefProvider"
        remote.artery.enabled = on
        remote.artery.hostname = localhost
-       remote.artery.port = $portA
+       remote.artery.port = 0
      }
   """)
 
-  val configB = ConfigFactory.parseString(s"akka.remote.artery.port = $portB")
-    .withFallback(commonConfig)
-
 }
 
-class RemoteSendConsistencySpec extends AkkaSpec(commonConfig) with ImplicitSender {
+class RemoteSendConsistencySpec extends AkkaSpec(RemoteSendConsistencySpec.config) with ImplicitSender {
 
-  val systemB = ActorSystem("systemB", RemoteSendConsistencySpec.configB)
+  val systemB = ActorSystem("systemB", system.settings.config)
   val addressB = systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
   println(addressB)
   val rootB = RootActorPath(addressB)
