@@ -81,6 +81,7 @@ abstract class AeronStreamConsistencySpec
   }
 
   val streamId = 1
+  val giveUpSendAfter = 30.seconds
 
   override def afterAll(): Unit = {
     taskRunner.stop()
@@ -96,7 +97,7 @@ abstract class AeronStreamConsistencySpec
       runOn(second) {
         // just echo back
         Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool))
-          .runWith(new AeronSink(channel(first), streamId, aeron, taskRunner, pool))
+          .runWith(new AeronSink(channel(first), streamId, aeron, taskRunner, pool, giveUpSendAfter))
       }
       enterBarrier("echo-started")
     }
@@ -137,7 +138,7 @@ abstract class AeronStreamConsistencySpec
             envelope
           }
             .throttle(1, 200.milliseconds, 1, ThrottleMode.Shaping)
-            .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool))
+            .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpSendAfter))
           started.expectMsg(Done)
         }
 
@@ -149,7 +150,7 @@ abstract class AeronStreamConsistencySpec
             envelope.byteBuffer.flip()
             envelope
           }
-          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool))
+          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpSendAfter))
 
         Await.ready(done, 20.seconds)
         killSwitch.shutdown()
