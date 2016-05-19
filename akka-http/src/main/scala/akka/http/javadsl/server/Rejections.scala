@@ -4,7 +4,7 @@
 package akka.http.javadsl.server
 
 import akka.http.impl.util.JavaMapping
-import akka.http.javadsl.RoutingJavaMapping
+import akka.http.javadsl.server.RoutingJavaMapping
 import akka.http.javadsl.model.ContentTypeRange
 import akka.http.scaladsl.model
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
