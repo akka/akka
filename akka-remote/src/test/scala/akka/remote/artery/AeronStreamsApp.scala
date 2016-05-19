@@ -91,6 +91,8 @@ object AeronStreamsApp {
   })
   lazy val reporterExecutor = Executors.newFixedThreadPool(1)
 
+  lazy val pool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumFrameSize)
+
   def stopReporter(): Unit = {
     reporter.halt()
     reporterExecutor.shutdown()
@@ -140,10 +142,10 @@ object AeronStreamsApp {
     if (args.length != 0 && args(0) == "echo-receiver")
       runEchoReceiver()
 
-    if (args(0) == "debug-receiver")
+    if (args.length != 0 && args(0) == "debug-receiver")
       runDebugReceiver()
 
-    if (args(0) == "debug-sender")
+    if (args.length != 0 && args(0) == "debug-sender")
       runDebugSender()
 
     if (args.length >= 2 && args(1) == "stats")
@@ -157,20 +159,21 @@ object AeronStreamsApp {
     var t0 = System.nanoTime()
     var count = 0L
     var payloadSize = 0L
-    Source.fromGraph(new AeronSource(channel1, streamId, aeron, taskRunner))
-      .map { bytes ⇒
-        r.onMessage(1, bytes.length)
-        bytes
+    Source.fromGraph(new AeronSource(channel1, streamId, aeron, taskRunner, pool))
+      .map { envelope ⇒
+        r.onMessage(1, envelope.byteBuffer.limit)
+        envelope
       }
-      .runForeach { bytes ⇒
+      .runForeach { envelope ⇒
         count += 1
         if (count == 1) {
           t0 = System.nanoTime()
-          payloadSize = bytes.length
+          payloadSize = envelope.byteBuffer.limit
         } else if (count == throughputN) {
           exit(0)
           printTotal(throughputN, "receive", t0, payloadSize)
         }
+        pool.release(envelope)
       }.onFailure {
         case e ⇒
           e.printStackTrace
@@ -193,21 +196,24 @@ object AeronStreamsApp {
       }
       .map { _ ⇒
         r.onMessage(1, payload.length)
-        payload
+        val envelope = pool.acquire()
+        envelope.byteBuffer.put(payload)
+        envelope.byteBuffer.flip()
+        envelope
       }
-      .runWith(new AeronSink(channel1, streamId, aeron, taskRunner))
+      .runWith(new AeronSink(channel1, streamId, aeron, taskRunner, pool))
   }
 
   def runEchoReceiver(): Unit = {
     // just echo back on channel2
     reporterExecutor.execute(reporter)
     val r = reporter
-    Source.fromGraph(new AeronSource(channel1, streamId, aeron, taskRunner))
-      .map { bytes ⇒
-        r.onMessage(1, bytes.length)
-        bytes
+    Source.fromGraph(new AeronSource(channel1, streamId, aeron, taskRunner, pool))
+      .map { envelope ⇒
+        r.onMessage(1, envelope.byteBuffer.limit)
+        envelope
       }
-      .runWith(new AeronSink(channel2, streamId, aeron, taskRunner))
+      .runWith(new AeronSink(channel2, streamId, aeron, taskRunner, pool))
   }
 
   def runEchoSender(): Unit = {
@@ -219,21 +225,22 @@ object AeronStreamsApp {
     var repeat = 3
     val count = new AtomicInteger
     var t0 = System.nanoTime()
-    Source.fromGraph(new AeronSource(channel2, streamId, aeron, taskRunner))
-      .map { bytes ⇒
-        r.onMessage(1, bytes.length)
-        bytes
+    Source.fromGraph(new AeronSource(channel2, streamId, aeron, taskRunner, pool))
+      .map { envelope ⇒
+        r.onMessage(1, envelope.byteBuffer.limit)
+        envelope
       }
-      .runForeach { bytes ⇒
+      .runForeach { envelope ⇒
         val c = count.incrementAndGet()
         val d = System.nanoTime() - sendTimes.get(c - 1)
         if (c % (latencyN / 10) == 0)
           println(s"# receive offset $c => ${d / 1000} µs") // FIXME
         histogram.recordValue(d)
         if (c == latencyN) {
-          printTotal(latencyN, "ping-pong", t0, bytes.length)
+          printTotal(latencyN, "ping-pong", t0, envelope.byteBuffer.limit)
           barrier.await() // this is always the last party
         }
+        pool.release(envelope)
       }.onFailure {
         case e ⇒
           e.printStackTrace
@@ -252,9 +259,12 @@ object AeronStreamsApp {
           if (n % (latencyN / 10) == 0)
             println(s"# send offset $n") // FIXME
           sendTimes.set(n - 1, System.nanoTime())
-          payload
+          val envelope = pool.acquire()
+          envelope.byteBuffer.put(payload)
+          envelope.byteBuffer.flip()
+          envelope
         }
-        .runWith(new AeronSink(channel1, streamId, aeron, taskRunner))
+        .runWith(new AeronSink(channel1, streamId, aeron, taskRunner, pool))
 
       barrier.await()
     }
@@ -264,8 +274,13 @@ object AeronStreamsApp {
 
   def runDebugReceiver(): Unit = {
     import system.dispatcher
-    Source.fromGraph(new AeronSource(channel1, streamId, aeron, taskRunner))
-      .map(bytes ⇒ new String(bytes, "utf-8"))
+    Source.fromGraph(new AeronSource(channel1, streamId, aeron, taskRunner, pool))
+      .map { envelope ⇒
+        val bytes = Array.ofDim[Byte](envelope.byteBuffer.limit)
+        envelope.byteBuffer.get(bytes)
+        pool.release(envelope)
+        new String(bytes, "utf-8")
+      }
       .runForeach { s ⇒
         println(s)
       }.onFailure {
@@ -283,9 +298,12 @@ object AeronStreamsApp {
       .map { n ⇒
         val s = (fill + n.toString).takeRight(4)
         println(s)
-        s.getBytes("utf-8")
+        val envelope = pool.acquire()
+        envelope.byteBuffer.put(s.getBytes("utf-8"))
+        envelope.byteBuffer.flip()
+        envelope
       }
-      .runWith(new AeronSink(channel1, streamId, aeron, taskRunner))
+      .runWith(new AeronSink(channel1, streamId, aeron, taskRunner, pool))
   }
 
   def runStats(): Unit = {

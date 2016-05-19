@@ -27,48 +27,49 @@ import io.aeron.Publication
 import org.agrona.concurrent.UnsafeBuffer
 
 object AeronSink {
-  type Bytes = Array[Byte]
 
-  private def offerTask(pub: Publication, buffer: UnsafeBuffer, msgSize: AtomicInteger, onOfferSuccess: AsyncCallback[Unit]): () ⇒ Boolean = {
+  class OfferTask(pub: Publication, var buffer: UnsafeBuffer, msgSize: AtomicInteger, onOfferSuccess: AsyncCallback[Unit])
+    extends (() ⇒ Boolean) {
+
     var n = 0L
     var localMsgSize = -1
-    () ⇒
-      {
-        n += 1
-        if (localMsgSize == -1)
-          localMsgSize = msgSize.get
-        val result = pub.offer(buffer, 0, localMsgSize)
-        if (result >= 0) {
-          n = 0
-          localMsgSize = -1
-          onOfferSuccess.invoke(())
-          true
-        } else {
-          // FIXME drop after too many attempts?
-          if (n > 1000000 && n % 100000 == 0)
-            println(s"# offer not accepted after $n") // FIXME
-          false
-        }
+
+    override def apply(): Boolean = {
+      n += 1
+      if (localMsgSize == -1)
+        localMsgSize = msgSize.get
+      val result = pub.offer(buffer, 0, localMsgSize)
+      if (result >= 0) {
+        n = 0
+        localMsgSize = -1
+        onOfferSuccess.invoke(())
+        true
+      } else {
+        // FIXME drop after too many attempts?
+        if (n > 1000000 && n % 100000 == 0)
+          println(s"# offer not accepted after $n") // FIXME
+        false
       }
+    }
   }
 }
 
 /**
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
  */
-class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRunner)
-  extends GraphStageWithMaterializedValue[SinkShape[AeronSink.Bytes], Future[Done]] {
+class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRunner, pool: EnvelopeBufferPool)
+  extends GraphStageWithMaterializedValue[SinkShape[EnvelopeBuffer], Future[Done]] {
   import AeronSink._
   import TaskRunner._
 
-  val in: Inlet[Bytes] = Inlet("AeronSink")
-  override val shape: SinkShape[Bytes] = SinkShape(in)
+  val in: Inlet[EnvelopeBuffer] = Inlet("AeronSink")
+  override val shape: SinkShape[EnvelopeBuffer] = SinkShape(in)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val completed = Promise[Done]()
     val logic = new GraphStageLogic(shape) with InHandler {
 
-      private val buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(128 * 1024))
+      private var envelopeInFlight: EnvelopeBuffer = null
       private val pub = aeron.addPublication(channel, streamId)
 
       private var completedValue: Try[Done] = Success(Done)
@@ -76,8 +77,9 @@ class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRu
       private val spinning = 1000
       private var backoffCount = spinning
       private var lastMsgSize = 0
-      private var lastMsgSizeRef = new AtomicInteger // used in the external backoff task
-      private val addOfferTask: Add = Add(offerTask(pub, buffer, lastMsgSizeRef, getAsyncCallback(_ ⇒ onOfferSuccess())))
+      private val lastMsgSizeRef = new AtomicInteger // used in the external backoff task
+      private val offerTask = new OfferTask(pub, null, lastMsgSizeRef, getAsyncCallback(_ ⇒ onOfferSuccess()))
+      private val addOfferTask: Add = Add(offerTask)
 
       private var offerTaskInProgress = false
 
@@ -94,15 +96,14 @@ class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRu
 
       // InHandler
       override def onPush(): Unit = {
-        val msg = grab(in)
-        buffer.putBytes(0, msg);
+        envelopeInFlight = grab(in)
         backoffCount = spinning
-        lastMsgSize = msg.length
+        lastMsgSize = envelopeInFlight.byteBuffer.limit
         publish()
       }
 
       @tailrec private def publish(): Unit = {
-        val result = pub.offer(buffer, 0, lastMsgSize)
+        val result = pub.offer(envelopeInFlight.aeronBuffer, 0, lastMsgSize)
         // FIXME handle Publication.CLOSED
         // TODO the backoff strategy should be measured and tuned
         if (result < 0) {
@@ -113,6 +114,7 @@ class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRu
             // delegate backoff to shared TaskRunner
             lastMsgSizeRef.set(lastMsgSize)
             offerTaskInProgress = true
+            offerTask.buffer = envelopeInFlight.aeronBuffer
             taskRunner.command(addOfferTask)
           }
         } else {
@@ -122,6 +124,10 @@ class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRu
 
       private def onOfferSuccess(): Unit = {
         offerTaskInProgress = false
+        pool.release(envelopeInFlight)
+        offerTask.buffer = null
+        envelopeInFlight = null
+
         if (isClosed(in))
           completeStage()
         else

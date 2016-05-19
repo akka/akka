@@ -5,6 +5,7 @@ package akka.remote.artery
 
 import java.net.InetAddress
 import java.util.concurrent.Executors
+
 import scala.collection.AbstractIterator
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -21,6 +22,8 @@ import io.aeron.Aeron
 import io.aeron.driver.MediaDriver
 import akka.stream.KillSwitches
 import java.io.File
+
+import akka.util.ByteString
 import io.aeron.CncFileDescriptor
 import org.agrona.IoUtil
 
@@ -80,6 +83,8 @@ abstract class AeronStreamMaxThroughputSpec
   var plot = PlotResult()
 
   val driver = MediaDriver.launchEmbedded()
+
+  val pool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
 
   val stats =
     new AeronStat(AeronStat.mapCounters(new File(driver.aeronDirectoryName, CncFileDescriptor.CNC_FILE)))
@@ -168,9 +173,10 @@ abstract class AeronStreamMaxThroughputSpec
       var count = 0L
       val done = TestLatch(1)
       val killSwitch = KillSwitches.shared(testName)
-      Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner))
+      Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool))
         .via(killSwitch.flow)
-        .runForeach { bytes ⇒
+        .runForeach { envelope ⇒
+          val bytes = ByteString.fromByteBuffer(envelope.byteBuffer)
           rep.onMessage(1, bytes.length)
           count += 1
           if (count == 1) {
@@ -180,6 +186,7 @@ abstract class AeronStreamMaxThroughputSpec
             done.countDown()
             killSwitch.shutdown()
           }
+          pool.release(envelope)
         }.onFailure {
           case e ⇒
             e.printStackTrace
@@ -198,8 +205,13 @@ abstract class AeronStreamMaxThroughputSpec
       val payload = ("0" * payloadSize).getBytes("utf-8")
       val t0 = System.nanoTime()
       Source.fromIterator(() ⇒ iterate(1, totalMessages))
-        .map { n ⇒ payload }
-        .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner))
+        .map { n ⇒
+          val envelope = pool.acquire()
+          envelope.byteBuffer.put(payload)
+          envelope.byteBuffer.flip()
+          envelope
+        }
+        .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool))
 
       printStats("sender")
       enterBarrier(testName + "-done")
