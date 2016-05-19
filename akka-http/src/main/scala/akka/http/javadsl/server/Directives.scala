@@ -16,7 +16,7 @@ abstract class AllDirectives extends TimeoutDirectives
  */
 object Directives extends AllDirectives {
   import JavaMapping.Implicits._
-  import akka.http.javadsl.RoutingJavaMapping._
+  import RoutingJavaMapping._
 
   // These are repeated here since sometimes (?) the Scala compiler won't actually generate java-compatible
   // signatures for varargs methods, making them show up as Seq<Object> instead of T... in Java.

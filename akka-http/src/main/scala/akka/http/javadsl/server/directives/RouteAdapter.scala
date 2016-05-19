@@ -8,8 +8,8 @@ import akka.actor.ActorSystem
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.HttpResponse
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.javadsl.RoutingJavaMapping._
-import akka.http.javadsl.server.{ ExceptionHandler, RejectionHandler, Route }
+import akka.http.javadsl.server.{ ExceptionHandler, RejectionHandler, Route, RoutingJavaMapping }
+import RoutingJavaMapping._
 import akka.http.javadsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl
 import akka.http.scaladsl.server.RouteConcatenation._
