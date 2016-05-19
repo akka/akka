@@ -434,7 +434,8 @@ object AkkaBuild extends Build {
   val dontPublishSettings = Seq(
     publishSigned := (),
     publish := (),
-    publishArtifact in Compile := false
+    publishArtifact in Compile := false,
+    Dist.includeInDist := false
   )
 
   val dontPublishDocsSettings = Seq(
