@@ -386,7 +386,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       // TODO just cargo-cult programming here
       val completed = Source.fromGraph(new AeronSource(inboundChannel, largeStreamId, aeron, taskRunner, envelopePool))
         .async // FIXME measure
-        .map(ByteString.apply) // TODO we should use ByteString all the way
         .via(inboundFlow)
         .runWith(Sink.ignore)(materializer)
 
@@ -473,7 +472,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     Flow.fromGraph(killSwitch.flow[Send])
       .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval))
       .via(encoder)
-      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), largeStreamId, aeron, taskRunner, largeMessageDestinationsBufferSize))(Keep.right)
+      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), largeStreamId, aeron, taskRunner, envelopePool))(Keep.right)
   }
 
   def outboundControl(outboundContext: OutboundContext): Sink[Send, (OutboundControlIngress, Future[Done])] = {
