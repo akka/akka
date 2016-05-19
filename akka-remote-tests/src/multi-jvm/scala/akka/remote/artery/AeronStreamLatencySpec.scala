@@ -7,6 +7,7 @@ import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLongArray
+
 import scala.concurrent.duration._
 import akka.actor._
 import akka.remote.testconductor.RoleName
@@ -22,11 +23,14 @@ import io.aeron.Aeron
 import io.aeron.driver.MediaDriver
 import org.HdrHistogram.Histogram
 import java.util.concurrent.atomic.AtomicBoolean
+
 import akka.stream.KillSwitches
 import akka.Done
 import org.agrona.IoUtil
 import java.io.File
 import java.io.File
+
+import akka.util.ByteString
 import io.aeron.CncFileDescriptor
 
 object AeronStreamLatencySpec extends MultiNodeConfig {
@@ -75,6 +79,8 @@ abstract class AeronStreamLatencySpec
   var plots = LatencyPlots()
 
   val driver = MediaDriver.launchEmbedded()
+
+  val pool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
 
   val stats =
     new AeronStat(AeronStat.mapCounters(new File(driver.aeronDirectoryName, CncFileDescriptor.CNC_FILE)))
@@ -193,9 +199,10 @@ abstract class AeronStreamLatencySpec
       val killSwitch = KillSwitches.shared(testName)
       val started = TestProbe()
       val startMsg = "0".getBytes("utf-8")
-      Source.fromGraph(new AeronSource(channel(first), streamId, aeron, taskRunner))
+      Source.fromGraph(new AeronSource(channel(first), streamId, aeron, taskRunner, pool))
         .via(killSwitch.flow)
-        .runForeach { bytes ⇒
+        .runForeach { envelope ⇒
+          val bytes = ByteString.fromByteBuffer(envelope.byteBuffer)
           if (bytes.length == 1 && bytes(0) == startMsg(0))
             started.ref ! Done
           else {
@@ -209,12 +216,18 @@ abstract class AeronStreamLatencySpec
               barrier.await() // this is always the last party
             }
           }
+          pool.release(envelope)
         }
 
       within(10.seconds) {
-        Source(1 to 50).map(_ ⇒ startMsg)
+        Source(1 to 50).map { _ ⇒
+          val envelope = pool.acquire()
+          envelope.byteBuffer.put(startMsg)
+          envelope.byteBuffer.flip()
+          envelope
+        }
           .throttle(1, 200.milliseconds, 1, ThrottleMode.Shaping)
-          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner))
+          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool))
         started.expectMsg(Done)
       }
 
@@ -226,10 +239,13 @@ abstract class AeronStreamLatencySpec
         Source(1 to totalMessages)
           .throttle(messageRate, 1.second, math.max(messageRate / 10, 1), ThrottleMode.Shaping)
           .map { n ⇒
+            val envelope = pool.acquire()
+            envelope.byteBuffer.put(payload)
+            envelope.byteBuffer.flip()
             sendTimes.set(n - 1, System.nanoTime())
-            payload
+            envelope
           }
-          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner))
+          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool))
 
         barrier.await((totalMessages / messageRate) + 10, SECONDS)
       }
@@ -247,8 +263,8 @@ abstract class AeronStreamLatencySpec
     "start echo" in {
       runOn(second) {
         // just echo back
-        Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner))
-          .runWith(new AeronSink(channel(first), streamId, aeron, taskRunner))
+        Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool))
+          .runWith(new AeronSink(channel(first), streamId, aeron, taskRunner, pool))
       }
       enterBarrier("echo-started")
     }

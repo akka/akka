@@ -24,9 +24,8 @@ import org.agrona.DirectBuffer
 import org.agrona.concurrent.BackoffIdleStrategy
 
 object AeronSource {
-  type Bytes = Array[Byte]
 
-  private def pollTask(sub: Subscription, handler: MessageHandler, onMessage: AsyncCallback[Bytes]): () ⇒ Boolean = {
+  private def pollTask(sub: Subscription, handler: MessageHandler, onMessage: AsyncCallback[EnvelopeBuffer]): () ⇒ Boolean = {
     () ⇒
       {
         handler.reset
@@ -41,19 +40,20 @@ object AeronSource {
       }
   }
 
-  class MessageHandler {
+  class MessageHandler(pool: EnvelopeBufferPool) {
     def reset(): Unit = messageReceived = null
 
-    var messageReceived: Bytes = null
+    var messageReceived: EnvelopeBuffer = null
 
-    val fragmentsHandler = new Fragments(data ⇒ messageReceived = data)
+    val fragmentsHandler = new Fragments(data ⇒ messageReceived = data, pool)
   }
 
-  class Fragments(onMessage: Bytes ⇒ Unit) extends FragmentAssembler(new FragmentHandler {
-    override def onFragment(buffer: DirectBuffer, offset: Int, length: Int, header: Header): Unit = {
-      val data = Array.ofDim[Byte](length)
-      buffer.getBytes(offset, data)
-      onMessage(data)
+  class Fragments(onMessage: EnvelopeBuffer ⇒ Unit, pool: EnvelopeBufferPool) extends FragmentAssembler(new FragmentHandler {
+    override def onFragment(aeronBuffer: DirectBuffer, offset: Int, length: Int, header: Header): Unit = {
+      val envelope = pool.acquire()
+      aeronBuffer.getBytes(offset, envelope.byteBuffer, length)
+      envelope.byteBuffer.flip()
+      onMessage(envelope)
     }
   })
 }
@@ -61,12 +61,13 @@ object AeronSource {
 /**
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
  */
-class AeronSource(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRunner) extends GraphStage[SourceShape[AeronSource.Bytes]] {
+class AeronSource(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRunner, pool: EnvelopeBufferPool)
+  extends GraphStage[SourceShape[EnvelopeBuffer]] {
   import AeronSource._
   import TaskRunner._
 
-  val out: Outlet[Bytes] = Outlet("AeronSource")
-  override val shape: SourceShape[Bytes] = SourceShape(out)
+  val out: Outlet[EnvelopeBuffer] = Outlet("AeronSource")
+  override val shape: SourceShape[EnvelopeBuffer] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with OutHandler {
@@ -81,7 +82,7 @@ class AeronSource(channel: String, streamId: Int, aeron: Aeron, taskRunner: Task
       private var backoffCount = idleStrategyRetries
 
       // the fragmentHandler is called from `poll` in same thread, i.e. no async callback is needed
-      private val messageHandler = new MessageHandler
+      private val messageHandler = new MessageHandler(pool)
       private val addPollTask: Add = Add(pollTask(sub, messageHandler, getAsyncCallback(onMessage)))
 
       override def postStop(): Unit = {
@@ -119,7 +120,7 @@ class AeronSource(channel: String, streamId: Int, aeron: Aeron, taskRunner: Task
         }
       }
 
-      private def onMessage(data: Bytes): Unit = {
+      private def onMessage(data: EnvelopeBuffer): Unit = {
         push(out, data)
       }
 
