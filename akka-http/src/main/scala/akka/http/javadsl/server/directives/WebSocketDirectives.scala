@@ -7,11 +7,13 @@ package directives
 
 import java.util.{ List ⇒ JList }
 import java.util.Optional
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ Function ⇒ JFunction, Supplier }
 
 import akka.NotUsed
 import scala.collection.JavaConverters._
 import akka.http.scaladsl.model.{ ws ⇒ s }
+import akka.http.javadsl.model.StatusCodes
+import akka.http.javadsl.model.headers.{ HttpOriginRange, Origin }
 import akka.http.javadsl.model.ws.Message
 import akka.http.javadsl.model.ws.UpgradeToWebSocket
 import akka.http.scaladsl.server.{ Directives ⇒ D }
@@ -71,6 +73,21 @@ abstract class WebSocketDirectives extends SecurityDirectives {
   def handleWebSocketMessagesForOptionalProtocol(handler: Flow[Message, Message, Any], subprotocol: Optional[String]): Route = RouteAdapter {
     val adapted = scaladsl.Flow[s.Message].map(_.asJava).via(handler).map(_.asScala)
     D.handleWebSocketMessagesForOptionalProtocol(adapted, subprotocol.asScala)
+  }
+
+  /**
+   * Checks that the WebSocket comes from the same origin. Extracts the [[Origin]] header and
+   * verify that the allowed range contains obtained values. In case of absent of [[Origin]] header
+   * rejects with [[MissingHeaderRejection]] and [[StatusCodes.FORBIDDEN]]. In case if some of the origin
+   * values not in the allowed list rejects with a [[MalformedHeaderRejection]] and [[StatusCodes.FORBIDDEN]].
+   *
+   * See https://tools.ietf.org/html/rfc6455#section-1.3 and
+   * http://blog.dewhurstsecurity.com/2013/08/30/security-testing-html5-websockets.html
+   *
+   * @group websocket
+   */
+  def checkSameOrigin(allowed: HttpOriginRange, inner: Supplier[Route]): Route = RouteAdapter {
+    D.checkSameOrigin(allowed.asScala) { inner.get().delegate }
   }
 
   // TODO this is because scala Message does not extend java Message - we could fix that, but http-core is stable
