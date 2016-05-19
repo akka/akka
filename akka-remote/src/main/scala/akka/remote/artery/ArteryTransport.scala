@@ -384,10 +384,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def runInboundLargeMessagesStream(): Unit = {
     if (largeMessageDestinationsEnabled) {
       // TODO just cargo-cult programming here
-      val completed = Source.fromGraph(new AeronSource(inboundChannel, largeStreamId, aeron, taskRunner))
+      val completed = Source.fromGraph(new AeronSource(inboundChannel, largeStreamId, aeron, taskRunner, envelopePool))
         .async // FIXME measure
         .map(ByteString.apply) // TODO we should use ByteString all the way
-        .via(inboundLargeFlow)
+        .via(inboundFlow)
         .runWith(Sink.ignore)(materializer)
 
       attachStreamRestart("Inbound large message stream", completed, () ⇒ runInboundLargeMessagesStream())
@@ -447,7 +447,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     else {
       associations.computeIfAbsent(remoteAddress, new JFunction[Address, Association] {
         override def apply(remoteAddress: Address): Association = {
-          val newAssociation = new Association(ArteryTransport.this, materializer, remoteAddress, controlSubject, largeMessageDestinationsEnabled, largeMessageDestinations)
+          val newAssociation = new Association(ArteryTransport.this, materializer, remoteAddress, controlSubject, largeMessageDestinations)
           newAssociation.associate() // This is a bit costly for this blocking method :(
           newAssociation
         }
@@ -473,8 +473,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     Flow.fromGraph(killSwitch.flow[Send])
       .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval))
       .via(encoder)
-      .map(_.toArray) // TODO we should use ByteString all the way
-      .map { bytes ⇒ println("sending large bytes: " + bytes.length); bytes }
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), largeStreamId, aeron, taskRunner, largeMessageDestinationsBufferSize))(Keep.right)
   }
 

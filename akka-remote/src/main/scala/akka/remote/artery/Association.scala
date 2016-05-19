@@ -44,7 +44,6 @@ private[akka] class Association(
   val materializer: Materializer,
   override val remoteAddress: Address,
   override val controlSubject: ControlMessageSubject,
-  largeMessageChannelEnabled: Boolean,
   largeMessageDestinations: WildcardTree[NotUsed])
   extends AbstractAssociation with OutboundContext {
 
@@ -54,6 +53,7 @@ private[akka] class Association(
   private val restartTimeout: FiniteDuration = 5.seconds // FIXME config
   private val maxRestarts = 5 // FIXME config
   private val restartCounter = new RestartCounter(maxRestarts, restartTimeout)
+  private val largeMessageChannelEnabled = largeMessageDestinations.children.nonEmpty
 
   @volatile private[this] var queue: SourceQueueWithComplete[Send] = _
   @volatile private[this] var largeQueue: SourceQueueWithComplete[Send] = _
@@ -138,11 +138,10 @@ private[akka] class Association(
           }
         case _ ⇒
           val send = Send(message, senderOption, recipient, None)
-          if (!largeMessageChannelEnabled || !isLargeMessageDestination(recipient)) {
-            queue.offer(send)
-          } else {
+          if (largeMessageChannelEnabled && isLargeMessageDestination(recipient))
             largeQueue.offer(send)
-          }
+          else
+            queue.offer(send)
       }
     } else if (log.isDebugEnabled)
       log.debug("Dropping message to quarantined system {}", remoteAddress)
@@ -156,7 +155,7 @@ private[akka] class Association(
           r.cachedLargeMessageDestinationFlag = RegularDestination
           false
         } else {
-          log.debug("Using large message channel for {}", r.path)
+          log.debug("Using large message stream for {}", r.path)
           r.cachedLargeMessageDestinationFlag = LargeDestination
           true
         }

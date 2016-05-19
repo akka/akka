@@ -438,9 +438,12 @@ private[akka] trait RemoteRef extends ActorRefScope {
   final def isLocal = false
 }
 
-sealed abstract class LargeMessageDestinationFlag
-case object RegularDestination extends LargeMessageDestinationFlag
-case object LargeDestination extends LargeMessageDestinationFlag
+/**
+ * INTERNAL API
+ */
+private[remote] sealed abstract class LargeMessageDestinationFlag
+private[remote] case object RegularDestination extends LargeMessageDestinationFlag
+private[remote] case object LargeDestination extends LargeMessageDestinationFlag
 
 /**
  * INTERNAL API

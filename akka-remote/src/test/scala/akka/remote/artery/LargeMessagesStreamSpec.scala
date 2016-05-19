@@ -5,7 +5,7 @@ package akka.remote.artery
 
 import akka.actor.{ Actor, ActorRef, ActorSelection, ActorSystem, ExtendedActorSystem, Props, RootActorPath }
 import akka.remote.{ LargeDestination, RegularDestination, RemoteActorRef }
-import akka.testkit.{ SocketUtil, TestProbe }
+import akka.testkit.{ SocketUtil, TestKit, TestProbe }
 import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
@@ -14,7 +14,7 @@ import org.scalatest.{ ShouldMatchers, WordSpec }
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-object LargeMessagesChannelSpec {
+object LargeMessagesStreamSpec {
   case class Ping(payload: ByteString = ByteString.empty)
   case class Pong(bytesReceived: Long)
   class EchoSize extends Actor {
@@ -24,10 +24,10 @@ object LargeMessagesChannelSpec {
   }
 }
 
-class LargeMessagesChannelSpec extends WordSpec with ShouldMatchers with ScalaFutures {
-  import LargeMessagesChannelSpec._
+class LargeMessagesStreamSpec extends WordSpec with ShouldMatchers with ScalaFutures {
+  import LargeMessagesStreamSpec._
 
-  def config(port: Int) = ConfigFactory.parseString(
+  val config = ConfigFactory.parseString(
     s"""
       akka {
         loglevel = ERROR
@@ -37,7 +37,7 @@ class LargeMessagesChannelSpec extends WordSpec with ShouldMatchers with ScalaFu
         remote.artery {
           enabled = on
           hostname = localhost
-          port = $port
+          port = 0
           large-message-destinations = [
             "/user/large"
           ]
@@ -49,9 +49,8 @@ class LargeMessagesChannelSpec extends WordSpec with ShouldMatchers with ScalaFu
   "The large message support" should {
 
     "not affect regular communication" in {
-      val Seq(portA, portB) = SocketUtil.temporaryServerAddresses(2, "localhost", udp = true).map(_.getPort)
-      val systemA = ActorSystem("systemA", config(portA))
-      val systemB = ActorSystem("systemB", config(portB))
+      val systemA = ActorSystem("systemA", config)
+      val systemB = ActorSystem("systemB", config)
 
       try {
         val senderProbeA = TestProbe()(systemA)
@@ -73,15 +72,14 @@ class LargeMessagesChannelSpec extends WordSpec with ShouldMatchers with ScalaFu
         largeRemote.asInstanceOf[RemoteActorRef].cachedLargeMessageDestinationFlag should ===(RegularDestination)
 
       } finally {
-        systemA.terminate()
-        systemB.terminate()
+        TestKit.shutdownActorSystem(systemA)
+        TestKit.shutdownActorSystem(systemB)
       }
     }
 
-    "pass small regular messages over the large-message channel" in {
-      val Seq(portA, portB) = SocketUtil.temporaryServerAddresses(2, "localhost", udp = true).map(_.getPort)
-      val systemA = ActorSystem("systemA", config(portA))
-      val systemB = ActorSystem("systemB", config(portB))
+    "pass small regular messages over the large-message stream" in {
+      val systemA = ActorSystem("systemA", config)
+      val systemB = ActorSystem("systemB", config)
 
       try {
         val senderProbeA = TestProbe()(systemA)
@@ -103,18 +101,17 @@ class LargeMessagesChannelSpec extends WordSpec with ShouldMatchers with ScalaFu
         largeRemote.asInstanceOf[RemoteActorRef].cachedLargeMessageDestinationFlag should ===(LargeDestination)
 
       } finally {
-        systemA.terminate()
-        systemB.terminate()
+        TestKit.shutdownActorSystem(systemA)
+        TestKit.shutdownActorSystem(systemB)
       }
     }
 
     "allow for normal communication while simultaneously sending large messages" in {
-      val Seq(portA, portB) = SocketUtil.temporaryServerAddresses(2, "localhost", udp = true).map(_.getPort)
-      val systemA = ActorSystem("systemA", config(portA))
-      val systemB = ActorSystem("systemB", config(portB))
+      val systemA = ActorSystem("systemA", config)
+      val systemB = ActorSystem("systemB", config)
 
       try {
-        val senderProbeA = TestProbe()(systemA)
+
         val senderProbeB = TestProbe()(systemB)
 
         // setup two actors, one with the large flag and one regular
@@ -133,22 +130,25 @@ class LargeMessagesChannelSpec extends WordSpec with ShouldMatchers with ScalaFu
         val regularRemote = awaitResolve(systemA.actorSelection(rootB / "user" / "regular"))
 
         // send a large message, as well as regular one
+        val largeProbe = TestProbe()(systemA)
+        val regularProbe = TestProbe()(systemA)
+
         val largeBytes = 500000
-        largeRemote.tell(Ping(ByteString.fromArray(Array.ofDim[Byte](largeBytes))), senderProbeA.ref)
-        regularRemote.tell(Ping(), senderProbeA.ref)
+        largeRemote.tell(Ping(ByteString.fromArray(Array.ofDim[Byte](largeBytes))), largeProbe.ref)
+        regularRemote.tell(Ping(), regularProbe.ref)
 
         // this is racy but I don'd know how to test it any other way
         // should be no problems sending regular small messages
-        senderProbeA.expectMsg(Pong(0))
-        senderProbeA.expectMsg(10.seconds, Pong(largeBytes))
+        regularProbe.expectMsg(Pong(0))
+        largeProbe.expectMsg(10.seconds, Pong(largeBytes))
 
         // cached flags should be set now
         largeRemote.asInstanceOf[RemoteActorRef].cachedLargeMessageDestinationFlag should ===(LargeDestination)
         regularRemote.asInstanceOf[RemoteActorRef].cachedLargeMessageDestinationFlag should ===(RegularDestination)
 
       } finally {
-        systemA.terminate()
-        systemB.terminate()
+        TestKit.shutdownActorSystem(systemA)
+        TestKit.shutdownActorSystem(systemB)
       }
     }
   }
