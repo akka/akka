@@ -8,10 +8,9 @@ import java.io.File
 
 import scala.annotation.varargs
 import scala.collection.JavaConverters._
-
 import akka.http.javadsl.model.ContentType
 import akka.http.javadsl.model.RequestEntity
-import akka.http.javadsl.server.Route
+import akka.http.javadsl.server.{ Route, RoutingJavaMapping }
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 
 /**
@@ -39,7 +38,7 @@ trait DirectoryRenderer {
  */
 abstract class FileAndResourceDirectives extends ExecutionDirectives {
   import akka.http.impl.util.JavaMapping.Implicits._
-  import akka.http.javadsl.RoutingJavaMapping._
+  import RoutingJavaMapping._
 
   /**
    * Completes GET requests with the content of the given resource loaded from the default ClassLoader,

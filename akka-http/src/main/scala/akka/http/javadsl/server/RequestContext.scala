@@ -23,7 +23,7 @@ import akka.http.scaladsl.model.Uri.Path
 
 class RequestContext private (val delegate: scaladsl.server.RequestContext) {
   import RequestContext._
-  import akka.http.javadsl.RoutingJavaMapping._
+  import RoutingJavaMapping._
 
   def getRequest: HttpRequest = delegate.request
   def getUnmatchedPath: String = delegate.unmatchedPath.toString()

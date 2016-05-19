@@ -33,12 +33,13 @@ import java.util.function.Predicate
 
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
+import akka.http.javadsl.server
 
 import scala.compat.java8.FutureConverters._
 
 abstract class BasicDirectives {
   import akka.http.impl.util.JavaMapping.Implicits._
-  import akka.http.javadsl.RoutingJavaMapping._
+  import RoutingJavaMapping._
 
   def mapRequest(f: JFunction[HttpRequest, HttpRequest], inner: Supplier[Route]): Route = RouteAdapter {
     D.mapRequest(rq ⇒ f.apply(rq.asJava).asScala) { inner.get.delegate }
@@ -197,7 +198,7 @@ abstract class BasicDirectives {
    * Extracts a single value using the given function.
    */
   def extract[T](extract: JFunction[RequestContext, T], inner: JFunction[T, Route]): Route = RouteAdapter {
-    D.extract(sc ⇒ extract.apply(JavaMapping.toJava(sc)(akka.http.javadsl.RoutingJavaMapping.RequestContext))) { c ⇒ inner.apply(c).delegate }
+    D.extract(sc ⇒ extract.apply(JavaMapping.toJava(sc)(server.RoutingJavaMapping.RequestContext))) { c ⇒ inner.apply(c).delegate }
   }
 
   /**
@@ -250,7 +251,7 @@ abstract class BasicDirectives {
    * Extracts the [[akka.http.javadsl.server.RequestContext]] itself.
    */
   def extractRequestContext(inner: JFunction[RequestContext, Route]) = RouteAdapter {
-    D.extractRequestContext { ctx ⇒ inner.apply(JavaMapping.toJava(ctx)(akka.http.javadsl.RoutingJavaMapping.RequestContext)).delegate }
+    D.extractRequestContext { ctx ⇒ inner.apply(JavaMapping.toJava(ctx)(server.RoutingJavaMapping.RequestContext)).delegate }
   }
 
 }
