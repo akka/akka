@@ -8,7 +8,7 @@ package directives
 import java.io.File
 import java.net.{ URI, URL }
 
-import akka.http.javadsl.{ RoutingJavaMapping, model }
+import akka.http.javadsl.model
 import akka.http.javadsl.model.RequestEntity
 import akka.stream.ActorAttributes
 import akka.stream.scaladsl.{ FileIO, StreamConverters }
@@ -16,14 +16,15 @@ import akka.stream.scaladsl.{ FileIO, StreamConverters }
 import scala.annotation.tailrec
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.marshalling.{ Marshalling, Marshaller, ToEntityMarshaller }
+import akka.http.scaladsl.marshalling.{ Marshaller, Marshalling, ToEntityMarshaller }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
 import akka.http.javadsl
+
 import scala.collection.JavaConverters._
 import JavaMapping.Implicits._
-import akka.http.javadsl.RoutingJavaMapping._
+import akka.http.javadsl.server.RoutingJavaMapping
 
 /**
  * @groupname fileandresource File and resource directives

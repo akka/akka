@@ -7,10 +7,9 @@ package akka.http.javadsl.server.directives
 import java.util.function
 
 import akka.http.javadsl.model.HttpMethod
-import akka.http.javadsl.server.Route
+import akka.http.javadsl.server.{ Route, RoutingJavaMapping }
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.javadsl.RoutingJavaMapping._
-
+import RoutingJavaMapping._
 import akka.http.scaladsl.server.directives.{ MethodDirectives ⇒ D }
 
 abstract class MethodDirectives extends MarshallingDirectives {

@@ -9,7 +9,7 @@ import java.util.function.Supplier
 
 import scala.collection.JavaConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.javadsl.RoutingJavaMapping._
+import RoutingJavaMapping._
 import akka.http.javadsl.model.headers.HttpEncoding
 import akka.http.javadsl.server.Route
 import akka.http.scaladsl.server.{ Directives ⇒ D }
