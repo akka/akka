@@ -236,6 +236,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val handshakeTimeout: FiniteDuration =
     system.settings.config.getMillisDuration("akka.remote.handshake-timeout").requiring(_ > Duration.Zero,
       "handshake-timeout must be > 0")
+  private val giveUpSendAfter: FiniteDuration = 60.seconds
 
   private val largeMessageDestinations =
     system.settings.config.getStringList("akka.remote.artery.large-message-destinations").asScala.foldLeft(WildcardTree[NotUsed]()) { (tree, entry) ⇒
@@ -416,17 +417,17 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def attachStreamRestart(streamName: String, streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
     implicit val ec = materializer.executionContext
     streamCompleted.onFailure {
+      case _ if isShutdown               ⇒ // don't restart after shutdown
       case _: AbruptTerminationException ⇒ // ActorSystem shutdown
       case cause ⇒
-        if (!isShutdown)
-          if (restartCounter.restart()) {
-            log.error(cause, "{} failed. Restarting it.", streamName)
-            restart()
-          } else {
-            log.error(cause, "{} failed and restarted {} times within {} seconds. Terminating system.",
-              streamName, maxRestarts, restartTimeout.toSeconds)
-            system.terminate()
-          }
+        if (restartCounter.restart()) {
+          log.error(cause, "{} failed. Restarting it. {}", streamName, cause.getMessage)
+          restart()
+        } else {
+          log.error(cause, "{} failed and restarted {} times within {} seconds. Terminating system. {}",
+            streamName, maxRestarts, restartTimeout.toSeconds, cause.getMessage)
+          system.terminate()
+        }
     }
   }
 
@@ -485,7 +486,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     Flow.fromGraph(killSwitch.flow[Send])
       .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval))
       .via(encoder)
-      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), ordinaryStreamId, aeron, taskRunner, envelopePool))(Keep.right)
+      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), ordinaryStreamId, aeron, taskRunner,
+        envelopePool, giveUpSendAfter))(Keep.right)
   }
 
   def outboundLarge(outboundContext: OutboundContext): Sink[Send, Future[Done]] = {
@@ -494,7 +496,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         Flow.fromGraph(killSwitch.flow[Send])
           .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval))
           .via(createEncoder(pool))
-          .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), largeStreamId, aeron, taskRunner, envelopePool))(Keep.right)
+          .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), largeStreamId, aeron, taskRunner,
+            envelopePool, giveUpSendAfter))(Keep.right)
       case None ⇒ throw new IllegalArgumentException("Trying to create outbound stream but outbound stream not configured")
     }
   }
@@ -505,7 +508,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .via(new SystemMessageDelivery(outboundContext, systemMessageResendInterval, remoteSettings.SysMsgBufferSize))
       .viaMat(new OutboundControlJunction(outboundContext))(Keep.right)
       .via(encoder)
-      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), controlStreamId, aeron, taskRunner, envelopePool))(Keep.both)
+      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), controlStreamId, aeron, taskRunner,
+        envelopePool, Duration.Inf))(Keep.both)
 
     // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
   }

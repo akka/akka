@@ -38,6 +38,7 @@ object AeronStreamsApp {
   val latencyRate = 10000 // per second
   val latencyN = 10 * latencyRate
   val payload = ("0" * 100).getBytes("utf-8")
+  val giveUpSendAfter = 60.seconds
   lazy val sendTimes = new AtomicLongArray(latencyN)
 
   lazy val driver = {
@@ -201,7 +202,7 @@ object AeronStreamsApp {
         envelope.byteBuffer.flip()
         envelope
       }
-      .runWith(new AeronSink(channel1, streamId, aeron, taskRunner, pool))
+      .runWith(new AeronSink(channel1, streamId, aeron, taskRunner, pool, giveUpSendAfter))
   }
 
   def runEchoReceiver(): Unit = {
@@ -213,7 +214,7 @@ object AeronStreamsApp {
         r.onMessage(1, envelope.byteBuffer.limit)
         envelope
       }
-      .runWith(new AeronSink(channel2, streamId, aeron, taskRunner, pool))
+      .runWith(new AeronSink(channel2, streamId, aeron, taskRunner, pool, giveUpSendAfter))
   }
 
   def runEchoSender(): Unit = {
@@ -264,7 +265,7 @@ object AeronStreamsApp {
           envelope.byteBuffer.flip()
           envelope
         }
-        .runWith(new AeronSink(channel1, streamId, aeron, taskRunner, pool))
+        .runWith(new AeronSink(channel1, streamId, aeron, taskRunner, pool, giveUpSendAfter))
 
       barrier.await()
     }
@@ -303,7 +304,7 @@ object AeronStreamsApp {
         envelope.byteBuffer.flip()
         envelope
       }
-      .runWith(new AeronSink(channel1, streamId, aeron, taskRunner, pool))
+      .runWith(new AeronSink(channel1, streamId, aeron, taskRunner, pool, giveUpSendAfter))
   }
 
   def runStats(): Unit = {

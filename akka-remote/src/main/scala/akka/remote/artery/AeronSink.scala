@@ -13,6 +13,7 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+import scala.util.control.NoStackTrace
 
 import akka.Done
 import akka.stream.Attributes
@@ -28,26 +29,38 @@ import org.agrona.concurrent.UnsafeBuffer
 
 object AeronSink {
 
-  class OfferTask(pub: Publication, var buffer: UnsafeBuffer, msgSize: AtomicInteger, onOfferSuccess: AsyncCallback[Unit])
-    extends (() ⇒ Boolean) {
+  final class GaveUpSendingException(msg: String) extends RuntimeException(msg) with NoStackTrace
 
+  private val TimerCheckPeriod = 1 << 13 // 8192
+  private val TimerCheckMask = TimerCheckPeriod - 1
+
+  private final class OfferTask(pub: Publication, var buffer: UnsafeBuffer, var msgSize: Int, onOfferSuccess: AsyncCallback[Unit],
+                                giveUpAfter: Duration, onGiveUp: AsyncCallback[Unit])
+    extends (() ⇒ Boolean) {
+    val giveUpAfterNanos = giveUpAfter match {
+      case f: FiniteDuration ⇒ f.toNanos
+      case _                 ⇒ -1L
+    }
     var n = 0L
-    var localMsgSize = -1
+    var startTime = 0L
 
     override def apply(): Boolean = {
+      if (n == 0L) {
+        // first invocation for this message
+        startTime = if (giveUpAfterNanos >= 0) System.nanoTime() else 0L
+      }
       n += 1
-      if (localMsgSize == -1)
-        localMsgSize = msgSize.get
-      val result = pub.offer(buffer, 0, localMsgSize)
+      val result = pub.offer(buffer, 0, msgSize)
       if (result >= 0) {
-        n = 0
-        localMsgSize = -1
+        n = 0L
         onOfferSuccess.invoke(())
         true
+      } else if (giveUpAfterNanos >= 0 && (n & TimerCheckMask) == 0 && (System.nanoTime() - startTime) > giveUpAfterNanos) {
+        // the task is invoked by the spinning thread, only check nanoTime each 8192th invocation
+        n = 0L
+        onGiveUp.invoke(())
+        true
       } else {
-        // FIXME drop after too many attempts?
-        if (n > 1000000 && n % 100000 == 0)
-          println(s"# offer not accepted after $n") // FIXME
         false
       }
     }
@@ -57,7 +70,7 @@ object AeronSink {
 /**
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
  */
-class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRunner, pool: EnvelopeBufferPool)
+class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRunner, pool: EnvelopeBufferPool, giveUpSendAfter: Duration)
   extends GraphStageWithMaterializedValue[SinkShape[EnvelopeBuffer], Future[Done]] {
   import AeronSink._
   import TaskRunner._
@@ -77,8 +90,8 @@ class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRu
       private val spinning = 1000
       private var backoffCount = spinning
       private var lastMsgSize = 0
-      private val lastMsgSizeRef = new AtomicInteger // used in the external backoff task
-      private val offerTask = new OfferTask(pub, null, lastMsgSizeRef, getAsyncCallback(_ ⇒ onOfferSuccess()))
+      private val offerTask = new OfferTask(pub, null, lastMsgSize, getAsyncCallback(_ ⇒ onOfferSuccess()),
+        giveUpSendAfter, getAsyncCallback(_ ⇒ onGiveUp()))
       private val addOfferTask: Add = Add(offerTask)
 
       private var offerTaskInProgress = false
@@ -112,9 +125,10 @@ class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRu
             publish() // recursive
           } else {
             // delegate backoff to shared TaskRunner
-            lastMsgSizeRef.set(lastMsgSize)
             offerTaskInProgress = true
+            // visibility of these assignments are ensured by adding the task to the command queue
             offerTask.buffer = envelopeInFlight.aeronBuffer
+            offerTask.msgSize = lastMsgSize
             taskRunner.command(addOfferTask)
           }
         } else {
@@ -132,6 +146,13 @@ class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRu
           completeStage()
         else
           pull(in)
+      }
+
+      private def onGiveUp(): Unit = {
+        offerTaskInProgress = false
+        val cause = new GaveUpSendingException(s"Gave up sending message to $channel after $giveUpSendAfter.")
+        completedValue = Failure(cause)
+        failStage(cause)
       }
 
       override def onUpstreamFinish(): Unit = {
