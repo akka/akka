@@ -39,7 +39,7 @@ class LargeMessagesChannelSpec extends WordSpec with ShouldMatchers with ScalaFu
           hostname = localhost
           port = $port
           large-message-destinations = [
-            "/large"
+            "/user/large"
           ]
         }
       }

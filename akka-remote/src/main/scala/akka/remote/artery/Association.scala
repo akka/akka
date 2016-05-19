@@ -152,11 +152,7 @@ private[akka] class Association(
     recipient match {
       case r: RemoteActorRef if r.cachedLargeMessageDestinationFlag ne null ⇒ r.cachedLargeMessageDestinationFlag == LargeDestination
       case r: RemoteActorRef ⇒
-        val elements = r.path.elements
-        if (elements.head != "user") {
-          r.cachedLargeMessageDestinationFlag = RegularDestination
-          false
-        } else if (largeMessageDestinations.find(elements.tail.iterator).data.isEmpty) {
+        if (largeMessageDestinations.find(r.path.elements.iterator).data.isEmpty) {
           r.cachedLargeMessageDestinationFlag = RegularDestination
           false
         } else {
