@@ -515,30 +515,34 @@ private[http] object HttpServerBluePrint {
           }
         }
 
+      case object OneHundredContinueStage extends GraphStage[FlowShape[ParserOutput, ParserOutput]] {
+        val in: Inlet[ParserOutput] = Inlet("GraphStage.in")
+        val out: Outlet[ParserOutput] = Outlet("GraphStage.out")
+        override val shape: FlowShape[ParserOutput, ParserOutput] = FlowShape(in, out)
+
+        override def initialAttributes = Attributes.name("expect100continueTrigger")
+
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+          new GraphStageLogic(shape) with InHandler with OutHandler {
+            private var oneHundredContinueSent = false
+
+            override def onPush(): Unit = push(out, grab(in))
+            override def onPull(): Unit = {
+              if (!oneHundredContinueSent) {
+                oneHundredContinueSent = true
+                emit100ContinueResponse.invoke(())
+              }
+              pull(in)
+            }
+
+            setHandlers(in, out, this)
+          }
+      }
+
       def with100ContinueTrigger[T <: ParserOutput](createEntity: EntityCreator[T, RequestEntity]) =
         StreamedEntityCreator {
           createEntity.compose[Source[T, NotUsed]] {
-            _.via(new GraphStage[FlowShape[T, T]] {
-              val in: Inlet[T] = Inlet("GraphStage.in")
-              val out: Outlet[T] = Outlet("GraphStage.out")
-              override val shape: FlowShape[T, T] = FlowShape(in, out)
-
-              override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-                new GraphStageLogic(shape) with InHandler with OutHandler {
-                  private var oneHundredContinueSent = false
-
-                  override def onPush(): Unit = push(out, grab(in))
-                  override def onPull(): Unit = {
-                    if (!oneHundredContinueSent) {
-                      oneHundredContinueSent = true
-                      emit100ContinueResponse.invoke(())
-                    }
-                    pull(in)
-                  }
-
-                  setHandlers(in, out, this)
-                }
-            }.named("expect100continueTrigger"))
+            _.via(OneHundredContinueStage.asInstanceOf[GraphStage[FlowShape[T, T]]])
           }
         }
     }
