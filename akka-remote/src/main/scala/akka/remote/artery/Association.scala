@@ -265,16 +265,16 @@ private[akka] class Association(
       case _ if transport.isShutdown     ⇒ // don't restart after shutdown
       case _: AbruptTerminationException ⇒ // ActorSystem shutdown
       case cause: GaveUpSendingException ⇒
-        log.error(cause, "{} failed. Restarting it. {}", streamName, cause.getMessage)
+        log.debug("{} to {} failed. Restarting it. {}", streamName, remoteAddress, cause.getMessage)
         // restart unconditionally, without counting restarts
         restart(cause)
       case cause ⇒
         if (restartCounter.restart()) {
-          log.error(cause, "{} failed. Restarting it. {}", streamName, cause.getMessage)
+          log.error(cause, "{} to {} failed. Restarting it. {}", streamName, remoteAddress, cause.getMessage)
           restart(cause)
         } else {
-          log.error(cause, "{} failed and restarted {} times within {} seconds. Terminating system. {}",
-            streamName, maxRestarts, restartTimeout.toSeconds, cause.getMessage)
+          log.error(cause, s"{} to {} failed and restarted {} times within {} seconds. Terminating system. ${cause.getMessage}",
+            streamName, remoteAddress, maxRestarts, restartTimeout.toSeconds)
           transport.system.terminate()
         }
     }
