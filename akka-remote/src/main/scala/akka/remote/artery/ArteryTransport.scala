@@ -239,7 +239,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       tree.insert(segments.iterator, NotUsed)
     }
   private val largeMessageDestinationsEnabled = largeMessageDestinations.children.nonEmpty
-  private val largeMessageDestinationsBufferSize = 1024 * 2000
 
   private def inboundChannel = s"aeron:udp?endpoint=${localAddress.address.host.get}:${localAddress.address.port.get}"
   private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
@@ -256,6 +255,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val restartCounter = new RestartCounter(maxRestarts, restartTimeout)
 
   val envelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
+  val largeEnvelopePool: Option[EnvelopeBufferPool] =
+    if (largeMessageDestinationsEnabled) Some(new EnvelopeBufferPool(ArteryTransport.MaximumLargeFrameSize, ArteryTransport.MaximumPooledBuffers))
+    else None
+
   // FIXME: Compression table must be owned by each channel instead
   // of having a global one
   val compression = new Compression(system)
@@ -382,9 +385,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def runInboundLargeMessagesStream(): Unit = {
-    if (largeMessageDestinationsEnabled) {
+    largeEnvelopePool.foreach { largePool ⇒
       // TODO just cargo-cult programming here
-      val completed = Source.fromGraph(new AeronSource(inboundChannel, largeStreamId, aeron, taskRunner, envelopePool))
+      val completed = Source.fromGraph(new AeronSource(inboundChannel, largeStreamId, aeron, taskRunner, largePool))
         .async // FIXME measure
         .via(inboundFlow)
         .runWith(Sink.ignore)(materializer)
@@ -468,11 +471,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   def outboundLarge(outboundContext: OutboundContext): Sink[Send, Future[Done]] = {
-    // TODO not sure about this, just cargo culting here
-    Flow.fromGraph(killSwitch.flow[Send])
-      .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval))
-      .via(encoder)
-      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), largeStreamId, aeron, taskRunner, envelopePool))(Keep.right)
+    largeEnvelopePool match {
+      case Some(pool) ⇒
+        Flow.fromGraph(killSwitch.flow[Send])
+          .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval))
+          .via(createEncoder(pool))
+          .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), largeStreamId, aeron, taskRunner, envelopePool))(Keep.right)
+      case None ⇒ throw new IllegalArgumentException("Trying to create outbound stream but outbound stream not configured")
+    }
   }
 
   def outboundControl(outboundContext: OutboundContext): Sink[Send, (OutboundControlIngress, Future[Done])] = {
@@ -489,8 +495,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   // FIXME hack until real envelopes, encoding originAddress in sender :)
   private val dummySender = system.systemActorOf(Props.empty, "dummy")
 
-  val encoder: Flow[Send, EnvelopeBuffer, NotUsed] =
-    Flow.fromGraph(new Encoder(this, compression))
+  def createEncoder(pool: EnvelopeBufferPool): Flow[Send, EnvelopeBuffer, NotUsed] =
+    Flow.fromGraph(new Encoder(this, compression, pool))
+  val encoder = createEncoder(envelopePool)
 
   val messageDispatcherSink: Sink[InboundEnvelope, Future[Done]] = Sink.foreach[InboundEnvelope] { m ⇒
     messageDispatcher.dispatch(m.recipient, m.recipientAddress, m.message, m.senderOption)
@@ -528,6 +535,7 @@ private[remote] object ArteryTransport {
   val Version = 0
   val MaximumFrameSize = 1024 * 1024
   val MaximumPooledBuffers = 256
+  val MaximumLargeFrameSize = MaximumFrameSize * 5
 
   /**
    * Internal API

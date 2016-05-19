@@ -10,7 +10,8 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 // TODO: Long UID
 class Encoder(
   transport: ArteryTransport,
-  compressionTable: LiteralCompressionTable)
+  compressionTable: LiteralCompressionTable,
+  pool: EnvelopeBufferPool)
   extends GraphStage[FlowShape[Send, EnvelopeBuffer]] {
 
   val in: Inlet[Send] = Inlet("Artery.Encoder.in")
@@ -20,7 +21,6 @@ class Encoder(
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
-      private val pool = transport.envelopePool
       private val headerBuilder = HeaderBuilder(compressionTable)
       headerBuilder.version = ArteryTransport.Version
       headerBuilder.uid = transport.localAddress.uid
