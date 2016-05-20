@@ -263,7 +263,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     // TODO: Configure materializer properly
     // TODO: Have a supervisor actor
     _localAddress = UniqueAddress(
-      Address("akka.artery", system.name, remoteSettings.ArteryHostname, port),
+      Address("artery", system.name, remoteSettings.ArteryHostname, port),
       AddressUidExtension(system).addressUid)
     materializer = ActorMaterializer()(system)
 
