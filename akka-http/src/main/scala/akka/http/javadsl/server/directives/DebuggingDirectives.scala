@@ -4,17 +4,16 @@
 package akka.http.javadsl.server.directives
 
 import java.lang.{ Iterable ⇒ JIterable }
-import java.util.function.{ BiFunction, Function ⇒ JFunction, Supplier }
-import java.util.{ List ⇒ JList, Optional }
+import java.util.function.{ BiFunction, Supplier, Function ⇒ JFunction }
+import java.util.{ Optional, List ⇒ JList }
 
 import akka.event.Logging
 import akka.event.Logging.LogLevel
-import akka.http.javadsl.RoutingJavaMapping
 import akka.http.javadsl.model.{ HttpRequest, HttpResponse }
-import akka.http.javadsl.server.Route
+import akka.http.javadsl.server.{ Route, RoutingJavaMapping }
 import akka.http.scaladsl
 import akka.http.scaladsl.server.directives.LoggingMagnet
-import akka.http.scaladsl.server.{ Directives ⇒ D, Rejection, RouteResult }
+import akka.http.scaladsl.server.{ Rejection, RouteResult, Directives ⇒ D }
 
 import scala.collection.JavaConverters._
 
