@@ -39,7 +39,7 @@ class HandshakeFailureSpec extends AkkaSpec(HandshakeFailureSpec.commonConfig) w
   "Artery handshake" must {
 
     "allow for timeout and later connect" in {
-      def sel = system.actorSelection(s"akka.artery://systemB@localhost:$portB/user/echo")
+      def sel = system.actorSelection(s"artery://systemB@localhost:$portB/user/echo")
       sel ! "hello"
       expectNoMsg(3.seconds) // longer than handshake-timeout
 

@@ -28,8 +28,8 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
   val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
   implicit val mat = ActorMaterializer(matSettings)(system)
 
-  val addressA = UniqueAddress(Address("akka.artery", "sysA", "hostA", 1001), 1)
-  val addressB = UniqueAddress(Address("akka.artery", "sysB", "hostB", 1002), 2)
+  val addressA = UniqueAddress(Address("artery", "sysA", "hostA", 1001), 1)
+  val addressB = UniqueAddress(Address("artery", "sysB", "hostB", 1002), 2)
 
   private def setupStream(outboundContext: OutboundContext, timeout: FiniteDuration = 5.seconds,
                           retryInterval: FiniteDuration = 10.seconds): (TestPublisher.Probe[String], TestSubscriber.Probe[Any]) = {
