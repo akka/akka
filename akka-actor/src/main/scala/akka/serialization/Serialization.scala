@@ -83,6 +83,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
 
   val settings = new Settings(system.settings.config)
   val log = Logging(system, getClass.getName)
+  private val manifestCache = new ConcurrentHashMap[String, Option[Class[_]]]
 
   /**
    * Serializes the given AnyRef/java.lang.Object according to the Serialization configuration
@@ -123,12 +124,18 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
           if (manifest == "")
             s1.fromBinary(bytes, None)
           else {
-            system.dynamicAccess.getClassFor[AnyRef](manifest) match {
-              case Success(classManifest) ⇒
-                s1.fromBinary(bytes, Some(classManifest))
-              case Failure(e) ⇒
-                throw new NotSerializableException(
-                  s"Cannot find manifest class [$manifest] for serializer with id [$serializerId].")
+            val cachedClassManifest = manifestCache.get(manifest)
+            if (cachedClassManifest ne null)
+              s1.fromBinary(bytes, cachedClassManifest)
+            else {
+              system.dynamicAccess.getClassFor[AnyRef](manifest) match {
+                case Success(classManifest) ⇒
+                  manifestCache.put(manifest, Some(classManifest))
+                  s1.fromBinary(bytes, Some(classManifest))
+                case Failure(e) ⇒
+                  throw new NotSerializableException(
+                    s"Cannot find manifest class [$manifest] for serializer with id [$serializerId].")
+              }
             }
           }
       }
