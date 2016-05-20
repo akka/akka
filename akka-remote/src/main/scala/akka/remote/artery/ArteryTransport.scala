@@ -278,9 +278,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     // TODO also support external media driver
     val driverContext = new MediaDriver.Context
     // FIXME settings from config
-    driverContext.clientLivenessTimeoutNs(SECONDS.toNanos(10))
-    driverContext.imageLivenessTimeoutNs(SECONDS.toNanos(10))
-    driverContext.driverTimeoutMs(SECONDS.toNanos(10))
+    driverContext.clientLivenessTimeoutNs(SECONDS.toNanos(20))
+    driverContext.imageLivenessTimeoutNs(SECONDS.toNanos(20))
+    driverContext.driverTimeoutMs(SECONDS.toNanos(20))
     driver = MediaDriver.launchEmbedded(driverContext)
   }
 
