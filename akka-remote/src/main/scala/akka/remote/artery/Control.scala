@@ -141,7 +141,7 @@ private[akka] class InboundControlJunction
  * INTERNAL API
  */
 private[akka] object OutboundControlJunction {
-  trait OutboundControlIngress {
+  private[akka] trait OutboundControlIngress {
     def sendControlMessage(message: ControlMessage): Unit
   }
 }
@@ -158,7 +158,7 @@ private[akka] class OutboundControlJunction(outboundContext: OutboundContext)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     // FIXME see issue #20503 related to CallbackWrapper, we might implement this in a better way
-    val logic = new GraphStageLogic(shape) with CallbackWrapper[ControlMessage] with InHandler with OutHandler {
+    val logic = new GraphStageLogic(shape) with CallbackWrapper[ControlMessage] with InHandler with OutHandler with StageLogging {
       import OutboundControlJunction._
 
       private val sendControlMessageCallback = getAsyncCallback[ControlMessage](internalSendControlMessage)
@@ -192,8 +192,7 @@ private[akka] class OutboundControlJunction(outboundContext: OutboundContext)
           buffer.offer(wrap(message))
         else {
           // it's alright to drop control messages
-          // FIXME we need that stage logging support
-          println(s"dropping control message ${message.getClass.getName} due to full buffer")
+          log.debug("Dropping control message [{}] due to full buffer.", message.getClass.getName)
         }
       }
 

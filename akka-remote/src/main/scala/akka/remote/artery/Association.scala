@@ -21,6 +21,7 @@ import akka.dispatch.sysmsg.SystemMessage
 import akka.event.Logging
 import akka.remote.EndpointManager.Send
 import akka.remote.{ LargeDestination, RegularDestination, RemoteActorRef, UniqueAddress }
+import akka.remote.artery.AeronSink.GaveUpSendingException
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.remote.artery.OutboundHandshake.HandshakeTimeoutException
@@ -261,17 +262,21 @@ private[akka] class Association(
   private def attachStreamRestart(streamName: String, streamCompleted: Future[Done], restart: Throwable ⇒ Unit): Unit = {
     implicit val ec = materializer.executionContext
     streamCompleted.onFailure {
+      case _ if transport.isShutdown     ⇒ // don't restart after shutdown
       case _: AbruptTerminationException ⇒ // ActorSystem shutdown
+      case cause: GaveUpSendingException ⇒
+        log.debug("{} to {} failed. Restarting it. {}", streamName, remoteAddress, cause.getMessage)
+        // restart unconditionally, without counting restarts
+        restart(cause)
       case cause ⇒
-        if (!transport.isShutdown)
-          if (restartCounter.restart()) {
-            log.error(cause, "{} failed. Restarting it.", streamName)
-            restart(cause)
-          } else {
-            log.error(cause, "{} failed and restarted {} times within {} seconds. Terminating system.",
-              streamName, maxRestarts, restartTimeout.toSeconds)
-            transport.system.terminate()
-          }
+        if (restartCounter.restart()) {
+          log.error(cause, "{} to {} failed. Restarting it. {}", streamName, remoteAddress, cause.getMessage)
+          restart(cause)
+        } else {
+          log.error(cause, s"{} to {} failed and restarted {} times within {} seconds. Terminating system. ${cause.getMessage}",
+            streamName, remoteAddress, maxRestarts, restartTimeout.toSeconds)
+          transport.system.terminate()
+        }
     }
   }
 }
