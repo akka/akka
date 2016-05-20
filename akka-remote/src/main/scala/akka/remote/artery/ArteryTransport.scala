@@ -66,6 +66,9 @@ import java.net.InetSocketAddress
 import java.nio.channels.DatagramChannel
 
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
+import io.aeron.CncFileDescriptor
+import java.util.concurrent.atomic.AtomicLong
+import akka.actor.Cancellable
 
 import scala.collection.JavaConverters._
 /**
@@ -215,6 +218,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   @volatile private[this] var messageDispatcher: MessageDispatcher = _
   @volatile private[this] var driver: MediaDriver = _
   @volatile private[this] var aeron: Aeron = _
+  @volatile private[this] var aeronErrorLogTask: Cancellable = _
 
   override def defaultAddress: Address = localAddress.address
   override def addresses: Set[Address] = Set(defaultAddress)
@@ -266,6 +270,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def start(): Unit = {
     startMediaDriver()
     startAeron()
+    startAeronErrorLog()
     taskRunner.start()
 
     val port =
@@ -327,6 +332,18 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
     ctx.aeronDirectoryName(driver.aeronDirectoryName)
     aeron = Aeron.connect(ctx)
+  }
+
+  private def startAeronErrorLog(): Unit = {
+    val errorLog = new AeronErrorLog(new File(driver.aeronDirectoryName, CncFileDescriptor.CNC_FILE))
+    val lastTimestamp = new AtomicLong(0L)
+    import system.dispatcher // FIXME perhaps use another dispatcher for this
+    aeronErrorLogTask = system.scheduler.schedule(3.seconds, 5.seconds) {
+      if (!isShutdown) {
+        val newLastTimestamp = errorLog.logErrors(log, lastTimestamp.get)
+        lastTimestamp.set(newLastTimestamp + 1)
+      }
+    }
   }
 
   private def runInboundStreams(): Unit = {
@@ -417,6 +434,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     _shutdown = true
     killSwitch.shutdown()
     if (taskRunner != null) taskRunner.stop()
+    if (aeronErrorLogTask != null) aeronErrorLogTask.cancel()
     if (aeron != null) aeron.close()
     if (driver != null) {
       driver.close()
