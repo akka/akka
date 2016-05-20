@@ -39,7 +39,7 @@ class HandshakeRetrySpec extends AkkaSpec(HandshakeRetrySpec.commonConfig) with 
   "Artery handshake" must {
 
     "be retried during handshake-timeout (no message loss)" in {
-      def sel = system.actorSelection(s"akka.artery://systemB@localhost:$portB/user/echo")
+      def sel = system.actorSelection(s"artery://systemB@localhost:$portB/user/echo")
       sel ! "hello"
       expectNoMsg(1.second)
 
