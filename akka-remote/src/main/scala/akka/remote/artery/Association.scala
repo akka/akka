@@ -5,14 +5,12 @@ package akka.remote.artery
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-
 import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Success
-
 import akka.Done
 import akka.actor.ActorRef
 import akka.actor.ActorSelectionMessage
@@ -34,6 +32,7 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.SourceQueueWithComplete
 import akka.util.Unsafe
+import akka.remote.PriorityMessage
 
 /**
  * INTERNAL API
@@ -135,6 +134,9 @@ private[akka] class Association(
             case e ⇒
               quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
           }
+        case _: PriorityMessage | ActorSelectionMessage(_: PriorityMessage, _, _) ⇒
+          // bypass the system message delivery and such
+          sendControl(OutboundControlJunction.Wrapped(Send(message, senderOption, recipient, None)))
         case _ ⇒
           queue.offer(Send(message, senderOption, recipient, None))
       }

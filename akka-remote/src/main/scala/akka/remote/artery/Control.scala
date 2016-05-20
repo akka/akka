@@ -141,9 +141,11 @@ private[akka] class InboundControlJunction
  * INTERNAL API
  */
 private[akka] object OutboundControlJunction {
-  trait OutboundControlIngress {
+  private[akka] trait OutboundControlIngress {
     def sendControlMessage(message: ControlMessage): Unit
   }
+
+  final case class Wrapped(send: Send) extends ControlMessage
 }
 
 /**
@@ -186,10 +188,16 @@ private[akka] class OutboundControlJunction(outboundContext: OutboundContext)
       }
 
       private def internalSendControlMessage(message: ControlMessage): Unit = {
+        val envelope = message match {
+          case Wrapped(send) ⇒
+            println(s"# prio message: ${send.message}") // FIXME
+            send
+          case _ ⇒ wrap(message)
+        }
         if (buffer.isEmpty && isAvailable(out))
-          push(out, wrap(message))
+          push(out, envelope)
         else if (buffer.size < maxControlMessageBufferSize)
-          buffer.offer(wrap(message))
+          buffer.offer(envelope)
         else {
           // it's alright to drop control messages
           // FIXME we need that stage logging support
