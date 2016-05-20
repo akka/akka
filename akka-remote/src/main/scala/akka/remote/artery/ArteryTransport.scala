@@ -50,8 +50,7 @@ import akka.stream.scaladsl.Framing
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.util.ByteString
-import akka.util.ByteStringBuilder
+import akka.util.{ ByteString, ByteStringBuilder, WildcardTree }
 import akka.util.Helpers.ConfigOps
 import akka.util.Helpers.Requiring
 import io.aeron.Aeron
@@ -68,6 +67,7 @@ import java.nio.channels.DatagramChannel
 
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 
+import scala.collection.JavaConverters._
 /**
  * INTERNAL API
  */
@@ -233,10 +233,18 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     system.settings.config.getMillisDuration("akka.remote.handshake-timeout").requiring(_ > Duration.Zero,
       "handshake-timeout must be > 0")
 
+  private val largeMessageDestinations =
+    system.settings.config.getStringList("akka.remote.artery.large-message-destinations").asScala.foldLeft(WildcardTree[NotUsed]()) { (tree, entry) ⇒
+      val segments = entry.split('/').tail
+      tree.insert(segments.iterator, NotUsed)
+    }
+  private val largeMessageDestinationsEnabled = largeMessageDestinations.children.nonEmpty
+
   private def inboundChannel = s"aeron:udp?endpoint=${localAddress.address.host.get}:${localAddress.address.port.get}"
   private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
   private val controlStreamId = 1
   private val ordinaryStreamId = 3
+  private val largeStreamId = 4
   private val taskRunner = new TaskRunner(system)
 
   // FIXME: This does locking on putIfAbsent, we need something smarter
@@ -247,6 +255,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val restartCounter = new RestartCounter(maxRestarts, restartTimeout)
 
   val envelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
+  val largeEnvelopePool: Option[EnvelopeBufferPool] =
+    if (largeMessageDestinationsEnabled) Some(new EnvelopeBufferPool(ArteryTransport.MaximumLargeFrameSize, ArteryTransport.MaximumPooledBuffers))
+    else None
+
   // FIXME: Compression table must be owned by each channel instead
   // of having a global one
   val compression = new Compression(system)
@@ -320,6 +332,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def runInboundStreams(): Unit = {
     runInboundControlStream()
     runInboundOrdinaryMessagesStream()
+    if (largeMessageDestinationsEnabled) {
+      runInboundLargeMessagesStream()
+    }
   }
 
   private def runInboundControlStream(): Unit = {
@@ -367,6 +382,18 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .runWith(Sink.ignore)(materializer)
 
     attachStreamRestart("Inbound message stream", completed, () ⇒ runInboundOrdinaryMessagesStream())
+  }
+
+  private def runInboundLargeMessagesStream(): Unit = {
+    largeEnvelopePool.foreach { largePool ⇒
+      // TODO just cargo-cult programming here
+      val completed = Source.fromGraph(new AeronSource(inboundChannel, largeStreamId, aeron, taskRunner, largePool))
+        .async // FIXME measure
+        .via(inboundFlow)
+        .runWith(Sink.ignore)(materializer)
+
+      attachStreamRestart("Inbound large message stream", completed, () ⇒ runInboundLargeMessagesStream())
+    }
   }
 
   private def attachStreamRestart(streamName: String, streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
@@ -422,7 +449,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     else {
       associations.computeIfAbsent(remoteAddress, new JFunction[Address, Association] {
         override def apply(remoteAddress: Address): Association = {
-          val newAssociation = new Association(ArteryTransport.this, materializer, remoteAddress, controlSubject)
+          val newAssociation = new Association(ArteryTransport.this, materializer, remoteAddress, controlSubject, largeMessageDestinations)
           newAssociation.associate() // This is a bit costly for this blocking method :(
           newAssociation
         }
@@ -443,6 +470,17 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), ordinaryStreamId, aeron, taskRunner, envelopePool))(Keep.right)
   }
 
+  def outboundLarge(outboundContext: OutboundContext): Sink[Send, Future[Done]] = {
+    largeEnvelopePool match {
+      case Some(pool) ⇒
+        Flow.fromGraph(killSwitch.flow[Send])
+          .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval))
+          .via(createEncoder(pool))
+          .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), largeStreamId, aeron, taskRunner, envelopePool))(Keep.right)
+      case None ⇒ throw new IllegalArgumentException("Trying to create outbound stream but outbound stream not configured")
+    }
+  }
+
   def outboundControl(outboundContext: OutboundContext): Sink[Send, (OutboundControlIngress, Future[Done])] = {
     Flow.fromGraph(killSwitch.flow[Send])
       .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval))
@@ -457,8 +495,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   // FIXME hack until real envelopes, encoding originAddress in sender :)
   private val dummySender = system.systemActorOf(Props.empty, "dummy")
 
-  val encoder: Flow[Send, EnvelopeBuffer, NotUsed] =
-    Flow.fromGraph(new Encoder(this, compression))
+  def createEncoder(pool: EnvelopeBufferPool): Flow[Send, EnvelopeBuffer, NotUsed] =
+    Flow.fromGraph(new Encoder(this, compression, pool))
+  val encoder = createEncoder(envelopePool)
 
   val messageDispatcherSink: Sink[InboundEnvelope, Future[Done]] = Sink.foreach[InboundEnvelope] { m ⇒
     messageDispatcher.dispatch(m.recipient, m.recipientAddress, m.message, m.senderOption)
@@ -496,6 +535,7 @@ private[remote] object ArteryTransport {
   val Version = 0
   val MaximumFrameSize = 1024 * 1024
   val MaximumPooledBuffers = 256
+  val MaximumLargeFrameSize = MaximumFrameSize * 5
 
   /**
    * Internal API
