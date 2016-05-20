@@ -3,7 +3,11 @@
  */
 package akka.stream.impl
 
+import akka.dispatch.ExecutionContexts
+import akka.stream.ActorAttributes.SupervisionStrategy
+import akka.stream.Supervision.{ stoppingDecider, Stop }
 import akka.stream.impl.QueueSink.{ Output, Pull }
+import akka.stream.impl.fusing.GraphInterpreter
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Actor, Props }
 import akka.stream.Attributes.InputBuffer
@@ -20,11 +24,11 @@ import akka.stream.stage._
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
-import scala.concurrent.{ Promise, Future }
+import scala.concurrent.{ ExecutionContext, Promise, Future }
 import scala.language.postfixOps
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
-import akka.stream.scaladsl.{ SinkQueueWithCancel, SinkQueue }
+import akka.stream.scaladsl.{ Source, Sink, SinkQueueWithCancel, SinkQueue }
 import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
@@ -444,3 +448,101 @@ private[akka] final class ReducerState[T, R](val collector: java.util.stream.Col
   def finish(): R = collector.finisher().apply(reduced)
 }
 
+/**
+ * INTERNAL API
+ */
+final private[stream] class LazySink[T, M](sinkFactory: T ⇒ Future[Sink[T, M]], zeroMat: () ⇒ M) extends GraphStageWithMaterializedValue[SinkShape[T], Future[M]] {
+  val in = Inlet[T]("lazySink.in")
+  override def initialAttributes = DefaultAttributes.lazySink
+  override val shape: SinkShape[T] = SinkShape.of(in)
+
+  override def toString: String = "LazySink"
+
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(stoppingDecider)
+
+    val promise = Promise[M]()
+    val stageLogic = new GraphStageLogic(shape) with InHandler {
+      override def preStart(): Unit = pull(in)
+
+      override def onPush(): Unit = {
+        try {
+          val element = grab(in)
+          val cb: AsyncCallback[Try[Sink[T, M]]] = getAsyncCallback {
+            case Success(sink) ⇒ initInternalSource(sink, element)
+            case Failure(e)    ⇒ failure(e)
+          }
+          sinkFactory(element).onComplete { cb.invoke }(ExecutionContexts.sameThreadExecutionContext)
+        } catch {
+          case NonFatal(e) ⇒ decider(e) match {
+            case Supervision.Stop ⇒ failure(e)
+            case _                ⇒ pull(in)
+          }
+        }
+      }
+
+      private def failure(ex: Throwable): Unit = {
+        failStage(ex)
+        promise.failure(ex)
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        completeStage()
+        promise.tryComplete(Try(zeroMat()))
+      }
+      override def onUpstreamFailure(ex: Throwable): Unit = failure(ex)
+      setHandler(in, this)
+
+      private def initInternalSource(sink: Sink[T, M], firstElement: T): Unit = {
+        val sourceOut = new SubSourceOutlet[T]("LazySink")
+        var completed = false
+
+        def switchToFirstElementHandlers(): Unit = {
+          sourceOut.setHandler(new OutHandler {
+            override def onPull(): Unit = {
+              sourceOut.push(firstElement)
+              if (completed) internalSourceComplete() else switchToFinalHandlers()
+            }
+            override def onDownstreamFinish(): Unit = internalSourceComplete()
+          })
+
+          setHandler(in, new InHandler {
+            override def onPush(): Unit = sourceOut.push(grab(in))
+            override def onUpstreamFinish(): Unit = {
+              setKeepGoing(true)
+              completed = true
+            }
+            override def onUpstreamFailure(ex: Throwable): Unit = internalSourceFailure(ex)
+          })
+        }
+
+        def switchToFinalHandlers(): Unit = {
+          sourceOut.setHandler(new OutHandler {
+            override def onPull(): Unit = pull(in)
+            override def onDownstreamFinish(): Unit = internalSourceComplete()
+          })
+          setHandler(in, new InHandler {
+            override def onPush(): Unit = sourceOut.push(grab(in))
+            override def onUpstreamFinish(): Unit = internalSourceComplete()
+            override def onUpstreamFailure(ex: Throwable): Unit = internalSourceFailure(ex)
+          })
+        }
+
+        def internalSourceComplete(): Unit = {
+          sourceOut.complete()
+          completeStage()
+        }
+
+        def internalSourceFailure(ex: Throwable): Unit = {
+          sourceOut.fail(ex)
+          failStage(ex)
+        }
+
+        switchToFirstElementHandlers()
+        promise.trySuccess(Source.fromGraph(sourceOut.source).runWith(sink)(interpreter.subFusingMaterializer))
+      }
+
+    }
+    (stageLogic, promise.future)
+  }
+}
