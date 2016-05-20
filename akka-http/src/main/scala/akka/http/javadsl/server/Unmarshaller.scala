@@ -5,7 +5,7 @@
 package akka.http.javadsl.server
 
 import akka.http.impl.util.JavaMapping
-import akka.http.javadsl.RoutingJavaMapping
+import akka.http.javadsl.server.RoutingJavaMapping
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.unmarshalling.{ FromEntityUnmarshaller, FromRequestUnmarshaller }
 import akka.http.scaladsl.unmarshalling.Unmarshaller.{ EnhancedFromEntityUnmarshaller, EnhancedUnmarshaller, UnsupportedContentTypeException }
@@ -27,7 +27,7 @@ import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters._
 import scala.collection.JavaConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.javadsl.RoutingJavaMapping._
+import RoutingJavaMapping._
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 
@@ -125,6 +125,7 @@ abstract class Unmarshaller[-A, B] extends UnmarshallerBase[A, B] {
 
   /**
    * Transform the result `B` of this unmarshaller to a `C` producing a marshaller that turns `A`s into `C`s
+   *
    * @return A new marshaller that can unmarshall instances of `A` into instances of `C`
    */
   def thenApply[C](f: java.util.function.Function[B, C]): Unmarshaller[A, C] = asScala.map(f.apply)

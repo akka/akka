@@ -13,12 +13,13 @@ import akka.japi.Util
 import scala.collection.immutable
 import akka.http.scaladsl.model._
 import akka.http.javadsl
-import akka.http.javadsl.{ server ⇒ jserver, model }
+import akka.http.javadsl.{ model, server ⇒ jserver }
 import headers._
-
 import akka.http.impl.util.JavaMapping._
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.javadsl.RoutingJavaMapping._
+import akka.http.javadsl.server.RoutingJavaMapping
+import RoutingJavaMapping._
+
 import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters
 

@@ -2,17 +2,15 @@
  * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.http.javadsl
+package akka.http.javadsl.server
 
 import java.util.concurrent.CompletionStage
 
-import akka.http.impl.util._
 import akka.http.impl.util.JavaMapping._
-import akka.http.javadsl
-import akka.http.scaladsl
-import javadsl.server.{ directives ⇒ jdirectives }
-import akka.http.scaladsl.server.{ directives ⇒ sdirectives, RequestContext }
-
+import akka.http.impl.util._
+import akka.http.{ javadsl, scaladsl }
+import akka.http.scaladsl.server.{ directives ⇒ sdirectives }
+import akka.http.javadsl.server.{ directives ⇒ jdirectives }
 import scala.collection.immutable
 
 /**
@@ -40,8 +38,8 @@ private[http] object RoutingJavaMapping {
   implicit object RequestContext extends JavaMapping[javadsl.server.RequestContext, scaladsl.server.RequestContext] {
     // TODO make it inhierit
     //    extends Inherited[javadsl.server.RequestContext, scaladsl.server.RequestContext]
-    override def toScala(javaObject: javadsl.server.RequestContext): RequestContext = javaObject.delegate
-    override def toJava(scalaObject: RequestContext): server.RequestContext = javadsl.server.RequestContext.wrap(scalaObject)
+    override def toScala(javaObject: javadsl.server.RequestContext): scaladsl.server.RequestContext = javaObject.delegate
+    override def toJava(scalaObject: scaladsl.server.RequestContext): javadsl.server.RequestContext = javadsl.server.RequestContext.wrap(scalaObject)
   }
   implicit object convertRouteResult extends Inherited[javadsl.server.RouteResult, scaladsl.server.RouteResult]
 

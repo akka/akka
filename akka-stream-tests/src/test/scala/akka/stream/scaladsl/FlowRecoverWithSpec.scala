@@ -130,5 +130,11 @@ class FlowRecoverWithSpec extends AkkaSpec {
         .request(1)
         .expectError(ex)
     }
+
+    "throw IllegalArgumentException if number of retries is less than -1" in assertAllStagesStopped {
+      intercept[IllegalArgumentException] {
+        Flow[Int].recoverWithRetries(-2, { case t: Throwable ⇒ Source.empty[Int] })
+      }
+    }
   }
 }

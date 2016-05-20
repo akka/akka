@@ -24,8 +24,10 @@ object Dist {
   val distDocJars = TaskKey[Seq[File]]("dist-doc-jars")
   val distSources = TaskKey[DistSources]("dist-sources")
   val dist = TaskKey[File]("dist", "Create a zipped distribution of everything.")
+  val includeInDist = SettingKey[Boolean]("include-in-dist", "Include the artifact of this project in the standalone dist zip-file")
 
   lazy val settings: Seq[Setting[_]] = Seq(
+    includeInDist := true,
     distAllClasspaths <<= (thisProjectRef, buildStructure) flatMap aggregated(dependencyClasspath in Compile),
     distDependencies <<= distAllClasspaths map { _.flatten.map(_.data).filter(ClasspathUtilities.isArchive).distinct },
     distLibJars <<= (thisProjectRef, buildStructure) flatMap aggregated(packageBin in Compile),
@@ -49,7 +51,7 @@ object Dist {
   def aggregatedProjects(projectRef: ProjectRef, structure: BuildStructure, scope: Scope): Seq[ProjectRef] = {
     val aggregate = Project.getProject(projectRef, structure).toSeq.flatMap(_.aggregate)
     aggregate flatMap { ref =>
-      if (!(publishArtifact in ref in scope get structure.data getOrElse false)) Nil
+      if (!(includeInDist in ref in scope get structure.data getOrElse false)) Nil
       else ref +: aggregatedProjects(ref, structure, scope)
     }
   }

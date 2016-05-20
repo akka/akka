@@ -6,29 +6,25 @@ package akka.http.javadsl.server.directives
 import java.util.concurrent.CompletionStage
 
 import akka.dispatch.ExecutionContexts
-import akka.http.javadsl.RoutingJavaMapping
 import akka.http.scaladsl.server._
 import akka.japi.Util
 
 import scala.collection.immutable.Seq
 import scala.annotation.varargs
 import scala.collection.JavaConverters._
-
 import akka.http.impl.model.JavaUri
 import akka.http.javadsl.model.HttpHeader
 import akka.http.javadsl.model.HttpResponse
 import akka.http.javadsl.model.RequestEntity
 import akka.http.javadsl.model.StatusCode
 import akka.http.javadsl.model.Uri
-import akka.http.javadsl.server.{ Rejection, Marshaller, Route }
+import akka.http.javadsl.server.{ RoutingJavaMapping, Rejection, Marshaller, Route }
 import akka.http.scaladsl
 import akka.http.scaladsl.marshalling.Marshaller._
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model.StatusCodes.Redirection
-import akka.http.javadsl.RoutingJavaMapping._
+import akka.http.javadsl.server.RoutingJavaMapping._
 import akka.http.scaladsl.server.directives.{ RouteDirectives ⇒ D }
-import akka.http.javadsl.server.Rejection
-
 import akka.http.scaladsl.util.FastFuture._
 
 abstract class RouteDirectives extends RespondWithDirectives {

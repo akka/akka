@@ -1259,6 +1259,7 @@ private[stream] object RecoverWith {
 }
 
 private[stream] final class RecoverWith[T, M](maximumRetries: Int, pf: PartialFunction[Throwable, Graph[SourceShape[T], M]]) extends SimpleLinearGraphStage[T] {
+  require(maximumRetries >= -1, "number of retries must be non-negative or equal to -1")
   override def initialAttributes = DefaultAttributes.recoverWith
 
   override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
