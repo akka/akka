@@ -108,6 +108,7 @@ abstract class AeronStreamLatencySpec
   }
 
   val streamId = 1
+  val giveUpSendAfter = 30.seconds
 
   lazy val reporterExecutor = Executors.newFixedThreadPool(1)
   def reporter(name: String): TestRateReporter = {
@@ -227,7 +228,7 @@ abstract class AeronStreamLatencySpec
           envelope
         }
           .throttle(1, 200.milliseconds, 1, ThrottleMode.Shaping)
-          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool))
+          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpSendAfter))
         started.expectMsg(Done)
       }
 
@@ -245,7 +246,7 @@ abstract class AeronStreamLatencySpec
             sendTimes.set(n - 1, System.nanoTime())
             envelope
           }
-          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool))
+          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpSendAfter))
 
         barrier.await((totalMessages / messageRate) + 10, SECONDS)
       }
@@ -264,7 +265,7 @@ abstract class AeronStreamLatencySpec
       runOn(second) {
         // just echo back
         Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool))
-          .runWith(new AeronSink(channel(first), streamId, aeron, taskRunner, pool))
+          .runWith(new AeronSink(channel(first), streamId, aeron, taskRunner, pool, giveUpSendAfter))
       }
       enterBarrier("echo-started")
     }

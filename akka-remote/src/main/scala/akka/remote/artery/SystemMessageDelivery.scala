@@ -107,6 +107,7 @@ private[akka] class SystemMessageDelivery(
             }
             if (!unacknowledged.isEmpty)
               scheduleOnce(ResendTick, resendInterval)
+          // FIXME give up resending after a long while, i.e. config property quarantine-after-silence
         }
 
       // ControlMessageObserver, external call
