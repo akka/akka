@@ -66,12 +66,12 @@ private[akka] object MessageSerializer {
     envelope.byteBuffer.put(serializer.toBinary(message))
   }
 
-  def deserializeForArtery(system: ExtendedActorSystem, headerBuilder: HeaderBuilder, envelope: EnvelopeBuffer): AnyRef = {
+  def deserializeForArtery(system: ExtendedActorSystem, serialization: Serialization, headerBuilder: HeaderBuilder, envelope: EnvelopeBuffer): AnyRef = {
     // FIXME: Use the buffer directly
     val size = envelope.byteBuffer.limit - envelope.byteBuffer.position
     val bytes = Array.ofDim[Byte](size)
     envelope.byteBuffer.get(bytes)
-    SerializationExtension(system).deserialize(
+    serialization.deserialize(
       bytes,
       Integer.parseInt(headerBuilder.serializer), // FIXME: Use FQCN
       headerBuilder.classManifest).get
