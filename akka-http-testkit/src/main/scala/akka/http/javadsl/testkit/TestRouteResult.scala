@@ -16,9 +16,10 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.impl.util._
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.javadsl.RoutingJavaMapping._
-import akka.http.javadsl.server.{Rejection, Unmarshaller}
+import akka.http.javadsl.server.{Rejection, RoutingJavaMapping, Unmarshaller}
+import RoutingJavaMapping._
 import akka.http.javadsl.model._
+
 import scala.collection.JavaConverters._
 import scala.annotation.varargs
 
