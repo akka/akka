@@ -252,7 +252,7 @@ Serialization
 When using remoting for actors you must ensure that the ``props`` and ``messages`` used for
 those actors are serializable. Failing to do so will cause the system to behave in an unintended way.
 
-For more information please see :ref:`serialization-scala`
+For more information please see :ref:`serialization-scala`.
 
 Routers with Remote Destinations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
