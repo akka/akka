@@ -88,6 +88,17 @@ the :class:`ActorSelection`, which returns a ``Future`` of the matching
 
   For more details on how actor addresses and paths are formed and used, please refer to :ref:`addressing`.
 
+.. note::
+
+  Message sends to actors that are actually in the sending actor system do not
+  get delivered via the remote actor ref provider. They're delivered directly,
+  by the local actor ref provider.
+
+  Aside from providing better performance, this also means that if the hostname
+  you configure remoting to listen as cannot actually be resolved from within
+  the very same actor system, such messages will (perhaps counterintuitively)
+  be delivered just fine.
+
 Creating Actors Remotely
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
