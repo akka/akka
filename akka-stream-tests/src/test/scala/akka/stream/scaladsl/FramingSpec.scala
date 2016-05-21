@@ -6,10 +6,12 @@ package akka.stream.scaladsl
 import java.nio.ByteOrder
 
 import akka.stream.scaladsl.Framing.FramingException
-import akka.stream.stage.{ Context, PushPullStage, SyncDirective, TerminationDirective }
+import akka.stream.stage.{ Context, GraphStage, SyncDirective, TerminationDirective }
 import akka.testkit.AkkaSpec
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.{ Outlet, Inlet, Attributes, FlowShape }
 import akka.util.{ ByteString, ByteStringBuilder }
+import akka.stream.stage._
 
 import scala.collection.immutable
 import scala.concurrent.Await
@@ -22,38 +24,53 @@ class FramingSpec extends AkkaSpec {
   val settings = ActorMaterializerSettings(system)
   implicit val materializer = ActorMaterializer(settings)
 
-  class Rechunker extends PushPullStage[ByteString, ByteString] {
-    private var rechunkBuffer = ByteString.empty
+  class Rechunker extends GraphStage[FlowShape[ByteString, ByteString]] {
 
-    override def onPush(chunk: ByteString, ctx: Context[ByteString]): SyncDirective = {
-      rechunkBuffer ++= chunk
-      rechunk(ctx)
-    }
+    val out: Outlet[ByteString] = Outlet("Rechunker.out")
+    val in: Inlet[ByteString] = Inlet("Rechunker.in")
 
-    override def onPull(ctx: Context[ByteString]): SyncDirective = {
-      rechunk(ctx)
-    }
+    override val shape: FlowShape[ByteString, ByteString] = FlowShape(in, out)
 
-    override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective = {
-      if (rechunkBuffer.isEmpty) ctx.finish()
-      else ctx.absorbTermination()
-    }
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+      new GraphStageLogic(shape) with InHandler with OutHandler {
 
-    private def rechunk(ctx: Context[ByteString]): SyncDirective = {
-      if (!ctx.isFinishing && ThreadLocalRandom.current().nextBoolean()) ctx.pull()
-      else {
-        val nextChunkSize =
-          if (rechunkBuffer.isEmpty) 0
-          else ThreadLocalRandom.current().nextInt(0, rechunkBuffer.size + 1)
-        val newChunk = rechunkBuffer.take(nextChunkSize)
-        rechunkBuffer = rechunkBuffer.drop(nextChunkSize)
-        if (ctx.isFinishing && rechunkBuffer.isEmpty) ctx.pushAndFinish(newChunk)
-        else ctx.push(newChunk)
+        private var rechunkBuffer = ByteString.empty
+
+        private def rechunk() = {
+          if (!isClosed(in) && ThreadLocalRandom.current().nextBoolean()) pull(in)
+          else {
+            val nextChunkSize =
+              if (rechunkBuffer.isEmpty) 0
+              else ThreadLocalRandom.current().nextInt(0, rechunkBuffer.size + 1)
+            val newChunk = rechunkBuffer.take(nextChunkSize)
+            rechunkBuffer = rechunkBuffer.drop(nextChunkSize)
+            if (isClosed(in) && rechunkBuffer.isEmpty) {
+              push(out, newChunk)
+              completeStage()
+            } else push(out, newChunk)
+          }
+        }
+
+        override def onPush(): Unit = {
+          rechunkBuffer ++= grab(in)
+          rechunk()
+        }
+
+        override def onPull(): Unit = {
+          rechunk()
+        }
+
+        override def onUpstreamFinish(): Unit = {
+          if (rechunkBuffer.isEmpty) completeStage()
+          else if (isAvailable(out))
+            onPull()
+        }
+
+        setHandlers(in, out, this)
       }
-    }
   }
 
-  val rechunk = Flow[ByteString].transform(() ⇒ new Rechunker).named("rechunker")
+  val rechunk = Flow[ByteString] via new Rechunker().named("rechunker")
 
   "Delimiter bytes based framing" must {
 
