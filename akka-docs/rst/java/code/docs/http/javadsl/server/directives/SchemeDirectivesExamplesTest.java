@@ -23,14 +23,17 @@ public class SchemeDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test
   public void testScheme() {
+    //#extractScheme
     final Route route = extractScheme((scheme) -> 
                                       complete(String.format("The scheme is '%s'", scheme)));
     testRoute(route).run(HttpRequest.GET("https://www.example.com/"))
       .assertEntity("The scheme is 'https'");
+    //#extractScheme
   }
 
   @Test
   public void testRedirection() {
+    //#scheme
     final Route route = route(
       scheme("http", ()->
         extract((ctx) -> ctx.getRequest().getUri(), (uri)->
@@ -49,6 +52,7 @@ public class SchemeDirectivesExamplesTest extends JUnitRouteTest {
 
     testRoute(route).run(HttpRequest.GET("https://www.example.com/hello"))
       .assertEntity("Safe and secure!");
+    //#scheme
   }
 
 }
