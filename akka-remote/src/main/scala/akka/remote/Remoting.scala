@@ -379,8 +379,13 @@ private[remote] object EndpointManager {
      */
     def markAsFailed(endpoint: ActorRef, timeOfRelease: Deadline): Unit =
       if (isWritable(endpoint)) {
-        addressToWritable += writableToAddress(endpoint) -> Gated(timeOfRelease)
-        writableToAddress -= endpoint
+        val address = writableToAddress(endpoint)
+        addressToWritable.get(address) match {
+          case Some(Quarantined(_, _)) ⇒ // don't overwrite Quarantined with Gated
+          case _ ⇒
+            addressToWritable += address -> Gated(timeOfRelease)
+            writableToAddress -= endpoint
+        }
       } else if (isReadOnly(endpoint)) {
         addressToReadonly -= readonlyToAddress(endpoint)
         readonlyToAddress -= endpoint
