@@ -112,11 +112,10 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
             assignPort(source.shape.out, pub.asInstanceOf[Publisher[Any]])
             matVal.put(atomic, mat)
 
-          // FIXME: Remove this, only stream-of-stream ops need it
-          case stage: StageModule ⇒
-            val (processor, mat) = processorFor(stage, effectiveAttributes, effectiveSettings(effectiveAttributes))
+          case stage: ProcessorModule[_, _, _] ⇒
+            val (processor, mat) = stage.createProcessor()
             assignPort(stage.inPort, processor)
-            assignPort(stage.outPort, processor)
+            assignPort(stage.outPort, processor.asInstanceOf[Publisher[Any]])
             matVal.put(atomic, mat)
 
           case tls: TlsModule ⇒ // TODO solve this so TlsModule doesn't need special treatment here
@@ -175,16 +174,6 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
         }
       }
 
-      // FIXME: Remove this, only stream-of-stream ops need it
-      private def processorFor(op: StageModule,
-                               effectiveAttributes: Attributes,
-                               effectiveSettings: ActorMaterializerSettings): (Processor[Any, Any], Any) = op match {
-        case DirectProcessor(processorFactory, _) ⇒ processorFactory()
-        case _ ⇒
-          val (opprops, mat) = ActorProcessorFactory.props(ActorMaterializerImpl.this, op, effectiveAttributes)
-          ActorProcessorFactory[Any, Any](
-            actorOf(opprops, stageName(effectiveAttributes), effectiveSettings.dispatcher)) -> mat
-      }
     }
 
     session.materialize().asInstanceOf[Mat]
@@ -294,27 +283,3 @@ private[akka] class StreamSupervisor(settings: ActorMaterializerSettings, haveSh
   override def postStop(): Unit = haveShutDown.set(true)
 }
 
-/**
- * INTERNAL API
- */
-private[akka] object ActorProcessorFactory {
-  import akka.stream.impl.Stages._
-
-  def props(materializer: ActorMaterializer, op: StageModule, parentAttributes: Attributes): (Props, Any) = {
-    val att = parentAttributes and op.attributes
-    // USE THIS TO AVOID CLOSING OVER THE MATERIALIZER BELOW
-    // Also, otherwise the attributes will not affect the settings properly!
-    val settings = materializer.effectiveSettings(att)
-    op match {
-      case GroupBy(maxSubstreams, f, _) ⇒ (GroupByProcessorImpl.props(settings, maxSubstreams, f), ())
-      case DirectProcessor(p, m)        ⇒ throw new AssertionError("DirectProcessor cannot end up in ActorProcessorFactory")
-    }
-  }
-
-  def apply[I, O](impl: ActorRef): ActorProcessor[I, O] = {
-    val p = new ActorProcessor[I, O](impl)
-    // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
-    impl ! ExposedPublisher(p.asInstanceOf[ActorPublisher[Any]])
-    p
-  }
-}

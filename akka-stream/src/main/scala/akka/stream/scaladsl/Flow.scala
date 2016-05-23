@@ -3,10 +3,10 @@
  */
 package akka.stream.scaladsl
 
-import akka.event.LoggingAdapter
+import akka.event.{Logging, LoggingAdapter}
 import akka.stream._
 import akka.Done
-import akka.stream.impl.Stages.{ DirectProcessor, StageModule }
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.stream.impl.fusing._
@@ -205,21 +205,6 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
       .replaceShape(FlowShape(ins(1), outs.head)))
   }
 
-  /** INTERNAL API */
-  // FIXME: Only exists to keep old stuff alive
-  private[stream] override def deprecatedAndThen[U](op: StageModule): Repr[U] = {
-    //No need to copy here, op is a fresh instance
-    if (this.isIdentity) new Flow(op).asInstanceOf[Repr[U]]
-    else new Flow(module.fuse(op, shape.out, op.inPort).replaceShape(FlowShape(shape.in, op.outPort)))
-  }
-
-  // FIXME: Only exists to keep old stuff alive
-  private[akka] def deprecatedAndThenMat[U, Mat2, O >: Out](processorFactory: () ⇒ (Processor[O, U], Mat2)): ReprMat[U, Mat2] = {
-    val op = DirectProcessor(processorFactory.asInstanceOf[() ⇒ (Processor[Any, Any], Any)])
-    if (this.isIdentity) new Flow(op).asInstanceOf[ReprMat[U, Mat2]]
-    else new Flow[In, U, Mat2](module.fuse(op, shape.out, op.inPort, Keep.right).replaceShape(FlowShape(shape.in, op.outPort)))
-  }
-
   /**
    * Change the attributes of this [[Flow]] to the given ones and seal the list
    * of attributes. This means that further calls will not be able to remove these
@@ -293,9 +278,8 @@ object Flow {
   /**
    * Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]] and returns a materialized value.
    */
-  def fromProcessorMat[I, O, Mat](processorFactory: () ⇒ (Processor[I, O], Mat)): Flow[I, O, Mat] = {
-    Flow[I].deprecatedAndThenMat(processorFactory)
-  }
+  def fromProcessorMat[I, O, M](processorFactory: () ⇒ (Processor[I, O], M)): Flow[I, O, M] =
+    new Flow(ProcessorModule(processorFactory))
 
   /**
    * Returns a `Flow` which outputs all its inputs.
@@ -1210,6 +1194,8 @@ trait FlowOps[+Out, +Mat] {
    * is [[akka.stream.Supervision.Resume]] or [[akka.stream.Supervision.Restart]]
    * the element is dropped and the stream and substreams continue.
    *
+   * Function `f`  MUST NOT return `null`. This will throw exception and trigger supervision decision mechanism.
+   *
    * '''Emits when''' an element for which the grouping function returns a group that has not yet been created.
    * Emits the new group
    *
@@ -1223,16 +1209,15 @@ trait FlowOps[+Out, +Mat] {
    *        that are supported; if more distinct keys are encountered then the stream fails
    */
   def groupBy[K](maxSubstreams: Int, f: Out ⇒ K): SubFlow[Out, Mat, Repr, Closed] = {
-    implicit def mat = GraphInterpreter.currentInterpreter.materializer
     val merge = new SubFlowImpl.MergeBack[Out, Repr] {
       override def apply[T](flow: Flow[Out, T, NotUsed], breadth: Int): Repr[T] =
-        deprecatedAndThen[Source[Out, NotUsed]](GroupBy(maxSubstreams, f.asInstanceOf[Any ⇒ Any]))
+        via(new GroupBy(maxSubstreams, f))
           .map(_.via(flow))
           .via(new FlattenMerge(breadth))
     }
     val finish: (Sink[Out, NotUsed]) ⇒ Closed = s ⇒
-      deprecatedAndThen[Source[Out, NotUsed]](GroupBy(maxSubstreams, f.asInstanceOf[Any ⇒ Any]))
-        .to(Sink.foreach(_.runWith(s)))
+      via(new GroupBy(maxSubstreams, f))
+        .to(Sink.foreach(_.runWith(s)(GraphInterpreter.currentInterpreter.materializer)))
     new SubFlowImpl(Flow[Out], merge, finish)
   }
 
@@ -1849,8 +1834,6 @@ trait FlowOps[+Out, +Mat] {
   /** INTERNAL API */
   private[scaladsl] def andThen[T](op: SymbolicStage[Out, T]): Repr[T] =
     via(SymbolicGraphStage(op))
-
-  private[scaladsl] def deprecatedAndThen[U](op: StageModule): Repr[U]
 }
 
 /**

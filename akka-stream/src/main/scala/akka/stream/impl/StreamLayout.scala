@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.{ AtomicReference }
 import java.{ util ⇒ ju }
 import akka.NotUsed
 import akka.stream.impl.MaterializerSession.MaterializationPanic
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.scaladsl.Keep
 import akka.stream._
@@ -934,4 +935,21 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
       case v: VirtualPublisher[_] => v.registerPublisher(publisher)
     }
 
+}
+
+/**
+  * INTERNAL API
+  */
+private[akka] final case class ProcessorModule[In, Out, Mat](val createProcessor: () ⇒ (Processor[In, Out], Mat),
+                                                             attributes: Attributes = DefaultAttributes.processor) extends StreamLayout.AtomicModule {
+  val inPort = Inlet[In]("ProcessorModule.in")
+  val outPort = Outlet[Out]("ProcessorModule.out")
+  override val shape = new FlowShape(inPort, outPort)
+
+  override def replaceShape(s: Shape) = if (s != shape) throw new UnsupportedOperationException("cannot replace the shape of a FlowModule")
+  else this
+
+  override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  override def carbonCopy: Module = withAttributes(attributes)
+  override def toString: String = f"ProcessorModule [${System.identityHashCode(this)}%08x]"
 }
