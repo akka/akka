@@ -5,6 +5,10 @@
 package akka.actor;
 
 import static org.junit.Assert.*;
+import static java.util.stream.Collectors.toCollection;
+
+import java.util.ArrayList;
+import java.util.stream.IntStream;
 
 import akka.testkit.TestActors;
 import org.junit.Test;
@@ -144,36 +148,27 @@ public class ActorCreationTest extends JUnitSuite {
     }
   }
 
-  static final class StrategySupervisor {
-    final PriceProcessorCreator priceProcessorCreator = new PriceProcessorCreator(this);
-    final Props props = Props.create(priceProcessorCreator);
-  }
+  public static class Issue20537Reproducer extends UntypedActor {
 
-  static abstract class AbstractProcessor extends UntypedActor {
-  }
+    static final class ReproducerCreator implements Creator<Issue20537Reproducer> {
 
-  public static class PriceProcessor extends AbstractProcessor {
-    final StrategySupervisor supervisor;
+      final boolean create;
 
-    PriceProcessor(StrategySupervisor supervisor) {
-      this.supervisor = supervisor;
+      private ReproducerCreator(boolean create) {
+        this.create = create;
+      }
+
+      @Override
+      public Issue20537Reproducer create() throws Exception {
+        return new Issue20537Reproducer(create);
+      }
     }
 
-    public void onReceive(Object msg) {
-    }
-  }
-
-  static final class PriceProcessorCreator implements Creator<AbstractProcessor> {
-
-    final StrategySupervisor supervisor;
-
-    protected PriceProcessorCreator(StrategySupervisor supervisor) {
-      this.supervisor = supervisor;
+    public Issue20537Reproducer(boolean create) {
     }
 
     @Override
-    public AbstractProcessor create() {
-      return new PriceProcessor(supervisor);
+    public void onReceive(Object message) throws Exception {
     }
   }
 
@@ -321,9 +316,16 @@ public class ActorCreationTest extends JUnitSuite {
   }
 
   @Test
-  public void testPriceProcessorCreator() {
-    final StrategySupervisor strategySupervisor = new StrategySupervisor();
-    assertEquals(AbstractProcessor.class, strategySupervisor.props.actorClass());
+  public void testIssue20537Reproducer() {
+    final Issue20537Reproducer.ReproducerCreator creator = new Issue20537Reproducer.ReproducerCreator(false);
+    final Props p = Props.create(creator);
+    assertEquals(Issue20537Reproducer.class, p.actorClass());
+
+    ArrayList<Props> pList = IntStream.range(0, 4).mapToObj(i -> Props.create(creator))
+        .collect(toCollection(ArrayList::new));
+    for (Props each : pList) {
+      assertEquals(Issue20537Reproducer.class, each.actorClass());
+    }
   }
 
 
