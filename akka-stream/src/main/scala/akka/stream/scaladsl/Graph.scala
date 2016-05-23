@@ -8,7 +8,7 @@ import akka.stream._
 import akka.stream.impl._
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
-import akka.stream.impl.Stages.{ DefaultAttributes, StageModule }
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout._
 import akka.stream.scaladsl.Partition.PartitionOutOfBoundsException
 import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
@@ -977,13 +977,6 @@ object GraphDSL extends GraphApply {
       source.out
     }
 
-    private[stream] def deprecatedAndThen(port: OutPort, op: StageModule): Unit = {
-      moduleInProgress =
-        moduleInProgress
-          .compose(op)
-          .wire(port, op.inPort)
-    }
-
     private[stream] def module: Module = moduleInProgress
 
     /** Converts this Scala DSL element to it's Java DSL counterpart. */
@@ -1117,11 +1110,6 @@ object GraphDSL extends GraphApply {
 
       override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] =
         super.~>(flow)(b)
-
-      override private[scaladsl] def deprecatedAndThen[U](op: StageModule): Repr[U] = {
-        b.deprecatedAndThen(outlet, op)
-        new PortOpsImpl(op.shape.out.asInstanceOf[Outlet[U]], b)
-      }
 
       def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Closed = {
         super.~>(sink)(b)

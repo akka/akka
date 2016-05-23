@@ -1088,6 +1088,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * is [[akka.stream.Supervision#resume]] or [[akka.stream.Supervision#restart]]
    * the element is dropped and the stream and substreams continue.
    *
+   * Function `f`  MUST NOT return `null`. This will throw exception and trigger supervision decision mechanism.
+   *
    * '''Emits when''' an element for which the grouping function returns a group that has not yet been created.
    * Emits the new group
    *

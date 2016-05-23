@@ -134,12 +134,6 @@ private[stream] object Stages {
 
   import DefaultAttributes._
 
-  // FIXME: To be deprecated as soon as stream-of-stream operations are stages
-  sealed trait StageModule extends FlowModule[Any, Any, Any] {
-    def withAttributes(attributes: Attributes): StageModule
-    override def carbonCopy: Module = withAttributes(attributes)
-  }
-
   /*
    * Stage that is backed by a GraphStage but can be symbolically introspected
    */
@@ -189,14 +183,4 @@ private[stream] object Stages {
     override def create(attr: Attributes): Stage[T, T] = fusing.Buffer(size, overflowStrategy)
   }
 
-  // FIXME: These are not yet proper stages, therefore they use the deprecated StageModule infrastructure
-
-  final case class GroupBy(maxSubstreams: Int, f: Any ⇒ Any, attributes: Attributes = groupBy) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
-    override protected def label: String = s"GroupBy($maxSubstreams)"
-  }
-
-  final case class DirectProcessor(p: () ⇒ (Processor[Any, Any], Any), attributes: Attributes = processor) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
-  }
 }

@@ -5,7 +5,7 @@ package akka.stream.impl
 
 import akka.stream.impl.QueueSink.{ Output, Pull }
 import akka.{ Done, NotUsed }
-import akka.actor.{ ActorRef, Props }
+import akka.actor.{ ActorRef, Actor, Props }
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
@@ -100,10 +100,12 @@ private[akka] final class FanoutPublisherSink[In](
 
   override def create(context: MaterializationContext): (Subscriber[In], Publisher[In]) = {
     val actorMaterializer = ActorMaterializer.downcast(context.materializer)
-    val fanoutProcessor = ActorProcessorFactory[In, In](
-      actorMaterializer.actorOf(
-        context,
-        FanoutProcessorImpl.props(actorMaterializer.effectiveSettings(attributes))))
+    val impl = actorMaterializer.actorOf(
+      context,
+      FanoutProcessorImpl.props(actorMaterializer.effectiveSettings(attributes)))
+    val fanoutProcessor = new ActorProcessor[In, In](impl)
+    impl ! ExposedPublisher(fanoutProcessor.asInstanceOf[ActorPublisher[Any]])
+    // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
     (fanoutProcessor, fanoutProcessor)
   }
 
