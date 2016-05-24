@@ -24,8 +24,8 @@ import akka.http.scaladsl.TestUtils.writeAllText
 class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Inside {
 
   // operations touch files, can be randomly hit by slowness
-  implicit val routeTestTimeout = RouteTestTimeout(3.seconds) 
-  
+  implicit val routeTestTimeout = RouteTestTimeout(3.seconds)
+
   override def testConfigSource = "akka.http.routing.range-coalescing-threshold = 1"
 
   "getFromFile" should {
