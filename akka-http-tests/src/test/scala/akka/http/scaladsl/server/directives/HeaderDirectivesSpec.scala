@@ -159,4 +159,37 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
       }
     }
   }
+
+  "The checkSameOrigin directive" should {
+    val correctOrigin = HttpOrigin("http://localhost:8080")
+    val route = checkSameOrigin(HttpOriginRange(correctOrigin)) {
+      complete("Result")
+    }
+    "handle request with correct origin headers" in {
+      Get("abc") ~> Origin(correctOrigin) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        responseAs[String] shouldEqual "Result"
+      }
+    }
+    "reject request with missed origin header" in {
+      Get("abc") ~> route ~> check {
+        inside(rejection) {
+          case MissingHeaderRejection(headerName) ⇒ headerName shouldEqual Origin.name
+        }
+      }
+    }
+    "reject requests with invalid origin header value" in {
+      val invalidHeaderValue = "http://invalid.com"
+      val invalidOriginHeader = Origin(HttpOrigin(invalidHeaderValue))
+      Get("abc") ~> invalidOriginHeader ~> route ~> check {
+        inside(rejection) {
+          case InvalidOriginHeaderRejection(headerValue) ⇒ headerValue shouldBe invalidHeaderValue
+        }
+      }
+      Get("abc") ~> invalidOriginHeader ~> Route.seal(route) ~> check {
+        status shouldEqual StatusCodes.Forbidden
+        responseAs[String] should include("is not in the same origin")
+      }
+    }
+  }
 }

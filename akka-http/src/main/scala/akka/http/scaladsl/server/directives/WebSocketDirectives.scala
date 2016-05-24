@@ -6,13 +6,9 @@ package akka.http.scaladsl.server
 package directives
 
 import scala.collection.immutable
-import akka.http.scaladsl.model.headers.{ HttpOrigin, HttpOriginRange, Origin }
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.ws.{ UpgradeToWebSocket, Message }
-import akka.http.scaladsl.server.MalformedHeaderRejection
-import akka.stream.scaladsl.Flow
 
-import scala.collection.immutable
+import akka.http.scaladsl.model.ws.{ UpgradeToWebSocket, Message }
+import akka.stream.scaladsl.Flow
 
 /**
  * @groupname websocket WebSocket directives
@@ -80,43 +76,4 @@ trait WebSocketDirectives {
       else
         reject(UnsupportedWebSocketSubprotocolRejection(subprotocol.get)) // None.forall == true
     }
-
-  /**
-   * Checks that the WebSocket comes from the same origin. Extracts the [[Origin]] header and
-   * verify that the allowed range contains obtained values. In case of absent of [[Origin]] header
-   * rejects with [[MissingHeaderRejection]] and [[StatusCodes.Forbidden]]. In case if some of the origin
-   * values not in the allowed list rejects with a [[MalformedHeaderRejection]] and [[StatusCodes.Forbidden]].
-   *
-   * See https://tools.ietf.org/html/rfc6455#section-1.3 and
-   * http://blog.dewhurstsecurity.com/2013/08/30/security-testing-html5-websockets.html
-   *
-   * @group websocket
-   */
-  def checkSameOrigin(allowed: HttpOriginRange): Directive0 = {
-
-    /** Return an invalid origin, or `None` if they are all valid. */
-    def validateOrigin(origins: Seq[HttpOrigin]): Option[HttpOrigin] =
-      origins.find(!allowed.matches(_))
-
-    def sameOriginCheckRejectionHandler = RejectionHandler.newBuilder()
-      .handle {
-        case MissingHeaderRejection(origin) ⇒
-          complete((StatusCodes.Forbidden, s"Request is missing required HTTP header '$origin'"))
-      }
-      .handle {
-        case MalformedHeaderRejection(headerName, msg, _) ⇒
-          complete((StatusCodes.Forbidden, s"The value of HTTP header '$headerName' was malformed:\n" + msg))
-      }
-      .result()
-
-    def check: Directive0 = optionalHeaderValueByType[Origin]().flatMap {
-      case None ⇒ reject(MissingHeaderRejection(Origin.name))
-      case Some(origin) ⇒ validateOrigin(origin.origins) match {
-        case Some(malformed) ⇒ reject(MalformedHeaderRejection(Origin.name, s"Origin header value '$malformed' is not in the same origin"))
-        case None            ⇒ pass
-      }
-    }
-
-    ExecutionDirectives.handleRejections(sameOriginCheckRejectionHandler) & check
-  }
 }

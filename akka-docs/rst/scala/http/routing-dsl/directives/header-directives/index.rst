@@ -9,6 +9,7 @@ response headers use one of the :ref:`RespondWithDirectives`.
 .. toctree::
    :maxdepth: 1
 
+   checkSameOrigin
    headerValue
    headerValueByName
    headerValueByType

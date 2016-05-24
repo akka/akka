@@ -4,13 +4,11 @@
 
 package docs.http.scaladsl.server.directives
 
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.MissingHeaderRejection
-import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.server.util.ClassMagnet
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.server.{ InvalidOriginHeaderRejection, MissingHeaderRejection, Route }
 import docs.http.scaladsl.server.RoutingSpec
-import headers._
-import StatusCodes._
 import org.scalatest.Inside
 
 class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
@@ -184,6 +182,40 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
     // extract None if no header of the given type is present
     Get("abc") ~> route ~> check {
       responseAs[String] shouldEqual "No Origin header found."
+    }
+  }
+  "checkSameOrigin-0" in {
+    val correctOrigin = HttpOrigin("http://localhost:8080")
+    val route = checkSameOrigin(HttpOriginRange(correctOrigin)) {
+      complete("Result")
+    }
+
+    // tests:
+    // handle request with correct origin headers
+    Get("abc") ~> Origin(correctOrigin) ~> route ~> check {
+      status shouldEqual StatusCodes.OK
+      responseAs[String] shouldEqual "Result"
+    }
+
+    // reject request with missed origin header
+    Get("abc") ~> route ~> check {
+      inside(rejection) {
+        case MissingHeaderRejection(headerName) ⇒ headerName shouldEqual Origin.name
+      }
+    }
+
+    // rejects request with invalid origin headers
+    val invalidHeaderValue = "http://invalid.com"
+    val invalidOriginHeader = Origin(HttpOrigin(invalidHeaderValue))
+    Get("abc") ~> invalidOriginHeader ~> route ~> check {
+      inside(rejection) {
+        case InvalidOriginHeaderRejection(headerValue) ⇒
+          headerValue shouldBe invalidHeaderValue
+      }
+    }
+    Get("abc") ~> invalidOriginHeader ~> Route.seal(route) ~> check {
+      status shouldEqual StatusCodes.Forbidden
+      responseAs[String] should include("is not in the same origin")
     }
   }
 }

@@ -103,6 +103,14 @@ trait MalformedHeaderRejection extends Rejection {
 }
 
 /**
+ * Rejection created by [[akka.http.scaladsl.server.directives.HeaderDirectives.checkSameOrigin]].
+ * Signals that the request was rejected because `Origin` header value is invalid.
+ */
+trait InvalidOriginHeaderRejection extends Rejection {
+  def headerValue: String
+}
+
+/**
  * Rejection created by unmarshallers.
  * Signals that the request was rejected because the requests content-type is unsupported.
  */

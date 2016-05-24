@@ -93,6 +93,13 @@ final case class MalformedHeaderRejection(headerName: String, errorMsg: String, 
   extends jserver.MalformedHeaderRejection with RejectionWithOptionalCause
 
 /**
+ * Rejection created by [[akka.http.scaladsl.server.directives.HeaderDirectives.checkSameOrigin]].
+ * Signals that the request was rejected because `Origin` header value is invalid.
+ */
+final case class InvalidOriginHeaderRejection(headerValue: String)
+  extends jserver.InvalidOriginHeaderRejection with Rejection
+
+/**
  * Rejection created by unmarshallers.
  * Signals that the request was rejected because the requests content-type is unsupported.
  */

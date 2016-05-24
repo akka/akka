@@ -5,16 +5,12 @@
 package akka.http.scaladsl.server
 package directives
 
-import akka.http.javadsl.model.headers.CustomHeader
-import akka.http.scaladsl.model.headers.{ModeledCustomHeaderCompanion, ModeledCustomHeader, RawHeader}
+import akka.http.impl.util._
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{ HttpOrigin, HttpOriginRange, ModeledCustomHeader, ModeledCustomHeaderCompanion, Origin }
 
-import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
-import akka.http.javadsl.{ model => jm }
-import akka.http.scaladsl.server.util.ClassMagnet
-import akka.http.scaladsl.model._
-import akka.http.impl.util._
 
 /**
  * @groupname header Header directives
@@ -23,6 +19,28 @@ import akka.http.impl.util._
 trait HeaderDirectives {
   import BasicDirectives._
   import RouteDirectives._
+
+  /**
+    * Checks that request comes from the same origin. Extracts the [[Origin]] header value and verifies that
+    * allowed range contains the obtained value. In the case of absent of the [[Origin]] header rejects
+    * with [[MissingHeaderRejection]]. If the origin value is not in the allowed range
+    * rejects with an [[InvalidOriginHeaderRejection]] and [[StatusCodes.Forbidden]] status.
+    *
+    * @group header
+    */
+  def checkSameOrigin(allowed: HttpOriginRange): Directive0 = {
+
+    /** Return an invalid origin, or `None` if they are all valid. */
+    def validateOrigin(origins: Seq[HttpOrigin]): Option[HttpOrigin] =
+      origins.find(!allowed.matches(_))
+
+    headerValueByType[Origin]().flatMap { origin ⇒
+      validateOrigin(origin.origins) match {
+        case Some(invalid) ⇒ reject(InvalidOriginHeaderRejection(invalid.value))
+        case None          ⇒ pass
+      }
+    }
+  }
 
   /**
    * Extracts an HTTP header value using the given function. If the function result is undefined for all headers the

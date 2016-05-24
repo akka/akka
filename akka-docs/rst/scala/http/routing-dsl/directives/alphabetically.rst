@@ -29,6 +29,7 @@ Directive                                   Description
                                             given one to the rejections potentially coming back from the inner route.
 :ref:`-cancelRejections-`                   Adds a ``TransformationRejection`` cancelling all matching rejections
                                             to the rejections potentially coming back from the inner route
+:ref:`-checkSameOrigin-`                    Checks that the request comes from the same origin
 :ref:`-complete-`                           Completes the request using the given arguments
 :ref:`-completeOrRecoverWith-`              "Unwraps" a ``Future[T]`` and runs the inner route when the future has
                                             failed with the error as an extraction of type ``Throwable``
