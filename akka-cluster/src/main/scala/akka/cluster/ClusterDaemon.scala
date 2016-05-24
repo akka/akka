@@ -241,7 +241,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   import InternalClusterAction._
 
   val cluster = Cluster(context.system)
-  import cluster.{ selfAddress, scheduler, failureDetector }
+  import cluster.{ selfAddress, selfRoles, scheduler, failureDetector }
   import cluster.settings._
   import cluster.InfoLogger._
 
@@ -613,8 +613,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       val newOverview = localGossip.overview copy (reachability = newReachability)
       val newGossip = localGossip copy (overview = newOverview)
       updateLatestGossip(newGossip)
-      log.warning("Cluster Node [{}] - Marking node as TERMINATED [{}], due to quarantine",
-        selfAddress, node.address)
+      log.warning("Cluster Node [{}] - Marking node as TERMINATED [{}], due to quarantine. Node roles [{}]",
+        selfAddress, node.address, selfRoles.mkString(","))
       publish(latestGossip)
       downing(node.address)
     }
@@ -1045,12 +1045,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
           val (exiting, nonExiting) = newlyDetectedUnreachableMembers.partition(_.status == Exiting)
           if (nonExiting.nonEmpty)
-            log.warning("Cluster Node [{}] - Marking node(s) as UNREACHABLE [{}]", selfAddress, nonExiting.mkString(", "))
+            log.warning("Cluster Node [{}] - Marking node(s) as UNREACHABLE [{}]. Node roles [{}]", selfAddress, nonExiting.mkString(", "), selfRoles.mkString(", "))
           if (exiting.nonEmpty)
             logInfo("Marking exiting node(s) as UNREACHABLE [{}]. This is expected and they will be removed.",
               exiting.mkString(", "))
           if (newlyDetectedReachableMembers.nonEmpty)
-            logInfo("Marking node(s) as REACHABLE [{}]", newlyDetectedReachableMembers.mkString(", "))
+            logInfo("Marking node(s) as REACHABLE [{}]. Node roles [{}]", newlyDetectedReachableMembers.mkString(", "), selfRoles.mkString(","))
 
           publish(latestGossip)
         }
