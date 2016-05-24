@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package docs.http.javadsl.server.directives;
 
 import java.util.List;
@@ -19,7 +23,7 @@ public class RespondWithDirectivesExamplesTest extends JUnitRouteTest {
         final Route route = path("foo", () ->
                 respondWithHeader(RawHeader.create("Funky-Muppet", "gonzo"), () ->
                         complete("beep")));
-        
+
         testRoute(route).run(HttpRequest.GET("/foo"))
                 .assertHeaderExists("Funky-Muppet", "gonzo")
                 .assertEntity("beep");
