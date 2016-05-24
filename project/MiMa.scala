@@ -850,6 +850,9 @@ object MiMa extends AutoPlugin {
         // internal api
         FilterAnyProblemStartingWith("akka.stream.impl"),
 
+        // #20214 SNI disabling for single connections (AkkaSSLConfig being passed around)
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.ConnectionContext.sslConfig"), // class meant only for internal extension 
+        
         //#20229 migrate GroupBy to GraphStage
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Builder.deprecatedAndThen"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.deprecatedAndThen"),
