@@ -87,7 +87,7 @@ private[akka] trait AbstractProps {
         if (i == declaredConstructors.length) false
         else {
           val c = declaredConstructors(i)
-          if (c.getParameterCount >= 1 && c.getParameterTypes()(i) == enclosingClass)
+          if (c.getParameterCount >= 1 && c.getParameterTypes()(0) == enclosingClass)
             true
           else
             loop(i + 1) // recur
