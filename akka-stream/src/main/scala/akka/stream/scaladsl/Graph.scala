@@ -913,7 +913,7 @@ object GraphDSL extends GraphApply {
     def add[S <: Shape](graph: Graph[S, _]): S = {
       if (StreamLayout.Debug) StreamLayout.validate(graph.module)
       val copy = graph.module.carbonCopy
-      moduleInProgress = moduleInProgress.compose(copy)
+      moduleInProgress = moduleInProgress.compose(copy, Keep.left)
       graph.shape.copyFromPorts(copy.shape.inlets, copy.shape.outlets).asInstanceOf[S]
     }
 
@@ -926,7 +926,7 @@ object GraphDSL extends GraphApply {
     private[stream] def add[S <: Shape, A](graph: Graph[S, _], transform: (A) ⇒ Any): S = {
       if (StreamLayout.Debug) StreamLayout.validate(graph.module)
       val copy = graph.module.carbonCopy
-      moduleInProgress = moduleInProgress.compose(copy.transformMaterializedValue(transform.asInstanceOf[Any ⇒ Any]))
+      moduleInProgress = moduleInProgress.compose(copy.transformMaterializedValue(transform.asInstanceOf[Any ⇒ Any]), Keep.right)
       graph.shape.copyFromPorts(copy.shape.inlets, copy.shape.outlets).asInstanceOf[S]
     }
 
