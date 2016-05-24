@@ -308,13 +308,13 @@ private[stream] object ActorGraphInterpreter {
  * INTERNAL API
  */
 private[stream] final class GraphInterpreterShell(
-  assembly: GraphAssembly,
-  inHandlers: Array[InHandler],
+  assembly:    GraphAssembly,
+  inHandlers:  Array[InHandler],
   outHandlers: Array[OutHandler],
-  logics: Array[GraphStageLogic],
-  shape: Shape,
-  settings: ActorMaterializerSettings,
-  val mat: ActorMaterializerImpl) {
+  logics:      Array[GraphStageLogic],
+  shape:       Shape,
+  settings:    ActorMaterializerSettings,
+  val mat:     ActorMaterializerImpl) {
 
   import ActorGraphInterpreter._
 

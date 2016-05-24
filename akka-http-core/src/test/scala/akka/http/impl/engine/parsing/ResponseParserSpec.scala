@@ -59,7 +59,8 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "a response with a simple body" in new Test {
-        collectBlocking(rawParse(GET,
+        collectBlocking(rawParse(
+          GET,
           prep {
             """HTTP/1.1 200 Ok
               |Content-Length: 4
@@ -93,7 +94,8 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |Transfer-Encoding: foo, chunked, bar
           |Content-Length: 0
           |
-          |""" should parseTo(HttpResponse(ServerOnTheMove, List(`Transfer-Encoding`(TransferEncodings.Extension("foo"),
+          |""" should parseTo(HttpResponse(ServerOnTheMove, List(`Transfer-Encoding`(
+          TransferEncodings.Extension("foo"),
           TransferEncodings.chunked, TransferEncodings.Extension("bar")))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
@@ -158,8 +160,9 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "message chunk with and without extension" in new Test {
-        Seq(start +
-          """3
+        Seq(
+          start +
+            """3
             |abc
             |10;some=stuff;bla
             |0123456789ABCDEF
@@ -182,7 +185,8 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "message end" in new Test {
-        Seq(start,
+        Seq(
+          start,
           """0
             |
             |""") should generalMultiParseTo(
@@ -191,14 +195,16 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "message end with extension, trailer and remaining content" in new Test {
-        Seq(start,
+        Seq(
+          start,
           """000;nice=true
             |Foo: pip
             | apo
             |Bar: xyz
             |
             |HT""") should generalMultiParseTo(
-            Right(baseResponse.withEntity(Chunked(`application/pdf`,
+            Right(baseResponse.withEntity(Chunked(
+              `application/pdf`,
               source(LastChunk("nice=true", List(RawHeader("Foo", "pip apo"), RawHeader("Bar", "xyz"))))))),
             Left(MessageStartError(400: StatusCode, ErrorInfo("Illegal HTTP message start"))))
         closeAfterResponseCompletion shouldEqual Seq(false)
@@ -210,7 +216,8 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |Cont""", """ent-Type: application/pdf
           |
           |""") should generalMultiParseTo(
-          Right(HttpResponse(headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
+          Right(HttpResponse(
+            headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
             entity = HttpEntity.Chunked(`application/pdf`, source()))),
           Left(EntityStreamError(ErrorInfo("Entity stream truncation"))))
         closeAfterResponseCompletion shouldEqual Seq(false)

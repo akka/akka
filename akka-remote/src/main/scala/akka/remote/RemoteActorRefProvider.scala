@@ -79,9 +79,10 @@ private[akka] object RemoteActorRefProvider {
    * and handled as dead letters to the original (remote) destination. Without this special case, DeathWatch related
    * functionality breaks, like the special handling of Watch messages arriving to dead letters.
    */
-  private class RemoteDeadLetterActorRef(_provider: ActorRefProvider,
-                                         _path: ActorPath,
-                                         _eventStream: EventStream) extends DeadLetterActorRef(_provider, _path, _eventStream) {
+  private class RemoteDeadLetterActorRef(
+    _provider:    ActorRefProvider,
+    _path:        ActorPath,
+    _eventStream: EventStream) extends DeadLetterActorRef(_provider, _path, _eventStream) {
     import EndpointManager.Send
 
     override def !(message: Any)(implicit sender: ActorRef): Unit = message match {
@@ -109,9 +110,9 @@ private[akka] object RemoteActorRefProvider {
  *
  */
 private[akka] class RemoteActorRefProvider(
-  val systemName: String,
-  val settings: ActorSystem.Settings,
-  val eventStream: EventStream,
+  val systemName:    String,
+  val settings:      ActorSystem.Settings,
+  val eventStream:   EventStream,
   val dynamicAccess: DynamicAccess) extends ActorRefProvider {
   import RemoteActorRefProvider._
 
@@ -168,16 +169,16 @@ private[akka] class RemoteActorRefProvider(
 
     val internals = Internals(
       remoteDaemon = {
-        val d = new RemoteSystemDaemon(
-          system,
-          local.rootPath / "remote",
-          rootGuardian,
-          remotingTerminator,
-          log,
-          untrustedMode = remoteSettings.UntrustedMode)
-        local.registerExtraNames(Map(("remote", d)))
-        d
-      },
+      val d = new RemoteSystemDaemon(
+        system,
+        local.rootPath / "remote",
+        rootGuardian,
+        remotingTerminator,
+        log,
+        untrustedMode = remoteSettings.UntrustedMode)
+      local.registerExtraNames(Map(("remote", d)))
+      d
+    },
       serialization = SerializationExtension(system),
       transport = new Remoting(system, this))
 
@@ -440,12 +441,12 @@ private[akka] trait RemoteRef extends ActorRefScope {
  * This reference is network-aware (remembers its origin) and immutable.
  */
 private[akka] class RemoteActorRef private[akka] (
-  remote: RemoteTransport,
+  remote:                RemoteTransport,
   val localAddressToUse: Address,
-  val path: ActorPath,
-  val getParent: InternalActorRef,
-  props: Option[Props],
-  deploy: Option[Deploy])
+  val path:              ActorPath,
+  val getParent:         InternalActorRef,
+  props:                 Option[Props],
+  deploy:                Option[Deploy])
   extends InternalActorRef with RemoteRef {
 
   def getChild(name: Iterator[String]): InternalActorRef = {

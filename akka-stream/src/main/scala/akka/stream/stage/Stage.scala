@@ -38,8 +38,8 @@ private[stream] object AbstractStage {
 
   private class PushPullGraphLogic[In, Out](
     private val shape: FlowShape[In, Out],
-    val attributes: Attributes,
-    val stage: AbstractStage[In, Out, Directive, Directive, Context[Out], LifecycleContext])
+    val attributes:    Attributes,
+    val stage:         AbstractStage[In, Out, Directive, Directive, Context[Out], LifecycleContext])
     extends GraphStageLogic(shape) with DetachedContext[Out] {
 
     final override def materializer: Materializer = interpreter.materializer
@@ -163,7 +163,7 @@ private[stream] object AbstractStage {
   }
 
   class PushPullGraphStageWithMaterializedValue[-In, +Out, Ext, +Mat](
-    val factory: (Attributes) ⇒ (Stage[In, Out], Mat),
+    val factory:     (Attributes) ⇒ (Stage[In, Out], Mat),
     stageAttributes: Attributes)
     extends GraphStageWithMaterializedValue[FlowShape[In, Out], Mat] {
 

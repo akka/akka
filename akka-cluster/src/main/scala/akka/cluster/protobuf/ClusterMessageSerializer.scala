@@ -37,27 +37,28 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
   private lazy val GossipTimeToLive = Cluster(system).settings.GossipTimeToLive
 
   private val fromBinaryMap = collection.immutable.HashMap[Class[_ <: ClusterMessage], Array[Byte] ⇒ AnyRef](
-    classOf[InternalClusterAction.Join] -> {
+    classOf[InternalClusterAction.Join] → {
       case bytes ⇒
         val m = cm.Join.parseFrom(bytes)
-        InternalClusterAction.Join(uniqueAddressFromProto(m.getNode),
+        InternalClusterAction.Join(
+          uniqueAddressFromProto(m.getNode),
           Set.empty[String] ++ m.getRolesList.asScala)
     },
-    classOf[InternalClusterAction.Welcome] -> {
+    classOf[InternalClusterAction.Welcome] → {
       case bytes ⇒
         val m = cm.Welcome.parseFrom(decompress(bytes))
         InternalClusterAction.Welcome(uniqueAddressFromProto(m.getFrom), gossipFromProto(m.getGossip))
     },
-    classOf[ClusterUserAction.Leave] -> (bytes ⇒ ClusterUserAction.Leave(addressFromBinary(bytes))),
-    classOf[ClusterUserAction.Down] -> (bytes ⇒ ClusterUserAction.Down(addressFromBinary(bytes))),
-    InternalClusterAction.InitJoin.getClass -> (_ ⇒ InternalClusterAction.InitJoin),
-    classOf[InternalClusterAction.InitJoinAck] -> (bytes ⇒ InternalClusterAction.InitJoinAck(addressFromBinary(bytes))),
-    classOf[InternalClusterAction.InitJoinNack] -> (bytes ⇒ InternalClusterAction.InitJoinNack(addressFromBinary(bytes))),
-    classOf[ClusterHeartbeatSender.Heartbeat] -> (bytes ⇒ ClusterHeartbeatSender.Heartbeat(addressFromBinary(bytes))),
-    classOf[ClusterHeartbeatSender.HeartbeatRsp] -> (bytes ⇒ ClusterHeartbeatSender.HeartbeatRsp(uniqueAddressFromBinary(bytes))),
-    classOf[GossipStatus] -> gossipStatusFromBinary,
-    classOf[GossipEnvelope] -> gossipEnvelopeFromBinary,
-    classOf[MetricsGossipEnvelope] -> metricsGossipEnvelopeFromBinary)
+    classOf[ClusterUserAction.Leave] → (bytes ⇒ ClusterUserAction.Leave(addressFromBinary(bytes))),
+    classOf[ClusterUserAction.Down] → (bytes ⇒ ClusterUserAction.Down(addressFromBinary(bytes))),
+    InternalClusterAction.InitJoin.getClass → (_ ⇒ InternalClusterAction.InitJoin),
+    classOf[InternalClusterAction.InitJoinAck] → (bytes ⇒ InternalClusterAction.InitJoinAck(addressFromBinary(bytes))),
+    classOf[InternalClusterAction.InitJoinNack] → (bytes ⇒ InternalClusterAction.InitJoinNack(addressFromBinary(bytes))),
+    classOf[ClusterHeartbeatSender.Heartbeat] → (bytes ⇒ ClusterHeartbeatSender.Heartbeat(addressFromBinary(bytes))),
+    classOf[ClusterHeartbeatSender.HeartbeatRsp] → (bytes ⇒ ClusterHeartbeatSender.HeartbeatRsp(uniqueAddressFromBinary(bytes))),
+    classOf[GossipStatus] → gossipStatusFromBinary,
+    classOf[GossipEnvelope] → gossipEnvelopeFromBinary,
+    classOf[MetricsGossipEnvelope] → metricsGossipEnvelopeFromBinary)
 
   def includeManifest: Boolean = true
 
@@ -164,20 +165,20 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
     UniqueAddress(addressFromProto(uniqueAddress.getAddress), uniqueAddress.getUid)
 
   private val memberStatusToInt = scala.collection.immutable.HashMap[MemberStatus, Int](
-    MemberStatus.Joining -> cm.MemberStatus.Joining_VALUE,
-    MemberStatus.Up -> cm.MemberStatus.Up_VALUE,
-    MemberStatus.Leaving -> cm.MemberStatus.Leaving_VALUE,
-    MemberStatus.Exiting -> cm.MemberStatus.Exiting_VALUE,
-    MemberStatus.Down -> cm.MemberStatus.Down_VALUE,
-    MemberStatus.Removed -> cm.MemberStatus.Removed_VALUE,
-    MemberStatus.WeaklyUp -> cm.MemberStatus.WeaklyUp_VALUE)
+    MemberStatus.Joining → cm.MemberStatus.Joining_VALUE,
+    MemberStatus.Up → cm.MemberStatus.Up_VALUE,
+    MemberStatus.Leaving → cm.MemberStatus.Leaving_VALUE,
+    MemberStatus.Exiting → cm.MemberStatus.Exiting_VALUE,
+    MemberStatus.Down → cm.MemberStatus.Down_VALUE,
+    MemberStatus.Removed → cm.MemberStatus.Removed_VALUE,
+    MemberStatus.WeaklyUp → cm.MemberStatus.WeaklyUp_VALUE)
 
   private val memberStatusFromInt = memberStatusToInt.map { case (a, b) ⇒ (b, a) }
 
   private val reachabilityStatusToInt = scala.collection.immutable.HashMap[Reachability.ReachabilityStatus, Int](
-    Reachability.Reachable -> cm.ReachabilityStatus.Reachable_VALUE,
-    Reachability.Unreachable -> cm.ReachabilityStatus.Unreachable_VALUE,
-    Reachability.Terminated -> cm.ReachabilityStatus.Terminated_VALUE)
+    Reachability.Reachable → cm.ReachabilityStatus.Reachable_VALUE,
+    Reachability.Unreachable → cm.ReachabilityStatus.Unreachable_VALUE,
+    Reachability.Terminated → cm.ReachabilityStatus.Terminated_VALUE)
 
   private val reachabilityStatusFromInt = reachabilityStatusToInt.map { case (a, b) ⇒ (b, a) }
 
@@ -310,7 +311,8 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
   }
 
   private def gossipStatusFromProto(status: cm.GossipStatus): GossipStatus =
-    GossipStatus(uniqueAddressFromProto(status.getFrom), vectorClockFromProto(status.getVersion,
+    GossipStatus(uniqueAddressFromProto(status.getFrom), vectorClockFromProto(
+      status.getVersion,
       status.getAllHashesList.asScala.toVector))
 
   private def metricsGossipEnvelopeToProto(envelope: MetricsGossipEnvelope): cm.MetricsGossipEnvelope = {
@@ -381,7 +383,8 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
         case NumberType.Float_VALUE   ⇒ jl.Float.intBitsToFloat(number.getValue32)
         case NumberType.Integer_VALUE ⇒ number.getValue32
         case NumberType.Serialized_VALUE ⇒
-          val in = new ClassLoaderObjectInputStream(system.dynamicAccess.classLoader,
+          val in = new ClassLoaderObjectInputStream(
+            system.dynamicAccess.classLoader,
             new ByteArrayInputStream(number.getSerialized.toByteArray))
           val obj = in.readObject
           in.close()

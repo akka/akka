@@ -35,12 +35,12 @@ object Deploy {
  */
 @SerialVersionUID(2L)
 final case class Deploy(
-  path: String = "",
-  config: Config = ConfigFactory.empty,
+  path:         String       = "",
+  config:       Config       = ConfigFactory.empty,
   routerConfig: RouterConfig = NoRouter,
-  scope: Scope = NoScopeGiven,
-  dispatcher: String = Deploy.NoDispatcherGiven,
-  mailbox: String = Deploy.NoMailboxGiven) {
+  scope:        Scope        = NoScopeGiven,
+  dispatcher:   String       = Deploy.NoDispatcherGiven,
+  mailbox:      String       = Deploy.NoMailboxGiven) {
 
   /**
    * Java API to create a Deploy with the given RouterConfig
@@ -137,7 +137,7 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
   protected val default = config.getConfig("default")
   val routerTypeMapping: Map[String, String] =
     settings.config.getConfig("akka.actor.router.type-mapping").root.unwrapped.asScala.collect {
-      case (key, value: String) ⇒ (key -> value)
+      case (key, value: String) ⇒ (key → value)
     }.toMap
 
   config.root.asScala flatMap {
@@ -198,8 +198,8 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
             s"[${args(0)._1.getName}] and optional [${args(1)._1.getName}] parameter", cause)
 
       // first try with Config param, and then with Config and DynamicAccess parameters
-      val args1 = List(classOf[Config] -> deployment2)
-      val args2 = List(classOf[Config] -> deployment2, classOf[DynamicAccess] -> dynamicAccess)
+      val args1 = List(classOf[Config] → deployment2)
+      val args2 = List(classOf[Config] → deployment2, classOf[DynamicAccess] → dynamicAccess)
       dynamicAccess.createInstanceFor[RouterConfig](fqn, args1).recover({
         case e @ (_: IllegalArgumentException | _: ConfigException) ⇒ throw e
         case e: NoSuchMethodException ⇒

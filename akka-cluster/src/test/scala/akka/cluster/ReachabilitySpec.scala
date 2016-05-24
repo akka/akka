@@ -98,7 +98,7 @@ class ReachabilitySpec extends WordSpec with Matchers {
         Reachability.Record(nodeC, nodeB, Unreachable, 2),
         Reachability.Record(nodeA, nodeD, Unreachable, 3),
         Reachability.Record(nodeD, nodeB, Terminated, 4))
-      val versions = Map(nodeA -> 3L, nodeC -> 3L, nodeD -> 4L)
+      val versions = Map(nodeA → 3L, nodeC → 3L, nodeD → 4L)
       val r = Reachability(records, versions)
       r.status(nodeA) should ===(Reachable)
       r.status(nodeB) should ===(Terminated)
@@ -136,9 +136,9 @@ class ReachabilitySpec extends WordSpec with Matchers {
       r.allUnreachableFrom(nodeD) should ===(Set(nodeA, nodeB))
 
       r.observersGroupedByUnreachable should ===(Map(
-        nodeA -> Set(nodeB, nodeC, nodeD),
-        nodeB -> Set(nodeD),
-        nodeE -> Set(nodeA)))
+        nodeA → Set(nodeB, nodeC, nodeD),
+        nodeB → Set(nodeD),
+        nodeE → Set(nodeA)))
     }
 
     "merge by picking latest version of each record" in {
@@ -199,11 +199,11 @@ class ReachabilitySpec extends WordSpec with Matchers {
     }
 
     "merge versions correctly" in {
-      val r1 = Reachability(Vector.empty, Map(nodeA -> 3L, nodeB -> 5L, nodeC -> 7L))
-      val r2 = Reachability(Vector.empty, Map(nodeA -> 6L, nodeB -> 2L, nodeD -> 1L))
+      val r1 = Reachability(Vector.empty, Map(nodeA → 3L, nodeB → 5L, nodeC → 7L))
+      val r2 = Reachability(Vector.empty, Map(nodeA → 6L, nodeB → 2L, nodeD → 1L))
       val merged = r1.merge(Set(nodeA, nodeB, nodeC, nodeD, nodeE), r2)
 
-      val expected = Map(nodeA -> 6L, nodeB -> 5L, nodeC -> 7L, nodeD -> 1L)
+      val expected = Map(nodeA → 6L, nodeB → 5L, nodeC → 7L, nodeD → 1L)
       merged.versions should ===(expected)
 
       val merged2 = r2.merge(Set(nodeA, nodeB, nodeC, nodeD, nodeE), r1)

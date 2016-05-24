@@ -53,7 +53,8 @@ class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       //This will schedule to send the Tick-message
       //to the tickActor after 0ms repeating every 50ms
       val cancellable =
-        system.scheduler.schedule(0 milliseconds,
+        system.scheduler.schedule(
+          0 milliseconds,
           50 milliseconds,
           tickActor,
           Tick)

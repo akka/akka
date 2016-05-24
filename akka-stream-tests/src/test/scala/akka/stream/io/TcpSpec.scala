@@ -555,10 +555,11 @@ class TcpSpec extends AkkaSpec("akka.stream.materializer.subscription-timeout.ti
     }
   }
 
-  def validateServerClientCommunication(testData: ByteString,
-                                        serverConnection: ServerConnection,
-                                        readProbe: TcpReadProbe,
-                                        writeProbe: TcpWriteProbe): Unit = {
+  def validateServerClientCommunication(
+    testData:         ByteString,
+    serverConnection: ServerConnection,
+    readProbe:        TcpReadProbe,
+    writeProbe:       TcpWriteProbe): Unit = {
     serverConnection.write(testData)
     serverConnection.read(5)
     readProbe.read(5) should be(testData)

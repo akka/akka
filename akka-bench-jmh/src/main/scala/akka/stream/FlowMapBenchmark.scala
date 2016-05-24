@@ -69,7 +69,7 @@ class FlowMapBenchmark {
   var numberOfMapOps = 0
 
   @Setup
-  def setup():Unit = {
+  def setup(): Unit = {
     val settings = ActorMaterializerSettings(system)
       .withInputBuffer(initialInputBufferSize, initialInputBufferSize)
 
@@ -111,13 +111,13 @@ class FlowMapBenchmark {
   }
 
   @TearDown
-  def shutdown():Unit = {
+  def shutdown(): Unit = {
     Await.result(system.terminate(), 5.seconds)
   }
 
   @Benchmark
   @OperationsPerInvocation(100000)
-  def flow_map_100k_elements():Unit = {
+  def flow_map_100k_elements(): Unit = {
     val lock = new Lock() // todo rethink what is the most lightweight way to await for a streams completion
     lock.acquire()
 
@@ -127,7 +127,7 @@ class FlowMapBenchmark {
   }
 
   // source setup
-  private def mkMaps[O, Mat](source: Source[O, Mat], count: Int)(flow: => Graph[FlowShape[O, O], _]): Source[O, Mat] = {
+  private def mkMaps[O, Mat](source: Source[O, Mat], count: Int)(flow: ⇒ Graph[FlowShape[O, O], _]): Source[O, Mat] = {
     var f = source
     for (i ← 1 to count)
       f = f.via(flow)

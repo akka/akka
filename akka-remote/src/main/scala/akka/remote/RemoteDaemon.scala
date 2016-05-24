@@ -42,11 +42,11 @@ private[akka] final case class DaemonMsgCreate(props: Props, deploy: Deploy, pat
  * It acts as the brain of the remote that responds to system remote events (messages) and undertakes action.
  */
 private[akka] class RemoteSystemDaemon(
-  system: ActorSystemImpl,
-  _path: ActorPath,
-  _parent: InternalActorRef,
-  terminator: ActorRef,
-  _log: LoggingAdapter,
+  system:            ActorSystemImpl,
+  _path:             ActorPath,
+  _parent:           InternalActorRef,
+  terminator:        ActorRef,
+  _log:              LoggingAdapter,
   val untrustedMode: Boolean)
   extends VirtualPathContainer(system.provider, _path, _parent, _log) {
 

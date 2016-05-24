@@ -284,9 +284,9 @@ class ReliableProxy(targetPath: ActorPath, retryAfter: FiniteDuration,
   }
 
   onTransition {
-    case _ -> Active     ⇒ scheduleTick()
-    case Active -> Idle  ⇒ cancelTimer(resendTimer)
-    case _ -> Connecting ⇒ scheduleReconnectTick()
+    case _ → Active     ⇒ scheduleTick()
+    case Active → Idle  ⇒ cancelTimer(resendTimer)
+    case _ → Connecting ⇒ scheduleReconnectTick()
   }
 
   when(Active) {

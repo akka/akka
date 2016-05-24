@@ -850,6 +850,12 @@ object MiMa extends AutoPlugin {
         // internal api
         FilterAnyProblemStartingWith("akka.stream.impl"),
 
+        // Add arrows for arrow rewrite in new Scalariform
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.FSM.→"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.FSM.akka$actor$FSM$_setter_$→_="),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.fsm.PersistentFSMBase.→"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.fsm.PersistentFSMBase.akka$persistence$fsm$PersistentFSMBase$_setter_$→_="),
+
         //#20229 migrate GroupBy to GraphStage
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Builder.deprecatedAndThen"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.deprecatedAndThen"),

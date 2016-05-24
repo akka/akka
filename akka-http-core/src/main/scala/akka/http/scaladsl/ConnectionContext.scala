@@ -21,11 +21,12 @@ trait ConnectionContext extends akka.http.javadsl.ConnectionContext {
 object ConnectionContext {
   //#https-context-creation
   // ConnectionContext
-  def https(sslContext: SSLContext,
-            enabledCipherSuites: Option[immutable.Seq[String]] = None,
-            enabledProtocols: Option[immutable.Seq[String]] = None,
-            clientAuth: Option[TLSClientAuth] = None,
-            sslParameters: Option[SSLParameters] = None) = {
+  def https(
+    sslContext:          SSLContext,
+    enabledCipherSuites: Option[immutable.Seq[String]] = None,
+    enabledProtocols:    Option[immutable.Seq[String]] = None,
+    clientAuth:          Option[TLSClientAuth]         = None,
+    sslParameters:       Option[SSLParameters]         = None) = {
     new HttpsConnectionContext(sslContext, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
   }
   //#https-context-creation
@@ -34,11 +35,11 @@ object ConnectionContext {
 }
 
 final class HttpsConnectionContext(
-  val sslContext: SSLContext,
+  val sslContext:          SSLContext,
   val enabledCipherSuites: Option[immutable.Seq[String]] = None,
-  val enabledProtocols: Option[immutable.Seq[String]] = None,
-  val clientAuth: Option[TLSClientAuth] = None,
-  val sslParameters: Option[SSLParameters] = None)
+  val enabledProtocols:    Option[immutable.Seq[String]] = None,
+  val clientAuth:          Option[TLSClientAuth]         = None,
+  val sslParameters:       Option[SSLParameters]         = None)
   extends akka.http.javadsl.HttpsConnectionContext with ConnectionContext {
 
   def firstSession = NegotiateNewSession(enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)

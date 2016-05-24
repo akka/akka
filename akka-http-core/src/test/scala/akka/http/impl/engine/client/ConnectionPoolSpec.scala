@@ -60,7 +60,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
     "properly complete a simple request/response cycle" in new TestSetup {
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int]()
 
-      requestIn.sendNext(HttpRequest(uri = "/") -> 42)
+      requestIn.sendNext(HttpRequest(uri = "/") → 42)
 
       responseOutSub.request(1)
       acceptIncomingConnection()
@@ -71,8 +71,8 @@ class ConnectionPoolSpec extends AkkaSpec("""
     "open a second connection if the first one is loaded" in new TestSetup {
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int]()
 
-      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
-      requestIn.sendNext(HttpRequest(uri = "/b") -> 43)
+      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
+      requestIn.sendNext(HttpRequest(uri = "/b") → 43)
 
       responseOutSub.request(2)
       acceptIncomingConnection()
@@ -100,7 +100,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
         case x ⇒ super.testServerHandler(connNr)(x)
       }
 
-      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
+      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
       responseOutSub.request(1)
       acceptIncomingConnection()
       val (Success(r1), 42) = responseOut.expectNext()
@@ -110,7 +110,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
       responseEntityPub.sendNext(ByteString("YEAH"))
       responseEntityProbe.expectNext(ByteString("YEAH"))
 
-      requestIn.sendNext(HttpRequest(uri = "/b") -> 43)
+      requestIn.sendNext(HttpRequest(uri = "/b") → 43)
       responseOutSub.request(1)
       acceptIncomingConnection()
       val (Success(r2), 43) = responseOut.expectNext()
@@ -120,13 +120,13 @@ class ConnectionPoolSpec extends AkkaSpec("""
     "not open a second connection if there is an idle one available" in new TestSetup {
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int]()
 
-      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
+      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
       responseOutSub.request(1)
       acceptIncomingConnection()
       val (Success(response1), 42) = responseOut.expectNext()
       connNr(response1) shouldEqual 1
 
-      requestIn.sendNext(HttpRequest(uri = "/b") -> 43)
+      requestIn.sendNext(HttpRequest(uri = "/b") → 43)
       responseOutSub.request(1)
       val (Success(response2), 43) = responseOut.expectNext()
       connNr(response2) shouldEqual 1
@@ -138,7 +138,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
       val N = 500
       val requestIds = Source.fromIterator(() ⇒ Iterator.from(1)).take(N)
-      val idSum = requestIds.map(id ⇒ HttpRequest(uri = s"/r$id") -> id).via(poolFlow).map {
+      val idSum = requestIds.map(id ⇒ HttpRequest(uri = s"/r$id") → id).via(poolFlow).map {
         case (Success(response), id) ⇒
           requestUri(response) should endWith(s"/r$id")
           id
@@ -156,8 +156,8 @@ class ConnectionPoolSpec extends AkkaSpec("""
     "properly surface connection-level errors" in new TestSetup(autoAccept = true) {
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](maxRetries = 0)
 
-      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
-      requestIn.sendNext(HttpRequest(uri = "/crash") -> 43)
+      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
+      requestIn.sendNext(HttpRequest(uri = "/crash") → 43)
       responseOutSub.request(2)
 
       override def mapServerSideOutboundRawBytes(bytes: ByteString): ByteString =
@@ -172,8 +172,8 @@ class ConnectionPoolSpec extends AkkaSpec("""
     "retry failed requests" in new TestSetup(autoAccept = true) {
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int]()
 
-      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
-      requestIn.sendNext(HttpRequest(uri = "/crash") -> 43)
+      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
+      requestIn.sendNext(HttpRequest(uri = "/crash") → 43)
       responseOutSub.request(2)
 
       val remainingResponsesToKill = new AtomicInteger(1)
@@ -191,8 +191,8 @@ class ConnectionPoolSpec extends AkkaSpec("""
     "respect the configured `maxRetries` value" in new TestSetup(autoAccept = true) {
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](maxRetries = 4)
 
-      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
-      requestIn.sendNext(HttpRequest(uri = "/crash") -> 43)
+      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
+      requestIn.sendNext(HttpRequest(uri = "/crash") → 43)
       responseOutSub.request(2)
 
       val remainingResponsesToKill = new AtomicInteger(5)
@@ -222,7 +222,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
       Await.result(gateway.poolStatus(), 1500.millis).get shouldBe a[PoolInterfaceRunning]
       awaitCond({ Await.result(gateway.poolStatus(), 1500.millis).isEmpty }, 2000.millis)
 
-      requestIn.sendNext(HttpRequest(uri = "/") -> 42)
+      requestIn.sendNext(HttpRequest(uri = "/") → 42)
 
       responseOutSub.request(1)
       acceptIncomingConnection()
@@ -272,8 +272,8 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
       val (requestIn, responseOut, responseOutSub, hcp) = superPool[Int]()
 
-      requestIn.sendNext(HttpRequest(uri = s"http://$serverHostName:$serverPort/a") -> 42)
-      requestIn.sendNext(HttpRequest(uri = s"http://$serverHostName2:$serverPort2/b") -> 43)
+      requestIn.sendNext(HttpRequest(uri = s"http://$serverHostName:$serverPort/a") → 42)
+      requestIn.sendNext(HttpRequest(uri = s"http://$serverHostName2:$serverPort2/b") → 43)
 
       responseOutSub.request(2)
       Seq(responseOut.expectNext(), responseOut.expectNext()) foreach {
@@ -284,8 +284,9 @@ class ConnectionPoolSpec extends AkkaSpec("""
     }
   }
 
-  class TestSetup(serverSettings: ServerSettings = ServerSettings(system),
-                  autoAccept: Boolean = false) {
+  class TestSetup(
+    serverSettings: ServerSettings = ServerSettings(system),
+    autoAccept:     Boolean        = false) {
     val (serverEndpoint, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
 
     def testServerHandler(connNr: Int): HttpRequest ⇒ HttpResponse = {
@@ -322,23 +323,25 @@ class ConnectionPoolSpec extends AkkaSpec("""
     private def handleConnection(c: Http.IncomingConnection) =
       c.handleWithSyncHandler(testServerHandler(incomingConnectionCounter.incrementAndGet()))
 
-    def cachedHostConnectionPool[T](maxConnections: Int = 2,
-                                    maxRetries: Int = 2,
-                                    maxOpenRequests: Int = 8,
-                                    pipeliningLimit: Int = 1,
-                                    idleTimeout: Duration = 5.seconds,
-                                    ccSettings: ClientConnectionSettings = ClientConnectionSettings(system)) = {
+    def cachedHostConnectionPool[T](
+      maxConnections:  Int                      = 2,
+      maxRetries:      Int                      = 2,
+      maxOpenRequests: Int                      = 8,
+      pipeliningLimit: Int                      = 1,
+      idleTimeout:     Duration                 = 5.seconds,
+      ccSettings:      ClientConnectionSettings = ClientConnectionSettings(system)) = {
       val settings = new ConnectionPoolSettingsImpl(maxConnections, maxRetries, maxOpenRequests, pipeliningLimit,
         idleTimeout, ClientConnectionSettings(system))
       flowTestBench(Http().cachedHostConnectionPool[T](serverHostName, serverPort, settings))
     }
 
-    def superPool[T](maxConnections: Int = 2,
-                     maxRetries: Int = 2,
-                     maxOpenRequests: Int = 8,
-                     pipeliningLimit: Int = 1,
-                     idleTimeout: Duration = 5.seconds,
-                     ccSettings: ClientConnectionSettings = ClientConnectionSettings(system)) = {
+    def superPool[T](
+      maxConnections:  Int                      = 2,
+      maxRetries:      Int                      = 2,
+      maxOpenRequests: Int                      = 8,
+      pipeliningLimit: Int                      = 1,
+      idleTimeout:     Duration                 = 5.seconds,
+      ccSettings:      ClientConnectionSettings = ClientConnectionSettings(system)) = {
       val settings = new ConnectionPoolSettingsImpl(maxConnections, maxRetries, maxOpenRequests, pipeliningLimit,
         idleTimeout, ClientConnectionSettings(system))
       flowTestBench(Http().superPool[T](settings = settings))

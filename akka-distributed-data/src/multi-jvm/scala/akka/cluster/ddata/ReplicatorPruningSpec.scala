@@ -146,7 +146,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
             replicator ! Get(KeyC, ReadLocal)
             expectMsgPF() {
               case g @ GetSuccess(KeyC, _) ⇒
-                g.get(KeyC).entries should be(Map("x" -> 3L, "y" -> 3L))
+                g.get(KeyC).entries should be(Map("x" → 3L, "y" → 3L))
                 g.get(KeyC).needPruningFrom(thirdUniqueAddress) should be(false)
             }
           }

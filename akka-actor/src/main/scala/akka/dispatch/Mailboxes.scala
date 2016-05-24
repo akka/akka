@@ -23,10 +23,10 @@ object Mailboxes {
 }
 
 private[akka] class Mailboxes(
-  val settings: ActorSystem.Settings,
+  val settings:    ActorSystem.Settings,
   val eventStream: EventStream,
-  dynamicAccess: DynamicAccess,
-  deadLetters: ActorRef) {
+  dynamicAccess:   DynamicAccess,
+  deadLetters:     ActorRef) {
 
   import Mailboxes._
 
@@ -187,7 +187,7 @@ private[akka] class Mailboxes(
             val mailboxType = conf.getString("mailbox-type") match {
               case "" ⇒ throw new ConfigurationException(s"The setting mailbox-type, defined in [$id] is empty")
               case fqcn ⇒
-                val args = List(classOf[ActorSystem.Settings] -> settings, classOf[Config] -> conf)
+                val args = List(classOf[ActorSystem.Settings] → settings, classOf[Config] → conf)
                 dynamicAccess.createInstanceFor[MailboxType](fqcn, args).recover({
                   case exception ⇒
                     throw new IllegalArgumentException(
@@ -228,7 +228,7 @@ private[akka] class Mailboxes(
   //INTERNAL API
   private def config(id: String): Config = {
     import scala.collection.JavaConverters._
-    ConfigFactory.parseMap(Map("id" -> id).asJava)
+    ConfigFactory.parseMap(Map("id" → id).asJava)
       .withFallback(settings.config.getConfig(id))
       .withFallback(defaultMailboxConfig)
   }

@@ -38,8 +38,9 @@ object Fusing {
    * holds more information on the operation structure of the contained stream
    * topology for convenient graph traversal.
    */
-  case class FusedGraph[+S <: Shape @uncheckedVariance, +M](override val module: FusedModule,
-                                                            override val shape: S) extends Graph[S, M] {
+  case class FusedGraph[+S <: Shape @uncheckedVariance, +M](
+    override val module: FusedModule,
+    override val shape:  S) extends Graph[S, M] {
     // the @uncheckedVariance look like a compiler bug ... why does it work in Graph but not here?
     override def withAttributes(attr: Attributes) = copy(module = module.withAttributes(attr))
   }
@@ -47,8 +48,8 @@ object Fusing {
   object FusedGraph {
     def unapply[S <: Shape, M](g: Graph[S, M]): Option[(FusedModule, S)] =
       g.module match {
-        case f: FusedModule => Some((f, g.shape))
-        case _              => None
+        case f: FusedModule ⇒ Some((f, g.shape))
+        case _              ⇒ None
       }
   }
 
@@ -59,10 +60,11 @@ object Fusing {
    * the wirings in a more accessible form, allowing traversal from port to upstream
    * or downstream port and from there to the owning module (or graph vertex).
    */
-  final case class StructuralInfo(upstreams: immutable.Map[InPort, OutPort],
-                                  downstreams: immutable.Map[OutPort, InPort],
-                                  inOwners: immutable.Map[InPort, Module],
-                                  outOwners: immutable.Map[OutPort, Module],
-                                  allModules: Set[Module])
+  final case class StructuralInfo(
+    upstreams:   immutable.Map[InPort, OutPort],
+    downstreams: immutable.Map[OutPort, InPort],
+    inOwners:    immutable.Map[InPort, Module],
+    outOwners:   immutable.Map[OutPort, Module],
+    allModules:  Set[Module])
 
 }

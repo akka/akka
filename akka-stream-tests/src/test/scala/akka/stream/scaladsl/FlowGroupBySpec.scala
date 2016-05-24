@@ -31,7 +31,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 object FlowGroupBySpec {
 
   implicit class Lift[M](val f: SubFlow[Int, M, Source[Int, M]#Repr, RunnableGraph[M]]) extends AnyVal {
-    def lift(key: Int ⇒ Int) = f.prefixAndTail(1).map(p ⇒ key(p._1.head) -> (Source.single(p._1.head) ++ p._2)).concatSubstreams
+    def lift(key: Int ⇒ Int) = f.prefixAndTail(1).map(p ⇒ key(p._1.head) → (Source.single(p._1.head) ++ p._2)).concatSubstreams
   }
 
 }

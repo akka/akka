@@ -21,9 +21,9 @@ private object PoolConductor {
   import PoolSlot.{ RawSlotEvent, SlotEvent }
 
   case class Ports(
-    requestIn: Inlet[RequestContext],
+    requestIn:   Inlet[RequestContext],
     slotEventIn: Inlet[RawSlotEvent],
-    slotOuts: immutable.Seq[Outlet[RequestContext]]) extends Shape {
+    slotOuts:    immutable.Seq[Outlet[RequestContext]]) extends Shape {
 
     override val inlets = requestIn :: slotEventIn :: Nil
     override def outlets = slotOuts
@@ -194,7 +194,7 @@ private object PoolConductor {
       @tailrec def bestSlot(ix: Int = 0, bestIx: Int = -1, bestState: SlotState = Busy): Int =
         if (ix < slotStates.length) {
           val pl = pipeliningLimit
-          slotStates(ix) -> bestState match {
+          slotStates(ix) → bestState match {
             case (Idle, _)                           ⇒ ix
             case (Unconnected, Loaded(_) | Busy)     ⇒ bestSlot(ix + 1, ix, Unconnected)
             case (x @ Loaded(a), Loaded(b)) if a < b ⇒ bestSlot(ix + 1, ix, x)

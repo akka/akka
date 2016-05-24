@@ -187,7 +187,7 @@ object LineNumbers {
     val cl = c.getClassLoader
     val r = cl.getResourceAsStream(resource)
     if (debug) println(s"LNB:     resource '$resource' resolved to stream $r")
-    Option(r).map(_ -> None)
+    Option(r).map(_ → None)
   }
 
   private def getStreamForLambda(l: AnyRef): Option[(InputStream, Some[String])] =
@@ -269,7 +269,7 @@ object LineNumbers {
     val count = d.readUnsignedShort()
     if (debug) println(s"LNB: reading $count methods")
     if (c.contains("Code") && c.contains("LineNumberTable")) {
-      (1 to count).map(_ ⇒ readMethod(d, c("Code"), c("LineNumberTable"), filter)).flatten.foldLeft(Int.MaxValue -> 0) {
+      (1 to count).map(_ ⇒ readMethod(d, c("Code"), c("LineNumberTable"), filter)).flatten.foldLeft(Int.MaxValue → 0) {
         case ((low, high), (start, end)) ⇒ (Math.min(low, start), Math.max(high, end))
       } match {
         case (Int.MaxValue, 0) ⇒ None
@@ -282,10 +282,11 @@ object LineNumbers {
     }
   }
 
-  private def readMethod(d: DataInputStream,
-                         codeTag: Int,
-                         lineNumberTableTag: Int,
-                         filter: Option[String])(implicit c: Constants): Option[(Int, Int)] = {
+  private def readMethod(
+    d:                  DataInputStream,
+    codeTag:            Int,
+    lineNumberTableTag: Int,
+    filter:             Option[String])(implicit c: Constants): Option[(Int, Int)] = {
     skip(d, 2) // access flags
     val name = d.readUnsignedShort() // name
     skip(d, 2) // signature
@@ -315,7 +316,7 @@ object LineNumbers {
                     skip(d, 2) // start PC
                     d.readUnsignedShort() // finally: the line number
                   }
-                Some(lines.min -> lines.max)
+                Some(lines.min → lines.max)
               }
             }
           if (debug) println(s"LNB:     nested attributes yielded: $possibleLines")

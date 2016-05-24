@@ -3,7 +3,6 @@
  */
 package akka.typed
 
-
 /**
  * The behavior of an actor defines how it reacts to the messages that it
  * receives. The message may either be of the type that the Actor declares

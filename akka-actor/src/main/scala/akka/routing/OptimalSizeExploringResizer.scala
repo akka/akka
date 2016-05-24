@@ -44,9 +44,9 @@ case object OptimalSizeExploringResizer {
    */
   private[routing] case class ResizeRecord(
     underutilizationStreak: Option[UnderUtilizationStreak] = None,
-    messageCount: Long = 0,
-    totalQueueLength: Int = 0,
-    checkTime: Long = 0)
+    messageCount:           Long                           = 0,
+    totalQueueLength:       Int                            = 0,
+    checkTime:              Long                           = 0)
 
   /**
    * INTERNAL API
@@ -115,16 +115,16 @@ case object OptimalSizeExploringResizer {
  */
 @SerialVersionUID(1L)
 case class DefaultOptimalSizeExploringResizer(
-  lowerBound: PoolSize = 1,
-  upperBound: PoolSize = 30,
-  chanceOfScalingDownWhenFull: Double = 0.2,
-  actionInterval: Duration = 5.seconds,
-  numOfAdjacentSizesToConsiderDuringOptimization: Int = 16,
-  exploreStepSize: Double = 0.1,
-  downsizeRatio: Double = 0.8,
-  downsizeAfterUnderutilizedFor: Duration = 72.hours,
-  explorationProbability: Double = 0.4,
-  weightOfLatestMetric: Double = 0.5) extends OptimalSizeExploringResizer {
+  lowerBound:                                     PoolSize = 1,
+  upperBound:                                     PoolSize = 30,
+  chanceOfScalingDownWhenFull:                    Double   = 0.2,
+  actionInterval:                                 Duration = 5.seconds,
+  numOfAdjacentSizesToConsiderDuringOptimization: Int      = 16,
+  exploreStepSize:                                Double   = 0.1,
+  downsizeRatio:                                  Double   = 0.8,
+  downsizeAfterUnderutilizedFor:                  Duration = 72.hours,
+  explorationProbability:                         Double   = 0.4,
+  weightOfLatestMetric:                           Double   = 0.5) extends OptimalSizeExploringResizer {
   /**
    * Leave package accessible for testing purpose
    */

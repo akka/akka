@@ -101,7 +101,8 @@ class ActorLifeCycleSpec extends AkkaSpec("akka.actor.serialize-messages=off") w
 
     "not invoke preRestart and postRestart when never restarted using OneForOneStrategy" in {
       val id = newUuid().toString
-      val supervisor = system.actorOf(Props(classOf[Supervisor],
+      val supervisor = system.actorOf(Props(
+        classOf[Supervisor],
         OneForOneStrategy(maxNrOfRetries = 3)(List(classOf[Exception]))))
       val gen = new AtomicInteger(0)
       val props = Props(classOf[LifeCycleTestActor], testActor, id, gen)

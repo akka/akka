@@ -121,7 +121,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     val (bsAIt, bsBIt) = (a.iterator, b.iterator)
     val (vecAIt, vecBIt) = (Vector(a: _*).iterator.buffered, Vector(b: _*).iterator.buffered)
     (body(bsAIt, bsBIt) == body(vecAIt, vecBIt)) &&
-      (!strict || (bsAIt.toSeq -> bsBIt.toSeq) == (vecAIt.toSeq -> vecBIt.toSeq))
+      (!strict || (bsAIt.toSeq → bsBIt.toSeq) == (vecAIt.toSeq → vecBIt.toSeq))
   }
 
   def likeVecBld(body: Builder[Byte, _] ⇒ Unit): Boolean = {

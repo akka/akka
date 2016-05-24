@@ -21,11 +21,12 @@ object ConnectionContext {
     scaladsl.ConnectionContext.https(sslContext)
 
   /** Used to serve HTTPS traffic. */
-  def https(sslContext: SSLContext,
-            enabledCipherSuites: Optional[JCollection[String]],
-            enabledProtocols: Optional[JCollection[String]],
-            clientAuth: Optional[TLSClientAuth],
-            sslParameters: Optional[SSLParameters]) =
+  def https(
+    sslContext:          SSLContext,
+    enabledCipherSuites: Optional[JCollection[String]],
+    enabledProtocols:    Optional[JCollection[String]],
+    clientAuth:          Optional[TLSClientAuth],
+    sslParameters:       Optional[SSLParameters]) =
     scaladsl.ConnectionContext.https(
       sslContext,
       OptionConverters.toScala(enabledCipherSuites).map(Util.immutableSeq(_)),

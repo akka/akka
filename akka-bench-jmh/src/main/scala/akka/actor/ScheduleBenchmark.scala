@@ -56,13 +56,13 @@ class ScheduleBenchmark {
   var promise: Promise[Any] = _
 
   @Setup(Level.Iteration)
-  def setup():Unit = {
+  def setup(): Unit = {
     winner = (to * ratio + 1).toInt
     promise = Promise[Any]()
   }
 
   @TearDown
-  def shutdown():Unit = {
+  def shutdown(): Unit = {
     system.terminate()
     Await.ready(system.whenTerminated, 15.seconds)
   }
@@ -70,7 +70,7 @@ class ScheduleBenchmark {
   def op(idx: Int) = if (idx == winner) promise.trySuccess(idx) else idx
 
   @Benchmark
-  def oneSchedule():Unit = {
+  def oneSchedule(): Unit = {
     val aIdx = new AtomicInteger(1)
     val tryWithNext = scheduler.schedule(0.millis, interval) {
       val idx = aIdx.getAndIncrement
@@ -84,8 +84,8 @@ class ScheduleBenchmark {
   }
 
   @Benchmark
-  def multipleScheduleOnce():Unit = {
-    val tryWithNext = (1 to to).foldLeft(0.millis -> List[Cancellable]()) {
+  def multipleScheduleOnce(): Unit = {
+    val tryWithNext = (1 to to).foldLeft(0.millis → List[Cancellable]()) {
       case ((interv, c), idx) ⇒
         (interv + interval, scheduler.scheduleOnce(interv) {
           op(idx)

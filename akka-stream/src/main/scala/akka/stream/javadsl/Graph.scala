@@ -278,7 +278,7 @@ object ZipN {
 object ZipWithN {
   def create[A, O](zipper: function.Function[java.util.List[A], O], n: Int): Graph[UniformFanInShape[A, O], NotUsed] = {
     import scala.collection.JavaConverters._
-    scaladsl.ZipWithN[A, O](seq => zipper.apply(seq.asJava))(n)
+    scaladsl.ZipWithN[A, O](seq ⇒ zipper.apply(seq.asJava))(n)
   }
 }
 

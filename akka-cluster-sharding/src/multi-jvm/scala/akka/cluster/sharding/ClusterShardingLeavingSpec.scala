@@ -177,7 +177,7 @@ abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConf
         val locations = (for (n ← 1 to 10) yield {
           val id = n.toString
           region ! Ping(id)
-          id -> expectMsgType[ActorRef]
+          id → expectMsgType[ActorRef]
         }).toMap
         shardLocations ! Locations(locations)
       }
