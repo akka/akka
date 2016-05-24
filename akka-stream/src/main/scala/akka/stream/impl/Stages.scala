@@ -61,6 +61,7 @@ private[stream] object Stages {
     val processor = name("processor")
     val processorWithKey = name("processorWithKey")
     val identityOp = name("identityOp")
+    val delimiterFraming = name("delimiterFraming")
 
     val initial = name("initial")
     val completion = name("completion")

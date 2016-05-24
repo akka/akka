@@ -93,6 +93,12 @@ class FramingSpec extends AkkaSpec {
           Source.single(ByteString("ab\n")).via(simpleLines("\n", 1)).limit(100).runWith(Sink.seq),
           3.seconds)
       }
+
+      an[FramingException] should be thrownBy {
+        Await.result(
+          Source.single(ByteString("aaa")).via(simpleLines("\n", 2)).limit(100).runWith(Sink.seq),
+          3.seconds)
+      }
     }
 
     "work with empty streams" in {
