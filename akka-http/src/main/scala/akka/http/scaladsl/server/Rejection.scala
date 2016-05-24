@@ -20,6 +20,7 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.server.RoutingJavaMapping
 import RoutingJavaMapping._
 import akka.pattern.CircuitBreakerOpenException
+import akka.http.javadsl.model.headers.HttpOrigin
 
 import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters
@@ -96,8 +97,10 @@ final case class MalformedHeaderRejection(headerName: String, errorMsg: String, 
  * Rejection created by [[akka.http.scaladsl.server.directives.HeaderDirectives.checkSameOrigin]].
  * Signals that the request was rejected because `Origin` header value is invalid.
  */
-final case class InvalidOriginHeaderRejection(headerValue: String)
-  extends jserver.InvalidOriginHeaderRejection with Rejection
+final case class InvalidOriginHeaderRejection(invalidOrigins: immutable.Seq[HttpOrigin])
+  extends jserver.InvalidOriginHeaderRejection with Rejection {
+  override def getInvalidOrigins: java.util.List[HttpOrigin] = invalidOrigins.asJava
+}
 
 /**
  * Rejection created by unmarshallers.

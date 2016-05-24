@@ -29,16 +29,9 @@ trait HeaderDirectives {
     * @group header
     */
   def checkSameOrigin(allowed: HttpOriginRange): Directive0 = {
-
-    /** Return an invalid origin, or `None` if they are all valid. */
-    def validateOrigin(origins: Seq[HttpOrigin]): Option[HttpOrigin] =
-      origins.find(!allowed.matches(_))
-
     headerValueByType[Origin]().flatMap { origin ⇒
-      validateOrigin(origin.origins) match {
-        case Some(invalid) ⇒ reject(InvalidOriginHeaderRejection(invalid.value))
-        case None          ⇒ pass
-      }
+      if (origin.origins.exists(allowed.matches)) pass
+      else reject(InvalidOriginHeaderRejection(origin.origins))
     }
   }
 

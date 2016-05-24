@@ -237,7 +237,7 @@ public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
 
     final HttpOriginRange validOriginRange = HttpOriginRange.create(validOriginHeader);
 
-    TestRoute route = testRoute(
+    final TestRoute route = testRoute(
             checkSameOrigin(validOriginRange,
                     () -> complete("Result")));
 

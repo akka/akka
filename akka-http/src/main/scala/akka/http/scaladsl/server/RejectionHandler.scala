@@ -167,7 +167,7 @@ object RejectionHandler {
       }
       .handle {
         case InvalidOriginHeaderRejection(invalidOrigin) ⇒
-          complete((Forbidden, s"Origin header value '$invalidOrigin' is not in the same origin"))
+          complete((Forbidden, s"Invalid `Origin` header values: ${invalidOrigin.mkString(", ")}"))
       }
       .handle {
         case MissingQueryParamRejection(paramName) ⇒
