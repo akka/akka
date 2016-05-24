@@ -48,8 +48,8 @@ public class JavaTestServer extends AllDirectives { // or import static Directiv
       );
 
     final Route crash = path("crash", () ->
-      path("scala", () -> completeWithFutureString(akka.dispatch.Futures.<String>failed(new Exception("Boom!")))).orElse(
-      path("java", () -> completeWithFutureString(CompletableFuture.<String>supplyAsync(() -> { throw new RuntimeException("Boom!"); }))))
+      path("scala", () -> completeOKWithFutureString(akka.dispatch.Futures.<String>failed(new Exception("Boom!")))).orElse(
+      path("java", () -> completeOKWithFutureString(CompletableFuture.<String>supplyAsync(() -> { throw new RuntimeException("Boom!"); }))))
     );
 
     final Route inner = path("inner", () ->
