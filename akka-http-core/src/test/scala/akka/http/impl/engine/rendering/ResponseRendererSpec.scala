@@ -582,10 +582,13 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
     def awaitAtMost: FiniteDuration = 3.seconds
 
     def renderTo(expected: String): Matcher[HttpResponse] =
-      renderTo(expected, close = false) compose (ResponseRenderingContext(_))
+      renderToImpl(expected, checkClose = None) compose (ResponseRenderingContext(_))
 
     def renderTo(expected: String, close: Boolean): Matcher[ResponseRenderingContext] =
-      equal(expected.stripMarginWithNewline("\r\n") -> close).matcher[(String, Boolean)] compose { ctx ⇒
+      renderToImpl(expected, checkClose = Some(close))
+
+    def renderToImpl(expected: String, checkClose: Option[Boolean]): Matcher[ResponseRenderingContext] =
+      equal(expected.stripMarginWithNewline("\r\n") -> checkClose).matcher[(String, Option[Boolean])] compose { ctx ⇒
         val (wasCompletedFuture, resultFuture) =
           (Source.single(ctx) ++ Source.maybe[ResponseRenderingContext]) // never send upstream completion
             .via(renderer.named("renderer"))
@@ -597,14 +600,18 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
             .watchTermination()(Keep.right)
             .toMat(Sink.head)(Keep.both).run()
 
-        // we try to find out if the renderer has already flagged completion even without the upstream being completed
-        val wasCompleted =
-          try {
-            Await.ready(wasCompletedFuture, 100.millis)
-            true
-          } catch {
-            case NonFatal(_) ⇒ false
-          }
+        val wasCompleted: Option[Boolean] = checkClose match {
+          case None ⇒ None
+          case Some(close) ⇒
+            // we try to find out if the renderer has already flagged completion even without the upstream being completed
+            try {
+              Await.ready(wasCompletedFuture, 100.millis)
+              Some(true)
+            } catch {
+              case NonFatal(_) ⇒ Some(false)
+            }
+        }
+
         Await.result(resultFuture, awaitAtMost).reduceLeft(_ ++ _).utf8String -> wasCompleted
       }
 
