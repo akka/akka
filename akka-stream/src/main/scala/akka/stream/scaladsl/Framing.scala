@@ -287,3 +287,11 @@ object Framing {
   }
 
 }
+
+/**
+ * Wrapper around a framing Flow (as provided by [[Framing.delimiter]] for example.
+ * Used for providing a framing implicitly for other components which may need one (such as framed entity streaming in Akka HTTP).
+ */
+trait Framing {
+  def flow: Flow[ByteString, ByteString, NotUsed]
+}
