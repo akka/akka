@@ -15,10 +15,11 @@ import akka.stream.impl.ActorMaterializerImpl
 import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.io.FileSourceSpec.Settings
-import akka.stream.scaladsl.{ FileIO, Sink }
+import akka.stream.scaladsl.{ FileIO, Keep, Sink }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.TestDuration
 import akka.util.ByteString
 import akka.util.Timeout
 import scala.concurrent.Await
@@ -138,13 +139,14 @@ class FileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
       c.expectComplete()
     }
 
-    "onError whent trying to read from file which does not exist" in assertAllStagesStopped {
-      val p = FileIO.fromPath(notExistingFile).runWith(Sink.asPublisher(false))
+    "onError with failure and return a failed IOResult when trying to read from file which does not exist" in assertAllStagesStopped {
+      val (r, p) = FileIO.fromPath(notExistingFile).toMat(Sink.asPublisher(false))(Keep.both).run()
       val c = TestSubscriber.manualProbe[ByteString]()
       p.subscribe(c)
 
       c.expectSubscription()
       c.expectError()
+      val ioResult = Await.result(r, 3.seconds.dilated).status.isFailure shouldBe true
     }
 
     List(
