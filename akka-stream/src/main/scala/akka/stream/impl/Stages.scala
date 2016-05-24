@@ -85,7 +85,7 @@ private[stream] object Stages {
     val repeat = name("repeat")
     val unfold = name("unfold")
     val unfoldAsync = name("unfoldAsync")
-    val delay = name("delay") and inputBuffer(16, 16)
+    val delay = name("delay")
 
     val terminationWatcher = name("terminationWatcher")
 
