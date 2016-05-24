@@ -6,6 +6,8 @@ package akka.stream.scaladsl
 import java.nio.ByteOrder
 
 import akka.NotUsed
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.{ Attributes, Inlet, Outlet, FlowShape }
 import akka.stream.stage._
 import akka.util.{ ByteIterator, ByteString }
 
@@ -29,7 +31,7 @@ object Framing {
    *                           exceeded this Flow will fail the stream.
    */
   def delimiter(delimiter: ByteString, maximumFrameLength: Int, allowTruncation: Boolean = false): Flow[ByteString, ByteString, NotUsed] =
-    Flow[ByteString].transform(() ⇒ new DelimiterFramingStage(delimiter, maximumFrameLength, allowTruncation))
+    Flow[ByteString].via(new DelimiterFramingStage(delimiter, maximumFrameLength, allowTruncation))
       .named("delimiterFraming")
 
   /**
@@ -126,65 +128,84 @@ object Framing {
   }
 
   private class DelimiterFramingStage(val separatorBytes: ByteString, val maximumLineBytes: Int, val allowTruncation: Boolean)
-    extends PushPullStage[ByteString, ByteString] {
-    private val firstSeparatorByte = separatorBytes.head
-    private var buffer = ByteString.empty
-    private var nextPossibleMatch = 0
+    extends GraphStage[FlowShape[ByteString, ByteString]] {
 
-    override def onPush(chunk: ByteString, ctx: Context[ByteString]): SyncDirective = {
-      buffer ++= chunk
-      doParse(ctx)
-    }
+    val in = Inlet[ByteString]("DelimiterFramingStage.in")
+    val out = Outlet[ByteString]("DelimiterFramingStage.out")
+    override val shape: FlowShape[ByteString, ByteString] = FlowShape(in, out)
 
-    override def onPull(ctx: Context[ByteString]): SyncDirective = doParse(ctx)
+    override def initialAttributes: Attributes = DefaultAttributes.delimiterFraming
+    override def toString: String = "DelimiterFraming"
 
-    override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective =
-      if (buffer.nonEmpty) ctx.absorbTermination()
-      else ctx.finish()
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+      private val firstSeparatorByte = separatorBytes.head
+      private var buffer = ByteString.empty
+      private var nextPossibleMatch = 0
 
-    private def tryPull(ctx: Context[ByteString]): SyncDirective = {
-      if (ctx.isFinishing) {
-        if (allowTruncation) ctx.pushAndFinish(buffer)
-        else
-          ctx.fail(new FramingException(
-            "Stream finished but there was a truncated final frame in the buffer"))
-      } else ctx.pull()
-    }
+      override def onPush(): Unit = {
+        buffer ++= grab(in)
+        doParse()
+      }
 
-    @tailrec
-    private def doParse(ctx: Context[ByteString]): SyncDirective = {
-      val possibleMatchPos = buffer.indexOf(firstSeparatorByte, from = nextPossibleMatch)
-      if (possibleMatchPos > maximumLineBytes)
-        ctx.fail(new FramingException(s"Read ${buffer.size} bytes " +
-          s"which is more than $maximumLineBytes without seeing a line terminator"))
-      else {
-        if (possibleMatchPos == -1) {
-          // No matching character, we need to accumulate more bytes into the buffer
-          nextPossibleMatch = buffer.size
-          tryPull(ctx)
+      override def onPull(): Unit = doParse()
+
+      override def onUpstreamFinish(): Unit = {
+        if (buffer.isEmpty) {
+          completeStage()
+        } else if (isAvailable(out)) {
+          doParse()
+        } // else swallow the termination and wait for pull
+      }
+
+      private def tryPull(): Unit = {
+        if (isClosed(in)) {
+          if (allowTruncation) {
+            push(out, buffer)
+            completeStage()
+          } else
+            failStage(new FramingException(
+              "Stream finished but there was a truncated final frame in the buffer"))
+        } else pull(in)
+      }
+
+      @tailrec
+      private def doParse(): Unit = {
+        val possibleMatchPos = buffer.indexOf(firstSeparatorByte, from = nextPossibleMatch)
+        if (possibleMatchPos > maximumLineBytes)
+          failStage(new FramingException(s"Read ${buffer.size} bytes " +
+            s"which is more than $maximumLineBytes without seeing a line terminator"))
+        else if (possibleMatchPos == -1) {
+          if (buffer.size > maximumLineBytes)
+            failStage(new FramingException(s"Read ${buffer.size} bytes " +
+              s"which is more than $maximumLineBytes without seeing a line terminator"))
+          else {
+            // No matching character, we need to accumulate more bytes into the buffer
+            nextPossibleMatch = buffer.size
+            tryPull()
+          }
         } else if (possibleMatchPos + separatorBytes.size > buffer.size) {
           // We have found a possible match (we found the first character of the terminator
           // sequence) but we don't have yet enough bytes. We remember the position to
           // retry from next time.
           nextPossibleMatch = possibleMatchPos
-          tryPull(ctx)
+          tryPull()
+        } else if (buffer.slice(possibleMatchPos, possibleMatchPos + separatorBytes.size) == separatorBytes) {
+          // Found a match
+          val parsedFrame = buffer.slice(0, possibleMatchPos).compact
+          buffer = buffer.drop(possibleMatchPos + separatorBytes.size)
+          nextPossibleMatch = 0
+          if (isClosed(in) && buffer.isEmpty) {
+            push(out, parsedFrame)
+            completeStage()
+          } else push(out, parsedFrame)
         } else {
-          if (buffer.slice(possibleMatchPos, possibleMatchPos + separatorBytes.size) == separatorBytes) {
-            // Found a match
-            val parsedFrame = buffer.slice(0, possibleMatchPos).compact
-            buffer = buffer.drop(possibleMatchPos + separatorBytes.size)
-            nextPossibleMatch = 0
-            if (ctx.isFinishing && buffer.isEmpty) ctx.pushAndFinish(parsedFrame)
-            else ctx.push(parsedFrame)
-          } else {
-            nextPossibleMatch += 1
-            doParse(ctx)
-          }
+          // possibleMatchPos was not actually a match
+          nextPossibleMatch += 1
+          doParse()
         }
       }
+      setHandlers(in, out, this)
     }
-
-    override def postStop(): Unit = buffer = null
   }
 
   private final class LengthFieldFramingStage(
