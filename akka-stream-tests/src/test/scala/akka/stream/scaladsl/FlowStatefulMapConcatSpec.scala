@@ -20,10 +20,10 @@ class FlowStatefulMapConcatSpec extends AkkaSpec with ScriptedTest {
 
     "work in happy case" in {
       val script = Script(
-        Seq(2) -> Seq(),
-        Seq(1) -> Seq(1, 1),
-        Seq(3) -> Seq(3),
-        Seq(6) -> Seq(6, 6, 6))
+        Seq(2) → Seq(),
+        Seq(1) → Seq(1, 1),
+        Seq(3) → Seq(3),
+        Seq(6) → Seq(6, 6, 6))
       TestConfig.RandomTestRange foreach (_ ⇒ runScript(script, settings)(_.statefulMapConcat(() ⇒ {
         var prev: Option[Int] = None
         x ⇒ prev match {

@@ -88,9 +88,10 @@ object RejectionHandler {
     def apply(rejection: Rejection) = rejection.asInstanceOf[T]
   }
 
-  private class BuiltRejectionHandler(val cases: Vector[Handler],
-                                      val notFound: Option[Route],
-                                      val isDefault: Boolean) extends RejectionHandler {
+  private class BuiltRejectionHandler(
+    val cases:     Vector[Handler],
+    val notFound:  Option[Route],
+    val isDefault: Boolean) extends RejectionHandler {
     def apply(rejections: immutable.Seq[Rejection]): Option[Route] =
       if (rejections.nonEmpty) {
         @tailrec def rec(ix: Int): Option[Route] =
@@ -120,7 +121,7 @@ object RejectionHandler {
         complete((BadRequest, "Uri scheme not allowed, supported schemes: " + schemes))
       }
       .handleAll[MethodRejection] { rejections ⇒
-        val (methods, names) = rejections.map(r ⇒ r.supported -> r.supported.name).unzip
+        val (methods, names) = rejections.map(r ⇒ r.supported → r.supported.name).unzip
         complete((MethodNotAllowed, List(Allow(methods)), "HTTP method not allowed, supported methods: " + names.mkString(", ")))
       }
       .handle {
@@ -207,7 +208,8 @@ object RejectionHandler {
       .handle { case ExpectedWebSocketRequestRejection ⇒ complete((BadRequest, "Expected WebSocket Upgrade request")) }
       .handleAll[UnsupportedWebSocketSubprotocolRejection] { rejections ⇒
         val supported = rejections.map(_.supportedProtocol)
-        complete(HttpResponse(BadRequest,
+        complete(HttpResponse(
+          BadRequest,
           entity = s"None of the websocket subprotocols offered in the request are supported. Supported are ${supported.map("'" + _ + "'").mkString(",")}.",
           headers = `Sec-WebSocket-Protocol`(supported) :: Nil))
       }

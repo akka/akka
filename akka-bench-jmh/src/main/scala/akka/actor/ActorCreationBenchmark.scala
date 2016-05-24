@@ -34,7 +34,7 @@ class ActorCreationBenchmark {
   }
 
   @TearDown(Level.Trial)
-  def shutdown():Unit = {
+  def shutdown(): Unit = {
     system.terminate()
     Await.ready(system.whenTerminated, 15.seconds)
   }

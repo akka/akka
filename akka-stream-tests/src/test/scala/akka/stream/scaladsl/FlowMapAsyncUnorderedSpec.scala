@@ -33,7 +33,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
     "produce future elements in the order they are ready" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
-      val latch = (1 to 4).map(_ -> TestLatch(1)).toMap
+      val latch = (1 to 4).map(_ → TestLatch(1)).toMap
       val p = Source(1 to 4).mapAsyncUnordered(4)(n ⇒ Future {
         Await.ready(latch(n), 5.seconds)
         n
@@ -229,7 +229,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
         if (counter.incrementAndGet() > parallelism) Future.failed(new Exception("parallelism exceeded"))
         else {
           val p = Promise[Int]
-          queue.offer(p -> System.nanoTime())
+          queue.offer(p → System.nanoTime())
           p.future
         }
       }

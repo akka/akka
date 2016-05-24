@@ -22,9 +22,10 @@ import headers._
 /**
  * INTERNAL API
  */
-private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`User-Agent`],
-                                               requestHeaderSizeHint: Int,
-                                               log: LoggingAdapter) {
+private[http] class HttpRequestRendererFactory(
+  userAgentHeader:       Option[headers.`User-Agent`],
+  requestHeaderSizeHint: Int,
+  log:                   LoggingAdapter) {
   import HttpRequestRendererFactory.RequestRenderingOutput
 
   def renderToSource(ctx: RequestRenderingContext): Source[ByteString, Any] = render(ctx).byteStream
@@ -175,6 +176,6 @@ private[http] object HttpRequestRendererFactory {
  *                          if the future is completed with an error the connection is to be closed.
  */
 private[http] final case class RequestRenderingContext(
-  request: HttpRequest,
-  hostHeader: Host,
+  request:           HttpRequest,
+  hostHeader:        Host,
   sendEntityTrigger: Option[Future[NotUsed]] = None)

@@ -262,7 +262,7 @@ final case class OneVersionVector private[akka] (node: UniqueAddress, version: L
   private[akka] override def increment(n: UniqueAddress): VersionVector = {
     val v = Timestamp.counter.getAndIncrement()
     if (n == node) copy(version = v)
-    else ManyVersionVector(TreeMap(node -> version, n -> v))
+    else ManyVersionVector(TreeMap(node → version, n → v))
   }
 
   /** INTERNAL API */
@@ -282,7 +282,7 @@ final case class OneVersionVector private[akka] (node: UniqueAddress, version: L
     that match {
       case OneVersionVector(n2, v2) ⇒
         if (node == n2) if (version >= v2) this else OneVersionVector(n2, v2)
-        else ManyVersionVector(TreeMap(node -> version, n2 -> v2))
+        else ManyVersionVector(TreeMap(node → version, n2 → v2))
       case ManyVersionVector(vs2) ⇒
         val v2 = vs2.getOrElse(node, Timestamp.Zero)
         val mergedVersions =

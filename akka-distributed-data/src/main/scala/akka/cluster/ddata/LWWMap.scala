@@ -47,7 +47,7 @@ final class LWWMap[A] private[akka] (
   /**
    * Scala API: All entries of the map.
    */
-  def entries: Map[String, A] = underlying.entries.map { case (k, r) ⇒ k -> r.value }
+  def entries: Map[String, A] = underlying.entries.map { case (k, r) ⇒ k → r.value }
 
   /**
    * Java API: All entries of the map.

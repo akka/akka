@@ -49,10 +49,11 @@ private[camel] class ActorComponent(camel: Camel, system: ActorSystem) extends D
  * <code>[actorPath]?[options]%s</code>,
  * where <code>[actorPath]</code> refers to the actor path to the actor.
  */
-private[camel] class ActorEndpoint(uri: String,
-                                   comp: ActorComponent,
-                                   val path: ActorEndpointPath,
-                                   val camel: Camel) extends DefaultEndpoint(uri, comp) with ActorEndpointConfig {
+private[camel] class ActorEndpoint(
+  uri:       String,
+  comp:      ActorComponent,
+  val path:  ActorEndpointPath,
+  val camel: Camel) extends DefaultEndpoint(uri, comp) with ActorEndpointConfig {
 
   /**
    * The ActorEndpoint only supports receiving messages from Camel.
@@ -174,7 +175,7 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
     path.findActorIn(camel.system) getOrElse (throw new ActorNotRegisteredException(path.actorPath))
 
   private[this] def messageFor(exchange: CamelExchangeAdapter) =
-    exchange.toRequestMessage(Map(CamelMessage.MessageExchangeId -> exchange.getExchangeId))
+    exchange.toRequestMessage(Map(CamelMessage.MessageExchangeId → exchange.getExchangeId))
 }
 
 /**

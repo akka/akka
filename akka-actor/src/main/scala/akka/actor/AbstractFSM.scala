@@ -66,9 +66,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param stateTimeout default state timeout for this state
    * @param stateFunctionBuilder partial function builder describing response to input
    */
-  final def when(stateName: S,
-                 stateTimeout: FiniteDuration,
-                 stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
+  final def when(
+    stateName:            S,
+    stateTimeout:         FiniteDuration,
+    stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
     when(stateName, stateTimeout)(stateFunctionBuilder.build())
 
   /**

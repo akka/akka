@@ -26,7 +26,8 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
     "be able to handle 100 pipelined requests across one connection" in Utils.assertAllStagesStopped {
       val (_, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
 
-      val binding = Http().bindAndHandleSync(r ⇒ HttpResponse(entity = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse),
+      val binding = Http().bindAndHandleSync(
+        r ⇒ HttpResponse(entity = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse),
         serverHostName, serverPort)
 
       val N = 100
@@ -45,7 +46,8 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
     "be able to handle 100 pipelined requests across 4 connections (client-flow is reusable)" in Utils.assertAllStagesStopped {
       val (_, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
 
-      val binding = Http().bindAndHandleSync(r ⇒ HttpResponse(entity = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse),
+      val binding = Http().bindAndHandleSync(
+        r ⇒ HttpResponse(entity = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse),
         serverHostName, serverPort)
 
       val connFlow = Http().outgoingConnection(serverHostName, serverPort)

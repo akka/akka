@@ -193,10 +193,11 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
        * The latter is very useful in order to avoid disturbances with GotSignal(PostStop) in
        * test procedures that stop this child.
        */
-      def mkChild(name: Option[String],
-                  monitor: ActorRef[Event],
-                  self: ActorRef[Event],
-                  inert: Boolean = false): StepWise.Steps[Event, (ActorRef[Command], ActorRef[Command])] = {
+      def mkChild(
+        name:    Option[String],
+        monitor: ActorRef[Event],
+        self:    ActorRef[Event],
+        inert:   Boolean         = false): StepWise.Steps[Event, (ActorRef[Command], ActorRef[Command])] = {
         val s =
           startWith.keep { subj ⇒
             subj ! MkChild(name, monitor, self)

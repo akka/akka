@@ -35,7 +35,8 @@ object TestServer extends App {
   val bindingFuture = Http().bindAndHandle({
     get {
       path("") {
-        withRequestTimeout(1.milli, _ ⇒ HttpResponse(StatusCodes.EnhanceYourCalm,
+        withRequestTimeout(1.milli, _ ⇒ HttpResponse(
+          StatusCodes.EnhanceYourCalm,
           entity = "Unable to serve response within time limit, please enchance your calm.")) {
           Thread.sleep(1000)
           complete(index)

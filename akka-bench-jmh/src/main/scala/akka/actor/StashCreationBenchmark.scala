@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit
 object StashCreationBenchmark {
   class StashingActor extends Actor with Stash {
     def receive = {
-      case msg => sender() ! msg
+      case msg ⇒ sender() ! msg
     }
   }
 
@@ -35,7 +35,7 @@ class StashCreationBenchmark {
   val probe = TestProbe()
 
   @TearDown(Level.Trial)
-  def shutdown():Unit = {
+  def shutdown(): Unit = {
     system.terminate()
     Await.ready(system.whenTerminated, 15.seconds)
   }

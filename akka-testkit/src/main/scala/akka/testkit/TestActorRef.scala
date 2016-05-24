@@ -19,10 +19,10 @@ import akka.pattern.ask
  * @since 1.1
  */
 class TestActorRef[T <: Actor](
-  _system: ActorSystem,
-  _props: Props,
+  _system:     ActorSystem,
+  _props:      Props,
   _supervisor: ActorRef,
-  name: String)
+  name:        String)
   extends {
     val props =
       _props.withDispatcher(
@@ -149,7 +149,8 @@ object TestActorRef {
   def apply[T <: Actor](implicit t: ClassTag[T], system: ActorSystem): TestActorRef[T] = apply[T](randomName)
 
   private def dynamicCreateRecover[U]: PartialFunction[Throwable, U] = {
-    case exception ⇒ throw ActorInitializationException(null,
+    case exception ⇒ throw ActorInitializationException(
+      null,
       "Could not instantiate Actor" +
         "\nMake sure Actor is NOT defined inside a class/trait," +
         "\nif so put it outside the class/trait, f.e. in a companion object," +

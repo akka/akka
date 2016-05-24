@@ -8,7 +8,7 @@ import akka.cluster.ddata.GSet
 
 //#twophaseset
 case class TwoPhaseSet(
-  adds: GSet[String] = GSet.empty,
+  adds:     GSet[String] = GSet.empty,
   removals: GSet[String] = GSet.empty)
   extends ReplicatedData {
   type T = TwoPhaseSet

@@ -74,7 +74,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * Java API: Get the first (least specific) attribute of a given `Class` or subclass thereof.
    */
   def getFirstAttribute[T <: Attribute](c: Class[T]): Optional[T] =
-    attributeList.collectFirst { case attr if c.isInstance(attr) => c cast attr }.asJava
+    attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c cast attr }.asJava
 
   /**
    * Scala API: get all attributes of a given type (or subtypes thereof).
@@ -105,7 +105,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    */
   def get[T <: Attribute: ClassTag]: Option[T] = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
-    attributeList.reverseIterator.collectFirst[T] { case attr if c.isInstance(attr) => c.cast(attr) }
+    attributeList.reverseIterator.collectFirst[T] { case attr if c.isInstance(attr) ⇒ c.cast(attr) }
   }
 
   /**
@@ -113,7 +113,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    */
   def getFirst[T <: Attribute: ClassTag]: Option[T] = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
-    attributeList.collectFirst { case attr if c.isInstance(attr) => c.cast(attr) }
+    attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }
   }
 
   /**

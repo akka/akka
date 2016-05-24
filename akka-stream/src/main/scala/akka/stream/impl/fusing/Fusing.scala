@@ -30,7 +30,7 @@ private[stream] object Fusing {
   def aggressive[S <: Shape, M](g: Graph[S, M]): FusedGraph[S, M] =
     g match {
       case fg: FusedGraph[_, _]      ⇒ fg
-      case FusedGraph(module, shape) => FusedGraph(module, shape)
+      case FusedGraph(module, shape) ⇒ FusedGraph(module, shape)
       case _                         ⇒ doAggressive(g)
     }
 
@@ -160,7 +160,7 @@ private[stream] object Fusing {
         }
 
         pos += 1
-      case _ => throw new IllegalArgumentException("unexpected module structure")
+      case _ ⇒ throw new IllegalArgumentException("unexpected module structure")
     }
 
     val outsB2 = new Array[Outlet[_]](insB2.size)
@@ -186,7 +186,7 @@ private[stream] object Fusing {
             }
         }
         pos += 1
-      case _ => throw new IllegalArgumentException("unexpected module structure")
+      case _ ⇒ throw new IllegalArgumentException("unexpected module structure")
     }
 
     /*
@@ -217,8 +217,8 @@ private[stream] object Fusing {
 
     // FIXME attributes should contain some naming info and async boundary where needed
     val firstModule = group.iterator.next() match {
-      case c: CopiedModule => c
-      case _               => throw new IllegalArgumentException("unexpected module structure")
+      case c: CopiedModule ⇒ c
+      case _               ⇒ throw new IllegalArgumentException("unexpected module structure")
     }
     val async = if (isAsync(firstModule)) Attributes(AsyncBoundary) else Attributes.none
     val disp = dispatcher(firstModule) match {
@@ -253,11 +253,12 @@ private[stream] object Fusing {
    * correspondence is then used during materialization to trigger these sources
    * when “their” node has received its value.
    */
-  private def descend(m: Module,
-                      inheritedAttributes: Attributes,
-                      struct: BuildStructuralInfo,
-                      openGroup: ju.Set[Module],
-                      indent: Int): List[(Module, MaterializedValueNode)] = {
+  private def descend(
+    m:                   Module,
+    inheritedAttributes: Attributes,
+    struct:              BuildStructuralInfo,
+    openGroup:           ju.Set[Module],
+    indent:              Int): List[(Module, MaterializedValueNode)] = {
     def log(msg: String): Unit = println("  " * indent + msg)
     val async = m match {
       case _: GraphStageModule ⇒ m.attributes.contains(AsyncBoundary)
@@ -327,7 +328,7 @@ private[stream] object Fusing {
               struct.registerInternals(newShape, indent)
 
               copy
-            case _ => throw new IllegalArgumentException("unexpected module structure")
+            case _ ⇒ throw new IllegalArgumentException("unexpected module structure")
           }
           val newgm = gm.copy(shape = oldShape.copyFromPorts(oldIns.toList, oldOuts.toList), matValIDs = newids)
           // make sure to add all the port mappings from old GraphModule Shape to new shape
@@ -336,14 +337,14 @@ private[stream] object Fusing {
           var result = List.empty[(Module, MaterializedValueNode)]
           var i = 0
           while (i < mvids.length) {
-            result ::= mvids(i) -> Atomic(newids(i))
+            result ::= mvids(i) → Atomic(newids(i))
             i += 1
           }
-          result ::= m -> Atomic(newgm)
+          result ::= m → Atomic(newgm)
           result
         case _ ⇒
           if (Debug) log(s"atomic module $m")
-          List(m -> struct.addModule(m, localGroup, inheritedAttributes, indent))
+          List(m → struct.addModule(m, localGroup, inheritedAttributes, indent))
       }
     } else {
       val attributes = inheritedAttributes and m.attributes
@@ -351,7 +352,7 @@ private[stream] object Fusing {
         case CopiedModule(shape, _, copyOf) ⇒
           val ret =
             descend(copyOf, attributes, struct, localGroup, indent + 1) match {
-              case xs @ (_, mat) :: _ ⇒ (m -> mat) :: xs
+              case xs @ (_, mat) :: _ ⇒ (m → mat) :: xs
               case _                  ⇒ throw new IllegalArgumentException("cannot happen")
             }
           struct.rewire(copyOf.shape, shape, indent)
@@ -390,7 +391,7 @@ private[stream] object Fusing {
             val ms = c.copyOf.asInstanceOf[GraphStageModule].stage.asInstanceOf[MaterializedValueSource[Any]]
             val mapped = ms.computation match {
               case Atomic(sub) ⇒ subMat(sub)
-              case Ignore      => Ignore
+              case Ignore      ⇒ Ignore
               case other       ⇒ matNodeMapping.get(other)
             }
             if (Debug) log(s"materialized value source: ${c.copyOf} -> $mapped")
@@ -400,7 +401,7 @@ private[stream] object Fusing {
             struct.replace(c, replacement, localGroup)
           }
           // the result for each level is the materialized value computation
-          List(m -> newMat)
+          List(m → newMat)
       }
     }
   }

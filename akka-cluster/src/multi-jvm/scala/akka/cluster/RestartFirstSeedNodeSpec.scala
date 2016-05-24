@@ -50,7 +50,8 @@ abstract class RestartFirstSeedNodeSpec
   def missingSeed = address(seed3).copy(port = Some(61313))
   def seedNodes: immutable.IndexedSeq[Address] = Vector(seedNode1Address, seed2, seed3, missingSeed)
 
-  lazy val restartedSeed1System = ActorSystem(system.name,
+  lazy val restartedSeed1System = ActorSystem(
+    system.name,
     ConfigFactory.parseString("akka.remote.netty.tcp.port=" + seedNodes.head.port.get).
       withFallback(system.settings.config))
 

@@ -26,8 +26,9 @@ case object MoneyMarket extends AccountType
 final case class GetCustomerAccountBalances(id: Long, accountTypes: Set[AccountType])
 final case class GetAccountBalances(id: Long)
 
-final case class AccountBalances(accountType: AccountType,
-                                 balance: Option[List[(Long, BigDecimal)]])
+final case class AccountBalances(
+  accountType: AccountType,
+  balance:     Option[List[(Long, BigDecimal)]])
 
 final case class CheckingAccountBalances(balances: Option[List[(Long, BigDecimal)]])
 final case class SavingsAccountBalances(balances: Option[List[(Long, BigDecimal)]])
@@ -69,8 +70,9 @@ class AccountBalanceRetriever extends Actor with Aggregator {
   }
   //#initial-expect
 
-  class AccountAggregator(originalSender: ActorRef,
-                          id: Long, types: Set[AccountType]) {
+  class AccountAggregator(
+    originalSender: ActorRef,
+    id:             Long, types: Set[AccountType]) {
 
     val results =
       mutable.ArrayBuffer.empty[(AccountType, Option[List[(Long, BigDecimal)]])]
@@ -95,7 +97,7 @@ class AccountBalanceRetriever extends Actor with Aggregator {
       context.actorOf(Props[CheckingAccountProxy]) ! GetAccountBalances(id)
       expectOnce {
         case CheckingAccountBalances(balances) ⇒
-          results += (Checking -> balances)
+          results += (Checking → balances)
           collectBalances()
       }
     }
@@ -105,7 +107,7 @@ class AccountBalanceRetriever extends Actor with Aggregator {
       context.actorOf(Props[SavingsAccountProxy]) ! GetAccountBalances(id)
       expectOnce {
         case SavingsAccountBalances(balances) ⇒
-          results += (Savings -> balances)
+          results += (Savings → balances)
           collectBalances()
       }
     }
@@ -114,7 +116,7 @@ class AccountBalanceRetriever extends Actor with Aggregator {
       context.actorOf(Props[MoneyMarketAccountProxy]) ! GetAccountBalances(id)
       expectOnce {
         case MoneyMarketAccountBalances(balances) ⇒
-          results += (MoneyMarket -> balances)
+          results += (MoneyMarket → balances)
           collectBalances()
       }
     }

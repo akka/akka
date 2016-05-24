@@ -4,7 +4,7 @@
 
 package akka.stream
 
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import java.util.concurrent.TimeUnit
@@ -30,26 +30,26 @@ class FlatMapMergeBenchmark {
   def createSource(count: Int): Graph[SourceShape[Int], NotUsed] = akka.stream.Fusing.aggressive(Source.repeat(1).take(count))
 
   @Setup
-  def setup():Unit = {
+  def setup(): Unit = {
     val source = NumberOfStreams match {
       // Base line: process NumberOfElements-many elements from a single source without using flatMapMerge
-      case 0 => createSource(NumberOfElements)
+      case 0 ⇒ createSource(NumberOfElements)
       // Stream merging: process NumberOfElements-many elements from n sources, each producing (NumberOfElements/n)-many elements
-      case n =>
+      case n ⇒
         val subSource = createSource(NumberOfElements / n)
-        Source.repeat(()).take(n).flatMapMerge(n, _ => subSource)
+        Source.repeat(()).take(n).flatMapMerge(n, _ ⇒ subSource)
     }
     graph = Source.fromGraph(source).toMat(Sink.ignore)(Keep.right)
   }
 
   @TearDown
-  def shutdown():Unit = {
+  def shutdown(): Unit = {
     Await.result(system.terminate(), 5.seconds)
   }
 
   @Benchmark
   @OperationsPerInvocation(100000) // Note: needs to match NumberOfElements.
-  def flat_map_merge_100k_elements():Unit = {
+  def flat_map_merge_100k_elements(): Unit = {
     Await.result(graph.run(), Duration.Inf)
   }
 }

@@ -154,10 +154,11 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
   }
 }
 
-private[akka] class OutputStreamAdapter(dataQueue: BlockingQueue[ByteString],
-                                        downstreamStatus: AtomicReference[DownstreamStatus],
-                                        sendToStage: (AdapterToStageMessage) ⇒ Future[Unit],
-                                        writeTimeout: FiniteDuration)
+private[akka] class OutputStreamAdapter(
+  dataQueue:        BlockingQueue[ByteString],
+  downstreamStatus: AtomicReference[DownstreamStatus],
+  sendToStage:      (AdapterToStageMessage) ⇒ Future[Unit],
+  writeTimeout:     FiniteDuration)
   extends OutputStream {
 
   var isActive = true

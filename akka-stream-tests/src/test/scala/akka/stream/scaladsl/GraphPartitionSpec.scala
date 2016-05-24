@@ -23,18 +23,17 @@ class GraphPartitionSpec extends AkkaSpec {
 
     "partition to three subscribers" in assertAllStagesStopped {
 
-      val (s1, s2, s3) = RunnableGraph.fromGraph(GraphDSL.create(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) { implicit b ⇒
-        (sink1, sink2, sink3) ⇒
-          val partition = b.add(Partition[Int](3, {
-            case g if (g > 3)  ⇒ 0
-            case l if (l < 3)  ⇒ 1
-            case e if (e == 3) ⇒ 2
-          }))
-          Source(List(1, 2, 3, 4, 5)) ~> partition.in
-          partition.out(0) ~> sink1.in
-          partition.out(1) ~> sink2.in
-          partition.out(2) ~> sink3.in
-          ClosedShape
+      val (s1, s2, s3) = RunnableGraph.fromGraph(GraphDSL.create(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) { implicit b ⇒ (sink1, sink2, sink3) ⇒
+        val partition = b.add(Partition[Int](3, {
+          case g if (g > 3)  ⇒ 0
+          case l if (l < 3)  ⇒ 1
+          case e if (e == 3) ⇒ 2
+        }))
+        Source(List(1, 2, 3, 4, 5)) ~> partition.in
+        partition.out(0) ~> sink1.in
+        partition.out(1) ~> sink2.in
+        partition.out(2) ~> sink3.in
+        ClosedShape
       }).run()
 
       s1.futureValue.toSet should ===(Set(4, 5))
@@ -124,16 +123,15 @@ class GraphPartitionSpec extends AkkaSpec {
       val s = Sink.seq[Int]
       val input = Set(5, 2, 9, 1, 1, 1, 10)
 
-      val g = RunnableGraph.fromGraph(GraphDSL.create(s) { implicit b ⇒
-        sink ⇒
-          val partition = b.add(Partition[Int](2, { case l if l < 4 ⇒ 0; case _ ⇒ 1 }))
-          val merge = b.add(Merge[Int](2))
-          Source(input) ~> partition.in
-          partition.out(0) ~> merge.in(0)
-          partition.out(1) ~> merge.in(1)
-          merge.out ~> sink.in
+      val g = RunnableGraph.fromGraph(GraphDSL.create(s) { implicit b ⇒ sink ⇒
+        val partition = b.add(Partition[Int](2, { case l if l < 4 ⇒ 0; case _ ⇒ 1 }))
+        val merge = b.add(Merge[Int](2))
+        Source(input) ~> partition.in
+        partition.out(0) ~> merge.in(0)
+        partition.out(1) ~> merge.in(1)
+        merge.out ~> sink.in
 
-          ClosedShape
+        ClosedShape
       })
 
       val result = Await.result(g.run(), remainingOrDefault)

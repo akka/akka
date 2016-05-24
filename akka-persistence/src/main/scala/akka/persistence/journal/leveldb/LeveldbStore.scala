@@ -64,7 +64,8 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
             if (tags.nonEmpty && hasTagSubscribers)
               allTags = allTags union tags
 
-            require(!p2.persistenceId.startsWith(tagPersistenceIdPrefix),
+            require(
+              !p2.persistenceId.startsWith(tagPersistenceIdPrefix),
               s"persistenceId [${p.persistenceId}] must not start with $tagPersistenceIdPrefix")
             addToMessageBatch(p2, tags, batch)
           }

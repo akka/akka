@@ -63,11 +63,11 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
   import akka.cluster.routing.UseRoleIgnoredMultiJvmSpec._
 
   def receiveReplies(routeeType: RouteeType, expectedReplies: Int): Map[Address, Int] = {
-    val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)
+    val zero = Map.empty[Address, Int] ++ roles.map(address(_) → 0)
     (receiveWhile(5 seconds, messages = expectedReplies) {
       case Reply(`routeeType`, ref) ⇒ fullAddress(ref)
     }).foldLeft(zero) {
-      case (replyMap, address) ⇒ replyMap + (address -> (replyMap(address) + 1))
+      case (replyMap, address) ⇒ replyMap + (address → (replyMap(address) + 1))
     }
   }
 
@@ -101,10 +101,11 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
       runOn(first) {
         val role = Some("b")
 
-        val router = system.actorOf(ClusterRouterPool(
-          RoundRobinPool(nrOfInstances = 6),
-          ClusterRouterPoolSettings(totalInstances = 6, maxInstancesPerNode = 2, allowLocalRoutees = false, useRole = role)).
-          props(Props[SomeActor]),
+        val router = system.actorOf(
+          ClusterRouterPool(
+            RoundRobinPool(nrOfInstances = 6),
+            ClusterRouterPoolSettings(totalInstances = 6, maxInstancesPerNode = 2, allowLocalRoutees = false, useRole = role)).
+            props(Props[SomeActor]),
           "router-2")
 
         awaitAssert(currentRoutees(router).size should ===(4))
@@ -130,7 +131,8 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
       runOn(first) {
         val role = Some("b")
 
-        val router = system.actorOf(ClusterRouterGroup(
+        val router = system.actorOf(
+          ClusterRouterGroup(
           RoundRobinGroup(paths = Nil),
           ClusterRouterGroupSettings(totalInstances = 6, routeesPaths = List("/user/foo", "/user/bar"),
             allowLocalRoutees = false, useRole = role)).props,
@@ -159,10 +161,11 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
       runOn(first) {
         val role = Some("b")
 
-        val router = system.actorOf(ClusterRouterPool(
-          RoundRobinPool(nrOfInstances = 6),
-          ClusterRouterPoolSettings(totalInstances = 6, maxInstancesPerNode = 2, allowLocalRoutees = true, useRole = role)).
-          props(Props[SomeActor]),
+        val router = system.actorOf(
+          ClusterRouterPool(
+            RoundRobinPool(nrOfInstances = 6),
+            ClusterRouterPoolSettings(totalInstances = 6, maxInstancesPerNode = 2, allowLocalRoutees = true, useRole = role)).
+            props(Props[SomeActor]),
           "router-3")
 
         awaitAssert(currentRoutees(router).size should ===(4))
@@ -188,7 +191,8 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
       runOn(first) {
         val role = Some("b")
 
-        val router = system.actorOf(ClusterRouterGroup(
+        val router = system.actorOf(
+          ClusterRouterGroup(
           RoundRobinGroup(paths = Nil),
           ClusterRouterGroupSettings(totalInstances = 6, routeesPaths = List("/user/foo", "/user/bar"),
             allowLocalRoutees = true, useRole = role)).props,
@@ -217,10 +221,11 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
       runOn(first) {
         val role = Some("a")
 
-        val router = system.actorOf(ClusterRouterPool(
-          RoundRobinPool(nrOfInstances = 6),
-          ClusterRouterPoolSettings(totalInstances = 6, maxInstancesPerNode = 2, allowLocalRoutees = true, useRole = role)).
-          props(Props[SomeActor]),
+        val router = system.actorOf(
+          ClusterRouterPool(
+            RoundRobinPool(nrOfInstances = 6),
+            ClusterRouterPoolSettings(totalInstances = 6, maxInstancesPerNode = 2, allowLocalRoutees = true, useRole = role)).
+            props(Props[SomeActor]),
           "router-4")
 
         awaitAssert(currentRoutees(router).size should ===(2))
@@ -246,7 +251,8 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
       runOn(first) {
         val role = Some("a")
 
-        val router = system.actorOf(ClusterRouterGroup(
+        val router = system.actorOf(
+          ClusterRouterGroup(
           RoundRobinGroup(paths = Nil),
           ClusterRouterGroupSettings(totalInstances = 6, routeesPaths = List("/user/foo", "/user/bar"),
             allowLocalRoutees = true, useRole = role)).props,
@@ -275,10 +281,11 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
       runOn(first) {
         val role = Some("c")
 
-        val router = system.actorOf(ClusterRouterPool(
-          RoundRobinPool(nrOfInstances = 6),
-          ClusterRouterPoolSettings(totalInstances = 6, maxInstancesPerNode = 2, allowLocalRoutees = true, useRole = role)).
-          props(Props[SomeActor]),
+        val router = system.actorOf(
+          ClusterRouterPool(
+            RoundRobinPool(nrOfInstances = 6),
+            ClusterRouterPoolSettings(totalInstances = 6, maxInstancesPerNode = 2, allowLocalRoutees = true, useRole = role)).
+            props(Props[SomeActor]),
           "router-5")
 
         awaitAssert(currentRoutees(router).size should ===(6))
@@ -304,7 +311,8 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
       runOn(first) {
         val role = Some("c")
 
-        val router = system.actorOf(ClusterRouterGroup(
+        val router = system.actorOf(
+          ClusterRouterGroup(
           RoundRobinGroup(paths = Nil),
           ClusterRouterGroupSettings(totalInstances = 6, routeesPaths = List("/user/foo", "/user/bar"),
             allowLocalRoutees = true, useRole = role)).props,

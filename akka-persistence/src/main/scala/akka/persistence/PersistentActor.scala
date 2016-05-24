@@ -52,8 +52,8 @@ final case class DeleteMessagesFailure(cause: Throwable, toSequenceNr: Long)
 @SerialVersionUID(1L)
 final case class Recovery(
   fromSnapshot: SnapshotSelectionCriteria = SnapshotSelectionCriteria.Latest,
-  toSequenceNr: Long = Long.MaxValue,
-  replayMax: Long = Long.MaxValue)
+  toSequenceNr: Long                      = Long.MaxValue,
+  replayMax:    Long                      = Long.MaxValue)
 
 object Recovery {
 

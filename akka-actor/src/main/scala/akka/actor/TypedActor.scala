@@ -523,11 +523,11 @@ object TypedProps {
 @SerialVersionUID(1L)
 final case class TypedProps[T <: AnyRef] protected[TypedProps] (
   interfaces: immutable.Seq[Class[_]],
-  creator: () ⇒ T,
-  dispatcher: String = TypedProps.defaultDispatcherId,
-  deploy: Deploy = Props.defaultDeploy,
-  timeout: Option[Timeout] = TypedProps.defaultTimeout,
-  loader: Option[ClassLoader] = TypedProps.defaultLoader) {
+  creator:    () ⇒ T,
+  dispatcher: String                  = TypedProps.defaultDispatcherId,
+  deploy:     Deploy                  = Props.defaultDeploy,
+  timeout:    Option[Timeout]         = TypedProps.defaultTimeout,
+  loader:     Option[ClassLoader]     = TypedProps.defaultLoader) {
 
   /**
    * Uses the supplied class as the factory for the TypedActor implementation,
@@ -536,7 +536,8 @@ final case class TypedProps[T <: AnyRef] protected[TypedProps] (
    * appended in the sequence of interfaces.
    */
   def this(implementation: Class[T]) =
-    this(interfaces = TypedProps.extractInterfaces(implementation),
+    this(
+      interfaces = TypedProps.extractInterfaces(implementation),
       creator = instantiator(implementation))
 
   /**
@@ -546,7 +547,8 @@ final case class TypedProps[T <: AnyRef] protected[TypedProps] (
    * appended in the sequence of interfaces.
    */
   def this(interface: Class[_ >: T], implementation: Creator[T]) =
-    this(interfaces = TypedProps.extractInterfaces(interface),
+    this(
+      interfaces = TypedProps.extractInterfaces(interface),
       creator = implementation.create _)
 
   /**
@@ -556,7 +558,8 @@ final case class TypedProps[T <: AnyRef] protected[TypedProps] (
    * appended in the sequence of interfaces.
    */
   def this(interface: Class[_ >: T], implementation: Class[T]) =
-    this(interfaces = TypedProps.extractInterfaces(interface),
+    this(
+      interfaces = TypedProps.extractInterfaces(interface),
       creator = instantiator(implementation))
 
   /**

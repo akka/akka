@@ -39,17 +39,17 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
       var connections = Vector.empty[(Outlet[_], Inlet[_])]
 
       def connect[T](upstream: UpstreamBoundaryStageLogic[T], in: Inlet[T]): AssemblyBuilder = {
-        upstreams :+= upstream -> in
+        upstreams :+= upstream → in
         this
       }
 
       def connect[T](out: Outlet[T], downstream: DownstreamBoundaryStageLogic[T]): AssemblyBuilder = {
-        downstreams :+= out -> downstream
+        downstreams :+= out → downstream
         this
       }
 
       def connect[T](out: Outlet[T], in: Inlet[T]): AssemblyBuilder = {
-        connections :+= out -> in
+        connections :+= out → in
         this
       }
 

@@ -15,7 +15,7 @@ class CookieDirectivesSpec extends RoutingSpec {
 
   "The 'cookie' directive" should {
     "extract the respectively named cookie" in {
-      Get() ~> addHeader(Cookie("fancy" -> "pants")) ~> {
+      Get() ~> addHeader(Cookie("fancy" → "pants")) ~> {
         cookie("fancy") { echoComplete }
       } ~> check { responseAs[String] shouldEqual "fancy=pants" }
     }
@@ -25,7 +25,7 @@ class CookieDirectivesSpec extends RoutingSpec {
       } ~> check { rejection shouldEqual MissingCookieRejection("fancy") }
     }
     "properly pass through inner rejections" in {
-      Get() ~> addHeader(Cookie("fancy" -> "pants")) ~> {
+      Get() ~> addHeader(Cookie("fancy" → "pants")) ~> {
         cookie("fancy") { c ⇒ reject(ValidationRejection("Dont like " + c.value)) }
       } ~> check { rejection shouldEqual ValidationRejection("Dont like pants") }
     }
@@ -56,7 +56,7 @@ class CookieDirectivesSpec extends RoutingSpec {
 
   "The 'optionalCookie' directive" should {
     "produce a `Some(cookie)` extraction if the cookie is present" in {
-      Get() ~> Cookie("abc" -> "123") ~> {
+      Get() ~> Cookie("abc" → "123") ~> {
         optionalCookie("abc") { echoComplete }
       } ~> check { responseAs[String] shouldEqual "Some(abc=123)" }
     }

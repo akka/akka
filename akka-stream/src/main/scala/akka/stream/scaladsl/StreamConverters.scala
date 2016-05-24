@@ -6,16 +6,16 @@ package akka.stream.scaladsl
 import java.io.{ OutputStream, InputStream }
 import java.util.Spliterators
 import java.util.concurrent.atomic.AtomicReference
-import java.util.stream.{Collector, StreamSupport}
+import java.util.stream.{ Collector, StreamSupport }
 
-import akka.stream.{Attributes, SinkShape, IOResult}
+import akka.stream.{ Attributes, SinkShape, IOResult }
 import akka.stream.impl._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.{ InputStreamSinkStage, OutputStreamSink, OutputStreamSourceStage, InputStreamSource }
 import akka.util.ByteString
 
 import scala.concurrent.duration.Duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import akka.NotUsed
 
@@ -97,101 +97,100 @@ object StreamConverters {
     Sink.fromGraph(new InputStreamSinkStage(readTimeout))
 
   /**
-    * Creates a sink which materializes into a ``Future`` which will be completed with result of the Java 8 ``Collector`` transformation
-    * and reduction operations. This allows usage of Java 8 streams transformations for reactive streams. The ``Collector`` will trigger
-    * demand downstream. Elements emitted through the stream will be accumulated into a mutable result container, optionally transformed
-    * into a final representation after all input elements have been processed. The ``Collector`` can also do reduction
-    * at the end. Reduction processing is performed sequentially
-    *
-    * Note that a flow can be materialized multiple times, so the function producing the ``Collector`` must be able
-    * to handle multiple invocations.
-    */
+   * Creates a sink which materializes into a ``Future`` which will be completed with result of the Java 8 ``Collector`` transformation
+   * and reduction operations. This allows usage of Java 8 streams transformations for reactive streams. The ``Collector`` will trigger
+   * demand downstream. Elements emitted through the stream will be accumulated into a mutable result container, optionally transformed
+   * into a final representation after all input elements have been processed. The ``Collector`` can also do reduction
+   * at the end. Reduction processing is performed sequentially
+   *
+   * Note that a flow can be materialized multiple times, so the function producing the ``Collector`` must be able
+   * to handle multiple invocations.
+   */
   def javaCollector[T, R](collectorFactory: () ⇒ java.util.stream.Collector[T, _ <: Any, R]): Sink[T, Future[R]] =
     Flow[T].fold(() ⇒
-      new CollectorState[T,R](collectorFactory().asInstanceOf[Collector[T, Any, R]])) { (state, elem) ⇒ () ⇒ state().update(elem) }
+      new CollectorState[T, R](collectorFactory().asInstanceOf[Collector[T, Any, R]])) { (state, elem) ⇒ () ⇒ state().update(elem) }
       .map(state ⇒ state().finish())
       .toMat(Sink.head)(Keep.right).withAttributes(DefaultAttributes.javaCollector)
 
   /**
-    * Creates a sink which materializes into a ``Future`` which will be completed with result of the Java 8 ``Collector`` transformation
-    * and reduction operations. This allows usage of Java 8 streams transformations for reactive streams. The ``Collector`` will trigger demand
-    * downstream. Elements emitted through the stream will be accumulated into a mutable result container, optionally transformed
-    * into a final representation after all input elements have been processed. The ``Collector`` can also do reduction
-    * at the end. Reduction processing is performed in parallel based on graph ``Balance``.
-    *
-    * Note that a flow can be materialized multiple times, so the function producing the ``Collector`` must be able
-    * to handle multiple invocations.
-    */
+   * Creates a sink which materializes into a ``Future`` which will be completed with result of the Java 8 ``Collector`` transformation
+   * and reduction operations. This allows usage of Java 8 streams transformations for reactive streams. The ``Collector`` will trigger demand
+   * downstream. Elements emitted through the stream will be accumulated into a mutable result container, optionally transformed
+   * into a final representation after all input elements have been processed. The ``Collector`` can also do reduction
+   * at the end. Reduction processing is performed in parallel based on graph ``Balance``.
+   *
+   * Note that a flow can be materialized multiple times, so the function producing the ``Collector`` must be able
+   * to handle multiple invocations.
+   */
   def javaCollectorParallelUnordered[T, R](parallelism: Int)(collectorFactory: () ⇒ java.util.stream.Collector[T, _ <: Any, R]): Sink[T, Future[R]] = {
     if (parallelism == 1) javaCollector[T, R](collectorFactory)
     else {
-      Sink.fromGraph(GraphDSL.create(Sink.head[R]) { implicit b ⇒
-        sink ⇒
-          import GraphDSL.Implicits._
-          val collector = collectorFactory().asInstanceOf[Collector[T, Any, R]]
-          val balance = b.add(Balance[T](parallelism))
-          val merge = b.add(Merge[() ⇒ CollectorState[T, R]](parallelism))
+      Sink.fromGraph(GraphDSL.create(Sink.head[R]) { implicit b ⇒ sink ⇒
+        import GraphDSL.Implicits._
+        val collector = collectorFactory().asInstanceOf[Collector[T, Any, R]]
+        val balance = b.add(Balance[T](parallelism))
+        val merge = b.add(Merge[() ⇒ CollectorState[T, R]](parallelism))
 
-          for (i ← 0 until parallelism) {
-            val worker = Flow[T]
-              .fold(() => new CollectorState(collector)) { (state, elem) ⇒ () ⇒ state().update(elem) }
-              .async
+        for (i ← 0 until parallelism) {
+          val worker = Flow[T]
+            .fold(() ⇒ new CollectorState(collector)) { (state, elem) ⇒ () ⇒ state().update(elem) }
+            .async
 
-            balance.out(i) ~> worker ~> merge.in(i)
-          }
+          balance.out(i) ~> worker ~> merge.in(i)
+        }
 
-          merge.out
-            .fold(() => new ReducerState(collector)) { (state, elem) ⇒ () ⇒ state().update(elem().accumulated) }
-            .map(state => state().finish()) ~> sink.in
+        merge.out
+          .fold(() ⇒ new ReducerState(collector)) { (state, elem) ⇒ () ⇒ state().update(elem().accumulated) }
+          .map(state ⇒ state().finish()) ~> sink.in
 
-          SinkShape(balance.in)
+        SinkShape(balance.in)
       }).withAttributes(DefaultAttributes.javaCollectorParallelUnordered)
     }
   }
 
   /**
-    * Creates a sink which materializes into Java 8 ``Stream`` that can be run to trigger demand through the sink.
-    * Elements emitted through the stream will be available for reading through the Java 8 ``Stream``.
-    *
-    * The Java 8 ``Stream`` will be ended when the stream flowing into this ``Sink`` completes, and closing the Java
-    * ``Stream`` will cancel the inflow of this ``Sink``.
-    *
-    * Java 8 ``Stream`` throws exception in case reactive stream failed.
-    *
-    * Be aware that Java ``Stream`` blocks current thread while waiting on next element from downstream.
-    * As it is interacting wit blocking API the implementation runs on a separate dispatcher
-    * configured through the ``akka.stream.blocking-io-dispatcher``.
-    */
+   * Creates a sink which materializes into Java 8 ``Stream`` that can be run to trigger demand through the sink.
+   * Elements emitted through the stream will be available for reading through the Java 8 ``Stream``.
+   *
+   * The Java 8 ``Stream`` will be ended when the stream flowing into this ``Sink`` completes, and closing the Java
+   * ``Stream`` will cancel the inflow of this ``Sink``.
+   *
+   * Java 8 ``Stream`` throws exception in case reactive stream failed.
+   *
+   * Be aware that Java ``Stream`` blocks current thread while waiting on next element from downstream.
+   * As it is interacting wit blocking API the implementation runs on a separate dispatcher
+   * configured through the ``akka.stream.blocking-io-dispatcher``.
+   */
   def asJavaStream[T](): Sink[T, java.util.stream.Stream[T]] = {
     Sink.fromGraph(new QueueSink[T]())
       .mapMaterializedValue(queue ⇒ StreamSupport.stream(
-      Spliterators.spliteratorUnknownSize(new java.util.Iterator[T] {
-        var nextElementFuture: Future[Option[T]] = queue.pull()
-        var nextElement: Option[T] = null
+        Spliterators.spliteratorUnknownSize(new java.util.Iterator[T] {
+          var nextElementFuture: Future[Option[T]] = queue.pull()
+          var nextElement: Option[T] = null
 
-        override def hasNext: Boolean = {
-          nextElement = Await.result(nextElementFuture, Inf)
-          nextElement.isDefined
-        }
+          override def hasNext: Boolean = {
+            nextElement = Await.result(nextElementFuture, Inf)
+            nextElement.isDefined
+          }
 
-        override def next(): T = {
-          val next = nextElement.get
-          nextElementFuture = queue.pull()
-          next
-        }
-      }, 0), false).onClose(new Runnable { def run = queue.cancel() }))
-       .withAttributes(DefaultAttributes.asJavaStream)
+          override def next(): T = {
+            val next = nextElement.get
+            nextElementFuture = queue.pull()
+            next
+          }
+        }, 0), false).onClose(new Runnable { def run = queue.cancel() }))
+      .withAttributes(DefaultAttributes.asJavaStream)
   }
 
   /**
-    * Creates a source that wraps a Java 8 ``Stream``. ``Source`` uses a stream iterator to get all its
-    * elements and send them downstream on demand.
-    *
-    * Example usage: `Source.fromJavaStream(() ⇒ IntStream.rangeClosed(1, 10))`
-    *
-    * You can use [[Source.async]] to create asynchronous boundaries between synchronous Java ``Stream``
-    * and the rest of flow.
-    */
+   * Creates a source that wraps a Java 8 ``Stream``. ``Source`` uses a stream iterator to get all its
+   * elements and send them downstream on demand.
+   *
+   * Example usage: `Source.fromJavaStream(() ⇒ IntStream.rangeClosed(1, 10))`
+   *
+   * You can use [[Source.async]] to create asynchronous boundaries between synchronous Java ``Stream``
+   * and the rest of flow.
+   */
   def fromJavaStream[T, S <: java.util.stream.BaseStream[T, S]](stream: () ⇒ java.util.stream.BaseStream[T, S]): Source[T, NotUsed] = {
     import scala.collection.JavaConverters._
     Source.fromIterator(() ⇒ stream().iterator().asScala).withAttributes(DefaultAttributes.fromJavaStream)

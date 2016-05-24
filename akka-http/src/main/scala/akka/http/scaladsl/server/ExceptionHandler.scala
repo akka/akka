@@ -40,7 +40,8 @@ object ExceptionHandler {
   def default(settings: RoutingSettings): ExceptionHandler =
     apply(knownToBeSealed = true) {
       case IllegalRequestException(info, status) ⇒ ctx ⇒ {
-        ctx.log.warning("Illegal request {}\n\t{}\n\tCompleting with '{}' response",
+        ctx.log.warning(
+          "Illegal request {}\n\t{}\n\tCompleting with '{}' response",
           ctx.request, info.formatPretty, status)
         ctx.complete((status, info.format(settings.verboseErrorMessages)))
       }

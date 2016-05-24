@@ -9,7 +9,7 @@ resolvers += "Bintray Jcenter" at "https://jcenter.bintray.com/"
 addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.3.8")
 //#sbt-multi-jvm
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.2.0")
+addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.6.0")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "0.7.1")
 

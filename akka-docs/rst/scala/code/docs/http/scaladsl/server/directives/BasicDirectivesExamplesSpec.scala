@@ -388,13 +388,12 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
   "mapInnerRoute" in {
     //#mapInnerRoute
     val completeWithInnerException =
-      mapInnerRoute { route =>
-        ctx =>
-          try {
-            route(ctx)
-          } catch {
-            case NonFatal(e) => ctx.complete(s"Got ${e.getClass.getSimpleName} '${e.getMessage}'")
-          }
+      mapInnerRoute { route => ctx =>
+        try {
+          route(ctx)
+        } catch {
+          case NonFatal(e) => ctx.complete(s"Got ${e.getClass.getSimpleName} '${e.getMessage}'")
+        }
       }
 
     val route =

@@ -194,8 +194,7 @@ object BidiFlow {
   def fromFlowsMat[I1, O1, I2, O2, M1, M2, M](
     flow1: Graph[FlowShape[I1, O1], M1],
     flow2: Graph[FlowShape[I2, O2], M2])(combine: (M1, M2) ⇒ M): BidiFlow[I1, O1, I2, O2, M] =
-    fromGraph(GraphDSL.create(flow1, flow2)(combine) {
-      implicit b ⇒ (f1, f2) ⇒ BidiShape(f1.in, f1.out, f2.in, f2.out)
+    fromGraph(GraphDSL.create(flow1, flow2)(combine) { implicit b ⇒ (f1, f2) ⇒ BidiShape(f1.in, f1.out, f2.in, f2.out)
     })
 
   /**
@@ -216,8 +215,9 @@ object BidiFlow {
    * }}}
    *
    */
-  def fromFlows[I1, O1, I2, O2, M1, M2](flow1: Graph[FlowShape[I1, O1], M1],
-                                        flow2: Graph[FlowShape[I2, O2], M2]): BidiFlow[I1, O1, I2, O2, NotUsed] =
+  def fromFlows[I1, O1, I2, O2, M1, M2](
+    flow1: Graph[FlowShape[I1, O1], M1],
+    flow2: Graph[FlowShape[I2, O2], M2]): BidiFlow[I1, O1, I2, O2, NotUsed] =
     fromFlowsMat(flow1, flow2)(Keep.none)
 
   /**
