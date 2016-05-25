@@ -183,8 +183,8 @@ object Sink {
    * reject any additional `Subscriber`s.
    */
   def asPublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
-    if (fanout) Sink.fromGraph(new CancellablePublisherSink[T](false)).named("FanoutPublisherSink")
-    else new Sink(new PublisherSink[T](DefaultAttributes.publisherSink, shape("PublisherSink")))
+    if (fanout) Sink.fromGraph(new FanoutPublisherSink[T](false)).named("FanoutPublisherSink")
+    else new Sink(new PublisherSink[T](false, DefaultAttributes.publisherSink, shape("PublisherSink")))
 
   /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]] with additional cancel method.
@@ -199,8 +199,9 @@ object Sink {
    *
    * @see [[#asPublisher]]
    */
-  def asCancellablePublisher[T](): Sink[T, CancellablePublisher[T]] =
-    Sink.fromGraph(new CancellablePublisherSink[T](true))
+  def asPublisher[T](fanout: Boolean, finalizeOnLastSubscriptionCompletion: Boolean): Sink[T, KillSwitchPublisher[T]] =
+    if (fanout) Sink.fromGraph(new FanoutPublisherSink[T](finalizeOnLastSubscriptionCompletion)).named("FanoutPublisherSink")
+    else new Sink(new PublisherSink[T](finalizeOnLastSubscriptionCompletion, DefaultAttributes.publisherSink, shape("PublisherSink")))
 
   /**
    * A `Sink` that will consume the stream and discard the elements.

@@ -7,7 +7,7 @@ import akka.dispatch.ExecutionContexts
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.Supervision.stoppingDecider
 import akka.stream.impl.QueueSink.{ Output, Pull }
-import akka.stream.impl.CancellablePublisherSink.PublisherSinkMessages
+import akka.stream.impl.FanoutPublisherSink.PublisherSinkMessages
 import akka.{ Done, NotUsed }
 
 import akka.stream.impl.Stages.DefaultAttributes
@@ -74,7 +74,7 @@ abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) extends AtomicModu
  * elements to fill the internal buffers it will assert back-pressure until
  * a subscriber connects and creates demand for elements to be emitted.
  */
-private[akka] class PublisherSink[In](val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, Publisher[In]](shape) {
+private[akka] class PublisherSink[In](finalizeOnLastSubscriptionCompletion: Boolean, val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, Publisher[In]](shape) {
 
   /*
    * This method is the reason why SinkModule.create may return something that is
@@ -82,12 +82,14 @@ private[akka] class PublisherSink[In](val attributes: Attributes, shape: SinkSha
    * subscription a VirtualProcessor would perform (and it also saves overhead).
    */
   override def create(context: MaterializationContext): (AnyRef, Publisher[In]) = {
-    val proc = new VirtualPublisher[In]
+    val proc = new VirtualPublisher[In](finalizeOnLastSubscriptionCompletion)
     (proc, proc)
   }
 
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] = new PublisherSink[In](attributes, shape)
-  override def withAttributes(attr: Attributes): AtomicModule = new PublisherSink[In](attr, amendShape(attr))
+  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
+    new PublisherSink[In](finalizeOnLastSubscriptionCompletion, attributes, shape)
+  override def withAttributes(attr: Attributes): AtomicModule =
+    new PublisherSink[In](finalizeOnLastSubscriptionCompletion, attr, amendShape(attr))
 }
 
 /**
@@ -517,25 +519,26 @@ final private[stream] class LazySink[T, M](sinkFactory: T ⇒ Future[Sink[T, M]]
   }
 }
 
-private[stream] object CancellablePublisherSink {
+private[stream] object FanoutPublisherSink {
   sealed trait PublisherSinkMessages[+T]
   private case class RequestMore[T](subscriber: SubscriptionWithCursor[T], demand: Long) extends PublisherSinkMessages[T]
   private case class Cancel[T](subscriber: SubscriptionWithCursor[T]) extends PublisherSinkMessages[T]
   private case class Subscribe[T](subscriber: Subscriber[_ >: T]) extends PublisherSinkMessages[T]
-  private case object CancelPublisher extends PublisherSinkMessages[Nothing]
+  private case object Shutdown extends PublisherSinkMessages[Nothing]
+  private case class Abort(ex: Throwable) extends PublisherSinkMessages[Nothing]
 
 }
 
 /**
  * INTERNAL API
  */
-final private[stream] class CancellablePublisherSink[T](drainWhenNoSubscribers: Boolean) extends GraphStageWithMaterializedValue[SinkShape[T], CancellablePublisher[T]] {
+final private[stream] class FanoutPublisherSink[T](drainWhenNoSubscribers: Boolean) extends GraphStageWithMaterializedValue[SinkShape[T], KillSwitchPublisher[T]] {
 
-  val in = Inlet[T]("CancellablePublisherSink.in")
-  override def initialAttributes = DefaultAttributes.cancellablePublisherSink
+  val in = Inlet[T]("FanoutPublisherSink.in")
+  override def initialAttributes = DefaultAttributes.fanoutPublisherSink
   override val shape: SinkShape[T] = SinkShape.of(in)
 
-  override def toString: String = "CancellablePublisherSink"
+  override def toString: String = "FanoutPublisherSink"
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val InputBuffer(initBuffer, maxBuffer) = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16))
@@ -561,7 +564,7 @@ final private[stream] class CancellablePublisherSink[T](drainWhenNoSubscribers: 
 
       override def postStop(): Unit = {
         stopCallback {
-          case CancellablePublisherSink.Subscribe(subscriber) ⇒
+          case FanoutPublisherSink.Subscribe(subscriber) ⇒
             subscriber.onSubscribe(CancelledSubscription)
             subscriber.onError(if (failedWithError == null) ActorPublisher.NormalShutdownReason else failedWithError)
           case _ ⇒ //keep silence
@@ -570,16 +573,17 @@ final private[stream] class CancellablePublisherSink[T](drainWhenNoSubscribers: 
 
       private val callback: AsyncCallback[PublisherSinkMessages[T]] =
         getAsyncCallback {
-          case CancellablePublisherSink.Subscribe(subscriber)             ⇒ registerSubscriber(subscriber.asInstanceOf[Subscriber[_ >: T]])
-          case CancellablePublisherSink.RequestMore(subscriber, elements) ⇒ moreRequested(subscriber, elements)
-          case CancellablePublisherSink.Cancel(subscription)              ⇒ unregisterSubscription(subscription)
-          case CancellablePublisherSink.CancelPublisher ⇒
+          case FanoutPublisherSink.Subscribe(subscriber)             ⇒ registerSubscriber(subscriber.asInstanceOf[Subscriber[_ >: T]])
+          case FanoutPublisherSink.RequestMore(subscriber, elements) ⇒ moreRequested(subscriber, elements)
+          case FanoutPublisherSink.Cancel(subscription)              ⇒ unregisterSubscription(subscription)
+          case FanoutPublisherSink.Shutdown ⇒
             completeDownstream()
             completeStage()
-            if (!cursors.isEmpty) {
+            if (cursors.nonEmpty) {
               upstreamCompleted = true
               setKeepGoing(true)
             }
+          case FanoutPublisherSink.Abort(ex) ⇒ failStage(ex)
         }
 
       override def onPush(): Unit = {
@@ -637,20 +641,19 @@ final private[stream] class CancellablePublisherSink[T](drainWhenNoSubscribers: 
       }
 
       override protected def createSubscription(_subscriber: Subscriber[_ >: T]): S = new SubscriptionWithCursor[T]() {
-        override def cancel(): Unit = invoke(CancellablePublisherSink.Cancel[T](this))
-        override def request(l: Long): Unit = invoke(CancellablePublisherSink.RequestMore[T](this, l))
+        override def cancel(): Unit = invoke(FanoutPublisherSink.Cancel[T](this))
+        override def request(l: Long): Unit = invoke(FanoutPublisherSink.RequestMore[T](this, l))
         override def subscriber: Subscriber[_ >: T] = _subscriber
       }
     }
 
-    (stageLogic, new CancellablePublisher[T] {
+    (stageLogic, new KillSwitchPublisher[T] {
       override def subscribe(subs: Subscriber[_ >: T]): Unit = {
         ReactiveStreamsCompliance.requireNonNullSubscriber(subs)
-        stageLogic.invoke(CancellablePublisherSink.Subscribe(subs))
+        stageLogic.invoke(FanoutPublisherSink.Subscribe(subs))
       }
-      override def cancel(): Unit = {
-        stageLogic.invoke(CancellablePublisherSink.CancelPublisher)
-      }
+      override def shutdown(): Unit = stageLogic.invoke(FanoutPublisherSink.Shutdown)
+      override def abort(ex: Throwable): Unit = stageLogic.invoke(FanoutPublisherSink.Abort(ex))
     })
   }
 }

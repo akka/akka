@@ -5,6 +5,4 @@ package akka.stream
 
 import org.reactivestreams.Publisher
 
-trait CancellablePublisher[T] extends Publisher[T] {
-  def cancel()
-}
+trait KillSwitchPublisher[T] extends Publisher[T] with KillSwitch

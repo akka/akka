@@ -17,7 +17,7 @@ class CancellablePublisherSinkSpec extends AkkaSpec {
   "A CancellablePublisherSink" must {
 
     "work in happy case" in assertAllStagesStopped {
-      val pub = Source.single(1).runWith(Sink.asCancellablePublisher[Int]())
+      val pub = Source.single(1).runWith(Sink.asPublisher[Int]())
       val sub = TestSubscriber.probe[Int]
       pub.subscribe(sub)
       sub.request(1)
@@ -29,7 +29,7 @@ class CancellablePublisherSinkSpec extends AkkaSpec {
       val sub1 = TestSubscriber.probe[Int]
       val sub2 = TestSubscriber.probe[Int]
       val src = TestPublisher.probe[Int]()
-      val pub = Source.fromPublisher(src).runWith(Sink.asCancellablePublisher[Int]())
+      val pub = Source.fromPublisher(src).runWith(Sink.asPublisher[Int]())
 
       pub.subscribe(sub1)
       sub1.request(1)
@@ -52,7 +52,7 @@ class CancellablePublisherSinkSpec extends AkkaSpec {
     }
 
     "be cancellable from publisher" in assertAllStagesStopped {
-      val pub = Source(1 to 3).runWith(Sink.asCancellablePublisher[Int]())
+      val pub = Source(1 to 3).runWith(Sink.asPublisher[Int]())
       val sub = TestSubscriber.probe[Int]
       pub.subscribe(sub)
       sub.request(1)
@@ -63,7 +63,7 @@ class CancellablePublisherSinkSpec extends AkkaSpec {
     }
 
     "drain buffer first before cancel all publishers" in assertAllStagesStopped {
-      val pub = Source(1 to 3).runWith(Sink.asCancellablePublisher[Int]())
+      val pub = Source(1 to 3).runWith(Sink.asPublisher[Int]())
       val sub1 = TestSubscriber.probe[Int]
       val sub2 = TestSubscriber.probe[Int]
 

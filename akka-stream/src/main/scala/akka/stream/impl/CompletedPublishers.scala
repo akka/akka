@@ -3,7 +3,7 @@
  */
 package akka.stream.impl
 
-import org.reactivestreams.{ Subscriber, Publisher, Subscription }
+import org.reactivestreams.{ Subscription, Subscriber, Publisher }
 import scala.concurrent.{ ExecutionContext, Promise }
 
 /**
@@ -102,6 +102,23 @@ private[akka] final class CancellingSubscriber[T] extends Subscriber[T] {
   override def onSubscribe(s: Subscription): Unit = s.cancel()
   override def onComplete(): Unit = ()
   override def onNext(t: T): Unit = ()
+}
+
+private[akka] case object DrainSubscription extends Subscription {
+  override def request(elements: Long): Unit = ()
+  override def cancel(): Unit = ()
+}
+
+private[akka] final class DrainSubscriber[T] extends Subscriber[T] {
+  var subscription = null.asInstanceOf[Subscription]
+  override def onError(t: Throwable): Unit = ()
+  override def onSubscribe(s: Subscription): Unit = {
+    subscription = s
+    subscription.request(1)
+  }
+  override def onComplete(): Unit = ()
+  override def onNext(t: T): Unit = subscription.request(1)
+
 }
 
 /**
