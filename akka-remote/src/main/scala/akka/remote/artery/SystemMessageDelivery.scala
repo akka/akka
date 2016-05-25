@@ -4,13 +4,11 @@
 package akka.remote.artery
 
 import java.util.ArrayDeque
-
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-
 import akka.Done
 import akka.remote.EndpointManager.Send
 import akka.remote.UniqueAddress
@@ -24,6 +22,7 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.stream.stage.TimerGraphStageLogic
+import akka.remote.artery.OutboundHandshake.HandshakeReq
 
 /**
  * INTERNAL API
@@ -159,6 +158,10 @@ private[akka] class SystemMessageDelivery(
       // InHandler
       override def onPush(): Unit = {
         grab(in) match {
+          case s @ Send(_: HandshakeReq, _, _, _) ⇒
+            // pass on HandshakeReq
+            if (isAvailable(out))
+              push(out, s)
           case s @ Send(ClearSystemMessageDelivery, _, _, _) ⇒
             clear()
             pull(in)

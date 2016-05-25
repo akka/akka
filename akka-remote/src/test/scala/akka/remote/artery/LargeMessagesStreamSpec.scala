@@ -57,19 +57,19 @@ class LargeMessagesStreamSpec extends WordSpec with ShouldMatchers with ScalaFut
         val senderProbeB = TestProbe()(systemB)
 
         // start actor and make sure it is up and running
-        val large = systemB.actorOf(Props(new EchoSize), "regular")
-        large.tell(Ping(), senderProbeB.ref)
+        val regular = systemB.actorOf(Props(new EchoSize), "regular")
+        regular.tell(Ping(), senderProbeB.ref)
         senderProbeB.expectMsg(Pong(0))
 
         // communicate with it from the other system
         val addressB = systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
         val rootB = RootActorPath(addressB)
-        val largeRemote = awaitResolve(systemA.actorSelection(rootB / "user" / "regular"))
-        largeRemote.tell(Ping(), senderProbeA.ref)
+        val regularRemote = awaitResolve(systemA.actorSelection(rootB / "user" / "regular"))
+        regularRemote.tell(Ping(), senderProbeA.ref)
         senderProbeA.expectMsg(Pong(0))
 
         // flag should be cached now
-        largeRemote.asInstanceOf[RemoteActorRef].cachedLargeMessageDestinationFlag should ===(RegularDestination)
+        regularRemote.asInstanceOf[RemoteActorRef].cachedLargeMessageDestinationFlag should ===(RegularDestination)
 
       } finally {
         TestKit.shutdownActorSystem(systemA)
