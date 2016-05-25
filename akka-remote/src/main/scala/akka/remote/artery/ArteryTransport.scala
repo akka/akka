@@ -5,8 +5,6 @@ package akka.remote.artery
 
 import java.io.File
 import java.nio.ByteOrder
-import java.util.concurrent.ConcurrentHashMap
-import java.util.function.{ Function ⇒ JFunction }
 
 import scala.concurrent.Future
 import scala.concurrent.Promise
@@ -79,7 +77,7 @@ private[akka] final case class InboundEnvelope(
   recipientAddress: Address,
   message: AnyRef,
   senderOption: Option[ActorRef],
-  originAddress: UniqueAddress)
+  originUid: Long)
 
 /**
  * INTERNAL API
@@ -102,6 +100,16 @@ private[akka] trait InboundContext {
    * Lookup the outbound association for a given address.
    */
   def association(remoteAddress: Address): OutboundContext
+
+  /**
+   * Lookup the outbound association for a given UID.
+   * Will return `null` if the UID is unknown, i.e.
+   * handshake not completed. `null` is used instead of `Optional`
+   * to avoid allocations.
+   */
+  def association(uid: Long): OutboundContext
+
+  def completeHandshake(peer: UniqueAddress): Unit
 
 }
 
@@ -150,7 +158,7 @@ private[akka] final class AssociationState(
   }
 
   def isQuarantined(uid: Long): Boolean = {
-    // FIXME does this mean boxing (allocation) because of Set[Long]? Use specialized Set. LongMap?
+    // FIXME does this mean boxing (allocation) because of Set[Long]? Use specialized Set. org.agrona.collections.LongHashSet?
     quarantined(uid)
   }
 
@@ -182,8 +190,6 @@ private[akka] trait OutboundContext {
   def remoteAddress: Address
 
   def associationState: AssociationState
-
-  def completeHandshake(peer: UniqueAddress): Unit
 
   def quarantine(reason: String): Unit
 
@@ -236,6 +242,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val handshakeTimeout: FiniteDuration =
     system.settings.config.getMillisDuration("akka.remote.handshake-timeout").requiring(_ > Duration.Zero,
       "handshake-timeout must be > 0")
+  private val injectHandshakeInterval: FiniteDuration = 1.second
   private val giveUpSendAfter: FiniteDuration = 60.seconds
 
   private val largeMessageDestinations =
@@ -252,9 +259,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val largeStreamId = 4
   private val taskRunner = new TaskRunner(system)
 
-  // FIXME: This does locking on putIfAbsent, we need something smarter
-  private[this] val associations = new ConcurrentHashMap[Address, Association]()
-
   private val restartTimeout: FiniteDuration = 5.seconds // FIXME config
   private val maxRestarts = 5 // FIXME config
   private val restartCounter = new RestartCounter(maxRestarts, restartTimeout)
@@ -265,6 +269,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   // FIXME: Compression table must be owned by each channel instead
   // of having a global one
   val compression = new Compression(system)
+
+  private val associationRegistry = new AssociationRegistry(
+    remoteAddress ⇒ new Association(this, materializer, remoteAddress, controlSubject, largeMessageDestinations))
 
   override def start(): Unit = {
     startMediaDriver()
@@ -280,7 +287,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     // TODO: Have a supervisor actor
     _localAddress = UniqueAddress(
       Address("artery", system.name, remoteSettings.ArteryHostname, port),
-      AddressUidExtension(system).addressUid)
+      AddressUidExtension(system).longAddressUid)
     materializer = ActorMaterializer()(system)
 
     messageDispatcher = new MessageDispatcher(system, provider)
@@ -457,29 +464,28 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     a.send(message, senderOption, recipient)
   }
 
-  override def association(remoteAddress: Address): Association = {
-    val current = associations.get(remoteAddress)
-    if (current ne null) current
-    else {
-      associations.computeIfAbsent(remoteAddress, new JFunction[Address, Association] {
-        override def apply(remoteAddress: Address): Association = {
-          val newAssociation = new Association(ArteryTransport.this, materializer, remoteAddress, controlSubject, largeMessageDestinations)
-          newAssociation.associate() // This is a bit costly for this blocking method :(
-          newAssociation
-        }
-      })
-    }
+  override def association(remoteAddress: Address): Association =
+    associationRegistry.association(remoteAddress)
+
+  override def association(uid: Long): Association =
+    associationRegistry.association(uid)
+
+  override def completeHandshake(peer: UniqueAddress): Unit = {
+    val a = associationRegistry.setUID(peer)
+    a.completeHandshake(peer)
   }
 
   private def publishLifecycleEvent(event: RemotingLifecycleEvent): Unit =
     eventPublisher.notifyListeners(event)
 
-  override def quarantine(remoteAddress: Address, uid: Option[Int]): Unit =
-    association(remoteAddress).quarantine(reason = "", uid) // FIXME change the method signature (old remoting) to include reason?
+  override def quarantine(remoteAddress: Address, uid: Option[Int]): Unit = {
+    // FIXME change the method signature (old remoting) to include reason and use Long uid?
+    association(remoteAddress).quarantine(reason = "", uid.map(_.toLong))
+  }
 
   def outbound(outboundContext: OutboundContext): Sink[Send, Future[Done]] = {
     Flow.fromGraph(killSwitch.flow[Send])
-      .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval))
+      .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval, injectHandshakeInterval))
       .via(encoder)
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), ordinaryStreamId, aeron, taskRunner,
         envelopePool, giveUpSendAfter))(Keep.right)
@@ -487,7 +493,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   def outboundLarge(outboundContext: OutboundContext): Sink[Send, Future[Done]] = {
     Flow.fromGraph(killSwitch.flow[Send])
-      .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval))
+      .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval, injectHandshakeInterval))
       .via(createEncoder(largeEnvelopePool))
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), largeStreamId, aeron, taskRunner,
         envelopePool, giveUpSendAfter))(Keep.right)
@@ -495,7 +501,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   def outboundControl(outboundContext: OutboundContext): Sink[Send, (OutboundControlIngress, Future[Done])] = {
     Flow.fromGraph(killSwitch.flow[Send])
-      .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval))
+      .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval, injectHandshakeInterval))
       .via(new SystemMessageDelivery(outboundContext, systemMessageResendInterval, remoteSettings.SysMsgBufferSize))
       .viaMat(new OutboundControlJunction(outboundContext))(Keep.right)
       .via(encoder)
@@ -504,9 +510,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
     // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
   }
-
-  // FIXME hack until real envelopes, encoding originAddress in sender :)
-  private val dummySender = system.systemActorOf(Props.empty, "dummy")
 
   def createEncoder(pool: EnvelopeBufferPool): Flow[Send, EnvelopeBuffer, NotUsed] =
     Flow.fromGraph(new Encoder(localAddress, system, compression, pool))

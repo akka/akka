@@ -91,7 +91,6 @@ abstract class HandshakeRestartReceiverSpec
         val (secondUid2, subject2) = identifyWithUid(secondRootPath, "subject2")
         secondUid2 should !==(secondUid)
         val secondUniqueRemoteAddress2 = Await.result(secondAssociation.associationState.uniqueRemoteAddress, 3.seconds)
-        println(s"# ${secondAssociation.associationState} secondUid $secondUid $secondUid2") // FIXME
         secondUniqueRemoteAddress2.uid should ===(secondUid2)
         secondUniqueRemoteAddress2.address should ===(secondAddress)
         secondUniqueRemoteAddress2 should !==(secondUniqueRemoteAddress)

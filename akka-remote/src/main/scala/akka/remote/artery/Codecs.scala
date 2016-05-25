@@ -167,7 +167,7 @@ class Decoder(
             localAddress, // FIXME: Is this needed anymore? What should we do here?
             deserializedMessage,
             senderOption, // FIXME: No need for an option, decode simply to deadLetters instead
-            UniqueAddress(senderOption.get.path.address, headerBuilder.uid)) // FIXME see issue #20568
+            headerBuilder.uid)
 
           push(out, decoded)
         } catch {
