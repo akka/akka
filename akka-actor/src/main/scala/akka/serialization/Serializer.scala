@@ -5,6 +5,7 @@ package akka.serialization
  */
 
 import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ByteArrayInputStream }
+import java.nio.ByteBuffer
 import java.util.concurrent.Callable
 import akka.util.ClassLoaderObjectInputStream
 import akka.actor.ExtendedActorSystem
@@ -129,6 +130,56 @@ abstract class SerializerWithStringManifest extends Serializer {
     }
     fromBinary(bytes, manifestString)
   }
+
+}
+
+/**
+ * Serializer between an object and a `ByteBuffer` representing that object.
+ *
+ * Implementations should typically extend [[SerializerWithStringManifest]] and
+ * in addition to the `ByteBuffer` based `toBinary` and `fromBinary` methods also
+ * implement the array based `toBinary` and `fromBinary` methods. The array based
+ * methods will be used when `ByteBuffer` is not used, e.g. in Akka Persistence.
+ *
+ * Note that the array based methods can for example be implemented by delegation
+ * like this:
+ * {{{
+ *   // you need to know the maximum size in bytes of the serialized messages
+ *   val pool = new akka.io.DirectByteBufferPool(defaultBufferSize = 1024 * 1024, maxPoolEntries = 10)
+ *
+ *
+ *  // Implement this method for compatibility with `SerializerWithStringManifest`.
+ *  override def toBinary(o: AnyRef): Array[Byte] = {
+ *    val buf = pool.acquire()
+ *    try {
+ *      toBinary(o, buf)
+ *      buf.flip()
+ *      val bytes = Array.ofDim[Byte](buf.remaining)
+ *      buf.get(bytes)
+ *      bytes
+ *    } finally {
+ *      pool.release(buf)
+ *    }
+ *  }
+ *
+ *  // Implement this method for compatibility with `SerializerWithStringManifest`.
+ *  override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
+ *    fromBinary(ByteBuffer.wrap(bytes), manifest)
+ *
+ * }}}
+ */
+trait ByteBufferSerializer {
+
+  /**
+   * Serializes the given object into the `ByteBuffer`.
+   */
+  def toBinary(o: AnyRef, buf: ByteBuffer): Unit
+
+  /**
+   * Produces an object from a `ByteBuffer`, with an optional type-hint;
+   * the class should be loaded using ActorSystem.dynamicAccess.
+   */
+  def fromBinary(buf: ByteBuffer, manifest: String): AnyRef
 
 }
 
@@ -260,7 +311,7 @@ class NullSerializer extends Serializer {
  * This is a special Serializer that Serializes and deserializes byte arrays only,
  * (just returns the byte array unchanged/uncopied)
  */
-class ByteArraySerializer(val system: ExtendedActorSystem) extends BaseSerializer {
+class ByteArraySerializer(val system: ExtendedActorSystem) extends BaseSerializer with ByteBufferSerializer {
 
   @deprecated("Use constructor with ExtendedActorSystem", "2.4")
   def this() = this(null)
@@ -274,7 +325,22 @@ class ByteArraySerializer(val system: ExtendedActorSystem) extends BaseSerialize
   def toBinary(o: AnyRef) = o match {
     case null           ⇒ null
     case o: Array[Byte] ⇒ o
-    case other          ⇒ throw new IllegalArgumentException("ByteArraySerializer only serializes byte arrays, not [" + other + "]")
+    case other ⇒ throw new IllegalArgumentException(
+      s"${getClass.getName} only serializes byte arrays, not [${other.getClass.getName}]")
   }
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = bytes
+
+  override def toBinary(o: AnyRef, buf: ByteBuffer): Unit =
+    o match {
+      case null               ⇒
+      case bytes: Array[Byte] ⇒ buf.put(bytes)
+      case other ⇒ throw new IllegalArgumentException(
+        s"${getClass.getName} only serializes byte arrays, not [${other.getClass.getName}]")
+    }
+
+  override def fromBinary(buf: ByteBuffer, manifest: String): AnyRef = {
+    val bytes = Array.ofDim[Byte](buf.remaining())
+    buf.get(bytes)
+    bytes
+  }
 }
