@@ -6,10 +6,13 @@ import akka.remote.{ MessageSerializer, UniqueAddress }
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
 
 // TODO: Long UID
 class Encoder(
-  transport: ArteryTransport,
+  uniqueLocalAddress: UniqueAddress,
+  system: ActorSystem,
   compressionTable: LiteralCompressionTable,
   pool: EnvelopeBufferPool)
   extends GraphStage[FlowShape[Send, EnvelopeBuffer]] {
@@ -23,11 +26,11 @@ class Encoder(
 
       private val headerBuilder = HeaderBuilder(compressionTable)
       headerBuilder.version = ArteryTransport.Version
-      headerBuilder.uid = transport.localAddress.uid
-      private val localAddress = transport.localAddress.address
-      private val serialization = SerializationExtension(transport.system)
+      headerBuilder.uid = uniqueLocalAddress.uid
+      private val localAddress = uniqueLocalAddress.address
+      private val serialization = SerializationExtension(system)
 
-      private val noSender = transport.system.deadLetters.path.toSerializationFormatWithAddress(localAddress)
+      private val noSender = system.deadLetters.path.toSerializationFormatWithAddress(localAddress)
       private val senderCache = new java.util.HashMap[ActorRef, String]
       private var recipientCache = new java.util.HashMap[ActorRef, String]
 
@@ -66,7 +69,7 @@ class Encoder(
         }
 
         // FIXME: Thunk allocation
-        Serialization.currentTransportInformation.withValue(Serialization.Information(localAddress, transport.system)) {
+        Serialization.currentTransportInformation.withValue(Serialization.Information(localAddress, system)) {
           MessageSerializer.serializeForArtery(serialization, send.message.asInstanceOf[AnyRef], headerBuilder, envelope)
         }
 
@@ -83,19 +86,20 @@ class Encoder(
 }
 
 class Decoder(
-  transport: ArteryTransport,
-  compressionTable: LiteralCompressionTable) extends GraphStage[FlowShape[EnvelopeBuffer, InboundEnvelope]] {
+  uniqueLocalAddress: UniqueAddress,
+  system: ExtendedActorSystem,
+  resolveActorRefWithLocalAddress: String ⇒ InternalActorRef,
+  compressionTable: LiteralCompressionTable,
+  pool: EnvelopeBufferPool) extends GraphStage[FlowShape[EnvelopeBuffer, InboundEnvelope]] {
   val in: Inlet[EnvelopeBuffer] = Inlet("Artery.Decoder.in")
   val out: Outlet[InboundEnvelope] = Outlet("Artery.Decoder.out")
   val shape: FlowShape[EnvelopeBuffer, InboundEnvelope] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
-      private val pool = transport.envelopePool
-      private val localAddress = transport.localAddress.address
-      private val provider = transport.provider
+      private val localAddress = uniqueLocalAddress.address
       private val headerBuilder = HeaderBuilder(compressionTable)
-      private val serialization = SerializationExtension(transport.system)
+      private val serialization = SerializationExtension(system)
 
       private val recipientCache = new java.util.HashMap[String, InternalActorRef]
       private val senderCache = new java.util.HashMap[String, Option[ActorRef]]
@@ -111,7 +115,7 @@ class Decoder(
         // FIXME: Is localAddress really needed?
         val recipient: InternalActorRef = recipientCache.get(headerBuilder.recipientActorRef) match {
           case null ⇒
-            val ref = provider.resolveActorRefWithLocalAddress(headerBuilder.recipientActorRef, localAddress)
+            val ref = resolveActorRefWithLocalAddress(headerBuilder.recipientActorRef)
             // FIXME we might need an efficient LRU cache, or replaced by compression table
             if (recipientCache.size() >= 1000)
               recipientCache.clear()
@@ -122,7 +126,7 @@ class Decoder(
 
         val senderOption: Option[ActorRef] = senderCache.get(headerBuilder.senderActorRef) match {
           case null ⇒
-            val ref = provider.resolveActorRefWithLocalAddress(headerBuilder.senderActorRef, localAddress)
+            val ref = resolveActorRefWithLocalAddress(headerBuilder.senderActorRef)
             // FIXME this cache will be replaced by compression table
             if (senderCache.size() >= 1000)
               senderCache.clear()
@@ -135,7 +139,7 @@ class Decoder(
         val decoded = InboundEnvelope(
           recipient,
           localAddress, // FIXME: Is this needed anymore? What should we do here?
-          MessageSerializer.deserializeForArtery(transport.system, serialization, headerBuilder, envelope),
+          MessageSerializer.deserializeForArtery(system, serialization, headerBuilder, envelope),
           senderOption, // FIXME: No need for an option, decode simply to deadLetters instead
           UniqueAddress(senderOption.get.path.address, headerBuilder.uid)) // FIXME see issue #20568
 
