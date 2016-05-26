@@ -751,6 +751,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   // cluster nodes, doesn't contain selfAddress
   var nodes: Set[Address] = Set.empty
 
+  // cluster weaklyUp nodes, doesn't contain selfAddress
+  var weaklyUpNodes: Set[Address] = Set.empty
+
   // nodes removed from cluster, to be pruned, and tombstoned
   var removedNodes: Map[UniqueAddress, Long] = Map.empty
   var pruningPerformed: Map[UniqueAddress, Long] = Map.empty
@@ -809,6 +812,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     case Subscribe(key, subscriber)             ⇒ receiveSubscribe(key, subscriber)
     case Unsubscribe(key, subscriber)           ⇒ receiveUnsubscribe(key, subscriber)
     case Terminated(ref)                        ⇒ receiveTerminated(ref)
+    case MemberWeaklyUp(m)                      ⇒ receiveWeaklyUpMemberUp(m)
     case MemberUp(m)                            ⇒ receiveMemberUp(m)
     case MemberRemoved(m, _)                    ⇒ receiveMemberRemoved(m)
     case _: MemberEvent                         ⇒ // not of interest
@@ -996,7 +1000,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     changed = Set.empty[String]
   }
 
-  def receiveGossipTick(): Unit = selectRandomNode(nodes.toVector) foreach gossipTo
+  def receiveGossipTick(): Unit = selectRandomNode(nodes.union(weaklyUpNodes).toVector) foreach gossipTo
 
   def gossipTo(address: Address): Unit = {
     val to = replica(address)
@@ -1111,6 +1115,10 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     }
   }
 
+  def receiveWeaklyUpMemberUp(m: Member): Unit =
+    if (matchingRole(m) && m.address != selfAddress)
+      weaklyUpNodes += m.address
+
   def receiveMemberUp(m: Member): Unit =
     if (matchingRole(m) && m.address != selfAddress)
       nodes += m.address
@@ -1120,6 +1128,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       context stop self
     else if (matchingRole(m)) {
       nodes -= m.address
+      weaklyUpNodes -= m.address
       removedNodes = removedNodes.updated(m.uniqueAddress, allReachableClockTime)
       unreachable -= m.address
     }
@@ -1250,7 +1259,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   def receiveGetReplicaCount(): Unit = {
     // selfAddress is not included in the set
-    sender() ! ReplicaCount(nodes.size + 1)
+    sender() ! ReplicaCount(nodes.size + weaklyUpNodes.size + 1)
   }
 
 }
