@@ -14,6 +14,9 @@ import scala.util.{ Try, DynamicVariable, Failure }
 import scala.collection.immutable
 import scala.util.control.NonFatal
 import scala.util.Success
+import java.nio.ByteBuffer
+import java.util.concurrent.atomic.AtomicReference
+import scala.annotation.tailrec
 
 object Serialization {
 
@@ -83,7 +86,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
 
   val settings = new Settings(system.settings.config)
   val log = Logging(system, getClass.getName)
-  private val manifestCache = new ConcurrentHashMap[String, Option[Class[_]]]
+  private val manifestCache = new AtomicReference[Map[String, Option[Class[_]]]](Map.empty[String, Option[Class[_]]])
 
   /**
    * Serializes the given AnyRef/java.lang.Object according to the Serialization configuration
@@ -118,28 +121,60 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
           s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
             "akka.actor.serializers is not in synch between the two systems.")
       }
-      serializer match {
-        case s2: SerializerWithStringManifest ⇒ s2.fromBinary(bytes, manifest)
-        case s1 ⇒
-          if (manifest == "")
-            s1.fromBinary(bytes, None)
-          else {
-            val cachedClassManifest = manifestCache.get(manifest)
-            if (cachedClassManifest ne null)
-              s1.fromBinary(bytes, cachedClassManifest)
-            else {
+      deserializeByteArray(bytes, serializer, manifest)
+    }
+
+  private def deserializeByteArray(bytes: Array[Byte], serializer: Serializer, manifest: String): AnyRef = {
+
+    @tailrec def updateCache(cache: Map[String, Option[Class[_]]], key: String, value: Option[Class[_]]): Boolean = {
+      manifestCache.compareAndSet(cache, cache.updated(key, value)) ||
+        updateCache(manifestCache.get, key, value) // recursive, try again
+    }
+
+    serializer match {
+      case s2: SerializerWithStringManifest ⇒ s2.fromBinary(bytes, manifest)
+      case s1 ⇒
+        if (manifest == "")
+          s1.fromBinary(bytes, None)
+        else {
+          val cache = manifestCache.get
+          cache.get(manifest) match {
+            case Some(cachedClassManifest) => s1.fromBinary(bytes, cachedClassManifest)
+            case None =>
               system.dynamicAccess.getClassFor[AnyRef](manifest) match {
                 case Success(classManifest) ⇒
-                  manifestCache.put(manifest, Some(classManifest))
-                  s1.fromBinary(bytes, Some(classManifest))
+                  val classManifestOption: Option[Class[_]] = Some(classManifest)
+                  updateCache(cache, manifest, classManifestOption)
+                  s1.fromBinary(bytes, classManifestOption)
                 case Failure(e) ⇒
                   throw new NotSerializableException(
-                    s"Cannot find manifest class [$manifest] for serializer with id [$serializerId].")
+                    s"Cannot find manifest class [$manifest] for serializer with id [${serializer.identifier}].")
               }
-            }
           }
-      }
+        }
     }
+  }
+
+  /**
+   * Deserializes the given ByteBuffer of bytes using the specified serializer id,
+   * using the optional type hint to the Serializer.
+   * Returns either the resulting object or throws an exception if deserialization fails.
+   */
+  def deserializeByteBuffer(buf: ByteBuffer, serializerId: Int, manifest: String): AnyRef = {
+    val serializer = try serializerByIdentity(serializerId) catch {
+      case _: NoSuchElementException ⇒ throw new NotSerializableException(
+        s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
+          "akka.actor.serializers is not in synch between the two systems.")
+    }
+    serializer match {
+      case ser: ByteBufferSerializer =>
+        ser.fromBinary(buf, manifest)
+      case _ ⇒
+        val bytes = Array.ofDim[Byte](buf.remaining())
+        buf.get(bytes)
+        deserializeByteArray(bytes, serializer, manifest)
+    }
+  }
 
   /**
    * Deserializes the given array of bytes using the specified type to look up what Serializer should be used.

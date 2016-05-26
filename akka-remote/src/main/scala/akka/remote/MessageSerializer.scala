@@ -9,6 +9,7 @@ import akka.protobuf.ByteString
 import akka.actor.ExtendedActorSystem
 import akka.remote.artery.{ EnvelopeBuffer, HeaderBuilder }
 import akka.serialization.{ Serialization, SerializationExtension, SerializerWithStringManifest }
+import akka.serialization.ByteBufferSerializer
 
 /**
  * INTERNAL API
@@ -53,27 +54,28 @@ private[akka] object MessageSerializer {
 
     // FIXME: This should be a FQCN instead
     headerBuilder.serializer = serializer.identifier.toString
-    serializer match {
-      case ser2: SerializerWithStringManifest ⇒
-        val manifest = ser2.manifest(message)
-        headerBuilder.classManifest = manifest
-      case _ ⇒
-        headerBuilder.classManifest = message.getClass.getName
+
+    def manifest: String = serializer match {
+      case ser: SerializerWithStringManifest ⇒ ser.manifest(message)
+      case _                                 ⇒ if (serializer.includeManifest) message.getClass.getName else ""
     }
 
-    envelope.writeHeader(headerBuilder)
-    // FIXME: This should directly write to the buffer instead
-    envelope.byteBuffer.put(serializer.toBinary(message))
+    serializer match {
+      case ser: ByteBufferSerializer ⇒
+        headerBuilder.classManifest = manifest
+        envelope.writeHeader(headerBuilder)
+        ser.toBinary(message, envelope.byteBuffer)
+      case _ ⇒
+        headerBuilder.classManifest = manifest
+        envelope.writeHeader(headerBuilder)
+        envelope.byteBuffer.put(serializer.toBinary(message))
+    }
   }
 
   def deserializeForArtery(system: ExtendedActorSystem, serialization: Serialization, headerBuilder: HeaderBuilder, envelope: EnvelopeBuffer): AnyRef = {
-    // FIXME: Use the buffer directly
-    val size = envelope.byteBuffer.limit - envelope.byteBuffer.position
-    val bytes = Array.ofDim[Byte](size)
-    envelope.byteBuffer.get(bytes)
-    serialization.deserialize(
-      bytes,
+    serialization.deserializeByteBuffer(
+      envelope.byteBuffer,
       Integer.parseInt(headerBuilder.serializer), // FIXME: Use FQCN
-      headerBuilder.classManifest).get
+      headerBuilder.classManifest)
   }
 }
