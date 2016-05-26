@@ -350,6 +350,9 @@ final case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Mo
    */
   def run()(implicit materializer: Materializer): Mat = materializer.materialize(this)
 
+  override def addAttributes(attr: Attributes): RunnableGraph[Mat] =
+    withAttributes(module.attributes and attr)
+
   override def withAttributes(attr: Attributes): RunnableGraph[Mat] =
     new RunnableGraph(module.withAttributes(attr))
 
