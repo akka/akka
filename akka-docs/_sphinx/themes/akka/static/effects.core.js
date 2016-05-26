@@ -1,7 +1,7 @@
 /*
  * jQuery UI Effects 1.5.3
  *
- * Copyright (C) 2008-2016 Aaron Eisenberger (aaronchi@gmail.com)
+ *  Copyright (C) 2008-2016 Aaron Eisenberger (aaronchi@gmail.com)
  * Dual licensed under the MIT (MIT-LICENSE.txt)
  * and GPL (GPL-LICENSE.txt) licenses.
  * 
@@ -177,7 +177,7 @@ $.fn.extend({
 
 /*
  * jQuery Color Animations
- * Copyright 2007 John Resig
+ *  Copyright 2007 John Resig
  * Released under the MIT and GPL licenses.
  */
 
@@ -310,7 +310,7 @@ var colors = {
  * 
  * Open source under the BSD License. 
  * 
- * Copyright Â© 2008 George McGinley Smith
+ *  Copyright Â© 2008 George McGinley Smith
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, 
@@ -479,7 +479,7 @@ jQuery.extend( jQuery.easing,
  * 
  * Open source under the BSD License. 
  * 
- * Copyright Â© 2001 Robert Penner
+ *  Copyright Â© 2001 Robert Penner
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, 
