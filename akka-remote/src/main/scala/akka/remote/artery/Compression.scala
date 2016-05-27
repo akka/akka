@@ -14,9 +14,6 @@ private[remote] class Compression(system: ActorSystem) extends LiteralCompressio
   override def compressActorRef(ref: String): Int = -1
   override def decompressActorRef(idx: Int): String = ???
 
-  override def compressSerializer(serializer: String): Int = -1
-  override def decompressSerializer(idx: Int): String = ???
-
   override def compressClassManifest(manifest: String): Int = -1
   override def decompressClassManifest(idx: Int): String = ???
 

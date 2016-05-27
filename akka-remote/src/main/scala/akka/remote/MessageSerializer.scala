@@ -9,6 +9,7 @@ import akka.protobuf.ByteString
 import akka.actor.ExtendedActorSystem
 import akka.remote.artery.{ EnvelopeBuffer, HeaderBuilder }
 import akka.serialization.{ Serialization, SerializationExtension, SerializerWithStringManifest }
+import akka.serialization.ByteBufferSerializer
 
 /**
  * INTERNAL API
@@ -51,29 +52,30 @@ private[akka] object MessageSerializer {
   def serializeForArtery(serialization: Serialization, message: AnyRef, headerBuilder: HeaderBuilder, envelope: EnvelopeBuffer): Unit = {
     val serializer = serialization.findSerializerFor(message)
 
-    // FIXME: This should be a FQCN instead
-    headerBuilder.serializer = serializer.identifier.toString
-    serializer match {
-      case ser2: SerializerWithStringManifest ⇒
-        val manifest = ser2.manifest(message)
-        headerBuilder.classManifest = manifest
-      case _ ⇒
-        headerBuilder.classManifest = message.getClass.getName
+    headerBuilder.serializer = serializer.identifier
+
+    def manifest: String = serializer match {
+      case ser: SerializerWithStringManifest ⇒ ser.manifest(message)
+      case _                                 ⇒ if (serializer.includeManifest) message.getClass.getName else ""
     }
 
-    envelope.writeHeader(headerBuilder)
-    // FIXME: This should directly write to the buffer instead
-    envelope.byteBuffer.put(serializer.toBinary(message))
+    serializer match {
+      case ser: ByteBufferSerializer ⇒
+        headerBuilder.manifest = manifest
+        envelope.writeHeader(headerBuilder)
+        ser.toBinary(message, envelope.byteBuffer)
+      case _ ⇒
+        headerBuilder.manifest = manifest
+        envelope.writeHeader(headerBuilder)
+        envelope.byteBuffer.put(serializer.toBinary(message))
+    }
   }
 
-  def deserializeForArtery(system: ExtendedActorSystem, serialization: Serialization, headerBuilder: HeaderBuilder, envelope: EnvelopeBuffer): AnyRef = {
-    // FIXME: Use the buffer directly
-    val size = envelope.byteBuffer.limit - envelope.byteBuffer.position
-    val bytes = Array.ofDim[Byte](size)
-    envelope.byteBuffer.get(bytes)
-    serialization.deserialize(
-      bytes,
-      Integer.parseInt(headerBuilder.serializer), // FIXME: Use FQCN
-      headerBuilder.classManifest).get
+  def deserializeForArtery(system: ExtendedActorSystem, serialization: Serialization, headerBuilder: HeaderBuilder,
+                           envelope: EnvelopeBuffer): AnyRef = {
+    serialization.deserializeByteBuffer(
+      envelope.byteBuffer,
+      headerBuilder.serializer,
+      headerBuilder.manifest)
   }
 }
