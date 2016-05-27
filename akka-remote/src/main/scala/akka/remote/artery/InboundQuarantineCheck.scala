@@ -7,11 +7,11 @@ import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
 import akka.stream.Outlet
-
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
+import akka.remote.UniqueAddress
 
 /**
  * INTERNAL API
@@ -27,13 +27,18 @@ private[akka] class InboundQuarantineCheck(inboundContext: InboundContext) exten
       // InHandler
       override def onPush(): Unit = {
         val env = grab(in)
-        val association = inboundContext.association(env.originAddress.address)
-        if (association.associationState.isQuarantined(env.originAddress.uid)) {
-          inboundContext.sendControl(env.originAddress.address,
-            Quarantined(inboundContext.localAddress, env.originAddress))
-          pull(in)
-        } else
-          push(out, env)
+        inboundContext.association(env.originUid) match {
+          case null ⇒
+            // unknown, handshake not completed
+            push(out, env)
+          case association ⇒
+            if (association.associationState.isQuarantined(env.originUid)) {
+              inboundContext.sendControl(association.remoteAddress,
+                Quarantined(inboundContext.localAddress, UniqueAddress(association.remoteAddress, env.originUid)))
+              pull(in)
+            } else
+              push(out, env)
+        }
       }
 
       // OutHandler

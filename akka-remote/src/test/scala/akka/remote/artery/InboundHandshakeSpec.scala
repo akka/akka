@@ -41,7 +41,7 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
   private def setupStream(inboundContext: InboundContext, timeout: FiniteDuration = 5.seconds): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
     val recipient = null.asInstanceOf[InternalActorRef] // not used
     TestSource.probe[AnyRef]
-      .map(msg ⇒ InboundEnvelope(recipient, addressB.address, msg, None, addressA))
+      .map(msg ⇒ InboundEnvelope(recipient, addressB.address, msg, None, addressA.uid))
       .via(new InboundHandshake(inboundContext, inControlStream = true))
       .map { case InboundEnvelope(_, _, msg, _, _) ⇒ msg }
       .toMat(TestSink.probe[Any])(Keep.both)
@@ -77,7 +77,7 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       downstream.cancel()
     }
 
-    "send HandshakeReq when receiving message from unknown (receiving system restarted)" in {
+    "drop message from unknown (receiving system restarted)" in {
       val replyProbe = TestProbe()
       val inboundContext = new TestInboundContext(addressB, controlProbe = Some(replyProbe.ref))
       val (upstream, downstream) = setupStream(inboundContext)
@@ -85,8 +85,16 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       downstream.request(10)
       // no HandshakeReq
       upstream.sendNext("msg17")
-      replyProbe.expectMsg(HandshakeReq(addressB))
       downstream.expectNoMsg(200.millis) // messages from unknown are dropped
+
+      // and accept messages after handshake
+      upstream.sendNext(HandshakeReq(addressA))
+      upstream.sendNext("msg18")
+      replyProbe.expectMsg(HandshakeRsp(addressB))
+      downstream.expectNext("msg18")
+      upstream.sendNext("msg19")
+      downstream.expectNext("msg19")
+
       downstream.cancel()
     }
 
