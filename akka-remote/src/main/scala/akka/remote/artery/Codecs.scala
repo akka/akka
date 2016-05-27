@@ -1,13 +1,16 @@
 package akka.remote.artery
 
+import scala.util.control.NonFatal
+
 import akka.actor.{ ActorRef, InternalActorRef }
-import akka.remote.EndpointManager.Send
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
 import akka.remote.{ MessageSerializer, UniqueAddress }
+import akka.remote.EndpointManager.Send
+import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
 
 // TODO: Long UID
 class Encoder(
@@ -22,7 +25,7 @@ class Encoder(
   val shape: FlowShape[Send, EnvelopeBuffer] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with InHandler with OutHandler {
+    new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
       private val headerBuilder = HeaderBuilder(compressionTable)
       headerBuilder.version = ArteryTransport.Version
@@ -34,6 +37,8 @@ class Encoder(
       private val noSender = system.deadLetters.path.toSerializationFormatWithAddress(localAddress)
       private val senderCache = new java.util.HashMap[ActorRef, String]
       private var recipientCache = new java.util.HashMap[ActorRef, String]
+
+      override protected def logSource = classOf[Encoder]
 
       override def onPush(): Unit = {
         val send = grab(in)
@@ -69,18 +74,31 @@ class Encoder(
             headerBuilder.senderActorRef = noSender
         }
 
-        // avoiding currentTransportInformation.withValue due to thunk allocation
-        val oldValue = Serialization.currentTransportInformation.value
         try {
-          Serialization.currentTransportInformation.value = serializationInfo
-          MessageSerializer.serializeForArtery(serialization, send.message.asInstanceOf[AnyRef], headerBuilder, envelope)
-        } finally
-          Serialization.currentTransportInformation.value = oldValue
+          // avoiding currentTransportInformation.withValue due to thunk allocation
+          val oldValue = Serialization.currentTransportInformation.value
+          try {
+            Serialization.currentTransportInformation.value = serializationInfo
+            MessageSerializer.serializeForArtery(serialization, send.message.asInstanceOf[AnyRef], headerBuilder, envelope)
+          } finally
+            Serialization.currentTransportInformation.value = oldValue
 
-        //println(s"${headerBuilder.senderActorRef} --> ${headerBuilder.recipientActorRef} ${headerBuilder.classManifest}")
+          envelope.byteBuffer.flip()
+          push(out, envelope)
 
-        envelope.byteBuffer.flip()
-        push(out, envelope)
+        } catch {
+          case NonFatal(e) ⇒
+            pool.release(envelope)
+            send.message match {
+              case _: SystemMessageEnvelope ⇒
+                log.error(e, "Failed to serialize system message [{}].", send.message.getClass.getName)
+                throw e
+              case _ ⇒
+                log.error(e, "Failed to serialize message [{}].", send.message.getClass.getName)
+                pull(in)
+            }
+        }
+
       }
 
       override def onPull(): Unit = pull(in)
@@ -100,7 +118,7 @@ class Decoder(
   val shape: FlowShape[EnvelopeBuffer, InboundEnvelope] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with InHandler with OutHandler {
+    new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
       private val localAddress = uniqueLocalAddress.address
       private val headerBuilder = HeaderBuilder(compressionTable)
       private val serialization = SerializationExtension(system)
@@ -108,11 +126,11 @@ class Decoder(
       private val recipientCache = new java.util.HashMap[String, InternalActorRef]
       private val senderCache = new java.util.HashMap[String, Option[ActorRef]]
 
+      override protected def logSource = classOf[Decoder]
+
       override def onPush(): Unit = {
         val envelope = grab(in)
         envelope.parseHeader(headerBuilder)
-
-        //println(s"${headerBuilder.recipientActorRef} <-- ${headerBuilder.senderActorRef} ${headerBuilder.classManifest}")
 
         // FIXME: Instead of using Strings, the headerBuilder should automatically return cached ActorRef instances
         // in case of compression is enabled
@@ -140,15 +158,26 @@ class Decoder(
           case refOpt ⇒ refOpt
         }
 
-        val decoded = InboundEnvelope(
-          recipient,
-          localAddress, // FIXME: Is this needed anymore? What should we do here?
-          MessageSerializer.deserializeForArtery(system, serialization, headerBuilder, envelope),
-          senderOption, // FIXME: No need for an option, decode simply to deadLetters instead
-          UniqueAddress(senderOption.get.path.address, headerBuilder.uid)) // FIXME see issue #20568
+        try {
+          val deserializedMessage = MessageSerializer.deserializeForArtery(
+            system, serialization, headerBuilder, envelope)
 
-        pool.release(envelope)
-        push(out, decoded)
+          val decoded = InboundEnvelope(
+            recipient,
+            localAddress, // FIXME: Is this needed anymore? What should we do here?
+            deserializedMessage,
+            senderOption, // FIXME: No need for an option, decode simply to deadLetters instead
+            UniqueAddress(senderOption.get.path.address, headerBuilder.uid)) // FIXME see issue #20568
+
+          push(out, decoded)
+        } catch {
+          case NonFatal(e) ⇒
+            log.warning("Failed to deserialize message with serializer id [{}] and manifest [{}]. {}",
+              headerBuilder.serializer, headerBuilder.classManifest, e.getMessage)
+            pull(in)
+        } finally {
+          pool.release(envelope)
+        }
       }
 
       override def onPull(): Unit = pull(in)
