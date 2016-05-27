@@ -150,7 +150,7 @@ private[akka] class Association(
 
   private def isLargeMessageDestination(recipient: ActorRef): Boolean = {
     recipient match {
-      case r: RemoteActorRef if r.cachedLargeMessageDestinationFlag ne null ⇒ r.cachedLargeMessageDestinationFlag == LargeDestination
+      case r: RemoteActorRef if r.cachedLargeMessageDestinationFlag ne null ⇒ r.cachedLargeMessageDestinationFlag eq LargeDestination
       case r: RemoteActorRef ⇒
         if (largeMessageDestinations.find(r.path.elements.iterator).data.isEmpty) {
           r.cachedLargeMessageDestinationFlag = RegularDestination
