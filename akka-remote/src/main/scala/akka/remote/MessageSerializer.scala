@@ -72,7 +72,8 @@ private[akka] object MessageSerializer {
     }
   }
 
-  def deserializeForArtery(system: ExtendedActorSystem, serialization: Serialization, headerBuilder: HeaderBuilder, envelope: EnvelopeBuffer): AnyRef = {
+  def deserializeForArtery(system: ExtendedActorSystem, serialization: Serialization, headerBuilder: HeaderBuilder,
+                           envelope: EnvelopeBuffer): AnyRef = {
     serialization.deserializeByteBuffer(
       envelope.byteBuffer,
       Integer.parseInt(headerBuilder.serializer), // FIXME: Use FQCN
