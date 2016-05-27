@@ -342,10 +342,17 @@ private[akka] class RemoteActorRefProvider(
   override private[akka] def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
     local.actorFor(ref, path)
 
-  def rootGuardianAt(address: Address): ActorRef =
+  def rootGuardianAt(address: Address): ActorRef = {
     if (hasAddress(address)) rootGuardian
-    else new RemoteActorRef(transport, transport.localAddressForRemote(address),
-      RootActorPath(address), Nobody, props = None, deploy = None)
+    else try {
+      new RemoteActorRef(transport, transport.localAddressForRemote(address),
+        RootActorPath(address), Nobody, props = None, deploy = None)
+    } catch {
+      case NonFatal(e) ⇒
+        log.error(e, "No root guardian at [{}]", address)
+        new EmptyLocalActorRef(this, RootActorPath(address), eventStream)
+    }
+  }
 
   /**
    * INTERNAL API
@@ -355,9 +362,14 @@ private[akka] class RemoteActorRefProvider(
     path match {
       case ActorPathExtractor(address, elems) ⇒
         if (hasAddress(address)) local.resolveActorRef(rootGuardian, elems)
-        else
+        else try {
           new RemoteActorRef(transport, localAddress, RootActorPath(address) / elems,
             Nobody, props = None, deploy = None)
+        } catch {
+          case NonFatal(e) ⇒
+            log.warning("Error while resolving ActorRef [{}] due to [{}]", path, e.getMessage)
+            new EmptyLocalActorRef(this, RootActorPath(address) / elems, eventStream)
+        }
       case _ ⇒
         log.debug("resolve of unknown path [{}] failed", path)
         deadLetters
@@ -374,7 +386,7 @@ private[akka] class RemoteActorRefProvider(
             rootPath, Nobody, props = None, deploy = None)
         } catch {
           case NonFatal(e) ⇒
-            log.warning("Error while resolving address [{}] due to [{}]", rootPath.address, e.getMessage)
+            log.warning("Error while resolving ActorRef [{}] due to [{}]", path, e.getMessage)
             new EmptyLocalActorRef(this, rootPath, eventStream)
         }
       }
@@ -390,7 +402,7 @@ private[akka] class RemoteActorRefProvider(
         path, Nobody, props = None, deploy = None)
     } catch {
       case NonFatal(e) ⇒
-        log.error(e, "Error while resolving address [{}]", path.address)
+        log.warning("Error while resolving ActorRef [{}] due to [{}]", path, e.getMessage)
         new EmptyLocalActorRef(this, path, eventStream)
     }
   }
@@ -459,10 +471,19 @@ private[akka] class RemoteActorRef private[akka] (
   deploy: Option[Deploy])
   extends InternalActorRef with RemoteRef {
 
-  @volatile var cachedAssociation: artery.Association = null
+  remote match {
+    case t: ArteryTransport ⇒
+      // detect mistakes such as using "akka.tcp" with Artery
+      if (path.address.protocol != t.localAddress.address.protocol)
+        throw new IllegalArgumentException(
+          s"Wrong protocol of [${path}], expected [${t.localAddress.address.protocol}]")
+    case _ ⇒
+  }
+
+  @volatile private[remote] var cachedAssociation: artery.Association = null
 
   // used by artery to direct messages to a separate stream for large messages
-  @volatile var cachedLargeMessageDestinationFlag: LargeMessageDestinationFlag = null
+  @volatile private[remote] var cachedLargeMessageDestinationFlag: LargeMessageDestinationFlag = null
 
   def getChild(name: Iterator[String]): InternalActorRef = {
     val s = name.toStream
