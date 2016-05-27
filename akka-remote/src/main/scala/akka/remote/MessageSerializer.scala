@@ -52,8 +52,7 @@ private[akka] object MessageSerializer {
   def serializeForArtery(serialization: Serialization, message: AnyRef, headerBuilder: HeaderBuilder, envelope: EnvelopeBuffer): Unit = {
     val serializer = serialization.findSerializerFor(message)
 
-    // FIXME: This should be a FQCN instead
-    headerBuilder.serializer = serializer.identifier.toString
+    headerBuilder.serializer = serializer.identifier
 
     def manifest: String = serializer match {
       case ser: SerializerWithStringManifest ⇒ ser.manifest(message)
@@ -62,11 +61,11 @@ private[akka] object MessageSerializer {
 
     serializer match {
       case ser: ByteBufferSerializer ⇒
-        headerBuilder.classManifest = manifest
+        headerBuilder.manifest = manifest
         envelope.writeHeader(headerBuilder)
         ser.toBinary(message, envelope.byteBuffer)
       case _ ⇒
-        headerBuilder.classManifest = manifest
+        headerBuilder.manifest = manifest
         envelope.writeHeader(headerBuilder)
         envelope.byteBuffer.put(serializer.toBinary(message))
     }
@@ -76,7 +75,7 @@ private[akka] object MessageSerializer {
                            envelope: EnvelopeBuffer): AnyRef = {
     serialization.deserializeByteBuffer(
       envelope.byteBuffer,
-      Integer.parseInt(headerBuilder.serializer), // FIXME: Use FQCN
-      headerBuilder.classManifest)
+      headerBuilder.serializer,
+      headerBuilder.manifest)
   }
 }

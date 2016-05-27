@@ -173,7 +173,7 @@ class Decoder(
         } catch {
           case NonFatal(e) ⇒
             log.warning("Failed to deserialize message with serializer id [{}] and manifest [{}]. {}",
-              headerBuilder.serializer, headerBuilder.classManifest, e.getMessage)
+              headerBuilder.serializer, headerBuilder.manifest, e.getMessage)
             pull(in)
         } finally {
           pool.release(envelope)

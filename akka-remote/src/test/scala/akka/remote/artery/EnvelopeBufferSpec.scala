@@ -26,8 +26,6 @@ class EnvelopeBufferSpec extends AkkaSpec {
 
     override def compressActorRef(ref: String): Int = refToIdx.getOrElse(ref, -1)
     override def decompressActorRef(idx: Int): String = idxToRef(idx)
-    override def compressSerializer(serializer: String): Int = serializerToIdx.getOrElse(serializer, -1)
-    override def decompressSerializer(idx: Int): String = idxToSer(idx)
     override def compressClassManifest(manifest: String): Int = manifestToIdx.getOrElse(manifest, -1)
     override def decompressClassManifest(idx: Int): String = idxToManifest(idx)
   }
@@ -42,10 +40,10 @@ class EnvelopeBufferSpec extends AkkaSpec {
     "be able to encode and decode headers with compressed literals" in {
       headerIn.version = 1
       headerIn.uid = 42
+      headerIn.serializer = 4
       headerIn.senderActorRef = "compressable0"
       headerIn.recipientActorRef = "compressable1"
-      headerIn.serializer = "serializer0"
-      headerIn.classManifest = "manifest1"
+      headerIn.manifest = "manifest1"
 
       envelope.writeHeader(headerIn)
       envelope.byteBuffer.position() should ===(EnvelopeBuffer.LiteralsSectionOffset) // Fully compressed header
@@ -55,26 +53,25 @@ class EnvelopeBufferSpec extends AkkaSpec {
 
       headerOut.version should ===(1)
       headerOut.uid should ===(42)
+      headerOut.serializer should ===(4)
       headerOut.senderActorRef should ===("compressable0")
       headerOut.recipientActorRef should ===("compressable1")
-      headerOut.serializer should ===("serializer0")
-      headerOut.classManifest should ===("manifest1")
+      headerOut.manifest should ===("manifest1")
     }
 
     "be able to encode and decode headers with uncompressed literals" in {
       headerIn.version = 1
       headerIn.uid = 42
+      headerIn.serializer = 4
       headerIn.senderActorRef = "uncompressable0"
       headerIn.recipientActorRef = "uncompressable11"
-      headerIn.serializer = "uncompressable222"
-      headerIn.classManifest = "uncompressable3333"
+      headerIn.manifest = "uncompressable3333"
 
       val expectedHeaderLength =
         EnvelopeBuffer.LiteralsSectionOffset + // Constant header part
           2 + headerIn.senderActorRef.length + // Length field + literal
           2 + headerIn.recipientActorRef.length + // Length field + literal
-          2 + headerIn.serializer.length + // Length field + literal
-          2 + headerIn.classManifest.length // Length field + literal
+          2 + headerIn.manifest.length // Length field + literal
 
       envelope.writeHeader(headerIn)
       envelope.byteBuffer.position() should ===(expectedHeaderLength)
@@ -84,58 +81,57 @@ class EnvelopeBufferSpec extends AkkaSpec {
 
       headerOut.version should ===(1)
       headerOut.uid should ===(42)
+      headerOut.serializer should ===(4)
       headerOut.senderActorRef should ===("uncompressable0")
       headerOut.recipientActorRef should ===("uncompressable11")
-      headerOut.serializer should ===("uncompressable222")
-      headerOut.classManifest should ===("uncompressable3333")
+      headerOut.manifest should ===("uncompressable3333")
     }
 
     "be able to encode and decode headers with mixed literals" in {
       headerIn.version = 1
       headerIn.uid = 42
+      headerIn.serializer = 4
       headerIn.senderActorRef = "reallylongcompressablestring"
       headerIn.recipientActorRef = "uncompressable1"
-      headerIn.serializer = "longuncompressedserializer"
-      headerIn.classManifest = "manifest1"
+      headerIn.manifest = "manifest1"
 
       envelope.writeHeader(headerIn)
       envelope.byteBuffer.position() should ===(
         EnvelopeBuffer.LiteralsSectionOffset +
-          2 + headerIn.recipientActorRef.length +
-          2 + headerIn.serializer.length)
+          2 + headerIn.recipientActorRef.length)
 
       envelope.byteBuffer.flip()
       envelope.parseHeader(headerOut)
 
       headerOut.version should ===(1)
       headerOut.uid should ===(42)
+      headerOut.serializer should ===(4)
       headerOut.senderActorRef should ===("reallylongcompressablestring")
       headerOut.recipientActorRef should ===("uncompressable1")
-      headerOut.serializer should ===("longuncompressedserializer")
-      headerOut.classManifest should ===("manifest1")
+      headerOut.manifest should ===("manifest1")
 
       headerIn.version = 3
       headerIn.uid = Int.MinValue
+      headerIn.serializer = -1
       headerIn.senderActorRef = "uncompressable0"
       headerIn.recipientActorRef = "reallylongcompressablestring"
-      headerIn.serializer = "serializer0"
-      headerIn.classManifest = "longlonglongliteralmanifest"
+      headerIn.manifest = "longlonglongliteralmanifest"
 
       envelope.writeHeader(headerIn)
       envelope.byteBuffer.position() should ===(
         EnvelopeBuffer.LiteralsSectionOffset +
           2 + headerIn.senderActorRef.length +
-          2 + headerIn.classManifest.length)
+          2 + headerIn.manifest.length)
 
       envelope.byteBuffer.flip()
       envelope.parseHeader(headerOut)
 
       headerOut.version should ===(3)
       headerOut.uid should ===(Int.MinValue)
+      headerOut.serializer should ===(-1)
       headerOut.senderActorRef should ===("uncompressable0")
       headerOut.recipientActorRef should ===("reallylongcompressablestring")
-      headerOut.serializer should ===("serializer0")
-      headerOut.classManifest should ===("longlonglongliteralmanifest")
+      headerOut.manifest should ===("longlonglongliteralmanifest")
     }
 
     "be able to encode and decode headers with mixed literals and payload" in {
@@ -143,10 +139,10 @@ class EnvelopeBufferSpec extends AkkaSpec {
 
       headerIn.version = 1
       headerIn.uid = 42
+      headerIn.serializer = 4
       headerIn.senderActorRef = "reallylongcompressablestring"
       headerIn.recipientActorRef = "uncompressable1"
-      headerIn.serializer = "serializer1"
-      headerIn.classManifest = "manifest1"
+      headerIn.manifest = "manifest1"
 
       envelope.writeHeader(headerIn)
       envelope.byteBuffer.put(payload.toByteBuffer)
@@ -156,10 +152,10 @@ class EnvelopeBufferSpec extends AkkaSpec {
 
       headerOut.version should ===(1)
       headerOut.uid should ===(42)
+      headerOut.serializer should ===(4)
       headerOut.senderActorRef should ===("reallylongcompressablestring")
       headerOut.recipientActorRef should ===("uncompressable1")
-      headerOut.serializer should ===("serializer1")
-      headerOut.classManifest should ===("manifest1")
+      headerOut.manifest should ===("manifest1")
 
       ByteString.fromByteBuffer(envelope.byteBuffer) should ===(payload)
     }

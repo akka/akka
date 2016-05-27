@@ -86,10 +86,10 @@ class CodecBenchmark {
     val envelope = new EnvelopeBuffer(envelopeTemplateBuffer)
     headerIn.version = 1
     headerIn.uid = 42
+    headerIn.serializer = 4
     headerIn.senderActorRef = senderStringA
     headerIn.recipientActorRef = recipientStringB
-    headerIn.serializer = "4"
-    headerIn.classManifest = ""
+    headerIn.manifest = ""
     envelope.writeHeader(headerIn)
     envelope.byteBuffer.put(payload)
     envelope.byteBuffer.flip()

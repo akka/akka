@@ -50,10 +50,10 @@ private[remote] object EnvelopeBuffer {
 
   val VersionOffset = 0
   val UidOffset = 4
-  val SenderActorRefTagOffset = 8
-  val RecipientActorRefTagOffset = 12
-  val SerializerTagOffset = 16
-  val ClassManifestTagOffset = 24
+  val SerializerOffset = 8
+  val SenderActorRefTagOffset = 12
+  val RecipientActorRefTagOffset = 16
+  val ClassManifestTagOffset = 20
 
   val LiteralsSectionOffset = 32
 
@@ -69,9 +69,6 @@ private[remote] trait LiteralCompressionTable {
 
   def compressActorRef(ref: String): Int
   def decompressActorRef(idx: Int): String
-
-  def compressSerializer(serializer: String): Int
-  def decompressSerializer(idx: Int): String
 
   def compressClassManifest(manifest: String): Int
   def decompressClassManifest(idx: Int): String
@@ -100,11 +97,11 @@ sealed trait HeaderBuilder {
   def recipientActorRef_=(ref: String): Unit
   def recipientActorRef: String
 
-  def serializer_=(serializer: String): Unit
-  def serializer: String
+  def serializer_=(serializer: Int): Unit
+  def serializer: Int
 
-  def classManifest_=(manifest: String): Unit
-  def classManifest: String
+  def manifest_=(manifest: String): Unit
+  def manifest: String
 }
 
 /**
@@ -120,10 +117,9 @@ private[remote] final class HeaderBuilderImpl(val compressionTable: LiteralCompr
   var _recipientActorRef: String = null
   var _recipientActorRefIdx: Int = -1
 
-  var _serializer: String = null
-  var _serializerIdx: Int = -1
-  var _classManifest: String = null
-  var _classManifestIdx: Int = -1
+  var _serializer: Int = _
+  var _manifest: String = null
+  var _manifestIdx: Int = -1
 
   def senderActorRef_=(ref: String): Unit = {
     _senderActorRef = ref
@@ -156,33 +152,27 @@ private[remote] final class HeaderBuilderImpl(val compressionTable: LiteralCompr
     }
   }
 
-  override def serializer_=(serializer: String): Unit = {
+  override def serializer_=(serializer: Int): Unit = {
     _serializer = serializer
-    _serializerIdx = compressionTable.compressSerializer(serializer)
   }
 
-  override def serializer: String = {
-    if (_serializer ne null) _serializer
+  override def serializer: Int =
+    _serializer
+
+  override def manifest_=(manifest: String): Unit = {
+    _manifest = manifest
+    _manifestIdx = compressionTable.compressClassManifest(manifest)
+  }
+
+  override def manifest: String = {
+    if (_manifest ne null) _manifest
     else {
-      _serializer = compressionTable.decompressSerializer(_serializerIdx)
-      _serializer
+      _manifest = compressionTable.decompressClassManifest(_manifestIdx)
+      _manifest
     }
   }
 
-  override def classManifest_=(manifest: String): Unit = {
-    _classManifest = manifest
-    _classManifestIdx = compressionTable.compressClassManifest(manifest)
-  }
-
-  override def classManifest: String = {
-    if (_classManifest ne null) _classManifest
-    else {
-      _classManifest = compressionTable.decompressClassManifest(_classManifestIdx)
-      _classManifest
-    }
-  }
-
-  override def toString = s"HeaderBuilderImpl($version, $uid, ${_senderActorRef}, ${_senderActorRefIdx}, ${_recipientActorRef}, ${_recipientActorRefIdx}, ${_serializer}, ${_serializerIdx}, ${_classManifest}, ${_classManifestIdx})"
+  override def toString = s"HeaderBuilderImpl($version, $uid, ${_senderActorRef}, ${_senderActorRefIdx}, ${_recipientActorRef}, ${_recipientActorRefIdx}, ${_serializer}, ${_manifest}, ${_manifestIdx})"
 }
 
 /**
@@ -214,6 +204,7 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     // Write fixed length parts
     byteBuffer.putInt(header.version)
     byteBuffer.putInt(header.uid)
+    byteBuffer.putInt(header.serializer)
 
     // Write compressable, variable-length parts always to the actual position of the buffer
     // Write tag values explicitly in their proper offset
@@ -231,17 +222,11 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     else
       writeLiteral(RecipientActorRefTagOffset, header._recipientActorRef)
 
-    // Serialize serializer
-    if (header._serializerIdx != -1)
-      byteBuffer.putInt(SerializerTagOffset, header._serializerIdx | TagTypeMask)
-    else
-      writeLiteral(SerializerTagOffset, header._serializer)
-
     // Serialize class manifest
-    if (header._classManifestIdx != -1)
-      byteBuffer.putInt(ClassManifestTagOffset, header._classManifestIdx | TagTypeMask)
+    if (header._manifestIdx != -1)
+      byteBuffer.putInt(ClassManifestTagOffset, header._manifestIdx | TagTypeMask)
     else
-      writeLiteral(ClassManifestTagOffset, header._classManifest)
+      writeLiteral(ClassManifestTagOffset, header._manifest)
   }
 
   def parseHeader(h: HeaderBuilder): Unit = {
@@ -250,6 +235,7 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     // Read fixed length parts
     header.version = byteBuffer.getInt
     header.uid = byteBuffer.getInt
+    header.serializer = byteBuffer.getInt
 
     // Read compressable, variable-length parts always from the actual position of the buffer
     // Read tag values explicitly from their proper offset
@@ -275,24 +261,14 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
       header._recipientActorRef = readLiteral()
     }
 
-    // Deserialize serializer
-    val serializerTag = byteBuffer.getInt(SerializerTagOffset)
-    if ((serializerTag & TagTypeMask) != 0) {
-      val idx = serializerTag & TagValueMask
-      header._serializer = null
-      header._serializerIdx = idx
-    } else {
-      header._serializer = readLiteral()
-    }
-
     // Deserialize class manifest
-    val classManifestTag = byteBuffer.getInt(ClassManifestTagOffset)
-    if ((classManifestTag & TagTypeMask) != 0) {
-      val idx = classManifestTag & TagValueMask
-      header._classManifest = null
-      header._classManifestIdx = idx
+    val manifestTag = byteBuffer.getInt(ClassManifestTagOffset)
+    if ((manifestTag & TagTypeMask) != 0) {
+      val idx = manifestTag & TagValueMask
+      header._manifest = null
+      header._manifestIdx = idx
     } else {
-      header._classManifest = readLiteral()
+      header._manifest = readLiteral()
     }
   }
 
