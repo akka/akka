@@ -29,6 +29,7 @@ class Encoder(
       headerBuilder.uid = uniqueLocalAddress.uid
       private val localAddress = uniqueLocalAddress.address
       private val serialization = SerializationExtension(system)
+      private val serializationInfo = Serialization.Information(localAddress, system)
 
       private val noSender = system.deadLetters.path.toSerializationFormatWithAddress(localAddress)
       private val senderCache = new java.util.HashMap[ActorRef, String]
@@ -68,10 +69,13 @@ class Encoder(
             headerBuilder.senderActorRef = noSender
         }
 
-        // FIXME: Thunk allocation
-        Serialization.currentTransportInformation.withValue(Serialization.Information(localAddress, system)) {
+        // avoiding currentTransportInformation.withValue due to thunk allocation
+        val oldValue = Serialization.currentTransportInformation.value
+        try {
+          Serialization.currentTransportInformation.value = serializationInfo
           MessageSerializer.serializeForArtery(serialization, send.message.asInstanceOf[AnyRef], headerBuilder, envelope)
-        }
+        } finally
+          Serialization.currentTransportInformation.value = oldValue
 
         //println(s"${headerBuilder.senderActorRef} --> ${headerBuilder.recipientActorRef} ${headerBuilder.classManifest}")
 
