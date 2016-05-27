@@ -25,7 +25,8 @@ private[akka] class TestInboundContext(
   val controlProbe: Option[ActorRef] = None,
   val replyDropRate: Double = 0.0) extends InboundContext {
 
-  private val associations = new ConcurrentHashMap[Address, OutboundContext]
+  private val associationsByAddress = new ConcurrentHashMap[Address, OutboundContext]()
+  private val associationsByUid = new ConcurrentHashMap[Long, OutboundContext]()
 
   override def sendControl(to: Address, message: ControlMessage) = {
     if (ThreadLocalRandom.current().nextDouble() >= replyDropRate)
@@ -33,17 +34,26 @@ private[akka] class TestInboundContext(
   }
 
   override def association(remoteAddress: Address): OutboundContext =
-    associations.get(remoteAddress) match {
+    associationsByAddress.get(remoteAddress) match {
       case null ⇒
         val a = createAssociation(remoteAddress)
-        associations.putIfAbsent(remoteAddress, a) match {
+        associationsByAddress.putIfAbsent(remoteAddress, a) match {
           case null     ⇒ a
           case existing ⇒ existing
         }
       case existing ⇒ existing
     }
 
-  protected def createAssociation(remoteAddress: Address): OutboundContext =
+  override def association(uid: Long): OutboundContext =
+    associationsByUid.get(uid)
+
+  override def completeHandshake(peer: UniqueAddress): Unit = {
+    val a = association(peer.address).asInstanceOf[TestOutboundContext]
+    a.completeHandshake(peer)
+    associationsByUid.put(peer.uid, a)
+  }
+
+  protected def createAssociation(remoteAddress: Address): TestOutboundContext =
     new TestOutboundContext(localAddress, remoteAddress, controlSubject, controlProbe)
 }
 
@@ -60,7 +70,7 @@ private[akka] class TestOutboundContext(
     _associationState
   }
 
-  override def completeHandshake(peer: UniqueAddress): Unit = synchronized {
+  def completeHandshake(peer: UniqueAddress): Unit = synchronized {
     _associationState.uniqueRemoteAddressPromise.trySuccess(peer)
     _associationState.uniqueRemoteAddress.value match {
       case Some(Success(`peer`)) ⇒ // our value
@@ -75,7 +85,7 @@ private[akka] class TestOutboundContext(
 
   override def sendControl(message: ControlMessage) = {
     controlProbe.foreach(_ ! message)
-    controlSubject.sendControl(InboundEnvelope(null, remoteAddress, message, None, localAddress))
+    controlSubject.sendControl(InboundEnvelope(null, remoteAddress, message, None, localAddress.uid))
   }
 
   // FIXME we should be able to Send without a recipient ActorRef

@@ -31,12 +31,15 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
   val addressA = UniqueAddress(Address("artery", "sysA", "hostA", 1001), 1)
   val addressB = UniqueAddress(Address("artery", "sysB", "hostB", 1002), 2)
 
-  private def setupStream(outboundContext: OutboundContext, timeout: FiniteDuration = 5.seconds,
-                          retryInterval: FiniteDuration = 10.seconds): (TestPublisher.Probe[String], TestSubscriber.Probe[Any]) = {
+  private def setupStream(
+    outboundContext: OutboundContext, timeout: FiniteDuration = 5.seconds,
+    retryInterval: FiniteDuration = 10.seconds,
+    injectHandshakeInterval: FiniteDuration = 10.seconds): (TestPublisher.Probe[String], TestSubscriber.Probe[Any]) = {
+
     val destination = null.asInstanceOf[RemoteActorRef] // not used
     TestSource.probe[String]
       .map(msg ⇒ Send(msg, None, destination, None))
-      .via(new OutboundHandshake(outboundContext, timeout, retryInterval))
+      .via(new OutboundHandshake(outboundContext, timeout, retryInterval, injectHandshakeInterval))
       .map { case Send(msg, _, _, _) ⇒ msg }
       .toMat(TestSink.probe[Any])(Keep.both)
       .run()
@@ -44,13 +47,25 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
 
   "OutboundHandshake stage" must {
     "send HandshakeReq when first pulled" in {
-      val controlProbe = TestProbe()
-      val inboundContext = new TestInboundContext(localAddress = addressA, controlProbe = Some(controlProbe.ref))
+      val inboundContext = new TestInboundContext(localAddress = addressA)
       val outboundContext = inboundContext.association(addressB.address)
       val (upstream, downstream) = setupStream(outboundContext)
 
       downstream.request(10)
-      controlProbe.expectMsg(HandshakeReq(addressA))
+      downstream.expectNext(HandshakeReq(addressA))
+      downstream.cancel()
+    }
+
+    "send HandshakeReq also when uniqueRemoteAddress future completed at startup" in {
+      val inboundContext = new TestInboundContext(localAddress = addressA)
+      val outboundContext = inboundContext.association(addressB.address)
+      inboundContext.completeHandshake(addressB)
+      val (upstream, downstream) = setupStream(outboundContext)
+
+      upstream.sendNext("msg1")
+      downstream.request(10)
+      downstream.expectNext(HandshakeReq(addressA))
+      downstream.expectNext("msg1")
       downstream.cancel()
     }
 
@@ -60,37 +75,60 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       val (upstream, downstream) = setupStream(outboundContext, timeout = 200.millis)
 
       downstream.request(1)
+      downstream.expectNext(HandshakeReq(addressA))
       downstream.expectError().getClass should be(classOf[HandshakeTimeoutException])
     }
 
     "retry HandshakeReq" in {
-      val controlProbe = TestProbe()
-      val inboundContext = new TestInboundContext(localAddress = addressA, controlProbe = Some(controlProbe.ref))
+      val inboundContext = new TestInboundContext(localAddress = addressA)
       val outboundContext = inboundContext.association(addressB.address)
       val (upstream, downstream) = setupStream(outboundContext, retryInterval = 100.millis)
 
       downstream.request(10)
-      controlProbe.expectMsg(HandshakeReq(addressA))
-      controlProbe.expectMsg(HandshakeReq(addressA))
-      controlProbe.expectMsg(HandshakeReq(addressA))
+      downstream.expectNext(HandshakeReq(addressA))
+      downstream.expectNext(HandshakeReq(addressA))
+      downstream.expectNext(HandshakeReq(addressA))
       downstream.cancel()
     }
 
     "not deliver messages from upstream until handshake completed" in {
-      val controlProbe = TestProbe()
-      val inboundContext = new TestInboundContext(localAddress = addressA, controlProbe = Some(controlProbe.ref))
+      val inboundContext = new TestInboundContext(localAddress = addressA)
       val outboundContext = inboundContext.association(addressB.address)
       val (upstream, downstream) = setupStream(outboundContext)
 
       downstream.request(10)
-      controlProbe.expectMsg(HandshakeReq(addressA))
+      downstream.expectNext(HandshakeReq(addressA))
       upstream.sendNext("msg1")
       downstream.expectNoMsg(200.millis)
       // InboundHandshake stage will complete the handshake when receiving HandshakeRsp
-      inboundContext.association(addressB.address).completeHandshake(addressB)
+      inboundContext.completeHandshake(addressB)
       downstream.expectNext("msg1")
       upstream.sendNext("msg2")
       downstream.expectNext("msg2")
+      downstream.cancel()
+    }
+
+    "inject HandshakeReq" in {
+      val inboundContext = new TestInboundContext(localAddress = addressA)
+      val outboundContext = inboundContext.association(addressB.address)
+      val (upstream, downstream) = setupStream(outboundContext, injectHandshakeInterval = 500.millis)
+
+      downstream.request(10)
+      upstream.sendNext("msg1")
+      downstream.expectNext(HandshakeReq(addressA))
+      inboundContext.completeHandshake(addressB)
+      downstream.expectNext("msg1")
+
+      downstream.expectNoMsg(600.millis)
+      upstream.sendNext("msg2")
+      upstream.sendNext("msg3")
+      upstream.sendNext("msg4")
+      downstream.expectNext(HandshakeReq(addressA))
+      downstream.expectNext("msg2")
+      downstream.expectNext("msg3")
+      downstream.expectNext("msg4")
+      downstream.expectNoMsg(600.millis)
+
       downstream.cancel()
     }
 
