@@ -7,7 +7,8 @@ import akka.dispatch.ExecutionContexts
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.Supervision.stoppingDecider
 import akka.stream.impl.QueueSink.{ Output, Pull }
-import akka.stream.impl.FanoutPublisherSink.PublisherSinkMessages
+import akka.stream.impl.ReactiveStreamsCompliance._
+import akka.stream.impl.VirtualProcessor.Inert
 import akka.{ Done, NotUsed }
 
 import akka.stream.impl.Stages.DefaultAttributes
@@ -519,7 +520,7 @@ final private[stream] class LazySink[T, M](sinkFactory: T ⇒ Future[Sink[T, M]]
   }
 }
 
-private[stream] object FanoutPublisherSink {
+private[stream] object AdvancedPublisherSink {
   sealed trait PublisherSinkMessages[+T]
   private case class RequestMore[T](subscriber: SubscriptionWithCursor[T], demand: Long) extends PublisherSinkMessages[T]
   private case class Cancel[T](subscriber: SubscriptionWithCursor[T]) extends PublisherSinkMessages[T]
@@ -527,20 +528,36 @@ private[stream] object FanoutPublisherSink {
   private case object Shutdown extends PublisherSinkMessages[Nothing]
   private case class Abort(ex: Throwable) extends PublisherSinkMessages[Nothing]
 
+  sealed trait Directive
+  case object Fanout extends Directive
+  case object FanoutWithDrainIfNoSubscribtions extends Directive
+  case object DrainIfNoSubscribtions extends Directive
+
+  def apply[T](fanout: Boolean, finalizeOnLastSubscriptionCompletion: Boolean): AdvancedPublisherSink[T] =
+    new AdvancedPublisherSink[T](getDirective(fanout, finalizeOnLastSubscriptionCompletion))
+
+  def getDirective(fanout: Boolean, finalizeOnLastSubscriptionCompletion: Boolean): Directive = {
+    require(fanout || !finalizeOnLastSubscriptionCompletion) //for single subscription have Publisher Sink
+    (fanout, finalizeOnLastSubscriptionCompletion) match {
+      case (true, true)   ⇒ Fanout
+      case (true, false)  ⇒ FanoutWithDrainIfNoSubscribtions
+      case (false, false) ⇒ DrainIfNoSubscribtions
+    }
+  }
 }
 
 /**
  * INTERNAL API
  */
-final private[stream] class FanoutPublisherSink[T](drainWhenNoSubscribers: Boolean) extends GraphStageWithMaterializedValue[SinkShape[T], KillSwitchPublisher[T]] {
-
-  val in = Inlet[T]("FanoutPublisherSink.in")
-  override def initialAttributes = DefaultAttributes.fanoutPublisherSink
+final private[stream] class AdvancedPublisherSink[T](strategy: AdvancedPublisherSink.Directive) extends GraphStageWithMaterializedValue[SinkShape[T], KillSwitchPublisher[T]] {
+  val in = Inlet[T]("AdvancedPublisherSink.in")
+  override def initialAttributes = DefaultAttributes.advancedPublisherSink
   override val shape: SinkShape[T] = SinkShape.of(in)
 
-  override def toString: String = "FanoutPublisherSink"
+  override def toString: String = "AdvancedPublisherSink"
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+    import AdvancedPublisherSink._
     val InputBuffer(initBuffer, maxBuffer) = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16))
     require(maxBuffer > 0, "Max buffer size must be greater than 0")
     require(initBuffer > 0, "Init buffer size must be greater than 0")
@@ -564,7 +581,7 @@ final private[stream] class FanoutPublisherSink[T](drainWhenNoSubscribers: Boole
 
       override def postStop(): Unit = {
         stopCallback {
-          case FanoutPublisherSink.Subscribe(subscriber) ⇒
+          case Subscribe(subscriber) ⇒
             subscriber.onSubscribe(CancelledSubscription)
             subscriber.onError(if (failedWithError == null) ActorPublisher.NormalShutdownReason else failedWithError)
           case _ ⇒ //keep silence
@@ -573,17 +590,22 @@ final private[stream] class FanoutPublisherSink[T](drainWhenNoSubscribers: Boole
 
       private val callback: AsyncCallback[PublisherSinkMessages[T]] =
         getAsyncCallback {
-          case FanoutPublisherSink.Subscribe(subscriber)             ⇒ registerSubscriber(subscriber.asInstanceOf[Subscriber[_ >: T]])
-          case FanoutPublisherSink.RequestMore(subscriber, elements) ⇒ moreRequested(subscriber, elements)
-          case FanoutPublisherSink.Cancel(subscription)              ⇒ unregisterSubscription(subscription)
-          case FanoutPublisherSink.Shutdown ⇒
+          case Subscribe(subscriber) ⇒ strategy match {
+            case DrainIfNoSubscribtions if cursors.nonEmpty ⇒ rejectAdditionalSubscriber(subscriber, "Sink.asPublisher(fanout = false)")
+            case _ ⇒ registerSubscriber(subscriber.asInstanceOf[Subscriber[_ >: T]])
+          }
+          case RequestMore(subscriber, elements) ⇒ moreRequested(subscriber, elements)
+          case Cancel(subscription) ⇒
+            unregisterSubscription(subscription)
+            if (cursors.isEmpty && strategy == Fanout) completeStage()
+          case Shutdown ⇒
             completeDownstream()
             completeStage()
             if (cursors.nonEmpty) {
               upstreamCompleted = true
               setKeepGoing(true)
             }
-          case FanoutPublisherSink.Abort(ex) ⇒ failStage(ex)
+          case Abort(ex) ⇒ failStage(ex)
         }
 
       override def onPush(): Unit = {
@@ -622,16 +644,16 @@ final private[stream] class FanoutPublisherSink[T](drainWhenNoSubscribers: Boole
       override protected def shutdown(): Unit = completeStage()
 
       override protected def shutdownWhenNoMoreSubscriptions(): Boolean = {
-        if (upstreamCompleted || !drainWhenNoSubscribers) {
-          completeStage()
-          true
-        } else {
-          //for drainWhenNoSubscribers == true when upstream not completed
-          if (cursors.isEmpty) {
-            downstreamDemand = 0
-            if (!hasBeenPulled(in)) pull(in)
-          }
-          false
+        strategy match {
+          case FanoutWithDrainIfNoSubscribtions | DrainIfNoSubscribtions if upstreamCompleted ⇒
+            completeStage()
+            true
+          case _ ⇒
+            if (cursors.isEmpty) {
+              downstreamDemand = 0
+              if (!hasBeenPulled(in)) pull(in)
+            }
+            false
         }
       }
 
@@ -641,8 +663,8 @@ final private[stream] class FanoutPublisherSink[T](drainWhenNoSubscribers: Boole
       }
 
       override protected def createSubscription(_subscriber: Subscriber[_ >: T]): S = new SubscriptionWithCursor[T]() {
-        override def cancel(): Unit = invoke(FanoutPublisherSink.Cancel[T](this))
-        override def request(l: Long): Unit = invoke(FanoutPublisherSink.RequestMore[T](this, l))
+        override def cancel(): Unit = invoke(Cancel[T](this))
+        override def request(l: Long): Unit = invoke(RequestMore[T](this, l))
         override def subscriber: Subscriber[_ >: T] = _subscriber
       }
     }
@@ -650,10 +672,11 @@ final private[stream] class FanoutPublisherSink[T](drainWhenNoSubscribers: Boole
     (stageLogic, new KillSwitchPublisher[T] {
       override def subscribe(subs: Subscriber[_ >: T]): Unit = {
         ReactiveStreamsCompliance.requireNonNullSubscriber(subs)
-        stageLogic.invoke(FanoutPublisherSink.Subscribe(subs))
+        stageLogic.invoke(Subscribe(subs))
       }
-      override def shutdown(): Unit = stageLogic.invoke(FanoutPublisherSink.Shutdown)
-      override def abort(ex: Throwable): Unit = stageLogic.invoke(FanoutPublisherSink.Abort(ex))
+
+      override def shutdown(): Unit = stageLogic.invoke(Shutdown)
+      override def abort(ex: Throwable): Unit = stageLogic.invoke(Abort(ex))
     })
   }
 }

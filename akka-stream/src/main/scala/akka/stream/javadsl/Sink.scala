@@ -4,7 +4,6 @@
 package akka.stream.javadsl
 
 import java.util.Optional
-import akka.stream.impl.Stages.DefaultAttributes
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Props }
 import akka.dispatch.ExecutionContexts
@@ -90,8 +89,8 @@ object Sink {
    *
    * @see [[#asPublisher]]
    */
-  def asCancellablePublisher[T](): Sink[T, Publisher[T]] =
-    new Sink(scaladsl.Sink.asCancellablePublisher())
+  def asPublisher[T](fanout: Boolean, finalizeOnLastSubscriptionCompletion: Boolean): Sink[T, Publisher[T]] =
+    new Sink(scaladsl.Sink.asPublisher(fanout, finalizeOnLastSubscriptionCompletion))
 
   /**
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized
