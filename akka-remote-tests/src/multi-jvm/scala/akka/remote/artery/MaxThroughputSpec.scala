@@ -36,6 +36,11 @@ object MaxThroughputSpec extends MultiNodeConfig {
          }
          remote.artery {
            enabled = on
+
+           # for serious measurements when running this test on only one machine
+           # it is recommended to use external media driver
+           #advanced.embedded-media-driver = off
+           #advanced.aeron-dir = "/Users/patrik/tmp/aeron-data"
          }
        }
        """)))
