@@ -235,6 +235,9 @@ Cycles in bounded stream topologies need special considerations to avoid potenti
 This section shows several examples of problems that can arise from the presence of feedback arcs in stream processing
 graphs.
 
+In examples below runnable graphs are created but do not run because each have some issue and will not complete normally.
+``Source`` variable is not defined as the nature and number of element does not matter for described problems.
+
 The first example demonstrates a graph that contains a naive cycle.
 The graph takes elements from the source, prints them, then broadcasts those elements
 to a consumer (we just used ``Sink.ignore`` for now) and to a feedback arc that is merged back into the main
