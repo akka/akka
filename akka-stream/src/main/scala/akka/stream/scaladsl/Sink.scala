@@ -15,7 +15,7 @@ import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.stream.stage.{ Context, PushStage, SyncDirective, TerminationDirective }
 import akka.stream.{ javadsl, _ }
-import org.reactivestreams.{ Publisher, Subscriber }
+import org.reactivestreams.{ Subscription, Publisher, Subscriber }
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.Duration.Inf
@@ -184,7 +184,7 @@ object Sink {
    */
   def asPublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
     if (fanout) Sink.fromGraph(AdvancedPublisherSink[T](true, true)).named("FanoutPublisherSink")
-    else new Sink(new PublisherSink[T](false, DefaultAttributes.publisherSink, shape("PublisherSink")))
+    else new Sink(new PublisherSink[T](DefaultAttributes.publisherSink, shape("PublisherSink")))
 
   /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]] with additional cancel method.
@@ -199,10 +199,10 @@ object Sink {
    *
    * @see [[#asPublisher]]
    */
-  def asPublisher[T](fanout: Boolean, finalizeOnLastSubscriptionCompletion: Boolean): Sink[T, KillSwitchPublisher[T]] =
+  def asPublisher[T](fanout: Boolean, finalizeOnLastSubscriptionCompletion: Boolean): Sink[T, Publisher[T]] =
     if (fanout || !finalizeOnLastSubscriptionCompletion)
       Sink.fromGraph(AdvancedPublisherSink[T](fanout, finalizeOnLastSubscriptionCompletion))
-    else new Sink(new PublisherSink[T](finalizeOnLastSubscriptionCompletion, DefaultAttributes.publisherSink, shape("PublisherSink")))
+    else new Sink(new PublisherSink[T](DefaultAttributes.publisherSink, shape("PublisherSink")))
 
   /**
    * A `Sink` that will consume the stream and discard the elements.
