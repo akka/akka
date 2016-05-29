@@ -464,7 +464,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   // InboundContext
   override def sendControl(to: Address, message: ControlMessage) =
-    association(to).outboundControlIngress.sendControlMessage(message)
+    association(to).sendControl(message)
 
   override def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = {
     val cached = recipient.cachedAssociation

@@ -113,7 +113,8 @@ class CodecBenchmark {
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
       .runWith(new LatchSink(N, latch))(materializer)
 
-    latch.await(30, TimeUnit.SECONDS)
+    if (!latch.await(30, TimeUnit.SECONDS))
+      throw new RuntimeException("Latch didn't complete in time")
   }
 
   @Benchmark
@@ -131,7 +132,8 @@ class CodecBenchmark {
       .map(envelope => envelopePool.release(envelope))
       .runWith(new LatchSink(N, latch))(materializer)
 
-    latch.await(30, TimeUnit.SECONDS)
+    if (!latch.await(30, TimeUnit.SECONDS))
+      throw new RuntimeException("Latch didn't complete in time")
   }
 
   @Benchmark
@@ -164,7 +166,8 @@ class CodecBenchmark {
       .via(decoder)
       .runWith(new LatchSink(N, latch))(materializer)
 
-    latch.await(30, TimeUnit.SECONDS)
+    if (!latch.await(30, TimeUnit.SECONDS))
+      throw new RuntimeException("Latch didn't complete in time")
   }
 
   @Benchmark
@@ -195,7 +198,8 @@ class CodecBenchmark {
       .via(decoder)
       .runWith(new LatchSink(N, latch))(materializer)
 
-    latch.await(30, TimeUnit.SECONDS)
+    if (!latch.await(30, TimeUnit.SECONDS))
+      throw new RuntimeException("Latch didn't complete in time")
   }
 
 }
