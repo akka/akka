@@ -4,13 +4,10 @@
 package akka.stream.impl.fusing
 
 import scala.util.control.NoStackTrace
-import akka.stream.ActorAttributes._
 import akka.stream.Supervision
-import akka.stream.Supervision._
 import akka.stream.stage.Context
 import akka.stream.stage.PushPullStage
 import akka.stream.stage.Stage
-import akka.stream.stage.TerminationDirective
 import akka.stream.stage.SyncDirective
 import akka.testkit.AkkaSpec
 
@@ -37,39 +34,6 @@ object InterpreterSupervisionSpec {
       this
     }
   }
-
-  case class OneToManyTestStage(decider: Supervision.Decider, absorbTermination: Boolean = false) extends PushPullStage[Int, Int] {
-    var buf: List[Int] = Nil
-    def onPush(elem: Int, ctx: Context[Int]): SyncDirective = {
-      buf = List(elem + 1, elem + 2, elem + 3)
-      ctx.push(elem)
-    }
-
-    override def onPull(ctx: Context[Int]): SyncDirective = {
-      if (buf.isEmpty && ctx.isFinishing)
-        ctx.finish()
-      else if (buf.isEmpty)
-        ctx.pull()
-      else {
-        val elem = buf.head
-        buf = buf.tail
-        if (elem == 3) throw TE
-        ctx.push(elem)
-      }
-    }
-
-    override def onUpstreamFinish(ctx: Context[Int]): TerminationDirective =
-      if (absorbTermination)
-        ctx.absorbTermination()
-      else
-        ctx.finish()
-
-    // note that resume will be turned into failure in the Interpreter if exception is thrown from onPull
-    override def decide(t: Throwable): Supervision.Directive = decider(t)
-
-    override def restart(): OneToManyTestStage = copy()
-  }
-
 }
 
 class InterpreterSupervisionSpec extends AkkaSpec with GraphInterpreterSpecKit {
@@ -329,40 +293,6 @@ class InterpreterSupervisionSpec extends AkkaSpec with GraphInterpreterSpecKit {
       downstream.requestOne()
       lastEvents() should be(Set(OnError(TE), Cancel))
     }
-
-    "fail when onPull throws before pushing all generated elements" in {
-      def test(decider: Supervision.Decider, absorbTermination: Boolean): Unit = {
-        new OneBoundedSetup[Int](Seq(
-          OneToManyTestStage(decider, absorbTermination))) {
-
-          downstream.requestOne()
-          lastEvents() should be(Set(RequestOne))
-          upstream.onNext(1)
-          lastEvents() should be(Set(OnNext(1)))
-
-          if (absorbTermination) {
-            upstream.onComplete()
-            lastEvents() should be(Set.empty)
-          }
-
-          downstream.requestOne()
-          lastEvents() should be(Set(OnNext(2)))
-
-          downstream.requestOne()
-          // 3 => boom
-          if (absorbTermination)
-            lastEvents() should be(Set(OnError(TE)))
-          else
-            lastEvents() should be(Set(OnError(TE), Cancel))
-        }
-      }
-
-      test(resumingDecider, absorbTermination = false)
-      test(restartingDecider, absorbTermination = false)
-      test(resumingDecider, absorbTermination = true)
-      test(restartingDecider, absorbTermination = true)
-    }
-
   }
 
 }
