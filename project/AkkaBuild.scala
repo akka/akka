@@ -549,7 +549,9 @@ object AkkaBuild extends Build {
 
     // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
     // -a Show stack traces and exception class name for AssertionErrors.
-    testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")
+    testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
+
+    Dist.includeInDist := true
   ) ++
     mavenLocalResolverSettings ++
     JUnitFileReporting.settings ++
