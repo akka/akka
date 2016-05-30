@@ -4,7 +4,7 @@
 
 package akka.http.javadsl.testkit
 
-import akka.http.scaladsl.server.RouteResult
+import akka.http.javadsl.server.RouteResult
 
 import scala.reflect.ClassTag
 import scala.concurrent.ExecutionContext
@@ -12,6 +12,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.FiniteDuration
 import akka.util.ByteString
 import akka.stream.Materializer
+import akka.http.scaladsl
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.impl.util._
@@ -32,13 +33,13 @@ import scala.annotation.varargs
 abstract class TestRouteResult(_result: RouteResult, awaitAtMost: FiniteDuration)(implicit ec: ExecutionContext, materializer: Materializer) {
   
   private def _response = _result match {
-    case RouteResult.Complete(r)          ⇒ r
-    case RouteResult.Rejected(rejections) ⇒ doFail("Expected route to complete, but was instead rejected with " + rejections)
+    case scaladsl.server.RouteResult.Complete(r)          ⇒ r
+    case scaladsl.server.RouteResult.Rejected(rejections) ⇒ doFail("Expected route to complete, but was instead rejected with " + rejections)
   }
   
   private def _rejections = _result match {
-    case RouteResult.Complete(r)  ⇒ doFail("Request was not rejected, response was " + r)
-    case RouteResult.Rejected(ex) ⇒ ex
+    case scaladsl.server.RouteResult.Complete(r)  ⇒ doFail("Request was not rejected, response was " + r)
+    case scaladsl.server.RouteResult.Rejected(ex) ⇒ ex
   }  
   
   /**

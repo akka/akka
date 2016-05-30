@@ -16,7 +16,6 @@ import org.junit.{ Assert, Rule }
 import org.scalatest.junit.{ JUnitSuiteLike, JUnitSuite }
 import scala.concurrent.duration._
 import scala.concurrent.Await
-import akka.http.scaladsl.server.RouteResult
 
 /**
  * A RouteTest that uses JUnit assertions. ActorSystem and Materializer are provided as an [[org.junit.rules.ExternalResource]]
