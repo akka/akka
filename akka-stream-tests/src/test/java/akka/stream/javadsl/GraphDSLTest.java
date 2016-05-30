@@ -14,6 +14,7 @@ import akka.japi.function.*;
 import akka.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
+import akka.testkit.AkkaJUnitActorSystemResource;
 
 import org.junit.ClassRule;
 import org.junit.Test;
