@@ -17,8 +17,9 @@ import akka.http.javadsl.model.headers.Host
 import akka.http.javadsl.server.AllDirectives
 import akka.http.javadsl.server.Directives
 import akka.http.javadsl.server.Route
+import akka.http.javadsl.server.RouteResult
 import akka.http.scaladsl.server
-import akka.http.scaladsl.server.{ ExceptionHandler, RequestContextImpl, RouteResult, Route ⇒ ScalaRoute }
+import akka.http.scaladsl.server.{ ExceptionHandler, RequestContextImpl, Route ⇒ ScalaRoute }
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.stream.Materializer
 
