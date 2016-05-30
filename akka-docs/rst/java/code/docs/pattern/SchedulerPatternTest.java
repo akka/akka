@@ -130,6 +130,11 @@ public class SchedulerPatternTest extends AbstractJavaTest {
       testSchedule(probe, props, duration("3000 millis"), duration("2500 millis"));
     }};
   }
+  
+  @Test
+  public void doNothing() {
+    // actorSystemResource.after is not called when all tests are ignored
+  }
 
   public static class TestSchedule extends JavaTestKit {
     private ActorSystem system;

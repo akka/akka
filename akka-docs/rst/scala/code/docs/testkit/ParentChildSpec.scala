@@ -11,6 +11,8 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
 import akka.testkit.TestActorRef
 import akka.actor.ActorRefFactory
+import akka.testkit.TestKit
+import org.scalatest.BeforeAndAfterAll
 
 /**
  * Parent-Child examples
@@ -74,8 +76,12 @@ class MockedChild extends Actor {
   }
 }
 
-class ParentChildSpec extends WordSpec with Matchers with TestKitBase {
-  implicit lazy val system = ActorSystem()
+class ParentChildSpec extends WordSpec with Matchers with TestKitBase with BeforeAndAfterAll {
+  implicit lazy val system = ActorSystem("ParentChildSpec")
+
+  override def afterAll(): Unit = {
+    TestKit.shutdownActorSystem(system)
+  }
 
   "A DependentChild" should {
     "be tested without its parent" in {

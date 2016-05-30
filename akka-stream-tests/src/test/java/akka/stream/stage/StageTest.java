@@ -5,7 +5,7 @@ package akka.stream.stage;
 
 import akka.NotUsed;
 import akka.stream.StreamTest;
-import akka.stream.javadsl.AkkaJUnitActorSystemResource;
+import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.AkkaSpec;
