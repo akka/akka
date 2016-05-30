@@ -34,12 +34,12 @@ final class PNCounterMap private[akka] (
   type T = PNCounterMap
 
   /** Scala API */
-  def entries: Map[String, BigInt] = underlying.entries.map { case (k, c) ⇒ k -> c.value }
+  def entries: Map[String, BigInt] = underlying.entries.map { case (k, c) ⇒ k → c.value }
 
   /** Java API */
   def getEntries: java.util.Map[String, BigInteger] = {
     import scala.collection.JavaConverters._
-    underlying.entries.map { case (k, c) ⇒ k -> c.value.bigInteger }.asJava
+    underlying.entries.map { case (k, c) ⇒ k → c.value.bigInteger }.asJava
   }
 
   /**

@@ -93,8 +93,8 @@ object LWWRegister {
 @SerialVersionUID(1L)
 final class LWWRegister[A] private[akka] (
   private[akka] val node: UniqueAddress,
-  val value: A,
-  val timestamp: Long)
+  val value:              A,
+  val timestamp:          Long)
   extends ReplicatedData with ReplicatedDataSerialization {
   import LWWRegister.{ Clock, defaultClock }
 

@@ -93,13 +93,13 @@ object ReplicatorSettings {
  *   be configured to worst case in a healthy cluster.
  */
 final class ReplicatorSettings(
-  val role: Option[String],
-  val gossipInterval: FiniteDuration,
+  val role:                      Option[String],
+  val gossipInterval:            FiniteDuration,
   val notifySubscribersInterval: FiniteDuration,
-  val maxDeltaElements: Int,
-  val dispatcher: String,
-  val pruningInterval: FiniteDuration,
-  val maxPruningDissemination: FiniteDuration) {
+  val maxDeltaElements:          Int,
+  val dispatcher:                String,
+  val pruningInterval:           FiniteDuration,
+  val maxPruningDissemination:   FiniteDuration) {
 
   def withRole(role: String): ReplicatorSettings = copy(role = ReplicatorSettings.roleOption(role))
 
@@ -126,13 +126,13 @@ final class ReplicatorSettings(
     copy(pruningInterval = pruningInterval, maxPruningDissemination = maxPruningDissemination)
 
   private def copy(
-    role: Option[String] = role,
-    gossipInterval: FiniteDuration = gossipInterval,
+    role:                      Option[String] = role,
+    gossipInterval:            FiniteDuration = gossipInterval,
     notifySubscribersInterval: FiniteDuration = notifySubscribersInterval,
-    maxDeltaElements: Int = maxDeltaElements,
-    dispatcher: String = dispatcher,
-    pruningInterval: FiniteDuration = pruningInterval,
-    maxPruningDissemination: FiniteDuration = maxPruningDissemination): ReplicatorSettings =
+    maxDeltaElements:          Int            = maxDeltaElements,
+    dispatcher:                String         = dispatcher,
+    pruningInterval:           FiniteDuration = pruningInterval,
+    maxPruningDissemination:   FiniteDuration = maxPruningDissemination): ReplicatorSettings =
     new ReplicatorSettings(role, gossipInterval, notifySubscribersInterval, maxDeltaElements, dispatcher,
       pruningInterval, maxPruningDissemination)
 }
@@ -471,7 +471,7 @@ object Replicator {
     val NotFoundDigest: Digest = ByteString(-1)
 
     final case class DataEnvelope(
-      data: ReplicatedData,
+      data:    ReplicatedData,
       pruning: Map[UniqueAddress, PruningState] = Map.empty)
       extends ReplicatorMessage {
 
@@ -735,7 +735,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   val selfUniqueAddress = cluster.selfUniqueAddress
 
   require(!cluster.isTerminated, "Cluster node must not be terminated")
-  require(role.forall(cluster.selfRoles.contains),
+  require(
+    role.forall(cluster.selfRoles.contains),
     s"This cluster member [${selfAddress}] doesn't have the role [$role]")
 
   //Start periodic gossip to random nodes in cluster
@@ -899,7 +900,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
           val merged = envelope.merge(pruningCleanupTombstoned(writeEnvelope)).addSeen(selfAddress)
           setData(key, merged)
         } else {
-          log.warning("Wrong type for writing [{}], existing type [{}], got [{}]",
+          log.warning(
+            "Wrong type for writing [{}], existing type [{}], got [{}]",
             key, existing.getClass.getName, writeEnvelope.data.getClass.getName)
         }
       case None ⇒
@@ -1048,14 +1050,14 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     if (keys.nonEmpty) {
       if (log.isDebugEnabled)
         log.debug("Sending gossip to [{}], containing [{}]", sender().path.address, keys.mkString(", "))
-      val g = Gossip(keys.map(k ⇒ k -> getData(k).get)(collection.breakOut), sendBack = otherDifferentKeys.nonEmpty)
+      val g = Gossip(keys.map(k ⇒ k → getData(k).get)(collection.breakOut), sendBack = otherDifferentKeys.nonEmpty)
       sender() ! g
     }
     val myMissingKeys = otherKeys diff myKeys
     if (myMissingKeys.nonEmpty) {
       if (log.isDebugEnabled)
         log.debug("Sending gossip status to [{}], requesting missing [{}]", sender().path.address, myMissingKeys.mkString(", "))
-      val status = Status(myMissingKeys.map(k ⇒ k -> NotFoundDigest)(collection.breakOut), chunk, totChunks)
+      val status = Status(myMissingKeys.map(k ⇒ k → NotFoundDigest)(collection.breakOut), chunk, totChunks)
       sender() ! status
     }
   }
@@ -1305,12 +1307,12 @@ private[akka] abstract class ReadWriteAggregator extends Actor {
  */
 private[akka] object WriteAggregator {
   def props(
-    key: KeyR,
-    envelope: Replicator.Internal.DataEnvelope,
+    key:         KeyR,
+    envelope:    Replicator.Internal.DataEnvelope,
     consistency: Replicator.WriteConsistency,
-    req: Option[Any],
-    nodes: Set[Address],
-    replyTo: ActorRef): Props =
+    req:         Option[Any],
+    nodes:       Set[Address],
+    replyTo:     ActorRef): Props =
     Props(new WriteAggregator(key, envelope, consistency, req, nodes, replyTo))
       .withDeploy(Deploy.local)
 }
@@ -1319,12 +1321,12 @@ private[akka] object WriteAggregator {
  * INTERNAL API
  */
 private[akka] class WriteAggregator(
-  key: KeyR,
-  envelope: Replicator.Internal.DataEnvelope,
-  consistency: Replicator.WriteConsistency,
-  req: Option[Any],
+  key:                KeyR,
+  envelope:           Replicator.Internal.DataEnvelope,
+  consistency:        Replicator.WriteConsistency,
+  req:                Option[Any],
   override val nodes: Set[Address],
-  replyTo: ActorRef) extends ReadWriteAggregator {
+  replyTo:            ActorRef) extends ReadWriteAggregator {
 
   import Replicator._
   import Replicator.Internal._
@@ -1384,12 +1386,12 @@ private[akka] class WriteAggregator(
  */
 private[akka] object ReadAggregator {
   def props(
-    key: KeyR,
+    key:         KeyR,
     consistency: Replicator.ReadConsistency,
-    req: Option[Any],
-    nodes: Set[Address],
-    localValue: Option[Replicator.Internal.DataEnvelope],
-    replyTo: ActorRef): Props =
+    req:         Option[Any],
+    nodes:       Set[Address],
+    localValue:  Option[Replicator.Internal.DataEnvelope],
+    replyTo:     ActorRef): Props =
     Props(new ReadAggregator(key, consistency, req, nodes, localValue, replyTo))
       .withDeploy(Deploy.local)
 
@@ -1399,12 +1401,12 @@ private[akka] object ReadAggregator {
  * INTERNAL API
  */
 private[akka] class ReadAggregator(
-  key: KeyR,
-  consistency: Replicator.ReadConsistency,
-  req: Option[Any],
+  key:                KeyR,
+  consistency:        Replicator.ReadConsistency,
+  req:                Option[Any],
   override val nodes: Set[Address],
-  localValue: Option[Replicator.Internal.DataEnvelope],
-  replyTo: ActorRef) extends ReadWriteAggregator {
+  localValue:         Option[Replicator.Internal.DataEnvelope],
+  replyTo:            ActorRef) extends ReadWriteAggregator {
 
   import Replicator._
   import Replicator.Internal._

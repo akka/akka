@@ -21,9 +21,9 @@ private[cluster] object ClusterRemoteWatcher {
    * Factory method for `ClusterRemoteWatcher` [[akka.actor.Props]].
    */
   def props(
-    failureDetector: FailureDetectorRegistry[Address],
-    heartbeatInterval: FiniteDuration,
-    unreachableReaperInterval: FiniteDuration,
+    failureDetector:                FailureDetectorRegistry[Address],
+    heartbeatInterval:              FiniteDuration,
+    unreachableReaperInterval:      FiniteDuration,
     heartbeatExpectedResponseAfter: FiniteDuration): Props =
     Props(classOf[ClusterRemoteWatcher], failureDetector, heartbeatInterval, unreachableReaperInterval,
       heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
@@ -41,9 +41,9 @@ private[cluster] object ClusterRemoteWatcher {
  * of the cluster and then later becomes cluster member.
  */
 private[cluster] class ClusterRemoteWatcher(
-  failureDetector: FailureDetectorRegistry[Address],
-  heartbeatInterval: FiniteDuration,
-  unreachableReaperInterval: FiniteDuration,
+  failureDetector:                FailureDetectorRegistry[Address],
+  heartbeatInterval:              FiniteDuration,
+  unreachableReaperInterval:      FiniteDuration,
   heartbeatExpectedResponseAfter: FiniteDuration)
   extends RemoteWatcher(
     failureDetector,

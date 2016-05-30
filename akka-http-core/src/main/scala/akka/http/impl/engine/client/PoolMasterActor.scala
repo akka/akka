@@ -53,8 +53,8 @@ private[http] final class PoolMasterActor extends Actor with ActorLogging {
     }
     val props = Props(new PoolInterfaceActor(gateway)).withDeploy(Deploy.local)
     val ref = context.actorOf(props, PoolInterfaceActor.name.next())
-    poolStatus += gateway -> PoolInterfaceRunning(ref)
-    poolInterfaces += ref -> gateway
+    poolStatus += gateway → PoolInterfaceRunning(ref)
+    poolInterfaces += ref → gateway
     context.watch(ref)
   }
 
@@ -93,7 +93,7 @@ private[http] final class PoolMasterActor extends Actor with ActorLogging {
           // to this actor by the pool actor, they will be retried once the shutdown
           // has completed.
           ref ! PoolInterfaceActor.Shutdown
-          poolStatus += gateway -> PoolInterfaceShuttingDown(shutdownCompletedPromise)
+          poolStatus += gateway → PoolInterfaceShuttingDown(shutdownCompletedPromise)
         case PoolInterfaceShuttingDown(formerPromise) ⇒
           // Pool is already shutting down, mirror the existing promise.
           shutdownCompletedPromise.tryCompleteWith(formerPromise.future)

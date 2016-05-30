@@ -228,7 +228,7 @@ object StageActorRefSpec {
         })
       }
 
-      logic -> p.future
+      logic → p.future
     }
   }
 

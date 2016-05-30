@@ -115,8 +115,9 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    */
   private[cluster] val scheduler: Scheduler = {
     if (system.scheduler.maxFrequency < 1.second / SchedulerTickDuration) {
-      logInfo("Using a dedicated scheduler for cluster. Default scheduler can be used if configured " +
-        "with 'akka.scheduler.tick-duration' [{} ms] <=  'akka.cluster.scheduler.tick-duration' [{} ms].",
+      logInfo(
+        "Using a dedicated scheduler for cluster. Default scheduler can be used if configured " +
+          "with 'akka.scheduler.tick-duration' [{} ms] <=  'akka.cluster.scheduler.tick-duration' [{} ms].",
         (1000 / system.scheduler.maxFrequency).toInt, SchedulerTickDuration.toMillis)
 
       val cfg = ConfigFactory.parseString(
@@ -127,9 +128,9 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         case tf                           ⇒ tf
       }
       system.dynamicAccess.createInstanceFor[Scheduler](system.settings.SchedulerClass, immutable.Seq(
-        classOf[Config] -> cfg,
-        classOf[LoggingAdapter] -> log,
-        classOf[ThreadFactory] -> threadFactory)).get
+        classOf[Config] → cfg,
+        classOf[LoggingAdapter] → log,
+        classOf[ThreadFactory] → threadFactory)).get
     } else {
       // delegate to system.scheduler, but don't close over system
       val systemScheduler = system.scheduler
@@ -142,8 +143,9 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
                               runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
           systemScheduler.schedule(initialDelay, interval, runnable)
 
-        override def scheduleOnce(delay: FiniteDuration,
-                                  runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
+        override def scheduleOnce(
+          delay:    FiniteDuration,
+          runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
           systemScheduler.scheduleOnce(delay, runnable)
       }
     }
@@ -228,7 +230,8 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    */
   @varargs def subscribe(subscriber: ActorRef, initialStateMode: SubscriptionInitialStateMode, to: Class[_]*): Unit = {
     require(to.length > 0, "at least one `ClusterDomainEvent` class is required")
-    require(to.forall(classOf[ClusterDomainEvent].isAssignableFrom),
+    require(
+      to.forall(classOf[ClusterDomainEvent].isAssignableFrom),
       s"subscribe to `akka.cluster.ClusterEvent.ClusterDomainEvent` or subclasses, was [${to.map(_.getName).mkString(", ")}]")
     clusterCore ! InternalClusterAction.Subscribe(subscriber, initialStateMode, to.toSet)
   }

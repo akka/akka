@@ -25,17 +25,19 @@ import akka.stream.impl.fusing.SubSource
  *
  * see: http://tools.ietf.org/html/rfc2046#section-5.1.1
  */
-private[http] final class BodyPartParser(defaultContentType: ContentType,
-                                         boundary: String,
-                                         log: LoggingAdapter,
-                                         settings: BodyPartParser.Settings)
+private[http] final class BodyPartParser(
+  defaultContentType: ContentType,
+  boundary:           String,
+  log:                LoggingAdapter,
+  settings:           BodyPartParser.Settings)
   extends GraphStage[FlowShape[ByteString, BodyPartParser.Output]] {
   import BodyPartParser._
   import settings._
 
   require(boundary.nonEmpty, "'boundary' parameter of multipart Content-Type must be non-empty")
   require(boundary.charAt(boundary.length - 1) != ' ', "'boundary' parameter of multipart Content-Type must not end with a space char")
-  require(boundaryChar matchesAll boundary,
+  require(
+    boundaryChar matchesAll boundary,
     s"'boundary' parameter of multipart Content-Type contains illegal character '${boundaryChar.firstMismatch(boundary).get}'")
 
   sealed trait StateResult // phantom type for ensuring soundness of our parsing method setup
@@ -68,7 +70,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
   override def createLogic(attributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
       private var output = collection.immutable.Queue.empty[Output] // FIXME this probably is too wasteful
-      private var state: ByteString => StateResult = tryParseInitialBoundary
+      private var state: ByteString ⇒ StateResult = tryParseInitialBoundary
       private var shouldTerminate = false
 
       override def onPush(): Unit = {
@@ -76,8 +78,8 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
           val elem = grab(in)
           try state(elem)
           catch {
-            case e: ParsingException => fail(e.info)
-            case NotEnoughDataException =>
+            case e: ParsingException ⇒ fail(e.info)
+            case NotEnoughDataException ⇒
               // we are missing a try/catch{continue} wrapper somewhere
               throw new IllegalStateException("unexpected NotEnoughDataException", NotEnoughDataException)
           }
@@ -105,8 +107,8 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
         if (illegalHeaderWarnings) log.warning(errorInfo.withSummaryPrepended("Illegal multipart header").formatPretty)
 
       def tryParseInitialBoundary(input: ByteString): StateResult =
-      // we don't use boyerMoore here because we are testing for the boundary *without* a
-      // preceding CRLF and at a known location (the very beginning of the entity)
+        // we don't use boyerMoore here because we are testing for the boundary *without* a
+        // preceding CRLF and at a known location (the very beginning of the entity)
         try {
           if (boundary(input, 0)) {
             val ix = boundaryLength
@@ -136,7 +138,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
         def contentType =
           cth match {
             case Some(x) ⇒ x.contentType
-            case None ⇒ defaultContentType
+            case None    ⇒ defaultContentType
           }
 
         var lineEnd = 0
@@ -181,7 +183,8 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
       def parseEntity(headers: List[HttpHeader], contentType: ContentType,
                       emitPartChunk: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = {
                         (headers, ct, bytes) ⇒
-                          emit(BodyPartStart(headers, entityParts ⇒ HttpEntity.IndefiniteLength(ct,
+                          emit(BodyPartStart(headers, entityParts ⇒ HttpEntity.IndefiniteLength(
+                            ct,
                             entityParts.collect { case EntityPart(data) ⇒ data })))
                           emit(bytes)
                       },

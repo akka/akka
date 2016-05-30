@@ -96,7 +96,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
   "A Flow" must {
 
-    for ((name, op) ← List("identity" -> identity, "identity2" -> identity2); n ← List(1, 2, 4)) {
+    for ((name, op) ← List("identity" → identity, "identity2" → identity2); n ← List(1, 2, 4)) {
       s"request initial elements from upstream ($name, $n)" in {
         new ChainSetup(op, settings.withInputBuffer(initialSize = n, maxSize = n), toPublisher) {
           upstream.expectRequest(upstreamSubscription, settings.maxInputBufferSize)

@@ -59,8 +59,8 @@ final class RandomRoutingLogic extends RoutingLogic {
 final case class RandomPool(
   override val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
-  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-  override val usePoolDispatcher: Boolean = false)
+  override val routerDispatcher:   String             = Dispatchers.DefaultDispatcherId,
+  override val usePoolDispatcher:  Boolean            = false)
   extends Pool with PoolOverrideUnsetConfig[RandomPool] {
 
   def this(config: Config) =
@@ -119,8 +119,8 @@ final case class RandomPool(
  */
 @SerialVersionUID(1L)
 final case class RandomGroup(
-  override val paths: immutable.Iterable[String],
-  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+  override val paths:            immutable.Iterable[String],
+  override val routerDispatcher: String                     = Dispatchers.DefaultDispatcherId)
   extends Group {
 
   def this(config: Config) =

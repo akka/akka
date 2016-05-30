@@ -89,15 +89,15 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   def withErrorLoggingVerbosity(newValue: ParserSettings.ErrorLoggingVerbosity): ParserSettings = self.copy(errorLoggingVerbosity = newValue)
   def withHeaderValueCacheLimits(newValue: Map[String, Int]): ParserSettings = self.copy(headerValueCacheLimits = newValue)
   def withCustomMethods(methods: HttpMethod*): ParserSettings = {
-    val map = methods.map(m ⇒ m.name -> m).toMap
+    val map = methods.map(m ⇒ m.name → m).toMap
     self.copy(customMethods = map.get)
   }
   def withCustomStatusCodes(codes: StatusCode*): ParserSettings = {
-    val map = codes.map(c ⇒ c.intValue -> c).toMap
+    val map = codes.map(c ⇒ c.intValue → c).toMap
     self.copy(customStatusCodes = map.get)
   }
   def withCustomMediaTypes(types: MediaType*): ParserSettings = {
-    val map = types.map(c ⇒ (c.mainType, c.subType) -> c).toMap
+    val map = types.map(c ⇒ (c.mainType, c.subType) → c).toMap
     self.copy(customMediaTypes = (main, sub) ⇒ map.get((main, sub)))
   }
 }

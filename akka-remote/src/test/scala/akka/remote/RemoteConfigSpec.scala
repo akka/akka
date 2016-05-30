@@ -46,8 +46,8 @@ class RemoteConfigSpec extends AkkaSpec(
       Transports.head._1 should ===(classOf[akka.remote.transport.netty.NettyTransport].getName)
       Transports.head._2 should ===(Nil)
       Adapters should ===(Map(
-        "gremlin" -> classOf[akka.remote.transport.FailureInjectorProvider].getName,
-        "trttl" -> classOf[akka.remote.transport.ThrottlerProvider].getName))
+        "gremlin" → classOf[akka.remote.transport.FailureInjectorProvider].getName,
+        "trttl" → classOf[akka.remote.transport.ThrottlerProvider].getName))
 
       WatchFailureDetectorImplementationClass should ===(classOf[PhiAccrualFailureDetector].getName)
       WatchHeartBeatInterval should ===(1 seconds)

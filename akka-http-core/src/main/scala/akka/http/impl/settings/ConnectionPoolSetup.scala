@@ -10,6 +10,6 @@ import akka.http.scaladsl.settings.ConnectionPoolSettings
 
 /** INTERNAL API */
 private[akka] final case class ConnectionPoolSetup(
-  settings: ConnectionPoolSettings,
-  connectionContext: ConnectionContext = ConnectionContext.noEncryption(),
-  log: LoggingAdapter)
+  settings:          ConnectionPoolSettings,
+  connectionContext: ConnectionContext      = ConnectionContext.noEncryption(),
+  log:               LoggingAdapter)

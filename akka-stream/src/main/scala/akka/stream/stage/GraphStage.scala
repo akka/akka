@@ -123,9 +123,10 @@ object GraphStageLogic {
   /**
    * Minimal actor to work with other actors and watch them in a synchronous ways
    */
-  final class StageActor(materializer: ActorMaterializer,
-                         getAsyncCallback: StageActorRef.Receive ⇒ AsyncCallback[(ActorRef, Any)],
-                         initialReceive: StageActorRef.Receive) {
+  final class StageActor(
+    materializer:     ActorMaterializer,
+    getAsyncCallback: StageActorRef.Receive ⇒ AsyncCallback[(ActorRef, Any)],
+    initialReceive:   StageActorRef.Receive) {
 
     private val callback = getAsyncCallback(internalReceive)
     private def cell = materializer.supervisor match {
@@ -1149,9 +1150,9 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
    * adding the new timer.
    */
   final protected def schedulePeriodicallyWithInitialDelay(
-    timerKey: Any,
+    timerKey:     Any,
     initialDelay: FiniteDuration,
-    interval: FiniteDuration): Unit = {
+    interval:     FiniteDuration): Unit = {
     cancelTimer(timerKey)
     val id = timerIdGen.next()
     val task = interpreter.materializer.schedulePeriodically(initialDelay, interval, new Runnable {

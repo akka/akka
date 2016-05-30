@@ -41,15 +41,15 @@ class DslConsistencySpec extends WordSpec with Matchers {
 
   val graphHelpers = Set("zipGraph", "zipWithGraph", "mergeGraph", "mergeSortedGraph", "interleaveGraph", "concatGraph", "prependGraph", "alsoToGraph")
   val allowMissing: Map[Class[_], Set[String]] = Map(
-    jFlowClass -> graphHelpers,
-    jSourceClass -> graphHelpers,
+    jFlowClass → graphHelpers,
+    jSourceClass → graphHelpers,
     // Java subflows can only be nested using .via and .to (due to type system restrictions)
-    jSubFlowClass -> (graphHelpers ++ Set("groupBy", "splitAfter", "splitWhen", "subFlow")),
-    jSubSourceClass -> (graphHelpers ++ Set("groupBy", "splitAfter", "splitWhen", "subFlow")),
-    sFlowClass -> Set("of"),
-    sSourceClass -> Set("adapt", "from"),
-    sSinkClass -> Set("adapt"),
-    sRunnableGraphClass -> Set("builder"))
+    jSubFlowClass → (graphHelpers ++ Set("groupBy", "splitAfter", "splitWhen", "subFlow")),
+    jSubSourceClass → (graphHelpers ++ Set("groupBy", "splitAfter", "splitWhen", "subFlow")),
+    sFlowClass → Set("of"),
+    sSourceClass → Set("adapt", "from"),
+    sSinkClass → Set("adapt"),
+    sRunnableGraphClass → Set("builder"))
 
   def materializing(m: Method): Boolean = m.getParameterTypes.contains(classOf[ActorMaterializer])
 
@@ -61,12 +61,12 @@ class DslConsistencySpec extends WordSpec with Matchers {
 
   "Java and Scala DSLs" must {
 
-    ("Source" -> List[Class[_]](sSourceClass, jSourceClass)) ::
-      ("SubSource" -> List[Class[_]](sSubSourceClass, jSubSourceClass)) ::
-      ("Flow" -> List[Class[_]](sFlowClass, jFlowClass)) ::
-      ("SubFlow" -> List[Class[_]](sSubFlowClass, jSubFlowClass)) ::
-      ("Sink" -> List[Class[_]](sSinkClass, jSinkClass)) ::
-      ("RunanbleFlow" -> List[Class[_]](sRunnableGraphClass, jRunnableGraphClass)) ::
+    ("Source" → List[Class[_]](sSourceClass, jSourceClass)) ::
+      ("SubSource" → List[Class[_]](sSubSourceClass, jSubSourceClass)) ::
+      ("Flow" → List[Class[_]](sFlowClass, jFlowClass)) ::
+      ("SubFlow" → List[Class[_]](sSubFlowClass, jSubFlowClass)) ::
+      ("Sink" → List[Class[_]](sSinkClass, jSinkClass)) ::
+      ("RunanbleFlow" → List[Class[_]](sRunnableGraphClass, jRunnableGraphClass)) ::
       Nil foreach {
         case (element, classes) ⇒
 

@@ -632,24 +632,24 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
     new SubSource(delegate.recoverWith(pf))
 
   /**
-    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
-    * a failure has been recovered up to `attempts` number of times so that each time there is a failure
-    * it is fed into the `pf` and a new Source may be materialized. Note that if you pass in 0, this won't
-    * attempt to recover at all. Passing in a negative number will behave exactly the same as  `recoverWith`.
-    *
-    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
-    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
-    *
-    * '''Emits when''' element is available from the upstream or upstream is failed and element is available
-    * from alternative Source
-    *
-    * '''Backpressures when''' downstream backpressures
-    *
-    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
-    *
-    * '''Cancels when''' downstream cancels
-    *
-    */
+   * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
+   * a failure has been recovered up to `attempts` number of times so that each time there is a failure
+   * it is fed into the `pf` and a new Source may be materialized. Note that if you pass in 0, this won't
+   * attempt to recover at all. Passing in a negative number will behave exactly the same as  `recoverWith`.
+   *
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * '''Emits when''' element is available from the upstream or upstream is failed and element is available
+   * from alternative Source
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   */
   def recoverWithRetries[T >: Out](attempts: Int, pf: PartialFunction[Throwable, _ <: Graph[SourceShape[T], NotUsed]]): SubSource[T, Mat @uncheckedVariance] =
     new SubSource(delegate.recoverWithRetries(attempts, pf))
 
@@ -1062,8 +1062,9 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    *
    * '''Cancels when''' downstream cancels
    */
-  def zipWith[Out2, Out3](that: Graph[SourceShape[Out2], _],
-                          combine: function.Function2[Out, Out2, Out3]): SubSource[Out3, Mat] =
+  def zipWith[Out2, Out3](
+    that:    Graph[SourceShape[Out2], _],
+    combine: function.Function2[Out, Out2, Out3]): SubSource[Out3, Mat] =
     new SubSource(delegate.zipWith[Out2, Out3](that)(combinerToScala(combine)))
 
   /**
@@ -1113,18 +1114,18 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
     new SubSource(delegate.idleTimeout(timeout))
 
   /**
-    * If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
-    * the stream is failed with a [[java.util.concurrent.TimeoutException]]. The timeout is checked periodically,
-    * so the resolution of the check is one period (equals to timeout value).
-    *
-    * '''Emits when''' upstream emits an element
-    *
-    * '''Backpressures when''' downstream backpressures
-    *
-    * '''Completes when''' upstream completes or fails if timeout elapses between element emission and downstream demand.
-    *
-    * '''Cancels when''' downstream cancels
-    */
+   * If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
+   * the stream is failed with a [[java.util.concurrent.TimeoutException]]. The timeout is checked periodically,
+   * so the resolution of the check is one period (equals to timeout value).
+   *
+   * '''Emits when''' upstream emits an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or fails if timeout elapses between element emission and downstream demand.
+   *
+   * '''Cancels when''' downstream cancels
+   */
   def backpressureTimeout(timeout: FiniteDuration): SubSource[Out, Mat] =
     new SubSource(delegate.backpressureTimeout(timeout))
 

@@ -248,7 +248,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
             def runRequest(uri: Uri): Future[(Try[HttpResponse], Int)] = {
               val itNeverSends = Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source.maybe[ByteString])
-              Source.single(HttpRequest(POST, uri, entity = itNeverSends) -> 1)
+              Source.single(HttpRequest(POST, uri, entity = itNeverSends) → 1)
                 .via(pool)
                 .runWith(Sink.head)
             }
@@ -480,7 +480,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
       connection.remoteAddress.getHostName shouldEqual hostname
       connection.remoteAddress.getPort shouldEqual port
-      requestPublisherProbe -> responseSubscriberProbe
+      requestPublisherProbe → responseSubscriberProbe
     }
 
     def acceptConnection(): (TestSubscriber.ManualProbe[HttpRequest], TestPublisher.ManualProbe[HttpResponse]) = {
@@ -497,7 +497,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
       pub.subscribe(requestSubscriberProbe)
       responsePublisherProbe.subscribe(sub)
-      requestSubscriberProbe -> responsePublisherProbe
+      requestSubscriberProbe → responsePublisherProbe
     }
 
     def openClientSocket() = new Socket(hostname, port)
@@ -513,7 +513,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val sb = new java.lang.StringBuilder
       val cbuf = new Array[Char](256)
       @tailrec def drain(): (String, BufferedReader) = reader.read(cbuf) match {
-        case -1 ⇒ sb.toString -> reader
+        case -1 ⇒ sb.toString → reader
         case n  ⇒ sb.append(cbuf, 0, n); drain()
       }
       drain()

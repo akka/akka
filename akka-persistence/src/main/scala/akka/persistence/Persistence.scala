@@ -305,7 +305,8 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
 
   private class PluginHolderExtensionId(configPath: String, fallbackPath: String) extends ExtensionId[PluginHolder] {
     override def createExtension(system: ExtendedActorSystem): PluginHolder = {
-      require(!isEmpty(configPath) && system.settings.config.hasPath(configPath),
+      require(
+        !isEmpty(configPath) && system.settings.config.hasPath(configPath),
         s"'reference.conf' is missing persistence plugin config path: '$configPath'")
       val config: Config = system.settings.config.getConfig(configPath)
         .withFallback(system.settings.config.getConfig(fallbackPath))

@@ -195,9 +195,10 @@ private[akka] final class SourceQueueAdapter[T](delegate: SourceQueueWithComplet
 /**
  * INTERNAL API
  */
-private[stream] final class UnfoldResourceSource[T, S](create: () ⇒ S,
-                                                       readData: (S) ⇒ Option[T],
-                                                       close: (S) ⇒ Unit) extends GraphStage[SourceShape[T]] {
+private[stream] final class UnfoldResourceSource[T, S](
+  create:   () ⇒ S,
+  readData: (S) ⇒ Option[T],
+  close:    (S) ⇒ Unit) extends GraphStage[SourceShape[T]] {
   val out = Outlet[T]("UnfoldResourceSource.out")
   override val shape = SourceShape(out)
   override def initialAttributes: Attributes = DefaultAttributes.unfoldResourceSource
@@ -251,9 +252,10 @@ private[stream] final class UnfoldResourceSource[T, S](create: () ⇒ S,
   override def toString = "UnfoldResourceSource"
 }
 
-private[stream] final class UnfoldResourceSourceAsync[T, S](create: () ⇒ Future[S],
-                                                            readData: (S) ⇒ Future[Option[T]],
-                                                            close: (S) ⇒ Future[Done]) extends GraphStage[SourceShape[T]] {
+private[stream] final class UnfoldResourceSourceAsync[T, S](
+  create:   () ⇒ Future[S],
+  readData: (S) ⇒ Future[Option[T]],
+  close:    (S) ⇒ Future[Done]) extends GraphStage[SourceShape[T]] {
   val out = Outlet[T]("UnfoldResourceSourceAsync.out")
   override val shape = SourceShape(out)
   override def initialAttributes: Attributes = DefaultAttributes.unfoldResourceSourceAsync

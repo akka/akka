@@ -68,8 +68,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private val ActorIdentifyManifest = "B"
 
   private val fromBinaryMap = Map[String, Array[Byte] ⇒ AnyRef](
-    IdentifyManifest -> deserializeIdentify,
-    ActorIdentifyManifest -> deserializeActorIdentity)
+    IdentifyManifest → deserializeIdentify,
+    ActorIdentifyManifest → deserializeActorIdentity)
 
   override def manifest(o: AnyRef): String =
     o match {

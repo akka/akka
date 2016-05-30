@@ -93,7 +93,7 @@ class EWMASpec extends AkkaSpec(MetricsEnabledSpec.config) with MetricsCollector
               } else None
           }
         }
-        streamingDataSet ++= changes.map(m ⇒ m.name -> m)
+        streamingDataSet ++= changes.map(m ⇒ m.name → m)
       }
     }
   }

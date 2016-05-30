@@ -107,7 +107,8 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
     }
 
     "Accept-Charset: UTF-8, *;q=0.8, us;q=0.1" test { accept ⇒
-      accept(`text/plain` withCharset `US-ASCII`,
+      accept(
+        `text/plain` withCharset `US-ASCII`,
         `text/plain` withCharset `ISO-8859-1`) should select(`text/plain` withCharset `ISO-8859-1`)
     }
 

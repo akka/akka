@@ -98,7 +98,7 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
     }
 
     val serverSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleServerContext, Server)
-    val clientSideTls = Http().sslTlsStage(clientContext, Client, Some(hostname -> 8080))
+    val clientSideTls = Http().sslTlsStage(clientContext, Client, Some(hostname → 8080))
 
     val server =
       Http().serverLayer()

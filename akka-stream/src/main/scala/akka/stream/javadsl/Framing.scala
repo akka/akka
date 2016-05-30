@@ -66,9 +66,10 @@ object Framing {
    *                           this Flow will fail the stream. This length *includes* the header (i.e the offset and
    *                           the length of the size field)
    */
-  def lengthField(fieldLength: Int,
-                  fieldOffset: Int,
-                  maximumFrameLength: Int): Flow[ByteString, ByteString, NotUsed] =
+  def lengthField(
+    fieldLength:        Int,
+    fieldOffset:        Int,
+    maximumFrameLength: Int): Flow[ByteString, ByteString, NotUsed] =
     scaladsl.Framing.lengthField(fieldLength, fieldOffset, maximumFrameLength).asJava
 
   /**
@@ -85,10 +86,11 @@ object Framing {
    *                           the length of the size field)
    * @param byteOrder The ''ByteOrder'' to be used when decoding the field
    */
-  def lengthField(fieldLength: Int,
-                  fieldOffset: Int,
-                  maximumFrameLength: Int,
-                  byteOrder: ByteOrder): Flow[ByteString, ByteString, NotUsed] =
+  def lengthField(
+    fieldLength:        Int,
+    fieldOffset:        Int,
+    maximumFrameLength: Int,
+    byteOrder:          ByteOrder): Flow[ByteString, ByteString, NotUsed] =
     scaladsl.Framing.lengthField(fieldLength, fieldOffset, maximumFrameLength, byteOrder).asJava
 
   /**

@@ -113,7 +113,8 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    * This extractor is just convenience for matching a (S, S) pair, including a
    * reminder what the new state is.
    */
-  val -> = PersistentFSM.->
+  val `->` = PersistentFSM.`->`
+  val → = PersistentFSM.`->`
 
   /**
    * This case object is received in case of a state timeout.

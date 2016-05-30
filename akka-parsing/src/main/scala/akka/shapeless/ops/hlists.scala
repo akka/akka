@@ -17,7 +17,6 @@
 package akka.shapeless
 package ops
 
-
 object hlist {
   /**
    * Type class witnessing that this `HList` is composite and providing access to head and tail.

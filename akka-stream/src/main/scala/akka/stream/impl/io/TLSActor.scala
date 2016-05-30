@@ -25,13 +25,14 @@ import akka.stream.TLSProtocol._
  */
 private[akka] object TLSActor {
 
-  def props(settings: ActorMaterializerSettings,
-            sslContext: SSLContext,
-            firstSession: NegotiateNewSession,
-            role: TLSRole,
-            closing: TLSClosing,
-            hostInfo: Option[(String, Int)],
-            tracing: Boolean = false): Props =
+  def props(
+    settings:     ActorMaterializerSettings,
+    sslContext:   SSLContext,
+    firstSession: NegotiateNewSession,
+    role:         TLSRole,
+    closing:      TLSClosing,
+    hostInfo:     Option[(String, Int)],
+    tracing:      Boolean                   = false): Props =
     Props(new TLSActor(settings, sslContext, firstSession, role, closing, hostInfo, tracing)).withDeploy(Deploy.local)
 
   final val TransportIn = 0
@@ -44,10 +45,11 @@ private[akka] object TLSActor {
 /**
  * INTERNAL API.
  */
-private[akka] class TLSActor(settings: ActorMaterializerSettings,
-                             sslContext: SSLContext,
-                             firstSession: NegotiateNewSession, role: TLSRole, closing: TLSClosing,
-                             hostInfo: Option[(String, Int)], tracing: Boolean)
+private[akka] class TLSActor(
+  settings:     ActorMaterializerSettings,
+  sslContext:   SSLContext,
+  firstSession: NegotiateNewSession, role: TLSRole, closing: TLSClosing,
+  hostInfo: Option[(String, Int)], tracing: Boolean)
   extends Actor with ActorLogging with Pump {
 
   import TLSActor._

@@ -30,14 +30,14 @@ import scala.concurrent.duration.FiniteDuration
  */
 @deprecated("Use BalancingPool instead of BalancingDispatcher", "2.3")
 class BalancingDispatcher(
-  _configurator: MessageDispatcherConfigurator,
-  _id: String,
-  throughput: Int,
-  throughputDeadlineTime: Duration,
-  _mailboxType: MailboxType,
+  _configurator:                   MessageDispatcherConfigurator,
+  _id:                             String,
+  throughput:                      Int,
+  throughputDeadlineTime:          Duration,
+  _mailboxType:                    MailboxType,
   _executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
-  _shutdownTimeout: FiniteDuration,
-  attemptTeamWork: Boolean)
+  _shutdownTimeout:                FiniteDuration,
+  attemptTeamWork:                 Boolean)
   extends Dispatcher(_configurator, _id, throughput, throughputDeadlineTime, _executorServiceFactoryProvider, _shutdownTimeout) {
 
   /**
