@@ -40,23 +40,22 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
     //#logRequest
     // logs request with "get-user"
     final Route routeBasicLogRequest = get(() -> 
-                            logRequest("get-user", ()-> 
-                                       complete("logged")));
+      logRequest("get-user", () -> complete("logged")));
     
     // logs request with "get-user" as Info
     final Route routeBasicLogRequestAsInfo = get(() -> 
-                            logRequest("get-user", InfoLevel(), ()-> 
-                                       complete("logged")));
+      logRequest("get-user", InfoLevel(), () -> complete("logged")));
 
     // logs just the request method at info level
-    Function<HttpRequest, LogEntry> requestMethodAsInfo = (request)->
+    Function<HttpRequest, LogEntry> requestMethodAsInfo = (request) -> 
       LogEntry.create(request.method().toString(), InfoLevel());
+
     final Route routeUsingFunction = get(() -> 
-                            logRequest(requestMethodAsInfo, ()-> 
-                                       complete("logged")));
+      logRequest(requestMethodAsInfo, () -> complete("logged")));
 
     // tests:
-    testRoute(routeBasicLogRequest).run(HttpRequest.GET("/")).assertEntity("logged");
+    testRoute(routeBasicLogRequest).run(HttpRequest.GET("/"))
+      .assertEntity("logged");
     //#logRequest
   }
 
@@ -67,33 +66,31 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
 
     // handle request to optionally generate a log entry
     BiFunction<HttpRequest, HttpResponse, Optional<LogEntry>> requestMethodAsInfo = 
-      (request, response)->
+      (request, response) ->
         (response.status().isSuccess())  ? 
             Optional.of(
-              LogEntry
-                .create(request.method().toString() + ":" + response.status().intValue(), 
-                        InfoLevel())
-            )
+              LogEntry.create(
+                request.method().toString() + ":" + response.status().intValue(), 
+                InfoLevel()))
           : Optional.empty(); // not a successful response
 
     // handle rejections to optionally generate a log entry
     BiFunction<HttpRequest, List<Rejection>, Optional<LogEntry>> rejectionsAsInfo = 
-      (request, rejections)->
+      (request, rejections) ->
         (!rejections.isEmpty())  ? 
           Optional.of(
-            LogEntry.create(rejections
-                          .stream()
-                          .map(Rejection::toString)
-                          .collect(Collectors.joining(", ")), 
-                        InfoLevel())
-            )
+            LogEntry.create(
+                rejections
+                .stream()
+                .map(Rejection::toString)
+                .collect(Collectors.joining(", ")), 
+              InfoLevel()))
           : Optional.empty(); // no rejections
 
-    final Route route = get(() -> 
-                            logRequestResultOptional(
-                                             requestMethodAsInfo, 
-                                             rejectionsAsInfo,
-                                             ()-> complete("logged")));
+    final Route route = get(() -> logRequestResultOptional(
+      requestMethodAsInfo, 
+      rejectionsAsInfo,
+      () -> complete("logged")));
     // tests:
     testRoute(route).run(HttpRequest.GET("/")).assertEntity("logged");
     //#logRequestResult
@@ -103,33 +100,31 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
   public void testLogResult() {
     //#logResult
     // logs result with "get-user"
-    final Route routeBasicLogResult = get(() -> 
-                            logResult("get-user", ()-> 
-                                       complete("logged")));
+    final Route routeBasicLogResult = get(() ->
+      logResult("get-user", () -> complete("logged")));
 
     // logs result with "get-user" as Info
-    final Route routeBasicLogResultAsInfo = get(() -> 
-                            logResult("get-user", InfoLevel(), ()-> 
-                                       complete("logged")));
+    final Route routeBasicLogResultAsInfo = get(() ->
+      logResult("get-user", InfoLevel(), () -> complete("logged")));
 
     // logs the result and the rejections as LogEntry
-    Function<HttpResponse, LogEntry> showSuccessAsInfo = (response)->
+    Function<HttpResponse, LogEntry> showSuccessAsInfo = (response) ->
       LogEntry.create(String.format("Response code '%d'", response.status().intValue()), 
-                      InfoLevel());
+        InfoLevel());
 
-    Function<List<Rejection>, LogEntry> showRejectionAsInfo = (rejections)->
-      LogEntry.create(rejections
-                        .stream()
-                        .map(rejection->rejection.toString())
-                        .collect(Collectors.joining(", ")), 
-                      InfoLevel());
+    Function<List<Rejection>, LogEntry> showRejectionAsInfo = (rejections) ->
+      LogEntry.create(
+        rejections
+        .stream()
+        .map(rejection->rejection.toString())
+        .collect(Collectors.joining(", ")), 
+      InfoLevel());
 
-    final Route routeUsingFunction = get(() -> 
-                            logResult(showSuccessAsInfo, 
-                                      showRejectionAsInfo, ()-> 
-                                       complete("logged")));
+    final Route routeUsingFunction = get(() ->
+      logResult(showSuccessAsInfo, showRejectionAsInfo, () -> complete("logged")));
     // tests:
-    testRoute(routeBasicLogResult).run(HttpRequest.GET("/")).assertEntity("logged");
+    testRoute(routeBasicLogResult).run(HttpRequest.GET("/"))
+      .assertEntity("logged");
     //#logResult
   }
 
