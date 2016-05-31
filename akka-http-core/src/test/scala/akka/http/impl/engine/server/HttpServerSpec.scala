@@ -376,7 +376,7 @@ class HttpServerSpec extends AkkaSpec(
       shutdownBlueprint()
     })
 
-    "proceed to next request once previous request's entity has beed drained" in assertAllStagesStopped(new TestSetup {
+    "proceed to next request once previous request's entity has been drained" in assertAllStagesStopped(new TestSetup {
       def twice(action: => Unit): Unit = { action; action }
 
       twice {
