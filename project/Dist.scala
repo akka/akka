@@ -27,7 +27,6 @@ object Dist {
   val includeInDist = SettingKey[Boolean]("include-in-dist", "Include the artifact of this project in the standalone dist zip-file")
 
   lazy val settings: Seq[Setting[_]] = Seq(
-    includeInDist := true,
     distAllClasspaths <<= (thisProjectRef, buildStructure) flatMap aggregated(dependencyClasspath in Compile),
     distDependencies <<= distAllClasspaths map { _.flatten.map(_.data).filter(ClasspathUtilities.isArchive).distinct },
     distLibJars <<= (thisProjectRef, buildStructure) flatMap aggregated(packageBin in Compile),
