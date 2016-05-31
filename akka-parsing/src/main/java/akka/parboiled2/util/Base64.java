@@ -36,7 +36,7 @@
  * Licence (BSD):
  * ==============
  *
- * Copyright (c) 2004, Mikael Grev, MiG InfoCom AB. (base64 @ miginfocom . com)
+ *  Copyright (c) 2004, Mikael Grev, MiG InfoCom AB. (base64 @ miginfocom . com)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
