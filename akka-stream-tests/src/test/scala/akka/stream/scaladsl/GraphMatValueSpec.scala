@@ -169,6 +169,47 @@ class GraphMatValueSpec extends AkkaSpec {
           done should ===(true)
         }
 
+        "ignore materialized values for a graph with no materialized values exposed" in {
+          // The bug here was that the default behavior for "compose" in Module is Keep.left, but
+          // EmptyModule.compose broke this by always returning the other module intact, which means
+          // that the materialized value was that of the other module (which is inconsistent with Keep.left behavior).
+
+          val sink = Sink.ignore
+          val g = RunnableGraph.fromGraph(GraphDSL.create() { implicit builder: GraphDSL.Builder[NotUsed] ⇒
+            import GraphDSL.Implicits._
+            val s = builder.add(sink)
+            val src = builder.add(Source(1 to 3))
+            val flow = builder.add(Flow[Int])
+
+            src ~> flow ~> s
+            ClosedShape
+          })
+
+          val result = g.run()
+        }
+
+        "ignore materialized values for a graph with no materialized values exposed, but keep side-effects" in {
+          // The bug here was that the default behavior for "compose" in Module is Keep.left, but
+          // EmptyModule.compose broke this by always returning the other module intact, which means
+          // that the materialized value was that of the other module (which is inconsistent with Keep.left behavior).
+
+          val sink = Sink.ignore.mapMaterializedValue(_ ⇒ testActor ! "side effect!")
+          val g = RunnableGraph.fromGraph(GraphDSL.create() { implicit builder: GraphDSL.Builder[NotUsed] ⇒
+            import GraphDSL.Implicits._
+            val s = builder.add(sink)
+            val src = builder.add(Source(1 to 3))
+            val flow = builder.add(Flow[Int])
+
+            src ~> flow ~> s
+            ClosedShape
+          })
+
+          var result = g.run()
+
+          expectMsg("side effect!")
+
+        }
+
       }
     }
 
