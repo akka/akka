@@ -3,9 +3,10 @@
  */
 package akka.typed
 
-import akka.actor.ActorPath
+import akka.{ actor ⇒ a }
 import scala.annotation.unchecked.uncheckedVariance
 import language.implicitConversions
+import scala.concurrent.Future
 
 /**
  * An ActorRef is the identity or address of an Actor instance. It is valid
@@ -16,20 +17,18 @@ import language.implicitConversions
  * [[akka.event.EventStream]] on a best effort basis
  * (i.e. this delivery is not reliable).
  */
-abstract class ActorRef[-T] extends java.lang.Comparable[ActorRef[Any]] { this: ScalaActorRef[T] ⇒
+abstract class ActorRef[-T](_path: a.ActorPath) extends java.lang.Comparable[ActorRef[Nothing]] { this: internal.ActorRefImpl[T] ⇒
   /**
-   * INTERNAL API.
-   *
-   * Implementation detail. The underlying untyped [[akka.actor.ActorRef]]
-   * of this typed ActorRef.
+   * Send a message to the Actor referenced by this ActorRef using *at-most-once*
+   * messaging semantics.
    */
-  private[akka] def untypedRef: akka.actor.ActorRef
+  def tell(msg: T): Unit
 
   /**
    * Send a message to the Actor referenced by this ActorRef using *at-most-once*
    * messaging semantics.
    */
-  def tell(msg: T): Unit = untypedRef ! msg
+  def !(msg: T): Unit = tell(msg)
 
   /**
    * Unsafe utility method for widening the type accepted by this ActorRef;
@@ -44,34 +43,44 @@ abstract class ActorRef[-T] extends java.lang.Comparable[ActorRef[Any]] { this: 
    * and more than one Actor instance can exist with the same path at different
    * points in time, but not concurrently.
    */
-  def path: ActorPath = untypedRef.path
+  final val path: a.ActorPath = _path
 
-  override def toString = untypedRef.toString
-  override def equals(other: Any) = other match {
-    case a: ActorRef[_] ⇒ a.untypedRef == untypedRef
-    case _              ⇒ false
+  /**
+   * Comparison takes path and the unique id of the actor cell into account.
+   */
+  final override def compareTo(other: ActorRef[Nothing]) = {
+    val x = this.path compareTo other.path
+    if (x == 0) if (this.path.uid < other.path.uid) -1 else if (this.path.uid == other.path.uid) 0 else 1
+    else x
   }
-  override def hashCode = untypedRef.hashCode
-  override def compareTo(other: ActorRef[Any]) = untypedRef.compareTo(other.untypedRef)
-}
 
-/**
- * This trait is used to hide the `!` method from Java code.
- */
-trait ScalaActorRef[-T] { this: ActorRef[T] ⇒
-  def !(msg: T): Unit = tell(msg)
+  final override def hashCode: Int = path.uid
+
+  /**
+   * Equals takes path and the unique id of the actor cell into account.
+   */
+  final override def equals(that: Any): Boolean = that match {
+    case other: ActorRef[_] ⇒ path.uid == other.path.uid && path == other.path
+    case _                  ⇒ false
+  }
+
+  final override def toString: String = s"Actor[${path}#${path.uid}]"
 }
 
 object ActorRef {
-  private class Combined[T](val untypedRef: akka.actor.ActorRef) extends ActorRef[T] with ScalaActorRef[T]
-
-  implicit def toScalaActorRef[T](ref: ActorRef[T]): ScalaActorRef[T] = ref.asInstanceOf[ScalaActorRef[T]]
+  /**
+   * Create an ActorRef from a Future, buffering up to the given number of
+   * messages in while the Future is not fulfilled.
+   */
+  def apply[T](f: Future[ActorRef[T]], bufferSize: Int = 1000): ActorRef[T] = new internal.FutureRef(FuturePath, bufferSize, f)
 
   /**
-   * Construct a typed ActorRef from an untyped one and a protocol definition
-   * (i.e. a recipient message type). This can be used to properly represent
-   * untyped Actors within the typed world, given that they implement the assumed
-   * protocol.
+   * Create an ActorRef by providing a function that is invoked for sending
+   * messages and a termination callback.
    */
-  def apply[T](ref: akka.actor.ActorRef): ActorRef[T] = new Combined[T](ref)
+  def apply[T](send: (T, internal.FunctionRef[T]) ⇒ Unit, terminate: internal.FunctionRef[T] ⇒ Unit): ActorRef[T] =
+    new internal.FunctionRef(FunctionPath, send, terminate)
+
+  private[typed] val FuturePath = a.RootActorPath(a.Address("akka.typed.internal", "future"))
+  private[typed] val FunctionPath = a.RootActorPath(a.Address("akka.typed.internal", "function"))
 }
