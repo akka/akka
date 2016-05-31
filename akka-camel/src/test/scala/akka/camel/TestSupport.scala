@@ -48,7 +48,7 @@ private[camel] object TestSupport {
   }
 
   trait SharedCamelSystem extends BeforeAndAfterAll { this: Suite ⇒
-    implicit lazy val system = ActorSystem("test", AkkaSpec.testConf)
+    implicit lazy val system = ActorSystem("SharedCamelSystem", AkkaSpec.testConf)
     implicit lazy val camel = CamelExtension(system)
 
     abstract override protected def afterAll() {
@@ -63,7 +63,7 @@ private[camel] object TestSupport {
 
     override protected def beforeEach() {
       super.beforeEach()
-      system = ActorSystem("test", AkkaSpec.testConf)
+      system = ActorSystem("NonSharedCamelSystem", AkkaSpec.testConf)
       camel = CamelExtension(system)
     }
 

@@ -7,13 +7,11 @@ import akka.testkit.{ ImplicitSender, TestKit }
 import org.scalatest.FunSuiteLike
 import org.scalatest.Matchers
 import scala.annotation.tailrec
-
-//#demo-code
 import scala.collection._
 import scala.concurrent.duration._
 import scala.math.BigDecimal.int2bigDecimal
-
 import akka.actor._
+import org.scalatest.BeforeAndAfterAll
 /**
  * Sample and test code for the aggregator patter.
  * This is based on Jamie Allen's tutorial at
@@ -187,7 +185,11 @@ class ChainingSample extends Actor with Aggregator {
 }
 //#chain-sample
 
-class AggregatorSpec extends TestKit(ActorSystem("test")) with ImplicitSender with FunSuiteLike with Matchers {
+class AggregatorSpec extends TestKit(ActorSystem("AggregatorSpec")) with ImplicitSender with FunSuiteLike with Matchers with BeforeAndAfterAll {
+
+  override def afterAll(): Unit = {
+    shutdown()
+  }
 
   test("Test request 1 account type") {
     system.actorOf(Props[AccountBalanceRetriever]) ! GetCustomerAccountBalances(1, Set(Savings))

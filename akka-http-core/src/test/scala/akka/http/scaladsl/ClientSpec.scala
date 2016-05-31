@@ -10,11 +10,12 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.stream.ActorMaterializer
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ Matchers, WordSpec }
-
 import scala.concurrent.duration._
 import scala.concurrent.{ Await }
+import org.scalatest.BeforeAndAfterAll
+import akka.testkit.TestKit
 
-class ClientSpec extends WordSpec with Matchers {
+class ClientSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = ERROR
@@ -24,6 +25,10 @@ class ClientSpec extends WordSpec with Matchers {
     akka.http.server.request-timeout = infinite""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   implicit val materializer = ActorMaterializer()
+
+  override def afterAll(): Unit = {
+    TestKit.shutdownActorSystem(system)
+  }
 
   "HTTP Client" should {
 
