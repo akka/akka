@@ -454,7 +454,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       class WatchActor extends Actor {
         val child = context.actorOf(Props.empty, "child")
         context.watch(child) // <-- this is the only call needed for registration
-        var lastSender = system.deadLetters
+        var lastSender = context.system.deadLetters
 
         def receive = {
           case "kill" =>
