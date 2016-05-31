@@ -16,8 +16,10 @@ import akka.http.javadsl.model.headers.HttpChallenge
 import java.util.Optional
 import java.util.function.{ Function ⇒ JFunction }
 import java.lang.{ Iterable ⇒ JIterable }
+
 import akka.http.scaladsl
 import akka.japi.Util
+import akka.pattern.CircuitBreakerOpenException
 
 import scala.compat.java8.OptionConverters._
 import scala.collection.immutable
@@ -248,6 +250,14 @@ trait UnsupportedWebSocketSubprotocolRejection extends Rejection {
 trait ValidationRejection extends Rejection {
   def message: String
   def getCause: Optional[Throwable]
+}
+
+/**
+ * Rejection created by the `onCompleteWithBreaker` directive.
+ * Signals that the request was rejected because the supplied circuit breaker is open and requests are failing fast.
+ */
+trait CircuitBreakerOpenRejection extends Rejection {
+  def cause: CircuitBreakerOpenException
 }
 
 /**

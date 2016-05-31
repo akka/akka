@@ -89,6 +89,7 @@ Directive                                        Description
 :ref:`-mapUnmatchedPath-java-`                   Transforms the ``unmatchedPath`` of the ``RequestContext`` using a ``Uri.Path ⇒ Uri.Path`` function
 :ref:`-method-java-`                             Rejects all requests whose HTTP method does not match the given one
 :ref:`-onComplete-java-`                         "Unwraps" a ``CompletionStage<T>`` and runs the inner route after future completion with the future's value as an extraction of type ``Try<T>``
+:ref:`-onCompleteWithBreaker-java-`              "Unwraps" a ``CompletionStage<T>`` inside a ``CircuitBreaker`` and runs the inner route after future completion with the future's value as an extraction of type ``Try<T>``
 :ref:`-onSuccess-java-`                          "Unwraps" a ``CompletionStage<T>`` and runs the inner route after future completion with the future's value as an extraction of type ``T``
 :ref:`-optionalCookie-java-`                     Extracts the ``HttpCookiePair`` with the given name as an ``Option<HttpCookiePair>``
 :ref:`-optionalHeaderValue-java-`                Extracts an optional HTTP header value using a given ``HttpHeader ⇒ Option<T>`` function

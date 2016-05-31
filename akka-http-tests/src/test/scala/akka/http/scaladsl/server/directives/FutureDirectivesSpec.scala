@@ -6,10 +6,15 @@ package akka.http.scaladsl.server
 package directives
 
 import akka.http.scaladsl.model.StatusCodes
+import akka.pattern.{ CircuitBreaker, CircuitBreakerOpenException }
+
 import scala.concurrent.Future
 import akka.testkit.EventFilter
+import org.scalatest.Inside
 
-class FutureDirectivesSpec extends RoutingSpec {
+import scala.concurrent.duration._
+
+class FutureDirectivesSpec extends RoutingSpec with Inside {
 
   class TestException(msg: String) extends Exception(msg)
   object TestException extends Exception("XXX")
@@ -17,6 +22,12 @@ class FutureDirectivesSpec extends RoutingSpec {
 
   implicit val exceptionHandler = ExceptionHandler {
     case e: TestException ⇒ complete((StatusCodes.InternalServerError, "Oops. " + e))
+  }
+
+  trait TestWithCircuitBreaker {
+    val breakerResetTimeout = 500.millis
+    val breaker = new CircuitBreaker(system.scheduler, maxFailures = 1, callTimeout = 10.seconds, breakerResetTimeout)
+    def openBreaker() = breaker.withCircuitBreaker(Future.failed(new Exception("boom")))
   }
 
   "The `onComplete` directive" should {
@@ -44,6 +55,52 @@ class FutureDirectivesSpec extends RoutingSpec {
     }
     "catch an exception in the failure case" in {
       Get() ~> onComplete(Future.failed[String](new RuntimeException("no"))) { throwTestException("EX when ") } ~> check {
+        status shouldEqual StatusCodes.InternalServerError
+        responseAs[String] shouldEqual s"Oops. akka.http.scaladsl.server.directives.FutureDirectivesSpec$$TestException: EX when Failure(java.lang.RuntimeException: no)"
+      }
+    }
+  }
+
+  "The `onCompleteWithBreaker` directive" should {
+    "unwrap a Future in the success case" in new TestWithCircuitBreaker {
+      var i = 0
+      def nextNumber() = { i += 1; i }
+      val route = onCompleteWithBreaker(breaker)(Future.successful(nextNumber())) { echoComplete }
+      Get() ~> route ~> check {
+        responseAs[String] shouldEqual "Success(1)"
+      }
+      Get() ~> route ~> check {
+        responseAs[String] shouldEqual "Success(2)"
+      }
+    }
+    "unwrap a Future in the failure case" in new TestWithCircuitBreaker {
+      Get() ~> onCompleteWithBreaker(breaker)(Future.failed[String](new RuntimeException("no"))) { echoComplete } ~> check {
+        responseAs[String] shouldEqual "Failure(java.lang.RuntimeException: no)"
+      }
+    }
+    "fail fast if the circuit breaker is open" in new TestWithCircuitBreaker {
+      openBreaker()
+      Get() ~> onCompleteWithBreaker(breaker)(Future.successful(1)) { echoComplete } ~> check {
+        inside(rejection) {
+          case CircuitBreakerOpenRejection(_) ⇒
+        }
+      }
+    }
+    "stop failing fast when the circuit breaker closes" in new TestWithCircuitBreaker {
+      openBreaker()
+      Thread.sleep(breakerResetTimeout.toMillis + 200)
+      Get() ~> onCompleteWithBreaker(breaker)(Future.successful(1)) { echoComplete } ~> check {
+        responseAs[String] shouldEqual "Success(1)"
+      }
+    }
+    "catch an exception in the success case" in new TestWithCircuitBreaker {
+      Get() ~> onCompleteWithBreaker(breaker)(Future.successful("ok")) { throwTestException("EX when ") } ~> check {
+        status shouldEqual StatusCodes.InternalServerError
+        responseAs[String] shouldEqual s"Oops. akka.http.scaladsl.server.directives.FutureDirectivesSpec$$TestException: EX when Success(ok)"
+      }
+    }
+    "catch an exception in the failure case" in new TestWithCircuitBreaker {
+      Get() ~> onCompleteWithBreaker(breaker)(Future.failed[String](new RuntimeException("no"))) { throwTestException("EX when ") } ~> check {
         status shouldEqual StatusCodes.InternalServerError
         responseAs[String] shouldEqual s"Oops. akka.http.scaladsl.server.directives.FutureDirectivesSpec$$TestException: EX when Failure(java.lang.RuntimeException: no)"
       }
