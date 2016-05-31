@@ -39,8 +39,9 @@ object MaxThroughputSpec extends MultiNodeConfig {
 
            # for serious measurements when running this test on only one machine
            # it is recommended to use external media driver
+           # See akka-remote-tests/src/test/resources/aeron.properties
            #advanced.embedded-media-driver = off
-           #advanced.aeron-dir = "/Users/patrik/tmp/aeron-data"
+           #advanced.aeron-dir = "target/aeron"
          }
        }
        """)))
