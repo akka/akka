@@ -470,7 +470,7 @@ private[http] object HttpServerBluePrint {
       }
 
       def emitErrorResponse(response: HttpResponse): Unit =
-        emit(responseCtxOut, ResponseRenderingContext(response, closeRequested = true), () ⇒ complete(responseCtxOut))
+        emit(responseCtxOut, ResponseRenderingContext(response, closeRequested = true), () ⇒ completeStage())
 
       /**
        * The `Expect: 100-continue` header has a special status in HTTP.
