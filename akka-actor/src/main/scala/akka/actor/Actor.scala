@@ -363,7 +363,7 @@ object Actor {
    * Default placeholder (null) used for "!" to indicate that there is no sender of the message,
    * that will be translated to the receiving system's deadLetters.
    */
-  final val noSender: ActorRef = null
+  final val noSender = null.asInstanceOf[ActorRef] // avoid type ascription: compile-time constant
 }
 
 /**
