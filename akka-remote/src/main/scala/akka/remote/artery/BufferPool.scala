@@ -10,6 +10,7 @@ import java.nio.{ ByteBuffer, ByteOrder }
 
 import org.agrona.concurrent.{ ManyToManyConcurrentArrayQueue, UnsafeBuffer }
 import sun.misc.Cleaner
+import akka.util.Unsafe
 
 import scala.util.control.NonFatal
 
@@ -60,6 +61,9 @@ private[remote] object EnvelopeBuffer {
   val UsAscii = Charset.forName("US-ASCII")
 
   val DeadLettersCode = 0
+
+  // accessing the internal char array of String when writing literal strings to ByteBuffer
+  val StringValueFieldOffset = Unsafe.instance.objectFieldOffset(classOf[String].getDeclaredField("value"))
 }
 
 /**
@@ -306,10 +310,8 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     } else {
       byteBuffer.putShort(literal.length.toShort)
       ensureLiteralCharsLength(length)
-      val chars = literalChars
       val bytes = literalBytes
-      // we could use Unsafe to get the internal char array of String, but we are staying safe so far
-      literal.getChars(0, length, chars, 0)
+      val chars = Unsafe.instance.getObject(literal, StringValueFieldOffset).asInstanceOf[Array[Char]]
       var i = 0
       while (i < length) {
         // UsAscii
