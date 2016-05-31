@@ -109,7 +109,7 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
   with DefaultTimeout {
   import SystemMessageDeliveryStressTest._
 
-  override def expectedTestDuration: FiniteDuration = 120.seconds
+  override def expectedTestDuration: FiniteDuration = 200.seconds
 
   val systemA = system
   val systemB = ActorSystem("systemB", system.settings.config)
