@@ -134,6 +134,9 @@ Directive                                   Description
 :ref:`-method-`                             Rejects all requests whose HTTP method does not match the given one
 :ref:`-onComplete-`                         "Unwraps" a ``Future[T]`` and runs the inner route after future completion
                                             with the future's value as an extraction of type ``Try[T]``
+:ref:`-onCompleteWithBreaker-`              "Unwraps" a ``Future[T]`` inside a ``CircuitBreaker`` and runs the inner
+                                            route after future completion with the future's value as an extraction of
+                                            type ``Try[T]``
 :ref:`-onSuccess-`                          "Unwraps" a ``Future[T]`` and runs the inner route after future completion
                                             with the future's value as an extraction of type ``T``
 :ref:`-optionalCookie-`                     Extracts the ``HttpCookiePair`` with the given name as an

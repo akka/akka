@@ -76,6 +76,15 @@ object RejectionHandler {
       this
     }
 
+    /**
+      * Convenience method for handling rejections created by created by the onCompleteWithBreaker directive.
+      * Signals that the request was rejected because the supplied circuit breaker is open and requests are failing fast.
+      *
+      * Use to customise the error response being written instead of the default [[ServiceUnavailable]] response.
+      */
+    def handleCircuitBreakerOpenRejection(handler: CircuitBreakerOpenRejection => Route): this.type =
+      handle { case r: CircuitBreakerOpenRejection => handler(r) }
+
     def result(): RejectionHandler =
       new BuiltRejectionHandler(cases.result(), notFound, isDefault)
   }
@@ -165,7 +174,11 @@ object RejectionHandler {
       }
       .handle {
         case TooManyRangesRejection(_) ⇒
-          complete((RequestedRangeNotSatisfiable, "Request contains too many ranges."))
+          complete((RequestedRangeNotSatisfiable, "Request contains too many ranges"))
+      }
+      .handle {
+        case CircuitBreakerOpenRejection(_) ⇒
+          complete(ServiceUnavailable)
       }
       .handle {
         case UnsatisfiableRangeRejection(unsatisfiableRanges, actualEntityLength) ⇒

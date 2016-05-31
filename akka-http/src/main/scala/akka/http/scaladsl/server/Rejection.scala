@@ -19,6 +19,7 @@ import akka.http.impl.util.JavaMapping._
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.server.RoutingJavaMapping
 import RoutingJavaMapping._
+import akka.pattern.CircuitBreakerOpenException
 
 import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters
@@ -255,6 +256,13 @@ final case class TransformationRejection(transform: immutable.Seq[Rejection] ⇒
       transform(Util.immutableSeq(t).collect { case r: Rejection ⇒ r }).collect[jserver.Rejection, Seq[jserver.Rejection]] { case j: jserver.Rejection ⇒ j }.asJava // TODO "asJavaDeep" and optimise?
   }
 }
+
+/**
+ * Rejection created by the `onCompleteWithBreaker` directive.
+ * Signals that the request was rejected because the supplied circuit breaker is open and requests are failing fast.
+ */
+final case class CircuitBreakerOpenRejection(cause: CircuitBreakerOpenException)
+  extends jserver.CircuitBreakerOpenRejection with Rejection
 
 /**
  * A Throwable wrapping a Rejection.

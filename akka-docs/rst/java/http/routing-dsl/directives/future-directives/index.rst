@@ -9,6 +9,7 @@ Future directives can be used to run inner routes once the provided ``Future[T]`
    :maxdepth: 1
 
    onComplete
+   onCompleteWithBreaker
    onSuccess
    completeOrRecoverWith
 
