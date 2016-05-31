@@ -26,7 +26,7 @@ trait GraphApply {
    */
   def create[S <: Shape, Mat](g1: Graph[Shape, Mat])(buildBlock: GraphDSL.Builder[Mat] ⇒ (g1.Shape) ⇒ S): Graph[S, Mat] = {
     val builder = new GraphDSL.Builder
-    val s1 = builder.add(g1)
+    val s1 = builder.add(g1, Keep.right)
     val s = buildBlock(builder)(s1)
     val mod = builder.module.replaceShape(s)
 
