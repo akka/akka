@@ -11,13 +11,16 @@ import scala.concurrent.duration.Deadline
 import akka.typed.ActorContext
 import java.util.LinkedList
 import scala.collection.JavaConverters._
-import akka.typed.ReceiveTimeout
 import scala.collection.immutable.Queue
 
+// FIXME make this nice again once the Actor Algebra is implemented
 object Receiver {
   import akka.typed.ScalaDSL._
 
-  sealed trait Command[T]
+  sealed trait InternalCommand[T]
+  case class ReceiveTimeout[T]() extends InternalCommand[T]
+
+  sealed trait Command[T] extends InternalCommand[T]
 
   /**
    * Retrieve one message from the Receiver, waiting at most for the given duration.
@@ -44,14 +47,14 @@ object Receiver {
     ContextAware[Any] { ctx ⇒
       SynchronousSelf { syncself ⇒
         Or(
-          empty(ctx).widen { case c: Command[t] ⇒ c.asInstanceOf[Command[T]] },
+          empty(ctx).widen { case c: InternalCommand[t] ⇒ c.asInstanceOf[InternalCommand[T]] },
           Static[Any] {
             case msg ⇒ syncself ! Enqueue(msg)
           })
       }
     }.narrow
 
-  private def empty[T](ctx: ActorContext[Any]): Behavior[Command[T]] =
+  private def empty[T](ctx: ActorContext[Any]): Behavior[InternalCommand[T]] =
     Total {
       case ExternalAddress(replyTo)            ⇒ { replyTo ! ctx.self; Same }
       case g @ GetOne(d) if d <= Duration.Zero ⇒ { g.replyTo ! GetOneResult(ctx.self, None); Same }
@@ -61,7 +64,7 @@ object Receiver {
       case Enqueue(msg)                        ⇒ queued(ctx, msg)
     }
 
-  private def queued[T](ctx: ActorContext[Any], t: T): Behavior[Command[T]] = {
+  private def queued[T](ctx: ActorContext[Any], t: T): Behavior[InternalCommand[T]] = {
     val queue = new LinkedList[T]
     queue.add(t)
     Total {
@@ -84,39 +87,36 @@ object Receiver {
   }
 
   private case class Asked[T](replyTo: ActorRef[GetOneResult[T]], deadline: Deadline)
-  private def asked[T](ctx: ActorContext[Any], queue: Queue[Asked[T]]): Behavior[Command[T]] = {
-    ctx.setReceiveTimeout(queue.map(_.deadline).min.timeLeft)
+  private def asked[T](ctx: ActorContext[Any], queue: Queue[Asked[T]]): Behavior[InternalCommand[T]] = {
+    ctx.setReceiveTimeout(queue.map(_.deadline).min.timeLeft, ReceiveTimeout())
 
-    Full {
-      case Sig(_, ReceiveTimeout) ⇒
+    Total {
+      case ReceiveTimeout() ⇒
         val (overdue, remaining) = queue partition (_.deadline.isOverdue)
         overdue foreach (a ⇒ a.replyTo ! GetOneResult(ctx.self, None))
         if (remaining.isEmpty) {
-          ctx.setReceiveTimeout(Duration.Undefined)
+          ctx.cancelReceiveTimeout()
           empty(ctx)
         } else asked(ctx, remaining)
-      case Msg(_, msg) ⇒
-        msg match {
-          case ExternalAddress(replyTo) ⇒ { replyTo ! ctx.self; Same }
-          case g @ GetOne(d) if d <= Duration.Zero ⇒
-            g.replyTo ! GetOneResult(ctx.self, None)
-            asked(ctx, queue)
-          case g @ GetOne(d) ⇒
-            asked(ctx, queue enqueue Asked(g.replyTo, Deadline.now + d))
-          case g @ GetAll(d) if d <= Duration.Zero ⇒
-            g.replyTo ! GetAllResult(ctx.self, Nil)
-            asked(ctx, queue)
-          case g @ GetAll(d) ⇒
-            ctx.schedule(d, ctx.self, GetAll(Duration.Zero)(g.replyTo))
-            asked(ctx, queue)
-          case Enqueue(msg) ⇒
-            val (ask, q) = queue.dequeue
-            ask.replyTo ! GetOneResult(ctx.self, Some(msg))
-            if (q.isEmpty) {
-              ctx.setReceiveTimeout(Duration.Undefined)
-              empty(ctx)
-            } else asked(ctx, q)
-        }
+      case ExternalAddress(replyTo) ⇒ { replyTo ! ctx.self; Same }
+      case g @ GetOne(d) if d <= Duration.Zero ⇒
+        g.replyTo ! GetOneResult(ctx.self, None)
+        asked(ctx, queue)
+      case g @ GetOne(d) ⇒
+        asked(ctx, queue enqueue Asked(g.replyTo, Deadline.now + d))
+      case g @ GetAll(d) if d <= Duration.Zero ⇒
+        g.replyTo ! GetAllResult(ctx.self, Nil)
+        asked(ctx, queue)
+      case g @ GetAll(d) ⇒
+        ctx.schedule(d, ctx.self, GetAll(Duration.Zero)(g.replyTo))
+        asked(ctx, queue)
+      case Enqueue(msg) ⇒
+        val (ask, q) = queue.dequeue
+        ask.replyTo ! GetOneResult(ctx.self, Some(msg))
+        if (q.isEmpty) {
+          ctx.cancelReceiveTimeout()
+          empty(ctx)
+        } else asked(ctx, q)
     }
   }
 }
