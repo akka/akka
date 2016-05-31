@@ -16,6 +16,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import akka.testkit.AkkaSpec;
+import akka.testkit.AkkaJUnitActorSystemResource;
 
 import static org.junit.Assert.assertEquals;
 

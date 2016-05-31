@@ -29,6 +29,7 @@ import akka.testkit.AkkaSpec;
 import akka.stream.testkit.TestUtils;
 import akka.util.ByteString;
 import akka.testkit.JavaTestKit;
+import akka.testkit.AkkaJUnitActorSystemResource;
 
 public class TcpTest extends StreamTest {
   public TcpTest() {
