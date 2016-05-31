@@ -15,8 +15,8 @@ import scala.reflect.ClassTag
  */
 class AkkaConsoleReporter(
   registry: AkkaMetricRegistry,
-  verbose: Boolean,
-  output: PrintStream = System.out)
+  verbose:  Boolean,
+  output:   PrintStream        = System.out)
   extends ScheduledReporter(registry.asInstanceOf[MetricRegistry], "akka-console-reporter", MetricFilter.ALL, TimeUnit.SECONDS, TimeUnit.NANOSECONDS) {
 
   private final val ConsoleWidth = 80

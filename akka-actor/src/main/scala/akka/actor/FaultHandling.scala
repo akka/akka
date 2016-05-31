@@ -380,9 +380,9 @@ abstract class SupervisorStrategy {
  * @param loggingEnabled the strategy logs the failure if this is enabled (true), by default it is enabled
  */
 case class AllForOneStrategy(
-  maxNrOfRetries: Int = -1,
-  withinTimeRange: Duration = Duration.Inf,
-  override val loggingEnabled: Boolean = true)(val decider: SupervisorStrategy.Decider)
+  maxNrOfRetries:              Int      = -1,
+  withinTimeRange:             Duration = Duration.Inf,
+  override val loggingEnabled: Boolean  = true)(val decider: SupervisorStrategy.Decider)
   extends SupervisorStrategy {
 
   import SupervisorStrategy._
@@ -458,9 +458,9 @@ case class AllForOneStrategy(
  * @param loggingEnabled the strategy logs the failure if this is enabled (true), by default it is enabled
  */
 case class OneForOneStrategy(
-  maxNrOfRetries: Int = -1,
-  withinTimeRange: Duration = Duration.Inf,
-  override val loggingEnabled: Boolean = true)(val decider: SupervisorStrategy.Decider)
+  maxNrOfRetries:              Int      = -1,
+  withinTimeRange:             Duration = Duration.Inf,
+  override val loggingEnabled: Boolean  = true)(val decider: SupervisorStrategy.Decider)
   extends SupervisorStrategy {
 
   /**

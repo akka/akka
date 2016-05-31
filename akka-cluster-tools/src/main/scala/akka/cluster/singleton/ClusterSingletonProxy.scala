@@ -69,10 +69,10 @@ object ClusterSingletonProxySettings {
  *   immediately if the location of the singleton is unknown.
  */
 final class ClusterSingletonProxySettings(
-  val singletonName: String,
-  val role: Option[String],
+  val singletonName:                   String,
+  val role:                            Option[String],
   val singletonIdentificationInterval: FiniteDuration,
-  val bufferSize: Int) extends NoSerializationVerificationNeeded {
+  val bufferSize:                      Int) extends NoSerializationVerificationNeeded {
 
   require(bufferSize >= 0 && bufferSize <= 10000, "bufferSize must be >= 0 and <= 10000")
 
@@ -88,10 +88,11 @@ final class ClusterSingletonProxySettings(
   def withBufferSize(bufferSize: Int): ClusterSingletonProxySettings =
     copy(bufferSize = bufferSize)
 
-  private def copy(singletonName: String = singletonName,
-                   role: Option[String] = role,
-                   singletonIdentificationInterval: FiniteDuration = singletonIdentificationInterval,
-                   bufferSize: Int = bufferSize): ClusterSingletonProxySettings =
+  private def copy(
+    singletonName:                   String         = singletonName,
+    role:                            Option[String] = role,
+    singletonIdentificationInterval: FiniteDuration = singletonIdentificationInterval,
+    bufferSize:                      Int            = bufferSize): ClusterSingletonProxySettings =
     new ClusterSingletonProxySettings(singletonName, role, singletonIdentificationInterval, bufferSize)
 }
 
@@ -252,7 +253,8 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
       singleton match {
         case Some(s) ⇒
           if (log.isDebugEnabled)
-            log.debug("Forwarding message of type [{}] to current singleton instance at [{}]: {}",
+            log.debug(
+              "Forwarding message of type [{}] to current singleton instance at [{}]: {}",
               Logging.simpleName(msg.getClass.getName), s.path)
           s forward msg
         case None ⇒

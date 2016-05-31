@@ -5,7 +5,7 @@ enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams)
 disablePlugins(Unidoc, MimaPlugin)
 
 AkkaBuild.defaultSettings
-
+Formatting.formatSettings
 AkkaBuild.dontPublishSettings
 AkkaBuild.dontPublishDocsSettings
 Dependencies.benchJmh

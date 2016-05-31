@@ -68,11 +68,11 @@ abstract class TypedSpec(config: Config) extends Spec with Matchers with BeforeA
   }
 
   def muteExpectedException[T <: Exception: ClassTag](
-    message: String = null,
-    source: String = null,
-    start: String = "",
-    pattern: String = null,
-    occurrences: Int = Int.MaxValue): EventFilter = {
+    message:     String = null,
+    source:      String = null,
+    start:       String = "",
+    pattern:     String = null,
+    occurrences: Int    = Int.MaxValue): EventFilter = {
     val filter = EventFilter(message, source, start, pattern, occurrences)
     system.eventStream.publish(Mute(filter))
     filter

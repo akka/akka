@@ -40,13 +40,13 @@ trait ScriptedTest extends Matchers {
   }
 
   final class Script[In, Out](
-    val providedInputs: Vector[In],
+    val providedInputs:  Vector[In],
     val expectedOutputs: Vector[Out],
-    val jumps: Vector[Int],
-    val inputCursor: Int,
-    val outputCursor: Int,
+    val jumps:           Vector[Int],
+    val inputCursor:     Int,
+    val outputCursor:    Int,
     val outputEndCursor: Int,
-    val completed: Boolean) {
+    val completed:       Boolean) {
     require(jumps.size == providedInputs.size)
 
     def provideInput: (In, Script[In, Out]) =
@@ -88,12 +88,12 @@ trait ScriptedTest extends Matchers {
   }
 
   class ScriptRunner[In, Out, M](
-    op: Flow[In, In, NotUsed] ⇒ Flow[In, Out, M],
-    settings: ActorMaterializerSettings,
-    script: Script[In, Out],
+    op:             Flow[In, In, NotUsed] ⇒ Flow[In, Out, M],
+    settings:       ActorMaterializerSettings,
+    script:         Script[In, Out],
     maximumOverrun: Int,
     maximumRequest: Int,
-    maximumBuffer: Int)(implicit _system: ActorSystem)
+    maximumBuffer:  Int)(implicit _system: ActorSystem)
     extends ChainSetup(op, settings, toPublisher) {
 
     var _debugLog = Vector.empty[String]

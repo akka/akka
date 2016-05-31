@@ -167,10 +167,11 @@ private[netty] trait CommonHandlers extends NettyHelpers {
 
   protected def createHandle(channel: Channel, localAddress: Address, remoteAddress: Address): AssociationHandle
 
-  protected def registerListener(channel: Channel,
-                                 listener: HandleEventListener,
-                                 msg: ChannelBuffer,
-                                 remoteSocketAddress: InetSocketAddress): Unit
+  protected def registerListener(
+    channel:             Channel,
+    listener:            HandleEventListener,
+    msg:                 ChannelBuffer,
+    remoteSocketAddress: InetSocketAddress): Unit
 
   final protected def init(channel: Channel, remoteSocketAddress: SocketAddress, remoteAddress: Address, msg: ChannelBuffer)(
     op: (AssociationHandle ⇒ Any)): Unit = {
@@ -193,8 +194,9 @@ private[netty] trait CommonHandlers extends NettyHelpers {
 /**
  * INTERNAL API
  */
-private[netty] abstract class ServerHandler(protected final val transport: NettyTransport,
-                                            private final val associationListenerFuture: Future[AssociationEventListener])
+private[netty] abstract class ServerHandler(
+  protected final val transport:               NettyTransport,
+  private final val associationListenerFuture: Future[AssociationEventListener])
   extends NettyServerHelpers with CommonHandlers {
 
   import transport.executionContext
@@ -205,7 +207,7 @@ private[netty] abstract class ServerHandler(protected final val transport: Netty
       case listener: AssociationEventListener ⇒
         val remoteAddress = NettyTransport.addressFromSocketAddress(remoteSocketAddress, transport.schemeIdentifier,
           transport.system.name, hostName = None, port = None).getOrElse(
-            throw new NettyTransportException(s"Unknown inbound remote address type [${remoteSocketAddress.getClass.getName}]"))
+          throw new NettyTransportException(s"Unknown inbound remote address type [${remoteSocketAddress.getClass.getName}]"))
         init(channel, remoteSocketAddress, remoteAddress, msg) { listener notify InboundAssociation(_) }
     }
   }

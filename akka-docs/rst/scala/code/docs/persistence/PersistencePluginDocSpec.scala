@@ -149,17 +149,19 @@ class MyJournal extends AsyncWriteJournal {
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] = ???
   def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long,
                           toSequenceNr: Long, max: Long)(
-                            replayCallback: (PersistentRepr) => Unit): Future[Unit] = ???
-  def asyncReadHighestSequenceNr(persistenceId: String,
-                                 fromSequenceNr: Long): Future[Long] = ???
+    replayCallback: (PersistentRepr) => Unit): Future[Unit] = ???
+  def asyncReadHighestSequenceNr(
+    persistenceId:  String,
+    fromSequenceNr: Long): Future[Long] = ???
 
   // optionally override:
   override def receivePluginInternal: Receive = super.receivePluginInternal
 }
 
 class MySnapshotStore extends SnapshotStore {
-  def loadAsync(persistenceId: String,
-                criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = ???
+  def loadAsync(
+    persistenceId: String,
+    criteria:      SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = ???
   def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = ???
   def deleteAsync(metadata: SnapshotMetadata): Future[Unit] = ???
   def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] = ???

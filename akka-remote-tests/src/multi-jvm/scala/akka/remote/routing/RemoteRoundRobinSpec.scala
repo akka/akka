@@ -99,8 +99,8 @@ class RemoteRoundRobinSpec extends MultiNodeSpec(RemoteRoundRobinMultiJvmSpec)
 
         val replies: Map[Address, Int] = (receiveWhile(5 seconds, messages = connectionCount * iterationCount) {
           case ref: ActorRef ⇒ ref.path.address
-        }).foldLeft(Map(node(first).address -> 0, node(second).address -> 0, node(third).address -> 0)) {
-          case (replyMap, address) ⇒ replyMap + (address -> (replyMap(address) + 1))
+        }).foldLeft(Map(node(first).address → 0, node(second).address → 0, node(third).address → 0)) {
+          case (replyMap, address) ⇒ replyMap + (address → (replyMap(address) + 1))
         }
 
         enterBarrier("broadcast-end")
@@ -184,8 +184,8 @@ class RemoteRoundRobinSpec extends MultiNodeSpec(RemoteRoundRobinMultiJvmSpec)
 
         val replies: Map[Address, Int] = (receiveWhile(5 seconds, messages = connectionCount * iterationCount) {
           case ref: ActorRef ⇒ ref.path.address
-        }).foldLeft(Map(node(first).address -> 0, node(second).address -> 0, node(third).address -> 0)) {
-          case (replyMap, address) ⇒ replyMap + (address -> (replyMap(address) + 1))
+        }).foldLeft(Map(node(first).address → 0, node(second).address → 0, node(third).address → 0)) {
+          case (replyMap, address) ⇒ replyMap + (address → (replyMap(address) + 1))
         }
 
         enterBarrier("end")

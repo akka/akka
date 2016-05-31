@@ -324,8 +324,8 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
       case "thread-pool-executor"           ⇒ new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
       case fqcn ⇒
         val args = List(
-          classOf[Config] -> config,
-          classOf[DispatcherPrerequisites] -> prerequisites)
+          classOf[Config] → config,
+          classOf[DispatcherPrerequisites] → prerequisites)
         prerequisites.dynamicAccess.createInstanceFor[ExecutorServiceConfigurator](fqcn, args).recover({
           case exception ⇒ throw new IllegalArgumentException(
             ("""Cannot instantiate ExecutorServiceConfigurator ("executor = [%s]"), defined in [%s],
@@ -379,14 +379,16 @@ object ForkJoinExecutorConfigurator {
   /**
    * INTERNAL AKKA USAGE ONLY
    */
-  final class AkkaForkJoinPool(parallelism: Int,
-                               threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
-                               unhandledExceptionHandler: Thread.UncaughtExceptionHandler,
-                               asyncMode: Boolean)
+  final class AkkaForkJoinPool(
+    parallelism:               Int,
+    threadFactory:             ForkJoinPool.ForkJoinWorkerThreadFactory,
+    unhandledExceptionHandler: Thread.UncaughtExceptionHandler,
+    asyncMode:                 Boolean)
     extends ForkJoinPool(parallelism, threadFactory, unhandledExceptionHandler, asyncMode) with LoadMetrics {
-    def this(parallelism: Int,
-             threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
-             unhandledExceptionHandler: Thread.UncaughtExceptionHandler) = this(parallelism, threadFactory, unhandledExceptionHandler, asyncMode = true)
+    def this(
+      parallelism:               Int,
+      threadFactory:             ForkJoinPool.ForkJoinWorkerThreadFactory,
+      unhandledExceptionHandler: Thread.UncaughtExceptionHandler) = this(parallelism, threadFactory, unhandledExceptionHandler, asyncMode = true)
 
     override def execute(r: Runnable): Unit =
       if (r ne null)
@@ -427,9 +429,10 @@ class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrer
     case x ⇒ throw new IllegalStateException("The prerequisites for the ForkJoinExecutorConfigurator is a ForkJoinPool.ForkJoinWorkerThreadFactory!")
   }
 
-  class ForkJoinExecutorServiceFactory(val threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
-                                       val parallelism: Int,
-                                       val asyncMode: Boolean) extends ExecutorServiceFactory {
+  class ForkJoinExecutorServiceFactory(
+    val threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
+    val parallelism:   Int,
+    val asyncMode:     Boolean) extends ExecutorServiceFactory {
     def this(threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory, parallelism: Int) = this(threadFactory, parallelism, asyncMode = true)
     def createExecutorService: ExecutorService = new AkkaForkJoinPool(parallelism, threadFactory, MonitorableThreadFactory.doNothing, asyncMode)
   }

@@ -124,7 +124,8 @@ class CustomRouterDocSpec extends AkkaSpec(CustomRouterDocSpec.config) with Impl
 
     val paths = for (n <- 1 to 10) yield ("/user/s" + n)
     val redundancy1: ActorRef =
-      system.actorOf(RedundancyGroup(paths, nbrCopies = 3).props(),
+      system.actorOf(
+        RedundancyGroup(paths, nbrCopies = 3).props(),
         name = "redundancy1")
     redundancy1 ! "important"
     //#usage-1
@@ -132,7 +133,8 @@ class CustomRouterDocSpec extends AkkaSpec(CustomRouterDocSpec.config) with Impl
     for (_ <- 1 to 3) expectMsg("important")
 
     //#usage-2
-    val redundancy2: ActorRef = system.actorOf(FromConfig.props(),
+    val redundancy2: ActorRef = system.actorOf(
+      FromConfig.props(),
       name = "redundancy2")
     redundancy2 ! "very important"
     //#usage-2

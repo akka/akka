@@ -155,9 +155,9 @@ trait ActorContext[T] {
  * See [[EffectfulActorContext]] for more advanced uses.
  */
 class StubbedActorContext[T](
-  val name: String,
+  val name:           String,
   override val props: Props[T])(
-    override implicit val system: ActorSystem[Nothing]) extends ActorContext[T] {
+  override implicit val system: ActorSystem[Nothing]) extends ActorContext[T] {
 
   val inbox = Inbox.sync[T](name)
   override val self = inbox.ref
@@ -169,7 +169,7 @@ class StubbedActorContext[T](
   override def child(name: String): Option[ActorRef[Nothing]] = _children get name map (_.ref)
   override def spawnAnonymous[U](props: Props[U]): ActorRef[U] = {
     val i = Inbox.sync[U](childName.next())
-    _children += i.ref.untypedRef.path.name -> i
+    _children += i.ref.untypedRef.path.name → i
     i.ref
   }
   override def spawn[U](props: Props[U], name: String): ActorRef[U] =
@@ -177,12 +177,12 @@ class StubbedActorContext[T](
       case Some(_) ⇒ throw new untyped.InvalidActorNameException(s"actor name $name is already taken")
       case None ⇒
         val i = Inbox.sync[U](name)
-        _children += name -> i
+        _children += name → i
         i.ref
     }
   override def actorOf(props: untyped.Props): untyped.ActorRef = {
     val i = Inbox.sync[Any](childName.next())
-    _children += i.ref.untypedRef.path.name -> i
+    _children += i.ref.untypedRef.path.name → i
     i.ref.untypedRef
   }
   override def actorOf(props: untyped.Props, name: String): untyped.ActorRef =
@@ -190,7 +190,7 @@ class StubbedActorContext[T](
       case Some(_) ⇒ throw new untyped.InvalidActorNameException(s"actor name $name is already taken")
       case None ⇒
         val i = Inbox.sync[Any](name)
-        _children += name -> i
+        _children += name → i
         i.ref.untypedRef
     }
   override def stop(child: ActorRef[Nothing]): Boolean = {

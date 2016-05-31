@@ -92,7 +92,8 @@ private[http] object Handshake {
           def requestedProtocols: Seq[String] = clientSupportedSubprotocols
 
           def handle(handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]], subprotocol: Option[String]): HttpResponse = {
-            require(subprotocol.forall(chosen ⇒ clientSupportedSubprotocols.contains(chosen)),
+            require(
+              subprotocol.forall(chosen ⇒ clientSupportedSubprotocols.contains(chosen)),
               s"Tried to choose invalid subprotocol '$subprotocol' which wasn't offered by the client: [${requestedProtocols.mkString(", ")}]")
             buildResponse(key.get, handler, subprotocol)
           }

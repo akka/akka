@@ -25,7 +25,7 @@ class TellOnlyBenchmark {
   implicit var system: ActorSystem = _
 
   @Setup(Level.Trial)
-  def setup():Unit = {
+  def setup(): Unit = {
     system = ActorSystem("TellOnlyBenchmark", ConfigFactory.parseString(
       s"""| akka {
           |   log-dead-letters = off
@@ -50,7 +50,7 @@ class TellOnlyBenchmark {
   }
 
   @TearDown(Level.Trial)
-  def shutdown():Unit = {
+  def shutdown(): Unit = {
     system.terminate()
     Await.ready(system.whenTerminated, 15.seconds)
   }
@@ -59,7 +59,7 @@ class TellOnlyBenchmark {
   var probe: TestProbe = _
 
   @Setup(Level.Iteration)
-  def setupIteration():Unit = {
+  def setupIteration(): Unit = {
     actor = system.actorOf(Props[TellOnlyBenchmark.Echo].withDispatcher("dropping-dispatcher"))
     probe = TestProbe()
     probe.watch(actor)
@@ -71,7 +71,7 @@ class TellOnlyBenchmark {
   }
 
   @TearDown(Level.Iteration)
-  def shutdownIteration():Unit = {
+  def shutdownIteration(): Unit = {
     probe.send(actor, flipDrop)
     probe.expectNoMsg(200.millis)
     actor ! stop
@@ -82,7 +82,7 @@ class TellOnlyBenchmark {
 
   @Benchmark
   @OutputTimeUnit(TimeUnit.MICROSECONDS)
-  def tell():Unit = {
+  def tell(): Unit = {
     probe.send(actor, message)
   }
 }
@@ -105,7 +105,7 @@ object TellOnlyBenchmark {
   class DroppingMessageQueue extends UnboundedMailbox.MessageQueue {
     @volatile var dropping = false
 
-    override def enqueue(receiver: ActorRef, handle: Envelope):Unit = {
+    override def enqueue(receiver: ActorRef, handle: Envelope): Unit = {
       if (handle.message == flipDrop) dropping = !dropping
       else if (!dropping) super.enqueue(receiver, handle)
     }
@@ -120,12 +120,12 @@ object TellOnlyBenchmark {
   }
 
   class DroppingDispatcher(
-    _configurator: MessageDispatcherConfigurator,
-    _id: String,
-    _throughput: Int,
-    _throughputDeadlineTime: Duration,
+    _configurator:                   MessageDispatcherConfigurator,
+    _id:                             String,
+    _throughput:                     Int,
+    _throughputDeadlineTime:         Duration,
     _executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
-    _shutdownTimeout: FiniteDuration)
+    _shutdownTimeout:                FiniteDuration)
     extends Dispatcher(_configurator, _id, _throughput, _throughputDeadlineTime, _executorServiceFactoryProvider, _shutdownTimeout) {
 
     override protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope): Unit = {

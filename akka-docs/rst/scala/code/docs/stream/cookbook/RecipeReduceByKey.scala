@@ -45,8 +45,8 @@ class RecipeReduceByKey extends RecipeSpec {
       //#reduce-by-key-general
       def reduceByKey[In, K, Out](
         maximumGroupSize: Int,
-        groupKey: (In) => K,
-        map: (In) => Out)(reduce: (Out, Out) => Out): Flow[In, (K, Out), NotUsed] = {
+        groupKey:         (In) => K,
+        map:              (In) => Out)(reduce: (Out, Out) => Out): Flow[In, (K, Out), NotUsed] = {
 
         Flow[In]
           .groupBy[K](maximumGroupSize, groupKey)
@@ -56,7 +56,8 @@ class RecipeReduceByKey extends RecipeSpec {
       }
 
       val wordCounts = words.via(
-        reduceByKey(MaximumDistinctWords,
+        reduceByKey(
+          MaximumDistinctWords,
           groupKey = (word: String) => word,
           map = (word: String) => 1)((left: Int, right: Int) => left + right))
       //#reduce-by-key-general

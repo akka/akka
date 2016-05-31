@@ -369,21 +369,20 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val sink1 = Sink.fromSubscriber(ActorSubscriber[String](system.actorOf(receiverProps(probe1.ref))))
       val sink2: Sink[String, ActorRef] = Sink.actorSubscriber(receiverProps(probe2.ref))
 
-      val senderRef2 = RunnableGraph.fromGraph(GraphDSL.create(Source.actorPublisher[Int](senderProps)) { implicit b ⇒
-        source2 ⇒
-          import GraphDSL.Implicits._
+      val senderRef2 = RunnableGraph.fromGraph(GraphDSL.create(Source.actorPublisher[Int](senderProps)) { implicit b ⇒ source2 ⇒
+        import GraphDSL.Implicits._
 
-          val merge = b.add(Merge[Int](2))
-          val bcast = b.add(Broadcast[String](2))
+        val merge = b.add(Merge[Int](2))
+        val bcast = b.add(Broadcast[String](2))
 
-          source1 ~> merge.in(0)
-          source2.out ~> merge.in(1)
+        source1 ~> merge.in(0)
+        source2.out ~> merge.in(1)
 
-          merge.out.map(_.toString) ~> bcast.in
+        merge.out.map(_.toString) ~> bcast.in
 
-          bcast.out(0).map(_ + "mark") ~> sink1
-          bcast.out(1) ~> sink2
-          ClosedShape
+        bcast.out(0).map(_ + "mark") ~> sink1
+        bcast.out(1) ~> sink2
+        ClosedShape
       }).run()
 
       (0 to 10).foreach {

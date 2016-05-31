@@ -15,10 +15,10 @@ import MemberStatus._
  */
 @SerialVersionUID(1L)
 class Member private[cluster] (
-  val uniqueAddress: UniqueAddress,
+  val uniqueAddress:             UniqueAddress,
   private[cluster] val upNumber: Int, // INTERNAL API
-  val status: MemberStatus,
-  val roles: Set[String]) extends Serializable {
+  val status:                    MemberStatus,
+  val roles:                     Set[String]) extends Serializable {
 
   def address: Address = uniqueAddress.address
 
@@ -53,7 +53,8 @@ class Member private[cluster] (
     val oldStatus = this.status
     if (status == oldStatus) this
     else {
-      require(allowedTransitions(oldStatus)(status),
+      require(
+        allowedTransitions(oldStatus)(status),
         s"Invalid member status transition [ ${this} -> ${status}]")
       new Member(uniqueAddress, upNumber, status, roles)
     }
@@ -233,13 +234,13 @@ object MemberStatus {
    */
   private[cluster] val allowedTransitions: Map[MemberStatus, Set[MemberStatus]] =
     Map(
-      Joining -> Set(WeaklyUp, Up, Down, Removed),
-      WeaklyUp -> Set(Up, Down, Removed),
-      Up -> Set(Leaving, Down, Removed),
-      Leaving -> Set(Exiting, Down, Removed),
-      Down -> Set(Removed),
-      Exiting -> Set(Removed, Down),
-      Removed -> Set.empty[MemberStatus])
+      Joining → Set(WeaklyUp, Up, Down, Removed),
+      WeaklyUp → Set(Up, Down, Removed),
+      Up → Set(Leaving, Down, Removed),
+      Leaving → Set(Exiting, Down, Removed),
+      Down → Set(Removed),
+      Exiting → Set(Removed, Down),
+      Removed → Set.empty[MemberStatus])
 }
 
 /**

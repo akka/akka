@@ -44,9 +44,10 @@ object MetricsBasedResizerSpec {
 
     var msgs: Set[TestLatch] = Set()
 
-    def mockSend(await: Boolean,
-                 l: TestLatch = TestLatch(),
-                 routeeIdx: Int = Random.nextInt(routees.length)): Latches = {
+    def mockSend(
+      await:     Boolean,
+      l:         TestLatch = TestLatch(),
+      routeeIdx: Int       = Random.nextInt(routees.length)): Latches = {
       val target = routees(routeeIdx)
       val first = TestLatch()
       val latches = Latches(first, l)

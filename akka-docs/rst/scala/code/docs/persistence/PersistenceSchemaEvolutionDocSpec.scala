@@ -247,7 +247,8 @@ class UserEventsAdapter extends EventAdapter {
     case UserDetailsChanged(null, address) => EventSeq(UserAddressChanged(address))
     case UserDetailsChanged(name, null)    => EventSeq(UserNameChanged(name))
     case UserDetailsChanged(name, address) =>
-      EventSeq(UserNameChanged(name),
+      EventSeq(
+        UserNameChanged(name),
         UserAddressChanged(address))
     case event: V2 => EventSeq(event)
   }
@@ -267,7 +268,7 @@ class RemovedEventsAwareSerializer extends SerializerWithStringManifest {
 
   val SkipEventManifestsEvents = Set(
     "docs.persistence.CustomerBlinked" // ...
-    )
+  )
 
   override def manifest(o: AnyRef): String = o.getClass.getName
 

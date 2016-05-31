@@ -103,7 +103,7 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
   }
 
   "pathPrefix(Map(\"red\" -> 1, \"green\" -> 2, \"blue\" -> 3))" should {
-    val test = testFor(pathPrefix(Map("red" -> 1, "green" -> 2, "blue" -> 3)) { echoCaptureAndUnmatchedPath })
+    val test = testFor(pathPrefix(Map("red" → 1, "green" → 2, "blue" → 3)) { echoCaptureAndUnmatchedPath })
     "accept [/green]" in test("2:")
     "accept [/redsea]" in test("1:sea")
     "reject [/black]" in test()

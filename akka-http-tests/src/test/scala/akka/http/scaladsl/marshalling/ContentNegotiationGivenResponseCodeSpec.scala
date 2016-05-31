@@ -15,9 +15,9 @@ class ContentNegotiationGivenResponseCodeSpec extends RoutingSpec {
     pathPrefix(Segment) { mode ⇒
       complete {
         mode match {
-          case "200-text" ⇒ OK -> "ok"
-          case "201-text" ⇒ Created -> "created"
-          case "400-text" ⇒ BadRequest -> "bad-request"
+          case "200-text" ⇒ OK → "ok"
+          case "201-text" ⇒ Created → "created"
+          case "400-text" ⇒ BadRequest → "bad-request"
         }
       }
     }

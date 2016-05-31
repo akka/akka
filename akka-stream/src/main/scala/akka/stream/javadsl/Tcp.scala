@@ -120,12 +120,13 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *                  independently whether the client is still attempting to write. This setting is recommended
    *                  for servers, and therefore it is the default setting.
    */
-  def bind(interface: String,
-           port: Int,
-           backlog: Int,
-           options: JIterable[SocketOption],
-           halfClose: Boolean,
-           idleTimeout: Duration): Source[IncomingConnection, CompletionStage[ServerBinding]] =
+  def bind(
+    interface:   String,
+    port:        Int,
+    backlog:     Int,
+    options:     JIterable[SocketOption],
+    halfClose:   Boolean,
+    idleTimeout: Duration): Source[IncomingConnection, CompletionStage[ServerBinding]] =
     Source.fromGraph(delegate.bind(interface, port, backlog, immutableSeq(options), halfClose, idleTimeout)
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
@@ -159,12 +160,13 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *                  If set to false, the connection will immediately closed once the client closes its write side,
    *                  independently whether the server is still attempting to write.
    */
-  def outgoingConnection(remoteAddress: InetSocketAddress,
-                         localAddress: Optional[InetSocketAddress],
-                         options: JIterable[SocketOption],
-                         halfClose: Boolean,
-                         connectTimeout: Duration,
-                         idleTimeout: Duration): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
+  def outgoingConnection(
+    remoteAddress:  InetSocketAddress,
+    localAddress:   Optional[InetSocketAddress],
+    options:        JIterable[SocketOption],
+    halfClose:      Boolean,
+    connectTimeout: Duration,
+    idleTimeout:    Duration): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
     Flow.fromGraph(delegate.outgoingConnection(remoteAddress, localAddress.asScala, immutableSeq(options), halfClose, connectTimeout, idleTimeout)
       .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
 

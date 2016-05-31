@@ -303,7 +303,8 @@ trait ActorPublisher[T] extends Actor {
           tryOnComplete(sub)
         case Active | Canceled ⇒
           tryOnSubscribe(sub, CancelledSubscription)
-          tryOnError(sub,
+          tryOnError(
+            sub,
             if (subscriber == sub) ReactiveStreamsCompliance.canNotSubscribeTheSameSubscriberMultipleTimesException
             else ReactiveStreamsCompliance.canNotSubscribeTheSameSubscriberMultipleTimesException)
       }

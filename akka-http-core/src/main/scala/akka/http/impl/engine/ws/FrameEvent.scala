@@ -41,23 +41,25 @@ private[http] final case class FrameData(data: ByteString, lastPart: Boolean) ex
 }
 
 /** Model of the frame header */
-private[http] final case class FrameHeader(opcode: Protocol.Opcode,
-                                           mask: Option[Int],
-                                           length: Long,
-                                           fin: Boolean,
-                                           rsv1: Boolean = false,
-                                           rsv2: Boolean = false,
-                                           rsv3: Boolean = false)
+private[http] final case class FrameHeader(
+  opcode: Protocol.Opcode,
+  mask:   Option[Int],
+  length: Long,
+  fin:    Boolean,
+  rsv1:   Boolean         = false,
+  rsv2:   Boolean         = false,
+  rsv3:   Boolean         = false)
 
 private[http] object FrameEvent {
-  def empty(opcode: Protocol.Opcode,
-            fin: Boolean,
-            rsv1: Boolean = false,
-            rsv2: Boolean = false,
-            rsv3: Boolean = false): FrameStart =
+  def empty(
+    opcode: Protocol.Opcode,
+    fin:    Boolean,
+    rsv1:   Boolean         = false,
+    rsv2:   Boolean         = false,
+    rsv3:   Boolean         = false): FrameStart =
     fullFrame(opcode, None, ByteString.empty, fin, rsv1, rsv2, rsv3)
   def fullFrame(opcode: Protocol.Opcode, mask: Option[Int], data: ByteString,
-                fin: Boolean,
+                fin:  Boolean,
                 rsv1: Boolean = false,
                 rsv2: Boolean = false,
                 rsv3: Boolean = false): FrameStart =

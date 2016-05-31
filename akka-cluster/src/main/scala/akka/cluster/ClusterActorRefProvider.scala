@@ -21,9 +21,9 @@ import com.typesafe.config.ConfigFactory
  * the `ClusterActorRefProvider` is used.
  */
 private[akka] class ClusterActorRefProvider(
-  _systemName: String,
-  _settings: ActorSystem.Settings,
-  _eventStream: EventStream,
+  _systemName:    String,
+  _settings:      ActorSystem.Settings,
+  _eventStream:   EventStream,
   _dynamicAccess: DynamicAccess) extends RemoteActorRefProvider(
   _systemName, _settings, _eventStream, _dynamicAccess) {
 
