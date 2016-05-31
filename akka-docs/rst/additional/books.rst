@@ -10,6 +10,6 @@ Books
 * `Akka Essentials <https://www.packtpub.com/application-development/akka-essentials>`_, by Munish K. Gupta, PACKT Publishing, ISBN: 1849518289, October 2012
 
 Videos
-=====
+======
 
-* `Learning Akka <https://www.packtpub.com/application-development/learning-akka-video>`_, by Salma Khater, PACKT Publishing, ISBN: 9781784391836, January 2016
+* `Learning Akka Videos <https://www.packtpub.com/application-development/learning-akka-video>`_, by Salma Khater, PACKT Publishing, ISBN: 9781784391836, January 2016
