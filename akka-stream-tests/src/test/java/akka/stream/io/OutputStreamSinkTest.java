@@ -44,7 +44,7 @@ public class OutputStreamSinkTest  extends StreamTest {
         }
       };
       final CompletionStage<IOResult> resultFuture = Source.single(ByteString.fromString("123456")).runWith(StreamConverters.fromOutputStream(() -> os), materializer);
-      final IOResult result = resultFuture.toCompletableFuture().get(3000, TimeUnit.MILLISECONDS);
+      final IOResult result = resultFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
       assertFalse(result.wasSuccessful());
       assertTrue(result.getError().getMessage().equals("Can't accept more data."));

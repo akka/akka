@@ -58,7 +58,7 @@ class FileUploadDirectivesSpec extends RoutingSpec {
         fileUpload("field1") {
           case (info, bytes) ⇒
             // stream the bytes somewhere
-            val allBytesF = bytes.runFold(ByteString()) { (all, bytes) ⇒ all ++ bytes }
+            val allBytesF = bytes.runFold(ByteString.empty) { (all, bytes) ⇒ all ++ bytes }
 
             // sum all individual file sizes
             onSuccess(allBytesF) { allBytes ⇒
@@ -120,7 +120,7 @@ class FileUploadDirectivesSpec extends RoutingSpec {
           fileUpload("missing") {
             case (info, bytes) ⇒
               // stream the bytes somewhere
-              val allBytesF = bytes.runFold(ByteString()) { (all, bytes) ⇒ all ++ bytes }
+              val allBytesF = bytes.runFold(ByteString.empty) { (all, bytes) ⇒ all ++ bytes }
 
               // sum all individual file sizes
               onSuccess(allBytesF) { allBytes ⇒
