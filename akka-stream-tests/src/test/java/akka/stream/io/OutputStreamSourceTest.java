@@ -33,7 +33,7 @@ public class OutputStreamSourceTest extends StreamTest {
             Utils.UnboundedMailboxConfig());
     @Test
     public void mustSendEventsViaOutputStream() throws Exception {
-        final FiniteDuration timeout = FiniteDuration.create(3000, TimeUnit.MILLISECONDS);
+        final FiniteDuration timeout = FiniteDuration.create(3, TimeUnit.SECONDS);
         final JavaTestKit probe = new JavaTestKit(system);
 
         final Source<ByteString, OutputStream> source = StreamConverters.asOutputStream(timeout);
