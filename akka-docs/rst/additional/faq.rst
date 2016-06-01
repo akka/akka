@@ -73,7 +73,7 @@ mailboxes and thereby filling up the heap memory.
 Some articles for inspiration:
 
 * `Balancing Workload across Nodes with Akka 2 <http://letitcrash.com/post/29044669086/balancing-workload-across-nodes-with-akka-2>`_.
-* `Work Pulling Pattern to prevent mailbox overflow, throttle and distribute work <http://www.michaelpollmeier.com/akka-work-pulling-pattern/>`_
+* `Work Pulling Pattern to prevent mailbox overflow, throttle and distribute work <http://www.michaelpollmeier.com/akka-work-pulling-pattern>`_
 
 Actors Scala API
 ^^^^^^^^^^^^^^^^
