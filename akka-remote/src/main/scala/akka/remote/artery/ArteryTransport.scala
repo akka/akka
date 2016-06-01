@@ -222,7 +222,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   @volatile private[this] var materializer: Materializer = _
   @volatile private[this] var controlSubject: ControlMessageSubject = _
   @volatile private[this] var messageDispatcher: MessageDispatcher = _
-  @volatile private[this] var driver: MediaDriver = _
+  @volatile private[this] var mediaDriver: Option[MediaDriver] = None
   @volatile private[this] var aeron: Aeron = _
   @volatile private[this] var aeronErrorLogTask: Cancellable = _
 
@@ -298,13 +298,23 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def startMediaDriver(): Unit = {
-    // TODO also support external media driver
-    val driverContext = new MediaDriver.Context
-    // FIXME settings from config
-    driverContext.clientLivenessTimeoutNs(SECONDS.toNanos(20))
-    driverContext.imageLivenessTimeoutNs(SECONDS.toNanos(20))
-    driverContext.driverTimeoutMs(SECONDS.toNanos(20))
-    driver = MediaDriver.launchEmbedded(driverContext)
+    if (remoteSettings.EmbeddedMediaDriver) {
+      val driverContext = new MediaDriver.Context
+      if (remoteSettings.AeronDirectoryName.nonEmpty)
+        driverContext.aeronDirectoryName(remoteSettings.AeronDirectoryName)
+      // FIXME settings from config
+      driverContext.clientLivenessTimeoutNs(SECONDS.toNanos(20))
+      driverContext.imageLivenessTimeoutNs(SECONDS.toNanos(20))
+      driverContext.driverTimeoutMs(SECONDS.toNanos(20))
+      val driver = MediaDriver.launchEmbedded(driverContext)
+      log.debug("Started embedded media driver in directory [{}]", driver.aeronDirectoryName)
+      mediaDriver = Some(driver)
+    }
+  }
+
+  private def aeronDir: String = mediaDriver match {
+    case Some(driver) ⇒ driver.aeronDirectoryName
+    case None         ⇒ remoteSettings.AeronDirectoryName
   }
 
   private def startAeron(): Unit = {
@@ -336,12 +346,12 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       }
     })
 
-    ctx.aeronDirectoryName(driver.aeronDirectoryName)
+    ctx.aeronDirectoryName(aeronDir)
     aeron = Aeron.connect(ctx)
   }
 
   private def startAeronErrorLog(): Unit = {
-    val errorLog = new AeronErrorLog(new File(driver.aeronDirectoryName, CncFileDescriptor.CNC_FILE))
+    val errorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE))
     val lastTimestamp = new AtomicLong(0L)
     import system.dispatcher // FIXME perhaps use another dispatcher for this
     aeronErrorLogTask = system.scheduler.schedule(3.seconds, 5.seconds) {
@@ -436,9 +446,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     if (taskRunner != null) taskRunner.stop()
     if (aeronErrorLogTask != null) aeronErrorLogTask.cancel()
     if (aeron != null) aeron.close()
-    if (driver != null) {
+    mediaDriver.foreach { driver ⇒
+      // this is only for embedded media driver
       driver.close()
-      // FIXME only delete files for embedded media driver, and it should also be configurable
+      // FIXME it should also be configurable to not delete dir
       IoUtil.delete(new File(driver.aeronDirectoryName), true)
     }
     Future.successful(Done)
