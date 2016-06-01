@@ -268,3 +268,9 @@ provided to parse (or render to) Strings or byte arrays.
   and can override them if needed. This is useful, since both ``client`` and ``host-connection-pool`` APIs,
   such as the Client API ``Http.get(sys).outgoingConnection`` or the Host Connection Pool APIs ``Http.get(sys).singleRequest``
   or ``Http.get(sys).superPool``, usually need the same settings, however the ``server`` most likely has a very different set of settings.
+
+URI
+------------------------------
+
+Akka HTTP offers the ``akka.http.server.raw-request-uri-header`` flag. When enabled a ``Raw-Request-URI`` header will be added
+to each request. This header will hold the original raw requests URI that was used. For an example check the reference configuration.
