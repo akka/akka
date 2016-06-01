@@ -54,7 +54,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
   final case class FlowControl(burstStartTime: Long) extends Echo
 
   def receiverProps(reporter: RateReporter, payloadSize: Int): Props =
-    Props(new Receiver(reporter, payloadSize))
+    Props(new Receiver(reporter, payloadSize)).withDispatcher("akka.remote.default-remote-dispatcher")
 
   class Receiver(reporter: RateReporter, payloadSize: Int) extends Actor {
     var c = 0L
