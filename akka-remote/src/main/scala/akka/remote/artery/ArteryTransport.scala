@@ -5,7 +5,6 @@ package akka.remote.artery
 
 import java.io.File
 import java.nio.ByteOrder
-
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
@@ -62,13 +61,12 @@ import org.agrona.IoUtil
 import java.io.File
 import java.net.InetSocketAddress
 import java.nio.channels.DatagramChannel
-
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import io.aeron.CncFileDescriptor
 import java.util.concurrent.atomic.AtomicLong
 import akka.actor.Cancellable
-
 import scala.collection.JavaConverters._
+import akka.stream.ActorMaterializerSettings
 /**
  * INTERNAL API
  */
@@ -288,6 +286,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     _localAddress = UniqueAddress(
       Address("artery", system.name, remoteSettings.ArteryHostname, port),
       AddressUidExtension(system).longAddressUid)
+
+    val materializerSettings = ActorMaterializerSettings(
+      remoteSettings.config.getConfig("akka.remote.artery.advanced.materializer"))
+    materializer = ActorMaterializer(materializerSettings)(system)
     materializer = ActorMaterializer()(system)
 
     messageDispatcher = new MessageDispatcher(system, provider)
