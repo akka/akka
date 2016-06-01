@@ -10,7 +10,7 @@ import akka.http.scaladsl.model
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server._
 import akka.http.javadsl.model._
-import akka.http.javadsl.model.headers.{ ByteRange, HttpEncoding, HttpChallenge, HttpOrigin }
+import akka.http.javadsl.model.headers.{ ByteRange, HttpEncoding, HttpChallenge }
 import java.util.Optional
 import java.util.function.{ Function ⇒ JFunction }
 import java.lang.{ Iterable ⇒ JIterable }
@@ -104,7 +104,7 @@ trait MalformedHeaderRejection extends Rejection {
  * Rejection created by [[akka.http.scaladsl.server.directives.HeaderDirectives.checkSameOrigin]].
  * Signals that the request was rejected because `Origin` header value is invalid.
  */
-trait InvalidOriginHeaderRejection extends Rejection {
+trait InvalidOriginRejection extends Rejection {
   def getInvalidOrigins: java.util.List[akka.http.javadsl.model.headers.HttpOrigin]
 }
 

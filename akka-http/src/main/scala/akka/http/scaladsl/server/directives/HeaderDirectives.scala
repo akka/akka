@@ -7,7 +7,7 @@ package directives
 
 import akka.http.impl.util._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{ HttpOrigin, HttpOriginRange, ModeledCustomHeader, ModeledCustomHeaderCompanion, Origin }
+import akka.http.scaladsl.model.headers.{ HttpOriginRange, ModeledCustomHeader, ModeledCustomHeaderCompanion, Origin }
 
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
@@ -24,14 +24,14 @@ trait HeaderDirectives {
     * Checks that request comes from the same origin. Extracts the [[Origin]] header value and verifies that
     * allowed range contains the obtained value. In the case of absent of the [[Origin]] header rejects
     * with [[MissingHeaderRejection]]. If the origin value is not in the allowed range
-    * rejects with an [[InvalidOriginHeaderRejection]] and [[StatusCodes.Forbidden]] status.
+    * rejects with an [[InvalidOriginRejection]] and [[StatusCodes.Forbidden]] status.
     *
     * @group header
     */
   def checkSameOrigin(allowed: HttpOriginRange): Directive0 = {
     headerValueByType[Origin]().flatMap { origin ⇒
       if (origin.origins.exists(allowed.matches)) pass
-      else reject(InvalidOriginHeaderRejection(origin.origins))
+      else reject(InvalidOriginRejection(origin.origins))
     }
   }
 

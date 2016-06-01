@@ -166,7 +166,7 @@ object RejectionHandler {
           complete((BadRequest, "Request is missing required HTTP header '" + headerName + '\''))
       }
       .handle {
-        case InvalidOriginHeaderRejection(invalidOrigin) ⇒
+        case InvalidOriginRejection(invalidOrigin) ⇒
           complete((Forbidden, s"Invalid `Origin` header values: ${invalidOrigin.mkString(", ")}"))
       }
       .handle {

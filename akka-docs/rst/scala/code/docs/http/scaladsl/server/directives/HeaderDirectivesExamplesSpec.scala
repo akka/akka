@@ -7,7 +7,7 @@ package docs.http.scaladsl.server.directives
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.server.{ InvalidOriginHeaderRejection, MissingHeaderRejection, Route }
+import akka.http.scaladsl.server.{ InvalidOriginRejection, MissingHeaderRejection, Route }
 import docs.http.scaladsl.server.RoutingSpec
 import org.scalatest.Inside
 
@@ -209,7 +209,7 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
     val invalidOriginHeader = Origin(invalidHttpOrigin)
     Get("abc") ~> invalidOriginHeader ~> route ~> check {
       inside(rejection) {
-        case InvalidOriginHeaderRejection(invalidOrigins) ⇒
+        case InvalidOriginRejection(invalidOrigins) ⇒
           invalidOrigins shouldEqual Seq(invalidHttpOrigin)
       }
     }

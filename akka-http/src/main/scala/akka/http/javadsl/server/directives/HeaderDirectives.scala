@@ -13,7 +13,7 @@ import scala.compat.java8.OptionConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.model.{HttpHeader, StatusCodes}
 import akka.http.javadsl.model.headers.HttpOriginRange
-import akka.http.javadsl.server.{InvalidOriginHeaderRejection, MissingHeaderRejection, Route}
+import akka.http.javadsl.server.{InvalidOriginRejection, MissingHeaderRejection, Route}
 import akka.http.scaladsl.model.headers.{ModeledCustomHeader, ModeledCustomHeaderCompanion, Origin}
 import akka.http.scaladsl.server.directives.{HeaderMagnet, BasicDirectives => B, HeaderDirectives => D}
 import akka.stream.ActorMaterializer
@@ -29,7 +29,7 @@ abstract class HeaderDirectives extends FutureDirectives {
     * Checks that request comes from the same origin. Extracts the [[Origin]] header value and verifies that
     * allowed range contains the obtained value. In the case of absent of the [[Origin]] header rejects
     * with [[MissingHeaderRejection]]. If the origin value is not in the allowed range
-    * rejects with an [[InvalidOriginHeaderRejection]] and [[StatusCodes.FORBIDDEN]] status.
+    * rejects with an [[InvalidOriginRejection]] and [[StatusCodes.FORBIDDEN]] status.
     *
     * @group header
     */
