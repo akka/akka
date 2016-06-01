@@ -10,6 +10,7 @@ import java.nio.{ ByteBuffer, ByteOrder }
 
 import org.agrona.concurrent.{ ManyToManyConcurrentArrayQueue, UnsafeBuffer }
 import sun.misc.Cleaner
+import akka.util.Unsafe
 
 import scala.util.control.NonFatal
 
@@ -60,6 +61,9 @@ private[remote] object EnvelopeBuffer {
   val UsAscii = Charset.forName("US-ASCII")
 
   val DeadLettersCode = 0
+
+  // accessing the internal char array of String when writing literal strings to ByteBuffer
+  val StringValueFieldOffset = Unsafe.instance.objectFieldOffset(classOf[String].getDeclaredField("value"))
 }
 
 /**
@@ -182,6 +186,9 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
   import EnvelopeBuffer._
   val aeronBuffer = new UnsafeBuffer(byteBuffer)
 
+  private var literalChars = Array.ofDim[Char](64)
+  private var literalBytes = Array.ofDim[Byte](64)
+
   private val cleanerField: Field = try {
     val cleaner = byteBuffer.getClass.getDeclaredField("cleaner")
     cleaner.setAccessible(true)
@@ -274,19 +281,52 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
 
   private def readLiteral(): String = {
     val length = byteBuffer.getShort
-    val bytes = Array.ofDim[Byte](length)
-    byteBuffer.get(bytes)
-    new String(bytes, UsAscii)
+    if (length == 0)
+      ""
+    else {
+      ensureLiteralCharsLength(length)
+      val chars = literalChars
+      val bytes = literalBytes
+      byteBuffer.get(bytes, 0, length)
+      var i = 0
+      while (i < length) {
+        // UsAscii
+        chars(i) = bytes(i).asInstanceOf[Char]
+        i += 1
+      }
+      String.valueOf(chars, 0, length)
+    }
   }
 
   private def writeLiteral(tagOffset: Int, literal: String): Unit = {
-    if (literal.length > 65535)
+    val length = literal.length
+    if (length > 65535)
       throw new IllegalArgumentException("Literals longer than 65535 cannot be encoded in the envelope")
 
-    val literalBytes = literal.getBytes(UsAscii)
     byteBuffer.putInt(tagOffset, byteBuffer.position())
-    byteBuffer.putShort(literalBytes.length.toShort)
-    byteBuffer.put(literalBytes)
+
+    if (length == 0) {
+      byteBuffer.putShort(0)
+    } else {
+      byteBuffer.putShort(literal.length.toShort)
+      ensureLiteralCharsLength(length)
+      val bytes = literalBytes
+      val chars = Unsafe.instance.getObject(literal, StringValueFieldOffset).asInstanceOf[Array[Char]]
+      var i = 0
+      while (i < length) {
+        // UsAscii
+        bytes(i) = chars(i).asInstanceOf[Byte]
+        i += 1
+      }
+      byteBuffer.put(bytes, 0, length)
+    }
+  }
+
+  private def ensureLiteralCharsLength(length: Int): Unit = {
+    if (length > literalChars.length) {
+      literalChars = Array.ofDim[Char](length)
+      literalBytes = Array.ofDim[Byte](length)
+    }
   }
 
 }
