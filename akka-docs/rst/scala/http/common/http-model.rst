@@ -371,7 +371,7 @@ in the right style / place.
 The URI model
 -------------
 
-Akka HTTP offers it's own specialised URI model class which is tuned for both performance and idiomatic usage within
+Akka HTTP offers its own specialised URI model class which is tuned for both performance and idiomatic usage within
 other types of the HTTP model. For example, an HTTPRequest's target URI is parsed into this type, where all character
 escaping and other URI specific semantics are applied.
 
