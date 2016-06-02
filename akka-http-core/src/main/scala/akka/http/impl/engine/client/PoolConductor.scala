@@ -44,22 +44,22 @@ private object PoolConductor {
   /*
     Stream Setup
     ============
-                                                                                                  Request-
-    Request-   +-----------+     +-----------+    Switch-    +-------------+     +-----------+    Context
-    Context    |   retry   |     |   slot-   |    Command    |   doubler   |     |   route   +-------------->
-    +--------->|   Merge   +---->| Selector  +-------------->| (MapConcat) +---->|  (Flexi   +-------------->
-               |           |     |           |               |             |     |   Route)  +-------------->
-               +----+------+     +-----+-----+               +-------------+     +-----------+       to slots
-                    ^                  ^
+                                                                                                  Request-
+    Request-   +-----------+     +-----------+    Switch-    +-------------+     +-----------+    Context
+    Context    |   retry   |     |   slot-   |    Command    |   doubler   |     |   route   +-------------->
+    +--------->|   Merge   +---->| Selector  +-------------->| (MapConcat) +---->|  (Flexi   +-------------->
+               |           |     |           |               |             |     |   Route)  +-------------->
+               +----+------+     +-----+-----+               +-------------+     +-----------+       to slots
+                    ^                  ^
                     |                  | SlotEvent
                     |             +----+----+
-                    |             | flatten | mapAsync
+                    |             | flatten | mapAsync
                     |             +----+----+
-                    |                  | RawSlotEvent
-                    | Request-         |
+                    |                  | RawSlotEvent
+                    | Request-         |
                     | Context     +---------+
-                    +-------------+  retry  |<-------- RawSlotEvent (from slotEventMerge)
-                                  |  Split  |
+                    +-------------+  retry  |<-------- RawSlotEvent (from slotEventMerge)
+                                  |  Split  |
                                   +---------+
 
   */
