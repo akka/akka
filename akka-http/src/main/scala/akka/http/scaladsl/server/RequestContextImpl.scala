@@ -17,13 +17,13 @@ import akka.http.scaladsl.util.FastFuture._
  * INTERNAL API
  */
 private[http] class RequestContextImpl(
-  val request: HttpRequest,
-  val unmatchedPath: Uri.Path,
+  val request:          HttpRequest,
+  val unmatchedPath:    Uri.Path,
   val executionContext: ExecutionContextExecutor,
-  val materializer: Materializer,
-  val log: LoggingAdapter,
-  val settings: RoutingSettings,
-  val parserSettings: ParserSettings) extends RequestContext {
+  val materializer:     Materializer,
+  val log:              LoggingAdapter,
+  val settings:         RoutingSettings,
+  val parserSettings:   ParserSettings) extends RequestContext {
 
   def this(request: HttpRequest, log: LoggingAdapter, settings: RoutingSettings, parserSettings: ParserSettings)(implicit ec: ExecutionContextExecutor, materializer: Materializer) =
     this(request, request.uri.path, ec, materializer, log, settings, parserSettings)
@@ -97,12 +97,13 @@ private[http] class RequestContextImpl(
       case _ ⇒ Future.successful(RouteResult.Rejected(UnacceptedResponseContentTypeRejection(supported) :: Nil))
     }
 
-  private def copy(request: HttpRequest = request,
-                   unmatchedPath: Uri.Path = unmatchedPath,
-                   executionContext: ExecutionContextExecutor = executionContext,
-                   materializer: Materializer = materializer,
-                   log: LoggingAdapter = log,
-                   routingSettings: RoutingSettings = settings,
-                   parserSettings: ParserSettings = parserSettings) =
+  private def copy(
+    request:          HttpRequest              = request,
+    unmatchedPath:    Uri.Path                 = unmatchedPath,
+    executionContext: ExecutionContextExecutor = executionContext,
+    materializer:     Materializer             = materializer,
+    log:              LoggingAdapter           = log,
+    routingSettings:  RoutingSettings          = settings,
+    parserSettings:   ParserSettings           = parserSettings) =
     new RequestContextImpl(request, unmatchedPath, executionContext, materializer, log, routingSettings, parserSettings)
 }

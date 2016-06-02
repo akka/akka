@@ -23,7 +23,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
   val InvalidUtf8TwoByteSequence: ByteString = ByteString(
     (128 + 64).toByte, // start two byte sequence
     0 // but don't finish it
-    )
+  )
 
   "The WebSocket implementation should" - {
     "collect messages from frames" - {

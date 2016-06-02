@@ -355,39 +355,38 @@ object DirectoryListing {
       |""".stripMarginWithNewline("\n") split '$'
 
   def directoryMarshaller(renderVanityFooter: Boolean): ToEntityMarshaller[DirectoryListing] =
-    Marshaller.StringMarshaller.wrapWithEC(MediaTypes.`text/html`) { implicit ec ⇒
-      listing ⇒
-        val DirectoryListing(path, isRoot, files) = listing
-        val filesAndNames = files.map(file ⇒ file -> file.getName).sortBy(_._2)
-        val deduped = filesAndNames.zipWithIndex.flatMap {
-          case (fan @ (file, name), ix) ⇒
-            if (ix == 0 || filesAndNames(ix - 1)._2 != name) Some(fan) else None
-        }
-        val (directoryFilesAndNames, fileFilesAndNames) = deduped.partition(_._1.isDirectory)
-        def maxNameLength(seq: Seq[(File, String)]) = if (seq.isEmpty) 0 else seq.map(_._2.length).max
-        val maxNameLen = math.max(maxNameLength(directoryFilesAndNames) + 1, maxNameLength(fileFilesAndNames))
-        val sb = new java.lang.StringBuilder
-        sb.append(html(0)).append(path).append(html(1)).append(path).append(html(2))
-        if (!isRoot) {
-          val secondToLastSlash = path.lastIndexOf('/', path.lastIndexOf('/', path.length - 1) - 1)
-          sb.append("<a href=\"%s/\">../</a>\n" format path.substring(0, secondToLastSlash))
-        }
-        def lastModified(file: File) = DateTime(file.lastModified).toIsoLikeDateTimeString
-        def start(name: String) =
-          sb.append("<a href=\"").append(path + name).append("\">").append(name).append("</a>")
-            .append(" " * (maxNameLen - name.length))
-        def renderDirectory(file: File, name: String) =
-          start(name + '/').append("        ").append(lastModified(file)).append('\n')
-        def renderFile(file: File, name: String) = {
-          val size = akka.http.impl.util.humanReadableByteCount(file.length, si = true)
-          start(name).append("        ").append(lastModified(file))
-          sb.append("                ".substring(size.length)).append(size).append('\n')
-        }
-        for ((file, name) ← directoryFilesAndNames) renderDirectory(file, name)
-        for ((file, name) ← fileFilesAndNames) renderFile(file, name)
-        if (isRoot && files.isEmpty) sb.append("(no files)\n")
-        sb.append(html(3))
-        if (renderVanityFooter) sb.append(html(4)).append(DateTime.now.toIsoLikeDateTimeString).append(html(5))
-        sb.append(html(6)).toString
+    Marshaller.StringMarshaller.wrapWithEC(MediaTypes.`text/html`) { implicit ec ⇒ listing ⇒
+      val DirectoryListing(path, isRoot, files) = listing
+      val filesAndNames = files.map(file ⇒ file → file.getName).sortBy(_._2)
+      val deduped = filesAndNames.zipWithIndex.flatMap {
+        case (fan @ (file, name), ix) ⇒
+          if (ix == 0 || filesAndNames(ix - 1)._2 != name) Some(fan) else None
+      }
+      val (directoryFilesAndNames, fileFilesAndNames) = deduped.partition(_._1.isDirectory)
+      def maxNameLength(seq: Seq[(File, String)]) = if (seq.isEmpty) 0 else seq.map(_._2.length).max
+      val maxNameLen = math.max(maxNameLength(directoryFilesAndNames) + 1, maxNameLength(fileFilesAndNames))
+      val sb = new java.lang.StringBuilder
+      sb.append(html(0)).append(path).append(html(1)).append(path).append(html(2))
+      if (!isRoot) {
+        val secondToLastSlash = path.lastIndexOf('/', path.lastIndexOf('/', path.length - 1) - 1)
+        sb.append("<a href=\"%s/\">../</a>\n" format path.substring(0, secondToLastSlash))
+      }
+      def lastModified(file: File) = DateTime(file.lastModified).toIsoLikeDateTimeString
+      def start(name: String) =
+        sb.append("<a href=\"").append(path + name).append("\">").append(name).append("</a>")
+          .append(" " * (maxNameLen - name.length))
+      def renderDirectory(file: File, name: String) =
+        start(name + '/').append("        ").append(lastModified(file)).append('\n')
+      def renderFile(file: File, name: String) = {
+        val size = akka.http.impl.util.humanReadableByteCount(file.length, si = true)
+        start(name).append("        ").append(lastModified(file))
+        sb.append("                ".substring(size.length)).append(size).append('\n')
+      }
+      for ((file, name) ← directoryFilesAndNames) renderDirectory(file, name)
+      for ((file, name) ← fileFilesAndNames) renderFile(file, name)
+      if (isRoot && files.isEmpty) sb.append("(no files)\n")
+      sb.append(html(3))
+      if (renderVanityFooter) sb.append(html(4)).append(DateTime.now.toIsoLikeDateTimeString).append(html(5))
+      sb.append(html(6)).toString
     }
 }

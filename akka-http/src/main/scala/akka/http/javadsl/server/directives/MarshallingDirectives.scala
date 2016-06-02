@@ -16,8 +16,9 @@ abstract class MarshallingDirectives extends HostDirectives {
    * If there is a problem with unmarshalling the request is rejected with the [[akka.http.javadsl.server.Rejection]]
    * produced by the unmarshaller.
    */
-  def request[T](unmarshaller: Unmarshaller[_ >: HttpRequest, T],
-                 inner: java.util.function.Function[T, Route]): Route = RouteAdapter {
+  def request[T](
+    unmarshaller: Unmarshaller[_ >: HttpRequest, T],
+    inner:        java.util.function.Function[T, Route]): Route = RouteAdapter {
     D.entity(unmarshaller.asScala) { value ⇒
       inner.apply(value).delegate
     }
@@ -28,8 +29,9 @@ abstract class MarshallingDirectives extends HostDirectives {
    * If there is a problem with unmarshalling the request is rejected with the [[akka.http.javadsl.server.Rejection]]
    * produced by the unmarshaller.
    */
-  def entity[T](unmarshaller: Unmarshaller[_ >: HttpEntity, T],
-                inner: java.util.function.Function[T, Route]): Route = RouteAdapter {
+  def entity[T](
+    unmarshaller: Unmarshaller[_ >: HttpEntity, T],
+    inner:        java.util.function.Function[T, Route]): Route = RouteAdapter {
     D.entity(Unmarshaller.requestToEntity.flatMap(unmarshaller).asScala) { value ⇒
       inner.apply(value).delegate
     }

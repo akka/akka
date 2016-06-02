@@ -57,17 +57,16 @@ trait TimeoutDirectives {
    * @group timeout
    */
   def withRequestTimeout(timeout: Duration, handler: Option[HttpRequest ⇒ HttpResponse]): Directive0 =
-    Directive { inner ⇒
-      ctx ⇒
-        ctx.request.header[`Timeout-Access`] match {
-          case Some(t) ⇒
-            handler match {
-              case Some(h) ⇒ t.timeoutAccess.update(timeout, h)
-              case _       ⇒ t.timeoutAccess.updateTimeout(timeout)
-            }
-          case _ ⇒ ctx.log.warning("withRequestTimeout was used in route however no request-timeout is set!")
-        }
-        inner()(ctx)
+    Directive { inner ⇒ ctx ⇒
+      ctx.request.header[`Timeout-Access`] match {
+        case Some(t) ⇒
+          handler match {
+            case Some(h) ⇒ t.timeoutAccess.update(timeout, h)
+            case _       ⇒ t.timeoutAccess.updateTimeout(timeout)
+          }
+        case _ ⇒ ctx.log.warning("withRequestTimeout was used in route however no request-timeout is set!")
+      }
+      inner()(ctx)
     }
 
   /**
@@ -80,13 +79,12 @@ trait TimeoutDirectives {
    * @group timeout
    */
   def withRequestTimeoutResponse(handler: HttpRequest ⇒ HttpResponse): Directive0 =
-    Directive { inner ⇒
-      ctx ⇒
-        ctx.request.header[`Timeout-Access`] match {
-          case Some(t) ⇒ t.timeoutAccess.updateHandler(handler)
-          case _       ⇒ ctx.log.warning("withRequestTimeoutResponse was used in route however no request-timeout is set!")
-        }
-        inner()(ctx)
+    Directive { inner ⇒ ctx ⇒
+      ctx.request.header[`Timeout-Access`] match {
+        case Some(t) ⇒ t.timeoutAccess.updateHandler(handler)
+        case _       ⇒ ctx.log.warning("withRequestTimeoutResponse was used in route however no request-timeout is set!")
+      }
+      inner()(ctx)
     }
 
 }

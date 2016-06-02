@@ -147,7 +147,7 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
   }
   "headerValueByType-0" in {
     val route =
-      headerValueByType[Origin]() { origin ⇒
+      headerValueByType[Origin]() { origin =>
         complete(s"The first origin was ${origin.origins.head}")
       }
 
@@ -161,14 +161,14 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
 
     // reject a request if no header of the given type is present
     Get("abc") ~> route ~> check {
-      inside(rejection) { case MissingHeaderRejection("Origin") ⇒ }
+      inside(rejection) { case MissingHeaderRejection("Origin") => }
     }
   }
   "optionalHeaderValueByType-0" in {
     val route =
       optionalHeaderValueByType[Origin]() {
-        case Some(origin) ⇒ complete(s"The first origin was ${origin.origins.head}")
-        case None         ⇒ complete("No Origin header found.")
+        case Some(origin) => complete(s"The first origin was ${origin.origins.head}")
+        case None         => complete("No Origin header found.")
       }
 
     val originHeader = Origin(HttpOrigin("http://localhost:8080"))
