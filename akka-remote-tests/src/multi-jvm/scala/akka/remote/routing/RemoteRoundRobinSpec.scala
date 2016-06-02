@@ -24,26 +24,19 @@ import akka.routing.Routee
 import akka.routing.FromConfig
 import akka.testkit._
 import scala.concurrent.duration._
+import com.typesafe.config.ConfigFactory
 
-object RemoteRoundRobinMultiJvmSpec extends MultiNodeConfig {
-
-  class SomeActor extends Actor {
-    def receive = {
-      case "hit" ⇒ sender() ! self
-    }
-  }
-
-  class TestResizer extends Resizer {
-    override def isTimeForResize(messageCounter: Long): Boolean = messageCounter <= 10
-    override def resize(currentRoutees: immutable.IndexedSeq[Routee]): Int = 1
-  }
+class RemoteRoundRobinConfig(artery: Boolean) extends MultiNodeConfig {
 
   val first = role("first")
   val second = role("second")
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false))
+  commonConfig(debugConfig(on = false).withFallback(
+    ConfigFactory.parseString(s"""
+      akka.remote.artery.enabled = $artery
+      """)))
 
   deployOnAll("""
       /service-hello {
@@ -56,7 +49,7 @@ object RemoteRoundRobinMultiJvmSpec extends MultiNodeConfig {
         router = round-robin-pool
         target.nodes = ["@first@", "@second@", "@third@"]
       }
-      
+
       /service-hello3 {
         router = round-robin-group
         routees.paths = [
@@ -67,14 +60,37 @@ object RemoteRoundRobinMultiJvmSpec extends MultiNodeConfig {
     """)
 }
 
-class RemoteRoundRobinMultiJvmNode1 extends RemoteRoundRobinSpec
-class RemoteRoundRobinMultiJvmNode2 extends RemoteRoundRobinSpec
-class RemoteRoundRobinMultiJvmNode3 extends RemoteRoundRobinSpec
-class RemoteRoundRobinMultiJvmNode4 extends RemoteRoundRobinSpec
+class RemoteRoundRobinMultiJvmNode1 extends RemoteRoundRobinSpec(new RemoteRoundRobinConfig(artery = false))
+class RemoteRoundRobinMultiJvmNode2 extends RemoteRoundRobinSpec(new RemoteRoundRobinConfig(artery = false))
+class RemoteRoundRobinMultiJvmNode3 extends RemoteRoundRobinSpec(new RemoteRoundRobinConfig(artery = false))
+class RemoteRoundRobinMultiJvmNode4 extends RemoteRoundRobinSpec(new RemoteRoundRobinConfig(artery = false))
 
-class RemoteRoundRobinSpec extends MultiNodeSpec(RemoteRoundRobinMultiJvmSpec)
+// FIXME this test fails with Artery
+// [akka://RemoteRoundRobinSpec/user/service-hello2] received Supervise from unregistered child
+// Actor[artery://RemoteRoundRobinSpec@localhost:52247/remote/artery/RemoteRoundRobinSpec@localhost:56386/user/service-hello2/c2#-2080820302],
+// this will not end well
+//class ArteryRemoteRoundRobinMultiJvmNode1 extends RemoteRoundRobinSpec(new RemoteRoundRobinConfig(artery = true))
+//class ArteryRemoteRoundRobinMultiJvmNode2 extends RemoteRoundRobinSpec(new RemoteRoundRobinConfig(artery = true))
+//class ArteryRemoteRoundRobinMultiJvmNode3 extends RemoteRoundRobinSpec(new RemoteRoundRobinConfig(artery = true))
+//class ArteryRemoteRoundRobinMultiJvmNode4 extends RemoteRoundRobinSpec(new RemoteRoundRobinConfig(artery = true))
+
+object RemoteRoundRobinSpec {
+  class SomeActor extends Actor {
+    def receive = {
+      case "hit" ⇒ sender() ! self
+    }
+  }
+
+  class TestResizer extends Resizer {
+    override def isTimeForResize(messageCounter: Long): Boolean = messageCounter <= 10
+    override def resize(currentRoutees: immutable.IndexedSeq[Routee]): Int = 1
+  }
+}
+
+class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends MultiNodeSpec(multiNodeConfig)
   with STMultiNodeSpec with ImplicitSender with DefaultTimeout {
-  import RemoteRoundRobinMultiJvmSpec._
+  import multiNodeConfig._
+  import RemoteRoundRobinSpec._
 
   def initialParticipants = roles.size
 

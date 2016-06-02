@@ -14,21 +14,19 @@ import akka.routing.Broadcast
 import akka.routing.RandomPool
 import akka.routing.RoutedActorRef
 import akka.testkit._
+import com.typesafe.config.ConfigFactory
 
-object RemoteRandomMultiJvmSpec extends MultiNodeConfig {
-
-  class SomeActor extends Actor {
-    def receive = {
-      case "hit" ⇒ sender() ! self
-    }
-  }
+class RemoteRandomConfig(artery: Boolean) extends MultiNodeConfig {
 
   val first = role("first")
   val second = role("second")
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false))
+  commonConfig(debugConfig(on = false).withFallback(
+    ConfigFactory.parseString(s"""
+      akka.remote.artery.enabled = $artery
+      """)))
 
   deployOnAll("""
       /service-hello {
@@ -39,14 +37,28 @@ object RemoteRandomMultiJvmSpec extends MultiNodeConfig {
     """)
 }
 
-class RemoteRandomMultiJvmNode1 extends RemoteRandomSpec
-class RemoteRandomMultiJvmNode2 extends RemoteRandomSpec
-class RemoteRandomMultiJvmNode3 extends RemoteRandomSpec
-class RemoteRandomMultiJvmNode4 extends RemoteRandomSpec
+class RemoteRandomMultiJvmNode1 extends RemoteRandomSpec(new RemoteRandomConfig(artery = false))
+class RemoteRandomMultiJvmNode2 extends RemoteRandomSpec(new RemoteRandomConfig(artery = false))
+class RemoteRandomMultiJvmNode3 extends RemoteRandomSpec(new RemoteRandomConfig(artery = false))
+class RemoteRandomMultiJvmNode4 extends RemoteRandomSpec(new RemoteRandomConfig(artery = false))
 
-class RemoteRandomSpec extends MultiNodeSpec(RemoteRandomMultiJvmSpec)
+class ArteryRemoteRandomMultiJvmNode1 extends RemoteRandomSpec(new RemoteRandomConfig(artery = true))
+class ArteryRemoteRandomMultiJvmNode2 extends RemoteRandomSpec(new RemoteRandomConfig(artery = true))
+class ArteryRemoteRandomMultiJvmNode3 extends RemoteRandomSpec(new RemoteRandomConfig(artery = true))
+class ArteryRemoteRandomMultiJvmNode4 extends RemoteRandomSpec(new RemoteRandomConfig(artery = true))
+
+object RemoteRandomSpec {
+  class SomeActor extends Actor {
+    def receive = {
+      case "hit" ⇒ sender() ! self
+    }
+  }
+}
+
+class RemoteRandomSpec(multiNodeConfig: RemoteRandomConfig) extends MultiNodeSpec(multiNodeConfig)
   with STMultiNodeSpec with ImplicitSender with DefaultTimeout {
-  import RemoteRandomMultiJvmSpec._
+  import multiNodeConfig._
+  import RemoteRandomSpec._
 
   def initialParticipants = roles.size
 
@@ -87,6 +99,9 @@ class RemoteRandomSpec extends MultiNodeSpec(RemoteRandomMultiJvmSpec)
         // "Terminate" to a shut down node
         system.stop(actor)
         enterBarrier("done")
+
+        // FIXME this test has problems shutting down actor system when running with Artery
+        // [akka.actor.ActorSystemImpl(RemoteRandomSpec)] Failed to stop [RemoteRandomSpec] within [5 seconds]
       }
     }
   }
