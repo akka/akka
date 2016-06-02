@@ -587,7 +587,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   /** Creates real or placebo SslTls stage based on if ConnectionContext is HTTPS or not. */
   private[http] def sslTlsStage(connectionContext: ConnectionContext, role: TLSRole, hostInfo: Option[(String, Int)] = None) =
     connectionContext match {
-      case hctx: HttpsConnectionContext ⇒ TLS(hctx.sslContext, hctx.firstSession, role, hostInfo = hostInfo)
+      case hctx: HttpsConnectionContext ⇒ TLS(hctx.sslContext, connectionContext.sslConfig, hctx.firstSession, role, hostInfo = hostInfo)
       case other                        ⇒ TLSPlacebo() // if it's not HTTPS, we don't enable SSL/TLS
     }
 
@@ -815,7 +815,7 @@ trait DefaultSSLContextCreation {
       defaultParams.setEndpointIdentificationAlgorithm("https")
     }
 
-    new HttpsConnectionContext(sslContext, Some(cipherSuites.toList), Some(defaultProtocols.toList), clientAuth, Some(defaultParams))
+    new HttpsConnectionContext(sslContext, Some(sslConfig), Some(cipherSuites.toList), Some(defaultProtocols.toList), clientAuth, Some(defaultParams))
   }
 
 }
