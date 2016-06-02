@@ -5,10 +5,13 @@
 package akka.http.scaladsl.server
 package directives
 
-import akka.http.scaladsl.model.{ MediaTypes, MediaRanges, StatusCodes }
+import akka.http.scaladsl.coding.Gzip
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.HttpEncodings._
 import akka.http.scaladsl.model.headers._
 import scala.concurrent.Future
 import akka.testkit.EventFilter
+import org.scalatest.matchers.Matcher
 
 class ExecutionDirectivesSpec extends RoutingSpec {
   object MyException extends RuntimeException
@@ -96,9 +99,39 @@ class ExecutionDirectivesSpec extends RoutingSpec {
     }
   }
 
+  "The `handleRejections` directive" should {
+    "handle encodeResponse inside RejectionHandler for non-success responses" in {
+      val rejectionHandler: RejectionHandler = RejectionHandler.newBuilder()
+        .handleNotFound {
+          encodeResponseWith(Gzip) {
+            complete((404, "Not here!"))
+          }
+        }.result()
+
+      Get("/hell0") ~>
+        get {
+          handleRejections(rejectionHandler) {
+            encodeResponseWith(Gzip) {
+              path("hello") {
+                get {
+                  complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "world"))
+                }
+              }
+            }
+          }
+        } ~> check {
+          response should haveContentEncoding(gzip)
+          status shouldEqual StatusCodes.NotFound
+        }
+    }
+  }
+
   def exceptionShouldBeHandled(route: Route) =
     Get("/abc") ~> route ~> check {
       status shouldEqual StatusCodes.InternalServerError
       responseAs[String] shouldEqual "Pling! Plong! Something went wrong!!!"
     }
+
+  def haveContentEncoding(encoding: HttpEncoding): Matcher[HttpResponse] =
+    be(Some(`Content-Encoding`(encoding))) compose { (_: HttpResponse).header[`Content-Encoding`] }
 }
