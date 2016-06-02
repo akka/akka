@@ -381,5 +381,5 @@ Obtaining the Raw Request URI
 Sometimes it may be needed to obtain the "raw" value of an incoming URI, without applying any escaping or parsing to it.
 While this use-case is rare, it comes up every once in a while. It is possible to obtain the "raw" request URI in Akka
 HTTP Server side by turning on the ``akka.http.server.raw-request-uri-header`` flag.
-When enabled a ``Raw-Request-URI`` header will be added to each request. This header will hold the original raw requests
+When enabled, a ``Raw-Request-URI`` header will be added to each request. This header will hold the original raw request's
 URI that was used. For an example check the reference configuration.
