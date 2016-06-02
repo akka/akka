@@ -18,39 +18,52 @@ import akka.remote.testconductor.RoleName
 import akka.actor.Identify
 import scala.concurrent.Await
 
-object RemoteQuarantinePiercingSpec extends MultiNodeConfig {
+class RemoteQuarantinePiercingConfig(artery: Boolean) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
   commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString("""
+    ConfigFactory.parseString(s"""
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = INFO
-                              """)))
+      akka.remote.artery.enabled = $artery
+      """)))
 
+}
+
+class RemoteQuarantinePiercingMultiJvmNode1 extends RemoteQuarantinePiercingSpec(
+  new RemoteQuarantinePiercingConfig(artery = false))
+class RemoteQuarantinePiercingMultiJvmNode2 extends RemoteQuarantinePiercingSpec(
+  new RemoteQuarantinePiercingConfig(artery = false))
+
+class ArteryRemoteQuarantinePiercingMultiJvmNode1 extends RemoteQuarantinePiercingSpec(
+  new RemoteQuarantinePiercingConfig(artery = true))
+class ArteryRemoteQuarantinePiercingMultiJvmNode2 extends RemoteQuarantinePiercingSpec(
+  new RemoteQuarantinePiercingConfig(artery = true))
+
+object RemoteQuarantinePiercingSpec {
   class Subject extends Actor {
     def receive = {
       case "shutdown" ⇒ context.system.terminate()
       case "identify" ⇒ sender() ! (AddressUidExtension(context.system).addressUid -> self)
     }
   }
-
 }
 
-class RemoteQuarantinePiercingMultiJvmNode1 extends RemoteQuarantinePiercingSpec
-class RemoteQuarantinePiercingMultiJvmNode2 extends RemoteQuarantinePiercingSpec
-
-abstract class RemoteQuarantinePiercingSpec extends MultiNodeSpec(RemoteQuarantinePiercingSpec)
+abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePiercingConfig)
+  extends MultiNodeSpec(multiNodeConfig)
   with STMultiNodeSpec
   with ImplicitSender {
-
+  import multiNodeConfig._
   import RemoteQuarantinePiercingSpec._
 
   override def initialParticipants = roles.size
 
-  def identify(role: RoleName, actorName: String): (Int, ActorRef) = {
-    system.actorSelection(node(role) / "user" / actorName) ! "identify"
-    expectMsgType[(Int, ActorRef)]
+  def identifyWithUid(role: RoleName, actorName: String, timeout: FiniteDuration = remainingOrDefault): (Int, ActorRef) = {
+    within(timeout) {
+      system.actorSelection(node(role) / "user" / actorName) ! "identify"
+      expectMsgType[(Int, ActorRef)]
+    }
   }
 
   "RemoteNodeShutdownAndComesBack" must {
@@ -61,7 +74,7 @@ abstract class RemoteQuarantinePiercingSpec extends MultiNodeSpec(RemoteQuaranti
         enterBarrier("actors-started")
 
         // Acquire ActorRef from first system
-        val (uidFirst, subjectFirst) = identify(second, "subject")
+        val (uidFirst, subjectFirst) = identifyWithUid(second, "subject", 5.seconds)
         enterBarrier("actor-identified")
 
         // Manually Quarantine the other system
@@ -101,11 +114,9 @@ abstract class RemoteQuarantinePiercingSpec extends MultiNodeSpec(RemoteQuaranti
         Await.ready(system.whenTerminated, 30.seconds)
 
         val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
-                    akka.remote.netty.tcp {
-                      hostname = ${addr.host.get}
-                      port = ${addr.port.get}
-                    }
-                    """).withFallback(system.settings.config))
+          akka.remote.netty.tcp.port = ${addr.port.get}
+          akka.remote.artery.port = ${addr.port.get}
+          """).withFallback(system.settings.config))
         freshSystem.actorOf(Props[Subject], "subject")
 
         Await.ready(freshSystem.whenTerminated, 30.seconds)
