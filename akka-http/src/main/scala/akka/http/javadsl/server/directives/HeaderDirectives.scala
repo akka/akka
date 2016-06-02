@@ -11,9 +11,10 @@ import akka.actor.ReflectiveDynamicAccess
 import scala.compat.java8.OptionConverters
 import scala.compat.java8.OptionConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.javadsl.model.HttpHeader
-import akka.http.javadsl.server.Route
-import akka.http.scaladsl.model.headers.{ModeledCustomHeader, ModeledCustomHeaderCompanion}
+import akka.http.javadsl.model.{HttpHeader, StatusCodes}
+import akka.http.javadsl.model.headers.HttpOriginRange
+import akka.http.javadsl.server.{InvalidOriginRejection, MissingHeaderRejection, Route}
+import akka.http.scaladsl.model.headers.{ModeledCustomHeader, ModeledCustomHeaderCompanion, Origin}
 import akka.http.scaladsl.server.directives.{HeaderMagnet, BasicDirectives => B, HeaderDirectives => D}
 import akka.stream.ActorMaterializer
 
@@ -23,6 +24,18 @@ import scala.util.{Failure, Success}
 abstract class HeaderDirectives extends FutureDirectives {
 
   private type ScalaHeaderMagnet = HeaderMagnet[akka.http.scaladsl.model.HttpHeader]
+
+  /**
+    * Checks that request comes from the same origin. Extracts the [[Origin]] header value and verifies that
+    * allowed range contains the obtained value. In the case of absent of the [[Origin]] header rejects
+    * with [[MissingHeaderRejection]]. If the origin value is not in the allowed range
+    * rejects with an [[InvalidOriginRejection]] and [[StatusCodes.FORBIDDEN]] status.
+    *
+    * @group header
+    */
+  def checkSameOrigin(allowed: HttpOriginRange, inner: jf.Supplier[Route]): Route = RouteAdapter {
+    D.checkSameOrigin(allowed.asScala) { inner.get().delegate }
+  }
 
   /**
    * Extracts an HTTP header value using the given function. If the function result is undefined for all headers the

@@ -4,13 +4,14 @@
 
 package akka.http.scaladsl.server
 
-import scala.annotation.tailrec
-import scala.reflect.ClassTag
-import scala.collection.immutable
-import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
-import StatusCodes._
-import AuthenticationFailedRejection._
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.server.AuthenticationFailedRejection._
+
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.reflect.ClassTag
 
 trait RejectionHandler extends (immutable.Seq[Rejection] ⇒ Option[Route]) { self ⇒
   import RejectionHandler._
@@ -163,6 +164,10 @@ object RejectionHandler {
       .handle {
         case MissingHeaderRejection(headerName) ⇒
           complete((BadRequest, "Request is missing required HTTP header '" + headerName + '\''))
+      }
+      .handle {
+        case InvalidOriginRejection(invalidOrigin) ⇒
+          complete((Forbidden, s"Invalid `Origin` header values: ${invalidOrigin.mkString(", ")}"))
       }
       .handle {
         case MissingQueryParamRejection(paramName) ⇒
