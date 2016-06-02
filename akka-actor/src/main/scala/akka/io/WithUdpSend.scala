@@ -51,7 +51,8 @@ private[io] trait WithUdpSend {
             } catch {
               case NonFatal(e) ⇒
                 sender() ! CommandFailed(send)
-                log.debug("Failure while sending UDP datagram to remote address [{}]: {}",
+                log.debug(
+                  "Failure while sending UDP datagram to remote address [{}]: {}",
                   send.target, e)
                 retriedSend = false
                 pendingSend = null

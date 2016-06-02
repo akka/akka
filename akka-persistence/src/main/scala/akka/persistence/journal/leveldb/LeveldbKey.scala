@@ -12,8 +12,8 @@ import java.nio.ByteBuffer
  */
 private[leveldb] final case class Key(
   persistenceId: Int,
-  sequenceNr: Long,
-  mappingId: Int)
+  sequenceNr:    Long,
+  mappingId:     Int)
 
 private[leveldb] object Key {
   def keyToBytes(key: Key): Array[Byte] = {

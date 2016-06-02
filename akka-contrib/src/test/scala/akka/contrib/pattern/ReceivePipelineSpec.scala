@@ -409,10 +409,10 @@ object MixinSample extends App {
 
   //#mixin-model
   val texts = Map(
-    "that.rug_EN" -> "That rug really tied the room together.",
-    "your.opinion_EN" -> "Yeah, well, you know, that's just, like, your opinion, man.",
-    "that.rug_ES" -> "Esa alfombra realmente completaba la sala.",
-    "your.opinion_ES" -> "Sí, bueno, ya sabes, eso es solo, como, tu opinion, amigo.")
+    "that.rug_EN" → "That rug really tied the room together.",
+    "your.opinion_EN" → "Yeah, well, you know, that's just, like, your opinion, man.",
+    "that.rug_ES" → "Esa alfombra realmente completaba la sala.",
+    "your.opinion_ES" → "Sí, bueno, ya sabes, eso es solo, como, tu opinion, amigo.")
 
   case class I18nText(locale: String, key: String)
   case class Message(author: Option[String], text: Any)

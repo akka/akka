@@ -55,13 +55,13 @@ private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore �
       val nextKey = keyFromBytes(nextEntry.getKey)
       if (!isMappingKey(nextKey)) pathMap else {
         val nextVal = new String(nextEntry.getValue, UTF_8)
-        readIdMap(pathMap + (nextVal -> nextKey.mappingId), iter)
+        readIdMap(pathMap + (nextVal → nextKey.mappingId), iter)
       }
     }
   }
 
   private def writeIdMapping(id: String, numericId: Int): Int = {
-    idMap = idMap + (id -> numericId)
+    idMap = idMap + (id → numericId)
     leveldb.put(keyToBytes(mappingKey(numericId)), id.getBytes(UTF_8))
     newPersistenceIdAdded(id)
     numericId

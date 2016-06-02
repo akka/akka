@@ -97,10 +97,10 @@ private[akka] final case class ScatterGatherFirstCompletedRoutees(
 @SerialVersionUID(1L)
 final case class ScatterGatherFirstCompletedPool(
   override val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
-  within: FiniteDuration,
+  within:                          FiniteDuration,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
-  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-  override val usePoolDispatcher: Boolean = false)
+  override val routerDispatcher:   String             = Dispatchers.DefaultDispatcherId,
+  override val usePoolDispatcher:  Boolean            = false)
   extends Pool with PoolOverrideUnsetConfig[ScatterGatherFirstCompletedPool] {
 
   def this(config: Config) =
@@ -165,9 +165,9 @@ final case class ScatterGatherFirstCompletedPool(
  */
 @SerialVersionUID(1L)
 final case class ScatterGatherFirstCompletedGroup(
-  override val paths: immutable.Iterable[String],
-  within: FiniteDuration,
-  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+  override val paths:            immutable.Iterable[String],
+  within:                        FiniteDuration,
+  override val routerDispatcher: String                     = Dispatchers.DefaultDispatcherId)
   extends Group {
 
   def this(config: Config) =

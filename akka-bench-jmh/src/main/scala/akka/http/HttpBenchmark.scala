@@ -28,7 +28,8 @@ class HttpBenchmark {
     """
       akka {
         loglevel = "ERROR"
-      }""".stripMargin).withFallback(ConfigFactory.load())
+      }""".stripMargin
+  ).withFallback(ConfigFactory.load())
 
   implicit val system = ActorSystem("HttpBenchmark", config)
   implicit val materializer = ActorMaterializer()
@@ -38,7 +39,7 @@ class HttpBenchmark {
   var pool: Flow[(HttpRequest, Int), (Try[HttpResponse], Int), _] = _
 
   @Setup
-  def setup():Unit = {
+  def setup(): Unit = {
     val route = {
       path("test") {
         get {
@@ -53,21 +54,21 @@ class HttpBenchmark {
   }
 
   @TearDown
-  def shutdown():Unit = {
+  def shutdown(): Unit = {
     Await.ready(Http().shutdownAllConnectionPools(), 1.second)
     binding.unbind()
     Await.result(system.terminate(), 5.seconds)
   }
 
   @Benchmark
-  def single_request():Unit = {
+  def single_request(): Unit = {
     import system.dispatcher
     val response = Await.result(Http().singleRequest(request), 1.second)
     Await.result(Unmarshal(response.entity).to[String], 1.second)
   }
 
   @Benchmark
-  def single_request_pool():Unit = {
+  def single_request_pool(): Unit = {
     import system.dispatcher
     val (response, id) = Await.result(Source.single(HttpRequest(uri = "/test") -> 42).via(pool).runWith(Sink.head), 1.second)
     Await.result(Unmarshal(response.get.entity).to[String], 1.second)

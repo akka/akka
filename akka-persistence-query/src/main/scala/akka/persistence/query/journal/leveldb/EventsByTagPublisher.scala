@@ -125,7 +125,7 @@ private[akka] abstract class AbstractEventsByTagPublisher(
 private[akka] class LiveEventsByTagPublisher(
   tag: String, fromOffset: Long, override val toOffset: Long,
   refreshInterval: FiniteDuration,
-  maxBufSize: Int, writeJournalPluginId: String)
+  maxBufSize:      Int, writeJournalPluginId: String)
   extends AbstractEventsByTagPublisher(
     tag, fromOffset, maxBufSize, writeJournalPluginId) {
   import EventsByTagPublisher._

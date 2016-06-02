@@ -37,7 +37,7 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
       val n = 20
       val testRuns = 1 to 2
 
-      def script = Script((1 to n) map { x ⇒ Seq(x) -> Seq(x) }: _*)
+      def script = Script((1 to n) map { x ⇒ Seq(x) → Seq(x) }: _*)
       testRuns foreach (_ ⇒ runScript(script, settings) { flow ⇒
         flow.
           map(identity).
@@ -59,7 +59,7 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
 
       val testRuns = 1 to 3
 
-      def script = Script((1 to n) map { x ⇒ Seq(x) -> Seq(x) }: _*)
+      def script = Script((1 to n) map { x ⇒ Seq(x) → Seq(x) }: _*)
       testRuns foreach (_ ⇒ runScript(script, settings) { flow ⇒
         flow.timed(_.map(identity), onComplete = printInfo)
       })

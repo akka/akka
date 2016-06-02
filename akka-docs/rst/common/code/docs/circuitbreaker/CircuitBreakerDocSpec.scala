@@ -22,7 +22,8 @@ class DangerousActor extends Actor with ActorLogging {
   import context.dispatcher
 
   val breaker =
-    new CircuitBreaker(context.system.scheduler,
+    new CircuitBreaker(
+      context.system.scheduler,
       maxFailures = 5,
       callTimeout = 10.seconds,
       resetTimeout = 1.minute).onOpen(notifyMeOnOpen())

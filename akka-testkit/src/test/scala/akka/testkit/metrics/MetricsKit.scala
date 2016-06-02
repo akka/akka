@@ -191,7 +191,7 @@ trait AkkaMetricRegistry {
     for {
       (key, metric) ← getMetrics.asScala
       if clazz.isInstance(metric)
-    } yield key -> metric.asInstanceOf[T]
+    } yield key → metric.asInstanceOf[T]
 }
 
 private[akka] class MetricsKitSettings(config: Config) {

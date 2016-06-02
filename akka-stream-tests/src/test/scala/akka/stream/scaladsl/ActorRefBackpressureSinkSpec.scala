@@ -59,7 +59,8 @@ class ActorRefBackpressureSinkSpec extends AkkaSpec {
 
     "send the elements to the ActorRef" in assertAllStagesStopped {
       val fw = createActor(classOf[Fw])
-      Source(List(1, 2, 3)).runWith(Sink.actorRefWithAck(fw,
+      Source(List(1, 2, 3)).runWith(Sink.actorRefWithAck(
+        fw,
         initMessage, ackMessage, completeMessage))
       expectMsg("start")
       expectMsg(1)
@@ -70,7 +71,8 @@ class ActorRefBackpressureSinkSpec extends AkkaSpec {
 
     "send the elements to the ActorRef2" in assertAllStagesStopped {
       val fw = createActor(classOf[Fw])
-      val probe = TestSource.probe[Int].to(Sink.actorRefWithAck(fw,
+      val probe = TestSource.probe[Int].to(Sink.actorRefWithAck(
+        fw,
         initMessage, ackMessage, completeMessage)).run()
       probe.sendNext(1)
       expectMsg("start")
@@ -85,7 +87,8 @@ class ActorRefBackpressureSinkSpec extends AkkaSpec {
 
     "cancel stream when actor terminates" in assertAllStagesStopped {
       val fw = createActor(classOf[Fw])
-      val publisher = TestSource.probe[Int].to(Sink.actorRefWithAck(fw,
+      val publisher = TestSource.probe[Int].to(Sink.actorRefWithAck(
+        fw,
         initMessage, ackMessage, completeMessage)).run().sendNext(1)
       expectMsg(initMessage)
       expectMsg(1)
@@ -95,7 +98,8 @@ class ActorRefBackpressureSinkSpec extends AkkaSpec {
 
     "send message only when backpressure received" in assertAllStagesStopped {
       val fw = createActor(classOf[Fw2])
-      val publisher = TestSource.probe[Int].to(Sink.actorRefWithAck(fw,
+      val publisher = TestSource.probe[Int].to(Sink.actorRefWithAck(
+        fw,
         initMessage, ackMessage, completeMessage)).run()
       expectMsg(initMessage)
 
@@ -138,7 +142,8 @@ class ActorRefBackpressureSinkSpec extends AkkaSpec {
     "work with one element buffer" in assertAllStagesStopped {
       val fw = createActor(classOf[Fw2])
       val publisher =
-        TestSource.probe[Int].to(Sink.actorRefWithAck(fw,
+        TestSource.probe[Int].to(Sink.actorRefWithAck(
+          fw,
           initMessage, ackMessage, completeMessage)
           .withAttributes(inputBuffer(1, 1))).run()
 

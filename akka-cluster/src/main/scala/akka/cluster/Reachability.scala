@@ -47,7 +47,7 @@ private[cluster] object Reachability {
  */
 @SerialVersionUID(1L)
 private[cluster] class Reachability private (
-  val records: immutable.IndexedSeq[Reachability.Record],
+  val records:  immutable.IndexedSeq[Reachability.Record],
   val versions: Map[UniqueAddress, Long]) extends Serializable {
 
   import Reachability._
@@ -67,10 +67,10 @@ private[cluster] class Reachability private (
 
         records foreach { r ⇒
           val m = mapBuilder.get(r.observer) match {
-            case None    ⇒ Map(r.subject -> r)
+            case None    ⇒ Map(r.subject → r)
             case Some(m) ⇒ m.updated(r.subject, r)
           }
-          mapBuilder += (r.observer -> m)
+          mapBuilder += (r.observer → m)
 
           if (r.status == Unreachable) unreachableBuilder += r.subject
           else if (r.status == Terminated) terminatedBuilder += r.subject
@@ -167,7 +167,7 @@ private[cluster] class Reachability private (
       }
 
       if (observerVersion2 > observerVersion1)
-        newVersions += (observer -> observerVersion2)
+        newVersions += (observer → observerVersion2)
     }
 
     newVersions = newVersions.filterNot { case (k, _) ⇒ !allowed(k) }
@@ -242,7 +242,7 @@ private[cluster] class Reachability private (
       case (subject, records) if records.exists(_.status == Unreachable) ⇒
         val observers: Set[UniqueAddress] =
           records.collect { case r if r.status == Unreachable ⇒ r.observer }(breakOut)
-        (subject -> observers)
+        (subject → observers)
     }
   }
 

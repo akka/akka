@@ -26,7 +26,8 @@ import scala.collection.immutable
  * a Test to show some TestKit examples
  */
 class TestKitUsageSpec
-  extends TestKit(ActorSystem("TestKitUsageSpec",
+  extends TestKit(ActorSystem(
+    "TestKitUsageSpec",
     ConfigFactory.parseString(TestKitUsageSpec.config)))
   with DefaultTimeout with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll {

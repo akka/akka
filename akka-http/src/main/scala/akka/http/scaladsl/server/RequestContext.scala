@@ -53,9 +53,9 @@ trait RequestContext {
    */
   def reconfigure(
     executionContext: ExecutionContextExecutor = executionContext,
-    materializer: Materializer = materializer,
-    log: LoggingAdapter = log,
-    settings: RoutingSettings = settings): RequestContext
+    materializer:     Materializer             = materializer,
+    log:              LoggingAdapter           = log,
+    settings:         RoutingSettings          = settings): RequestContext
 
   /**
    * Completes the request with the given ToResponseMarshallable.

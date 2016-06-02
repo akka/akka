@@ -88,8 +88,9 @@ private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser:
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
                   expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult = {
 
-    def emitResponseStart(createEntity: EntityCreator[ResponseOutput, ResponseEntity],
-                          headers: List[HttpHeader] = headers) = {
+    def emitResponseStart(
+      createEntity: EntityCreator[ResponseOutput, ResponseEntity],
+      headers:      List[HttpHeader]                              = headers) = {
       val close =
         contextForCurrentResponse.get.oneHundredContinueTrigger match {
           case None ⇒ closeAfterResponseCompletion
@@ -175,8 +176,9 @@ private[http] object HttpResponseParser {
    *                                  a promise whose completion either triggers the sending of the (suspended)
    *                                  request entity or the closing of the connection (for error completion)
    */
-  private[http] final case class ResponseContext(requestMethod: HttpMethod,
-                                                 oneHundredContinueTrigger: Option[Promise[Unit]])
+  private[http] final case class ResponseContext(
+    requestMethod:             HttpMethod,
+    oneHundredContinueTrigger: Option[Promise[Unit]])
 
   private[http] object OneHundredContinueError
     extends RuntimeException("Received error response for request with `Expect: 100-continue` header")

@@ -89,7 +89,8 @@ private[akka] trait StreamSubscriptionTimeoutSupport {
   }
 
   private def warn(target: Publisher[_], timeout: FiniteDuration): Unit = {
-    log.warning("Timed out {} detected (after {} ms)! You should investigate if you either cancel or consume all {} instances",
+    log.warning(
+      "Timed out {} detected (after {} ms)! You should investigate if you either cancel or consume all {} instances",
       target, timeout.toMillis, target.getClass.getCanonicalName)
   }
 

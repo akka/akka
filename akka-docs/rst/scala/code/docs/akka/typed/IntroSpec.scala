@@ -21,7 +21,7 @@ object IntroSpec {
     final case class Greet(whom: String, replyTo: ActorRef[Greeted])
     final case class Greeted(whom: String)
 
-    val greeter = Static[Greet] { msg ⇒
+    val greeter = Static[Greet] { msg =>
       println(s"Hello ${msg.whom}!")
       msg.replyTo ! Greeted(msg.whom)
     }
@@ -51,17 +51,17 @@ object IntroSpec {
     //#chatroom-behavior
 
     val behavior: Behavior[GetSession] =
-      ContextAware[Command] { ctx ⇒
+      ContextAware[Command] { ctx =>
         var sessions = List.empty[ActorRef[SessionEvent]]
 
         Static {
-          case GetSession(screenName, client) ⇒
+          case GetSession(screenName, client) =>
             sessions ::= client
             val wrapper = ctx.spawnAdapter {
-              p: PostMessage ⇒ PostSessionMessage(screenName, p.message)
+              p: PostMessage => PostSessionMessage(screenName, p.message)
             }
             client ! SessionGranted(wrapper)
-          case PostSessionMessage(screenName, message) ⇒
+          case PostSessionMessage(screenName, message) =>
             val mp = MessagePosted(screenName, message)
             sessions foreach (_ ! mp)
         }
@@ -98,13 +98,13 @@ class IntroSpec extends TypedSpec {
 
     val gabbler: Behavior[SessionEvent] =
       Total {
-        case SessionDenied(reason) ⇒
+        case SessionDenied(reason) =>
           println(s"cannot start chat room session: $reason")
           Stopped
-        case SessionGranted(handle) ⇒
+        case SessionGranted(handle) =>
           handle ! PostMessage("Hello World!")
           Same
-        case MessagePosted(screenName, message) ⇒
+        case MessagePosted(screenName, message) =>
           println(s"message has been posted by '$screenName': $message")
           Stopped
       }
@@ -113,13 +113,13 @@ class IntroSpec extends TypedSpec {
     //#chatroom-main
     val main: Behavior[Unit] =
       Full {
-        case Sig(ctx, PreStart) ⇒
+        case Sig(ctx, PreStart) =>
           val chatRoom = ctx.spawn(Props(ChatRoom.behavior), "chatroom")
           val gabblerRef = ctx.spawn(Props(gabbler), "gabbler")
           ctx.watch(gabblerRef)
           chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
           Same
-        case Sig(_, Terminated(ref)) ⇒
+        case Sig(_, Terminated(ref)) =>
           Stopped
       }
 

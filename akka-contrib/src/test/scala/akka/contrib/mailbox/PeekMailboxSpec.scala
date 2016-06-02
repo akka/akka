@@ -121,7 +121,8 @@ object MyApp extends App {
     }
     """))
 
-  val myActor = system.actorOf(Props[MyActor].withDispatcher("peek-dispatcher"),
+  val myActor = system.actorOf(
+    Props[MyActor].withDispatcher("peek-dispatcher"),
     name = "myActor")
 
   myActor ! "Hello"

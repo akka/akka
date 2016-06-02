@@ -60,7 +60,7 @@ private[metrics] object MetricsCollector {
     def create(provider: String) = TryNative {
       log.debug(s"Trying ${provider}.")
       system.asInstanceOf[ExtendedActorSystem].dynamicAccess
-        .createInstanceFor[MetricsCollector](provider, List(classOf[ActorSystem] -> system)).get
+        .createInstanceFor[MetricsCollector](provider, List(classOf[ActorSystem] → system)).get
     }
 
     val collector = if (useCustom)
@@ -86,7 +86,8 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
   import StandardMetrics._
 
   private def this(address: Address, settings: ClusterMetricsSettings) =
-    this(address,
+    this(
+      address,
       EWMA.alpha(settings.CollectorMovingAverageHalfLife, settings.CollectorSampleInterval))
 
   /**
@@ -193,7 +194,8 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: SigarP
   import org.hyperic.sigar.CpuPerc
 
   def this(address: Address, settings: ClusterMetricsSettings, sigar: SigarProxy) =
-    this(address,
+    this(
+      address,
       EWMA.alpha(settings.CollectorMovingAverageHalfLife, settings.CollectorSampleInterval),
       sigar)
 

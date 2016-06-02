@@ -90,9 +90,10 @@ final private[stream] class InputStreamSinkStage(readTimeout: FiniteDuration) ex
  * INTERNAL API
  * InputStreamAdapter that interacts with InputStreamSinkStage
  */
-private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapterMessage],
-                                       sendToStage: (AdapterToStageMessage) ⇒ Unit,
-                                       readTimeout: FiniteDuration)
+private[akka] class InputStreamAdapter(
+  sharedBuffer: BlockingQueue[StreamToAdapterMessage],
+  sendToStage:  (AdapterToStageMessage) ⇒ Unit,
+  readTimeout:  FiniteDuration)
   extends InputStream {
 
   var isInitialized = false

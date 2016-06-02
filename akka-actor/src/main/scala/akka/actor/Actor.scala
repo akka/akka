@@ -96,7 +96,7 @@ final case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
 @SerialVersionUID(1L)
 final case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
   @BeanProperty val existenceConfirmed: Boolean,
-  @BeanProperty val addressTerminated: Boolean)
+  @BeanProperty val addressTerminated:  Boolean)
   extends AutoReceivedMessage with PossiblyHarmful with DeadLetterSuppression
 
 /**
@@ -189,7 +189,8 @@ object ActorInitializationException {
  */
 @SerialVersionUID(1L)
 final case class PreRestartException private[akka] (actor: ActorRef, cause: Throwable, originalCause: Throwable, messageOption: Option[Any])
-  extends ActorInitializationException(actor,
+  extends ActorInitializationException(
+    actor,
     "exception in preRestart(" +
       (if (originalCause == null) "null" else originalCause.getClass) + ", " +
       (messageOption match { case Some(m: AnyRef) ⇒ m.getClass; case _ ⇒ "None" }) +
@@ -205,7 +206,8 @@ final case class PreRestartException private[akka] (actor: ActorRef, cause: Thro
  */
 @SerialVersionUID(1L)
 final case class PostRestartException private[akka] (actor: ActorRef, cause: Throwable, originalCause: Throwable)
-  extends ActorInitializationException(actor,
+  extends ActorInitializationException(
+    actor,
     "exception post restart (" + (if (originalCause == null) "null" else originalCause.getClass) + ")", cause)
 
 /**

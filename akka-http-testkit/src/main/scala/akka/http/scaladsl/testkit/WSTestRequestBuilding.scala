@@ -20,10 +20,11 @@ trait WSTestRequestBuilding { self: RouteTest ⇒
 
         def handleMessages(handlerFlow: Graph[FlowShape[Message, Message], Any], subprotocol: Option[String]): HttpResponse = {
           clientSideHandler.join(handlerFlow).run()
-          HttpResponse(StatusCodes.SwitchingProtocols,
+          HttpResponse(
+            StatusCodes.SwitchingProtocols,
             headers =
-              Upgrade(UpgradeProtocol("websocket") :: Nil) ::
-                subprotocol.map(p ⇒ `Sec-WebSocket-Protocol`(p :: Nil)).toList)
+            Upgrade(UpgradeProtocol("websocket") :: Nil) ::
+              subprotocol.map(p ⇒ `Sec-WebSocket-Protocol`(p :: Nil)).toList)
         }
       })
 }
