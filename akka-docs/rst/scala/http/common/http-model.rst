@@ -354,7 +354,7 @@ provided to parse (or render to) Strings or byte arrays.
 Registering Custom Media Types
 ------------------------------
 
-Akka HTTP `predefines`_ most commonly encoutered media types and emits them in their well-typed form while parsing http messages.
+Akka HTTP `predefines`_ most commonly encountered media types and emits them in their well-typed form while parsing http messages.
 Sometimes you may want to define a custom media type and inform the parser infrastructure about how to handle these custom
 media types, e.g. that ``application/custom`` is to be treated as ``NonBinary`` with ``WithFixedCharset``. To achieve this you
 need to register the custom media type in the server's settings by configuring ``ParserSettings`` like this:
@@ -367,3 +367,19 @@ in the right style / place.
 
 .. _Registration trees: https://en.wikipedia.org/wiki/Media_type#Registration_trees
 .. _predefines: https://github.com/akka/akka/blob/master/akka-http-core/src/main/scala/akka/http/scaladsl/model/MediaType.scala#L297
+
+The URI model
+-------------
+
+Akka HTTP offers its own specialised URI model class which is tuned for both performance and idiomatic usage within
+other types of the HTTP model. For example, an HTTPRequest's target URI is parsed into this type, where all character
+escaping and other URI specific semantics are applied.
+
+Obtaining the Raw Request URI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sometimes it may be needed to obtain the "raw" value of an incoming URI, without applying any escaping or parsing to it.
+While this use-case is rare, it comes up every once in a while. It is possible to obtain the "raw" request URI in Akka
+HTTP Server side by turning on the ``akka.http.server.raw-request-uri-header`` flag.
+When enabled, a ``Raw-Request-URI`` header will be added to each request. This header will hold the original raw request's
+URI that was used. For an example check the reference configuration.
