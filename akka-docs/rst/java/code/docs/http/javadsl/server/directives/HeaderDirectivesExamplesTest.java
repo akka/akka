@@ -13,12 +13,13 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.headers.Host;
 import akka.http.javadsl.model.headers.HttpOrigin;
+import akka.http.javadsl.model.headers.HttpOriginRange;
 import akka.http.javadsl.model.headers.Origin;
 import akka.http.javadsl.model.headers.RawHeader;
-import akka.http.javadsl.server.Rejections;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.japi.JavaPartialFunction;
+import akka.http.javadsl.testkit.TestRoute;
 import scala.PartialFunction;
 
 public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
@@ -226,5 +227,35 @@ public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(HttpRequest.GET("/"))
                     .assertEntity("The port was not provided explicitly");
     //#optionalHeaderValuePF
+  }
+
+  @Test
+  public void testCheckSameOrigin() {
+    //#checkSameOrigin
+    final HttpOrigin validOriginHeader =
+            HttpOrigin.create("http://localhost", Host.create("8080"));
+
+    final HttpOriginRange validOriginRange = HttpOriginRange.create(validOriginHeader);
+
+    final TestRoute route = testRoute(
+            checkSameOrigin(validOriginRange,
+                    () -> complete("Result")));
+
+    route
+            .run(HttpRequest.create().addHeader(Origin.create(validOriginHeader)))
+            .assertStatusCode(StatusCodes.OK)
+            .assertEntity("Result");
+
+    route
+            .run(HttpRequest.create())
+            .assertStatusCode(StatusCodes.BAD_REQUEST);
+
+    final HttpOrigin invalidOriginHeader =
+            HttpOrigin.create("http://invalid.com", Host.create("8080"));
+
+    route
+            .run(HttpRequest.create().addHeader(Origin.create(invalidOriginHeader)))
+            .assertStatusCode(StatusCodes.FORBIDDEN);
+    //#checkSameOrigin
   }
 }
