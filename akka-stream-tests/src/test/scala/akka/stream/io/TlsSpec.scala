@@ -5,6 +5,7 @@ import java.security.SecureRandom
 import java.util.concurrent.TimeoutException
 
 import akka.NotUsed
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
 
 import scala.collection.immutable
 import scala.concurrent.Await
@@ -90,6 +91,8 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
 
   import GraphDSL.Implicits._
 
+  val sslConfig: Option[AkkaSSLConfig] = None // no special settings to be applied here
+
   "SslTls" must {
 
     val sslContext = initSslContext()
@@ -103,9 +106,9 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
     }
 
     val cipherSuites = NegotiateNewSession.withCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_128_CBC_SHA")
-    def clientTls(closing: TLSClosing) = TLS(sslContext, cipherSuites, Client, closing)
-    def badClientTls(closing: TLSClosing) = TLS(initWithTrust("/badtruststore"), cipherSuites, Client, closing)
-    def serverTls(closing: TLSClosing) = TLS(sslContext, cipherSuites, Server, closing)
+    def clientTls(closing: TLSClosing) = TLS(sslContext, None, cipherSuites, Client, closing)
+    def badClientTls(closing: TLSClosing) = TLS(initWithTrust("/badtruststore"), None, cipherSuites, Client, closing)
+    def serverTls(closing: TLSClosing) = TLS(sslContext, None, cipherSuites, Server, closing)
 
     trait Named {
       def name: String =
