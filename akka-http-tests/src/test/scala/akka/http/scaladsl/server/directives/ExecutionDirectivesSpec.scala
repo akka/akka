@@ -120,9 +120,9 @@ class ExecutionDirectivesSpec extends RoutingSpec {
             }
           }
         } ~> check {
-        response should haveContentEncoding(gzip)
-        status shouldEqual StatusCodes.NotFound
-      }
+          response should haveContentEncoding(gzip)
+          status shouldEqual StatusCodes.NotFound
+        }
     }
   }
 
