@@ -37,15 +37,15 @@ private object PoolSlot {
     Stream Setup
     ============
 
-    Request-   +-----------+              +-------------+              +-------------+     +------------+
-    Context    | Slot-     |  List[       |   flatten   |  Processor-  |   doubler   |     | SlotEvent- |  Response-
-    +--------->| Processor +------------->| (MapConcat) +------------->| (MapConcat) +---->| Split      +------------->
-               |           |  Processor-  |             |  Out         |             |     |            |  Context
-               +-----------+  Out]        +-------------+              +-------------+     +-----+------+
-                                                                                                 | RawSlotEvent
-                                                                                                 | (to Conductor
+    Request-   +-----------+              +-------------+              +-------------+     +------------+
+    Context    | Slot-     |  List[       |   flatten   |  Processor-  |   doubler   |     | SlotEvent- |  Response-
+    +--------->| Processor +------------->| (MapConcat) +------------->| (MapConcat) +---->| Split      +------------->
+               |           |  Processor-  |             |  Out         |             |     |            |  Context
+               +-----------+  Out]        +-------------+              +-------------+     +-----+------+
+                                                                                                 | RawSlotEvent
+                                                                                                 | (to Conductor
                                                                                                  |  via slotEventMerge)
-                                                                                                 v
+                                                                                                 v
    */
   def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
             settings: ConnectionPoolSettings)(implicit system: ActorSystem,
