@@ -69,7 +69,7 @@ class EndpointRegistrySpec extends AkkaSpec {
       reg.registerWritableEndpoint(address1, None, None, actorA)
       val deadline = Deadline.now
       reg.markAsFailed(actorA, deadline)
-      reg.writableEndpointWithPolicyFor(address1) should ===(Some(Gated(deadline)))
+      reg.writableEndpointWithPolicyFor(address1) should ===(Some(Gated(deadline, None)))
       reg.isReadOnly(actorA) should ===(false)
       reg.isWritable(actorA) should ===(false)
     }
@@ -94,7 +94,7 @@ class EndpointRegistrySpec extends AkkaSpec {
       reg.unregisterEndpoint(actorA)
       reg.unregisterEndpoint(actorB)
 
-      reg.writableEndpointWithPolicyFor(address1) should ===(Some(Gated(deadline)))
+      reg.writableEndpointWithPolicyFor(address1) should ===(Some(Gated(deadline, None)))
       reg.writableEndpointWithPolicyFor(address2) should ===(Some(Quarantined(42, deadline)))
 
     }
@@ -109,8 +109,8 @@ class EndpointRegistrySpec extends AkkaSpec {
       reg.markAsFailed(actorB, farInTheFuture)
       reg.prune()
 
-      reg.writableEndpointWithPolicyFor(address1) should ===(None)
-      reg.writableEndpointWithPolicyFor(address2) should ===(Some(Gated(farInTheFuture)))
+      reg.writableEndpointWithPolicyFor(address1) should ===(Some(WasGated(None)))
+      reg.writableEndpointWithPolicyFor(address2) should ===(Some(Gated(farInTheFuture, None)))
     }
 
     "be able to register Quarantined policy for an address" in {
