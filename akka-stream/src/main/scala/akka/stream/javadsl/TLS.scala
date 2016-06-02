@@ -7,6 +7,7 @@ import akka.{ japi, NotUsed }
 import akka.stream._
 import akka.stream.TLSProtocol._
 import akka.util.ByteString
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
 
 import scala.compat.java8.OptionConverters
 
@@ -59,8 +60,22 @@ object TLS {
    *
    * This method uses the default closing behavior or [[IgnoreComplete]].
    */
+  def create(sslContext: SSLContext, sslConfig: Optional[AkkaSSLConfig], firstSession: NegotiateNewSession, role: TLSRole): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
+    new javadsl.BidiFlow(scaladsl.TLS.apply(sslContext, OptionConverters.toScala(sslConfig), firstSession, role))
+
+  /**
+   * Create a StreamTls [[akka.stream.javadsl.BidiFlow]] in client mode. The
+   * SSLContext will be used to create an SSLEngine to which then the
+   * `firstSession` parameters are applied before initiating the first
+   * handshake. The `role` parameter determines the SSLEngine’s role; this is
+   * often the same as the underlying transport’s server or client role, but
+   * that is not a requirement and depends entirely on the application
+   * protocol.
+   *
+   * This method uses the default closing behavior or [[IgnoreComplete]].
+   */
   def create(sslContext: SSLContext, firstSession: NegotiateNewSession, role: TLSRole): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
-    new javadsl.BidiFlow(scaladsl.TLS.apply(sslContext, firstSession, role))
+    new javadsl.BidiFlow(scaladsl.TLS.apply(sslContext, None, firstSession, role))
 
   /**
    * Create a StreamTls [[akka.stream.javadsl.BidiFlow]] in client mode. The
@@ -76,10 +91,29 @@ object TLS {
    * The `hostInfo` parameter allows to optionally specify a pair of hostname and port
    * that will be used when creating the SSLEngine with `sslContext.createSslEngine`.
    * The SSLEngine may use this information e.g. when an endpoint identification algorithm was
-   * configured using [[SSLParameters.setEndpointIdentificationAlgorithm]].
+   * configured using [[javax.net.ssl.SSLParameters.setEndpointIdentificationAlgorithm]].
+   */
+  def create(sslContext: SSLContext, sslConfig: Optional[AkkaSSLConfig], firstSession: NegotiateNewSession, role: TLSRole, hostInfo: Optional[japi.Pair[String, java.lang.Integer]], closing: TLSClosing): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
+    new javadsl.BidiFlow(scaladsl.TLS.apply(sslContext, OptionConverters.toScala(sslConfig), firstSession, role, closing, OptionConverters.toScala(hostInfo).map(e ⇒ (e.first, e.second))))
+
+  /**
+   * Create a StreamTls [[akka.stream.javadsl.BidiFlow]] in client mode. The
+   * SSLContext will be used to create an SSLEngine to which then the
+   * `firstSession` parameters are applied before initiating the first
+   * handshake. The `role` parameter determines the SSLEngine’s role; this is
+   * often the same as the underlying transport’s server or client role, but
+   * that is not a requirement and depends entirely on the application
+   * protocol.
+   *
+   * For a description of the `closing` parameter please refer to [[TLSClosing]].
+   *
+   * The `hostInfo` parameter allows to optionally specify a pair of hostname and port
+   * that will be used when creating the SSLEngine with `sslContext.createSslEngine`.
+   * The SSLEngine may use this information e.g. when an endpoint identification algorithm was
+   * configured using [[javax.net.ssl.SSLParameters.setEndpointIdentificationAlgorithm]].
    */
   def create(sslContext: SSLContext, firstSession: NegotiateNewSession, role: TLSRole, hostInfo: Optional[japi.Pair[String, java.lang.Integer]], closing: TLSClosing): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
-    new javadsl.BidiFlow(scaladsl.TLS.apply(sslContext, firstSession, role, closing, OptionConverters.toScala(hostInfo).map(e ⇒ (e.first, e.second))))
+    new javadsl.BidiFlow(scaladsl.TLS.apply(sslContext, None, firstSession, role, closing, OptionConverters.toScala(hostInfo).map(e ⇒ (e.first, e.second))))
 
 }
 
