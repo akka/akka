@@ -268,3 +268,19 @@ provided to parse (or render to) Strings or byte arrays.
   and can override them if needed. This is useful, since both ``client`` and ``host-connection-pool`` APIs,
   such as the Client API ``Http.get(sys).outgoingConnection`` or the Host Connection Pool APIs ``Http.get(sys).singleRequest``
   or ``Http.get(sys).superPool``, usually need the same settings, however the ``server`` most likely has a very different set of settings.
+
+The URI model
+-------------
+
+Akka HTTP offers its own specialised URI model class which is tuned for both performance and idiomatic usage within
+other types of the HTTP model. For example, an HTTPRequest's target URI is parsed into this type, where all character
+escaping and other URI specific semantics are applied.
+
+Obtaining the Raw Request URI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sometimes it may be needed to obtain the "raw" value of an incoming URI, without applying any escaping or parsing to it.
+While this use-case is rare, it comes up every once in a while. It is possible to obtain the "raw" request URI in Akka
+HTTP Server side by turning on the ``akka.http.server.raw-request-uri-header`` flag.
+When enabled, a ``Raw-Request-URI`` header will be added to each request. This header will hold the original raw request's
+URI that was used. For an example check the reference configuration.
