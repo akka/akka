@@ -216,7 +216,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   // these vars are initialized once in the start method
   @volatile private[this] var _localAddress: UniqueAddress = _
-  override def localAddress: UniqueAddress = _localAddress
+  @volatile private[this] var _addresses: Set[Address] = _
   @volatile private[this] var materializer: Materializer = _
   @volatile private[this] var controlSubject: ControlMessageSubject = _
   @volatile private[this] var messageDispatcher: MessageDispatcher = _
@@ -224,8 +224,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   @volatile private[this] var aeron: Aeron = _
   @volatile private[this] var aeronErrorLogTask: Cancellable = _
 
+  override def localAddress: UniqueAddress = _localAddress
   override def defaultAddress: Address = localAddress.address
-  override def addresses: Set[Address] = Set(defaultAddress)
+  override def addresses: Set[Address] = _addresses
   override def localAddressForRemote(remote: Address): Address = defaultAddress
   override val log: LoggingAdapter = Logging(system, getClass.getName)
   private val eventPublisher = new EventPublisher(system, log, remoteSettings.RemoteLifecycleEventsLogLevel)
@@ -284,8 +285,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     // TODO: Configure materializer properly
     // TODO: Have a supervisor actor
     _localAddress = UniqueAddress(
-      Address("artery", system.name, remoteSettings.ArteryHostname, port),
+      Address(ArteryTransport.ProtocolName, system.name, remoteSettings.ArteryHostname, port),
       AddressUidExtension(system).longAddressUid)
+    _addresses = Set(_localAddress.address)
 
     val materializerSettings = ActorMaterializerSettings(
       remoteSettings.config.getConfig("akka.remote.artery.advanced.materializer"))
@@ -465,11 +467,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   override def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = {
     val cached = recipient.cachedAssociation
-    val remoteAddress = recipient.path.address
 
     val a =
       if (cached ne null) cached
-      else association(remoteAddress)
+      else {
+        val a2 = association(recipient.path.address)
+        recipient.cachedAssociation = a2
+        a2
+      }
 
     a.send(message, senderOption, recipient)
   }
@@ -573,6 +578,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
  * INTERNAL API
  */
 private[remote] object ArteryTransport {
+
+  val ProtocolName = "artery"
 
   val Version = 0
   val MaximumFrameSize = 1024 * 1024
