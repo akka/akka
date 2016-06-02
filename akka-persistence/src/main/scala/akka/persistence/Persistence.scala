@@ -4,17 +4,21 @@
 
 package akka.persistence
 
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
+
 import akka.actor._
 import akka.event.{ Logging, LoggingAdapter }
 import akka.persistence.journal.{ EventAdapters, IdentityEventAdapters }
 import akka.util.Collections.EmptyImmutableSeq
 import akka.util.Helpers.ConfigOps
 import com.typesafe.config.Config
+
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import akka.util.Reflect
+
 import scala.util.control.NonFatal
 
 /**
@@ -49,6 +53,10 @@ final class PersistenceSettings(config: Config) {
 
     val maxUnconfirmedMessages: Int =
       config.getInt("at-least-once-delivery.max-unconfirmed-messages")
+  }
+
+  object recovery {
+    val replayEventTimeout: FiniteDuration = config.getMillisDuration("recovery.event-timeout")
   }
 
   /**

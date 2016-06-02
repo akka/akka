@@ -9,10 +9,11 @@ import java.util.UUID
 
 import scala.collection.immutable
 import scala.util.control.NonFatal
-import akka.actor.DeadLetter
-import akka.actor.StashOverflowException
+import akka.actor.{ DeadLetter, ReceiveTimeout, StashOverflowException }
 import akka.event.Logging
 import akka.event.LoggingAdapter
+
+import scala.concurrent.duration.Duration
 
 /**
  * INTERNAL API
@@ -471,6 +472,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
           _receiveRecover(s)
         case RecoveryCompleted if _receiveRecover.isDefinedAt(RecoveryCompleted) ⇒
           _receiveRecover(RecoveryCompleted)
+
       }
     }
 
@@ -502,30 +504,43 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    *
    * All incoming messages are stashed.
    */
-  private def recovering(recoveryBehavior: Receive) = new State {
-    override def toString: String = "replay started"
-    override def recoveryRunning: Boolean = true
+  private def recovering(recoveryBehavior: Receive) = {
+    // protect against replay stalling forever because of journal overloaded and such
+    context.setReceiveTimeout(extension.settings.recovery.replayEventTimeout)
 
-    override def stateReceive(receive: Receive, message: Any) = message match {
-      case ReplayedMessage(p) ⇒
-        try {
-          updateLastSequenceNr(p)
-          Eventsourced.super.aroundReceive(recoveryBehavior, p)
-        } catch {
-          case NonFatal(t) ⇒
-            try onRecoveryFailure(t, Some(p.payload)) finally context.stop(self)
-        }
-      case RecoverySuccess(highestSeqNr) ⇒
-        onReplaySuccess() // callback for subclass implementation
-        changeState(processingCommands)
-        sequenceNr = highestSeqNr
-        setLastSequenceNr(highestSeqNr)
-        internalStash.unstashAll()
-        Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryCompleted)
-      case ReplayMessagesFailure(cause) ⇒
-        try onRecoveryFailure(cause, event = None) finally context.stop(self)
-      case other ⇒
-        stashInternally(other)
+    new State {
+      override def toString: String = "replay started"
+
+      override def recoveryRunning: Boolean = true
+
+      override def stateReceive(receive: Receive, message: Any) = message match {
+        case ReplayedMessage(p) ⇒
+          try {
+            updateLastSequenceNr(p)
+            Eventsourced.super.aroundReceive(recoveryBehavior, p)
+          } catch {
+            case NonFatal(t) ⇒
+              try onRecoveryFailure(t, Some(p.payload)) finally context.stop(self)
+          }
+        case RecoverySuccess(highestSeqNr) ⇒
+          context.setReceiveTimeout(Duration.Undefined)
+          onReplaySuccess() // callback for subclass implementation
+          changeState(processingCommands)
+          sequenceNr = highestSeqNr
+          setLastSequenceNr(highestSeqNr)
+          internalStash.unstashAll()
+          Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryCompleted)
+        case ReplayMessagesFailure(cause) ⇒
+          context.setReceiveTimeout(Duration.Undefined)
+          try onRecoveryFailure(cause, event = None) finally context.stop(self)
+        case ReceiveTimeout ⇒
+          // TODO specific exception type?
+          try onRecoveryFailure(
+            new RuntimeException(s"Recovery timed out after ${extension.settings.recovery.replayEventTimeout}"),
+            event = None) finally context.stop(self)
+        case other ⇒
+          stashInternally(other)
+      }
     }
   }
 
