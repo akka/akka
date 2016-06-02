@@ -22,9 +22,6 @@ trait Unmarshaller[-A, B] extends akka.http.javadsl.server.Unmarshaller[A, B] {
   def transform[C](f: ExecutionContext ⇒ Materializer ⇒ Future[B] ⇒ Future[C]): Unmarshaller[A, C] =
     Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat ⇒ a ⇒ f(ec)(mat)(this(a)) }
 
-  //  def contramap[I](f: I ⇒ A): Unmarshaller[I, B] =
-  //    Unmarshaller.strict(i ⇒ f(i)).flatMap(ec ⇒ mat ⇒ apply(_)(ec, mat))
-
   def map[C](f: B ⇒ C): Unmarshaller[A, C] =
     transform(implicit ec ⇒ _ ⇒ _.fast map f)
 

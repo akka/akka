@@ -100,12 +100,6 @@ object Unmarshaller {
     unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala, u4.asScala, u5.asScala)
   }
 
-  //  implicit def asScalaToResponseMarshaller[T](um: Unmarshaller[akka.http.javadsl.model.HttpRequest, T]): FromRequestUnmarshaller[T] =
-  //    um.asScala.contramap[akka.http.scaladsl.model.HttpRequest](_.asJava)
-  //
-  //  implicit def asScalaEntityMarshaller[T](um: Unmarshaller[akka.http.javadsl.model.RequestEntity, T]): akka.http.scaladsl.marshalling.Marshaller[T, akka.http.scaladsl.model.RequestEntity] =
-  //    um.asScala.map(_.asJava)
-
   private implicit def adaptInputToJava[JI, SI, O](um: unmarshalling.Unmarshaller[SI, O])(implicit mi: JavaMapping[JI, SI]): unmarshalling.Unmarshaller[JI, O] =
     um.asInstanceOf[unmarshalling.Unmarshaller[JI, O]] // since guarantee provided by existence of `mi`
 
@@ -117,7 +111,6 @@ trait UnmarshallerBase[-A, B]
  * An unmarshaller transforms values of type A into type B.
  */
 abstract class Unmarshaller[-A, B] extends UnmarshallerBase[A, B] {
-  import unmarshalling.Unmarshaller._
 
   implicit def asScala: akka.http.scaladsl.unmarshalling.Unmarshaller[A, B]
 
