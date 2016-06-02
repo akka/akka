@@ -67,13 +67,13 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
       Language("de") withQValue 0.5f)
 
     request ~> {
-      selectPreferredLanguage("en", "en-US") { lang ⇒
+      selectPreferredLanguage("en", "en-US") { lang =>
         complete(lang.toString)
       }
     } ~> check { responseAs[String] shouldEqual "en-US" }
 
     request ~> {
-      selectPreferredLanguage("de-DE", "hu") { lang ⇒
+      selectPreferredLanguage("de-DE", "hu") { lang =>
         complete(lang.toString)
       }
     } ~> check { responseAs[String] shouldEqual "de-DE" }

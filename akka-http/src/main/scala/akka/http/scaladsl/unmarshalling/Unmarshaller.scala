@@ -104,16 +104,16 @@ object Unmarshaller
      * an IllegalStateException will be thrown!
      */
     def forContentTypes(ranges: ContentTypeRange*): FromEntityUnmarshaller[A] =
-      Unmarshaller.withMaterializer { implicit ec ⇒
-        implicit mat ⇒
-          entity ⇒
-            if (entity.contentType == ContentTypes.NoContentType || ranges.exists(_ matches entity.contentType)) {
-              underlying(entity).fast.recover[A](barkAtUnsupportedContentTypeException(ranges, entity.contentType))
-            } else FastFuture.failed(UnsupportedContentTypeException(ranges: _*))
+      Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat ⇒
+        entity ⇒
+          if (entity.contentType == ContentTypes.NoContentType || ranges.exists(_ matches entity.contentType)) {
+            underlying(entity).fast.recover[A](barkAtUnsupportedContentTypeException(ranges, entity.contentType))
+          } else FastFuture.failed(UnsupportedContentTypeException(ranges: _*))
       }
 
-    private def barkAtUnsupportedContentTypeException(ranges: Seq[ContentTypeRange],
-                                                      newContentType: ContentType): PartialFunction[Throwable, Nothing] = {
+    private def barkAtUnsupportedContentTypeException(
+      ranges:         Seq[ContentTypeRange],
+      newContentType: ContentType): PartialFunction[Throwable, Nothing] = {
       case UnsupportedContentTypeException(supported) ⇒ throw new IllegalStateException(
         s"Illegal use of `unmarshaller.forContentTypes($ranges)`: $newContentType is not supported by underlying marshaller!")
     }

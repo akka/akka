@@ -26,19 +26,19 @@ private[http] object ParserOutput {
   sealed trait ErrorOutput extends MessageOutput
 
   final case class RequestStart(
-    method: HttpMethod,
-    uri: Uri,
-    protocol: HttpProtocol,
-    headers: List[HttpHeader],
-    createEntity: EntityCreator[RequestOutput, RequestEntity],
+    method:            HttpMethod,
+    uri:               Uri,
+    protocol:          HttpProtocol,
+    headers:           List[HttpHeader],
+    createEntity:      EntityCreator[RequestOutput, RequestEntity],
     expect100Continue: Boolean,
-    closeRequested: Boolean) extends MessageStart with RequestOutput
+    closeRequested:    Boolean) extends MessageStart with RequestOutput
 
   final case class ResponseStart(
-    statusCode: StatusCode,
-    protocol: HttpProtocol,
-    headers: List[HttpHeader],
-    createEntity: EntityCreator[ResponseOutput, ResponseEntity],
+    statusCode:     StatusCode,
+    protocol:       HttpProtocol,
+    headers:        List[HttpHeader],
+    createEntity:   EntityCreator[ResponseOutput, ResponseEntity],
     closeRequested: Boolean) extends MessageStart with ResponseOutput
 
   case object MessageEnd extends MessageOutput

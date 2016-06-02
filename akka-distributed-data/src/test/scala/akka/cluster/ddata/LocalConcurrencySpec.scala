@@ -41,7 +41,8 @@ class LocalConcurrencySpec(_system: ActorSystem) extends TestKit(_system)
   import LocalConcurrencySpec._
 
   def this() {
-    this(ActorSystem("LocalConcurrencySpec",
+    this(ActorSystem(
+      "LocalConcurrencySpec",
       ConfigFactory.parseString("""
       akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
       akka.remote.netty.tcp.port=0

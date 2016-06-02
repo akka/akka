@@ -22,13 +22,13 @@ import akka.dispatch.MessageDispatcher
  * send a message to one (or more) of these actors.
  */
 private[akka] class RoutedActorRef(
-  _system: ActorSystemImpl,
-  _routerProps: Props,
+  _system:           ActorSystemImpl,
+  _routerProps:      Props,
   _routerDispatcher: MessageDispatcher,
-  _routerMailbox: MailboxType,
-  _routeeProps: Props,
-  _supervisor: InternalActorRef,
-  _path: ActorPath)
+  _routerMailbox:    MailboxType,
+  _routeeProps:      Props,
+  _supervisor:       InternalActorRef,
+  _path:             ActorPath)
   extends RepointableActorRef(_system, _routerProps, _routerDispatcher, _routerMailbox, _supervisor, _path) {
 
   // verify that a BalancingDispatcher is not used with a Router

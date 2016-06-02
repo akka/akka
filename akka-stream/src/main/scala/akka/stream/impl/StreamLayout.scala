@@ -204,10 +204,12 @@ object StreamLayout {
     final def wire(from: OutPort, to: InPort): Module = {
       if (Debug) validate(this)
 
-      require(outPorts(from),
+      require(
+        outPorts(from),
         if (downstreams.contains(from)) s"The output port [$from] is already connected"
         else s"The output port [$from] is not part of the underlying graph.")
-      require(inPorts(to),
+      require(
+        inPorts(to),
         if (upstreams.contains(to)) s"The input port [$to] is already connected"
         else s"The input port [$to] is not part of the underlying graph.")
 
@@ -360,7 +362,7 @@ object StreamLayout {
           if (IgnorableMatValComp(that))
             Ignore
           else
-            Transform(_ => NotUsed, that.materializedValueComputation)
+            Transform(_ ⇒ NotUsed, that.materializedValueComputation)
 
         CompositeModule(
           if (that.isSealed) Set(that) else that.subModules,
@@ -386,9 +388,10 @@ object StreamLayout {
     override def materializedValueComputation: MaterializedValueNode = Ignore
   }
 
-  final case class CopiedModule(override val shape: Shape,
-                                override val attributes: Attributes,
-                                copyOf: Module) extends Module {
+  final case class CopiedModule(
+    override val shape:      Shape,
+    override val attributes: Attributes,
+    copyOf:                  Module) extends Module {
     override val subModules: Set[Module] = Set(copyOf)
 
     override def withAttributes(attr: Attributes): Module =
@@ -411,12 +414,12 @@ object StreamLayout {
   }
 
   final case class CompositeModule(
-      override val subModules: Set[Module],
-      override val shape: Shape,
-      override val downstreams: Map[OutPort, InPort],
-      override val upstreams: Map[InPort, OutPort],
-      override val materializedValueComputation: MaterializedValueNode,
-      override val attributes: Attributes) extends Module {
+    override val subModules:                   Set[Module],
+    override val shape:                        Shape,
+    override val downstreams:                  Map[OutPort, InPort],
+    override val upstreams:                    Map[InPort, OutPort],
+    override val materializedValueComputation: MaterializedValueNode,
+    override val attributes:                   Attributes) extends Module {
 
     override def replaceShape(s: Shape): Module =
       if (s != shape) {
@@ -443,13 +446,13 @@ object StreamLayout {
   }
 
   final case class FusedModule(
-      override val subModules: Set[Module],
-      override val shape: Shape,
-      override val downstreams: Map[OutPort, InPort],
-      override val upstreams: Map[InPort, OutPort],
-      override val materializedValueComputation: MaterializedValueNode,
-      override val attributes: Attributes,
-      info: Fusing.StructuralInfo) extends Module {
+    override val subModules:                   Set[Module],
+    override val shape:                        Shape,
+    override val downstreams:                  Map[OutPort, InPort],
+    override val upstreams:                    Map[InPort, OutPort],
+    override val materializedValueComputation: MaterializedValueNode,
+    override val attributes:                   Attributes,
+    info:                                      Fusing.StructuralInfo) extends Module {
 
     override def isFused: Boolean = true
 
@@ -555,14 +558,14 @@ private[stream] final class VirtualProcessor[T] extends AtomicReference[AnyRef] 
   override def subscribe(s: Subscriber[_ >: T]): Unit = {
     @tailrec def rec(sub: Subscriber[Any]): Unit =
       get() match {
-        case null => if (!compareAndSet(null, s)) rec(sub)
-        case subscription: Subscription =>
+        case null ⇒ if (!compareAndSet(null, s)) rec(sub)
+        case subscription: Subscription ⇒
           if (compareAndSet(subscription, Both(sub))) establishSubscription(sub, subscription)
           else rec(sub)
-        case pub: Publisher[_] =>
+        case pub: Publisher[_] ⇒
           if (compareAndSet(pub, Inert)) pub.subscribe(sub)
           else rec(sub)
-        case _ =>
+        case _ ⇒
           rejectAdditionalSubscriber(sub, "VirtualProcessor")
       }
 
@@ -576,19 +579,19 @@ private[stream] final class VirtualProcessor[T] extends AtomicReference[AnyRef] 
   override final def onSubscribe(s: Subscription): Unit = {
     @tailrec def rec(obj: AnyRef): Unit =
       get() match {
-        case null => if (!compareAndSet(null, obj)) rec(obj)
-        case subscriber: Subscriber[_] =>
+        case null ⇒ if (!compareAndSet(null, obj)) rec(obj)
+        case subscriber: Subscriber[_] ⇒
           obj match {
-            case subscription: Subscription =>
+            case subscription: Subscription ⇒
               if (compareAndSet(subscriber, Both.create(subscriber))) establishSubscription(subscriber, subscription)
               else rec(obj)
-            case pub: Publisher[_] =>
+            case pub: Publisher[_] ⇒
               getAndSet(Inert) match {
-                case Inert => // nothing to be done
-                case _     => pub.subscribe(subscriber.asInstanceOf[Subscriber[Any]])
+                case Inert ⇒ // nothing to be done
+                case _     ⇒ pub.subscribe(subscriber.asInstanceOf[Subscriber[Any]])
               }
           }
-        case _ =>
+        case _ ⇒
           // spec violation
           tryCancel(s)
       }
@@ -604,7 +607,7 @@ private[stream] final class VirtualProcessor[T] extends AtomicReference[AnyRef] 
     val wrapped = new WrappedSubscription(subscription)
     try subscriber.onSubscribe(wrapped)
     catch {
-      case NonFatal(ex) =>
+      case NonFatal(ex) ⇒
         set(Inert)
         tryCancel(subscription)
         tryOnError(subscriber, ex)
@@ -619,22 +622,22 @@ private[stream] final class VirtualProcessor[T] extends AtomicReference[AnyRef] 
      */
     @tailrec def rec(ex: Throwable): Unit =
       get() match {
-        case null =>
+        case null ⇒
           if (!compareAndSet(null, ErrorPublisher(ex, "failed-VirtualProcessor"))) rec(ex)
           else if (t == null) throw ex
-        case s: Subscription =>
+        case s: Subscription ⇒
           if (!compareAndSet(s, ErrorPublisher(ex, "failed-VirtualProcessor"))) rec(ex)
           else if (t == null) throw ex
-        case Both(s) =>
+        case Both(s) ⇒
           set(Inert)
           try tryOnError(s, ex)
           finally if (t == null) throw ex // must throw NPE, rule 2:13
-        case s: Subscriber[_] => // spec violation
+        case s: Subscriber[_] ⇒ // spec violation
           getAndSet(Inert) match {
-            case Inert => // nothing to be done
-            case _     => ErrorPublisher(ex, "failed-VirtualProcessor").subscribe(s)
+            case Inert ⇒ // nothing to be done
+            case _     ⇒ ErrorPublisher(ex, "failed-VirtualProcessor").subscribe(s)
           }
-        case _ => // spec violation or cancellation race, but nothing we can do
+        case _ ⇒ // spec violation or cancellation race, but nothing we can do
       }
 
     val ex = if (t == null) exceptionMustNotBeNullException else t
@@ -643,15 +646,15 @@ private[stream] final class VirtualProcessor[T] extends AtomicReference[AnyRef] 
 
   @tailrec override final def onComplete(): Unit =
     get() match {
-      case null            => if (!compareAndSet(null, EmptyPublisher)) onComplete()
-      case s: Subscription => if (!compareAndSet(s, EmptyPublisher)) onComplete()
-      case Both(s) =>
+      case null            ⇒ if (!compareAndSet(null, EmptyPublisher)) onComplete()
+      case s: Subscription ⇒ if (!compareAndSet(s, EmptyPublisher)) onComplete()
+      case Both(s) ⇒
         set(Inert)
         tryOnComplete(s)
-      case s: Subscriber[_] => // spec violation
+      case s: Subscriber[_] ⇒ // spec violation
         set(Inert)
         EmptyPublisher.subscribe(s)
-      case _ => // spec violation or cancellation race, but nothing we can do
+      case _ ⇒ // spec violation or cancellation race, but nothing we can do
     }
 
   override def onNext(t: T): Unit =
@@ -659,32 +662,32 @@ private[stream] final class VirtualProcessor[T] extends AtomicReference[AnyRef] 
       val ex = elementMustNotBeNullException
       @tailrec def rec(): Unit =
         get() match {
-          case x @ (null | _: Subscription) => if (!compareAndSet(x, ErrorPublisher(ex, "failed-VirtualProcessor"))) rec()
-          case s: Subscriber[_]             => try s.onError(ex) catch { case NonFatal(_) => } finally set(Inert)
-          case Both(s)                      => try s.onError(ex) catch { case NonFatal(_) => } finally set(Inert)
-          case _                            => // spec violation or cancellation race, but nothing we can do
+          case x @ (null | _: Subscription) ⇒ if (!compareAndSet(x, ErrorPublisher(ex, "failed-VirtualProcessor"))) rec()
+          case s: Subscriber[_]             ⇒ try s.onError(ex) catch { case NonFatal(_) ⇒ } finally set(Inert)
+          case Both(s)                      ⇒ try s.onError(ex) catch { case NonFatal(_) ⇒ } finally set(Inert)
+          case _                            ⇒ // spec violation or cancellation race, but nothing we can do
         }
       rec()
       throw ex // must throw NPE, rule 2:13
     } else {
       @tailrec def rec(): Unit =
         get() match {
-          case Both(s) =>
+          case Both(s) ⇒
             try s.onNext(t)
             catch {
-              case NonFatal(e) =>
+              case NonFatal(e) ⇒
                 set(Inert)
                 throw new IllegalStateException("Subscriber threw exception, this is in violation of rule 2:13", e)
             }
-          case s: Subscriber[_] => // spec violation
+          case s: Subscriber[_] ⇒ // spec violation
             val ex = new IllegalStateException(noDemand)
             getAndSet(Inert) match {
-              case Inert => // nothing to be done
-              case _     => ErrorPublisher(ex, "failed-VirtualProcessor").subscribe(s)
+              case Inert ⇒ // nothing to be done
+              case _     ⇒ ErrorPublisher(ex, "failed-VirtualProcessor").subscribe(s)
             }
             throw ex
-          case Inert | _: Publisher[_] => // nothing to be done
-          case other =>
+          case Inert | _: Publisher[_] ⇒ // nothing to be done
+          case other ⇒
             val pub = ErrorPublisher(new IllegalStateException(noDemand), "failed-VirtualPublisher")
             if (!compareAndSet(other, pub)) rec()
             else throw pub.t
@@ -699,9 +702,9 @@ private[stream] final class VirtualProcessor[T] extends AtomicReference[AnyRef] 
       if (n < 1) {
         tryCancel(real)
         getAndSet(Inert) match {
-          case Both(s) => rejectDueToNonPositiveDemand(s)
-          case Inert   => // another failure has won the race
-          case _       => // this cannot possibly happen, but signaling errors is impossible at this point
+          case Both(s) ⇒ rejectDueToNonPositiveDemand(s)
+          case Inert   ⇒ // another failure has won the race
+          case _       ⇒ // this cannot possibly happen, but signaling errors is impossible at this point
         }
       } else real.request(n)
     }
@@ -738,12 +741,12 @@ private[impl] class VirtualPublisher[T] extends AtomicReference[AnyRef] with Pub
     requireNonNullSubscriber(subscriber)
     @tailrec def rec(): Unit = {
       get() match {
-        case null => if (!compareAndSet(null, subscriber)) rec()
-        case pub: Publisher[_] =>
+        case null ⇒ if (!compareAndSet(null, subscriber)) rec()
+        case pub: Publisher[_] ⇒
           if (compareAndSet(pub, Inert.subscriber)) {
             pub.asInstanceOf[Publisher[T]].subscribe(subscriber)
           } else rec()
-        case _: Subscriber[_] => rejectAdditionalSubscriber(subscriber, "Sink.asPublisher(fanout = false)")
+        case _: Subscriber[_] ⇒ rejectAdditionalSubscriber(subscriber, "Sink.asPublisher(fanout = false)")
       }
     }
     rec() // return value is boolean only to make the expressions above compile
@@ -751,11 +754,11 @@ private[impl] class VirtualPublisher[T] extends AtomicReference[AnyRef] with Pub
 
   @tailrec final def registerPublisher(pub: Publisher[_]): Unit =
     get() match {
-      case null => if (!compareAndSet(null, pub)) registerPublisher(pub)
-      case sub: Subscriber[r] =>
+      case null ⇒ if (!compareAndSet(null, pub)) registerPublisher(pub)
+      case sub: Subscriber[r] ⇒
         set(Inert.subscriber)
         pub.asInstanceOf[Publisher[r]].subscribe(sub)
-      case _ => throw new IllegalStateException("internal error")
+      case _ ⇒ throw new IllegalStateException("internal error")
     }
 }
 
@@ -884,14 +887,14 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
           exitScope(copied)
         case composite @ (_: CompositeModule | _: FusedModule) ⇒
           materializedValues.put(composite, materializeComposite(composite, subEffectiveAttributes))
-        case EmptyModule => // nothing to do or say
+        case EmptyModule ⇒ // nothing to do or say
       }
     }
 
     if (MaterializerSession.Debug) {
       println(f"resolving module [${System.identityHashCode(module)}%08x] computation ${module.materializedValueComputation}")
       println(s"  matValSrc = $matValSrc")
-      println(s"  matVals =\n    ${materializedValues.asScala.map(p ⇒ "%08x".format(System.identityHashCode(p._1)) -> p._2).mkString("\n    ")}")
+      println(s"  matVals =\n    ${materializedValues.asScala.map(p ⇒ "%08x".format(System.identityHashCode(p._1)) → p._2).mkString("\n    ")}")
     }
 
     val ret = resolveMaterialized(module.materializedValueComputation, materializedValues, 2)
@@ -934,11 +937,11 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
     subscribers.put(in, subscriberOrVirtual)
 
     currentLayout.upstreams.get(in) match {
-      case Some(upstream) =>
+      case Some(upstream) ⇒
         val publisher = publishers.get(upstream)
         if (publisher ne null) doSubscribe(publisher, subscriberOrVirtual)
       // Interface (unconnected) ports of the current scope will be wired when exiting the scope (or some parent scope)
-      case None =>
+      case None ⇒
     }
   }
 
@@ -946,27 +949,28 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
     publishers.put(out, publisher)
 
     currentLayout.downstreams.get(out) match {
-      case Some(downstream) =>
+      case Some(downstream) ⇒
         val subscriber = subscribers.get(downstream)
         if (subscriber ne null) doSubscribe(publisher, subscriber)
-    // Interface (unconnected) ports of the current scope will be wired when exiting the scope
-      case None =>
+      // Interface (unconnected) ports of the current scope will be wired when exiting the scope
+      case None ⇒
     }
   }
 
   private def doSubscribe(publisher: Publisher[_ <: Any], subscriberOrVirtual: AnyRef): Unit =
     subscriberOrVirtual match {
-      case s: Subscriber[_]       => publisher.subscribe(s.asInstanceOf[Subscriber[Any]])
-      case v: VirtualPublisher[_] => v.registerPublisher(publisher)
+      case s: Subscriber[_]       ⇒ publisher.subscribe(s.asInstanceOf[Subscriber[Any]])
+      case v: VirtualPublisher[_] ⇒ v.registerPublisher(publisher)
     }
 
 }
 
 /**
-  * INTERNAL API
-  */
-private[akka] final case class ProcessorModule[In, Out, Mat](val createProcessor: () ⇒ (Processor[In, Out], Mat),
-                                                             attributes: Attributes = DefaultAttributes.processor) extends StreamLayout.AtomicModule {
+ * INTERNAL API
+ */
+private[akka] final case class ProcessorModule[In, Out, Mat](
+  val createProcessor: () ⇒ (Processor[In, Out], Mat),
+  attributes:          Attributes                     = DefaultAttributes.processor) extends StreamLayout.AtomicModule {
   val inPort = Inlet[In]("ProcessorModule.in")
   val outPort = Outlet[Out]("ProcessorModule.out")
   override val shape = new FlowShape(inPort, outPort)

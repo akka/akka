@@ -34,8 +34,8 @@ class AkkaSpecSpec extends WordSpec with Matchers {
       // verbose config just for demonstration purposes, please leave in in case of debugging
       import scala.collection.JavaConverters._
       val conf = Map(
-        "akka.actor.debug.lifecycle" -> true, "akka.actor.debug.event-stream" -> true,
-        "akka.loglevel" -> "DEBUG", "akka.stdout-loglevel" -> "DEBUG")
+        "akka.actor.debug.lifecycle" → true, "akka.actor.debug.event-stream" → true,
+        "akka.loglevel" → "DEBUG", "akka.stdout-loglevel" → "DEBUG")
       val system = ActorSystem("AkkaSpec1", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
       var refs = Seq.empty[ActorRef]
       val spec = new AkkaSpec(system) { refs = Seq(testActor, system.actorOf(Props.empty, "name")) }

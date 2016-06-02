@@ -16,7 +16,6 @@
 
 package akka.shapeless
 
-
 /**
  * `HList` ADT base trait.
  *

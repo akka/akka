@@ -14,10 +14,10 @@ import com.typesafe.sslconfig.akka.AkkaSSLConfig
 private[akka] final case class TlsModule(plainIn: Inlet[SslTlsOutbound], plainOut: Outlet[SslTlsInbound],
                                          cipherIn: Inlet[ByteString], cipherOut: Outlet[ByteString],
                                          shape: Shape, attributes: Attributes,
-                                         sslContext: SSLContext,
-                                         sslConfig: Option[AkkaSSLConfig],
+                                         sslContext:   SSLContext,
+                                         sslConfig:    Option[AkkaSSLConfig],
                                          firstSession: NegotiateNewSession,
-                                         role: TLSRole, closing: TLSClosing, hostInfo: Option[(String, Int)]) extends AtomicModule {
+                                         role:         TLSRole, closing: TLSClosing, hostInfo: Option[(String, Int)]) extends AtomicModule {
 
   override def withAttributes(att: Attributes): TlsModule = copy(attributes = att)
   override def carbonCopy: TlsModule =

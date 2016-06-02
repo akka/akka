@@ -189,9 +189,11 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
 
 }
 
-class SystemMessageDeliveryRetryGate extends SystemMessageDeliveryStressTest("passive connections on",
+class SystemMessageDeliveryRetryGate extends SystemMessageDeliveryStressTest(
+  "passive connections on",
   "akka.remote.retry-gate-closed-for = 0.5 s")
-class SystemMessageDeliveryNoPassiveRetryGate extends SystemMessageDeliveryStressTest("passive connections off",
+class SystemMessageDeliveryNoPassiveRetryGate extends SystemMessageDeliveryStressTest(
+  "passive connections off",
   """
     akka.remote.use-passive-connections = off
     akka.remote.retry-gate-closed-for = 0.5 s

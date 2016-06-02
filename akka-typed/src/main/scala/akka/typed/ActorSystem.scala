@@ -127,8 +127,8 @@ object ActorSystem {
   private class Wrapper(val untyped: ExtendedActorSystem) extends ActorSystem[Nothing](untyped.name) with ScalaActorRef[Nothing]
 
   def apply[T](name: String, guardianProps: Props[T],
-               config: Option[Config] = None,
-               classLoader: Option[ClassLoader] = None,
+               config:           Option[Config]           = None,
+               classLoader:      Option[ClassLoader]      = None,
                executionContext: Option[ExecutionContext] = None): ActorSystem[T] = {
     val cl = classLoader.getOrElse(akka.actor.ActorSystem.findClassLoader())
     val appConfig = config.getOrElse(ConfigFactory.load(cl))

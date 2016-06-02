@@ -21,9 +21,9 @@ private[akka] object RemoteWatcher {
    * Factory method for `RemoteWatcher` [[akka.actor.Props]].
    */
   def props(
-    failureDetector: FailureDetectorRegistry[Address],
-    heartbeatInterval: FiniteDuration,
-    unreachableReaperInterval: FiniteDuration,
+    failureDetector:                FailureDetectorRegistry[Address],
+    heartbeatInterval:              FiniteDuration,
+    unreachableReaperInterval:      FiniteDuration,
     heartbeatExpectedResponseAfter: FiniteDuration): Props =
     Props(classOf[RemoteWatcher], failureDetector, heartbeatInterval, unreachableReaperInterval,
       heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
@@ -44,8 +44,9 @@ private[akka] object RemoteWatcher {
     lazy val empty: Stats = counts(0, 0)
     def counts(watching: Int, watchingNodes: Int): Stats = Stats(watching, watchingNodes)(Set.empty, Set.empty)
   }
-  final case class Stats(watching: Int, watchingNodes: Int)(val watchingRefs: Set[(ActorRef, ActorRef)],
-                                                            val watchingAddresses: Set[Address]) {
+  final case class Stats(watching: Int, watchingNodes: Int)(
+    val watchingRefs:      Set[(ActorRef, ActorRef)],
+    val watchingAddresses: Set[Address]) {
     override def toString: String = {
       def formatWatchingRefs: String =
         watchingRefs.map(x ⇒ x._2.path.name + " -> " + x._1.path.name).mkString("[", ", ", "]")
@@ -78,9 +79,9 @@ private[akka] object RemoteWatcher {
  *
  */
 private[akka] class RemoteWatcher(
-  failureDetector: FailureDetectorRegistry[Address],
-  heartbeatInterval: FiniteDuration,
-  unreachableReaperInterval: FiniteDuration,
+  failureDetector:                FailureDetectorRegistry[Address],
+  heartbeatInterval:              FiniteDuration,
+  unreachableReaperInterval:      FiniteDuration,
   heartbeatExpectedResponseAfter: FiniteDuration)
   extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 

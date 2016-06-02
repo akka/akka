@@ -4,27 +4,24 @@
 package akka.remote.testconductor
 
 import language.postfixOps
-import akka.actor.{ Actor, ActorRef, LoggingFSM, Props, NoSerializationVerificationNeeded }
-import RemoteConnection.getAddrString
-import TestConductorProtocol._
-import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent }
-import scala.concurrent.duration._
-import akka.pattern.ask
-import scala.concurrent.Await
-import akka.event.{ LoggingAdapter, Logging }
-import scala.util.control.NoStackTrace
-import akka.event.LoggingReceive
-import java.net.InetSocketAddress
-import scala.concurrent.Future
-import akka.actor.{ OneForOneStrategy, SupervisorStrategy, Status, Address }
-import java.util.concurrent.ConcurrentHashMap
-import akka.util.{ Timeout }
-import scala.reflect.classTag
-import akka.ConfigurationException
+
+import akka.actor.{ Actor, ActorRef, Address, DeadLetterSuppression, Deploy, FSM, LoggingFSM, NoSerializationVerificationNeeded, OneForOneStrategy, Props, Status, SupervisorStrategy }
 import akka.AkkaException
+import akka.ConfigurationException
+import akka.event.LoggingReceive
+import akka.event.{ Logging, LoggingAdapter }
+import akka.pattern.ask
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
-import akka.actor.Deploy
-import akka.actor.DeadLetterSuppression
+import akka.util.Timeout
+import java.net.InetSocketAddress
+import java.util.concurrent.ConcurrentHashMap
+import org.jboss.netty.channel.{ Channel, ChannelHandlerContext, ChannelStateEvent, MessageEvent, SimpleChannelUpstreamHandler }
+import RemoteConnection.getAddrString
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.concurrent.Future
+import scala.reflect.classTag
+import scala.util.control.NoStackTrace
 
 /**
  * The conductor is the one orchestrating the test: it governs the
@@ -431,7 +428,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
         }
         fsm ! ToClient(BarrierResult("initial startup", false))
       } else {
-        nodes += name -> c
+        nodes += name → c
         if (initialParticipants <= 0) fsm ! ToClient(Done)
         else if (nodes.size == initialParticipants) {
           for (NodeInfo(_, _, client) ← nodes.values) client ! ToClient(Done)
@@ -451,7 +448,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
         case _: FailBarrier  ⇒ barrier forward op
         case GetAddress(node) ⇒
           if (nodes contains node) sender() ! ToClient(AddressReply(node, nodes(node).addr))
-          else addrInterest += node -> ((addrInterest get node getOrElse Set()) + sender())
+          else addrInterest += node → ((addrInterest get node getOrElse Set()) + sender())
         case _: Done ⇒ //FIXME what should happen?
       }
     case op: CommandOp ⇒
@@ -523,6 +520,7 @@ private[akka] object BarrierCoordinator {
 private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State, BarrierCoordinator.Data] {
   import BarrierCoordinator._
   import Controller._
+  import FSM.`→`
 
   // this shall be set to true if all subsequent barriers shall fail
   var failed = false
@@ -567,8 +565,8 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
   }
 
   onTransition {
-    case Idle -> Waiting ⇒ setTimer("Timeout", StateTimeout, nextStateData.deadline.timeLeft, false)
-    case Waiting -> Idle ⇒ cancelTimer("Timeout")
+    case Idle → Waiting ⇒ setTimer("Timeout", StateTimeout, nextStateData.deadline.timeLeft, false)
+    case Waiting → Idle ⇒ cancelTimer("Timeout")
   }
 
   when(Waiting) {

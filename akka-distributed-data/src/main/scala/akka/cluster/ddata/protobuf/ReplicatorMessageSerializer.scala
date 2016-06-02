@@ -169,20 +169,20 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   val GossipManifest = "N"
 
   private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] ⇒ AnyRef](
-    GetManifest -> getFromBinary,
-    GetSuccessManifest -> getSuccessFromBinary,
-    NotFoundManifest -> notFoundFromBinary,
-    GetFailureManifest -> getFailureFromBinary,
-    SubscribeManifest -> subscribeFromBinary,
-    UnsubscribeManifest -> unsubscribeFromBinary,
-    ChangedManifest -> changedFromBinary,
-    DataEnvelopeManifest -> dataEnvelopeFromBinary,
-    WriteManifest -> writeFromBinary,
-    WriteAckManifest -> (_ ⇒ WriteAck),
-    ReadManifest -> readFromBinary,
-    ReadResultManifest -> readResultFromBinary,
-    StatusManifest -> statusFromBinary,
-    GossipManifest -> gossipFromBinary)
+    GetManifest → getFromBinary,
+    GetSuccessManifest → getSuccessFromBinary,
+    NotFoundManifest → notFoundFromBinary,
+    GetFailureManifest → getFailureFromBinary,
+    SubscribeManifest → subscribeFromBinary,
+    UnsubscribeManifest → unsubscribeFromBinary,
+    ChangedManifest → changedFromBinary,
+    DataEnvelopeManifest → dataEnvelopeFromBinary,
+    WriteManifest → writeFromBinary,
+    WriteAckManifest → (_ ⇒ WriteAck),
+    ReadManifest → readFromBinary,
+    ReadResultManifest → readResultFromBinary,
+    StatusManifest → statusFromBinary,
+    GossipManifest → gossipFromBinary)
 
   override def manifest(obj: AnyRef): String = obj match {
     case _: DataEnvelope   ⇒ DataEnvelopeManifest
@@ -243,8 +243,9 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
 
   private def statusFromBinary(bytes: Array[Byte]): Status = {
     val status = dm.Status.parseFrom(bytes)
-    Status(status.getEntriesList.asScala.map(e ⇒
-      e.getKey -> AkkaByteString(e.getDigest.toByteArray()))(breakOut),
+    Status(
+      status.getEntriesList.asScala.map(e ⇒
+        e.getKey → AkkaByteString(e.getDigest.toByteArray()))(breakOut),
       status.getChunk, status.getTotChunks)
   }
 
@@ -261,8 +262,9 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
 
   private def gossipFromBinary(bytes: Array[Byte]): Gossip = {
     val gossip = dm.Gossip.parseFrom(decompress(bytes))
-    Gossip(gossip.getEntriesList.asScala.map(e ⇒
-      e.getKey -> dataEnvelopeFromProto(e.getEnvelope))(breakOut),
+    Gossip(
+      gossip.getEntriesList.asScala.map(e ⇒
+        e.getKey → dataEnvelopeFromProto(e.getEnvelope))(breakOut),
       sendBack = gossip.getSendBack)
   }
 
@@ -408,7 +410,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
           else PruningState.PruningInitialized(pruningEntry.getSeenList.asScala.map(addressFromProto)(breakOut))
         val state = PruningState(uniqueAddressFromProto(pruningEntry.getOwnerAddress), phase)
         val removed = uniqueAddressFromProto(pruningEntry.getRemovedAddress)
-        removed -> state
+        removed → state
       }(breakOut)
     val data = otherMessageFromProto(dataEnvelope.getData).asInstanceOf[ReplicatedData]
     DataEnvelope(data, pruning)

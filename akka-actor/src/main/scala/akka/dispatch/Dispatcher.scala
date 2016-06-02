@@ -26,12 +26,12 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
  *                   Larger values (or zero or negative) increase throughput, smaller values increase fairness
  */
 class Dispatcher(
-  _configurator: MessageDispatcherConfigurator,
-  val id: String,
-  val throughput: Int,
-  val throughputDeadlineTime: Duration,
+  _configurator:                  MessageDispatcherConfigurator,
+  val id:                         String,
+  val throughput:                 Int,
+  val throughputDeadlineTime:     Duration,
   executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
-  val shutdownTimeout: FiniteDuration)
+  val shutdownTimeout:            FiniteDuration)
   extends MessageDispatcher(_configurator) {
 
   import configurator.prerequisites._

@@ -59,15 +59,14 @@ class GraphZipNSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒
-        out ⇒
-          val zipN = b.add(ZipN[Int](2))
+      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
+        val zipN = b.add(ZipN[Int](2))
 
-          Source.fromPublisher(upstream1) ~> zipN.in(0)
-          Source.fromPublisher(upstream2) ~> zipN.in(1)
-          zipN.out ~> out
+        Source.fromPublisher(upstream1) ~> zipN.in(0)
+        Source.fromPublisher(upstream2) ~> zipN.in(1)
+        zipN.out ~> out
 
-          ClosedShape
+        ClosedShape
       }).run()
 
       upstream1.sendNext(1)
@@ -85,15 +84,14 @@ class GraphZipNSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒
-        out ⇒
-          val zipN = b.add(ZipN[Int](2))
+      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
+        val zipN = b.add(ZipN[Int](2))
 
-          Source.fromPublisher(upstream1) ~> zipN.in(0)
-          Source.fromPublisher(upstream2) ~> zipN.in(1)
-          zipN.out ~> out
+        Source.fromPublisher(upstream1) ~> zipN.in(0)
+        Source.fromPublisher(upstream2) ~> zipN.in(1)
+        zipN.out ~> out
 
-          ClosedShape
+        ClosedShape
       }).run()
 
       downstream.request(1)
@@ -112,15 +110,14 @@ class GraphZipNSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒
-        out ⇒
-          val zipN = b.add(ZipN[Int](2))
+      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
+        val zipN = b.add(ZipN[Int](2))
 
-          Source.fromPublisher(upstream1) ~> zipN.in(0)
-          Source.fromPublisher(upstream2) ~> zipN.in(1)
-          zipN.out ~> out
+        Source.fromPublisher(upstream1) ~> zipN.in(0)
+        Source.fromPublisher(upstream2) ~> zipN.in(1)
+        zipN.out ~> out
 
-          ClosedShape
+        ClosedShape
       }).run()
 
       upstream1.sendNext(1)
@@ -138,15 +135,14 @@ class GraphZipNSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒
-        out ⇒
-          val zipN = b.add(ZipN[Int](2))
+      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
+        val zipN = b.add(ZipN[Int](2))
 
-          Source.fromPublisher(upstream1) ~> zipN.in(0)
-          Source.fromPublisher(upstream2) ~> zipN.in(1)
-          zipN.out ~> out
+        Source.fromPublisher(upstream1) ~> zipN.in(0)
+        Source.fromPublisher(upstream2) ~> zipN.in(1)
+        zipN.out ~> out
 
-          ClosedShape
+        ClosedShape
       }).run()
 
       upstream1.sendNext(1)
@@ -165,15 +161,14 @@ class GraphZipNSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒
-        out ⇒
-          val zipN = b.add(ZipN[Int](2))
+      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
+        val zipN = b.add(ZipN[Int](2))
 
-          Source.fromPublisher(upstream1) ~> zipN.in(0)
-          Source.fromPublisher(upstream2) ~> zipN.in(1)
-          zipN.out ~> out
+        Source.fromPublisher(upstream1) ~> zipN.in(0)
+        Source.fromPublisher(upstream2) ~> zipN.in(1)
+        zipN.out ~> out
 
-          ClosedShape
+        ClosedShape
       }).run()
 
       downstream.ensureSubscription()

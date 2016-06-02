@@ -351,8 +351,9 @@ object Rejections {
 
   def requestEntityExpected = RequestEntityExpectedRejection
 
-  def unacceptedResponseContentType(supportedContentTypes: java.lang.Iterable[ContentType],
-                                    supportedMediaTypes: java.lang.Iterable[MediaType]): UnacceptedResponseContentTypeRejection = {
+  def unacceptedResponseContentType(
+    supportedContentTypes: java.lang.Iterable[ContentType],
+    supportedMediaTypes:   java.lang.Iterable[MediaType]): UnacceptedResponseContentTypeRejection = {
     val s1: Set[Alternative] = supportedContentTypes.asScala.map(_.asScala).map(ct ⇒ ContentNegotiator.Alternative(ct)).toSet
     val s2: Set[Alternative] = supportedMediaTypes.asScala.map(_.asScala).map(mt ⇒ ContentNegotiator.Alternative(mt)).toSet
     s.UnacceptedResponseContentTypeRejection(s1 ++ s2)

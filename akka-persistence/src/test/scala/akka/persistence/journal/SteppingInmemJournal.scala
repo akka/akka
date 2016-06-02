@@ -47,7 +47,7 @@ object SteppingInmemJournal {
   def getRef(instanceId: String): ActorRef = synchronized(_current(instanceId))
 
   private def putRef(instanceId: String, instance: ActorRef): Unit = synchronized {
-    _current = _current + (instanceId -> instance)
+    _current = _current + (instanceId → instance)
   }
   private def remove(instanceId: String): Unit = synchronized(
     _current -= instanceId)

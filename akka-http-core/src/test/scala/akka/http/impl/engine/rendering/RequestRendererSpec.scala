@@ -152,7 +152,8 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
       }
 
       "POST request with body" in new TestSetup() {
-        HttpRequest(POST, "/abc/xyz", entity = Chunked(ContentTypes.`text/plain(UTF-8)`,
+        HttpRequest(POST, "/abc/xyz", entity = Chunked(
+          ContentTypes.`text/plain(UTF-8)`,
           source("XXXX", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))) should renderTo {
           """POST /abc/xyz HTTP/1.1
               |Host: test.com:8080
@@ -177,7 +178,8 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
             ChunkStreamPart("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
             LastChunk)
 
-        HttpRequest(POST, "/abc/xyz", entity = Chunked(ContentTypes.`text/plain(UTF-8)`,
+        HttpRequest(POST, "/abc/xyz", entity = Chunked(
+          ContentTypes.`text/plain(UTF-8)`,
           Source(chunks))) should renderTo {
           """POST /abc/xyz HTTP/1.1
             |Host: test.com:8080
@@ -203,7 +205,8 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
             LastChunk,
             LastChunk)
 
-        HttpRequest(POST, "/abc/xyz", entity = Chunked(ContentTypes.`text/plain(UTF-8)`,
+        HttpRequest(POST, "/abc/xyz", entity = Chunked(
+          ContentTypes.`text/plain(UTF-8)`,
           Source(chunks))) should renderTo {
           """POST /abc/xyz HTTP/1.1
             |Host: test.com:8080
@@ -317,8 +320,9 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
 
   override def afterAll() = system.terminate()
 
-  class TestSetup(val userAgent: Option[`User-Agent`] = Some(`User-Agent`("akka-http/1.0.0")),
-                  serverAddress: InetSocketAddress = new InetSocketAddress("test.com", 8080))
+  class TestSetup(
+    val userAgent: Option[`User-Agent`] = Some(`User-Agent`("akka-http/1.0.0")),
+    serverAddress: InetSocketAddress    = new InetSocketAddress("test.com", 8080))
     extends HttpRequestRendererFactory(userAgent, requestHeaderSizeHint = 64, NoLogging) {
 
     def awaitAtMost: FiniteDuration = 3.seconds

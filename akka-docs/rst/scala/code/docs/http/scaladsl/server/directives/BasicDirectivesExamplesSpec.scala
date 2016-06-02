@@ -267,14 +267,14 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
 
       private def nonSuccessToEmptyJsonEntity(response: HttpResponse): HttpResponse =
         response.status match {
-          case code if code.isSuccess ⇒ response
-          case code ⇒
+          case code if code.isSuccess => response
+          case code =>
             log.warning("Dropping response entity since response status code was: {}", code)
             response.copy(entity = NullJsonEntity)
         }
 
       /** Wrapper for all of our JSON API routes */
-      def apiRoute(innerRoutes: ⇒ Route): Route =
+      def apiRoute(innerRoutes: => Route): Route =
         mapResponse(nonSuccessToEmptyJsonEntity)(innerRoutes)
     }
     //#
@@ -388,13 +388,12 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
   "mapInnerRoute" in {
     //#mapInnerRoute
     val completeWithInnerException =
-      mapInnerRoute { route =>
-        ctx =>
-          try {
-            route(ctx)
-          } catch {
-            case NonFatal(e) => ctx.complete(s"Got ${e.getClass.getSimpleName} '${e.getMessage}'")
-          }
+      mapInnerRoute { route => ctx =>
+        try {
+          route(ctx)
+        } catch {
+          case NonFatal(e) => ctx.complete(s"Got ${e.getClass.getSimpleName} '${e.getMessage}'")
+        }
       }
 
     val route =

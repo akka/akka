@@ -146,7 +146,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
 
   def createChatUser(name: String): ActorRef = {
     var a = system.actorOf(Props(classOf[TestChatUser], mediator, testActor), name)
-    chatUsers += (name -> a)
+    chatUsers += (name → a)
     a
   }
 
@@ -473,11 +473,11 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
         val deltaBuckets1 = expectMsgType[Delta].buckets
         deltaBuckets1.map(_.content.size).sum should ===(500)
 
-        mediator ! Status(versions = deltaBuckets1.map(b ⇒ b.owner -> b.version).toMap)
+        mediator ! Status(versions = deltaBuckets1.map(b ⇒ b.owner → b.version).toMap)
         val deltaBuckets2 = expectMsgType[Delta].buckets
         deltaBuckets1.map(_.content.size).sum should ===(500)
 
-        mediator ! Status(versions = deltaBuckets2.map(b ⇒ b.owner -> b.version).toMap)
+        mediator ! Status(versions = deltaBuckets2.map(b ⇒ b.owner → b.version).toMap)
         val deltaBuckets3 = expectMsgType[Delta].buckets
 
         deltaBuckets3.map(_.content.size).sum should ===(10 + 9 + 2 + many - 500 - 500)

@@ -33,11 +33,11 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       check {
         """nodes: 0/H, 0/e, 0/l, 0/l, 0/o, 1/Ω
           |branchData:\u0020
-          |values: 'Hello""" -> parser.formatRawTrie
+          |values: 'Hello""" → parser.formatRawTrie
       }
       check {
         """-H-e-l-l-o- 'Hello
-          |""" -> parser.formatTrie
+          |""" → parser.formatTrie
       }
     }
 
@@ -47,12 +47,12 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       check {
         """nodes: 0/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω
           |branchData: 6/2/0
-          |values: 'Hello, 'Hallo""" -> parser.formatRawTrie
+          |values: 'Hello, 'Hallo""" → parser.formatRawTrie
       }
       check {
         """   ┌─a-l-l-o- 'Hallo
           |-H-e-l-l-o- 'Hello
-          |""" -> parser.formatTrie
+          |""" → parser.formatTrie
       }
     }
 
@@ -63,13 +63,13 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       check {
         """nodes: 2/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω, 0/Y, 0/e, 0/a, 0/h, 3/Ω
           |branchData: 6/2/0, 0/1/11
-          |values: 'Hello, 'Hallo, 'Yeah""" -> parser.formatRawTrie
+          |values: 'Hello, 'Hallo, 'Yeah""" → parser.formatRawTrie
       }
       check {
         """   ┌─a-l-l-o- 'Hallo
           |-H-e-l-l-o- 'Hello
           | └─Y-e-a-h- 'Yeah
-          |""" -> parser.formatTrie
+          |""" → parser.formatTrie
       }
     }
 
@@ -81,14 +81,14 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       check {
         """nodes: 2/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω, 0/Y, 0/e, 0/a, 0/h, 3/Ω, 0/o, 0/o, 4/Ω
           |branchData: 6/2/16, 0/1/11
-          |values: 'Hello, 'Hallo, 'Yeah, 'Hoo""" -> parser.formatRawTrie
+          |values: 'Hello, 'Hallo, 'Yeah, 'Hoo""" → parser.formatRawTrie
       }
       check {
         """   ┌─a-l-l-o- 'Hallo
           |-H-e-l-l-o- 'Hello
           | | └─o-o- 'Hoo
           | └─Y-e-a-h- 'Yeah
-          |""" -> parser.formatTrie
+          |""" → parser.formatTrie
       }
     }
 
@@ -103,7 +103,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
           |-H-e-l-l-o- 'Hello
           | | └─o-o- 'Foo
           | └─Y-e-a-h- 'Yeah
-          |""" -> parser.formatTrie
+          |""" → parser.formatTrie
       }
     }
 
@@ -142,7 +142,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       check {
         """ ┌─f-a-n-c-y---p-a-n-t-s-:-(Fancy-Pants)- -f-o-o-\r-\n- *Fancy-Pants: foo
           |-h-e-l-l-o-:- -b-o-b- 'Hello
-          |""" -> parser.formatTrie
+          |""" → parser.formatTrie
       }
       ixA shouldEqual ixB
       headerA shouldEqual RawHeader("Fancy-Pants", "foo")
@@ -253,7 +253,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       if (parser.isEmpty) HttpHeaderParser.insertRemainingCharsAsNewNodes(parser, ByteString(line), value)
       else HttpHeaderParser.insert(parser, ByteString(line), value)
 
-    def parseLine(line: String) = parser.parseHeaderLine(ByteString(line))() -> parser.resultHeader
+    def parseLine(line: String) = parser.parseHeaderLine(ByteString(line))() → parser.resultHeader
 
     def parseAndCache(lineA: String)(lineB: String = lineA): HttpHeader = {
       val (ixA, headerA) = parseLine(lineA)
