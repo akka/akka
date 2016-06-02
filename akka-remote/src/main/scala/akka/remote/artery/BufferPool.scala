@@ -37,7 +37,7 @@ private[remote] class EnvelopeBufferPool(maximumPayload: Int, maximumBuffers: In
     }
   }
 
-  def release(buffer: EnvelopeBuffer) = if (!availableBuffers.offer(buffer)) buffer.tryForceDrop()
+  def release(buffer: EnvelopeBuffer) = if (!availableBuffers.offer(buffer)) buffer.tryCleanDirectByteBuffer()
 
 }
 
@@ -189,21 +189,6 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
   private var literalChars = Array.ofDim[Char](64)
   private var literalBytes = Array.ofDim[Byte](64)
 
-  private val cleanerField: Field = try {
-    val cleaner = byteBuffer.getClass.getDeclaredField("cleaner")
-    cleaner.setAccessible(true)
-    cleaner
-  } catch {
-    case NonFatal(_) ⇒ null
-  }
-
-  def tryForceDrop(): Unit = {
-    if (cleanerField ne null) cleanerField.get(byteBuffer) match {
-      case cleaner: Cleaner ⇒ cleaner.clean()
-      case _                ⇒
-    }
-  }
-
   def writeHeader(h: HeaderBuilder): Unit = {
     val header = h.asInstanceOf[HeaderBuilderImpl]
     byteBuffer.clear()
@@ -327,6 +312,29 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
       literalChars = Array.ofDim[Char](length)
       literalBytes = Array.ofDim[Byte](length)
     }
+  }
+
+  /**
+   * DirectByteBuffers are garbage collected by using a phantom reference and a
+   * reference queue. Every once a while, the JVM checks the reference queue and
+   * cleans the DirectByteBuffers. However, as this doesn't happen
+   * immediately after discarding all references to a DirectByteBuffer, it's
+   * easy to OutOfMemoryError yourself using DirectByteBuffers. This function
+   * explicitly calls the Cleaner method of a DirectByteBuffer.
+   *
+   * Utilizes reflection to avoid dependency to `sun.misc.Cleaner`.
+   */
+  def tryCleanDirectByteBuffer(): Unit = try {
+    if (byteBuffer.isDirect) {
+      val cleanerMethod = byteBuffer.getClass().getMethod("cleaner")
+      cleanerMethod.setAccessible(true)
+      val cleaner = cleanerMethod.invoke(byteBuffer)
+      val cleanMethod = cleaner.getClass().getMethod("clean")
+      cleanMethod.setAccessible(true)
+      cleanMethod.invoke(cleaner)
+    }
+  } catch {
+    case NonFatal(_) ⇒ // attempt failed, ok
   }
 
 }
