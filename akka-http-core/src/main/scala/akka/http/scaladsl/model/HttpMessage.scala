@@ -8,18 +8,22 @@ import java.io.File
 import java.nio.file.Path
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.Optional
+import java.util.concurrent.CompletionStage
 
+import scala.compat.java8.FutureConverters
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Future, ExecutionContext }
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters._
-import scala.reflect.{ classTag, ClassTag }
+import scala.reflect.{ ClassTag, classTag }
+import akka.Done
 import akka.parboiled2.CharUtils
 import akka.stream.Materializer
-import akka.util.{ HashCode, ByteString }
+import akka.util.{ ByteString, HashCode }
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.util.FastFuture._
+import akka.stream.scaladsl.Sink
 import headers._
 import akka.http.impl.util.JavaMapping.Implicits._
 
@@ -36,6 +40,10 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def headers: immutable.Seq[HttpHeader]
   def entity: ResponseEntity
   def protocol: HttpProtocol
+
+  /** Drains entity stream */
+  def discardEntityBytes(mat: Materializer): HttpMessage.DiscardedEntity =
+    new HttpMessage.DiscardedEntity(entity.dataBytes.runWith(Sink.ignore)(mat))
 
   /** Returns a copy of this message with the list of headers set to the given ones. */
   def withHeaders(headers: HttpHeader*): Self = withHeaders(headers.toList)
@@ -139,6 +147,30 @@ object HttpMessage {
       case HttpProtocols.`HTTP/1.1` ⇒ connectionHeader.isDefined && connectionHeader.get.hasClose
       case HttpProtocols.`HTTP/1.0` ⇒ connectionHeader.isEmpty || !connectionHeader.get.hasKeepAlive
     }
+
+  /**
+   * Represents the the currently being-drained HTTP Entity which triggers completion of the contained
+   * Future once the entity has been drained for the given HttpMessage completely.
+   */
+  final class DiscardedEntity(f: Future[Done]) extends akka.http.javadsl.model.HttpMessage.DiscardedEntity {
+    /**
+     * This future completes successfully once the underlying entity stream has been
+     * successfully drained (and fails otherwise).
+     */
+    def future: Future[Done] = f
+
+    /**
+     * This future completes successfully once the underlying entity stream has been
+     * successfully drained (and fails otherwise).
+     */
+    def completionStage: CompletionStage[Done] = FutureConverters.toJava(f)
+  }
+
+  implicit final class HttpMessageDiscardEntity(val httpMessage: HttpMessage) extends AnyVal {
+    /** Drains entity stream of this message */
+    def discardEntityBytes()(implicit mat: Materializer): HttpMessage.DiscardedEntity =
+      httpMessage.discardEntityBytes(mat)
+  }
 }
 
 /**

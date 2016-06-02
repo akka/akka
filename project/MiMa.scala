@@ -878,8 +878,12 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorMaterializer.downcast"),
         
         // #20531 adding refuseUid to Gated
-        FilterAnyProblem("akka.remote.EndpointManager$Gated")
-      )
+        FilterAnyProblem("akka.remote.EndpointManager$Gated"),
+
+        // #20683
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage.discardEntityBytes"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.discardEntityBytes")
+    )
     )
   }
 }
