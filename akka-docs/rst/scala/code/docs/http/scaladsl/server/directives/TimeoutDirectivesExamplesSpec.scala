@@ -54,8 +54,6 @@ class TimeoutDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     }
 
     "allow mapping the response" in compileOnlySpec {
-      pending // compile only spec since requires actuall Http server to be run
-
       //#withRequestTimeoutResponse
       val timeoutResponse = HttpResponse(StatusCodes.EnhanceYourCalm,
         entity = "Unable to serve response within time limit, please enchance your calm.")
