@@ -61,7 +61,7 @@ object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
   // Extract individual sigar library for every node.
   nodeList foreach { role ⇒
     nodeConfig(role) {
-      ConfigFactory.parseString("akka.cluster.metrics.native-library-extract-folder=${user.dir}/target/native/" + role.name)
+      ConfigFactory.parseString(s"akka.cluster.metrics.native-library-extract-folder=$${user.dir}/target/native/" + role.name)
     }
   }
 

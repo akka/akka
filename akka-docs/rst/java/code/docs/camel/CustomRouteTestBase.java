@@ -16,7 +16,6 @@ public class CustomRouteTestBase {
       ActorRef responder = system.actorOf(Props.create(Responder.class), "TestResponder");
       camel.context().addRoutes(new CustomRouteBuilder(responder));
       //#CustomRoute
-      system.stop(responder);
     } finally {
       JavaTestKit.shutdownActorSystem(system);
     }
