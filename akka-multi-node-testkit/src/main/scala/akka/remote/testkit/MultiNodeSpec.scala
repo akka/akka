@@ -99,6 +99,7 @@ abstract class MultiNodeConfig {
       if (_testTransport) ConfigFactory.parseString(
         """
            akka.remote.netty.tcp.applied-adapters = [trttl, gremlin]
+           akka.remote.artery.advanced.test-mode = on
         """)
       else ConfigFactory.empty
 
