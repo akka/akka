@@ -18,13 +18,26 @@ import akka.testkit._
 import akka.actor.ActorIdentity
 import akka.actor.Identify
 
-object RemoteDeliveryMultiJvmSpec extends MultiNodeConfig {
+class RemoteDeliveryConfig(artery: Boolean) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("akka.loglevel=INFO")))
+  commonConfig(debugConfig(on = false).withFallback(
+    ConfigFactory.parseString(s"""
+      akka.remote.artery.enabled = $artery
+      """)))
+}
 
+class RemoteDeliveryMultiJvmNode1 extends RemoteDeliverySpec(new RemoteDeliveryConfig(artery = false))
+class RemoteDeliveryMultiJvmNode2 extends RemoteDeliverySpec(new RemoteDeliveryConfig(artery = false))
+class RemoteDeliveryMultiJvmNode3 extends RemoteDeliverySpec(new RemoteDeliveryConfig(artery = false))
+
+class ArteryRemoteDeliveryMultiJvmNode1 extends RemoteDeliverySpec(new RemoteDeliveryConfig(artery = true))
+class ArteryRemoteDeliveryMultiJvmNode2 extends RemoteDeliverySpec(new RemoteDeliveryConfig(artery = true))
+class ArteryRemoteDeliveryMultiJvmNode3 extends RemoteDeliverySpec(new RemoteDeliveryConfig(artery = true))
+
+object RemoteDeliverySpec {
   final case class Letter(n: Int, route: List[ActorRef])
 
   class Postman extends Actor {
@@ -32,18 +45,13 @@ object RemoteDeliveryMultiJvmSpec extends MultiNodeConfig {
       case Letter(n, route) ⇒ route.head ! Letter(n, route.tail)
     }
   }
-
 }
 
-class RemoteDeliveryMultiJvmNode1 extends RemoteDeliverySpec
-class RemoteDeliveryMultiJvmNode2 extends RemoteDeliverySpec
-class RemoteDeliveryMultiJvmNode3 extends RemoteDeliverySpec
-
-abstract class RemoteDeliverySpec
-  extends MultiNodeSpec(RemoteDeliveryMultiJvmSpec)
+abstract class RemoteDeliverySpec(multiNodeConfig: RemoteDeliveryConfig)
+  extends MultiNodeSpec(multiNodeConfig)
   with STMultiNodeSpec with ImplicitSender {
-
-  import RemoteDeliveryMultiJvmSpec._
+  import multiNodeConfig._
+  import RemoteDeliverySpec._
 
   override def initialParticipants = roles.size
 
@@ -52,7 +60,7 @@ abstract class RemoteDeliverySpec
     expectMsgType[ActorIdentity].ref.get
   }
 
-  "Remoting with TCP" must {
+  "Remote message delivery" must {
 
     "not drop messages under normal circumstances" in {
       system.actorOf(Props[Postman], "postman-" + myself.name)
