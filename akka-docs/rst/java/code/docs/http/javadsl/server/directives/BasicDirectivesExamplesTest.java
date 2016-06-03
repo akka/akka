@@ -544,7 +544,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     //#mapRouteResult
   }
 
-  public static final class MyCustomRejection implements akka.http.scaladsl.server.Rejection {}
+  public static final class MyCustomRejection implements CustomRejection {}
 
   @Test
   public void testMapRouteResultPF() {
