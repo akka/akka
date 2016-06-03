@@ -495,9 +495,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         changeState(recovering(recoveryBehavior, previousRecieveTimeout))
         journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
       case ReceiveTimeout ⇒
-        try onRecoveryFailure(
-          new RuntimeException(s"Recovery timed out, didn't get snapshot within timeout"),
-          event = None) finally context.stop(self)
+        try onRecoveryFailure(new RecoveryTimedOut, event = None) finally context.stop(self)
       case other ⇒
         stashInternally(other)
     }
@@ -540,9 +538,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
           resetRecieveTimeout()
           try onRecoveryFailure(cause, event = None) finally context.stop(self)
         case ReceiveTimeout ⇒
-          try onRecoveryFailure(
-            new RuntimeException(s"Recovery timed out, didn't get the next event after $sequenceNr"),
-            event = None) finally context.stop(self)
+          try onRecoveryFailure(new RecoveryTimedOut, event = None) finally context.stop(self)
         case other ⇒
           stashInternally(other)
       }
