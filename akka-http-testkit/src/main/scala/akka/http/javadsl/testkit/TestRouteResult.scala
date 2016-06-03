@@ -195,6 +195,15 @@ abstract class TestRouteResult(_result: RouteResult, awaitAtMost: FiniteDuration
   }
 
   /**
+   * Assert that a header of the given type does not exist.
+   */
+  def assertHeaderKindNotExists(name: String): TestRouteResult = {
+    val lowercased = name.toRootLowerCase
+    assertTrue(response.headers.forall(!_.is(lowercased)), s"`$name` header was not expected to appear.")
+    this
+  }
+
+  /**
    * Assert that a header of the given name and value exists.
    */
   def assertHeaderExists(name: String, value: String): TestRouteResult = {
