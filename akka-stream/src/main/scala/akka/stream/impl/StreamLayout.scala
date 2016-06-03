@@ -3,24 +3,24 @@
  */
 package akka.stream.impl
 
-import java.util.concurrent.atomic.{ AtomicReference }
+import java.util.concurrent.atomic.AtomicReference
 import java.{ util ⇒ ju }
+
 import akka.NotUsed
+import akka.event.Logging
+import akka.event.Logging.simpleName
+import akka.stream._
 import akka.stream.impl.MaterializerSession.MaterializationPanic
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.scaladsl.Keep
-import akka.stream._
-import org.reactivestreams.{ Processor, Subscription, Publisher, Subscriber }
-import scala.util.control.{ NoStackTrace, NonFatal }
-import akka.event.Logging.simpleName
-import scala.annotation.tailrec
-import java.util.concurrent.atomic.AtomicLong
-import scala.collection.JavaConverters._
-import akka.stream.impl.fusing.GraphStageModule
-import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
 import akka.stream.impl.fusing.GraphModule
-import akka.event.Logging
+import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
+import akka.stream.scaladsl.Keep
+import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
+
+import scala.annotation.tailrec
+import scala.collection.JavaConverters._
+import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
  * INTERNAL API
@@ -552,8 +552,8 @@ private[stream] object VirtualProcessor {
  * it must ensure that we drop the Subscriber reference when `cancel` is invoked.
  */
 private[stream] final class VirtualProcessor[T] extends AtomicReference[AnyRef] with Processor[T, T] {
-  import VirtualProcessor._
   import ReactiveStreamsCompliance._
+  import VirtualProcessor._
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = {
     @tailrec def rec(sub: Subscriber[Any]): Unit =
@@ -605,8 +605,12 @@ private[stream] final class VirtualProcessor[T] extends AtomicReference[AnyRef] 
 
   private def establishSubscription(subscriber: Subscriber[_], subscription: Subscription): Unit = {
     val wrapped = new WrappedSubscription(subscription)
-    try subscriber.onSubscribe(wrapped)
-    catch {
+    try {
+      subscriber.onSubscribe(wrapped)
+      // Requests will be only allowed once onSubscribe has returned to avoid reentering on an onNext before
+      // onSubscribe completed
+      wrapped.ungateDemandAndRequestBuffered()
+    } catch {
       case NonFatal(ex) ⇒
         set(Inert)
         tryCancel(subscription)
@@ -697,19 +701,51 @@ private[stream] final class VirtualProcessor[T] extends AtomicReference[AnyRef] 
 
   private def noDemand = "spec violation: onNext was signaled from upstream without demand"
 
-  private class WrappedSubscription(real: Subscription) extends Subscription {
+  object WrappedSubscription {
+    sealed trait SubscriptionState { def demand: Long }
+    case object PassThrough extends SubscriptionState { override def demand: Long = 0 }
+    final case class Buffering(demand: Long) extends SubscriptionState
+
+    val NoBufferedDemand = Buffering(0)
+  }
+
+  // Extdending AtomicReference to make the hot memory location share the same cache line with the Subscription
+  private class WrappedSubscription(real: Subscription)
+    extends AtomicReference[WrappedSubscription.SubscriptionState](WrappedSubscription.NoBufferedDemand) with Subscription {
+    import WrappedSubscription._
+
+    // Release
+    def ungateDemandAndRequestBuffered(): Unit = {
+      // Ungate demand
+      val requests = getAndSet(PassThrough).demand
+      // And request buffered demand
+      if (requests > 0) real.request(requests)
+    }
+
     override def request(n: Long): Unit = {
       if (n < 1) {
         tryCancel(real)
-        getAndSet(Inert) match {
+        VirtualProcessor.this.getAndSet(Inert) match {
           case Both(s) ⇒ rejectDueToNonPositiveDemand(s)
           case Inert   ⇒ // another failure has won the race
           case _       ⇒ // this cannot possibly happen, but signaling errors is impossible at this point
         }
-      } else real.request(n)
+      } else {
+        // NOTE: At this point, batched requests might not have been dispatched, i.e. this can reorder requests.
+        // This does not violate the Spec though, since we are a "Processor" here and although we, in reality,
+        // proxy downstream requests, it is virtually *us* that emit the requests here and we are free to follow
+        // any pattern of emitting them.
+        // The only invariant we need to keep is to never emit more requests than the downstream emitted so far.
+        @tailrec def bufferDemand(n: Long): Unit = {
+          val current = get()
+          if (current eq PassThrough) real.request(n)
+          else if (!compareAndSet(current, Buffering(current.demand + n))) bufferDemand(n)
+        }
+        bufferDemand(n)
+      }
     }
     override def cancel(): Unit = {
-      set(Inert)
+      VirtualProcessor.this.set(Inert)
       real.cancel()
     }
   }
@@ -734,8 +770,8 @@ private[stream] final class VirtualProcessor[T] extends AtomicReference[AnyRef] 
  * the use of `Inert.subscriber` as a tombstone.
  */
 private[impl] class VirtualPublisher[T] extends AtomicReference[AnyRef] with Publisher[T] {
-  import VirtualProcessor.Inert
   import ReactiveStreamsCompliance._
+  import VirtualProcessor.Inert
 
   override def subscribe(subscriber: Subscriber[_ >: T]): Unit = {
     requireNonNullSubscriber(subscriber)
