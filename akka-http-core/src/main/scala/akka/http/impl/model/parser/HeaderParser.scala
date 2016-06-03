@@ -19,7 +19,7 @@ import akka.http.scaladsl.model._
  */
 private[http] class HeaderParser(
   val input: ParserInput,
-  settings: HeaderParser.Settings = HeaderParser.DefaultSettings)
+  settings:  HeaderParser.Settings = HeaderParser.DefaultSettings)
   extends Parser with DynamicRuleHandler[HeaderParser, HttpHeader :: HNil]
   with CommonRules
   with AcceptCharsetHeader
@@ -99,7 +99,8 @@ private[http] object HeaderParser {
     dispatch(parser, headerName) match {
       case r @ Right(_) if parser.cursor == v.length ⇒ r
       case r @ Right(_) ⇒
-        Left(ErrorInfo("Header parsing error",
+        Left(ErrorInfo(
+          "Header parsing error",
           s"Rule for $headerName accepted trailing garbage. Is the parser missing a trailing EOI?"))
       case Left(e) ⇒ Left(e.copy(summary = e.summary.filterNot(_ == EOI), detail = e.detail.filterNot(_ == EOI)))
     }
@@ -169,9 +170,10 @@ private[http] object HeaderParser {
     def cookieParsingMode: ParserSettings.CookieParsingMode
     def customMediaTypes: MediaTypes.FindCustom
   }
-  def Settings(uriParsingMode: Uri.ParsingMode = Uri.ParsingMode.Relaxed,
-               cookieParsingMode: ParserSettings.CookieParsingMode = ParserSettings.CookieParsingMode.RFC6265,
-               customMediaTypes: MediaTypes.FindCustom = ConstantFun.scalaAnyTwoToNone): Settings = {
+  def Settings(
+    uriParsingMode:    Uri.ParsingMode                  = Uri.ParsingMode.Relaxed,
+    cookieParsingMode: ParserSettings.CookieParsingMode = ParserSettings.CookieParsingMode.RFC6265,
+    customMediaTypes:  MediaTypes.FindCustom            = ConstantFun.scalaAnyTwoToNone): Settings = {
     val _uriParsingMode = uriParsingMode
     val _cookieParsingMode = cookieParsingMode
     val _customMediaTypes = customMediaTypes

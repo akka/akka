@@ -18,9 +18,10 @@ import ParserOutput._
 /**
  * INTERNAL API
  */
-private[http] class HttpRequestParser(_settings: ParserSettings,
-                                      rawRequestUriHeader: Boolean,
-                                      _headerParser: HttpHeaderParser)
+private[http] class HttpRequestParser(
+  _settings:           ParserSettings,
+  rawRequestUriHeader: Boolean,
+  _headerParser:       HttpHeaderParser)
   extends HttpMessageParser[RequestOutput](_settings, _headerParser) {
   import HttpMessageParser._
   import settings._
@@ -54,7 +55,8 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
             }
           case c ⇒ parseCustomMethod(ix + 1, sb.append(c))
         }
-      } else throw new ParsingException(BadRequest,
+      } else throw new ParsingException(
+        BadRequest,
         ErrorInfo("Unsupported HTTP method", s"HTTP method too long (started with '${sb.toString}'). " +
           "Increase `akka.http.server.parsing.max-method-length` to support HTTP methods with more characters."))
 
@@ -93,7 +95,8 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
       if (ix == input.length) throw NotEnoughDataException
       else if (CharacterClasses.WSPCRLF(input(ix).toChar)) ix
       else if (ix < uriEndLimit) findUriEnd(ix + 1)
-      else throw new ParsingException(RequestUriTooLong,
+      else throw new ParsingException(
+        RequestUriTooLong,
         s"URI length exceeds the configured limit of $maxUriLength characters")
 
     val uriEnd = findUriEnd()
@@ -113,8 +116,9 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
                   expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult =
     if (hostHeaderPresent || protocol == HttpProtocols.`HTTP/1.0`) {
-      def emitRequestStart(createEntity: EntityCreator[RequestOutput, RequestEntity],
-                           headers: List[HttpHeader] = headers) = {
+      def emitRequestStart(
+        createEntity: EntityCreator[RequestOutput, RequestEntity],
+        headers:      List[HttpHeader]                            = headers) = {
         val allHeaders0 =
           if (rawRequestUriHeader) `Raw-Request-URI`(new String(uriBytes, HttpCharsets.`US-ASCII`.nioCharset)) :: headers
           else headers

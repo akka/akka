@@ -41,16 +41,14 @@ object Unmarshaller {
    * Creates an unmarshaller from an asynchronous Java function.
    */
   def async[A, B](f: java.util.function.Function[A, CompletionStage[B]]): Unmarshaller[A, B] =
-    unmarshalling.Unmarshaller[A, B] {
-      ctx ⇒ a ⇒ f(a).toScala
+    unmarshalling.Unmarshaller[A, B] { ctx ⇒ a ⇒ f(a).toScala
     }
 
   /**
    * Creates an unmarshaller from a Java function.
    */
   def sync[A, B](f: java.util.function.Function[A, B]): Unmarshaller[A, B] =
-    unmarshalling.Unmarshaller[A, B] {
-      ctx ⇒ a ⇒ scala.concurrent.Future.successful(f.apply(a))
+    unmarshalling.Unmarshaller[A, B] { ctx ⇒ a ⇒ scala.concurrent.Future.successful(f.apply(a))
     }
 
   // format: OFF
@@ -65,14 +63,13 @@ object Unmarshaller {
     unmarshalling.Unmarshaller.strict[HttpRequest, RequestEntity](_.entity)
 
   def forMediaType[B](t: MediaType, um: Unmarshaller[HttpEntity, B]): Unmarshaller[HttpEntity, B] = {
-    unmarshalling.Unmarshaller.withMaterializer[HttpEntity, B] { implicit ex ⇒
-      implicit mat ⇒ jEntity ⇒ {
-        val entity = jEntity.asScala
-        val mediaType = t.asScala
-        if (entity.contentType == ContentTypes.NoContentType || mediaType.matches(entity.contentType.mediaType)) {
-          um.asScala(entity)
-        } else FastFuture.failed(UnsupportedContentTypeException(ContentTypeRange(t.toRange.asScala)))
-      }
+    unmarshalling.Unmarshaller.withMaterializer[HttpEntity, B] { implicit ex ⇒ implicit mat ⇒ jEntity ⇒ {
+      val entity = jEntity.asScala
+      val mediaType = t.asScala
+      if (entity.contentType == ContentTypes.NoContentType || mediaType.matches(entity.contentType.mediaType)) {
+        um.asScala(entity)
+      } else FastFuture.failed(UnsupportedContentTypeException(ContentTypeRange(t.toRange.asScala)))
+    }
     }
   }
 

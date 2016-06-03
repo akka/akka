@@ -228,7 +228,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
           |""")
 
       inside(expectResponse()) {
-        case HttpResponse(StatusCodes.OK, _, HttpEntity.Chunked(_, data), _) =>
+        case HttpResponse(StatusCodes.OK, _, HttpEntity.Chunked(_, data), _) ⇒
           val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           // but only one consumed by server
           data.take(1).to(Sink.fromSubscriber(dataProbe)).run()
@@ -242,7 +242,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
     }
 
     "proceed to next response once previous response's entity has been drained" in new TestSetup {
-      def twice(action: => Unit): Unit = { action; action }
+      def twice(action: ⇒ Unit): Unit = { action; action }
 
       twice {
         requestsSub.sendNext(HttpRequest())
@@ -823,17 +823,16 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
       val netOut = TestSubscriber.manualProbe[ByteString]()
       val netIn = TestPublisher.manualProbe[ByteString]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(OutgoingConnectionBlueprint(Host("example.com"), settings, NoLogging)) { implicit b ⇒
-        client ⇒
-          import GraphDSL.Implicits._
-          Source.fromPublisher(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> client.in2
-          client.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> Sink.fromSubscriber(netOut)
-          Source.fromPublisher(requests) ~> client.in1
-          client.out2 ~> Sink.fromSubscriber(responses)
-          ClosedShape
+      RunnableGraph.fromGraph(GraphDSL.create(OutgoingConnectionBlueprint(Host("example.com"), settings, NoLogging)) { implicit b ⇒ client ⇒
+        import GraphDSL.Implicits._
+        Source.fromPublisher(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> client.in2
+        client.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> Sink.fromSubscriber(netOut)
+        Source.fromPublisher(requests) ~> client.in1
+        client.out2 ~> Sink.fromSubscriber(responses)
+        ClosedShape
       }).run()
 
-      netOut -> netIn
+      netOut → netIn
     }
 
     def wipeDate(string: String) =

@@ -66,9 +66,10 @@ abstract class DebuggingDirectives extends CookieDirectives {
    * @param showSuccess Function invoked when the route result was successful and yielded an HTTP response
    * @param showRejection Function invoked when the route yielded a rejection
    */
-  def logResult(showSuccess: JFunction[HttpResponse, LogEntry],
-                showRejection: JFunction[JList[Rejection], LogEntry],
-                inner: Supplier[Route]) = RouteAdapter {
+  def logResult(
+    showSuccess:   JFunction[HttpResponse, LogEntry],
+    showRejection: JFunction[JList[Rejection], LogEntry],
+    inner:         Supplier[Route]) = RouteAdapter {
     D.logResult(LoggingMagnet.forMessageFromFullShow {
       case RouteResult.Complete(response)   ⇒ showSuccess.apply(response).asScala
       case RouteResult.Rejected(rejections) ⇒ showRejection.apply(rejections.asJava).asScala
@@ -83,9 +84,10 @@ abstract class DebuggingDirectives extends CookieDirectives {
    * @param showSuccess Function invoked when the route result was successful and yielded an HTTP response
    * @param showRejection Function invoked when the route yielded a rejection
    */
-  def logRequestResult(showSuccess: BiFunction[HttpRequest, HttpResponse, LogEntry],
-                       showRejection: BiFunction[HttpRequest, JList[Rejection], LogEntry],
-                       inner: Supplier[Route]) = RouteAdapter {
+  def logRequestResult(
+    showSuccess:   BiFunction[HttpRequest, HttpResponse, LogEntry],
+    showRejection: BiFunction[HttpRequest, JList[Rejection], LogEntry],
+    inner:         Supplier[Route]) = RouteAdapter {
     D.logRequestResult(LoggingMagnet.forRequestResponseFromFullShow(request ⇒ {
       case RouteResult.Complete(response)   ⇒ Some(showSuccess.apply(request, response).asScala)
       case RouteResult.Rejected(rejections) ⇒ Some(showRejection.apply(request, rejections.asJava).asScala)
@@ -101,9 +103,10 @@ abstract class DebuggingDirectives extends CookieDirectives {
    * @param showRejection Function invoked when the route yielded a rejection
    */
   @CorrespondsTo("logRequestResult")
-  def logRequestResultOptional(showSuccess: BiFunction[HttpRequest, HttpResponse, Optional[LogEntry]],
-                               showRejection: BiFunction[HttpRequest, JList[Rejection], Optional[LogEntry]],
-                               inner: Supplier[Route]) = RouteAdapter {
+  def logRequestResultOptional(
+    showSuccess:   BiFunction[HttpRequest, HttpResponse, Optional[LogEntry]],
+    showRejection: BiFunction[HttpRequest, JList[Rejection], Optional[LogEntry]],
+    inner:         Supplier[Route]) = RouteAdapter {
     D.logRequestResult(LoggingMagnet.forRequestResponseFromFullShow(request ⇒ {
       case RouteResult.Complete(response)   ⇒ showSuccess.apply(request, response).asScala
       case RouteResult.Rejected(rejections) ⇒ showRejection.apply(request, rejections.asJava).asScala

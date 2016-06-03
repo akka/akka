@@ -50,9 +50,10 @@ private[http] object OutgoingConnectionBlueprint {
                                   |  Merge     |<------------------------------------------ V
                                   +------------+
   */
-  def apply(hostHeader: headers.Host,
-            settings: ClientConnectionSettings,
-            log: LoggingAdapter): Http.ClientLayer = {
+  def apply(
+    hostHeader: headers.Host,
+    settings:   ClientConnectionSettings,
+    log:        LoggingAdapter): Http.ClientLayer = {
     import settings._
 
     val core = BidiFlow.fromGraph(GraphDSL.create() { implicit b ⇒

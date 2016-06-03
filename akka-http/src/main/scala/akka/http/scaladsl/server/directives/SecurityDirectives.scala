@@ -13,7 +13,7 @@ import akka.http.scaladsl.util.FastFuture._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection.{ CredentialsRejected, CredentialsMissing }
 
-import scala.util.{Try, Success}
+import scala.util.{ Try, Success }
 
 /**
  * Provides directives for securing an inner route using the standard Http authentication headers [[`WWW-Authenticate`]]
@@ -220,7 +220,7 @@ trait SecurityDirectives {
    * @group security
    */
   def authorize(check: RequestContext ⇒ Boolean): Directive0 =
-    authorizeAsync(ctx => Future.successful(check(ctx)))
+    authorizeAsync(ctx ⇒ Future.successful(check(ctx)))
 
   /**
    * Asynchronous version of [[authorize]].
@@ -230,7 +230,7 @@ trait SecurityDirectives {
    * @group security
    */
   def authorizeAsync(check: ⇒ Future[Boolean]): Directive0 =
-    authorizeAsync(ctx => check)
+    authorizeAsync(ctx ⇒ check)
 
   /**
    * Asynchronous version of [[authorize]].
@@ -241,10 +241,10 @@ trait SecurityDirectives {
    */
   def authorizeAsync(check: RequestContext ⇒ Future[Boolean]): Directive0 =
     extractExecutionContext.flatMap { implicit ec ⇒
-      extract(check).flatMap[Unit] { fa =>
+      extract(check).flatMap[Unit] { fa ⇒
         onComplete(fa).flatMap {
-          case Success(true) => pass
-          case _ => reject(AuthorizationFailedRejection)
+          case Success(true) ⇒ pass
+          case _             ⇒ reject(AuthorizationFailedRejection)
         }
       }
     }
