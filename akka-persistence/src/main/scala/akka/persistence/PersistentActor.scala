@@ -101,7 +101,7 @@ object Recovery {
   val none: Recovery = Recovery(toSequenceNr = 0L)
 }
 
-final class RecoveryTimedOut extends RuntimeException with NoStackTrace
+final class RecoveryTimedOut(message: String) extends RuntimeException(message) with NoStackTrace
 
 /**
  * This defines how to handle the current received message which failed to stash, when the size of
