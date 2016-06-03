@@ -315,6 +315,7 @@ private[akka] class PersistentShard(
   import ShardRegion.{ EntityId, Msg }
   import Shard.{ State, RestartEntity, EntityStopped, EntityStarted }
   import settings.tuningParameters._
+  import scala.concurrent.duration.Duration
 
   override def persistenceId = s"/sharding/${typeName}Shard/${shardId}"
 
@@ -344,9 +345,22 @@ private[akka] class PersistentShard(
     case EntityStopped(id)                 ⇒ state = state.copy(state.entities - id)
     case SnapshotOffer(_, snapshot: State) ⇒ state = snapshot
     case RecoveryCompleted ⇒
-      state.entities foreach getEntity
+      restartRememberedEntities()
       super.initialized()
       log.debug("Shard recovery completed {}", shardId)
+  }
+
+  private def restartRememberedEntities(): Unit = {
+    if (entityRecoveryRateInterval == Duration.Zero) {
+      state.entities foreach getEntity
+    } else {
+      state.entities.foldLeft(entityRecoveryRateInterval) {
+        case (interval, entityId) ⇒
+          import context.dispatcher
+          context.system.scheduler.scheduleOnce(interval, self, RestartEntity(entityId))
+          interval + entityRecoveryRateInterval
+      }
+    }
   }
 
   override def receiveCommand: Receive = ({

@@ -38,7 +38,8 @@ object ClusterShardingSettings {
       leastShardAllocationMaxSimultaneousRebalance =
         config.getInt("least-shard-allocation-strategy.max-simultaneous-rebalance"),
       waitingForStateTimeout = config.getDuration("waiting-for-state-timeout", MILLISECONDS).millis,
-      updatingStateTimeout = config.getDuration("updating-state-timeout", MILLISECONDS).millis)
+      updatingStateTimeout = config.getDuration("updating-state-timeout", MILLISECONDS).millis,
+      entityRecoveryRateInterval = config.getDuration("entity-recovery-rate-interval", MILLISECONDS).millis)
 
     val coordinatorSingletonSettings = ClusterSingletonManagerSettings(config.getConfig("coordinator-singleton"))
 
@@ -83,7 +84,9 @@ object ClusterShardingSettings {
     val leastShardAllocationRebalanceThreshold:       Int,
     val leastShardAllocationMaxSimultaneousRebalance: Int,
     val waitingForStateTimeout:                       FiniteDuration,
-    val updatingStateTimeout:                         FiniteDuration)
+    val updatingStateTimeout:                         FiniteDuration,
+    val entityRecoveryRateInterval:                   FiniteDuration)
+
 }
 
 /**
