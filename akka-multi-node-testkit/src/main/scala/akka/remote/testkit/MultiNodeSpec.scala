@@ -195,11 +195,11 @@ object MultiNodeSpec {
   require(selfIndex >= 0 && selfIndex < maxNodes, "multinode.index is out of bounds: " + selfIndex)
 
   private[testkit] val nodeConfig = mapToConfig(Map(
-    "akka.actor.provider" -> "akka.remote.RemoteActorRefProvider",
-    "akka.remote.artery.hostname" -> selfName,
-    "akka.remote.netty.tcp.hostname" -> selfName,
-    "akka.remote.netty.tcp.port" -> selfPort,
-    "akka.remote.artery.port" -> selfPort))
+    "akka.actor.provider" → "akka.remote.RemoteActorRefProvider",
+    "akka.remote.artery.hostname" → selfName,
+    "akka.remote.netty.tcp.hostname" → selfName,
+    "akka.remote.netty.tcp.port" → selfPort,
+    "akka.remote.artery.port" → selfPort))
 
   private[testkit] val baseConfig: Config = ConfigFactory.parseString("""
       akka {

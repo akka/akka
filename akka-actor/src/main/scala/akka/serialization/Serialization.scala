@@ -139,8 +139,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
         else {
           val cache = manifestCache.get
           cache.get(manifest) match {
-            case Some(cachedClassManifest) => s1.fromBinary(bytes, cachedClassManifest)
-            case None =>
+            case Some(cachedClassManifest) ⇒ s1.fromBinary(bytes, cachedClassManifest)
+            case None ⇒
               system.dynamicAccess.getClassFor[AnyRef](manifest) match {
                 case Success(classManifest) ⇒
                   val classManifestOption: Option[Class[_]] = Some(classManifest)
@@ -167,7 +167,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
           "akka.actor.serializers is not in synch between the two systems.")
     }
     serializer match {
-      case ser: ByteBufferSerializer =>
+      case ser: ByteBufferSerializer ⇒
         ser.fromBinary(buf, manifest)
       case _ ⇒
         val bytes = Array.ofDim[Byte](buf.remaining())
