@@ -3,18 +3,18 @@
  */
 package akka.remote.artery
 
+import java.util.Queue
+
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import java.util.function.{ Function ⇒ JFunction }
-
+import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Success
-
 import akka.{ Done, NotUsed }
 import akka.actor.ActorRef
 import akka.actor.ActorSelectionMessage
@@ -31,11 +31,19 @@ import akka.remote.artery.OutboundHandshake.HandshakeTimeoutException
 import akka.remote.artery.SystemMessageDelivery.ClearSystemMessageDelivery
 import akka.stream.AbruptTerminationException
 import akka.stream.Materializer
-import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.SourceQueueWithComplete
 import akka.util.{ Unsafe, WildcardTree }
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
+
+/**
+ * INTERNAL API
+ */
+private[remote] object Association {
+  final case class QueueWrapper(queue: Queue[Send]) extends SendQueue.ProducerApi[Send] {
+    override def offer(message: Send): Boolean = queue.offer(message)
+  }
+}
 
 /**
  * INTERNAL API
@@ -43,25 +51,37 @@ import akka.util.{ Unsafe, WildcardTree }
  * Thread-safe, mutable holder for association state. Main entry point for remote destined message to a specific
  * remote address.
  */
-private[akka] class Association(
+private[remote] class Association(
   val transport:               ArteryTransport,
   val materializer:            Materializer,
   override val remoteAddress:  Address,
   override val controlSubject: ControlMessageSubject,
   largeMessageDestinations:    WildcardTree[NotUsed])
   extends AbstractAssociation with OutboundContext {
+  import Association._
 
   private val log = Logging(transport.system, getClass.getName)
   private val controlQueueSize = transport.provider.remoteSettings.SysMsgBufferSize
+  // FIXME config queue size, and it should perhaps also be possible to use some kind of LinkedQueue
+  //       such as agrona.ManyToOneConcurrentLinkedQueue or AbstractNodeQueue for less memory consumption
+  private val queueSize = 3072
+  private val largeQueueSize = 256
 
   private val restartTimeout: FiniteDuration = 5.seconds // FIXME config
   private val maxRestarts = 5 // FIXME config
   private val restartCounter = new RestartCounter(maxRestarts, restartTimeout)
   private val largeMessageChannelEnabled = largeMessageDestinations.children.nonEmpty
 
-  @volatile private[this] var queue: SourceQueueWithComplete[Send] = _
-  @volatile private[this] var largeQueue: SourceQueueWithComplete[Send] = _
-  @volatile private[this] var controlQueue: SourceQueueWithComplete[Send] = _
+  // We start with the raw wrapped queue and then it is replaced with the materialized value of
+  // the `SendQueue` after materialization. Using same underlying queue. This makes it possible to
+  // start sending (enqueuing) to the Association immediate after construction.
+
+  def createQueue(capacity: Int): Queue[Send] =
+    new ManyToOneConcurrentArrayQueue[Send](capacity)
+
+  @volatile private[this] var queue: SendQueue.ProducerApi[Send] = QueueWrapper(createQueue(queueSize))
+  @volatile private[this] var largeQueue: SendQueue.ProducerApi[Send] = QueueWrapper(createQueue(largeQueueSize))
+  @volatile private[this] var controlQueue: SendQueue.ProducerApi[Send] = QueueWrapper(createQueue(controlQueueSize))
   @volatile private[this] var _outboundControlIngress: OutboundControlIngress = _
   @volatile private[this] var materializing = new CountDownLatch(1)
 
@@ -137,17 +157,20 @@ private[akka] class Association(
       // FIXME: Use a different envelope than the old Send, but make sure the new is handled by deadLetters properly
       message match {
         case _: SystemMessage | ClearSystemMessageDelivery ⇒
-          implicit val ec = materializer.executionContext
-          controlQueue.offer(Send(message, senderOption, recipient, None)).onFailure {
-            case e ⇒
-              quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
+          val send = Send(message, senderOption, recipient, None)
+          if (!controlQueue.offer(send)) {
+            quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
+            transport.system.deadLetters ! send
           }
         case _ ⇒
           val send = Send(message, senderOption, recipient, None)
-          if (largeMessageChannelEnabled && isLargeMessageDestination(recipient))
-            largeQueue.offer(send)
-          else
-            queue.offer(send)
+          val offerOk =
+            if (largeMessageChannelEnabled && isLargeMessageDestination(recipient))
+              largeQueue.offer(send)
+            else
+              queue.offer(send)
+          if (!offerOk)
+            transport.system.deadLetters ! send
       }
     } else if (log.isDebugEnabled)
       log.debug("Dropping message to quarantined system {}", remoteAddress)
@@ -218,17 +241,23 @@ private[akka] class Association(
 
   }
 
-  // Idempotent
+  /**
+   * Called once after construction when the `Association` instance
+   * wins the CAS in the `AssociationRegistry`. It will materialize
+   * the streams. It is possible to sending (enqueuing) to the association
+   * before this method is called.
+   */
   def associate(): Unit = {
-    if (controlQueue eq null) {
-      // it's important to materialize the outboundControl stream first,
-      // so that outboundControlIngress is ready when stages for all streams start
-      runOutboundControlStream()
-      runOutboundOrdinaryMessagesStream()
+    if (!controlQueue.isInstanceOf[QueueWrapper])
+      throw new IllegalStateException("associate() must only be called once")
 
-      if (largeMessageChannelEnabled) {
-        runOutboundLargeMessagesStream()
-      }
+    // it's important to materialize the outboundControl stream first,
+    // so that outboundControlIngress is ready when stages for all streams start
+    runOutboundControlStream()
+    runOutboundOrdinaryMessagesStream()
+
+    if (largeMessageChannelEnabled) {
+      runOutboundLargeMessagesStream()
     }
   }
 
@@ -236,10 +265,15 @@ private[akka] class Association(
     // stage in the control stream may access the outboundControlIngress before returned here
     // using CountDownLatch to make sure that materialization is completed before accessing outboundControlIngress
     materializing = new CountDownLatch(1)
-    val (q, (control, completed)) = Source.queue(controlQueueSize, OverflowStrategy.backpressure)
+
+    val wrapper = getOrCreateQueueWrapper(controlQueue, queueSize)
+    controlQueue = wrapper // use new underlying queue immediately for restarts
+    val (queueValue, (control, completed)) = Source.fromGraph(new SendQueue[Send])
       .toMat(transport.outboundControl(this))(Keep.both)
       .run()(materializer)
-    controlQueue = q
+    queueValue.inject(wrapper.queue)
+    // replace with the materialized value, still same underlying queue
+    controlQueue = queueValue
     _outboundControlIngress = control
     materializing.countDown()
     attachStreamRestart("Outbound control stream", completed, cause ⇒ {
@@ -251,19 +285,35 @@ private[akka] class Association(
     })
   }
 
+  private def getOrCreateQueueWrapper(q: SendQueue.ProducerApi[Send], capacity: Int): QueueWrapper =
+    q match {
+      case existing: QueueWrapper ⇒ existing
+      case _ ⇒
+        // use new queue for restarts
+        QueueWrapper(createQueue(capacity))
+    }
+
   private def runOutboundOrdinaryMessagesStream(): Unit = {
-    val (q, completed) = Source.queue(256, OverflowStrategy.dropBuffer)
+    val wrapper = getOrCreateQueueWrapper(queue, queueSize)
+    queue = wrapper // use new underlying queue immediately for restarts
+    val (queueValue, completed) = Source.fromGraph(new SendQueue[Send])
       .toMat(transport.outbound(this))(Keep.both)
       .run()(materializer)
-    queue = q
+    queueValue.inject(wrapper.queue)
+    // replace with the materialized value, still same underlying queue
+    queue = queueValue
     attachStreamRestart("Outbound message stream", completed, _ ⇒ runOutboundOrdinaryMessagesStream())
   }
 
   private def runOutboundLargeMessagesStream(): Unit = {
-    val (q, completed) = Source.queue(256, OverflowStrategy.dropBuffer)
+    val wrapper = getOrCreateQueueWrapper(queue, largeQueueSize)
+    largeQueue = wrapper // use new underlying queue immediately for restarts
+    val (queueValue, completed) = Source.fromGraph(new SendQueue[Send])
       .toMat(transport.outboundLarge(this))(Keep.both)
       .run()(materializer)
-    largeQueue = q
+    queueValue.inject(wrapper.queue)
+    // replace with the materialized value, still same underlying queue
+    largeQueue = queueValue
     attachStreamRestart("Outbound large message stream", completed, _ ⇒ runOutboundLargeMessagesStream())
   }
 
@@ -297,21 +347,21 @@ private[akka] class Association(
  * INTERNAL API
  */
 private[remote] class AssociationRegistry(createAssociation: Address ⇒ Association) {
-  // FIXME: This does locking on putIfAbsent, we need something smarter
-  private[this] val associationsByAddress = new ConcurrentHashMap[Address, Association]()
-  private[this] val associationsByUid = new ConcurrentHashMap[Long, Association]()
+  private[this] val associationsByAddress = new AtomicReference[Map[Address, Association]](Map.empty)
+  private[this] val associationsByUid = new ConcurrentHashMap[Long, Association]() // FIXME replace with specialized Long Map
 
-  def association(remoteAddress: Address): Association = {
-    val current = associationsByAddress.get(remoteAddress)
-    if (current ne null) current
-    else {
-      associationsByAddress.computeIfAbsent(remoteAddress, new JFunction[Address, Association] {
-        override def apply(remoteAddress: Address): Association = {
-          val newAssociation = createAssociation(remoteAddress)
-          newAssociation.associate() // This is a bit costly for this blocking method :(
+  @tailrec final def association(remoteAddress: Address): Association = {
+    val currentMap = associationsByAddress.get
+    currentMap.get(remoteAddress) match {
+      case Some(existing) ⇒ existing
+      case None ⇒
+        val newAssociation = createAssociation(remoteAddress)
+        val newMap = currentMap.updated(remoteAddress, newAssociation)
+        if (associationsByAddress.compareAndSet(currentMap, newMap)) {
+          newAssociation.associate() // start it, only once
           newAssociation
-        }
-      })
+        } else
+          association(remoteAddress) // lost CAS, retry
     }
   }
 
