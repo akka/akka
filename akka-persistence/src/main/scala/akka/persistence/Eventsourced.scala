@@ -9,10 +9,12 @@ import java.util.UUID
 
 import scala.collection.immutable
 import scala.util.control.NonFatal
-import akka.actor.DeadLetter
-import akka.actor.StashOverflowException
+import akka.actor.{ DeadLetter, ReceiveTimeout, StashOverflowException }
+import akka.util.Helpers.ConfigOps
 import akka.event.Logging
 import akka.event.LoggingAdapter
+
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /**
  * INTERNAL API
@@ -461,6 +463,10 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    */
   private def recoveryStarted(replayMax: Long) = new State {
 
+    // protect against replay stalling forever because of journal overloaded and such
+    private val previousRecieveTimeout = context.receiveTimeout
+    context.setReceiveTimeout(extension.journalConfigFor(journalPluginId).getMillisDuration("recovery-event-timeout"))
+
     private val recoveryBehavior: Receive = {
       val _receiveRecover = receiveRecover
 
@@ -471,6 +477,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
           _receiveRecover(s)
         case RecoveryCompleted if _receiveRecover.isDefinedAt(RecoveryCompleted) ⇒
           _receiveRecover(RecoveryCompleted)
+
       }
     }
 
@@ -485,8 +492,13 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
             // Since we are recovering we can ignore the receive behavior from the stack
             Eventsourced.super.aroundReceive(recoveryBehavior, SnapshotOffer(metadata, snapshot))
         }
-        changeState(recovering(recoveryBehavior))
+        changeState(recovering(recoveryBehavior, previousRecieveTimeout))
         journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
+      case ReceiveTimeout ⇒
+        try onRecoveryFailure(
+          new RecoveryTimedOut(s"Recovery timed out, didn't get snapshot within ${context.receiveTimeout.toSeconds}s"),
+          event = None)
+        finally context.stop(self)
       case other ⇒
         stashInternally(other)
     }
@@ -502,32 +514,45 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    *
    * All incoming messages are stashed.
    */
-  private def recovering(recoveryBehavior: Receive) = new State {
-    override def toString: String = "replay started"
-    override def recoveryRunning: Boolean = true
+  private def recovering(recoveryBehavior: Receive, previousReceiveTimeout: Duration) =
+    new State {
+      override def toString: String = "replay started"
 
-    override def stateReceive(receive: Receive, message: Any) = message match {
-      case ReplayedMessage(p) ⇒
-        try {
-          updateLastSequenceNr(p)
-          Eventsourced.super.aroundReceive(recoveryBehavior, p)
-        } catch {
-          case NonFatal(t) ⇒
-            try onRecoveryFailure(t, Some(p.payload)) finally context.stop(self)
-        }
-      case RecoverySuccess(highestSeqNr) ⇒
-        onReplaySuccess() // callback for subclass implementation
-        changeState(processingCommands)
-        sequenceNr = highestSeqNr
-        setLastSequenceNr(highestSeqNr)
-        internalStash.unstashAll()
-        Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryCompleted)
-      case ReplayMessagesFailure(cause) ⇒
-        try onRecoveryFailure(cause, event = None) finally context.stop(self)
-      case other ⇒
-        stashInternally(other)
+      override def recoveryRunning: Boolean = true
+
+      override def stateReceive(receive: Receive, message: Any) = message match {
+        case ReplayedMessage(p) ⇒
+          try {
+            updateLastSequenceNr(p)
+            Eventsourced.super.aroundReceive(recoveryBehavior, p)
+          } catch {
+            case NonFatal(t) ⇒
+              try onRecoveryFailure(t, Some(p.payload)) finally context.stop(self)
+          }
+        case RecoverySuccess(highestSeqNr) ⇒
+          resetRecieveTimeout()
+          onReplaySuccess() // callback for subclass implementation
+          changeState(processingCommands)
+          sequenceNr = highestSeqNr
+          setLastSequenceNr(highestSeqNr)
+          internalStash.unstashAll()
+          Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryCompleted)
+        case ReplayMessagesFailure(cause) ⇒
+          resetRecieveTimeout()
+          try onRecoveryFailure(cause, event = None) finally context.stop(self)
+        case ReceiveTimeout ⇒
+          try onRecoveryFailure(
+            new RecoveryTimedOut(s"Recovery timed out, didn't get event within ${context.receiveTimeout.toSeconds}s, highest sequence number seen ${sequenceNr}"),
+            event = None)
+          finally context.stop(self)
+        case other ⇒
+          stashInternally(other)
+      }
+
+      private def resetRecieveTimeout(): Unit = {
+        context.setReceiveTimeout(previousReceiveTimeout)
+      }
     }
-  }
 
   private def flushBatch() {
     if (eventBatch.nonEmpty) {
