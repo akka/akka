@@ -16,7 +16,7 @@ The ``KillSwitch`` trait allows to complete or fail the graph(s).
 .. includecode:: ../../../../akka-stream/src/main/scala/akka/stream/KillSwitch.scala
    :include: kill-switch
 
-After the first call to either ``shutdown`` and ``abort``, all subsequent calls to any of these methods will be ignored.
+After the first call to either ``shutdown`` or ``abort``, all subsequent calls to any of these methods will be ignored.
 Graph completion is performed by both
 
 * completing its downstream

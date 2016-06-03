@@ -11,12 +11,12 @@ Controlling graph completion with KillSwitch
 
 A ``KillSwitch`` allows the completion of graphs of ``FlowShape`` from the outside. It consists of a flow element that
 can be linked to a graph of ``FlowShape`` needing completion control.
-The ``KillSwitch`` trait allows to complete or fail the graph(s).
+The ``KillSwitch`` interface allows to:
 
-.. includecode:: ../../../../akka-stream/src/main/scala/akka/stream/KillSwitch.scala
-   :include: kill-switch
+* complete the graph(s) via ``shutdown()``
+* fail the graph(s) via ``abort(Throwable error)``
 
-After the first call to either ``shutdown`` and ``abort``, all subsequent calls to any of these methods will be ignored.
+After the first call to either ``shutdown`` or ``abort``, all subsequent calls to any of these methods will be ignored.
 Graph completion is performed by both
 
 * completing its downstream
