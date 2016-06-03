@@ -21,9 +21,9 @@ import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 
 private[akka] class TestInboundContext(
   override val localAddress: UniqueAddress,
-  val controlSubject: TestControlMessageSubject = new TestControlMessageSubject,
-  val controlProbe: Option[ActorRef] = None,
-  val replyDropRate: Double = 0.0) extends InboundContext {
+  val controlSubject:        TestControlMessageSubject = new TestControlMessageSubject,
+  val controlProbe:          Option[ActorRef]          = None,
+  val replyDropRate:         Double                    = 0.0) extends InboundContext {
 
   private val associationsByAddress = new ConcurrentHashMap[Address, OutboundContext]()
   private val associationsByUid = new ConcurrentHashMap[Long, OutboundContext]()
@@ -58,10 +58,10 @@ private[akka] class TestInboundContext(
 }
 
 private[akka] class TestOutboundContext(
-  override val localAddress: UniqueAddress,
-  override val remoteAddress: Address,
+  override val localAddress:   UniqueAddress,
+  override val remoteAddress:  Address,
   override val controlSubject: TestControlMessageSubject,
-  val controlProbe: Option[ActorRef] = None) extends OutboundContext {
+  val controlProbe:            Option[ActorRef]          = None) extends OutboundContext {
 
   // access to this is synchronized (it's a test utility)
   private var _associationState = AssociationState()
@@ -117,8 +117,8 @@ private[akka] class TestControlMessageSubject extends ControlMessageSubject {
 }
 
 private[akka] class ManualReplyInboundContext(
-  replyProbe: ActorRef,
-  localAddress: UniqueAddress,
+  replyProbe:     ActorRef,
+  localAddress:   UniqueAddress,
   controlSubject: TestControlMessageSubject) extends TestInboundContext(localAddress, controlSubject) {
 
   private var lastReply: Option[(Address, ControlMessage)] = None

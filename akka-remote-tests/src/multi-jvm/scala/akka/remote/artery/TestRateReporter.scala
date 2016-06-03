@@ -6,7 +6,8 @@ package akka.remote.artery
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.Executors
 
-class TestRateReporter(name: String) extends RateReporter(SECONDS.toNanos(1),
+class TestRateReporter(name: String) extends RateReporter(
+  SECONDS.toNanos(1),
   new RateReporter.Reporter {
     override def onReport(messagesPerSec: Double, bytesPerSec: Double, totalMessages: Long, totalBytes: Long): Unit = {
       println(name +
