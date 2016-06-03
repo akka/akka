@@ -8,7 +8,7 @@ import java.util.function.{ Function ⇒ JFunction }
 
 import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.settings.ParserSettings
-import akka.http.scaladsl.settings.RoutingSettings
+import akka.http.javadsl.settings.RoutingSettings
 import akka.japi.Util
 
 import scala.concurrent.ExecutionContextExecutor
@@ -73,6 +73,10 @@ abstract class BasicDirectives {
     D.mapRouteResult(route ⇒ f(route.asJava).asScala) { inner.get.delegate }
   }
 
+  def mapRouteResultPF(f: PartialFunction[RouteResult, RouteResult], inner: Supplier[Route]): Route = RouteAdapter {
+    D.mapRouteResult(route ⇒ f(route.asJava).asScala) { inner.get.delegate }
+  }
+
   def mapRouteResultFuture(f: JFunction[CompletionStage[RouteResult], CompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
     D.mapRouteResultFuture(stage ⇒
       f(toJava(stage.fast.map(_.asJava)(ExecutionContexts.sameThreadExecutionContext))).toScala.fast.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)) {
@@ -84,11 +88,15 @@ abstract class BasicDirectives {
     D.mapRouteResultWith(r ⇒ f(r.asJava).toScala.fast.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)) { inner.get.delegate }
   }
 
+  def mapRouteResultWithPF(f: PartialFunction[RouteResult, CompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
+    D.mapRouteResultWith(r ⇒ f(r.asJava).toScala.fast.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)) { inner.get.delegate }
+  }
+
   /**
    * Runs the inner route with settings mapped by the given function.
    */
   def mapSettings(f: JFunction[RoutingSettings, RoutingSettings], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapSettings(rs ⇒ f(rs)) { inner.get.delegate }
+    D.mapSettings(rs ⇒ f(rs.asJava).asScala) { inner.get.delegate }
   }
 
   /**
@@ -216,10 +224,17 @@ abstract class BasicDirectives {
   }
 
   /**
+   * Runs its inner route with the given alternative [[akka.stream.Materializer]].
+   */
+  def withMaterializer(mat: Materializer, inner: Supplier[Route]): Route = RouteAdapter {
+    D.withMaterializer(mat) { inner.get.delegate }
+  }
+
+  /**
    * Runs its inner route with the given alternative [[RoutingSettings]].
    */
   def withSettings(s: RoutingSettings, inner: Supplier[Route]): Route = RouteAdapter {
-    D.withSettings(s) { inner.get.delegate }
+    D.withSettings(s.asScala) { inner.get.delegate }
   }
 
   /**
