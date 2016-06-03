@@ -4,10 +4,13 @@
 package akka.persistence
 
 import java.lang.{ Iterable ⇒ JIterable }
+
 import akka.actor._
 import akka.japi.Procedure
 import akka.japi.Util
 import com.typesafe.config.Config
+
+import scala.util.control.NoStackTrace
 
 abstract class RecoveryCompleted
 /**
@@ -97,6 +100,8 @@ object Recovery {
    */
   val none: Recovery = Recovery(toSequenceNr = 0L)
 }
+
+final class RecoveryTimedOut(message: String) extends RuntimeException(message) with NoStackTrace
 
 /**
  * This defines how to handle the current received message which failed to stash, when the size of
