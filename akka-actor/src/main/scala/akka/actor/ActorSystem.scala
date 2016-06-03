@@ -505,11 +505,11 @@ abstract class ExtendedActorSystem extends ActorSystem {
 }
 
 private[akka] class ActorSystemImpl(
-  val name: String,
-  applicationConfig: Config,
-  classLoader: ClassLoader,
+  val name:                String,
+  applicationConfig:       Config,
+  classLoader:             ClassLoader,
   defaultExecutionContext: Option[ExecutionContext],
-  val guardianProps: Option[Props]) extends ExtendedActorSystem {
+  val guardianProps:       Option[Props]) extends ExtendedActorSystem {
 
   if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-_]*$"""))
     throw new IllegalArgumentException(
@@ -593,7 +593,7 @@ private[akka] class ActorSystemImpl(
   eventStream.startStdoutLogger(settings)
 
   val logFilter: LoggingFilter = {
-    val arguments = Vector(classOf[Settings] -> settings, classOf[EventStream] -> eventStream)
+    val arguments = Vector(classOf[Settings] → settings, classOf[EventStream] → eventStream)
     dynamicAccess.createInstanceFor[LoggingFilter](LoggingFilter, arguments).get
   }
 
@@ -603,10 +603,10 @@ private[akka] class ActorSystemImpl(
 
   val provider: ActorRefProvider = try {
     val arguments = Vector(
-      classOf[String] -> name,
-      classOf[Settings] -> settings,
-      classOf[EventStream] -> eventStream,
-      classOf[DynamicAccess] -> dynamicAccess)
+      classOf[String] → name,
+      classOf[Settings] → settings,
+      classOf[EventStream] → eventStream,
+      classOf[DynamicAccess] → dynamicAccess)
 
     dynamicAccess.createInstanceFor[ActorRefProvider](ProviderClass, arguments).get
   } catch {
@@ -698,9 +698,9 @@ private[akka] class ActorSystemImpl(
    */
   protected def createScheduler(): Scheduler =
     dynamicAccess.createInstanceFor[Scheduler](settings.SchedulerClass, immutable.Seq(
-      classOf[Config] -> settings.config,
-      classOf[LoggingAdapter] -> log,
-      classOf[ThreadFactory] -> threadFactory.withName(threadFactory.name + "-scheduler"))).get
+      classOf[Config] → settings.config,
+      classOf[LoggingAdapter] → log,
+      classOf[ThreadFactory] → threadFactory.withName(threadFactory.name + "-scheduler"))).get
   //#create-scheduler
 
   /*
@@ -767,12 +767,12 @@ private[akka] class ActorSystemImpl(
     def loadExtensions(key: String, throwOnLoadFail: Boolean): Unit = {
       immutableSeq(settings.config.getStringList(key)) foreach { fqcn ⇒
         dynamicAccess.getObjectFor[AnyRef](fqcn) recoverWith { case _ ⇒ dynamicAccess.createInstanceFor[AnyRef](fqcn, Nil) } match {
-          case Success(p: ExtensionIdProvider)  ⇒ registerExtension(p.lookup())
-          case Success(p: ExtensionId[_])       ⇒ registerExtension(p)
-          case Success(other)⇒
+          case Success(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup())
+          case Success(p: ExtensionId[_])      ⇒ registerExtension(p)
+          case Success(other) ⇒
             if (!throwOnLoadFail) log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)
             else throw new RuntimeException(s"[$fqcn] is not an 'ExtensionIdProvider' or 'ExtensionId'")
-          case Failure(problem)                 ⇒
+          case Failure(problem) ⇒
             if (!throwOnLoadFail) log.error(problem, "While trying to load extension [{}], skipping...", fqcn)
             else throw new RuntimeException(s"While trying to load extension [$fqcn]", problem)
         }

@@ -22,7 +22,7 @@ object AutoDownSpec {
 
   class AutoDownTestActor(
     autoDownUnreachableAfter: FiniteDuration,
-    probe: ActorRef)
+    probe:                    ActorRef)
     extends AutoDownBase(autoDownUnreachableAfter) {
 
     override def selfAddress = memberA.address

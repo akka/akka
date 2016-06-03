@@ -5,7 +5,7 @@ package akka.stream.io;
 
 import akka.japi.Pair;
 import akka.stream.StreamTest;
-import akka.stream.javadsl.AkkaJUnitActorSystemResource;
+import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;

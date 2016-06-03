@@ -114,7 +114,8 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
           requestMethod = HttpMethods.HEAD,
           response = HttpResponse(
             headers = List(Age(30), Connection("Keep-Alive")),
-            entity = HttpEntity.CloseDelimited(ContentTypes.`text/plain(UTF-8)`,
+            entity = HttpEntity.CloseDelimited(
+              ContentTypes.`text/plain(UTF-8)`,
               Source.single(ByteString("Foo"))))) should renderTo(
             """HTTP/1.1 200 OK
               |Age: 30
@@ -130,7 +131,8 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
           requestMethod = HttpMethods.HEAD,
           response = HttpResponse(
             headers = List(Age(30), Connection("Keep-Alive")),
-            entity = HttpEntity.Chunked(ContentTypes.`text/plain(UTF-8)`,
+            entity = HttpEntity.Chunked(
+              ContentTypes.`text/plain(UTF-8)`,
               Source.single(HttpEntity.Chunk(ByteString("Foo")))))) should renderTo(
             """HTTP/1.1 200 OK
               |Age: 30
@@ -187,7 +189,8 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       }
 
       "status 200 and a custom Transfer-Encoding header" in new TestSetup() {
-        HttpResponse(headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
+        HttpResponse(
+          headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
           entity = "All good") should renderTo {
             """HTTP/1.1 200 OK
               |Transfer-Encoding: fancy
@@ -232,7 +235,8 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
     "a response with a CloseDelimited body" - {
       "without data" in new TestSetup() {
         ResponseRenderingContext(
-          HttpResponse(200, entity = CloseDelimited(ContentTypes.`application/json`,
+          HttpResponse(200, entity = CloseDelimited(
+            ContentTypes.`application/json`,
             source(ByteString.empty)))) should renderTo(
             """HTTP/1.1 200 OK
               |Server: akka-http/1.0.0
@@ -244,7 +248,8 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       }
       "consisting of two parts" in new TestSetup() {
         ResponseRenderingContext(
-          HttpResponse(200, entity = CloseDelimited(ContentTypes.`application/json`,
+          HttpResponse(200, entity = CloseDelimited(
+            ContentTypes.`application/json`,
             source(ByteString("abc"), ByteString("defg"))))) should renderTo(
             """HTTP/1.1 200 OK
               |Server: akka-http/1.0.0
@@ -283,7 +288,8 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       }
 
       "with one chunk and no explicit LastChunk" in new TestSetup() {
-        HttpResponse(entity = Chunked(ContentTypes.`text/plain(UTF-8)`,
+        HttpResponse(entity = Chunked(
+          ContentTypes.`text/plain(UTF-8)`,
           source("Yahoooo"))) should renderTo {
           """HTTP/1.1 200 OK
             |Server: akka-http/1.0.0
@@ -300,8 +306,10 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       }
 
       "with one chunk and an explicit LastChunk" in new TestSetup() {
-        HttpResponse(entity = Chunked(ContentTypes.`text/plain(UTF-8)`,
-          source(Chunk(ByteString("body123"), """key=value;another="tl;dr""""),
+        HttpResponse(entity = Chunked(
+          ContentTypes.`text/plain(UTF-8)`,
+          source(
+            Chunk(ByteString("body123"), """key=value;another="tl;dr""""),
             LastChunk("foo=bar", List(Age(30), RawHeader("Cache-Control", "public")))))) should renderTo {
           """HTTP/1.1 200 OK
             |Server: akka-http/1.0.0
@@ -320,8 +328,10 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       }
 
       "with one chunk and and extra LastChunks at the end (which should be ignored)" in new TestSetup() {
-        HttpResponse(entity = Chunked(ContentTypes.`text/plain(UTF-8)`,
-          source(Chunk(ByteString("body123"), """key=value;another="tl;dr""""),
+        HttpResponse(entity = Chunked(
+          ContentTypes.`text/plain(UTF-8)`,
+          source(
+            Chunk(ByteString("body123"), """key=value;another="tl;dr""""),
             LastChunk("foo=bar", List(Age(30), RawHeader("Cache-Control", "public"))), LastChunk))) should renderTo {
           """HTTP/1.1 200 OK
             |Server: akka-http/1.0.0
@@ -340,7 +350,8 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       }
 
       "with a custom Transfer-Encoding header" in new TestSetup() {
-        HttpResponse(headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
+        HttpResponse(
+          headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
           entity = Chunked(ContentTypes.`text/plain(UTF-8)`, source("Yahoooo"))) should renderTo {
             """HTTP/1.1 200 OK
               |Transfer-Encoding: fancy, chunked
@@ -361,7 +372,8 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       "with two chunks" in new TestSetup() {
         ResponseRenderingContext(
           requestProtocol = HttpProtocols.`HTTP/1.0`,
-          response = HttpResponse(entity = Chunked(ContentTypes.`application/json`,
+          response = HttpResponse(entity = Chunked(
+            ContentTypes.`application/json`,
             source(Chunk("abc"), Chunk("defg"))))) should renderTo(
             """HTTP/1.1 200 OK
               |Server: akka-http/1.0.0
@@ -375,8 +387,10 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       "with one chunk and an explicit LastChunk" in new TestSetup() {
         ResponseRenderingContext(
           requestProtocol = HttpProtocols.`HTTP/1.0`,
-          response = HttpResponse(entity = Chunked(ContentTypes.`text/plain(UTF-8)`,
-            source(Chunk(ByteString("body123"), """key=value;another="tl;dr""""),
+          response = HttpResponse(entity = Chunked(
+            ContentTypes.`text/plain(UTF-8)`,
+            source(
+              Chunk(ByteString("body123"), """key=value;another="tl;dr""""),
               LastChunk("foo=bar", List(Age(30), RawHeader("Cache-Control", "public"))))))) should renderTo(
             """HTTP/1.1 200 OK
               |Server: akka-http/1.0.0
@@ -559,9 +573,10 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       forAll(table)((reqProto, headReq, reqCH, resProto, resCH, resCD, renCH, close) ⇒
         ResponseRenderingContext(
           response = HttpResponse(200, headers = resCH.toList,
-            entity = if (resCD) HttpEntity.CloseDelimited(ContentTypes.`text/plain(UTF-8)`,
-              Source.single(ByteString("ENTITY")))
-            else HttpEntity("ENTITY"), protocol = resProto),
+            entity = if (resCD) HttpEntity.CloseDelimited(
+            ContentTypes.`text/plain(UTF-8)`,
+            Source.single(ByteString("ENTITY")))
+          else HttpEntity("ENTITY"), protocol = resProto),
           requestMethod = if (headReq) HttpMethods.HEAD else HttpMethods.GET,
           requestProtocol = reqProto,
           closeRequested = HttpMessage.connectionCloseExpected(reqProto, reqCH)) should renderTo(
@@ -582,10 +597,13 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
     def awaitAtMost: FiniteDuration = 3.seconds
 
     def renderTo(expected: String): Matcher[HttpResponse] =
-      renderTo(expected, close = false) compose (ResponseRenderingContext(_))
+      renderToImpl(expected, checkClose = None) compose (ResponseRenderingContext(_))
 
     def renderTo(expected: String, close: Boolean): Matcher[ResponseRenderingContext] =
-      equal(expected.stripMarginWithNewline("\r\n") -> close).matcher[(String, Boolean)] compose { ctx ⇒
+      renderToImpl(expected, checkClose = Some(close))
+
+    def renderToImpl(expected: String, checkClose: Option[Boolean]): Matcher[ResponseRenderingContext] =
+      equal(expected.stripMarginWithNewline("\r\n") → checkClose).matcher[(String, Option[Boolean])] compose { ctx ⇒
         val (wasCompletedFuture, resultFuture) =
           (Source.single(ctx) ++ Source.maybe[ResponseRenderingContext]) // never send upstream completion
             .via(renderer.named("renderer"))
@@ -597,15 +615,19 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
             .watchTermination()(Keep.right)
             .toMat(Sink.head)(Keep.both).run()
 
-        // we try to find out if the renderer has already flagged completion even without the upstream being completed
-        val wasCompleted =
-          try {
-            Await.ready(wasCompletedFuture, 100.millis)
-            true
-          } catch {
-            case NonFatal(_) ⇒ false
-          }
-        Await.result(resultFuture, awaitAtMost).reduceLeft(_ ++ _).utf8String -> wasCompleted
+        val wasCompleted: Option[Boolean] = checkClose match {
+          case None ⇒ None
+          case Some(close) ⇒
+            // we try to find out if the renderer has already flagged completion even without the upstream being completed
+            try {
+              Await.ready(wasCompletedFuture, 100.millis)
+              Some(true)
+            } catch {
+              case NonFatal(_) ⇒ Some(false)
+            }
+        }
+
+        Await.result(resultFuture, awaitAtMost).reduceLeft(_ ++ _).utf8String → wasCompleted
       }
 
     override def currentTimeMillis() = DateTime(2011, 8, 25, 9, 10, 29).clicks // provide a stable date for testing

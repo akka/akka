@@ -35,9 +35,9 @@ class RequestContext private (val delegate: scaladsl.server.RequestContext) {
 
   def reconfigure(
     executionContext: ExecutionContextExecutor,
-    materializer: Materializer,
-    log: LoggingAdapter,
-    settings: RoutingSettings): RequestContext = wrap(delegate.reconfigure(executionContext, materializer, log, settings.asScala))
+    materializer:     Materializer,
+    log:              LoggingAdapter,
+    settings:         RoutingSettings): RequestContext = wrap(delegate.reconfigure(executionContext, materializer, log, settings.asScala))
 
   def complete[T](value: T, marshaller: Marshaller[T, HttpResponse]): CompletionStage[RouteResult] = {
     delegate.complete(ToResponseMarshallable(value)(marshaller))

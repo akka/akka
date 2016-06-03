@@ -26,6 +26,7 @@ import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
+import akka.testkit.AkkaJUnitActorSystemResource;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;

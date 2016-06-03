@@ -35,14 +35,14 @@ class VotingService extends Actor {
   replicator ! Subscribe(OpenedKey, self)
 
   def receive = {
-    case Open ⇒
+    case Open =>
       replicator ! Update(OpenedKey, Flag(), WriteAll(5.seconds))(_.switchOn)
       becomeOpen()
 
-    case c @ Changed(OpenedKey) if c.get(OpenedKey).enabled ⇒
+    case c @ Changed(OpenedKey) if c.get(OpenedKey).enabled =>
       becomeOpen()
 
-    case GetVotes ⇒
+    case GetVotes =>
       sender() ! Votes(Map.empty, open = false)
   }
 
@@ -53,36 +53,36 @@ class VotingService extends Actor {
   }
 
   def open: Receive = {
-    case v @ Vote(participant) ⇒
+    case v @ Vote(participant) =>
       val update = Update(CountersKey, PNCounterMap(), WriteLocal, request = Some(v)) {
         _.increment(participant, 1)
       }
       replicator ! update
 
-    case _: UpdateSuccess[_] ⇒
+    case _: UpdateSuccess[_] =>
 
-    case Close ⇒
+    case Close =>
       replicator ! Update(ClosedKey, Flag(), WriteAll(5.seconds))(_.switchOn)
       context.become(getVotes(open = false))
 
-    case c @ Changed(ClosedKey) if c.get(ClosedKey).enabled ⇒
+    case c @ Changed(ClosedKey) if c.get(ClosedKey).enabled =>
       context.become(getVotes(open = false))
   }
 
   def getVotes(open: Boolean): Receive = {
-    case GetVotes ⇒
+    case GetVotes =>
       replicator ! Get(CountersKey, ReadAll(3.seconds), Some(GetVotesReq(sender())))
 
-    case g @ GetSuccess(CountersKey, Some(GetVotesReq(replyTo))) ⇒
+    case g @ GetSuccess(CountersKey, Some(GetVotesReq(replyTo))) =>
       val data = g.get(CountersKey)
       replyTo ! Votes(data.entries, open)
 
-    case NotFound(CountersKey, Some(GetVotesReq(replyTo))) ⇒
+    case NotFound(CountersKey, Some(GetVotesReq(replyTo))) =>
       replyTo ! Votes(Map.empty, open)
 
-    case _: GetFailure[_]    ⇒
+    case _: GetFailure[_]    =>
 
-    case _: UpdateSuccess[_] ⇒
+    case _: UpdateSuccess[_] =>
   }
 
 }

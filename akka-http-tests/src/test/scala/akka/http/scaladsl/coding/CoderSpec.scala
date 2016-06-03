@@ -66,7 +66,7 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
     }
     "properly round-trip encode/decode an HttpRequest" in {
       val request = HttpRequest(POST, entity = HttpEntity(largeText))
-      Coder.decode(Coder.encode(request)).toStrict(1.second).awaitResult(1.second) should equal(request)
+      Coder.decode(Coder.encode(request)).toStrict(3.seconds).awaitResult(3.seconds) should equal(request)
     }
 
     if (corruptInputCheck) {
@@ -121,7 +121,7 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
         Source.single(compressed)
           .via(Coder.withMaxBytesPerChunk(limit).decoderFlow)
           .limit(4200).runWith(Sink.seq)
-          .awaitResult(1.second)
+          .awaitResult(3.seconds)
 
       forAll(resultBs) { bs ⇒
         bs.length should be < limit
@@ -145,7 +145,7 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
           .via(Coder.decoderFlow)
           .runFold(Seq.empty[Int])(_ :+ _.size)
 
-      sizes shouldEqual sizesAfterRoundtrip.awaitResult(1.second)
+      sizes shouldEqual sizesAfterRoundtrip.awaitResult(3.seconds)
     }
 
     extraTests()
@@ -153,7 +153,7 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
 
   def encode(s: String) = ourEncode(ByteString(s, "UTF8"))
   def ourEncode(bytes: ByteString): ByteString = Coder.encode(bytes)
-  def ourDecode(bytes: ByteString): ByteString = Coder.decode(bytes).awaitResult(1.second)
+  def ourDecode(bytes: ByteString): ByteString = Coder.decode(bytes).awaitResult(3.seconds)
 
   lazy val corruptContent = {
     val content = encode(largeText).toArray

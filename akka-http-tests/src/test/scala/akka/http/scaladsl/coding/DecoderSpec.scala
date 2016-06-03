@@ -27,12 +27,12 @@ class DecoderSpec extends WordSpec with CodecSpecSupport {
       val request = HttpRequest(POST, entity = HttpEntity(smallText), headers = List(`Content-Encoding`(DummyDecoder.encoding)))
       val decoded = DummyDecoder.decode(request)
       decoded.headers shouldEqual Nil
-      decoded.entity.toStrict(1.second).awaitResult(1.second) shouldEqual HttpEntity(dummyDecompress(smallText))
+      decoded.entity.toStrict(3.seconds).awaitResult(3.seconds) shouldEqual HttpEntity(dummyDecompress(smallText))
     }
   }
 
   def dummyDecompress(s: String): String = dummyDecompress(ByteString(s, "UTF8")).decodeString("UTF8")
-  def dummyDecompress(bytes: ByteString): ByteString = DummyDecoder.decode(bytes).awaitResult(1.second)
+  def dummyDecompress(bytes: ByteString): ByteString = DummyDecoder.decode(bytes).awaitResult(3.seconds)
 
   case object DummyDecoder extends StreamDecoder {
     val encoding = HttpEncodings.compress

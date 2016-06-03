@@ -22,7 +22,7 @@ object MiMa extends AutoPlugin {
     val versions = {
       val akka23Versions = Seq("2.3.11", "2.3.12", "2.3.13", "2.3.14", "2.3.15")
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
-      val akka24StreamVersions = Seq("2.4.2", "2.4.3", "2.4.4")
+      val akka24StreamVersions = Seq("2.4.2", "2.4.3", "2.4.4", "2.4.6")
       val akka24NewArtifacts = Seq(
         "akka-cluster-sharding",
         "akka-cluster-tools",
@@ -834,7 +834,7 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.fsm.PersistentFSM.saveStateSnapshot"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.fsm.PersistentFSM.akka$persistence$fsm$PersistentFSM$$currentStateTimeout"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.fsm.PersistentFSM.akka$persistence$fsm$PersistentFSM$$currentStateTimeout_="),
-        
+
         // #19834
         ProblemFilters.exclude[MissingTypesProblem]("akka.stream.extra.Timed$StartTimed"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.extra.Timed#StartTimed.onPush"),
@@ -849,6 +849,37 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.client.ClusterClient.contacts_="),
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.client.ClusterClient.contacts"),
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.client.ClusterClient.initialContactsSel")
+      ),
+      "2.4.6" -> Seq(
+        // internal api
+        FilterAnyProblemStartingWith("akka.stream.impl"),
+
+        // #20214 SNI disabling for single connections (AkkaSSLConfig being passed around)
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.ConnectionContext.sslConfig"), // class meant only for internal extension 
+        
+        //#20229 migrate GroupBy to GraphStage
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Builder.deprecatedAndThen"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.deprecatedAndThen"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.deprecatedAndThenMat"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.deprecatedAndThen"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOps.deprecatedAndThen"),
+
+        // #20367 Converts DelimiterFramingStage from PushPullStage to GraphStage
+        ProblemFilters.exclude[MissingTypesProblem]("akka.stream.scaladsl.Framing$DelimiterFramingStage"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Framing#DelimiterFramingStage.onPush"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Framing#DelimiterFramingStage.onUpstreamFinish"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Framing#DelimiterFramingStage.onPull"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Framing#DelimiterFramingStage.postStop"),
+
+        // #20345 converts LengthFieldFramingStage to GraphStage
+        ProblemFilters.exclude[MissingTypesProblem]("akka.stream.scaladsl.Framing$LengthFieldFramingStage"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Framing#LengthFieldFramingStage.onPush"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Framing#LengthFieldFramingStage.onUpstreamFinish"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Framing#LengthFieldFramingStage.onPull"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Framing#LengthFieldFramingStage.postStop"),
+        
+        // #20531 adding refuseUid to Gated
+        FilterAnyProblem("akka.remote.EndpointManager$Gated")
       )
     )
   }

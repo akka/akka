@@ -9,6 +9,7 @@ import akka.testkit.AkkaSpec;
 import akka.util.ByteString;
 import org.junit.ClassRule;
 import org.junit.Test;
+import akka.testkit.AkkaJUnitActorSystemResource;
 
 public class FramingTest extends StreamTest {
   public FramingTest() {

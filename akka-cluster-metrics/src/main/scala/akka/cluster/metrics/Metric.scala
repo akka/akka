@@ -207,12 +207,12 @@ object StandardMetrics {
    */
   @SerialVersionUID(1L)
   final case class Cpu(
-    address: Address,
-    timestamp: Long,
+    address:           Address,
+    timestamp:         Long,
     systemLoadAverage: Option[Double],
-    cpuCombined: Option[Double],
-    cpuStolen: Option[Double],
-    processors: Int) {
+    cpuCombined:       Option[Double],
+    cpuStolen:         Option[Double],
+    processors:        Int) {
 
     cpuCombined match {
       case Some(x) ⇒ require(0.0 <= x && x <= 1.0, s"cpuCombined must be between [0.0 - 1.0], was [$x]")

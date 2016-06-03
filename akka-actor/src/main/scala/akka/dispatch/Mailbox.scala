@@ -54,7 +54,7 @@ private[akka] object Mailbox {
  * INTERNAL API
  */
 private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
-    extends ForkJoinTask[Unit] with SystemMessageQueue with Runnable {
+  extends ForkJoinTask[Unit] with SystemMessageQueue with Runnable {
 
   import Mailbox._
 
@@ -248,7 +248,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    * Process the messages in the mailbox
    */
   @tailrec private final def processMailbox(
-    left: Int = java.lang.Math.max(dispatcher.throughput, 1),
+    left:       Int  = java.lang.Math.max(dispatcher.throughput, 1),
     deadlineNs: Long = if (dispatcher.isThroughputDeadlineTimeDefined == true) System.nanoTime + dispatcher.throughputDeadlineTime.toNanos else 0L): Unit =
     if (shouldProcessMessage) {
       val next = dequeue()
@@ -391,7 +391,7 @@ class NodeMessageQueue extends AbstractNodeQueue[Envelope] with MessageQueue wit
  * Discards overflowing messages into DeadLetters.
  */
 class BoundedNodeMessageQueue(capacity: Int) extends AbstractBoundedNodeQueue[Envelope](capacity)
-    with MessageQueue with BoundedMessageQueueSemantics with MultipleConsumerSemantics {
+  with MessageQueue with BoundedMessageQueueSemantics with MultipleConsumerSemantics {
   final def pushTimeOut: Duration = Duration.Undefined
 
   final def enqueue(receiver: ActorRef, handle: Envelope): Unit =
@@ -654,10 +654,11 @@ case class NonBlockingBoundedMailbox(val capacity: Int) extends MailboxType with
  * BoundedMailbox is the default bounded MailboxType used by Akka Actors.
  */
 final case class BoundedMailbox(val capacity: Int, override val pushTimeOut: FiniteDuration)
-    extends MailboxType with ProducesMessageQueue[BoundedMailbox.MessageQueue]
-    with ProducesPushTimeoutSemanticsMailbox {
+  extends MailboxType with ProducesMessageQueue[BoundedMailbox.MessageQueue]
+  with ProducesPushTimeoutSemanticsMailbox {
 
-  def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),
+  def this(settings: ActorSystem.Settings, config: Config) = this(
+    config.getInt("mailbox-capacity"),
     config.getNanosDuration("mailbox-push-timeout-time"))
 
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
@@ -669,7 +670,7 @@ final case class BoundedMailbox(val capacity: Int, override val pushTimeOut: Fin
 
 object BoundedMailbox {
   class MessageQueue(capacity: Int, final val pushTimeOut: FiniteDuration)
-      extends LinkedBlockingQueue[Envelope](capacity) with BoundedQueueBasedMessageQueue {
+    extends LinkedBlockingQueue[Envelope](capacity) with BoundedQueueBasedMessageQueue {
     final def queue: BlockingQueue[Envelope] = this
   }
 }
@@ -679,7 +680,7 @@ object BoundedMailbox {
  * Extend this class and provide the Comparator in the constructor.
  */
 class UnboundedPriorityMailbox(val cmp: Comparator[Envelope], val initialCapacity: Int)
-    extends MailboxType with ProducesMessageQueue[UnboundedPriorityMailbox.MessageQueue] {
+  extends MailboxType with ProducesMessageQueue[UnboundedPriorityMailbox.MessageQueue] {
   def this(cmp: Comparator[Envelope]) = this(cmp, 11)
   final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
     new UnboundedPriorityMailbox.MessageQueue(initialCapacity, cmp)
@@ -687,7 +688,7 @@ class UnboundedPriorityMailbox(val cmp: Comparator[Envelope], val initialCapacit
 
 object UnboundedPriorityMailbox {
   class MessageQueue(initialCapacity: Int, cmp: Comparator[Envelope])
-      extends PriorityBlockingQueue[Envelope](initialCapacity, cmp) with UnboundedQueueBasedMessageQueue {
+    extends PriorityBlockingQueue[Envelope](initialCapacity, cmp) with UnboundedQueueBasedMessageQueue {
     final def queue: Queue[Envelope] = this
   }
 }
@@ -697,8 +698,8 @@ object UnboundedPriorityMailbox {
  * Extend this class and provide the Comparator in the constructor.
  */
 class BoundedPriorityMailbox( final val cmp: Comparator[Envelope], final val capacity: Int, override final val pushTimeOut: Duration)
-    extends MailboxType with ProducesMessageQueue[BoundedPriorityMailbox.MessageQueue]
-    with ProducesPushTimeoutSemanticsMailbox {
+  extends MailboxType with ProducesMessageQueue[BoundedPriorityMailbox.MessageQueue]
+  with ProducesPushTimeoutSemanticsMailbox {
 
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
@@ -709,8 +710,8 @@ class BoundedPriorityMailbox( final val cmp: Comparator[Envelope], final val cap
 
 object BoundedPriorityMailbox {
   class MessageQueue(capacity: Int, cmp: Comparator[Envelope], val pushTimeOut: Duration)
-      extends BoundedBlockingQueue[Envelope](capacity, new PriorityQueue[Envelope](11, cmp))
-      with BoundedQueueBasedMessageQueue {
+    extends BoundedBlockingQueue[Envelope](capacity, new PriorityQueue[Envelope](11, cmp))
+    with BoundedQueueBasedMessageQueue {
     final def queue: BlockingQueue[Envelope] = this
   }
 }
@@ -721,7 +722,7 @@ object BoundedPriorityMailbox {
  * Extend this class and provide the Comparator in the constructor.
  */
 class UnboundedStablePriorityMailbox(val cmp: Comparator[Envelope], val initialCapacity: Int)
-    extends MailboxType with ProducesMessageQueue[UnboundedStablePriorityMailbox.MessageQueue] {
+  extends MailboxType with ProducesMessageQueue[UnboundedStablePriorityMailbox.MessageQueue] {
   def this(cmp: Comparator[Envelope]) = this(cmp, 11)
   final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
     new UnboundedStablePriorityMailbox.MessageQueue(initialCapacity, cmp)
@@ -729,7 +730,7 @@ class UnboundedStablePriorityMailbox(val cmp: Comparator[Envelope], val initialC
 
 object UnboundedStablePriorityMailbox {
   class MessageQueue(initialCapacity: Int, cmp: Comparator[Envelope])
-      extends StablePriorityBlockingQueue[Envelope](initialCapacity, cmp) with UnboundedQueueBasedMessageQueue {
+    extends StablePriorityBlockingQueue[Envelope](initialCapacity, cmp) with UnboundedQueueBasedMessageQueue {
     final def queue: Queue[Envelope] = this
   }
 }
@@ -740,8 +741,8 @@ object UnboundedStablePriorityMailbox {
  * Extend this class and provide the Comparator in the constructor.
  */
 class BoundedStablePriorityMailbox( final val cmp: Comparator[Envelope], final val capacity: Int, override final val pushTimeOut: Duration)
-    extends MailboxType with ProducesMessageQueue[BoundedStablePriorityMailbox.MessageQueue]
-    with ProducesPushTimeoutSemanticsMailbox {
+  extends MailboxType with ProducesMessageQueue[BoundedStablePriorityMailbox.MessageQueue]
+  with ProducesPushTimeoutSemanticsMailbox {
 
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
@@ -752,8 +753,8 @@ class BoundedStablePriorityMailbox( final val cmp: Comparator[Envelope], final v
 
 object BoundedStablePriorityMailbox {
   class MessageQueue(capacity: Int, cmp: Comparator[Envelope], val pushTimeOut: Duration)
-      extends BoundedBlockingQueue[Envelope](capacity, new StablePriorityQueue[Envelope](11, cmp))
-      with BoundedQueueBasedMessageQueue {
+    extends BoundedBlockingQueue[Envelope](capacity, new StablePriorityQueue[Envelope](11, cmp))
+    with BoundedQueueBasedMessageQueue {
     final def queue: BlockingQueue[Envelope] = this
   }
 }
@@ -779,10 +780,11 @@ object UnboundedDequeBasedMailbox {
  * BoundedDequeBasedMailbox is an bounded MailboxType, backed by a Deque.
  */
 case class BoundedDequeBasedMailbox( final val capacity: Int, override final val pushTimeOut: FiniteDuration)
-    extends MailboxType with ProducesMessageQueue[BoundedDequeBasedMailbox.MessageQueue]
-    with ProducesPushTimeoutSemanticsMailbox {
+  extends MailboxType with ProducesMessageQueue[BoundedDequeBasedMailbox.MessageQueue]
+  with ProducesPushTimeoutSemanticsMailbox {
 
-  def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),
+  def this(settings: ActorSystem.Settings, config: Config) = this(
+    config.getInt("mailbox-capacity"),
     config.getNanosDuration("mailbox-push-timeout-time"))
 
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedDequeBasedMailbox can not be negative")
@@ -794,7 +796,7 @@ case class BoundedDequeBasedMailbox( final val capacity: Int, override final val
 
 object BoundedDequeBasedMailbox {
   class MessageQueue(capacity: Int, val pushTimeOut: FiniteDuration)
-      extends LinkedBlockingDeque[Envelope](capacity) with BoundedDequeBasedMessageQueue {
+    extends LinkedBlockingDeque[Envelope](capacity) with BoundedDequeBasedMessageQueue {
     final val queue = this
   }
 }
@@ -856,9 +858,10 @@ object UnboundedControlAwareMailbox {
  * to allow messages that extend [[akka.dispatch.ControlMessage]] to be delivered with priority.
  */
 final case class BoundedControlAwareMailbox(capacity: Int, override final val pushTimeOut: FiniteDuration) extends MailboxType
-    with ProducesMessageQueue[BoundedControlAwareMailbox.MessageQueue]
-    with ProducesPushTimeoutSemanticsMailbox {
-  def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),
+  with ProducesMessageQueue[BoundedControlAwareMailbox.MessageQueue]
+  with ProducesPushTimeoutSemanticsMailbox {
+  def this(settings: ActorSystem.Settings, config: Config) = this(
+    config.getInt("mailbox-capacity"),
     config.getNanosDuration("mailbox-push-timeout-time"))
 
   def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue = new BoundedControlAwareMailbox.MessageQueue(capacity, pushTimeOut)

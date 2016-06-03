@@ -9,31 +9,35 @@ import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 object Formatting {
-  lazy val formatSettings = SbtScalariform.scalariformSettings ++ Seq(
-    ScalariformKeys.preferences in Compile  := formattingPreferences,
-    ScalariformKeys.preferences in Test     := formattingPreferences,
-    ScalariformKeys.preferences in MultiJvm := formattingPreferences
+  lazy val formatSettings = Seq(
+    ScalariformKeys.preferences in Compile  <<= formattingPreferences,
+    ScalariformKeys.preferences in Test     <<= formattingPreferences,
+    ScalariformKeys.preferences in MultiJvm <<= formattingPreferences
   )
 
-  lazy val docFormatSettings = SbtScalariform.scalariformSettings ++ Seq(
-    ScalariformKeys.preferences in Compile  := docFormattingPreferences,
-    ScalariformKeys.preferences in Test     := docFormattingPreferences,
-    ScalariformKeys.preferences in MultiJvm := docFormattingPreferences
+  lazy val docFormatSettings = Seq(
+    ScalariformKeys.preferences in Compile  <<= docFormattingPreferences,
+    ScalariformKeys.preferences in Test     <<= docFormattingPreferences,
+    ScalariformKeys.preferences in MultiJvm <<= docFormattingPreferences
   )
 
-  def formattingPreferences = {
+  def formattingPreferences = Def.setting {
     import scalariform.formatter.preferences._
-    FormattingPreferences()
+    ScalariformKeys.preferences.value
       .setPreference(RewriteArrowSymbols, true)
       .setPreference(AlignParameters, true)
       .setPreference(AlignSingleLineCaseStatements, true)
+      .setPreference(DanglingCloseParenthesis, Preserve)
+      .setPreference(DoubleIndentClassDeclaration, false)
   }
 
-  def docFormattingPreferences = {
+  def docFormattingPreferences = Def.setting {
     import scalariform.formatter.preferences._
-    FormattingPreferences()
+    ScalariformKeys.preferences.value
       .setPreference(RewriteArrowSymbols, false)
       .setPreference(AlignParameters, true)
       .setPreference(AlignSingleLineCaseStatements, true)
+      .setPreference(DanglingCloseParenthesis, Preserve)
+      .setPreference(DoubleIndentClassDeclaration, false)
   }
 }

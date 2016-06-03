@@ -121,7 +121,8 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#typed-actor-create1
     //#typed-actor-create2
     val otherSquarer: Squarer =
-      TypedActor(system).typedActorOf(TypedProps(classOf[Squarer],
+      TypedActor(system).typedActorOf(TypedProps(
+        classOf[Squarer],
         new SquarerImpl("foo")), "name")
     //#typed-actor-create2
 

@@ -34,13 +34,14 @@ import java.lang.{ StringBuilder ⇒ JStringBuilder }
  *                   Set to a value < 0 to disable tab expansion.
  * @param traceCutOff the maximum number of (trailing) characters shown for a rule trace
  */
-class ErrorFormatter(showExpected: Boolean = true,
-                     showPosition: Boolean = true,
-                     showLine: Boolean = true,
-                     showTraces: Boolean = false,
-                     showFrameStartOffset: Boolean = true,
-                     expandTabs: Int = -1,
-                     traceCutOff: Int = 120) {
+class ErrorFormatter(
+  showExpected:         Boolean = true,
+  showPosition:         Boolean = true,
+  showLine:             Boolean = true,
+  showTraces:           Boolean = false,
+  showFrameStartOffset: Boolean = true,
+  expandTabs:           Int     = -1,
+  traceCutOff:          Int     = 120) {
 
   /**
    * Formats the given [[ParseError]] into a String using the settings configured for this formatter instance.
@@ -225,8 +226,9 @@ class ErrorFormatter(showExpected: Boolean = true,
   /**
    * Formats the head element of a [[RuleTrace]] into a String.
    */
-  def formatNonTerminal(nonTerminal: RuleTrace.NonTerminal,
-                        showFrameStartOffset: Boolean = showFrameStartOffset): String = {
+  def formatNonTerminal(
+    nonTerminal:          RuleTrace.NonTerminal,
+    showFrameStartOffset: Boolean               = showFrameStartOffset): String = {
     import RuleTrace._
     import CharUtils.escape
     val keyString = nonTerminal.key match {

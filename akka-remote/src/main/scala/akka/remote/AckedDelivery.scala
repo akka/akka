@@ -90,8 +90,8 @@ class ResendUnfulfillableException
 final case class AckedSendBuffer[T <: HasSequenceNumber](
   capacity: Int,
   nonAcked: IndexedSeq[T] = Vector.empty[T],
-  nacked: IndexedSeq[T] = Vector.empty[T],
-  maxSeq: SeqNo = SeqNo(-1)) {
+  nacked:   IndexedSeq[T] = Vector.empty[T],
+  maxSeq:   SeqNo         = SeqNo(-1)) {
 
   /**
    * Processes an incoming acknowledgement and returns a new buffer with only unacknowledged elements remaining.
@@ -137,9 +137,9 @@ final case class AckedSendBuffer[T <: HasSequenceNumber](
  * @param buf Buffer of messages that are waiting for delivery
  */
 final case class AckedReceiveBuffer[T <: HasSequenceNumber](
-  lastDelivered: SeqNo = SeqNo(-1),
-  cumulativeAck: SeqNo = SeqNo(-1),
-  buf: SortedSet[T] = TreeSet.empty[T])(implicit val seqOrdering: Ordering[T]) {
+  lastDelivered: SeqNo        = SeqNo(-1),
+  cumulativeAck: SeqNo        = SeqNo(-1),
+  buf:           SortedSet[T] = TreeSet.empty[T])(implicit val seqOrdering: Ordering[T]) {
 
   import SeqNo.ord.max
 

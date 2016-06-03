@@ -220,17 +220,16 @@ class ActorGraphInterpreterSpec extends AkkaSpec {
 
       val takeAll = Flow[Int].grouped(200).toMat(Sink.head)(Keep.right)
 
-      val (f1, f2) = RunnableGraph.fromGraph(GraphDSL.create(takeAll, takeAll)(Keep.both) { implicit b ⇒
-        (out1, out2) ⇒
-          import GraphDSL.Implicits._
-          val bidi = b.add(rotatedBidi)
+      val (f1, f2) = RunnableGraph.fromGraph(GraphDSL.create(takeAll, takeAll)(Keep.both) { implicit b ⇒ (out1, out2) ⇒
+        import GraphDSL.Implicits._
+        val bidi = b.add(rotatedBidi)
 
-          Source(1 to 10) ~> bidi.in1
-          out2 <~ bidi.out2
+        Source(1 to 10) ~> bidi.in1
+        out2 <~ bidi.out2
 
-          bidi.in2 <~ Source(1 to 100)
-          bidi.out1 ~> out1
-          ClosedShape
+        bidi.in2 <~ Source(1 to 100)
+        bidi.out1 ~> out1
+        ClosedShape
       }).run()
 
       Await.result(f1, 3.seconds) should ===(1 to 100)

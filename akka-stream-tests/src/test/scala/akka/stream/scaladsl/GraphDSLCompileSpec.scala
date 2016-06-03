@@ -200,7 +200,7 @@ class GraphDSLCompileSpec extends AkkaSpec {
         val unzip = b.add(Unzip[Int, String]())
         val out = Sink.asPublisher[(Int, String)](false)
         import GraphDSL.Implicits._
-        Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
+        Source(List(1 → "a", 2 → "b", 3 → "c")) ~> unzip.in
         unzip.out0 ~> Flow[Int].map(_ * 2) ~> zip.in0
         unzip.out1 ~> zip.in1
         zip.out ~> out
@@ -298,7 +298,7 @@ class GraphDSLCompileSpec extends AkkaSpec {
         b.add(Source.fromIterator(apples)) ~> Flow[Apple] ~> b.add(Sink.asPublisher[Fruit](false))
         appleSource ~> Flow[Apple] ~> merge.in(10)
 
-        Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
+        Source(List(1 → "a", 2 → "b", 3 → "c")) ~> unzip.in
         unzip.out1 ~> whatever
         unzip.out0 ~> b.add(Sink.asPublisher[Any](false))
 

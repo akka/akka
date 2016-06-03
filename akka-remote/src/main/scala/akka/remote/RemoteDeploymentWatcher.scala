@@ -30,7 +30,7 @@ private[akka] class RemoteDeploymentWatcher extends Actor with RequiresMessageQu
 
   def receive = {
     case WatchRemote(a, supervisor: InternalActorRef) ⇒
-      supervisors += (a -> supervisor)
+      supervisors += (a → supervisor)
       context.watch(a)
 
     case t @ Terminated(a) if supervisors isDefinedAt a ⇒

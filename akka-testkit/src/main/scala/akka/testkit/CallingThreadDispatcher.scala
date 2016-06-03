@@ -52,16 +52,16 @@ private[testkit] class CallingThreadDispatcherQueues extends Extension {
     queues = (Map.newBuilder[CallingThreadMailbox, Set[WeakReference[MessageQueue]]] /: queues) {
       case (m, (k, v)) ⇒
         val nv = v filter (_.get ne null)
-        if (nv.isEmpty) m else m += (k -> nv)
+        if (nv.isEmpty) m else m += (k → nv)
     }.result
   }
 
   protected[akka] def registerQueue(mbox: CallingThreadMailbox, q: MessageQueue): Unit = synchronized {
     if (queues contains mbox) {
       val newSet = queues(mbox) + new WeakReference(q)
-      queues += mbox -> newSet
+      queues += mbox → newSet
     } else {
-      queues += mbox -> Set(new WeakReference(q))
+      queues += mbox → Set(new WeakReference(q))
     }
     val now = System.nanoTime
     if (now - lastGC > 1000000000l) {

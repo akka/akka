@@ -31,18 +31,17 @@ class StreamPartialGraphDSLDocSpec extends AkkaSpec {
 
     val resultSink = Sink.head[Int]
 
-    val g = RunnableGraph.fromGraph(GraphDSL.create(resultSink) { implicit b =>
-      sink =>
-        import GraphDSL.Implicits._
+    val g = RunnableGraph.fromGraph(GraphDSL.create(resultSink) { implicit b => sink =>
+      import GraphDSL.Implicits._
 
-        // importing the partial graph will return its shape (inlets & outlets)
-        val pm3 = b.add(pickMaxOfThree)
+      // importing the partial graph will return its shape (inlets & outlets)
+      val pm3 = b.add(pickMaxOfThree)
 
-        Source.single(1) ~> pm3.in(0)
-        Source.single(2) ~> pm3.in(1)
-        Source.single(3) ~> pm3.in(2)
-        pm3.out ~> sink.in
-        ClosedShape
+      Source.single(1) ~> pm3.in(0)
+      Source.single(2) ~> pm3.in(1)
+      Source.single(3) ~> pm3.in(2)
+      pm3.out ~> sink.in
+      ClosedShape
     })
 
     val max: Future[Int] = g.run()

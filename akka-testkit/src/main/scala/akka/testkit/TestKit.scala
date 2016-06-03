@@ -123,8 +123,9 @@ trait TestKitBase {
    */
   val testActor: ActorRef = {
     val impl = system.asInstanceOf[ExtendedActorSystem]
-    val ref = impl.systemActorOf(TestActor.props(queue)
-      .withDispatcher(CallingThreadDispatcher.Id),
+    val ref = impl.systemActorOf(
+      TestActor.props(queue)
+        .withDispatcher(CallingThreadDispatcher.Id),
       "%s-%d".format(testActorName, TestKit.testActorId.incrementAndGet))
     awaitCond(ref match {
       case r: RepointableRef ⇒ r.isStarted
@@ -500,7 +501,8 @@ trait TestKitBase {
 
   private def checkMissingAndUnexpected(missing: Seq[Any], unexpected: Seq[Any],
                                         missingMessage: String, unexpectedMessage: String): Unit = {
-    assert(missing.isEmpty && unexpected.isEmpty,
+    assert(
+      missing.isEmpty && unexpected.isEmpty,
       (if (missing.isEmpty) "" else missing.mkString(missingMessage + " [", ", ", "] ")) +
         (if (unexpected.isEmpty) "" else unexpected.mkString(unexpectedMessage + " [", ", ", "]")))
   }
@@ -679,9 +681,10 @@ trait TestKitBase {
    *
    * If verifySystemShutdown is true, then an exception will be thrown on failure.
    */
-  def shutdown(actorSystem: ActorSystem = system,
-               duration: Duration = 5.seconds.dilated.min(10.seconds),
-               verifySystemShutdown: Boolean = false) {
+  def shutdown(
+    actorSystem:          ActorSystem = system,
+    duration:             Duration    = 5.seconds.dilated.min(10.seconds),
+    verifySystemShutdown: Boolean     = false) {
     TestKit.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
   }
 
@@ -771,9 +774,10 @@ object TestKit {
    *
    * If verifySystemShutdown is true, then an exception will be thrown on failure.
    */
-  def shutdownActorSystem(actorSystem: ActorSystem,
-                          duration: Duration = 10.seconds,
-                          verifySystemShutdown: Boolean = false): Unit = {
+  def shutdownActorSystem(
+    actorSystem:          ActorSystem,
+    duration:             Duration    = 10.seconds,
+    verifySystemShutdown: Boolean     = false): Unit = {
     actorSystem.terminate()
     try Await.ready(actorSystem.whenTerminated, duration) catch {
       case _: TimeoutException ⇒

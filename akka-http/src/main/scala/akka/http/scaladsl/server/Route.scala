@@ -23,8 +23,9 @@ object Route {
   /**
    * "Seals" a route by wrapping it with exception handling and rejection conversion.
    */
-  def seal(route: Route)(implicit routingSettings: RoutingSettings,
-                         parserSettings: ParserSettings = null,
+  def seal(route: Route)(implicit
+    routingSettings: RoutingSettings,
+                         parserSettings:   ParserSettings   = null,
                          rejectionHandler: RejectionHandler = RejectionHandler.default,
                          exceptionHandler: ExceptionHandler = null): Route = {
     import directives.ExecutionDirectives._
@@ -40,25 +41,27 @@ object Route {
    *
    * This conversion is also implicitly available through [[RouteResult#route2HandlerFlow]].
    */
-  def handlerFlow(route: Route)(implicit routingSettings: RoutingSettings,
-                                parserSettings: ParserSettings,
-                                materializer: Materializer,
-                                routingLog: RoutingLog,
+  def handlerFlow(route: Route)(implicit
+    routingSettings: RoutingSettings,
+                                parserSettings:   ParserSettings,
+                                materializer:     Materializer,
+                                routingLog:       RoutingLog,
                                 executionContext: ExecutionContextExecutor = null,
-                                rejectionHandler: RejectionHandler = RejectionHandler.default,
-                                exceptionHandler: ExceptionHandler = null): Flow[HttpRequest, HttpResponse, NotUsed] =
+                                rejectionHandler: RejectionHandler         = RejectionHandler.default,
+                                exceptionHandler: ExceptionHandler         = null): Flow[HttpRequest, HttpResponse, NotUsed] =
     Flow[HttpRequest].mapAsync(1)(asyncHandler(route))
 
   /**
    * Turns a `Route` into an async handler function.
    */
-  def asyncHandler(route: Route)(implicit routingSettings: RoutingSettings,
-                                 parserSettings: ParserSettings,
-                                 materializer: Materializer,
-                                 routingLog: RoutingLog,
+  def asyncHandler(route: Route)(implicit
+    routingSettings: RoutingSettings,
+                                 parserSettings:   ParserSettings,
+                                 materializer:     Materializer,
+                                 routingLog:       RoutingLog,
                                  executionContext: ExecutionContextExecutor = null,
-                                 rejectionHandler: RejectionHandler = RejectionHandler.default,
-                                 exceptionHandler: ExceptionHandler = null): HttpRequest ⇒ Future[HttpResponse] = {
+                                 rejectionHandler: RejectionHandler         = RejectionHandler.default,
+                                 exceptionHandler: ExceptionHandler         = null): HttpRequest ⇒ Future[HttpResponse] = {
     val effectiveEC = if (executionContext ne null) executionContext else materializer.executionContext
 
     {

@@ -46,7 +46,8 @@ sealed class Rule[-I <: HList, +O <: HList] extends RuleX {
    *   Rule[A, B:C] ~ Rule[D:B:C, E:F] = Rule[D:A, E:F]
    */
   @compileTimeOnly("Calls to `~` must be inside `rule` macro")
-  def ~[I2 <: HList, O2 <: HList](that: Rule[I2, O2])(implicit i: TailSwitch[I2, O @uncheckedVariance, I @uncheckedVariance],
+  def ~[I2 <: HList, O2 <: HList](that: Rule[I2, O2])(implicit
+    i: TailSwitch[I2, O @uncheckedVariance, I @uncheckedVariance],
                                                       o: TailSwitch[O @uncheckedVariance, I2, O2]): Rule[i.Out, o.Out] = `n/a`
 
   /**
@@ -54,7 +55,8 @@ sealed class Rule[-I <: HList, +O <: HList] extends RuleX {
    * If the rule being concatenated doesn't match a parse error will be triggered immediately.
    */
   @compileTimeOnly("Calls to `~!~` must be inside `rule` macro")
-  def ~!~[I2 <: HList, O2 <: HList](that: Rule[I2, O2])(implicit i: TailSwitch[I2, O @uncheckedVariance, I @uncheckedVariance],
+  def ~!~[I2 <: HList, O2 <: HList](that: Rule[I2, O2])(implicit
+    i: TailSwitch[I2, O @uncheckedVariance, I @uncheckedVariance],
                                                         o: TailSwitch[O @uncheckedVariance, I2, O2]): Rule[i.Out, o.Out] = `n/a`
 
   /**

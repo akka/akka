@@ -9,21 +9,6 @@ development cycle. The actor model presents a different view on how units of
 code are delimited and how they interact, which has an influence on how to
 perform tests.
 
-.. note::
-
-  Due to the conciseness of test DSLs available for Scala (`ScalaTest`_,
-  `Specs2`_, `ScalaCheck`_), it may be a good idea to write the test suite in
-  that language even if the main project is written in Java. If that is not
-  desirable, you can also use :class:`TestKit` and friends from Java, albeit
-  with more verbose syntax which is covered below. Munish Gupta has `published
-  a nice post
-  <http://www.akkaessentials.in/2012/05/using-testkit-with-java.html>`_ showing
-  several patterns you may find useful.
-
-.. _ScalaTest:  http://scalatest.org/
-.. _Specs2:     http://specs2.org/
-.. _ScalaCheck: http://code.google.com/p/scalacheck/
-
 Akka comes with a dedicated module :mod:`akka-testkit` for supporting tests at
 different levels, which fall into two clearly distinct categories:
 

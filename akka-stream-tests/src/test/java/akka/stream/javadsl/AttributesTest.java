@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import akka.stream.Attributes;
 import akka.stream.StreamTest;
+import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 
 public class AttributesTest extends StreamTest {

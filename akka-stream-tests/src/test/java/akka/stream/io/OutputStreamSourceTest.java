@@ -14,7 +14,7 @@ import org.junit.Test;
 import akka.actor.ActorRef;
 import akka.japi.function.Procedure;
 import akka.stream.StreamTest;
-import akka.stream.javadsl.AkkaJUnitActorSystemResource;
+import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
@@ -29,11 +29,11 @@ public class OutputStreamSourceTest extends StreamTest {
     }
 
     @ClassRule
-    public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("OutputStreamSource",
+    public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("OutputStreamSourceTest2",
             Utils.UnboundedMailboxConfig());
     @Test
     public void mustSendEventsViaOutputStream() throws Exception {
-        final FiniteDuration timeout = FiniteDuration.create(300, TimeUnit.MILLISECONDS);
+        final FiniteDuration timeout = FiniteDuration.create(3, TimeUnit.SECONDS);
         final JavaTestKit probe = new JavaTestKit(system);
 
         final Source<ByteString, OutputStream> source = StreamConverters.asOutputStream(timeout);
@@ -45,6 +45,8 @@ public class OutputStreamSourceTest extends StreamTest {
         })).run(materializer);
 
         s.write("a".getBytes());
+        
+        
         assertEquals(ByteString.fromString("a"), probe.receiveOne(timeout));
         s.close();
 

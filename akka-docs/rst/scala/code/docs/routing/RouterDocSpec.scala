@@ -415,7 +415,8 @@ router-dispatcher {}
 
     //#scatter-gather-group-2
     val router20: ActorRef =
-      context.actorOf(ScatterGatherFirstCompletedGroup(paths,
+      context.actorOf(ScatterGatherFirstCompletedGroup(
+        paths,
         within = 10.seconds).props(), "router20")
     //#scatter-gather-group-2
 
@@ -437,7 +438,8 @@ router-dispatcher {}
 
     //#tail-chopping-group-2
     val router24: ActorRef =
-      context.actorOf(TailChoppingGroup(paths,
+      context.actorOf(TailChoppingGroup(
+        paths,
         within = 10.seconds, interval = 20.millis).props(), "router24")
     //#tail-chopping-group-2
 
@@ -448,7 +450,8 @@ router-dispatcher {}
 
     //#consistent-hashing-pool-2
     val router26: ActorRef =
-      context.actorOf(ConsistentHashingPool(5).props(Props[Worker]),
+      context.actorOf(
+        ConsistentHashingPool(5).props(Props[Worker]),
         "router26")
     //#consistent-hashing-pool-2
 
@@ -470,7 +473,8 @@ router-dispatcher {}
     //#resize-pool-2
     val resizer = DefaultResizer(lowerBound = 2, upperBound = 15)
     val router30: ActorRef =
-      context.actorOf(RoundRobinPool(5, Some(resizer)).props(Props[Worker]),
+      context.actorOf(
+        RoundRobinPool(5, Some(resizer)).props(Props[Worker]),
         "router30")
     //#resize-pool-2  
 

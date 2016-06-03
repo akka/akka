@@ -5,16 +5,12 @@
 package akka.http.scaladsl.server
 package directives
 
-import akka.http.javadsl.model.headers.CustomHeader
-import akka.http.scaladsl.model.headers.{ModeledCustomHeaderCompanion, ModeledCustomHeader, RawHeader}
+import akka.http.impl.util._
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{ HttpOriginRange, ModeledCustomHeader, ModeledCustomHeaderCompanion, Origin }
 
-import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
-import akka.http.javadsl.{ model => jm }
-import akka.http.scaladsl.server.util.ClassMagnet
-import akka.http.scaladsl.model._
-import akka.http.impl.util._
 
 /**
  * @groupname header Header directives
@@ -23,6 +19,21 @@ import akka.http.impl.util._
 trait HeaderDirectives {
   import BasicDirectives._
   import RouteDirectives._
+
+  /**
+   * Checks that request comes from the same origin. Extracts the [[Origin]] header value and verifies that
+   * allowed range contains the obtained value. In the case of absent of the [[Origin]] header rejects
+   * with [[MissingHeaderRejection]]. If the origin value is not in the allowed range
+   * rejects with an [[InvalidOriginRejection]] and [[StatusCodes.Forbidden]] status.
+   *
+   * @group header
+   */
+  def checkSameOrigin(allowed: HttpOriginRange): Directive0 = {
+    headerValueByType[Origin]().flatMap { origin ⇒
+      if (origin.origins.exists(allowed.matches)) pass
+      else reject(InvalidOriginRejection(origin.origins))
+    }
+  }
 
   /**
    * Extracts an HTTP header value using the given function. If the function result is undefined for all headers the
@@ -161,22 +172,18 @@ object HeaderMagnet extends LowPriorityHeaderMagnetImplicits {
    * If possible we want to apply the special logic for [[ModeledCustomHeader]] to extract custom headers by type,
    * otherwise the default `fromUnit` is good enough (for headers that the parser emits in the right type already).
    */
-  implicit def fromUnitForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]]
-    (u: Unit)(implicit tag: ClassTag[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
-      fromClassTagForModeledCustomHeader[T, H](tag, companion)
+  implicit def fromUnitForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]](u: Unit)(implicit tag: ClassTag[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
+    fromClassTagForModeledCustomHeader[T, H](tag, companion)
 
+  implicit def fromClassForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]](clazz: Class[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
+    fromClassTagForModeledCustomHeader(ClassTag(clazz), companion)
 
-  implicit def fromClassForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]]
-    (clazz: Class[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
-      fromClassTagForModeledCustomHeader(ClassTag(clazz), companion)
-
-  implicit def fromClassTagForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]]
-    (tag: ClassTag[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
+  implicit def fromClassTagForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]](tag: ClassTag[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
     new HeaderMagnet[T] {
       override def runtimeClass = tag.runtimeClass.asInstanceOf[Class[T]]
       override def classTag = tag
       override def extractPF = {
-        case h if h.is(companion.lowercaseName) => companion.apply(h.value)
+        case h if h.is(companion.lowercaseName) ⇒ companion.apply(h.value)
       }
     }
 
@@ -188,11 +195,11 @@ trait LowPriorityHeaderMagnetImplicits {
 
   // TODO DRY?
   implicit def fromClassNormalJavaHeader[T <: akka.http.javadsl.model.HttpHeader](clazz: Class[T]): HeaderMagnet[T] =
-     new HeaderMagnet[T] {
-       override def classTag: ClassTag[T] = ClassTag(clazz)
-       override def runtimeClass: Class[T] = clazz
-       override def extractPF: PartialFunction[HttpHeader, T] = { case x if runtimeClass.isAssignableFrom(x.getClass) => x.asInstanceOf[T] }
-     }
+    new HeaderMagnet[T] {
+      override def classTag: ClassTag[T] = ClassTag(clazz)
+      override def runtimeClass: Class[T] = clazz
+      override def extractPF: PartialFunction[HttpHeader, T] = { case x if runtimeClass.isAssignableFrom(x.getClass) ⇒ x.asInstanceOf[T] }
+    }
 
   implicit def fromUnitNormalHeader[T <: HttpHeader](u: Unit)(implicit tag: ClassTag[T]): HeaderMagnet[T] =
     fromClassTagNormalHeader(tag)

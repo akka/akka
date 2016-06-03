@@ -8,6 +8,7 @@ package directives
 import java.io.File
 
 import akka.http.scaladsl.settings.RoutingSettings
+import akka.http.scaladsl.testkit.RouteTestTimeout
 
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
@@ -21,6 +22,9 @@ import akka.http.impl.util._
 import akka.http.scaladsl.TestUtils.writeAllText
 
 class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Inside {
+
+  // operations touch files, can be randomly hit by slowness
+  implicit val routeTestTimeout = RouteTestTimeout(3.seconds)
 
   override def testConfigSource = "akka.http.routing.range-coalescing-threshold = 1"
 

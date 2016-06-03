@@ -91,7 +91,7 @@ object StepWise {
       copy(ops = MultiMessage(timeout, count, (msgs, value) ⇒ { f.asInstanceOf[(Seq[Any], Any) ⇒ Any](msgs, value); value }, getTrace()) :: ops)
 
     def expectFailureKeep(timeout: FiniteDuration)(f: (Failed, U) ⇒ Failed.Decision): Steps[T, U] =
-      copy(ops = Failure(timeout, (failed, value) ⇒ f.asInstanceOf[(Failed, Any) ⇒ Failed.Decision](failed, value) -> value, getTrace()) :: ops)
+      copy(ops = Failure(timeout, (failed, value) ⇒ f.asInstanceOf[(Failed, Any) ⇒ Failed.Decision](failed, value) → value, getTrace()) :: ops)
 
     def expectTerminationKeep(timeout: FiniteDuration)(f: (Terminated, U) ⇒ Unit): Steps[T, U] =
       copy(ops = Termination(timeout, (t, value) ⇒ { f.asInstanceOf[(Terminated, Any) ⇒ Any](t, value); value }, getTrace()) :: ops)

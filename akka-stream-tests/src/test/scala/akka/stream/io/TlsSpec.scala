@@ -5,6 +5,7 @@ import java.security.SecureRandom
 import java.util.concurrent.TimeoutException
 
 import akka.NotUsed
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
 
 import scala.collection.immutable
 import scala.concurrent.Await
@@ -90,6 +91,8 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
 
   import GraphDSL.Implicits._
 
+  val sslConfig: Option[AkkaSSLConfig] = None // no special settings to be applied here
+
   "SslTls" must {
 
     val sslContext = initSslContext()
@@ -103,9 +106,9 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
     }
 
     val cipherSuites = NegotiateNewSession.withCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_128_CBC_SHA")
-    def clientTls(closing: TLSClosing) = TLS(sslContext, cipherSuites, Client, closing)
-    def badClientTls(closing: TLSClosing) = TLS(initWithTrust("/badtruststore"), cipherSuites, Client, closing)
-    def serverTls(closing: TLSClosing) = TLS(sslContext, cipherSuites, Server, closing)
+    def clientTls(closing: TLSClosing) = TLS(sslContext, None, cipherSuites, Client, closing)
+    def badClientTls(closing: TLSClosing) = TLS(initWithTrust("/badtruststore"), None, cipherSuites, Client, closing)
+    def serverTls(closing: TLSClosing) = TLS(sslContext, None, cipherSuites, Server, closing)
 
     trait Named {
       def name: String =
@@ -402,12 +405,11 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
     "reliably cancel subscriptions when TransportIn fails early" in assertAllStagesStopped {
       val ex = new Exception("hello")
       val (sub, out1, out2) =
-        RunnableGraph.fromGraph(GraphDSL.create(Source.asSubscriber[SslTlsOutbound], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b ⇒
-          (s, o1, o2) ⇒
-            val tls = b.add(clientTls(EagerClose))
-            s ~> tls.in1; tls.out1 ~> o1
-            o2 <~ tls.out2; tls.in2 <~ Source.failed(ex)
-            ClosedShape
+        RunnableGraph.fromGraph(GraphDSL.create(Source.asSubscriber[SslTlsOutbound], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b ⇒ (s, o1, o2) ⇒
+          val tls = b.add(clientTls(EagerClose))
+          s ~> tls.in1; tls.out1 ~> o1
+          o2 <~ tls.out2; tls.in2 <~ Source.failed(ex)
+          ClosedShape
         }).run()
       the[Exception] thrownBy Await.result(out1, 1.second) should be(ex)
       the[Exception] thrownBy Await.result(out2, 1.second) should be(ex)
@@ -420,12 +422,11 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
     "reliably cancel subscriptions when UserIn fails early" in assertAllStagesStopped {
       val ex = new Exception("hello")
       val (sub, out1, out2) =
-        RunnableGraph.fromGraph(GraphDSL.create(Source.asSubscriber[ByteString], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b ⇒
-          (s, o1, o2) ⇒
-            val tls = b.add(clientTls(EagerClose))
-            Source.failed[SslTlsOutbound](ex) ~> tls.in1; tls.out1 ~> o1
-            o2 <~ tls.out2; tls.in2 <~ s
-            ClosedShape
+        RunnableGraph.fromGraph(GraphDSL.create(Source.asSubscriber[ByteString], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b ⇒ (s, o1, o2) ⇒
+          val tls = b.add(clientTls(EagerClose))
+          Source.failed[SslTlsOutbound](ex) ~> tls.in1; tls.out1 ~> o1
+          o2 <~ tls.out2; tls.in2 <~ s
+          ClosedShape
         }).run()
       the[Exception] thrownBy Await.result(out1, 1.second) should be(ex)
       the[Exception] thrownBy Await.result(out2, 1.second) should be(ex)

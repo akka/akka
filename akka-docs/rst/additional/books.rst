@@ -7,4 +7,9 @@ Books
 * `Developing an Akka Edge <http://bleedingedgepress.com/our-books/developing-an-akka-edge/>`_, by Thomas Lockney and Raymond Tay, Bleeding Edge Press, ISBN: 9781939902054, April 2014
 * `Effective Akka <http://shop.oreilly.com/product/0636920028789.do>`_, by Jamie Allen, O'Reilly Media, ISBN: 1449360076, August 2013
 * `Akka Concurrency <http://www.artima.com/shop/akka_concurrency>`_, by Derek Wyatt, artima developer, ISBN: 0981531660, May 2013
-* `Akka Essentials <http://www.packtpub.com/akka-java-applications-essentials/book>`_, by Munish K. Gupta, PACKT Publishing, ISBN: 1849518289, October 2012
+* `Akka Essentials <https://www.packtpub.com/application-development/akka-essentials>`_, by Munish K. Gupta, PACKT Publishing, ISBN: 1849518289, October 2012
+
+Videos
+======
+
+* `Learning Akka Videos <https://www.packtpub.com/application-development/learning-akka-video>`_, by Salma Khater, PACKT Publishing, ISBN: 9781784391836, January 2016

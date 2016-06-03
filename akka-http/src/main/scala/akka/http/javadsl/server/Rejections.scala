@@ -10,14 +10,14 @@ import akka.http.scaladsl.model
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server._
 import akka.http.javadsl.model._
-import akka.http.javadsl.model.headers.HttpEncoding
-import akka.http.javadsl.model.headers.ByteRange
-import akka.http.javadsl.model.headers.HttpChallenge
+import akka.http.javadsl.model.headers.{ ByteRange, HttpEncoding, HttpChallenge }
 import java.util.Optional
 import java.util.function.{ Function ⇒ JFunction }
 import java.lang.{ Iterable ⇒ JIterable }
+
 import akka.http.scaladsl
 import akka.japi.Util
+import akka.pattern.CircuitBreakerOpenException
 
 import scala.compat.java8.OptionConverters._
 import scala.collection.immutable
@@ -98,6 +98,14 @@ trait MalformedHeaderRejection extends Rejection {
   def headerName: String
   def errorMsg: String
   def getCause: Optional[Throwable]
+}
+
+/**
+ * Rejection created by [[akka.http.scaladsl.server.directives.HeaderDirectives.checkSameOrigin]].
+ * Signals that the request was rejected because `Origin` header value is invalid.
+ */
+trait InvalidOriginRejection extends Rejection {
+  def getInvalidOrigins: java.util.List[akka.http.javadsl.model.headers.HttpOrigin]
 }
 
 /**
@@ -251,6 +259,14 @@ trait ValidationRejection extends Rejection {
 }
 
 /**
+ * Rejection created by the `onCompleteWithBreaker` directive.
+ * Signals that the request was rejected because the supplied circuit breaker is open and requests are failing fast.
+ */
+trait CircuitBreakerOpenRejection extends Rejection {
+  def cause: CircuitBreakerOpenException
+}
+
+/**
  * A special Rejection that serves as a container for a transformation function on rejections.
  * It is used by some directives to "cancel" rejections that are added by later directives of a similar type.
  *
@@ -335,8 +351,9 @@ object Rejections {
 
   def requestEntityExpected = RequestEntityExpectedRejection
 
-  def unacceptedResponseContentType(supportedContentTypes: java.lang.Iterable[ContentType],
-                                    supportedMediaTypes: java.lang.Iterable[MediaType]): UnacceptedResponseContentTypeRejection = {
+  def unacceptedResponseContentType(
+    supportedContentTypes: java.lang.Iterable[ContentType],
+    supportedMediaTypes:   java.lang.Iterable[MediaType]): UnacceptedResponseContentTypeRejection = {
     val s1: Set[Alternative] = supportedContentTypes.asScala.map(_.asScala).map(ct ⇒ ContentNegotiator.Alternative(ct)).toSet
     val s2: Set[Alternative] = supportedMediaTypes.asScala.map(_.asScala).map(mt ⇒ ContentNegotiator.Alternative(mt)).toSet
     s.UnacceptedResponseContentTypeRejection(s1 ++ s2)

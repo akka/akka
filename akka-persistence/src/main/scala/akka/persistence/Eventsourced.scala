@@ -145,7 +145,8 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    * @param event the event that was to be persisted
    */
   protected def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
-    log.warning("Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
+    log.warning(
+      "Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
       event.getClass.getName, seqNr, persistenceId, cause.getMessage)
   }
 
@@ -229,7 +230,8 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
       case DeleteSnapshotsFailure(c, e) ⇒
         log.warning("Failed to deleteSnapshots given criteria [{}] due to: [{}: {}]", c, e.getClass.getCanonicalName, e.getMessage)
       case DeleteMessagesFailure(e, toSequenceNr) ⇒
-        log.warning("Failed to deleteMessages toSequenceNr [{}] for persistenceId [{}] due to [{}: {}].",
+        log.warning(
+          "Failed to deleteMessages toSequenceNr [{}] for persistenceId [{}] due to [{}: {}].",
           toSequenceNr, persistenceId, e.getClass.getCanonicalName, e.getMessage)
       case m ⇒ super.unhandled(m)
     }

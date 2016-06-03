@@ -33,9 +33,10 @@ object WebSocketClientBlueprint {
   /**
    * Returns a WebSocketClientLayer that can be materialized once.
    */
-  def apply(request: WebSocketRequest,
-            settings: ClientConnectionSettings,
-            log: LoggingAdapter): Http.WebSocketClientLayer =
+  def apply(
+    request:  WebSocketRequest,
+    settings: ClientConnectionSettings,
+    log:      LoggingAdapter): Http.WebSocketClientLayer =
     (simpleTls.atopMat(handshake(request, settings, log))(Keep.right) atop
       WebSocket.framing atop
       WebSocket.stack(serverSide = false, maskingRandomFactory = settings.websocketRandomFactory, log = log)).reversed
@@ -44,9 +45,10 @@ object WebSocketClientBlueprint {
    * A bidi flow that injects and inspects the WS handshake and then goes out of the way. This BidiFlow
    * can only be materialized once.
    */
-  def handshake(request: WebSocketRequest,
-                settings: ClientConnectionSettings,
-                log: LoggingAdapter): BidiFlow[ByteString, ByteString, ByteString, ByteString, Future[WebSocketUpgradeResponse]] = {
+  def handshake(
+    request:  WebSocketRequest,
+    settings: ClientConnectionSettings,
+    log:      LoggingAdapter): BidiFlow[ByteString, ByteString, ByteString, ByteString, Future[WebSocketUpgradeResponse]] = {
     import request._
     val result = Promise[WebSocketUpgradeResponse]()
 

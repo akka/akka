@@ -7,13 +7,11 @@ import akka.testkit.{ ImplicitSender, TestKit }
 import org.scalatest.FunSuiteLike
 import org.scalatest.Matchers
 import scala.annotation.tailrec
-
-//#demo-code
 import scala.collection._
 import scala.concurrent.duration._
 import scala.math.BigDecimal.int2bigDecimal
-
 import akka.actor._
+import org.scalatest.BeforeAndAfterAll
 /**
  * Sample and test code for the aggregator patter.
  * This is based on Jamie Allen's tutorial at
@@ -28,8 +26,9 @@ case object MoneyMarket extends AccountType
 final case class GetCustomerAccountBalances(id: Long, accountTypes: Set[AccountType])
 final case class GetAccountBalances(id: Long)
 
-final case class AccountBalances(accountType: AccountType,
-                                 balance: Option[List[(Long, BigDecimal)]])
+final case class AccountBalances(
+  accountType: AccountType,
+  balance:     Option[List[(Long, BigDecimal)]])
 
 final case class CheckingAccountBalances(balances: Option[List[(Long, BigDecimal)]])
 final case class SavingsAccountBalances(balances: Option[List[(Long, BigDecimal)]])
@@ -71,8 +70,9 @@ class AccountBalanceRetriever extends Actor with Aggregator {
   }
   //#initial-expect
 
-  class AccountAggregator(originalSender: ActorRef,
-                          id: Long, types: Set[AccountType]) {
+  class AccountAggregator(
+    originalSender: ActorRef,
+    id:             Long, types: Set[AccountType]) {
 
     val results =
       mutable.ArrayBuffer.empty[(AccountType, Option[List[(Long, BigDecimal)]])]
@@ -97,7 +97,7 @@ class AccountBalanceRetriever extends Actor with Aggregator {
       context.actorOf(Props[CheckingAccountProxy]) ! GetAccountBalances(id)
       expectOnce {
         case CheckingAccountBalances(balances) ⇒
-          results += (Checking -> balances)
+          results += (Checking → balances)
           collectBalances()
       }
     }
@@ -107,7 +107,7 @@ class AccountBalanceRetriever extends Actor with Aggregator {
       context.actorOf(Props[SavingsAccountProxy]) ! GetAccountBalances(id)
       expectOnce {
         case SavingsAccountBalances(balances) ⇒
-          results += (Savings -> balances)
+          results += (Savings → balances)
           collectBalances()
       }
     }
@@ -116,7 +116,7 @@ class AccountBalanceRetriever extends Actor with Aggregator {
       context.actorOf(Props[MoneyMarketAccountProxy]) ! GetAccountBalances(id)
       expectOnce {
         case MoneyMarketAccountBalances(balances) ⇒
-          results += (MoneyMarket -> balances)
+          results += (MoneyMarket → balances)
           collectBalances()
       }
     }
@@ -187,7 +187,11 @@ class ChainingSample extends Actor with Aggregator {
 }
 //#chain-sample
 
-class AggregatorSpec extends TestKit(ActorSystem("test")) with ImplicitSender with FunSuiteLike with Matchers {
+class AggregatorSpec extends TestKit(ActorSystem("AggregatorSpec")) with ImplicitSender with FunSuiteLike with Matchers with BeforeAndAfterAll {
+
+  override def afterAll(): Unit = {
+    shutdown()
+  }
 
   test("Test request 1 account type") {
     system.actorOf(Props[AccountBalanceRetriever]) ! GetCustomerAccountBalances(1, Set(Savings))

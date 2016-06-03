@@ -7,7 +7,7 @@ import java.util.concurrent.TimeoutException
 
 import akka.actor._
 import akka.actor.dungeon.ChildrenContainer
-import akka.remote.transport.ThrottlerTransportAdapter.{ ForceDisassociate }
+import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociate
 import akka.testkit._
 import akka.testkit.TestActors.EchoActor
 import com.typesafe.config.ConfigFactory
@@ -98,6 +98,45 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
         Await.ready(remoteSystem.whenTerminated, 10.seconds)
       }
 
+      // Quarantine an old incarnation case
+      for (_ ← 1 to 3) {
+        //always use the same address
+        val remoteSystem = ActorSystem(
+          "remote",
+          ConfigFactory.parseString("akka.remote.netty.tcp.port = 2553")
+            .withFallback(config))
+
+        try {
+          val remoteAddress = RARP(remoteSystem).provider.getDefaultAddress
+
+          remoteSystem.actorOf(Props[StoppableActor], "stoppable")
+
+          // the message from remote to local will cause inbound connection established
+          val probe = TestProbe()(remoteSystem)
+          remoteSystem.actorSelection(echoPath).tell(Identify(1), probe.ref)
+          probe.expectMsgType[ActorIdentity].ref.nonEmpty should be(true)
+
+          val beforeQuarantineActors = targets.flatMap(collectLiveActors).toSet
+
+          // it must not quarantine the current connection
+          RARP(system).provider.transport.quarantine(remoteAddress, Some(AddressUidExtension(remoteSystem).addressUid + 1))
+
+          // the message from local to remote should reuse passive inbound connection
+          system.actorSelection(RootActorPath(remoteAddress) / "user" / "stoppable") ! Identify(1)
+          expectMsgType[ActorIdentity].ref.nonEmpty should be(true)
+
+          val afterQuarantineActors = targets.flatMap(collectLiveActors).toSet
+
+          assertResult(beforeQuarantineActors)(afterQuarantineActors)
+
+        } finally {
+          remoteSystem.terminate()
+        }
+
+        Await.ready(remoteSystem.whenTerminated, 10.seconds)
+
+      }
+
       // Missing SHUTDOWN case
       for (_ ← 1 to 3) {
 
@@ -167,7 +206,7 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
 
       val finalActors = targets.flatMap(collectLiveActors).toSet
 
-      (finalActors diff initialActors) should be(Set.empty)
+      assertResult(initialActors)(finalActors)
 
     }
 
