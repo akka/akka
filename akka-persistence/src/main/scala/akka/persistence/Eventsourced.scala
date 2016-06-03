@@ -55,7 +55,6 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   private var journalBatch = Vector.empty[PersistentEnvelope]
   // no longer used, but kept for binary compatibility
   private val maxMessageBatchSize = extension.journalConfigFor(journalPluginId).getInt("max-message-batch-size")
-  private val recoveryEventTimeout = extension.journalConfigFor(journalPluginId).getMillisDuration("recovery-event-timeout")
   private var writeInProgress = false
   private var sequenceNr: Long = 0L
   private var _lastSequenceNr: Long = 0L
@@ -466,7 +465,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
     // protect against replay stalling forever because of journal overloaded and such
     private val previousRecieveTimeout = context.receiveTimeout
-    context.setReceiveTimeout(recoveryEventTimeout)
+    context.setReceiveTimeout(extension.journalConfigFor(journalPluginId).getMillisDuration("recovery-event-timeout"))
 
     private val recoveryBehavior: Receive = {
       val _receiveRecover = receiveRecover
@@ -497,7 +496,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
       case ReceiveTimeout ⇒
         try onRecoveryFailure(
-          new RuntimeException(s"Recovery timed out, didn't get snapshot within ${recoveryEventTimeout.toSeconds}s"),
+          new RuntimeException(s"Recovery timed out, didn't get snapshot within timeout"),
           event = None) finally context.stop(self)
       case other ⇒
         stashInternally(other)
@@ -542,7 +541,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
           try onRecoveryFailure(cause, event = None) finally context.stop(self)
         case ReceiveTimeout ⇒
           try onRecoveryFailure(
-            new RuntimeException(s"Recovery timed out, didn't get the next event after $sequenceNr within ${recoveryEventTimeout.toSeconds}s"),
+            new RuntimeException(s"Recovery timed out, didn't get the next event after $sequenceNr"),
             event = None) finally context.stop(self)
         case other ⇒
           stashInternally(other)
