@@ -326,13 +326,13 @@ object PersistenceDocSpec {
       override def receiveCommand: Receive = {
         case c: String =>
           sender() ! c
-          persistAsync(c + "-outer-1") { outer ⇒
+          persistAsync(c + "-outer-1") { outer =>
             sender() ! outer
-            persistAsync(c + "-inner-1") { inner ⇒ sender() ! inner }
+            persistAsync(c + "-inner-1") { inner => sender() ! inner }
           }
-          persistAsync(c + "-outer-2") { outer ⇒
+          persistAsync(c + "-outer-2") { outer =>
             sender() ! outer
-            persistAsync(c + "-inner-2") { inner ⇒ sender() ! inner }
+            persistAsync(c + "-inner-2") { inner => sender() ! inner }
           }
       }
       //#nested-persistAsync-persistAsync

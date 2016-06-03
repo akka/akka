@@ -6,7 +6,7 @@ package akka.http.scaladsl.server
 package directives
 
 import org.scalatest.{ FreeSpec, Inside }
-import akka.http.scaladsl.unmarshalling.Unmarshaller._
+import akka.http.scaladsl.unmarshalling.Unmarshaller, Unmarshaller._
 
 class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Inside {
   "when used with 'as[Int]' the parameter directive should" - {
@@ -49,6 +49,18 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
           }
         }
       }
+    }
+    "supply chaining of unmarshallers" in {
+      case class UserId(id: Int)
+      case class AnotherUserId(id: Int)
+      val UserIdUnmarshaller = Unmarshaller.strict[Int, UserId](UserId)
+      implicit val AnotherUserIdUnmarshaller = Unmarshaller.strict[UserId, AnotherUserId](userId ⇒ AnotherUserId(userId.id))
+      Get("/?id=45") ~> {
+        parameter('id.as[Int].as(UserIdUnmarshaller)) { echoComplete }
+      } ~> check { responseAs[String] shouldEqual "UserId(45)" }
+      Get("/?id=45") ~> {
+        parameter('id.as[Int].as(UserIdUnmarshaller).as[AnotherUserId]) { echoComplete }
+      } ~> check { responseAs[String] shouldEqual "AnotherUserId(45)" }
     }
   }
 

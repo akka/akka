@@ -3,7 +3,6 @@
  */
 package akka
 
-
 import akka.actor.ActorSystem
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.reflect.ClassTag

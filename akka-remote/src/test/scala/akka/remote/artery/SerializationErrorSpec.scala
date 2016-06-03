@@ -75,8 +75,8 @@ class SerializationErrorSpec extends AkkaSpec(SerializationErrorSpec.config) wit
 
       EventFilter.warning(
         start = "Failed to deserialize message with serializer id [4]", occurrences = 1).intercept {
-          remoteRef ! "boom".getBytes("utf-8")
-        }(systemB)
+        remoteRef ! "boom".getBytes("utf-8")
+      }(systemB)
 
       remoteRef ! "ping2"
       expectMsg("ping2")

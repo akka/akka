@@ -83,8 +83,8 @@ final class GCounter private[akka] (
     else state.get(key) match {
       case Some(v) ⇒
         val tot = v + delta
-        assignAncestor(new GCounter(state + (key -> tot)))
-      case None ⇒ assignAncestor(new GCounter(state + (key -> delta)))
+        assignAncestor(new GCounter(state + (key → tot)))
+      case None ⇒ assignAncestor(new GCounter(state + (key → delta)))
     }
   }
 

@@ -9,19 +9,19 @@ class EnvelopeBufferSpec extends AkkaSpec {
 
   object TestCompressor extends LiteralCompressionTable {
     val refToIdx = Map(
-      "compressable0" -> 0,
-      "compressable1" -> 1,
-      "reallylongcompressablestring" -> 2)
+      "compressable0" → 0,
+      "compressable1" → 1,
+      "reallylongcompressablestring" → 2)
     val idxToRef = refToIdx.map(_.swap)
 
     val serializerToIdx = Map(
-      "serializer0" -> 0,
-      "serializer1" -> 1)
+      "serializer0" → 0,
+      "serializer1" → 1)
     val idxToSer = serializerToIdx.map(_.swap)
 
     val manifestToIdx = Map(
-      "manifest0" -> 0,
-      "manifest1" -> 1)
+      "manifest0" → 0,
+      "manifest1" → 1)
     val idxToManifest = manifestToIdx.map(_.swap)
 
     override def compressActorRef(ref: String): Int = refToIdx.getOrElse(ref, -1)

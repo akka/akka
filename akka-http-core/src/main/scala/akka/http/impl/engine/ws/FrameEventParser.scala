@@ -73,7 +73,8 @@ private[http] object FrameEventParser extends ByteStringParser[FrameEvent] {
 
         def isFlagSet(mask: Int): Boolean = (flags & mask) != 0
         val header =
-          FrameHeader(Opcode.forCode(op.toByte),
+          FrameHeader(
+            Opcode.forCode(op.toByte),
             mask,
             length,
             fin = isFlagSet(FIN_MASK),

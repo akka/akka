@@ -540,22 +540,22 @@ private[akka] final case class Buffer[T](size: Int, overflowStrategy: OverflowSt
         if (buffer.isFull) buffer.dropHead()
         buffer.enqueue(elem)
         ctx.pull()
-        case DropTail ⇒ (ctx, elem) ⇒
+      case DropTail ⇒ (ctx, elem) ⇒
         if (buffer.isFull) buffer.dropTail()
         buffer.enqueue(elem)
         ctx.pull()
-        case DropBuffer ⇒ (ctx, elem) ⇒
+      case DropBuffer ⇒ (ctx, elem) ⇒
         if (buffer.isFull) buffer.clear()
         buffer.enqueue(elem)
         ctx.pull()
-        case DropNew ⇒ (ctx, elem) ⇒
+      case DropNew ⇒ (ctx, elem) ⇒
         if (!buffer.isFull) buffer.enqueue(elem)
         ctx.pull()
-        case Backpressure ⇒ (ctx, elem) ⇒
+      case Backpressure ⇒ (ctx, elem) ⇒
         buffer.enqueue(elem)
         if (buffer.isFull) ctx.holdUpstream()
         else ctx.pull()
-        case Fail ⇒ (ctx, elem) ⇒
+      case Fail ⇒ (ctx, elem) ⇒
         if (buffer.isFull) ctx.fail(new BufferOverflowException(s"Buffer overflow (max capacity was: $size)!"))
         else {
           buffer.enqueue(elem)
@@ -908,7 +908,7 @@ private[akka] final case class MapAsyncUnordered[In, Out](parallelism: Int, f: I
  */
 private[akka] final case class Log[T](name: String, extract: T ⇒ Any,
                                       logAdapter: Option[LoggingAdapter],
-                                      decider: Supervision.Decider) extends PushStage[T, T] {
+                                      decider:    Supervision.Decider) extends PushStage[T, T] {
 
   import Log._
 
@@ -1125,7 +1125,7 @@ private[stream] final class Delay[T](d: FiniteDuration, strategy: DelayOverflowS
           case Backpressure ⇒ throw new IllegalStateException("Delay buffer must never overflow in Backpressure mode")
         }
         else {
-          grabAndPull(strategy != Backpressure || buffer.capacity < size - 1)
+          grabAndPull(strategy != Backpressure || buffer.used < size - 1)
           if (!isTimerActive(timerName)) scheduleOnce(timerName, d)
         }
       }

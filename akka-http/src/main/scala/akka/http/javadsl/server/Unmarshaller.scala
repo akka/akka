@@ -41,16 +41,14 @@ object Unmarshaller {
    * Creates an unmarshaller from an asynchronous Java function.
    */
   def async[A, B](f: java.util.function.Function[A, CompletionStage[B]]): Unmarshaller[A, B] =
-    unmarshalling.Unmarshaller[A, B] {
-      ctx ⇒ a ⇒ f(a).toScala
+    unmarshalling.Unmarshaller[A, B] { ctx ⇒ a ⇒ f(a).toScala
     }
 
   /**
    * Creates an unmarshaller from a Java function.
    */
   def sync[A, B](f: java.util.function.Function[A, B]): Unmarshaller[A, B] =
-    unmarshalling.Unmarshaller[A, B] {
-      ctx ⇒ a ⇒ scala.concurrent.Future.successful(f.apply(a))
+    unmarshalling.Unmarshaller[A, B] { ctx ⇒ a ⇒ scala.concurrent.Future.successful(f.apply(a))
     }
 
   // format: OFF
@@ -65,14 +63,13 @@ object Unmarshaller {
     unmarshalling.Unmarshaller.strict[HttpRequest, RequestEntity](_.entity)
 
   def forMediaType[B](t: MediaType, um: Unmarshaller[HttpEntity, B]): Unmarshaller[HttpEntity, B] = {
-    unmarshalling.Unmarshaller.withMaterializer[HttpEntity, B] { implicit ex ⇒
-      implicit mat ⇒ jEntity ⇒ {
-        val entity = jEntity.asScala
-        val mediaType = t.asScala
-        if (entity.contentType == ContentTypes.NoContentType || mediaType.matches(entity.contentType.mediaType)) {
-          um.asScala(entity)
-        } else FastFuture.failed(UnsupportedContentTypeException(ContentTypeRange(t.toRange.asScala)))
-      }
+    unmarshalling.Unmarshaller.withMaterializer[HttpEntity, B] { implicit ex ⇒ implicit mat ⇒ jEntity ⇒ {
+      val entity = jEntity.asScala
+      val mediaType = t.asScala
+      if (entity.contentType == ContentTypes.NoContentType || mediaType.matches(entity.contentType.mediaType)) {
+        um.asScala(entity)
+      } else FastFuture.failed(UnsupportedContentTypeException(ContentTypeRange(t.toRange.asScala)))
+    }
     }
   }
 
@@ -100,12 +97,6 @@ object Unmarshaller {
     unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala, u4.asScala, u5.asScala)
   }
 
-  //  implicit def asScalaToResponseMarshaller[T](um: Unmarshaller[akka.http.javadsl.model.HttpRequest, T]): FromRequestUnmarshaller[T] =
-  //    um.asScala.contramap[akka.http.scaladsl.model.HttpRequest](_.asJava)
-  //
-  //  implicit def asScalaEntityMarshaller[T](um: Unmarshaller[akka.http.javadsl.model.RequestEntity, T]): akka.http.scaladsl.marshalling.Marshaller[T, akka.http.scaladsl.model.RequestEntity] =
-  //    um.asScala.map(_.asJava)
-
   private implicit def adaptInputToJava[JI, SI, O](um: unmarshalling.Unmarshaller[SI, O])(implicit mi: JavaMapping[JI, SI]): unmarshalling.Unmarshaller[JI, O] =
     um.asInstanceOf[unmarshalling.Unmarshaller[JI, O]] // since guarantee provided by existence of `mi`
 
@@ -117,7 +108,6 @@ trait UnmarshallerBase[-A, B]
  * An unmarshaller transforms values of type A into type B.
  */
 abstract class Unmarshaller[-A, B] extends UnmarshallerBase[A, B] {
-  import unmarshalling.Unmarshaller._
 
   implicit def asScala: akka.http.scaladsl.unmarshalling.Unmarshaller[A, B]
 

@@ -147,10 +147,10 @@ object MaxThroughputSpec extends MultiNodeConfig {
   }
 
   final case class TestSettings(
-    testName: String,
-    totalMessages: Long,
-    burstSize: Int,
-    payloadSize: Int,
+    testName:            String,
+    totalMessages:       Long,
+    burstSize:           Int,
+    payloadSize:         Int,
     senderReceiverPairs: Int)
 
 }
@@ -240,7 +240,8 @@ abstract class MaxThroughputSpec
       val senders = for (n ← 1 to senderReceiverPairs) yield {
         val receiver = identifyReceiver(receiverName + n)
         val plotProbe = TestProbe()
-        val snd = system.actorOf(senderProps(receiver, testSettings, plotProbe.ref),
+        val snd = system.actorOf(
+          senderProps(receiver, testSettings, plotProbe.ref),
           testName + "-snd" + n)
         val terminationProbe = TestProbe()
         terminationProbe.watch(snd)

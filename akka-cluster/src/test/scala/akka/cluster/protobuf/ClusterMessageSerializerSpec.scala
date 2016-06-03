@@ -73,8 +73,10 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
 
       checkSerialization(InternalClusterAction.Welcome(uniqueAddress, g2))
 
-      val mg = MetricsGossip(Set(NodeMetrics(a1.address, 4711, Set(Metric("foo", 1.2, None))),
-        NodeMetrics(b1.address, 4712, Set(Metric("foo", 2.1, Some(EWMA(value = 100.0, alpha = 0.18))),
+      val mg = MetricsGossip(Set(
+        NodeMetrics(a1.address, 4711, Set(Metric("foo", 1.2, None))),
+        NodeMetrics(b1.address, 4712, Set(
+          Metric("foo", 2.1, Some(EWMA(value = 100.0, alpha = 0.18))),
           Metric("bar1", Double.MinPositiveValue, None),
           Metric("bar2", Float.MaxValue, None),
           Metric("bar3", Int.MaxValue, None),

@@ -33,7 +33,8 @@ private[akka] class InboundQuarantineCheck(inboundContext: InboundContext) exten
             push(out, env)
           case association ⇒
             if (association.associationState.isQuarantined(env.originUid)) {
-              inboundContext.sendControl(association.remoteAddress,
+              inboundContext.sendControl(
+                association.remoteAddress,
                 Quarantined(inboundContext.localAddress, UniqueAddress(association.remoteAddress, env.originUid)))
               pull(in)
             } else

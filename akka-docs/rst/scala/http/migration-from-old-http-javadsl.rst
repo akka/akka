@@ -54,6 +54,13 @@ pattern from blogs which used Scala, yet need to apply it in Java and the other 
 
 It is now possible to implement marshallers using Java. Refer to :ref:`marshalling-java` for details.
 
+Some complete* overloads changed to completeOK*
+-----------------------------------------------
+In JavaDSL when complete is called with only an entity, the ``OK`` response code is *assumed*,
+to make this more explicit these methods contain the word ``OK`` in them.
+
+This has been made more consistent than previously, across all overloads and Future-versions of these APIs.
+
 Migration help
 --------------
 As always, feel free to reach out via the `akka-user <https://groups.google.com/forum/#!searchin/akka-user/>`_ mailing list or gitter channels,

@@ -78,7 +78,7 @@ object Coroner {
    */
   def watch(duration: FiniteDuration, reportTitle: String, out: PrintStream,
             startAndStopDuration: FiniteDuration = defaultStartAndStopDuration,
-            displayThreadCounts: Boolean = false): WatchHandle = {
+            displayThreadCounts:  Boolean        = false): WatchHandle = {
 
     val watchedHandle = new WatchHandleImpl(startAndStopDuration)
 

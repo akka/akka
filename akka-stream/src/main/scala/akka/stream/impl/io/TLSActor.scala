@@ -25,14 +25,16 @@ import akka.stream.TLSProtocol._
  */
 private[akka] object TLSActor {
 
-  def props(settings: ActorMaterializerSettings,
-            sslContext: SSLContext,
-            firstSession: NegotiateNewSession,
-            role: TLSRole,
-            closing: TLSClosing,
-            hostInfo: Option[(String, Int)],
-            tracing: Boolean = false): Props =
-    Props(new TLSActor(settings, sslContext, firstSession, role, closing, hostInfo, tracing)).withDeploy(Deploy.local)
+  def props(
+    settings:     ActorMaterializerSettings,
+    sslContext:   SSLContext,
+    sslConfig:    Option[AkkaSSLConfig],
+    firstSession: NegotiateNewSession,
+    role:         TLSRole,
+    closing:      TLSClosing,
+    hostInfo:     Option[(String, Int)],
+    tracing:      Boolean                   = false): Props =
+    Props(new TLSActor(settings, sslContext, sslConfig, firstSession, role, closing, hostInfo, tracing)).withDeploy(Deploy.local)
 
   final val TransportIn = 0
   final val TransportOut = 0
@@ -44,10 +46,12 @@ private[akka] object TLSActor {
 /**
  * INTERNAL API.
  */
-private[akka] class TLSActor(settings: ActorMaterializerSettings,
-                             sslContext: SSLContext,
-                             firstSession: NegotiateNewSession, role: TLSRole, closing: TLSClosing,
-                             hostInfo: Option[(String, Int)], tracing: Boolean)
+private[akka] class TLSActor(
+  settings:          ActorMaterializerSettings,
+  sslContext:        SSLContext,
+  externalSslConfig: Option[AkkaSSLConfig],
+  firstSession:      NegotiateNewSession, role: TLSRole, closing: TLSClosing,
+  hostInfo: Option[(String, Int)], tracing: Boolean)
   extends Actor with ActorLogging with Pump {
 
   import TLSActor._
@@ -128,24 +132,23 @@ private[akka] class TLSActor(settings: ActorMaterializerSettings,
 
   // These are Netty's default values
   // 16665 + 1024 (room for compressed data) + 1024 (for OpenJDK compatibility)
-  val transportOutBuffer = ByteBuffer.allocate(16665 + 2048)
+  private val transportOutBuffer = ByteBuffer.allocate(16665 + 2048)
   /*
    * deviating here: chopping multiple input packets into this buffer can lead to
    * an OVERFLOW signal that also is an UNDERFLOW; avoid unnecessary copying by
    * increasing this buffer size to host up to two packets
    */
-  val userOutBuffer = ByteBuffer.allocate(16665 * 2 + 2048)
-  val transportInBuffer = ByteBuffer.allocate(16665 + 2048)
-  val userInBuffer = ByteBuffer.allocate(16665 + 2048)
+  private val userOutBuffer = ByteBuffer.allocate(16665 * 2 + 2048)
+  private val transportInBuffer = ByteBuffer.allocate(16665 + 2048)
+  private val userInBuffer = ByteBuffer.allocate(16665 + 2048)
 
-  val userInChoppingBlock = new ChoppingBlock(UserIn, "UserIn")
+  private val userInChoppingBlock = new ChoppingBlock(UserIn, "UserIn")
   userInChoppingBlock.prepare(userInBuffer)
-  val transportInChoppingBlock = new ChoppingBlock(TransportIn, "TransportIn")
+  private val transportInChoppingBlock = new ChoppingBlock(TransportIn, "TransportIn")
   transportInChoppingBlock.prepare(transportInBuffer)
 
-  // ssl-config
-  val sslConfig = AkkaSSLConfig(context.system)
-  val hostnameVerifier = sslConfig.hostnameVerifier
+  private val sslConfig = externalSslConfig.getOrElse(AkkaSSLConfig(context.system))
+  private val hostnameVerifier = sslConfig.hostnameVerifier
 
   val engine: SSLEngine = {
     val e = hostInfo match {
@@ -473,25 +476,28 @@ private[akka] class TLSActor(settings: ActorMaterializerSettings,
   // since setting a custom HostnameVerified (in JDK8, update 60 still) disables SNI
   // see here: https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#SNIExamples
   // resolves: https://github.com/akka/akka/issues/19287
-  private def applySNI(params: NegotiateNewSession): Unit = for {
-    sslParams ← params.sslParameters
-    (hostname, _) ← hostInfo
-    if !sslConfig.config.loose.disableSNI
-  } yield {
-    // first copy the *mutable* SLLParameters before modifying to prevent race condition in `setServerNames`
-    val clone = new SSLParameters()
-    clone.setCipherSuites(sslParams.getCipherSuites)
-    clone.setProtocols(sslParams.getProtocols)
-    clone.setWantClientAuth(sslParams.getWantClientAuth)
-    clone.setNeedClientAuth(sslParams.getNeedClientAuth)
-    clone.setEndpointIdentificationAlgorithm(sslParams.getEndpointIdentificationAlgorithm)
-    clone.setAlgorithmConstraints(sslParams.getAlgorithmConstraints)
-    clone.setSNIMatchers(sslParams.getSNIMatchers)
-    clone.setUseCipherSuitesOrder(sslParams.getUseCipherSuitesOrder)
+  private def applySNI(params: NegotiateNewSession): Unit = {
+    println("sslConfig.config.loose.disableSNI = " + sslConfig.config.loose.disableSNI)
+    for {
+      sslParams ← params.sslParameters
+      (hostname, _) ← hostInfo
+      if !sslConfig.config.loose.disableSNI
+    } yield {
+      // first copy the *mutable* SLLParameters before modifying to prevent race condition in `setServerNames`
+      val clone = new SSLParameters()
+      clone.setCipherSuites(sslParams.getCipherSuites)
+      clone.setProtocols(sslParams.getProtocols)
+      clone.setWantClientAuth(sslParams.getWantClientAuth)
+      clone.setNeedClientAuth(sslParams.getNeedClientAuth)
+      clone.setEndpointIdentificationAlgorithm(sslParams.getEndpointIdentificationAlgorithm)
+      clone.setAlgorithmConstraints(sslParams.getAlgorithmConstraints)
+      clone.setSNIMatchers(sslParams.getSNIMatchers)
+      clone.setUseCipherSuitesOrder(sslParams.getUseCipherSuitesOrder)
 
-    // apply the changes
-    clone.setServerNames(Collections.singletonList(new SNIHostName(hostname)))
-    engine.setSSLParameters(clone)
+      // apply the changes
+      clone.setServerNames(Collections.singletonList(new SNIHostName(hostname)))
+      engine.setSSLParameters(clone)
+    }
   }
 
 }

@@ -50,9 +50,9 @@ object AeronStreamMaxThroughputSpec extends MultiNodeConfig {
        """)))
 
   final case class TestSettings(
-    testName: String,
+    testName:      String,
     totalMessages: Long,
-    payloadSize: Int)
+    payloadSize:   Int)
 
   def iterate(start: Long, end: Long): Iterator[Long] = new AbstractIterator[Long] {
     private[this] var first = true

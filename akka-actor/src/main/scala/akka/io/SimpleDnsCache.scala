@@ -58,7 +58,7 @@ object SimpleDnsCache {
 
       new Cache(
         queue + new ExpiryEntry(answer.name, until),
-        cache + (answer.name -> CacheEntry(answer, until)),
+        cache + (answer.name → CacheEntry(answer, until)),
         clock)
     }
 

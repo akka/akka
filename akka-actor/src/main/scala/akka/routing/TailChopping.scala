@@ -142,11 +142,11 @@ private[akka] final case class TailChoppingRoutees(
 @SerialVersionUID(1L)
 final case class TailChoppingPool(
   override val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
-  within: FiniteDuration,
-  interval: FiniteDuration,
+  within:                          FiniteDuration,
+  interval:                        FiniteDuration,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
-  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-  override val usePoolDispatcher: Boolean = false)
+  override val routerDispatcher:   String             = Dispatchers.DefaultDispatcherId,
+  override val usePoolDispatcher:  Boolean            = false)
   extends Pool with PoolOverrideUnsetConfig[TailChoppingPool] {
 
   def this(config: Config) =
@@ -227,10 +227,10 @@ final case class TailChoppingPool(
  *   router management messages
  */
 final case class TailChoppingGroup(
-  override val paths: immutable.Iterable[String],
-  within: FiniteDuration,
-  interval: FiniteDuration,
-  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId) extends Group {
+  override val paths:            immutable.Iterable[String],
+  within:                        FiniteDuration,
+  interval:                      FiniteDuration,
+  override val routerDispatcher: String                     = Dispatchers.DefaultDispatcherId) extends Group {
 
   def this(config: Config) =
     this(

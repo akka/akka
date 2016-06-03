@@ -25,7 +25,7 @@ class CamelMessageTest extends Matchers with WordSpecLike with SharedCamelSystem
       message.setExchange(new DefaultExchange(camel.context))
 
       val attachmentToAdd = new DataHandler(new URL("https://another.url"))
-      CamelMessage.copyContent(new CamelMessage("body", Map("key" -> "baz"), Map("key" -> attachmentToAdd)), message)
+      CamelMessage.copyContent(new CamelMessage("body", Map("key" → "baz"), Map("key" → attachmentToAdd)), message)
 
       assert(message.getBody === "body")
       assert(message.getHeader("foo") === "bar")

@@ -59,7 +59,7 @@ class JepsenInspiredInsertSpec extends MultiNodeSpec(JepsenInspiredInsertSpec) w
   //  val totalCount = 2000
   val expectedData = (0 until totalCount).toSet
   val data: Map[RoleName, Seq[Int]] = {
-    val nodeIndex = nodes.zipWithIndex.map { case (n, i) ⇒ i -> n }.toMap
+    val nodeIndex = nodes.zipWithIndex.map { case (n, i) ⇒ i → n }.toMap
     (0 until totalCount).groupBy(i ⇒ nodeIndex(i % nodeCount))
   }
   lazy val myData: Seq[Int] = data(myself)

@@ -66,25 +66,29 @@ public final class HttpEntities {
         return HttpEntity$.MODULE$.fromPath((akka.http.scaladsl.model.ContentType) contentType, file, chunkSize);
     }
 
-    public static HttpEntity.Default create(ContentType contentType, long contentLength, Source<ByteString, Object> data) {
-        return new akka.http.scaladsl.model.HttpEntity.Default((akka.http.scaladsl.model.ContentType) contentType, contentLength, data.asScala());
+    public static HttpEntity.Default create(ContentType contentType, long contentLength, Source<ByteString, ?> data) {
+        return new akka.http.scaladsl.model.HttpEntity.Default((akka.http.scaladsl.model.ContentType) contentType, contentLength, toScala(data));
     }
 
-    public static HttpEntity.Chunked create(ContentType contentType, Source<ByteString, Object> data) {
-        return akka.http.scaladsl.model.HttpEntity.Chunked$.MODULE$.fromData((akka.http.scaladsl.model.ContentType) contentType, data.asScala());
+    public static HttpEntity.Chunked create(ContentType contentType, Source<ByteString, ?> data) {
+        return akka.http.scaladsl.model.HttpEntity.Chunked$.MODULE$.fromData((akka.http.scaladsl.model.ContentType) contentType, toScala(data));
     }
 
-    public static HttpEntity.CloseDelimited createCloseDelimited(ContentType contentType, Source<ByteString, Object> data) {
-        return new akka.http.scaladsl.model.HttpEntity.CloseDelimited((akka.http.scaladsl.model.ContentType) contentType, data.asScala());
+    public static HttpEntity.CloseDelimited createCloseDelimited(ContentType contentType, Source<ByteString, ?> data) {
+        return new akka.http.scaladsl.model.HttpEntity.CloseDelimited((akka.http.scaladsl.model.ContentType) contentType, toScala(data));
     }
 
-    public static HttpEntity.IndefiniteLength createIndefiniteLength(ContentType contentType, Source<ByteString, Object> data) {
-        return new akka.http.scaladsl.model.HttpEntity.IndefiniteLength((akka.http.scaladsl.model.ContentType) contentType, data.asScala());
+    public static HttpEntity.IndefiniteLength createIndefiniteLength(ContentType contentType, Source<ByteString, ?> data) {
+        return new akka.http.scaladsl.model.HttpEntity.IndefiniteLength((akka.http.scaladsl.model.ContentType) contentType, toScala(data));
     }
 
-    public static HttpEntity.Chunked createChunked(ContentType contentType, Source<ByteString, Object> data) {
+    public static HttpEntity.Chunked createChunked(ContentType contentType, Source<ByteString, ?> data) {
         return akka.http.scaladsl.model.HttpEntity.Chunked$.MODULE$.fromData(
                 (akka.http.scaladsl.model.ContentType) contentType,
-                data.asScala());
+                toScala(data));
+    }
+    
+    private static akka.stream.scaladsl.Source<ByteString,Object> toScala(Source<ByteString, ?> javaSource) {
+        return (akka.stream.scaladsl.Source<ByteString,Object>)javaSource.asScala();
     }
 }

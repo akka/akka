@@ -105,14 +105,14 @@ trait ActorRefProvider {
    * the latter can be suppressed by setting ``lookupDeploy`` to ``false``.
    */
   def actorOf(
-    system: ActorSystemImpl,
-    props: Props,
-    supervisor: InternalActorRef,
-    path: ActorPath,
+    system:        ActorSystemImpl,
+    props:         Props,
+    supervisor:    InternalActorRef,
+    path:          ActorPath,
     systemService: Boolean,
-    deploy: Option[Deploy],
-    lookupDeploy: Boolean,
-    async: Boolean): InternalActorRef
+    deploy:        Option[Deploy],
+    lookupDeploy:  Boolean,
+    async:         Boolean): InternalActorRef
 
   /**
    * INTERNAL API
@@ -475,20 +475,22 @@ private[akka] object LocalActorRefProvider {
  * Depending on this class is not supported, only the [[ActorRefProvider]] interface is supported.
  */
 private[akka] class LocalActorRefProvider private[akka] (
-  _systemName: String,
+  _systemName:           String,
   override val settings: ActorSystem.Settings,
-  val eventStream: EventStream,
-  val dynamicAccess: DynamicAccess,
+  val eventStream:       EventStream,
+  val dynamicAccess:     DynamicAccess,
   override val deployer: Deployer,
-  _deadLetters: Option[ActorPath ⇒ InternalActorRef])
+  _deadLetters:          Option[ActorPath ⇒ InternalActorRef])
   extends ActorRefProvider {
 
   // this is the constructor needed for reflectively instantiating the provider
-  def this(_systemName: String,
-           settings: ActorSystem.Settings,
-           eventStream: EventStream,
-           dynamicAccess: DynamicAccess) =
-    this(_systemName,
+  def this(
+    _systemName:   String,
+    settings:      ActorSystem.Settings,
+    eventStream:   EventStream,
+    dynamicAccess: DynamicAccess) =
+    this(
+      _systemName,
       settings,
       eventStream,
       dynamicAccess,
@@ -776,7 +778,8 @@ private[akka] class LocalActorRefProvider private[akka] (
         if (!system.dispatchers.hasDispatcher(r.routerDispatcher))
           throw new ConfigurationException(s"Dispatcher [${p.dispatcher}] not configured for router of $path")
 
-        val routerProps = Props(p.deploy.copy(dispatcher = p.routerConfig.routerDispatcher),
+        val routerProps = Props(
+          p.deploy.copy(dispatcher = p.routerConfig.routerDispatcher),
           classOf[RoutedActorCell.RouterActorCreator], Vector(p.routerConfig))
         val routeeProps = p.withRouter(NoRouter)
 

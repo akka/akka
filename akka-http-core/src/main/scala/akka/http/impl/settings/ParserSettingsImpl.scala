@@ -14,24 +14,24 @@ import akka.http.impl.util._
 
 /** INTERNAL API */
 private[akka] final case class ParserSettingsImpl(
-  maxUriLength: Int,
-  maxMethodLength: Int,
-  maxResponseReasonLength: Int,
-  maxHeaderNameLength: Int,
-  maxHeaderValueLength: Int,
-  maxHeaderCount: Int,
-  maxContentLength: Long,
-  maxChunkExtLength: Int,
-  maxChunkSize: Int,
-  uriParsingMode: Uri.ParsingMode,
-  cookieParsingMode: CookieParsingMode,
-  illegalHeaderWarnings: Boolean,
-  errorLoggingVerbosity: ParserSettings.ErrorLoggingVerbosity,
-  headerValueCacheLimits: Map[String, Int],
+  maxUriLength:                Int,
+  maxMethodLength:             Int,
+  maxResponseReasonLength:     Int,
+  maxHeaderNameLength:         Int,
+  maxHeaderValueLength:        Int,
+  maxHeaderCount:              Int,
+  maxContentLength:            Long,
+  maxChunkExtLength:           Int,
+  maxChunkSize:                Int,
+  uriParsingMode:              Uri.ParsingMode,
+  cookieParsingMode:           CookieParsingMode,
+  illegalHeaderWarnings:       Boolean,
+  errorLoggingVerbosity:       ParserSettings.ErrorLoggingVerbosity,
+  headerValueCacheLimits:      Map[String, Int],
   includeTlsSessionInfoHeader: Boolean,
-  customMethods: String ⇒ Option[HttpMethod],
-  customStatusCodes: Int ⇒ Option[StatusCode],
-  customMediaTypes: MediaTypes.FindCustom)
+  customMethods:               String ⇒ Option[HttpMethod],
+  customStatusCodes:           Int ⇒ Option[StatusCode],
+  customMediaTypes:            MediaTypes.FindCustom)
   extends akka.http.scaladsl.settings.ParserSettings {
 
   require(maxUriLength > 0, "max-uri-length must be > 0")
@@ -76,7 +76,7 @@ object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.ht
       CookieParsingMode(c getString "cookie-parsing-mode"),
       c getBoolean "illegal-header-warnings",
       ErrorLoggingVerbosity(c getString "error-logging-verbosity"),
-      cacheConfig.entrySet.asScala.map(kvp ⇒ kvp.getKey -> cacheConfig.getInt(kvp.getKey))(collection.breakOut),
+      cacheConfig.entrySet.asScala.map(kvp ⇒ kvp.getKey → cacheConfig.getInt(kvp.getKey))(collection.breakOut),
       c getBoolean "tls-session-info-header",
       noCustomMethods,
       noCustomStatusCodes,

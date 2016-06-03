@@ -4,13 +4,11 @@
 
 package docs.http.scaladsl.server.directives
 
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.MissingHeaderRejection
-import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.server.util.ClassMagnet
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.server.{ InvalidOriginRejection, MissingHeaderRejection, Route }
 import docs.http.scaladsl.server.RoutingSpec
-import headers._
-import StatusCodes._
 import org.scalatest.Inside
 
 class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
@@ -149,7 +147,7 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
   }
   "headerValueByType-0" in {
     val route =
-      headerValueByType[Origin]() { origin ⇒
+      headerValueByType[Origin]() { origin =>
         complete(s"The first origin was ${origin.origins.head}")
       }
 
@@ -163,14 +161,14 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
 
     // reject a request if no header of the given type is present
     Get("abc") ~> route ~> check {
-      inside(rejection) { case MissingHeaderRejection("Origin") ⇒ }
+      inside(rejection) { case MissingHeaderRejection("Origin") => }
     }
   }
   "optionalHeaderValueByType-0" in {
     val route =
       optionalHeaderValueByType[Origin]() {
-        case Some(origin) ⇒ complete(s"The first origin was ${origin.origins.head}")
-        case None         ⇒ complete("No Origin header found.")
+        case Some(origin) => complete(s"The first origin was ${origin.origins.head}")
+        case None         => complete("No Origin header found.")
       }
 
     val originHeader = Origin(HttpOrigin("http://localhost:8080"))
@@ -184,6 +182,40 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
     // extract None if no header of the given type is present
     Get("abc") ~> route ~> check {
       responseAs[String] shouldEqual "No Origin header found."
+    }
+  }
+  "checkSameOrigin-0" in {
+    val correctOrigin = HttpOrigin("http://localhost:8080")
+    val route = checkSameOrigin(HttpOriginRange(correctOrigin)) {
+      complete("Result")
+    }
+
+    // tests:
+    // handle request with correct origin headers
+    Get("abc") ~> Origin(correctOrigin) ~> route ~> check {
+      status shouldEqual StatusCodes.OK
+      responseAs[String] shouldEqual "Result"
+    }
+
+    // reject request with missed origin header
+    Get("abc") ~> route ~> check {
+      inside(rejection) {
+        case MissingHeaderRejection(headerName) ⇒ headerName shouldEqual Origin.name
+      }
+    }
+
+    // rejects request with invalid origin headers
+    val invalidHttpOrigin = HttpOrigin("http://invalid.com")
+    val invalidOriginHeader = Origin(invalidHttpOrigin)
+    Get("abc") ~> invalidOriginHeader ~> route ~> check {
+      inside(rejection) {
+        case InvalidOriginRejection(invalidOrigins) ⇒
+          invalidOrigins shouldEqual Seq(invalidHttpOrigin)
+      }
+    }
+    Get("abc") ~> invalidOriginHeader ~> Route.seal(route) ~> check {
+      status shouldEqual StatusCodes.Forbidden
+      responseAs[String] should include(s"${invalidHttpOrigin.value}")
     }
   }
 }

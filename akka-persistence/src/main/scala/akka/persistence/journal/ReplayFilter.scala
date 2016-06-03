@@ -20,10 +20,10 @@ import scala.collection.mutable.LinkedHashSet
 private[akka] object ReplayFilter {
   def props(
     persistentActor: ActorRef,
-    mode: Mode,
-    windowSize: Int,
-    maxOldWriters: Int,
-    debugEnabled: Boolean): Props = {
+    mode:            Mode,
+    windowSize:      Int,
+    maxOldWriters:   Int,
+    debugEnabled:    Boolean): Props = {
     require(windowSize > 0, "windowSize must be > 0")
     require(maxOldWriters > 0, "maxOldWriters must be > 0")
     require(mode != Disabled, "mode must not be Disabled")
@@ -33,9 +33,9 @@ private[akka] object ReplayFilter {
   // for binary compatibility
   def props(
     persistentActor: ActorRef,
-    mode: Mode,
-    windowSize: Int,
-    maxOldWriters: Int): Props = props(persistentActor, mode, windowSize, maxOldWriters, debugEnabled = false)
+    mode:            Mode,
+    windowSize:      Int,
+    maxOldWriters:   Int): Props = props(persistentActor, mode, windowSize, maxOldWriters, debugEnabled = false)
 
   sealed trait Mode
   case object Fail extends Mode

@@ -30,7 +30,7 @@ import akka.util.Timeout
 import akka.actor._
 import akka.testkit._
 
-class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike with Matchers with ActorProducerFixture {
+class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with WordSpecLike with Matchers with ActorProducerFixture {
   implicit val timeout = Timeout(10 seconds)
 
   "ActorProducer" when {

@@ -19,10 +19,11 @@ import akka.io.Tcp._
  *
  * INTERNAL API
  */
-private[io] class TcpOutgoingConnection(_tcp: TcpExt,
-                                        channelRegistry: ChannelRegistry,
-                                        commander: ActorRef,
-                                        connect: Connect)
+private[io] class TcpOutgoingConnection(
+  _tcp:            TcpExt,
+  channelRegistry: ChannelRegistry,
+  commander:       ActorRef,
+  connect:         Connect)
   extends TcpConnection(_tcp, SocketChannel.open().configureBlocking(false).asInstanceOf[SocketChannel], connect.pullMode) {
 
   import context._

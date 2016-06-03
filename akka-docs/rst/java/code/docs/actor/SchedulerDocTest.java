@@ -22,10 +22,10 @@ import akka.testkit.AkkaJUnitActorSystemResource;
 import org.junit.*;
 
 public class SchedulerDocTest extends AbstractJavaTest {
-
-  @Rule
-  public AkkaJUnitActorSystemResource actorSystemResource =
-    new AkkaJUnitActorSystemResource("SchedulerDocTest", AkkaSpec.testConf());
+  
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("SchedulerDocTest",
+      AkkaSpec.testConf());
 
   private final ActorSystem system = actorSystemResource.getSystem();
   private ActorRef testActor = system.actorOf(Props.create(MyUntypedActor.class));

@@ -79,10 +79,10 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
       }
       val textHeaders: Seq[(String, String)] = entityTextHeaders ++ partialTextHeaders
       textHeaders shouldEqual Seq(
-        "Content-Type" -> "application/json",
-        "Content-Length" -> "5",
-        "Host" -> "localhost",
-        "Origin" -> "null")
+        "Content-Type" → "application/json",
+        "Content-Length" → "5",
+        "Host" → "localhost",
+        "Origin" → "null")
 
       // Finally convert the body into an Array[Byte].
 
@@ -98,9 +98,9 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
       // example simple model of an HTTP response.
 
       val textHeaders: Seq[(String, String)] = Seq(
-        "Content-Type" -> "text/plain",
-        "Content-Length" -> "3",
-        "X-Greeting" -> "Hello")
+        "Content-Type" → "text/plain",
+        "Content-Length" → "3",
+        "X-Greeting" → "Hello")
       val byteArrayBody: Array[Byte] = "foo".getBytes
 
       // Now we need to convert this model to Akka HTTP's model. To do that

@@ -3,12 +3,14 @@
  */
 package akka.stream.scaladsl
 
+import akka.Done
 import akka.stream.Attributes._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
-import akka.stream.{ BufferOverflowException, DelayOverflowStrategy, ActorMaterializer }
-import scala.concurrent.Await
+import akka.stream.{ ActorMaterializer, Attributes, BufferOverflowException, DelayOverflowStrategy }
+
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.testkit.AkkaSpec
@@ -88,7 +90,7 @@ class FlowDelaySpec extends AkkaSpec {
     }
 
     "pass elements with delay through normally in backpressured mode" in assertAllStagesStopped {
-      Source(1 to 3).delay(300.millis, DelayOverflowStrategy.backpressure).runWith(TestSink.probe[Int])
+      Source(1 to 3).delay(300.millis, DelayOverflowStrategy.backpressure).withAttributes(inputBuffer(1, 1)).runWith(TestSink.probe[Int])
         .request(5)
         .expectNoMsg(200.millis)
         .expectNext(200.millis, 1)
@@ -123,5 +125,37 @@ class FlowDelaySpec extends AkkaSpec {
       //fail will terminate despite of non empty internal buffer
       pSub.sendError(new RuntimeException() with NoStackTrace)
     }
+
+    "properly delay according to buffer size" in {
+      import akka.pattern.pipe
+      import system.dispatcher
+
+      // With a buffer size of 1, delays add up
+      Source(1 to 5)
+        .delay(500.millis, DelayOverflowStrategy.backpressure)
+        .withAttributes(Attributes.inputBuffer(initial = 1, max = 1))
+        .runWith(Sink.ignore).pipeTo(testActor)
+
+      expectNoMsg(2.seconds)
+      expectMsg(Done)
+
+      // With a buffer large enough to hold all arriving elements, delays don't add up
+      Source(1 to 100)
+        .delay(1.second, DelayOverflowStrategy.backpressure)
+        .withAttributes(Attributes.inputBuffer(initial = 100, max = 100))
+        .runWith(Sink.ignore).pipeTo(testActor)
+
+      expectMsg(Done)
+
+      // Delays that are already present are preserved when buffer is large enough
+      Source.tick(100.millis, 100.millis, ()).take(10)
+        .delay(1.second, DelayOverflowStrategy.backpressure)
+        .withAttributes(Attributes.inputBuffer(initial = 10, max = 10))
+        .runWith(Sink.ignore).pipeTo(testActor)
+
+      expectNoMsg(900.millis)
+      expectMsg(Done)
+    }
+
   }
 }

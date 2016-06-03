@@ -7,7 +7,6 @@ package akka.http.scaladsl
 import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.{ BindException, Socket }
 import java.util.concurrent.TimeoutException
-
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.event.Logging.LogEvent
@@ -26,11 +25,11 @@ import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
-
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
 import scala.util.{ Success, Try }
+import akka.testkit.TestKit
 
 class TightRequestTimeoutSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
   val testConf: Config = ConfigFactory.parseString("""
@@ -45,6 +44,10 @@ class TightRequestTimeoutSpec extends WordSpec with Matchers with BeforeAndAfter
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
   implicit val patience = PatienceConfig(3.seconds)
+
+  override def afterAll(): Unit = {
+    TestKit.shutdownActorSystem(system)
+  }
 
   "Tight request timeout" should {
 

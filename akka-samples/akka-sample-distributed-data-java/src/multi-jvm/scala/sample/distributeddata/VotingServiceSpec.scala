@@ -84,7 +84,7 @@ class VotingServiceSpec extends MultiNodeSpec(VotingServiceSpec) with STMultiNod
         votingService ! VotingService.CLOSE
       }
 
-      val expected = (1 to 20).map(n ⇒ "#" + n -> BigInteger.valueOf(3L * N / 20)).toMap
+      val expected = (1 to 20).map(n => "#" + n -> BigInteger.valueOf(3L * N / 20)).toMap
       awaitAssert {
         votingService ! VotingService.GET_VOTES
         val votes = expectMsgType[Votes](3.seconds)

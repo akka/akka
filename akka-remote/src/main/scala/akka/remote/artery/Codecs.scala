@@ -15,9 +15,9 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 // TODO: Long UID
 class Encoder(
   uniqueLocalAddress: UniqueAddress,
-  system: ActorSystem,
-  compressionTable: LiteralCompressionTable,
-  pool: EnvelopeBufferPool)
+  system:             ActorSystem,
+  compressionTable:   LiteralCompressionTable,
+  pool:               EnvelopeBufferPool)
   extends GraphStage[FlowShape[Send, EnvelopeBuffer]] {
 
   val in: Inlet[Send] = Inlet("Artery.Encoder.in")
@@ -108,11 +108,11 @@ class Encoder(
 }
 
 class Decoder(
-  uniqueLocalAddress: UniqueAddress,
-  system: ExtendedActorSystem,
+  uniqueLocalAddress:              UniqueAddress,
+  system:                          ExtendedActorSystem,
   resolveActorRefWithLocalAddress: String ⇒ InternalActorRef,
-  compressionTable: LiteralCompressionTable,
-  pool: EnvelopeBufferPool) extends GraphStage[FlowShape[EnvelopeBuffer, InboundEnvelope]] {
+  compressionTable:                LiteralCompressionTable,
+  pool:                            EnvelopeBufferPool) extends GraphStage[FlowShape[EnvelopeBuffer, InboundEnvelope]] {
   val in: Inlet[EnvelopeBuffer] = Inlet("Artery.Decoder.in")
   val out: Outlet[InboundEnvelope] = Outlet("Artery.Decoder.out")
   val shape: FlowShape[EnvelopeBuffer, InboundEnvelope] = FlowShape(in, out)
@@ -172,7 +172,8 @@ class Decoder(
           push(out, decoded)
         } catch {
           case NonFatal(e) ⇒
-            log.warning("Failed to deserialize message with serializer id [{}] and manifest [{}]. {}",
+            log.warning(
+              "Failed to deserialize message with serializer id [{}] and manifest [{}]. {}",
               headerBuilder.serializer, headerBuilder.manifest, e.getMessage)
             pull(in)
         } finally {

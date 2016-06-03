@@ -5,6 +5,10 @@
 package akka.actor;
 
 import static org.junit.Assert.*;
+import static java.util.stream.Collectors.toCollection;
+
+import java.util.ArrayList;
+import java.util.stream.IntStream;
 
 import akka.testkit.TestActors;
 import org.junit.Test;
@@ -141,6 +145,30 @@ public class ActorCreationTest extends JUnitSuite {
 
     @Override
     public void onReceive(Object msg) {
+    }
+  }
+
+  public static class Issue20537Reproducer extends UntypedActor {
+
+    static final class ReproducerCreator implements Creator<Issue20537Reproducer> {
+
+      final boolean create;
+
+      private ReproducerCreator(boolean create) {
+        this.create = create;
+      }
+
+      @Override
+      public Issue20537Reproducer create() throws Exception {
+        return new Issue20537Reproducer(create);
+      }
+    }
+
+    public Issue20537Reproducer(boolean create) {
+    }
+
+    @Override
+    public void onReceive(Object message) throws Exception {
     }
   }
 
@@ -285,6 +313,19 @@ public class ActorCreationTest extends JUnitSuite {
   public void testPropsUsingCreatorWithoutClass() {
     final Props p = UntypedTestActor.propsUsingCreatorWithoutClass(17);
     assertEquals(UntypedTestActor.class, p.actorClass());
+  }
+
+  @Test
+  public void testIssue20537Reproducer() {
+    final Issue20537Reproducer.ReproducerCreator creator = new Issue20537Reproducer.ReproducerCreator(false);
+    final Props p = Props.create(creator);
+    assertEquals(Issue20537Reproducer.class, p.actorClass());
+
+    ArrayList<Props> pList = IntStream.range(0, 4).mapToObj(i -> Props.create(creator))
+        .collect(toCollection(ArrayList::new));
+    for (Props each : pList) {
+      assertEquals(Issue20537Reproducer.class, each.actorClass());
+    }
   }
 
 

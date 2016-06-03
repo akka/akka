@@ -18,13 +18,13 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /** INTERNAL API */
 private[akka] final case class ClientConnectionSettingsImpl(
-  userAgentHeader: Option[`User-Agent`],
-  connectingTimeout: FiniteDuration,
-  idleTimeout: Duration,
-  requestHeaderSizeHint: Int,
+  userAgentHeader:        Option[`User-Agent`],
+  connectingTimeout:      FiniteDuration,
+  idleTimeout:            Duration,
+  requestHeaderSizeHint:  Int,
   websocketRandomFactory: () ⇒ Random,
-  socketOptions: immutable.Seq[SocketOption],
-  parserSettings: ParserSettings)
+  socketOptions:          immutable.Seq[SocketOption],
+  parserSettings:         ParserSettings)
   extends akka.http.scaladsl.settings.ClientConnectionSettings {
 
   require(connectingTimeout >= Duration.Zero, "connectingTimeout must be >= 0")

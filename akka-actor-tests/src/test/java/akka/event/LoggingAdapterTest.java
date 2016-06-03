@@ -3,6 +3,7 @@ package akka.event;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.JavaTestKit;
 import akka.event.Logging.Error;
 import akka.event.ActorWithMDC.Log;
@@ -10,6 +11,8 @@ import static akka.event.Logging.*;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.Duration;
@@ -30,9 +33,19 @@ public class LoggingAdapterTest extends JUnitSuite {
             "akka.actor.serialize-messages = off"
     );
 
+    @Rule
+    public AkkaJUnitActorSystemResource actorSystemResource = 
+        new AkkaJUnitActorSystemResource("LoggingAdapterTest", config);
+
+    private ActorSystem system = null;
+
+    @Before
+    public void beforeEach() {
+       system = actorSystemResource.getSystem();
+    }
+
     @Test
     public void mustFormatMessage() {
-        final ActorSystem system = ActorSystem.create("test-system", config);
         final LoggingAdapter log = Logging.getLogger(system, this);
         new LogJavaTestKit(system) {{
             system.eventStream().subscribe(getRef(), LogEvent.class);
@@ -66,7 +79,6 @@ public class LoggingAdapterTest extends JUnitSuite {
 
     @Test
     public void mustCallMdcForEveryLog() throws Exception {
-        final ActorSystem system = ActorSystem.create("test-system", config);
         new LogJavaTestKit(system) {{
             system.eventStream().subscribe(getRef(), LogEvent.class);
             ActorRef ref = system.actorOf(Props.create(ActorWithMDC.class));
@@ -86,7 +98,6 @@ public class LoggingAdapterTest extends JUnitSuite {
 
     @Test
     public void mustSupportMdcNull() throws Exception {
-        final ActorSystem system = ActorSystem.create("test-system", config);
         new LogJavaTestKit(system) {{
             system.eventStream().subscribe(getRef(), LogEvent.class);
             ActorRef ref = system.actorOf(Props.create(ActorWithMDC.class));
@@ -131,6 +142,7 @@ public class LoggingAdapterTest extends JUnitSuite {
 
         void expectLog(final Object level, final String message, final Throwable cause, final String mdc) {
             new ExpectMsg<Void>(Duration.create(3, TimeUnit.SECONDS), "LogEvent") {
+                @Override
                 protected Void match(Object event) {
                     LogEvent log = (LogEvent) event;
                     assertEquals(message, log.message());

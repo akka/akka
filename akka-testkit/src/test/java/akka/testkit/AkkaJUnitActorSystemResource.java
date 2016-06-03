@@ -4,28 +4,44 @@
 package akka.testkit;
 
 import akka.actor.ActorSystem;
+
 import com.typesafe.config.Config;
 import org.junit.rules.ExternalResource;
 
 /**
- * This is a resource for creating an actor system before test start and shut it down afterwards.
+ * This is a resource for creating an actor system before test start and shut it
+ * down afterwards.
  *
  * To use it on a class level add this to your test class:
  *
- * @ClassRule
+ * <code>
+ * &#64;ClassRule
  * public static AkkaJUnitActorSystemResource actorSystemResource =
  *   new AkkaJUnitActorSystemResource(name, config);
  *
  * private final ActorSystem system = actorSystemResource.getSystem();
+ * </code>
  *
  *
- * To use it on a per test level add this to your test class:
+ *            To use it on a per test level add this to your test class:
  *
- * @Rule
+ *            <code>
+ * &#64;Rule
  * public AkkaJUnitActorSystemResource actorSystemResource =
  *   new AkkaJUnitActorSystemResource(name, config);
  *
- * private final ActorSystem system = actorSystemResource.getSystem();
+ * private ActorSystem system = null;
+ *
+ * &#64;Before
+ * public void beforeEach() {
+ *   system = actorSystemResource.getSystem();
+ * }
+ * </code>
+ *
+ *         Note that it is important to not use <code>getSystem</code> from the
+ *         constructor of the test, becuase some test runners may create an
+ *         instance of the class without actually using it later, resulting in
+ *         memory leaks because of not shutting down the actor system.
  */
 
 public class AkkaJUnitActorSystemResource extends ExternalResource {
@@ -49,7 +65,6 @@ public class AkkaJUnitActorSystemResource extends ExternalResource {
   public AkkaJUnitActorSystemResource(String name, Config config) {
     this.name = name;
     this.config = config;
-    system = createSystem(name, config);
   }
 
   public AkkaJUnitActorSystemResource(String name) {
@@ -58,9 +73,6 @@ public class AkkaJUnitActorSystemResource extends ExternalResource {
 
   @Override
   protected void before() throws Throwable {
-    // Sometimes the ExternalResource seems to be reused, and
-    // we don't run the constructor again, so if that's the case
-    // then create the system here
     if (system == null) {
       system = createSystem(name, config);
     }
@@ -73,6 +85,9 @@ public class AkkaJUnitActorSystemResource extends ExternalResource {
   }
 
   public ActorSystem getSystem() {
+    if (system == null) {
+      system = createSystem(name, config);
+    }
     return system;
   }
 }

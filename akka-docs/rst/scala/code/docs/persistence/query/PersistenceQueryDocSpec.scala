@@ -57,7 +57,7 @@ object PersistenceQueryDocSpec {
       tag: String, offset: Long = 0L): Source[EventEnvelope, NotUsed] = {
       val props = MyEventsByTagPublisher.props(tag, offset, refreshInterval)
       Source.actorPublisher[EventEnvelope](props)
-        .mapMaterializedValue(_ ⇒ NotUsed)
+        .mapMaterializedValue(_ => NotUsed)
     }
 
     override def eventsByPersistenceId(

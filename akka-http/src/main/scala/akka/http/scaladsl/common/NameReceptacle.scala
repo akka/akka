@@ -4,7 +4,7 @@
 
 package akka.http.scaladsl.common
 
-import akka.http.scaladsl.unmarshalling.{ FromStringUnmarshaller ⇒ FSU }
+import akka.http.scaladsl.unmarshalling.{ Unmarshaller, FromStringUnmarshaller ⇒ FSU }
 
 private[http] trait ToNameReceptacleEnhancements {
   implicit def _symbol2NR(symbol: Symbol): NameReceptacle[String] = new NameReceptacle[String](symbol.name)
@@ -14,7 +14,8 @@ object ToNameReceptacleEnhancements extends ToNameReceptacleEnhancements
 
 class NameReceptacle[T](val name: String) {
   def as[B] = new NameReceptacle[B](name)
-  def as[B](unmarshaller: FSU[B]) = new NameUnmarshallerReceptacle(name, unmarshaller)
+  def as[B](unmarshaller: Unmarshaller[T, B])(implicit fsu: FSU[T]) =
+    new NameUnmarshallerReceptacle(name, fsu.transform[B](implicit ec ⇒ implicit mat ⇒ { _ flatMap unmarshaller.apply }))
   def ? = new NameOptionReceptacle[T](name)
   def ?[B](default: B) = new NameDefaultReceptacle(name, default)
   def ![B](requiredValue: B) = new RequiredValueReceptacle(name, requiredValue)
@@ -22,6 +23,8 @@ class NameReceptacle[T](val name: String) {
 }
 
 class NameUnmarshallerReceptacle[T](val name: String, val um: FSU[T]) {
+  def as[B](implicit unmarshaller: Unmarshaller[T, B]) =
+    new NameUnmarshallerReceptacle(name, um.transform[B](implicit ec ⇒ implicit mat ⇒ { _ flatMap unmarshaller.apply }))
   def ? = new NameOptionUnmarshallerReceptacle[T](name, um)
   def ?(default: T) = new NameDefaultUnmarshallerReceptacle(name, default, um)
   def !(requiredValue: T) = new RequiredValueUnmarshallerReceptacle(name, requiredValue, um)

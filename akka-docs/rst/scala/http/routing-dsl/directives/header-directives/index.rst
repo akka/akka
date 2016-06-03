@@ -17,3 +17,4 @@ response headers use one of the :ref:`RespondWithDirectives`.
    optionalHeaderValueByName
    optionalHeaderValueByType
    optionalHeaderValuePF
+   checkSameOrigin

@@ -33,6 +33,10 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
   lazy val helloGzipped = compress("Hello", Gzip)
   lazy val helloDeflated = compress("Hello", Deflate)
 
+  val nope = complete((404, "Nope!"))
+  lazy val nopeGzipped = compress("Nope!", Gzip)
+  lazy val nopeDeflated = compress("Nope!", Deflate)
+
   "the NoEncoding decoder" should {
     "decode the request content if it has encoding 'identity'" in {
       Post("/", "yes") ~> `Content-Encoding`(identity) ~> {
@@ -158,6 +162,19 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
           UnsupportedRequestEncodingRejection(gzip),
           UnsupportedRequestEncodingRejection(identity))
       }
+    }
+  }
+
+  "the encoder" should {
+    "encode the response content with GZIP if the response is not a success and request has no Accept-Encoding header" in {
+      Post() ~> {
+        encodeResponseWith(Gzip) { nope }
+      } ~> check { strictify(responseEntity) shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), nopeGzipped) }
+    }
+    "encode the response content with Deflate if the response is not a success and request has no Accept-Encoding header" in {
+      Post() ~> {
+        encodeResponseWith(Deflate) { nope }
+      } ~> check { strictify(responseEntity) shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), nopeDeflated) }
     }
   }
 

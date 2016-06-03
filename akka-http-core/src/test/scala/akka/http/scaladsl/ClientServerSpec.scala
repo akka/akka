@@ -7,7 +7,7 @@ package akka.http.scaladsl
 import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.{ BindException, Socket }
 import java.util.concurrent.TimeoutException
-import akka.http.scaladsl.settings.{ ConnectionPoolSettings, ClientConnectionSettings, ServerSettings }
+import java.util.concurrent.atomic.AtomicLong
 
 import scala.annotation.tailrec
 import scala.concurrent.duration._
@@ -19,15 +19,18 @@ import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.headers.{ Accept, Age, Date, Host, Server, `User-Agent` }
+import akka.http.scaladsl.settings.{ ConnectionPoolSettings, ClientConnectionSettings, ServerSettings }
 import akka.stream.scaladsl._
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.testkit._
-import akka.stream.{ ActorMaterializer, BindFailedException, StreamTcpException }
+import akka.stream._
 import akka.testkit.EventFilter
 import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.concurrent.Eventually.eventually
 
 class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
   val testConf: Config = ConfigFactory.parseString("""
@@ -248,7 +251,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
             def runRequest(uri: Uri): Future[(Try[HttpResponse], Int)] = {
               val itNeverSends = Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source.maybe[ByteString])
-              Source.single(HttpRequest(POST, uri, entity = itNeverSends) -> 1)
+              Source.single(HttpRequest(POST, uri, entity = itNeverSends) → 1)
                 .via(pool)
                 .runWith(Sink.head)
             }
@@ -343,6 +346,58 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
           }
         }(system2)
         Await.result(b1.unbind(), 1.second)
+      }(materializer2)
+
+      "stop stages on failure" in Utils.assertAllStagesStopped {
+        val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+        val stageCounter = new AtomicLong(0)
+        val cancelCounter = new AtomicLong(0)
+        val stage: GraphStage[FlowShape[HttpRequest, HttpResponse]] = new GraphStage[FlowShape[HttpRequest, HttpResponse]] {
+          val in = Inlet[HttpRequest]("request.in")
+          val out = Outlet[HttpResponse]("response.out")
+
+          override def shape: FlowShape[HttpRequest, HttpResponse] = FlowShape.of(in, out)
+
+          override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+            override def preStart(): Unit = stageCounter.incrementAndGet()
+            override def postStop(): Unit = stageCounter.decrementAndGet()
+            override def onPush(): Unit = push(out, HttpResponse(entity = stageCounter.get().toString))
+            override def onPull(): Unit = pull(in)
+            override def onDownstreamFinish(): Unit = cancelCounter.incrementAndGet()
+
+            setHandlers(in, out, this)
+          }
+        }
+
+        def performFaultyRequest() = {
+          val socket = new Socket(hostname, port)
+          val os = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream, "UTF8"))
+
+          os.write("YOLO")
+          os.close()
+
+          socket.close()
+        }
+
+        def performValidRequest() = Http().outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.ignore)
+
+        def assertCounters(stage: Int, cancel: Int) = eventually(timeout(1.second)) {
+          stageCounter.get shouldEqual stage
+          cancelCounter.get shouldEqual cancel
+        }
+
+        val bind = Await.result(Http().bindAndHandle(Flow.fromGraph(stage), hostname, port)(materializer2), 1.seconds)
+
+        performValidRequest()
+        assertCounters(0, 1)
+
+        performFaultyRequest()
+        assertCounters(0, 2)
+
+        performValidRequest()
+        assertCounters(0, 3)
+
+        Await.result(bind.unbind(), 1.second)
       }(materializer2)
     }
 
@@ -480,7 +535,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
       connection.remoteAddress.getHostName shouldEqual hostname
       connection.remoteAddress.getPort shouldEqual port
-      requestPublisherProbe -> responseSubscriberProbe
+      requestPublisherProbe → responseSubscriberProbe
     }
 
     def acceptConnection(): (TestSubscriber.ManualProbe[HttpRequest], TestPublisher.ManualProbe[HttpResponse]) = {
@@ -497,7 +552,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
       pub.subscribe(requestSubscriberProbe)
       responsePublisherProbe.subscribe(sub)
-      requestSubscriberProbe -> responsePublisherProbe
+      requestSubscriberProbe → responsePublisherProbe
     }
 
     def openClientSocket() = new Socket(hostname, port)
@@ -513,7 +568,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val sb = new java.lang.StringBuilder
       val cbuf = new Array[Char](256)
       @tailrec def drain(): (String, BufferedReader) = reader.read(cbuf) match {
-        case -1 ⇒ sb.toString -> reader
+        case -1 ⇒ sb.toString → reader
         case n  ⇒ sb.append(cbuf, 0, n); drain()
       }
       drain()

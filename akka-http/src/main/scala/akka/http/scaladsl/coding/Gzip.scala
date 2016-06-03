@@ -125,5 +125,5 @@ private[http] object GzipDecompressor {
     0, // MTIME 4
     0, // XFL
     0 // OS
-    )
+  )
 }

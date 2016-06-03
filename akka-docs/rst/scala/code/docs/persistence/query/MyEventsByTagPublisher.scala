@@ -39,11 +39,11 @@ class MyEventsByTagPublisher(tag: String, offset: Long, refreshInterval: FiniteD
   }
 
   def receive = {
-    case _: Request | Continue ⇒
+    case _: Request | Continue =>
       query()
       deliverBuf()
 
-    case Cancel ⇒
+    case Cancel =>
       context.stop(self)
   }
 
@@ -79,12 +79,12 @@ class MyEventsByTagPublisher(tag: String, offset: Long, refreshInterval: FiniteD
         val serialization = SerializationExtension(context.system)
 
         buf = result.map {
-          case (id, bytes) ⇒
+          case (id, bytes) =>
             val p = serialization.deserialize(bytes, classOf[PersistentRepr]).get
             EventEnvelope(offset = id, p.persistenceId, p.sequenceNr, p.payload)
         }
       } catch {
-        case e: Exception ⇒
+        case e: Exception =>
           onErrorThenStop(e)
       }
     }
