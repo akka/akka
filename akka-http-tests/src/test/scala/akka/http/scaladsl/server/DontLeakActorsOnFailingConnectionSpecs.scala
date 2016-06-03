@@ -41,7 +41,7 @@ class DontLeakActorsOnFailingConnectionSpecs extends WordSpecLike with Matchers 
         val reqsCount = 100
         val clientFlow = Http().superPool[Int]()
         val (_, _, port) = TestUtils.temporaryServerHostnameAndPort()
-        val source = Source(1 to reqsCount).map(i ⇒ HttpRequest(uri = Uri(s"http://127.0.0.1:$port/test/$i")) -> i)
+        val source = Source(1 to reqsCount).map(i ⇒ HttpRequest(uri = Uri(s"http://127.0.0.1:$port/test/$i")) → i)
 
         val countDown = new CountDownLatch(reqsCount)
         val sink = Sink.foreach[(Try[HttpResponse], Int)] {

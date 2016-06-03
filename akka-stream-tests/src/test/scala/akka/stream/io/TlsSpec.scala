@@ -405,12 +405,11 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
     "reliably cancel subscriptions when TransportIn fails early" in assertAllStagesStopped {
       val ex = new Exception("hello")
       val (sub, out1, out2) =
-        RunnableGraph.fromGraph(GraphDSL.create(Source.asSubscriber[SslTlsOutbound], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b ⇒
-          (s, o1, o2) ⇒
-            val tls = b.add(clientTls(EagerClose))
-            s ~> tls.in1; tls.out1 ~> o1
-            o2 <~ tls.out2; tls.in2 <~ Source.failed(ex)
-            ClosedShape
+        RunnableGraph.fromGraph(GraphDSL.create(Source.asSubscriber[SslTlsOutbound], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b ⇒ (s, o1, o2) ⇒
+          val tls = b.add(clientTls(EagerClose))
+          s ~> tls.in1; tls.out1 ~> o1
+          o2 <~ tls.out2; tls.in2 <~ Source.failed(ex)
+          ClosedShape
         }).run()
       the[Exception] thrownBy Await.result(out1, 1.second) should be(ex)
       the[Exception] thrownBy Await.result(out2, 1.second) should be(ex)
@@ -423,12 +422,11 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
     "reliably cancel subscriptions when UserIn fails early" in assertAllStagesStopped {
       val ex = new Exception("hello")
       val (sub, out1, out2) =
-        RunnableGraph.fromGraph(GraphDSL.create(Source.asSubscriber[ByteString], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b ⇒
-          (s, o1, o2) ⇒
-            val tls = b.add(clientTls(EagerClose))
-            Source.failed[SslTlsOutbound](ex) ~> tls.in1; tls.out1 ~> o1
-            o2 <~ tls.out2; tls.in2 <~ s
-            ClosedShape
+        RunnableGraph.fromGraph(GraphDSL.create(Source.asSubscriber[ByteString], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b ⇒ (s, o1, o2) ⇒
+          val tls = b.add(clientTls(EagerClose))
+          Source.failed[SslTlsOutbound](ex) ~> tls.in1; tls.out1 ~> o1
+          o2 <~ tls.out2; tls.in2 <~ s
+          ClosedShape
         }).run()
       the[Exception] thrownBy Await.result(out1, 1.second) should be(ex)
       the[Exception] thrownBy Await.result(out2, 1.second) should be(ex)

@@ -148,7 +148,8 @@ class UriSpec extends WordSpec with Matchers {
     "not accept illegal IPv6 literals" in {
       // 5 char quad
       the[IllegalUriException] thrownBy Host("[::12345]") shouldBe {
-        IllegalUriException("Illegal URI host: Invalid input '5', expected ':' or ']' (line 1, column 8)",
+        IllegalUriException(
+          "Illegal URI host: Invalid input '5', expected ':' or ']' (line 1, column 8)",
           "[::12345]\n" +
             "       ^")
       }
@@ -305,29 +306,29 @@ class UriSpec extends WordSpec with Matchers {
       query.getOrElse("d", "x") shouldEqual "x"
       query.getAll("b") shouldEqual List("", "4", "2")
       query.getAll("d") shouldEqual Nil
-      query.toMap shouldEqual Map("a" -> "1", "b" -> "", "c" -> "3")
-      query.toMultiMap shouldEqual Map("a" -> List("1"), "b" -> List("", "4", "2"), "c" -> List("3"))
-      query.toList shouldEqual List("a" -> "1", "b" -> "2", "c" -> "3", "b" -> "4", "b" -> "")
-      query.toSeq shouldEqual Seq("a" -> "1", "b" -> "2", "c" -> "3", "b" -> "4", "b" -> "")
+      query.toMap shouldEqual Map("a" → "1", "b" → "", "c" → "3")
+      query.toMultiMap shouldEqual Map("a" → List("1"), "b" → List("", "4", "2"), "c" → List("3"))
+      query.toList shouldEqual List("a" → "1", "b" → "2", "c" → "3", "b" → "4", "b" → "")
+      query.toSeq shouldEqual Seq("a" → "1", "b" → "2", "c" → "3", "b" → "4", "b" → "")
     }
     "support conversion from list of name/value pairs" in {
       import Query._
-      val pairs = List("key1" -> "value1", "key2" -> "value2", "key3" -> "value3")
+      val pairs = List("key1" → "value1", "key2" → "value2", "key3" → "value3")
       Query(pairs: _*).toList.diff(pairs) shouldEqual Nil
       Query() shouldEqual Empty
-      Query("k" -> "v") shouldEqual ("k" -> "v") +: Empty
+      Query("k" → "v") shouldEqual ("k" → "v") +: Empty
     }
     "encode special separators in query parameter names" in {
-      Query("a=b" -> "c").toString() shouldEqual "a%3Db=c"
-      Query("a&b" -> "c").toString() shouldEqual "a%26b=c"
-      Query("a+b" -> "c").toString() shouldEqual "a%2Bb=c"
-      Query("a;b" -> "c").toString() shouldEqual "a%3Bb=c"
+      Query("a=b" → "c").toString() shouldEqual "a%3Db=c"
+      Query("a&b" → "c").toString() shouldEqual "a%26b=c"
+      Query("a+b" → "c").toString() shouldEqual "a%2Bb=c"
+      Query("a;b" → "c").toString() shouldEqual "a%3Bb=c"
     }
     "encode special separators in query parameter values" in {
-      Query("a" -> "b=c").toString() shouldEqual "a=b%3Dc"
-      Query("a" -> "b&c").toString() shouldEqual "a=b%26c"
-      Query("a" -> "b+c").toString() shouldEqual "a=b%2Bc"
-      Query("a" -> "b;c").toString() shouldEqual "a=b%3Bc"
+      Query("a" → "b=c").toString() shouldEqual "a=b%3Dc"
+      Query("a" → "b&c").toString() shouldEqual "a=b%26c"
+      Query("a" → "b+c").toString() shouldEqual "a=b%2Bc"
+      Query("a" → "b;c").toString() shouldEqual "a=b%3Bc"
     }
   }
 
@@ -456,7 +457,7 @@ class UriSpec extends WordSpec with Matchers {
 
     "support tunneling a URI through a query param" in {
       val uri = Uri("http://aHost/aPath?aParam=aValue#aFragment")
-      val q = Query("uri" -> uri.toString)
+      val q = Query("uri" → uri.toString)
       val uri2 = Uri(path = Path./, fragment = Some("aFragment")).withQuery(q).toString
       uri2 shouldEqual "/?uri=http://ahost/aPath?aParam%3DaValue%23aFragment#aFragment"
       Uri(uri2).query() shouldEqual q
@@ -466,42 +467,48 @@ class UriSpec extends WordSpec with Matchers {
     "produce proper error messages for illegal URIs" in {
       // illegal scheme
       the[IllegalUriException] thrownBy Uri("foö:/a") shouldBe {
-        IllegalUriException("Illegal URI reference: Invalid input 'ö', expected scheme-char, 'EOI', '#', ':', '?', slashSegments or pchar (line 1, column 3)",
+        IllegalUriException(
+          "Illegal URI reference: Invalid input 'ö', expected scheme-char, 'EOI', '#', ':', '?', slashSegments or pchar (line 1, column 3)",
           "foö:/a\n" +
             "  ^")
       }
 
       // illegal userinfo
       the[IllegalUriException] thrownBy Uri("http://user:ö@host") shouldBe {
-        IllegalUriException("Illegal URI reference: Invalid input 'ö', expected userinfo-char, pct-encoded, '@' or port (line 1, column 13)",
+        IllegalUriException(
+          "Illegal URI reference: Invalid input 'ö', expected userinfo-char, pct-encoded, '@' or port (line 1, column 13)",
           "http://user:ö@host\n" +
             "            ^")
       }
 
       // illegal percent-encoding
       the[IllegalUriException] thrownBy Uri("http://use%2G@host") shouldBe {
-        IllegalUriException("Illegal URI reference: Invalid input 'G', expected HEXDIG (line 1, column 13)",
+        IllegalUriException(
+          "Illegal URI reference: Invalid input 'G', expected HEXDIG (line 1, column 13)",
           "http://use%2G@host\n" +
             "            ^")
       }
 
       // illegal path
       the[IllegalUriException] thrownBy Uri("http://www.example.com/name with spaces/") shouldBe {
-        IllegalUriException("Illegal URI reference: Invalid input ' ', expected '/', 'EOI', '#', '?' or pchar (line 1, column 28)",
+        IllegalUriException(
+          "Illegal URI reference: Invalid input ' ', expected '/', 'EOI', '#', '?' or pchar (line 1, column 28)",
           "http://www.example.com/name with spaces/\n" +
             "                           ^")
       }
 
       // illegal path with control character
       the[IllegalUriException] thrownBy Uri("http:///with\newline") shouldBe {
-        IllegalUriException("Illegal URI reference: Invalid input '\\n', expected '/', 'EOI', '#', '?' or pchar (line 1, column 13)",
+        IllegalUriException(
+          "Illegal URI reference: Invalid input '\\n', expected '/', 'EOI', '#', '?' or pchar (line 1, column 13)",
           "http:///with\n" +
             "            ^")
       }
 
       // illegal query
       the[IllegalUriException] thrownBy Uri("?a=b=c").query() shouldBe {
-        IllegalUriException("Illegal query: Invalid input '=', expected '+', query-char, 'EOI', '&' or pct-encoded (line 1, column 4)",
+        IllegalUriException(
+          "Illegal query: Invalid input '=', expected '+', query-char, 'EOI', '&' or pct-encoded (line 1, column 4)",
           "a=b=c\n" +
             "   ^")
       }
@@ -596,8 +603,8 @@ class UriSpec extends WordSpec with Matchers {
       uri.withUserInfo("someInfo") shouldEqual Uri("http://someInfo@host/path?query#fragment")
       explicitDefault.withUserInfo("someInfo") shouldEqual Uri("http://someInfo@host:80/path?query#fragment")
 
-      uri.withQuery(Query("param1" -> "value1")) shouldEqual Uri("http://host/path?param1=value1#fragment")
-      uri.withQuery(Query(Map("param1" -> "value1"))) shouldEqual Uri("http://host/path?param1=value1#fragment")
+      uri.withQuery(Query("param1" → "value1")) shouldEqual Uri("http://host/path?param1=value1#fragment")
+      uri.withQuery(Query(Map("param1" → "value1"))) shouldEqual Uri("http://host/path?param1=value1#fragment")
       uri.withRawQueryString("param1=value1") shouldEqual Uri("http://host/path?param1=value1#fragment")
 
       uri.withFragment("otherFragment") shouldEqual Uri("http://host/path?query#otherFragment")

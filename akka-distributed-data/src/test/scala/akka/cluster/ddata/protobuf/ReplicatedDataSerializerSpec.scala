@@ -25,7 +25,8 @@ import akka.testkit.TestKit
 import akka.cluster.UniqueAddress
 import com.typesafe.config.ConfigFactory
 
-class ReplicatedDataSerializerSpec extends TestKit(ActorSystem("ReplicatedDataSerializerSpec",
+class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
+  "ReplicatedDataSerializerSpec",
   ConfigFactory.parseString("""
     akka.actor.provider=akka.cluster.ClusterActorRefProvider
     akka.remote.netty.tcp.port=0

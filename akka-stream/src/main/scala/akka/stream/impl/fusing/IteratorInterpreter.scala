@@ -100,7 +100,7 @@ private[akka] object IteratorInterpreter {
  * INTERNAL API
  */
 private[akka] class IteratorInterpreter[I, O](
-  val input: Iterator[I],
+  val input:  Iterator[I],
   val stages: Seq[GraphStageWithMaterializedValue[FlowShape[_, _], Any]]) {
 
   import akka.stream.impl.fusing.IteratorInterpreter._

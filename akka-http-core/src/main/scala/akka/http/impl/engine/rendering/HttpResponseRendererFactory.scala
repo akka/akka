@@ -23,9 +23,10 @@ import headers._
 /**
  * INTERNAL API
  */
-private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Server],
-                                                responseHeaderSizeHint: Int,
-                                                log: LoggingAdapter) {
+private[http] class HttpResponseRendererFactory(
+  serverHeader:           Option[headers.Server],
+  responseHeaderSizeHint: Int,
+  log:                    LoggingAdapter) {
 
   private val renderDefaultServerHeader: Rendering ⇒ Unit =
     serverHeader match {
@@ -46,7 +47,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
       val r = new ByteArrayRendering(48)
       DateTime(now).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
       cachedBytes = r.get
-      cachedDateHeader = cachedSeconds -> cachedBytes
+      cachedDateHeader = cachedSeconds → cachedBytes
     }
     cachedBytes
   }
@@ -275,10 +276,10 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
  * INTERNAL API
  */
 private[http] final case class ResponseRenderingContext(
-  response: HttpResponse,
-  requestMethod: HttpMethod = HttpMethods.GET,
+  response:        HttpResponse,
+  requestMethod:   HttpMethod   = HttpMethods.GET,
   requestProtocol: HttpProtocol = HttpProtocols.`HTTP/1.1`,
-  closeRequested: Boolean = false)
+  closeRequested:  Boolean      = false)
 
 /** INTERNAL API */
 private[http] sealed trait ResponseRenderingOutput

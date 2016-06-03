@@ -25,10 +25,11 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
  */
 private[http] object BodyPartRenderer {
 
-  def streamed(boundary: String,
-               nioCharset: Charset,
-               partHeadersSizeHint: Int,
-               log: LoggingAdapter): PushPullStage[Multipart.BodyPart, Source[ChunkStreamPart, Any]] =
+  def streamed(
+    boundary:            String,
+    nioCharset:          Charset,
+    partHeadersSizeHint: Int,
+    log:                 LoggingAdapter): PushPullStage[Multipart.BodyPart, Source[ChunkStreamPart, Any]] =
     new PushPullStage[Multipart.BodyPart, Source[ChunkStreamPart, Any]] {
       var firstBoundaryRendered = false
 

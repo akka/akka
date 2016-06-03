@@ -372,11 +372,11 @@ private[akka] object ActorCell {
  * for! (waves hand)
  */
 private[akka] class ActorCell(
-  val system: ActorSystemImpl,
-  val self: InternalActorRef,
+  val system:      ActorSystemImpl,
+  val self:        InternalActorRef,
   final val props: Props, // Must be final so that it can be properly cleared in clearActorCellFields
-  val dispatcher: MessageDispatcher,
-  val parent: InternalActorRef)
+  val dispatcher:  MessageDispatcher,
+  val parent:      InternalActorRef)
   extends UntypedActorContext with AbstractActorContext with Cell
   with dungeon.ReceiveTimeout
   with dungeon.Children
@@ -598,7 +598,8 @@ private[akka] class ActorCell(
       case NonFatal(e) ⇒
         clearOutActorIfNonNull()
         e match {
-          case i: InstantiationException ⇒ throw ActorInitializationException(self,
+          case i: InstantiationException ⇒ throw ActorInitializationException(
+            self,
             """exception during creation, this problem is likely to occur because the class of the Actor you tried to create is either,
                a non-static inner class (in which case make it a static inner class or use Props(new ...) or Props( new Creator ... )
                or is missing an appropriate, reachable no-args constructor.

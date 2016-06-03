@@ -65,7 +65,8 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
     asked.correlationId should ===(selection)
 
     implicit val ec = system.dispatcher
-    val resolved = Await.result(selection.resolveOne(timeout.duration).mapTo[ActorRef] recover { case _ ⇒ null },
+    val resolved = Await.result(
+      selection.resolveOne(timeout.duration).mapTo[ActorRef] recover { case _ ⇒ null },
       timeout.duration)
     Option(resolved) should ===(result)
 
@@ -248,11 +249,11 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
         val lookname = looker.path.elements.mkString("", "/", "/")
         for (
           (l, r) ← Seq(
-            SelectString("a/b/c") -> None,
-            SelectString("akka://all-systems/Nobody") -> None,
-            SelectPath(system / "hallo") -> None,
-            SelectPath(looker.path child "hallo") -> None, // test Java API
-            SelectPath(looker.path descendant Seq("a", "b").asJava) -> None) // test Java API
+            SelectString("a/b/c") → None,
+            SelectString("akka://all-systems/Nobody") → None,
+            SelectPath(system / "hallo") → None,
+            SelectPath(looker.path child "hallo") → None, // test Java API
+            SelectPath(looker.path descendant Seq("a", "b").asJava) → None) // test Java API
         ) checkOne(looker, l, r)
       }
       for (looker ← all) check(looker)

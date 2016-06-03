@@ -26,10 +26,11 @@ private[http] object WebSocket {
   /**
    * A stack of all the higher WS layers between raw frames and the user API.
    */
-  def stack(serverSide: Boolean,
-            maskingRandomFactory: () ⇒ Random,
-            closeTimeout: FiniteDuration = 3.seconds,
-            log: LoggingAdapter): BidiFlow[FrameEvent, Message, Message, FrameEvent, NotUsed] =
+  def stack(
+    serverSide:           Boolean,
+    maskingRandomFactory: () ⇒ Random,
+    closeTimeout:         FiniteDuration = 3.seconds,
+    log:                  LoggingAdapter): BidiFlow[FrameEvent, Message, Message, FrameEvent, NotUsed] =
     masking(serverSide, maskingRandomFactory) atop
       frameHandling(serverSide, closeTimeout, log) atop
       messageAPI(serverSide, closeTimeout)
@@ -50,9 +51,10 @@ private[http] object WebSocket {
    * The layer that implements all low-level frame handling, like handling control frames, collecting messages
    * from frames, decoding text messages, close handling, etc.
    */
-  def frameHandling(serverSide: Boolean = true,
-                    closeTimeout: FiniteDuration,
-                    log: LoggingAdapter): BidiFlow[FrameEventOrError, FrameHandler.Output, FrameOutHandler.Input, FrameStart, NotUsed] =
+  def frameHandling(
+    serverSide:   Boolean        = true,
+    closeTimeout: FiniteDuration,
+    log:          LoggingAdapter): BidiFlow[FrameEventOrError, FrameHandler.Output, FrameOutHandler.Input, FrameStart, NotUsed] =
     BidiFlow.fromFlows(
       FrameHandler.create(server = serverSide),
       FrameOutHandler.create(serverSide, closeTimeout, log))
@@ -67,7 +69,7 @@ private[http] object WebSocket {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
       var inMessage = false
-      override def onPush():Unit = grab(in) match {
+      override def onPush(): Unit = grab(in) match {
         case PeerClosed(code, reason) ⇒
           if (code.exists(Protocol.CloseCodes.isError)) failStage(new PeerClosedConnectionException(code.get, reason))
           else if (inMessage) failStage(new ProtocolException(s"Truncated message, peer closed connection in the middle of message."))
@@ -77,8 +79,8 @@ private[http] object WebSocket {
           else failStage(new IllegalStateException("Regular close from FrameHandler is unexpected"))
         case x: MessageDataPart ⇒
           inMessage = !x.last
-          push(out,x)
-        case x ⇒ push(out,x)
+          push(out, x)
+        case x ⇒ push(out, x)
       }
       override def onPull(): Unit = pull(in)
       setHandlers(in, out, this)
@@ -88,8 +90,9 @@ private[http] object WebSocket {
   /**
    * The layer that provides the high-level user facing API on top of frame handling.
    */
-  def messageAPI(serverSide: Boolean,
-                 closeTimeout: FiniteDuration): BidiFlow[FrameHandler.Output, Message, Message, FrameOutHandler.Input, NotUsed] = {
+  def messageAPI(
+    serverSide:   Boolean,
+    closeTimeout: FiniteDuration): BidiFlow[FrameHandler.Output, Message, Message, FrameOutHandler.Input, NotUsed] = {
     /* Collects user-level API messages from MessageDataParts */
     val collectMessage: Flow[MessageDataPart, Message, NotUsed] =
       Flow[MessageDataPart]

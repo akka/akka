@@ -9,13 +9,13 @@ import com.typesafe.config.Config
 
 /** INTERNAL API */
 final case class RoutingSettingsImpl(
-  verboseErrorMessages: Boolean,
-  fileGetConditional: Boolean,
-  renderVanityFooter: Boolean,
-  rangeCountLimit: Int,
+  verboseErrorMessages:     Boolean,
+  fileGetConditional:       Boolean,
+  renderVanityFooter:       Boolean,
+  rangeCountLimit:          Int,
   rangeCoalescingThreshold: Long,
-  decodeMaxBytesPerChunk: Int,
-  fileIODispatcher: String) extends akka.http.scaladsl.settings.RoutingSettings {
+  decodeMaxBytesPerChunk:   Int,
+  fileIODispatcher:         String) extends akka.http.scaladsl.settings.RoutingSettings {
 
   override def productPrefix = "RoutingSettings"
 }

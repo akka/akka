@@ -39,11 +39,11 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
   private val PublishManifest = "E"
 
   private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] ⇒ AnyRef](
-    StatusManifest -> statusFromBinary,
-    DeltaManifest -> deltaFromBinary,
-    SendManifest -> sendFromBinary,
-    SendToAllManifest -> sendToAllFromBinary,
-    PublishManifest -> publishFromBinary)
+    StatusManifest → statusFromBinary,
+    DeltaManifest → deltaFromBinary,
+    SendManifest → sendFromBinary,
+    SendToAllManifest → sendToAllFromBinary,
+    PublishManifest → publishFromBinary)
 
   override def manifest(obj: AnyRef): String = obj match {
     case _: Status    ⇒ StatusManifest
@@ -122,7 +122,7 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
 
   private def statusFromProto(status: dm.Status): Status =
     Status(status.getVersionsList.asScala.map(v ⇒
-      addressFromProto(v.getAddress) -> v.getTimestamp)(breakOut))
+      addressFromProto(v.getAddress) → v.getTimestamp)(breakOut))
 
   private def deltaToProto(delta: Delta): dm.Delta = {
     val buckets = delta.buckets.map { b ⇒
@@ -148,7 +148,7 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
   private def deltaFromProto(delta: dm.Delta): Delta =
     Delta(delta.getBucketsList.asScala.toVector.map { b ⇒
       val content: TreeMap[String, ValueHolder] = b.getContentList.asScala.map { entry ⇒
-        entry.getKey -> ValueHolder(entry.getVersion, if (entry.hasRef) Some(resolveActorRef(entry.getRef)) else None)
+        entry.getKey → ValueHolder(entry.getVersion, if (entry.hasRef) Some(resolveActorRef(entry.getRef)) else None)
       }(breakOut)
       Bucket(addressFromProto(b.getOwner), b.getVersion, content)
     })

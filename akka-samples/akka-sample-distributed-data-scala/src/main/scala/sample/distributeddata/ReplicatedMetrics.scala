@@ -30,7 +30,7 @@ object ReplicatedMetrics {
   case class UsedHeap(percentPerNode: Map[String, Double]) {
     override def toString =
       percentPerNode.toSeq.sortBy(_._1).map {
-        case (key, value) ⇒ key + " --> " + value + " %"
+        case (key, value) => key + " --> " + value + " %"
       }.mkString("\n")
   }
 
@@ -71,42 +71,42 @@ class ReplicatedMetrics(measureInterval: FiniteDuration, cleanupInterval: Finite
   var nodesInCluster = Set.empty[String]
 
   def receive = {
-    case Tick ⇒
+    case Tick =>
       val heap = memoryMBean.getHeapMemoryUsage
       val used = heap.getUsed
       val max = heap.getMax
       replicator ! Update(UsedHeapKey, LWWMap.empty[Long], WriteLocal)(_ + (node -> used))
-      replicator ! Update(MaxHeapKey, LWWMap.empty[Long], WriteLocal) { data ⇒
+      replicator ! Update(MaxHeapKey, LWWMap.empty[Long], WriteLocal) { data =>
         data.get(node) match {
-          case Some(`max`) ⇒ data // unchanged
-          case _           ⇒ data + (node -> max)
+          case Some(`max`) => data // unchanged
+          case _           => data + (node -> max)
         }
       }
 
-    case c @ Changed(MaxHeapKey) ⇒
+    case c @ Changed(MaxHeapKey) =>
       maxHeap = c.get(MaxHeapKey).entries
 
-    case c @ Changed(UsedHeapKey) ⇒
+    case c @ Changed(UsedHeapKey) =>
       val usedHeapPercent = UsedHeap(c.get(UsedHeapKey).entries.collect {
-        case (key, value) if maxHeap.contains(key) ⇒
+        case (key, value) if maxHeap.contains(key) =>
           (key -> (value.toDouble / maxHeap(key)) * 100.0)
       })
       log.debug("Node {} observed:\n{}", node, usedHeapPercent)
       context.system.eventStream.publish(usedHeapPercent)
 
-    case _: UpdateResponse[_] ⇒ // ok
+    case _: UpdateResponse[_] => // ok
 
-    case MemberUp(m) ⇒
+    case MemberUp(m) =>
       nodesInCluster += nodeKey(m.address)
 
-    case MemberRemoved(m, _) ⇒
+    case MemberRemoved(m, _) =>
       nodesInCluster -= nodeKey(m.address)
       if (m.address == cluster.selfAddress)
         context.stop(self)
 
-    case Cleanup ⇒
+    case Cleanup =>
       def cleanupRemoved(data: LWWMap[Long]): LWWMap[Long] =
-        (data.entries.keySet -- nodesInCluster).foldLeft(data) { case (d, key) ⇒ d - key }
+        (data.entries.keySet -- nodesInCluster).foldLeft(data) { case (d, key) => d - key }
 
       replicator ! Update(UsedHeapKey, LWWMap.empty[Long], WriteLocal)(cleanupRemoved)
       replicator ! Update(MaxHeapKey, LWWMap.empty[Long], WriteLocal)(cleanupRemoved)

@@ -131,15 +131,16 @@ final case class AdaptiveLoadBalancingRoutingLogic(system: ActorSystem, metricsS
 @SerialVersionUID(1L)
 @deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 final case class AdaptiveLoadBalancingPool(
-  metricsSelector: MetricsSelector = MixMetricsSelector,
-  override val nrOfInstances: Int = 0,
+  metricsSelector:                 MetricsSelector    = MixMetricsSelector,
+  override val nrOfInstances:      Int                = 0,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
-  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-  override val usePoolDispatcher: Boolean = false)
+  override val routerDispatcher:   String             = Dispatchers.DefaultDispatcherId,
+  override val usePoolDispatcher:  Boolean            = false)
   extends Pool {
 
   def this(config: Config, dynamicAccess: DynamicAccess) =
-    this(nrOfInstances = ClusterRouterSettingsBase.getMaxTotalNrOfInstances(config),
+    this(
+      nrOfInstances = ClusterRouterSettingsBase.getMaxTotalNrOfInstances(config),
       metricsSelector = MetricsSelector.fromConfig(config, dynamicAccess),
       usePoolDispatcher = config.hasPath("pool-dispatcher"))
 
@@ -159,7 +160,8 @@ final case class AdaptiveLoadBalancingPool(
     new Router(AdaptiveLoadBalancingRoutingLogic(system, metricsSelector))
 
   override def routingLogicController(routingLogic: RoutingLogic): Option[Props] =
-    Some(Props(classOf[AdaptiveLoadBalancingMetricsListener],
+    Some(Props(
+      classOf[AdaptiveLoadBalancingMetricsListener],
       routingLogic.asInstanceOf[AdaptiveLoadBalancingRoutingLogic]))
 
   /**
@@ -212,13 +214,14 @@ final case class AdaptiveLoadBalancingPool(
 @SerialVersionUID(1L)
 @deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 final case class AdaptiveLoadBalancingGroup(
-  metricsSelector: MetricsSelector = MixMetricsSelector,
-  override val paths: immutable.Iterable[String] = Nil,
-  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+  metricsSelector:               MetricsSelector            = MixMetricsSelector,
+  override val paths:            immutable.Iterable[String] = Nil,
+  override val routerDispatcher: String                     = Dispatchers.DefaultDispatcherId)
   extends Group {
 
   def this(config: Config, dynamicAccess: DynamicAccess) =
-    this(metricsSelector = MetricsSelector.fromConfig(config, dynamicAccess),
+    this(
+      metricsSelector = MetricsSelector.fromConfig(config, dynamicAccess),
       paths = immutableSeq(config.getStringList("routees.paths")))
 
   /**
@@ -228,8 +231,9 @@ final case class AdaptiveLoadBalancingGroup(
    * @param routeesPaths string representation of the actor paths of the routees, messages are
    *   sent with [[akka.actor.ActorSelection]] to these paths
    */
-  def this(metricsSelector: MetricsSelector,
-           routeesPaths: java.lang.Iterable[String]) = this(paths = immutableSeq(routeesPaths))
+  def this(
+    metricsSelector: MetricsSelector,
+    routeesPaths:    java.lang.Iterable[String]) = this(paths = immutableSeq(routeesPaths))
 
   override def paths(system: ActorSystem): immutable.Iterable[String] = this.paths
 
@@ -237,7 +241,8 @@ final case class AdaptiveLoadBalancingGroup(
     new Router(AdaptiveLoadBalancingRoutingLogic(system, metricsSelector))
 
   override def routingLogicController(routingLogic: RoutingLogic): Option[Props] =
-    Some(Props(classOf[AdaptiveLoadBalancingMetricsListener],
+    Some(Props(
+      classOf[AdaptiveLoadBalancingMetricsListener],
       routingLogic.asInstanceOf[AdaptiveLoadBalancingRoutingLogic]))
 
   /**
@@ -363,9 +368,9 @@ abstract class MixMetricsSelectorBase(selectors: immutable.IndexedSeq[CapacityMe
     combined.foldLeft(Map.empty[Address, (Double, Int)].withDefaultValue((0.0, 0))) {
       case (acc, (address, capacity)) ⇒
         val (sum, count) = acc(address)
-        acc + (address -> ((sum + capacity, count + 1)))
+        acc + (address → ((sum + capacity, count + 1)))
     }.map {
-      case (addr, (sum, count)) ⇒ (addr -> sum / count)
+      case (addr, (sum, count)) ⇒ addr → (sum / count)
     }
   }
 
@@ -380,7 +385,7 @@ object MetricsSelector {
       case "cpu"  ⇒ CpuMetricsSelector
       case "load" ⇒ SystemLoadAverageMetricsSelector
       case fqn ⇒
-        val args = List(classOf[Config] -> config)
+        val args = List(classOf[Config] → config)
         dynamicAccess.createInstanceFor[MetricsSelector](fqn, args).recover({
           case exception ⇒ throw new IllegalArgumentException(
             (s"Cannot instantiate metrics-selector [$fqn], " +
@@ -430,7 +435,7 @@ abstract class CapacityMetricsSelector extends MetricsSelector {
       val (_, min) = capacity.minBy { case (_, c) ⇒ c }
       // lowest usable capacity is 1% (>= 0.5% will be rounded to weight 1), also avoids div by zero
       val divisor = math.max(0.01, min)
-      capacity map { case (addr, c) ⇒ (addr -> math.round((c) / divisor).toInt) }
+      capacity map { case (addr, c) ⇒ (addr → math.round((c) / divisor).toInt) }
     }
   }
 

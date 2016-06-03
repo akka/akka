@@ -37,8 +37,8 @@ class FlowSplitWhenSpec extends AkkaSpec {
   }
 
   class SubstreamsSupport(
-    splitWhen: Int = 3,
-    elementCount: Int = 6,
+    splitWhen:               Int                     = 3,
+    elementCount:            Int                     = 6,
     substreamCancelStrategy: SubstreamCancelStrategy = SubstreamCancelStrategy.drain) {
 
     val source = Source(1 to elementCount)

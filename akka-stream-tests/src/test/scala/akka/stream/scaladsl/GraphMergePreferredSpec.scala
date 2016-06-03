@@ -32,32 +32,30 @@ class GraphMergePreferredSpec extends TwoStreamsSetup {
       val preferred = Source(Stream.fill(numElements)(1))
       val aux = Source(Stream.fill(numElements)(2))
 
-      val result = RunnableGraph.fromGraph(GraphDSL.create(Sink.head[Seq[Int]]) { implicit b ⇒
-        sink ⇒
-          val merge = b.add(MergePreferred[Int](3))
-          preferred ~> merge.preferred
+      val result = RunnableGraph.fromGraph(GraphDSL.create(Sink.head[Seq[Int]]) { implicit b ⇒ sink ⇒
+        val merge = b.add(MergePreferred[Int](3))
+        preferred ~> merge.preferred
 
-          merge.out.grouped(numElements * 2) ~> sink.in
-          aux ~> merge.in(0)
-          aux ~> merge.in(1)
-          aux ~> merge.in(2)
-          ClosedShape
+        merge.out.grouped(numElements * 2) ~> sink.in
+        aux ~> merge.in(0)
+        aux ~> merge.in(1)
+        aux ~> merge.in(2)
+        ClosedShape
       }).run()
 
       Await.result(result, 3.seconds).filter(_ == 1).size should be(numElements)
     }
 
     "eventually pass through all elements" in {
-      val result = RunnableGraph.fromGraph(GraphDSL.create(Sink.head[Seq[Int]]) { implicit b ⇒
-        sink ⇒
-          val merge = b.add(MergePreferred[Int](3))
-          Source(1 to 100) ~> merge.preferred
+      val result = RunnableGraph.fromGraph(GraphDSL.create(Sink.head[Seq[Int]]) { implicit b ⇒ sink ⇒
+        val merge = b.add(MergePreferred[Int](3))
+        Source(1 to 100) ~> merge.preferred
 
-          merge.out.grouped(500) ~> sink.in
-          Source(101 to 200) ~> merge.in(0)
-          Source(201 to 300) ~> merge.in(1)
-          Source(301 to 400) ~> merge.in(2)
-          ClosedShape
+        merge.out.grouped(500) ~> sink.in
+        Source(101 to 200) ~> merge.in(0)
+        Source(201 to 300) ~> merge.in(1)
+        Source(301 to 400) ~> merge.in(2)
+        ClosedShape
       }).run()
 
       Await.result(result, 3.seconds).toSet should ===((1 to 400).toSet)

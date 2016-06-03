@@ -21,13 +21,13 @@ trait HeaderDirectives {
   import RouteDirectives._
 
   /**
-    * Checks that request comes from the same origin. Extracts the [[Origin]] header value and verifies that
-    * allowed range contains the obtained value. In the case of absent of the [[Origin]] header rejects
-    * with [[MissingHeaderRejection]]. If the origin value is not in the allowed range
-    * rejects with an [[InvalidOriginRejection]] and [[StatusCodes.Forbidden]] status.
-    *
-    * @group header
-    */
+   * Checks that request comes from the same origin. Extracts the [[Origin]] header value and verifies that
+   * allowed range contains the obtained value. In the case of absent of the [[Origin]] header rejects
+   * with [[MissingHeaderRejection]]. If the origin value is not in the allowed range
+   * rejects with an [[InvalidOriginRejection]] and [[StatusCodes.Forbidden]] status.
+   *
+   * @group header
+   */
   def checkSameOrigin(allowed: HttpOriginRange): Directive0 = {
     headerValueByType[Origin]().flatMap { origin ⇒
       if (origin.origins.exists(allowed.matches)) pass
@@ -172,22 +172,18 @@ object HeaderMagnet extends LowPriorityHeaderMagnetImplicits {
    * If possible we want to apply the special logic for [[ModeledCustomHeader]] to extract custom headers by type,
    * otherwise the default `fromUnit` is good enough (for headers that the parser emits in the right type already).
    */
-  implicit def fromUnitForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]]
-    (u: Unit)(implicit tag: ClassTag[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
-      fromClassTagForModeledCustomHeader[T, H](tag, companion)
+  implicit def fromUnitForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]](u: Unit)(implicit tag: ClassTag[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
+    fromClassTagForModeledCustomHeader[T, H](tag, companion)
 
+  implicit def fromClassForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]](clazz: Class[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
+    fromClassTagForModeledCustomHeader(ClassTag(clazz), companion)
 
-  implicit def fromClassForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]]
-    (clazz: Class[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
-      fromClassTagForModeledCustomHeader(ClassTag(clazz), companion)
-
-  implicit def fromClassTagForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]]
-    (tag: ClassTag[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
+  implicit def fromClassTagForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]](tag: ClassTag[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
     new HeaderMagnet[T] {
       override def runtimeClass = tag.runtimeClass.asInstanceOf[Class[T]]
       override def classTag = tag
       override def extractPF = {
-        case h if h.is(companion.lowercaseName) => companion.apply(h.value)
+        case h if h.is(companion.lowercaseName) ⇒ companion.apply(h.value)
       }
     }
 
@@ -199,11 +195,11 @@ trait LowPriorityHeaderMagnetImplicits {
 
   // TODO DRY?
   implicit def fromClassNormalJavaHeader[T <: akka.http.javadsl.model.HttpHeader](clazz: Class[T]): HeaderMagnet[T] =
-     new HeaderMagnet[T] {
-       override def classTag: ClassTag[T] = ClassTag(clazz)
-       override def runtimeClass: Class[T] = clazz
-       override def extractPF: PartialFunction[HttpHeader, T] = { case x if runtimeClass.isAssignableFrom(x.getClass) => x.asInstanceOf[T] }
-     }
+    new HeaderMagnet[T] {
+      override def classTag: ClassTag[T] = ClassTag(clazz)
+      override def runtimeClass: Class[T] = clazz
+      override def extractPF: PartialFunction[HttpHeader, T] = { case x if runtimeClass.isAssignableFrom(x.getClass) ⇒ x.asInstanceOf[T] }
+    }
 
   implicit def fromUnitNormalHeader[T <: HttpHeader](u: Unit)(implicit tag: ClassTag[T]): HeaderMagnet[T] =
     fromClassTagNormalHeader(tag)

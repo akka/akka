@@ -308,7 +308,8 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
    * as a blob in your custom snapshot.
    */
   def getDeliverySnapshot: AtLeastOnceDeliverySnapshot =
-    AtLeastOnceDeliverySnapshot(deliverySequenceNr,
+    AtLeastOnceDeliverySnapshot(
+      deliverySequenceNr,
       unconfirmed.map { case (deliveryId, d) ⇒ UnconfirmedDelivery(deliveryId, d.destination, d.message) }(breakOut))
 
   /**
@@ -319,7 +320,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
     deliverySequenceNr = snapshot.currentDeliveryId
     val now = System.nanoTime()
     unconfirmed = snapshot.unconfirmedDeliveries.map(d ⇒
-      d.deliveryId -> Delivery(d.destination, d.message, now, 0))(breakOut)
+      d.deliveryId → Delivery(d.destination, d.message, now, 0))(breakOut)
   }
 
   /**

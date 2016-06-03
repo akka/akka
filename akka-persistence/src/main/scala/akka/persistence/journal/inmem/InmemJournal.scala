@@ -54,17 +54,17 @@ private[persistence] trait InmemMessages {
   var messages = Map.empty[String, Vector[PersistentRepr]]
 
   def add(p: PersistentRepr): Unit = messages = messages + (messages.get(p.persistenceId) match {
-    case Some(ms) ⇒ p.persistenceId -> (ms :+ p)
-    case None     ⇒ p.persistenceId -> Vector(p)
+    case Some(ms) ⇒ p.persistenceId → (ms :+ p)
+    case None     ⇒ p.persistenceId → Vector(p)
   })
 
   def update(pid: String, snr: Long)(f: PersistentRepr ⇒ PersistentRepr): Unit = messages = messages.get(pid) match {
-    case Some(ms) ⇒ messages + (pid -> ms.map(sp ⇒ if (sp.sequenceNr == snr) f(sp) else sp))
+    case Some(ms) ⇒ messages + (pid → ms.map(sp ⇒ if (sp.sequenceNr == snr) f(sp) else sp))
     case None     ⇒ messages
   }
 
   def delete(pid: String, snr: Long): Unit = messages = messages.get(pid) match {
-    case Some(ms) ⇒ messages + (pid -> ms.filterNot(_.sequenceNr == snr))
+    case Some(ms) ⇒ messages + (pid → ms.filterNot(_.sequenceNr == snr))
     case None     ⇒ messages
   }
 

@@ -377,7 +377,7 @@ class HttpServerSpec extends AkkaSpec(
     })
 
     "proceed to next request once previous request's entity has been drained" in assertAllStagesStopped(new TestSetup {
-      def twice(action: => Unit): Unit = { action; action }
+      def twice(action: ⇒ Unit): Unit = { action; action }
 
       twice {
         send("""POST / HTTP/1.1
@@ -977,7 +977,7 @@ class HttpServerSpec extends AkkaSpec(
                   .thrownBy(entity.dataBytes.runFold(ByteString.empty)(_ ++ _).awaitResult(100.millis))
                   .getCause
                 error shouldEqual EntityStreamSizeException(limit, Some(actualSize))
-                error.getMessage should include ("exceeded content length limit")
+                error.getMessage should include("exceeded content length limit")
 
                 responses.expectRequest()
                 responses.sendError(error.asInstanceOf[Exception])
@@ -1000,7 +1000,7 @@ class HttpServerSpec extends AkkaSpec(
                   .thrownBy(entity.dataBytes.runFold(ByteString.empty)(_ ++ _).awaitResult(100.millis))
                   .getCause
                 error shouldEqual EntityStreamSizeException(limit, None)
-                error.getMessage should include ("exceeded content length limit")
+                error.getMessage should include("exceeded content length limit")
 
                 responses.expectRequest()
                 responses.sendError(error.asInstanceOf[Exception])

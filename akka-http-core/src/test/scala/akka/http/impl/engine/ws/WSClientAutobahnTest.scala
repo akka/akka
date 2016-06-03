@@ -90,7 +90,7 @@ object WSClientAutobahnTest extends App {
     val res =
       getCaseCount().flatMap { count ⇒
         println(s"Retrieving case info for $count cases...")
-        Future.traverse(1 to count)(getCaseInfo).map(_.map(e ⇒ e.caseInfo.id -> e).toMap)
+        Future.traverse(1 to count)(getCaseInfo).map(_.map(e ⇒ e.caseInfo.id → e).toMap)
       }
     res.foreach { res ⇒
       println(s"Received info for ${res.size} cases")

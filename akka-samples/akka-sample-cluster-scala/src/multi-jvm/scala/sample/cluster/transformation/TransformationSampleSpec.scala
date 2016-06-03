@@ -26,7 +26,7 @@ object TransformationSampleSpecConfig extends MultiNodeConfig {
   def nodeList = Seq(frontend1, frontend2, backend1, backend2, backend3)
 
   // Extract individual sigar library for every node.
-  nodeList foreach { role ⇒
+  nodeList foreach { role =>
     nodeConfig(role) {
       ConfigFactory.parseString(s"""
       # Disable legacy metrics in akka-cluster.

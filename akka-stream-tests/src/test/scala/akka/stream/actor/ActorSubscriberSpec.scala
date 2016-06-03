@@ -85,7 +85,7 @@ object ActorSubscriberSpec {
 
     def receive = {
       case OnNext(Msg(id, replyTo)) ⇒
-        queue += (id -> replyTo)
+        queue += (id → replyTo)
         assert(queue.size <= 10, s"queued too many: ${queue.size}")
         router.route(Work(id), self)
       case Reply(id) ⇒

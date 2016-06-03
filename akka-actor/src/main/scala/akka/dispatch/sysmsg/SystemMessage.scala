@@ -261,6 +261,6 @@ private[akka] final case class Failed(child: ActorRef, cause: Throwable, uid: In
 
 @SerialVersionUID(1L)
 private[akka] final case class DeathWatchNotification(
-  actor: ActorRef,
+  actor:              ActorRef,
   existenceConfirmed: Boolean,
-  addressTerminated: Boolean) extends SystemMessage with DeadLetterSuppression
+  addressTerminated:  Boolean) extends SystemMessage with DeadLetterSuppression

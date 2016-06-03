@@ -126,8 +126,8 @@ object MediaType {
   }
 
   def customWithFixedCharset(mainType: String, subType: String, charset: HttpCharset, fileExtensions: List[String] = Nil,
-                             params: Map[String, String] = Map.empty,
-                             allowArbitrarySubtypes: Boolean = false): WithFixedCharset = {
+                             params:                 Map[String, String] = Map.empty,
+                             allowArbitrarySubtypes: Boolean             = false): WithFixedCharset = {
     require(mainType != "multipart", "Cannot create a MediaType.Multipart here, use `customMultipart` instead!")
     require(allowArbitrarySubtypes || subType != "*", "Cannot create a MediaRange here, use `MediaRange.custom` instead!")
     val _params = params
@@ -143,8 +143,8 @@ object MediaType {
   }
 
   def customWithOpenCharset(mainType: String, subType: String, fileExtensions: List[String] = Nil,
-                            params: Map[String, String] = Map.empty,
-                            allowArbitrarySubtypes: Boolean = false): WithOpenCharset = {
+                            params:                 Map[String, String] = Map.empty,
+                            allowArbitrarySubtypes: Boolean             = false): WithOpenCharset = {
     require(mainType != "multipart", "Cannot create a MediaType.Multipart here, use `customMultipart` instead!")
     require(allowArbitrarySubtypes || subType != "*", "Cannot create a MediaRange here, use `MediaRange.custom` instead!")
     val _params = params
@@ -258,7 +258,7 @@ object MediaType {
 }
 
 object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
-  type FindCustom = (String, String) => Option[MediaType]
+  type FindCustom = (String, String) ⇒ Option[MediaType]
 
   private[this] var extensionMap = Map.empty[String, MediaType]
 
@@ -276,7 +276,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
 
   private def register[T <: MediaType](mediaType: T): T = {
     registerFileExtensions(mediaType)
-    register(mediaType.mainType.toRootLowerCase -> mediaType.subType.toRootLowerCase, mediaType)
+    register(mediaType.mainType.toRootLowerCase → mediaType.subType.toRootLowerCase, mediaType)
   }
 
   import MediaType._  

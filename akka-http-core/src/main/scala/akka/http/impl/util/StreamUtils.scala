@@ -70,7 +70,7 @@ private[http] object StreamUtils {
         setHandlers(in, out, this)
       }
     }
-    source.via(transformer) -> promise.future
+    source.via(transformer) → promise.future
   }
 
   def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString, NotUsed] = {
@@ -163,7 +163,7 @@ private[http] object StreamUtils {
 
   /** A copy of PublisherSink that allows access to the publisher through the cell but can only materialized once */
   private class OneTimePublisherSink[In](attributes: Attributes, shape: SinkShape[In], cell: OneTimeWriteCell[Publisher[In]])
-      extends PublisherSink[In](attributes, shape) {
+    extends PublisherSink[In](attributes, shape) {
     override def create(context: MaterializationContext): (AnyRef, Publisher[In]) = {
       val results = super.create(context)
       cell.set(results._2)
@@ -177,7 +177,7 @@ private[http] object StreamUtils {
   }
   /** A copy of SubscriberSource that allows access to the subscriber through the cell but can only materialized once */
   private class OneTimeSubscriberSource[Out](val attributes: Attributes, shape: SourceShape[Out], cell: OneTimeWriteCell[Subscriber[Out]])
-      extends SourceModule[Out, Subscriber[Out]](shape) {
+    extends SourceModule[Out, Subscriber[Out]](shape) {
 
     override def create(context: MaterializationContext): (Publisher[Out], Subscriber[Out]) = {
       val processor = new Processor[Out, Out] {

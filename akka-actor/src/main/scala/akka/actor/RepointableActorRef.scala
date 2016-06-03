@@ -24,12 +24,12 @@ import scala.util.control.NonFatal
  * and swap out the cell ref.
  */
 private[akka] class RepointableActorRef(
-  val system: ActorSystemImpl,
-  val props: Props,
-  val dispatcher: MessageDispatcher,
+  val system:      ActorSystemImpl,
+  val props:       Props,
+  val dispatcher:  MessageDispatcher,
   val mailboxType: MailboxType,
-  val supervisor: InternalActorRef,
-  val path: ActorPath)
+  val supervisor:  InternalActorRef,
+  val path:        ActorPath)
   extends ActorRefWithCell with RepointableRef {
 
   import AbstractActorRef.{ cellOffset, lookupOffset }
@@ -176,10 +176,11 @@ private[akka] class RepointableActorRef(
   protected def writeReplace(): AnyRef = SerializedActorRef(this)
 }
 
-private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
-                                  val self: RepointableActorRef,
-                                  val props: Props,
-                                  val supervisor: InternalActorRef) extends Cell {
+private[akka] class UnstartedCell(
+  val systemImpl: ActorSystemImpl,
+  val self:       RepointableActorRef,
+  val props:      Props,
+  val supervisor: InternalActorRef) extends Cell {
 
   /*
    * This lock protects all accesses to this cell’s queues. It also ensures

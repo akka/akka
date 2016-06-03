@@ -72,7 +72,7 @@ class VotingServiceSpec extends MultiNodeSpec(VotingServiceSpec) with STMultiNod
         val p = TestProbe()
         awaitAssert {
           votingService.tell(GetVotes, p.ref)
-          p.expectMsgPF(3.seconds) { case Votes(_, true) ⇒ true }
+          p.expectMsgPF(3.seconds) { case Votes(_, true) => true }
         }
         for (n ← 1 to N) {
           votingService ! Vote("#" + ((n % 20) + 1))
@@ -83,7 +83,7 @@ class VotingServiceSpec extends MultiNodeSpec(VotingServiceSpec) with STMultiNod
         votingService ! Close
       }
 
-      val expected = (1 to 20).map(n ⇒ "#" + n -> BigInt(3L * N / 20)).toMap
+      val expected = (1 to 20).map(n => "#" + n -> BigInt(3L * N / 20)).toMap
       awaitAssert {
         votingService ! GetVotes
         expectMsg(3.seconds, Votes(expected, false))

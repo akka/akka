@@ -185,11 +185,11 @@ class TcpIntegrationSpec extends AkkaSpec("""
   }
 
   def chitchat(
-    clientHandler: TestProbe,
+    clientHandler:    TestProbe,
     clientConnection: ActorRef,
-    serverHandler: TestProbe,
+    serverHandler:    TestProbe,
     serverConnection: ActorRef,
-    rounds: Int = 100) = {
+    rounds:           Int       = 100) = {
 
     val testData = ByteString(0)
     (1 to rounds) foreach { _ ⇒

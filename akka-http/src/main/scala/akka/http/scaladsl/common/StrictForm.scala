@@ -91,38 +91,38 @@ object StrictForm {
     }
   }
 
-  implicit def unmarshaller(implicit formDataUM: FromEntityUnmarshaller[FormData],
+  implicit def unmarshaller(implicit
+    formDataUM: FromEntityUnmarshaller[FormData],
                             multipartUM: FromEntityUnmarshaller[Multipart.FormData]): FromEntityUnmarshaller[StrictForm] =
-    Unmarshaller.withMaterializer { implicit ec ⇒
-      implicit fm ⇒
-        entity ⇒
+    Unmarshaller.withMaterializer { implicit ec ⇒ implicit fm ⇒
+      entity ⇒
 
-          def tryUnmarshalToQueryForm: Future[StrictForm] =
-            for (formData ← formDataUM(entity).fast) yield {
-              new StrictForm {
-                val fields = formData.fields.map { case (name, value) ⇒ name -> Field.FromString(value) }(collection.breakOut)
-              }
+        def tryUnmarshalToQueryForm: Future[StrictForm] =
+          for (formData ← formDataUM(entity).fast) yield {
+            new StrictForm {
+              val fields = formData.fields.map { case (name, value) ⇒ name → Field.FromString(value) }(collection.breakOut)
             }
-
-          def tryUnmarshalToMultipartForm: Future[StrictForm] =
-            for {
-              multiPartFD ← multipartUM(entity).fast
-              strictMultiPartFD ← multiPartFD.toStrict(10.seconds).fast // TODO: make timeout configurable
-            } yield {
-              new StrictForm {
-                val fields = strictMultiPartFD.strictParts.map {
-                  case x: Multipart.FormData.BodyPart.Strict ⇒ x.name -> Field.FromPart(x)
-                }(collection.breakOut)
-              }
-            }
-
-          tryUnmarshalToQueryForm.fast.recoverWith {
-            case Unmarshaller.UnsupportedContentTypeException(supported1) ⇒
-              tryUnmarshalToMultipartForm.fast.recoverWith {
-                case Unmarshaller.UnsupportedContentTypeException(supported2) ⇒
-                  FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(supported1 ++ supported2))
-              }
           }
+
+        def tryUnmarshalToMultipartForm: Future[StrictForm] =
+          for {
+            multiPartFD ← multipartUM(entity).fast
+            strictMultiPartFD ← multiPartFD.toStrict(10.seconds).fast // TODO: make timeout configurable
+          } yield {
+            new StrictForm {
+              val fields = strictMultiPartFD.strictParts.map {
+                case x: Multipart.FormData.BodyPart.Strict ⇒ x.name → Field.FromPart(x)
+              }(collection.breakOut)
+            }
+          }
+
+        tryUnmarshalToQueryForm.fast.recoverWith {
+          case Unmarshaller.UnsupportedContentTypeException(supported1) ⇒
+            tryUnmarshalToMultipartForm.fast.recoverWith {
+              case Unmarshaller.UnsupportedContentTypeException(supported2) ⇒
+                FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(supported1 ++ supported2))
+            }
+        }
     }
 
   /**

@@ -46,8 +46,8 @@ object BidiFlow {
    *
    */
   def fromFlowsMat[I1, O1, I2, O2, M1, M2, M](
-    flow1: Graph[FlowShape[I1, O1], M1],
-    flow2: Graph[FlowShape[I2, O2], M2],
+    flow1:   Graph[FlowShape[I1, O1], M1],
+    flow2:   Graph[FlowShape[I2, O2], M2],
     combine: function.Function2[M1, M2, M]): BidiFlow[I1, O1, I2, O2, M] = {
     new BidiFlow(scaladsl.BidiFlow.fromFlowsMat(flow1, flow2)(combinerToScala(combine)))
   }

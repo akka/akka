@@ -243,8 +243,8 @@ class StreamLayoutSpec extends AkkaSpec {
 
     materializer.subscribers.size should be(materializer.publishers.size)
 
-    val inToSubscriber: Map[InPort, TestSubscriber] = materializer.subscribers.map(s ⇒ s.port -> s).toMap
-    val outToPublisher: Map[OutPort, TestPublisher] = materializer.publishers.map(s ⇒ s.port -> s).toMap
+    val inToSubscriber: Map[InPort, TestSubscriber] = materializer.subscribers.map(s ⇒ s.port → s).toMap
+    val outToPublisher: Map[OutPort, TestPublisher] = materializer.publishers.map(s ⇒ s.port → s).toMap
 
     for (publisher ← materializer.publishers) {
       publisher.owner.isAtomic should be(true)

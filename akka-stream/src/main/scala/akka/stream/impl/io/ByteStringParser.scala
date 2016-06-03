@@ -82,9 +82,10 @@ private[akka] object ByteStringParser {
    * @param acceptUpstreamFinish - if true - stream will complete when received `onUpstreamFinish`, if "false"
    *                             - onTruncation will be called
    */
-  case class ParseResult[+T](result: Option[T],
-                             nextStep: ParseStep[T],
-                             acceptUpstreamFinish: Boolean = true)
+  case class ParseResult[+T](
+    result:               Option[T],
+    nextStep:             ParseStep[T],
+    acceptUpstreamFinish: Boolean      = true)
 
   trait ParseStep[+T] {
     /**
