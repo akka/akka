@@ -4,7 +4,7 @@
 
 package akka.http.javadsl.testkit
 
-import akka.http.scaladsl.server.RouteResult
+import akka.http.javadsl.server.RouteResult
 
 import scala.reflect.ClassTag
 import scala.concurrent.ExecutionContext
@@ -12,11 +12,12 @@ import scala.concurrent.Await
 import scala.concurrent.duration.FiniteDuration
 import akka.util.ByteString
 import akka.stream.Materializer
+import akka.http.scaladsl
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.impl.util._
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.javadsl.server.{Rejection, RoutingJavaMapping, Unmarshaller}
+import akka.http.javadsl.server.{ Rejection, RoutingJavaMapping, Unmarshaller }
 import RoutingJavaMapping._
 import akka.http.javadsl.model._
 
@@ -30,17 +31,17 @@ import scala.annotation.varargs
  * implementations for the abstract assertion methods.
  */
 abstract class TestRouteResult(_result: RouteResult, awaitAtMost: FiniteDuration)(implicit ec: ExecutionContext, materializer: Materializer) {
-  
+
   private def _response = _result match {
-    case RouteResult.Complete(r)          ⇒ r
-    case RouteResult.Rejected(rejections) ⇒ doFail("Expected route to complete, but was instead rejected with " + rejections)
+    case scaladsl.server.RouteResult.Complete(r)          ⇒ r
+    case scaladsl.server.RouteResult.Rejected(rejections) ⇒ doFail("Expected route to complete, but was instead rejected with " + rejections)
   }
-  
+
   private def _rejections = _result match {
-    case RouteResult.Complete(r)  ⇒ doFail("Request was not rejected, response was " + r)
-    case RouteResult.Rejected(ex) ⇒ ex
-  }  
-  
+    case scaladsl.server.RouteResult.Complete(r)  ⇒ doFail("Request was not rejected, response was " + r)
+    case scaladsl.server.RouteResult.Rejected(ex) ⇒ ex
+  }
+
   /**
    * Returns the strictified entity of the response. It will be strictified on first access.
    */
@@ -55,12 +56,12 @@ abstract class TestRouteResult(_result: RouteResult, awaitAtMost: FiniteDuration
    * Returns the response's content-type
    */
   def contentType: ContentType = _response.entity.contentType
-  
+
   /**
    * Returns a string representation of the response's content-type
    */
   def contentTypeString: String = contentType.toString
-  
+
   /**
    * Returns the media-type of the the response's content-type
    */
@@ -112,7 +113,7 @@ abstract class TestRouteResult(_result: RouteResult, awaitAtMost: FiniteDuration
    * Fails the test if the route completes with a response rather than having been rejected.
    */
   def rejections: java.util.List[Rejection] = _rejections.map(_.asJava).asJava
-  
+
   /**
    * Expects the route to have been rejected with a single rejection.
    * Fails the test if the route completes with a response, or is rejected with 0 or >1 rejections.
@@ -157,7 +158,7 @@ abstract class TestRouteResult(_result: RouteResult, awaitAtMost: FiniteDuration
    */
   def assertContentType(expected: ContentType): TestRouteResult =
     assertEqualsKind(expected, contentType, "content type")
-    
+
   /**
    * Assert on the response entity to be a UTF8 representation of the given string.
    */
@@ -173,7 +174,7 @@ abstract class TestRouteResult(_result: RouteResult, awaitAtMost: FiniteDuration
   /**
    * Assert on the response entity to equal the given object after applying an [[akka.http.javadsl.server.Unmarshaller]].
    */
-  def assertEntityAs[T <: AnyRef](unmarshaller: Unmarshaller[HttpEntity,T], expected: T): TestRouteResult =
+  def assertEntityAs[T <: AnyRef](unmarshaller: Unmarshaller[HttpEntity, T], expected: T): TestRouteResult =
     assertEqualsKind(expected, entity(unmarshaller), "entity")
 
   /**
@@ -200,17 +201,18 @@ abstract class TestRouteResult(_result: RouteResult, awaitAtMost: FiniteDuration
     val lowercased = name.toRootLowerCase
     val headers = response.headers.filter(_.is(lowercased))
     if (headers.isEmpty) fail(s"Expected `$name` header was missing.")
-    else assertTrue(headers.exists(_.value == value),
+    else assertTrue(
+      headers.exists(_.value == value),
       s"`$name` header was found but had the wrong value. Found headers: ${headers.mkString(", ")}")
 
     this
   }
-  
+
   @varargs def assertRejections(expectedRejections: Rejection*): TestRouteResult = {
     if (rejections.asScala == expectedRejections.toSeq) {
       this
     } else {
-      doFail(s"Expected rejections [${expectedRejections.mkString(",")}], but rejected with [${rejections.asScala.mkString(",")}] instead.") 
+      doFail(s"Expected rejections [${expectedRejections.mkString(",")}], but rejected with [${rejections.asScala.mkString(",")}] instead.")
     }
   }
 

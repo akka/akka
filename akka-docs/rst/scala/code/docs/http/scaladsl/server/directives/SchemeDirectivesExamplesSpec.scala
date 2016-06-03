@@ -25,7 +25,7 @@ class SchemeDirectivesExamplesSpec extends RoutingSpec {
 
     val route =
       scheme("http") {
-        extract(_.request.uri) { uri ⇒
+        extract(_.request.uri) { uri =>
           redirect(uri.copy(scheme = "https"), MovedPermanently)
         }
       } ~

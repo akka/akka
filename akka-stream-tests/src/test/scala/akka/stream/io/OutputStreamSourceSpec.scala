@@ -31,7 +31,7 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)
 
-  val timeout = 300.milliseconds
+  val timeout = 3.seconds
   val bytesArray = Array.fill[Byte](3)(Random.nextInt(1024).asInstanceOf[Byte])
   val byteString = ByteString(bytesArray)
 
@@ -40,6 +40,17 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   def expectSuccess[T](f: Future[T], value: T) =
     Await.result(f, remainingOrDefault) should be(value)
+
+  def assertNoBlockedThreads(): Unit = {
+    def threadsBlocked =
+      ManagementFactory.getThreadMXBean.dumpAllThreads(true, true).toSeq
+        .filter(t ⇒ t.getThreadName.startsWith("OutputStreamSourceSpec") &&
+          t.getLockName != null &&
+          t.getLockName.startsWith("java.util.concurrent.locks.AbstractQueuedSynchronizer") &&
+          t.getStackTrace.exists(s ⇒ s.getClassName.startsWith(classOf[OutputStreamSourceStage].getName)))
+
+    awaitAssert(threadsBlocked should ===(Seq()), 5.seconds, interval = 500.millis)
+  }
 
   "OutputStreamSource" must {
     "read bytes from OutputStream" in assertAllStagesStopped {
@@ -156,15 +167,18 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
           .withAttributes(inputBuffer(0, 0))
           .runWith(Sink.head)
         /*
-         With Sink.head we test the code path in which the source
-         itself throws an exception when being materialized. If
-         Sink.ignore is used, the same exception is thrown by
-         Materializer.
-         */
+             With Sink.head we test the code path in which the source
+             itself throws an exception when being materialized. If
+             Sink.ignore is used, the same exception is thrown by
+             Materializer.
+             */
       }
     }
 
     "not leave blocked threads" in {
+      // make sure previous tests didn't leak
+      assertNoBlockedThreads()
+
       val (outputStream, probe) = StreamConverters.asOutputStream(timeout)
         .toMat(TestSink.probe[ByteString])(Keep.both).run()(materializer)
 
@@ -175,13 +189,22 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
       sub.request(1)
       sub.cancel()
 
-      def threadsBlocked =
-        ManagementFactory.getThreadMXBean.dumpAllThreads(true, true).toSeq
-          .filter(t ⇒ t.getThreadName.startsWith("OutputStreamSourceSpec") &&
-            t.getLockName != null &&
-            t.getLockName.startsWith("java.util.concurrent.locks.AbstractQueuedSynchronizer"))
+      assertNoBlockedThreads()
+    }
 
-      awaitAssert(threadsBlocked should ===(Seq()), 3.seconds)
+    "not leave blocked threads when materializer shutdown" in {
+      val materializer2 = ActorMaterializer(settings)
+      val (outputStream, probe) = StreamConverters.asOutputStream(timeout)
+        .toMat(TestSink.probe[ByteString])(Keep.both).run()(materializer2)
+
+      val sub = probe.expectSubscription()
+
+      // triggers a blocking read on the queue
+      // and then shutdown the materializer before we got anything
+      sub.request(1)
+      materializer2.shutdown()
+
+      assertNoBlockedThreads()
     }
   }
 }

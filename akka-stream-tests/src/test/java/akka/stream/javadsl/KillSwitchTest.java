@@ -11,6 +11,7 @@ import org.junit.Test;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import akka.testkit.AkkaJUnitActorSystemResource;
 
 import static org.junit.Assert.*;
 

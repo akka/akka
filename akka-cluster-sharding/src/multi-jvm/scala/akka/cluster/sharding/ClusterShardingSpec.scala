@@ -256,10 +256,11 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
           minBackoff = 5.seconds,
           maxBackoff = 5.seconds,
           randomFactor = 0.1).withDeploy(Deploy.local)
-        system.actorOf(ClusterSingletonManager.props(
-          singletonProps,
-          terminationMessage = PoisonPill,
-          settings = ClusterSingletonManagerSettings(system)),
+        system.actorOf(
+          ClusterSingletonManager.props(
+            singletonProps,
+            terminationMessage = PoisonPill,
+            settings = ClusterSingletonManagerSettings(system)),
           name = typeName + "Coordinator")
       }
   }
@@ -273,14 +274,15 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
       """).withFallback(system.settings.config.getConfig("akka.cluster.sharding"))
     val settings = ClusterShardingSettings(cfg)
       .withRememberEntities(rememberEntities)
-    system.actorOf(ShardRegion.props(
-      typeName = typeName,
-      entityProps = qualifiedCounterProps(typeName),
-      settings = settings,
-      coordinatorPath = "/user/" + typeName + "Coordinator/singleton/coordinator",
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId,
-      handOffStopMessage = PoisonPill),
+    system.actorOf(
+      ShardRegion.props(
+        typeName = typeName,
+        entityProps = qualifiedCounterProps(typeName),
+        settings = settings,
+        coordinatorPath = "/user/" + typeName + "Coordinator/singleton/coordinator",
+        extractEntityId = extractEntityId,
+        extractShardId = extractShardId,
+        handOffStopMessage = PoisonPill),
       name = typeName + "Region")
   }
 
@@ -398,12 +400,13 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
           buffer-size = 1000
         """).withFallback(system.settings.config.getConfig("akka.cluster.sharding"))
         val settings = ClusterShardingSettings(cfg)
-        val proxy = system.actorOf(ShardRegion.proxyProps(
-          typeName = "counter",
-          settings,
-          coordinatorPath = "/user/counterCoordinator/singleton/coordinator",
-          extractEntityId = extractEntityId,
-          extractShardId = extractShardId),
+        val proxy = system.actorOf(
+          ShardRegion.proxyProps(
+            typeName = "counter",
+            settings,
+            coordinatorPath = "/user/counterCoordinator/singleton/coordinator",
+            extractEntityId = extractEntityId,
+            extractShardId = extractShardId),
           name = "regionProxy")
 
         proxy ! Get(1)

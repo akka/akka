@@ -109,7 +109,7 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
   with DefaultTimeout {
   import SystemMessageDeliveryStressTest._
 
-  override def expectedTestDuration: FiniteDuration = 120.seconds
+  override def expectedTestDuration: FiniteDuration = 200.seconds
 
   val systemA = system
   val systemB = ActorSystem("systemB", system.settings.config)
@@ -189,9 +189,11 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
 
 }
 
-class SystemMessageDeliveryRetryGate extends SystemMessageDeliveryStressTest("passive connections on",
+class SystemMessageDeliveryRetryGate extends SystemMessageDeliveryStressTest(
+  "passive connections on",
   "akka.remote.retry-gate-closed-for = 0.5 s")
-class SystemMessageDeliveryNoPassiveRetryGate extends SystemMessageDeliveryStressTest("passive connections off",
+class SystemMessageDeliveryNoPassiveRetryGate extends SystemMessageDeliveryStressTest(
+  "passive connections off",
   """
     akka.remote.use-passive-connections = off
     akka.remote.retry-gate-closed-for = 0.5 s

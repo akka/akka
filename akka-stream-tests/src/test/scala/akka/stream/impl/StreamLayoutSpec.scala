@@ -8,6 +8,8 @@ import akka.testkit.AkkaSpec
 import org.reactivestreams.{ Subscription, Subscriber, Publisher }
 import akka.stream._
 
+import scala.concurrent.duration._
+
 class StreamLayoutSpec extends AkkaSpec {
   import StreamLayout._
 
@@ -123,6 +125,9 @@ class StreamLayoutSpec extends AkkaSpec {
       }
     }
 
+    // Seen tests run in 9-10 seconds, these test cases are heavy on the GC
+    val veryPatient = PatienceConfig(20.seconds)
+
     "not fail materialization when building a large graph with simple computation" when {
 
       "starting from a Source" in {
@@ -131,14 +136,14 @@ class StreamLayoutSpec extends AkkaSpec {
             (f, i) ⇒ f.map(identity))
         val (mat, fut) = g.toMat(Sink.seq)(Keep.both).run()
         mat should ===(1)
-        fut.futureValue should ===(List(42))
+        fut.futureValue(veryPatient) should ===(List(42))
       }
 
       "starting from a Flow" in {
         val g = (1 to tooDeepForStack).foldLeft(Flow[Int])((f, i) ⇒ f.map(identity))
         val (mat, fut) = g.runWith(Source.single(42).mapMaterializedValue(_ ⇒ 1), Sink.seq)
         mat should ===(1)
-        fut.futureValue should ===(List(42))
+        fut.futureValue(veryPatient) should ===(List(42))
       }
 
       "using .via" in {
@@ -147,7 +152,7 @@ class StreamLayoutSpec extends AkkaSpec {
             (f, i) ⇒ f.via(Flow[Int].map(identity)))
         val (mat, fut) = g.toMat(Sink.seq)(Keep.both).run()
         mat should ===(1)
-        fut.futureValue should ===(List(42))
+        fut.futureValue(veryPatient) should ===(List(42))
       }
     }
 
@@ -159,14 +164,14 @@ class StreamLayoutSpec extends AkkaSpec {
             (f, i) ⇒ f.map(identity)))
         val (mat, fut) = g.toMat(Sink.seq)(Keep.both).run()
         mat should ===(1)
-        fut.futureValue should ===(List(42))
+        fut.futureValue(veryPatient) should ===(List(42))
       }
 
       "starting from a Flow" in {
         val g = Flow fromGraph Fusing.aggressive((1 to tooDeepForStack).foldLeft(Flow[Int])((f, i) ⇒ f.map(identity)))
         val (mat, fut) = g.runWith(Source.single(42).mapMaterializedValue(_ ⇒ 1), Sink.seq)
         mat should ===(1)
-        fut.futureValue should ===(List(42))
+        fut.futureValue(veryPatient) should ===(List(42))
       }
 
       "using .via" in {
@@ -175,7 +180,7 @@ class StreamLayoutSpec extends AkkaSpec {
             (f, i) ⇒ f.via(Flow[Int].map(identity))))
         val (mat, fut) = g.toMat(Sink.seq)(Keep.both).run()
         mat should ===(1)
-        fut.futureValue should ===(List(42))
+        fut.futureValue(veryPatient) should ===(List(42))
       }
     }
 
@@ -238,8 +243,8 @@ class StreamLayoutSpec extends AkkaSpec {
 
     materializer.subscribers.size should be(materializer.publishers.size)
 
-    val inToSubscriber: Map[InPort, TestSubscriber] = materializer.subscribers.map(s ⇒ s.port -> s).toMap
-    val outToPublisher: Map[OutPort, TestPublisher] = materializer.publishers.map(s ⇒ s.port -> s).toMap
+    val inToSubscriber: Map[InPort, TestSubscriber] = materializer.subscribers.map(s ⇒ s.port → s).toMap
+    val outToPublisher: Map[OutPort, TestPublisher] = materializer.publishers.map(s ⇒ s.port → s).toMap
 
     for (publisher ← materializer.publishers) {
       publisher.owner.isAtomic should be(true)

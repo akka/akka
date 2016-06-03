@@ -37,18 +37,19 @@ private object PoolSlot {
     Stream Setup
     ============
 
-    Request-   +-----------+              +-------------+              +-------------+     +------------+
-    Context    | Slot-     |  List[       |   flatten   |  Processor-  |   doubler   |     | SlotEvent- |  Response-
-    +--------->| Processor +------------->| (MapConcat) +------------->| (MapConcat) +---->| Split      +------------->
-               |           |  Processor-  |             |  Out         |             |     |            |  Context
-               +-----------+  Out]        +-------------+              +-------------+     +-----+------+
-                                                                                                 | RawSlotEvent
-                                                                                                 | (to Conductor
+    Request-   +-----------+              +-------------+              +-------------+     +------------+
+    Context    | Slot-     |  List[       |   flatten   |  Processor-  |   doubler   |     | SlotEvent- |  Response-
+    +--------->| Processor +------------->| (MapConcat) +------------->| (MapConcat) +---->| Split      +------------->
+               |           |  Processor-  |             |  Out         |             |     |            |  Context
+               +-----------+  Out]        +-------------+              +-------------+     +-----+------+
+                                                                                                 | RawSlotEvent
+                                                                                                 | (to Conductor
                                                                                                  |  via slotEventMerge)
-                                                                                                 v
+                                                                                                 v
    */
   def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
-            settings: ConnectionPoolSettings)(implicit system: ActorSystem,
+            settings: ConnectionPoolSettings)(implicit
+    system: ActorSystem,
                                               fm: Materializer): Graph[FanOutShape2[RequestContext, ResponseContext, RawSlotEvent], Any] =
     GraphDSL.create() { implicit b ⇒
       import GraphDSL.Implicits._
@@ -57,7 +58,8 @@ private object PoolSlot {
       val name = slotProcessorActorName.next()
       val slotProcessor = b.add {
         Flow.fromProcessor { () ⇒
-          val actor = system.actorOf(Props(new SlotProcessor(slotIx, connectionFlow, settings)).withDeploy(Deploy.local),
+          val actor = system.actorOf(
+            Props(new SlotProcessor(slotIx, connectionFlow, settings)).withDeploy(Deploy.local),
             name)
           ActorProcessor[RequestContext, List[ProcessorOut]](actor)
         }.mapConcat(ConstantFun.scalaIdentityFunction)
@@ -66,7 +68,8 @@ private object PoolSlot {
 
       slotProcessor ~> split.in
 
-      new FanOutShape2(slotProcessor.in,
+      new FanOutShape2(
+        slotProcessor.in,
         split.out(0).collect { case ResponseDelivery(r) ⇒ r }.outlet,
         split.out(1).collect { case r: RawSlotEvent ⇒ r }.outlet)
     }

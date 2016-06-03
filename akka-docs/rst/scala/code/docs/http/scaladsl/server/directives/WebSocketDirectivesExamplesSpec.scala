@@ -19,9 +19,9 @@ class WebSocketDirectivesExamplesSpec extends RoutingSpec {
   "greeter-service" in {
     def greeter: Flow[Message, Message, Any] =
       Flow[Message].mapConcat {
-        case tm: TextMessage ⇒
+        case tm: TextMessage =>
           TextMessage(Source.single("Hello ") ++ tm.textStream ++ Source.single("!")) :: Nil
-        case bm: BinaryMessage ⇒
+        case bm: BinaryMessage =>
           // ignore binary messages but drain content to avoid the stream being clogged
           bm.dataStream.runWith(Sink.ignore)
           Nil
@@ -59,9 +59,9 @@ class WebSocketDirectivesExamplesSpec extends RoutingSpec {
   "handle-multiple-protocols" in {
     def greeterService: Flow[Message, Message, Any] =
       Flow[Message].mapConcat {
-        case tm: TextMessage ⇒
+        case tm: TextMessage =>
           TextMessage(Source.single("Hello ") ++ tm.textStream ++ Source.single("!")) :: Nil
-        case bm: BinaryMessage ⇒
+        case bm: BinaryMessage =>
           // ignore binary messages but drain content to avoid the stream being clogged
           bm.dataStream.runWith(Sink.ignore)
           Nil
@@ -85,7 +85,7 @@ class WebSocketDirectivesExamplesSpec extends RoutingSpec {
     WS("/services", wsClient.flow, List("other", "echo")) ~>
       websocketMultipleProtocolRoute ~>
       check {
-        expectWebSocketUpgradeWithProtocol { protocol ⇒
+        expectWebSocketUpgradeWithProtocol { protocol =>
           protocol shouldEqual "echo"
 
           wsClient.sendMessage("Peter")

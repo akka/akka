@@ -106,7 +106,8 @@ final class RemoteSettings(val config: Config) {
   } requiring (_ > Duration.Zero, "quarantine-after-silence must be > 0")
 
   val QuarantineDuration: FiniteDuration = {
-    config.getMillisDuration("akka.remote.prune-quarantine-marker-after").requiring(_ > Duration.Zero,
+    config.getMillisDuration("akka.remote.prune-quarantine-marker-after").requiring(
+      _ > Duration.Zero,
       "prune-quarantine-marker-after must be > 0 ms")
   }
 
@@ -128,7 +129,8 @@ final class RemoteSettings(val config: Config) {
 
   val Transports: immutable.Seq[(String, immutable.Seq[String], Config)] = transportNames.map { name ⇒
     val transportConfig = transportConfigFor(name)
-    (transportConfig.getString("transport-class"),
+    (
+      transportConfig.getString("transport-class"),
       immutableSeq(transportConfig.getStringList("applied-adapters")).reverse,
       transportConfig)
   }

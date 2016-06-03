@@ -32,25 +32,28 @@ import scala.concurrent.Future
  * INTERNAL API
  */
 private[remote] trait InboundMessageDispatcher {
-  def dispatch(recipient: InternalActorRef,
-               recipientAddress: Address,
-               serializedMessage: SerializedMessage,
-               senderOption: Option[ActorRef]): Unit
+  def dispatch(
+    recipient:         InternalActorRef,
+    recipientAddress:  Address,
+    serializedMessage: SerializedMessage,
+    senderOption:      Option[ActorRef]): Unit
 }
 
 /**
  * INTERNAL API
  */
-private[remote] class DefaultMessageDispatcher(private val system: ExtendedActorSystem,
-                                               private val provider: RemoteActorRefProvider,
-                                               private val log: LoggingAdapter) extends InboundMessageDispatcher {
+private[remote] class DefaultMessageDispatcher(
+  private val system:   ExtendedActorSystem,
+  private val provider: RemoteActorRefProvider,
+  private val log:      LoggingAdapter) extends InboundMessageDispatcher {
 
   private val remoteDaemon = provider.remoteDaemon
 
-  override def dispatch(recipient: InternalActorRef,
-                        recipientAddress: Address,
-                        serializedMessage: SerializedMessage,
-                        senderOption: Option[ActorRef]): Unit = {
+  override def dispatch(
+    recipient:         InternalActorRef,
+    recipientAddress:  Address,
+    serializedMessage: SerializedMessage,
+    senderOption:      Option[ActorRef]): Unit = {
 
     import provider.remoteSettings._
 
@@ -76,8 +79,9 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
           case sel: ActorSelectionMessage ⇒
             if (UntrustedMode && (!TrustedSelectionPaths.contains(sel.elements.mkString("/", "/", "")) ||
               sel.msg.isInstanceOf[PossiblyHarmful] || l != provider.rootGuardian))
-              log.debug("operating in UntrustedMode, dropping inbound actor selection to [{}], " +
-                "allow it by adding the path to 'akka.remote.trusted-selection-paths' configuration",
+              log.debug(
+                "operating in UntrustedMode, dropping inbound actor selection to [{}], " +
+                  "allow it by adding the path to 'akka.remote.trusted-selection-paths' configuration",
                 sel.elements.mkString("/", "/", ""))
             else
               // run the receive logic for ActorSelectionMessage here to make sure it is not stuck on busy user actor
@@ -94,10 +98,12 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
           // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
           r.!(payload)(sender)
         else
-          log.error("dropping message [{}] for non-local recipient [{}] arriving at [{}] inbound addresses are [{}]",
+          log.error(
+            "dropping message [{}] for non-local recipient [{}] arriving at [{}] inbound addresses are [{}]",
             payloadClass, r, recipientAddress, provider.transport.addresses.mkString(", "))
 
-      case r ⇒ log.error("dropping message [{}] for unknown recipient [{}] arriving at [{}] inbound addresses are [{}]",
+      case r ⇒ log.error(
+        "dropping message [{}] for unknown recipient [{}] arriving at [{}] inbound addresses are [{}]",
         payloadClass, r, recipientAddress, provider.transport.addresses.mkString(", "))
 
     }
@@ -129,10 +135,11 @@ private[remote] final case class ShutDownAssociation(localAddress: Address, remo
  * INTERNAL API
  */
 @SerialVersionUID(2L)
-private[remote] final case class InvalidAssociation(localAddress: Address,
-                                                    remoteAddress: Address,
-                                                    cause: Throwable,
-                                                    disassociationInfo: Option[DisassociateInfo] = None)
+private[remote] final case class InvalidAssociation(
+  localAddress:       Address,
+  remoteAddress:      Address,
+  cause:              Throwable,
+  disassociationInfo: Option[DisassociateInfo] = None)
   extends EndpointException("Invalid address: " + remoteAddress, cause) with AssociationProblem
 
 /**
@@ -174,12 +181,12 @@ private[remote] object ReliableDeliverySupervisor {
 
   def props(
     handleOrActive: Option[AkkaProtocolHandle],
-    localAddress: Address,
-    remoteAddress: Address,
-    refuseUid: Option[Int],
-    transport: AkkaProtocolTransport,
-    settings: RemoteSettings,
-    codec: AkkaPduCodec,
+    localAddress:   Address,
+    remoteAddress:  Address,
+    refuseUid:      Option[Int],
+    transport:      AkkaProtocolTransport,
+    settings:       RemoteSettings,
+    codec:          AkkaPduCodec,
     receiveBuffers: ConcurrentHashMap[Link, ResendState]): Props =
     Props(classOf[ReliableDeliverySupervisor], handleOrActive, localAddress, remoteAddress, refuseUid, transport, settings,
       codec, receiveBuffers)
@@ -189,13 +196,13 @@ private[remote] object ReliableDeliverySupervisor {
  * INTERNAL API
  */
 private[remote] class ReliableDeliverySupervisor(
-  handleOrActive: Option[AkkaProtocolHandle],
-  val localAddress: Address,
-  val remoteAddress: Address,
-  val refuseUid: Option[Int],
-  val transport: AkkaProtocolTransport,
-  val settings: RemoteSettings,
-  val codec: AkkaPduCodec,
+  handleOrActive:     Option[AkkaProtocolHandle],
+  val localAddress:   Address,
+  val remoteAddress:  Address,
+  val refuseUid:      Option[Int],
+  val transport:      AkkaProtocolTransport,
+  val settings:       RemoteSettings,
+  val codec:          AkkaPduCodec,
   val receiveBuffers: ConcurrentHashMap[Link, ResendState]) extends Actor with ActorLogging {
   import ReliableDeliverySupervisor._
   import context.dispatcher
@@ -209,7 +216,8 @@ private[remote] class ReliableDeliverySupervisor(
     case e @ (_: AssociationProblem) ⇒ Escalate
     case NonFatal(e) ⇒
       val causedBy = if (e.getCause == null) "" else s"Caused by: [${e.getCause.getMessage}]"
-      log.warning("Association with remote system [{}] has failed, address is now gated for [{}] ms. Reason: [{}] {}",
+      log.warning(
+        "Association with remote system [{}] has failed, address is now gated for [{}] ms. Reason: [{}] {}",
         remoteAddress, settings.RetryGateClosedFor.toMillis, e.getMessage, causedBy)
       uidConfirmed = false // Need confirmation of UID again
       if (bufferWasInUse) {
@@ -437,11 +445,11 @@ private[remote] class ReliableDeliverySupervisor(
  * INTERNAL API
  */
 private[remote] abstract class EndpointActor(
-  val localAddress: Address,
+  val localAddress:  Address,
   val remoteAddress: Address,
-  val transport: Transport,
-  val settings: RemoteSettings,
-  val codec: AkkaPduCodec) extends Actor with ActorLogging {
+  val transport:     Transport,
+  val settings:      RemoteSettings,
+  val codec:         AkkaPduCodec) extends Actor with ActorLogging {
 
   def inbound: Boolean
 
@@ -463,14 +471,14 @@ private[remote] abstract class EndpointActor(
 private[remote] object EndpointWriter {
 
   def props(
-    handleOrActive: Option[AkkaProtocolHandle],
-    localAddress: Address,
-    remoteAddress: Address,
-    refuseUid: Option[Int],
-    transport: AkkaProtocolTransport,
-    settings: RemoteSettings,
-    codec: AkkaPduCodec,
-    receiveBuffers: ConcurrentHashMap[Link, ResendState],
+    handleOrActive:             Option[AkkaProtocolHandle],
+    localAddress:               Address,
+    remoteAddress:              Address,
+    refuseUid:                  Option[Int],
+    transport:                  AkkaProtocolTransport,
+    settings:                   RemoteSettings,
+    codec:                      AkkaPduCodec,
+    receiveBuffers:             ConcurrentHashMap[Link, ResendState],
     reliableDeliverySupervisor: Option[ActorRef]): Props =
     Props(classOf[EndpointWriter], handleOrActive, localAddress, remoteAddress, refuseUid, transport, settings, codec,
       receiveBuffers, reliableDeliverySupervisor)
@@ -508,14 +516,14 @@ private[remote] object EndpointWriter {
  * INTERNAL API
  */
 private[remote] class EndpointWriter(
-  handleOrActive: Option[AkkaProtocolHandle],
-  localAddress: Address,
-  remoteAddress: Address,
-  refuseUid: Option[Int],
-  transport: AkkaProtocolTransport,
-  settings: RemoteSettings,
-  codec: AkkaPduCodec,
-  val receiveBuffers: ConcurrentHashMap[Link, ResendState],
+  handleOrActive:                 Option[AkkaProtocolHandle],
+  localAddress:                   Address,
+  remoteAddress:                  Address,
+  refuseUid:                      Option[Int],
+  transport:                      AkkaProtocolTransport,
+  settings:                       RemoteSettings,
+  codec:                          AkkaPduCodec,
+  val receiveBuffers:             ConcurrentHashMap[Link, ResendState],
   val reliableDeliverySupervisor: Option[ActorRef])
   extends EndpointActor(localAddress, remoteAddress, transport, settings, codec) {
 
@@ -704,8 +712,9 @@ private[remote] class EndpointWriter(
       if (size > settings.LogBufferSizeExceeding) {
         val now = System.nanoTime()
         if (now - largeBufferLogTimestamp >= LogBufferSizeInterval) {
-          log.warning("[{}] buffered messages in EndpointWriter for [{}]. " +
-            "You should probably implement flow control to avoid flooding the remote connection.",
+          log.warning(
+            "[{}] buffered messages in EndpointWriter for [{}]. " +
+              "You should probably implement flow control to avoid flooding the remote connection.",
             size, remoteAddress)
           largeBufferLogTimestamp = now
         }
@@ -888,16 +897,16 @@ private[remote] class EndpointWriter(
 private[remote] object EndpointReader {
 
   def props(
-    localAddress: Address,
-    remoteAddress: Address,
-    transport: Transport,
-    settings: RemoteSettings,
-    codec: AkkaPduCodec,
-    msgDispatch: InboundMessageDispatcher,
-    inbound: Boolean,
-    uid: Int,
+    localAddress:               Address,
+    remoteAddress:              Address,
+    transport:                  Transport,
+    settings:                   RemoteSettings,
+    codec:                      AkkaPduCodec,
+    msgDispatch:                InboundMessageDispatcher,
+    inbound:                    Boolean,
+    uid:                        Int,
     reliableDeliverySupervisor: Option[ActorRef],
-    receiveBuffers: ConcurrentHashMap[Link, ResendState]): Props =
+    receiveBuffers:             ConcurrentHashMap[Link, ResendState]): Props =
     Props(classOf[EndpointReader], localAddress, remoteAddress, transport, settings, codec, msgDispatch, inbound,
       uid, reliableDeliverySupervisor, receiveBuffers)
 
@@ -907,16 +916,16 @@ private[remote] object EndpointReader {
  * INTERNAL API
  */
 private[remote] class EndpointReader(
-  localAddress: Address,
-  remoteAddress: Address,
-  transport: Transport,
-  settings: RemoteSettings,
-  codec: AkkaPduCodec,
-  msgDispatch: InboundMessageDispatcher,
-  val inbound: Boolean,
-  val uid: Int,
+  localAddress:                   Address,
+  remoteAddress:                  Address,
+  transport:                      Transport,
+  settings:                       RemoteSettings,
+  codec:                          AkkaPduCodec,
+  msgDispatch:                    InboundMessageDispatcher,
+  val inbound:                    Boolean,
+  val uid:                        Int,
   val reliableDeliverySupervisor: Option[ActorRef],
-  val receiveBuffers: ConcurrentHashMap[Link, ResendState]) extends EndpointActor(localAddress, remoteAddress, transport, settings, codec) {
+  val receiveBuffers:             ConcurrentHashMap[Link, ResendState]) extends EndpointActor(localAddress, remoteAddress, transport, settings, codec) {
 
   import EndpointWriter.{ OutboundAck, StopReading, StoppedReading }
 
@@ -972,8 +981,9 @@ private[remote] class EndpointReader(
       }
 
     case InboundPayload(oversized) ⇒
-      log.error(new OversizedPayloadException(s"Discarding oversized payload received: " +
-        s"max allowed size [${transport.maximumPayloadBytes}] bytes, actual size [${oversized.size}] bytes."),
+      log.error(
+        new OversizedPayloadException(s"Discarding oversized payload received: " +
+          s"max allowed size [${transport.maximumPayloadBytes}] bytes, actual size [${oversized.size}] bytes."),
         "Transient error while reading from association (association remains live)")
 
     case StopReading(writer, replyTo) ⇒

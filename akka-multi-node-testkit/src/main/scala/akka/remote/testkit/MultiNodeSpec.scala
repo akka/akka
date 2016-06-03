@@ -41,7 +41,7 @@ abstract class MultiNodeConfig {
    */
   def nodeConfig(roles: RoleName*)(configs: Config*): Unit = {
     val c = configs.reduceLeft(_ withFallback _)
-    _nodeConf ++= roles map { _ -> c }
+    _nodeConf ++= roles map { _ → c }
   }
 
   /**
@@ -78,7 +78,7 @@ abstract class MultiNodeConfig {
   }
 
   def deployOn(role: RoleName, deployment: String): Unit =
-    _deployments += role -> ((_deployments get role getOrElse Vector()) :+ deployment)
+    _deployments += role → ((_deployments get role getOrElse Vector()) :+ deployment)
 
   def deployOnAll(deployment: String): Unit = _allDeploy :+= deployment
 

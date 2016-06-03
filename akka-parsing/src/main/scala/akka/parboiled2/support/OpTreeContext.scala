@@ -397,13 +397,13 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
           if (i <= 0) c.abort(base.pos, "`x` in `x.times` must be positive")
           else if (i == 1) rule
           else Times(rule, q"val min, max = $n", collector, separator)
-        case x@(Ident(_) | Select(_, _)) ⇒ Times(rule, q"val min = $n; val max = min", collector, separator)
-        case _ ⇒ c.abort(n.pos, "Invalid int base expression for `.times(...)`: " + n)
+        case x @ (Ident(_) | Select(_, _)) ⇒ Times(rule, q"val min = $n; val max = min", collector, separator)
+        case _                             ⇒ c.abort(n.pos, "Invalid int base expression for `.times(...)`: " + n)
       }
       case q"$a.this.range2NTimes($r)" ⇒ r match {
-        case q"scala.Predef.intWrapper($mn).to($mx)" ⇒ handleRange(mn, mx, r) // Scala 2.12
+        case q"scala.Predef.intWrapper($mn).to($mx)"      ⇒ handleRange(mn, mx, r) // Scala 2.12
         case q"scala.this.Predef.intWrapper($mn).to($mx)" ⇒ handleRange(mn, mx, r) // Scala 2.11
-        case x@(Ident(_) | Select(_, _)) ⇒
+        case x @ (Ident(_) | Select(_, _)) ⇒
           Times(rule, q"val r = $r; val min = r.start; val max = r.end", collector, separator)
         case _ ⇒ c.abort(r.pos, "Invalid range base expression for `.times(...)`: " + r)
       }
@@ -689,11 +689,11 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
   /////////////////////////////////// helpers ////////////////////////////////////
 
   class Collector(
-    val valBuilder: Tree,
-    val popToBuilder: Tree,
+    val valBuilder:        Tree,
+    val popToBuilder:      Tree,
     val pushBuilderResult: Tree,
-    val pushSomePop: Tree,
-    val pushNone: Tree)
+    val pushSomePop:       Tree,
+    val pushNone:          Tree)
 
   lazy val rule0Collector = {
     val unit = q"()"

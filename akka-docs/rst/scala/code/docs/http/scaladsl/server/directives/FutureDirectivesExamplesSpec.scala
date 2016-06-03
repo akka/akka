@@ -5,17 +5,17 @@
 package docs.http.scaladsl.server.directives
 
 import java.util.concurrent.TimeUnit
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
+
 import docs.http.scaladsl.server.RoutingSpec
 
 import scala.concurrent.Future
-import scala.util.{ Success, Failure }
-import akka.http.scaladsl.server.ExceptionHandler
-import akka.actor.{ Actor, Props }
+import scala.concurrent.duration._
+import scala.util.{ Failure, Success }
+import akka.http.scaladsl.server.{ CircuitBreakerOpenRejection, ExceptionHandler, Route }
 import akka.util.Timeout
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.Route
 import StatusCodes._
+import akka.pattern.CircuitBreaker
 
 // format: OFF
 
@@ -51,6 +51,47 @@ class FutureDirectivesExamplesSpec extends RoutingSpec {
     Get("/divide/10/0") ~> Route.seal(route) ~> check {
       status shouldEqual InternalServerError
       responseAs[String] shouldEqual "An error occurred: / by zero"
+    }
+  }
+
+  "onCompleteWithBreaker" in {
+    def divide(a: Int, b: Int): Future[Int] = Future {
+      a / b
+    }
+
+    val resetTimeout = 1.second
+    val breaker = new CircuitBreaker(system.scheduler,
+      maxFailures = 1,
+      callTimeout = 5.seconds,
+      resetTimeout
+    )
+
+    val route =
+      path("divide" / IntNumber / IntNumber) { (a, b) =>
+        onCompleteWithBreaker(breaker)(divide(a, b)) {
+          case Success(value) => complete(s"The result was $value")
+          case Failure(ex)    => complete((InternalServerError, s"An error occurred: ${ex.getMessage}"))
+        }
+      }
+
+    // tests:
+    Get("/divide/10/2") ~> route ~> check {
+      responseAs[String] shouldEqual "The result was 5"
+    }
+
+    Get("/divide/10/0") ~> Route.seal(route) ~> check {
+      status shouldEqual InternalServerError
+      responseAs[String] shouldEqual "An error occurred: / by zero"
+    } // opens the circuit breaker
+
+    Get("/divide/10/2") ~> route ~> check {
+      rejection shouldBe a[CircuitBreakerOpenRejection]
+    }
+
+    Thread.sleep(resetTimeout.toMillis + 200)
+
+    Get("/divide/10/2") ~> route ~> check {
+      responseAs[String] shouldEqual "The result was 5"
     }
   }
 

@@ -28,7 +28,8 @@ object Utils {
           try probe.awaitAssert {
             impl.supervisor.tell(StreamSupervisor.GetChildren, probe.ref)
             children = probe.expectMsgType[StreamSupervisor.Children].children
-            assert(children.isEmpty,
+            assert(
+              children.isEmpty,
               s"expected no StreamSupervisor children, but got [${children.mkString(", ")}]")
           }
           catch {

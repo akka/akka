@@ -30,6 +30,6 @@ is shown in the example below, however it allows including multiple default head
 
 The semantics remain the same however, as explained by the following example:
 
-TODO: Example snippets for JavaDSL are subject to community contributions! Help us complete the docs, read more about it here: `write example snippets for Akka HTTP Java DSL #20466 <https://github.com/akka/akka/issues/20466>`_.
+.. includecode:: ../../../../code/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java#respondWithDefaultHeaders
 
 See the :ref:`-respondWithDefaultHeader-java-` directive for an example with only one header.

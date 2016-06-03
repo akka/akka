@@ -78,7 +78,7 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
                 case AlreadyRegistered ⇒
                   import spray.json.DefaultJsonProtocol._
                   import SprayJsonSupport._
-                  StatusCodes.BadRequest -> Map("error" -> "User already Registered")
+                  StatusCodes.BadRequest → Map("error" → "User already Registered")
               }
             }
           }
@@ -119,7 +119,8 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
       } ~> check {
         response shouldEqual HttpResponse(
           status = 302,
-          entity = HttpEntity(ContentTypes.`text/html(UTF-8)`,
+          entity = HttpEntity(
+            ContentTypes.`text/html(UTF-8)`,
             "The requested resource temporarily resides under <a href=\"/foo\">this URI</a>."),
           headers = Location("/foo") :: Nil)
       }

@@ -69,13 +69,15 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   /**
    * Start periodic gossip to random nodes in cluster
    */
-  val gossipTask = scheduler.schedule(PeriodicTasksInitialDelay max MetricsGossipInterval,
+  val gossipTask = scheduler.schedule(
+    PeriodicTasksInitialDelay max MetricsGossipInterval,
     MetricsGossipInterval, self, GossipTick)
 
   /**
    * Start periodic metrics collection
    */
-  val metricsTask = scheduler.schedule(PeriodicTasksInitialDelay max MetricsInterval,
+  val metricsTask = scheduler.schedule(
+    PeriodicTasksInitialDelay max MetricsInterval,
     MetricsInterval, self, MetricsTick)
 
   override def preStart(): Unit = {
@@ -535,11 +537,11 @@ object StandardMetrics {
    */
   @SerialVersionUID(1L)
   final case class Cpu(
-    address: Address,
-    timestamp: Long,
+    address:           Address,
+    timestamp:         Long,
     systemLoadAverage: Option[Double],
-    cpuCombined: Option[Double],
-    processors: Int) {
+    cpuCombined:       Option[Double],
+    processors:        Int) {
 
     cpuCombined match {
       case Some(x) ⇒ require(0.0 <= x && x <= 1.0, s"cpuCombined must be between [0.0 - 1.0], was [$x]")
@@ -607,7 +609,8 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
   import StandardMetrics._
 
   private def this(cluster: Cluster) =
-    this(cluster.selfAddress,
+    this(
+      cluster.selfAddress,
       EWMA.alpha(cluster.settings.MetricsMovingAverageHalfLife, cluster.settings.MetricsInterval))
 
   /**
@@ -710,7 +713,8 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: AnyRef
   import StandardMetrics._
 
   private def this(cluster: Cluster) =
-    this(cluster.selfAddress,
+    this(
+      cluster.selfAddress,
       EWMA.alpha(cluster.settings.MetricsMovingAverageHalfLife, cluster.settings.MetricsInterval),
       cluster.system.dynamicAccess.createInstanceFor[AnyRef]("org.hyperic.sigar.Sigar", Nil).get)
 
@@ -804,7 +808,7 @@ private[cluster] object MetricsCollector {
       }
 
     } else {
-      system.dynamicAccess.createInstanceFor[MetricsCollector](fqcn, List(classOf[ActorSystem] -> system)).
+      system.dynamicAccess.createInstanceFor[MetricsCollector](fqcn, List(classOf[ActorSystem] → system)).
         recover {
           case e ⇒ throw new ConfigurationException("Could not create custom metrics collector [" + fqcn + "] due to:" + e.toString)
         }.get

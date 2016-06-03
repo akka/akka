@@ -4,79 +4,21 @@
 package akka.stream.impl.fusing
 
 import scala.util.control.NoStackTrace
-import akka.stream.ActorAttributes._
 import akka.stream.Supervision
-import akka.stream.Supervision._
 import akka.stream.stage.Context
 import akka.stream.stage.PushPullStage
 import akka.stream.stage.Stage
-import akka.stream.stage.TerminationDirective
 import akka.stream.stage.SyncDirective
 import akka.testkit.AkkaSpec
 
-object InterpreterSupervisionSpec {
-  val TE = new Exception("TEST") with NoStackTrace {
-    override def toString = "TE"
-  }
-
-  class RestartTestStage extends PushPullStage[Int, Int] {
-    var sum = 0
-    def onPush(elem: Int, ctx: Context[Int]): SyncDirective = {
-      sum += elem
-      ctx.push(sum)
-    }
-
-    override def onPull(ctx: Context[Int]): SyncDirective = {
-      ctx.pull()
-    }
-
-    override def decide(t: Throwable): Supervision.Directive = Supervision.Restart
-
-    override def restart(): Stage[Int, Int] = {
-      sum = 0
-      this
-    }
-  }
-
-  case class OneToManyTestStage(decider: Supervision.Decider, absorbTermination: Boolean = false) extends PushPullStage[Int, Int] {
-    var buf: List[Int] = Nil
-    def onPush(elem: Int, ctx: Context[Int]): SyncDirective = {
-      buf = List(elem + 1, elem + 2, elem + 3)
-      ctx.push(elem)
-    }
-
-    override def onPull(ctx: Context[Int]): SyncDirective = {
-      if (buf.isEmpty && ctx.isFinishing)
-        ctx.finish()
-      else if (buf.isEmpty)
-        ctx.pull()
-      else {
-        val elem = buf.head
-        buf = buf.tail
-        if (elem == 3) throw TE
-        ctx.push(elem)
-      }
-    }
-
-    override def onUpstreamFinish(ctx: Context[Int]): TerminationDirective =
-      if (absorbTermination)
-        ctx.absorbTermination()
-      else
-        ctx.finish()
-
-    // note that resume will be turned into failure in the Interpreter if exception is thrown from onPull
-    override def decide(t: Throwable): Supervision.Directive = decider(t)
-
-    override def restart(): OneToManyTestStage = copy()
-  }
-
-}
-
 class InterpreterSupervisionSpec extends AkkaSpec with GraphInterpreterSpecKit {
-  import InterpreterSupervisionSpec._
   import Supervision.stoppingDecider
   import Supervision.resumingDecider
   import Supervision.restartingDecider
+
+  val TE = new Exception("TEST") with NoStackTrace {
+    override def toString = "TE"
+  }
 
   "Interpreter error handling" must {
 
@@ -85,7 +27,6 @@ class InterpreterSupervisionSpec extends AkkaSpec with GraphInterpreterSpecKit {
 
       upstream.onError(TE)
       lastEvents() should be(Set(OnError(TE)))
-
     }
 
     "emit failure when op throws" in new OneBoundedSetup[Int](Seq(Map((x: Int) ⇒ if (x == 0) throw TE else x, stoppingDecider))) {
@@ -199,95 +140,6 @@ class InterpreterSupervisionSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnNext(Vector(13, 14)), OnComplete))
     }
 
-    "restart when onPush throws" in {
-      val stage = new RestartTestStage {
-        override def onPush(elem: Int, ctx: Context[Int]): SyncDirective = {
-          if (elem <= 0) throw TE
-          else super.onPush(elem, ctx)
-        }
-      }
-
-      new OneBoundedSetup[Int](Seq(
-        Map((x: Int) ⇒ x + 1, restartingDecider),
-        stage,
-        Map((x: Int) ⇒ x + 100, restartingDecider))) {
-
-        downstream.requestOne()
-        lastEvents() should be(Set(RequestOne))
-        upstream.onNext(2)
-        lastEvents() should be(Set(OnNext(103)))
-
-        downstream.requestOne()
-        lastEvents() should be(Set(RequestOne))
-        upstream.onNext(-1) // boom
-        lastEvents() should be(Set(RequestOne))
-
-        upstream.onNext(3)
-        lastEvents() should be(Set(OnNext(104)))
-      }
-    }
-
-    "restart when onPush throws after ctx.push" in {
-      val stage = new RestartTestStage {
-        override def onPush(elem: Int, ctx: Context[Int]): SyncDirective = {
-          val ret = ctx.push(elem)
-          if (elem <= 0) throw TE
-          ret
-        }
-      }
-
-      new OneBoundedSetup[Int](Seq(
-        Map((x: Int) ⇒ x + 1, restartingDecider),
-        stage,
-        Map((x: Int) ⇒ x + 100, restartingDecider))) {
-
-        downstream.requestOne()
-        lastEvents() should be(Set(RequestOne))
-        upstream.onNext(2)
-        lastEvents() should be(Set(OnNext(103)))
-
-        downstream.requestOne()
-        lastEvents() should be(Set(RequestOne))
-        upstream.onNext(-1) // boom
-        // The element has been pushed before the exception, there is no way back
-        lastEvents() should be(Set(OnNext(100)))
-
-        downstream.requestOne()
-        lastEvents() should be(Set(RequestOne))
-
-        upstream.onNext(3)
-        lastEvents() should be(Set(OnNext(104)))
-      }
-    }
-
-    "fail when onPull throws" in {
-      val stage = new RestartTestStage {
-        override def onPull(ctx: Context[Int]): SyncDirective = {
-          if (sum < 0) throw TE
-          super.onPull(ctx)
-        }
-      }
-
-      new OneBoundedSetup[Int](Seq(
-        Map((x: Int) ⇒ x + 1, restartingDecider),
-        stage,
-        Map((x: Int) ⇒ x + 100, restartingDecider))) {
-
-        downstream.requestOne()
-        lastEvents() should be(Set(RequestOne))
-        upstream.onNext(2)
-        lastEvents() should be(Set(OnNext(103)))
-
-        downstream.requestOne()
-        lastEvents() should be(Set(RequestOne))
-        upstream.onNext(-5) // this will trigger failure of next requestOne (pull)
-        lastEvents() should be(Set(OnNext(99)))
-
-        downstream.requestOne() // boom
-        lastEvents() should be(Set(OnError(TE), Cancel))
-      }
-    }
-
     "fail when Expand `seed` throws" in new OneBoundedSetup[Int](
       new Expand((in: Int) ⇒ if (in == 2) throw TE else Iterator(in) ++ Iterator.continually(-math.abs(in)))) {
 
@@ -329,40 +181,6 @@ class InterpreterSupervisionSpec extends AkkaSpec with GraphInterpreterSpecKit {
       downstream.requestOne()
       lastEvents() should be(Set(OnError(TE), Cancel))
     }
-
-    "fail when onPull throws before pushing all generated elements" in {
-      def test(decider: Supervision.Decider, absorbTermination: Boolean): Unit = {
-        new OneBoundedSetup[Int](Seq(
-          OneToManyTestStage(decider, absorbTermination))) {
-
-          downstream.requestOne()
-          lastEvents() should be(Set(RequestOne))
-          upstream.onNext(1)
-          lastEvents() should be(Set(OnNext(1)))
-
-          if (absorbTermination) {
-            upstream.onComplete()
-            lastEvents() should be(Set.empty)
-          }
-
-          downstream.requestOne()
-          lastEvents() should be(Set(OnNext(2)))
-
-          downstream.requestOne()
-          // 3 => boom
-          if (absorbTermination)
-            lastEvents() should be(Set(OnError(TE)))
-          else
-            lastEvents() should be(Set(OnError(TE), Cancel))
-        }
-      }
-
-      test(resumingDecider, absorbTermination = false)
-      test(restartingDecider, absorbTermination = false)
-      test(resumingDecider, absorbTermination = true)
-      test(restartingDecider, absorbTermination = true)
-    }
-
   }
 
 }

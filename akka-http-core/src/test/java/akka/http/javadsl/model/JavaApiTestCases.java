@@ -6,6 +6,8 @@ package akka.http.javadsl.model;
 
 import akka.http.javadsl.model.headers.*;
 import akka.japi.Pair;
+import akka.stream.javadsl.Source;
+import akka.util.ByteString;
 
 public class JavaApiTestCases {
   /**
@@ -95,5 +97,10 @@ public class JavaApiTestCases {
     anything = (akka.http.javadsl.model.ContentType.WithFixedCharset) type;
 
     return anything;
+  }
+  
+  public static void HttpEntity_should_not_care_about_materialized_value_of_its_source() {
+      Source<ByteString, Integer> src = Source.single(ByteString.fromString("hello, world")).mapMaterializedValue(m -> 42);
+      HttpEntity entity = HttpEntities.create(ContentTypes.TEXT_PLAIN_UTF8, src); // this needs to accept Source<ByteString, ?>
   }
 }

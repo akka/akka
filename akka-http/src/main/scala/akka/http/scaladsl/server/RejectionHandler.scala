@@ -4,13 +4,14 @@
 
 package akka.http.scaladsl.server
 
-import scala.annotation.tailrec
-import scala.reflect.ClassTag
-import scala.collection.immutable
-import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
-import StatusCodes._
-import AuthenticationFailedRejection._
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.server.AuthenticationFailedRejection._
+
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.reflect.ClassTag
 
 trait RejectionHandler extends (immutable.Seq[Rejection] ⇒ Option[Route]) { self ⇒
   import RejectionHandler._
@@ -76,6 +77,15 @@ object RejectionHandler {
       this
     }
 
+    /**
+     * Convenience method for handling rejections created by created by the onCompleteWithBreaker directive.
+     * Signals that the request was rejected because the supplied circuit breaker is open and requests are failing fast.
+     *
+     * Use to customise the error response being written instead of the default [[ServiceUnavailable]] response.
+     */
+    def handleCircuitBreakerOpenRejection(handler: CircuitBreakerOpenRejection ⇒ Route): this.type =
+      handle { case r: CircuitBreakerOpenRejection ⇒ handler(r) }
+
     def result(): RejectionHandler =
       new BuiltRejectionHandler(cases.result(), notFound, isDefault)
   }
@@ -88,9 +98,10 @@ object RejectionHandler {
     def apply(rejection: Rejection) = rejection.asInstanceOf[T]
   }
 
-  private class BuiltRejectionHandler(val cases: Vector[Handler],
-                                      val notFound: Option[Route],
-                                      val isDefault: Boolean) extends RejectionHandler {
+  private class BuiltRejectionHandler(
+    val cases:     Vector[Handler],
+    val notFound:  Option[Route],
+    val isDefault: Boolean) extends RejectionHandler {
     def apply(rejections: immutable.Seq[Rejection]): Option[Route] =
       if (rejections.nonEmpty) {
         @tailrec def rec(ix: Int): Option[Route] =
@@ -120,7 +131,7 @@ object RejectionHandler {
         complete((BadRequest, "Uri scheme not allowed, supported schemes: " + schemes))
       }
       .handleAll[MethodRejection] { rejections ⇒
-        val (methods, names) = rejections.map(r ⇒ r.supported -> r.supported.name).unzip
+        val (methods, names) = rejections.map(r ⇒ r.supported → r.supported.name).unzip
         complete((MethodNotAllowed, List(Allow(methods)), "HTTP method not allowed, supported methods: " + names.mkString(", ")))
       }
       .handle {
@@ -156,6 +167,10 @@ object RejectionHandler {
           complete((BadRequest, "Request is missing required HTTP header '" + headerName + '\''))
       }
       .handle {
+        case InvalidOriginRejection(invalidOrigin) ⇒
+          complete((Forbidden, s"Invalid `Origin` header values: ${invalidOrigin.mkString(", ")}"))
+      }
+      .handle {
         case MissingQueryParamRejection(paramName) ⇒
           complete((NotFound, "Request is missing required query parameter '" + paramName + '\''))
       }
@@ -165,7 +180,11 @@ object RejectionHandler {
       }
       .handle {
         case TooManyRangesRejection(_) ⇒
-          complete((RequestedRangeNotSatisfiable, "Request contains too many ranges."))
+          complete((RequestedRangeNotSatisfiable, "Request contains too many ranges"))
+      }
+      .handle {
+        case CircuitBreakerOpenRejection(_) ⇒
+          complete(ServiceUnavailable)
       }
       .handle {
         case UnsatisfiableRangeRejection(unsatisfiableRanges, actualEntityLength) ⇒
@@ -207,7 +226,8 @@ object RejectionHandler {
       .handle { case ExpectedWebSocketRequestRejection ⇒ complete((BadRequest, "Expected WebSocket Upgrade request")) }
       .handleAll[UnsupportedWebSocketSubprotocolRejection] { rejections ⇒
         val supported = rejections.map(_.supportedProtocol)
-        complete(HttpResponse(BadRequest,
+        complete(HttpResponse(
+          BadRequest,
           entity = s"None of the websocket subprotocols offered in the request are supported. Supported are ${supported.map("'" + _ + "'").mkString(",")}.",
           headers = `Sec-WebSocket-Protocol`(supported) :: Nil))
       }

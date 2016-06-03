@@ -5,7 +5,7 @@ package akka.stream.io;
 
 import akka.stream.IOResult;
 import akka.stream.StreamTest;
-import akka.stream.javadsl.AkkaJUnitActorSystemResource;
+import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
 import akka.stream.testkit.Utils;
@@ -29,7 +29,7 @@ public class OutputStreamSinkTest  extends StreamTest {
     }
 
     @ClassRule
-    public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("OutputStreamSink",
+    public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("OutputStreamSinkTest",
             Utils.UnboundedMailboxConfig());
     @Test
     public void mustSignalFailureViaIoResult() throws Exception {
@@ -44,7 +44,7 @@ public class OutputStreamSinkTest  extends StreamTest {
         }
       };
       final CompletionStage<IOResult> resultFuture = Source.single(ByteString.fromString("123456")).runWith(StreamConverters.fromOutputStream(() -> os), materializer);
-      final IOResult result = resultFuture.toCompletableFuture().get(300, TimeUnit.MILLISECONDS);
+      final IOResult result = resultFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
       assertFalse(result.wasSuccessful());
       assertTrue(result.getError().getMessage().equals("Can't accept more data."));

@@ -127,7 +127,7 @@ private[akka] class SubclassifiedIndex[K, V] private (protected var values: Set[
     if (!found) {
       val v = values + value
       val n = new Nonroot(root, key, v)
-      integrate(n) ++ n.innerAddValue(key, value) :+ (key -> v)
+      integrate(n) ++ n.innerAddValue(key, value) :+ (key → v)
     } else ch
   }
 

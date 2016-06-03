@@ -55,12 +55,13 @@ object AkkaSpec {
 }
 
 abstract class AkkaSpec(_system: ActorSystem)
-    extends TestKit(_system) with WordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner
-    with ConversionCheckedTripleEquals with ScalaFutures {
+  extends TestKit(_system) with WordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner
+  with ConversionCheckedTripleEquals with ScalaFutures {
 
   implicit val patience = PatienceConfig(testKitSettings.DefaultTimeout.duration)
 
-  def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName(getClass),
+  def this(config: Config) = this(ActorSystem(
+    AkkaSpec.getCallerName(getClass),
     ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
 
   def this(s: String) = this(ConfigFactory.parseString(s))

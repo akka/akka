@@ -24,6 +24,7 @@ import scala.concurrent.duration.Duration;
 import akka.japi.function.Function2;
 import akka.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
+import akka.testkit.AkkaJUnitActorSystemResource;
 
 import static org.junit.Assert.*;
 

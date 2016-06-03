@@ -24,10 +24,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
  * production systems.
  */
 class TestTransport(
-  val localAddress: Address,
-  final val registry: AssociationRegistry,
-  val maximumPayloadBytes: Int = 32000,
-  val schemeIdentifier: String = "test") extends Transport {
+  val localAddress:        Address,
+  final val registry:      AssociationRegistry,
+  val maximumPayloadBytes: Int                 = 32000,
+  val schemeIdentifier:    String              = "test") extends Transport {
 
   def this(system: ExtendedActorSystem, conf: Config) = {
     this(
@@ -141,12 +141,12 @@ class TestTransport(
    */
   val writeBehavior = new SwitchableLoggedBehavior[(TestAssociationHandle, ByteString), Boolean](
     defaultBehavior = {
-      defaultWrite _
-    },
+    defaultWrite _
+  },
     logCallback = {
-      case (handle, payload) ⇒
-        registry.logActivity(WriteAttempt(handle.localAddress, handle.remoteAddress, payload))
-    })
+    case (handle, payload) ⇒
+      registry.logActivity(WriteAttempt(handle.localAddress, handle.remoteAddress, payload))
+  })
 
   /**
    * The [[akka.remote.transport.TestTransport.SwitchableLoggedBehavior]] for the disassociate() method on handles. All
@@ -154,12 +154,12 @@ class TestTransport(
    */
   val disassociateBehavior = new SwitchableLoggedBehavior[TestAssociationHandle, Unit](
     defaultBehavior = {
-      defaultDisassociate _
-    },
+    defaultDisassociate _
+  },
     logCallback = {
-      (handle) ⇒
-        registry.logActivity(DisassociateAttempt(handle.localAddress, handle.remoteAddress))
-    })
+    (handle) ⇒
+      registry.logActivity(DisassociateAttempt(handle.localAddress, handle.remoteAddress))
+  })
 
   private[akka] def write(handle: TestAssociationHandle, payload: ByteString): Boolean =
     Await.result(writeBehavior((handle, payload)), 3.seconds)
@@ -299,8 +299,9 @@ object TestTransport {
      * @param listenerPair pair of listeners in initiator, receiver order.
      * @return
      */
-    def remoteListenerRelativeTo(handle: TestAssociationHandle,
-                                 listenerPair: (HandleEventListener, HandleEventListener)): HandleEventListener = {
+    def remoteListenerRelativeTo(
+      handle:       TestAssociationHandle,
+      listenerPair: (HandleEventListener, HandleEventListener)): HandleEventListener = {
       listenerPair match {
         case (initiator, receiver) ⇒ if (handle.inbound) initiator else receiver
       }
@@ -448,10 +449,10 @@ object AssociationRegistry {
 }
 
 final case class TestAssociationHandle(
-  localAddress: Address,
+  localAddress:  Address,
   remoteAddress: Address,
-  transport: TestTransport,
-  inbound: Boolean) extends AssociationHandle {
+  transport:     TestTransport,
+  inbound:       Boolean) extends AssociationHandle {
 
   @volatile var writable = true
 

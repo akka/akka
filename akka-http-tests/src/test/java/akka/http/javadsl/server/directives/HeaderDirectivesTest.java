@@ -182,4 +182,28 @@ public class HeaderDirectivesTest extends JUnitRouteTest {
       .assertStatusCode(StatusCodes.BAD_REQUEST);
   }
 
+  @Test
+  public void testCheckSameOrigin() {
+    final HttpOrigin validOriginHeader = HttpOrigin.create("http://localhost", Host.create("8080"));
+
+    final HttpOriginRange validOriginRange = HttpOriginRange.create(validOriginHeader);
+
+    TestRoute route = testRoute(checkSameOrigin(validOriginRange, () -> complete("Result")));
+
+    route
+      .run(HttpRequest.create().addHeader(Origin.create(validOriginHeader)))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("Result");
+
+    route
+      .run(HttpRequest.create())
+      .assertStatusCode(StatusCodes.BAD_REQUEST);
+
+    final HttpOrigin invalidOriginHeader = HttpOrigin.create("http://invalid.com", Host.create("8080"));
+
+    route
+      .run(HttpRequest.create().addHeader(Origin.create(invalidOriginHeader)))
+      .assertStatusCode(StatusCodes.FORBIDDEN);
+  }
+
 }

@@ -45,7 +45,7 @@ eventually become too full. It also let’s you distribute work around your clus
 scale dynamically scale and is completely non-blocking. This pattern is a 
 specialisation of the above 'Balancing Workload Pattern'."
 
-The pattern is described `Work Pulling Pattern to prevent mailbox overflow, throttle and distribute work <http://www.michaelpollmeier.com/akka-work-pulling-pattern/>`_.
+The pattern is described `Work Pulling Pattern to prevent mailbox overflow, throttle and distribute work <http://www.michaelpollmeier.com/akka-work-pulling-pattern>`_.
 
 Ordered Termination
 ===================

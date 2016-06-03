@@ -85,7 +85,7 @@ class StreamTcpDocSpec extends AkkaSpec {
           allowTruncation = true))
         .map(_.utf8String)
         //#welcome-banner-chat-server
-        .map { command ⇒ serverProbe.ref ! command; command }
+        .map { command => serverProbe.ref ! command; command }
         //#welcome-banner-chat-server
         .via(commandParser)
         // merge in the initial banner after parser
@@ -102,8 +102,8 @@ class StreamTcpDocSpec extends AkkaSpec {
     val input = new AtomicReference("Hello world" :: "What a lovely day" :: Nil)
     def readLine(prompt: String): String = {
       input.get() match {
-        case all @ cmd :: tail if input.compareAndSet(all, tail) ⇒ cmd
-        case _ ⇒ "q"
+        case all @ cmd :: tail if input.compareAndSet(all, tail) => cmd
+        case _ => "q"
       }
     }
 

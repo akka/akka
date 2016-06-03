@@ -163,7 +163,7 @@ private[camel] class ProducerRegistrar(activationTracker: ActorRef) extends Acto
         try {
           val endpoint = camelContext.getEndpoint(endpointUri)
           val processor = new SendProcessor(endpoint)
-          camelObjects = camelObjects.updated(producer, endpoint -> processor)
+          camelObjects = camelObjects.updated(producer, endpoint → processor)
           // if this throws, the supervisor stops the producer and de-registers it on termination
           processor.start()
           producer ! CamelProducerObjects(endpoint, processor)

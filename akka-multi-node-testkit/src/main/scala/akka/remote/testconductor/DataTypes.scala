@@ -133,7 +133,8 @@ private[akka] class MsgDecoder extends OneToOneDecoder {
           case BarrierOp.Succeeded ⇒ BarrierResult(barrier.getName, true)
           case BarrierOp.Failed    ⇒ BarrierResult(barrier.getName, false)
           case BarrierOp.Fail      ⇒ FailBarrier(barrier.getName)
-          case BarrierOp.Enter ⇒ EnterBarrier(barrier.getName,
+          case BarrierOp.Enter ⇒ EnterBarrier(
+            barrier.getName,
             if (barrier.hasTimeout) Option(Duration.fromNanos(barrier.getTimeout)) else None)
         }
       } else if (w.hasFailure) {

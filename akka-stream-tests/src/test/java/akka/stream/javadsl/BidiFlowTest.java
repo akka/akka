@@ -25,6 +25,7 @@ import akka.japi.function.*;
 import akka.util.ByteString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertArrayEquals;
+import akka.testkit.AkkaJUnitActorSystemResource;
 
 public class BidiFlowTest extends StreamTest {
   public BidiFlowTest() {

@@ -227,6 +227,7 @@ import ReliableProxy._
 class ReliableProxy(targetPath: ActorPath, retryAfter: FiniteDuration,
                     reconnectAfter: Option[FiniteDuration], maxConnectAttempts: Option[Int])
   extends Actor with LoggingFSM[State, Vector[Message]] with ReliableProxyDebugLogging {
+  import FSM.`→`
 
   var tunnel: ActorRef = _
   var currentSerial: Int = 0
@@ -284,9 +285,9 @@ class ReliableProxy(targetPath: ActorPath, retryAfter: FiniteDuration,
   }
 
   onTransition {
-    case _ -> Active     ⇒ scheduleTick()
-    case Active -> Idle  ⇒ cancelTimer(resendTimer)
-    case _ -> Connecting ⇒ scheduleReconnectTick()
+    case _ → Active     ⇒ scheduleTick()
+    case Active → Idle  ⇒ cancelTimer(resendTimer)
+    case _ → Connecting ⇒ scheduleReconnectTick()
   }
 
   when(Active) {

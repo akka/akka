@@ -49,8 +49,8 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
   lazy val statesMap: Map[String, S] = stateNames.map(name ⇒ (name.identifier, name)).toMap
 
   /**
-    * Timeout set for the current state. Used when saving a snapshot
-    */
+   * Timeout set for the current state. Used when saving a snapshot
+   */
   private var currentStateTimeout: Option[FiniteDuration] = None
 
   /**
@@ -68,8 +68,8 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
   def onRecoveryCompleted(): Unit = {}
 
   /**
-    * Save the current state as a snapshot
-    */
+   * Save the current state as a snapshot
+   */
   final def saveStateSnapshot(): Unit = {
     saveSnapshot(PersistentFSMSnapshot(stateName.identifier, stateData, currentStateTimeout))
   }
@@ -85,9 +85,9 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
    * Discover the latest recorded state
    */
   override def receiveRecover: Receive = {
-    case domainEventTag(event)                      ⇒ startWith(stateName, applyEvent(event, stateData))
+    case domainEventTag(event) ⇒ startWith(stateName, applyEvent(event, stateData))
     case StateChangeEvent(stateIdentifier, timeout) ⇒ startWith(statesMap(stateIdentifier), stateData, timeout)
-    case SnapshotOffer(_, PersistentFSMSnapshot(stateIdentifier, data: D, timeout)) => startWith(statesMap(stateIdentifier), data, timeout)
+    case SnapshotOffer(_, PersistentFSMSnapshot(stateIdentifier, data: D, timeout)) ⇒ startWith(statesMap(stateIdentifier), data, timeout)
     case RecoveryCompleted ⇒
       initialize()
       onRecoveryCompleted()
@@ -147,13 +147,13 @@ object PersistentFSM {
   private[persistence] case class StateChangeEvent(stateIdentifier: String, timeout: Option[FiniteDuration]) extends PersistentFsmEvent
 
   /**
-    * FSM state and data snapshot
-    *
-    * @param stateIdentifier FSM state identifier
-    * @param data FSM state data
-    * @param timeout FSM state timeout
-    * @tparam D state data type
-    */
+   * FSM state and data snapshot
+   *
+   * @param stateIdentifier FSM state identifier
+   * @param data FSM state data
+   * @param timeout FSM state timeout
+   * @tparam D state data type
+   */
   private[persistence] case class PersistentFSMSnapshot[D](stateIdentifier: String, data: D, timeout: Option[FiniteDuration]) extends Message
 
   /**
@@ -259,9 +259,10 @@ object PersistentFSM {
    * This extractor is just convenience for matching a (S, S) pair, including a
    * reminder what the new state is.
    */
-  object -> {
+  object `->` {
     def unapply[S](in: (S, S)) = Some(in)
   }
+  val `→` = `->`
 
   /**
    * Log Entry of the [[akka.actor.LoggingFSM]], can be obtained by calling `getLog`.
@@ -275,13 +276,13 @@ object PersistentFSM {
    * to be executed after FSM moves to the new state (also triggered when staying in the same state)
    */
   final case class State[S, D, E](
-    stateName: S,
-    stateData: D,
-    timeout: Option[FiniteDuration] = None,
-    stopReason: Option[Reason] = None,
-    replies: List[Any] = Nil,
-    domainEvents: Seq[E] = Nil,
-    afterTransitionDo: D ⇒ Unit = { _: D ⇒ })(private[akka] val notifies: Boolean = true) {
+    stateName:         S,
+    stateData:         D,
+    timeout:           Option[FiniteDuration] = None,
+    stopReason:        Option[Reason]         = None,
+    replies:           List[Any]              = Nil,
+    domainEvents:      Seq[E]                 = Nil,
+    afterTransitionDo: D ⇒ Unit               = { _: D ⇒ })(private[akka] val notifies: Boolean = true) {
 
     /**
      * Copy object and update values if needed.

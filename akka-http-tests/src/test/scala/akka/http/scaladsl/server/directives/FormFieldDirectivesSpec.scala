@@ -19,24 +19,24 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     ScalaXmlSupport.nodeSeqUnmarshaller(`text/xml`, `text/html`, `text/plain`)
 
   val nodeSeq: xml.NodeSeq = <b>yes</b>
-  val urlEncodedForm = FormData(Map("firstName" -> "Mike", "age" -> "42"))
-  val urlEncodedFormWithVip = FormData(Map("firstName" -> "Mike", "age" -> "42", "VIP" -> "true", "super" -> "<b>no</b>"))
+  val urlEncodedForm = FormData(Map("firstName" → "Mike", "age" → "42"))
+  val urlEncodedFormWithVip = FormData(Map("firstName" → "Mike", "age" → "42", "VIP" → "true", "super" → "<b>no</b>"))
   val multipartForm = Multipart.FormData {
     Map(
-      "firstName" -> HttpEntity("Mike"),
-      "age" -> HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<int>42</int>"),
-      "VIPBoolean" -> HttpEntity("true"))
+      "firstName" → HttpEntity("Mike"),
+      "age" → HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<int>42</int>"),
+      "VIPBoolean" → HttpEntity("true"))
   }
   val multipartFormWithTextHtml = Multipart.FormData {
     Map(
-      "firstName" -> HttpEntity("Mike"),
-      "age" -> HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<int>42</int>"),
-      "VIP" -> HttpEntity(ContentTypes.`text/html(UTF-8)`, "<b>yes</b>"),
-      "super" -> HttpEntity("no"))
+      "firstName" → HttpEntity("Mike"),
+      "age" → HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<int>42</int>"),
+      "VIP" → HttpEntity(ContentTypes.`text/html(UTF-8)`, "<b>yes</b>"),
+      "super" → HttpEntity("no"))
   }
   val multipartFormWithFile = Multipart.FormData(
     Multipart.FormData.BodyPart.Strict("file", HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<int>42</int>"),
-      Map("filename" -> "age.xml")))
+      Map("filename" → "age.xml")))
 
   "The 'formFields' extraction directive" should {
     "properly extract the value of www-urlencoded form fields" in {
@@ -142,22 +142,22 @@ class FormFieldDirectivesSpec extends RoutingSpec {
 
   "The 'formField' repeated directive" should {
     "extract an empty Iterable when the parameter is absent" in {
-      Post("/", FormData("age" -> "42")) ~> {
+      Post("/", FormData("age" → "42")) ~> {
         formField('hobby.*) { echoComplete }
       } ~> check { responseAs[String] === "List()" }
     }
     "extract all occurrences into an Iterable when parameter is present" in {
-      Post("/", FormData("age" -> "42", "hobby" -> "cooking", "hobby" -> "reading")) ~> {
+      Post("/", FormData("age" → "42", "hobby" → "cooking", "hobby" → "reading")) ~> {
         formField('hobby.*) { echoComplete }
       } ~> check { responseAs[String] === "List(cooking, reading)" }
     }
     "extract as Iterable[Int]" in {
-      Post("/", FormData("age" -> "42", "number" -> "3", "number" -> "5")) ~> {
+      Post("/", FormData("age" → "42", "number" → "3", "number" → "5")) ~> {
         formField('number.as[Int].*) { echoComplete }
       } ~> check { responseAs[String] === "List(3, 5)" }
     }
     "extract as Iterable[Int] with an explicit deserializer" in {
-      Post("/", FormData("age" -> "42", "number" -> "3", "number" -> "A")) ~> {
+      Post("/", FormData("age" → "42", "number" → "3", "number" → "A")) ~> {
         formField('number.as(HexInt).*) { echoComplete }
       } ~> check { responseAs[String] === "List(3, 10)" }
     }
@@ -165,7 +165,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
 
   "The 'formFieldMap' directive" should {
     "extract fields with different keys" in {
-      Post("/", FormData("age" -> "42", "numberA" -> "3", "numberB" -> "5")) ~> {
+      Post("/", FormData("age" → "42", "numberA" → "3", "numberB" → "5")) ~> {
         formFieldMap { echoComplete }
       } ~> check { responseAs[String] shouldEqual "Map(age -> 42, numberA -> 3, numberB -> 5)" }
     }
@@ -173,7 +173,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
 
   "The 'formFieldSeq' directive" should {
     "extract all fields" in {
-      Post("/", FormData("age" -> "42", "number" -> "3", "number" -> "5")) ~> {
+      Post("/", FormData("age" → "42", "number" → "3", "number" → "5")) ~> {
         formFieldSeq { echoComplete }
       } ~> check { responseAs[String] shouldEqual "Vector((age,42), (number,3), (number,5))" }
     }
@@ -186,7 +186,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
 
   "The 'formFieldMultiMap' directive" should {
     "extract fields with different keys (with duplicates)" in {
-      Post("/", FormData("age" -> "42", "number" -> "3", "number" -> "5")) ~> {
+      Post("/", FormData("age" → "42", "number" → "3", "number" → "5")) ~> {
         formFieldMultiMap { echoComplete }
       } ~> check { responseAs[String] shouldEqual "Map(age -> List(42), number -> List(5, 3))" }
     }

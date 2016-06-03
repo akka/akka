@@ -8,11 +8,10 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.testkit.EventFilter
 import akka.testkit.TestKit._
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{ Matchers, WordSpec }
 import org.scalatest.junit.JUnitSuiteLike
 
 import scala.util.control.NoStackTrace
-
 
 class JavaExtensionSpec extends JavaExtension with JUnitSuiteLike
 
@@ -52,7 +51,6 @@ class FailingTestExtension(val system: ExtendedActorSystem) extends Extension {
   throw new FailingTestExtension.TestException
 }
 
-
 class ExtensionSpec extends WordSpec with Matchers {
 
   "The ActorSystem extensions support" should {
@@ -83,9 +81,8 @@ class ExtensionSpec extends WordSpec with Matchers {
       shutdownActorSystem(system)
     }
 
-
     "fail the actor system if an extension listed in akka.extensions fails to start" in {
-      intercept[RuntimeException]{
+      intercept[RuntimeException] {
         val system = ActorSystem("failing", ConfigFactory.parseString(
           """
             akka.extensions = ["akka.actor.FailingTestExtension"]
@@ -133,7 +130,6 @@ class ExtensionSpec extends WordSpec with Matchers {
           """).withFallback(ConfigFactory.load()))
       }
     }
-
 
   }
 

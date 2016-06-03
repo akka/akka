@@ -71,7 +71,8 @@ class PersistenceQuery(system: ExtendedActorSystem) extends Extension {
   }
 
   private def createPlugin(configPath: String): ReadJournalProvider = {
-    require(!isEmpty(configPath) && system.settings.config.hasPath(configPath),
+    require(
+      !isEmpty(configPath) && system.settings.config.hasPath(configPath),
       s"'reference.conf' is missing persistence read journal plugin config path: '${configPath}'")
     val pluginConfig = system.settings.config.getConfig(configPath)
     val pluginClassName = pluginConfig.getString("class")

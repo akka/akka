@@ -26,28 +26,28 @@ private object PoolFlow {
   /*
     Pool Flow Stream Setup
     ======================
-                                               +-------------------+                             
-                                               |                   |                             
-                                        +----> | Connection Slot 1 +---->                        
-                                        |      |                   |    |                        
-                                        |      +---+---------------+    |                        
-                                        |          |                    |                        
-                       +-----------+    |      +-------------------+    |      +---------------+
-      RequestContext   |           +----+      |                   |    +----> |               |  ResponseContext
-    +----------------> | Conductor |---------> | Connection Slot 2 +---------> | responseMerge +------------------>
-                       |           +----+      |                   |    +----> |               |
-                       +-----------+    |      +---------+---------+    |      +---------------+
-                             ^          |          |     |              |                        
-                             |          |      +-------------------+    |                        
-                             |          |      |                   |    |                        
-                RawSlotEvent |          +----> | Connection Slot 3 +---->                        
-                             |                 |                   |                             
-                             |                 +---------------+---+                             
-                             |                     |     |     |                                    
-                       +-----------+  RawSlotEvent |     |     | 
-                       | slotEvent | <-------------+     |     |
-                       |   Merge   | <-------------------+     |                                  
-                       |           | <-------------------------+                                  
+                                               +-------------------+                             
+                                               |                   |                             
+                                        +----> | Connection Slot 1 +---->                        
+                                        |      |                   |    |                        
+                                        |      +---+---------------+    |                        
+                                        |          |                    |                        
+                       +-----------+    |      +-------------------+    |      +---------------+
+      RequestContext   |           +----+      |                   |    +----> |               |  ResponseContext
+    +----------------> | Conductor |---------> | Connection Slot 2 +---------> | responseMerge +------------------>
+                       |           +----+      |                   |    +----> |               |
+                       +-----------+    |      +---------+---------+    |      +---------------+
+                             ^          |          |     |              |                        
+                             |          |      +-------------------+    |                        
+                             |          |      |                   |    |                        
+                RawSlotEvent |          +----> | Connection Slot 3 +---->                        
+                             |                 |                   |                             
+                             |                 +---------------+---+                             
+                             |                     |     |     |                                    
+                       +-----------+  RawSlotEvent |     |     | 
+                       | slotEvent | <-------------+     |     |
+                       |   Merge   | <-------------------+     |                                  
+                       |           | <-------------------------+                                  
                        +-----------+
 
     Conductor:
@@ -67,9 +67,11 @@ private object PoolFlow {
     - Simple merge of the Connection Slots' outputs
 
   */
-  def apply(connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
-            settings: ConnectionPoolSettings, log: LoggingAdapter)(
-              implicit system: ActorSystem, fm: Materializer): Flow[RequestContext, ResponseContext, NotUsed] =
+  def apply(
+    connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
+    settings:       ConnectionPoolSettings, log: LoggingAdapter)(
+    implicit
+    system: ActorSystem, fm: Materializer): Flow[RequestContext, ResponseContext, NotUsed] =
     Flow.fromGraph(GraphDSL.create[FlowShape[RequestContext, ResponseContext]]() { implicit b ⇒
       import settings._
       import GraphDSL.Implicits._

@@ -15,9 +15,9 @@ import akka.stream.scaladsl.Flow
  * @groupprio websocket 230
  */
 trait WebSocketDirectives {
-  import RouteDirectives._
-  import HeaderDirectives._
   import BasicDirectives._
+  import HeaderDirectives._
+  import RouteDirectives._
 
   /**
    * Extract the [[UpgradeToWebSocket]] header if existent. Rejects with an [[ExpectedWebSocketRequestRejection]], otherwise.

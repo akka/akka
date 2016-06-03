@@ -25,15 +25,14 @@ trait ExecutionDirectives {
    * @group execution
    */
   def handleExceptions(handler: ExceptionHandler): Directive0 =
-    Directive { innerRouteBuilder ⇒
-      ctx ⇒
-        import ctx.executionContext
-        def handleException: PartialFunction[Throwable, Future[RouteResult]] =
-          handler andThen (_(ctx.withAcceptAll))
-        try innerRouteBuilder(())(ctx).fast.recoverWith(handleException)
-        catch {
-          case NonFatal(e) ⇒ handleException.applyOrElse[Throwable, Future[RouteResult]](e, throw _)
-        }
+    Directive { innerRouteBuilder ⇒ ctx ⇒
+      import ctx.executionContext
+      def handleException: PartialFunction[Throwable, Future[RouteResult]] =
+        handler andThen (_(ctx.withAcceptAll))
+      try innerRouteBuilder(())(ctx).fast.recoverWith(handleException)
+      catch {
+        case NonFatal(e) ⇒ handleException.applyOrElse[Throwable, Future[RouteResult]](e, throw _)
+      }
     }
 
   /**

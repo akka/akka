@@ -5,7 +5,7 @@ package akka.stream.impl
 
 import akka.stream.impl.QueueSink.{ Output, Pull }
 import akka.{ Done, NotUsed }
-import akka.actor.{ ActorRef, Props }
+import akka.actor.{ ActorRef, Actor, Props }
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
@@ -95,15 +95,17 @@ private[akka] class PublisherSink[In](val attributes: Attributes, shape: SinkSha
  */
 private[akka] final class FanoutPublisherSink[In](
   val attributes: Attributes,
-  shape: SinkShape[In])
+  shape:          SinkShape[In])
   extends SinkModule[In, Publisher[In]](shape) {
 
   override def create(context: MaterializationContext): (Subscriber[In], Publisher[In]) = {
     val actorMaterializer = ActorMaterializer.downcast(context.materializer)
-    val fanoutProcessor = ActorProcessorFactory[In, In](
-      actorMaterializer.actorOf(
-        context,
-        FanoutProcessorImpl.props(actorMaterializer.effectiveSettings(attributes))))
+    val impl = actorMaterializer.actorOf(
+      context,
+      FanoutProcessorImpl.props(actorMaterializer.effectiveSettings(attributes)))
+    val fanoutProcessor = new ActorProcessor[In, In](impl)
+    impl ! ExposedPublisher(fanoutProcessor.asInstanceOf[ActorPublisher[Any]])
+    // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
     (fanoutProcessor, fanoutProcessor)
   }
 
@@ -174,12 +176,13 @@ private[akka] final class ActorSubscriberSink[In](props: Props, val attributes: 
  */
 private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any,
                                            val attributes: Attributes,
-                                           shape: SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
+                                           shape:          SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
 
   override def create(context: MaterializationContext) = {
     val actorMaterializer = ActorMaterializer.downcast(context.materializer)
     val effectiveSettings = actorMaterializer.effectiveSettings(context.effectiveAttributes)
-    val subscriberRef = actorMaterializer.actorOf(context,
+    val subscriberRef = actorMaterializer.actorOf(
+      context,
       ActorRefSinkActor.props(ref, effectiveSettings.maxInputBufferSize, onCompleteMessage))
     (akka.stream.actor.ActorSubscriber[In](subscriberRef), NotUsed)
   }

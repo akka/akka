@@ -56,9 +56,9 @@ Predefined path matchers allow extraction of various types of values:
   Matches if the unmatched path starts with a path segment (i.e. not a slash).
   If so the path segment is extracted as a ``String`` instance.
 
-``PathMatchers.Rest``
+``PathMatchers.Remaining``
   Matches and extracts the complete remaining unmatched part of the request's URI path as an (encoded!) String.
-  If you need access to the remaining *decoded* elements of the path use ``RestPath`` instead.
+  If you need access to the remaining *decoded* elements of the path use ``RemainingPath`` instead.
 
 ``PathMatchers.intValue``
   Efficiently matches a number of decimal digits (unsigned) and extracts their (non-negative) ``Int`` value. The matcher
