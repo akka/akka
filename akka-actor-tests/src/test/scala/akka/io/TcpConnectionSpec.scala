@@ -886,10 +886,11 @@ class TcpConnectionSpec extends AkkaSpec("""
 
     def setServerSocketOptions() = ()
 
-    def createConnectionActor(serverAddress: InetSocketAddress = serverAddress,
-                              options: immutable.Seq[SocketOption] = Nil,
-                              timeout: Option[FiniteDuration] = None,
-                              pullMode: Boolean = false): TestActorRef[TcpOutgoingConnection] = {
+    def createConnectionActor(
+      serverAddress: InetSocketAddress           = serverAddress,
+      options:       immutable.Seq[SocketOption] = Nil,
+      timeout:       Option[FiniteDuration]      = None,
+      pullMode:      Boolean                     = false): TestActorRef[TcpOutgoingConnection] = {
       val ref = createConnectionActorWithoutRegistration(serverAddress, options, timeout, pullMode)
       ref ! newChannelRegistration
       ref
@@ -901,10 +902,11 @@ class TcpConnectionSpec extends AkkaSpec("""
         def disableInterest(op: Int): Unit = interestCallReceiver.ref ! -op
       }
 
-    def createConnectionActorWithoutRegistration(serverAddress: InetSocketAddress = serverAddress,
-                                                 options: immutable.Seq[SocketOption] = Nil,
-                                                 timeout: Option[FiniteDuration] = None,
-                                                 pullMode: Boolean = false): TestActorRef[TcpOutgoingConnection] =
+    def createConnectionActorWithoutRegistration(
+      serverAddress: InetSocketAddress           = serverAddress,
+      options:       immutable.Seq[SocketOption] = Nil,
+      timeout:       Option[FiniteDuration]      = None,
+      pullMode:      Boolean                     = false): TestActorRef[TcpOutgoingConnection] =
       TestActorRef(
         new TcpOutgoingConnection(Tcp(system), this, userHandler.ref,
           Connect(serverAddress, options = options, timeout = timeout, pullMode = pullMode)) {
@@ -931,8 +933,8 @@ class TcpConnectionSpec extends AkkaSpec("""
 
   abstract class EstablishedConnectionTest(
     keepOpenOnPeerClosed: Boolean = false,
-    useResumeWriting: Boolean = true,
-    pullMode: Boolean = false)
+    useResumeWriting:     Boolean = true,
+    pullMode:             Boolean = false)
     extends UnacceptedConnectionTest(pullMode) {
 
     // lazy init since potential exceptions should not be triggered in the constructor but during execution of `run`
@@ -1074,7 +1076,7 @@ class TcpConnectionSpec extends AkkaSpec("""
       }
 
     val interestsNames =
-      Seq(OP_ACCEPT -> "accepting", OP_CONNECT -> "connecting", OP_READ -> "reading", OP_WRITE -> "writing")
+      Seq(OP_ACCEPT → "accepting", OP_CONNECT → "connecting", OP_READ → "reading", OP_WRITE → "writing")
     def interestsDesc(interests: Int): String =
       interestsNames.filter(i ⇒ (i._1 & interests) != 0).map(_._2).mkString(", ")
 

@@ -143,10 +143,10 @@ class LifecycleInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
   }
 
   private[akka] case class PreStartAndPostStopIdentity[T](
-    onStart: () ⇒ Unit = () ⇒ (),
-    onStop: () ⇒ Unit = () ⇒ (),
-    onUpstreamCompleted: () ⇒ Unit = () ⇒ (),
-    onUpstreamFailed: Throwable ⇒ Unit = ex ⇒ ()) extends SimpleLinearGraphStage[T] {
+    onStart:             () ⇒ Unit        = () ⇒ (),
+    onStop:              () ⇒ Unit        = () ⇒ (),
+    onUpstreamCompleted: () ⇒ Unit        = () ⇒ (),
+    onUpstreamFailed:    Throwable ⇒ Unit = ex ⇒ ()) extends SimpleLinearGraphStage[T] {
 
     override def createLogic(attributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) with InHandler with OutHandler {

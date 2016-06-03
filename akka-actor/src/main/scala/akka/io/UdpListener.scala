@@ -19,10 +19,11 @@ import akka.io.Udp._
 /**
  * INTERNAL API
  */
-private[io] class UdpListener(val udp: UdpExt,
-                              channelRegistry: ChannelRegistry,
-                              bindCommander: ActorRef,
-                              bind: Bind)
+private[io] class UdpListener(
+  val udp:         UdpExt,
+  channelRegistry: ChannelRegistry,
+  bindCommander:   ActorRef,
+  bind:            Bind)
   extends Actor with ActorLogging with WithUdpSend with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import udp.bufferPool

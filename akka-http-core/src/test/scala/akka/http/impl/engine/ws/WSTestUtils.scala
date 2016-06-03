@@ -13,11 +13,11 @@ object WSTestUtils {
   def frameHeader(
     opcode: Opcode,
     length: Long,
-    fin: Boolean,
-    mask: Option[Int] = None,
-    rsv1: Boolean = false,
-    rsv2: Boolean = false,
-    rsv3: Boolean = false): ByteString = {
+    fin:    Boolean,
+    mask:   Option[Int] = None,
+    rsv1:   Boolean     = false,
+    rsv2:   Boolean     = false,
+    rsv3:   Boolean     = false): ByteString = {
     def set(should: Boolean, mask: Int): Int =
       if (should) mask else 0
 

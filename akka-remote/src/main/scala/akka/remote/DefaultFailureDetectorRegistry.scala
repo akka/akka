@@ -48,7 +48,7 @@ class DefaultFailureDetectorRegistry[A](detectorFactory: () ⇒ FailureDetector)
             case None ⇒
               val newDetector: FailureDetector = detectorFactory()
               newDetector.heartbeat()
-              resourceToFailureDetector.set(oldTable + (resource -> newDetector))
+              resourceToFailureDetector.set(oldTable + (resource → newDetector))
           }
         } finally failureDetectorCreationLock.unlock()
     }

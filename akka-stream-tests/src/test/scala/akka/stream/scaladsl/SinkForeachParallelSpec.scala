@@ -23,7 +23,7 @@ class SinkForeachParallelSpec extends AkkaSpec {
       implicit val ec = system.dispatcher
 
       val probe = TestProbe()
-      val latch = (1 to 4).map(_ -> TestLatch(1)).toMap
+      val latch = (1 to 4).map(_ → TestLatch(1)).toMap
       val p = Source(1 to 4).runWith(Sink.foreachParallel(4)((n: Int) ⇒ {
         Await.ready(latch(n), 5.seconds)
         probe.ref ! n
@@ -48,7 +48,7 @@ class SinkForeachParallelSpec extends AkkaSpec {
       implicit val ec = system.dispatcher
 
       val probe = TestProbe()
-      val latch = (1 to 5).map(_ -> TestLatch()).toMap
+      val latch = (1 to 5).map(_ → TestLatch()).toMap
 
       val p = Source(1 to 5).runWith(Sink.foreachParallel(4)((n: Int) ⇒ {
         probe.ref ! n

@@ -58,7 +58,7 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
 
         countDownLatch.await(10, TimeUnit.SECONDS)
 
-        Seq("actor1" -> actor1, "actor2" -> actor2, "actor3" -> actor3, "actor4" -> actor4) map {
+        Seq("actor1" → actor1, "actor2" → actor2, "actor3" → actor3, "actor4" → actor4) map {
           case (id, ref) ⇒ (id, ref ? "status")
         } foreach {
           case (id, f) ⇒ (id, Await.result(f, timeout.duration)) should ===((id, "OK"))

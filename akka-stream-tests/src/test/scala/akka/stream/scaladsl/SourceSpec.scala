@@ -143,16 +143,15 @@ class SourceSpec extends AkkaSpec with DefaultTimeout {
       val source = Source.asSubscriber[Int]
       val out = TestSubscriber.manualProbe[Int]
 
-      val s = Source.fromGraph(GraphDSL.create(source, source, source, source, source)(immutable.Seq(_, _, _, _, _)) { implicit b ⇒
-        (i0, i1, i2, i3, i4) ⇒
-          import GraphDSL.Implicits._
-          val m = b.add(Merge[Int](5))
-          i0.out ~> m.in(0)
-          i1.out ~> m.in(1)
-          i2.out ~> m.in(2)
-          i3.out ~> m.in(3)
-          i4.out ~> m.in(4)
-          SourceShape(m.out)
+      val s = Source.fromGraph(GraphDSL.create(source, source, source, source, source)(immutable.Seq(_, _, _, _, _)) { implicit b ⇒ (i0, i1, i2, i3, i4) ⇒
+        import GraphDSL.Implicits._
+        val m = b.add(Merge[Int](5))
+        i0.out ~> m.in(0)
+        i1.out ~> m.in(1)
+        i2.out ~> m.in(2)
+        i3.out ~> m.in(3)
+        i4.out ~> m.in(4)
+        SourceShape(m.out)
       }).to(Sink.fromSubscriber(out)).run()
 
       for (i ← 0 to 4) probes(i).subscribe(s(i))
@@ -241,11 +240,11 @@ class SourceSpec extends AkkaSpec with DefaultTimeout {
       EventFilter[RuntimeException](message = "expected", occurrences = 1) intercept
         whenReady(
           Source.unfold((0, 1)) {
-            case (a, _) if a > 10000000 ⇒ throw t
-            case (a, b)                 ⇒ Some((b, a + b) → a)
-          }.runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }.failed) {
-            _ should be theSameInstanceAs (t)
-          }
+          case (a, _) if a > 10000000 ⇒ throw t
+          case (a, b)                 ⇒ Some((b, a + b) → a)
+        }.runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }.failed) {
+          _ should be theSameInstanceAs (t)
+        }
     }
 
     "generate a finite fibonacci sequence asynchronously" in {

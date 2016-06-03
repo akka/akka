@@ -104,15 +104,15 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
   def ofType[T <: MessageDispatcher: ClassTag]: (MessageDispatcher) ⇒ Boolean = _.getClass == implicitly[ClassTag[T]].runtimeClass
 
   def typesAndValidators: Map[String, (MessageDispatcher) ⇒ Boolean] = Map(
-    "PinnedDispatcher" -> ofType[PinnedDispatcher],
-    "Dispatcher" -> ofType[Dispatcher])
+    "PinnedDispatcher" → ofType[PinnedDispatcher],
+    "Dispatcher" → ofType[Dispatcher])
 
   def validTypes = typesAndValidators.keys.toList
 
   val defaultDispatcherConfig = settings.config.getConfig("akka.actor.default-dispatcher")
 
   lazy val allDispatchers: Map[String, MessageDispatcher] = {
-    validTypes.map(t ⇒ (t, from(ConfigFactory.parseMap(Map(tipe -> t, id -> t).asJava).
+    validTypes.map(t ⇒ (t, from(ConfigFactory.parseMap(Map(tipe → t, id → t).asJava).
       withFallback(defaultDispatcherConfig)))).toMap
   }
 
@@ -150,7 +150,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
 
     "throw ConfigurationException if type does not exist" in {
       intercept[ConfigurationException] {
-        from(ConfigFactory.parseMap(Map(tipe -> "typedoesntexist", id -> "invalid-dispatcher").asJava).
+        from(ConfigFactory.parseMap(Map(tipe → "typedoesntexist", id → "invalid-dispatcher").asJava).
           withFallback(defaultDispatcherConfig))
       }
     }

@@ -3,7 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import akka.event.{Logging, LoggingAdapter}
+import akka.event.{ Logging, LoggingAdapter }
 import akka.stream._
 import akka.Done
 import akka.stream.impl.Stages.DefaultAttributes
@@ -26,7 +26,7 @@ import akka.NotUsed
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
  */
 final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
-    extends FlowOpsMat[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
+  extends FlowOpsMat[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
 
   override val shape: FlowShape[In, Out] = module.shape.asInstanceOf[FlowShape[In, Out]]
 
@@ -49,8 +49,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
       val m = flow.module
       val mat =
         if (combine == Keep.left) {
-          if (IgnorableMatValComp(m)) Ignore else Transform(_ => NotUsed, Atomic(m))
-        } else Combine(combine.asInstanceOf[(Any, Any) => Any], Ignore, Atomic(m))
+          if (IgnorableMatValComp(m)) Ignore else Transform(_ ⇒ NotUsed, Atomic(m))
+        } else Combine(combine.asInstanceOf[(Any, Any) ⇒ Any], Ignore, Atomic(m))
       new Flow(CompositeModule(Set(m), m.shape, empty, empty, mat, Attributes.none))
     } else {
       val flowCopy = flow.module.carbonCopy
@@ -434,28 +434,28 @@ trait FlowOps[+Out, +Mat] {
     via(new RecoverWith(-1, pf))
 
   /**
-    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
-    * a failure has been recovered up to `attempts` number of times so that each time there is a failure
-    * it is fed into the `pf` and a new Source may be materialized. Note that if you pass in 0, this won't
-    * attempt to recover at all. Passing -1 will behave exactly the same as  `recoverWith`.
-    *
-    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
-    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
-    *
-    * '''Emits when''' element is available from the upstream or upstream is failed and element is available
-    * from alternative Source
-    *
-    * '''Backpressures when''' downstream backpressures
-    *
-    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
-    *
-    * '''Cancels when''' downstream cancels
-    *
-    * @param attempts Maximum number of retries or -1 to retry indefinitely
-    * @param pf Receives the failure cause and returns the new Source to be materialized if any
-    * @throws IllegalArgumentException if `attempts` is a negative number other than -1
-    *
-    */
+   * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
+   * a failure has been recovered up to `attempts` number of times so that each time there is a failure
+   * it is fed into the `pf` and a new Source may be materialized. Note that if you pass in 0, this won't
+   * attempt to recover at all. Passing -1 will behave exactly the same as  `recoverWith`.
+   *
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * '''Emits when''' element is available from the upstream or upstream is failed and element is available
+   * from alternative Source
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @param attempts Maximum number of retries or -1 to retry indefinitely
+   * @param pf Receives the failure cause and returns the new Source to be materialized if any
+   * @throws IllegalArgumentException if `attempts` is a negative number other than -1
+   *
+   */
   def recoverWithRetries[T >: Out](attempts: Int, pf: PartialFunction[Throwable, Graph[SourceShape[T], NotUsed]]): Repr[T] =
     via(new RecoverWith(attempts, pf))
 
@@ -492,7 +492,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def mapConcat[T](f: Out ⇒ immutable.Iterable[T]): Repr[T] = statefulMapConcat(() => f)
+  def mapConcat[T](f: Out ⇒ immutable.Iterable[T]): Repr[T] = statefulMapConcat(() ⇒ f)
 
   /**
    * Transform each input element into an `Iterable` of output elements that is
@@ -1029,7 +1029,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.conflate]], [[FlowOps.limit]], [[FlowOps.limitWeighted]] [[FlowOps.batch]] [[FlowOps.batchWeighted]]
    */
-  def conflate[O2 >: Out](aggregate: (O2, O2) => O2): Repr[O2] = conflateWithSeed[O2](ConstantFun.scalaIdentityFunction)(aggregate)
+  def conflate[O2 >: Out](aggregate: (O2, O2) ⇒ O2): Repr[O2] = conflateWithSeed[O2](ConstantFun.scalaIdentityFunction)(aggregate)
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by aggregating elements into batches
@@ -1442,18 +1442,18 @@ trait FlowOps[+Out, +Mat] {
   def idleTimeout(timeout: FiniteDuration): Repr[Out] = via(new Timers.Idle[Out](timeout))
 
   /**
-    * If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
-    * the stream is failed with a [[scala.concurrent.TimeoutException]]. The timeout is checked periodically,
-    * so the resolution of the check is one period (equals to timeout value).
-    *
-    * '''Emits when''' upstream emits an element
-    *
-    * '''Backpressures when''' downstream backpressures
-    *
-    * '''Completes when''' upstream completes or fails if timeout elapses between element emission and downstream demand.
-    *
-    * '''Cancels when''' downstream cancels
-    */
+   * If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
+   * the stream is failed with a [[scala.concurrent.TimeoutException]]. The timeout is checked periodically,
+   * so the resolution of the check is one period (equals to timeout value).
+   *
+   * '''Emits when''' upstream emits an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or fails if timeout elapses between element emission and downstream demand.
+   *
+   * '''Cancels when''' downstream cancels
+   */
   def backpressureTimeout(timeout: FiniteDuration): Repr[Out] = via(new Timers.BackpressureTimeout[Out](timeout))
 
   /**
@@ -1600,11 +1600,10 @@ trait FlowOps[+Out, +Mat] {
   def zip[U](that: Graph[SourceShape[U], _]): Repr[(Out, U)] = via(zipGraph(that))
 
   protected def zipGraph[U, M](that: Graph[SourceShape[U], M]): Graph[FlowShape[Out @uncheckedVariance, (Out, U)], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val zip = b.add(Zip[Out, U]())
-        r ~> zip.in1
-        FlowShape(zip.in0, zip.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val zip = b.add(Zip[Out, U]())
+      r ~> zip.in1
+      FlowShape(zip.in0, zip.out)
     }
 
   /**
@@ -1623,11 +1622,10 @@ trait FlowOps[+Out, +Mat] {
     via(zipWithGraph(that)(combine))
 
   protected def zipWithGraph[Out2, Out3, M](that: Graph[SourceShape[Out2], M])(combine: (Out, Out2) ⇒ Out3): Graph[FlowShape[Out @uncheckedVariance, Out3], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val zip = b.add(ZipWith[Out, Out2, Out3](combine))
-        r ~> zip.in1
-        FlowShape(zip.in0, zip.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val zip = b.add(ZipWith[Out, Out2, Out3](combine))
+      r ~> zip.in1
+      FlowShape(zip.in0, zip.out)
     }
 
   /**
@@ -1656,13 +1654,13 @@ trait FlowOps[+Out, +Mat] {
   def interleave[U >: Out](that: Graph[SourceShape[U], _], segmentSize: Int): Repr[U] =
     via(interleaveGraph(that, segmentSize))
 
-  protected def interleaveGraph[U >: Out, M](that: Graph[SourceShape[U], M],
-                                             segmentSize: Int): Graph[FlowShape[Out @uncheckedVariance, U], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val interleave = b.add(Interleave[U](2, segmentSize))
-        r ~> interleave.in(1)
-        FlowShape(interleave.in(0), interleave.out)
+  protected def interleaveGraph[U >: Out, M](
+    that:        Graph[SourceShape[U], M],
+    segmentSize: Int): Graph[FlowShape[Out @uncheckedVariance, U], M] =
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val interleave = b.add(Interleave[U](2, segmentSize))
+      r ~> interleave.in(1)
+      FlowShape(interleave.in(0), interleave.out)
     }
 
   /**
@@ -1681,11 +1679,10 @@ trait FlowOps[+Out, +Mat] {
     via(mergeGraph(that, eagerComplete))
 
   protected def mergeGraph[U >: Out, M](that: Graph[SourceShape[U], M], eagerComplete: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val merge = b.add(Merge[U](2, eagerComplete))
-        r ~> merge.in(1)
-        FlowShape(merge.in(0), merge.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val merge = b.add(Merge[U](2, eagerComplete))
+      r ~> merge.in(1)
+      FlowShape(merge.in(0), merge.out)
     }
 
   /**
@@ -1707,11 +1704,10 @@ trait FlowOps[+Out, +Mat] {
     via(mergeSortedGraph(that))
 
   protected def mergeSortedGraph[U >: Out, M](that: Graph[SourceShape[U], M])(implicit ord: Ordering[U]): Graph[FlowShape[Out @uncheckedVariance, U], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val merge = b.add(new MergeSorted[U])
-        r ~> merge.in1
-        FlowShape(merge.in0, merge.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val merge = b.add(new MergeSorted[U])
+      r ~> merge.in1
+      FlowShape(merge.in0, merge.out)
     }
 
   /**
@@ -1736,11 +1732,10 @@ trait FlowOps[+Out, +Mat] {
     via(concatGraph(that))
 
   protected def concatGraph[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2]): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val merge = b.add(Concat[U]())
-        r ~> merge.in(1)
-        FlowShape(merge.in(0), merge.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val merge = b.add(Concat[U]())
+      r ~> merge.in(1)
+      FlowShape(merge.in(0), merge.out)
     }
 
   /**
@@ -1765,11 +1760,10 @@ trait FlowOps[+Out, +Mat] {
     via(prependGraph(that))
 
   protected def prependGraph[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2]): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        val merge = b.add(Concat[U]())
-        r ~> merge.in(0)
-        FlowShape(merge.in(1), merge.out)
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      val merge = b.add(Concat[U]())
+      r ~> merge.in(0)
+      FlowShape(merge.in(1), merge.out)
     }
 
   /**
@@ -1815,12 +1809,11 @@ trait FlowOps[+Out, +Mat] {
   def alsoTo(that: Graph[SinkShape[Out], _]): Repr[Out] = via(alsoToGraph(that))
 
   protected def alsoToGraph[M](that: Graph[SinkShape[Out], M]): Graph[FlowShape[Out @uncheckedVariance, Out], M] =
-    GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        import GraphDSL.Implicits._
-        val bcast = b.add(Broadcast[Out](2))
-        bcast.out(1) ~> r
-        FlowShape(bcast.in, bcast.out(0))
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      import GraphDSL.Implicits._
+      val bcast = b.add(Broadcast[Out](2))
+      bcast.out(1) ~> r
+      FlowShape(bcast.in, bcast.out(0))
     }
 
   def withAttributes(attr: Attributes): Repr[Out]
@@ -1837,10 +1830,10 @@ trait FlowOps[+Out, +Mat] {
 }
 
 /**
-  * INTERNAL API: this trait will be changed in binary-incompatible ways for classes that are derived from it!
-  * Do not implement this interface outside the Akka code base!
-  *
-  * Binary compatibility is only maintained for callers of this trait’s interface.
+ * INTERNAL API: this trait will be changed in binary-incompatible ways for classes that are derived from it!
+ * Do not implement this interface outside the Akka code base!
+ *
+ * Binary compatibility is only maintained for callers of this trait’s interface.
  */
 trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
 
@@ -2033,12 +2026,12 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
   def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2]
 
   /**
-    * Materializes to `FlowMonitor[Out]` that allows monitoring of the the current flow. All events are propagated
-    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
-    * event, and may therefor affect performance.
-    * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
-    */
-  def monitor[Mat2]()(combine: (Mat, FlowMonitor[Out]) => Mat2): ReprMat[Out, Mat2] =
+   * Materializes to `FlowMonitor[Out]` that allows monitoring of the the current flow. All events are propagated
+   * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
+   * event, and may therefor affect performance.
+   * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
+   */
+  def monitor[Mat2]()(combine: (Mat, FlowMonitor[Out]) ⇒ Mat2): ReprMat[Out, Mat2] =
     viaMat(GraphStages.monitor)(combine)
 
   /**

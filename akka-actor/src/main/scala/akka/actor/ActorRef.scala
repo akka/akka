@@ -302,11 +302,11 @@ private[akka] case object Nobody extends MinimalActorRef {
  *  INTERNAL API
  */
 private[akka] class LocalActorRef private[akka] (
-  _system: ActorSystemImpl,
-  _props: Props,
-  _dispatcher: MessageDispatcher,
-  _mailboxType: MailboxType,
-  _supervisor: InternalActorRef,
+  _system:           ActorSystemImpl,
+  _props:            Props,
+  _dispatcher:       MessageDispatcher,
+  _mailboxType:      MailboxType,
+  _supervisor:       InternalActorRef,
   override val path: ActorPath)
   extends ActorRefWithCell with LocalRef {
 
@@ -518,9 +518,10 @@ private[akka] object DeadLetterActorRef {
  *
  * INTERNAL API
  */
-private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
-                                       override val path: ActorPath,
-                                       val eventStream: EventStream) extends MinimalActorRef {
+private[akka] class EmptyLocalActorRef(
+  override val provider: ActorRefProvider,
+  override val path:     ActorPath,
+  val eventStream:       EventStream) extends MinimalActorRef {
 
   @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
   override private[akka] def isTerminated = true
@@ -570,9 +571,10 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
  *
  * INTERNAL API
  */
-private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
-                                       _path: ActorPath,
-                                       _eventStream: EventStream) extends EmptyLocalActorRef(_provider, _path, _eventStream) {
+private[akka] class DeadLetterActorRef(
+  _provider:    ActorRefProvider,
+  _path:        ActorPath,
+  _eventStream: EventStream) extends EmptyLocalActorRef(_provider, _path, _eventStream) {
 
   override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
     case null                ⇒ throw new InvalidMessageException("Message is null")
@@ -601,10 +603,10 @@ private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
  * INTERNAL API
  */
 private[akka] class VirtualPathContainer(
-  override val provider: ActorRefProvider,
-  override val path: ActorPath,
+  override val provider:  ActorRefProvider,
+  override val path:      ActorPath,
   override val getParent: InternalActorRef,
-  val log: LoggingAdapter) extends MinimalActorRef {
+  val log:                LoggingAdapter) extends MinimalActorRef {
 
   private val children = new ConcurrentHashMap[String, InternalActorRef]
 
@@ -705,10 +707,11 @@ private[akka] class VirtualPathContainer(
  * When using the watch() feature you must ensure that upon reception of the
  * Terminated message the watched actorRef is unwatch()ed.
  */
-private[akka] final class FunctionRef(override val path: ActorPath,
-                                      override val provider: ActorRefProvider,
-                                      val eventStream: EventStream,
-                                      f: (ActorRef, Any) ⇒ Unit) extends MinimalActorRef {
+private[akka] final class FunctionRef(
+  override val path:     ActorPath,
+  override val provider: ActorRefProvider,
+  val eventStream:       EventStream,
+  f:                     (ActorRef, Any) ⇒ Unit) extends MinimalActorRef {
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
     f(sender, message)

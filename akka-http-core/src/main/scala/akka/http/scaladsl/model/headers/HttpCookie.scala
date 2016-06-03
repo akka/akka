@@ -17,7 +17,7 @@ import scala.compat.java8.OptionConverters._
 // see http://tools.ietf.org/html/rfc6265
 // sealed abstract to prevent generation of default apply method in companion
 sealed abstract case class HttpCookiePair private (
-  name: String,
+  name:  String,
   value: String) extends jm.headers.HttpCookiePair with ToStringRenderable {
 
   def render[R <: Rendering](r: R): r.type = r ~~ name ~~ '=' ~~ value
@@ -50,15 +50,15 @@ object HttpCookiePair {
 
 // see http://tools.ietf.org/html/rfc6265
 final case class HttpCookie(
-  name: String,
-  value: String,
-  expires: Option[DateTime] = None,
-  maxAge: Option[Long] = None,
-  domain: Option[String] = None,
-  path: Option[String] = None,
-  secure: Boolean = false,
-  httpOnly: Boolean = false,
-  extension: Option[String] = None) extends jm.headers.HttpCookie with ToStringRenderable {
+  name:      String,
+  value:     String,
+  expires:   Option[DateTime] = None,
+  maxAge:    Option[Long]     = None,
+  domain:    Option[String]   = None,
+  path:      Option[String]   = None,
+  secure:    Boolean          = false,
+  httpOnly:  Boolean          = false,
+  extension: Option[String]   = None) extends jm.headers.HttpCookie with ToStringRenderable {
 
   /** Returns the name/value pair for this cookie, to be used in [[Cookie]] headers. */
   def pair: HttpCookiePair = HttpCookiePair(name, value)
@@ -111,14 +111,15 @@ final case class HttpCookie(
 }
 
 object HttpCookie {
-  def fromPair(pair: HttpCookiePair,
-               expires: Option[DateTime] = None,
-               maxAge: Option[Long] = None,
-               domain: Option[String] = None,
-               path: Option[String] = None,
-               secure: Boolean = false,
-               httpOnly: Boolean = false,
-               extension: Option[String] = None): HttpCookie =
+  def fromPair(
+    pair:      HttpCookiePair,
+    expires:   Option[DateTime] = None,
+    maxAge:    Option[Long]     = None,
+    domain:    Option[String]   = None,
+    path:      Option[String]   = None,
+    secure:    Boolean          = false,
+    httpOnly:  Boolean          = false,
+    extension: Option[String]   = None): HttpCookie =
     HttpCookie(pair.name, pair.value, expires, maxAge, domain, path, secure, httpOnly, extension)
 
   import akka.http.impl.model.parser.CharacterClasses._

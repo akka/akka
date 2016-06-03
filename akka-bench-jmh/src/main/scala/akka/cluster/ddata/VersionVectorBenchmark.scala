@@ -45,7 +45,7 @@ class VersionVectorBenchmark {
   var dot1: VersionVector = _
 
   @Setup(Level.Trial)
-  def setup():Unit = {
+  def setup(): Unit = {
     vv1 = (1 to size).foldLeft(VersionVector.empty)((vv, n) => vv + nextNode())
     vv2 = vv1 + nextNode()
     vv3 = vv1 + nextNode()

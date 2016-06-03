@@ -92,7 +92,8 @@ object RemoveInternalClusterShardingData {
     }
 
     val completion = Promise[Unit]()
-    system.actorOf(props(journalPluginId, typeNames, completion, remove2dot3Data),
+    system.actorOf(
+      props(journalPluginId, typeNames, completion, remove2dot3Data),
       name = "removeInternalClusterShardingData")
     completion.future
   }

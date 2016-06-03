@@ -134,14 +134,16 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
       val g1 = Gossip(members = SortedSet(aUp, bUp, cUp, dLeaving, eJoining))
       val g2 = Gossip(members = SortedSet(bUp, cUp, dExiting, eJoining))
       diffRolesLeader(g0, g1, selfDummyAddress) should ===(
-        Set(RoleLeaderChanged("AA", Some(aUp.address)),
+        Set(
+          RoleLeaderChanged("AA", Some(aUp.address)),
           RoleLeaderChanged("AB", Some(aUp.address)),
           RoleLeaderChanged("BB", Some(bUp.address)),
           RoleLeaderChanged("DD", Some(dLeaving.address)),
           RoleLeaderChanged("DE", Some(dLeaving.address)),
           RoleLeaderChanged("EE", Some(eUp.address))))
       diffRolesLeader(g1, g2, selfDummyAddress) should ===(
-        Set(RoleLeaderChanged("AA", None),
+        Set(
+          RoleLeaderChanged("AA", None),
           RoleLeaderChanged("AB", Some(bUp.address)),
           RoleLeaderChanged("DE", Some(eJoining.address))))
     }

@@ -12,11 +12,11 @@ import scala.concurrent.duration.Duration
 
 /** INTERNAL API */
 private[akka] final case class ConnectionPoolSettingsImpl(
-  val maxConnections: Int,
-  val maxRetries: Int,
-  val maxOpenRequests: Int,
-  val pipeliningLimit: Int,
-  val idleTimeout: Duration,
+  val maxConnections:     Int,
+  val maxRetries:         Int,
+  val maxOpenRequests:    Int,
+  val pipeliningLimit:    Int,
+  val idleTimeout:        Duration,
   val connectionSettings: ClientConnectionSettings)
   extends ConnectionPoolSettings {
 

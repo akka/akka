@@ -42,12 +42,11 @@ class SinkSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
 
     "be composable with importing 1 module" in {
       val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
-      val sink = Sink.fromGraph(GraphDSL.create(Sink.fromSubscriber(probes(0))) { implicit b ⇒
-        s0 ⇒
-          val bcast = b.add(Broadcast[Int](3))
-          bcast.out(0) ~> Flow[Int].filter(_ == 0) ~> s0.in
-          for (i ← 1 to 2) bcast.out(i).filter(_ == i) ~> Sink.fromSubscriber(probes(i))
-          SinkShape(bcast.in)
+      val sink = Sink.fromGraph(GraphDSL.create(Sink.fromSubscriber(probes(0))) { implicit b ⇒ s0 ⇒
+        val bcast = b.add(Broadcast[Int](3))
+        bcast.out(0) ~> Flow[Int].filter(_ == 0) ~> s0.in
+        for (i ← 1 to 2) bcast.out(i).filter(_ == i) ~> Sink.fromSubscriber(probes(i))
+        SinkShape(bcast.in)
       })
       Source(List(0, 1, 2)).runWith(sink)
 
@@ -59,13 +58,12 @@ class SinkSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
 
     "be composable with importing 2 modules" in {
       val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
-      val sink = Sink.fromGraph(GraphDSL.create(Sink.fromSubscriber(probes(0)), Sink.fromSubscriber(probes(1)))(List(_, _)) { implicit b ⇒
-        (s0, s1) ⇒
-          val bcast = b.add(Broadcast[Int](3))
-          bcast.out(0).filter(_ == 0) ~> s0.in
-          bcast.out(1).filter(_ == 1) ~> s1.in
-          bcast.out(2).filter(_ == 2) ~> Sink.fromSubscriber(probes(2))
-          SinkShape(bcast.in)
+      val sink = Sink.fromGraph(GraphDSL.create(Sink.fromSubscriber(probes(0)), Sink.fromSubscriber(probes(1)))(List(_, _)) { implicit b ⇒ (s0, s1) ⇒
+        val bcast = b.add(Broadcast[Int](3))
+        bcast.out(0).filter(_ == 0) ~> s0.in
+        bcast.out(1).filter(_ == 1) ~> s1.in
+        bcast.out(2).filter(_ == 2) ~> Sink.fromSubscriber(probes(2))
+        SinkShape(bcast.in)
       })
       Source(List(0, 1, 2)).runWith(sink)
 
@@ -77,13 +75,12 @@ class SinkSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
 
     "be composable with importing 3 modules" in {
       val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
-      val sink = Sink.fromGraph(GraphDSL.create(Sink.fromSubscriber(probes(0)), Sink.fromSubscriber(probes(1)), Sink.fromSubscriber(probes(2)))(List(_, _, _)) { implicit b ⇒
-        (s0, s1, s2) ⇒
-          val bcast = b.add(Broadcast[Int](3))
-          bcast.out(0).filter(_ == 0) ~> s0.in
-          bcast.out(1).filter(_ == 1) ~> s1.in
-          bcast.out(2).filter(_ == 2) ~> s2.in
-          SinkShape(bcast.in)
+      val sink = Sink.fromGraph(GraphDSL.create(Sink.fromSubscriber(probes(0)), Sink.fromSubscriber(probes(1)), Sink.fromSubscriber(probes(2)))(List(_, _, _)) { implicit b ⇒ (s0, s1, s2) ⇒
+        val bcast = b.add(Broadcast[Int](3))
+        bcast.out(0).filter(_ == 0) ~> s0.in
+        bcast.out(1).filter(_ == 1) ~> s1.in
+        bcast.out(2).filter(_ == 2) ~> s2.in
+        SinkShape(bcast.in)
       })
       Source(List(0, 1, 2)).runWith(sink)
 
@@ -142,10 +139,11 @@ class SinkSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
   "Java collector Sink" must {
     import scala.compat.java8.FunctionConverters._
 
-    class TestCollector(_supplier: () ⇒ Supplier[Array[Int]],
-                        _accumulator: () ⇒ BiConsumer[Array[Int], Int],
-                        _combiner: () ⇒ BinaryOperator[Array[Int]],
-                        _finisher: () ⇒ function.Function[Array[Int], Int]) extends Collector[Int, Array[Int], Int] {
+    class TestCollector(
+      _supplier:    () ⇒ Supplier[Array[Int]],
+      _accumulator: () ⇒ BiConsumer[Array[Int], Int],
+      _combiner:    () ⇒ BinaryOperator[Array[Int]],
+      _finisher:    () ⇒ function.Function[Array[Int], Int]) extends Collector[Int, Array[Int], Int] {
       override def supplier(): Supplier[Array[Int]] = _supplier()
       override def combiner(): BinaryOperator[Array[Int]] = _combiner()
       override def finisher(): function.Function[Array[Int], Int] = _finisher()

@@ -22,12 +22,13 @@ object ConnectionContext {
     scaladsl.ConnectionContext.https(sslContext)
 
   /** Used to serve HTTPS traffic. */
-  def https(sslContext: SSLContext,
-            sslConfig: Optional[AkkaSSLConfig],
-            enabledCipherSuites: Optional[JCollection[String]],
-            enabledProtocols: Optional[JCollection[String]],
-            clientAuth: Optional[TLSClientAuth],
-            sslParameters: Optional[SSLParameters]) =
+  def https(
+    sslContext:          SSLContext,
+    sslConfig:           Optional[AkkaSSLConfig],
+    enabledCipherSuites: Optional[JCollection[String]],
+    enabledProtocols:    Optional[JCollection[String]],
+    clientAuth:          Optional[TLSClientAuth],
+    sslParameters:       Optional[SSLParameters]) =
     scaladsl.ConnectionContext.https(
       sslContext,
       OptionConverters.toScala(sslConfig),
@@ -39,11 +40,12 @@ object ConnectionContext {
 
   /** Used to serve HTTPS traffic. */
   // for binary-compatibility, since 2.4.7
-  def https(sslContext: SSLContext,
-            enabledCipherSuites: Optional[JCollection[String]],
-            enabledProtocols: Optional[JCollection[String]],
-            clientAuth: Optional[TLSClientAuth],
-            sslParameters: Optional[SSLParameters]) =
+  def https(
+    sslContext:          SSLContext,
+    enabledCipherSuites: Optional[JCollection[String]],
+    enabledProtocols:    Optional[JCollection[String]],
+    clientAuth:          Optional[TLSClientAuth],
+    sslParameters:       Optional[SSLParameters]) =
     scaladsl.ConnectionContext.https(
       sslContext,
       OptionConverters.toScala(enabledCipherSuites).map(Util.immutableSeq(_)),

@@ -201,7 +201,7 @@ object ORSet {
 @SerialVersionUID(1L)
 final class ORSet[A] private[akka] (
   private[akka] val elementsMap: Map[A, ORSet.Dot],
-  private[akka] val vvector: VersionVector)
+  private[akka] val vvector:     VersionVector)
   extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning with FastMerge {
 
   type T = ORSet[A]

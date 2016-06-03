@@ -17,12 +17,12 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
     Set("adapt") // the scaladsl -> javadsl bridge
 
   val `scala -> java aliases` =
-    ("apply" -> "create") ::
-      ("apply" -> "of") ::
-      ("apply" -> "from") ::
-      ("apply" -> "fromGraph") ::
-      ("apply" -> "fromIterator") ::
-      ("apply" -> "fromFunctions") ::
+    ("apply" → "create") ::
+      ("apply" → "of") ::
+      ("apply" → "from") ::
+      ("apply" → "fromGraph") ::
+      ("apply" → "fromIterator") ::
+      ("apply" → "fromFunctions") ::
       Nil
 
   // format: OFF

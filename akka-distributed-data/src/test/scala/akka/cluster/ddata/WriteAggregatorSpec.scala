@@ -68,7 +68,7 @@ class WriteAggregatorSpec extends AkkaSpec("""
   val writeMajority = WriteMajority(timeout)
 
   def probes(probe: ActorRef): Map[Address, ActorRef] =
-    nodes.toSeq.map(_ -> system.actorOf(WriteAggregatorSpec.writeAckAdapterProps(probe))).toMap
+    nodes.toSeq.map(_ → system.actorOf(WriteAggregatorSpec.writeAckAdapterProps(probe))).toMap
 
   "WriteAggregator" must {
     "send to at least N/2+1 replicas when WriteMajority" in {

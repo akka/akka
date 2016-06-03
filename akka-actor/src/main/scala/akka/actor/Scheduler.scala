@@ -42,10 +42,11 @@ trait Scheduler {
    */
   final def schedule(
     initialDelay: FiniteDuration,
-    interval: FiniteDuration,
-    receiver: ActorRef,
-    message: Any)(implicit executor: ExecutionContext,
-                  sender: ActorRef = Actor.noSender): Cancellable =
+    interval:     FiniteDuration,
+    receiver:     ActorRef,
+    message:      Any)(implicit
+    executor: ExecutionContext,
+                       sender: ActorRef = Actor.noSender): Cancellable =
     schedule(initialDelay, interval, new Runnable {
       def run = {
         receiver ! message
@@ -71,8 +72,9 @@ trait Scheduler {
    */
   final def schedule(
     initialDelay: FiniteDuration,
-    interval: FiniteDuration)(f: ⇒ Unit)(
-      implicit executor: ExecutionContext): Cancellable =
+    interval:     FiniteDuration)(f: ⇒ Unit)(
+    implicit
+    executor: ExecutionContext): Cancellable =
     schedule(initialDelay, interval, new Runnable { override def run = f })
 
   /**
@@ -93,8 +95,8 @@ trait Scheduler {
    */
   def schedule(
     initialDelay: FiniteDuration,
-    interval: FiniteDuration,
-    runnable: Runnable)(implicit executor: ExecutionContext): Cancellable
+    interval:     FiniteDuration,
+    runnable:     Runnable)(implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a message to be sent once with a delay, i.e. a time period that has
@@ -103,10 +105,11 @@ trait Scheduler {
    * Java & Scala API
    */
   final def scheduleOnce(
-    delay: FiniteDuration,
+    delay:    FiniteDuration,
     receiver: ActorRef,
-    message: Any)(implicit executor: ExecutionContext,
-                  sender: ActorRef = Actor.noSender): Cancellable =
+    message:  Any)(implicit
+    executor: ExecutionContext,
+                   sender: ActorRef = Actor.noSender): Cancellable =
     scheduleOnce(delay, new Runnable {
       override def run = receiver ! message
     })
@@ -118,7 +121,8 @@ trait Scheduler {
    * Scala API
    */
   final def scheduleOnce(delay: FiniteDuration)(f: ⇒ Unit)(
-    implicit executor: ExecutionContext): Cancellable =
+    implicit
+    executor: ExecutionContext): Cancellable =
     scheduleOnce(delay, new Runnable { override def run = f })
 
   /**
@@ -128,7 +132,7 @@ trait Scheduler {
    * Java & Scala API
    */
   def scheduleOnce(
-    delay: FiniteDuration,
+    delay:    FiniteDuration,
     runnable: Runnable)(implicit executor: ExecutionContext): Cancellable
 
   /**

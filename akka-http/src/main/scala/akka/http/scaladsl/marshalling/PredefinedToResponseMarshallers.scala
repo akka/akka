@@ -15,9 +15,11 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
 
   private type TRM[T] = ToResponseMarshaller[T] // brevity alias
 
-  def fromToEntityMarshaller[T](status: StatusCode = StatusCodes.OK,
-                                headers: immutable.Seq[HttpHeader] = Nil)(
-                                  implicit m: ToEntityMarshaller[T]): ToResponseMarshaller[T] =
+  def fromToEntityMarshaller[T](
+    status:  StatusCode                = StatusCodes.OK,
+    headers: immutable.Seq[HttpHeader] = Nil)(
+    implicit
+    m: ToEntityMarshaller[T]): ToResponseMarshaller[T] =
     fromStatusCodeAndHeadersAndValue compose (t ⇒ (status, headers, t))
 
   implicit val fromResponse: TRM[HttpResponse] = Marshaller.opaque(ConstantFun.scalaIdentityFunction)
@@ -30,7 +32,8 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
   implicit def fromStatusCodeAndValue[S, T](implicit sConv: S ⇒ StatusCode, mt: ToEntityMarshaller[T]): TRM[(S, T)] =
     fromStatusCodeAndHeadersAndValue[T] compose { case (status, value) ⇒ (sConv(status), Nil, value) }
 
-  implicit def fromStatusCodeConvertibleAndHeadersAndT[S, T](implicit sConv: S ⇒ StatusCode,
+  implicit def fromStatusCodeConvertibleAndHeadersAndT[S, T](implicit
+    sConv: S ⇒ StatusCode,
                                                              mt: ToEntityMarshaller[T]): TRM[(S, immutable.Seq[HttpHeader], T)] =
     fromStatusCodeAndHeadersAndValue[T] compose { case (status, headers, value) ⇒ (sConv(status), headers, value) }
 

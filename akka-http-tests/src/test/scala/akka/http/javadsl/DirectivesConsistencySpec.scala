@@ -60,7 +60,7 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
         d ← javaDirectives
         if d.isAnnotationPresent(classOf[CorrespondsTo])
         annot = d.getAnnotation(classOf[CorrespondsTo])
-      } yield d.getName -> annot.value()
+      } yield d.getName → annot.value()
 
     Map(javaToScalaMappings.toList: _*)
   }
@@ -82,12 +82,12 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
     }
 
   val allowMissing: Map[Class[_], Set[String]] = Map(
-    scalaDirectivesClazz -> Set(
+    scalaDirectivesClazz → Set(
       "route", "request",
       "completeOK", // solved by raw complete() in Scala
       "defaultDirectoryRenderer", "defaultContentTypeResolver" // solved by implicits in Scala
-      ),
-    javaDirectivesClazz -> Set(
+    ),
+    javaDirectivesClazz → Set(
       "as",
       "instanceOf",
       "pass",

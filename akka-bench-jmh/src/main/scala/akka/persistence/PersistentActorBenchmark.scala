@@ -21,7 +21,8 @@ class PersistentActorThroughputBenchmark {
   lazy val storageLocations = List(
     "akka.persistence.journal.leveldb.dir",
     "akka.persistence.journal.leveldb-shared.store.dir",
-    "akka.persistence.snapshot-store.local.dir").map(s ⇒ new File(system.settings.config.getString(s)))
+    "akka.persistence.snapshot-store.local.dir"
+  ).map(s ⇒ new File(system.settings.config.getString(s)))
 
   var system: ActorSystem = _
 
@@ -35,7 +36,7 @@ class PersistentActorThroughputBenchmark {
   val data10k = (1 to 10000).toArray
 
   @Setup
-  def setup():Unit = {
+  def setup(): Unit = {
     system = ActorSystem("test", config)
 
     probe = TestProbe()(system)
@@ -52,7 +53,7 @@ class PersistentActorThroughputBenchmark {
   }
 
   @TearDown
-  def shutdown():Unit = {
+  def shutdown(): Unit = {
     system.terminate()
     Await.ready(system.whenTerminated, 15.seconds)
 
@@ -61,7 +62,7 @@ class PersistentActorThroughputBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def actor_normalActor_reply_baseline():Unit = {
+  def actor_normalActor_reply_baseline(): Unit = {
     for (i <- data10k) actor.tell(i, probe.ref)
 
     probe.expectMsg(data10k.last)
@@ -69,7 +70,7 @@ class PersistentActorThroughputBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def persistentActor_persist_reply():Unit = {
+  def persistentActor_persist_reply(): Unit = {
     for (i <- data10k) persistPersistentActor.tell(i, probe.ref)
 
     probe.expectMsg(Evt(data10k.last))
@@ -77,7 +78,7 @@ class PersistentActorThroughputBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def persistentActor_persistAsync_reply():Unit = {
+  def persistentActor_persistAsync_reply(): Unit = {
     for (i <- data10k) persistAsync1PersistentActor.tell(i, probe.ref)
 
     probe.expectMsg(Evt(data10k.last))
@@ -85,7 +86,7 @@ class PersistentActorThroughputBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def persistentActor_noPersist_reply():Unit = {
+  def persistentActor_noPersist_reply(): Unit = {
     for (i <- data10k) noPersistPersistentActor.tell(i, probe.ref)
 
     probe.expectMsg(Evt(data10k.last))
@@ -93,7 +94,7 @@ class PersistentActorThroughputBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def persistentActor_persistAsync_replyRightOnCommandReceive():Unit = {
+  def persistentActor_persistAsync_replyRightOnCommandReceive(): Unit = {
     for (i <- data10k) persistAsyncQuickReplyPersistentActor.tell(i, probe.ref)
 
     probe.expectMsg(Evt(data10k.last))

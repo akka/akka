@@ -67,9 +67,11 @@ private object PoolFlow {
     - Simple merge of the Connection Slots' outputs
 
   */
-  def apply(connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
-            settings: ConnectionPoolSettings, log: LoggingAdapter)(
-              implicit system: ActorSystem, fm: Materializer): Flow[RequestContext, ResponseContext, NotUsed] =
+  def apply(
+    connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
+    settings:       ConnectionPoolSettings, log: LoggingAdapter)(
+    implicit
+    system: ActorSystem, fm: Materializer): Flow[RequestContext, ResponseContext, NotUsed] =
     Flow.fromGraph(GraphDSL.create[FlowShape[RequestContext, ResponseContext]]() { implicit b ⇒
       import settings._
       import GraphDSL.Implicits._
