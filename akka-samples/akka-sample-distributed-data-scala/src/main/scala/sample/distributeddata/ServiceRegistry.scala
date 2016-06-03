@@ -69,7 +69,7 @@ class ServiceRegistry extends Actor with ActorLogging {
   }
 
   def receive = {
-    case Register(name, service) ⇒
+    case Register(name, service) =>
       val dKey = serviceKey(name)
       // store the service names in a separate GSet to be able to
       // get notifications of new names
@@ -78,19 +78,19 @@ class ServiceRegistry extends Actor with ActorLogging {
       // add the service
       replicator ! Update(dKey, ORSet(), WriteLocal)(_ + service)
 
-    case Lookup(name) ⇒
+    case Lookup(name) =>
       sender() ! Bindings(name, services.getOrElse(name, Set.empty))
 
-    case c @ Changed(AllServicesKey) ⇒
+    case c @ Changed(AllServicesKey) =>
       val newKeys = c.get(AllServicesKey).elements
       log.debug("Services changed, added: {}, all: {}", (newKeys -- keys), newKeys)
-      (newKeys -- keys).foreach { dKey ⇒
+      (newKeys -- keys).foreach { dKey =>
         // subscribe to get notifications of when services with this name are added or removed
         replicator ! Subscribe(dKey, self)
       }
       keys = newKeys
 
-    case c @ Changed(ServiceKey(serviceName)) ⇒
+    case c @ Changed(ServiceKey(serviceName)) =>
       val name = serviceName.split(":").tail.mkString
       val newServices = c.get(serviceKey(name)).elements
       log.debug("Services changed for name [{}]: {}", name, newServices)
@@ -99,7 +99,7 @@ class ServiceRegistry extends Actor with ActorLogging {
       if (leader)
         newServices.foreach(context.watch) // watch is idempotent
 
-    case LeaderChanged(node) ⇒
+    case LeaderChanged(node) =>
       // Let one node (the leader) be responsible for removal of terminated services
       // to avoid redundant work and too many death watch notifications.
       // It is not critical to only do it from one node.
@@ -114,14 +114,14 @@ class ServiceRegistry extends Actor with ActorLogging {
         for (refs ← services.valuesIterator; ref ← refs)
           context.unwatch(ref)
 
-    case Terminated(ref) ⇒
-      val names = services.collect { case (name, refs) if refs.contains(ref) ⇒ name }
-      names.foreach { name ⇒
+    case Terminated(ref) =>
+      val names = services.collect { case (name, refs) if refs.contains(ref) => name }
+      names.foreach { name =>
         log.debug("Service with name [{}] terminated: {}", name, ref)
         replicator ! Update(serviceKey(name), ORSet(), WriteLocal)(_ - ref)
       }
 
-    case _: UpdateResponse[_] ⇒ // ok
+    case _: UpdateResponse[_] => // ok
   }
 
 }

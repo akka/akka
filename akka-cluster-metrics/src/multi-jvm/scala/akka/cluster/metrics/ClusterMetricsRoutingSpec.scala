@@ -61,7 +61,7 @@ object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
   // Extract individual sigar library for every node.
   nodeList foreach { role ⇒
     nodeConfig(role) {
-      ConfigFactory.parseString("akka.cluster.metrics.native-library-extract-folder=${user.dir}/target/native/" + role.name)
+      ConfigFactory.parseString(s"akka.cluster.metrics.native-library-extract-folder=$${user.dir}/target/native/" + role.name)
     }
   }
 
@@ -122,11 +122,11 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
     Await.result(router ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees
 
   def receiveReplies(expectedReplies: Int): Map[Address, Int] = {
-    val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)
+    val zero = Map.empty[Address, Int] ++ roles.map(address(_) → 0)
     (receiveWhile(5 seconds, messages = expectedReplies) {
       case Reply(address) ⇒ address
     }).foldLeft(zero) {
-      case (replyMap, address) ⇒ replyMap + (address -> (replyMap(address) + 1))
+      case (replyMap, address) ⇒ replyMap + (address → (replyMap(address) + 1))
     }
   }
 
@@ -139,10 +139,11 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
   }
 
   def startRouter(name: String): ActorRef = {
-    val router = system.actorOf(ClusterRouterPool(
-      local = AdaptiveLoadBalancingPool(HeapMetricsSelector),
-      settings = ClusterRouterPoolSettings(totalInstances = 10, maxInstancesPerNode = 1, allowLocalRoutees = true, useRole = None)).
-      props(Props[Echo]),
+    val router = system.actorOf(
+      ClusterRouterPool(
+        local = AdaptiveLoadBalancingPool(HeapMetricsSelector),
+        settings = ClusterRouterPoolSettings(totalInstances = 10, maxInstancesPerNode = 1, allowLocalRoutees = true, useRole = None)).
+        props(Props[Echo]),
       name)
     // it may take some time until router receives cluster member events
     awaitAssert { currentRoutees(router).size should ===(roles.size) }

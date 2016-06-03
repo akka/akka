@@ -135,9 +135,9 @@ object ConsistentHashingRoutingLogic {
  */
 @SerialVersionUID(1L)
 final case class ConsistentHashingRoutingLogic(
-  system: ActorSystem,
-  virtualNodesFactor: Int = 0,
-  hashMapping: ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping)
+  system:             ActorSystem,
+  virtualNodesFactor: Int                                           = 0,
+  hashMapping:        ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping)
   extends RoutingLogic {
 
   import ConsistentHashingRouter._
@@ -219,7 +219,8 @@ final case class ConsistentHashingRoutingLogic(
         case _ if hashMapping.isDefinedAt(message) ⇒ target(hashMapping(message))
         case hashable: ConsistentHashable          ⇒ target(hashable.consistentHashKey)
         case other ⇒
-          log.warning("Message [{}] must be handled by hashMapping, or implement [{}] or be wrapped in [{}]",
+          log.warning(
+            "Message [{}] must be handled by hashMapping, or implement [{}] or be wrapped in [{}]",
             message.getClass.getName, classOf[ConsistentHashable].getName,
             classOf[ConsistentHashableEnvelope].getName)
           NoRoutee
@@ -266,13 +267,13 @@ final case class ConsistentHashingRoutingLogic(
  */
 @SerialVersionUID(1L)
 final case class ConsistentHashingPool(
-  override val nrOfInstances: Int,
-  override val resizer: Option[Resizer] = None,
-  val virtualNodesFactor: Int = 0,
-  val hashMapping: ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping,
-  override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
-  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-  override val usePoolDispatcher: Boolean = false)
+  override val nrOfInstances:      Int,
+  override val resizer:            Option[Resizer]                               = None,
+  val virtualNodesFactor:          Int                                           = 0,
+  val hashMapping:                 ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping,
+  override val supervisorStrategy: SupervisorStrategy                            = Pool.defaultSupervisorStrategy,
+  override val routerDispatcher:   String                                        = Dispatchers.DefaultDispatcherId,
+  override val usePoolDispatcher:  Boolean                                       = false)
   extends Pool with PoolOverrideUnsetConfig[ConsistentHashingPool] {
 
   def this(config: Config) =
@@ -354,10 +355,10 @@ final case class ConsistentHashingPool(
  */
 @SerialVersionUID(1L)
 final case class ConsistentHashingGroup(
-  override val paths: immutable.Iterable[String],
-  val virtualNodesFactor: Int = 0,
-  val hashMapping: ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping,
-  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+  override val paths:            immutable.Iterable[String],
+  val virtualNodesFactor:        Int                                           = 0,
+  val hashMapping:               ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping,
+  override val routerDispatcher: String                                        = Dispatchers.DefaultDispatcherId)
   extends Group {
 
   def this(config: Config) =

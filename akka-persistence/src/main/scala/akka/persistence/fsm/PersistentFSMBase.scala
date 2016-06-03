@@ -113,7 +113,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    * This extractor is just convenience for matching a (S, S) pair, including a
    * reminder what the new state is.
    */
-  val -> = PersistentFSM.->
+  val `->` = PersistentFSM.`->`
 
   /**
    * This case object is received in case of a state timeout.
@@ -669,9 +669,10 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param stateTimeout default state timeout for this state
    * @param stateFunctionBuilder partial function builder describing response to input
    */
-  final def when(stateName: S,
-                 stateTimeout: FiniteDuration,
-                 stateFunctionBuilder: FSMStateFunctionBuilder[S, D, E]): Unit =
+  final def when(
+    stateName:            S,
+    stateTimeout:         FiniteDuration,
+    stateFunctionBuilder: FSMStateFunctionBuilder[S, D, E]): Unit =
     when(stateName, stateTimeout)(stateFunctionBuilder.build())
 
   /**

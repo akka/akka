@@ -6,16 +6,15 @@ package docs.io
 
 import java.net.{ Inet6Address, InetSocketAddress, NetworkInterface, StandardProtocolFamily }
 import java.nio.channels.DatagramChannel
-
 import scala.util.Random
 import akka.actor.{ ActorSystem, Props }
 import akka.io.Udp
 import akka.testkit.TestKit
 import org.scalatest.{ BeforeAndAfter, WordSpecLike }
-
 import scala.collection.JavaConversions.enumerationAsScalaIterator
+import org.scalatest.BeforeAndAfterAll
 
-class ScalaUdpMulticastSpec extends TestKit(ActorSystem("ScalaUdpMulticastSpec")) with WordSpecLike with BeforeAndAfter {
+class ScalaUdpMulticastSpec extends TestKit(ActorSystem("ScalaUdpMulticastSpec")) with WordSpecLike with BeforeAndAfterAll {
 
   "listener" should {
     "send message back to sink" in {
@@ -65,7 +64,7 @@ class ScalaUdpMulticastSpec extends TestKit(ActorSystem("ScalaUdpMulticastSpec")
     }
   }
 
-  def afterAll(): Unit = {
+  override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
   }
 

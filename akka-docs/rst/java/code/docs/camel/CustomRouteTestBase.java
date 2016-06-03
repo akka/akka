@@ -11,11 +11,13 @@ public class CustomRouteTestBase {
   public void customRoute() throws Exception{
     //#CustomRoute
     ActorSystem system = ActorSystem.create("some-system");
-    Camel camel = CamelExtension.get(system);
-    ActorRef responder = system.actorOf(Props.create(Responder.class), "TestResponder");
-    camel.context().addRoutes(new CustomRouteBuilder(responder));
-    //#CustomRoute
-    system.stop(responder);
-    JavaTestKit.shutdownActorSystem(system);
+    try {
+      Camel camel = CamelExtension.get(system);
+      ActorRef responder = system.actorOf(Props.create(Responder.class), "TestResponder");
+      camel.context().addRoutes(new CustomRouteBuilder(responder));
+      //#CustomRoute
+    } finally {
+      JavaTestKit.shutdownActorSystem(system);
+    }
   }
 }

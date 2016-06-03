@@ -44,8 +44,8 @@ private[akka] object SystemMessageDelivery {
  */
 private[akka] class SystemMessageDelivery(
   outboundContext: OutboundContext,
-  resendInterval: FiniteDuration,
-  maxBufferSize: Int)
+  resendInterval:  FiniteDuration,
+  maxBufferSize:   Int)
   extends GraphStage[FlowShape[Send, Send]] {
 
   import SystemMessageDelivery._

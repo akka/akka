@@ -51,8 +51,9 @@ package parsing {
   /**
    * INTERNAL API
    */
-  private[parsing] class ParsingException(val status: StatusCode,
-                                          val info: ErrorInfo) extends RuntimeException(info.formatPretty) {
+  private[parsing] class ParsingException(
+    val status: StatusCode,
+    val info:   ErrorInfo) extends RuntimeException(info.formatPretty) {
     def this(status: StatusCode, summary: String = "") =
       this(status, ErrorInfo(if (summary.isEmpty) status.defaultMessage else summary))
     def this(summary: String) =

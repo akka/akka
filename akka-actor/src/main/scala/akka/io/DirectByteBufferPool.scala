@@ -5,6 +5,7 @@
 package akka.io
 
 import java.nio.ByteBuffer
+import scala.util.control.NonFatal
 
 trait BufferPool {
   def acquire(): ByteBuffer
@@ -54,11 +55,42 @@ private[akka] class DirectByteBufferPool(defaultBufferSize: Int, maxPoolEntries:
     }
   }
 
-  private final def offerBufferToPool(buf: ByteBuffer): Unit =
-    pool.synchronized {
-      if (buffersInPool < maxPoolEntries) {
-        pool(buffersInPool) = buf
-        buffersInPool += 1
-      } // else let the buffer be gc'd
+  private final def offerBufferToPool(buf: ByteBuffer): Unit = {
+    val clean =
+      pool.synchronized {
+        if (buffersInPool < maxPoolEntries) {
+          pool(buffersInPool) = buf
+          buffersInPool += 1
+          false
+        } else {
+          // try to clean it outside the lock, or let the buffer be gc'd
+          true
+        }
+      }
+    if (clean)
+      tryCleanDirectByteBuffer(buf)
+  }
+
+  /**
+   * DirectByteBuffers are garbage collected by using a phantom reference and a
+   * reference queue. Every once a while, the JVM checks the reference queue and
+   * cleans the DirectByteBuffers. However, as this doesn't happen
+   * immediately after discarding all references to a DirectByteBuffer, it's
+   * easy to OutOfMemoryError yourself using DirectByteBuffers. This function
+   * explicitly calls the Cleaner method of a DirectByteBuffer.
+   *
+   * Utilizes reflection to avoid dependency to `sun.misc.Cleaner`.
+   */
+  private final def tryCleanDirectByteBuffer(toBeDestroyed: ByteBuffer): Unit = try {
+    if (toBeDestroyed.isDirect) {
+      val cleanerMethod = toBeDestroyed.getClass().getMethod("cleaner")
+      cleanerMethod.setAccessible(true)
+      val cleaner = cleanerMethod.invoke(toBeDestroyed)
+      val cleanMethod = cleaner.getClass().getMethod("clean")
+      cleanMethod.setAccessible(true)
+      cleanMethod.invoke(cleaner)
     }
+  } catch {
+    case NonFatal(_) ⇒ // attempt failed, ok
+  }
 }

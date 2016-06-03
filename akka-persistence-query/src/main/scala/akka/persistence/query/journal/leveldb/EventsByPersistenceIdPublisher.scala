@@ -123,7 +123,7 @@ private[akka] abstract class AbstractEventsByPersistenceIdPublisher(
 private[akka] class LiveEventsByPersistenceIdPublisher(
   persistenceId: String, fromSequenceNr: Long, override val toSequenceNr: Long,
   refreshInterval: FiniteDuration,
-  maxBufSize: Int, writeJournalPluginId: String)
+  maxBufSize:      Int, writeJournalPluginId: String)
   extends AbstractEventsByPersistenceIdPublisher(
     persistenceId, fromSequenceNr, maxBufSize, writeJournalPluginId) {
   import EventsByPersistenceIdPublisher._

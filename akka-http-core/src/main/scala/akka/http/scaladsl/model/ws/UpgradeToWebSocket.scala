@@ -34,8 +34,9 @@ trait UpgradeToWebSocket extends jm.ws.UpgradeToWebSocket {
    *
    * Optionally, a subprotocol out of the ones requested by the client can be chosen.
    */
-  def handleMessages(handlerFlow: Graph[FlowShape[Message, Message], Any],
-                     subprotocol: Option[String] = None): HttpResponse
+  def handleMessages(
+    handlerFlow: Graph[FlowShape[Message, Message], Any],
+    subprotocol: Option[String]                          = None): HttpResponse
 
   /**
    * The high-level interface to create a WebSocket server based on "messages".
@@ -47,9 +48,10 @@ trait UpgradeToWebSocket extends jm.ws.UpgradeToWebSocket {
    *
    * Optionally, a subprotocol out of the ones requested by the client can be chosen.
    */
-  def handleMessagesWithSinkSource(inSink: Graph[SinkShape[Message], Any],
-                                   outSource: Graph[SourceShape[Message], Any],
-                                   subprotocol: Option[String] = None): HttpResponse =
+  def handleMessagesWithSinkSource(
+    inSink:      Graph[SinkShape[Message], Any],
+    outSource:   Graph[SourceShape[Message], Any],
+    subprotocol: Option[String]                   = None): HttpResponse =
     handleMessages(scaladsl.Flow.fromSinkAndSource(inSink, outSource), subprotocol)
 
   import scala.collection.JavaConverters._
@@ -80,9 +82,10 @@ trait UpgradeToWebSocket extends jm.ws.UpgradeToWebSocket {
   /**
    * Java API
    */
-  def handleMessagesWith(inSink: Graph[SinkShape[jm.ws.Message], _ <: Any],
-                         outSource: Graph[SourceShape[jm.ws.Message], _ <: Any],
-                         subprotocol: String): HttpResponse =
+  def handleMessagesWith(
+    inSink:      Graph[SinkShape[jm.ws.Message], _ <: Any],
+    outSource:   Graph[SourceShape[jm.ws.Message], _ <: Any],
+    subprotocol: String): HttpResponse =
     handleMessages(createScalaFlow(inSink, outSource), subprotocol = Some(subprotocol))
 
   private[this] def createScalaFlow(inSink: Graph[SinkShape[jm.ws.Message], _ <: Any], outSource: Graph[SourceShape[jm.ws.Message], _ <: Any]): Graph[FlowShape[Message, Message], NotUsed] =

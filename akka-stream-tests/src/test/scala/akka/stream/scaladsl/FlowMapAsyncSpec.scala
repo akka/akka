@@ -237,7 +237,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
         if (counter.incrementAndGet() > parallelism) Future.failed(new Exception("parallelism exceeded"))
         else {
           val p = Promise[Int]
-          queue.offer(p -> System.nanoTime())
+          queue.offer(p → System.nanoTime())
           p.future
         }
       }

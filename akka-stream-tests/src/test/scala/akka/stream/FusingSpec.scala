@@ -21,7 +21,7 @@ class FusingSpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer()
 
   def graph(async: Boolean) =
-    Source.unfold(1)(x ⇒ Some(x -> x)).filter(_ % 2 == 1)
+    Source.unfold(1)(x ⇒ Some(x → x)).filter(_ % 2 == 1)
       .alsoTo(Flow[Int].fold(0)(_ + _).to(Sink.head.named("otherSink")).addAttributes(if (async) Attributes.asyncBoundary else Attributes.none))
       .via(Flow[Int].fold(1)(_ + _).named("mainSink"))
 

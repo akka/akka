@@ -38,7 +38,7 @@ object Serialization {
 
     private final def configToMap(path: String): Map[String, String] = {
       import scala.collection.JavaConverters._
-      config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) ⇒ (k -> v.toString) }
+      config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) ⇒ (k → v.toString) }
     }
   }
 
@@ -139,8 +139,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
         else {
           val cache = manifestCache.get
           cache.get(manifest) match {
-            case Some(cachedClassManifest) => s1.fromBinary(bytes, cachedClassManifest)
-            case None =>
+            case Some(cachedClassManifest) ⇒ s1.fromBinary(bytes, cachedClassManifest)
+            case None ⇒
               system.dynamicAccess.getClassFor[AnyRef](manifest) match {
                 case Success(classManifest) ⇒
                   val classManifestOption: Option[Class[_]] = Some(classManifest)
@@ -167,7 +167,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
           "akka.actor.serializers is not in synch between the two systems.")
     }
     serializer match {
-      case ser: ByteBufferSerializer =>
+      case ser: ByteBufferSerializer ⇒
         ser.fromBinary(buf, manifest)
       case _ ⇒
         val bytes = Array.ofDim[Byte](buf.remaining())
@@ -236,7 +236,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * loading is performed by the system’s [[akka.actor.DynamicAccess]].
    */
   def serializerOf(serializerFQN: String): Try[Serializer] =
-    system.dynamicAccess.createInstanceFor[Serializer](serializerFQN, List(classOf[ExtendedActorSystem] -> system)) recoverWith {
+    system.dynamicAccess.createInstanceFor[Serializer](serializerFQN, List(classOf[ExtendedActorSystem] → system)) recoverWith {
       case _: NoSuchMethodException ⇒ system.dynamicAccess.createInstanceFor[Serializer](serializerFQN, Nil)
     }
 
@@ -245,7 +245,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * By default always contains the following mapping: "java" -> akka.serialization.JavaSerializer
    */
   private val serializers: Map[String, Serializer] =
-    for ((k: String, v: String) ← settings.Serializers) yield k -> serializerOf(v).get
+    for ((k: String, v: String) ← settings.Serializers) yield k → serializerOf(v).get
 
   /**
    *  bindings is a Seq of tuple representing the mapping from Class to Serializer.
@@ -286,7 +286,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * Maps from a Serializer Identity (Int) to a Serializer instance (optimization)
    */
   val serializerByIdentity: Map[Int, Serializer] =
-    Map(NullSerializer.identifier -> NullSerializer) ++ serializers map { case (_, v) ⇒ (v.identifier, v) }
+    Map(NullSerializer.identifier → NullSerializer) ++ serializers map { case (_, v) ⇒ (v.identifier, v) }
 
   private val isJavaSerializationWarningEnabled = settings.config.getBoolean("akka.actor.warn-about-java-serializer-usage")
 

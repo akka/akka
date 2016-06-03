@@ -99,12 +99,13 @@ private[akka] object GraphInterpreter {
    * corresponding segments of these arrays matches the exact same order of the ports in the [[Shape]].
    *
    */
-  final class GraphAssembly(val stages: Array[GraphStageWithMaterializedValue[Shape, Any]],
-                            val originalAttributes: Array[Attributes],
-                            val ins: Array[Inlet[_]],
-                            val inOwners: Array[Int],
-                            val outs: Array[Outlet[_]],
-                            val outOwners: Array[Int]) {
+  final class GraphAssembly(
+    val stages:             Array[GraphStageWithMaterializedValue[Shape, Any]],
+    val originalAttributes: Array[Attributes],
+    val ins:                Array[Inlet[_]],
+    val inOwners:           Array[Int],
+    val outs:               Array[Outlet[_]],
+    val outOwners:          Array[Int]) {
     require(ins.length == inOwners.length && inOwners.length == outs.length && outs.length == outOwners.length)
 
     def connectionCount: Int = ins.length
@@ -119,10 +120,11 @@ private[akka] object GraphInterpreter {
      *  - array of the logics
      *  - materialized value
      */
-    def materialize(inheritedAttributes: Attributes,
-                    copiedModules: Array[Module],
-                    matVal: ju.Map[Module, Any],
-                    register: MaterializedValueSource[Any] ⇒ Unit): (Array[InHandler], Array[OutHandler], Array[GraphStageLogic]) = {
+    def materialize(
+      inheritedAttributes: Attributes,
+      copiedModules:       Array[Module],
+      matVal:              ju.Map[Module, Any],
+      register:            MaterializedValueSource[Any] ⇒ Unit): (Array[InHandler], Array[OutHandler], Array[GraphStageLogic]) = {
       val logics = Array.ofDim[GraphStageLogic](stages.length)
 
       var i = 0
@@ -208,9 +210,10 @@ private[akka] object GraphInterpreter {
     /**
      * INTERNAL API
      */
-    final def apply(inlets: immutable.Seq[Inlet[_]],
-                    outlets: immutable.Seq[Outlet[_]],
-                    stages: GraphStageWithMaterializedValue[Shape, _]*): GraphAssembly = {
+    final def apply(
+      inlets:  immutable.Seq[Inlet[_]],
+      outlets: immutable.Seq[Outlet[_]],
+      stages:  GraphStageWithMaterializedValue[Shape, _]*): GraphAssembly = {
       // add the contents of an iterator to an array starting at idx
       @tailrec def add[T](i: Iterator[T], a: Array[T], idx: Int): Array[T] =
         if (i.hasNext) {
@@ -345,14 +348,14 @@ private[akka] object GraphInterpreter {
  */
 private[stream] final class GraphInterpreter(
   private val assembly: GraphInterpreter.GraphAssembly,
-  val materializer: Materializer,
-  val log: LoggingAdapter,
-  val inHandlers: Array[InHandler], // Lookup table for the InHandler of a connection
-  val outHandlers: Array[OutHandler], // Lookup table for the outHandler of the connection
-  val logics: Array[GraphStageLogic], // Array of stage logics
-  val onAsyncInput: (GraphStageLogic, Any, (Any) ⇒ Unit) ⇒ Unit,
-  val fuzzingMode: Boolean,
-  val context: ActorRef) {
+  val materializer:     Materializer,
+  val log:              LoggingAdapter,
+  val inHandlers:       Array[InHandler], // Lookup table for the InHandler of a connection
+  val outHandlers:      Array[OutHandler], // Lookup table for the outHandler of the connection
+  val logics:           Array[GraphStageLogic], // Array of stage logics
+  val onAsyncInput:     (GraphStageLogic, Any, (Any) ⇒ Unit) ⇒ Unit,
+  val fuzzingMode:      Boolean,
+  val context:          ActorRef) {
   import GraphInterpreter._
 
   // Maintains additional information for events, basically elements in-flight, or failure.

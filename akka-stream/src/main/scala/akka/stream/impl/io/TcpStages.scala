@@ -26,13 +26,14 @@ import scala.concurrent.{ Future, Promise }
 /**
  * INTERNAL API
  */
-private[stream] class ConnectionSourceStage(val tcpManager: ActorRef,
-                                            val endpoint: InetSocketAddress,
-                                            val backlog: Int,
-                                            val options: immutable.Traversable[SocketOption],
-                                            val halfClose: Boolean,
-                                            val idleTimeout: Duration,
-                                            val bindShutdownTimeout: FiniteDuration)
+private[stream] class ConnectionSourceStage(
+  val tcpManager:          ActorRef,
+  val endpoint:            InetSocketAddress,
+  val backlog:             Int,
+  val options:             immutable.Traversable[SocketOption],
+  val halfClose:           Boolean,
+  val idleTimeout:         Duration,
+  val bindShutdownTimeout: FiniteDuration)
   extends GraphStageWithMaterializedValue[SourceShape[StreamTcp.IncomingConnection], Future[StreamTcp.ServerBinding]] {
   import ConnectionSourceStage._
 
@@ -159,10 +160,10 @@ private[stream] object TcpConnectionStage {
     def halfClose: Boolean
   }
   case class Outbound(
-    manager: ActorRef,
-    connectCmd: Connect,
+    manager:             ActorRef,
+    connectCmd:          Connect,
     localAddressPromise: Promise[InetSocketAddress],
-    halfClose: Boolean) extends TcpRole
+    halfClose:           Boolean) extends TcpRole
   case class Inbound(connection: ActorRef, halfClose: Boolean) extends TcpRole
 
   /*
@@ -272,7 +273,8 @@ private[stream] object TcpConnectionStage {
       override def onUpstreamFailure(ex: Throwable): Unit = {
         if (connection != null) {
           if (interpreter.log.isDebugEnabled) {
-            interpreter.log.debug("Aborting tcp connection because of upstream failure: {}\n{}",
+            interpreter.log.debug(
+              "Aborting tcp connection because of upstream failure: {}\n{}",
               ex.getMessage,
               ex.getStackTrace.mkString("\n"))
           }
@@ -317,12 +319,13 @@ private[stream] class IncomingConnectionStage(connection: ActorRef, remoteAddres
 /**
  * INTERNAL API
  */
-private[stream] class OutgoingConnectionStage(manager: ActorRef,
-                                              remoteAddress: InetSocketAddress,
-                                              localAddress: Option[InetSocketAddress] = None,
-                                              options: immutable.Traversable[SocketOption] = Nil,
-                                              halfClose: Boolean = true,
-                                              connectTimeout: Duration = Duration.Inf)
+private[stream] class OutgoingConnectionStage(
+  manager:        ActorRef,
+  remoteAddress:  InetSocketAddress,
+  localAddress:   Option[InetSocketAddress]           = None,
+  options:        immutable.Traversable[SocketOption] = Nil,
+  halfClose:      Boolean                             = true,
+  connectTimeout: Duration                            = Duration.Inf)
 
   extends GraphStageWithMaterializedValue[FlowShape[ByteString, ByteString], Future[StreamTcp.OutgoingConnection]] {
   import TcpConnectionStage._

@@ -19,13 +19,14 @@ import akka.http.scaladsl.model._
 import headers._
 import HttpProtocols._
 import ParserOutput._
-import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
+import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 
 /**
  * INTERNAL API
  */
-private[http] abstract class HttpMessageParser[Output >: MessageOutput <: ParserOutput](val settings: ParserSettings,
-                                                                                        val headerParser: HttpHeaderParser) { self ⇒
+private[http] abstract class HttpMessageParser[Output >: MessageOutput <: ParserOutput](
+  val settings:     ParserSettings,
+  val headerParser: HttpHeaderParser) { self ⇒
   import HttpMessageParser._
   import settings._
 
@@ -191,8 +192,9 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
                   expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult
 
-  def parseFixedLengthBody(remainingBodyBytes: Long,
-                           isLastMessage: Boolean)(input: ByteString, bodyStart: Int): StateResult = {
+  def parseFixedLengthBody(
+    remainingBodyBytes: Long,
+    isLastMessage:      Boolean)(input: ByteString, bodyStart: Int): StateResult = {
     val remainingInputBytes = input.length - bodyStart
     if (remainingInputBytes > 0) {
       if (remainingInputBytes < remainingBodyBytes) {

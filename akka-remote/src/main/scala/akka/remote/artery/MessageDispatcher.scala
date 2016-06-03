@@ -21,16 +21,17 @@ import akka.remote.RemoteRef
  * INTERNAL API
  */
 private[akka] class MessageDispatcher(
-  system: ExtendedActorSystem,
+  system:   ExtendedActorSystem,
   provider: RemoteActorRefProvider) {
 
   private val remoteDaemon = provider.remoteDaemon
   private val log = Logging(system, getClass.getName)
 
-  def dispatch(recipient: InternalActorRef,
-               recipientAddress: Address,
-               message: AnyRef,
-               senderOption: Option[ActorRef]): Unit = {
+  def dispatch(
+    recipient:        InternalActorRef,
+    recipientAddress: Address,
+    message:          AnyRef,
+    senderOption:     Option[ActorRef]): Unit = {
 
     import provider.remoteSettings._
 
@@ -54,8 +55,9 @@ private[akka] class MessageDispatcher(
           case sel: ActorSelectionMessage ⇒
             if (UntrustedMode && (!TrustedSelectionPaths.contains(sel.elements.mkString("/", "/", "")) ||
               sel.msg.isInstanceOf[PossiblyHarmful] || l != provider.rootGuardian))
-              log.debug("operating in UntrustedMode, dropping inbound actor selection to [{}], " +
-                "allow it by adding the path to 'akka.remote.trusted-selection-paths' configuration",
+              log.debug(
+                "operating in UntrustedMode, dropping inbound actor selection to [{}], " +
+                  "allow it by adding the path to 'akka.remote.trusted-selection-paths' configuration",
                 sel.elements.mkString("/", "/", ""))
             else
               // run the receive logic for ActorSelectionMessage here to make sure it is not stuck on busy user actor
@@ -72,10 +74,12 @@ private[akka] class MessageDispatcher(
           // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
           r.!(message)(sender)
         else
-          log.error("dropping message [{}] for non-local recipient [{}] arriving at [{}] inbound addresses are [{}]",
+          log.error(
+            "dropping message [{}] for non-local recipient [{}] arriving at [{}] inbound addresses are [{}]",
             message.getClass, r, recipientAddress, provider.transport.addresses.mkString(", "))
 
-      case r ⇒ log.error("dropping message [{}] for unknown recipient [{}] arriving at [{}] inbound addresses are [{}]",
+      case r ⇒ log.error(
+        "dropping message [{}] for unknown recipient [{}] arriving at [{}] inbound addresses are [{}]",
         message.getClass, r, recipientAddress, provider.transport.addresses.mkString(", "))
 
     }

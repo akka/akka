@@ -22,7 +22,7 @@ private[parser] trait ContentDispositionHeader { this: Parser with CommonRules w
 
   def `disp-ext-type` = rule { token }
 
-  def `disposition-parm` = rule { (`filename-parm` | `disp-ext-parm`) ~> (_ -> _) }
+  def `disposition-parm` = rule { (`filename-parm` | `disp-ext-parm`) ~> (_ → _) }
 
   def `filename-parm` = rule(
     ignoreCase("filename") ~ OWS ~ ws('=') ~ push("filename") ~ word

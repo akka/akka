@@ -388,9 +388,9 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   class PendingBufferWrite(
     val commander: ActorRef,
     remainingData: ByteString,
-    ack: Any,
-    buffer: ByteBuffer,
-    tail: WriteCommand) extends PendingWrite {
+    ack:           Any,
+    buffer:        ByteBuffer,
+    tail:          WriteCommand) extends PendingWrite {
 
     def doWrite(info: ConnectionInfo): PendingWrite = {
       @tailrec def writeToChannel(data: ByteString): PendingWrite = {
@@ -429,11 +429,11 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
   class PendingWriteFile(
     val commander: ActorRef,
-    fileChannel: FileChannel,
-    offset: Long,
-    remaining: Long,
-    ack: Event,
-    tail: WriteCommand) extends PendingWrite with Runnable {
+    fileChannel:   FileChannel,
+    offset:        Long,
+    remaining:     Long,
+    ack:           Event,
+    tail:          WriteCommand) extends PendingWrite with Runnable {
 
     def doWrite(info: ConnectionInfo): PendingWrite = {
       tcp.fileIoDispatcher.execute(this)
@@ -479,10 +479,11 @@ private[io] object TcpConnection {
   /**
    * Groups required connection-related data that are only available once the connection has been fully established.
    */
-  final case class ConnectionInfo(registration: ChannelRegistration,
-                                  handler: ActorRef,
-                                  keepOpenOnPeerClosed: Boolean,
-                                  useResumeWriting: Boolean)
+  final case class ConnectionInfo(
+    registration:         ChannelRegistration,
+    handler:              ActorRef,
+    keepOpenOnPeerClosed: Boolean,
+    useResumeWriting:     Boolean)
 
   // INTERNAL MESSAGES
 

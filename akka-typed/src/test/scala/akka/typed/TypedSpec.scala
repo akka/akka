@@ -25,13 +25,13 @@ import org.scalactic.Constraint
 /**
  * Helper class for writing tests for typed Actors with ScalaTest.
  */
-class TypedSpec(config: Config) extends Spec with Matchers with BeforeAndAfterAll with ScalaFutures with ConversionCheckedTripleEquals {
+abstract class TypedSpec(config: Config) extends Spec with Matchers with BeforeAndAfterAll with ScalaFutures with ConversionCheckedTripleEquals {
   import TypedSpec._
   import AskPattern._
 
   def this() = this(ConfigFactory.empty)
 
-  implicit val system = ActorSystem(AkkaSpec.getCallerName(classOf[TypedSpec]), Props(guardian()), Some(config withFallback AkkaSpec.testConf))
+  implicit val system = ActorSystem(TypedSpec.getCallerName(classOf[TypedSpec]), Props(guardian()), Some(config withFallback AkkaSpec.testConf))
 
   implicit val timeout = Timeout(1.minute)
   implicit val patience = PatienceConfig(3.seconds)
@@ -68,11 +68,11 @@ class TypedSpec(config: Config) extends Spec with Matchers with BeforeAndAfterAl
   }
 
   def muteExpectedException[T <: Exception: ClassTag](
-    message: String = null,
-    source: String = null,
-    start: String = "",
-    pattern: String = null,
-    occurrences: Int = Int.MaxValue): EventFilter = {
+    message:     String = null,
+    source:      String = null,
+    start:       String = "",
+    pattern:     String = null,
+    occurrences: Int    = Int.MaxValue): EventFilter = {
     val filter = EventFilter(message, source, start, pattern, occurrences)
     system.eventStream.publish(Mute(filter))
     filter
@@ -146,4 +146,14 @@ object TypedSpec {
         c.replyTo ! ctx.spawn(c.props, c.name)
         Same
     }
+
+  def getCallerName(clazz: Class[_]): String = {
+    val s = (Thread.currentThread.getStackTrace map (_.getClassName) drop 1)
+      .dropWhile(_ matches "(java.lang.Thread|.*TypedSpec.?$)")
+    val reduced = s.lastIndexWhere(_ == clazz.getName) match {
+      case -1 ⇒ s
+      case z  ⇒ s drop (z + 1)
+    }
+    reduced.head.replaceFirst(""".*\.""", "").replaceAll("[^a-zA-Z_0-9]", "_")
+  }
 }

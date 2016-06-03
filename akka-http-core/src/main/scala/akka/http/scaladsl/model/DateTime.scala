@@ -11,15 +11,16 @@ import akka.http.impl.util._
  * Does not support TimeZones, all DateTime values are always GMT based.
  * Note that this implementation discards milliseconds (i.e. rounds down to full seconds).
  */
-final case class DateTime private (year: Int, // the year
-                                   month: Int, // the month of the year. January is 1.
-                                   day: Int, // the day of the month. The first day is 1.
-                                   hour: Int, // the hour of the day. The first hour is 0.
-                                   minute: Int, // the minute of the hour. The first minute is 0.
-                                   second: Int, // the second of the minute. The first second is 0.
-                                   weekday: Int, // the day of the week. Sunday is 0.
-                                   clicks: Long, // milliseconds since January 1, 1970, 00:00:00 GMT
-                                   isLeapYear: Boolean) extends akka.http.javadsl.model.DateTime with Ordered[DateTime] with Renderable {
+final case class DateTime private (
+  year:       Int, // the year
+  month:      Int, // the month of the year. January is 1.
+  day:        Int, // the day of the month. The first day is 1.
+  hour:       Int, // the hour of the day. The first hour is 0.
+  minute:     Int, // the minute of the hour. The first minute is 0.
+  second:     Int, // the second of the minute. The first second is 0.
+  weekday:    Int, // the day of the week. Sunday is 0.
+  clicks:     Long, // milliseconds since January 1, 1970, 00:00:00 GMT
+  isLeapYear: Boolean) extends akka.http.javadsl.model.DateTime with Ordered[DateTime] with Renderable {
   /**
    * The day of the week as a 3 letter abbreviation:
    * `Sun`, `Mon`, `Tue`, `Wed`, `Thu`, `Fri` or `Sat`
@@ -41,7 +42,6 @@ final case class DateTime private (year: Int, // the year
    * Creates a new `DateTime` that represents the point in time the given number of ms earlier.
    */
   def -(millis: Long): DateTime = DateTime(clicks - millis)
-
 
   /**
    * Creates a new `DateTime` that represents the point in time the given number of ms earlier.
@@ -172,7 +172,8 @@ object DateTime {
    * Note that this implementation discards milliseconds (i.e. rounds down to full seconds).
    */
   def apply(clicks: Long): DateTime = {
-    require(DateTime.MinValue.clicks <= clicks && clicks <= DateTime.MaxValue.clicks,
+    require(
+      DateTime.MinValue.clicks <= clicks && clicks <= DateTime.MaxValue.clicks,
       "DateTime value must be >= " + DateTime.MinValue + " and <= " + DateTime.MaxValue)
 
     // based on a fast RFC1123 implementation (C) 2000 by Tim Kientzle <kientzle@acm.org>

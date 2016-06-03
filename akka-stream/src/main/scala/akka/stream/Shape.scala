@@ -306,10 +306,11 @@ object SinkShape {
  *        +------+
  * }}}
  */
-final case class BidiShape[-In1, +Out1, -In2, +Out2](in1: Inlet[In1 @uncheckedVariance],
-                                                     out1: Outlet[Out1 @uncheckedVariance],
-                                                     in2: Inlet[In2 @uncheckedVariance],
-                                                     out2: Outlet[Out2 @uncheckedVariance]) extends Shape {
+final case class BidiShape[-In1, +Out1, -In2, +Out2](
+  in1:  Inlet[In1 @uncheckedVariance],
+  out1: Outlet[Out1 @uncheckedVariance],
+  in2:  Inlet[In2 @uncheckedVariance],
+  out2: Outlet[Out2 @uncheckedVariance]) extends Shape {
   //#implementation-details-elided
   override val inlets: immutable.Seq[Inlet[_]] = List(in1, in2)
   override val outlets: immutable.Seq[Outlet[_]] = List(out1, out2)
@@ -335,10 +336,11 @@ object BidiShape {
     BidiShape(top.in, top.out, bottom.in, bottom.out)
 
   /** Java API */
-  def of[In1, Out1, In2, Out2](in1: Inlet[In1 @uncheckedVariance],
-                               out1: Outlet[Out1 @uncheckedVariance],
-                               in2: Inlet[In2 @uncheckedVariance],
-                               out2: Outlet[Out2 @uncheckedVariance]): BidiShape[In1, Out1, In2, Out2] =
+  def of[In1, Out1, In2, Out2](
+    in1:  Inlet[In1 @uncheckedVariance],
+    out1: Outlet[Out1 @uncheckedVariance],
+    in2:  Inlet[In2 @uncheckedVariance],
+    out2: Outlet[Out2 @uncheckedVariance]): BidiShape[In1, Out1, In2, Out2] =
     BidiShape(in1, out1, in2, out2)
 
 }

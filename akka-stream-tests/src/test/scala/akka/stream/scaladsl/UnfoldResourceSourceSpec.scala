@@ -43,7 +43,8 @@ class UnfoldResourceSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   "Unfold Resource Source" must {
     "read contents from a file" in assertAllStagesStopped {
-      val p = Source.unfoldResource[String, BufferedReader](() ⇒ new BufferedReader(new FileReader(manyLinesFile)),
+      val p = Source.unfoldResource[String, BufferedReader](
+        () ⇒ new BufferedReader(new FileReader(manyLinesFile)),
         reader ⇒ Option(reader.readLine()),
         reader ⇒ reader.close())
         .runWith(Sink.asPublisher(false))
@@ -69,7 +70,8 @@ class UnfoldResourceSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "continue when Strategy is Resume and exception happened" in assertAllStagesStopped {
-      val p = Source.unfoldResource[String, BufferedReader](() ⇒ new BufferedReader(new FileReader(manyLinesFile)),
+      val p = Source.unfoldResource[String, BufferedReader](
+        () ⇒ new BufferedReader(new FileReader(manyLinesFile)),
         reader ⇒ {
           val s = reader.readLine()
           if (s != null && s.contains("b")) throw TE("") else Option(s)
@@ -90,7 +92,8 @@ class UnfoldResourceSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "close and open stream again when Strategy is Restart" in assertAllStagesStopped {
-      val p = Source.unfoldResource[String, BufferedReader](() ⇒ new BufferedReader(new FileReader(manyLinesFile)),
+      val p = Source.unfoldResource[String, BufferedReader](
+        () ⇒ new BufferedReader(new FileReader(manyLinesFile)),
         reader ⇒ {
           val s = reader.readLine()
           if (s != null && s.contains("b")) throw TE("") else Option(s)
@@ -112,7 +115,8 @@ class UnfoldResourceSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     "work with ByteString as well" in assertAllStagesStopped {
       val chunkSize = 50
       val buffer = Array.ofDim[Char](chunkSize)
-      val p = Source.unfoldResource[ByteString, Reader](() ⇒ new BufferedReader(new FileReader(manyLinesFile)),
+      val p = Source.unfoldResource[ByteString, Reader](
+        () ⇒ new BufferedReader(new FileReader(manyLinesFile)),
         reader ⇒ {
           val s = reader.read(buffer)
           if (s > 0) Some(ByteString(buffer.mkString("")).take(s)) else None
@@ -143,7 +147,8 @@ class UnfoldResourceSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val materializer = ActorMaterializer()(sys)
       try {
-        val p = Source.unfoldResource[String, BufferedReader](() ⇒ new BufferedReader(new FileReader(manyLinesFile)),
+        val p = Source.unfoldResource[String, BufferedReader](
+          () ⇒ new BufferedReader(new FileReader(manyLinesFile)),
           reader ⇒ Option(reader.readLine()),
           reader ⇒ reader.close()).runWith(TestSink.probe)(materializer)
 
@@ -154,7 +159,8 @@ class UnfoldResourceSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "fail when create throws exception" in assertAllStagesStopped {
-      val p = Source.unfoldResource[String, BufferedReader](() ⇒ throw TE(""),
+      val p = Source.unfoldResource[String, BufferedReader](
+        () ⇒ throw TE(""),
         reader ⇒ Option(reader.readLine()),
         reader ⇒ reader.close())
         .runWith(Sink.asPublisher(false))
@@ -166,7 +172,8 @@ class UnfoldResourceSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "fail when close throws exception" in assertAllStagesStopped {
-      val p = Source.unfoldResource[String, BufferedReader](() ⇒ new BufferedReader(new FileReader(manyLinesFile)),
+      val p = Source.unfoldResource[String, BufferedReader](
+        () ⇒ new BufferedReader(new FileReader(manyLinesFile)),
         reader ⇒ Option(reader.readLine()),
         reader ⇒ throw TE(""))
         .runWith(Sink.asPublisher(false))

@@ -47,12 +47,13 @@ trait Route {
   /**
    * "Seals" a route by wrapping it with explicit exception handling and rejection conversion.
    */
-  def seal(routingSettings: RoutingSettings,
-           parserSettings: ParserSettings,
-           rejectionHandler: RejectionHandler,
-           exceptionHandler: ExceptionHandler,
-           system: ActorSystem,
-           materializer: Materializer): Route
+  def seal(
+    routingSettings:  RoutingSettings,
+    parserSettings:   ParserSettings,
+    rejectionHandler: RejectionHandler,
+    exceptionHandler: ExceptionHandler,
+    system:           ActorSystem,
+    materializer:     Materializer): Route
 
   def orElse(alternative: Route): Route
 }

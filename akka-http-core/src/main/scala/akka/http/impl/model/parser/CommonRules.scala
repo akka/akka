@@ -180,8 +180,8 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
 
   def `challenge-or-credentials`: Rule2[String, Seq[(String, String)]] = rule {
     `auth-scheme` ~ (
-      oneOrMore(`auth-param` ~> (_ -> _)).separatedBy(listSep)
-      | `token68` ~> (x ⇒ ("" -> x) :: Nil)
+      oneOrMore(`auth-param` ~> (_ → _)).separatedBy(listSep)
+      | `token68` ~> (x ⇒ ("" → x) :: Nil)
       | push(Nil))
   }
 
@@ -397,7 +397,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
     token ~ zeroOrMore(ws(';') ~ `transfer-parameter`) ~> (_.toMap) ~> (TransferEncodings.Extension(_, _))
   }
 
-  def `transfer-parameter` = rule { token ~ ws('=') ~ word ~> (_ -> _) }
+  def `transfer-parameter` = rule { token ~ ws('=') ~ word ~> (_ → _) }
 
   // ******************************************************************************************
   //                                    helpers

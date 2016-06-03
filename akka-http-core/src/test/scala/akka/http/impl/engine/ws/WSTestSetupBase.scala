@@ -16,13 +16,14 @@ trait WSTestSetupBase extends Matchers {
   def expectBytes(length: Int): ByteString
   def expectBytes(bytes: ByteString): Unit
 
-  def sendWSFrame(opcode: Opcode,
-                  data: ByteString,
-                  fin: Boolean,
-                  mask: Boolean = false,
-                  rsv1: Boolean = false,
-                  rsv2: Boolean = false,
-                  rsv3: Boolean = false): Unit = {
+  def sendWSFrame(
+    opcode: Opcode,
+    data:   ByteString,
+    fin:    Boolean,
+    mask:   Boolean    = false,
+    rsv1:   Boolean    = false,
+    rsv2:   Boolean    = false,
+    rsv3:   Boolean    = false): Unit = {
     val (theMask, theData) =
       if (mask) {
         val m = Random.nextInt()
@@ -34,13 +35,14 @@ trait WSTestSetupBase extends Matchers {
   def sendWSCloseFrame(closeCode: Int, mask: Boolean = false): Unit =
     send(closeFrame(closeCode, mask))
 
-  def expectWSFrame(opcode: Opcode,
-                    data: ByteString,
-                    fin: Boolean,
-                    mask: Option[Int] = None,
-                    rsv1: Boolean = false,
-                    rsv2: Boolean = false,
-                    rsv3: Boolean = false): Unit =
+  def expectWSFrame(
+    opcode: Opcode,
+    data:   ByteString,
+    fin:    Boolean,
+    mask:   Option[Int] = None,
+    rsv1:   Boolean     = false,
+    rsv2:   Boolean     = false,
+    rsv3:   Boolean     = false): Unit =
     expectBytes(frameHeader(opcode, data.length, fin, mask, rsv1, rsv2, rsv3) ++ data)
 
   def expectWSCloseFrame(closeCode: Int, mask: Boolean = false): Unit =

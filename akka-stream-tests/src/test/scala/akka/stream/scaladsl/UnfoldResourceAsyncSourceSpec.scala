@@ -62,10 +62,11 @@ class UnfoldResourceAsyncSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
       val closePromiseCalled = Promise[Done]()
 
       val resource = new BufferedReader(new FileReader(manyLinesFile))
-      val p = Source.unfoldResourceAsync[String, BufferedReader](() ⇒ {
-        createPromiseCalled.success(Done)
-        createPromise.future
-      },
+      val p = Source.unfoldResourceAsync[String, BufferedReader](
+        () ⇒ {
+          createPromiseCalled.success(Done)
+          createPromise.future
+        },
         reader ⇒ {
           readPromiseCalled.success(Done)
           readPromise.future
@@ -107,10 +108,11 @@ class UnfoldResourceAsyncSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
       val closePromiseCalled = Promise[Done]()
 
       val resource = new BufferedReader(new FileReader(manyLinesFile))
-      val p = Source.unfoldResourceAsync[String, BufferedReader](() ⇒ {
-        createPromiseCalled.success(Done)
-        createPromise.future
-      },
+      val p = Source.unfoldResourceAsync[String, BufferedReader](
+        () ⇒ {
+          createPromiseCalled.success(Done)
+          createPromise.future
+        },
         reader ⇒ {
           readPromiseCalled.success(Done)
           readPromise.future
@@ -134,7 +136,8 @@ class UnfoldResourceAsyncSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "continue when Strategy is Resume and exception happened" in assertAllStagesStopped {
-      val p = Source.unfoldResourceAsync[String, BufferedReader](open,
+      val p = Source.unfoldResourceAsync[String, BufferedReader](
+        open,
         reader ⇒ {
           val s = reader.readLine()
           if (s != null && s.contains("b")) throw TE("") else Promise.successful(Option(s)).future
@@ -154,7 +157,8 @@ class UnfoldResourceAsyncSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "close and open stream again when Strategy is Restart" in assertAllStagesStopped {
-      val p = Source.unfoldResourceAsync[String, BufferedReader](open,
+      val p = Source.unfoldResourceAsync[String, BufferedReader](
+        open,
         reader ⇒ {
           val s = reader.readLine()
           if (s != null && s.contains("b")) throw TE("") else Promise.successful(Option(s)).future
@@ -175,7 +179,8 @@ class UnfoldResourceAsyncSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     "work with ByteString as well" in assertAllStagesStopped {
       val chunkSize = 50
       val buffer = Array.ofDim[Char](chunkSize)
-      val p = Source.unfoldResourceAsync[ByteString, Reader](open,
+      val p = Source.unfoldResourceAsync[ByteString, Reader](
+        open,
         reader ⇒ {
           val p = Promise[Option[ByteString]]
           val s = reader.read(buffer)
@@ -210,7 +215,8 @@ class UnfoldResourceAsyncSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val materializer = ActorMaterializer()(sys)
       try {
-        val p = Source.unfoldResourceAsync[String, BufferedReader](open,
+        val p = Source.unfoldResourceAsync[String, BufferedReader](
+          open,
           read, close).runWith(TestSink.probe)(materializer)
 
         materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
@@ -220,7 +226,8 @@ class UnfoldResourceAsyncSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "fail when create throws exception" in assertAllStagesStopped {
-      val p = Source.unfoldResourceAsync[String, BufferedReader](() ⇒ throw TE(""),
+      val p = Source.unfoldResourceAsync[String, BufferedReader](
+        () ⇒ throw TE(""),
         read, close).runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[String]()
       p.subscribe(c)
@@ -230,7 +237,8 @@ class UnfoldResourceAsyncSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "fail when close throws exception" in assertAllStagesStopped {
-      val p = Source.unfoldResourceAsync[String, BufferedReader](open,
+      val p = Source.unfoldResourceAsync[String, BufferedReader](
+        open,
         read, reader ⇒ throw TE(""))
         .runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[String]()

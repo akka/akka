@@ -6,7 +6,7 @@ package akka.remote.artery
 final case class PlotResult(values: Vector[(String, Number)] = Vector.empty) {
 
   def add(key: String, value: Number): PlotResult =
-    copy(values = values :+ (key -> value))
+    copy(values = values :+ (key → value))
 
   def addAll(p: PlotResult): PlotResult =
     copy(values ++ p.values)

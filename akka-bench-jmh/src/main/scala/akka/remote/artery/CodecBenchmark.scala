@@ -46,7 +46,8 @@ class CodecBenchmark {
        remote.artery.hostname = localhost
        remote.artery.port = 0
      }
-    """)
+    """
+  )
 
   implicit val system = ActorSystem("CodecBenchmark", config)
   val systemB = ActorSystem("systemB", system.settings.config)
@@ -56,8 +57,10 @@ class CodecBenchmark {
   val headerIn = HeaderBuilder(compression)
   val envelopeTemplateBuffer = ByteBuffer.allocate(ArteryTransport.MaximumFrameSize).order(ByteOrder.LITTLE_ENDIAN)
 
-  val uniqueLocalAddress = UniqueAddress(system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
-    AddressUidExtension(system).addressUid)
+  val uniqueLocalAddress = UniqueAddress(
+    system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
+    AddressUidExtension(system).addressUid
+  )
   val payload = Array.ofDim[Byte](1000)
 
   private var materializer: ActorMaterializer = _

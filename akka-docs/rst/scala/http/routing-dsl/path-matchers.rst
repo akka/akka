@@ -69,11 +69,11 @@ Segment: PathMatcher1[String]
 PathEnd: PathMatcher0
   Matches the very end of the path, similar to ``$`` in regular expressions and extracts nothing.
 
-Rest: PathMatcher1[String]
+Remaining: PathMatcher1[String]
   Matches and extracts the complete remaining unmatched part of the request's URI path as an (encoded!) String.
-  If you need access to the remaining *decoded* elements of the path use ``RestPath`` instead.
+  If you need access to the remaining *decoded* elements of the path use ``RemainingPath`` instead.
 
-RestPath: PathMatcher1[Path]
+RemainingPath: PathMatcher1[Path]
   Matches and extracts the complete remaining, unmatched part of the request's URI path.
 
 IntNumber: PathMatcher1[Int]

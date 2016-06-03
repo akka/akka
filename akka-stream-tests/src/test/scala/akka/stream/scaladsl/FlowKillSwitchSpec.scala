@@ -272,15 +272,14 @@ class FlowKillSwitchSpec extends AkkaSpec {
       val switch1 = KillSwitches.shared("switch")
       val switch2 = KillSwitches.shared("switch")
 
-      val downstream = RunnableGraph.fromGraph(GraphDSL.create(TestSink.probe[Int]) { implicit b ⇒
-        snk ⇒
-          import GraphDSL.Implicits._
-          val merge = b.add(Merge[Int](2))
+      val downstream = RunnableGraph.fromGraph(GraphDSL.create(TestSink.probe[Int]) { implicit b ⇒ snk ⇒
+        import GraphDSL.Implicits._
+        val merge = b.add(Merge[Int](2))
 
-          Source.maybe[Int].via(switch1.flow) ~> merge ~> snk
-          Source.maybe[Int].via(switch2.flow) ~> merge
+        Source.maybe[Int].via(switch1.flow) ~> merge ~> snk
+        Source.maybe[Int].via(switch2.flow) ~> merge
 
-          ClosedShape
+        ClosedShape
       }).run()
 
       downstream.ensureSubscription()

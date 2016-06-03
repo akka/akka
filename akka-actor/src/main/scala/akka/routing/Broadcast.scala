@@ -58,8 +58,8 @@ final class BroadcastRoutingLogic extends RoutingLogic {
 final case class BroadcastPool(
   override val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
-  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-  override val usePoolDispatcher: Boolean = false)
+  override val routerDispatcher:   String             = Dispatchers.DefaultDispatcherId,
+  override val usePoolDispatcher:  Boolean            = false)
   extends Pool with PoolOverrideUnsetConfig[BroadcastPool] {
 
   def this(config: Config) =
@@ -118,8 +118,8 @@ final case class BroadcastPool(
  */
 @SerialVersionUID(1L)
 final case class BroadcastGroup(
-  override val paths: immutable.Iterable[String],
-  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+  override val paths:            immutable.Iterable[String],
+  override val routerDispatcher: String                     = Dispatchers.DefaultDispatcherId)
   extends Group {
 
   def this(config: Config) =

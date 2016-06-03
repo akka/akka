@@ -7,6 +7,7 @@ import java.nio.ByteOrder
 
 import akka.stream.scaladsl.Framing.FramingException
 import akka.stream.stage.{ Context, PushPullStage, SyncDirective, TerminationDirective }
+import akka.stream.testkit.{ TestSubscriber, TestPublisher }
 import akka.testkit.AkkaSpec
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.util.{ ByteString, ByteStringBuilder }
@@ -93,6 +94,12 @@ class FramingSpec extends AkkaSpec {
           Source.single(ByteString("ab\n")).via(simpleLines("\n", 1)).limit(100).runWith(Sink.seq),
           3.seconds)
       }
+
+      an[FramingException] should be thrownBy {
+        Await.result(
+          Source.single(ByteString("aaa")).via(simpleLines("\n", 2)).limit(100).runWith(Sink.seq),
+          3.seconds)
+      }
     }
 
     "work with empty streams" in {
@@ -172,6 +179,33 @@ class FramingSpec extends AkkaSpec {
       Await.result(
         Source.empty.via(Framing.lengthField(4, 0, Int.MaxValue, ByteOrder.BIG_ENDIAN)).runFold(Vector.empty[ByteString])(_ :+ _),
         3.seconds) should ===(Vector.empty)
+    }
+
+    "work with grouped frames" in {
+      val groupSize = 5
+      val single = encode(referenceChunk.take(100), 0, 1, ByteOrder.BIG_ENDIAN)
+      val groupedFrames = (1 to groupSize)
+        .map(_ ⇒ single)
+        .fold(ByteString.empty)((result, bs) ⇒ result ++ bs)
+
+      val publisher = TestPublisher.probe[ByteString]()
+      val substriber = TestSubscriber.manualProbe[ByteString]()
+
+      Source.fromPublisher(publisher)
+        .via(Framing.lengthField(1, 0, Int.MaxValue, ByteOrder.BIG_ENDIAN))
+        .to(Sink.fromSubscriber(substriber))
+        .run()
+
+      val subscription = substriber.expectSubscription()
+
+      publisher.sendNext(groupedFrames)
+      publisher.sendComplete()
+      for (_ ← 1 to groupSize) {
+        subscription.request(1)
+        substriber.expectNext(single)
+      }
+      substriber.expectComplete()
+      subscription.cancel()
     }
 
     "report oversized frames" in {

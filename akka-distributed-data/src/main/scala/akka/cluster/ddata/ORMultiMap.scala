@@ -52,7 +52,7 @@ final class ORMultiMap[A] private[akka] (private[akka] val underlying: ORMap[ORS
    * Scala API: All entries of a multimap where keys are strings and values are sets.
    */
   def entries: Map[String, Set[A]] =
-    underlying.entries.map { case (k, v) ⇒ k -> v.elements }
+    underlying.entries.map { case (k, v) ⇒ k → v.elements }
 
   /**
    * Java API: All entries of a multimap where keys are strings and values are sets.

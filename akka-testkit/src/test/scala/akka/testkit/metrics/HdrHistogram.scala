@@ -16,9 +16,9 @@ import org.{ HdrHistogram ⇒ hdr }
  *                                       integer between 0 and 5.
  */
 private[akka] class HdrHistogram(
-  highestTrackableValue: Long,
+  highestTrackableValue:          Long,
   numberOfSignificantValueDigits: Int,
-  val unit: String = "")
+  val unit:                       String = "")
   extends Metric {
 
   private val hist = new hdr.Histogram(highestTrackableValue, numberOfSignificantValueDigits)

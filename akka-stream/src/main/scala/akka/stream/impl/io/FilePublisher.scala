@@ -51,7 +51,8 @@ private[akka] final class FilePublisher(f: Path, completionPromise: Promise[IORe
     try {
       chan = FileChannel.open(f, FilePublisher.Read)
     } catch {
-      case ex: Exception ⇒
+      case NonFatal(ex) ⇒
+        completionPromise.trySuccess(IOResult(0L, Failure(ex)))
         onErrorThenStop(ex)
     }
 
@@ -108,8 +109,8 @@ private[akka] final class FilePublisher(f: Path, completionPromise: Promise[IORe
     try {
       if (chan ne null) chan.close()
     } catch {
-      case ex: Exception ⇒
-        completionPromise.success(IOResult(readBytesTotal, Failure(ex)))
+      case NonFatal(ex) ⇒
+        completionPromise.trySuccess(IOResult(readBytesTotal, Failure(ex)))
     }
 
     completionPromise.trySuccess(IOResult(readBytesTotal, Success(Done)))

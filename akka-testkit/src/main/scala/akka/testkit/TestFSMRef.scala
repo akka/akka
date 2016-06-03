@@ -33,10 +33,10 @@ import scala.reflect.ClassTag
  * @since 1.2
  */
 class TestFSMRef[S, D, T <: Actor](
-  system: ActorSystem,
-  props: Props,
+  system:     ActorSystem,
+  props:      Props,
   supervisor: ActorRef,
-  name: String)(implicit ev: T <:< FSM[S, D])
+  name:       String)(implicit ev: T <:< FSM[S, D])
   extends TestActorRef[T](system, props, supervisor, name) {
 
   private def fsm: T = underlyingActor

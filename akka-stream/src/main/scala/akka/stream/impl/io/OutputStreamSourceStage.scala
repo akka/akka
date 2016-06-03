@@ -6,18 +6,21 @@ package akka.stream.impl.io
 import java.io.{ IOException, OutputStream }
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ BlockingQueue, LinkedBlockingQueue }
-
 import akka.stream.{ Outlet, SourceShape, Attributes }
 import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.OutputStreamSourceStage._
 import akka.stream.stage._
 import akka.util.ByteString
-
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Await, Future, Promise }
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
+import akka.stream.ActorAttributes
+import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
+import akka.stream.ActorAttributes.Dispatcher
+import scala.concurrent.ExecutionContext
+import akka.stream.ActorMaterializer
 
 private[stream] object OutputStreamSourceStage {
   sealed trait AdapterToStageMessage
@@ -40,6 +43,9 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, OutputStream) = {
     val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+
+    val dispatcherId = inheritedAttributes.get[Dispatcher](IODispatcher).dispatcher
+
     require(maxBuffer > 0, "Buffer size must be greater than 0")
 
     val dataQueue = new LinkedBlockingQueue[ByteString](maxBuffer)
@@ -48,6 +54,9 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
     val logic = new GraphStageLogic(shape) with StageWithCallback {
       var flush: Option[Promise[Unit]] = None
       var close: Option[Promise[Unit]] = None
+
+      private var dispatcher: ExecutionContext = null // set in preStart
+      private var blockingThread: Thread = null // for postStop interrupt
 
       private val downstreamCallback: AsyncCallback[Try[ByteString]] =
         getAsyncCallback {
@@ -102,29 +111,54 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
           sendResponseIfNeed()
         }
 
+      override def preStart(): Unit = {
+        dispatcher = ActorMaterializer.downcast(materializer).system.dispatchers.lookup(dispatcherId)
+        super.preStart()
+      }
+
       setHandler(out, new OutHandler {
         override def onDownstreamFinish(): Unit = {
           //assuming there can be no further in messages
           downstreamStatus.set(Canceled)
           dataQueue.clear()
           // if blocked reading, make sure the take() completes
-          dataQueue.put(ByteString())
+          dataQueue.put(ByteString.empty)
           completeStage()
         }
         override def onPull(): Unit = {
-          implicit val ex = interpreter.materializer.executionContext
-          Future(dataQueue.take()).onComplete(downstreamCallback.invoke)
+          implicit val ec = dispatcher
+          Future {
+            // keep track of the thread for postStop interrupt
+            blockingThread = Thread.currentThread()
+            try {
+              dataQueue.take()
+            } catch {
+              case _: InterruptedException ⇒
+                Thread.interrupted()
+                ByteString.empty
+            } finally {
+              blockingThread = null
+            }
+          }.onComplete(downstreamCallback.invoke)
         }
       })
+
+      override def postStop(): Unit = {
+        // interrupt any pending blocking take
+        if (blockingThread != null)
+          blockingThread.interrupt()
+        super.postStop()
+      }
     }
     (logic, new OutputStreamAdapter(dataQueue, downstreamStatus, logic.wakeUp, writeTimeout))
   }
 }
 
-private[akka] class OutputStreamAdapter(dataQueue: BlockingQueue[ByteString],
-                                        downstreamStatus: AtomicReference[DownstreamStatus],
-                                        sendToStage: (AdapterToStageMessage) ⇒ Future[Unit],
-                                        writeTimeout: FiniteDuration)
+private[akka] class OutputStreamAdapter(
+  dataQueue:        BlockingQueue[ByteString],
+  downstreamStatus: AtomicReference[DownstreamStatus],
+  sendToStage:      (AdapterToStageMessage) ⇒ Future[Unit],
+  writeTimeout:     FiniteDuration)
   extends OutputStream {
 
   var isActive = true

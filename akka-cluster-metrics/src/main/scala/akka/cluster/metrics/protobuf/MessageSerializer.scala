@@ -177,7 +177,8 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
         case NumberType.Float_VALUE   ⇒ jl.Float.intBitsToFloat(number.getValue32)
         case NumberType.Integer_VALUE ⇒ number.getValue32
         case NumberType.Serialized_VALUE ⇒
-          val in = new ClassLoaderObjectInputStream(system.dynamicAccess.classLoader,
+          val in = new ClassLoaderObjectInputStream(
+            system.dynamicAccess.classLoader,
             new ByteArrayInputStream(number.getSerialized.toByteArray))
           val obj = in.readObject
           in.close()

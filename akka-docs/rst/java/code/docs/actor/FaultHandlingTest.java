@@ -151,7 +151,7 @@ public class FaultHandlingTest extends AbstractJavaTest {
 
   @BeforeClass
   public static void start() {
-    system = ActorSystem.create("test");
+    system = ActorSystem.create("FaultHandlingTest");
   }
 
   @AfterClass

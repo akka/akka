@@ -5,11 +5,15 @@
 package akka.http.scaladsl.server
 package directives
 
-import scala.concurrent.Future
-import scala.util.{ Failure, Success, Try }
 import akka.http.scaladsl.marshalling.ToResponseMarshaller
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.util.Tupler
 import akka.http.scaladsl.util.FastFuture._
+import akka.pattern.{ CircuitBreaker, CircuitBreakerOpenException }
+import akka.stream.scaladsl.Sink
+
+import scala.concurrent.Future
+import scala.util.{ Failure, Success, Try }
 
 // format: OFF
 
@@ -18,6 +22,8 @@ import akka.http.scaladsl.util.FastFuture._
  * @groupprio future 100
  */
 trait FutureDirectives {
+
+  import RouteDirectives._
 
   /**
    * "Unwraps" a `Future[T]` and runs the inner route after future
@@ -29,6 +35,26 @@ trait FutureDirectives {
     Directive { inner ⇒ ctx ⇒
         import ctx.executionContext
         future.fast.transformWith(t ⇒ inner(Tuple1(t))(ctx))
+    }
+
+  /**
+    * "Unwraps" a `Future[T]` and runs the inner route after future
+    * completion with the future's value as an extraction of type `T` if
+    * the supplied `CircuitBreaker` is closed.
+    *
+    * If the supplied [[CircuitBreaker]] is open the request is rejected
+    * with a [[CircuitBreakerOpenRejection]].
+    *
+    * @group future
+    */
+  def onCompleteWithBreaker[T](breaker: CircuitBreaker)(future: ⇒ Future[T]): Directive1[Try[T]] =
+    onComplete(breaker.withCircuitBreaker(future)).flatMap {
+      case Failure(ex: CircuitBreakerOpenException) ⇒
+        extractRequestContext.flatMap { ctx ⇒
+          ctx.request.entity.dataBytes.runWith(Sink.cancelled)(ctx.materializer)
+          reject(CircuitBreakerOpenRejection(ex))
+        }
+      case x ⇒ provide(x)
     }
 
   /**

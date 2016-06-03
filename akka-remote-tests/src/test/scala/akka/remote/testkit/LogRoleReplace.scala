@@ -128,8 +128,8 @@ class LogRoleReplace {
 
     line match {
       case RoleStarted(jvm, role, host, port) ⇒
-        replacements += (jvm -> role)
-        replacements += ((host + ":" + port) -> role)
+        replacements += (jvm → role)
+        replacements += ((host + ":" + port) → role)
         false
       case _ ⇒ true
     }

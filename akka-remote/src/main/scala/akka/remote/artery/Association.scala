@@ -44,11 +44,11 @@ import akka.util.{ Unsafe, WildcardTree }
  * remote address.
  */
 private[akka] class Association(
-  val transport: ArteryTransport,
-  val materializer: Materializer,
-  override val remoteAddress: Address,
+  val transport:               ArteryTransport,
+  val materializer:            Materializer,
+  override val remoteAddress:  Address,
   override val controlSubject: ControlMessageSubject,
-  largeMessageDestinations: WildcardTree[NotUsed])
+  largeMessageDestinations:    WildcardTree[NotUsed])
   extends AbstractAssociation with OutboundContext {
 
   private val log = Logging(transport.system, getClass.getName)
@@ -103,7 +103,8 @@ private[akka] class Association(
     Unsafe.instance.getObjectVolatile(this, AbstractAssociation.sharedStateOffset).asInstanceOf[AssociationState]
 
   def completeHandshake(peer: UniqueAddress): Unit = {
-    require(remoteAddress == peer.address,
+    require(
+      remoteAddress == peer.address,
       s"wrong remote address in completeHandshake, got ${peer.address}, expected ${remoteAddress}")
     val current = associationState
     current.uniqueRemoteAddressPromise.trySuccess(peer)
@@ -114,7 +115,8 @@ private[akka] class Association(
         if (swapState(current, newState)) {
           current.uniqueRemoteAddressValue() match {
             case Some(Success(old)) ⇒
-              log.debug("Incarnation {} of association to [{}] with new UID [{}] (old UID [{}])",
+              log.debug(
+                "Incarnation {} of association to [{}] with new UID [{}] (old UID [{}])",
                 newState.incarnation, peer.address, peer.uid, old.uid)
             case _ ⇒
             // Failed, nothing to do
@@ -190,7 +192,8 @@ private[akka] class Association(
               val newState = current.newQuarantined()
               if (swapState(current, newState)) {
                 // quarantine state change was performed
-                log.warning("Association to [{}] with UID [{}] is irrecoverably failed. Quarantining address. {}",
+                log.warning(
+                  "Association to [{}] with UID [{}] is irrecoverably failed. Quarantining address. {}",
                   remoteAddress, u, reason)
                 // end delivery of system messages to that incarnation after this point
                 send(ClearSystemMessageDelivery, None, dummyRecipient)
@@ -200,10 +203,12 @@ private[akka] class Association(
                 quarantine(reason, uid) // recursive
             }
           case Some(Success(peer)) ⇒
-            log.debug("Quarantine of [{}] ignored due to non-matching UID, quarantine requested for [{}] but current is [{}]. {}",
+            log.debug(
+              "Quarantine of [{}] ignored due to non-matching UID, quarantine requested for [{}] but current is [{}]. {}",
               remoteAddress, u, peer.uid, reason)
           case None ⇒
-            log.debug("Quarantine of [{}] ignored because handshake not completed, quarantine request was for old incarnation. {}",
+            log.debug(
+              "Quarantine of [{}] ignored because handshake not completed, quarantine request was for old incarnation. {}",
               remoteAddress, reason)
         }
       case None ⇒

@@ -69,12 +69,13 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
             val newUnreachable =
               if (_state.unreachable.contains(event.member)) _state.unreachable - event.member + event.member
               else _state.unreachable
-            _state = _state.copy(members = _state.members - event.member + event.member,
+            _state = _state.copy(
+              members = _state.members - event.member + event.member,
               unreachable = newUnreachable)
           case LeaderChanged(leader) ⇒
             _state = _state.copy(leader = leader)
           case RoleLeaderChanged(role, leader) ⇒
-            _state = _state.copy(roleLeaderMap = _state.roleLeaderMap + (role -> leader))
+            _state = _state.copy(roleLeaderMap = _state.roleLeaderMap + (role → leader))
           case stats: CurrentInternalStats  ⇒ _latestStats = stats
           case ClusterMetricsChanged(nodes) ⇒ _clusterMetrics = nodes
           case ClusterShuttingDown          ⇒

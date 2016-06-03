@@ -22,9 +22,6 @@ trait Unmarshaller[-A, B] extends akka.http.javadsl.server.Unmarshaller[A, B] {
   def transform[C](f: ExecutionContext ⇒ Materializer ⇒ Future[B] ⇒ Future[C]): Unmarshaller[A, C] =
     Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat ⇒ a ⇒ f(ec)(mat)(this(a)) }
 
-  //  def contramap[I](f: I ⇒ A): Unmarshaller[I, B] =
-  //    Unmarshaller.strict(i ⇒ f(i)).flatMap(ec ⇒ mat ⇒ apply(_)(ec, mat))
-
   def map[C](f: B ⇒ C): Unmarshaller[A, C] =
     transform(implicit ec ⇒ _ ⇒ _.fast map f)
 
@@ -107,16 +104,16 @@ object Unmarshaller
      * an IllegalStateException will be thrown!
      */
     def forContentTypes(ranges: ContentTypeRange*): FromEntityUnmarshaller[A] =
-      Unmarshaller.withMaterializer { implicit ec ⇒
-        implicit mat ⇒
-          entity ⇒
-            if (entity.contentType == ContentTypes.NoContentType || ranges.exists(_ matches entity.contentType)) {
-              underlying(entity).fast.recover[A](barkAtUnsupportedContentTypeException(ranges, entity.contentType))
-            } else FastFuture.failed(UnsupportedContentTypeException(ranges: _*))
+      Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat ⇒
+        entity ⇒
+          if (entity.contentType == ContentTypes.NoContentType || ranges.exists(_ matches entity.contentType)) {
+            underlying(entity).fast.recover[A](barkAtUnsupportedContentTypeException(ranges, entity.contentType))
+          } else FastFuture.failed(UnsupportedContentTypeException(ranges: _*))
       }
 
-    private def barkAtUnsupportedContentTypeException(ranges: Seq[ContentTypeRange],
-                                                      newContentType: ContentType): PartialFunction[Throwable, Nothing] = {
+    private def barkAtUnsupportedContentTypeException(
+      ranges:         Seq[ContentTypeRange],
+      newContentType: ContentType): PartialFunction[Throwable, Nothing] = {
       case UnsupportedContentTypeException(supported) ⇒ throw new IllegalStateException(
         s"Illegal use of `unmarshaller.forContentTypes($ranges)`: $newContentType is not supported by underlying marshaller!")
     }

@@ -71,11 +71,11 @@ import akka.stream.ActorMaterializerSettings
  * INTERNAL API
  */
 private[akka] final case class InboundEnvelope(
-  recipient: InternalActorRef,
+  recipient:        InternalActorRef,
   recipientAddress: Address,
-  message: AnyRef,
-  senderOption: Option[ActorRef],
-  originUid: Long)
+  message:          AnyRef,
+  senderOption:     Option[ActorRef],
+  originUid:        Long)
 
 /**
  * INTERNAL API
@@ -123,9 +123,9 @@ private[akka] object AssociationState {
  * INTERNAL API
  */
 private[akka] final class AssociationState(
-  val incarnation: Int,
+  val incarnation:                Int,
   val uniqueRemoteAddressPromise: Promise[UniqueAddress],
-  val quarantined: Set[Long]) {
+  val quarantined:                Set[Long]) {
 
   /**
    * Full outbound address with UID for this association.
@@ -239,7 +239,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val systemMessageResendInterval: FiniteDuration = 1.second
   private val handshakeRetryInterval: FiniteDuration = 1.second
   private val handshakeTimeout: FiniteDuration =
-    system.settings.config.getMillisDuration("akka.remote.handshake-timeout").requiring(_ > Duration.Zero,
+    system.settings.config.getMillisDuration("akka.remote.handshake-timeout").requiring(
+      _ > Duration.Zero,
       "handshake-timeout must be > 0")
   private val injectHandshakeInterval: FiniteDuration = 1.second
   private val giveUpSendAfter: FiniteDuration = 60.seconds

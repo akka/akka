@@ -9,6 +9,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 
 object FSMTransitionSpec {
+  import FSM.`→`
 
   class Supervisor extends Actor {
     def receive = { case _ ⇒ }
@@ -20,7 +21,7 @@ object FSMTransitionSpec {
       case Event("stay", _) ⇒ stay()
       case Event(_, _)      ⇒ goto(0)
     }
-    onTransition { case from -> to ⇒ target ! (from -> to) }
+    onTransition { case from → to ⇒ target ! (from → to) }
 
     initialize()
   }
@@ -50,8 +51,8 @@ object FSMTransitionSpec {
       case _ ⇒ goto(1)
     }
     onTransition {
-      case 0 -> 1 ⇒ target ! ((stateData, nextStateData))
-      case 1 -> 1 ⇒ target ! ((stateData, nextStateData))
+      case 0 → 1 ⇒ target ! ((stateData, nextStateData))
+      case 1 → 1 ⇒ target ! ((stateData, nextStateData))
     }
   }
 
@@ -64,16 +65,17 @@ object FSMTransitionSpec {
 class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
 
   import FSMTransitionSpec._
+  import FSM.`→`
 
   "A FSM transition notifier" must {
 
     "not trigger onTransition for stay" in {
       val fsm = system.actorOf(Props(new SendAnyTransitionFSM(testActor)))
-      expectMsg(0 -> 0) // caused by initialize(), OK.
+      expectMsg(0 → 0) // caused by initialize(), OK.
       fsm ! "stay" // no transition event
       expectNoMsg(500.millis)
       fsm ! "goto" // goto(current state)
-      expectMsg(0 -> 0)
+      expectMsg(0 → 0)
     }
 
     "notify listeners" in {
@@ -150,7 +152,7 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
           case Event("switch", _) ⇒ goto(1) using sender()
         }
         onTransition {
-          case x -> y ⇒ nextStateData ! (x -> y)
+          case x → y ⇒ nextStateData ! (x → y)
         }
         when(1) {
           case Event("test", _) ⇒
