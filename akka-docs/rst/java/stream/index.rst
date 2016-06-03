@@ -13,6 +13,7 @@ Streams
    stream-graphs
    stream-composition
    stream-rate
+   stream-dynamic
    stream-customize
    stream-integrations
    stream-error
