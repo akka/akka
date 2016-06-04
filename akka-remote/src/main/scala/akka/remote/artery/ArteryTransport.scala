@@ -159,6 +159,7 @@ private[akka] object AssociationState {
     override def toString(): String =
       uids.mkString("QuarantinedUidSet(", ",", ")")
   }
+
 }
 
 /**
@@ -169,15 +170,26 @@ private[akka] final class AssociationState(
   val uniqueRemoteAddressPromise: Promise[UniqueAddress],
   val quarantined:                AssociationState.QuarantinedUidSet) {
 
+  // doesn't have to be volatile since it's only a cache changed once
+  private var uniqueRemoteAddressValueCache: Option[UniqueAddress] = null
+
   /**
    * Full outbound address with UID for this association.
    * Completed when by the handshake.
    */
   def uniqueRemoteAddress: Future[UniqueAddress] = uniqueRemoteAddressPromise.future
 
-  def uniqueRemoteAddressValue(): Option[Try[UniqueAddress]] = {
-    // FIXME we should cache access to uniqueRemoteAddress.value (avoid allocations), used in many places
-    uniqueRemoteAddress.value
+  def uniqueRemoteAddressValue(): Option[UniqueAddress] = {
+    if (uniqueRemoteAddressValueCache ne null)
+      uniqueRemoteAddressValueCache
+    else {
+      uniqueRemoteAddress.value match {
+        case Some(Success(peer)) ⇒
+          uniqueRemoteAddressValueCache = Some(peer)
+          uniqueRemoteAddressValueCache
+        case _ ⇒ None
+      }
+    }
   }
 
   def newIncarnation(remoteAddressPromise: Promise[UniqueAddress]): AssociationState =
@@ -192,8 +204,8 @@ private[akka] final class AssociationState(
 
   def isQuarantined(): Boolean = {
     uniqueRemoteAddressValue match {
-      case Some(Success(a)) ⇒ isQuarantined(a.uid)
-      case _                ⇒ false // handshake not completed yet
+      case Some(a) ⇒ isQuarantined(a.uid)
+      case _       ⇒ false // handshake not completed yet
     }
   }
 
