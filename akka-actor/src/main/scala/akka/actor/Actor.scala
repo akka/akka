@@ -442,6 +442,12 @@ trait Actor {
           "You have to use one of the 'actorOf' factory methods to create a new actor. See the documentation.")
     val c = contextStack.head
     ActorCell.contextStack.set(null :: contextStack)
+    // cache function to `unhandled` to avoid allocations in aroundReceive,
+    // can't use a val in Actor due to binary compatibility restriction
+    c match {
+      case cell: ActorCell ⇒ cell.unhandledFun = unhandled
+      case _               ⇒
+    }
     c
   }
 
@@ -481,7 +487,8 @@ trait Actor {
    * @param receive current behavior.
    * @param msg current message.
    */
-  protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = receive.applyOrElse(msg, unhandled)
+  protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit =
+    receive.applyOrElse(msg, unhandledFun)
 
   /**
    * Can be overridden to intercept calls to `preStart`. Calls `preStart` by default.
@@ -581,4 +588,13 @@ trait Actor {
       case _                ⇒ context.system.eventStream.publish(UnhandledMessage(message, sender(), self))
     }
   }
+
+  private[this] def unhandledFun: Any ⇒ Unit =
+    context match {
+      case cell: ActorCell if (cell.unhandledFun ne null) ⇒
+        // use cached function to avoid allocations in aroundReceive,
+        // can't use a val in Actor due to binary compatibility restriction
+        cell.unhandledFun
+      case _ ⇒ unhandled
+    }
 }
