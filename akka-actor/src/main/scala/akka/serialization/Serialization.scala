@@ -17,6 +17,7 @@ import scala.util.Success
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
+import java.util.NoSuchElementException
 
 object Serialization {
 
@@ -101,7 +102,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   def deserialize[T](bytes: Array[Byte], serializerId: Int, clazz: Option[Class[_ <: T]]): Try[T] =
     Try {
-      val serializer = try serializerByIdentity(serializerId) catch {
+      val serializer = try getSerializerById(serializerId) catch {
         case _: NoSuchElementException ⇒ throw new NotSerializableException(
           s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
             "akka.actor.serializers is not in synch between the two systems.")
@@ -116,7 +117,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   def deserialize(bytes: Array[Byte], serializerId: Int, manifest: String): Try[AnyRef] =
     Try {
-      val serializer = try serializerByIdentity(serializerId) catch {
+      val serializer = try getSerializerById(serializerId) catch {
         case _: NoSuchElementException ⇒ throw new NotSerializableException(
           s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
             "akka.actor.serializers is not in synch between the two systems.")
@@ -161,7 +162,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * Returns either the resulting object or throws an exception if deserialization fails.
    */
   def deserializeByteBuffer(buf: ByteBuffer, serializerId: Int, manifest: String): AnyRef = {
-    val serializer = try serializerByIdentity(serializerId) catch {
+    val serializer = try getSerializerById(serializerId) catch {
       case _: NoSuchElementException ⇒ throw new NotSerializableException(
         s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
           "akka.actor.serializers is not in synch between the two systems.")
@@ -287,6 +288,31 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   val serializerByIdentity: Map[Int, Serializer] =
     Map(NullSerializer.identifier → NullSerializer) ++ serializers map { case (_, v) ⇒ (v.identifier, v) }
+
+  /**
+   * Serializers with id 0 - 1023 are stored in an array for quick allocation free access
+   */
+  private val quickSerializerByIdentity: Array[Serializer] = {
+    val size = 1024
+    val table = Array.ofDim[Serializer](size)
+    serializerByIdentity.foreach {
+      case (id, ser) ⇒ if (0 <= id && id < size) table(id) = ser
+    }
+    table
+  }
+
+  /**
+   * @throws `NoSuchElementException` if no serializer with given `id`
+   */
+  private def getSerializerById(id: Int): Serializer = {
+    if (0 <= id && id < quickSerializerByIdentity.length) {
+      quickSerializerByIdentity(id) match {
+        case null ⇒ throw new NoSuchElementException(s"key not found: $id")
+        case ser  ⇒ ser
+      }
+    } else
+      serializerByIdentity(id)
+  }
 
   private val isJavaSerializationWarningEnabled = settings.config.getBoolean("akka.actor.warn-about-java-serializer-usage")
 
