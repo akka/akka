@@ -76,7 +76,7 @@ import akka.actor.Cancellable
 
 import scala.collection.JavaConverters._
 import akka.stream.ActorMaterializerSettings
-
+import scala.annotation.tailrec
 /**
  * INTERNAL API
  */
@@ -126,7 +126,39 @@ private[akka] trait InboundContext {
  */
 private[akka] object AssociationState {
   def apply(): AssociationState =
-    new AssociationState(incarnation = 1, uniqueRemoteAddressPromise = Promise(), quarantined = Set.empty)
+    new AssociationState(incarnation = 1, uniqueRemoteAddressPromise = Promise(), quarantined = QuarantinedUidSet.empty)
+
+  object QuarantinedUidSet {
+    val maxEntries = 10 // ok to not keep all old uids
+    def empty: QuarantinedUidSet = new QuarantinedUidSet(Array.emptyLongArray)
+  }
+
+  class QuarantinedUidSet private (uids: Array[Long]) {
+    import QuarantinedUidSet._
+
+    def add(uid: Long): QuarantinedUidSet = {
+      if (apply(uid))
+        this
+      else {
+        val newUids = Array.ofDim[Long](math.min(uids.length + 1, maxEntries))
+        newUids(0) = uid
+        if (uids.length > 0)
+          System.arraycopy(uids, 0, newUids, 1, newUids.length - 1)
+        new QuarantinedUidSet(newUids)
+      }
+    }
+
+    def apply(uid: Long): Boolean = {
+      @tailrec def find(i: Int): Boolean =
+        if (i == uids.length) false
+        else if (uids(i) == uid) true
+        else find(i + 1)
+      find(0)
+    }
+
+    override def toString(): String =
+      uids.mkString("QuarantinedUidSet(", ",", ")")
+  }
 }
 
 /**
@@ -135,7 +167,7 @@ private[akka] object AssociationState {
 private[akka] final class AssociationState(
   val incarnation:                Int,
   val uniqueRemoteAddressPromise: Promise[UniqueAddress],
-  val quarantined:                Set[Long]) {
+  val quarantined:                AssociationState.QuarantinedUidSet) {
 
   /**
    * Full outbound address with UID for this association.
@@ -154,7 +186,7 @@ private[akka] final class AssociationState(
   def newQuarantined(): AssociationState =
     uniqueRemoteAddressPromise.future.value match {
       case Some(Success(a)) ⇒
-        new AssociationState(incarnation, uniqueRemoteAddressPromise, quarantined = quarantined + a.uid)
+        new AssociationState(incarnation, uniqueRemoteAddressPromise, quarantined = quarantined.add(a.uid))
       case _ ⇒ this
     }
 
@@ -165,10 +197,7 @@ private[akka] final class AssociationState(
     }
   }
 
-  def isQuarantined(uid: Long): Boolean = {
-    // FIXME does this mean boxing (allocation) because of Set[Long]? Use specialized Set. org.agrona.collections.LongHashSet?
-    quarantined(uid)
-  }
+  def isQuarantined(uid: Long): Boolean = quarantined(uid)
 
   override def toString(): String = {
     val a = uniqueRemoteAddressPromise.future.value match {
