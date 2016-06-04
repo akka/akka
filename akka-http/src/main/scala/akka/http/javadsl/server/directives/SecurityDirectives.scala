@@ -12,9 +12,11 @@ import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import akka.http.javadsl.model.headers.HttpChallenge
 import akka.http.javadsl.model.headers.HttpCredentials
-import akka.http.javadsl.server.{ RequestContext, Route }
+import akka.http.javadsl.server.{ Route, RequestContext }
 import akka.http.scaladsl
-import akka.http.scaladsl.server.{ AuthorizationFailedRejection, Directives ⇒ D }
+import akka.http.scaladsl.server.{ Directives ⇒ D }
+
+import scala.concurrent.{ ExecutionContextExecutor, Future }
 
 object SecurityDirectives {
   /**
@@ -65,6 +67,50 @@ abstract class SecurityDirectives extends SchemeDirectives {
                            inner: JFunction[T, Route]): Route = RouteAdapter {
     D.authenticateBasic(realm, c ⇒ authenticator.apply(toJava(c)).asScala) { t ⇒
       inner.apply(t).delegate
+    }
+  }
+
+  /**
+   * Wraps the inner route with Http Basic authentication support.
+   * The given authenticator determines whether the credentials in the request are valid
+   * and, if so, which user object to supply to the inner route.
+   *
+   * Authentication is required in this variant, i.e. the request is rejected if [authenticator] returns Optional.empty.
+   */
+  def authenticateBasicPF[T](realm: String, authenticator: PartialFunction[Optional[ProvidedCredentials], T],
+                             inner: JFunction[T, Route]): Route = RouteAdapter {
+    def pf: PartialFunction[scaladsl.server.directives.Credentials, Option[T]] = {
+      case c ⇒ Option(authenticator.applyOrElse(toJava(c), (_: Any) ⇒ null.asInstanceOf[T]))
+    }
+
+    D.authenticateBasic(realm, pf) { t ⇒
+      inner.apply(t).delegate
+    }
+  }
+
+  /**
+   * Wraps the inner route with Http Basic authentication support.
+   * The given authenticator determines whether the credentials in the request are valid
+   * and, if so, which user object to supply to the inner route.
+   *
+   * Authentication is required in this variant, i.e. the request is rejected if [authenticator] returns Optional.empty.
+   */
+  def authenticateBasicPFAsync[T](realm: String, authenticator: PartialFunction[Optional[ProvidedCredentials], CompletionStage[T]],
+                                  inner: JFunction[T, Route]): Route = RouteAdapter {
+    def pf(implicit ec: ExecutionContextExecutor): PartialFunction[scaladsl.server.directives.Credentials, Future[Option[T]]] = {
+      case credentials ⇒
+        val jCredentials = toJava(credentials)
+        if (authenticator isDefinedAt jCredentials) {
+          authenticator(jCredentials).toScala.map(Some(_))
+        } else {
+          Future.successful(None)
+        }
+    }
+
+    D.extractExecutionContext { implicit ec ⇒
+      D.authenticateBasicAsync(realm, pf) { t ⇒
+        inner.apply(t).delegate
+      }
     }
   }
 
