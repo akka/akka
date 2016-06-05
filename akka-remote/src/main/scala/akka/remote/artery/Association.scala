@@ -4,7 +4,6 @@
 package akka.remote.artery
 
 import java.util.Queue
-
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
@@ -36,6 +35,7 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
 import akka.util.{ Unsafe, WildcardTree }
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -158,7 +158,7 @@ private[remote] class Association(
   override def sendControl(message: ControlMessage): Unit =
     outboundControlIngress.sendControlMessage(message)
 
-  def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = {
+  def send(message: Any, senderOption: OptionVal[ActorRef], recipient: RemoteActorRef): Unit = {
     // allow ActorSelectionMessage to pass through quarantine, to be able to establish interaction with new system
     // FIXME where is that ActorSelectionMessage check in old remoting?
     if (message.isInstanceOf[ActorSelectionMessage] || !associationState.isQuarantined() || message == ClearSystemMessageDelivery) {
@@ -224,7 +224,7 @@ private[remote] class Association(
                   "Association to [{}] with UID [{}] is irrecoverably failed. Quarantining address. {}",
                   remoteAddress, u, reason)
                 // end delivery of system messages to that incarnation after this point
-                send(ClearSystemMessageDelivery, None, dummyRecipient)
+                send(ClearSystemMessageDelivery, OptionVal.None, dummyRecipient)
                 // try to tell the other system that we have quarantined it
                 sendControl(Quarantined(localAddress, peer))
               } else
@@ -408,8 +408,8 @@ private[remote] class AssociationRegistry(createAssociation: Address ⇒ Associa
     }
   }
 
-  def association(uid: Long): Association =
-    associationsByUid.get(uid)
+  def association(uid: Long): OptionVal[Association] =
+    OptionVal(associationsByUid.get(uid))
 
   def setUID(peer: UniqueAddress): Association = {
     val a = association(peer.address)

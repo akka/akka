@@ -11,6 +11,7 @@ import akka.event.{ LoggingAdapter }
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
+import akka.util.OptionVal
 
 /**
  * RemoteTransportException represents a general failure within a RemoteTransport,
@@ -68,7 +69,7 @@ private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, va
   /**
    * Sends the given message to the recipient supplying the sender() if any
    */
-  def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit
+  def send(message: Any, senderOption: OptionVal[ActorRef], recipient: RemoteActorRef): Unit
 
   /**
    * Sends a management command to the underlying transport stack. The call returns with a Future that indicates

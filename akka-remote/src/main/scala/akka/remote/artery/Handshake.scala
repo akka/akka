@@ -5,7 +5,6 @@ package akka.remote.artery
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import akka.remote.EndpointManager.Send
 import akka.remote.UniqueAddress
 import akka.stream.Attributes
@@ -17,6 +16,7 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.stream.stage.TimerGraphStageLogic
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -123,7 +123,7 @@ private[akka] class OutboundHandshake(outboundContext: OutboundContext, timeout:
       private def pushHandshakeReq(): Unit = {
         injectHandshakeTickScheduled = true
         scheduleOnce(InjectHandshakeTick, injectHandshakeInterval)
-        push(out, Send(HandshakeReq(outboundContext.localAddress), None, outboundContext.dummyRecipient, None))
+        push(out, Send(HandshakeReq(outboundContext.localAddress), OptionVal.None, outboundContext.dummyRecipient, None))
       }
 
       private def handshakeCompleted(): Unit = {
@@ -215,7 +215,7 @@ private[akka] class InboundHandshake(inboundContext: InboundContext, inControlSt
 
       private def isKnownOrigin(originUid: Long): Boolean = {
         // FIXME these association lookups are probably too costly for each message, need local cache or something
-        (inboundContext.association(originUid) ne null)
+        inboundContext.association(originUid).isDefined
       }
 
       // OutHandler

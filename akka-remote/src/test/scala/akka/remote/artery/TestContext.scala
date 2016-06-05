@@ -6,11 +6,9 @@ package akka.remote.artery
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ThreadLocalRandom
-
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.util.Success
-
 import akka.Done
 import akka.actor.ActorRef
 import akka.actor.Address
@@ -18,6 +16,7 @@ import akka.remote.RemoteActorRef
 import akka.remote.UniqueAddress
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
+import akka.util.OptionVal
 
 private[akka] class TestInboundContext(
   override val localAddress: UniqueAddress,
@@ -44,8 +43,8 @@ private[akka] class TestInboundContext(
       case existing ⇒ existing
     }
 
-  override def association(uid: Long): OutboundContext =
-    associationsByUid.get(uid)
+  override def association(uid: Long): OptionVal[OutboundContext] =
+    OptionVal(associationsByUid.get(uid))
 
   override def completeHandshake(peer: UniqueAddress): Unit = {
     val a = association(peer.address).asInstanceOf[TestOutboundContext]
@@ -85,7 +84,7 @@ private[akka] class TestOutboundContext(
 
   override def sendControl(message: ControlMessage) = {
     controlProbe.foreach(_ ! message)
-    controlSubject.sendControl(InboundEnvelope(null, remoteAddress, message, None, localAddress.uid))
+    controlSubject.sendControl(InboundEnvelope(null, remoteAddress, message, OptionVal.None, localAddress.uid))
   }
 
   // FIXME we should be able to Send without a recipient ActorRef

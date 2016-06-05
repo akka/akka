@@ -5,13 +5,10 @@ package akka.remote.artery
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
@@ -28,6 +25,7 @@ import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
+import akka.util.OptionVal
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -127,7 +125,7 @@ class CodecBenchmark {
       Flow.fromGraph(new Encoder(uniqueLocalAddress, system, compression, envelopePool))
 
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
-      .map(_ ⇒ Send(payload, None, remoteRefB, None))
+      .map(_ ⇒ Send(payload, OptionVal.None, remoteRefB, None))
       .via(encoder)
       .map(envelope => envelopePool.release(envelope))
       .runWith(new LatchSink(N, latch))(materializer)
@@ -193,7 +191,7 @@ class CodecBenchmark {
         resolveActorRefWithLocalAddress, compression, envelopePool))
 
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
-      .map(_ ⇒ Send(payload, None, remoteRefB, None))
+      .map(_ ⇒ Send(payload, OptionVal.None, remoteRefB, None))
       .via(encoder)
       .via(decoder)
       .runWith(new LatchSink(N, latch))(materializer)

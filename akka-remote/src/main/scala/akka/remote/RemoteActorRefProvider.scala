@@ -11,15 +11,14 @@ import akka.event.{ EventStream, Logging, LoggingAdapter }
 import akka.event.Logging.Error
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.pattern.pipe
-
 import scala.util.control.NonFatal
 import akka.actor.SystemGuardian.{ RegisterTerminationHook, TerminationHook, TerminationHookDone }
-
 import scala.util.control.Exception.Catcher
 import scala.concurrent.Future
 import akka.ConfigurationException
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.remote.artery.ArteryTransport
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -528,13 +527,13 @@ private[akka] class RemoteActorRef private[akka] (
         //Unwatch has a different signature, need to pattern match arguments against InternalActorRef
         case Unwatch(watchee: InternalActorRef, watcher: InternalActorRef) if isWatchIntercepted(watchee, watcher) ⇒
           provider.remoteWatcher ! RemoteWatcher.UnwatchRemote(watchee, watcher)
-        case _ ⇒ remote.send(message, None, this)
+        case _ ⇒ remote.send(message, OptionVal.None, this)
       }
     } catch handleException
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
     if (message == null) throw new InvalidMessageException("Message is null")
-    try remote.send(message, Option(sender), this) catch handleException
+    try remote.send(message, OptionVal(sender), this) catch handleException
   }
 
   override def provider: RemoteActorRefProvider = remote.provider

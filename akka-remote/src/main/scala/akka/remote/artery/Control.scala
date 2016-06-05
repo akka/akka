@@ -18,6 +18,7 @@ import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.remote.UniqueAddress
+import akka.util.OptionVal
 
 /**
  * INTERNAL API: Marker trait for reply messages
@@ -197,7 +198,7 @@ private[akka] class OutboundControlJunction(outboundContext: OutboundContext)
       }
 
       private def wrap(message: ControlMessage): Send =
-        Send(message, None, outboundContext.dummyRecipient, None)
+        Send(message, OptionVal.None, outboundContext.dummyRecipient, None)
 
       setHandlers(in, out, this)
     }
