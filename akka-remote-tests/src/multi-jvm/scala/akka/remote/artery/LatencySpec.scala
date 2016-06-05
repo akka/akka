@@ -43,6 +43,8 @@ object LatencySpec extends MultiNodeConfig {
        akka.test.LatencySpec.repeatCount = 1
        akka {
          loglevel = ERROR
+         # avoid TestEventListener
+         loggers = ["akka.event.Logging$$DefaultLogger"]
          testconductor.barrier-timeout = ${barrierTimeout.toSeconds}s
          actor {
            provider = "akka.remote.RemoteActorRefProvider"
