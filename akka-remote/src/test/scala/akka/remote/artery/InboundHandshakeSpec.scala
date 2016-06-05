@@ -5,7 +5,6 @@ package akka.remote.artery
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import akka.actor.Address
 import akka.actor.InternalActorRef
 import akka.remote.UniqueAddress
@@ -22,6 +21,7 @@ import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
+import akka.util.OptionVal
 
 object InboundHandshakeSpec {
   case object Control1 extends ControlMessage
@@ -41,7 +41,7 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
   private def setupStream(inboundContext: InboundContext, timeout: FiniteDuration = 5.seconds): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
     val recipient = null.asInstanceOf[InternalActorRef] // not used
     TestSource.probe[AnyRef]
-      .map(msg ⇒ InboundEnvelope(recipient, addressB.address, msg, None, addressA.uid))
+      .map(msg ⇒ InboundEnvelope(recipient, addressB.address, msg, OptionVal.None, addressA.uid))
       .via(new InboundHandshake(inboundContext, inControlStream = true))
       .map { case InboundEnvelope(_, _, msg, _, _) ⇒ msg }
       .toMat(TestSink.probe[Any])(Keep.both)

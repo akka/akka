@@ -77,6 +77,7 @@ import akka.actor.Cancellable
 import scala.collection.JavaConverters._
 import akka.stream.ActorMaterializerSettings
 import scala.annotation.tailrec
+import akka.util.OptionVal
 /**
  * INTERNAL API
  */
@@ -84,7 +85,7 @@ private[akka] final case class InboundEnvelope(
   recipient:        InternalActorRef,
   recipientAddress: Address,
   message:          AnyRef,
-  senderOption:     Option[ActorRef],
+  senderOption:     OptionVal[ActorRef],
   originUid:        Long)
 
 /**
@@ -111,11 +112,10 @@ private[akka] trait InboundContext {
 
   /**
    * Lookup the outbound association for a given UID.
-   * Will return `null` if the UID is unknown, i.e.
-   * handshake not completed. `null` is used instead of `Optional`
-   * to avoid allocations.
+   * Will return `OptionVal.None` if the UID is unknown, i.e.
+   * handshake not completed.
    */
-  def association(uid: Long): OutboundContext
+  def association(uid: Long): OptionVal[OutboundContext]
 
   def completeHandshake(peer: UniqueAddress): Unit
 
@@ -603,7 +603,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def sendControl(to: Address, message: ControlMessage) =
     association(to).sendControl(message)
 
-  override def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = {
+  override def send(message: Any, senderOption: OptionVal[ActorRef], recipient: RemoteActorRef): Unit = {
     val cached = recipient.cachedAssociation
 
     val a =
@@ -620,7 +620,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def association(remoteAddress: Address): Association =
     associationRegistry.association(remoteAddress)
 
-  override def association(uid: Long): Association =
+  override def association(uid: Long): OptionVal[Association] =
     associationRegistry.association(uid)
 
   override def completeHandshake(peer: UniqueAddress): Unit = {
