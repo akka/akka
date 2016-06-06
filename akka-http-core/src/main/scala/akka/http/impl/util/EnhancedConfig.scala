@@ -28,11 +28,6 @@ private[http] class EnhancedConfig(val underlying: Config) extends AnyVal {
     case x          ⇒ underlying.getInt(path)
   }
 
-  def getIntOpt(path: String): Option[Int] = underlying.hasPath(path) match {
-    case true ⇒ Option(getPossiblyInfiniteInt(path))
-    case x    ⇒ None
-  }
-
   def getIntBytes(path: String): Int = {
     val value: Long = underlying getBytes path
     if (value <= Int.MaxValue) value.toInt

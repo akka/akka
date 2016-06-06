@@ -48,7 +48,7 @@ private object PoolSlot {
                                                                                                  v
    */
   def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
-            settings: ConnectionPoolSettings, isHotConnection: Boolean)(implicit system: ActorSystem, fm: Materializer): Graph[FanOutShape2[RequestContext, ResponseContext, RawSlotEvent], Any] =
+            settings: ConnectionPoolSettings)(implicit system: ActorSystem, fm: Materializer): Graph[FanOutShape2[RequestContext, ResponseContext, RawSlotEvent], Any] =
     GraphDSL.create() { implicit b ⇒
       import GraphDSL.Implicits._
 
@@ -57,7 +57,7 @@ private object PoolSlot {
       val slotProcessor = b.add {
         Flow.fromProcessor { () ⇒
           val actor = system.actorOf(
-            Props(new SlotProcessor(slotIx, connectionFlow, settings, isHotConnection)).withDeploy(Deploy.local),
+            Props(new SlotProcessor(slotIx, connectionFlow, settings)).withDeploy(Deploy.local),
             name)
           ActorProcessor[RequestContext, List[ProcessorOut]](actor)
         }.mapConcat(ConstantFun.scalaIdentityFunction)
@@ -85,7 +85,7 @@ private object PoolSlot {
    * shutting down completely).
    */
   private class SlotProcessor(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
-                              settings: ConnectionPoolSettings, isHotConnection: Boolean)(implicit fm: Materializer)
+                              settings: ConnectionPoolSettings)(implicit fm: Materializer)
     extends ActorSubscriber with ActorPublisher[List[ProcessorOut]] with ActorLogging {
     var exposedPublisher: akka.stream.impl.ActorPublisher[Any] = _
     var inflightRequests = immutable.Queue.empty[RequestContext]
@@ -93,11 +93,6 @@ private object PoolSlot {
       .via(connectionFlow)
       .toMat(Sink.actorSubscriber[HttpResponse](Props(new FlowOutportActor(self)).withDeploy(Deploy.local)))(Keep.both)
       .named("SlotProcessorInternalConnectionFlow")
-
-    // might hold a pair of (in, out) actorRefs, as in the runnableGraph definition above
-    val hotConnections: Option[(ActorRef, ActorRef)] = if (isHotConnection) {
-      Option(runnableGraph.run())
-    } else None
 
     override def requestStrategy = ZeroRequestStrategy
     override def receive = waitingExposedPublisher
@@ -118,7 +113,7 @@ private object PoolSlot {
 
     val unconnected: Receive = {
       case OnNext(rc: RequestContext) ⇒
-        val (connInport, connOutport) = hotConnections.getOrElse(runnableGraph.run())
+        val (connInport, connOutport) = runnableGraph.run()
         connOutport ! Request(totalDemand)
         context.become(waitingForDemandFromConnection(connInport = connInport, connOutport = connOutport, rc))
 

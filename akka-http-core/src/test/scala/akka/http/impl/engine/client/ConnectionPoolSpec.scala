@@ -232,11 +232,16 @@ class ConnectionPoolSpec extends AkkaSpec("""
     "never close hot connections when minConnections key is given and >0" in new TestSetup() {
       // for lower bound of one connection
       val minOneConnection = 1
-      val (_, _, _, hcpMinOneConnection) = cachedHostConnectionPool[Int](idleTimeout = 100.millis, minConnections = minOneConnection)
+      val (requestInOne, _, responseOutSubOne, hcpMinOneConnection) =
+        cachedHostConnectionPool[Int](idleTimeout = 100.millis, minConnections = minOneConnection)
       val gatewayOneConnection = hcpMinOneConnection.gateway
 
-      condHolds(1200.millis) { () ⇒
-        Await.result(gatewayOneConnection.poolStatus(), 300.millis).get shouldBe a[PoolInterfaceRunning]
+      requestInOne.sendNext(HttpRequest(uri = "/minimumslots/1") → 42)
+      responseOutSubOne.request(1)
+      acceptIncomingConnection()
+
+      condHolds(500.millis) { () ⇒
+        Await.result(gatewayOneConnection.poolStatus(), 100.millis).get shouldBe a[PoolInterfaceRunning]
       }
 
       // for lower bound of five connections
@@ -247,8 +252,8 @@ class ConnectionPoolSpec extends AkkaSpec("""
         maxConnections = minFiveConnections + 1)
 
       val gatewayFiveConnections = hcpMinFiveConnection.gateway
-      condHolds(1200.millis) { () ⇒
-        Await.result(gatewayFiveConnections.poolStatus(), 300.millis).get shouldBe a[PoolInterfaceRunning]
+      condHolds(500.millis) { () ⇒
+        Await.result(gatewayFiveConnections.poolStatus(), 100.millis).get shouldBe a[PoolInterfaceRunning]
       }
     }
 
