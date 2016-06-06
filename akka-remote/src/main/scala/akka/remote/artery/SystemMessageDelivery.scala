@@ -226,12 +226,13 @@ private[akka] class SystemMessageAcker(inboundContext: InboundContext) extends G
 
       // InHandler
       override def onPush(): Unit = {
-        grab(in) match {
-          case env @ InboundEnvelope(_, _, sysEnv @ SystemMessageEnvelope(_, n, ackReplyTo), _, _) ⇒
+        val env = grab(in)
+        env.message match {
+          case sysEnv @ SystemMessageEnvelope(_, n, ackReplyTo) ⇒
             if (n == seqNo) {
               inboundContext.sendControl(ackReplyTo.address, Ack(n, localAddress))
               seqNo += 1
-              val unwrapped = env.copy(message = sysEnv.message)
+              val unwrapped = env.withMessage(sysEnv.message)
               push(out, unwrapped)
             } else if (n < seqNo) {
               inboundContext.sendControl(ackReplyTo.address, Ack(n, localAddress))
@@ -240,11 +241,10 @@ private[akka] class SystemMessageAcker(inboundContext: InboundContext) extends G
               inboundContext.sendControl(ackReplyTo.address, Nack(seqNo - 1, localAddress))
               pull(in)
             }
-          case env ⇒
+          case _ ⇒
             // messages that don't need acking
             push(out, env)
         }
-
       }
 
       // OutHandler

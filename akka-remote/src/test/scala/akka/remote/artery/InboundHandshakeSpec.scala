@@ -43,7 +43,7 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
     TestSource.probe[AnyRef]
       .map(msg ⇒ InboundEnvelope(recipient, addressB.address, msg, OptionVal.None, addressA.uid))
       .via(new InboundHandshake(inboundContext, inControlStream = true))
-      .map { case InboundEnvelope(_, _, msg, _, _) ⇒ msg }
+      .map { case env: InboundEnvelope ⇒ env.message }
       .toMat(TestSink.probe[Any])(Keep.both)
       .run()
   }

@@ -29,10 +29,10 @@ private[akka] class InboundQuarantineCheck(inboundContext: InboundContext) exten
       override def onPush(): Unit = {
         val env = grab(in)
         inboundContext.association(env.originUid) match {
-          case OptionVal.None =>
+          case OptionVal.None ⇒
             // unknown, handshake not completed
             push(out, env)
-          case OptionVal.Some(association) =>
+          case OptionVal.Some(association) ⇒
             if (association.associationState.isQuarantined(env.originUid)) {
               inboundContext.sendControl(
                 association.remoteAddress,

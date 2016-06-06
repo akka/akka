@@ -17,6 +17,7 @@ import akka.remote.UniqueAddress
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.util.OptionVal
+import akka.actor.InternalActorRef
 
 private[akka] class TestInboundContext(
   override val localAddress: UniqueAddress,
