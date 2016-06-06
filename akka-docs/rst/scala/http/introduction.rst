@@ -25,10 +25,13 @@ Akka HTTP was designed specifically as “not-a-framework”, not because we don
 
 Using Akka HTTP
 ---------------
-Akka HTTP is provided in separate jar files, to use it make sure to include the following dependencies::
+Akka HTTP is provided in a separate jar file, to use it make sure to include the following dependency::
 
-  "com.typesafe.akka" %% "akka-http-core" % "@version@" @crossString@
   "com.typesafe.akka" %% "akka-http-experimental" % "@version@" @crossString@
+
+Mind that ``akka-http`` comes in two modules: ``akka-http-experimental`` and ``akka-http-core``. Because ``akka-http-experimental``
+depends on ``akka-http-core`` you don't need to bring the latter explicitly. Still you may need to this in case you rely
+solely on low-level API.
 
 
 Routing DSL for HTTP servers

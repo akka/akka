@@ -6,11 +6,11 @@ package docs.http.scaladsl.server
 
 import akka.http.scaladsl.model.ws.BinaryMessage
 import akka.stream.scaladsl.Sink
+import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
 
-class WebSocketExampleSpec extends WordSpec with Matchers {
-  "core-example" in {
-    pending // compile-time only test
+class WebSocketExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
+  "core-example" in compileOnlySpec {
     //#websocket-example-using-core
     import akka.actor.ActorSystem
     import akka.stream.ActorMaterializer
@@ -64,8 +64,7 @@ class WebSocketExampleSpec extends WordSpec with Matchers {
       .flatMap(_.unbind()) // trigger unbinding from the port
       .onComplete(_ => system.terminate()) // and shutdown when done
   }
-  "routing-example" in {
-    pending // compile-time only test
+  "routing-example" in compileOnlySpec {
     import akka.actor.ActorSystem
     import akka.stream.ActorMaterializer
     import akka.stream.scaladsl.{ Source, Flow }
