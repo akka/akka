@@ -61,10 +61,18 @@ object AeronSource {
 /**
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
  */
-class AeronSource(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRunner, pool: EnvelopeBufferPool)
+class AeronSource(
+  channel:        String,
+  streamId:       Int,
+  aeron:          Aeron,
+  taskRunner:     TaskRunner,
+  pool:           EnvelopeBufferPool,
+  flightRecorder: EventSink
+)
   extends GraphStage[SourceShape[EnvelopeBuffer]] {
   import AeronSource._
   import TaskRunner._
+  import FlightRecorderEvents._
 
   val out: Outlet[EnvelopeBuffer] = Outlet("AeronSource")
   override val shape: SourceShape[EnvelopeBuffer] = SourceShape(out)
@@ -85,9 +93,16 @@ class AeronSource(channel: String, streamId: Int, aeron: Aeron, taskRunner: Task
       private val messageHandler = new MessageHandler(pool)
       private val addPollTask: Add = Add(pollTask(sub, messageHandler, getAsyncCallback(onMessage)))
 
+      private val channelMetadata = channel.getBytes("US-ASCII")
+
+      override def preStart(): Unit = {
+        flightRecorder.loFreq(AeronSource_Started, channelMetadata)
+      }
+
       override def postStop(): Unit = {
         sub.close()
         taskRunner.command(Remove(addPollTask.task))
+        flightRecorder.loFreq(AeronSource_Stopped, channelMetadata)
       }
 
       // OutHandler
@@ -115,12 +130,14 @@ class AeronSource(channel: String, streamId: Int, aeron: Aeron, taskRunner: Task
             subscriberLoop() // recursive
           } else {
             // delegate backoff to shared TaskRunner
+            flightRecorder.hiFreq(AeronSource_DelegateToTaskRunner, 0)
             taskRunner.command(addPollTask)
           }
         }
       }
 
       private def onMessage(data: EnvelopeBuffer): Unit = {
+        flightRecorder.hiFreq(AeronSource_Received, data.byteBuffer.limit)
         push(out, data)
       }
 

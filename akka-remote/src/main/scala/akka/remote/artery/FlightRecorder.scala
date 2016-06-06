@@ -3,9 +3,10 @@
  */
 package akka.remote.artery
 
-import java.io.RandomAccessFile
+import java.io.{ File, RandomAccessFile }
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.nio.channels.FileChannel
+import java.nio.file.StandardOpenOption
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.util.ByteString
@@ -27,6 +28,16 @@ private[remote] trait EventSink {
 
 /**
  * INTERNAL API
+ */
+private[remote] object IgnoreEventSink extends EventSink {
+  override def alert(code: Int, metadata: Array[Byte]): Unit = ()
+  override def loFreq(code: Int, metadata: Array[Byte]): Unit = ()
+  override def flushHiFreqBatch(): Unit = ()
+  override def hiFreq(code: Long, param: Long): Unit = ()
+}
+
+/**
+ * INTERNAL API
  *
  * Update clock at various resolutions and aquire the resulting timestamp.
  */
@@ -35,8 +46,8 @@ private[remote] trait EventClock {
   def updateWallClock(): Unit
   def updateHighSpeedClock(): Unit
 
-  def getWallClockPart: Long
-  def getHighSpeedPart: Long
+  def wallClockPart: Long
+  def highSpeedPart: Long
 
 }
 
@@ -64,8 +75,8 @@ private[remote] class EventClockImpl extends EventClock {
     highSpeedClock = System.nanoTime() - highSpeedClockOffset
   }
 
-  override def getWallClockPart: Long = wallClock
-  override def getHighSpeedPart: Long = highSpeedClock
+  override def wallClockPart: Long = wallClock
+  override def highSpeedPart: Long = highSpeedClock
 }
 
 /**
@@ -93,11 +104,11 @@ private[remote] object RollingEventLogSection {
  * INTERNAL API
  */
 private[remote] class RollingEventLogSection(
-  fileChannel: FileChannel,
-  offset: Long,
-  entryCount: Long,
+  fileChannel:   FileChannel,
+  offset:        Long,
+  entryCount:    Long,
   logBufferSize: Long,
-  recordSize: Int) extends AtomicBoolean {
+  recordSize:    Int) {
   import RollingEventLogSection._
 
   // FIXME: check if power of two
@@ -150,6 +161,16 @@ private[remote] class RollingEventLogSection(
  * INTERNAL API
  */
 private[remote] object FlightRecorder {
+
+  def prepareFileForFlightRecorder(file: File): FileChannel = {
+    // Force the size, otherwise memory mapping will fail on *nixes
+    val randomAccessFile = new RandomAccessFile(file, "rwd")
+    randomAccessFile.setLength(FlightRecorder.TotalSize)
+    randomAccessFile.close()
+
+    FileChannel.open(file.toPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ)
+  }
+
   val Alignment = 64 * 1024 // Windows is picky about mapped section alignments
 
   val MagicString = 0x31524641 // "AFR1", little-endian
@@ -288,11 +309,14 @@ private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicB
     private def prepareRichRecord(recordBuffer: ByteBuffer, code: Int, metadata: Array[Byte]): Unit = {
       recordBuffer.clear()
       // FIXME: This is a bit overkill, needs some smarter scheme later, no need to always store the wallclock
-      recordBuffer.putLong(clock.getWallClockPart)
-      recordBuffer.putLong(clock.getHighSpeedPart)
+      recordBuffer.putLong(clock.wallClockPart)
+      recordBuffer.putLong(clock.highSpeedPart)
       recordBuffer.putInt(code)
-      recordBuffer.put(metadata.length.toByte)
-      recordBuffer.put(metadata)
+      // Truncate if necessary
+      val metadataLength = math.min(LoFreqRecordSize - 32, metadata.length)
+      recordBuffer.put(metadataLength.toByte)
+      if (metadataLength > 0)
+        recordBuffer.put(metadata, 0, metadataLength)
       // Don't flip here! We always write fixed size records
       recordBuffer.position(0)
     }
@@ -313,8 +337,8 @@ private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicB
       clock.updateHighSpeedClock()
       // Header of the batch will contain our most accurate knowledge of the clock, individual entries do not
       // contain any timestamp
-      hiFreqBatchBuffer.putLong(clock.getWallClockPart)
-      hiFreqBatchBuffer.putLong(clock.getHighSpeedPart)
+      hiFreqBatchBuffer.putLong(clock.wallClockPart)
+      hiFreqBatchBuffer.putLong(clock.highSpeedPart)
       // Leave space for the size field
       hiFreqBatchBuffer.putLong(0L)
       // Reserved for now
