@@ -77,14 +77,20 @@ private object PoolFlow {
       import GraphDSL.Implicits._
 
       val conductor = b.add(PoolConductor(maxConnections, pipeliningLimit, log))
-      val slots = Vector
-        .tabulate(maxConnections)(PoolSlot(_, connectionFlow, settings))
-        .map(b.add)
+      //The difference between hot and cold slots:
+      // - hot: should be kept alive, the number is based on "minConnections" from settings
+      // - cold: hold ordinary connection that might be killed, the number is "maxConnections" - "minConnections"
+      val hotSlots = Vector
+        .tabulate(minConnections)(PoolSlot(_, connectionFlow, settings, isHotConnection = true))
+      val coldSlots = Vector
+        .tabulate(maxConnections - minConnections)(PoolSlot(_, connectionFlow, settings, isHotConnection = false))
+      val allSlots = (hotSlots ++ coldSlots).map(b.add)
+
       val responseMerge = b.add(Merge[ResponseContext](maxConnections))
       val slotEventMerge = b.add(Merge[PoolSlot.RawSlotEvent](maxConnections))
 
       slotEventMerge.out ~> conductor.slotEventIn
-      for ((slot, ix) ← slots.zipWithIndex) {
+      for ((slot, ix) ← allSlots.zipWithIndex) {
         conductor.slotOuts(ix) ~> slot.in
         slot.out0 ~> responseMerge.in(ix)
         slot.out1 ~> slotEventMerge.in(ix)

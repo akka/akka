@@ -14,6 +14,7 @@ import akka.http.impl.util.JavaMapping.Implicits._
  */
 abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSettingsImpl ⇒
   def getMaxConnections: Int
+  def getMinConnections: Int
   def getMaxRetries: Int
   def getMaxOpenRequests: Int
   def getPipeliningLimit: Int

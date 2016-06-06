@@ -228,6 +228,36 @@ class ConnectionPoolSpec extends AkkaSpec("""
       acceptIncomingConnection()
       val (Success(_), 42) = responseOut.expectNext()
     }
+
+    "never close hot connections when minConnections key is given and >0" in new TestSetup() {
+      // for lower bound of one connection
+      val minOneConnection = 1
+      val (_, _, _, hcpMinOneConnection) = cachedHostConnectionPool[Int](idleTimeout = 100.millis, minConnections = minOneConnection)
+      val gatewayOneConnection = hcpMinOneConnection.gateway
+
+      condHolds(1200.millis) { () ⇒
+        Await.result(gatewayOneConnection.poolStatus(), 300.millis).get shouldBe a[PoolInterfaceRunning]
+      }
+
+      // for lower bound of five connections
+      val minFiveConnections = 5
+      val (_, _, _, hcpMinFiveConnection) = cachedHostConnectionPool[Int](
+        idleTimeout = 100.millis,
+        minConnections = minFiveConnections,
+        maxConnections = minFiveConnections + 1)
+
+      val gatewayFiveConnections = hcpMinFiveConnection.gateway
+      condHolds(1200.millis) { () ⇒
+        Await.result(gatewayFiveConnections.poolStatus(), 300.millis).get shouldBe a[PoolInterfaceRunning]
+      }
+    }
+
+    "shutdown if idle and min connection has been set to 0" in new TestSetup() {
+      val (_, _, _, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second, minConnections = 0)
+      val gateway = hcp.gateway
+      Await.result(gateway.poolStatus(), 1500.millis).get shouldBe a[PoolInterfaceRunning]
+      awaitCond({ Await.result(gateway.poolStatus(), 1500.millis).isEmpty }, 2000.millis)
+    }
   }
 
   "The single-request client infrastructure" should {
@@ -325,24 +355,26 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
     def cachedHostConnectionPool[T](
       maxConnections:  Int                      = 2,
+      minConnections:  Int                      = 0,
       maxRetries:      Int                      = 2,
       maxOpenRequests: Int                      = 8,
       pipeliningLimit: Int                      = 1,
       idleTimeout:     Duration                 = 5.seconds,
       ccSettings:      ClientConnectionSettings = ClientConnectionSettings(system)) = {
-      val settings = new ConnectionPoolSettingsImpl(maxConnections, maxRetries, maxOpenRequests, pipeliningLimit,
+      val settings = new ConnectionPoolSettingsImpl(maxConnections, minConnections, maxRetries, maxOpenRequests, pipeliningLimit,
         idleTimeout, ClientConnectionSettings(system))
       flowTestBench(Http().cachedHostConnectionPool[T](serverHostName, serverPort, settings))
     }
 
     def superPool[T](
       maxConnections:  Int                      = 2,
+      minConnections:  Int                      = 0,
       maxRetries:      Int                      = 2,
       maxOpenRequests: Int                      = 8,
       pipeliningLimit: Int                      = 1,
       idleTimeout:     Duration                 = 5.seconds,
       ccSettings:      ClientConnectionSettings = ClientConnectionSettings(system)) = {
-      val settings = new ConnectionPoolSettingsImpl(maxConnections, maxRetries, maxOpenRequests, pipeliningLimit,
+      val settings = new ConnectionPoolSettingsImpl(maxConnections, minConnections, maxRetries, maxOpenRequests, pipeliningLimit,
         idleTimeout, ClientConnectionSettings(system))
       flowTestBench(Http().superPool[T](settings = settings))
     }
@@ -357,6 +389,22 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
     def connNr(r: HttpResponse): Int = r.headers.find(_ is "conn-nr").get.value.toInt
     def requestUri(r: HttpResponse): String = r.headers.find(_ is "req-uri").get.value
+
+    /**
+     * Makes sure the given condition "f" holds in the timer period of "in".
+     * The given condition function should throw if not met.
+     * Note: Execution of "condHolds" will take at least "in" time, so for big "in" it might drain the ime budget for tests.
+     */
+    def condHolds[T](in: FiniteDuration)(f: () ⇒ T): T = {
+      val end = System.nanoTime.nanos + in
+
+      var lastR = f()
+      while (System.nanoTime.nanos < end) {
+        lastR = f()
+        Thread.sleep(50)
+      }
+      lastR
+    }
   }
 
   case class ConnNrHeader(nr: Int) extends CustomHeader {
