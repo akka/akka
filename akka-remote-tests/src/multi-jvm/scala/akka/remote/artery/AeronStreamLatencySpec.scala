@@ -200,7 +200,7 @@ abstract class AeronStreamLatencySpec
       val killSwitch = KillSwitches.shared(testName)
       val started = TestProbe()
       val startMsg = "0".getBytes("utf-8")
-      Source.fromGraph(new AeronSource(channel(first), streamId, aeron, taskRunner, pool))
+      Source.fromGraph(new AeronSource(channel(first), streamId, aeron, taskRunner, pool, IgnoreEventSink))
         .via(killSwitch.flow)
         .runForeach { envelope ⇒
           val bytes = ByteString.fromByteBuffer(envelope.byteBuffer)
@@ -228,7 +228,7 @@ abstract class AeronStreamLatencySpec
           envelope
         }
           .throttle(1, 200.milliseconds, 1, ThrottleMode.Shaping)
-          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpSendAfter))
+          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpSendAfter, IgnoreEventSink))
         started.expectMsg(Done)
       }
 
@@ -246,7 +246,7 @@ abstract class AeronStreamLatencySpec
             sendTimes.set(n - 1, System.nanoTime())
             envelope
           }
-          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpSendAfter))
+          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpSendAfter, IgnoreEventSink))
 
         barrier.await((totalMessages / messageRate) + 10, SECONDS)
       }
@@ -264,8 +264,8 @@ abstract class AeronStreamLatencySpec
     "start echo" in {
       runOn(second) {
         // just echo back
-        Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool))
-          .runWith(new AeronSink(channel(first), streamId, aeron, taskRunner, pool, giveUpSendAfter))
+        Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool, IgnoreEventSink))
+          .runWith(new AeronSink(channel(first), streamId, aeron, taskRunner, pool, giveUpSendAfter, IgnoreEventSink))
       }
       enterBarrier("echo-started")
     }

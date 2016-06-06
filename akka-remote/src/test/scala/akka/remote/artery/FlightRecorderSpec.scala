@@ -144,6 +144,21 @@ class FlightRecorderSpec extends AkkaSpec {
       entries.sortBy(_.code) should ===(entries.sortBy(_.timeStamp))
     }
 
+    "properly truncate low frequency event metadata if necessary" in withFlightRecorder { (recorder, reader, channel) ⇒
+      val sink = recorder.createEventSink()
+      val longMetadata = Array.ofDim[Byte](1024)
+
+      sink.loFreq(0, longMetadata)
+      channel.force(false)
+
+      reader.rereadStructure()
+      val entries = reader.structure.loFreqLog.logs(0).richEntries.toSeq
+
+      entries.size should ===(1)
+      entries.head.metadata should ===(Array.ofDim[Byte](FlightRecorder.LoFreqRecordSize - 32))
+
+    }
+
     "properly store high frequency events" in withFlightRecorder { (recorder, reader, channel) ⇒
       val EffectiveHighFreqWindow = FlightRecorder.HiFreqWindow * FlightRecorder.HiFreqBatchSize
       val sink = recorder.createEventSink()
