@@ -44,7 +44,7 @@ class InboundControlJunctionSpec extends AkkaSpec with ImplicitSender {
       val ((upstream, controlSubject), downstream) = TestSource.probe[AnyRef]
         .map(msg ⇒ InboundEnvelope(recipient, addressB.address, msg, OptionVal.None, addressA.uid))
         .viaMat(new InboundControlJunction)(Keep.both)
-        .map { case InboundEnvelope(_, _, msg, _, _) ⇒ msg }
+        .map { case env: InboundEnvelope ⇒ env.message }
         .toMat(TestSink.probe[Any])(Keep.both)
         .run()
 

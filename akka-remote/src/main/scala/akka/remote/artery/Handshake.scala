@@ -166,23 +166,25 @@ private[akka] class InboundHandshake(inboundContext: InboundContext, inControlSt
       if (inControlStream)
         setHandler(in, new InHandler {
           override def onPush(): Unit = {
-            grab(in) match {
-              case InboundEnvelope(_, _, HandshakeReq(from), _, _) ⇒
-                onHandshakeReq(from)
-              case InboundEnvelope(_, _, HandshakeRsp(from), _, _) ⇒
+            val env = grab(in)
+            env.message match {
+              case HandshakeReq(from) ⇒ onHandshakeReq(from)
+              case HandshakeRsp(from) ⇒
                 inboundContext.completeHandshake(from)
                 pull(in)
-              case other ⇒ onMessage(other)
+              case _ ⇒
+                onMessage(env)
             }
           }
         })
       else
         setHandler(in, new InHandler {
           override def onPush(): Unit = {
-            grab(in) match {
-              case InboundEnvelope(_, _, HandshakeReq(from), _, _) ⇒
-                onHandshakeReq(from)
-              case other ⇒ onMessage(other)
+            val env = grab(in)
+            env.message match {
+              case HandshakeReq(from) ⇒ onHandshakeReq(from)
+              case _ ⇒
+                onMessage(env)
             }
           }
         })

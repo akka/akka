@@ -105,7 +105,7 @@ private[akka] class InboundControlJunction
       // InHandler
       override def onPush(): Unit = {
         grab(in) match {
-          case env @ InboundEnvelope(_, _, _: ControlMessage, _, _) ⇒
+          case env: InboundEnvelope if env.message.isInstanceOf[ControlMessage] ⇒
             observers.foreach(_.notify(env))
             pull(in)
           case env ⇒

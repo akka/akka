@@ -78,15 +78,82 @@ import scala.collection.JavaConverters._
 import akka.stream.ActorMaterializerSettings
 import scala.annotation.tailrec
 import akka.util.OptionVal
+
 /**
  * INTERNAL API
  */
-private[akka] final case class InboundEnvelope(
-  recipient:        InternalActorRef,
-  recipientAddress: Address,
-  message:          AnyRef,
-  senderOption:     OptionVal[ActorRef],
-  originUid:        Long)
+private[akka] object InboundEnvelope {
+  def apply(
+    recipient:        InternalActorRef,
+    recipientAddress: Address,
+    message:          AnyRef,
+    senderOption:     OptionVal[ActorRef],
+    originUid:        Long): InboundEnvelope = {
+    val env = new ReusableInboundEnvelope
+    env.init(recipient, recipientAddress, message, senderOption, originUid)
+    env
+  }
+
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] trait InboundEnvelope {
+  def recipient: InternalActorRef
+  def recipientAddress: Address
+  def message: AnyRef
+  def senderOption: OptionVal[ActorRef]
+  def originUid: Long
+
+  def withMessage(message: AnyRef): InboundEnvelope
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] final class ReusableInboundEnvelope extends InboundEnvelope {
+  private var _recipient: InternalActorRef = null
+  private var _recipientAddress: Address = null
+  private var _message: AnyRef = null
+  private var _senderOption: OptionVal[ActorRef] = OptionVal.None
+  private var _originUid: Long = 0L
+
+  override def recipient: InternalActorRef = _recipient
+  override def recipientAddress: Address = _recipientAddress
+  override def message: AnyRef = _message
+  override def senderOption: OptionVal[ActorRef] = _senderOption
+  override def originUid: Long = _originUid
+
+  override def withMessage(message: AnyRef): InboundEnvelope = {
+    _message = message
+    this
+  }
+
+  def clear(): Unit = {
+    _recipient = null
+    _recipientAddress = null
+    _message = null
+    _senderOption = OptionVal.None
+    _originUid = 0L
+  }
+
+  def init(
+    recipient:        InternalActorRef,
+    recipientAddress: Address,
+    message:          AnyRef,
+    senderOption:     OptionVal[ActorRef],
+    originUid:        Long): Unit = {
+    _recipient = recipient
+    _recipientAddress = recipientAddress
+    _message = message
+    _senderOption = senderOption
+    _originUid = originUid
+  }
+
+  override def toString: String =
+    s"InboundEnvelope($recipient, $recipientAddress, $message, $senderOption, $originUid)"
+}
 
 /**
  * INTERNAL API
@@ -316,8 +383,12 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val maxRestarts = 5 // FIXME config
   private val restartCounter = new RestartCounter(maxRestarts, restartTimeout)
 
-  val envelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
-  val largeEnvelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumLargeFrameSize, ArteryTransport.MaximumPooledBuffers)
+  private val envelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
+  private val largeEnvelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumLargeFrameSize, ArteryTransport.MaximumPooledBuffers)
+
+  private val inboundEnvelopePool = new ObjectPool[InboundEnvelope](
+    16,
+    create = () ⇒ new ReusableInboundEnvelope, clear = inEnvelope ⇒ inEnvelope.asInstanceOf[ReusableInboundEnvelope].clear())
 
   val (afrFileChannel, afrFlie, flightRecorder) = initializeFlightRecorder()
 
@@ -532,11 +603,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           .run()(materializer)
       }
 
-    aeronSource(largeStreamId, largeEnvelopePool)
-      .via(inboundLargeFlow)
-      .toMat(inboundSink)(Keep.right)
-      .run()(materializer)
-
     attachStreamRestart("Inbound large message stream", completed, () ⇒ runInboundLargeMessagesStream())
   }
 
@@ -664,8 +730,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
   }
 
-  def createEncoder(pool: EnvelopeBufferPool): Flow[Send, EnvelopeBuffer, NotUsed] =
-    Flow.fromGraph(new Encoder(localAddress, system, compression, pool))
+  def createEncoder(bufferPool: EnvelopeBufferPool): Flow[Send, EnvelopeBuffer, NotUsed] =
+    Flow.fromGraph(new Encoder(localAddress, system, compression, bufferPool))
 
   def encoder: Flow[Send, EnvelopeBuffer, NotUsed] = createEncoder(envelopePool)
 
@@ -675,12 +741,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   val messageDispatcherSink: Sink[InboundEnvelope, Future[Done]] = Sink.foreach[InboundEnvelope] { m ⇒
     messageDispatcher.dispatch(m.recipient, m.recipientAddress, m.message, m.senderOption)
+    inboundEnvelopePool.release(m)
   }
 
-  def createDecoder(pool: EnvelopeBufferPool): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
+  def createDecoder(bufferPool: EnvelopeBufferPool): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
     val resolveActorRefWithLocalAddress: String ⇒ InternalActorRef =
       recipient ⇒ provider.resolveActorRefWithLocalAddress(recipient, localAddress.address)
-    Flow.fromGraph(new Decoder(localAddress, system, resolveActorRefWithLocalAddress, compression, pool))
+    Flow.fromGraph(new Decoder(localAddress, system, resolveActorRefWithLocalAddress, compression, bufferPool,
+      inboundEnvelopePool))
   }
 
   def decoder: Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = createDecoder(envelopePool)
