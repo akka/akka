@@ -5,36 +5,48 @@
 package docs.http.scaladsl
 
 import akka.actor.{ ActorLogging, ActorSystem }
-import akka.stream.{ ActorMaterializerSettings }
 import akka.util.ByteString
+import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
 
-class HttpClientExampleSpec extends WordSpec with Matchers {
+class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
 
-  "outgoing-connection-example" in {
-    pending // compile-time only test
+  "outgoing-connection-example" in compileOnlySpec {
     //#outgoing-connection-example
+    import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model._
     import akka.stream.ActorMaterializer
     import akka.stream.scaladsl._
 
     import scala.concurrent.Future
+    import scala.util.{ Failure, Success }
 
-    implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
+    object WebClient {
+      def main(args: Array[String]): Unit = {
+        implicit val system = ActorSystem()
+        implicit val materializer = ActorMaterializer()
+        implicit val executionContext = system.dispatcher
 
-    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-      Http().outgoingConnection("akka.io")
-    val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = "/"))
-        .via(connectionFlow)
-        .runWith(Sink.head)
+        val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+          Http().outgoingConnection("akka.io")
+        val responseFuture: Future[HttpResponse] =
+          Source.single(HttpRequest(uri = "/"))
+            .via(connectionFlow)
+            .runWith(Sink.head)
+
+        responseFuture.andThen {
+          case Success(_) => println("request succeded")
+          case Failure(_) => println("request failed")
+        }.andThen {
+          case _ => system.terminate()
+        }
+      }
+    }
     //#outgoing-connection-example
   }
 
-  "host-level-example" in {
-    pending // compile-time only test
+  "host-level-example" in compileOnlySpec {
     //#host-level-example
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model._
@@ -55,8 +67,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers {
     //#host-level-example
   }
 
-  "single-request-example" in {
-    pending // compile-time only test
+  "single-request-example" in compileOnlySpec {
     //#single-request-example
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model._
@@ -72,8 +83,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers {
     //#single-request-example
   }
 
-  "single-request-in-actor-example" in {
-    pending // compile-time only test
+  "single-request-in-actor-example" in compileOnlySpec {
     //#single-request-in-actor-example
     import akka.actor.Actor
     import akka.http.scaladsl.Http

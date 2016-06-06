@@ -8,8 +8,6 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.server.Directives
 import org.scalatest.{ Matchers, WordSpec }
 
-import scala.concurrent.Future
-
 class SprayJsonExampleSpec extends WordSpec with Matchers {
 
   def compileOnlySpec(body: => Unit) = ()
@@ -53,6 +51,7 @@ class SprayJsonExampleSpec extends WordSpec with Matchers {
   "second-spray-json-example" in compileOnlySpec {
     //#second-spray-json-example
     import akka.actor.ActorSystem
+    import akka.http.scaladsl.Http
     import akka.stream.ActorMaterializer
     import akka.Done
     import akka.http.scaladsl.server.Route
@@ -60,6 +59,10 @@ class SprayJsonExampleSpec extends WordSpec with Matchers {
     import akka.http.scaladsl.model.StatusCodes
     import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
     import spray.json.DefaultJsonProtocol._
+
+    import scala.io.StdIn
+
+    import scala.concurrent.Future
 
     object WebServer {
 
@@ -80,6 +83,8 @@ class SprayJsonExampleSpec extends WordSpec with Matchers {
         // needed to run the route
         implicit val system = ActorSystem()
         implicit val materializer = ActorMaterializer()
+        // needed for the future map/flatmap in the end
+        implicit val executionContext = system.dispatcher
 
         val route: Route =
           get {
@@ -103,6 +108,13 @@ class SprayJsonExampleSpec extends WordSpec with Matchers {
                 }
               }
             }
+
+        val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
+        println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
+        StdIn.readLine() // let it run until user presses return
+        bindingFuture
+          .flatMap(_.unbind()) // trigger unbinding from the port
+          .onComplete(_ ⇒ system.terminate()) // and shutdown when done
 
       }
     }
