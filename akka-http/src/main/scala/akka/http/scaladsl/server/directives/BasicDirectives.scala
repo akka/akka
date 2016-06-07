@@ -296,11 +296,11 @@ trait BasicDirectives {
   def extractRequestEntity: Directive1[RequestEntity] = BasicDirectives._extractRequestEntity
 
   /**
-   * Extracts the [[akka.stream.scaladsl.Source]] from the [[akka.http.scaladsl.server.RequestContext]].
+   * Extracts the entities `dataBytes` [[akka.stream.scaladsl.Source]] from the [[akka.http.scaladsl.server.RequestContext]].
    *
    * @group basic
    */
-  def extractData: Directive1[Source[ByteString, Any]] = BasicDirectives._extractDataBytes
+  def extractDataBytes: Directive1[Source[ByteString, Any]] = BasicDirectives._extractDataBytes
 }
 
 object BasicDirectives extends BasicDirectives {

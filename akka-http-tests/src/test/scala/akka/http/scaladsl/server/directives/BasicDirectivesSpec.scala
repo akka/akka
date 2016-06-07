@@ -31,11 +31,11 @@ class BasicDirectivesSpec extends RoutingSpec {
     }
   }
 
-  "The `extractData` directive" should {
+  "The `extractDataBytes` directive" should {
     "extract stream of ByteString from the RequestContext" in {
-      val dataBytes = Source.fromIterator(() ⇒ Iterator.range(1, 10) map (x ⇒ ByteString(x + "")))
+      val dataBytes = Source.fromIterator(() ⇒ Iterator.range(1, 10).map(x ⇒ ByteString(x.toString)))
       Post("/abc", HttpEntity(ContentTypes.`text/plain(UTF-8)`, data = dataBytes)) ~> {
-        extractData { data ⇒
+        extractDataBytes { data ⇒
           val sum = data.runFold(0) { (acc, i) ⇒ acc + i.utf8String.toInt }
           onSuccess(sum) { s ⇒
             complete(HttpResponse(entity = HttpEntity(s.toString)))

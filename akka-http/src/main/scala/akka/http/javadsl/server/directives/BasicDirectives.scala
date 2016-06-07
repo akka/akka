@@ -272,9 +272,9 @@ abstract class BasicDirectives {
   }
 
   /**
-   * Extracts the [[akka.stream.javadsl.Source]] from the [[akka.http.javadsl.server.RequestContext]].
+   * Extracts the entities `dataBytes` [[akka.stream.javadsl.Source]] from the [[akka.http.javadsl.server.RequestContext]].
    */
-  def extractData(inner: JFunction[Source[ByteString, Any], Route]) = RouteAdapter {
+  def extractDataBytes(inner: JFunction[Source[ByteString, Any], Route]) = RouteAdapter {
     D.extractRequest { ctx ⇒ inner.apply(ctx.entity.dataBytes.asJava).delegate }
   }
 
