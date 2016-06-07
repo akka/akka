@@ -160,7 +160,7 @@ object AeronStreamsApp {
     var t0 = System.nanoTime()
     var count = 0L
     var payloadSize = 0L
-    Source.fromGraph(new AeronSource(channel1, streamId, aeron, taskRunner, pool))
+    Source.fromGraph(new AeronSource(channel1, streamId, aeron, taskRunner, pool, IgnoreEventSink))
       .map { envelope ⇒
         r.onMessage(1, envelope.byteBuffer.limit)
         envelope
@@ -202,19 +202,19 @@ object AeronStreamsApp {
         envelope.byteBuffer.flip()
         envelope
       }
-      .runWith(new AeronSink(channel1, streamId, aeron, taskRunner, pool, giveUpSendAfter))
+      .runWith(new AeronSink(channel1, streamId, aeron, taskRunner, pool, giveUpSendAfter, IgnoreEventSink))
   }
 
   def runEchoReceiver(): Unit = {
     // just echo back on channel2
     reporterExecutor.execute(reporter)
     val r = reporter
-    Source.fromGraph(new AeronSource(channel1, streamId, aeron, taskRunner, pool))
+    Source.fromGraph(new AeronSource(channel1, streamId, aeron, taskRunner, pool, IgnoreEventSink))
       .map { envelope ⇒
         r.onMessage(1, envelope.byteBuffer.limit)
         envelope
       }
-      .runWith(new AeronSink(channel2, streamId, aeron, taskRunner, pool, giveUpSendAfter))
+      .runWith(new AeronSink(channel2, streamId, aeron, taskRunner, pool, giveUpSendAfter, IgnoreEventSink))
   }
 
   def runEchoSender(): Unit = {
@@ -226,7 +226,7 @@ object AeronStreamsApp {
     var repeat = 3
     val count = new AtomicInteger
     var t0 = System.nanoTime()
-    Source.fromGraph(new AeronSource(channel2, streamId, aeron, taskRunner, pool))
+    Source.fromGraph(new AeronSource(channel2, streamId, aeron, taskRunner, pool, IgnoreEventSink))
       .map { envelope ⇒
         r.onMessage(1, envelope.byteBuffer.limit)
         envelope
@@ -265,7 +265,7 @@ object AeronStreamsApp {
           envelope.byteBuffer.flip()
           envelope
         }
-        .runWith(new AeronSink(channel1, streamId, aeron, taskRunner, pool, giveUpSendAfter))
+        .runWith(new AeronSink(channel1, streamId, aeron, taskRunner, pool, giveUpSendAfter, IgnoreEventSink))
 
       barrier.await()
     }
@@ -275,7 +275,7 @@ object AeronStreamsApp {
 
   def runDebugReceiver(): Unit = {
     import system.dispatcher
-    Source.fromGraph(new AeronSource(channel1, streamId, aeron, taskRunner, pool))
+    Source.fromGraph(new AeronSource(channel1, streamId, aeron, taskRunner, pool, IgnoreEventSink))
       .map { envelope ⇒
         val bytes = Array.ofDim[Byte](envelope.byteBuffer.limit)
         envelope.byteBuffer.get(bytes)
@@ -304,7 +304,7 @@ object AeronStreamsApp {
         envelope.byteBuffer.flip()
         envelope
       }
-      .runWith(new AeronSink(channel1, streamId, aeron, taskRunner, pool, giveUpSendAfter))
+      .runWith(new AeronSink(channel1, streamId, aeron, taskRunner, pool, giveUpSendAfter, IgnoreEventSink))
   }
 
   def runStats(): Unit = {

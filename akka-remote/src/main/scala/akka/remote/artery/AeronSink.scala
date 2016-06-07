@@ -70,10 +70,19 @@ object AeronSink {
 /**
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
  */
-class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRunner, pool: EnvelopeBufferPool, giveUpSendAfter: Duration)
+class AeronSink(
+  channel:         String,
+  streamId:        Int,
+  aeron:           Aeron,
+  taskRunner:      TaskRunner,
+  pool:            EnvelopeBufferPool,
+  giveUpSendAfter: Duration,
+  flightRecorder:  EventSink
+)
   extends GraphStageWithMaterializedValue[SinkShape[EnvelopeBuffer], Future[Done]] {
   import AeronSink._
   import TaskRunner._
+  import FlightRecorderEvents._
 
   val in: Inlet[EnvelopeBuffer] = Inlet("AeronSink")
   override val shape: SinkShape[EnvelopeBuffer] = SinkShape(in)
@@ -96,15 +105,22 @@ class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRu
 
       private var offerTaskInProgress = false
 
+      private val channelMetadata = channel.getBytes("US-ASCII")
+
       override def preStart(): Unit = {
         setKeepGoing(true)
         pull(in)
+        // TODO: Identify different sinks!
+        flightRecorder.loFreq(AeronSink_Started, channelMetadata)
       }
 
       override def postStop(): Unit = {
         taskRunner.command(Remove(addOfferTask.task))
+        flightRecorder.loFreq(AeronSink_TaskRunnerRemoved, channelMetadata)
         pub.close()
+        flightRecorder.loFreq(AeronSink_PublicationClosed, channelMetadata)
         completed.complete(completedValue)
+        flightRecorder.loFreq(AeronSink_Stopped, channelMetadata)
       }
 
       // InHandler
@@ -112,6 +128,7 @@ class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRu
         envelopeInFlight = grab(in)
         backoffCount = spinning
         lastMsgSize = envelopeInFlight.byteBuffer.limit
+        flightRecorder.hiFreq(AeronSink_EnvelopeGrabbed, lastMsgSize)
         publish()
       }
 
@@ -130,6 +147,7 @@ class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRu
             offerTask.buffer = envelopeInFlight.aeronBuffer
             offerTask.msgSize = lastMsgSize
             taskRunner.command(addOfferTask)
+            flightRecorder.hiFreq(AeronSink_DelegateToTaskRunner, lastMsgSize)
           }
         } else {
           onOfferSuccess()
@@ -137,6 +155,7 @@ class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRu
       }
 
       private def onOfferSuccess(): Unit = {
+        flightRecorder.hiFreq(AeronSink_EnvelopeOffered, lastMsgSize)
         offerTaskInProgress = false
         pool.release(envelopeInFlight)
         offerTask.buffer = null
@@ -151,6 +170,7 @@ class AeronSink(channel: String, streamId: Int, aeron: Aeron, taskRunner: TaskRu
       private def onGiveUp(): Unit = {
         offerTaskInProgress = false
         val cause = new GaveUpSendingException(s"Gave up sending message to $channel after $giveUpSendAfter.")
+        flightRecorder.alert(AeronSink_GaveUpEnvelope, cause.getMessage.getBytes("US-ASCII"))
         completedValue = Failure(cause)
         failStage(cause)
       }
