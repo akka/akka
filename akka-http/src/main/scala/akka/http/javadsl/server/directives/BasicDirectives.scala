@@ -10,6 +10,8 @@ import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.settings.ParserSettings
 import akka.http.javadsl.settings.RoutingSettings
 import akka.japi.Util
+import akka.stream.javadsl.Source
+import akka.util.ByteString
 
 import scala.concurrent.ExecutionContextExecutor
 import akka.http.impl.model.JavaUri
@@ -184,7 +186,7 @@ abstract class BasicDirectives {
    * Extracts the current http request entity.
    */
   @CorrespondsTo("extract")
-  def extractEntity(inner: java.util.function.Function[RequestEntity, Route]): Route = RouteAdapter {
+  def extractEntity(inner: JFunction[RequestEntity, Route]): Route = RouteAdapter {
     D.extractRequest { rq ⇒
       inner.apply(rq.entity).delegate
     }
@@ -268,5 +270,17 @@ abstract class BasicDirectives {
   def extractRequestContext(inner: JFunction[RequestContext, Route]) = RouteAdapter {
     D.extractRequestContext { ctx ⇒ inner.apply(JavaMapping.toJava(ctx)(server.RoutingJavaMapping.RequestContext)).delegate }
   }
+
+  /**
+   * Extracts the entities `dataBytes` [[akka.stream.javadsl.Source]] from the [[akka.http.javadsl.server.RequestContext]].
+   */
+  def extractDataBytes(inner: JFunction[Source[ByteString, Any], Route]) = RouteAdapter {
+    D.extractRequest { ctx ⇒ inner.apply(ctx.entity.dataBytes.asJava).delegate }
+  }
+
+  /**
+   * Extracts the [[akka.http.javadsl.model.RequestEntity]] from the [[akka.http.javadsl.server.RequestContext]].
+   */
+  def extractRequestEntity(inner: JFunction[RequestEntity, Route]): Route = extractEntity(inner)
 
 }

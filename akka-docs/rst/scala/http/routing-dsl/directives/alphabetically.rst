@@ -47,6 +47,7 @@ Directive                                   Description
                                             via the ``Accept-Encoding`` header (from a user-defined set)
 :ref:`-entity-`                             Extracts the request entity unmarshalled to a given type
 :ref:`-extract-`                            Extracts a single value using a ``RequestContext ⇒ T`` function
+:ref:`-extractDataBytes-`                   Extracts the entities data bytes as a stream ``Source[ByteString, Any]``
 :ref:`-extractClientIP-`                    Extracts the client's IP from either the ``X-Forwarded-``,
                                             ``Remote-Address`` or ``X-Real-IP`` header
 :ref:`-extractCredentials-`                 Extracts the potentially present ``HttpCredentials`` provided with the
@@ -58,6 +59,7 @@ Directive                                   Description
 :ref:`-extractMethod-`                      Extracts the request method
 :ref:`-extractRequest-`                     Extracts the current ``HttpRequest`` instance
 :ref:`-extractRequestContext-`              Extracts the ``RequestContext`` itself
+:ref:`-extractRequestEntity-`               Extracts the ``RequestEntity`` from the ``RequestContext``
 :ref:`-extractScheme-`                      Extracts the URI scheme from the request
 :ref:`-extractSettings-`                    Extracts the ``RoutingSettings`` from the ``RequestContext``
 :ref:`-extractUnmatchedPath-`               Extracts the yet unmatched path from the ``RequestContext``
