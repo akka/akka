@@ -553,11 +553,11 @@ private[stream] class ActorGraphInterpreter(_initial: GraphInterpreterShell) ext
   private val eventLimit: Int = _initial.mat.settings.syncProcessingLimit
   private var currentLimit: Int = eventLimit
   //this is a var in order to save the allocation when no short-circuiting actually happens
-  private var shortCircuitBuffer: util.LinkedList[Any] = null
+  private var shortCircuitBuffer: util.ArrayDeque[Any] = null
 
   def enqueueToShortCircuit(input: Any): Unit = {
-    if (shortCircuitBuffer == null) shortCircuitBuffer = new util.LinkedList[Any]()
-    shortCircuitBuffer.add(input)
+    if (shortCircuitBuffer == null) shortCircuitBuffer = new util.ArrayDeque[Any]()
+    shortCircuitBuffer.addLast(input)
   }
 
   def registerShell(shell: GraphInterpreterShell): ActorRef = {
