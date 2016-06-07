@@ -1,0 +1,95 @@
+/**
+ * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ */
+package akka.remote.artery
+
+import akka.testkit._
+import akka.actor._
+import com.typesafe.config.ConfigFactory
+import akka.actor.RootActorPath
+import scala.concurrent.duration._
+import akka.testkit.SocketUtil
+import akka.event.Logging.Warning
+import akka.remote.QuarantinedEvent
+import akka.remote.RARP
+import akka.remote.RemoteActorRef
+
+object RemoteDeathWatchSpec {
+  val otherPort = SocketUtil.temporaryServerAddress("localhost", udp = true).getPort
+
+  val config = ConfigFactory.parseString(s"""
+    akka {
+        actor {
+            provider = "akka.remote.RemoteActorRefProvider"
+            deployment {
+                /watchers.remote = "artery://other@localhost:$otherPort"
+            }
+        }
+        remote.watch-failure-detector.acceptable-heartbeat-pause = 3s
+        # FIXME do we need the initial-system-message-delivery-timeout?
+        remote.initial-system-message-delivery-timeout = 3 s
+        remote.artery.enabled = on
+        remote.artery.hostname = localhost
+        remote.artery.port = 0
+    }
+    """)
+}
+
+class RemoteDeathWatchSpec extends AkkaSpec(RemoteDeathWatchSpec.config) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
+  import RemoteDeathWatchSpec._
+
+  val other = ActorSystem("other", ConfigFactory.parseString(s"akka.remote.artery.port=$otherPort")
+    .withFallback(system.settings.config))
+
+  override def afterTermination() {
+    shutdown(other)
+  }
+
+  override def expectedTestDuration: FiniteDuration = 120.seconds
+
+  "receive Terminated when system of de-serialized ActorRef is not running" in {
+    val probe = TestProbe()
+    system.eventStream.subscribe(probe.ref, classOf[QuarantinedEvent])
+    val rarp = RARP(system).provider
+    // pick an unused port
+    val port = SocketUtil.temporaryServerAddress("localhost", udp = true).getPort
+    // simulate de-serialized ActorRef
+    val ref = rarp.resolveActorRef(s"artery://OtherSystem@localhost:$port/user/foo/bar#1752527294")
+
+    // we don't expect real quarantine when the UID is unknown, i.e. QuarantinedEvent is not published
+    EventFilter.warning(pattern = "Quarantine of .* ignored because unknown UID", occurrences = 1).intercept {
+      EventFilter.warning(start = "Detected unreachable", occurrences = 1).intercept {
+
+        system.actorOf(Props(new Actor {
+          context.watch(ref)
+          def receive = {
+            case Terminated(r) ⇒ testActor ! r
+          }
+        }).withDeploy(Deploy.local))
+
+        expectMsg(10.seconds, ref)
+      }
+    }
+  }
+
+  // FIXME this is failing with Artery
+  "receive Terminated when watched node is unknown host" ignore {
+    val path = RootActorPath(Address("artery", system.name, "unknownhost", 2552)) / "user" / "subject"
+    system.actorOf(Props(new Actor {
+      context.watch(context.actorFor(path))
+      def receive = {
+        case t: Terminated ⇒ testActor ! t.actor.path
+      }
+    }).withDeploy(Deploy.local), name = "observer2")
+
+    expectMsg(60.seconds, path)
+  }
+
+  // FIXME this is failing with Artery
+  "receive ActorIdentity(None) when identified node is unknown host" ignore {
+    val path = RootActorPath(Address("artery", system.name, "unknownhost2", 2552)) / "user" / "subject"
+    system.actorSelection(path) ! Identify(path)
+    expectMsg(60.seconds, ActorIdentity(path, None))
+  }
+
+}
