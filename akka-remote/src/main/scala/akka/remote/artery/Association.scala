@@ -6,6 +6,7 @@ package akka.remote.artery
 import java.util.Queue
 
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -61,7 +62,7 @@ private[remote] class Association(
   import Association._
 
   private val log = Logging(transport.system, getClass.getName)
-  private val controlQueueSize = transport.provider.remoteSettings.SysMsgBufferSize
+  private val controlQueueSize = transport.remoteSettings.SysMsgBufferSize
   // FIXME config queue size, and it should perhaps also be possible to use some kind of LinkedQueue
   //       such as agrona.ManyToOneConcurrentLinkedQueue or AbstractNodeQueue for less memory consumption
   private val queueSize = 3072
@@ -84,6 +85,13 @@ private[remote] class Association(
   @volatile private[this] var controlQueue: SendQueue.ProducerApi[Send] = QueueWrapper(createQueue(controlQueueSize))
   @volatile private[this] var _outboundControlIngress: OutboundControlIngress = _
   @volatile private[this] var materializing = new CountDownLatch(1)
+
+  private val _testStages: CopyOnWriteArrayList[TestManagementApi] = new CopyOnWriteArrayList
+
+  def testStages(): List[TestManagementApi] = {
+    import scala.collection.JavaConverters._
+    _testStages.asScala.toList
+  }
 
   def outboundControlIngress: OutboundControlIngress = {
     if (_outboundControlIngress ne null)
@@ -268,9 +276,22 @@ private[remote] class Association(
 
     val wrapper = getOrCreateQueueWrapper(controlQueue, queueSize)
     controlQueue = wrapper // use new underlying queue immediately for restarts
-    val (queueValue, (control, completed)) = Source.fromGraph(new SendQueue[Send])
-      .toMat(transport.outboundControl(this))(Keep.both)
-      .run()(materializer)
+
+    val (queueValue, (control, completed)) =
+      if (transport.remoteSettings.TestMode) {
+        val ((queueValue, mgmt), (control, completed)) =
+          Source.fromGraph(new SendQueue[Send])
+            .viaMat(transport.outboundTestFlow(this))(Keep.both)
+            .toMat(transport.outboundControl(this))(Keep.both)
+            .run()(materializer)
+        _testStages.add(mgmt)
+        (queueValue, (control, completed))
+      } else {
+        Source.fromGraph(new SendQueue[Send])
+          .toMat(transport.outboundControl(this))(Keep.both)
+          .run()(materializer)
+      }
+
     queueValue.inject(wrapper.queue)
     // replace with the materialized value, still same underlying queue
     controlQueue = queueValue
@@ -296,21 +317,46 @@ private[remote] class Association(
   private def runOutboundOrdinaryMessagesStream(): Unit = {
     val wrapper = getOrCreateQueueWrapper(queue, queueSize)
     queue = wrapper // use new underlying queue immediately for restarts
-    val (queueValue, completed) = Source.fromGraph(new SendQueue[Send])
-      .toMat(transport.outbound(this))(Keep.both)
-      .run()(materializer)
+
+    val (queueValue, completed) =
+      if (transport.remoteSettings.TestMode) {
+        val ((queueValue, mgmt), completed) = Source.fromGraph(new SendQueue[Send])
+          .viaMat(transport.outboundTestFlow(this))(Keep.both)
+          .toMat(transport.outbound(this))(Keep.both)
+          .run()(materializer)
+        _testStages.add(mgmt)
+        (queueValue, completed)
+      } else {
+        Source.fromGraph(new SendQueue[Send])
+          .toMat(transport.outbound(this))(Keep.both)
+          .run()(materializer)
+      }
+
     queueValue.inject(wrapper.queue)
     // replace with the materialized value, still same underlying queue
     queue = queueValue
+
     attachStreamRestart("Outbound message stream", completed, _ ⇒ runOutboundOrdinaryMessagesStream())
   }
 
   private def runOutboundLargeMessagesStream(): Unit = {
     val wrapper = getOrCreateQueueWrapper(queue, largeQueueSize)
     largeQueue = wrapper // use new underlying queue immediately for restarts
-    val (queueValue, completed) = Source.fromGraph(new SendQueue[Send])
-      .toMat(transport.outboundLarge(this))(Keep.both)
-      .run()(materializer)
+
+    val (queueValue, completed) =
+      if (transport.remoteSettings.TestMode) {
+        val ((queueValue, mgmt), completed) = Source.fromGraph(new SendQueue[Send])
+          .viaMat(transport.outboundTestFlow(this))(Keep.both)
+          .toMat(transport.outboundLarge(this))(Keep.both)
+          .run()(materializer)
+        _testStages.add(mgmt)
+        (queueValue, completed)
+      } else {
+        Source.fromGraph(new SendQueue[Send])
+          .toMat(transport.outboundLarge(this))(Keep.both)
+          .run()(materializer)
+      }
+
     queueValue.inject(wrapper.queue)
     // replace with the materialized value, still same underlying queue
     largeQueue = queueValue
@@ -375,4 +421,7 @@ private[remote] class AssociationRegistry(createAssociation: Address ⇒ Associa
       throw new IllegalArgumentException(s"UID collision old [$previous] new [$a]")
     a
   }
+
+  def allAssociations: Set[Association] =
+    associationsByAddress.get.values.toSet
 }

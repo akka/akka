@@ -29,6 +29,7 @@ final class RemoteSettings(val config: Config) {
   val EmbeddedMediaDriver = getBoolean("akka.remote.artery.advanced.embedded-media-driver")
   val AeronDirectoryName = getString("akka.remote.artery.advanced.aeron-dir") requiring (dir ⇒
     EmbeddedMediaDriver || dir.nonEmpty, "aeron-dir must be defined when using external media driver")
+  val TestMode: Boolean = getBoolean("akka.remote.artery.advanced.test-mode")
 
   val LogReceive: Boolean = getBoolean("akka.remote.log-received-messages")
 
