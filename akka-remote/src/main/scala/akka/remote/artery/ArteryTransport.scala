@@ -76,16 +76,84 @@ import akka.actor.Cancellable
 
 import scala.collection.JavaConverters._
 import akka.stream.ActorMaterializerSettings
+import scala.annotation.tailrec
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
  */
-private[akka] final case class InboundEnvelope(
-  recipient:        InternalActorRef,
-  recipientAddress: Address,
-  message:          AnyRef,
-  senderOption:     Option[ActorRef],
-  originUid:        Long)
+private[akka] object InboundEnvelope {
+  def apply(
+    recipient:        InternalActorRef,
+    recipientAddress: Address,
+    message:          AnyRef,
+    senderOption:     OptionVal[ActorRef],
+    originUid:        Long): InboundEnvelope = {
+    val env = new ReusableInboundEnvelope
+    env.init(recipient, recipientAddress, message, senderOption, originUid)
+    env
+  }
+
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] trait InboundEnvelope {
+  def recipient: InternalActorRef
+  def recipientAddress: Address
+  def message: AnyRef
+  def senderOption: OptionVal[ActorRef]
+  def originUid: Long
+
+  def withMessage(message: AnyRef): InboundEnvelope
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] final class ReusableInboundEnvelope extends InboundEnvelope {
+  private var _recipient: InternalActorRef = null
+  private var _recipientAddress: Address = null
+  private var _message: AnyRef = null
+  private var _senderOption: OptionVal[ActorRef] = OptionVal.None
+  private var _originUid: Long = 0L
+
+  override def recipient: InternalActorRef = _recipient
+  override def recipientAddress: Address = _recipientAddress
+  override def message: AnyRef = _message
+  override def senderOption: OptionVal[ActorRef] = _senderOption
+  override def originUid: Long = _originUid
+
+  override def withMessage(message: AnyRef): InboundEnvelope = {
+    _message = message
+    this
+  }
+
+  def clear(): Unit = {
+    _recipient = null
+    _recipientAddress = null
+    _message = null
+    _senderOption = OptionVal.None
+    _originUid = 0L
+  }
+
+  def init(
+    recipient:        InternalActorRef,
+    recipientAddress: Address,
+    message:          AnyRef,
+    senderOption:     OptionVal[ActorRef],
+    originUid:        Long): Unit = {
+    _recipient = recipient
+    _recipientAddress = recipientAddress
+    _message = message
+    _senderOption = senderOption
+    _originUid = originUid
+  }
+
+  override def toString: String =
+    s"InboundEnvelope($recipient, $recipientAddress, $message, $senderOption, $originUid)"
+}
 
 /**
  * INTERNAL API
@@ -111,11 +179,10 @@ private[akka] trait InboundContext {
 
   /**
    * Lookup the outbound association for a given UID.
-   * Will return `null` if the UID is unknown, i.e.
-   * handshake not completed. `null` is used instead of `Optional`
-   * to avoid allocations.
+   * Will return `OptionVal.None` if the UID is unknown, i.e.
+   * handshake not completed.
    */
-  def association(uid: Long): OutboundContext
+  def association(uid: Long): OptionVal[OutboundContext]
 
   def completeHandshake(peer: UniqueAddress): Unit
 
@@ -126,7 +193,40 @@ private[akka] trait InboundContext {
  */
 private[akka] object AssociationState {
   def apply(): AssociationState =
-    new AssociationState(incarnation = 1, uniqueRemoteAddressPromise = Promise(), quarantined = Set.empty)
+    new AssociationState(incarnation = 1, uniqueRemoteAddressPromise = Promise(), quarantined = QuarantinedUidSet.empty)
+
+  object QuarantinedUidSet {
+    val maxEntries = 10 // ok to not keep all old uids
+    def empty: QuarantinedUidSet = new QuarantinedUidSet(Array.emptyLongArray)
+  }
+
+  class QuarantinedUidSet private (uids: Array[Long]) {
+    import QuarantinedUidSet._
+
+    def add(uid: Long): QuarantinedUidSet = {
+      if (apply(uid))
+        this
+      else {
+        val newUids = Array.ofDim[Long](math.min(uids.length + 1, maxEntries))
+        newUids(0) = uid
+        if (uids.length > 0)
+          System.arraycopy(uids, 0, newUids, 1, newUids.length - 1)
+        new QuarantinedUidSet(newUids)
+      }
+    }
+
+    def apply(uid: Long): Boolean = {
+      @tailrec def find(i: Int): Boolean =
+        if (i == uids.length) false
+        else if (uids(i) == uid) true
+        else find(i + 1)
+      find(0)
+    }
+
+    override def toString(): String =
+      uids.mkString("QuarantinedUidSet(", ",", ")")
+  }
+
 }
 
 /**
@@ -135,7 +235,10 @@ private[akka] object AssociationState {
 private[akka] final class AssociationState(
   val incarnation:                Int,
   val uniqueRemoteAddressPromise: Promise[UniqueAddress],
-  val quarantined:                Set[Long]) {
+  val quarantined:                AssociationState.QuarantinedUidSet) {
+
+  // doesn't have to be volatile since it's only a cache changed once
+  private var uniqueRemoteAddressValueCache: Option[UniqueAddress] = null
 
   /**
    * Full outbound address with UID for this association.
@@ -143,9 +246,17 @@ private[akka] final class AssociationState(
    */
   def uniqueRemoteAddress: Future[UniqueAddress] = uniqueRemoteAddressPromise.future
 
-  def uniqueRemoteAddressValue(): Option[Try[UniqueAddress]] = {
-    // FIXME we should cache access to uniqueRemoteAddress.value (avoid allocations), used in many places
-    uniqueRemoteAddress.value
+  def uniqueRemoteAddressValue(): Option[UniqueAddress] = {
+    if (uniqueRemoteAddressValueCache ne null)
+      uniqueRemoteAddressValueCache
+    else {
+      uniqueRemoteAddress.value match {
+        case Some(Success(peer)) ⇒
+          uniqueRemoteAddressValueCache = Some(peer)
+          uniqueRemoteAddressValueCache
+        case _ ⇒ None
+      }
+    }
   }
 
   def newIncarnation(remoteAddressPromise: Promise[UniqueAddress]): AssociationState =
@@ -154,21 +265,18 @@ private[akka] final class AssociationState(
   def newQuarantined(): AssociationState =
     uniqueRemoteAddressPromise.future.value match {
       case Some(Success(a)) ⇒
-        new AssociationState(incarnation, uniqueRemoteAddressPromise, quarantined = quarantined + a.uid)
+        new AssociationState(incarnation, uniqueRemoteAddressPromise, quarantined = quarantined.add(a.uid))
       case _ ⇒ this
     }
 
   def isQuarantined(): Boolean = {
     uniqueRemoteAddressValue match {
-      case Some(Success(a)) ⇒ isQuarantined(a.uid)
-      case _                ⇒ false // handshake not completed yet
+      case Some(a) ⇒ isQuarantined(a.uid)
+      case _       ⇒ false // handshake not completed yet
     }
   }
 
-  def isQuarantined(uid: Long): Boolean = {
-    // FIXME does this mean boxing (allocation) because of Set[Long]? Use specialized Set. org.agrona.collections.LongHashSet?
-    quarantined(uid)
-  }
+  def isQuarantined(uid: Long): Boolean = quarantined(uid)
 
   override def toString(): String = {
     val a = uniqueRemoteAddressPromise.future.value match {
@@ -275,8 +383,12 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val maxRestarts = 5 // FIXME config
   private val restartCounter = new RestartCounter(maxRestarts, restartTimeout)
 
-  val envelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
-  val largeEnvelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumLargeFrameSize, ArteryTransport.MaximumPooledBuffers)
+  private val envelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
+  private val largeEnvelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumLargeFrameSize, ArteryTransport.MaximumPooledBuffers)
+
+  private val inboundEnvelopePool = new ObjectPool[InboundEnvelope](
+    16,
+    create = () ⇒ new ReusableInboundEnvelope, clear = inEnvelope ⇒ inEnvelope.asInstanceOf[ReusableInboundEnvelope].clear())
 
   val (afrFileChannel, afrFlie, flightRecorder) = initializeFlightRecorder()
 
@@ -491,11 +603,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           .run()(materializer)
       }
 
-    aeronSource(largeStreamId, largeEnvelopePool)
-      .via(inboundLargeFlow)
-      .toMat(inboundSink)(Keep.right)
-      .run()(materializer)
-
     attachStreamRestart("Inbound large message stream", completed, () ⇒ runInboundLargeMessagesStream())
   }
 
@@ -562,7 +669,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def sendControl(to: Address, message: ControlMessage) =
     association(to).sendControl(message)
 
-  override def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = {
+  override def send(message: Any, senderOption: OptionVal[ActorRef], recipient: RemoteActorRef): Unit = {
     val cached = recipient.cachedAssociation
 
     val a =
@@ -579,7 +686,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def association(remoteAddress: Address): Association =
     associationRegistry.association(remoteAddress)
 
-  override def association(uid: Long): Association =
+  override def association(uid: Long): OptionVal[Association] =
     associationRegistry.association(uid)
 
   override def completeHandshake(peer: UniqueAddress): Unit = {
@@ -623,8 +730,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
   }
 
-  def createEncoder(pool: EnvelopeBufferPool): Flow[Send, EnvelopeBuffer, NotUsed] =
-    Flow.fromGraph(new Encoder(localAddress, system, compression, pool))
+  def createEncoder(bufferPool: EnvelopeBufferPool): Flow[Send, EnvelopeBuffer, NotUsed] =
+    Flow.fromGraph(new Encoder(localAddress, system, compression, bufferPool))
 
   def encoder: Flow[Send, EnvelopeBuffer, NotUsed] = createEncoder(envelopePool)
 
@@ -634,12 +741,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   val messageDispatcherSink: Sink[InboundEnvelope, Future[Done]] = Sink.foreach[InboundEnvelope] { m ⇒
     messageDispatcher.dispatch(m.recipient, m.recipientAddress, m.message, m.senderOption)
+    inboundEnvelopePool.release(m)
   }
 
-  def createDecoder(pool: EnvelopeBufferPool): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
+  def createDecoder(bufferPool: EnvelopeBufferPool): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
     val resolveActorRefWithLocalAddress: String ⇒ InternalActorRef =
       recipient ⇒ provider.resolveActorRefWithLocalAddress(recipient, localAddress.address)
-    Flow.fromGraph(new Decoder(localAddress, system, resolveActorRefWithLocalAddress, compression, pool))
+    Flow.fromGraph(new Decoder(localAddress, system, resolveActorRefWithLocalAddress, compression, bufferPool,
+      inboundEnvelopePool))
   }
 
   def decoder: Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = createDecoder(envelopePool)

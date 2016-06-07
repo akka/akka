@@ -4,10 +4,8 @@
 package akka.remote.artery
 
 import java.util.concurrent.ThreadLocalRandom
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import akka.NotUsed
 import akka.actor.ActorIdentity
 import akka.actor.ActorSystem
@@ -33,6 +31,7 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
+import akka.util.OptionVal
 
 object SystemMessageDeliverySpec {
 
@@ -68,7 +67,7 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
   private def send(sendCount: Int, resendInterval: FiniteDuration, outboundContext: OutboundContext): Source[Send, NotUsed] = {
     val remoteRef = null.asInstanceOf[RemoteActorRef] // not used
     Source(1 to sendCount)
-      .map(n ⇒ Send("msg-" + n, None, remoteRef, None))
+      .map(n ⇒ Send("msg-" + n, OptionVal.None, remoteRef, None))
       .via(new SystemMessageDelivery(outboundContext, resendInterval, maxBufferSize = 1000))
   }
 
@@ -77,7 +76,7 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
     Flow[Send]
       .map {
         case Send(sysEnv: SystemMessageEnvelope, _, _, _) ⇒
-          InboundEnvelope(recipient, addressB.address, sysEnv, None, addressA.uid)
+          InboundEnvelope(recipient, addressB.address, sysEnv, OptionVal.None, addressA.uid)
       }
       .async
       .via(new SystemMessageAcker(inboundContext))

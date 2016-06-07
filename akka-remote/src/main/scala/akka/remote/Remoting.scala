@@ -24,6 +24,7 @@ import akka.remote.transport.AkkaPduCodec.Message
 import java.util.concurrent.ConcurrentHashMap
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.util.ByteString.UTF_8
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -209,7 +210,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
     }
   }
 
-  override def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = endpointManager match {
+  override def send(message: Any, senderOption: OptionVal[ActorRef], recipient: RemoteActorRef): Unit = endpointManager match {
     case Some(manager) ⇒ manager.tell(Send(message, senderOption, recipient), sender = senderOption getOrElse Actor.noSender)
     case None          ⇒ throw new RemoteTransportExceptionNoStackTrace("Attempted to send remote message but Remoting is not running.", null)
   }
@@ -249,7 +250,7 @@ private[remote] object EndpointManager {
   final case class Listen(addressesPromise: Promise[Seq[(AkkaProtocolTransport, Address)]]) extends RemotingCommand
   case object StartupFinished extends RemotingCommand
   case object ShutdownAndFlush extends RemotingCommand
-  final case class Send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef, seqOpt: Option[SeqNo] = None)
+  final case class Send(message: Any, senderOption: OptionVal[ActorRef], recipient: RemoteActorRef, seqOpt: Option[SeqNo] = None)
     extends RemotingCommand with HasSequenceNumber {
     override def toString = s"Remote message $senderOption -> $recipient"
 

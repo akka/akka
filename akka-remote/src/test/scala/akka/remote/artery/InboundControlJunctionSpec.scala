@@ -4,7 +4,6 @@
 package akka.remote.artery
 
 import scala.concurrent.duration._
-
 import akka.actor.Address
 import akka.actor.InternalActorRef
 import akka.remote.UniqueAddress
@@ -18,6 +17,7 @@ import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
+import akka.util.OptionVal
 
 object InboundControlJunctionSpec {
   case object Control1 extends ControlMessage
@@ -42,9 +42,9 @@ class InboundControlJunctionSpec extends AkkaSpec with ImplicitSender {
       val recipient = null.asInstanceOf[InternalActorRef] // not used
 
       val ((upstream, controlSubject), downstream) = TestSource.probe[AnyRef]
-        .map(msg ⇒ InboundEnvelope(recipient, addressB.address, msg, None, addressA.uid))
+        .map(msg ⇒ InboundEnvelope(recipient, addressB.address, msg, OptionVal.None, addressA.uid))
         .viaMat(new InboundControlJunction)(Keep.both)
-        .map { case InboundEnvelope(_, _, msg, _, _) ⇒ msg }
+        .map { case env: InboundEnvelope ⇒ env.message }
         .toMat(TestSink.probe[Any])(Keep.both)
         .run()
 

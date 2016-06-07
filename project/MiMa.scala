@@ -851,7 +851,15 @@ object MiMa extends AutoPlugin {
           
         // Remove useUntrustedMode which is an internal API and not used anywhere anymore
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.Remoting.useUntrustedMode"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteTransport.useUntrustedMode"),  
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteTransport.useUntrustedMode"),
+        
+        // Use OptionVal in remote Send envelope
+        FilterAnyProblemStartingWith("akka.remote.EndpointManager"),
+        FilterAnyProblemStartingWith("akka.remote.Remoting"),
+        FilterAnyProblemStartingWith("akka.remote.RemoteTransport"),
+        FilterAnyProblemStartingWith("akka.remote.InboundMessageDispatcher"),
+        FilterAnyProblemStartingWith("akka.remote.DefaultMessageDispatcher"),
+        FilterAnyProblemStartingWith("akka.remote.transport"),
           
         // internal api
         FilterAnyProblemStartingWith("akka.stream.impl"),
