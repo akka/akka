@@ -67,7 +67,7 @@ class RemoteSendConsistencySpec extends AkkaSpec(RemoteSendConsistencySpec.confi
       }
 
       val senderProps = Props(new Actor {
-        var counter = 100 // FIXME try this test with 1000, why does it take so long?
+        var counter = 1000
         remoteRef ! counter
 
         override def receive: Receive = {
