@@ -114,7 +114,7 @@ object ClusterShardingSpec {
 
 }
 
-abstract class ClusterShardingSpecConfig(val mode: String) extends MultiNodeConfig {
+abstract class ClusterShardingSpecConfig(val mode: String, val entityRecoveryRateInterval: FiniteDuration = Duration.Zero) extends MultiNodeConfig {
   val controller = role("controller")
   val first = role("first")
   val second = role("second")
@@ -144,6 +144,7 @@ abstract class ClusterShardingSpecConfig(val mode: String) extends MultiNodeConf
       entity-restart-backoff = 1s
       rebalance-interval = 2 s
       state-store-mode = "$mode"
+      entity-recovery-rate-interval = "${entityRecoveryRateInterval.toMillis}ms"
       least-shard-allocation-strategy {
         rebalance-threshold = 2
         max-simultaneous-rebalance = 1
@@ -177,9 +178,13 @@ object ClusterShardingDocCode {
 
 object PersistentClusterShardingSpecConfig extends ClusterShardingSpecConfig("persistence")
 object DDataClusterShardingSpecConfig extends ClusterShardingSpecConfig("ddata")
+object PersistentClusterShardingWithEntityRecoverySpecConfig extends ClusterShardingSpecConfig("persistence", 1.millis)
+object DDataClusterShardingWithEntityRecoverySpecConfig extends ClusterShardingSpecConfig("ddata", 1.millis)
 
 class PersistentClusterShardingSpec extends ClusterShardingSpec(PersistentClusterShardingSpecConfig)
 class DDataClusterShardingSpec extends ClusterShardingSpec(DDataClusterShardingSpecConfig)
+class PersistentClusterShardingWithEntityRecoverySpec extends ClusterShardingSpec(PersistentClusterShardingWithEntityRecoverySpecConfig)
+class DDataClusterShardingWithEntityRecoverySpec extends ClusterShardingSpec(DDataClusterShardingWithEntityRecoverySpecConfig)
 
 class PersistentClusterShardingMultiJvmNode1 extends PersistentClusterShardingSpec
 class PersistentClusterShardingMultiJvmNode2 extends PersistentClusterShardingSpec
@@ -196,6 +201,22 @@ class DDataClusterShardingMultiJvmNode4 extends DDataClusterShardingSpec
 class DDataClusterShardingMultiJvmNode5 extends DDataClusterShardingSpec
 class DDataClusterShardingMultiJvmNode6 extends DDataClusterShardingSpec
 class DDataClusterShardingMultiJvmNode7 extends DDataClusterShardingSpec
+
+class PersistentClusterShardingWithEntityRecoveryMultiJvmNode1 extends PersistentClusterShardingSpec
+class PersistentClusterShardingWithEntityRecoveryMultiJvmNode2 extends PersistentClusterShardingSpec
+class PersistentClusterShardingWithEntityRecoveryMultiJvmNode3 extends PersistentClusterShardingSpec
+class PersistentClusterShardingWithEntityRecoveryMultiJvmNode4 extends PersistentClusterShardingSpec
+class PersistentClusterShardingWithEntityRecoveryMultiJvmNode5 extends PersistentClusterShardingSpec
+class PersistentClusterShardingWithEntityRecoveryMultiJvmNode6 extends PersistentClusterShardingSpec
+class PersistentClusterShardingWithEntityRecoveryMultiJvmNode7 extends PersistentClusterShardingSpec
+
+class DDataClusterShardingWithEntityRecoveryMultiJvmNode1 extends DDataClusterShardingSpec
+class DDataClusterShardingWithEntityRecoveryMultiJvmNode2 extends DDataClusterShardingSpec
+class DDataClusterShardingWithEntityRecoveryMultiJvmNode3 extends DDataClusterShardingSpec
+class DDataClusterShardingWithEntityRecoveryMultiJvmNode4 extends DDataClusterShardingSpec
+class DDataClusterShardingWithEntityRecoveryMultiJvmNode5 extends DDataClusterShardingSpec
+class DDataClusterShardingWithEntityRecoveryMultiJvmNode6 extends DDataClusterShardingSpec
+class DDataClusterShardingWithEntityRecoveryMultiJvmNode7 extends DDataClusterShardingSpec
 
 abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends MultiNodeSpec(config) with STMultiNodeSpec with ImplicitSender {
   import ClusterShardingSpec._
