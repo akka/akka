@@ -116,7 +116,7 @@ Add texlive bin to $PATH:
 
 ::
 
-  export TEXLIVE_PATH=/usr/local/texlive/2015basic/bin/universal-darwin
+  export TEXLIVE_PATH=/usr/local/texlive/2016basic/bin/universal-darwin
   export PATH=$TEXLIVE_PATH:$PATH
 
 Add missing tex packages:
@@ -131,6 +131,11 @@ Add missing tex packages:
   sudo tlmgr install helvetic
   sudo tlmgr install courier
   sudo tlmgr install multirow
+  sudo tlmgr install capt-of
+  sudo tlmgr install needspace
+  sudo tlmgr install eqparbox
+  sudo tlmgr install environ
+  sudo tlmgr install trimspaces
 
 If you get the error "unknown locale: UTF-8" when generating the documentation the solution is to define the following environment variables:
 
