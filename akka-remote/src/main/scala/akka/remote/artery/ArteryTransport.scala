@@ -5,6 +5,7 @@ package akka.remote.artery
 
 import java.io.File
 import java.nio.ByteOrder
+
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
@@ -60,11 +61,14 @@ import org.agrona.ErrorHandler
 import org.agrona.IoUtil
 import java.io.File
 import java.net.InetSocketAddress
-import java.nio.channels.DatagramChannel
+import java.nio.channels.{ DatagramChannel, FileChannel }
+
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import io.aeron.CncFileDescriptor
 import java.util.concurrent.atomic.AtomicLong
+
 import akka.actor.Cancellable
+
 import scala.collection.JavaConverters._
 import akka.stream.ActorMaterializerSettings
 /**
@@ -213,6 +217,7 @@ private[akka] trait OutboundContext {
 private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
   extends RemoteTransport(_system, _provider) with InboundContext {
   import provider.remoteSettings
+  import FlightRecorderEvents._
 
   // these vars are initialized once in the start method
   @volatile private[this] var _localAddress: UniqueAddress = _
@@ -266,6 +271,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   val envelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
   val largeEnvelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumLargeFrameSize, ArteryTransport.MaximumPooledBuffers)
 
+  val (afrFileChannel, afrFlie, flightRecorder) = initializeFlightRecorder()
+
+  // !!! WARNING !!! This is *NOT* thread safe,
+  private val topLevelFREvents = flightRecorder.createEventSink()
+
   // FIXME: Compression table must be owned by each channel instead
   // of having a global one
   val compression = new Compression(system)
@@ -276,8 +286,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def start(): Unit = {
     startMediaDriver()
     startAeron()
+    topLevelFREvents.loFreq(Transport_AeronStarted, NoMetaData)
     startAeronErrorLog()
+    topLevelFREvents.loFreq(Transport_AeronErrorLogStarted, NoMetaData)
     taskRunner.start()
+    topLevelFREvents.loFreq(Transport_TaskRunnerStarted, NoMetaData)
 
     val port =
       if (remoteSettings.ArteryPort == 0) ArteryTransport.autoSelectPort(remoteSettings.ArteryHostname)
@@ -290,14 +303,18 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       AddressUidExtension(system).longAddressUid)
     _addresses = Set(_localAddress.address)
 
+    // TODO: This probably needs to be a global value instead of an event as events might rotate out of the log
+    topLevelFREvents.loFreq(Transport_UniqueAddressSet, _localAddress.toString().getBytes("US-ASCII"))
+
     val materializerSettings = ActorMaterializerSettings(
       remoteSettings.config.getConfig("akka.remote.artery.advanced.materializer"))
     materializer = ActorMaterializer(materializerSettings)(system)
-    materializer = ActorMaterializer()(system)
 
     messageDispatcher = new MessageDispatcher(system, provider)
+    topLevelFREvents.loFreq(Transport_MaterializerStarted, NoMetaData)
 
     runInboundStreams()
+    topLevelFREvents.loFreq(Transport_StartupFinished, NoMetaData)
 
     log.info("Remoting started; listening on address: {}", defaultAddress)
   }
@@ -313,6 +330,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       driverContext.driverTimeoutMs(SECONDS.toNanos(20))
       val driver = MediaDriver.launchEmbedded(driverContext)
       log.debug("Started embedded media driver in directory [{}]", driver.aeronDirectoryName)
+      topLevelFREvents.loFreq(Transport_MediaDriverStarted, driver.aeronDirectoryName().getBytes("US-ASCII"))
       mediaDriver = Some(driver)
     }
   }
@@ -322,6 +340,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     case None         ⇒ remoteSettings.AeronDirectoryName
   }
 
+  // TODO: Add FR events
   private def startAeron(): Unit = {
     val ctx = new Aeron.Context
 
@@ -355,6 +374,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     aeron = Aeron.connect(ctx)
   }
 
+  // TODO Add FR Events
   private def startAeronErrorLog(): Unit = {
     val errorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE))
     val lastTimestamp = new AtomicLong(0L)
@@ -376,7 +396,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def runInboundControlStream(): Unit = {
-    val (c, completed) = Source.fromGraph(new AeronSource(inboundChannel, controlStreamId, aeron, taskRunner, envelopePool))
+    val (c, completed) = Source.fromGraph(
+      new AeronSource(inboundChannel, controlStreamId, aeron, taskRunner, envelopePool, flightRecorder.createEventSink())
+    )
       .viaMat(inboundControlFlow)(Keep.right)
       .toMat(Sink.ignore)(Keep.both)
       .run()(materializer)
@@ -413,7 +435,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def runInboundOrdinaryMessagesStream(): Unit = {
-    val completed = Source.fromGraph(new AeronSource(inboundChannel, ordinaryStreamId, aeron, taskRunner, envelopePool))
+    val completed = Source.fromGraph(
+      new AeronSource(inboundChannel, ordinaryStreamId, aeron, taskRunner, envelopePool, flightRecorder.createEventSink())
+    )
       .via(inboundFlow)
       .runWith(Sink.ignore)(materializer)
 
@@ -421,7 +445,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def runInboundLargeMessagesStream(): Unit = {
-    val completed = Source.fromGraph(new AeronSource(inboundChannel, largeStreamId, aeron, taskRunner, largeEnvelopePool))
+    val completed = Source.fromGraph(
+      new AeronSource(inboundChannel, largeStreamId, aeron, taskRunner, largeEnvelopePool, flightRecorder.createEventSink()
+      ))
       .via(inboundLargeFlow)
       .runWith(Sink.ignore)(materializer)
 
@@ -448,15 +474,29 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def shutdown(): Future[Done] = {
     _shutdown = true
     killSwitch.shutdown()
-    if (taskRunner != null) taskRunner.stop()
-    if (aeronErrorLogTask != null) aeronErrorLogTask.cancel()
+    topLevelFREvents.loFreq(Transport_KillSwitchPulled, NoMetaData)
+    if (taskRunner != null) {
+      taskRunner.stop()
+      topLevelFREvents.loFreq(Transport_Stopped, NoMetaData)
+    }
+    if (aeronErrorLogTask != null) {
+      aeronErrorLogTask.cancel()
+      topLevelFREvents.loFreq(Transport_AeronErrorLogTaskStopped, NoMetaData)
+    }
     if (aeron != null) aeron.close()
     mediaDriver.foreach { driver ⇒
       // this is only for embedded media driver
       driver.close()
       // FIXME it should also be configurable to not delete dir
       IoUtil.delete(new File(driver.aeronDirectoryName), true)
+      topLevelFREvents.loFreq(Transport_MediaFileDeleted, NoMetaData)
     }
+    topLevelFREvents.loFreq(Transport_FlightRecorderClose, NoMetaData)
+    flightRecorder.close()
+    afrFileChannel.force(true)
+    afrFileChannel.close()
+    // TODO: Be smarter about this in tests and make it always-on-for prod
+    afrFlie.delete()
     Future.successful(Done)
   }
 
@@ -504,7 +544,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval, injectHandshakeInterval))
       .via(encoder)
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), ordinaryStreamId, aeron, taskRunner,
-        envelopePool, giveUpSendAfter))(Keep.right)
+        envelopePool, giveUpSendAfter, flightRecorder.createEventSink()))(Keep.right)
   }
 
   def outboundLarge(outboundContext: OutboundContext): Sink[Send, Future[Done]] = {
@@ -512,7 +552,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval, injectHandshakeInterval))
       .via(createEncoder(largeEnvelopePool))
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), largeStreamId, aeron, taskRunner,
-        envelopePool, giveUpSendAfter))(Keep.right)
+        envelopePool, giveUpSendAfter, flightRecorder.createEventSink()))(Keep.right)
   }
 
   def outboundControl(outboundContext: OutboundContext): Sink[Send, (OutboundControlIngress, Future[Done])] = {
@@ -522,7 +562,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .viaMat(new OutboundControlJunction(outboundContext))(Keep.right)
       .via(encoder)
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), controlStreamId, aeron, taskRunner,
-        envelopePool, Duration.Inf))(Keep.both)
+        envelopePool, Duration.Inf, flightRecorder.createEventSink()))(Keep.both)
 
     // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
   }
@@ -571,6 +611,15 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         .via(new SystemMessageAcker(this))
         .to(messageDispatcherSink),
       Source.maybe[ByteString].via(killSwitch.flow))((a, b) ⇒ a)
+  }
+
+  private def initializeFlightRecorder(): (FileChannel, File, FlightRecorder) = {
+    // TODO: Figure out where to put it, currently using temporary files
+    val afrFile = File.createTempFile("artery", ".afr")
+    afrFile.deleteOnExit()
+
+    val fileChannel = FlightRecorder.prepareFileForFlightRecorder(afrFile)
+    (fileChannel, afrFile, new FlightRecorder(fileChannel))
   }
 
 }
