@@ -139,6 +139,7 @@ Directive                                        Description
 :ref:`-uploadedFile-java-`                       Streams one uploaded file from a multipart request to a file on disk
 :ref:`-validate-java-`                           Checks a given condition before running its inner route
 :ref:`-withoutRequestTimeout-java-`              Disables :ref:`request timeouts <request-timeout-java>` for a given route.
+:ref:`-withoutSizeLimit-java-`                   Skips request entity size check
 :ref:`-withExecutionContext-java-`               Runs its inner route with the given alternative ``ExecutionContext``
 :ref:`-withMaterializer-java-`                   Runs its inner route with the given alternative ``Materializer``
 :ref:`-withLog-java-`                            Runs its inner route with the given alternative ``LoggingAdapter``
@@ -146,5 +147,6 @@ Directive                                        Description
 :ref:`-withRequestTimeout-java-`                 Configures the :ref:`request timeouts <request-timeout-java>` for a given route.
 :ref:`-withRequestTimeoutResponse-java-`         Prepares the ``HttpResponse`` that is emitted if a request timeout is triggered. ``RequestContext => RequestContext`` function
 :ref:`-withSettings-java-`                       Runs its inner route with the given alternative ``RoutingSettings``
+:ref:`-withSizeLimit-java-`                      Applies request entity size check
 ================================================ ============================================================================
 
