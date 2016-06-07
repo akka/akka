@@ -7,7 +7,6 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-
 import akka.Done
 import akka.actor.Address
 import akka.remote.EndpointManager.Send
@@ -25,6 +24,7 @@ import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.stream.stage.TimerGraphStageLogic
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -158,10 +158,10 @@ private[remote] class InboundTestStage(inboundContext: InboundContext)
       override def onPush(): Unit = {
         val env = grab(in)
         inboundContext.association(env.originUid) match {
-          case null ⇒
+          case OptionVal.None ⇒
             // unknown, handshake not completed
             push(out, env)
-          case association ⇒
+          case OptionVal.Some(association) ⇒
             if (blackhole(association.remoteAddress)) {
               log.debug(
                 "dropping inbound message [{}] from [{}] with UID [{}] because of blackhole",

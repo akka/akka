@@ -5,13 +5,10 @@ package akka.remote.artery
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
@@ -28,6 +25,7 @@ import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
+import akka.util.OptionVal
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -53,6 +51,10 @@ class CodecBenchmark {
   val systemB = ActorSystem("systemB", system.settings.config)
 
   val envelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
+  val inboundEnvelopePool = new ObjectPool[InboundEnvelope](
+    16,
+    create = () ⇒ new ReusableInboundEnvelope, clear = inEnvelope ⇒ inEnvelope.asInstanceOf[ReusableInboundEnvelope].clear()
+  )
   val compression = new Compression(system)
   val headerIn = HeaderBuilder(compression)
   val envelopeTemplateBuffer = ByteBuffer.allocate(ArteryTransport.MaximumFrameSize).order(ByteOrder.LITTLE_ENDIAN)
@@ -127,7 +129,7 @@ class CodecBenchmark {
       Flow.fromGraph(new Encoder(uniqueLocalAddress, system, compression, envelopePool))
 
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
-      .map(_ ⇒ Send(payload, None, remoteRefB, None))
+      .map(_ ⇒ Send(payload, OptionVal.None, remoteRefB, None))
       .via(encoder)
       .map(envelope => envelopePool.release(envelope))
       .runWith(new LatchSink(N, latch))(materializer)
@@ -153,7 +155,7 @@ class CodecBenchmark {
 
     val decoder: Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] =
       Flow.fromGraph(new Decoder(uniqueLocalAddress, system.asInstanceOf[ExtendedActorSystem],
-        resolveActorRefWithLocalAddress, compression, envelopePool))
+        resolveActorRefWithLocalAddress, compression, envelopePool, inboundEnvelopePool))
 
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
       .map { _ =>
@@ -164,6 +166,10 @@ class CodecBenchmark {
         envelope
       }
       .via(decoder)
+      .map { env =>
+        inboundEnvelopePool.release(env)
+        ()
+      }
       .runWith(new LatchSink(N, latch))(materializer)
 
     if (!latch.await(30, TimeUnit.SECONDS))
@@ -190,12 +196,16 @@ class CodecBenchmark {
 
     val decoder: Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] =
       Flow.fromGraph(new Decoder(uniqueLocalAddress, system.asInstanceOf[ExtendedActorSystem],
-        resolveActorRefWithLocalAddress, compression, envelopePool))
+        resolveActorRefWithLocalAddress, compression, envelopePool, inboundEnvelopePool))
 
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
-      .map(_ ⇒ Send(payload, None, remoteRefB, None))
+      .map(_ ⇒ Send(payload, OptionVal.None, remoteRefB, None))
       .via(encoder)
       .via(decoder)
+      .map { env =>
+        inboundEnvelopePool.release(env)
+        ()
+      }
       .runWith(new LatchSink(N, latch))(materializer)
 
     if (!latch.await(30, TimeUnit.SECONDS))

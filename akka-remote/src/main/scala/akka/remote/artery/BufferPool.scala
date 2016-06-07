@@ -97,6 +97,7 @@ sealed trait HeaderBuilder {
   def senderActorRef: String
 
   def setNoSender(): Unit
+  def isNoSender: Boolean
 
   def recipientActorRef_=(ref: String): Unit
   def recipientActorRef: String
@@ -134,6 +135,9 @@ private[remote] final class HeaderBuilderImpl(val compressionTable: LiteralCompr
     _senderActorRef = null
     _senderActorRefIdx = EnvelopeBuffer.DeadLettersCode
   }
+
+  def isNoSender: Boolean =
+    (_senderActorRef eq null) && _senderActorRefIdx == EnvelopeBuffer.DeadLettersCode
 
   def senderActorRef: String = {
     if (_senderActorRef ne null) _senderActorRef

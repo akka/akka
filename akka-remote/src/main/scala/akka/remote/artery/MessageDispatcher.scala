@@ -16,6 +16,7 @@ import akka.dispatch.sysmsg.SystemMessage
 import akka.event.Logging
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteRef
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -31,7 +32,7 @@ private[akka] class MessageDispatcher(
     recipient:        InternalActorRef,
     recipientAddress: Address,
     message:          AnyRef,
-    senderOption:     Option[ActorRef]): Unit = {
+    senderOption:     OptionVal[ActorRef]): Unit = {
 
     import provider.remoteSettings._
 

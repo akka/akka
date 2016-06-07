@@ -4,7 +4,6 @@
 package akka.remote.artery
 
 import scala.concurrent.duration._
-
 import akka.actor.Address
 import akka.remote.EndpointManager.Send
 import akka.remote.RemoteActorRef
@@ -22,6 +21,7 @@ import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
+import akka.util.OptionVal
 
 class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
 
@@ -38,7 +38,7 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
 
     val destination = null.asInstanceOf[RemoteActorRef] // not used
     TestSource.probe[String]
-      .map(msg ⇒ Send(msg, None, destination, None))
+      .map(msg ⇒ Send(msg, OptionVal.None, destination, None))
       .via(new OutboundHandshake(outboundContext, timeout, retryInterval, injectHandshakeInterval))
       .map { case Send(msg, _, _, _) ⇒ msg }
       .toMat(TestSink.probe[Any])(Keep.both)

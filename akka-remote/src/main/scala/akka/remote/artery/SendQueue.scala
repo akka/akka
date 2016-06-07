@@ -119,8 +119,10 @@ private[remote] final class SendQueue[T] extends GraphStageWithMaterializedValue
         val q = producerQueue
         if (q eq null) throw new IllegalStateException("offer not allowed before injecting the queue")
         val result = q.offer(message)
-        if (result && needWakeup)
+        if (result && needWakeup) {
+          needWakeup = false
           logic.wakeup()
+        }
         result
       }
     }
