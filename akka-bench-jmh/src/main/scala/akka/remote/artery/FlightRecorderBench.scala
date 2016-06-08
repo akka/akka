@@ -1,12 +1,14 @@
-package akka.artery
+/**
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
+package akka.remote.artery
 
 import java.io.File
 import java.nio.channels.FileChannel
 import java.nio.file.StandardOpenOption
-import java.util.concurrent.{CountDownLatch, TimeUnit}
-
-import akka.remote.artery.FlightRecorder
-import org.openjdk.jmh.annotations.{OperationsPerInvocation, _}
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import org.openjdk.jmh.annotations.{ OperationsPerInvocation, _ }
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
@@ -18,12 +20,12 @@ class FlightRecorderBench {
 
   val Writes = 10000000
 
-  var file: File = _
-  var fileChannel: FileChannel = _
-  var recorder: FlightRecorder = _
+  private var file: File = _
+  private var fileChannel: FileChannel = _
+  private var recorder: FlightRecorder = _
 
   @Setup
-  def setup():Unit = {
+  def setup(): Unit = {
     file = File.createTempFile("akka-flightrecorder", "dat")
     file.deleteOnExit()
     fileChannel = FileChannel.open(file.toPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ)
@@ -31,7 +33,7 @@ class FlightRecorderBench {
   }
 
   @TearDown
-  def shutdown():Unit = {
+  def shutdown(): Unit = {
     fileChannel.force(false)
     recorder.close()
     fileChannel.close()

@@ -26,6 +26,7 @@ import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 import akka.util.OptionVal
+import akka.actor.Address
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -64,6 +65,15 @@ class CodecBenchmark {
     AddressUidExtension(system).addressUid
   )
   val payload = Array.ofDim[Byte](1000)
+
+  private val inboundContext: InboundContext = new InboundContext {
+    override def localAddress: UniqueAddress = uniqueLocalAddress
+    override def association(uid: Long): OptionVal[OutboundContext] = OptionVal.None
+    // the following methods are not used by in this test
+    override def sendControl(to: Address, message: ControlMessage): Unit = ???
+    override def association(remoteAddress: Address): OutboundContext = ???
+    override def completeHandshake(peer: UniqueAddress): Unit = ???
+  }
 
   private var materializer: ActorMaterializer = _
   private var remoteRefB: RemoteActorRef = _
@@ -154,7 +164,7 @@ class CodecBenchmark {
     }
 
     val decoder: Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] =
-      Flow.fromGraph(new Decoder(uniqueLocalAddress, system.asInstanceOf[ExtendedActorSystem],
+      Flow.fromGraph(new Decoder(inboundContext, system.asInstanceOf[ExtendedActorSystem],
         resolveActorRefWithLocalAddress, compression, envelopePool, inboundEnvelopePool))
 
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
@@ -195,7 +205,7 @@ class CodecBenchmark {
     }
 
     val decoder: Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] =
-      Flow.fromGraph(new Decoder(uniqueLocalAddress, system.asInstanceOf[ExtendedActorSystem],
+      Flow.fromGraph(new Decoder(inboundContext, system.asInstanceOf[ExtendedActorSystem],
         resolveActorRefWithLocalAddress, compression, envelopePool, inboundEnvelopePool))
 
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
