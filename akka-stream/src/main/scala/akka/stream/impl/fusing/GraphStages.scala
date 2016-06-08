@@ -267,7 +267,7 @@ object GraphStages {
    *
    * This source is not reusable, it is only created internally.
    */
-  private[stream] final class MaterializedValueSource[T](val computation: MaterializedValueNode, val out: Outlet[T]) extends GraphStage[SourceShape[T]] {
+  final class MaterializedValueSource[T](val computation: MaterializedValueNode, val out: Outlet[T]) extends GraphStage[SourceShape[T]] {
     def this(computation: MaterializedValueNode) = this(computation, Outlet[T]("matValue"))
     override def initialAttributes: Attributes = DefaultAttributes.materializedValueSource
     override val shape = SourceShape(out)

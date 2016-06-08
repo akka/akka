@@ -99,7 +99,7 @@ private[akka] final class FanoutPublisherSink[In](
   extends SinkModule[In, Publisher[In]](shape) {
 
   override def create(context: MaterializationContext): (Subscriber[In], Publisher[In]) = {
-    val actorMaterializer = ActorMaterializer.downcast(context.materializer)
+    val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
     val impl = actorMaterializer.actorOf(
       context,
       FanoutProcessorImpl.props(actorMaterializer.effectiveSettings(attributes)))
@@ -124,7 +124,7 @@ private[akka] final class FanoutPublisherSink[In](
 private[akka] final class SinkholeSink(val attributes: Attributes, shape: SinkShape[Any]) extends SinkModule[Any, Future[Done]](shape) {
 
   override def create(context: MaterializationContext) = {
-    val effectiveSettings = ActorMaterializer.downcast(context.materializer).effectiveSettings(context.effectiveAttributes)
+    val effectiveSettings = ActorMaterializerHelper.downcast(context.materializer).effectiveSettings(context.effectiveAttributes)
     val p = Promise[Done]()
     (new SinkholeSubscriber[Any](p), p.future)
   }
@@ -163,7 +163,7 @@ private[akka] final class CancelSink(val attributes: Attributes, shape: SinkShap
 private[akka] final class ActorSubscriberSink[In](props: Props, val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, ActorRef](shape) {
 
   override def create(context: MaterializationContext) = {
-    val subscriberRef = ActorMaterializer.downcast(context.materializer).actorOf(context, props)
+    val subscriberRef = ActorMaterializerHelper.downcast(context.materializer).actorOf(context, props)
     (akka.stream.actor.ActorSubscriber[In](subscriberRef), subscriberRef)
   }
 
@@ -179,7 +179,7 @@ private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any
                                            shape:          SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
 
   override def create(context: MaterializationContext) = {
-    val actorMaterializer = ActorMaterializer.downcast(context.materializer)
+    val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
     val effectiveSettings = actorMaterializer.effectiveSettings(context.effectiveAttributes)
     val subscriberRef = actorMaterializer.actorOf(
       context,
