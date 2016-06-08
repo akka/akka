@@ -5,20 +5,19 @@ package akka.stream.impl.fusing
 
 import java.util
 import java.util.concurrent.TimeoutException
+
 import akka.actor._
 import akka.event.Logging
 import akka.stream._
-import akka.stream.impl._
 import akka.stream.impl.ReactiveStreamsCompliance._
-import akka.stream.impl.StreamLayout.{ CompositeModule, CopiedModule, Module, AtomicModule }
-import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic, GraphAssembly }
+import akka.stream.impl.StreamLayout.{ AtomicModule, CompositeModule, CopiedModule, Module }
+import akka.stream.impl.{ SubFusingActorMaterializerImpl, _ }
+import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, GraphAssembly, UpstreamBoundaryStageLogic }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 import org.reactivestreams.{ Subscriber, Subscription }
-import scala.concurrent.forkjoin.ThreadLocalRandom
-import scala.util.control.NonFatal
-import akka.stream.impl.ActorMaterializerImpl
-import akka.stream.impl.SubFusingActorMaterializerImpl
+
 import scala.annotation.tailrec
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -307,14 +306,14 @@ private[stream] object ActorGraphInterpreter {
 /**
  * INTERNAL API
  */
-private[stream] final class GraphInterpreterShell(
+final class GraphInterpreterShell(
   assembly:    GraphAssembly,
   inHandlers:  Array[InHandler],
   outHandlers: Array[OutHandler],
   logics:      Array[GraphStageLogic],
   shape:       Shape,
   settings:    ActorMaterializerSettings,
-  val mat:     ActorMaterializerImpl) {
+  val mat:     ExtendedActorMaterializer) {
 
   import ActorGraphInterpreter._
 
