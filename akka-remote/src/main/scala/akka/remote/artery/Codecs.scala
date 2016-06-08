@@ -5,7 +5,7 @@ import scala.util.control.NonFatal
 import akka.actor.{ ActorRef, InternalActorRef }
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
-import akka.remote.{ MessageSerializer, UniqueAddress }
+import akka.remote.{ MessageSerializer, OversizedPayloadException, UniqueAddress }
 import akka.remote.EndpointManager.Send
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 import akka.serialization.{ Serialization, SerializationExtension }
@@ -95,6 +95,10 @@ private[remote] class Encoder(
               case _: SystemMessageEnvelope ⇒
                 log.error(e, "Failed to serialize system message [{}].", send.message.getClass.getName)
                 throw e
+              case _ if e.isInstanceOf[java.nio.BufferOverflowException] ⇒
+                val reason = new OversizedPayloadException(s"Discarding oversized payload sent to ${send.recipient}: max allowed size ${envelope.byteBuffer.limit()} bytes. Message type [${send.message.getClass.getName}].")
+                log.error(reason, "Transient association error (association remains live)")
+                pull(in)
               case _ ⇒
                 log.error(e, "Failed to serialize message [{}].", send.message.getClass.getName)
                 pull(in)

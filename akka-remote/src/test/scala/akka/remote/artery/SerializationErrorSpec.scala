@@ -5,6 +5,7 @@ package akka.remote.artery
 
 import scala.concurrent.duration._
 import akka.actor.{ ActorIdentity, ActorSystem, ExtendedActorSystem, Identify, RootActorPath }
+import akka.remote.RARP
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.testkit.TestActors
 import com.typesafe.config.ConfigFactory
@@ -40,7 +41,7 @@ class SerializationErrorSpec extends AkkaSpec(SerializationErrorSpec.config) wit
      """).withFallback(system.settings.config)
   val systemB = ActorSystem("systemB", configB)
   systemB.actorOf(TestActors.echoActorProps, "echo")
-  val addressB = systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+  val addressB = RARP(systemB).provider.getDefaultAddress
   val rootB = RootActorPath(addressB)
 
   override def afterTermination(): Unit = shutdown(systemB)

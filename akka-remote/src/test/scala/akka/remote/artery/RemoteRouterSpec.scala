@@ -10,7 +10,7 @@ import akka.actor._
 import akka.remote.routing._
 import com.typesafe.config._
 import akka.testkit.TestActors.echoActorProps
-import akka.remote.RemoteScope
+import akka.remote.{ RARP, RemoteScope }
 
 object RemoteRouterSpec {
   class Parent extends Actor {
@@ -43,7 +43,7 @@ class RemoteRouterSpec extends AkkaSpec("""
 
   import RemoteRouterSpec._
 
-  val port = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress.port.get
+  val port = RARP(system).provider.getDefaultAddress.port.get
   val sysName = system.name
   val conf = ConfigFactory.parseString(
     s"""
