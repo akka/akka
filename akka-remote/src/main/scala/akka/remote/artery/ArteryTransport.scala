@@ -9,16 +9,13 @@ import java.nio.channels.DatagramChannel
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
-
 import scala.collection.JavaConverters._
-
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-
 import akka.Done
 import akka.NotUsed
 import akka.actor.ActorRef
@@ -68,13 +65,10 @@ import org.agrona.IoUtil
 import java.io.File
 import java.net.InetSocketAddress
 import java.nio.channels.{ DatagramChannel, FileChannel }
-
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import io.aeron.CncFileDescriptor
 import java.util.concurrent.atomic.AtomicLong
-
 import akka.actor.Cancellable
-
 import scala.collection.JavaConverters._
 import akka.stream.ActorMaterializerSettings
 import scala.annotation.tailrec
@@ -331,7 +325,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def addresses: Set[Address] = _addresses
   override def localAddressForRemote(remote: Address): Address = defaultAddress
   override val log: LoggingAdapter = Logging(system, getClass.getName)
-  private val eventPublisher = new EventPublisher(system, log, remoteSettings.RemoteLifecycleEventsLogLevel)
+  val eventPublisher = new EventPublisher(system, log, remoteSettings.RemoteLifecycleEventsLogLevel)
 
   private val codec: AkkaPduCodec = AkkaPduProtobufCodec
   private val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
@@ -705,7 +699,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   def outboundControl(outboundContext: OutboundContext): Sink[Send, (OutboundControlIngress, Future[Done])] = {
     Flow.fromGraph(killSwitch.flow[Send])
       .via(new OutboundHandshake(outboundContext, handshakeTimeout, handshakeRetryInterval, injectHandshakeInterval))
-      .via(new SystemMessageDelivery(outboundContext, systemMessageResendInterval, remoteSettings.SysMsgBufferSize))
+      .via(new SystemMessageDelivery(outboundContext, system.deadLetters, systemMessageResendInterval,
+        remoteSettings.SysMsgBufferSize))
       .viaMat(new OutboundControlJunction(outboundContext))(Keep.right)
       .via(encoder)
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), controlStreamId, aeron, taskRunner,
