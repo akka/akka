@@ -301,10 +301,4 @@ abstract class SecurityDirectives extends SchemeDirectives {
   def authorizeAsyncWithRequestContext(check: akka.japi.function.Function[RequestContext, CompletionStage[Boolean]], inner: Supplier[Route]): Route = RouteAdapter {
     D.authorizeAsync(rc ⇒ check(RequestContext.wrap(rc)).toScala)(inner.get().delegate)
   }
-
-  /**
-   * Creates a `Basic` [[HttpChallenge]] for the given realm.
-   */
-  def challengeFor(realm: String): HttpChallenge = HttpChallenge.create("Basic", realm)
-
 }
