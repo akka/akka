@@ -18,6 +18,9 @@ As opposed to its :ref:`-rawPathPrefix-java-` counterpart ``pathPrefix`` automat
 Depending on the type of its ``PathMatcher`` argument the ``pathPrefix`` directive extracts zero or more values from
 the URI. If the match fails the request is rejected with an :ref:`empty rejection set <empty rejections>`.
 
+.. note:: The empty string (also called empty word or identity) is a **neutral element** of string concatenation operation,
+ so it will match everything and consume nothing. The :ref:`-path-java-` provides more strict behaviour.
+
 
 Example
 -------

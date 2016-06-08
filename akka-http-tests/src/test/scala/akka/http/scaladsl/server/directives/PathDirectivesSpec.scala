@@ -22,6 +22,34 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     "reject [/foo/]" in test()
   }
 
+  """pathPrefix("")""" should {
+    val test = testFor(pathPrefix("") { echoUnmatchedPath })
+
+    // Should match everything because pathPrefix is used and "" is a neutral element.
+    "accept [/] and clear the unmatchedPath=" in test("")
+    "accept [/foo] and clear the unmatchedPath" in test("foo")
+    "accept [/foo/] and clear the unmatchedPath" in test("foo/")
+    "accept [/bar/] and clear the unmatchedPath" in test("bar/")
+  }
+
+  """path("" | "foo")""" should {
+    val test = testFor(path("" | "foo") { echoUnmatchedPath })
+
+    // Should not match anything apart of "/", because path requires whole path being matched.
+    "accept [/] and clear the unmatchedPath=" in test("")
+    "reject [/foo]" in test()
+    "reject [/foo/]" in test()
+    "reject [/bar/]" in test()
+  }
+
+  """path("") ~ path("foo")""" should {
+    val test = testFor(path("")(echoUnmatchedPath) ~ path("foo")(echoUnmatchedPath))
+
+    // Should match both because ~ operator is used for two exclusive routes.
+    "accept [/] and clear the unmatchedPath=" in test("")
+    "accept [/foo] and clear the unmatchedPath=" in test("")
+  }
+
   """path("foo" /)""" should {
     val test = testFor(path("foo" /) { echoUnmatchedPath })
     "reject [/foo]" in test()
