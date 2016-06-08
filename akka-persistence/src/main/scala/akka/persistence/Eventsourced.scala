@@ -499,12 +499,12 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
             // Since we are recovering we can ignore the receive behavior from the stack
             Eventsourced.super.aroundReceive(recoveryBehavior, SnapshotOffer(metadata, snapshot))
         }
-        changeState(recovering(recoveryBehavior))
+        changeState(recovering(recoveryBehavior, timeout))
         journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
 
       case RecoveryTick(true) ⇒
         try onRecoveryFailure(
-          new RecoveryTimedOut(s"Recovery timed out, didn't get snapshot within ${timeout} s"),
+          new RecoveryTimedOut(s"Recovery timed out, didn't get snapshot within $timeout s"),
           event = None)
         finally context.stop(self)
 
@@ -523,11 +523,10 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    *
    * All incoming messages are stashed.
    */
-  private def recovering(recoveryBehavior: Receive) =
+  private def recovering(recoveryBehavior: Receive, timeout: FiniteDuration) =
     new State {
 
       // protect against snapshot stalling forever because of journal overloaded and such
-      val timeout = extension.journalConfigFor(journalPluginId).getMillisDuration("recovery-event-timeout")
       val timeoutCancellable = {
         import context.dispatcher
         context.system.scheduler.schedule(timeout, timeout, self, RecoveryTick(snapshot = false))
@@ -563,7 +562,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         case RecoveryTick(false) if !eventSeenInInterval ⇒
           timeoutCancellable.cancel()
           try onRecoveryFailure(
-            new RecoveryTimedOut(s"Recovery timed out, didn't get event within ${timeout} s, highest sequence number seen $sequenceNr"),
+            new RecoveryTimedOut(s"Recovery timed out, didn't get event within $timeout s, highest sequence number seen $sequenceNr"),
             event = None)
           finally context.stop(self)
         case RecoveryTick(false) ⇒
