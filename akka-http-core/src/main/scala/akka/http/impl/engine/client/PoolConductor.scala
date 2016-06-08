@@ -23,7 +23,7 @@ private object PoolConductor {
   case class Ports(
     requestIn:   Inlet[RequestContext],
     slotEventIn: Inlet[RawSlotEvent],
-    slotOuts:    immutable.Seq[Outlet[RequestContext]]) extends Shape {
+    slotOuts:    immutable.Seq[Outlet[SlotCommand]]) extends Shape {
 
     override val inlets = requestIn :: slotEventIn :: Nil
     override def outlets = slotOuts
@@ -38,18 +38,18 @@ private object PoolConductor {
       Ports(
         inlets.head.asInstanceOf[Inlet[RequestContext]],
         inlets.last.asInstanceOf[Inlet[RawSlotEvent]],
-        outlets.asInstanceOf[immutable.Seq[Outlet[RequestContext]]])
+        outlets.asInstanceOf[immutable.Seq[Outlet[SlotCommand]]])
   }
 
-  case class PoolSlotsSetting(minSlots: Int, maxSlots: Int){
+  case class PoolSlotsSetting(minSlots: Int, maxSlots: Int) {
     require(minSlots <= maxSlots, "min-connections must be <= max-connections")
   }
 
   /*
     Stream Setup
     ============
-                                                                                                  Request-
-    Request-   +-----------+     +-----------+    Switch-    +-------------+     +-----------+    Context
+                                                                                                  Slot-
+    Request-   +-----------+     +-----------+    Switch-    +-------------+     +-----------+    Command
     Context    |   retry   |     |   slot-   |    Command    |   doubler   |     |   route   +-------------->
     +--------->|   Merge   +---->| Selector  +-------------->| (MapConcat) +---->|  (Flexi   +-------------->
                |           |     |           |               |             |     |   Route)  +-------------->
@@ -89,9 +89,10 @@ private object PoolConductor {
       Ports(retryMerge.in(0), retrySplit.in, route.outArray.toList)
     }
 
-  trait SlotCommand
-  private case class SwitchCommand(rc: RequestContext, slotIx: Int) extends SlotCommand
-  case object SlotShouldConnectCommand extends SlotCommand
+  sealed trait SlotCommand
+  case class DispatchCommand(rc: RequestContext) extends SlotCommand
+  case class SwitchSlotCommand(cmd: DispatchCommand, slotIx: Int) extends SlotCommand
+  case class SlotShouldConnectCommand(slotIx: Int) extends SlotCommand
 
   // the SlotSelector keeps the state of all slotSettings as instances of this ADT
   private sealed trait SlotState
@@ -132,7 +133,7 @@ private object PoolConductor {
           val slot = nextSlot
           slotStates(slot) = slotStateAfterDispatch(slotStates(slot), ctx.request.method)
           nextSlot = bestSlot()
-          emit(out, SwitchCommand(ctx, slot), tryPullCtx)
+          emit(out, SwitchSlotCommand(DispatchCommand(ctx), slot), tryPullCtx)
         }
       })
 
@@ -143,6 +144,7 @@ private object PoolConductor {
               slotStates(slotIx) = slotStateAfterRequestCompleted(slotStates(slotIx))
             case SlotEvent.Disconnected(slotIx, failed) ⇒
               slotStates(slotIx) = slotStateAfterDisconnect(slotStates(slotIx), failed)
+              reconnectIfNeeded()
           }
           pull(slotIn)
           val wasBlocked = nextSlot == -1
@@ -160,8 +162,26 @@ private object PoolConductor {
         pull(ctxIn)
         pull(slotIn)
 
-        (0 until slotSettings.minSlots).foreach { i =>
-          emit(out, SlotShouldConnectCommand)
+        startMinConnections()
+      }
+
+      def startMinConnections(): Unit =
+        (0 until slotSettings.minSlots).foreach { connect }
+
+      def connect(index: Int): Unit = {
+        emit(out, SlotShouldConnectCommand(index), () ⇒
+          slotStates(index) = Idle
+        )
+      }
+
+      private def reconnectIfNeeded(): Unit = {
+        val connectedNum = slotStates.count(_ != Unconnected)
+        if (connectedNum < slotSettings.minSlots) {
+          val unconnected = slotStates
+            .zipWithIndex
+            .filter(_._1 != Unconnected)
+            .take(slotSettings.minSlots - connectedNum)
+          unconnected.map(_._2).map(connect)
         }
       }
 
@@ -215,11 +235,11 @@ private object PoolConductor {
     }
   }
 
-  private class Route(slotCount: Int) extends GraphStage[UniformFanOutShape[SlotCommand, RequestContext]] {
+  private class Route(slotCount: Int) extends GraphStage[UniformFanOutShape[SlotCommand, SlotCommand]] {
 
     override def initialAttributes = Attributes.name("PoolConductor.Route")
 
-    override val shape = new UniformFanOutShape[SlotCommand, RequestContext](slotCount)
+    override val shape = new UniformFanOutShape[SlotCommand, SlotCommand](slotCount)
 
     override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       shape.outArray foreach { setHandler(_, ignoreTerminateOutput) }
@@ -229,12 +249,12 @@ private object PoolConductor {
         override def onPush(): Unit = {
           val cmd = grab(in)
           cmd match {
-            case SwitchCommand(rc, slotIx) =>
-              emit (shape.outArray(slotIx), rc, pullIn)
-            case x =>
-              ///TODO: how to pass the message on ????
-              val f = RequestContext(request = null, responsePromise = null, retriesLeft = 0)
-              emit (shape.outArray(0), f, pullIn)
+            case SwitchSlotCommand(cmd, slotIx) ⇒
+              emit(shape.outArray(slotIx), cmd, pullIn)
+            case cmd @ SlotShouldConnectCommand(slotIx) ⇒
+              emit(shape.outArray(slotIx), cmd, pullIn)
+            case _: DispatchCommand ⇒ 
+              throw new IllegalStateException("Raw DispatchCommand SlotCommand should not be used directly. Wrap it with SwitchSlotCommand")
           }
         }
       })

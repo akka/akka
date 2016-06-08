@@ -246,14 +246,18 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
       // for lower bound of five connections
       val minFiveConnections = 5
-      val (_, _, _, hcpMinFiveConnection) = cachedHostConnectionPool[Int](
+      val (requestInFive, _, responseOutSubFive, hcpMinFiveConnection) = cachedHostConnectionPool[Int](
         idleTimeout = 100.millis,
         minConnections = minFiveConnections,
-        maxConnections = minFiveConnections + 1)
+        maxConnections = minFiveConnections + 10)
 
       val gatewayFiveConnections = hcpMinFiveConnection.gateway
-      condHolds(500.millis) { () ⇒
-        Await.result(gatewayFiveConnections.poolStatus(), 100.millis).get shouldBe a[PoolInterfaceRunning]
+      condHolds(1000.millis) { () ⇒
+        val status = gatewayFiveConnections.poolStatus()
+        val interfaces = gatewayFiveConnections.poolInterfacesStatus()
+
+        Await.result(status, 100.millis).get shouldBe a[PoolInterfaceRunning]
+        //        Await.result(interfaces, 100.millis) should be >= minFiveConnections
       }
     }
 

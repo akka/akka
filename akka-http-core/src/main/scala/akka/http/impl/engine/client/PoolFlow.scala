@@ -5,7 +5,7 @@
 package akka.http.impl.engine.client
 
 import akka.NotUsed
-import akka.http.impl.engine.client.PoolConductor.PoolSlotsSetting
+import akka.http.impl.engine.client.PoolConductor.{ DispatchCommand, PoolSlotsSetting }
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 
 import scala.concurrent.{ Promise, Future }
@@ -82,7 +82,7 @@ private object PoolFlow {
       )
 
       val slots = Vector
-        .tabulate(maxConnections)(PoolSlot(_, connectionFlow, settings))
+        .tabulate(maxConnections)(PoolSlot(_, connectionFlow))
         .map(b.add)
 
       val responseMerge = b.add(Merge[ResponseContext](maxConnections))
