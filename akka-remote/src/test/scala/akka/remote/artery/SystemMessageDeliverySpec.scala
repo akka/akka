@@ -4,6 +4,7 @@
 package akka.remote.artery
 
 import java.util.concurrent.ThreadLocalRandom
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.NotUsed
@@ -14,10 +15,8 @@ import akka.actor.Identify
 import akka.actor.InternalActorRef
 import akka.actor.PoisonPill
 import akka.actor.RootActorPath
-import akka.remote.AddressUidExtension
+import akka.remote.{ AddressUidExtension, RARP, RemoteActorRef, UniqueAddress }
 import akka.remote.EndpointManager.Send
-import akka.remote.RemoteActorRef
-import akka.remote.UniqueAddress
 import akka.remote.artery.SystemMessageDelivery._
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
@@ -52,11 +51,11 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
   import SystemMessageDeliverySpec._
 
   val addressA = UniqueAddress(
-    system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
+    RARP(system).provider.getDefaultAddress,
     AddressUidExtension(system).addressUid)
   val systemB = ActorSystem("systemB", system.settings.config)
   val addressB = UniqueAddress(
-    systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
+    RARP(systemB).provider.getDefaultAddress,
     AddressUidExtension(systemB).addressUid)
   val rootB = RootActorPath(addressB.address)
   val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
