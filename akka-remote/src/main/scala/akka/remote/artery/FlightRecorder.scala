@@ -9,6 +9,7 @@ import java.nio.channels.FileChannel
 import java.nio.file.StandardOpenOption
 import java.util.concurrent.atomic.AtomicBoolean
 
+import akka.actor.{ ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.util.ByteString
 import org.agrona.BitUtil
 import org.agrona.concurrent.MappedResizeableBuffer
@@ -162,15 +163,6 @@ private[remote] class RollingEventLogSection(
  */
 private[remote] object FlightRecorder {
 
-  def prepareFileForFlightRecorder(file: File): FileChannel = {
-    // Force the size, otherwise memory mapping will fail on *nixes
-    val randomAccessFile = new RandomAccessFile(file, "rwd")
-    randomAccessFile.setLength(FlightRecorder.TotalSize)
-    randomAccessFile.close()
-
-    FileChannel.open(file.toPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ)
-  }
-
   val Alignment = 64 * 1024 // Windows is picky about mapped section alignments
 
   val MagicString = 0x31524641 // "AFR1", little-endian
@@ -208,11 +200,32 @@ private[remote] object FlightRecorder {
   val HiFreqEntryCountFieldOffset = 16
 }
 
+private[akka] object FlightRecorderExtension extends ExtensionId[FlightRecorder] with ExtensionIdProvider {
+
+  override def lookup(): FlightRecorderExtension.type = FlightRecorderExtension
+
+  override def createExtension(system: ExtendedActorSystem): FlightRecorder = {
+    // TODO: Figure out where to put it, currently using temporary files
+    val afrFile = File.createTempFile("artery", ".afr")
+    afrFile.deleteOnExit()
+    new FlightRecorder(afrFile)
+  }
+}
+
 /**
  * INTERNAL API
  */
-private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicBoolean {
+private[akka] class FlightRecorder(val file: File) extends AtomicBoolean with Extension {
   import FlightRecorder._
+
+  val fileChannel = {
+    // Force the size, otherwise memory mapping will fail on *nixes
+    val randomAccessFile = new RandomAccessFile(file, "rwd")
+    randomAccessFile.setLength(FlightRecorder.TotalSize)
+    randomAccessFile.close()
+
+    FileChannel.open(file.toPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ)
+  }
 
   private[this] val globalSection = new MappedResizeableBuffer(fileChannel, 0, GlobalSectionSize)
 
@@ -276,11 +289,18 @@ private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicB
     }
   }
 
+  def flush(): Unit = {
+    fileChannel.force(false)
+  }
+
   def close(): Unit = {
     alertLogs.close()
     hiFreqLogs.close()
     loFreqLogs.close()
     globalSection.close()
+    fileChannel.force(true)
+    fileChannel.close()
+    file.delete()
   }
 
   def createEventSink(): EventSink = new EventSink {
