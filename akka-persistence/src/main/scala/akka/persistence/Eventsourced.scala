@@ -637,8 +637,8 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         () // it will be stopped by the first WriteMessageFailure message
 
       case _: RecoveryTick =>
-        // we may have one of these scheduled before the scheduled timeout
-        // is cancelled, just consume it so the concrete actor never sees it
+        // we may have one of these in the mailbox before the scheduled timeout
+        // is cancelled when recovery has completed, just consume it so the concrete actor never sees it
     }
 
     def onWriteMessageComplete(err: Boolean): Unit
