@@ -16,6 +16,7 @@ import akka.actor.Actor
 import akka.persistence.RecoveryCompleted
 import akka.persistence.SaveSnapshotFailure
 import akka.persistence.SaveSnapshotSuccess
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API
@@ -34,6 +35,12 @@ private[akka] object Shard {
    * restart it after a back off using this message.
    */
   final case class RestartEntity(entity: EntityId) extends ShardCommand
+
+  /**
+   * When initialising a shard with remember entities enabled the following message is used
+   * to restart batches of entity actors at a time.
+   */
+  final case class RestartEntities(entity: Set[EntityId]) extends ShardCommand
 
   /**
    * A case class which represents a state change for the Shard
@@ -116,7 +123,7 @@ private[akka] class Shard(
 
   import ShardRegion.{ handOffStopperProps, EntityId, Msg, Passivate, ShardInitialized }
   import ShardCoordinator.Internal.{ HandOff, ShardStopped }
-  import Shard.{ State, RestartEntity, EntityStopped, EntityStarted }
+  import Shard.{ State, RestartEntity, RestartEntities, EntityStopped, EntityStarted }
   import Shard.{ ShardQuery, GetCurrentShardState, CurrentShardState, GetShardStats, ShardStats }
   import akka.cluster.sharding.ShardCoordinator.Internal.CoordinatorMessage
   import akka.cluster.sharding.ShardRegion.ShardRegionCommand
@@ -151,7 +158,8 @@ private[akka] class Shard(
   }
 
   def receiveShardCommand(msg: ShardCommand): Unit = msg match {
-    case RestartEntity(id) ⇒ getEntity(id)
+    case RestartEntity(id)    ⇒ getEntity(id)
+    case RestartEntities(ids) ⇒ ids foreach getEntity
   }
 
   def receiveShardRegionCommand(msg: ShardRegionCommand): Unit = msg match {
@@ -315,7 +323,15 @@ private[akka] class PersistentShard(
   import ShardRegion.{ EntityId, Msg }
   import Shard.{ State, RestartEntity, EntityStopped, EntityStarted }
   import settings.tuningParameters._
-  import scala.concurrent.duration.Duration
+
+  import akka.actor.ExtendedActorSystem
+  import akka.util.Collections.EmptyImmutableSeq
+  import com.typesafe.config.{ ConfigFactory, Config }
+
+  val entityRecoveryStrategy: EntityRecoveryStrategy =
+    context.system.asInstanceOf[ExtendedActorSystem].dynamicAccess.createInstanceFor[EntityRecoveryConfigurator](
+      settings.tuningParameters.entityRecoveryStrategy, EmptyImmutableSeq
+    ).map(_.create(retrieveEntityRecoveryConfig())).get
 
   override def persistenceId = s"/sharding/${typeName}Shard/${shardId}"
 
@@ -345,22 +361,9 @@ private[akka] class PersistentShard(
     case EntityStopped(id)                 ⇒ state = state.copy(state.entities - id)
     case SnapshotOffer(_, snapshot: State) ⇒ state = snapshot
     case RecoveryCompleted ⇒
-      restartRememberedEntities()
+      entityRecoveryStrategy.recoverEntities(context, state.entities)
       super.initialized()
       log.debug("Shard recovery completed {}", shardId)
-  }
-
-  private def restartRememberedEntities(): Unit = {
-    if (entityRecoveryRateInterval == Duration.Zero) {
-      state.entities foreach getEntity
-    } else {
-      state.entities.foldLeft(entityRecoveryRateInterval) {
-        case (interval, entityId) ⇒
-          import context.dispatcher
-          context.system.scheduler.scheduleOnce(interval, self, RestartEntity(entityId))
-          interval + entityRecoveryRateInterval
-      }
-    }
   }
 
   override def receiveCommand: Receive = ({
@@ -402,4 +405,59 @@ private[akka] class PersistentShard(
     }
   }
 
+  private def retrieveEntityRecoveryConfig(): Config = {
+    val path = settings.tuningParameters.entityRecoveryStrategyConfigPath
+    if (path.isEmpty)
+      ConfigFactory.empty()
+    else
+      context.system.settings.config.getConfig(path)
+  }
 }
+
+abstract class EntityRecoveryStrategy {
+  import ShardRegion.EntityId
+  import akka.actor.ActorContext
+  def recoverEntities(context: ActorContext, entities: Set[EntityId])
+}
+
+final class AllAtOnceEntityRecoveryStrategy extends EntityRecoveryStrategy {
+  import ShardRegion.EntityId
+  import akka.actor.ActorContext
+  import Shard.RestartEntities
+  override def recoverEntities(context: ActorContext, entities: Set[EntityId]): Unit =
+    context.self ! RestartEntities(entities)
+}
+
+final class ConstantRateEntityRecoveryStrategy(val frequency: FiniteDuration, val numberOfEntities: Int) extends EntityRecoveryStrategy {
+  import ShardRegion.EntityId
+  import akka.actor.ActorContext
+  import Shard.RestartEntities
+  override def recoverEntities(context: ActorContext, entities: Set[EntityId]): Unit = {
+    entities.grouped(numberOfEntities).foldLeft(frequency) {
+      case (interval, entityIds) ⇒
+        import context.dispatcher
+        context.system.scheduler.scheduleOnce(interval, context.self, RestartEntities(entityIds))
+        interval + frequency
+    }
+  }
+}
+
+trait EntityRecoveryConfigurator {
+  import com.typesafe.config.Config
+  def create(config: Config): EntityRecoveryStrategy
+}
+
+final class AllAtOnceEntityRecoveryConfigurator extends EntityRecoveryConfigurator {
+  import com.typesafe.config.Config
+  override def create(config: Config): EntityRecoveryStrategy = new AllAtOnceEntityRecoveryStrategy()
+}
+
+final class ConstantRateEntityRecoveryConfigurator extends EntityRecoveryConfigurator {
+  import com.typesafe.config.Config
+  import scala.concurrent.duration._
+  override def create(config: Config): EntityRecoveryStrategy = new ConstantRateEntityRecoveryStrategy(
+    config.getDuration("frequency", MILLISECONDS).millis,
+    config.getInt("number-of-entities")
+  )
+}
+

@@ -114,7 +114,12 @@ object ClusterShardingSpec {
 
 }
 
-abstract class ClusterShardingSpecConfig(val mode: String, val entityRecoveryRateInterval: FiniteDuration = Duration.Zero) extends MultiNodeConfig {
+abstract class ClusterShardingSpecConfig(
+  val mode:                     String,
+  val entityRecoveryStrategy:   String = "akka.cluster.sharding.AllAtOnceEntityRecoveryConfigurator",
+  val entityRecoveryConfigPath: String = "")
+  extends MultiNodeConfig {
+
   val controller = role("controller")
   val first = role("first")
   val second = role("second")
@@ -144,7 +149,12 @@ abstract class ClusterShardingSpecConfig(val mode: String, val entityRecoveryRat
       entity-restart-backoff = 1s
       rebalance-interval = 2 s
       state-store-mode = "$mode"
-      entity-recovery-rate-interval = "${entityRecoveryRateInterval.toMillis}ms"
+      entity-recovery-strategy = "$entityRecoveryStrategy"
+      entity-recovery-strategy-config-path = "$entityRecoveryConfigPath"
+      entity-recovery-constant-rate-strategy {
+        frequency = 1 ms
+        number-of-entities = 1
+      }
       least-shard-allocation-strategy {
         rebalance-threshold = 2
         max-simultaneous-rebalance = 1
@@ -178,8 +188,16 @@ object ClusterShardingDocCode {
 
 object PersistentClusterShardingSpecConfig extends ClusterShardingSpecConfig("persistence")
 object DDataClusterShardingSpecConfig extends ClusterShardingSpecConfig("ddata")
-object PersistentClusterShardingWithEntityRecoverySpecConfig extends ClusterShardingSpecConfig("persistence", 1.millis)
-object DDataClusterShardingWithEntityRecoverySpecConfig extends ClusterShardingSpecConfig("ddata", 1.millis)
+object PersistentClusterShardingWithEntityRecoverySpecConfig extends ClusterShardingSpecConfig(
+  "persistence",
+  "akka.cluster.sharding.ConstantRateEntityRecoveryConfigurator",
+  "akka.cluster.sharding.entity-recovery-constant-rate-strategy"
+)
+object DDataClusterShardingWithEntityRecoverySpecConfig extends ClusterShardingSpecConfig(
+  "ddata",
+  "akka.cluster.sharding.ConstantRateEntityRecoveryConfigurator",
+  "akka.cluster.sharding.entity-recovery-constant-rate-strategy"
+)
 
 class PersistentClusterShardingSpec extends ClusterShardingSpec(PersistentClusterShardingSpecConfig)
 class DDataClusterShardingSpec extends ClusterShardingSpec(DDataClusterShardingSpecConfig)

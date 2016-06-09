@@ -39,7 +39,8 @@ object ClusterShardingSettings {
         config.getInt("least-shard-allocation-strategy.max-simultaneous-rebalance"),
       waitingForStateTimeout = config.getDuration("waiting-for-state-timeout", MILLISECONDS).millis,
       updatingStateTimeout = config.getDuration("updating-state-timeout", MILLISECONDS).millis,
-      entityRecoveryRateInterval = config.getDuration("entity-recovery-rate-interval", MILLISECONDS).millis)
+      entityRecoveryStrategy = config.getString("entity-recovery-strategy"),
+      entityRecoveryStrategyConfigPath = config.getString("entity-recovery-strategy-config-path"))
 
     val coordinatorSingletonSettings = ClusterSingletonManagerSettings(config.getConfig("coordinator-singleton"))
 
@@ -85,7 +86,8 @@ object ClusterShardingSettings {
     val leastShardAllocationMaxSimultaneousRebalance: Int,
     val waitingForStateTimeout:                       FiniteDuration,
     val updatingStateTimeout:                         FiniteDuration,
-    val entityRecoveryRateInterval:                   FiniteDuration)
+    val entityRecoveryStrategy:                       String         = "akka.cluster.sharding.AllAtOnceEntityRecoveryConfigurator",
+    val entityRecoveryStrategyConfigPath:             String         = "")
 
 }
 
