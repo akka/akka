@@ -9,7 +9,7 @@ response properties in a compact way.
 
 To use the testkit you need to take these steps:
 
-* add a dependency to the ``akka-http-testkit-experimental`` module
+* add a dependency to the ``akka-http-testkit`` module
 * derive the test class from ``JUnitRouteTest``
 * wrap the route under test with ``RouteTest.testRoute`` to create a ``TestRoute``
 * run requests against the route using ``TestRoute.run(request)`` which will return
