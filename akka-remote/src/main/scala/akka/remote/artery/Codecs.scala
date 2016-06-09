@@ -1,5 +1,6 @@
 package akka.remote.artery
 
+import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import akka.actor.{ ActorRef, InternalActorRef }
 import akka.actor.ActorSystem
@@ -11,9 +12,13 @@ import akka.serialization.{ Serialization, SerializationExtension }
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.util.OptionVal
+import akka.actor.EmptyLocalActorRef
+import akka.stream.stage.TimerGraphStageLogic
 
-// TODO: Long UID
-class Encoder(
+/**
+ * INTERNAL API
+ */
+private[remote] class Encoder(
   uniqueLocalAddress: UniqueAddress,
   system:             ActorSystem,
   compressionTable:   LiteralCompressionTable,
@@ -104,7 +109,20 @@ class Encoder(
     }
 }
 
-class Decoder(
+/**
+ * INTERNAL API
+ */
+private[remote] object Decoder {
+  private final case class RetryResolveRemoteDeployedRecipient(
+    attemptsLeft:    Int,
+    recipientPath:   String,
+    inboundEnvelope: InboundEnvelope)
+}
+
+/**
+ * INTERNAL API
+ */
+private[remote] class Decoder(
   inboundContext:                  InboundContext,
   system:                          ExtendedActorSystem,
   resolveActorRefWithLocalAddress: String ⇒ InternalActorRef,
@@ -116,13 +134,17 @@ class Decoder(
   val shape: FlowShape[EnvelopeBuffer, InboundEnvelope] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+    new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+      import Decoder.RetryResolveRemoteDeployedRecipient
       private val localAddress = inboundContext.localAddress.address
       private val headerBuilder = HeaderBuilder(compressionTable)
       private val serialization = SerializationExtension(system)
 
       private val recipientCache = new java.util.HashMap[String, InternalActorRef]
       private val senderCache = new java.util.HashMap[String, ActorRef]
+
+      private val retryResolveRemoteDeployedRecipientInterval = 50.millis
+      private val retryResolveRemoteDeployedRecipientAttempts = 20
 
       override protected def logSource = classOf[Decoder]
 
@@ -133,18 +155,8 @@ class Decoder(
         // FIXME: Instead of using Strings, the headerBuilder should automatically return cached ActorRef instances
         // in case of compression is enabled
         // FIXME: Is localAddress really needed?
-        val recipient: InternalActorRef = recipientCache.get(headerBuilder.recipientActorRef) match {
-          case null ⇒
-            val ref = resolveActorRefWithLocalAddress(headerBuilder.recipientActorRef)
-            // FIXME we might need an efficient LRU cache, or replaced by compression table
-            if (recipientCache.size() >= 1000)
-              recipientCache.clear()
-            recipientCache.put(headerBuilder.recipientActorRef, ref)
-            ref
-          case ref ⇒ ref
-        }
 
-        val senderOption =
+        val sender =
           if (headerBuilder.isNoSender)
             OptionVal.None
           else {
@@ -160,6 +172,12 @@ class Decoder(
             }
           }
 
+        val recipient =
+          if (headerBuilder.isNoRecipient)
+            OptionVal.None
+          else
+            resolveRecipient(headerBuilder.recipientActorRef)
+
         val originUid = headerBuilder.uid
         val association = inboundContext.association(originUid)
 
@@ -172,11 +190,18 @@ class Decoder(
             recipient,
             localAddress, // FIXME: Is this needed anymore? What should we do here?
             deserializedMessage,
-            senderOption,
+            sender,
             originUid,
             association)
 
-          push(out, decoded)
+          if (recipient.isEmpty && !headerBuilder.isNoRecipient) {
+            // the remote deployed actor might not be created yet when resolving the
+            // recipient for the first message that is sent to it, best effort retry
+            scheduleOnce(RetryResolveRemoteDeployedRecipient(
+              retryResolveRemoteDeployedRecipientAttempts,
+              headerBuilder.recipientActorRef, decoded), retryResolveRemoteDeployedRecipientInterval)
+          } else
+            push(out, decoded)
         } catch {
           case NonFatal(e) ⇒
             log.warning(
@@ -188,7 +213,55 @@ class Decoder(
         }
       }
 
+      private def resolveRecipient(path: String): OptionVal[InternalActorRef] = {
+        recipientCache.get(path) match {
+          case null ⇒
+            def addToCache(resolved: InternalActorRef): Unit = {
+              // FIXME we might need an efficient LRU cache, or replaced by compression table
+              if (recipientCache.size() >= 1000)
+                recipientCache.clear()
+              recipientCache.put(path, resolved)
+            }
+
+            resolveActorRefWithLocalAddress(path) match {
+              case empty: EmptyLocalActorRef ⇒
+                val pathElements = empty.path.elements
+                if (pathElements.nonEmpty && pathElements.head == "remote")
+                  OptionVal.None
+                else {
+                  addToCache(empty)
+                  OptionVal(empty)
+                }
+              case ref ⇒
+                addToCache(ref)
+                OptionVal(ref)
+            }
+          case ref ⇒ OptionVal(ref)
+        }
+      }
+
       override def onPull(): Unit = pull(in)
+
+      override protected def onTimer(timerKey: Any): Unit = {
+        timerKey match {
+          case RetryResolveRemoteDeployedRecipient(attemptsLeft, recipientPath, inboundEnvelope) ⇒
+            resolveRecipient(recipientPath) match {
+              case OptionVal.None ⇒
+                if (attemptsLeft > 0)
+                  scheduleOnce(RetryResolveRemoteDeployedRecipient(
+                    attemptsLeft - 1,
+                    headerBuilder.recipientActorRef, inboundEnvelope), retryResolveRemoteDeployedRecipientInterval)
+                else {
+                  val recipient = resolveActorRefWithLocalAddress(recipientPath)
+                  // only retry for the first message
+                  recipientCache.put(recipientPath, recipient)
+                  push(out, inboundEnvelope.withRecipient(recipient))
+                }
+              case OptionVal.Some(recipient) ⇒
+                push(out, inboundEnvelope.withRecipient(recipient))
+            }
+        }
+      }
 
       setHandlers(in, out, this)
     }
