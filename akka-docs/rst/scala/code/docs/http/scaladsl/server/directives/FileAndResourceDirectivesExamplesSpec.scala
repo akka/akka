@@ -18,7 +18,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
 
     val route =
       path("logs" / Segment) { name =>
-        getFromFile(".log") // uses implicit ContentTypeResolver
+        getFromFile(s"$name.log") // uses implicit ContentTypeResolver
       }
 
     // tests:
@@ -32,7 +32,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
 
     val route =
       path("logs" / Segment) { name =>
-        getFromResource(".log") // uses implicit ContentTypeResolver
+        getFromResource(s"$name.log") // uses implicit ContentTypeResolver
       }
 
     // tests:
@@ -46,6 +46,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
         listDirectoryContents("/tmp")
       } ~
         path("custom") {
+          // implement your custom renderer here
           val renderer = new DirectoryRenderer {
             override def marshaller(renderVanityFooter: Boolean): ToEntityMarshaller[DirectoryListing] = ???
           }
