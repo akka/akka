@@ -37,6 +37,7 @@ import akka.util.{ Unsafe, WildcardTree }
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 import akka.util.OptionVal
 import akka.remote.QuarantinedEvent
+import akka.remote.DaemonMsgCreate
 
 /**
  * INTERNAL API
@@ -159,20 +160,31 @@ private[remote] class Association(
   override def sendControl(message: ControlMessage): Unit =
     outboundControlIngress.sendControlMessage(message)
 
-  def send(message: Any, senderOption: OptionVal[ActorRef], recipient: RemoteActorRef): Unit = {
+  def send(message: Any, sender: OptionVal[ActorRef], recipient: RemoteActorRef): Unit = {
     // allow ActorSelectionMessage to pass through quarantine, to be able to establish interaction with new system
     // FIXME where is that ActorSelectionMessage check in old remoting?
     if (message.isInstanceOf[ActorSelectionMessage] || !associationState.isQuarantined() || message == ClearSystemMessageDelivery) {
       // FIXME: Use a different envelope than the old Send, but make sure the new is handled by deadLetters properly
       message match {
         case _: SystemMessage | ClearSystemMessageDelivery ⇒
-          val send = Send(message, senderOption, recipient, None)
+          val send = Send(message, sender, recipient, None)
           if (!controlQueue.offer(send)) {
             quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
             transport.system.deadLetters ! send
           }
+        case _: DaemonMsgCreate ⇒
+          // DaemonMsgCreate is not a SystemMessage, but must be sent over the control stream because
+          // remote deployment process depends on message ordering for DaemonMsgCreate and Watch messages.
+          // It must also be sent over the ordinary message stream so that it arrives (and creates the
+          // destination) before the first ordinary message arrives.
+          val send1 = Send(message, sender, recipient, None)
+          if (!controlQueue.offer(send1))
+            transport.system.deadLetters ! send1
+          val send2 = Send(message, sender, recipient, None)
+          if (!queue.offer(send2))
+            transport.system.deadLetters ! send2
         case _ ⇒
-          val send = Send(message, senderOption, recipient, None)
+          val send = Send(message, sender, recipient, None)
           val offerOk =
             if (largeMessageChannelEnabled && isLargeMessageDestination(recipient))
               largeQueue.offer(send)

@@ -82,11 +82,6 @@ abstract class RemoteRestartedQuarantinedSpec
       runOn(first) {
         val secondAddress = node(second).address
 
-        // FIXME this should not be needed, see issue #20566
-        within(30.seconds) {
-          identifyWithUid(second, "subject", 1.seconds)
-        }
-
         val (uid, ref) = identifyWithUid(second, "subject", 5.seconds)
 
         enterBarrier("before-quarantined")

@@ -39,7 +39,7 @@ class InboundControlJunctionSpec extends AkkaSpec with ImplicitSender {
     "be emitted via side channel" in {
       val observerProbe = TestProbe()
       val inboundContext = new TestInboundContext(localAddress = addressB)
-      val recipient = null.asInstanceOf[InternalActorRef] // not used
+      val recipient = OptionVal.None // not used
 
       val ((upstream, controlSubject), downstream) = TestSource.probe[AnyRef]
         .map(msg ⇒ InboundEnvelope(recipient, addressB.address, msg, OptionVal.None, addressA.uid, OptionVal.None))
