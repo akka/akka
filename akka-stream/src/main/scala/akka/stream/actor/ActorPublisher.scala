@@ -469,3 +469,24 @@ object AbstractActorPublisher {
  * @see [[akka.stream.actor.ActorPublisher]]
  */
 abstract class AbstractActorPublisher[T] extends AbstractActor with ActorPublisher[T]
+
+/**
+ * Java API compatible with lambda expressions.
+ * This class adds a Stash to {@link AbstractActorPublisher}.
+ * @see [[akka.stream.actor.ActorPublisher]] and [[akka.stream.actor.AbstractActorWithStash]]
+ */
+abstract class AbstractActorPublisherWithStash[T] extends AbstractActor with ActorPublisher[T] with Stash
+
+/**
+ * Java API compatible with lambda expressions.
+ * This class adds an unbounded Stash to {@link AbstractActorPublisher}.
+ * @see [[akka.stream.actor.ActorPublisher]] and [[akka.stream.actor.AbstractActorWithUnboundedStash]]
+ */
+abstract class AbstractActorPublisherWithUnboundedStash[T] extends AbstractActor with ActorPublisher[T] with UnboundedStash
+
+/**
+ * Java API compatible with lambda expressions.
+ * This class adds an unrestricted Stash to {@link AbstractActorPublisher}.
+ * @see [[akka.stream.actor.ActorPublisher]] and [[akka.stream.actor.AbstractActorWithUnrestrictedStash]]
+ */
+abstract class AbstractActorPublisherWithUnrestrictedStash[T] extends AbstractActor with ActorPublisher[T] with UnrestrictedStash
