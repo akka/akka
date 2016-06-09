@@ -86,9 +86,42 @@ object ClusterShardingSettings {
     val leastShardAllocationMaxSimultaneousRebalance: Int,
     val waitingForStateTimeout:                       FiniteDuration,
     val updatingStateTimeout:                         FiniteDuration,
-    val entityRecoveryStrategy:                       String         = "akka.cluster.sharding.AllAtOnceEntityRecoveryConfigurator",
-    val entityRecoveryStrategyConfigPath:             String         = "")
+    val entityRecoveryStrategy:                       String,
+    val entityRecoveryStrategyConfigPath:             String) {
 
+    def this(
+      coordinatorFailureBackoff:                    FiniteDuration,
+      retryInterval:                                FiniteDuration,
+      bufferSize:                                   Int,
+      handOffTimeout:                               FiniteDuration,
+      shardStartTimeout:                            FiniteDuration,
+      shardFailureBackoff:                          FiniteDuration,
+      entityRestartBackoff:                         FiniteDuration,
+      rebalanceInterval:                            FiniteDuration,
+      snapshotAfter:                                Int,
+      leastShardAllocationRebalanceThreshold:       Int,
+      leastShardAllocationMaxSimultaneousRebalance: Int,
+      waitingForStateTimeout:                       FiniteDuration,
+      updatingStateTimeout:                         FiniteDuration) = {
+      this(
+        coordinatorFailureBackoff,
+        retryInterval,
+        bufferSize,
+        handOffTimeout,
+        shardStartTimeout,
+        shardFailureBackoff,
+        entityRestartBackoff,
+        rebalanceInterval,
+        snapshotAfter,
+        leastShardAllocationRebalanceThreshold,
+        leastShardAllocationMaxSimultaneousRebalance,
+        waitingForStateTimeout,
+        updatingStateTimeout,
+        "akka.cluster.sharding.AllAtOnceEntityRecoveryConfigurator",
+        ""
+      )
+    }
+  }
 }
 
 /**
