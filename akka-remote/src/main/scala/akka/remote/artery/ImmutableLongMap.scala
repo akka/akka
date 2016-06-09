@@ -7,6 +7,7 @@ import scala.annotation.tailrec
 import akka.util.OptionVal
 import scala.reflect.ClassTag
 import java.util.Arrays
+import akka.util.HashCode
 
 /**
  * INTERNAL API
@@ -24,7 +25,8 @@ private[akka] object ImmutableLongMap {
  * Keys and values are backed by arrays and lookup is performed with binary
  * search. It's intended for rather small (<1000) maps.
  */
-private[akka] class ImmutableLongMap[A >: Null] private (keys: Array[Long], values: Array[A])(implicit t: ClassTag[A]) {
+private[akka] class ImmutableLongMap[A >: Null] private (
+  private val keys: Array[Long], private val values: Array[A])(implicit t: ClassTag[A]) {
   import ImmutableLongMap.MaxScanLength
 
   val size: Int = keys.length
@@ -79,10 +81,56 @@ private[akka] class ImmutableLongMap[A >: Null] private (keys: Array[Long], valu
     }
   }
 
+  def remove(key: Long): ImmutableLongMap[A] = {
+    val i = Arrays.binarySearch(keys, key)
+    if (i >= 0) {
+      if (size == 1)
+        ImmutableLongMap.empty
+      else {
+        val newKeys = Array.ofDim[Long](size - 1)
+        System.arraycopy(keys, 0, newKeys, 0, i)
+        System.arraycopy(keys, i + 1, newKeys, i, keys.length - i - 1)
+
+        val newValues = Array.ofDim[A](size - 1)
+        System.arraycopy(values, 0, newValues, 0, i)
+        System.arraycopy(values, i + 1, newValues, i, values.length - i - 1)
+
+        new ImmutableLongMap(newKeys, newValues)
+      }
+    } else
+      this
+  }
+
   /**
    * All keys
    */
   def keysIterator: Iterator[Long] =
     keys.iterator
 
+  override def toString: String =
+    keysIterator.map(key ⇒ s"$key -> ${get(key).get}").mkString("ImmutableLongMap(", ", ", ")")
+
+  override def hashCode: Int = {
+    var result = HashCode.SEED
+    result = HashCode.hash(result, keys)
+    result = HashCode.hash(result, values)
+    result
+  }
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: ImmutableLongMap[A] ⇒
+      if (other eq this) true
+      else if (size != other.size) false
+      else if (size == 0 && other.size == 0) true
+      else {
+        @tailrec def check(i: Int): Boolean = {
+          if (i == size) true
+          else if (keys(i) == other.keys(i) && values(i) == other.values(i))
+            check(i + 1) // recur, next elem
+          else false
+        }
+        check(0)
+      }
+    case _ ⇒ false
+  }
 }
