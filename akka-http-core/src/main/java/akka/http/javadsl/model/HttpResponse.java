@@ -4,7 +4,12 @@
 
 package akka.http.javadsl.model;
 
+import akka.Done;
 import akka.http.impl.util.JavaAccessors;
+import akka.stream.Materializer;
+import akka.stream.javadsl.Sink;
+
+import java.util.concurrent.CompletionStage;
 
 /**
  * Represents an Http response.
@@ -16,7 +21,7 @@ public abstract class HttpResponse implements HttpMessage, HttpMessage.MessageTr
     public abstract StatusCode status();
 
     /**
-     * Returns the entity of this request.
+     * Returns the entity of this response.
      */
     public abstract ResponseEntity entity();
 
