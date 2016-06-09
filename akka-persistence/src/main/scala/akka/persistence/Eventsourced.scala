@@ -33,7 +33,7 @@ private[persistence] object Eventsourced {
   private final case class AsyncHandlerInvocation(evt: Any, handler: Any ⇒ Unit) extends PendingHandlerInvocation
 
   /** message used to detect that recovery timed out */
-  private case class RecoveryTick(snapshot: Boolean)
+  private final case class RecoveryTick(snapshot: Boolean)
 }
 
 /**
