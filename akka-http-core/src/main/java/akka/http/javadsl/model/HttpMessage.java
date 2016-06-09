@@ -4,10 +4,15 @@
 
 package akka.http.javadsl.model;
 
+import akka.Done;
+import akka.stream.Materializer;
 import akka.util.ByteString;
+import scala.concurrent.Future;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 
 /**
  * The base type for an Http message (request or response).
@@ -54,6 +59,29 @@ public interface HttpMessage {
      * The entity of this message.
      */
     ResponseEntity entity();
+
+    /**
+     *  Drains entity stream of this message
+     */
+    DiscardedEntity discardEntityBytes(Materializer materializer);
+
+    /**
+     * Represents the the currently being-drained HTTP Entity which triggers completion of the contained
+     * Future once the entity has been drained for the given HttpMessage completely.
+     */
+    public interface DiscardedEntity {
+        /**
+         * This future completes successfully once the underlying entity stream has been
+         * successfully drained (and fails otherwise).
+         */
+        Future<Done> future();
+
+        /**
+         * This future completes successfully once the underlying entity stream has been
+         * successfully drained (and fails otherwise).
+         */
+        CompletionStage<Done> completionStage();
+    }
 
     public static interface MessageTransformations<Self> {
         /**
