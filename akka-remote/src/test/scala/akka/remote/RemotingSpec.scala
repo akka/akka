@@ -79,7 +79,7 @@ object RemotingSpec {
     }
 
     akka {
-      actor.provider = "akka.remote.RemoteActorRefProvider"
+      actor.provider = remote
 
       remote {
         retry-gate-closed-for = 1 s

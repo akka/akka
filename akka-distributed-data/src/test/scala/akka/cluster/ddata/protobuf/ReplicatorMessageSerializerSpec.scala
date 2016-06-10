@@ -26,7 +26,7 @@ import com.typesafe.config.ConfigFactory
 class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
   "ReplicatorMessageSerializerSpec",
   ConfigFactory.parseString("""
-    akka.actor.provider=akka.cluster.ClusterActorRefProvider
+    akka.actor.provider=cluster
     akka.remote.netty.tcp.port=0
     """))) with WordSpecLike with Matchers with BeforeAndAfterAll {
 

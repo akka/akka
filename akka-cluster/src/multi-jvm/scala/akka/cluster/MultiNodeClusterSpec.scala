@@ -34,7 +34,7 @@ object MultiNodeClusterSpec {
     if (failureDetectorPuppet) clusterConfigWithFailureDetectorPuppet else clusterConfig
 
   def clusterConfig: Config = ConfigFactory.parseString("""
-    akka.actor.provider = akka.cluster.ClusterActorRefProvider
+    akka.actor.provider = cluster
     akka.cluster {
       jmx.enabled                         = off
       gossip-interval                     = 200 ms

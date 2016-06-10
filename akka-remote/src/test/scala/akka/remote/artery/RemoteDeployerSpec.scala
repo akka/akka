@@ -12,7 +12,7 @@ import akka.remote.RemoteScope
 
 object RemoteDeployerSpec {
   val deployerConf = ConfigFactory.parseString("""
-      akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+      akka.actor.provider = remote
       akka.actor.deployment {
         /service2 {
           router = round-robin-pool

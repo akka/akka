@@ -40,7 +40,7 @@ object LotsOfDataBot {
           ConfigFactory.parseString("""
             passive = off
             max-entries = 100000
-            akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+            akka.actor.provider = "cluster"
             akka.remote {
               netty.tcp {
                 hostname = "127.0.0.1"

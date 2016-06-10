@@ -13,7 +13,7 @@ import scala.concurrent.duration.Duration
 
 object NettyTransportSpec {
   val commonConfig = ConfigFactory.parseString("""
-    akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+    akka.actor.provider = remote
   """)
 
   def getInternal()(implicit sys: ActorSystem) =

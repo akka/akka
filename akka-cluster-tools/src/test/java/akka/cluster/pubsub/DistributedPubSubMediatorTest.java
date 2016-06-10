@@ -25,7 +25,7 @@ public class DistributedPubSubMediatorTest extends JUnitSuite {
   public static AkkaJUnitActorSystemResource actorSystemResource =
     new AkkaJUnitActorSystemResource("DistributedPubSubMediatorTest",
         ConfigFactory.parseString(
-            "akka.actor.provider = \"akka.cluster.ClusterActorRefProvider\"\n" +
+            "akka.actor.provider = \"cluster\"\n" +
             "akka.remote.netty.tcp.port=0"));
 
   private final ActorSystem system = actorSystemResource.getSystem();

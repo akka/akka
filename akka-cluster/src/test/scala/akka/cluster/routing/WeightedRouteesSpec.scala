@@ -12,7 +12,7 @@ import akka.routing.ActorSelectionRoutee
 import akka.routing.ActorRefRoutee
 
 class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
-      akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+      akka.actor.provider = "cluster"
       akka.remote.netty.tcp.port = 0
       """)) {
 

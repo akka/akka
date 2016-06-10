@@ -24,7 +24,7 @@ class SunnyWeatherMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
   val common =
     """
     akka {
-      actor.provider = akka.cluster.ClusterActorRefProvider
+      actor.provider = cluster
       loggers = ["akka.testkit.TestEventListener"]
       loglevel = INFO
       remote.log-remote-lifecycle-events = off

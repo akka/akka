@@ -31,7 +31,7 @@ to your ``application.conf`` file::
 
   akka {
     actor {
-      provider = "akka.remote.RemoteActorRefProvider"
+      provider = remote
     }
     remote {
       enabled-transports = ["akka.remote.netty.tcp"]
@@ -44,7 +44,7 @@ to your ``application.conf`` file::
 
 As you can see in the example above there are four things you need to add to get started:
 
-* Change provider from ``akka.actor.LocalActorRefProvider`` to ``akka.remote.RemoteActorRefProvider``
+* Change provider from ``local`` to ``remote``
 * Add host name - the machine you want to run the actor system on; this host
   name is exactly what is passed to remote systems in order to identify this
   system and consequently used for connecting back to this system if need be,
