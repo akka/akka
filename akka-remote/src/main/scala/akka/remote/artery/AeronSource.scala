@@ -67,8 +67,7 @@ class AeronSource(
   aeron:          Aeron,
   taskRunner:     TaskRunner,
   pool:           EnvelopeBufferPool,
-  flightRecorder: EventSink
-)
+  flightRecorder: EventSink)
   extends GraphStage[SourceShape[EnvelopeBuffer]] {
   import AeronSource._
   import TaskRunner._
@@ -81,6 +80,7 @@ class AeronSource(
     new GraphStageLogic(shape) with OutHandler {
 
       private val sub = aeron.addSubscription(channel, streamId)
+      // FIXME measure and adjust with IdleCpuLevel
       private val spinning = 1000
       private val yielding = 0
       private val parking = 0

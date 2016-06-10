@@ -11,6 +11,9 @@ import akka.event.Logging
 import org.agrona.concurrent.BackoffIdleStrategy
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
+import org.agrona.concurrent.IdleStrategy
+import org.agrona.concurrent.BusySpinIdleStrategy
+import akka.dispatch.MonitorableThreadFactory
 
 /**
  * INTERNAL API
@@ -82,7 +85,7 @@ private[akka] object TaskRunner {
 /**
  * INTERNAL API
  */
-private[akka] class TaskRunner(system: ExtendedActorSystem) extends Runnable {
+private[akka] class TaskRunner(system: ExtendedActorSystem, idleCpuLevel: Int) extends Runnable {
   import TaskRunner._
 
   private val log = Logging(system, getClass)
@@ -91,14 +94,29 @@ private[akka] class TaskRunner(system: ExtendedActorSystem) extends Runnable {
   private[this] val tasks = new ArrayBag[Task]
 
   // TODO the backoff strategy should be measured and tuned
-  private val spinning = 2000000
-  private val yielding = 0
-  private val idleStrategy = new BackoffIdleStrategy(
-    spinning, yielding, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100))
+  private val idleStrategy: IdleStrategy = {
+    if (idleCpuLevel == 1) {
+      val maxParkMicros = 400
+      new BackoffIdleStrategy(1, 1, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(maxParkMicros))
+    } else if (idleCpuLevel == 10)
+      new BusySpinIdleStrategy
+    else {
+      val spinning = 100000 * idleCpuLevel
+      val yielding = 2 * idleCpuLevel
+      val maxParkMicros = 40 * (11 - idleCpuLevel)
+      new BackoffIdleStrategy(
+        spinning, yielding, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(maxParkMicros))
+    }
+  }
   private var reset = false
 
   def start(): Unit = {
-    val thread = system.threadFactory.newThread(this)
+    val tf = system.threadFactory match {
+      case m: MonitorableThreadFactory ⇒
+        m.withName(m.name + "-taskrunner")
+      case other ⇒ other
+    }
+    val thread = tf.newThread(this)
     thread.start()
   }
 

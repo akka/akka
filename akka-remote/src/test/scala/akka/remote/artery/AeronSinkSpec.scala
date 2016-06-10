@@ -32,8 +32,9 @@ class AeronSinkSpec extends AkkaSpec with ImplicitSender {
     Aeron.connect(ctx)
   }
 
+  val idleCpuLevel = 5
   val taskRunner = {
-    val r = new TaskRunner(system.asInstanceOf[ExtendedActorSystem])
+    val r = new TaskRunner(system.asInstanceOf[ExtendedActorSystem], idleCpuLevel)
     r.start()
     r
   }
