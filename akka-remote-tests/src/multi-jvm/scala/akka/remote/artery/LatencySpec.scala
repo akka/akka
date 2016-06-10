@@ -53,6 +53,7 @@ object LatencySpec extends MultiNodeConfig {
          }
          remote.artery {
            enabled = on
+           advanced.idle-cpu-level=8
          }
        }
        """)))

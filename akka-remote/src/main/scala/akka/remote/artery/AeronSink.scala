@@ -77,8 +77,7 @@ class AeronSink(
   taskRunner:      TaskRunner,
   pool:            EnvelopeBufferPool,
   giveUpSendAfter: Duration,
-  flightRecorder:  EventSink
-)
+  flightRecorder:  EventSink)
   extends GraphStageWithMaterializedValue[SinkShape[EnvelopeBuffer], Future[Done]] {
   import AeronSink._
   import TaskRunner._
@@ -96,6 +95,7 @@ class AeronSink(
 
       private var completedValue: Try[Done] = Success(Done)
 
+      // FIXME measure and adjust with IdleCpuLevel
       private val spinning = 1000
       private var backoffCount = spinning
       private var lastMsgSize = 0
