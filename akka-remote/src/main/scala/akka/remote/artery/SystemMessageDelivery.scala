@@ -23,6 +23,7 @@ import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.stream.stage.TimerGraphStageLogic
 import akka.remote.artery.OutboundHandshake.HandshakeReq
+import akka.actor.ActorRef
 
 /**
  * INTERNAL API
@@ -44,6 +45,7 @@ private[akka] object SystemMessageDelivery {
  */
 private[akka] class SystemMessageDelivery(
   outboundContext: OutboundContext,
+  deadLetters:     ActorRef,
   resendInterval:  FiniteDuration,
   maxBufferSize:   Int)
   extends GraphStage[FlowShape[Send, Send]] {
@@ -87,6 +89,8 @@ private[akka] class SystemMessageDelivery(
       }
 
       override def postStop(): Unit = {
+        sendUnacknowledgedToDeadLetters()
+        unacknowledged.clear()
         outboundContext.controlSubject.detach(this)
       }
 
@@ -180,17 +184,26 @@ private[akka] class SystemMessageDelivery(
             } else {
               // buffer overflow
               outboundContext.quarantine(reason = s"System message delivery buffer overflow, size [$maxBufferSize]")
+              deadLetters ! s
               pull(in)
             }
         }
       }
 
       private def clear(): Unit = {
+        sendUnacknowledgedToDeadLetters()
         seqNo = 0L // sequence number for the first message will be 1
         unacknowledged.clear()
         resending.clear()
         resendingFromSeqNo = -1L
         cancelTimer(resendInterval)
+      }
+
+      private def sendUnacknowledgedToDeadLetters(): Unit = {
+        val iter = unacknowledged.iterator
+        while (iter.hasNext()) {
+          deadLetters ! iter.next()
+        }
       }
 
       // OutHandler

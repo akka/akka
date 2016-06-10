@@ -72,8 +72,7 @@ class RemoteDeathWatchSpec extends AkkaSpec(RemoteDeathWatchSpec.config) with Im
     }
   }
 
-  // FIXME this is failing with Artery
-  "receive Terminated when watched node is unknown host" ignore {
+  "receive Terminated when watched node is unknown host" in {
     val path = RootActorPath(Address("artery", system.name, "unknownhost", 2552)) / "user" / "subject"
     system.actorOf(Props(new Actor {
       context.watch(context.actorFor(path))
@@ -85,8 +84,7 @@ class RemoteDeathWatchSpec extends AkkaSpec(RemoteDeathWatchSpec.config) with Im
     expectMsg(60.seconds, path)
   }
 
-  // FIXME this is failing with Artery
-  "receive ActorIdentity(None) when identified node is unknown host" ignore {
+  "receive ActorIdentity(None) when identified node is unknown host" in {
     val path = RootActorPath(Address("artery", system.name, "unknownhost2", 2552)) / "user" / "subject"
     system.actorSelection(path) ! Identify(path)
     expectMsg(60.seconds, ActorIdentity(path, None))
