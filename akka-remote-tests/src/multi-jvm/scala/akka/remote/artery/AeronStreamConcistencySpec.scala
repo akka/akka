@@ -37,7 +37,7 @@ object AeronStreamConsistencySpec extends MultiNodeConfig {
        akka {
          loglevel = INFO
          actor {
-           provider = "akka.remote.RemoteActorRefProvider"
+           provider = remote
          }
          remote.artery.enabled = off
        }

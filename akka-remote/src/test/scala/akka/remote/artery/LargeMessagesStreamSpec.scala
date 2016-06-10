@@ -32,7 +32,7 @@ class LargeMessagesStreamSpec extends WordSpec with ShouldMatchers with ScalaFut
       akka {
         loglevel = ERROR
         actor {
-          provider = "akka.remote.RemoteActorRefProvider"
+          provider = remote
         }
         remote.artery {
           enabled = on

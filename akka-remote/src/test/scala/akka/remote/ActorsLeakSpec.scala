@@ -20,7 +20,7 @@ object ActorsLeakSpec {
 
   val config = ConfigFactory.parseString(
     """
-      | akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+      | akka.actor.provider = remote
       | #akka.loglevel = DEBUG
       | akka.remote.netty.tcp.applied-adapters = ["trttl"]
       | #akka.remote.log-lifecycle-events = on

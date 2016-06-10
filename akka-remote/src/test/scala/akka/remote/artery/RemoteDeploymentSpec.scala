@@ -34,7 +34,7 @@ object RemoteDeploymentSpec {
 
 class RemoteDeploymentSpec extends AkkaSpec("""
     #akka.loglevel=DEBUG
-    akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+    akka.actor.provider = remote
     akka.remote.artery.enabled = on
     akka.remote.artery.hostname = localhost
     akka.remote.artery.port = 0

@@ -24,7 +24,7 @@ class RemoteInitErrorSpec extends FlatSpec with Matchers {
     """
       akka {
         actor {
-          provider = "akka.remote.RemoteActorRefProvider"
+          provider = remote
         }
         remote {
           enabled-transports = ["akka.remote.netty.tcp"]

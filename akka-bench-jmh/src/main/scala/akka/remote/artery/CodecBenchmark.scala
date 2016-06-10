@@ -39,7 +39,7 @@ class CodecBenchmark {
     """
     akka {
        loglevel = WARNING
-       actor.provider = "akka.remote.RemoteActorRefProvider"
+       actor.provider = remote
        remote.artery.enabled = on
        remote.artery.hostname = localhost
        remote.artery.port = 0

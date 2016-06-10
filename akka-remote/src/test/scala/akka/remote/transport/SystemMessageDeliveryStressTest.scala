@@ -36,7 +36,7 @@ object SystemMessageDeliveryStressTest {
   val baseConfig: Config = ConfigFactory parseString (s"""
     akka {
       #loglevel = DEBUG
-      actor.provider = "akka.remote.RemoteActorRefProvider"
+      actor.provider = remote
       actor.serialize-messages = off
 
       remote.log-remote-lifecycle-events = on

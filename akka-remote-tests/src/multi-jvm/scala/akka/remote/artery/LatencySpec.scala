@@ -47,7 +47,7 @@ object LatencySpec extends MultiNodeConfig {
          loggers = ["akka.event.Logging$$DefaultLogger"]
          testconductor.barrier-timeout = ${barrierTimeout.toSeconds}s
          actor {
-           provider = "akka.remote.RemoteActorRefProvider"
+           provider = remote
            serialize-creators = false
            serialize-messages = false
          }

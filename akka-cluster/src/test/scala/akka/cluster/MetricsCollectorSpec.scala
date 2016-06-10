@@ -21,7 +21,7 @@ object MetricsEnabledSpec {
     akka.cluster.metrics.enabled = on
     akka.cluster.metrics.collect-interval = 1 s
     akka.cluster.metrics.gossip-interval = 1 s
-    akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+    akka.actor.provider = remote
     """
 }
 

@@ -47,7 +47,7 @@ object ClusterShardingGetStatsSpecConfig extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString("""
     akka.loglevel = INFO
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
     akka.log-dead-letters-during-shutdown = off
     akka.cluster.metrics.enabled = off

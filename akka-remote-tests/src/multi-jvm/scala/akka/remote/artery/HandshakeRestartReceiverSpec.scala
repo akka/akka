@@ -24,7 +24,7 @@ object HandshakeRestartReceiverSpec extends MultiNodeConfig {
     ConfigFactory.parseString(s"""
        akka {
          loglevel = INFO
-         actor.provider = "akka.remote.RemoteActorRefProvider"
+         actor.provider = remote
          remote.artery {
            enabled = on
          }
