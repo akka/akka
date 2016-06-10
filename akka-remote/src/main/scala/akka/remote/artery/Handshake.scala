@@ -196,7 +196,7 @@ private[akka] class InboundHandshake(inboundContext: InboundContext, inControlSt
       }
 
       private def onMessage(env: InboundEnvelope): Unit = {
-        if (isKnownOrigin(env.originUid))
+        if (isKnownOrigin(env))
           push(out, env)
         else {
           // FIXME remove, only debug
@@ -215,10 +215,8 @@ private[akka] class InboundHandshake(inboundContext: InboundContext, inControlSt
         }
       }
 
-      private def isKnownOrigin(originUid: Long): Boolean = {
-        // FIXME these association lookups are probably too costly for each message, need local cache or something
-        inboundContext.association(originUid).isDefined
-      }
+      private def isKnownOrigin(env: InboundEnvelope): Boolean =
+        env.association.isDefined
 
       // OutHandler
       override def onPull(): Unit = pull(in)

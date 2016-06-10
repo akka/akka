@@ -76,7 +76,8 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
     Flow[Send]
       .map {
         case Send(sysEnv: SystemMessageEnvelope, _, _, _) ⇒
-          InboundEnvelope(recipient, addressB.address, sysEnv, OptionVal.None, addressA.uid)
+          InboundEnvelope(recipient, addressB.address, sysEnv, OptionVal.None, addressA.uid,
+            inboundContext.association(addressA.uid))
       }
       .async
       .via(new SystemMessageAcker(inboundContext))

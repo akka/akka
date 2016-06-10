@@ -85,7 +85,8 @@ private[akka] class TestOutboundContext(
 
   override def sendControl(message: ControlMessage) = {
     controlProbe.foreach(_ ! message)
-    controlSubject.sendControl(InboundEnvelope(null, remoteAddress, message, OptionVal.None, localAddress.uid))
+    controlSubject.sendControl(InboundEnvelope(null, remoteAddress, message, OptionVal.None, localAddress.uid,
+      OptionVal.None))
   }
 
   // FIXME we should be able to Send without a recipient ActorRef

@@ -157,7 +157,7 @@ private[remote] class InboundTestStage(inboundContext: InboundContext)
       // InHandler
       override def onPush(): Unit = {
         val env = grab(in)
-        inboundContext.association(env.originUid) match {
+        env.association match {
           case OptionVal.None ⇒
             // unknown, handshake not completed
             push(out, env)

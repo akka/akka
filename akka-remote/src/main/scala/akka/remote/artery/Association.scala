@@ -391,7 +391,7 @@ private[remote] class Association(
  */
 private[remote] class AssociationRegistry(createAssociation: Address ⇒ Association) {
   private[this] val associationsByAddress = new AtomicReference[Map[Address, Association]](Map.empty)
-  private[this] val associationsByUid = new ConcurrentHashMap[Long, Association]() // FIXME replace with specialized Long Map
+  private[this] val associationsByUid = new AtomicReference[ImmutableLongMap[Association]](ImmutableLongMap.empty)
 
   @tailrec final def association(remoteAddress: Address): Association = {
     val currentMap = associationsByAddress.get
@@ -409,14 +409,22 @@ private[remote] class AssociationRegistry(createAssociation: Address ⇒ Associa
   }
 
   def association(uid: Long): OptionVal[Association] =
-    OptionVal(associationsByUid.get(uid))
+    associationsByUid.get.get(uid)
 
-  def setUID(peer: UniqueAddress): Association = {
+  @tailrec final def setUID(peer: UniqueAddress): Association = {
+    val currentMap = associationsByUid.get
     val a = association(peer.address)
-    val previous = associationsByUid.put(peer.uid, a)
-    if ((previous ne null) && (previous ne a))
-      throw new IllegalArgumentException(s"UID collision old [$previous] new [$a]")
-    a
+    // make sure we don't overwrite same UID with different association
+    currentMap.get(peer.uid) match {
+      case OptionVal.Some(previous) if (previous ne a) ⇒
+        throw new IllegalArgumentException(s"UID collision old [$previous] new [$a]")
+      case _ ⇒ // ok
+    }
+    val newMap = currentMap.updated(peer.uid, a)
+    if (associationsByUid.compareAndSet(currentMap, newMap))
+      a
+    else
+      setUID(peer) // lost CAS, retry
   }
 
   def allAssociations: Set[Association] =
