@@ -16,10 +16,16 @@ import Uri._
 
 // http://tools.ietf.org/html/rfc3986
 private[http] class UriParser(val input: ParserInput,
-                              val uriParsingCharset: Charset = UTF8,
-                              val uriParsingMode: Uri.ParsingMode = Uri.ParsingMode.Relaxed) extends Parser
+                              val uriParsingCharset: Charset,
+                              val uriParsingMode: Uri.ParsingMode,
+                              val maxValueStackSize: Int) extends Parser(maxValueStackSize)
   with IpAddressParsing with StringBuilding {
   import CharacterClasses._
+
+  def this(input: ParserInput,
+           uriParsingCharset: Charset = UTF8,
+           uriParsingMode: Uri.ParsingMode = Uri.ParsingMode.Relaxed) =
+    this(input, uriParsingCharset, uriParsingMode, 1024)
 
   def parseAbsoluteUri(): Uri =
     rule(`absolute-URI` ~ EOI).run() match {
@@ -170,15 +176,32 @@ private[http] class UriParser(val input: ParserInput,
       clearSBForDecoding() ~ oneOrMore('+' ~ appendSB(' ') | `query-char` ~ appendSB() | `pct-encoded`) ~ push(getDecodedString())
         | push(""))
 
+    def keyValuePair: Rule2[String, String] = rule {
+      part ~ ('=' ~ part | push(Query.EmptyValue))
+    }
+
+    // has a max value-stack depth of 3
+    def keyValuePairsWithLimitedStackUse: Rule1[Query] = rule {
+      keyValuePair ~> { (key, value) => Query.Cons(key, value, Query.Empty) } ~ {
+        zeroOrMore('&' ~ keyValuePair ~> { (prefix: Query, key, value) => Query.Cons(key, value, prefix) }) ~>
+          (_.reverse)
+      }
+    }
+
     // non-tail recursion, which we accept because it allows us to directly build the query
     // without having to reverse it at the end.
-    // Also: request queries usually do not have hundreds of elements, so we should get away with
-    // putting some pressure onto the JVM and value stack
-    def keyValuePairs: Rule1[Query] = rule {
-      part ~ ('=' ~ part | push(Query.EmptyValue)) ~ ('&' ~ keyValuePairs | push(Query.Empty)) ~> { (key, value, tail) =>
+    // Adds 2 values to the value stack for the first pair, then parses the remaining pairs.
+    def keyValuePairsWithReversalAvoidance: Rule1[Query] = rule {
+      keyValuePair ~ ('&' ~ keyValuePairs | push(Query.Empty)) ~> { (key, value, tail) =>
         Query.Cons(key, value, tail)
       }
     }
+
+    // Uses a reversal-free parsing approach as long as there is enough space on the value stack,
+    // switching to a limited-stack approach when necessary.
+    def keyValuePairs: Rule1[Query] =
+      if (valueStack.size + 5 <= maxValueStackSize) keyValuePairsWithReversalAvoidance
+      else keyValuePairsWithLimitedStackUse
 
     rule { keyValuePairs }
   }
