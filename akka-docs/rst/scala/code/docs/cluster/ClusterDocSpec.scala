@@ -10,7 +10,7 @@ object ClusterDocSpec {
 
   val config =
     """
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.actor.provider = "cluster"
     akka.remote.netty.tcp.port = 0
     """
 }

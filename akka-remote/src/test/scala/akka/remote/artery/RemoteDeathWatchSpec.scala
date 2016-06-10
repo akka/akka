@@ -20,7 +20,7 @@ object RemoteDeathWatchSpec {
   val config = ConfigFactory.parseString(s"""
     akka {
         actor {
-            provider = "akka.remote.RemoteActorRefProvider"
+            provider = remote
             deployment {
                 /watchers.remote = "artery://other@localhost:$otherPort"
             }

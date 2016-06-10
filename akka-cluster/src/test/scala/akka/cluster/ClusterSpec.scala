@@ -25,7 +25,7 @@ object ClusterSpec {
       publish-stats-interval = 0 s # always, when it happens
       failure-detector.implementation-class = akka.cluster.FailureDetectorPuppet
     }
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
     akka.remote.netty.tcp.port = 0
     #akka.loglevel = DEBUG
@@ -107,7 +107,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
 
     "allow join and leave with local address" in {
       val sys2 = ActorSystem("ClusterSpec2", ConfigFactory.parseString("""
-        akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+        akka.actor.provider = "cluster"
         akka.remote.netty.tcp.port = 0
         """))
       try {

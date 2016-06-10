@@ -26,7 +26,7 @@ object Configuration {
   private val keyStore = getClass.getClassLoader.getResource("keystore").getPath
   private val conf = """
     akka {
-      actor.provider = "akka.remote.RemoteActorRefProvider"
+      actor.provider = remote
       test {
         single-expect-default = 10s
         filter-leeway = 10s

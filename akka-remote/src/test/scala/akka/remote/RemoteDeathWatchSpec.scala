@@ -14,7 +14,7 @@ import akka.event.Logging.Warning
 class RemoteDeathWatchSpec extends AkkaSpec(ConfigFactory.parseString("""
 akka {
     actor {
-        provider = "akka.remote.RemoteActorRefProvider"
+        provider = remote
         deployment {
             /watchers.remote = "akka.tcp://other@localhost:2666"
         }

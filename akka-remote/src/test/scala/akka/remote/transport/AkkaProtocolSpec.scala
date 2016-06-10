@@ -30,7 +30,7 @@ object AkkaProtocolSpec {
 
 }
 
-class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.RemoteActorRefProvider" """) with ImplicitSender {
+class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) with ImplicitSender {
 
   val conf = ConfigFactory.parseString(
     """

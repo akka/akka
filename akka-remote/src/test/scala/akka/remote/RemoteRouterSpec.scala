@@ -21,7 +21,7 @@ object RemoteRouterSpec {
 }
 
 class RemoteRouterSpec extends AkkaSpec("""
-    akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+    akka.actor.provider = remote
     akka.remote.netty.tcp {
       hostname = localhost
       port = 0
