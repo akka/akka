@@ -168,11 +168,11 @@ object ActorSystem {
     final val ConfigVersion: String = getString("akka.version")
     final val ProviderClass: String =
       getString("akka.actor.provider") match {
-        case "local" => classOf[LocalActorRefProvider].getName
+        case "local"   ⇒ classOf[LocalActorRefProvider].getName
         // these two cannot be referenced by class as they may not be on the classpath
-        case "remote" => "akka.remote.RemoteActorRefProvider"
-        case "cluster" => "akka.cluster.ClusterActorRefProvider"
-        case fqcn => fqcn
+        case "remote"  ⇒ "akka.remote.RemoteActorRefProvider"
+        case "cluster" ⇒ "akka.cluster.ClusterActorRefProvider"
+        case fqcn      ⇒ fqcn
       }
 
     final val SupervisorStrategyClass: String = getString("akka.actor.guardian-supervisor-strategy")
