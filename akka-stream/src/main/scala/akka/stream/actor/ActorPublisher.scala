@@ -183,7 +183,7 @@ trait ActorPublisher[T] extends Actor {
    * otherwise `onNext` will throw `IllegalStateException`.
    */
   def onNext(element: T): Unit = lifecycleState match {
-    case Active | PreSubscriber | CompleteThenStop ⇒
+    case Active | PreSubscriber ⇒
       if (demand > 0) {
         demand -= 1
         tryOnNext(subscriber, element)
@@ -192,7 +192,7 @@ trait ActorPublisher[T] extends Actor {
           "onNext is not allowed when the stream has not requested elements, totalDemand was 0")
     case _: ErrorEmitted ⇒
       throw new IllegalStateException("onNext must not be called after onError")
-    case Completed ⇒
+    case Completed | CompleteThenStop ⇒
       throw new IllegalStateException("onNext must not be called after onComplete")
     case Canceled ⇒ // drop
   }
@@ -302,11 +302,10 @@ trait ActorPublisher[T] extends Actor {
           tryOnSubscribe(sub, CancelledSubscription)
           tryOnComplete(sub)
         case Active | Canceled ⇒
-          tryOnSubscribe(sub, CancelledSubscription)
-          tryOnError(
-            sub,
-            if (subscriber == sub) ReactiveStreamsCompliance.canNotSubscribeTheSameSubscriberMultipleTimesException
-            else ReactiveStreamsCompliance.canNotSubscribeTheSameSubscriberMultipleTimesException)
+          if (subscriber eq sub)
+            rejectDuplicateSubscriber(sub)
+          else
+            rejectAdditionalSubscriber(sub, "ActorPublisher")
       }
 
     case Cancel ⇒
