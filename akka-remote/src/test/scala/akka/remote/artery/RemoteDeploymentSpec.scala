@@ -59,8 +59,7 @@ class RemoteDeploymentSpec extends AkkaSpec("""
 
   "Remoting" must {
 
-    // FIXME this test is failing with Artery
-    "create and supervise children on remote node" ignore {
+    "create and supervise children on remote node" in {
       val senderProbe = TestProbe()(masterSystem)
       val r = masterSystem.actorOf(Props[Echo1], "blub")
       r.path.toString should ===(s"artery://${system.name}@localhost:${port}/remote/artery/${masterSystem.name}@localhost:${masterPort}/user/blub")

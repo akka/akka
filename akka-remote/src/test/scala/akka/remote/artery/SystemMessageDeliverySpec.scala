@@ -73,7 +73,7 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
   }
 
   private def inbound(inboundContext: InboundContext): Flow[Send, InboundEnvelope, NotUsed] = {
-    val recipient = null.asInstanceOf[InternalActorRef] // not used
+    val recipient = OptionVal.None // not used
     Flow[Send]
       .map {
         case Send(sysEnv: SystemMessageEnvelope, _, _, _) ⇒

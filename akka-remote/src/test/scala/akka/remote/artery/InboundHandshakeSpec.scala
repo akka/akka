@@ -39,7 +39,7 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
   val addressB = UniqueAddress(Address("artery", "sysB", "hostB", 1002), 2)
 
   private def setupStream(inboundContext: InboundContext, timeout: FiniteDuration = 5.seconds): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
-    val recipient = null.asInstanceOf[InternalActorRef] // not used
+    val recipient = OptionVal.None // not used
     TestSource.probe[AnyRef]
       .map(msg ⇒ InboundEnvelope(recipient, addressB.address, msg, OptionVal.None, addressA.uid,
         inboundContext.association(addressA.uid)))

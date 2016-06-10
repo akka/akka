@@ -22,7 +22,6 @@ object RemoteRouterSpec {
 }
 
 class RemoteRouterSpec extends AkkaSpec("""
-    akka.loglevel=DEBUG
     akka.actor.provider = remote
     akka.remote.artery.enabled = on
     akka.remote.artery.hostname = localhost
@@ -99,8 +98,7 @@ class RemoteRouterSpec extends AkkaSpec("""
 
   "A Remote Router" must {
 
-    // FIXME this test is failing with Artery
-    "deploy its children on remote host driven by configuration" ignore {
+    "deploy its children on remote host driven by configuration" in {
       val probe = TestProbe()(masterSystem)
       val router = masterSystem.actorOf(RoundRobinPool(2).props(echoActorProps), "blub")
       val replies = collectRouteePaths(probe, router, 5)
@@ -112,8 +110,7 @@ class RemoteRouterSpec extends AkkaSpec("""
       masterSystem.stop(router)
     }
 
-    // FIXME this test is failing with Artery
-    "deploy its children on remote host driven by programatic definition" ignore {
+    "deploy its children on remote host driven by programatic definition" in {
       val probe = TestProbe()(masterSystem)
       val router = masterSystem.actorOf(new RemoteRouterConfig(
         RoundRobinPool(2),
@@ -126,8 +123,7 @@ class RemoteRouterSpec extends AkkaSpec("""
       masterSystem.stop(router)
     }
 
-    // FIXME this test is failing with Artery
-    "deploy dynamic resizable number of children on remote host driven by configuration" ignore {
+    "deploy dynamic resizable number of children on remote host driven by configuration" in {
       val probe = TestProbe()(masterSystem)
       val router = masterSystem.actorOf(FromConfig.props(echoActorProps), "elastic-blub")
       val replies = collectRouteePaths(probe, router, 5000)
@@ -152,8 +148,7 @@ class RemoteRouterSpec extends AkkaSpec("""
       masterSystem.stop(router)
     }
 
-    // FIXME this test is failing with Artery
-    "deploy remote routers based on explicit deployment" ignore {
+    "deploy remote routers based on explicit deployment" in {
       val probe = TestProbe()(masterSystem)
       val router = masterSystem.actorOf(RoundRobinPool(2).props(echoActorProps)
         .withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(s"artery://${sysName}@localhost:${port}")))), "remote-blub2")
@@ -168,8 +163,7 @@ class RemoteRouterSpec extends AkkaSpec("""
       masterSystem.stop(router)
     }
 
-    // FIXME this test is failing with Artery
-    "let remote deployment be overridden by local configuration" ignore {
+    "let remote deployment be overridden by local configuration" in {
       val probe = TestProbe()(masterSystem)
       val router = masterSystem.actorOf(RoundRobinPool(2).props(echoActorProps)
         .withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(s"artery://${sysName}@localhost:${port}")))), "local-blub")
@@ -214,8 +208,7 @@ class RemoteRouterSpec extends AkkaSpec("""
       masterSystem.stop(router)
     }
 
-    // FIXME this test is failing with Artery
-    "set supplied supervisorStrategy" ignore {
+    "set supplied supervisorStrategy" in {
       val probe = TestProbe()(masterSystem)
       val escalator = OneForOneStrategy() {
         case e ⇒ probe.ref ! e; SupervisorStrategy.Escalate
