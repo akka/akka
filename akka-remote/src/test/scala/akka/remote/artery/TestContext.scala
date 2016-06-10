@@ -85,7 +85,7 @@ private[akka] class TestOutboundContext(
 
   override def sendControl(message: ControlMessage) = {
     controlProbe.foreach(_ ! message)
-    controlSubject.sendControl(InboundEnvelope(null, remoteAddress, message, OptionVal.None, localAddress.uid,
+    controlSubject.sendControl(InboundEnvelope(OptionVal.None, remoteAddress, message, OptionVal.None, localAddress.uid,
       OptionVal.None))
   }
 
