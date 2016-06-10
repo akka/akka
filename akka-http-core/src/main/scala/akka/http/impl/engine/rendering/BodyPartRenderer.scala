@@ -17,6 +17,7 @@ import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.util.ByteString
 import HttpEntity._
+import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 
 import scala.concurrent.forkjoin.ThreadLocalRandom
 
@@ -29,46 +30,60 @@ private[http] object BodyPartRenderer {
     boundary:            String,
     nioCharset:          Charset,
     partHeadersSizeHint: Int,
-    log:                 LoggingAdapter): PushPullStage[Multipart.BodyPart, Source[ChunkStreamPart, Any]] =
-    new PushPullStage[Multipart.BodyPart, Source[ChunkStreamPart, Any]] {
+    log:                 LoggingAdapter): GraphStage[FlowShape[Multipart.BodyPart, Source[ChunkStreamPart, Any]]] =
+    new GraphStage[FlowShape[Multipart.BodyPart, Source[ChunkStreamPart, Any]]] {
       var firstBoundaryRendered = false
 
-      override def onPush(bodyPart: Multipart.BodyPart, ctx: Context[Source[ChunkStreamPart, Any]]): SyncDirective = {
-        val r = new CustomCharsetByteStringRendering(nioCharset, partHeadersSizeHint)
+      val in: Inlet[Multipart.BodyPart] = Inlet("BodyPartRenderer.in")
+      val out: Outlet[Source[ChunkStreamPart, Any]] = Outlet("BodyPartRenderer.out")
+      override val shape: FlowShape[Multipart.BodyPart, Source[ChunkStreamPart, Any]] = FlowShape(in, out)
 
-        def bodyPartChunks(data: Source[ByteString, Any]): Source[ChunkStreamPart, Any] = {
-          val entityChunks = data.map[ChunkStreamPart](Chunk(_))
-          (chunkStream(r.get) ++ entityChunks).mapMaterializedValue((_) ⇒ ())
-        }
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+        new GraphStageLogic(shape) with InHandler with OutHandler {
+          override def onPush(): Unit = {
+            val r = new CustomCharsetByteStringRendering(nioCharset, partHeadersSizeHint)
 
-        def completePartRendering(): Source[ChunkStreamPart, Any] =
-          bodyPart.entity match {
-            case x if x.isKnownEmpty       ⇒ chunkStream(r.get)
-            case Strict(_, data)           ⇒ chunkStream((r ~~ data).get)
-            case Default(_, _, data)       ⇒ bodyPartChunks(data)
-            case IndefiniteLength(_, data) ⇒ bodyPartChunks(data)
+            def bodyPartChunks(data: Source[ByteString, Any]): Source[ChunkStreamPart, Any] = {
+              val entityChunks = data.map[ChunkStreamPart](Chunk(_))
+              (chunkStream(r.get) ++ entityChunks).mapMaterializedValue((_) ⇒ ())
+            }
+
+            def completePartRendering(entity: HttpEntity): Source[ChunkStreamPart, Any] =
+              entity match {
+                case x if x.isKnownEmpty       ⇒ chunkStream(r.get)
+                case Strict(_, data)           ⇒ chunkStream((r ~~ data).get)
+                case Default(_, _, data)       ⇒ bodyPartChunks(data)
+                case IndefiniteLength(_, data) ⇒ bodyPartChunks(data)
+              }
+
+            renderBoundary(r, boundary, suppressInitialCrLf = !firstBoundaryRendered)
+            firstBoundaryRendered = true
+
+            val bodyPart = grab(in)
+            renderEntityContentType(r, bodyPart.entity)
+            renderHeaders(r, bodyPart.headers, log)
+
+            push(out, completePartRendering(bodyPart.entity))
           }
 
-        renderBoundary(r, boundary, suppressInitialCrLf = !firstBoundaryRendered)
-        firstBoundaryRendered = true
-        renderEntityContentType(r, bodyPart.entity)
-        renderHeaders(r, bodyPart.headers, log)
-        ctx.push(completePartRendering())
-      }
+          override def onPull(): Unit =
+            if (isClosed(in) && firstBoundaryRendered)
+              completeRendering()
+            else if (isClosed(in)) completeStage()
+            else pull(in)
 
-      override def onPull(ctx: Context[Source[ChunkStreamPart, Any]]): SyncDirective = {
-        val finishing = ctx.isFinishing
-        if (finishing && firstBoundaryRendered) {
-          val r = new ByteStringRendering(boundary.length + 4)
-          renderFinalBoundary(r, boundary)
-          ctx.pushAndFinish(chunkStream(r.get))
-        } else if (finishing)
-          ctx.finish()
-        else
-          ctx.pull()
-      }
+          override def onUpstreamFinish(): Unit =
+            if (isAvailable(out) && firstBoundaryRendered) completeRendering()
 
-      override def onUpstreamFinish(ctx: Context[Source[ChunkStreamPart, Any]]): TerminationDirective = ctx.absorbTermination()
+          private def completeRendering(): Unit = {
+            val r = new ByteStringRendering(boundary.length + 4)
+            renderFinalBoundary(r, boundary)
+            push(out, chunkStream(r.get))
+            completeStage()
+          }
+
+          setHandlers(in, out, this)
+        }
 
       private def chunkStream(byteString: ByteString): Source[ChunkStreamPart, Any] =
         Source.single(Chunk(byteString))
