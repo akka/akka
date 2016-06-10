@@ -81,6 +81,11 @@ verified during construction of the :class:`Props` object, resulting in an
 :class:`IllegalArgumentException` if no or multiple matching constructors are
 found.
 
+.. note::
+
+  The recommended approach to create the actor :class:`Props` is not supported
+  for cases when the actor constructor takes value classes as arguments.
+
 Dangerous Variants
 ^^^^^^^^^^^^^^^^^^
 
@@ -161,6 +166,18 @@ not be empty or start with ``$``, but it may contain URL encoded characters
 another child to the same parent an :class:`InvalidActorNameException` is thrown.
 
 Actors are automatically started asynchronously when created.
+
+Value classes as constructor arguments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The recommended way to instantiate actor props uses reflection at runtime
+to determine the correct actor constructor to be invoked and due to technical
+limitations is not supported when said constructor takes arguments that are
+value classes.
+In these cases you should either unpack the arguments or create the props by
+calling the constructor manually:
+
+.. includecode:: code/docs/actor/ActorDocSpec.scala#actor-with-value-class-argument
 
 Dependency Injection
 --------------------
