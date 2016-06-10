@@ -168,7 +168,7 @@ object ActorSystem {
     final val ConfigVersion: String = getString("akka.version")
     final val ProviderClass: String = {
       val shortNames = Map(
-        "local" -> classOf[ActorRefProvider].getName,
+        "local" -> classOf[LocalActorRefProvider].getName,
         // these two cannot be referenced by class as they may not be on the classpath
         "remote" -> "akka.remote.RemoteActorRefProvider",
         "cluster" -> "akka.cluster.ClusterActorRefProvider"
