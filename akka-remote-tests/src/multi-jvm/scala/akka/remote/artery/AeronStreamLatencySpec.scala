@@ -52,7 +52,10 @@ object AeronStreamLatencySpec extends MultiNodeConfig {
            serialize-creators = false
            serialize-messages = false
          }
-         remote.artery.enabled = off
+         remote.artery {
+           enabled = off
+           advanced.idle-cpu-level=8
+         }
        }
        """)))
 
@@ -91,8 +94,9 @@ abstract class AeronStreamLatencySpec
     Aeron.connect(ctx)
   }
 
+  val idleCpuLevel = system.settings.config.getInt("akka.remote.artery.advanced.idle-cpu-level")
   val taskRunner = {
-    val r = new TaskRunner(system.asInstanceOf[ExtendedActorSystem])
+    val r = new TaskRunner(system.asInstanceOf[ExtendedActorSystem], idleCpuLevel)
     r.start()
     r
   }

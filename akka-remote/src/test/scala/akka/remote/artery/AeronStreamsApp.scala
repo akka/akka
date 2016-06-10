@@ -78,8 +78,9 @@ object AeronStreamsApp {
   lazy val system = ActorSystem("AeronStreams")
   lazy implicit val mat = ActorMaterializer()(system)
 
+  val idleCpuLevel = 5
   lazy val taskRunner = {
-    val r = new TaskRunner(system.asInstanceOf[ExtendedActorSystem])
+    val r = new TaskRunner(system.asInstanceOf[ExtendedActorSystem], idleCpuLevel)
     r.start()
     r
   }

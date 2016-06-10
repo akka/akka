@@ -30,6 +30,8 @@ final class RemoteSettings(val config: Config) {
   val AeronDirectoryName = getString("akka.remote.artery.advanced.aeron-dir") requiring (dir ⇒
     EmbeddedMediaDriver || dir.nonEmpty, "aeron-dir must be defined when using external media driver")
   val TestMode: Boolean = getBoolean("akka.remote.artery.advanced.test-mode")
+  val IdleCpuLevel: Int = getInt("akka.remote.artery.advanced.idle-cpu-level").requiring(level ⇒
+    1 <= level && level <= 10, "idle-cpu-level must be between 1 and 10")
 
   val LogReceive: Boolean = getBoolean("akka.remote.log-received-messages")
 
