@@ -36,6 +36,7 @@ import akka.stream.scaladsl.Source
 import akka.util.{ Unsafe, WildcardTree }
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 import akka.util.OptionVal
+import akka.remote.QuarantinedEvent
 
 /**
  * INTERNAL API
@@ -223,6 +224,8 @@ private[remote] class Association(
                 log.warning(
                   "Association to [{}] with UID [{}] is irrecoverably failed. Quarantining address. {}",
                   remoteAddress, u, reason)
+                // FIXME when we complete the switch to Long UID we must use Long here also, issue #20644
+                transport.eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, u.toInt))
                 // end delivery of system messages to that incarnation after this point
                 send(ClearSystemMessageDelivery, OptionVal.None, dummyRecipient)
                 // try to tell the other system that we have quarantined it

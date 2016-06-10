@@ -497,12 +497,14 @@ private[akka] class RemoteActorRef private[akka] (
   @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
   override private[akka] def isTerminated: Boolean = false
 
-  private def handleException: Catcher[Unit] = {
+  private def handleException(message: Any, sender: ActorRef): Catcher[Unit] = {
     case e: InterruptedException ⇒
       remote.system.eventStream.publish(Error(e, path.toString, getClass, "interrupted during message send"))
+      remote.system.deadLetters.tell(message, sender)
       Thread.currentThread.interrupt()
     case NonFatal(e) ⇒
       remote.system.eventStream.publish(Error(e, path.toString, getClass, "swallowing exception during message send"))
+      remote.system.deadLetters.tell(message, sender)
   }
 
   /**
@@ -529,11 +531,11 @@ private[akka] class RemoteActorRef private[akka] (
           provider.remoteWatcher ! RemoteWatcher.UnwatchRemote(watchee, watcher)
         case _ ⇒ remote.send(message, OptionVal.None, this)
       }
-    } catch handleException
+    } catch handleException(message, Actor.noSender)
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
     if (message == null) throw new InvalidMessageException("Message is null")
-    try remote.send(message, OptionVal(sender), this) catch handleException
+    try remote.send(message, OptionVal(sender), this) catch handleException(message, sender)
   }
 
   override def provider: RemoteActorRefProvider = remote.provider
