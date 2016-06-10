@@ -882,8 +882,11 @@ object MiMa extends AutoPlugin {
 
         // #20683
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage.discardEntityBytes"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.discardEntityBytes")
-    )
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.discardEntityBytes"),
+
+        // #20288 migrate BodyPartRenderer to GraphStage
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.BodyPartRenderer.streamed")
+      )
     )
   }
 }
