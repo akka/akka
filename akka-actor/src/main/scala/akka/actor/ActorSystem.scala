@@ -166,16 +166,15 @@ object ActorSystem {
     import config._
 
     final val ConfigVersion: String = getString("akka.version")
-    final val ProviderClass: String = {
-      val shortNames = Map(
-        "local" -> classOf[LocalActorRefProvider].getName,
+    final val ProviderClass: String =
+      getString("akka.actor.provider") match {
+        case "local" => classOf[LocalActorRefProvider].getName
         // these two cannot be referenced by class as they may not be on the classpath
-        "remote" -> "akka.remote.RemoteActorRefProvider",
-        "cluster" -> "akka.cluster.ClusterActorRefProvider"
-      )
-      val value = getString("akka.actor.provider")
-      shortNames.getOrElse(value, value)
-    }
+        case "remote" => "akka.remote.RemoteActorRefProvider"
+        case "cluster" => "akka.cluster.ClusterActorRefProvider"
+        case fqcn => fqcn
+      }
+
     final val SupervisorStrategyClass: String = getString("akka.actor.guardian-supervisor-strategy")
     final val CreationTimeout: Timeout = Timeout(config.getMillisDuration("akka.actor.creation-timeout"))
     final val UnstartedPushTimeout: Timeout = Timeout(config.getMillisDuration("akka.actor.unstarted-push-timeout"))
@@ -840,6 +839,7 @@ private[akka] class ActorSystemImpl(
     /**
      * Adds a Runnable that will be executed on ActorSystem termination.
      * Note that callbacks are executed in reverse order of insertion.
+     *
      * @param r The callback to be executed on ActorSystem termination
      * Throws RejectedExecutionException if called after ActorSystem has been terminated.
      */
