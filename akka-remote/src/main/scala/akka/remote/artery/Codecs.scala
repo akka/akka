@@ -105,7 +105,7 @@ class Encoder(
 }
 
 class Decoder(
-  uniqueLocalAddress:              UniqueAddress,
+  inboundContext:                  InboundContext,
   system:                          ExtendedActorSystem,
   resolveActorRefWithLocalAddress: String ⇒ InternalActorRef,
   compressionTable:                LiteralCompressionTable,
@@ -117,7 +117,7 @@ class Decoder(
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
-      private val localAddress = uniqueLocalAddress.address
+      private val localAddress = inboundContext.localAddress.address
       private val headerBuilder = HeaderBuilder(compressionTable)
       private val serialization = SerializationExtension(system)
 
@@ -160,6 +160,9 @@ class Decoder(
             }
           }
 
+        val originUid = headerBuilder.uid
+        val association = inboundContext.association(originUid)
+
         try {
           val deserializedMessage = MessageSerializer.deserializeForArtery(
             system, serialization, headerBuilder, envelope)
@@ -170,7 +173,8 @@ class Decoder(
             localAddress, // FIXME: Is this needed anymore? What should we do here?
             deserializedMessage,
             senderOption,
-            headerBuilder.uid)
+            originUid,
+            association)
 
           push(out, decoded)
         } catch {

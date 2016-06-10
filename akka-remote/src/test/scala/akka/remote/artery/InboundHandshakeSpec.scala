@@ -41,7 +41,8 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
   private def setupStream(inboundContext: InboundContext, timeout: FiniteDuration = 5.seconds): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
     val recipient = null.asInstanceOf[InternalActorRef] // not used
     TestSource.probe[AnyRef]
-      .map(msg ⇒ InboundEnvelope(recipient, addressB.address, msg, OptionVal.None, addressA.uid))
+      .map(msg ⇒ InboundEnvelope(recipient, addressB.address, msg, OptionVal.None, addressA.uid,
+        inboundContext.association(addressA.uid)))
       .via(new InboundHandshake(inboundContext, inControlStream = true))
       .map { case env: InboundEnvelope ⇒ env.message }
       .toMat(TestSink.probe[Any])(Keep.both)
