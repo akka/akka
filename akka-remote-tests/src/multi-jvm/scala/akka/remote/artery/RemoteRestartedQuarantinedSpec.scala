@@ -30,20 +30,8 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
     ConfigFactory.parseString("""
       akka.loglevel = WARNING
       akka.remote.log-remote-lifecycle-events = WARNING
-
-      # Keep it long, we don't want reconnects
-      akka.remote.retry-gate-closed-for  = 1 s
-
-      # Important, otherwise it is very racy to get a non-writing endpoint: the only way to do it if the two nodes
-      # associate to each other at the same time. Setting this will ensure that the right scenario happens.
-      akka.remote.use-passive-connections = off
-
-      # TODO should not be needed, but see TODO at the end of the test
-      akka.remote.transport-failure-detector.heartbeat-interval = 1 s
-      akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 10 s
-
       akka.remote.artery.enabled = on
-                              """)))
+      """)))
 
   class Subject extends Actor {
     def receive = {
@@ -134,10 +122,7 @@ abstract class RemoteRestartedQuarantinedSpec
         val probe = TestProbe()(freshSystem)
 
         freshSystem.actorSelection(RootActorPath(firstAddress) / "user" / "subject").tell(Identify("subject"), probe.ref)
-        // TODO sometimes it takes long time until the new connection is established,
-        //      It seems like there must first be a transport failure detector timeout, that triggers
-        //      "No response from remote. Handshake timed out or transport failure detector triggered".
-        probe.expectMsgType[ActorIdentity](30.second).ref should not be (None)
+        probe.expectMsgType[ActorIdentity](5.seconds).ref should not be (None)
 
         // Now the other system will be able to pass, too
         freshSystem.actorOf(Props[Subject], "subject")
