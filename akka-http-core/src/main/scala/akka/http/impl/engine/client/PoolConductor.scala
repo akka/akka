@@ -53,7 +53,7 @@ private object PoolConductor {
     Context    |   retry   |     |   slot-   |    Command    |   doubler   |     |   route   +-------------->
     +--------->|   Merge   +---->| Selector  +-------------->| (MapConcat) +---->|  (Flexi   +-------------->
                |           |     |           |               |             |     |   Route)  +-------------->
-               +----+------+     +-----+-----+               +-------------+     +-----------+       to slotSettings
+               +----+------+     +-----+-----+               +-------------+     +-----------+       to slots
                     ^                  ^
                     |                  | SlotEvent
                     |             +----+----+
@@ -92,8 +92,9 @@ private object PoolConductor {
 
   sealed trait SlotCommand
   case class DispatchCommand(rc: RequestContext) extends SlotCommand
-  case class SwitchSlotCommand(cmd: DispatchCommand, slotIx: Int) extends SlotCommand
-  case class SlotShouldConnectCommand(slotIx: Int) extends SlotCommand
+  case object SlotShouldConnectCommand extends SlotCommand
+
+  case class SwitchSlotCommand(cmd: SlotCommand, slotIx: Int)
 
   // the SlotSelector keeps the state of all slotSettings as instances of this ADT
   private sealed trait SlotState
@@ -114,11 +115,11 @@ private object PoolConductor {
   private object Busy extends Busy(1)
 
   private class SlotSelector(slotSettings: PoolSlotsSetting, pipeliningLimit: Int, log: LoggingAdapter)
-    extends GraphStage[FanInShape2[RequestContext, SlotEvent, SlotCommand]] {
+    extends GraphStage[FanInShape2[RequestContext, SlotEvent, SwitchSlotCommand]] {
 
     private val ctxIn = Inlet[RequestContext]("requestContext")
     private val slotIn = Inlet[SlotEvent]("slotEvents")
-    private val out = Outlet[SlotCommand]("slotCommand")
+    private val out = Outlet[SwitchSlotCommand]("slotCommand")
 
     override def initialAttributes = Attributes.name("SlotSelector")
 
@@ -174,16 +175,12 @@ private object PoolConductor {
       // pool ordering connection doesn't change the status of a connection to Idle,
       // receiving confirmation from the Slot does. See: handler for "slotIn"
       def connect(index: Int): Unit =
-        emit(out, SlotShouldConnectCommand(index))
+        emit(out, SwitchSlotCommand(SlotShouldConnectCommand, index))
 
       private def reconnectIfNeeded(): Unit = {
         val connectedNum = slotStates.count(_ != Unconnected)
         if (connectedNum < slotSettings.minSlots) {
-          val unconnected = slotStates
-            .zipWithIndex
-            .filter(_._1 == Unconnected)
-            .take(slotSettings.minSlots - connectedNum)
-          unconnected.map(_._2).map(connect)
+          connect(slotStates.indexWhere(_ == Unconnected))
         }
       }
 
@@ -237,11 +234,11 @@ private object PoolConductor {
     }
   }
 
-  private class Route(slotCount: Int) extends GraphStage[UniformFanOutShape[SlotCommand, SlotCommand]] {
+  private class Route(slotCount: Int) extends GraphStage[UniformFanOutShape[SwitchSlotCommand, SlotCommand]] {
 
     override def initialAttributes = Attributes.name("PoolConductor.Route")
 
-    override val shape = new UniformFanOutShape[SlotCommand, SlotCommand](slotCount)
+    override val shape = new UniformFanOutShape[SwitchSlotCommand, SlotCommand](slotCount)
 
     override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       shape.outArray foreach { setHandler(_, ignoreTerminateOutput) }
@@ -249,13 +246,8 @@ private object PoolConductor {
       val in = shape.in
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
-          val cmd = grab(in)
-          cmd match {
-            case SwitchSlotCommand(cmd, slotIx)         ⇒ emit(shape.outArray(slotIx), cmd, pullIn)
-            case cmd @ SlotShouldConnectCommand(slotIx) ⇒ emit(shape.outArray(slotIx), cmd, pullIn)
-            case _: DispatchCommand ⇒
-              throw new IllegalStateException("Raw DispatchCommand SlotCommand should not be used directly. Wrap it with SwitchSlotCommand")
-          }
+          val switchCommand = grab(in)
+          emit(shape.outArray(switchCommand.slotIx), switchCommand.cmd, pullIn)
         }
       })
       val pullIn = () ⇒ pull(in)

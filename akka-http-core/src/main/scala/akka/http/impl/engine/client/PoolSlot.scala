@@ -134,7 +134,7 @@ private object PoolSlot {
         connOutport ! Request(totalDemand)
         context.become(waitingForDemandFromConnection(connInport = connInport, connOutport = connOutport, rc))
 
-      case OnNext(SlotShouldConnectCommand(id)) if id == slotIx ⇒
+      case OnNext(SlotShouldConnectCommand) ⇒
         val (in, out) = runnableGraph.run()
         onNext(SlotEvent.ConnectedEagerly(slotIx) :: Nil)
         out ! Request(totalDemand)

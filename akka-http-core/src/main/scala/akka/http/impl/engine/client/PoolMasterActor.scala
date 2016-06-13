@@ -51,8 +51,7 @@ private[http] final class PoolMasterActor extends Actor with ActorLogging {
     if (poolStatus.contains(gateway)) {
       throw new IllegalStateException(s"pool interface actor for $gateway already exists")
     }
-    val props = PoolInterfaceActor.props(gateway).withDeploy(Deploy.local)
-    val ref = context.actorOf(props, PoolInterfaceActor.name.next())
+    val ref = context.actorOf(PoolInterfaceActor.props(gateway), PoolInterfaceActor.name.next())
     poolStatus += gateway → PoolInterfaceRunning(ref)
     poolInterfaces += ref → gateway
     context.watch(ref)

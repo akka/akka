@@ -26,7 +26,7 @@ private object PoolInterfaceActor {
 
   val name = SeqActorName("PoolInterfaceActor")
 
-  def props(gateway: PoolGateway)(implicit fm: Materializer) = Props(new PoolInterfaceActor(gateway))
+  def props(gateway: PoolGateway)(implicit fm: Materializer) = Props(new PoolInterfaceActor(gateway)).withDeploy(Deploy.local)
 }
 
 /**
