@@ -59,7 +59,7 @@ private[http] object StreamUtils {
         override def onPull(): Unit = pull(in)
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
-          promise.failure(ex)
+          promise.tryFailure(ex)
           failStage(ex)
         }
 
