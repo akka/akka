@@ -21,14 +21,14 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.assertEquals;
 
-public class EntityDrainingTestCases extends JUnitSuite {
+public class EntityDiscardingTest extends JUnitSuite {
 
   private ActorSystem sys = ActorSystem.create("test");
   private ActorMaterializer mat = ActorMaterializer.create(sys);
   private Iterable<ByteString> testData = Arrays.asList(ByteString.fromString("abc"), ByteString.fromString("def"));
 
   @Test
-  public void testHttpRequestDrainEntity() {
+  public void testHttpRequestDiscardEntity() {
 
     CompletableFuture<Done> f = new CompletableFuture<>();
     Source<ByteString, ?> s = Source.from(testData).alsoTo(Sink.onComplete(completeDone(f)));
@@ -43,7 +43,7 @@ public class EntityDrainingTestCases extends JUnitSuite {
   }
 
   @Test
-  public void testHttpResponseDrainEntity() {
+  public void testHttpResponseDiscardEntity() {
 
     CompletableFuture<Done> f = new CompletableFuture<>();
     Source<ByteString, ?> s = Source.from(testData).alsoTo(Sink.onComplete(completeDone(f)));
