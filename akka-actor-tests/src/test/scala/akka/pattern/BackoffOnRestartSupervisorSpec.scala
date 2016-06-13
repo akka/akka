@@ -48,7 +48,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
 
   def supervisorProps(probeRef: ActorRef) = {
     val options = Backoff.onFailure(TestActor.props(probeRef), "someChildName", 200 millis, 10 seconds, 0.0)
-      .withSupervisorStrategy(OneForOneStrategy() {
+      .withSupervisorStrategy(OneForOneStrategy(maxNrOfRetries = 4) {
         case _: TestActor.StoppingException ⇒ SupervisorStrategy.Stop
       })
     BackoffSupervisor.props(options)
@@ -168,6 +168,24 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
         expectMsgType[BackoffSupervisor.CurrentChild].ref.get should !==(child)
       }
 
+    }
+
+    "respect maxNrOfRetries property of OneForOneStrategy" in new Setup {
+      filterException[TestActor.TestException] {
+        probe.watch(supervisor)
+        // Have the child throw an exception 5 times, which is more than the max restarts allowed.
+        for (i ← 1 to 5) {
+          println(s"iteration $i")
+          supervisor ! "THROW"
+          if (i < 5) {
+            // Since we should've died on this throw, don't expect to be started.
+            // We're not testing timing, so set a reasonably high timeout.
+            probe.expectMsg(4 seconds, "STARTED")
+          }
+        }
+        // Superviser should've terminated.
+        probe.expectTerminated(supervisor)
+      }
     }
   }
 }

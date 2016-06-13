@@ -38,7 +38,15 @@ private class BackoffOnRestartSupervisor(
         // to our own Restarts, which involves stopping the child.
         case Restart ⇒
           val childRef = sender()
-          become(waitChildTerminatedBeforeBackoff(childRef) orElse handleBackoff)
+          val nextRestartCount = restartCount + 1
+          if (strategy.maxNrOfRetries >= 0 && nextRestartCount > strategy.maxNrOfRetries) {
+            // If we've exceeded the maximum # of retries allowed by the Strategy, die.
+            log.debug(s"Terminating on restart # $nextRestartCount which exceeds max allowed restarts (${strategy.maxNrOfRetries})")
+            become(receive)
+            stop(self)
+          } else {
+            become(waitChildTerminatedBeforeBackoff(childRef) orElse handleBackoff)
+          }
           Stop
 
         case other ⇒ other
