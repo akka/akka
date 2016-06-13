@@ -28,10 +28,10 @@ trait HeaderDirectives {
    *
    * @group header
    */
-  def checkSameOrigin(allowed: HttpOriginRange): Directive0 = {
+  def checkSameOrigin(allowed: HttpOriginRange.Default): Directive0 = {
     headerValueByType[Origin]().flatMap { origin ⇒
       if (origin.origins.exists(allowed.matches)) pass
-      else reject(InvalidOriginRejection(origin.origins))
+      else reject(InvalidOriginRejection(allowed.origins))
     }
   }
 

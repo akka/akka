@@ -14,6 +14,7 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.model.{ HttpHeader, StatusCodes }
 import akka.http.javadsl.model.headers.HttpOriginRange
 import akka.http.javadsl.server.{ InvalidOriginRejection, MissingHeaderRejection, Route }
+import akka.http.scaladsl.model.headers.HttpOriginRange.{ Default, `*` }
 import akka.http.scaladsl.model.headers.{ ModeledCustomHeader, ModeledCustomHeaderCompanion, Origin }
 import akka.http.scaladsl.server.directives.{ HeaderMagnet, BasicDirectives ⇒ B, HeaderDirectives ⇒ D }
 import akka.stream.ActorMaterializer
@@ -34,7 +35,11 @@ abstract class HeaderDirectives extends FutureDirectives {
    * @group header
    */
   def checkSameOrigin(allowed: HttpOriginRange, inner: jf.Supplier[Route]): Route = RouteAdapter {
-    D.checkSameOrigin(allowed.asScala) { inner.get().delegate }
+    val a = allowed.asScala match {
+      case x: `*`.type ⇒ ???
+      case x: Default  ⇒ x
+    }
+    D.checkSameOrigin(a) { inner.get().delegate }
   }
 
   /**
