@@ -78,6 +78,7 @@ private object PoolConductor {
       val flatten = Flow[RawSlotEvent].mapAsyncUnordered(slotSettings.maxSlots) {
         case x: SlotEvent.Disconnected                ⇒ FastFuture.successful(x)
         case SlotEvent.RequestCompletedFuture(future) ⇒ future
+        case x: SlotEvent.ConnectedEagerly            ⇒ FastFuture.successful(x)
         case x                                        ⇒ throw new IllegalStateException("Unexpected " + x)
       }
 
@@ -117,7 +118,7 @@ private object PoolConductor {
 
     private val ctxIn = Inlet[RequestContext]("requestContext")
     private val slotIn = Inlet[SlotEvent]("slotEvents")
-    private val out = Outlet[SlotCommand]("switchCommand")
+    private val out = Outlet[SlotCommand]("slotCommand")
 
     override def initialAttributes = Attributes.name("SlotSelector")
 
@@ -145,6 +146,8 @@ private object PoolConductor {
             case SlotEvent.Disconnected(slotIx, failed) ⇒
               slotStates(slotIx) = slotStateAfterDisconnect(slotStates(slotIx), failed)
               reconnectIfNeeded()
+            case SlotEvent.ConnectedEagerly(slotIx) ⇒
+              slotStates(slotIx) = Idle
           }
           pull(slotIn)
           val wasBlocked = nextSlot == -1
@@ -168,18 +171,17 @@ private object PoolConductor {
       def startMinConnections(): Unit =
         (0 until slotSettings.minSlots).foreach { connect }
 
-      def connect(index: Int): Unit = {
-        emit(out, SlotShouldConnectCommand(index), () ⇒
-          slotStates(index) = Idle
-        )
-      }
+      // pool ordering connection doesn't change the status of a connection to Idle,
+      // receiving confirmation from the Slot does. See: handler for "slotIn"
+      def connect(index: Int): Unit =
+        emit(out, SlotShouldConnectCommand(index))
 
       private def reconnectIfNeeded(): Unit = {
         val connectedNum = slotStates.count(_ != Unconnected)
         if (connectedNum < slotSettings.minSlots) {
           val unconnected = slotStates
             .zipWithIndex
-            .filter(_._1 != Unconnected)
+            .filter(_._1 == Unconnected)
             .take(slotSettings.minSlots - connectedNum)
           unconnected.map(_._2).map(connect)
         }
@@ -249,11 +251,9 @@ private object PoolConductor {
         override def onPush(): Unit = {
           val cmd = grab(in)
           cmd match {
-            case SwitchSlotCommand(cmd, slotIx) ⇒
-              emit(shape.outArray(slotIx), cmd, pullIn)
-            case cmd @ SlotShouldConnectCommand(slotIx) ⇒
-              emit(shape.outArray(slotIx), cmd, pullIn)
-            case _: DispatchCommand ⇒ 
+            case SwitchSlotCommand(cmd, slotIx)         ⇒ emit(shape.outArray(slotIx), cmd, pullIn)
+            case cmd @ SlotShouldConnectCommand(slotIx) ⇒ emit(shape.outArray(slotIx), cmd, pullIn)
+            case _: DispatchCommand ⇒
               throw new IllegalStateException("Raw DispatchCommand SlotCommand should not be used directly. Wrap it with SwitchSlotCommand")
           }
         }

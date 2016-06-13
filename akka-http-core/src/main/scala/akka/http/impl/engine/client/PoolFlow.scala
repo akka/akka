@@ -5,7 +5,7 @@
 package akka.http.impl.engine.client
 
 import akka.NotUsed
-import akka.http.impl.engine.client.PoolConductor.{ DispatchCommand, PoolSlotsSetting }
+import akka.http.impl.engine.client.PoolConductor.PoolSlotsSetting
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 
 import scala.concurrent.{ Promise, Future }

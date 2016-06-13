@@ -23,6 +23,7 @@ import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 
+import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
@@ -229,35 +230,46 @@ class ConnectionPoolSpec extends AkkaSpec("""
       val (Success(_), 42) = responseOut.expectNext()
     }
 
-    "never close hot connections when minConnections key is given and >0" in new TestSetup() {
+    "never close hot connections when minConnections key is given and >0 (minConnections = 1)" in new TestSetup() {
+      val close: HttpHeader = Connection("close")
+
       // for lower bound of one connection
       val minOneConnection = 1
-      val (requestInOne, _, responseOutSubOne, hcpMinOneConnection) =
+      val (requestInOne, requestOutOne, responseOutSubOne, hcpMinOneConnection) =
         cachedHostConnectionPool[Int](idleTimeout = 100.millis, minConnections = minOneConnection)
       val gatewayOneConnection = hcpMinOneConnection.gateway
 
-      requestInOne.sendNext(HttpRequest(uri = "/minimumslots/1") → 42)
-      responseOutSubOne.request(1)
       acceptIncomingConnection()
+      requestInOne.sendNext(HttpRequest(uri = "/minimumslots/1", headers = immutable.Seq(close)) → 42)
+      responseOutSubOne.request(1)
+      requestOutOne.expectNextN(1)
 
       condHolds(500.millis) { () ⇒
         Await.result(gatewayOneConnection.poolStatus(), 100.millis).get shouldBe a[PoolInterfaceRunning]
       }
+    }
+
+    "never close hot connections when minConnections key is given and >0 (minConnections = 5)" in new TestSetup() {
+      val close: HttpHeader = Connection("close")
 
       // for lower bound of five connections
       val minFiveConnections = 5
-      val (requestInFive, _, responseOutSubFive, hcpMinFiveConnection) = cachedHostConnectionPool[Int](
+      val (requestInFive, requestOutFive, responseOutSubFive, hcpMinFiveConnection) = cachedHostConnectionPool[Int](
         idleTimeout = 100.millis,
         minConnections = minFiveConnections,
         maxConnections = minFiveConnections + 10)
 
+      (0 until minFiveConnections) foreach { _ ⇒ acceptIncomingConnection() }
+      (0 until minFiveConnections) foreach { i ⇒
+        requestInFive.sendNext(HttpRequest(uri = s"/minimumslots/5/$i", headers = immutable.Seq(close)) → 42)
+      }
+      responseOutSubFive.request(minFiveConnections)
+      requestOutFive.expectNextN(minFiveConnections)
+
       val gatewayFiveConnections = hcpMinFiveConnection.gateway
       condHolds(1000.millis) { () ⇒
         val status = gatewayFiveConnections.poolStatus()
-        val interfaces = gatewayFiveConnections.poolInterfacesStatus()
-
         Await.result(status, 100.millis).get shouldBe a[PoolInterfaceRunning]
-        //        Await.result(interfaces, 100.millis) should be >= minFiveConnections
       }
     }
 
@@ -370,9 +382,13 @@ class ConnectionPoolSpec extends AkkaSpec("""
       pipeliningLimit: Int                      = 1,
       idleTimeout:     Duration                 = 5.seconds,
       ccSettings:      ClientConnectionSettings = ClientConnectionSettings(system)) = {
-      val settings = new ConnectionPoolSettingsImpl(maxConnections, minConnections, maxRetries, maxOpenRequests, pipeliningLimit,
-        idleTimeout, ClientConnectionSettings(system))
-      flowTestBench(Http().cachedHostConnectionPool[T](serverHostName, serverPort, settings))
+
+      val settings =
+        new ConnectionPoolSettingsImpl(maxConnections, minConnections,
+          maxRetries, maxOpenRequests, pipeliningLimit,
+          idleTimeout, ccSettings)
+      flowTestBench(
+        Http().cachedHostConnectionPool[T](serverHostName, serverPort, settings))
     }
 
     def superPool[T](

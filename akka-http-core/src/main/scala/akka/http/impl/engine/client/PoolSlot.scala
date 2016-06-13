@@ -30,6 +30,11 @@ private object PoolSlot {
     final case class RetryRequest(rc: RequestContext) extends RawSlotEvent
     final case class RequestCompleted(slotIx: Int) extends SlotEvent
     final case class Disconnected(slotIx: Int, failedRequests: Int) extends SlotEvent
+    /**
+     * Slot with id "slotIx" has responded to request from PoolConductor and connected immediately
+     * Ordinary connections from slots don't produce this event
+     */
+    final case class ConnectedEagerly(slotIx: Int) extends SlotEvent
   }
 
   private val slotProcessorActorName = SeqActorName("SlotProcessor")
@@ -96,6 +101,17 @@ private object PoolSlot {
       .named("SlotProcessorInternalConnectionFlow")
 
     override def requestStrategy = ZeroRequestStrategy
+
+    /**
+     * How PoolProcessor changes it's `receive`:
+     * waitingExposedPublisher -> waitingForSubscribePending -> unconnected ->
+     * waitingForDemandFromConnection OR waitingEagerlyConnected -> running
+     * Given slot can become get to 'running' state via 'waitingForDemandFromConnection' or 'waitingEagerlyConnected'.
+     * The difference between those two paths is that the first one is lazy - reacts to DispatchCommand and then uses
+     * inport and outport actors to obtain more items.
+     * Where the second one is eager - reacts to SlotShouldConnectCommand from PoolConductor, sends SlotEvent.ConnectedEagerly
+     * back to conductor and then waits for the first DispatchCommand
+     */
     override def receive = waitingExposedPublisher
 
     def waitingExposedPublisher: Receive = {
@@ -120,7 +136,9 @@ private object PoolSlot {
 
       case OnNext(SlotShouldConnectCommand(id)) if id == slotIx ⇒
         val (in, out) = runnableGraph.run()
-        context.become(running(connInport = in, connOutport = out))
+        onNext(SlotEvent.ConnectedEagerly(slotIx) :: Nil)
+        out ! Request(totalDemand)
+        context.become(waitingEagerlyConnected(connInport = in, connOutport = out))
 
       case Request(_) ⇒ if (remainingRequested == 0) request(1) // ask for first request if necessary
 
@@ -131,6 +149,17 @@ private object PoolSlot {
         shutdown()
 
       case c @ FromConnection(msg) ⇒ // ignore ...
+    }
+
+    def waitingEagerlyConnected(connInport: ActorRef, connOutport: ActorRef): Receive = {
+      case FromConnection(Request(n)) ⇒
+        request(n)
+
+      case OnNext(DispatchCommand(rc: RequestContext)) ⇒
+        inflightRequests = inflightRequests.enqueue(rc)
+        request(1)
+        connInport ! OnNext(rc.request)
+        context.become(running(connInport, connOutport))
     }
 
     def waitingForDemandFromConnection(connInport: ActorRef, connOutport: ActorRef,

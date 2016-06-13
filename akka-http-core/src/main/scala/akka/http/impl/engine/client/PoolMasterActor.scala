@@ -133,10 +133,6 @@ private[http] final class PoolMasterActor extends Actor with ActorLogging {
     // Testing only.
     case PoolSize(sizePromise) ⇒
       sizePromise.success(poolStatus.size)
-
-    // Testing only.
-    case PoolInterfaceSize(statusPromise) ⇒
-      statusPromise.success(poolInterfaces.size)
   }
 
 }
@@ -158,6 +154,5 @@ private[http] object PoolMasterActor {
   // INTERNAL API (for testing only)
   final case class PoolStatus(gateway: PoolGateway, statusPromise: Promise[Option[PoolInterfaceStatus]]) extends NoSerializationVerificationNeeded
   final case class PoolSize(sizePromise: Promise[Int]) extends NoSerializationVerificationNeeded
-  final case class PoolInterfaceSize(sizePromise: Promise[Int]) extends NoSerializationVerificationNeeded
 
 }

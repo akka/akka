@@ -71,13 +71,6 @@ private[http] final class PoolGateway(gatewayRef: ActorRef, val hcps: HostConnec
     statusPromise.future
   }
 
-  // INTERNAL API (testing only)
-  private[client] def poolInterfacesStatus(): Future[Int] = {
-    val statusPromise = Promise[Int]()
-    gatewayRef ! PoolInterfaceSize(statusPromise)
-    statusPromise.future
-  }
-
   override def equals(that: Any): Boolean =
     that match {
       case p: PoolGateway ⇒ p.hcps == hcps && p.gatewayId == gatewayId
