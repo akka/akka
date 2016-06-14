@@ -3,17 +3,14 @@
  */
 package akka.persistence.journal
 
+import akka.actor._
+import akka.persistence.JournalProtocol._
+import akka.persistence._
 import akka.persistence.scalatest.{ MayVerb, OptionalTests }
+import akka.testkit._
+import com.typesafe.config._
 
 import scala.concurrent.duration._
-import scala.collection.immutable.Seq
-
-import akka.actor._
-import akka.persistence._
-import akka.persistence.JournalProtocol._
-import akka.testkit._
-
-import com.typesafe.config._
 
 object JournalSpec {
   val config = ConfigFactory.parseString(
@@ -39,67 +36,10 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) with MayVe
 
   implicit lazy val system: ActorSystem = ActorSystem("JournalSpec", config.withFallback(JournalSpec.config))
 
-  private var senderProbe: TestProbe = _
-  private var receiverProbe: TestProbe = _
-
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    senderProbe = TestProbe()
-    receiverProbe = TestProbe()
     preparePersistenceId(pid)
     writeMessages(1, 5, pid, senderProbe.ref, writerUuid)
-  }
-
-  /**
-   * Overridable hook that is called before populating the journal for the next
-   * test case. `pid` is the `persistenceId` that will be used in the test.
-   * This method may be needed to clean pre-existing events from the log.
-   */
-  def preparePersistenceId(pid: String): Unit = ()
-
-  /**
-   * Implementation may override and return false if it does not
-   * support atomic writes of several events, as emitted by `persistAll`.
-   */
-  def supportsAtomicPersistAllOfSeveralEvents: Boolean = true
-
-  def journal: ActorRef =
-    extension.journalFor(null)
-
-  def replayedMessage(snr: Long, deleted: Boolean = false, confirms: Seq[String] = Nil): ReplayedMessage =
-    ReplayedMessage(PersistentImpl(s"a-${snr}", snr, pid, "", deleted, Actor.noSender, writerUuid))
-
-  def writeMessages(fromSnr: Int, toSnr: Int, pid: String, sender: ActorRef, writerUuid: String): Unit = {
-
-    def persistentRepr(sequenceNr: Long) = PersistentRepr(
-      payload = s"a-$sequenceNr", sequenceNr = sequenceNr, persistenceId = pid,
-      sender = sender, writerUuid = writerUuid)
-
-    val msgs =
-      if (supportsAtomicPersistAllOfSeveralEvents) {
-        (fromSnr to toSnr - 1).map { i ⇒
-          if (i == toSnr - 1)
-            AtomicWrite(List(persistentRepr(i), persistentRepr(i + 1)))
-          else
-            AtomicWrite(persistentRepr(i))
-        }
-      } else {
-        (fromSnr to toSnr).map { i ⇒
-          AtomicWrite(persistentRepr(i))
-        }
-      }
-
-    val probe = TestProbe()
-
-    journal ! WriteMessages(msgs, probe.ref, actorInstanceId)
-
-    probe.expectMsg(WriteMessagesSuccessful)
-    fromSnr to toSnr foreach { i ⇒
-      probe.expectMsgPF() {
-        case WriteMessageSuccess(PersistentImpl(payload, `i`, `pid`, _, _, `sender`, `writerUuid`), _) ⇒
-          payload should be(s"a-${i}")
-      }
-    }
   }
 
   "A journal" must {
