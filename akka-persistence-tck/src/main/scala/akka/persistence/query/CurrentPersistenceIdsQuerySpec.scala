@@ -19,6 +19,8 @@ trait CurrentPersistenceIdsQuerySpec { _: QuerySpec ⇒
         tp.expectNextUnorderedN(persistenceIds)
         tp.expectComplete()
       }
+
+      (1 to 3).map("pid-" + _).foreach(deleteMessages(_))
     }
   }
 }

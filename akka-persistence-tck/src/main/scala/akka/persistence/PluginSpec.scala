@@ -72,24 +72,19 @@ abstract class PluginSpec(val config: Config) extends TestKitBase with WordSpecL
     ReplayedMessage(PersistentImpl(s"a-$snr", snr, pid, "", deleted, Actor.noSender, writerUuid))
 
   def writeMessages(fromSnr: Int, toSnr: Int, pid: String, sender: ActorRef, writerUuid: String): Unit = {
-    assert(fromSnr != toSnr, "fromSnr must not be equal to toSnr")
-    def persistentRepr(sequenceNr: Long) = PersistentRepr(
-      payload = s"a-$sequenceNr", sequenceNr = sequenceNr, persistenceId = pid,
-      sender = sender, writerUuid = writerUuid)
+    def persistentRepr(sequenceNr: Long) =
+      PersistentRepr(
+        payload = s"a-$sequenceNr",
+        sequenceNr = sequenceNr,
+        persistenceId = pid,
+        sender = sender,
+        writerUuid = writerUuid
+      )
 
-    val msgs =
-      if (supportsAtomicPersistAllOfSeveralEvents) {
-        (fromSnr to toSnr - 1).map { i ⇒
-          if (i == toSnr - 1)
-            AtomicWrite(List(persistentRepr(i), persistentRepr(i + 1)))
-          else
-            AtomicWrite(persistentRepr(i))
-        }
-      } else {
-        (fromSnr to toSnr).map { i ⇒
-          AtomicWrite(persistentRepr(i))
-        }
-      }
+    val msgs: Seq[PersistentEnvelope] =
+      if (supportsAtomicPersistAllOfSeveralEvents)
+        Seq(AtomicWrite((fromSnr to toSnr).map(i ⇒ persistentRepr(i))))
+      else (fromSnr to toSnr).map(i ⇒ AtomicWrite(persistentRepr(i)))
 
     val probe = TestProbe()
 
@@ -104,12 +99,13 @@ abstract class PluginSpec(val config: Config) extends TestKitBase with WordSpecL
     }
   }
 
-  def deleteMessages(persistenceId: String, toSequenceNr: Long): Unit = {
+  def deleteMessages(persistenceId: String, toSequenceNr: Long = Long.MaxValue): Unit = {
     val probe = TestProbe()
     journal ! DeleteMessagesTo(persistenceId, toSequenceNr, probe.ref)
     probe.expectMsgPF() {
       case DeleteMessagesSuccess(_) ⇒
     }
-    Thread.sleep(1000) //TODO: some storage devices (like JDBC) take some ms to delete a record...
+    //    println("==> Deleting: " + persistenceId)
+    //    Thread.sleep(1000) //TODO: some storage devices (like JDBC) take some ms to delete a record...
   }
 }

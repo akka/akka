@@ -35,6 +35,8 @@ trait AllPersistenceIdsQuerySpec { _: QuerySpec ⇒
 
         tp.cancel()
         tp.expectNoMsg(100.millis)
+
+        (1 to 6).map("pid-" + _).foreach(deleteMessages(_))
       }
     }
   }

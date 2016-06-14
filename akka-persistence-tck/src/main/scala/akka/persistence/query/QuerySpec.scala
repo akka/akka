@@ -32,7 +32,7 @@ abstract class QuerySpec(config: Config) extends PluginSpec(config) {
     qExtension.readJournalFor[A](readJournalPluginId)
 
   def persistEventFor: String ⇒ Unit =
-    writeMessages(1, 2, _, senderProbe.ref, writerUuid)
+    writeMessages(1, 1, _, senderProbe.ref, writerUuid)
 
   def persistEventsFor: (Int, Int, String) ⇒ Unit =
     writeMessages(_, _, _, senderProbe.ref, writerUuid)

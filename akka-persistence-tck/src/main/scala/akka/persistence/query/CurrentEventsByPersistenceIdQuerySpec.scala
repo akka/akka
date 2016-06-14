@@ -14,6 +14,8 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
         tp.request(2)
         tp.expectNext(EventEnvelope(3, "a", 3, "a-3"))
         tp.expectComplete()
+
+        deleteMessages("a")
       }
     }
 
@@ -25,6 +27,7 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
         tp.expectNext(EventEnvelope(2, "b", 2, "a-2"))
         tp.expectComplete()
       }
+      deleteMessages("b")
     }
 
     "find existing events from an offset" in {
@@ -93,6 +96,8 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
         tp.expectNext(EventEnvelope(2, "c", 2, "a-2"))
         tp.expectNext(EventEnvelope(3, "c", 3, "a-3"))
         tp.expectComplete()
+
+        deleteMessages("c")
       }
     }
 
@@ -110,6 +115,8 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
         tp.request(5)
         tp.expectNext(EventEnvelope(3, "f", 3, "a-3"))
         tp.expectComplete() // event 4 not seen
+
+        deleteMessages("f")
       }
     }
 
@@ -120,6 +127,7 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
         tp.request(1)
         tp.expectComplete()
       }
+      deleteMessages("g1")
     }
 
     "return empty stream for cleaned journal from 0 to 0" in {
@@ -129,6 +137,7 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
         tp.request(1)
         tp.expectComplete()
       }
+      deleteMessages("g2")
     }
 
     "return remaining values after partial journal cleanup" in {
@@ -139,6 +148,7 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
         tp.expectNext(EventEnvelope(3, "h", 3, "a-3"))
         tp.expectComplete()
       }
+      deleteMessages("h")
     }
 
     "return empty stream for empty journal" in {
@@ -146,6 +156,7 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
         tp.request(1)
         tp.expectComplete()
       }
+      deleteMessages("i")
     }
 
     "return empty stream for journal from 0 to 0" in {
@@ -154,6 +165,7 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
         tp.request(1)
         tp.expectComplete()
       }
+      deleteMessages("k1")
     }
 
     "return empty stream for empty journal from 0 to 0" in {
@@ -164,11 +176,12 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
     }
 
     "return empty stream for journal from seqNo greater than highestSeqNo" in {
-      persistEventsFor(1, 3, "k1")
-      withCurrentEventsByPersistenceId()("l", 4L, 3L) { tp ⇒
+      persistEventsFor(1, 3, "k3")
+      withCurrentEventsByPersistenceId()("k3", 4L, 3L) { tp ⇒
         tp.request(1)
         tp.expectComplete()
       }
+      deleteMessages("k3")
     }
   }
 }
