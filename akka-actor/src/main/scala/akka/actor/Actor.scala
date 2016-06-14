@@ -442,12 +442,6 @@ trait Actor {
           "You have to use one of the 'actorOf' factory methods to create a new actor. See the documentation.")
     val c = contextStack.head
     ActorCell.contextStack.set(null :: contextStack)
-    // cache function to `unhandled` to avoid allocations in aroundReceive,
-    // can't use a val in Actor due to binary compatibility restriction
-    c match {
-      case cell: ActorCell ⇒ cell.unhandledFun = unhandled
-      case _               ⇒
-    }
     c
   }
 
@@ -591,9 +585,11 @@ trait Actor {
 
   private[this] def unhandledFun: Any ⇒ Unit =
     context match {
-      case cell: ActorCell if (cell.unhandledFun ne null) ⇒
+      case cell: ActorCell ⇒
         // use cached function to avoid allocations in aroundReceive,
         // can't use a val in Actor due to binary compatibility restriction
+        if (cell.unhandledFun eq null)
+          cell.unhandledFun = unhandled
         cell.unhandledFun
       case _ ⇒ unhandled
     }

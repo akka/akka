@@ -643,6 +643,7 @@ private[akka] class ActorCell(
     setActorFields(actorInstance, context = null, self = if (recreate) self else system.deadLetters)
     currentMessage = null
     behaviorStack = emptyBehaviorStack
+    unhandledFun = null
   }
 
   final protected def setActorFields(actorInstance: Actor, context: ActorContext, self: ActorRef): Unit =
