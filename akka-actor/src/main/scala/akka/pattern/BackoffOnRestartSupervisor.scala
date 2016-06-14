@@ -41,7 +41,7 @@ private class BackoffOnRestartSupervisor(
           val nextRestartCount = restartCount + 1
           if (strategy.maxNrOfRetries >= 0 && nextRestartCount > strategy.maxNrOfRetries) {
             // If we've exceeded the maximum # of retries allowed by the Strategy, die.
-            log.debug(s"Terminating on restart # $nextRestartCount which exceeds max allowed restarts (${strategy.maxNrOfRetries})")
+            log.debug(s"Terminating on restart #{} which exceeds max allowed restarts ({})", nextRestartCount, strategy.maxNrOfRetries)
             become(receive)
             stop(self)
           } else {

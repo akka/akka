@@ -175,7 +175,6 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
         probe.watch(supervisor)
         // Have the child throw an exception 5 times, which is more than the max restarts allowed.
         for (i ← 1 to 5) {
-          println(s"iteration $i")
           supervisor ! "THROW"
           if (i < 5) {
             // Since we should've died on this throw, don't expect to be started.
