@@ -175,6 +175,28 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |""" should parseTo(HttpRequest(GET, Uri("http://x//foo").toHttpRequestTargetOriginForm, protocol = `HTTP/1.0`))
         closeAfterResponseCompletion shouldEqual Seq(true)
       }
+
+      "with additional fields in Strict-Transport-Security header" in new Test {
+        """GET /hsts HTTP/1.1
+          |Host: x
+          |Strict-Transport-Security: max-age=1; preload; dummy
+          |
+          |""" should parseTo(HttpRequest(
+          GET,
+          "/hsts",
+          headers = List(Host("x"), `Strict-Transport-Security`(1, None)),
+          protocol = `HTTP/1.1`))
+
+        """GET /hsts HTTP/1.1
+          |Host: x
+          |Strict-Transport-Security: max-age=1; dummy; preload
+          |
+          |""" should parseTo(HttpRequest(
+          GET,
+          "/hsts",
+          headers = List(Host("x"), `Strict-Transport-Security`(1, None)),
+          protocol = `HTTP/1.1`))
+      }
     }
 
     "properly parse a chunked request" - {
@@ -452,6 +474,36 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |Host: x
           |
           |""" should parseToError(422: StatusCode, ErrorInfo("TRACE requests must not have an entity"))
+      }
+
+      "with additional fields in headers" in new Test {
+        """GET / HTTP/1.1
+          |Host: x; dummy
+          |
+          |""" should parseToError(
+          BadRequest,
+          ErrorInfo("Illegal 'host' header: Invalid input ' ', expected 'EOI', ':', UPPER_ALPHA, lower-reg-name-char or pct-encoded (line 1, column 3)", "x; dummy\n  ^"))
+
+        """GET / HTTP/1.1
+          |Content-length: 3; dummy
+          |
+          |""" should parseToError(
+          BadRequest,
+          ErrorInfo("Illegal `Content-Length` header value"))
+
+        """GET / HTTP/1.1
+          |Connection:keep-alive; dummy
+          |
+          |""" should parseToError(
+          BadRequest,
+          ErrorInfo("Illegal 'connection' header: Invalid input ';', expected tchar, OWS, listSep or 'EOI' (line 1, column 11)", "keep-alive; dummy\n          ^"))
+
+        """GET / HTTP/1.1
+          |Transfer-Encoding: chunked; dummy
+          |
+          |""" should parseToError(
+          BadRequest,
+          ErrorInfo("Illegal 'transfer-encoding' header: Invalid input ';', expected OWS, listSep or 'EOI' (line 1, column 8)", "chunked; dummy\n       ^"))
       }
     }
   }
