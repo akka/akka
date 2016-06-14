@@ -76,6 +76,7 @@ import akka.util.OptionVal
 import io.aeron.driver.ThreadingMode
 import org.agrona.concurrent.BackoffIdleStrategy
 import org.agrona.concurrent.BusySpinIdleStrategy
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -428,6 +429,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     log.info("Remoting started; listening on address: {}", defaultAddress)
   }
 
+  private lazy val stopMediaDriverShutdownHook = new Thread {
+    override def run(): Unit = stopMediaDriver()
+  }
+
   private def startMediaDriver(): Unit = {
     if (remoteSettings.EmbeddedMediaDriver) {
       val driverContext = new MediaDriver.Context
@@ -458,6 +463,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       val driver = MediaDriver.launchEmbedded(driverContext)
       log.debug("Started embedded media driver in directory [{}]", driver.aeronDirectoryName)
       topLevelFREvents.loFreq(Transport_MediaDriverStarted, driver.aeronDirectoryName().getBytes("US-ASCII"))
+      Runtime.getRuntime.addShutdownHook(stopMediaDriverShutdownHook)
       mediaDriver = Some(driver)
     }
   }
@@ -465,6 +471,23 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def aeronDir: String = mediaDriver match {
     case Some(driver) ⇒ driver.aeronDirectoryName
     case None         ⇒ remoteSettings.AeronDirectoryName
+  }
+
+  private def stopMediaDriver(): Unit = {
+    mediaDriver.foreach { driver ⇒
+      // this is only for embedded media driver
+      driver.close()
+      try {
+        // FIXME it should also be configurable to not delete dir
+        IoUtil.delete(new File(driver.aeronDirectoryName), false)
+      } catch {
+        case NonFatal(e) ⇒
+          log.warning(
+            "Couldn't delete Aeron embedded media driver files in [{}] due to [{}]",
+            driver.aeronDirectoryName, e.getMessage)
+      }
+    }
+    Try(Runtime.getRuntime.removeShutdownHook(stopMediaDriverShutdownHook))
   }
 
   // TODO: Add FR events
@@ -642,11 +665,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       topLevelFREvents.loFreq(Transport_AeronErrorLogTaskStopped, NoMetaData)
     }
     if (aeron != null) aeron.close()
-    mediaDriver.foreach { driver ⇒
-      // this is only for embedded media driver
-      driver.close()
-      // FIXME it should also be configurable to not delete dir
-      IoUtil.delete(new File(driver.aeronDirectoryName), true)
+    if (mediaDriver.isDefined) {
+      stopMediaDriver()
       topLevelFREvents.loFreq(Transport_MediaFileDeleted, NoMetaData)
     }
     topLevelFREvents.loFreq(Transport_FlightRecorderClose, NoMetaData)
