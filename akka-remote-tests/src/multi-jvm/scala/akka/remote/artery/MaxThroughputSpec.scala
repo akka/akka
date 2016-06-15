@@ -75,11 +75,12 @@ object MaxThroughputSpec extends MultiNodeConfig {
   final case class EndResult(totalReceived: Long)
   final case class FlowControl(burstStartTime: Long) extends Echo
 
-  def receiverProps(reporter: RateReporter, payloadSize: Int): Props =
-    Props(new Receiver(reporter, payloadSize)).withDispatcher("akka.remote.default-remote-dispatcher")
+  def receiverProps(reporter: RateReporter, payloadSize: Int, printTaskRunnerMetrics: Boolean): Props =
+    Props(new Receiver(reporter, payloadSize, printTaskRunnerMetrics)).withDispatcher("akka.remote.default-remote-dispatcher")
 
-  class Receiver(reporter: RateReporter, payloadSize: Int) extends Actor {
+  class Receiver(reporter: RateReporter, payloadSize: Int, printTaskRunnerMetrics: Boolean) extends Actor {
     private var c = 0L
+    private val taskRunnerMetrics = new TaskRunnerMetrics(context.system)
 
     def receive = {
       case msg: Array[Byte] ⇒
@@ -90,6 +91,8 @@ object MaxThroughputSpec extends MultiNodeConfig {
         c = 0
         sender() ! Start
       case End ⇒
+        if (printTaskRunnerMetrics)
+          taskRunnerMetrics.printHistograms()
         sender() ! EndResult(c)
         context.stop(self)
       case m: Echo ⇒
@@ -98,15 +101,18 @@ object MaxThroughputSpec extends MultiNodeConfig {
     }
   }
 
-  def senderProps(target: ActorRef, testSettings: TestSettings, plotRef: ActorRef): Props =
-    Props(new Sender(target, testSettings, plotRef))
+  def senderProps(target: ActorRef, testSettings: TestSettings, plotRef: ActorRef,
+                  printTaskRunnerMetrics: Boolean): Props =
+    Props(new Sender(target, testSettings, plotRef, printTaskRunnerMetrics))
 
-  class Sender(target: ActorRef, testSettings: TestSettings, plotRef: ActorRef) extends Actor {
+  class Sender(target: ActorRef, testSettings: TestSettings, plotRef: ActorRef, printTaskRunnerMetrics: Boolean)
+    extends Actor {
     import testSettings._
     val payload = ("0" * testSettings.payloadSize).getBytes("utf-8")
     var startTime = 0L
     var remaining = totalMessages
     var maxRoundTripMillis = 0L
+    val taskRunnerMetrics = new TaskRunnerMetrics(context.system)
 
     context.system.eventStream.subscribe(self, classOf[ReceivedActorRefCompressionTable])
 
@@ -176,6 +182,10 @@ object MaxThroughputSpec extends MultiNodeConfig {
             s"payload size $payloadSize, " +
             s"total size ${totalSize(context.system)}, " +
             s"$took ms to deliver $totalReceived messages")
+
+        if (printTaskRunnerMetrics)
+          taskRunnerMetrics.printHistograms()
+
         plotRef ! PlotResult().add(testName, throughput * payloadSize * testSettings.senderReceiverPairs / 1024 / 1024)
         context.stop(self)
 
@@ -232,8 +242,18 @@ object MaxThroughputSpec extends MultiNodeConfig {
         case FlowControlManifest ⇒ FlowControl(buf.getLong)
       }
 
-    override def toBinary(o: AnyRef): Array[Byte] = ???
-    override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = ???
+    override def toBinary(o: AnyRef): Array[Byte] = o match {
+      case FlowControl(burstStartTime) ⇒
+        val buf = ByteBuffer.allocate(8)
+        toBinary(o, buf)
+        buf.flip()
+        val bytes = Array.ofDim[Byte](buf.remaining)
+        buf.get(bytes)
+        bytes
+    }
+
+    override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
+      fromBinary(ByteBuffer.wrap(bytes), manifest)
   }
 
 }
@@ -319,7 +339,9 @@ abstract class MaxThroughputSpec
     runOn(second) {
       val rep = reporter(testName)
       for (n ← 1 to senderReceiverPairs) {
-        val receiver = system.actorOf(receiverProps(rep, payloadSize), receiverName + n)
+        val receiver = system.actorOf(
+          receiverProps(rep, payloadSize, printTaskRunnerMetrics = n == 1),
+          receiverName + n)
       }
       enterBarrier(receiverName + "-started")
       enterBarrier(testName + "-done")
@@ -333,7 +355,7 @@ abstract class MaxThroughputSpec
         val receiver = identifyReceiver(receiverName + n)
         val plotProbe = TestProbe()
         val snd = system.actorOf(
-          senderProps(receiver, testSettings, plotProbe.ref),
+          senderProps(receiver, testSettings, plotProbe.ref, printTaskRunnerMetrics = n == 1),
           testName + "-snd" + n)
         val terminationProbe = TestProbe()
         terminationProbe.watch(snd)
