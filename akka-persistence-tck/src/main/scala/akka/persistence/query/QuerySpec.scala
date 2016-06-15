@@ -7,6 +7,7 @@ import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ ActorMaterializer, Materializer }
 import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 
 import scala.concurrent.Await
 import scala.concurrent.duration.{ FiniteDuration, _ }
@@ -18,12 +19,14 @@ object QuerySpec {
     """)
 }
 
-abstract class QuerySpec(config: Config) extends PluginSpec(config) {
+abstract class QuerySpec(config: Config) extends PluginSpec(config) with ScalaFutures with Eventually {
   implicit lazy val system: ActorSystem = ActorSystem("JournalSpec", config.withFallback(QuerySpec.config))
 
-  private var _qExtension: PersistenceQuery = _
-
   implicit val mat: Materializer = ActorMaterializer()(system)
+
+  implicit val pc: PatienceConfig = PatienceConfig(timeout = 10.seconds)
+
+  private var _qExtension: PersistenceQuery = _
 
   def qExtension: PersistenceQuery = _qExtension
 
@@ -42,17 +45,22 @@ abstract class QuerySpec(config: Config) extends PluginSpec(config) {
     pid
   }
 
-  def getAllPids: List[String] = {
-    val xs = query[CurrentPersistenceIdsQuery]
-      .currentPersistenceIds()
-      .runFold(List.empty[String])(_ :+ _)
-    Await.result(xs, 10.seconds)
-  }
-
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     _qExtension = PersistenceQuery(system)
   }
+
+  def getAllPids: List[String] =
+    query[CurrentPersistenceIdsQuery]
+      .currentPersistenceIds()
+      .runFold(List.empty[String])(_ :+ _)
+      .futureValue
+
+  def getEvents(pid: String): List[EventEnvelope] =
+    query[CurrentEventsByPersistenceIdQuery]
+      .currentEventsByPersistenceId(pid, 0, Long.MaxValue)
+      .runFold(List.empty[EventEnvelope])(_ :+ _)
+      .futureValue
 
   def withCurrentPersistenceIdsQuery(within: FiniteDuration = 10.seconds)(f: TestSubscriber.Probe[String] ⇒ Unit): Unit = {
     val tp = query[CurrentPersistenceIdsQuery].currentPersistenceIds().runWith(TestSink.probe[String])

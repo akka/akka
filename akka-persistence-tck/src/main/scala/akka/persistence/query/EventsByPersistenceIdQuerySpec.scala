@@ -5,8 +5,6 @@ import scala.concurrent.duration._
 trait EventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
   "EventsByPersistenceIdQuery" must {
     "find new events" in {
-      val pid = nextPid
-
       withEventsByPersistenceId()(pid, 0L, Long.MaxValue) { tp ⇒
         tp.request(5)
         tp.expectNoMsg(100.millis)
@@ -25,7 +23,7 @@ trait EventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
     }
 
     "find new events up to a sequence number" in {
-      val pid = persist(1, 3, nextPid)
+      persist(1, 3, pid)
 
       withEventsByPersistenceId()(pid, 0L, 4L) { tp ⇒
         tp.request(5)

@@ -5,13 +5,13 @@ import akka.persistence.scalatest.{ MayVerb, OptionalTests }
 
 import scala.concurrent.duration._
 
-trait CurrentEventsByTagQuerySpec extends OptionalTests with CurrentEventsByTagCapabilityFlags {
-  _: QuerySpec ⇒
+trait CurrentEventsByTagQuerySpec extends OptionalTests
+  with CurrentEventsByTagCapabilityFlags { _: QuerySpec ⇒
 
   "CurrentEventsByTagQuery" must {
     optional(flag = supportsOrderingByDateIndependentlyOfPersistenceId) {
       "find existing events" in {
-        val pidA = nextPid
+        val pidA = pid
         val pidB = nextPid
 
         persist(1, 1, pidB)
@@ -38,7 +38,7 @@ trait CurrentEventsByTagQuerySpec extends OptionalTests with CurrentEventsByTagC
       }
 
       "not see new events after demand request" in {
-        val pidA = nextPid
+        val pidA = pid
         val pidB = nextPid
         val pidC = nextPid
 
@@ -62,10 +62,21 @@ trait CurrentEventsByTagQuerySpec extends OptionalTests with CurrentEventsByTagC
       }
 
       "find events from offset" in {
-        persist(1, 1, "f", "yellow")
-        persist(1, 1, "g", "purple")
-        persist(2, 2, "h", "yellow")
+        val pidA = pid
+        val pidB = nextPid
+        val pidC = nextPid
 
+        persist(1, 1, pidA, "yellow")
+        persist(1, 2, pidB, "yellow")
+        persist(2, 2, pidA, "yellow")
+
+        withCurrentEventsByTag()(tag = "yellow", offset = 2L) { tp ⇒
+          tp.request(10)
+          tp.expectNext(EventEnvelope(2L, pidB, 1L, "a-1"))
+          tp.expectNext(EventEnvelope(3L, pidB, 2L, "a-2"))
+          tp.expectNext(EventEnvelope(4L, pidA, 2L, "a-2"))
+          tp.expectComplete()
+        }
       }
     }
 

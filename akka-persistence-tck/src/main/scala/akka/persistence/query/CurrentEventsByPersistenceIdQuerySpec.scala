@@ -5,7 +5,7 @@ import scala.concurrent.duration._
 trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
   "CurrentEventsByPersistenceIdQuery" must {
     "find existing events" in {
-      val pid = persist(1, 3, nextPid)
+      persist(1, 3, pid)
       withCurrentEventsByPersistenceId()(persistenceId = pid, 0L, Long.MaxValue) { tp ⇒
         tp.request(2)
         tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
@@ -18,7 +18,7 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
     }
 
     "find existing events up to a sequence number" in {
-      val pid = persist(1, 3, nextPid)
+      persist(1, 3, pid)
       withCurrentEventsByPersistenceId()(pid, 0L, 2L) { tp ⇒
         tp.request(5)
         tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
@@ -28,7 +28,7 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
     }
 
     "find existing events from an offset" in {
-      val pid = persist(1, 3, nextPid)
+      persist(1, 3, pid)
 
       withCurrentEventsByPersistenceId()(pid, 0L, 1L) { tp ⇒
         tp.request(Long.MaxValue)
@@ -97,7 +97,7 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
     }
 
     "not see new events after demand request" in {
-      val pid = persist(1, 3, nextPid)
+      persist(1, 3, pid)
       withCurrentEventsByPersistenceId()(pid, 0L, Long.MaxValue) { tp ⇒
         tp.request(2)
         tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
@@ -114,8 +114,9 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
     }
 
     "return empty stream for cleaned journal from 0 to MaxLong" in {
-      val pid = persist(1, 3, nextPid)
+      persist(1, 3, pid)
       delete(pid)
+      eventually(getEvents(pid) shouldBe 'empty)
       withCurrentEventsByPersistenceId()(pid, 0L, Long.MaxValue) { tp ⇒
         tp.request(1)
         tp.expectComplete()
@@ -123,7 +124,7 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
     }
 
     "return empty stream for cleaned journal from 0 to 0" in {
-      val pid = persist(1, 3, nextPid)
+      persist(1, 3, pid)
       withCurrentEventsByPersistenceId()(pid, 0L, 0L) { tp ⇒
         tp.request(1)
         tp.expectComplete()
@@ -131,8 +132,9 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
     }
 
     "return remaining values after partial journal cleanup" in {
-      val pid = persist(1, 3, nextPid)
+      println("==> " + persist(1, 3, pid))
       delete(pid, 2L)
+      eventually(getEvents(pid).size shouldBe 1)
       withCurrentEventsByPersistenceId()(pid, 0L, Long.MaxValue) { tp ⇒
         tp.request(1)
         tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
@@ -141,14 +143,14 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
     }
 
     "return empty stream for empty journal" in {
-      withCurrentEventsByPersistenceId()(nextPid, 0L, Long.MaxValue) { tp ⇒
+      withCurrentEventsByPersistenceId()(pid, 0L, Long.MaxValue) { tp ⇒
         tp.request(1)
         tp.expectComplete()
       }
     }
 
     "return empty stream for journal from 0 to 0" in {
-      val pid = persist(1, 3, nextPid)
+      persist(1, 3, pid)
       withCurrentEventsByPersistenceId()(pid, 0L, 0L) { tp ⇒
         tp.request(1)
         tp.expectComplete()
@@ -156,14 +158,14 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
     }
 
     "return empty stream for empty journal from 0 to 0" in {
-      withCurrentEventsByPersistenceId()(nextPid, 0L, 0L) { tp ⇒
+      withCurrentEventsByPersistenceId()(pid, 0L, 0L) { tp ⇒
         tp.request(1)
         tp.expectComplete()
       }
     }
 
     "return empty stream for journal from seqNo greater than highestSeqNo" in {
-      val pid = persist(1, 3, nextPid)
+      persist(1, 3, pid)
       withCurrentEventsByPersistenceId()(pid, 4L, 3L) { tp ⇒
         tp.request(1)
         tp.expectComplete()
