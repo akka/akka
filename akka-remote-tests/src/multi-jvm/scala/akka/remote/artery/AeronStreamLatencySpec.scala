@@ -3,35 +3,38 @@
  */
 package akka.remote.artery
 
+import java.io.File
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicLongArray
+import java.util.concurrent.locks.LockSupport
 
 import scala.concurrent.duration._
+
+import akka.Done
 import akka.actor._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.stream.ActorMaterializer
+import akka.stream.KillSwitches
 import akka.stream.ThrottleMode
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
 import akka.testkit._
+import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
 import io.aeron.Aeron
+import io.aeron.CncFileDescriptor
 import io.aeron.driver.MediaDriver
 import org.HdrHistogram.Histogram
-import java.util.concurrent.atomic.AtomicBoolean
-
-import akka.stream.KillSwitches
-import akka.Done
 import org.agrona.IoUtil
-import java.io.File
-import java.io.File
-
-import akka.util.ByteString
-import io.aeron.CncFileDescriptor
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 
 object AeronStreamLatencySpec extends MultiNodeConfig {
   val first = role("first")
@@ -135,7 +138,7 @@ abstract class AeronStreamLatencySpec
     super.afterAll()
   }
 
-  def printTotal(testName: String, payloadSize: Long, histogram: Histogram, lastRepeat: Boolean): Unit = {
+  def printTotal(testName: String, payloadSize: Long, histogram: Histogram, totalDurationNanos: Long, lastRepeat: Boolean): Unit = {
     import scala.collection.JavaConverters._
     val percentiles = histogram.percentiles(5)
     def percentile(p: Double): Double =
@@ -144,10 +147,13 @@ abstract class AeronStreamLatencySpec
           value.getPercentileLevelIteratedTo < (p + 0.5) ⇒ value.getValueIteratedTo / 1000.0
       }.getOrElse(Double.NaN)
 
+    val throughput = 1000.0 * histogram.getTotalCount / totalDurationNanos.nanos.toMillis
+
     println(s"=== AeronStreamLatency $testName: RTT " +
       f"50%%ile: ${percentile(50.0)}%.0f µs, " +
       f"90%%ile: ${percentile(90.0)}%.0f µs, " +
-      f"99%%ile: ${percentile(99.0)}%.0f µs, ")
+      f"99%%ile: ${percentile(99.0)}%.0f µs, " +
+      f"rate: ${throughput}%,.0f msg/s")
     println("Histogram of RTT latencies in microseconds.")
     histogram.outputPercentileDistribution(System.out, 1000.0)
 
@@ -182,6 +188,11 @@ abstract class AeronStreamLatencySpec
       payloadSize = 100,
       repeat = repeatCount),
     TestSettings(
+      testName = "rate-20000-size-100",
+      messageRate = 20000,
+      payloadSize = 100,
+      repeat = repeatCount),
+    TestSettings(
       testName = "rate-1000-size-1k",
       messageRate = 1000,
       payloadSize = 1000,
@@ -200,6 +211,7 @@ abstract class AeronStreamLatencySpec
       val rep = reporter(testName)
       val barrier = new CyclicBarrier(2)
       val count = new AtomicInteger
+      val startTime = new AtomicLong
       val lastRepeat = new AtomicBoolean(false)
       val killSwitch = KillSwitches.shared(testName)
       val started = TestProbe()
@@ -217,7 +229,8 @@ abstract class AeronStreamLatencySpec
             val d = System.nanoTime() - sendTimes.get(c - 1)
             histogram.recordValue(d)
             if (c == totalMessages) {
-              printTotal(testName, bytes.length, histogram, lastRepeat.get)
+              val totalDurationNanos = System.nanoTime() - startTime.get
+              printTotal(testName, bytes.length, histogram, totalDurationNanos, lastRepeat.get)
               barrier.await() // this is always the last party
             }
           }
@@ -236,21 +249,53 @@ abstract class AeronStreamLatencySpec
         started.expectMsg(Done)
       }
 
-      for (n ← 1 to repeat) {
+      for (rep ← 1 to repeat) {
         histogram.reset()
         count.set(0)
-        lastRepeat.set(n == repeat)
+        lastRepeat.set(rep == repeat)
 
-        Source(1 to totalMessages)
-          .throttle(messageRate, 1.second, math.max(messageRate / 10, 1), ThrottleMode.Shaping)
-          .map { n ⇒
+        val sendFlow = Flow[Unit]
+          .map { _ ⇒
             val envelope = pool.acquire()
             envelope.byteBuffer.put(payload)
             envelope.byteBuffer.flip()
-            sendTimes.set(n - 1, System.nanoTime())
             envelope
           }
-          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpSendAfter, IgnoreEventSink))
+
+        val queueValue = Source.fromGraph(new SendQueue[Unit])
+          .via(sendFlow)
+          .to(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpSendAfter, IgnoreEventSink))
+          .run()
+
+        val queue = new ManyToOneConcurrentArrayQueue[Unit](1024)
+        queueValue.inject(queue)
+        Thread.sleep(3000) // let materialization complete
+
+        startTime.set(System.nanoTime())
+
+        var i = 0
+        var adjust = 0L
+        // increase the rate somewhat to compensate for overhead, based on heuristics
+        val adjustRateFactor =
+          if (messageRate <= 100) 1.05
+          else if (messageRate <= 1000) 1.1
+          else if (messageRate <= 10000) 1.2
+          else if (messageRate <= 20000) 1.3
+          else 1.4
+        val targetDelay = (SECONDS.toNanos(1) / (messageRate * adjustRateFactor)).toLong
+        while (i < totalMessages) {
+          LockSupport.parkNanos(targetDelay - adjust)
+          val now = System.nanoTime()
+          sendTimes.set(i, now)
+          if (i >= 1) {
+            val diff = now - sendTimes.get(i - 1)
+            adjust = math.max(0L, (diff - targetDelay) / 2)
+          }
+
+          if (!queueValue.offer(()))
+            fail("sendQueue full")
+          i += 1
+        }
 
         barrier.await((totalMessages / messageRate) + 10, SECONDS)
       }
