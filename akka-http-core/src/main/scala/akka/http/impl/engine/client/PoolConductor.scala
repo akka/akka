@@ -96,7 +96,7 @@ private object PoolConductor {
 
   case class SwitchSlotCommand(cmd: SlotCommand, slotIx: Int)
 
-  // the SlotSelector keeps the state of all slotSettings as instances of this ADT
+  // the SlotSelector keeps the state of all slots as instances of this ADT
   private sealed trait SlotState
 
   // the connection of the respective slot is not connected
