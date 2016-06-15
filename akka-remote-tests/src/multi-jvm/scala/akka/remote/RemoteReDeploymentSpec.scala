@@ -134,11 +134,6 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
 
       enterBarrier("first-deployed")
 
-      // FIXME When running with Artery:
-      // [akka://RemoteReDeploymentMultiJvmSpec/user/parent] received Supervise from unregistered child
-      // Actor[artery://RemoteReDeploymentMultiJvmSpec@localhost:55627/remote/artery/RemoteReDeploymentMultiJvmSpec@localhost:65490/user/parent/hello#-370928728],
-      // this will not end well
-
       runOn(first) {
         testConductor.blackhole(second, first, Both).await
         testConductor.shutdown(second, abort = true).await
