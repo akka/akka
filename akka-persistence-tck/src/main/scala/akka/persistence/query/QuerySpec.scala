@@ -8,6 +8,7 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ ActorMaterializer, Materializer }
 import com.typesafe.config.{ Config, ConfigFactory }
 
+import scala.concurrent.Await
 import scala.concurrent.duration.{ FiniteDuration, _ }
 
 object QuerySpec {
@@ -31,11 +32,22 @@ abstract class QuerySpec(config: Config) extends PluginSpec(config) {
   def query[A <: scaladsl.ReadJournal]: A =
     qExtension.readJournalFor[A](readJournalPluginId)
 
-  def persistEventFor: String ⇒ Unit =
-    writeMessages(1, 1, _, senderProbe.ref, writerUuid)
+  def persist(pid: String, tags: String*): String = {
+    writeMessages(1, 1, pid, senderProbe.ref, writerUuid, tags: _*)
+    pid
+  }
 
-  def persistEventsFor: (Int, Int, String) ⇒ Unit =
-    writeMessages(_, _, _, senderProbe.ref, writerUuid)
+  def persist(from: Int, to: Int, pid: String, tags: String*): String = {
+    writeMessages(from, to, pid, senderProbe.ref, writerUuid, tags: _*)
+    pid
+  }
+
+  def getAllPids: List[String] = {
+    val xs = query[CurrentPersistenceIdsQuery]
+      .currentPersistenceIds()
+      .runFold(List.empty[String])(_ :+ _)
+    Await.result(xs, 10.seconds)
+  }
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()

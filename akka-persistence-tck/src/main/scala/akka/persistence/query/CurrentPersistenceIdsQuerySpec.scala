@@ -11,16 +11,12 @@ package akka.persistence.query
 trait CurrentPersistenceIdsQuerySpec { _: QuerySpec ⇒
   "CurrentPersistenceIdsQuery" must {
     "find existing persistenceIds" in {
-      val persistenceIds = List("pid-1", "pid-2", "pid-3")
-      persistenceIds.foreach(persistEventFor)
-
+      val pids = getAllPids ++ List.fill(3)(persist(nextPid))
       withCurrentPersistenceIdsQuery() { tp ⇒
-        tp.request(3)
-        tp.expectNextUnorderedN(persistenceIds)
+        tp.request(pids.size)
+        tp.expectNextUnorderedN(pids)
         tp.expectComplete()
       }
-
-      (1 to 3).map("pid-" + _).foreach(deleteMessages(_))
     }
   }
 }

@@ -5,183 +5,169 @@ import scala.concurrent.duration._
 trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
   "CurrentEventsByPersistenceIdQuery" must {
     "find existing events" in {
-      persistEventsFor(1, 3, "a")
-      withCurrentEventsByPersistenceId()("a", 0L, Long.MaxValue) { tp ⇒
+      val pid = persist(1, 3, nextPid)
+      withCurrentEventsByPersistenceId()(persistenceId = pid, 0L, Long.MaxValue) { tp ⇒
         tp.request(2)
-        tp.expectNext(EventEnvelope(1, "a", 1, "a-1"))
-        tp.expectNext(EventEnvelope(2, "a", 2, "a-2"))
+        tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
+        tp.expectNext(EventEnvelope(2, pid, 2, "a-2"))
         tp.expectNoMsg(100.millis)
         tp.request(2)
-        tp.expectNext(EventEnvelope(3, "a", 3, "a-3"))
+        tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
         tp.expectComplete()
-
-        deleteMessages("a")
       }
     }
 
     "find existing events up to a sequence number" in {
-      persistEventsFor(1, 3, "b")
-      withCurrentEventsByPersistenceId()("b", 0L, 2L) { tp ⇒
+      val pid = persist(1, 3, nextPid)
+      withCurrentEventsByPersistenceId()(pid, 0L, 2L) { tp ⇒
         tp.request(5)
-        tp.expectNext(EventEnvelope(1, "b", 1, "a-1"))
-        tp.expectNext(EventEnvelope(2, "b", 2, "a-2"))
+        tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
+        tp.expectNext(EventEnvelope(2, pid, 2, "a-2"))
         tp.expectComplete()
       }
-      deleteMessages("b")
     }
 
     "find existing events from an offset" in {
-      persistEventsFor(1, 3, "c")
+      val pid = persist(1, 3, nextPid)
 
-      withCurrentEventsByPersistenceId()("c", 0L, 1L) { tp ⇒
+      withCurrentEventsByPersistenceId()(pid, 0L, 1L) { tp ⇒
         tp.request(Long.MaxValue)
-        tp.expectNext(EventEnvelope(1, "c", 1, "a-1"))
+        tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
         tp.expectComplete()
       }
 
-      withCurrentEventsByPersistenceId()("c", 1L, 1L) { tp ⇒
+      withCurrentEventsByPersistenceId()(pid, 1L, 1L) { tp ⇒
         tp.request(Long.MaxValue)
-        tp.expectNext(EventEnvelope(1, "c", 1, "a-1"))
+        tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
         tp.expectComplete()
       }
 
-      withCurrentEventsByPersistenceId()("c", 1L, 2L) { tp ⇒
+      withCurrentEventsByPersistenceId()(pid, 1L, 2L) { tp ⇒
         tp.request(Long.MaxValue)
-        tp.expectNext(EventEnvelope(1, "c", 1, "a-1"))
-        tp.expectNext(EventEnvelope(2, "c", 2, "a-2"))
+        tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
+        tp.expectNext(EventEnvelope(2, pid, 2, "a-2"))
         tp.expectComplete()
       }
 
-      withCurrentEventsByPersistenceId()("c", 2L, 2L) { tp ⇒
+      withCurrentEventsByPersistenceId()(pid, 2L, 2L) { tp ⇒
         tp.request(Long.MaxValue)
-        tp.expectNext(EventEnvelope(2, "c", 2, "a-2"))
+        tp.expectNext(EventEnvelope(2, pid, 2, "a-2"))
         tp.expectComplete()
       }
 
-      withCurrentEventsByPersistenceId()("c", 2L, 3L) { tp ⇒
+      withCurrentEventsByPersistenceId()(pid, 2L, 3L) { tp ⇒
         tp.request(Long.MaxValue)
-        tp.expectNext(EventEnvelope(2, "c", 2, "a-2"))
-        tp.expectNext(EventEnvelope(3, "c", 3, "a-3"))
+        tp.expectNext(EventEnvelope(2, pid, 2, "a-2"))
+        tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
         tp.expectComplete()
       }
 
-      withCurrentEventsByPersistenceId()("c", 3L, 3L) { tp ⇒
+      withCurrentEventsByPersistenceId()(pid, 3L, 3L) { tp ⇒
         tp.request(Long.MaxValue)
-        tp.expectNext(EventEnvelope(3, "c", 3, "a-3"))
+        tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
         tp.expectComplete()
       }
 
-      withCurrentEventsByPersistenceId()("c", 3L, 4L) { tp ⇒
+      withCurrentEventsByPersistenceId()(pid, 3L, 4L) { tp ⇒
         tp.request(Long.MaxValue)
-        tp.expectNext(EventEnvelope(3, "c", 3, "a-3"))
+        tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
         tp.expectComplete()
       }
 
-      withCurrentEventsByPersistenceId()("c", 4L, 4L) { tp ⇒
+      withCurrentEventsByPersistenceId()(pid, 4L, 4L) { tp ⇒
         tp.request(Long.MaxValue)
         tp.expectComplete()
       }
 
-      withCurrentEventsByPersistenceId()("c", 0L, 3L) { tp ⇒
+      withCurrentEventsByPersistenceId()(pid, 0L, 3L) { tp ⇒
         tp.request(Long.MaxValue)
-        tp.expectNext(EventEnvelope(1, "c", 1, "a-1"))
-        tp.expectNext(EventEnvelope(2, "c", 2, "a-2"))
-        tp.expectNext(EventEnvelope(3, "c", 3, "a-3"))
+        tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
+        tp.expectNext(EventEnvelope(2, pid, 2, "a-2"))
+        tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
         tp.expectComplete()
       }
 
-      withCurrentEventsByPersistenceId()("c", 1L, 3L) { tp ⇒
+      withCurrentEventsByPersistenceId()(pid, 1L, 3L) { tp ⇒
         tp.request(Long.MaxValue)
-        tp.expectNext(EventEnvelope(1, "c", 1, "a-1"))
-        tp.expectNext(EventEnvelope(2, "c", 2, "a-2"))
-        tp.expectNext(EventEnvelope(3, "c", 3, "a-3"))
+        tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
+        tp.expectNext(EventEnvelope(2, pid, 2, "a-2"))
+        tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
         tp.expectComplete()
-
-        deleteMessages("c")
       }
     }
 
     "not see new events after demand request" in {
-      persistEventsFor(1, 3, "f")
-      withCurrentEventsByPersistenceId()("f", 0L, Long.MaxValue) { tp ⇒
+      val pid = persist(1, 3, nextPid)
+      withCurrentEventsByPersistenceId()(pid, 0L, Long.MaxValue) { tp ⇒
         tp.request(2)
-        tp.expectNext(EventEnvelope(1, "f", 1, "a-1"))
-        tp.expectNext(EventEnvelope(2, "f", 2, "a-2"))
+        tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
+        tp.expectNext(EventEnvelope(2, pid, 2, "a-2"))
         tp.expectNoMsg(100.millis)
 
-        persistEventsFor(4, 5, "f")
+        persist(4, 5, pid)
 
         tp.expectNoMsg(100.millis)
         tp.request(5)
-        tp.expectNext(EventEnvelope(3, "f", 3, "a-3"))
+        tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
         tp.expectComplete() // event 4 not seen
-
-        deleteMessages("f")
       }
     }
 
     "return empty stream for cleaned journal from 0 to MaxLong" in {
-      persistEventsFor(1, 3, "g1")
-      deleteMessages("g1", Long.MaxValue)
-      withCurrentEventsByPersistenceId()("g1", 0L, Long.MaxValue) { tp ⇒
+      val pid = persist(1, 3, nextPid)
+      delete(pid)
+      withCurrentEventsByPersistenceId()(pid, 0L, Long.MaxValue) { tp ⇒
         tp.request(1)
         tp.expectComplete()
       }
-      deleteMessages("g1")
     }
 
     "return empty stream for cleaned journal from 0 to 0" in {
-      persistEventsFor(1, 3, "g2")
-      deleteMessages("g2", Long.MaxValue)
-      withCurrentEventsByPersistenceId()("g1", 0L, 0L) { tp ⇒
+      val pid = persist(1, 3, nextPid)
+      withCurrentEventsByPersistenceId()(pid, 0L, 0L) { tp ⇒
         tp.request(1)
         tp.expectComplete()
       }
-      deleteMessages("g2")
     }
 
     "return remaining values after partial journal cleanup" in {
-      persistEventsFor(1, 3, "h")
-      deleteMessages("h", 2L)
-      withCurrentEventsByPersistenceId()("h", 0L, Long.MaxValue) { tp ⇒
+      val pid = persist(1, 3, nextPid)
+      delete(pid, 2L)
+      withCurrentEventsByPersistenceId()(pid, 0L, Long.MaxValue) { tp ⇒
         tp.request(1)
-        tp.expectNext(EventEnvelope(3, "h", 3, "a-3"))
+        tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
         tp.expectComplete()
       }
-      deleteMessages("h")
     }
 
     "return empty stream for empty journal" in {
-      withCurrentEventsByPersistenceId()("i", 0L, Long.MaxValue) { tp ⇒
+      withCurrentEventsByPersistenceId()(nextPid, 0L, Long.MaxValue) { tp ⇒
         tp.request(1)
         tp.expectComplete()
       }
-      deleteMessages("i")
     }
 
     "return empty stream for journal from 0 to 0" in {
-      persistEventsFor(1, 3, "k1")
-      withCurrentEventsByPersistenceId()("k1", 0L, 0L) { tp ⇒
+      val pid = persist(1, 3, nextPid)
+      withCurrentEventsByPersistenceId()(pid, 0L, 0L) { tp ⇒
         tp.request(1)
         tp.expectComplete()
       }
-      deleteMessages("k1")
     }
 
     "return empty stream for empty journal from 0 to 0" in {
-      withCurrentEventsByPersistenceId()("k2", 0L, 0L) { tp ⇒
+      withCurrentEventsByPersistenceId()(nextPid, 0L, 0L) { tp ⇒
         tp.request(1)
         tp.expectComplete()
       }
     }
 
     "return empty stream for journal from seqNo greater than highestSeqNo" in {
-      persistEventsFor(1, 3, "k3")
-      withCurrentEventsByPersistenceId()("k3", 4L, 3L) { tp ⇒
+      val pid = persist(1, 3, nextPid)
+      withCurrentEventsByPersistenceId()(pid, 4L, 3L) { tp ⇒
         tp.request(1)
         tp.expectComplete()
       }
-      deleteMessages("k3")
     }
   }
 }

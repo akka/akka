@@ -52,3 +52,9 @@ trait SnapshotStoreCapabilityFlags extends CapabilityFlags {
   // no flags currently
 }
 //#snapshot-store-flags
+
+trait CurrentEventsByTagCapabilityFlags extends CapabilityFlags {
+  protected def supportsOrderingByDateIndependentlyOfPersistenceId: CapabilityFlag
+
+  protected def supportsOrderingByPersistenceIdAndSequenceNr: CapabilityFlag
+}

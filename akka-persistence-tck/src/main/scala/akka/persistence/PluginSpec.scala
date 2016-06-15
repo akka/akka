@@ -13,6 +13,7 @@ import org.scalatest._
 import java.util.UUID
 
 import akka.persistence.JournalProtocol._
+import akka.persistence.journal.Tagged
 
 import scala.collection.immutable.Seq
 
@@ -31,7 +32,7 @@ abstract class PluginSpec(val config: Config) extends TestKitBase with WordSpecL
   protected val actorInstanceId = 1
 
   override protected def beforeEach(): Unit = {
-    _pid = s"p-${counter.incrementAndGet()}"
+    _pid = nextPid
     _writerUuid = UUID.randomUUID.toString
     senderProbe = TestProbe()
     receiverProbe = TestProbe()
@@ -44,6 +45,9 @@ abstract class PluginSpec(val config: Config) extends TestKitBase with WordSpecL
     shutdown(system)
 
   def extension: Persistence = _extension
+
+  def nextPid: String =
+    s"p-${counter.incrementAndGet()}"
 
   def pid: String = _pid
 
@@ -71,10 +75,10 @@ abstract class PluginSpec(val config: Config) extends TestKitBase with WordSpecL
   def replayedMessage(snr: Long, deleted: Boolean = false, confirms: Seq[String] = Nil): ReplayedMessage =
     ReplayedMessage(PersistentImpl(s"a-$snr", snr, pid, "", deleted, Actor.noSender, writerUuid))
 
-  def writeMessages(fromSnr: Int, toSnr: Int, pid: String, sender: ActorRef, writerUuid: String): Unit = {
+  def writeMessages(fromSnr: Int, toSnr: Int, pid: String, sender: ActorRef, writerUuid: String, tags: String*): Unit = {
     def persistentRepr(sequenceNr: Long) =
       PersistentRepr(
-        payload = s"a-$sequenceNr",
+        payload = if (tags.isEmpty) s"a-$sequenceNr" else Tagged(s"a-$sequenceNr", Set(tags: _*)),
         sequenceNr = sequenceNr,
         persistenceId = pid,
         sender = sender,
@@ -94,18 +98,20 @@ abstract class PluginSpec(val config: Config) extends TestKitBase with WordSpecL
     fromSnr to toSnr foreach { i ⇒
       probe.expectMsgPF() {
         case WriteMessageSuccess(PersistentImpl(payload, `i`, `pid`, _, _, `sender`, `writerUuid`), _) ⇒
-          payload should be(s"a-$i")
+          val id = s"a-$i"
+          payload should matchPattern {
+            case `id`            ⇒
+            case Tagged(`id`, _) ⇒
+          }
       }
     }
   }
 
-  def deleteMessages(persistenceId: String, toSequenceNr: Long = Long.MaxValue): Unit = {
+  def delete(persistenceId: String, toSequenceNr: Long = Long.MaxValue): Unit = {
     val probe = TestProbe()
     journal ! DeleteMessagesTo(persistenceId, toSequenceNr, probe.ref)
     probe.expectMsgPF() {
       case DeleteMessagesSuccess(_) ⇒
     }
-    //    println("==> Deleting: " + persistenceId)
-    //    Thread.sleep(1000) //TODO: some storage devices (like JDBC) take some ms to delete a record...
   }
 }
