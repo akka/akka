@@ -8,6 +8,7 @@ import akka.actor.{ Actor, ActorIdentity, ActorSystem, Deploy, ExtendedActorSyst
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor.Receive
+import akka.remote.RARP
 
 object RemoteSendConsistencySpec {
 
@@ -25,7 +26,7 @@ object RemoteSendConsistencySpec {
 class RemoteSendConsistencySpec extends AkkaSpec(RemoteSendConsistencySpec.config) with ImplicitSender {
 
   val systemB = ActorSystem("systemB", system.settings.config)
-  val addressB = systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+  val addressB = RARP(systemB).provider.getDefaultAddress
   println(addressB)
   val rootB = RootActorPath(addressB)
 
