@@ -79,7 +79,7 @@ class RemoteWatcherSpec extends AkkaSpec(
   override def expectedTestDuration = 2.minutes
 
   val remoteSystem = ActorSystem("RemoteSystem", system.settings.config)
-  val remoteAddress = remoteSystem.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+  val remoteAddress = RARP(remoteSystem).provider.getDefaultAddress
   def remoteAddressUid = AddressUidExtension(remoteSystem).addressUid
 
   Seq(system, remoteSystem).foreach(muteDeadLetters(

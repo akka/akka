@@ -3,40 +3,18 @@
  */
 package akka.remote.artery
 
-import scala.concurrent.duration._
-import akka.actor.{ ActorIdentity, ActorSystem, ExtendedActorSystem, Identify, RootActorPath }
-import akka.testkit.{ AkkaSpec, ImplicitSender }
-import akka.testkit.TestActors
-import com.typesafe.config.ConfigFactory
-import akka.testkit.EventFilter
-import akka.actor.InternalActorRef
+import akka.actor.{ EmptyLocalActorRef, InternalActorRef }
 import akka.remote.RemoteActorRef
-import akka.actor.EmptyLocalActorRef
+import akka.testkit.{ EventFilter, TestActors }
 
-object RemoteActorRefProviderSpec {
+class RemoteActorRefProviderSpec extends ArteryMultiNodeSpec {
 
-  val config = ConfigFactory.parseString(s"""
-     akka {
-       actor.provider = remote
-       remote.artery.enabled = on
-       remote.artery.hostname = localhost
-       remote.artery.port = 0
-     }
-  """)
-
-}
-
-class RemoteActorRefProviderSpec extends AkkaSpec(RemoteActorRefProviderSpec.config) with ImplicitSender {
-  import RemoteActorRefProviderSpec._
-
-  val addressA = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+  val addressA = address(localSystem)
   system.actorOf(TestActors.echoActorProps, "echo")
 
-  val systemB = ActorSystem("systemB", system.settings.config)
-  val addressB = systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+  val systemB = newRemoteSystem()
+  val addressB = address(systemB)
   systemB.actorOf(TestActors.echoActorProps, "echo")
-
-  override def afterTermination(): Unit = shutdown(systemB)
 
   "RemoteActorRefProvider" must {
 

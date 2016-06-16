@@ -10,7 +10,7 @@ import akka.actor._
 import akka.remote.routing._
 import com.typesafe.config._
 import akka.testkit.TestActors.echoActorProps
-import akka.remote.RemoteScope
+import akka.remote.{ RARP, RemoteScope }
 
 object RemoteDeploymentSpec {
   class Echo1 extends Actor {
@@ -42,7 +42,7 @@ class RemoteDeploymentSpec extends AkkaSpec("""
 
   import RemoteDeploymentSpec._
 
-  val port = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress.port.get
+  val port = RARP(system).provider.getDefaultAddress.port.get
   val conf = ConfigFactory.parseString(
     s"""
     akka.actor.deployment {
@@ -51,7 +51,7 @@ class RemoteDeploymentSpec extends AkkaSpec("""
     """).withFallback(system.settings.config)
 
   val masterSystem = ActorSystem("Master" + system.name, conf)
-  val masterPort = masterSystem.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress.port.get
+  val masterPort = RARP(masterSystem).provider.getDefaultAddress.port.get
 
   override def afterTermination(): Unit = {
     shutdown(masterSystem)

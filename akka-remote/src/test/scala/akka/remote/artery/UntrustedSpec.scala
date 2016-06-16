@@ -23,6 +23,7 @@ import akka.testkit.TestProbe
 import akka.actor.ActorSelection
 import akka.testkit.TestEvent
 import akka.event.Logging
+import akka.remote.RARP
 import akka.testkit.EventFilter
 
 object UntrustedSpec {
@@ -77,7 +78,7 @@ class UntrustedSpec extends AkkaSpec("""
       akka.remote.artery.hostname = localhost
       akka.remote.artery.port = 0
       """))
-  val addr = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+  val addr = RARP(system).provider.getDefaultAddress
 
   val receptionist = system.actorOf(Props(classOf[Receptionist], testActor), "receptionist")
 
