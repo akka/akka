@@ -1,6 +1,5 @@
 package akka.persistence.query.leveldb
 
-import akka.actor.ActorRef
 import akka.persistence.query._
 import akka.persistence.{ CapabilityFlag, PersistenceSpec, PluginCleanup }
 

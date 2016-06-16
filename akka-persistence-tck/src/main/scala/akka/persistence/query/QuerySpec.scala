@@ -9,7 +9,6 @@ import akka.stream.{ ActorMaterializer, Materializer }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 
-import scala.concurrent.Await
 import scala.concurrent.duration.{ FiniteDuration, _ }
 
 object QuerySpec {
@@ -30,32 +29,55 @@ abstract class QuerySpec(config: Config) extends PluginSpec(config) with ScalaFu
 
   def qExtension: PersistenceQuery = _qExtension
 
+  /**
+   * Override this method to provide the readJournalPluginId
+   */
   def readJournalPluginId: String
 
+  /**
+   * The read journal
+   */
   def query[A <: scaladsl.ReadJournal]: A =
     qExtension.readJournalFor[A](readJournalPluginId)
-
-  def persist(pid: String, tags: String*): String = {
-    writeMessages(1, 1, pid, senderProbe.ref, writerUuid, tags: _*)
-    pid
-  }
-
-  def persist(from: Int, to: Int, pid: String, tags: String*): String = {
-    writeMessages(from, to, pid, senderProbe.ref, writerUuid, tags: _*)
-    pid
-  }
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     _qExtension = PersistenceQuery(system)
   }
 
+  /**
+   * Persists a single event for a persistenceId with optionally
+   * a number of tags.
+   */
+  def persist(pid: String, tags: String*): String = {
+    writeMessages(1, 1, pid, senderProbe.ref, writerUuid, tags: _*)
+    pid
+  }
+
+  /**
+   * Persist a number of events for a persistenceId with optionally
+   * a number of tags. For example, persist(1, 2, pid, tags) will
+   * persist two events with seqno 1 and 2. persist(3,3, pid, tags) will
+   * persist a single event with seqno 3. The value associated with the
+   * event is 'a-seqno' eg. persist(3, 3, pid, tags) will store value 'a-3'.
+   */
+  def persist(from: Int, to: Int, pid: String, tags: String*): String = {
+    writeMessages(from, to, pid, senderProbe.ref, writerUuid, tags: _*)
+    pid
+  }
+
+  /**
+   * Returns a list of all persistenceIds in the journal
+   */
   def getAllPids: List[String] =
     query[CurrentPersistenceIdsQuery]
       .currentPersistenceIds()
       .runFold(List.empty[String])(_ :+ _)
       .futureValue
 
+  /**
+   * Returns all events of a persistenceId
+   */
   def getEvents(pid: String): List[EventEnvelope] =
     query[CurrentEventsByPersistenceIdQuery]
       .currentEventsByPersistenceId(pid, 0, Long.MaxValue)
