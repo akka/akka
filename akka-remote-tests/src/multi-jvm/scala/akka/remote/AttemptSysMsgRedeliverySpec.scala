@@ -37,13 +37,12 @@ class AttemptSysMsgRedeliveryMultiJvmNode2 extends AttemptSysMsgRedeliverySpec(
 class AttemptSysMsgRedeliveryMultiJvmNode3 extends AttemptSysMsgRedeliverySpec(
   new AttemptSysMsgRedeliveryMultiJvmSpec(artery = false))
 
-// FIXME this is failing with Artery
-//class ArteryAttemptSysMsgRedeliveryMultiJvmNode1 extends AttemptSysMsgRedeliverySpec(
-//  new AttemptSysMsgRedeliveryMultiJvmSpec(artery = true))
-//class ArteryAttemptSysMsgRedeliveryMultiJvmNode2 extends AttemptSysMsgRedeliverySpec(
-//  new AttemptSysMsgRedeliveryMultiJvmSpec(artery = true))
-//class ArteryAttemptSysMsgRedeliveryMultiJvmNode3 extends AttemptSysMsgRedeliverySpec(
-//  new AttemptSysMsgRedeliveryMultiJvmSpec(artery = true))
+class ArteryAttemptSysMsgRedeliveryMultiJvmNode1 extends AttemptSysMsgRedeliverySpec(
+  new AttemptSysMsgRedeliveryMultiJvmSpec(artery = true))
+class ArteryAttemptSysMsgRedeliveryMultiJvmNode2 extends AttemptSysMsgRedeliverySpec(
+  new AttemptSysMsgRedeliveryMultiJvmSpec(artery = true))
+class ArteryAttemptSysMsgRedeliveryMultiJvmNode3 extends AttemptSysMsgRedeliverySpec(
+  new AttemptSysMsgRedeliveryMultiJvmSpec(artery = true))
 
 object AttemptSysMsgRedeliverySpec {
   class Echo extends Actor {
