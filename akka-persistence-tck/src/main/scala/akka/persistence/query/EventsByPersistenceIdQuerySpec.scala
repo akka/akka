@@ -4,6 +4,84 @@ import scala.concurrent.duration._
 
 trait EventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
   "EventsByPersistenceIdQuery" must {
+
+    "find existing events from an offset" in {
+      persist(1, 3, pid)
+
+      withEventsByPersistenceId()(pid, 0L, 0L) { tp ⇒
+        tp.request(Long.MaxValue)
+        tp.expectNoMsg(100.millis)
+        tp.cancel()
+      }
+
+      withEventsByPersistenceId()(pid, 0L, 1L) { tp ⇒
+        tp.request(Long.MaxValue)
+        tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
+        tp.expectComplete()
+      }
+
+      withEventsByPersistenceId()(pid, 1L, 1L) { tp ⇒
+        tp.request(Long.MaxValue)
+        tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
+        tp.expectComplete()
+      }
+
+      withEventsByPersistenceId()(pid, 1L, 2L) { tp ⇒
+        tp.request(Long.MaxValue)
+        tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
+        tp.expectNext(EventEnvelope(2, pid, 2, "a-2"))
+        tp.expectComplete()
+      }
+
+      withEventsByPersistenceId()(pid, 2L, 2L) { tp ⇒
+        tp.request(Long.MaxValue)
+        tp.expectNext(EventEnvelope(2, pid, 2, "a-2"))
+        tp.expectComplete()
+      }
+
+      withEventsByPersistenceId()(pid, 2L, 3L) { tp ⇒
+        tp.request(Long.MaxValue)
+        tp.expectNext(EventEnvelope(2, pid, 2, "a-2"))
+        tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
+        tp.expectComplete()
+      }
+
+      withEventsByPersistenceId()(pid, 3L, 3L) { tp ⇒
+        tp.request(Long.MaxValue)
+        tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
+        tp.expectComplete()
+      }
+
+      withEventsByPersistenceId()(pid, 3L, 4L) { tp ⇒
+        tp.request(Long.MaxValue)
+        tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
+        tp.expectNoMsg(100.millis)
+        tp.cancel()
+      }
+
+      withEventsByPersistenceId()(pid, 4L, 4L) { tp ⇒
+        tp.request(Long.MaxValue)
+        tp.expectNoMsg(100.millis)
+        tp.cancel()
+      }
+
+      withEventsByPersistenceId()(pid, 0L, 3L) { tp ⇒
+        tp.request(Long.MaxValue)
+        tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
+        tp.expectNext(EventEnvelope(2, pid, 2, "a-2"))
+        tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
+        tp.expectComplete()
+      }
+
+      withEventsByPersistenceId()(pid, 1L, 3L) { tp ⇒
+        tp.request(Long.MaxValue)
+        tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
+        tp.expectNext(EventEnvelope(2, pid, 2, "a-2"))
+        tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
+        tp.expectComplete()
+      }
+    }
+
     "find new events" in {
       withEventsByPersistenceId()(pid, 0L, Long.MaxValue) { tp ⇒
         tp.request(5)

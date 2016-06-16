@@ -95,10 +95,11 @@ abstract class PluginSpec(val config: Config) extends TestKitBase with WordSpecL
     journal ! WriteMessages(msgs, probe.ref, actorInstanceId)
 
     probe.expectMsg(WriteMessagesSuccessful)
-    fromSnr to toSnr foreach { i ⇒
+    fromSnr to toSnr foreach { seqNo ⇒
+      afterWriteMessages(pid, seqNo, sender, writerUuid, tags: _*)
       probe.expectMsgPF() {
-        case WriteMessageSuccess(PersistentImpl(payload, `i`, `pid`, _, _, `sender`, `writerUuid`), _) ⇒
-          val id = s"a-$i"
+        case WriteMessageSuccess(PersistentImpl(payload, `seqNo`, `pid`, _, _, `sender`, `writerUuid`), _) ⇒
+          val id = s"a-$seqNo"
           payload should matchPattern {
             case `id`            ⇒
             case Tagged(`id`, _) ⇒
@@ -107,11 +108,16 @@ abstract class PluginSpec(val config: Config) extends TestKitBase with WordSpecL
     }
   }
 
+  def afterWriteMessages(pid: String, seqNo: Int, sender: ActorRef, writerUuid: String, tags: String*): Unit = ()
+
   def delete(persistenceId: String, toSequenceNr: Long = Long.MaxValue): Unit = {
     val probe = TestProbe()
     journal ! DeleteMessagesTo(persistenceId, toSequenceNr, probe.ref)
     probe.expectMsgPF() {
       case DeleteMessagesSuccess(_) ⇒
     }
+    afterDelete(persistenceId, toSequenceNr)
   }
+
+  def afterDelete(persistenceId: String, toSequenceNr: Long): Unit = ()
 }

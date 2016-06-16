@@ -1,5 +1,6 @@
 package akka.persistence.query.leveldb
 
+import akka.actor.ActorRef
 import akka.persistence.query._
 import akka.persistence.{ CapabilityFlag, PersistenceSpec, PluginCleanup }
 
@@ -16,6 +17,7 @@ class LeveldbQuerySpec extends QuerySpec(
   with CurrentEventsByPersistenceIdQuerySpec
   with EventsByPersistenceIdQuerySpec
   with CurrentEventsByTagQuerySpec
+  with EventsByTagQuerySpec
   with PluginCleanup {
   override def readJournalPluginId: String = "akka.persistence.query.journal.leveldb"
 

@@ -30,6 +30,11 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
     "find existing events from an offset" in {
       persist(1, 3, pid)
 
+      withCurrentEventsByPersistenceId()(pid, 0L, 0L) { tp ⇒
+        tp.request(Long.MaxValue)
+        tp.expectComplete()
+      }
+
       withCurrentEventsByPersistenceId()(pid, 0L, 1L) { tp ⇒
         tp.request(Long.MaxValue)
         tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
@@ -132,11 +137,11 @@ trait CurrentEventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
     }
 
     "return remaining values after partial journal cleanup" in {
-      println("==> " + persist(1, 3, pid))
+      persist(1, 3, pid)
       delete(pid, 2L)
       eventually(getEvents(pid).size shouldBe 1)
       withCurrentEventsByPersistenceId()(pid, 0L, Long.MaxValue) { tp ⇒
-        tp.request(1)
+        tp.request(Long.MaxValue)
         tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
         tp.expectComplete()
       }
