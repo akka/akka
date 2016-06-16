@@ -41,8 +41,6 @@ private[akka] final case class Filter[T](p: T ⇒ Boolean) extends SimpleLinearG
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with OutHandler with InHandler {
-      override def toString = "FilterLogic"
-
       def decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
       override def onPush(): Unit = {
@@ -916,12 +914,10 @@ private[akka] final case class Log[T](
   // TODO more optimisations can be done here - prepare logOnPush function etc
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with OutHandler with InHandler {
-      override def toString = "LogLogic"
+      import Log._
 
       private var logLevels: LogLevels = _
       private var log: LoggingAdapter = _
-
-      import Log._
 
       def decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
