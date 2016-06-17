@@ -6,6 +6,21 @@ trait CurrentEventsByTagQuerySpec extends {
   _: QuerySpec ⇒
 
   "CurrentEventsByTagQuery" must {
+
+    "not produce anything given an empty tag" in {
+      withCurrentEventsByTag()(tag = "", offset = 0L) { tp ⇒
+        tp.request(10)
+        tp.expectComplete()
+      }
+    }
+
+    "not produce anything if there aren't any events matching the tag" in {
+      withCurrentEventsByTag()(tag = "unknown-tag", offset = 0L) { tp ⇒
+        tp.request(10)
+        tp.expectComplete()
+      }
+    }
+
     "find existing events" in {
       val pidA = pid
       val pidB = nextPid
@@ -88,6 +103,11 @@ trait CurrentEventsByTagQuerySpec extends {
         tp.request(10)
         tp.expectNext(EventEnvelope(1L, pid, 1L, "a-1"))
         tp.expectNoMsg(100.millis)
+
+        persist(2, 2, pid, tagA)
+
+        tp.expectNext(EventEnvelope(2L, pid, 2L, "a-2"))
+        tp.expectNoMsg(100.millis)
         tp.cancel()
       }
 
@@ -95,12 +115,22 @@ trait CurrentEventsByTagQuerySpec extends {
         tp.request(10)
         tp.expectNext(EventEnvelope(1L, pid, 1L, "a-1"))
         tp.expectNoMsg(100.millis)
+
+        persist(3, 3, pid, tagB)
+
+        tp.expectNext(EventEnvelope(2L, pid, 3L, "a-3"))
+        tp.expectNoMsg(100.millis)
         tp.cancel()
       }
 
       withEventsByTag()(tag = tagC, offset = 0L) { tp ⇒
         tp.request(10)
         tp.expectNext(EventEnvelope(1L, pid, 1L, "a-1"))
+        tp.expectNoMsg(100.millis)
+
+        persist(4, 4, pid, tagC)
+
+        tp.expectNext(EventEnvelope(2L, pid, 4L, "a-4"))
         tp.expectNoMsg(100.millis)
         tp.cancel()
       }
@@ -137,6 +167,11 @@ trait CurrentEventsByTagQuerySpec extends {
         tp.expectNext(EventEnvelope(8L, pidC, 2L, "a-2"))
         tp.expectNext(EventEnvelope(9L, pidC, 3L, "a-3"))
         tp.expectNoMsg(100.millis)
+
+        persist(4, 4, pidA, tagA)
+
+        tp.expectNext(EventEnvelope(10L, pidA, 4L, "a-4"))
+        tp.expectNoMsg(100.millis)
         tp.cancel()
       }
 
@@ -149,6 +184,11 @@ trait CurrentEventsByTagQuerySpec extends {
         tp.expectNext(EventEnvelope(5L, pidC, 2L, "a-2"))
         tp.expectNext(EventEnvelope(6L, pidC, 3L, "a-3"))
         tp.expectNoMsg(100.millis)
+
+        persist(4, 4, pidB, tagB)
+
+        tp.expectNext(EventEnvelope(7L, pidB, 4L, "a-4"))
+        tp.expectNoMsg(100.millis)
         tp.cancel()
       }
 
@@ -157,6 +197,11 @@ trait CurrentEventsByTagQuerySpec extends {
         tp.expectNext(EventEnvelope(1L, pidA, 3L, "a-3"))
         tp.expectNext(EventEnvelope(2L, pidB, 3L, "a-3"))
         tp.expectNext(EventEnvelope(3L, pidC, 3L, "a-3"))
+        tp.expectNoMsg(100.millis)
+
+        persist(4, 4, pidC, tagC)
+
+        tp.expectNext(EventEnvelope(4L, pidC, 4L, "a-4"))
         tp.expectNoMsg(100.millis)
         tp.cancel()
       }
