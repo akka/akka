@@ -3,19 +3,22 @@
  */
 package docs.stream
 
-//#imports
+//#stream-imports
 import akka.stream._
 import akka.stream.scaladsl._
-//#imports
+//#stream-imports
+
+//#other-imports
 import akka.{ NotUsed, Done }
 import akka.actor.ActorSystem
 import akka.util.ByteString
-
-import org.scalatest._
-import org.scalatest.concurrent._
 import scala.concurrent._
 import scala.concurrent.duration._
 import java.nio.file.Paths
+//#other-imports
+
+import org.scalatest._
+import org.scalatest.concurrent._
 
 class QuickStartDocSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures {
   implicit val patience = PatienceConfig(5.seconds)
