@@ -4,20 +4,20 @@
 
 package docs.http.scaladsl.server.directives
 
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
 import akka.http.scaladsl.server.Route
 import docs.CompileOnlySpec
 import akka.actor.ActorSystem
-import akka.http.scaladsl.{Http, TestUtils}
+import akka.http.scaladsl.{ Http, TestUtils }
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model._
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ Future, Promise }
 import akka.testkit.TestKit
 
 class TimeoutDirectivesExamplesSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with CompileOnlySpec {
@@ -60,12 +60,13 @@ class TimeoutDirectivesExamplesSpec extends WordSpec with Matchers with BeforeAn
       //#withRequestTimeout-plain
       val route =
         path("timeout") {
-          withRequestTimeout(1.seconds) { // less than akka.http.server.request-timeout value of 1000s
+          withRequestTimeout(1.seconds) { // modifies the global akka.http.server.request-timeout for this request
             val response: Future[String] = slowFuture() // very slow
             complete(response)
           }
         }
 
+      // check
       runRoute(route, "timeout").status should ===(StatusCodes.ServiceUnavailable) // the timeout response
       //#
     }
@@ -79,7 +80,7 @@ class TimeoutDirectivesExamplesSpec extends WordSpec with Matchers with BeforeAn
           }
         }
 
-      // no check as there is no time-out, the future will time out failing the test
+      // no check as there is no time-out, the future would time out failing the test
       //#
     }
 
@@ -98,6 +99,7 @@ class TimeoutDirectivesExamplesSpec extends WordSpec with Matchers with BeforeAn
           }
         }
 
+      // check
       runRoute(route, "timeout").status should ===(StatusCodes.EnhanceYourCalm) // the timeout response
       //#
     }
@@ -118,6 +120,7 @@ class TimeoutDirectivesExamplesSpec extends WordSpec with Matchers with BeforeAn
           }
         }
 
+      // check
       runRoute(route, "timeout").status should ===(StatusCodes.EnhanceYourCalm) // the timeout response
       //#
     }

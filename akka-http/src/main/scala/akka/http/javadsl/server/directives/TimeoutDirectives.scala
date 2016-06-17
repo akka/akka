@@ -43,4 +43,15 @@ abstract class TimeoutDirectives extends WebSocketDirectives {
     D.withoutRequestTimeout { inner.get.delegate }
   }
 
+  /**
+   * Tries to set a new request timeout handler, which produces the timeout response for a
+   * given request. Note that the handler must produce the response synchronously and shouldn't block!
+   *
+   * Due to the inherent raciness it is not guaranteed that the update will be applied before
+   * the previously set timeout has expired!
+   */
+  def withRequestTimeoutResponse(timeoutHandler: JFunction[HttpRequest, HttpResponse], inner: Supplier[Route]): RouteAdapter = RouteAdapter {
+    D.withRequestTimeoutResponse(in ⇒ timeoutHandler(in.asJava).asScala) { inner.get.delegate }
+  }
+
 }
