@@ -46,13 +46,25 @@ abstract class PluginSpec(val config: Config) extends TestKitBase with WordSpecL
 
   def extension: Persistence = _extension
 
+  /**
+   * Returns a new unique persistence id
+   */
   def nextPid: String =
     s"p-${counter.incrementAndGet()}"
 
+  /**
+   * Returns the current persistence id
+   */
   def pid: String = _pid
 
+  /**
+   * Returns the current writer uuid
+   */
   def writerUuid: String = _writerUuid
 
+  /**
+   * Returns the actorRef of the default configured journal plugin
+   */
   def journal: ActorRef =
     extension.journalFor(null)
 

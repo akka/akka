@@ -1,7 +1,7 @@
 package akka.persistence.query.leveldb
 
 import akka.persistence.query._
-import akka.persistence.{ CapabilityFlag, PersistenceSpec, PluginCleanup }
+import akka.persistence.{ PersistenceSpec, PluginCleanup }
 
 class LeveldbQuerySpec extends QuerySpec(
   config = PersistenceSpec.config(
@@ -10,6 +10,7 @@ class LeveldbQuerySpec extends QuerySpec(
     extraConfig = Some(
       """
         |akka.persistence.journal.leveldb.native = off
+        |akka.persistence.query.journal.leveldb.refresh-interval = 300ms
       """.stripMargin)))
   with CurrentPersistenceIdsQuerySpec
   with AllPersistenceIdsQuerySpec
@@ -19,8 +20,4 @@ class LeveldbQuerySpec extends QuerySpec(
   with EventsByTagQuerySpec
   with PluginCleanup {
   override def readJournalPluginId: String = "akka.persistence.query.journal.leveldb"
-
-  override protected def supportsOrderingByDateIndependentlyOfPersistenceId: CapabilityFlag = true
-
-  override protected def supportsOrderingByPersistenceIdAndSequenceNr: CapabilityFlag = false
 }

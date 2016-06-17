@@ -1,5 +1,7 @@
 package akka.persistence.query
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.actor.ActorSystem
 import akka.persistence.PluginSpec
 import akka.persistence.query.scaladsl._
@@ -21,6 +23,10 @@ object QuerySpec {
 abstract class QuerySpec(config: Config) extends PluginSpec(config) with ScalaFutures with Eventually {
   implicit lazy val system: ActorSystem = ActorSystem("JournalSpec", config.withFallback(QuerySpec.config))
 
+  private val tagCounter = new AtomicInteger(0)
+
+  private var _tag: String = _
+
   implicit val mat: Materializer = ActorMaterializer()(system)
 
   implicit val pc: PatienceConfig = PatienceConfig(timeout = 10.seconds)
@@ -28,6 +34,17 @@ abstract class QuerySpec(config: Config) extends PluginSpec(config) with ScalaFu
   private var _qExtension: PersistenceQuery = _
 
   def qExtension: PersistenceQuery = _qExtension
+
+  /**
+   * Returns a new unique tag
+   */
+  def nextTag: String =
+    s"p-${tagCounter.incrementAndGet()}"
+
+  /**
+   * Returns the current tag
+   */
+  def tag: String = _tag
 
   /**
    * Override this method to provide the readJournalPluginId
@@ -39,6 +56,11 @@ abstract class QuerySpec(config: Config) extends PluginSpec(config) with ScalaFu
    */
   def query[A <: scaladsl.ReadJournal]: A =
     qExtension.readJournalFor[A](readJournalPluginId)
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    _tag = nextTag
+  }
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()

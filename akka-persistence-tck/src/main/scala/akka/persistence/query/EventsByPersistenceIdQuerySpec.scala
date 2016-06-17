@@ -5,6 +5,36 @@ import scala.concurrent.duration._
 trait EventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
   "EventsByPersistenceIdQuery" must {
 
+    "not produce anything if there aren't any events" in {
+      withEventsByPersistenceId()(pid, 0L, Long.MaxValue) { tp ⇒
+        tp.request(10)
+        tp.expectNoMsg(100.millis)
+        tp.cancel()
+      }
+    }
+
+    "find existing events" in {
+      persist(1, 3, pid)
+
+      withEventsByPersistenceId()(pid, 0L, Long.MaxValue) { tp ⇒
+        tp.request(Long.MaxValue)
+        tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
+        tp.expectNext(EventEnvelope(2, pid, 2, "a-2"))
+        tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
+        tp.expectNoMsg(100.millis)
+        tp.cancel()
+      }
+
+      withEventsByPersistenceId()(pid, 1L, Long.MaxValue) { tp ⇒
+        tp.request(Long.MaxValue)
+        tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
+        tp.expectNext(EventEnvelope(2, pid, 2, "a-2"))
+        tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
+        tp.expectNoMsg(100.millis)
+        tp.cancel()
+      }
+    }
+
     "find existing events from an offset" in {
       persist(1, 3, pid)
 
@@ -100,6 +130,24 @@ trait EventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
       }
     }
 
+    "find new events if the stream starts after current latest event" in {
+      persist(1, 3, pid)
+
+      withEventsByPersistenceId()(pid, 0L, Long.MaxValue) { tp ⇒
+        tp.request(5)
+        tp.expectNext(EventEnvelope(1, pid, 1, "a-1"))
+        tp.expectNext(EventEnvelope(2, pid, 2, "a-2"))
+        tp.expectNext(EventEnvelope(3, pid, 3, "a-3"))
+        tp.expectNoMsg(100.millis)
+
+        persist(4, 4, pid)
+
+        tp.expectNext(EventEnvelope(4, pid, 4, "a-4"))
+        tp.expectNoMsg(100.millis)
+        tp.cancel()
+      }
+    }
+
     "find new events up to a sequence number" in {
       persist(1, 3, pid)
 
@@ -118,7 +166,7 @@ trait EventsByPersistenceIdQuerySpec { _: QuerySpec ⇒
     }
 
     "find new events after demand request" in {
-      val pid = persist(1, 3, nextPid)
+      persist(1, 3, pid)
 
       withEventsByPersistenceId()(pid, 0L, Long.MaxValue) { tp ⇒
         tp.request(2)
