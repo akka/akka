@@ -161,4 +161,36 @@ trait EventsByTagQuerySpec { _: QuerySpec ⇒
       tp.cancel()
     }
   }
+
+  "not find events by search tag formatted as csv" in {
+    val pidA = pid
+    val pidB = nextPid
+    val pidC = nextPid
+
+    val tagA = tag
+    val tagB = nextTag
+
+    persist(1, 1, pidA, tagA)
+    persist(1, 1, pidB, tagB)
+
+    List(";", ",", "").foreach { separatorChar ⇒
+      withEventsByTag()(tag = s"$tagA$separatorChar$tagB", offset = 0L) { tp ⇒
+        tp.request(10)
+        tp.expectNoMsg(100.millis)
+        tp.cancel()
+      }
+    }
+
+    // only when stored as csv format
+    withEventsByTag()(tag = s"$tagA,$tagB", offset = 0L) { tp ⇒
+      tp.request(10)
+      tp.expectNoMsg(100.millis)
+
+      persist(1, 1, pidC, s"$tagA,$tagB")
+
+      tp.expectNext(EventEnvelope(1L, pidC, 1L, "a-1"))
+      tp.expectNoMsg(100.millis)
+      tp.cancel()
+    }
+  }
 }

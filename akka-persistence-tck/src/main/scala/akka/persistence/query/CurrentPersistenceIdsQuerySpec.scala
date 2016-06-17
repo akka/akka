@@ -18,14 +18,5 @@ trait CurrentPersistenceIdsQuerySpec { _: QuerySpec ⇒
         tp.expectComplete()
       }
     }
-
-    "find existing persistence ids in batches if there is more of them than max-buffer-size/max-result-size-query" in {
-      val pids = getAllPids ++ List.fill(1000)(persist(nextPid))
-      withCurrentPersistenceIdsQuery() { tp ⇒
-        tp.request(pids.size)
-        tp.expectNextUnorderedN(pids)
-        tp.expectComplete()
-      }
-    }
   }
 }

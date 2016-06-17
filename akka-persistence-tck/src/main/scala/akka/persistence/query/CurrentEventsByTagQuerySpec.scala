@@ -99,40 +99,22 @@ trait CurrentEventsByTagQuerySpec extends {
       val tagC = nextTag
 
       persist(1, 1, pid, tagA, tagB, tagC)
-      withEventsByTag()(tag = tagA, offset = 0L) { tp ⇒
+      withCurrentEventsByTag()(tag = tagA, offset = 0L) { tp ⇒
         tp.request(10)
         tp.expectNext(EventEnvelope(1L, pid, 1L, "a-1"))
-        tp.expectNoMsg(100.millis)
-
-        persist(2, 2, pid, tagA)
-
-        tp.expectNext(EventEnvelope(2L, pid, 2L, "a-2"))
-        tp.expectNoMsg(100.millis)
-        tp.cancel()
+        tp.expectComplete()
       }
 
-      withEventsByTag()(tag = tagB, offset = 0L) { tp ⇒
+      withCurrentEventsByTag()(tag = tagB, offset = 0L) { tp ⇒
         tp.request(10)
         tp.expectNext(EventEnvelope(1L, pid, 1L, "a-1"))
-        tp.expectNoMsg(100.millis)
-
-        persist(3, 3, pid, tagB)
-
-        tp.expectNext(EventEnvelope(2L, pid, 3L, "a-3"))
-        tp.expectNoMsg(100.millis)
-        tp.cancel()
+        tp.expectComplete()
       }
 
-      withEventsByTag()(tag = tagC, offset = 0L) { tp ⇒
+      withCurrentEventsByTag()(tag = tagC, offset = 0L) { tp ⇒
         tp.request(10)
         tp.expectNext(EventEnvelope(1L, pid, 1L, "a-1"))
-        tp.expectNoMsg(100.millis)
-
-        persist(4, 4, pid, tagC)
-
-        tp.expectNext(EventEnvelope(2L, pid, 4L, "a-4"))
-        tp.expectNoMsg(100.millis)
-        tp.cancel()
+        tp.expectComplete()
       }
     }
 
@@ -155,7 +137,7 @@ trait CurrentEventsByTagQuerySpec extends {
       persist(2, 2, pidC, tagA, tagB)
       persist(3, 3, pidC, tagA, tagB, tagC)
 
-      withEventsByTag()(tag = tagA, offset = 0L) { tp ⇒
+      withCurrentEventsByTag()(tag = tagA, offset = 0L) { tp ⇒
         tp.request(10)
         tp.expectNext(EventEnvelope(1L, pidA, 1L, "a-1"))
         tp.expectNext(EventEnvelope(2L, pidA, 2L, "a-2"))
@@ -166,16 +148,10 @@ trait CurrentEventsByTagQuerySpec extends {
         tp.expectNext(EventEnvelope(7L, pidC, 1L, "a-1"))
         tp.expectNext(EventEnvelope(8L, pidC, 2L, "a-2"))
         tp.expectNext(EventEnvelope(9L, pidC, 3L, "a-3"))
-        tp.expectNoMsg(100.millis)
-
-        persist(4, 4, pidA, tagA)
-
-        tp.expectNext(EventEnvelope(10L, pidA, 4L, "a-4"))
-        tp.expectNoMsg(100.millis)
-        tp.cancel()
+        tp.expectComplete()
       }
 
-      withEventsByTag()(tag = tagB, offset = 0L) { tp ⇒
+      withCurrentEventsByTag()(tag = tagB, offset = 0L) { tp ⇒
         tp.request(10)
         tp.expectNext(EventEnvelope(1L, pidA, 2L, "a-2"))
         tp.expectNext(EventEnvelope(2L, pidA, 3L, "a-3"))
@@ -183,27 +159,43 @@ trait CurrentEventsByTagQuerySpec extends {
         tp.expectNext(EventEnvelope(4L, pidB, 3L, "a-3"))
         tp.expectNext(EventEnvelope(5L, pidC, 2L, "a-2"))
         tp.expectNext(EventEnvelope(6L, pidC, 3L, "a-3"))
-        tp.expectNoMsg(100.millis)
-
-        persist(4, 4, pidB, tagB)
-
-        tp.expectNext(EventEnvelope(7L, pidB, 4L, "a-4"))
-        tp.expectNoMsg(100.millis)
-        tp.cancel()
+        tp.expectComplete()
       }
 
-      withEventsByTag()(tag = tagC, offset = 0L) { tp ⇒
+      withCurrentEventsByTag()(tag = tagC, offset = 0L) { tp ⇒
         tp.request(10)
         tp.expectNext(EventEnvelope(1L, pidA, 3L, "a-3"))
         tp.expectNext(EventEnvelope(2L, pidB, 3L, "a-3"))
         tp.expectNext(EventEnvelope(3L, pidC, 3L, "a-3"))
-        tp.expectNoMsg(100.millis)
+        tp.expectComplete()
+      }
+    }
 
-        persist(4, 4, pidC, tagC)
+    "not find events by search tag formatted as csv" in {
+      val pidA = pid
+      val pidB = nextPid
+      val pidC = nextPid
 
-        tp.expectNext(EventEnvelope(4L, pidC, 4L, "a-4"))
-        tp.expectNoMsg(100.millis)
-        tp.cancel()
+      val tagA = tag
+      val tagB = nextTag
+
+      persist(1, 1, pidA, tagA)
+      persist(1, 1, pidB, tagB)
+
+      List(";", ",", "").foreach { separatorChar ⇒
+        withCurrentEventsByTag()(tag = s"$tagA$separatorChar$tagB", offset = 0L) { tp ⇒
+          tp.request(10)
+          tp.expectComplete()
+        }
+      }
+
+      // only when stored as csv
+      persist(1, 1, pidC, s"$tagA,$tagB")
+
+      withCurrentEventsByTag()(tag = s"$tagA,$tagB", offset = 0L) { tp ⇒
+        tp.request(10)
+        tp.expectNext(EventEnvelope(1L, pidC, 1L, "a-1"))
+        tp.expectComplete()
       }
     }
   }
