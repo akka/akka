@@ -41,6 +41,10 @@ message ActorRef {
   required string path = 1;
 }
 
+message Option {
+  optional Payload value = 1;
+}
+
 message Payload {
   required bytes enclosedMessage = 1;
   required int32 serializerId = 2;
