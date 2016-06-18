@@ -6,7 +6,11 @@ Quick Start Guide
 A stream usually begins at a source, so this is also how we start an Akka
 Stream. Before we create one, we import the full complement of streaming tools:
 
-.. includecode:: ../code/docs/stream/QuickStartDocSpec.scala#imports
+.. includecode:: ../code/docs/stream/QuickStartDocSpec.scala#stream-imports
+
+If you want to execute the code samples while you read through the quick start guide, you will also need the following imports:
+
+.. includecode:: ../code/docs/stream/QuickStartDocSpec.scala#other-imports
 
 Now we will start with a rather simple source, emitting the integers 1 to 100:
 
