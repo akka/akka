@@ -6,6 +6,7 @@ package akka.http.javadsl.model;
 
 import akka.Done;
 import akka.stream.Materializer;
+import akka.http.javadsl.model.headers.HttpCredentials;
 import akka.util.ByteString;
 import scala.concurrent.Future;
 
@@ -112,6 +113,11 @@ public interface HttpMessage {
          * Returns a copy of this message with the given headers added to the list of headers.
          */
         Self addHeaders(Iterable<HttpHeader> headers);
+
+        /**
+         * Returns a copy of this message with the given http credential header added to the list of headers.
+         */
+        Self addCredentials(HttpCredentials credentials);
 
         /**
          * Returns a copy of this message with all headers of the given name (case-insensitively) removed.
