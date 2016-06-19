@@ -886,6 +886,11 @@ object MiMa extends AutoPlugin {
 
         // #20288 migrate BodyPartRenderer to GraphStage
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.BodyPartRenderer.streamed")
+      ),
+      "2.4.8" -> Seq(
+        // #20717 example snippet for akka http java dsl: SecurityDirectives
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage#MessageTransformations.addCredentials"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.addCredentials")
       )
     )
   }

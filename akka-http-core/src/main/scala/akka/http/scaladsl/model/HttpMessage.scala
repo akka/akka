@@ -109,6 +109,8 @@ sealed trait HttpMessage extends jm.HttpMessage {
 
   def addHeader(header: jm.HttpHeader): Self = mapHeaders(_ :+ header.asInstanceOf[HttpHeader])
 
+  def addCredentials(credentials: jm.headers.HttpCredentials): Self = addHeader(jm.headers.Authorization.create(credentials))
+
   /** Removes the header with the given name (case-insensitive) */
   def removeHeader(headerName: String): Self = {
     val lowerHeaderName = headerName.toRootLowerCase
