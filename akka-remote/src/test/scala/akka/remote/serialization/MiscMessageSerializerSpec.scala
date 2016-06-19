@@ -12,10 +12,12 @@ import com.typesafe.config.ConfigFactory
 
 object MiscMessageSerializerSpec {
   val serializationTestOverrides =
-    s"""
+    """
        |akka.actor.serialization-bindings = {
        |  "akka.actor.Identify" = akka-misc
        |  "akka.actor.ActorIdentity" = akka-misc
+       |  "scala.Some" = akka-misc
+       |  "scala.None$" = akka-misc
        |}
      """.stripMargin
 
@@ -27,8 +29,12 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
   "MiscMessageSerializer" must {
     Seq(
       "Identify" → Identify("some-message"),
-      s"ActorIdentity without actor ref" → ActorIdentity("some-message", ref = None),
-      s"ActorIdentity with actor ref" → ActorIdentity("some-message", ref = Some(testActor))).foreach {
+      "Identify with None" → Identify(None),
+      "Identify with Some" → Identify(Some("value")),
+      "ActorIdentity without actor ref" → ActorIdentity("some-message", ref = None),
+      "ActorIdentity with actor ref" → ActorIdentity("some-message", ref = Some(testActor)),
+      "Some" → Some("value"),
+      "None" → None).foreach {
         case (scenario, item) ⇒
           s"resolve serializer for $scenario" in {
             val serializer = SerializationExtension(system)
