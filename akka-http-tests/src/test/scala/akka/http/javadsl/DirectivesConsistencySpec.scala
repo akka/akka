@@ -25,7 +25,7 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
         "concat", "route") ++ // TODO this fails on jenkins but not locally, no idea why, disabling to get Java DSL in
         // param extractions in ScalaDSL
         Set("DoubleNumber", "HexIntNumber", "HexLongNumber", "IntNumber", "JavaUUID", "LongNumber",
-          "Neutral", "PathEnd", "Remaining", "Segment", "Segments", "Slash", "RemainingPath") // TODO do we cover these?
+          "Neutral", "PathEnd", "Remaining", "RemainingDecoded", "Segment", "Segments", "Slash", "RemainingPath") // TODO do we cover these?
 
   def prepareDirectivesList(in: Array[Method]): List[Method] = {
     in.toSet[Method]
