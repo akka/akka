@@ -29,7 +29,8 @@ class TimeoutDirectivesExamplesSpec extends WordSpec with Matchers with BeforeAn
     windows-connection-abort-workaround-enabled = auto
     akka.log-dead-letters = OFF
     akka.http.server.request-timeout = 1000s""")
-  // large timeout - 1000s (please note - setting to infinite will disable withRequestTimeout at the moment)
+  // large timeout - 1000s (please note - setting to infinite will disable Timeout-Access header
+  // and withRequestTimeout will not work)
 
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher

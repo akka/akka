@@ -40,8 +40,9 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
             + "windows-connection-abort-workaround-enabled = auto\n"
             + "akka.log-dead-letters = OFF\n"
             + "akka.http.server.request-timeout = 1000s");
-    // large timeout - 1000s (please note - setting to infinite will disable withRequestTimeout at the moment)
-
+    // large timeout - 1000s (please note - setting to infinite will disable Timeout-Access header
+    // and withRequestTimeout will not work)
+    
     private final ActorSystem system = ActorSystem.create("TimeoutDirectivesExamplesTest", testConf);
 
     private final ActorMaterializer materializer = ActorMaterializer.create(system);
