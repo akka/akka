@@ -147,7 +147,7 @@ status to ``down`` automatically after the configured time of unreachability.
 
 This is a naïve approach to remove unreachable nodes from the cluster membership. It
 works great for crashes and short transient network partitions, but not for long network
-partitions. Both sides of the network partition will see the other side as unreachable 
+partitions. Both sides of the network partition will see the other side as unreachable
 and after a while remove it from its cluster membership. Since this happens on both
 sides the result is that two separate disconnected clusters have been created. This
 can also happen because of long GC pauses or system overload.
@@ -155,14 +155,14 @@ can also happen because of long GC pauses or system overload.
 .. warning::
 
   We recommend against using the auto-down feature of Akka Cluster in production.
-  This is crucial for correct behavior if you use :ref:`cluster-singleton-java` or 
+  This is crucial for correct behavior if you use :ref:`cluster-singleton-java` or
   :ref:`cluster_sharding_java`, especially together with Akka :ref:`persistence-java`.
-  
-A pre-packaged solution for the downing problem is provided by 
-`Split Brain Resolver <http://doc.akka.io/docs/akka/rp-16s01p03/java/split-brain-resolver.html>`_, 
-which is part of the Lightbend Reactive Platform. If you don’t use RP, you should anyway carefully 
+
+A pre-packaged solution for the downing problem is provided by
+`Split Brain Resolver <http://doc.akka.io/docs/akka/rp-16s01p03/java/split-brain-resolver.html>`_,
+which is part of the Lightbend Reactive Platform. If you don’t use RP, you should anyway carefully
 read the `documentation <http://doc.akka.io/docs/akka/rp-16s01p03/java/split-brain-resolver.html>`_
-of the Split Brain Resolver and make sure that the solution you are using handles the concerns 
+of the Split Brain Resolver and make sure that the solution you are using handles the concerns
 described there.
 
 .. note:: If you have *auto-down* enabled and the failure detector triggers, you
@@ -427,8 +427,8 @@ If system messages cannot be delivered to a node it will be quarantined and then
 cannot come back from ``unreachable``. This can happen if the there are too many
 unacknowledged system messages (e.g. watch, Terminated, remote actor deployment,
 failures of actors supervised by remote parent). Then the node needs to be moved
-to the ``down`` or ``removed`` states and the actor system must be restarted before
-it can join the cluster again.
+to the ``down`` or ``removed`` states and the actor system of the quarantined node
+must be restarted before it can join the cluster again.
 
 The nodes in the cluster monitor each other by sending heartbeats to detect if a node is
 unreachable from the rest of the cluster. The heartbeat arrival times is interpreted
