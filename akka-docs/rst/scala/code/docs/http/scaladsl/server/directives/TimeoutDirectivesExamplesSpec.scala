@@ -29,7 +29,7 @@ class TimeoutDirectivesExamplesSpec extends WordSpec with Matchers with BeforeAn
     windows-connection-abort-workaround-enabled = auto
     akka.log-dead-letters = OFF
     akka.http.server.request-timeout = 1000s""")
-  // large timeout - 1000s
+  // large timeout - 1000s (please note - setting to infinite will disable withRequestTimeout at the moment)
 
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
@@ -88,7 +88,7 @@ class TimeoutDirectivesExamplesSpec extends WordSpec with Matchers with BeforeAn
       //#withRequestTimeout-with-handler
       val timeoutResponse = HttpResponse(
         StatusCodes.EnhanceYourCalm,
-        entity = "Unable to serve response within time limit, please enchance your calm.")
+        entity = "Unable to serve response within time limit, please enhance your calm.")
 
       val route =
         path("timeout") {
@@ -108,7 +108,7 @@ class TimeoutDirectivesExamplesSpec extends WordSpec with Matchers with BeforeAn
       //#withRequestTimeoutResponse
       val timeoutResponse = HttpResponse(
         StatusCodes.EnhanceYourCalm,
-        entity = "Unable to serve response within time limit, please enchance your calm.")
+        entity = "Unable to serve response within time limit, please enhance your calm.")
 
       val route =
         path("timeout") {

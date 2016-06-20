@@ -40,6 +40,7 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
             + "windows-connection-abort-workaround-enabled = auto\n"
             + "akka.log-dead-letters = OFF\n"
             + "akka.http.server.request-timeout = 1000s");
+    // large timeout - 1000s (please note - setting to infinite will disable withRequestTimeout at the moment)
 
     private final ActorSystem system = ActorSystem.create("TimeoutDirectivesExamplesTest", testConf);
 
@@ -113,7 +114,6 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
     @Test
     public void testRequestWithoutTimeoutCancelsTimeout() {
         //#withoutRequestTimeout-1
-        final Duration timeout = Duration.create(1, TimeUnit.SECONDS);
         CompletionStage<String> slowFuture = new CompletableFuture<>();
 
         final Route route = path("timeout", () ->
@@ -136,7 +136,7 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
 
         HttpResponse enhanceYourCalmResponse = HttpResponse.create()
                 .withStatus(StatusCodes.ENHANCE_YOUR_CALM)
-                .withEntity("Unable to serve response within time limit, please enchance your calm.");
+                .withEntity("Unable to serve response within time limit, please enhance your calm.");
 
         final Route route = path("timeout", () ->
                 withRequestTimeout(timeout, (request) -> enhanceYourCalmResponse, () -> {
@@ -158,7 +158,7 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
 
         HttpResponse enhanceYourCalmResponse = HttpResponse.create()
                 .withStatus(StatusCodes.ENHANCE_YOUR_CALM)
-                .withEntity("Unable to serve response within time limit, please enchance your calm.");
+                .withEntity("Unable to serve response within time limit, please enhance your calm.");
 
         final Route route = path("timeout", () ->
                 withRequestTimeout(timeout, () ->
