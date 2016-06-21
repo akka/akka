@@ -44,12 +44,12 @@ private object PoolConductor {
   /*
     Stream Setup
     ============
-                                                                                                  Request-
-    Request-   +-----------+     +-----------+    Switch-    +-------------+     +-----------+    Context
-    Context    |   retry   |     |   slot-   |    Command    |   doubler   |     |   route   +-------------->
-    +--------->|   Merge   +---->| Selector  +-------------->| (MapConcat) +---->|  (Flexi   +-------------->
-               |           |     |           |               |             |     |   Route)  +-------------->
-               +----+------+     +-----+-----+               +-------------+     +-----------+       to slots
+                                                                              Request-
+    Request-   +-----------+     +-----------+    Switch-    +-----------+    Context
+    Context    |   retry   |     |   slot-   |    Command    |   route   +-------------->
+    +--------->|   Merge   +---->| Selector  +-------------->|  (Flexi   +-------------->
+               |           |     |           |               |   Route)  +-------------->
+               +----+------+     +-----+-----+               +-----------+       to slots
                     ^                  ^
                     |                  | SlotEvent
                     |             +----+----+

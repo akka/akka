@@ -5,8 +5,9 @@
 package akka.http.impl.engine.client
 
 import akka.actor._
+import akka.http.scaladsl.model.headers.Connection
 import akka.http.scaladsl.settings.ConnectionPoolSettings
-import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
+import akka.http.scaladsl.model.{ HttpEntity, HttpMessage, HttpRequest, HttpResponse }
 import akka.stream._
 import akka.stream.actor._
 import akka.stream.impl.{ ActorProcessor, ConstantFun, ExposedPublisher, SeqActorName, SubscribePending }
@@ -37,15 +38,15 @@ private object PoolSlot {
     Stream Setup
     ============
 
-    Request-   +-----------+              +-------------+              +-------------+     +------------+
-    Context    | Slot-     |  List[       |   flatten   |  Processor-  |   doubler   |     | SlotEvent- |  Response-
-    +--------->| Processor +------------->| (MapConcat) +------------->| (MapConcat) +---->| Split      +------------->
-               |           |  Processor-  |             |  Out         |             |     |            |  Context
-               +-----------+  Out]        +-------------+              +-------------+     +-----+------+
-                                                                                                 | RawSlotEvent
-                                                                                                 | (to Conductor
-                                                                                                 |  via slotEventMerge)
-                                                                                                 v
+    Request-   +-----------+              +-------------+              +------------+
+    Context    | Slot-     |  List[       |   flatten   |  Processor-  | SlotEvent- |  Response-
+    +--------->| Processor +------------->| (MapConcat) +------------->| Split      +------------->
+               |           |  Processor-  |             |  Out         |            |  Context
+               +-----------+  Out]        +-------------+              +-----+------+
+                                                                             | RawSlotEvent
+                                                                             | (to Conductor
+                                                                             |  via slotEventMerge)
+                                                                             v
    */
   def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
             settings: ConnectionPoolSettings)(implicit
@@ -166,12 +167,23 @@ private object PoolSlot {
         import fm.executionContext
         val requestCompleted = SlotEvent.RequestCompletedFuture(whenCompleted.map(_ ⇒ SlotEvent.RequestCompleted(slotIx)))
         onNext(delivery :: requestCompleted :: Nil)
+        if (HttpMessage.connectionCloseExpected(response.protocol, response.header[Connection]))
+          context.become(waitingForCompletionFromConnection(connInport, connOutport, Nil))
 
       case FromConnection(OnComplete) ⇒ handleDisconnect(sender(), None)
       case FromConnection(OnError(e)) ⇒ handleDisconnect(sender(), Some(e))
     }
 
-    def handleDisconnect(connInport: ActorRef, error: Option[Throwable], firstContext: Option[RequestContext] = None): Unit = {
+    def waitingForCompletionFromConnection(connInport: ActorRef, connOutport: ActorRef, retries: List[SlotEvent.RetryRequest]): Receive = {
+      case ev @ (Request(_) | Cancel)     ⇒ connOutport ! ev
+      case ev @ (OnComplete | OnError(_)) ⇒ connInport ! ev
+      case OnNext(rc: RequestContext)     ⇒ context.become(waitingForCompletionFromConnection(connInport, connOutport, retries :+ SlotEvent.RetryRequest(rc)))
+      case FromConnection(OnComplete)     ⇒ handleDisconnect(sender(), None, retries = retries)
+      case FromConnection(OnError(e))     ⇒ handleDisconnect(sender(), Some(e), retries = retries)
+      case FromConnection(Cancel)         ⇒ if (!isActive) { cancel(); shutdown() }
+    }
+
+    def handleDisconnect(connInport: ActorRef, error: Option[Throwable], firstContext: Option[RequestContext] = None, retries: List[SlotEvent.RetryRequest] = Nil): Unit = {
       log.debug("Slot {} disconnected after {}", slotIx, error getOrElse "regular connection close")
 
       val results: List[ProcessorOut] = {
@@ -189,7 +201,7 @@ private object PoolSlot {
             } else SlotEvent.RetryRequest(rc.copy(retriesLeft = rc.retriesLeft - 1))
           }(collection.breakOut)
         }
-      }
+      }.++(retries)(collection.breakOut)
       inflightRequests = immutable.Queue.empty
       onNext(SlotEvent.Disconnected(slotIx, results.size) :: results)
       if (canceled) onComplete()

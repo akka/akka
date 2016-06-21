@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.http.impl.engine.client.PoolMasterActor.PoolInterfaceRunning
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
-import akka.http.impl.util.{ SingletonException, StreamUtils }
+import akka.http.impl.util.SingletonException
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
@@ -23,7 +23,7 @@ import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 
-import scala.concurrent.Await
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
@@ -31,7 +31,6 @@ import scala.util.{ Failure, Success, Try }
 class ConnectionPoolSpec extends AkkaSpec("""
     akka.loggers = []
     akka.loglevel = OFF
-    akka.io.tcp.windows-connection-abort-workaround-enabled = auto
     akka.io.tcp.trace-logging = off""") {
   implicit val materializer = ActorMaterializer()
 
@@ -232,6 +231,29 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
   "The single-request client infrastructure" should {
     class LocalTestSetup extends TestSetup(ServerSettings(system).withRawRequestUriHeader(true), autoAccept = true)
+
+    "be able to deal with connection termination" in new TestSetup(autoAccept = true) {
+      def closeHeader() =
+        if (util.Random.nextInt(8) == 0) Connection("close") :: Nil else Nil
+
+      def method() =
+        if (util.Random.nextInt(2) == 0) HttpMethods.POST else HttpMethods.GET
+
+      override def testServerHandler(connNr: Int): HttpRequest ⇒ HttpResponse = {
+        case r: HttpRequest ⇒
+          HttpResponse()
+            .withHeaders(RawHeader("Req-Idx", r.uri.path.tail.head.toString) +: responseHeaders(r, connNr))
+            .withDefaultHeaders(closeHeader())
+      }
+
+      private val N = 1000
+      Stream.from(1).take(N).map(_.toString).foreach { i ⇒
+        val responseFuture: Future[HttpResponse] =
+          Http().singleRequest(HttpRequest(method = method(), headers = closeHeader(), uri = s"http://$serverHostName:$serverPort/$i"))
+        val response = Await.result(responseFuture, 1.second)
+        response.headers.find(_ is "req-idx").get.value shouldEqual i
+      }
+    }
 
     "transform absolute request URIs into relative URIs plus host header" in new LocalTestSetup {
       val request = HttpRequest(uri = s"http://$serverHostName:$serverPort/abc?query#fragment")
