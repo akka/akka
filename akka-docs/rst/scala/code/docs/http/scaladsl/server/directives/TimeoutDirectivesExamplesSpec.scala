@@ -7,7 +7,6 @@ package docs.http.scaladsl.server.directives
 import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
 import akka.http.scaladsl.server.Route
 import docs.CompileOnlySpec
-import akka.actor.ActorSystem
 import akka.http.scaladsl.{ Http, TestUtils }
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
@@ -15,13 +14,11 @@ import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model._
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
-import akka.testkit.TestKit
+import akka.testkit.AkkaSpec
 
-class TimeoutDirectivesExamplesSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with CompileOnlySpec {
-  //#testSetup
+private[this] object TimeoutDirectivesTestConfig {
   val testConf: Config = ConfigFactory.parseString("""
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = ERROR
@@ -31,17 +28,15 @@ class TimeoutDirectivesExamplesSpec extends WordSpec with Matchers with BeforeAn
     akka.http.server.request-timeout = 1000s""")
   // large timeout - 1000s (please note - setting to infinite will disable Timeout-Access header
   // and withRequestTimeout will not work)
+}
 
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
+class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesTestConfig.testConf)
+  with ScalaFutures with CompileOnlySpec {
+  //#testSetup
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
-  implicit val patience = PatienceConfig(3.seconds)
 
-  override def afterAll(): Unit = {
-    TestKit.shutdownActorSystem(system)
-  }
-
-  def slowFuture(): Future[String] = Promise[String].future
+  def slowFuture(): Future[String] = Promise[String].future // move to Future.never in Scala 2.12
 
   def runRoute(route: Route, routePath: String): HttpResponse = {
     val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
@@ -105,7 +100,8 @@ class TimeoutDirectivesExamplesSpec extends WordSpec with Matchers with BeforeAn
       //#
     }
 
-    "allow mapping the response" in {
+    // make it compile only to avoid flaking in slow builds
+    "allow mapping the response" in compileOnlySpec {
       //#withRequestTimeoutResponse
       val timeoutResponse = HttpResponse(
         StatusCodes.EnhanceYourCalm,

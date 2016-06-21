@@ -22,6 +22,7 @@ import akka.testkit.TestKit;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 import scala.Tuple2;
 import scala.Tuple3;
@@ -151,6 +152,8 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
         //#
     }
 
+    // make it compile only to avoid flaking in slow builds
+    @Ignore("Compile only test")
     @Test
     public void testRequestTimeoutCustomResponseCanBeAddedSeparately() {
         //#withRequestTimeoutResponse
