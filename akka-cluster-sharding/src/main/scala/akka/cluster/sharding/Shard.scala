@@ -425,7 +425,8 @@ final class AllAtOnceEntityRecoveryStrategy extends EntityRecoveryStrategy {
   import akka.actor.ActorContext
   import Shard.RestartEntities
   override def recoverEntities(context: ActorContext, entities: Set[EntityId]): Unit =
-    context.self ! RestartEntities(entities)
+    if (entities.nonEmpty)
+      context.self ! RestartEntities(entities)
 }
 
 final class ConstantRateEntityRecoveryStrategy(val frequency: FiniteDuration, val numberOfEntities: Int) extends EntityRecoveryStrategy {
