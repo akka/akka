@@ -159,10 +159,6 @@ private[stream] object Stages {
     override def create(attr: Attributes): Stage[In, Out] = fusing.Map(f, supervision(attr))
   }
 
-  final case class Log[T](name: String, extract: T ⇒ Any, loggingAdapter: Option[LoggingAdapter], attributes: Attributes = log) extends SymbolicStage[T, T] {
-    override def create(attr: Attributes): Stage[T, T] = fusing.Log(name, extract, loggingAdapter, supervision(attr))
-  }
-
   final case class Grouped[T](n: Int, attributes: Attributes = grouped) extends SymbolicStage[T, immutable.Seq[T]] {
     require(n > 0, "n must be greater than 0")
     override def create(attr: Attributes): Stage[T, immutable.Seq[T]] = fusing.Grouped(n)

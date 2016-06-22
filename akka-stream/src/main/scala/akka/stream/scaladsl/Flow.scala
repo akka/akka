@@ -1584,7 +1584,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def log(name: String, extract: Out ⇒ Any = ConstantFun.scalaIdentityFunction)(implicit log: LoggingAdapter = null): Repr[Out] =
-    andThen(Stages.Log(name, extract.asInstanceOf[Any ⇒ Any], Option(log)))
+    via(Log(name, extract.asInstanceOf[Any ⇒ Any], Option(log)))
 
   /**
    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
