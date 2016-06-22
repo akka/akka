@@ -253,7 +253,7 @@ private[akka] class SystemMessageAcker(inboundContext: InboundContext) extends G
               val unwrapped = env.withMessage(sysEnv.message)
               push(out, unwrapped)
             } else if (n < expectedSeqNo) {
-              inboundContext.sendControl(ackReplyTo.address, Ack(n, localAddress))
+              inboundContext.sendControl(ackReplyTo.address, Ack(expectedSeqNo - 1, localAddress))
               pull(in)
             } else {
               inboundContext.sendControl(ackReplyTo.address, Nack(expectedSeqNo - 1, localAddress))
