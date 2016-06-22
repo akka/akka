@@ -252,7 +252,14 @@ object TestSubscriber {
      * Expect and return a stream element.
      */
     def expectNext(): I = {
-      val t = probe.remainingOr(probe.testKitSettings.SingleExpectDefaultTimeout.dilated)
+      expectNext(probe.testKitSettings.SingleExpectDefaultTimeout.dilated)
+    }
+
+    /**
+     * Expect and return a stream element during specified time or timeout.
+     */
+    def expectNext(d: FiniteDuration): I = {
+      val t = probe.remainingOr(d)
       probe.receiveOne(t) match {
         case null         ⇒ throw new AssertionError(s"Expected OnNext(_), yet no element signaled during $t")
         case OnNext(elem) ⇒ elem.asInstanceOf[I]
@@ -612,6 +619,11 @@ object TestSubscriber {
     def requestNext(): T = {
       subscription.request(1)
       expectNext()
+    }
+
+    def requestNext(d: FiniteDuration): T = {
+      subscription.request(1)
+      expectNext(d)
     }
   }
 }
