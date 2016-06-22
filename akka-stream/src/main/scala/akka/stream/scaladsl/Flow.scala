@@ -672,7 +672,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def grouped(n: Int): Repr[immutable.Seq[Out]] = andThen(Grouped(n))
+  def grouped(n: Int): Repr[immutable.Seq[Out]] = via(Grouped(n))
 
   /**
    * Ensure stream boundedness by limiting the number of elements from upstream.
@@ -736,7 +736,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def sliding(n: Int, step: Int = 1): Repr[immutable.Seq[Out]] = andThen(Sliding(n, step))
+  def sliding(n: Int, step: Int = 1): Repr[immutable.Seq[Out]] = via(Sliding(n, step))
 
   /**
    * Similar to `fold` but is not a terminal operation,
@@ -777,7 +777,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.scan]]
    */
-  def fold[T](zero: T)(f: (T, Out) ⇒ T): Repr[T] = andThen(Fold(zero, f))
+  def fold[T](zero: T)(f: (T, Out) ⇒ T): Repr[T] = via(Fold(zero, f))
 
   /**
    * Similar to `fold` but uses first element as zero element.
