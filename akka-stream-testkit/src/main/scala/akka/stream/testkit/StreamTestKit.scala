@@ -606,8 +606,8 @@ object TestSubscriber {
     }
 
     /**
-      * Request and expect a stream element.
-      */
+     * Request and expect a stream element.
+     */
     def requestNext(element: T): Self = {
       subscription.request(1)
       expectNext(element)
@@ -620,16 +620,16 @@ object TestSubscriber {
     }
 
     /**
-      * Request and expect a stream element.
-      */
+     * Request and expect a stream element.
+     */
     def requestNext(): T = {
       subscription.request(1)
       expectNext()
     }
 
     /**
-      * Request and expect a stream element during the specified time or timeout.
-      */
+     * Request and expect a stream element during the specified time or timeout.
+     */
     def requestNext(d: FiniteDuration): T = {
       subscription.request(1)
       expectNext(d)
