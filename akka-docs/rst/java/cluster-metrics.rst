@@ -14,9 +14,9 @@ Cluster metrics information is primarily used for load-balancing routers,
 and can also be used to implement advanced metrics-based node life cycles,
 such as "Node Let-it-crash" when CPU steal time becomes excessive.
 
-Cluster Metrics Extension is a separate akka module delivered in ``akka-cluster-metrics`` jar. 
+Cluster Metrics Extension is a separate akka module delivered in ``akka-cluster-metrics`` jar.
 
-To enable usage of the extension you need to add the following dependency to your project: 
+To enable usage of the extension you need to add the following dependency to your project:
 ::
 
   <dependency>
@@ -29,13 +29,13 @@ and add the following configuration stanza to your ``application.conf``
 ::
 
    akka.extensions = [ "akka.cluster.metrics.ClusterMetricsExtension" ]
- 
+
 Make sure to disable legacy metrics in akka-cluster: ``akka.cluster.metrics.enabled=off``,
 since it is still enabled in akka-cluster by default (for compatibility with past releases).
 
 Cluster members with status :ref:`WeaklyUp <weakly_up_java>`, if that feature is enabled,
 will participate in Cluster Metrics collection and dissemination.
- 
+
 Metrics Collector
 -----------------
 
@@ -46,15 +46,15 @@ Certain message routing and let-it-crash functions may not work when Sigar is no
 
 Cluster metrics extension comes with two built-in collector implementations:
 
-#. ``akka.cluster.metrics.SigarMetricsCollector``, which requires Sigar provisioning, and is more rich/precise 
+#. ``akka.cluster.metrics.SigarMetricsCollector``, which requires Sigar provisioning, and is more rich/precise
 #. ``akka.cluster.metrics.JmxMetricsCollector``, which is used as fall back, and is less rich/precise
 
 You can also plug-in your own metrics collector implementation.
 
-By default, metrics extension will use collector provider fall back and will try to load them in this order: 
+By default, metrics extension will use collector provider fall back and will try to load them in this order:
 
 #. configured user-provided collector
-#. built-in ``akka.cluster.metrics.SigarMetricsCollector`` 
+#. built-in ``akka.cluster.metrics.SigarMetricsCollector``
 #. and finally ``akka.cluster.metrics.JmxMetricsCollector``
 
 Metrics Events
@@ -71,7 +71,7 @@ which was received during the collector sample period.
 You can subscribe your metrics listener actors to these events in order to implement custom node lifecycle
 ::
 
-    ClusterMetricsExtension.get(system).subscribe(metricsListenerActor); 
+    ClusterMetricsExtension.get(system).subscribe(metricsListenerActor);
 
 Hyperic Sigar Provisioning
 --------------------------
@@ -79,8 +79,8 @@ Hyperic Sigar Provisioning
 Both user-provided and built-in metrics collectors can optionally use `Hyperic Sigar <http://www.hyperic.com/products/sigar>`_
 for a wider and more accurate range of metrics compared to what can be retrieved from ordinary JMX MBeans.
 
-Sigar is using a native o/s library, and requires library provisioning, i.e. 
-deployment, extraction and loading of the o/s native library into JVM at runtime. 
+Sigar is using a native o/s library, and requires library provisioning, i.e.
+deployment, extraction and loading of the o/s native library into JVM at runtime.
 
 User can provision Sigar classes and native library in one of the following ways:
 
@@ -90,8 +90,15 @@ User can provision Sigar classes and native library in one of the following ways
    Kamon sigar loader agent will extract and load sigar library during JVM start.
 #. Place ``sigar.jar`` on the ``classpath`` and Sigar native library for the o/s on the ``java.library.path``.
    User is required to manage both project dependency and library deployment manually.
- 
-To enable usage of Sigar you can add the following dependency to the user project  
+
+.. warning::
+
+  When using `Kamon sigar-loader <https://github.com/kamon-io/sigar-loader>`_ and running multiple
+  instances of the same application on the same host, you have to make sure that sigar library is extracted to a
+  unique per instance directory. You can control the extract directory with the
+  ``akka.cluster.metrics.native-library-extract-folder`` configuration setting.
+
+To enable usage of Sigar you can add the following dependency to the user project
 ::
 
   <dependency>
@@ -110,7 +117,7 @@ It uses random selection of routees with probabilities derived from the remainin
 It can be configured to use a specific MetricsSelector to produce the probabilities, a.k.a. weights:
 
 * ``heap`` / ``HeapMetricsSelector`` - Used and max JVM heap memory. Weights based on remaining heap capacity; (max - used) / max
-* ``load`` / ``SystemLoadAverageMetricsSelector`` - System load average for the past 1 minute, corresponding value can be found in ``top`` of Linux systems. The system is possibly nearing a bottleneck if the system load average is nearing number of cpus/cores. Weights based on remaining load capacity; 1 - (load / processors) 
+* ``load`` / ``SystemLoadAverageMetricsSelector`` - System load average for the past 1 minute, corresponding value can be found in ``top`` of Linux systems. The system is possibly nearing a bottleneck if the system load average is nearing number of cpus/cores. Weights based on remaining load capacity; 1 - (load / processors)
 * ``cpu`` / ``CpuMetricsSelector`` - CPU utilization in percentage, sum of User + Sys + Nice + Wait. Weights based on remaining cpu capacity; 1 - utilization
 * ``mix`` / ``MixMetricsSelector`` - Combines heap, cpu and load. Weights based on mean of remaining capacity of the combined selectors.
 * Any custom implementation of ``akka.cluster.metrics.MetricsSelector``
@@ -132,7 +139,7 @@ As you can see, the router is defined in the same way as other routers, and in t
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/resources/factorial.conf#adaptive-router
 
-It is only ``router`` type and the ``metrics-selector`` parameter that is specific to this router, 
+It is only ``router`` type and the ``metrics-selector`` parameter that is specific to this router,
 other things work in the same way as other routers.
 
 The same type of router could also have been defined in code:
@@ -158,11 +165,11 @@ Custom Metrics Collector
 Metrics collection is delegated to the implementation of ``akka.cluster.metrics.MetricsCollector``
 
 You can plug-in your own metrics collector instead of built-in
-``akka.cluster.metrics.SigarMetricsCollector`` or ``akka.cluster.metrics.JmxMetricsCollector``. 
+``akka.cluster.metrics.SigarMetricsCollector`` or ``akka.cluster.metrics.JmxMetricsCollector``.
 
-Look at those two implementations for inspiration. 
+Look at those two implementations for inspiration.
 
-Custom metrics collector implementation class must be specified in the 
+Custom metrics collector implementation class must be specified in the
 ``akka.cluster.metrics.collector.provider`` configuration property.
 
 Configuration
