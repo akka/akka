@@ -40,6 +40,16 @@ private[akka] final case class Quarantined(from: UniqueAddress, to: UniqueAddres
 /**
  * INTERNAL API
  */
+private[akka] case class ActorSystemTerminating(from: UniqueAddress) extends ControlMessage // FIXME serialization
+
+/**
+ * INTERNAL API
+ */
+private[akka] case class ActorSystemTerminatingAck(from: UniqueAddress) // FIXME serialization
+
+/**
+ * INTERNAL API
+ */
 private[akka] object InboundControlJunction {
 
   /**
