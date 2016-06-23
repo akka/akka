@@ -102,7 +102,6 @@ class RemoteRouterSpec extends AkkaSpec("""
       val probe = TestProbe()(masterSystem)
       val router = masterSystem.actorOf(RoundRobinPool(2).props(echoActorProps), "blub")
       val replies = collectRouteePaths(probe, router, 5)
-      println(s"# replies $replies") // FIXME
       val children = replies.toSet
       children should have size 2
       children.map(_.parent) should have size 1

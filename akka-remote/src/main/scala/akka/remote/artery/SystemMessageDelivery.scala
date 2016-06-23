@@ -233,7 +233,8 @@ private[akka] class SystemMessageAcker(inboundContext: InboundContext) extends G
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
-      var seqNo = 1L
+      // TODO we might need have to prune old unused entries
+      var sequenceNumbers = Map.empty[UniqueAddress, Long]
 
       def localAddress = inboundContext.localAddress
 
@@ -242,16 +243,20 @@ private[akka] class SystemMessageAcker(inboundContext: InboundContext) extends G
         val env = grab(in)
         env.message match {
           case sysEnv @ SystemMessageEnvelope(_, n, ackReplyTo) ⇒
-            if (n == seqNo) {
+            val expectedSeqNo = sequenceNumbers.get(ackReplyTo) match {
+              case None        ⇒ 1L
+              case Some(seqNo) ⇒ seqNo
+            }
+            if (n == expectedSeqNo) {
               inboundContext.sendControl(ackReplyTo.address, Ack(n, localAddress))
-              seqNo += 1
+              sequenceNumbers = sequenceNumbers.updated(ackReplyTo, n + 1)
               val unwrapped = env.withMessage(sysEnv.message)
               push(out, unwrapped)
-            } else if (n < seqNo) {
-              inboundContext.sendControl(ackReplyTo.address, Ack(n, localAddress))
+            } else if (n < expectedSeqNo) {
+              inboundContext.sendControl(ackReplyTo.address, Ack(expectedSeqNo - 1, localAddress))
               pull(in)
             } else {
-              inboundContext.sendControl(ackReplyTo.address, Nack(seqNo - 1, localAddress))
+              inboundContext.sendControl(ackReplyTo.address, Nack(expectedSeqNo - 1, localAddress))
               pull(in)
             }
           case _ ⇒
