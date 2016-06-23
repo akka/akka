@@ -35,6 +35,7 @@ import akka.util.OptionVal
 object SystemMessageDeliverySpec {
 
   val config = ConfigFactory.parseString(s"""
+     akka.loglevel=INFO
      akka {
        actor.provider = remote
        remote.artery.enabled = on
@@ -108,7 +109,7 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
   "System messages" must {
 
     "be delivered with real actors" in {
-      val actorOnSystemB = systemB.actorOf(TestActors.echoActorProps, "echo")
+      systemB.actorOf(TestActors.echoActorProps, "echo")
 
       val remoteRef = {
         system.actorSelection(rootB / "user" / "echo") ! Identify(None)
@@ -118,6 +119,30 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
       watch(remoteRef)
       remoteRef ! PoisonPill
       expectTerminated(remoteRef)
+    }
+
+    "be flushed on shutdown" in {
+      val systemC = ActorSystem("systemC", system.settings.config)
+      try {
+        systemC.actorOf(TestActors.echoActorProps, "echo")
+
+        val addressC = RARP(systemC).provider.getDefaultAddress
+        val rootC = RootActorPath(addressC)
+
+        val remoteRef = {
+          system.actorSelection(rootC / "user" / "echo") ! Identify(None)
+          expectMsgType[ActorIdentity].ref.get
+        }
+
+        watch(remoteRef)
+        remoteRef ! "hello"
+        expectMsg("hello")
+        systemC.terminate()
+        // DeathWatchNotification is sent from systemC, failure detection takes longer than 3 seconds
+        expectTerminated(remoteRef, 5.seconds)
+      } finally {
+        shutdown(systemC)
+      }
     }
 
     "be resent when some in the middle are lost" in {

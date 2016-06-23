@@ -69,6 +69,8 @@ import io.aeron.driver.ThreadingMode
 import org.agrona.concurrent.BackoffIdleStrategy
 import org.agrona.concurrent.BusySpinIdleStrategy
 import scala.util.control.NonFatal
+import akka.actor.Props
+import akka.actor.Actor
 
 /**
  * INTERNAL API
@@ -316,6 +318,50 @@ private[akka] trait OutboundContext {
 /**
  * INTERNAL API
  */
+private[remote] object FlushOnShutdown {
+  def props(done: Promise[Done], timeout: FiniteDuration,
+            inboundContext: InboundContext, associations: Set[Association]): Props = {
+    require(associations.nonEmpty)
+    Props(new FlushOnShutdown(done, timeout, inboundContext, associations))
+  }
+
+  case object Timeout
+}
+
+/**
+ * INTERNAL API
+ */
+private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDuration,
+                                      inboundContext: InboundContext, associations: Set[Association]) extends Actor {
+
+  var remaining = associations.flatMap(_.associationState.uniqueRemoteAddressValue)
+
+  val timeoutTask = context.system.scheduler.scheduleOnce(timeout, self, FlushOnShutdown.Timeout)(context.dispatcher)
+
+  override def preStart(): Unit = {
+    val msg = ActorSystemTerminating(inboundContext.localAddress)
+    associations.foreach { a ⇒ a.send(msg, OptionVal.Some(self), a.dummyRecipient) }
+  }
+
+  override def postStop(): Unit =
+    timeoutTask.cancel()
+
+  def receive = {
+    case ActorSystemTerminatingAck(from) ⇒
+      remaining -= from
+      if (remaining.isEmpty) {
+        done.trySuccess(Done)
+        context.stop(self)
+      }
+    case FlushOnShutdown.Timeout ⇒
+      done.trySuccess(Done)
+      context.stop(self)
+  }
+}
+
+/**
+ * INTERNAL API
+ */
 private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
   extends RemoteTransport(_system, _provider) with InboundContext {
   import FlightRecorderEvents._
@@ -352,6 +398,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       "handshake-timeout must be > 0")
   private val injectHandshakeInterval: FiniteDuration = 1.second
   private val giveUpSendAfter: FiniteDuration = 60.seconds
+  private val shutdownFlushTimeout = 1.second
+
+  private val remoteDispatcher = system.dispatchers.lookup(remoteSettings.Dispatcher)
 
   private val largeMessageDestinations =
     system.settings.config.getStringList("akka.remote.artery.large-message-destinations").asScala.foldLeft(WildcardTree[NotUsed]()) { (tree, entry) ⇒
@@ -380,8 +429,15 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   val (afrFileChannel, afrFlie, flightRecorder) = initializeFlightRecorder()
 
+  def createFlightRecorderEventSink(): EventSink = {
+    // FIXME there is some concurrency issue with the FlightRecorder, when shutting down.
+    //       It crashes the JVM.
+    // flightRecorder.createEventSink()
+    IgnoreEventSink
+  }
+
   // !!! WARNING !!! This is *NOT* thread safe,
-  private val topLevelFREvents = flightRecorder.createEventSink()
+  private val topLevelFREvents = createFlightRecorderEventSink()
 
   private val associationRegistry = new AssociationRegistry(
     remoteAddress ⇒ new Association(this, materializer, remoteAddress, controlSubject, largeMessageDestinations))
@@ -413,7 +469,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
     val materializerSettings = ActorMaterializerSettings(
       remoteSettings.config.getConfig("akka.remote.artery.advanced.materializer"))
-    materializer = ActorMaterializer(materializerSettings)(system)
+    materializer = ActorMaterializer.systemMaterializer(materializerSettings, "remote", system)
 
     messageDispatcher = new MessageDispatcher(system, provider)
     topLevelFREvents.loFreq(Transport_MaterializerStarted, NoMetaData)
@@ -563,23 +619,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
     controlSubject = ctrl
 
-    // ordinary messages stream
     controlSubject.attach(new ControlMessageObserver {
       override def notify(inboundEnvelope: InboundEnvelope): Unit = {
-        inboundEnvelope.message match {
-          case Quarantined(from, to) if to == localAddress ⇒
-            val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress.address, from.address)
-            publishLifecycleEvent(lifecycleEvent)
-            // quarantine the other system from here
-            association(from.address).quarantine(lifecycleEvent.toString, Some(from.uid))
-          case _ ⇒ // not interesting
-        }
-      }
-    })
-
-    // compression messages
-    controlSubject.attach(new ControlMessageObserver {
-      override def notify(inboundEnvelope: InboundEnvelope): Unit =
         inboundEnvelope.message match {
           case m: CompressionMessage ⇒
             m match {
@@ -593,8 +634,22 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
                 association(from.address).compression.applyClassManifestCompressionTable(table)
                 system.eventStream.publish(CompressionProtocol.Events.ReceivedCompressionTable(from, table))
             }
-          case _ ⇒ // not interested in non CompressionMessages
+
+          case Quarantined(from, to) if to == localAddress ⇒
+            val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress.address, from.address)
+            publishLifecycleEvent(lifecycleEvent)
+            // quarantine the other system from here
+            association(from.address).quarantine(lifecycleEvent.toString, Some(from.uid))
+
+          case _: ActorSystemTerminating ⇒
+            inboundEnvelope.sender match {
+              case OptionVal.Some(snd) ⇒ snd.tell(ActorSystemTerminatingAck(localAddress), ActorRef.noSender)
+              case OptionVal.None      ⇒ log.error("Expected sender for ActorSystemTerminating message")
+            }
+
+          case _ ⇒ // not interesting
         }
+      }
     })
 
     attachStreamRestart("Inbound control stream", completed, () ⇒ runInboundControlStream(compression))
@@ -661,28 +716,42 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   override def shutdown(): Future[Done] = {
     _shutdown = true
-    killSwitch.shutdown()
-    topLevelFREvents.loFreq(Transport_KillSwitchPulled, NoMetaData)
-    if (taskRunner != null) {
-      taskRunner.stop()
-      topLevelFREvents.loFreq(Transport_Stopped, NoMetaData)
+    val allAssociations = associationRegistry.allAssociations
+    val flushing: Future[Done] =
+      if (allAssociations.isEmpty) Future.successful(Done)
+      else {
+        val flushingPromise = Promise[Done]()
+        system.systemActorOf(FlushOnShutdown.props(flushingPromise, shutdownFlushTimeout,
+          this, allAssociations).withDispatcher(remoteSettings.Dispatcher), "remoteFlushOnShutdown")
+        flushingPromise.future
+      }
+    implicit val ec = remoteDispatcher
+    flushing.recover { case _ ⇒ Done }.map { _ ⇒
+      killSwitch.shutdown()
+
+      topLevelFREvents.loFreq(Transport_KillSwitchPulled, NoMetaData)
+      if (taskRunner != null) {
+        taskRunner.stop()
+        topLevelFREvents.loFreq(Transport_Stopped, NoMetaData)
+      }
+      if (aeronErrorLogTask != null) {
+        aeronErrorLogTask.cancel()
+        topLevelFREvents.loFreq(Transport_AeronErrorLogTaskStopped, NoMetaData)
+      }
+      if (aeron != null) aeron.close()
+      if (mediaDriver.isDefined) {
+        stopMediaDriver()
+        topLevelFREvents.loFreq(Transport_MediaFileDeleted, NoMetaData)
+      }
+      topLevelFREvents.loFreq(Transport_FlightRecorderClose, NoMetaData)
+
+      flightRecorder.close()
+      afrFileChannel.force(true)
+      afrFileChannel.close()
+      // TODO: Be smarter about this in tests and make it always-on-for prod
+      afrFlie.delete()
+      Done
     }
-    if (aeronErrorLogTask != null) {
-      aeronErrorLogTask.cancel()
-      topLevelFREvents.loFreq(Transport_AeronErrorLogTaskStopped, NoMetaData)
-    }
-    if (aeron != null) aeron.close()
-    if (mediaDriver.isDefined) {
-      stopMediaDriver()
-      topLevelFREvents.loFreq(Transport_MediaFileDeleted, NoMetaData)
-    }
-    topLevelFREvents.loFreq(Transport_FlightRecorderClose, NoMetaData)
-    flightRecorder.close()
-    afrFileChannel.force(true)
-    afrFileChannel.close()
-    // TODO: Be smarter about this in tests and make it always-on-for prod
-    afrFlie.delete()
-    Future.successful(Done)
   }
 
   private[remote] def isShutdown: Boolean = _shutdown
@@ -742,7 +811,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .via(new OutboundHandshake(system, outboundContext, handshakeTimeout, handshakeRetryInterval, injectHandshakeInterval))
       .via(encoder(compression))
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), ordinaryStreamId, aeron, taskRunner,
-        envelopePool, giveUpSendAfter, flightRecorder.createEventSink()))(Keep.right)
+        envelopePool, giveUpSendAfter, createFlightRecorderEventSink()))(Keep.right)
   }
 
   def outboundLarge(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[Send, Future[Done]] = {
@@ -750,7 +819,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .via(new OutboundHandshake(system, outboundContext, handshakeTimeout, handshakeRetryInterval, injectHandshakeInterval))
       .via(createEncoder(largeEnvelopePool, compression))
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), largeStreamId, aeron, taskRunner,
-        envelopePool, giveUpSendAfter, flightRecorder.createEventSink()))(Keep.right)
+        envelopePool, giveUpSendAfter, createFlightRecorderEventSink()))(Keep.right)
   }
 
   def outboundControl(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[Send, (OutboundControlIngress, Future[Done])] = {
@@ -761,7 +830,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .viaMat(new OutboundControlJunction(outboundContext))(Keep.right)
       .via(encoder(compression))
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), controlStreamId, aeron, taskRunner,
-        envelopePool, Duration.Inf, flightRecorder.createEventSink()))(Keep.both)
+        envelopePool, Duration.Inf, createFlightRecorderEventSink()))(Keep.both)
 
     // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
   }
@@ -780,7 +849,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   def aeronSource(streamId: Int, pool: EnvelopeBufferPool): Source[EnvelopeBuffer, NotUsed] =
     Source.fromGraph(new AeronSource(inboundChannel, streamId, aeron, taskRunner, pool,
-      flightRecorder.createEventSink()))
+      createFlightRecorderEventSink()))
 
   val messageDispatcherSink: Sink[InboundEnvelope, Future[Done]] = Sink.foreach[InboundEnvelope] { m ⇒
     messageDispatcher.dispatch(m.recipient.get, m.recipientAddress, m.message, m.sender)
