@@ -7,6 +7,7 @@ ParameterDirectives
    :maxdepth: 1
 
    parameter
+   parameters
    parameterMap
    parameterMultiMap
    parameterSeq
