@@ -3,6 +3,7 @@
  */
 package akka.remote
 
+import akka.remote.artery.compress.CompressionSettings
 import com.typesafe.config.Config
 import scala.concurrent.duration._
 import akka.util.Timeout
@@ -32,6 +33,8 @@ final class RemoteSettings(val config: Config) {
   val TestMode: Boolean = getBoolean("akka.remote.artery.advanced.test-mode")
   val IdleCpuLevel: Int = getInt("akka.remote.artery.advanced.idle-cpu-level").requiring(level ⇒
     1 <= level && level <= 10, "idle-cpu-level must be between 1 and 10")
+
+  val ArteryCompressionSettings = CompressionSettings(getConfig("akka.remote.artery.advanced.compression"))
 
   val LogReceive: Boolean = getBoolean("akka.remote.log-received-messages")
 

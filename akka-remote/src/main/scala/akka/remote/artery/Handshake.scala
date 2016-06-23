@@ -3,6 +3,8 @@
  */
 package akka.remote.artery
 
+import akka.actor.ActorSystem
+
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.remote.EndpointManager.Send
@@ -47,8 +49,10 @@ private[akka] object OutboundHandshake {
 /**
  * INTERNAL API
  */
-private[akka] class OutboundHandshake(outboundContext: OutboundContext, timeout: FiniteDuration,
-                                      retryInterval: FiniteDuration, injectHandshakeInterval: FiniteDuration)
+private[akka] class OutboundHandshake(
+  system:          ActorSystem,
+  outboundContext: OutboundContext, timeout: FiniteDuration,
+  retryInterval: FiniteDuration, injectHandshakeInterval: FiniteDuration)
   extends GraphStage[FlowShape[Send, Send]] {
 
   val in: Inlet[Send] = Inlet("OutboundHandshake.in")

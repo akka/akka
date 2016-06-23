@@ -75,7 +75,7 @@ private[akka] class TestOutboundContext(
     _associationState.uniqueRemoteAddress.value match {
       case Some(Success(`peer`)) ⇒ // our value
       case _ ⇒
-        _associationState = _associationState.newIncarnation(Promise.successful(peer))
+        _associationState = _associationState.newIncarnation(Promise.successful(peer), NoOutboundCompression)
     }
   }
 
@@ -96,7 +96,7 @@ private[akka] class TestOutboundContext(
 
 private[akka] class TestControlMessageSubject extends ControlMessageSubject {
 
-  private var observers = new CopyOnWriteArrayList[ControlMessageObserver]
+  private val observers = new CopyOnWriteArrayList[ControlMessageObserver]
 
   override def attach(observer: ControlMessageObserver): Future[Done] = {
     observers.add(observer)
