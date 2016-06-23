@@ -76,7 +76,7 @@ private[remote] class Encoder(
                 throw e
               case _ if e.isInstanceOf[java.nio.BufferOverflowException] ⇒
                 val reason = new OversizedPayloadException(s"Discarding oversized payload sent to ${send.recipient}: max allowed size ${envelope.byteBuffer.limit()} bytes. Message type [${send.message.getClass.getName}].")
-                log.error(reason, "Transient association error (association remains live)")
+                log.error(reason, "Failed to serialize oversized message [{}].", send.message.getClass.getName)
                 pull(in)
               case _ ⇒
                 log.error(e, "Failed to serialize message [{}].", send.message.getClass.getName)
