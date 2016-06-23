@@ -9,6 +9,9 @@ import akka.testkit.{ AkkaSpec, ImplicitSender }
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor.Receive
 import akka.remote.RARP
+import akka.testkit.TestActors
+import akka.actor.PoisonPill
+import akka.testkit.TestProbe
 
 object RemoteSendConsistencySpec {
 
@@ -52,7 +55,26 @@ class RemoteSendConsistencySpec extends AkkaSpec(RemoteSendConsistencySpec.confi
 
       remoteRef ! "ping"
       expectMsg("pong")
+    }
 
+    "not send to remote re-created actor with same name" in {
+      val echo = systemB.actorOf(TestActors.echoActorProps, "otherEcho1")
+      echo ! 71
+      expectMsg(71)
+      echo ! PoisonPill
+      echo ! 72
+      val probe = TestProbe()(systemB)
+      probe.watch(echo)
+      probe.expectTerminated(echo)
+      expectNoMsg(1.second)
+
+      val echo2 = systemB.actorOf(TestActors.echoActorProps, "otherEcho1")
+      echo2 ! 73
+      expectMsg(73)
+      // msg to old ActorRef (different uid) should not get through
+      echo2.path.uid should not be (echo.path.uid)
+      echo ! 74
+      expectNoMsg(1.second)
     }
 
     "be able to send messages concurrently preserving order" in {
