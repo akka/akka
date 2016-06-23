@@ -5,7 +5,7 @@ package akka.remote.artery
 
 import scala.concurrent.duration._
 
-import akka.actor.{ ActorIdentity, ActorSystem, Identify }
+import akka.actor._
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.testkit.SocketUtil
 import akka.testkit.TestActors
@@ -20,9 +20,11 @@ object HandshakeRetrySpec {
      akka {
        actor.provider = remote
        remote.artery.enabled = on
+       remote.artery.compression.enabled = on
        remote.artery.hostname = localhost
        remote.artery.port = 0
        remote.handshake-timeout = 10s
+       
      }
   """)
 

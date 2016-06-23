@@ -39,7 +39,7 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
     val destination = null.asInstanceOf[RemoteActorRef] // not used
     TestSource.probe[String]
       .map(msg ⇒ Send(msg, OptionVal.None, destination, None))
-      .via(new OutboundHandshake(outboundContext, timeout, retryInterval, injectHandshakeInterval))
+      .via(new OutboundHandshake(system, outboundContext, timeout, retryInterval, injectHandshakeInterval))
       .map { case Send(msg, _, _, _) ⇒ msg }
       .toMat(TestSink.probe[Any])(Keep.both)
       .run()

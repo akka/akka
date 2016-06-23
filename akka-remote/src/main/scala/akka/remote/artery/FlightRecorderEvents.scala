@@ -35,4 +35,10 @@ object FlightRecorderEvents {
   val AeronSource_Received = 23
   val AeronSource_DelegateToTaskRunner = 24
 
+  // Compression events
+  val Compression_CompressedActorRef = 25
+  val Compression_AllocatedActorRefCompressionId = 26
+  val Compression_CompressedManifest = 27
+  val Compression_AllocatedManifestCompressionId = 28
+
 }

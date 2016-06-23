@@ -3,18 +3,21 @@
  */
 package akka.remote.artery
 
+import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.nio.channels.FileChannel
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+
+import akka.remote.artery.compress._
+import akka.stream.impl.ConstantFun
+import org.openjdk.jmh.annotations.Scope
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
-import akka.actor.InternalActorRef
-import akka.actor.Props
-import akka.actor.RootActorPath
+import akka.actor._
 import akka.remote.AddressUidExtension
 import akka.remote.EndpointManager.Send
 import akka.remote.RARP
@@ -56,8 +59,9 @@ class CodecBenchmark {
     16,
     create = () ⇒ new ReusableInboundEnvelope, clear = inEnvelope ⇒ inEnvelope.asInstanceOf[ReusableInboundEnvelope].clear()
   )
-  val compression = new Compression(system)
-  val headerIn = HeaderBuilder(compression)
+
+  val compressionOut = NoOutboundCompression
+  val headerIn = HeaderBuilder.in(NoopInboundCompression)
   val envelopeTemplateBuffer = ByteBuffer.allocate(ArteryTransport.MaximumFrameSize).order(ByteOrder.LITTLE_ENDIAN)
 
   val uniqueLocalAddress = UniqueAddress(
@@ -102,8 +106,8 @@ class CodecBenchmark {
     headerIn.version = 1
     headerIn.uid = 42
     headerIn.serializer = 4
-    headerIn.senderActorRef = senderStringA
-    headerIn.recipientActorRef = recipientStringB
+    headerIn.senderActorRef = actorOnSystemA
+    headerIn.recipientActorRef = remoteRefB
     headerIn.manifest = ""
     envelope.writeHeader(headerIn)
     envelope.byteBuffer.put(payload)
@@ -136,7 +140,7 @@ class CodecBenchmark {
     val N = 100000
 
     val encoder: Flow[Send, EnvelopeBuffer, NotUsed] =
-      Flow.fromGraph(new Encoder(uniqueLocalAddress, system, compression, envelopePool))
+      Flow.fromGraph(new Encoder(uniqueLocalAddress, system, compressionOut, envelopePool))
 
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
       .map(_ ⇒ Send(payload, OptionVal.None, remoteRefB, None))
@@ -165,7 +169,7 @@ class CodecBenchmark {
 
     val decoder: Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] =
       Flow.fromGraph(new Decoder(inboundContext, system.asInstanceOf[ExtendedActorSystem],
-        resolveActorRefWithLocalAddress, compression, envelopePool, inboundEnvelopePool))
+        resolveActorRefWithLocalAddress, NoopInboundCompression, envelopePool, inboundEnvelopePool))
 
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
       .map { _ =>
@@ -193,7 +197,7 @@ class CodecBenchmark {
     val N = 100000
 
     val encoder: Flow[Send, EnvelopeBuffer, NotUsed] =
-      Flow.fromGraph(new Encoder(uniqueLocalAddress, system, compression, envelopePool))
+      Flow.fromGraph(new Encoder(uniqueLocalAddress, system, compressionOut, envelopePool))
 
     val localRecipient = resolvedRef.path.toSerializationFormatWithAddress(uniqueLocalAddress.address)
     val provider = RARP(system).provider
@@ -206,7 +210,7 @@ class CodecBenchmark {
 
     val decoder: Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] =
       Flow.fromGraph(new Decoder(inboundContext, system.asInstanceOf[ExtendedActorSystem],
-        resolveActorRefWithLocalAddress, compression, envelopePool, inboundEnvelopePool))
+        resolveActorRefWithLocalAddress, NoopInboundCompression, envelopePool, inboundEnvelopePool))
 
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
       .map(_ ⇒ Send(payload, OptionVal.None, remoteRefB, None))

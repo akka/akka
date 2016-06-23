@@ -4,13 +4,14 @@
 
 package akka.remote.artery
 
-import java.lang.reflect.Field
 import java.nio.charset.Charset
 import java.nio.{ ByteBuffer, ByteOrder }
 
+import akka.actor.{ Address, ActorRef }
+import akka.remote.artery.compress.{ NoopOutboundCompression, NoopInboundCompression }
+import akka.serialization.Serialization
 import org.agrona.concurrent.{ ManyToManyConcurrentArrayQueue, UnsafeBuffer }
-import sun.misc.Cleaner
-import akka.util.Unsafe
+import akka.util.{ OptionVal, Unsafe }
 
 import scala.util.control.NonFatal
 
@@ -68,19 +69,37 @@ private[remote] object EnvelopeBuffer {
 
 /**
  * INTERNAL API
+ * Decompress and cause compression advertisements.
  */
-private[remote] trait LiteralCompressionTable {
+private[remote] trait InboundCompression {
+  def hitActorRef(remote: Address, ref: ActorRef): Unit
+  def decompressActorRef(idx: Int): OptionVal[ActorRef]
 
-  def compressActorRef(ref: String): Int
-  def decompressActorRef(idx: Int): String
+  def hitClassManifest(remote: Address, manifest: String): Unit
+  def decompressClassManifest(idx: Int): OptionVal[String]
+}
+/**
+ * INTERNAL API
+ * Compress outgoing data and handle compression advertisements to fill compression table.
+ */
+private[remote] trait OutboundCompression {
+  def allocateActorRefCompressionId(ref: ActorRef, id: Int): Unit
+  def compressActorRef(ref: ActorRef): Int
 
+  def allocateClassManifestCompressionId(manifest: String, id: Int): Unit
   def compressClassManifest(manifest: String): Int
-  def decompressClassManifest(idx: Int): String
-
 }
 
 object HeaderBuilder {
-  def apply(compressionTable: LiteralCompressionTable): HeaderBuilder = new HeaderBuilderImpl(compressionTable)
+
+  // We really only use the Header builder on one "side" or the other, thus in order to avoid having to split its impl
+  // we inject no-op compression's of the "other side".  
+
+  def in(compression: InboundCompression): HeaderBuilder = new HeaderBuilderImpl(compression, NoopOutboundCompression)
+  def out(compression: OutboundCompression): HeaderBuilder = new HeaderBuilderImpl(NoopInboundCompression, compression)
+
+  /** INTERNAL API, FOR TESTING ONLY */
+  private[remote] def bothWays(in: InboundCompression, out: OutboundCompression): HeaderBuilder = new HeaderBuilderImpl(in, out)
 }
 
 /**
@@ -93,8 +112,9 @@ sealed trait HeaderBuilder {
   def uid_=(u: Long): Unit
   def uid: Long
 
-  def senderActorRef_=(ref: String): Unit
-  def senderActorRef: String
+  def senderActorRef_=(ref: ActorRef): Unit
+  def senderActorRef: OptionVal[ActorRef]
+  def senderActorRefPath: String
 
   def setNoSender(): Unit
   def isNoSender: Boolean
@@ -102,8 +122,9 @@ sealed trait HeaderBuilder {
   def setNoRecipient(): Unit
   def isNoRecipient: Boolean
 
-  def recipientActorRef_=(ref: String): Unit
-  def recipientActorRef: String
+  def recipientActorRef_=(ref: ActorRef): Unit
+  def recipientActorRef: OptionVal[ActorRef]
+  def recipientActorRefPath: String
 
   def serializer_=(serializer: Int): Unit
   def serializer: Int
@@ -115,7 +136,7 @@ sealed trait HeaderBuilder {
 /**
  * INTERNAL API
  */
-private[remote] final class HeaderBuilderImpl(val compressionTable: LiteralCompressionTable) extends HeaderBuilder {
+private[remote] final class HeaderBuilderImpl(inboundCompression: InboundCompression, outboundCompression: OutboundCompression) extends HeaderBuilder {
   var version: Int = _
   var uid: Long = _
 
@@ -129,64 +150,61 @@ private[remote] final class HeaderBuilderImpl(val compressionTable: LiteralCompr
   var _manifest: String = null
   var _manifestIdx: Int = -1
 
-  def senderActorRef_=(ref: String): Unit = {
-    _senderActorRef = ref
-    _senderActorRefIdx = compressionTable.compressActorRef(ref)
+  def senderActorRef_=(ref: ActorRef): Unit = {
+    _senderActorRefIdx = outboundCompression.compressActorRef(ref)
+    if (_senderActorRefIdx == -1) _senderActorRef = Serialization.serializedActorPath(ref) // includes local address from `currentTransportInformation`
   }
-
   def setNoSender(): Unit = {
     _senderActorRef = null
     _senderActorRefIdx = EnvelopeBuffer.DeadLettersCode
   }
-
   def isNoSender: Boolean =
     (_senderActorRef eq null) && _senderActorRefIdx == EnvelopeBuffer.DeadLettersCode
-
-  def senderActorRef: String = {
+  def senderActorRef: OptionVal[ActorRef] =
+    if (_senderActorRef eq null) inboundCompression.decompressActorRef(_senderActorRefIdx)
+    else OptionVal.None
+  def senderActorRefPath: String =
     if (_senderActorRef ne null) _senderActorRef
     else {
-      _senderActorRef = compressionTable.decompressActorRef(_senderActorRefIdx)
+      _senderActorRef = inboundCompression.decompressActorRef(_senderActorRefIdx).get.path.toSerializationFormat
       _senderActorRef
     }
-  }
 
   def setNoRecipient(): Unit = {
     _recipientActorRef = null
     _recipientActorRefIdx = EnvelopeBuffer.DeadLettersCode
   }
-
   def isNoRecipient: Boolean =
     (_recipientActorRef eq null) && _recipientActorRefIdx == EnvelopeBuffer.DeadLettersCode
 
-  def recipientActorRef_=(ref: String): Unit = {
-    _recipientActorRef = ref
-    _recipientActorRefIdx = compressionTable.compressActorRef(ref)
+  def recipientActorRef_=(ref: ActorRef): Unit = {
+    _recipientActorRefIdx = outboundCompression.compressActorRef(ref)
+    if (_recipientActorRefIdx == -1) _recipientActorRef = ref.path.toSerializationFormat
   }
-
-  def recipientActorRef: String = {
+  def recipientActorRef: OptionVal[ActorRef] =
+    if (_recipientActorRef eq null) inboundCompression.decompressActorRef(_recipientActorRefIdx)
+    else OptionVal.None
+  def recipientActorRefPath: String =
     if (_recipientActorRef ne null) _recipientActorRef
     else {
-      _recipientActorRef = compressionTable.decompressActorRef(_recipientActorRefIdx)
+      _recipientActorRef = inboundCompression.decompressActorRef(_recipientActorRefIdx).get.path.toSerializationFormat
       _recipientActorRef
     }
-  }
 
   override def serializer_=(serializer: Int): Unit = {
     _serializer = serializer
   }
-
   override def serializer: Int =
     _serializer
 
   override def manifest_=(manifest: String): Unit = {
-    _manifest = manifest
-    _manifestIdx = compressionTable.compressClassManifest(manifest)
+    _manifestIdx = outboundCompression.compressClassManifest(manifest)
+    if (_manifestIdx == -1) _manifest = manifest
   }
-
   override def manifest: String = {
     if (_manifest ne null) _manifest
     else {
-      _manifest = compressionTable.decompressClassManifest(_manifestIdx)
+      _manifest = inboundCompression.decompressClassManifest(_manifestIdx).get
       _manifest
     }
   }
@@ -341,10 +359,10 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
    */
   def tryCleanDirectByteBuffer(): Unit = try {
     if (byteBuffer.isDirect) {
-      val cleanerMethod = byteBuffer.getClass().getMethod("cleaner")
+      val cleanerMethod = byteBuffer.getClass.getMethod("cleaner")
       cleanerMethod.setAccessible(true)
       val cleaner = cleanerMethod.invoke(byteBuffer)
-      val cleanMethod = cleaner.getClass().getMethod("clean")
+      val cleanMethod = cleaner.getClass.getMethod("clean")
       cleanMethod.setAccessible(true)
       cleanMethod.invoke(cleaner)
     }

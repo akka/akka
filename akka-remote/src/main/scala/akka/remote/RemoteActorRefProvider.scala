@@ -217,7 +217,7 @@ private[akka] class RemoteActorRefProvider(
   }
 
   protected def createRemoteDeploymentWatcher(system: ActorSystemImpl): ActorRef =
-    system.systemActorOf(remoteSettings.configureDispatcher(Props[RemoteDeploymentWatcher]), "remote-deployment-watcher")
+    system.systemActorOf(remoteSettings.configureDispatcher(Props[RemoteDeploymentWatcher]()), "remote-deployment-watcher")
 
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath,
               systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean, async: Boolean): InternalActorRef =
@@ -361,10 +361,10 @@ private[akka] class RemoteActorRefProvider(
   private[akka] def resolveActorRefWithLocalAddress(path: String, localAddress: Address): InternalActorRef = {
     path match {
       case ActorPathExtractor(address, elems) ⇒
-        if (hasAddress(address)) local.resolveActorRef(rootGuardian, elems)
+        if (hasAddress(address))
+          local.resolveActorRef(rootGuardian, elems)
         else try {
-          new RemoteActorRef(transport, localAddress, RootActorPath(address) / elems,
-            Nobody, props = None, deploy = None)
+          new RemoteActorRef(transport, localAddress, RootActorPath(address) / elems, Nobody, props = None, deploy = None)
         } catch {
           case NonFatal(e) ⇒
             log.warning("Error while resolving ActorRef [{}] due to [{}]", path, e.getMessage)
@@ -479,7 +479,6 @@ private[akka] class RemoteActorRef private[akka] (
           s"Wrong protocol of [${path}], expected [${t.localAddress.address.protocol}]")
     case _ ⇒
   }
-
   @volatile private[remote] var cachedAssociation: artery.Association = null
 
   // used by artery to direct messages to a separate stream for large messages
