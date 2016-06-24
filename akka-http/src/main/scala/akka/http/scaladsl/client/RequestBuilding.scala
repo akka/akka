@@ -18,29 +18,31 @@ import HttpMethods._
 trait RequestBuilding extends TransformerPipelineSupport {
   type RequestTransformer = HttpRequest ⇒ HttpRequest
 
+  implicit val timeout = Timeout(1.second)
+
   class RequestBuilder(val method: HttpMethod) {
     def apply(): HttpRequest =
       apply("/")
 
-    def apply(uri: String): HttpRequest =
+    def apply(uri: String)(implicit timeout: Timeout): HttpRequest =
       apply(uri, HttpEntity.Empty)
 
-    def apply[T](uri: String, content: T)(implicit m: ToEntityMarshaller[T], ec: ExecutionContext): HttpRequest =
+    def apply[T](uri: String, content: T)(implicit m: ToEntityMarshaller[T], ec: ExecutionContext, timeout: Timeout): HttpRequest =
       apply(uri, Some(content))
 
-    def apply[T](uri: String, content: Option[T])(implicit m: ToEntityMarshaller[T], ec: ExecutionContext): HttpRequest =
+    def apply[T](uri: String, content: Option[T])(implicit m: ToEntityMarshaller[T], ec: ExecutionContext, timeout: Timeout): HttpRequest =
       apply(Uri(uri), content)
 
-    def apply(uri: String, entity: RequestEntity): HttpRequest =
+    def apply(uri: String, entity: RequestEntity)(implicit timeout: Timeout): HttpRequest =
       apply(Uri(uri), entity)
 
-    def apply(uri: Uri): HttpRequest =
+    def apply(uri: Uri)(implicit timeout: Timeout): HttpRequest =
       apply(uri, HttpEntity.Empty)
 
-    def apply[T](uri: Uri, content: T)(implicit m: ToEntityMarshaller[T], ec: ExecutionContext): HttpRequest =
+    def apply[T](uri: Uri, content: T)(implicit m: ToEntityMarshaller[T], ec: ExecutionContext, timeout: Timeout): HttpRequest =
       apply(uri, Some(content))
 
-    def apply[T](uri: Uri, content: Option[T])(implicit m: ToEntityMarshaller[T], timeout: Timeout = Timeout(1.second), ec: ExecutionContext): HttpRequest =
+    def apply[T](uri: Uri, content: Option[T])(implicit m: ToEntityMarshaller[T], ec: ExecutionContext, timeout: Timeout): HttpRequest =
       content match {
         case None ⇒ apply(uri, HttpEntity.Empty)
         case Some(value) ⇒
@@ -48,7 +50,7 @@ trait RequestBuilding extends TransformerPipelineSupport {
           apply(uri, entity)
       }
 
-    def apply(uri: Uri, entity: RequestEntity): HttpRequest =
+    def apply(uri: Uri, entity: RequestEntity)(implicit timeout: Timeout): HttpRequest =
       HttpRequest(method, uri, Nil, entity)
   }
 

@@ -4,16 +4,14 @@
 
 package akka.http.scaladsl.testkit
 
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
-import akka.http.scaladsl.server.directives.ExecutionDirectives._
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.stream.impl.ConstantFun
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Await, Future }
-import scala.concurrent.duration._
 import scala.util.DynamicVariable
 import scala.reflect.ClassTag
+import scala.language.implicitConversions
 import akka.actor.ActorSystem
 import akka.stream.{ Materializer, ActorMaterializer }
 import akka.http.scaladsl.client.RequestBuilding
@@ -22,6 +20,7 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Upgrade, `Sec-WebSocket-Protocol`, Host }
+import akka.util.Timeout
 import FastFuture._
 
 trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTestResultComponent with MarshallingTestUtils {
@@ -54,6 +53,9 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
     if (dynRR.value ne null) dynRR.value
     else sys.error("This value is only available inside of a `check` construct!")
 
+  implicit def routeTestTimeout2Timeout(implicit timeout: RouteTestTimeout): Timeout =
+    Timeout(timeout.duration)
+
   def check[T](body: ⇒ T): RouteTestResult ⇒ T = result ⇒ dynRR.withValue(result.awaitResult)(body)
 
   private def responseSafe = if (dynRR.value ne null) dynRR.value.response else "<not available anymore>"
@@ -62,13 +64,13 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
   def response: HttpResponse = result.response
   def responseEntity: HttpEntity = result.entity
   def chunks: immutable.Seq[HttpEntity.ChunkStreamPart] = result.chunks
-  def entityAs[T: FromEntityUnmarshaller: ClassTag](implicit timeout: Duration = 1.second): T = {
+  def entityAs[T: FromEntityUnmarshaller: ClassTag](implicit timeout: RouteTestTimeout = RouteTestTimeout.default): T = {
     def msg(e: Throwable) = s"Could not unmarshal entity to type '${implicitly[ClassTag[T]]}' for `entityAs` assertion: $e\n\nResponse was: $responseSafe"
-    Await.result(Unmarshal(responseEntity).to[T].fast.recover[T] { case error ⇒ failTest(msg(error)) }, timeout)
+    Await.result(Unmarshal(responseEntity).to[T].fast.recover[T] { case error ⇒ failTest(msg(error)) }, timeout.duration)
   }
-  def responseAs[T: FromResponseUnmarshaller: ClassTag](implicit timeout: Duration = 1.second): T = {
+  def responseAs[T: FromResponseUnmarshaller: ClassTag](implicit timeout: RouteTestTimeout = RouteTestTimeout.default): T = {
     def msg(e: Throwable) = s"Could not unmarshal response to type '${implicitly[ClassTag[T]]}' for `responseAs` assertion: $e\n\nResponse was: $responseSafe"
-    Await.result(Unmarshal(response).to[T].fast.recover[T] { case error ⇒ failTest(msg(error)) }, timeout)
+    Await.result(Unmarshal(response).to[T].fast.recover[T] { case error ⇒ failTest(msg(error)) }, timeout.duration)
   }
   def contentType: ContentType = responseEntity.contentType
   def mediaType: MediaType = contentType.mediaType
@@ -151,7 +153,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
       new TildeArrow[RequestContext, Future[RouteResult]] {
         type Out = RouteTestResult
         def apply(request: HttpRequest, route: Route): Out = {
-          val routeTestResult = new RouteTestResult(timeout.duration)
+          val routeTestResult = new RouteTestResult(timeout)
           val effectiveRequest =
             request.withEffectiveUri(
               securedConnection = defaultHostInfo.securedConnection,

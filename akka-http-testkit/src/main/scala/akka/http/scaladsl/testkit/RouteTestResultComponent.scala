@@ -8,13 +8,14 @@ import java.util.concurrent.CountDownLatch
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext }
+import scala.concurrent.ExecutionContext
 import akka.stream.Materializer
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
+import akka.util.Timeout
 
 trait RouteTestResultComponent {
 
@@ -23,7 +24,7 @@ trait RouteTestResultComponent {
   /**
    * A receptacle for the response or rejections created by a route.
    */
-  class RouteTestResult(timeout: FiniteDuration)(implicit fm: Materializer) {
+  class RouteTestResult(timeout: RouteTestTimeout)(implicit fm: Materializer) {
     private[this] var result: Option[Either[immutable.Seq[Rejection], HttpResponse]] = None
     private[this] val latch = new CountDownLatch(1)
 
@@ -72,7 +73,7 @@ trait RouteTestResultComponent {
       }
 
     private[testkit] def awaitResult: this.type = {
-      latch.await(timeout.toMillis, MILLISECONDS)
+      latch.await(timeout.duration.toMillis, MILLISECONDS)
       this
     }
 
@@ -94,6 +95,6 @@ trait RouteTestResultComponent {
       failTest("Request was neither completed nor rejected within " + timeout)
 
     private def awaitAllElements[T](data: Source[T, _]): immutable.Seq[T] =
-      data.limit(100000).runWith(Sink.seq).awaitResult(timeout)
+      data.limit(100000).runWith(Sink.seq).awaitResult(timeout.duration)
   }
 }
