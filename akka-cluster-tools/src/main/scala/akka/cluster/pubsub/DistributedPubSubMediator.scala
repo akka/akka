@@ -666,6 +666,12 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
       if (matchingRole(m))
         nodes += m.address
 
+    case MemberLeft(m) ⇒
+      if (matchingRole(m)) {
+        nodes -= m.address
+        registry -= m.address
+      }
+
     case MemberRemoved(m, _) ⇒
       if (m.address == selfAddress)
         context stop self
