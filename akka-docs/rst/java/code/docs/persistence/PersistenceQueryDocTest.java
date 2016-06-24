@@ -104,7 +104,7 @@ public class PersistenceQueryDocTest {
   akka.persistence.query.javadsl.ReadJournal,
   akka.persistence.query.javadsl.EventsByTagQuery,
   akka.persistence.query.javadsl.EventsByPersistenceIdQuery,
-  akka.persistence.query.javadsl.AllPersistenceIdsQuery,
+  akka.persistence.query.javadsl.PersistenceIdsQuery,
   akka.persistence.query.javadsl.CurrentPersistenceIdsQuery {
     
     private final FiniteDuration refreshInterval;
@@ -130,7 +130,7 @@ public class PersistenceQueryDocTest {
     }
 
     @Override
-    public Source<String, NotUsed> allPersistenceIds() {
+    public Source<String, NotUsed> persistenceIds() {
       // implement in a similar way as eventsByTag
       throw new UnsupportedOperationException("Not implemented yet");
     }
@@ -159,7 +159,7 @@ public class PersistenceQueryDocTest {
   akka.persistence.query.scaladsl.ReadJournal,
   akka.persistence.query.scaladsl.EventsByTagQuery,
   akka.persistence.query.scaladsl.EventsByPersistenceIdQuery,
-  akka.persistence.query.scaladsl.AllPersistenceIdsQuery,
+  akka.persistence.query.scaladsl.PersistenceIdsQuery,
   akka.persistence.query.scaladsl.CurrentPersistenceIdsQuery {
     
     private final MyJavadslReadJournal javadslReadJournal;
@@ -182,8 +182,8 @@ public class PersistenceQueryDocTest {
     }
 
     @Override
-    public akka.stream.scaladsl.Source<String, NotUsed> allPersistenceIds() {
-      return javadslReadJournal.allPersistenceIds().asScala();
+    public akka.stream.scaladsl.Source<String, NotUsed> persistenceIds() {
+      return javadslReadJournal.persistenceIds().asScala();
     }
     
     @Override
@@ -221,14 +221,14 @@ public class PersistenceQueryDocTest {
     //#basic-usage
   }
 
-  void demonstrateAllPersistenceIdsLive() {
+  void demonstratePersistenceIdsLive() {
     final MyJavadslReadJournal readJournal =
         PersistenceQuery.get(system).getReadJournalFor(MyJavadslReadJournal.class,
             "akka.persistence.query.my-read-journal");
 
-    //#all-persistence-ids-live
-    readJournal.allPersistenceIds();
-    //#all-persistence-ids-live
+    //#persistence-ids-live
+    readJournal.persistenceIds();
+    //#persistence-ids-live
   }
 
   void demonstrateNoRefresh() {
@@ -238,9 +238,9 @@ public class PersistenceQueryDocTest {
         PersistenceQuery.get(system).getReadJournalFor(MyJavadslReadJournal.class,
             "akka.persistence.query.my-read-journal");
 
-    //#all-persistence-ids-snap
+    //#persistence-ids-snap
     readJournal.currentPersistenceIds();
-    //#all-persistence-ids-snap
+    //#persistence-ids-snap
   }
 
   void demonstrateRefresh() {
