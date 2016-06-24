@@ -47,7 +47,7 @@ object PersistenceQueryDocSpec {
     extends akka.persistence.query.scaladsl.ReadJournal
     with akka.persistence.query.scaladsl.EventsByTagQuery
     with akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
-    with akka.persistence.query.scaladsl.AllPersistenceIdsQuery
+    with akka.persistence.query.scaladsl.PersistenceIdsQuery
     with akka.persistence.query.scaladsl.CurrentPersistenceIdsQuery {
 
     private val refreshInterval: FiniteDuration =
@@ -67,7 +67,7 @@ object PersistenceQueryDocSpec {
       ???
     }
 
-    override def allPersistenceIds(): Source[String, NotUsed] = {
+    override def persistenceIds(): Source[String, NotUsed] = {
       // implement in a similar way as eventsByTag
       ???
     }
@@ -92,7 +92,7 @@ object PersistenceQueryDocSpec {
     extends akka.persistence.query.javadsl.ReadJournal
     with akka.persistence.query.javadsl.EventsByTagQuery
     with akka.persistence.query.javadsl.EventsByPersistenceIdQuery
-    with akka.persistence.query.javadsl.AllPersistenceIdsQuery
+    with akka.persistence.query.javadsl.PersistenceIdsQuery
     with akka.persistence.query.javadsl.CurrentPersistenceIdsQuery {
 
     override def eventsByTag(
@@ -105,8 +105,8 @@ object PersistenceQueryDocSpec {
       scaladslReadJournal.eventsByPersistenceId(
         persistenceId, fromSequenceNr, toSequenceNr).asJava
 
-    override def allPersistenceIds(): javadsl.Source[String, NotUsed] =
-      scaladslReadJournal.allPersistenceIds().asJava
+    override def persistenceIds(): javadsl.Source[String, NotUsed] =
+      scaladslReadJournal.persistenceIds().asJava
 
     override def currentPersistenceIds(): javadsl.Source[String, NotUsed] =
       scaladslReadJournal.currentPersistenceIds().asJava
@@ -210,13 +210,13 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
     source.runForeach { event => println("Event: " + event) }
     //#basic-usage
 
-    //#all-persistence-ids-live
-    readJournal.allPersistenceIds()
-    //#all-persistence-ids-live
+    //#persistence-ids-live
+    readJournal.persistenceIds()
+    //#persistence-ids-live
 
-    //#all-persistence-ids-snap
+    //#persistence-ids-snap
     readJournal.currentPersistenceIds()
-    //#all-persistence-ids-snap
+    //#persistence-ids-snap
 
     //#events-by-tag
     // assuming journal is able to work with numeric offsets we can:

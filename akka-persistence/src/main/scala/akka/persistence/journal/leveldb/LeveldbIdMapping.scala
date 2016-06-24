@@ -40,7 +40,7 @@ private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore â
     !idMap.contains(id)
   }
 
-  def allPersistenceIds: Set[String] = idMapLock.synchronized {
+  def persistenceIds: Set[String] = idMapLock.synchronized {
     idMap.keySet
   }
 

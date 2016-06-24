@@ -48,8 +48,8 @@ private[persistence] class LeveldbJournal extends { val configPath = "akka.persi
     case SubscribePersistenceId(persistenceId: String) ⇒
       addPersistenceIdSubscriber(sender(), persistenceId)
       context.watch(sender())
-    case SubscribeAllPersistenceIds ⇒
-      addAllPersistenceIdsSubscriber(sender())
+    case SubscribePersistenceIds ⇒
+      addPersistenceIdsSubscriber(sender())
       context.watch(sender())
     case SubscribeTag(tag: String) ⇒
       addTagSubscriber(sender(), tag)
@@ -79,8 +79,8 @@ private[persistence] object LeveldbJournal {
    * subscriber followed by [[PersistenceIdAdded]] messages when new persistenceIds
    * are created.
    */
-  final case object SubscribeAllPersistenceIds extends SubscriptionCommand
-  final case class CurrentPersistenceIds(allPersistenceIds: Set[String]) extends DeadLetterSuppression
+  final case object SubscribePersistenceIds extends SubscriptionCommand
+  final case class CurrentPersistenceIds(persistenceIds: Set[String]) extends DeadLetterSuppression
   final case class PersistenceIdAdded(persistenceId: String) extends DeadLetterSuppression
 
   /**

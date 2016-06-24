@@ -63,12 +63,12 @@ hint.
 The stream is completed with failure if there is a failure in executing the query in the
 backend journal.
 
-AllPersistenceIdsQuery and CurrentPersistenceIdsQuery 
+PersistenceIdsQuery and CurrentPersistenceIdsQuery 
 -----------------------------------------------------
 
-``allPersistenceIds`` is used for retrieving all ``persistenceIds`` of all persistent actors.
+``persistenceIds`` is used for retrieving all ``persistenceIds`` of all persistent actors.
 
-.. includecode:: code/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala#AllPersistenceIds
+.. includecode:: code/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala#PersistenceIds
 
 The returned event stream is unordered and you can expect different order for multiple
 executions of the query.

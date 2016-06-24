@@ -7,32 +7,32 @@ import scala.concurrent.duration._
 
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
-import akka.persistence.query.scaladsl.AllPersistenceIdsQuery
+import akka.persistence.query.scaladsl.PersistenceIdsQuery
 import akka.stream.ActorMaterializer
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 
-object AllPersistenceIdsSpec {
+object PersistenceIdsSpec {
   val config = """
     akka.loglevel = INFO
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
-    akka.persistence.journal.leveldb.dir = "target/journal-AllPersistenceIdsSpec"
+    akka.persistence.journal.leveldb.dir = "target/journal-PersistenceIdsSpec"
     akka.test.single-expect-default = 10s
     """
 }
 
-class AllPersistenceIdsSpec extends AkkaSpec(AllPersistenceIdsSpec.config)
+class PersistenceIdsSpec extends AkkaSpec(PersistenceIdsSpec.config)
   with Cleanup with ImplicitSender {
 
   implicit val mat = ActorMaterializer()(system)
 
   val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
-  "Leveldb query AllPersistenceIds" must {
+  "Leveldb query PersistenceIds" must {
 
-    "implement standard AllPersistenceIdsQuery" in {
-      queries.isInstanceOf[AllPersistenceIdsQuery] should ===(true)
+    "implement standard PersistenceIdsQuery" in {
+      queries.isInstanceOf[PersistenceIdsQuery] should ===(true)
     }
 
     "find existing persistenceIds" in {
@@ -57,7 +57,7 @@ class AllPersistenceIdsSpec extends AkkaSpec(AllPersistenceIdsSpec.config)
       system.actorOf(TestActor.props("d")) ! "d1"
       expectMsg("d1-done")
 
-      val src = queries.allPersistenceIds()
+      val src = queries.persistenceIds()
       val probe = src.runWith(TestSink.probe[String])
       probe.within(10.seconds) {
         probe.request(5)

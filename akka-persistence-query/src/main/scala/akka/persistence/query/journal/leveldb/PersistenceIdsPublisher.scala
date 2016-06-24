@@ -16,9 +16,9 @@ import akka.stream.actor.ActorPublisherMessage.Request
 /**
  * INTERNAL API
  */
-private[akka] object AllPersistenceIdsPublisher {
+private[akka] object PersistenceIdsPublisher {
   def props(liveQuery: Boolean, maxBufSize: Int, writeJournalPluginId: String): Props =
-    Props(new AllPersistenceIdsPublisher(liveQuery, maxBufSize, writeJournalPluginId))
+    Props(new PersistenceIdsPublisher(liveQuery, maxBufSize, writeJournalPluginId))
 
   private case object Continue
 }
@@ -26,7 +26,7 @@ private[akka] object AllPersistenceIdsPublisher {
 /**
  * INTERNAL API
  */
-private[akka] class AllPersistenceIdsPublisher(liveQuery: Boolean, maxBufSize: Int, writeJournalPluginId: String)
+private[akka] class PersistenceIdsPublisher(liveQuery: Boolean, maxBufSize: Int, writeJournalPluginId: String)
   extends ActorPublisher[String] with DeliveryBuffer[String] with ActorLogging {
 
   val journal: ActorRef = Persistence(context.system).journalFor(writeJournalPluginId)
@@ -35,14 +35,14 @@ private[akka] class AllPersistenceIdsPublisher(liveQuery: Boolean, maxBufSize: I
 
   def init: Receive = {
     case _: Request ⇒
-      journal ! LeveldbJournal.SubscribeAllPersistenceIds
+      journal ! LeveldbJournal.SubscribePersistenceIds
       context.become(active)
     case Cancel ⇒ context.stop(self)
   }
 
   def active: Receive = {
-    case LeveldbJournal.CurrentPersistenceIds(allPersistenceIds) ⇒
-      buf ++= allPersistenceIds
+    case LeveldbJournal.CurrentPersistenceIds(persistenceIds) ⇒
+      buf ++= persistenceIds
       deliverBuf()
       if (!liveQuery && buf.isEmpty)
         onCompleteThenStop()
