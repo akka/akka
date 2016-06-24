@@ -896,15 +896,7 @@ object MiMa extends AutoPlugin {
         // #20456 adding hot connection pool option
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ConnectionPoolSettings.getMinConnections"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.minConnections"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.client.PoolSlot#SlotProcessor.this"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.engine.client.PoolConductor$SwitchCommand$"),
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.client.PoolConductor#SlotSelector.this"),
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.client.PoolConductor.apply"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.client.PoolSlot.apply"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.engine.client.PoolConductor$SwitchCommand"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.apply"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.copy"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.this")
+        FilterAnyProblemStartingWith("akka.http.impl")
       )
     )
   }

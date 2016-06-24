@@ -41,7 +41,7 @@ private object PoolConductor {
         outlets.asInstanceOf[immutable.Seq[Outlet[SlotCommand]]])
   }
 
-  case class PoolSlotsSetting(minSlots: Int, maxSlots: Int) {
+  final case class PoolSlotsSetting(minSlots: Int, maxSlots: Int) {
     require(minSlots <= maxSlots, "min-connections must be <= max-connections")
   }
 
@@ -91,10 +91,10 @@ private object PoolConductor {
     }
 
   sealed trait SlotCommand
-  case class DispatchCommand(rc: RequestContext) extends SlotCommand
-  case object SlotShouldConnectCommand extends SlotCommand
+  final case class DispatchCommand(rc: RequestContext) extends SlotCommand
+  final case object ConnectEagerlyCommand extends SlotCommand
 
-  case class SwitchSlotCommand(cmd: SlotCommand, slotIx: Int)
+  final case class SwitchSlotCommand(cmd: SlotCommand, slotIx: Int)
 
   // the SlotSelector keeps the state of all slots as instances of this ADT
   private sealed trait SlotState
@@ -148,7 +148,7 @@ private object PoolConductor {
               slotStates(slotIx) = slotStateAfterDisconnect(slotStates(slotIx), failed)
               reconnectIfNeeded()
             case SlotEvent.ConnectedEagerly(slotIx) ⇒
-              slotStates(slotIx) = Idle
+            // do nothing ...
           }
           pull(slotIn)
           val wasBlocked = nextSlot == -1
@@ -166,23 +166,19 @@ private object PoolConductor {
         pull(ctxIn)
         pull(slotIn)
 
-        startMinConnections()
+        // eagerly start at least slotSettings.minSlots connections
+        (0 until slotSettings.minSlots).foreach { connect }
       }
 
-      def startMinConnections(): Unit =
-        (0 until slotSettings.minSlots).foreach { connect }
+      def connect(slotIx: Int): Unit = {
+        emit(out, SwitchSlotCommand(ConnectEagerlyCommand, slotIx))
+        slotStates(slotIx) = Idle
+      }
 
-      // pool ordering connection doesn't change the status of a connection to Idle,
-      // receiving confirmation from the Slot does. See: handler for "slotIn"
-      def connect(index: Int): Unit =
-        emit(out, SwitchSlotCommand(SlotShouldConnectCommand, index))
-
-      private def reconnectIfNeeded(): Unit = {
-        val connectedNum = slotStates.count(_ != Unconnected)
-        if (connectedNum < slotSettings.minSlots) {
+      private def reconnectIfNeeded(): Unit =
+        if (slotStates.count(_ != Unconnected) < slotSettings.minSlots) {
           connect(slotStates.indexWhere(_ == Unconnected))
         }
-      }
 
       def slotStateAfterDispatch(slotState: SlotState, method: HttpMethod): SlotState =
         slotState match {

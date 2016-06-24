@@ -234,18 +234,18 @@ class ConnectionPoolSpec extends AkkaSpec("""
       val close: HttpHeader = Connection("close")
 
       // for lower bound of one connection
-      val minOneConnection = 1
-      val (requestInOne, requestOutOne, responseOutSubOne, hcpMinOneConnection) =
-        cachedHostConnectionPool[Int](idleTimeout = 100.millis, minConnections = minOneConnection)
-      val gatewayOneConnection = hcpMinOneConnection.gateway
+      val minConnection = 1
+      val (requestIn, requestOut, responseOutSub, hcpMinConnection) =
+        cachedHostConnectionPool[Int](idleTimeout = 100.millis, minConnections = minConnection)
+      val gatewayConnection = hcpMinConnection.gateway
 
       acceptIncomingConnection()
-      requestInOne.sendNext(HttpRequest(uri = "/minimumslots/1", headers = immutable.Seq(close)) → 42)
-      responseOutSubOne.request(1)
-      requestOutOne.expectNextN(1)
+      requestIn.sendNext(HttpRequest(uri = "/minimumslots/1", headers = immutable.Seq(close)) → 42)
+      responseOutSub.request(1)
+      requestOut.expectNextN(1)
 
       condHolds(500.millis) { () ⇒
-        Await.result(gatewayOneConnection.poolStatus(), 100.millis).get shouldBe a[PoolInterfaceRunning]
+        Await.result(gatewayConnection.poolStatus(), 100.millis).get shouldBe a[PoolInterfaceRunning]
       }
     }
 
@@ -253,22 +253,22 @@ class ConnectionPoolSpec extends AkkaSpec("""
       val close: HttpHeader = Connection("close")
 
       // for lower bound of five connections
-      val minFiveConnections = 5
-      val (requestInFive, requestOutFive, responseOutSubFive, hcpMinFiveConnection) = cachedHostConnectionPool[Int](
+      val minConnections = 5
+      val (requestIn, requestOut, responseOutSub, hcpMinConnection) = cachedHostConnectionPool[Int](
         idleTimeout = 100.millis,
-        minConnections = minFiveConnections,
-        maxConnections = minFiveConnections + 10)
+        minConnections = minConnections,
+        maxConnections = minConnections + 10)
 
-      (0 until minFiveConnections) foreach { _ ⇒ acceptIncomingConnection() }
-      (0 until minFiveConnections) foreach { i ⇒
-        requestInFive.sendNext(HttpRequest(uri = s"/minimumslots/5/$i", headers = immutable.Seq(close)) → 42)
+      (0 until minConnections) foreach { _ ⇒ acceptIncomingConnection() }
+      (0 until minConnections) foreach { i ⇒
+        requestIn.sendNext(HttpRequest(uri = s"/minimumslots/5/$i", headers = immutable.Seq(close)) → 42)
       }
-      responseOutSubFive.request(minFiveConnections)
-      requestOutFive.expectNextN(minFiveConnections)
+      responseOutSub.request(minConnections)
+      requestOut.expectNextN(minConnections)
 
-      val gatewayFiveConnections = hcpMinFiveConnection.gateway
+      val gatewayConnections = hcpMinConnection.gateway
       condHolds(1000.millis) { () ⇒
-        val status = gatewayFiveConnections.poolStatus()
+        val status = gatewayConnections.poolStatus()
         Await.result(status, 100.millis).get shouldBe a[PoolInterfaceRunning]
       }
     }

@@ -5,8 +5,7 @@
 package akka.http.impl.engine.client
 
 import akka.actor._
-import akka.http.impl.engine.client.PoolConductor.{ SlotShouldConnectCommand, DispatchCommand, SlotCommand }
-import akka.http.scaladsl.settings.ConnectionPoolSettings
+import akka.http.impl.engine.client.PoolConductor.{ ConnectEagerlyCommand, DispatchCommand, SlotCommand }
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
 import akka.stream._
 import akka.stream.actor._
@@ -103,7 +102,7 @@ private object PoolSlot {
     override def requestStrategy = ZeroRequestStrategy
 
     /**
-     * How PoolProcessor changes it's `receive`:
+     * How PoolProcessor changes its `receive`:
      * waitingExposedPublisher -> waitingForSubscribePending -> unconnected ->
      * waitingForDemandFromConnection OR waitingEagerlyConnected -> running
      * Given slot can become get to 'running' state via 'waitingForDemandFromConnection' or 'waitingEagerlyConnected'.
@@ -134,7 +133,7 @@ private object PoolSlot {
         connOutport ! Request(totalDemand)
         context.become(waitingForDemandFromConnection(connInport = connInport, connOutport = connOutport, rc))
 
-      case OnNext(SlotShouldConnectCommand) ⇒
+      case OnNext(ConnectEagerlyCommand) ⇒
         val (in, out) = runnableGraph.run()
         onNext(SlotEvent.ConnectedEagerly(slotIx) :: Nil)
         out ! Request(totalDemand)
