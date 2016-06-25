@@ -13,7 +13,7 @@ import akka.http.scaladsl.util.FastFuture._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection.{ CredentialsRejected, CredentialsMissing }
 
-import scala.util.{ Try, Success }
+import scala.util.Success
 
 /**
  * Provides directives for securing an inner route using the standard Http authentication headers [[`WWW-Authenticate`]]
