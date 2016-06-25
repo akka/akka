@@ -268,24 +268,35 @@ sealed trait Credentials
 object Credentials {
   case object Missing extends Credentials
   abstract case class Provided(identifier: String) extends Credentials {
+
+    /**
+      * First applies the passed in `hasher` function to the received secret part of the Credentials
+      * and then safely compares the passed in `secret` with the hashed received secret.
+      * This method can be used if the secret is not stored in plain text.
+      * Use of this method instead of manual String equality testing is recommended in order to guard against timing attacks.
+      *
+      * See also [[EnhancedString#secure_==]], for more information.
+      */
+    def verify(secret: String, hasher: String ⇒ String): Boolean
+    
     /**
      * Safely compares the passed in `secret` with the received secret part of the Credentials.
      * Use of this method instead of manual String equality testing is recommended in order to guard against timing attacks.
      *
      * See also [[EnhancedString#secure_==]], for more information.
      */
-    def verify(secret: String): Boolean
+    def verify(secret: String): Boolean = verify(secret, x => x)
   }
 
   def apply(cred: Option[HttpCredentials]): Credentials = {
     cred match {
       case Some(BasicHttpCredentials(username, receivedSecret)) ⇒
         new Credentials.Provided(username) {
-          def verify(secret: String): Boolean = secret secure_== receivedSecret
+          def verify(secret: String, hasher: String ⇒ String): Boolean = secret secure_== hasher(receivedSecret)
         }
       case Some(OAuth2BearerToken(token)) ⇒
         new Credentials.Provided(token) {
-          def verify(secret: String): Boolean = secret secure_== token
+          def verify(secret: String, hasher: String ⇒ String): Boolean = secret secure_== hasher(token)
         }
       case Some(GenericHttpCredentials(scheme, token, params)) ⇒
         throw new UnsupportedOperationException("cannot verify generic HTTP credentials")
