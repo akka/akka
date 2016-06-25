@@ -16,6 +16,7 @@ import akka.http.scaladsl.model._
 import StatusCodes._
 import HttpMethods._
 import Directives._
+import akka.util.Timeout
 
 class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteTest {
 
@@ -49,7 +50,7 @@ class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteT
     }
 
     "long running routes" in {
-      implicit val timeout = RouteTestTimeout(2.seconds)
+      implicit val timeout = Timeout(2.seconds)
       Post("/abc", "content") ~> complete {
         Future {
           Thread.sleep(1200)

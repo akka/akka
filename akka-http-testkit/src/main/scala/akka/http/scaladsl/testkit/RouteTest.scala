@@ -53,8 +53,8 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
     if (dynRR.value ne null) dynRR.value
     else sys.error("This value is only available inside of a `check` construct!")
 
-  implicit def routeTestTimeout2Timeout(implicit timeout: RouteTestTimeout): Timeout =
-    Timeout(timeout.duration)
+  implicit def timeout2RouteTestTimeout(implicit timeout: Timeout): RouteTestTimeout =
+    RouteTestTimeout(timeout.duration)
 
   def check[T](body: ⇒ T): RouteTestResult ⇒ T = result ⇒ dynRR.withValue(result.awaitResult)(body)
 
