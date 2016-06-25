@@ -550,6 +550,8 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
 
     }
 
+    //#20386
+    @deprecated("Usage of PushPullStage is deprecated, please use GraphStage instead", "2.4.5")
     class InvalidAbsorbTermination extends PushPullStage[Int, Int] {
       override def onPull(ctx: Context[Int]): SyncDirective = ctx.pull()
       override def onPush(elem: Int, ctx: Context[Int]): SyncDirective = ctx.push(elem)
