@@ -888,6 +888,8 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.BodyPartRenderer.streamed")
       ),
       "2.4.8" -> Seq(
+        FilterAnyProblemStartingWith("akka.http.impl"),
+
         // #20717 example snippet for akka http java dsl: SecurityDirectives
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage#MessageTransformations.addCredentials"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.addCredentials")
