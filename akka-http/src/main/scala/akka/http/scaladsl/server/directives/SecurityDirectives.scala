@@ -254,7 +254,7 @@ trait SecurityDirectives {
    *
    * @group security
    */
-  def challengeFor(realm: String) = HttpChallenge(scheme = "Basic", realm = realm, params = Map.empty)
+  def challengeFor(realm: String) = HttpChallenge(scheme = "Bearer", realm = realm, params = Map.empty)
 }
 
 object SecurityDirectives extends SecurityDirectives
