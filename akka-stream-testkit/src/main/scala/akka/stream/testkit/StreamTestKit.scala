@@ -168,7 +168,11 @@ object TestPublisher {
       this
     }
 
-    def expectRequest(): Long = subscription.expectRequest()
+    def expectRequest(): Long = {
+      val requests = subscription.expectRequest()
+      pendingRequests += requests
+      requests
+    }
 
     def expectCancellation(): Self = {
       subscription.expectCancellation()
