@@ -269,7 +269,7 @@ final class GroupBy[T, K](maxSubstreams: Int, keyFor: T ⇒ K) extends GraphStag
               subSubstreamSource.push(nextElementValue)
               clearNextElement()
             }
-          } else tryPull(in)
+          } else if (!hasBeenPulled(in)) tryPull(in)
       }
     }
 
