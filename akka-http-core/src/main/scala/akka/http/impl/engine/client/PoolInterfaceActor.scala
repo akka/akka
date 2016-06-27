@@ -25,6 +25,8 @@ private object PoolInterfaceActor {
   case object Shutdown extends DeadLetterSuppression
 
   val name = SeqActorName("PoolInterfaceActor")
+
+  def props(gateway: PoolGateway)(implicit fm: Materializer) = Props(new PoolInterfaceActor(gateway)).withDeploy(Deploy.local)
 }
 
 /**
@@ -147,9 +149,12 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
   }
 
   def activateIdleTimeoutIfNecessary(): Unit =
-    if (remainingRequested == 0 && hcps.setup.settings.idleTimeout.isFinite) {
+    if (shouldStopOnIdle()) {
       import context.dispatcher
       val timeout = hcps.setup.settings.idleTimeout.asInstanceOf[FiniteDuration]
       activeIdleTimeout = Some(context.system.scheduler.scheduleOnce(timeout)(gateway.shutdown()))
     }
+
+  private def shouldStopOnIdle(): Boolean =
+    remainingRequested == 0 && hcps.setup.settings.idleTimeout.isFinite && hcps.setup.settings.minConnections == 0
 }

@@ -5,7 +5,7 @@
 package akka.http.impl.engine.client
 
 import akka.actor._
-import akka.http.scaladsl.settings.ConnectionPoolSettings
+import akka.http.impl.engine.client.PoolConductor.{ ConnectEagerlyCommand, DispatchCommand, SlotCommand }
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
 import akka.stream._
 import akka.stream.actor._
@@ -29,6 +29,11 @@ private object PoolSlot {
     final case class RetryRequest(rc: RequestContext) extends RawSlotEvent
     final case class RequestCompleted(slotIx: Int) extends SlotEvent
     final case class Disconnected(slotIx: Int, failedRequests: Int) extends SlotEvent
+    /**
+     * Slot with id "slotIx" has responded to request from PoolConductor and connected immediately
+     * Ordinary connections from slots don't produce this event
+     */
+    final case class ConnectedEagerly(slotIx: Int) extends SlotEvent
   }
 
   private val slotProcessorActorName = SeqActorName("SlotProcessor")
@@ -47,21 +52,19 @@ private object PoolSlot {
                                                                                                  |  via slotEventMerge)
                                                                                                  v
    */
-  def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
-            settings: ConnectionPoolSettings)(implicit
-    system: ActorSystem,
-                                              fm: Materializer): Graph[FanOutShape2[RequestContext, ResponseContext, RawSlotEvent], Any] =
+  def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any])(implicit system: ActorSystem, fm: Materializer): Graph[FanOutShape2[SlotCommand, ResponseContext, RawSlotEvent], Any] =
     GraphDSL.create() { implicit b ⇒
       import GraphDSL.Implicits._
 
       // TODO wouldn't be better to have them under a known parent? /user/SlotProcessor-0 seems weird
       val name = slotProcessorActorName.next()
+
       val slotProcessor = b.add {
         Flow.fromProcessor { () ⇒
           val actor = system.actorOf(
-            Props(new SlotProcessor(slotIx, connectionFlow, settings)).withDeploy(Deploy.local),
+            Props(new SlotProcessor(slotIx, connectionFlow)).withDeploy(Deploy.local),
             name)
-          ActorProcessor[RequestContext, List[ProcessorOut]](actor)
+          ActorProcessor[SlotCommand, List[ProcessorOut]](actor)
         }.mapConcat(ConstantFun.scalaIdentityFunction)
       }
       val split = b.add(Broadcast[ProcessorOut](2))
@@ -78,25 +81,36 @@ private object PoolSlot {
   import ActorSubscriberMessage._
 
   /**
-   * An actor mananging a series of materializations of the given `connectionFlow`.
-   * To the outside it provides a stable flow stage, consuming `RequestContext` instances on its
+   * An actor managing a series of materializations of the given `connectionFlow`.
+   * To the outside it provides a stable flow stage, consuming `SlotCommand` instances on its
    * input (ActorSubscriber) side and producing `List[ProcessorOut]` instances on its output
    * (ActorPublisher) side.
    * The given `connectionFlow` is materialized into a running flow whenever required.
    * Completion and errors from the connection are not surfaced to the outside (unless we are
    * shutting down completely).
    */
-  private class SlotProcessor(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
-                              settings: ConnectionPoolSettings)(implicit fm: Materializer)
+  private class SlotProcessor(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any])(implicit fm: Materializer)
     extends ActorSubscriber with ActorPublisher[List[ProcessorOut]] with ActorLogging {
     var exposedPublisher: akka.stream.impl.ActorPublisher[Any] = _
     var inflightRequests = immutable.Queue.empty[RequestContext]
-    val runnableGraph = Source.actorPublisher[HttpRequest](Props(new FlowInportActor(self)).withDeploy(Deploy.local))
+
+    val runnableGraph = Source.actorPublisher[HttpRequest](flowInportProps(self))
       .via(connectionFlow)
-      .toMat(Sink.actorSubscriber[HttpResponse](Props(new FlowOutportActor(self)).withDeploy(Deploy.local)))(Keep.both)
+      .toMat(Sink.actorSubscriber[HttpResponse](flowOutportProps(self)))(Keep.both)
       .named("SlotProcessorInternalConnectionFlow")
 
     override def requestStrategy = ZeroRequestStrategy
+
+    /**
+     * How PoolProcessor changes its `receive`:
+     * waitingExposedPublisher -> waitingForSubscribePending -> unconnected ->
+     * waitingForDemandFromConnection OR waitingEagerlyConnected -> running
+     * Given slot can become get to 'running' state via 'waitingForDemandFromConnection' or 'waitingEagerlyConnected'.
+     * The difference between those two paths is that the first one is lazy - reacts to DispatchCommand and then uses
+     * inport and outport actors to obtain more items.
+     * Where the second one is eager - reacts to SlotShouldConnectCommand from PoolConductor, sends SlotEvent.ConnectedEagerly
+     * back to conductor and then waits for the first DispatchCommand
+     */
     override def receive = waitingExposedPublisher
 
     def waitingExposedPublisher: Receive = {
@@ -114,10 +128,16 @@ private object PoolSlot {
     }
 
     val unconnected: Receive = {
-      case OnNext(rc: RequestContext) ⇒
+      case OnNext(DispatchCommand(rc: RequestContext)) ⇒
         val (connInport, connOutport) = runnableGraph.run()
         connOutport ! Request(totalDemand)
-        context.become(waitingForDemandFromConnection(connInport, connOutport, rc))
+        context.become(waitingForDemandFromConnection(connInport = connInport, connOutport = connOutport, rc))
+
+      case OnNext(ConnectEagerlyCommand) ⇒
+        val (in, out) = runnableGraph.run()
+        onNext(SlotEvent.ConnectedEagerly(slotIx) :: Nil)
+        out ! Request(totalDemand)
+        context.become(waitingEagerlyConnected(connInport = in, connOutport = out))
 
       case Request(_) ⇒ if (remainingRequested == 0) request(1) // ask for first request if necessary
 
@@ -128,6 +148,17 @@ private object PoolSlot {
         shutdown()
 
       case c @ FromConnection(msg) ⇒ // ignore ...
+    }
+
+    def waitingEagerlyConnected(connInport: ActorRef, connOutport: ActorRef): Receive = {
+      case FromConnection(Request(n)) ⇒
+        request(n)
+
+      case OnNext(DispatchCommand(rc: RequestContext)) ⇒
+        inflightRequests = inflightRequests.enqueue(rc)
+        request(1)
+        connInport ! OnNext(rc.request)
+        context.become(running(connInport, connOutport))
     }
 
     def waitingForDemandFromConnection(connInport: ActorRef, connOutport: ActorRef,
@@ -151,7 +182,7 @@ private object PoolSlot {
     def running(connInport: ActorRef, connOutport: ActorRef): Receive = {
       case ev @ (Request(_) | Cancel)     ⇒ connOutport ! ev
       case ev @ (OnComplete | OnError(_)) ⇒ connInport ! ev
-      case OnNext(rc: RequestContext) ⇒
+      case OnNext(DispatchCommand(rc: RequestContext)) ⇒
         inflightRequests = inflightRequests.enqueue(rc)
         connInport ! OnNext(rc.request)
 
@@ -225,6 +256,7 @@ private object PoolSlot {
         context.stop(self)
     }
   }
+  def flowInportProps(s: ActorRef) = Props(new FlowInportActor(s)).withDeploy(Deploy.local)
 
   private class FlowOutportActor(slotProcessor: ActorRef) extends ActorSubscriber with ActorLogging {
     def requestStrategy = ZeroRequestStrategy
@@ -237,6 +269,7 @@ private object PoolSlot {
         context.stop(self)
     }
   }
+  def flowOutportProps(s: ActorRef) = Props(new FlowOutportActor(s)).withDeploy(Deploy.local)
 
   final class UnexpectedDisconnectException(msg: String, cause: Throwable) extends RuntimeException(msg, cause) {
     def this(msg: String) = this(msg, null)
