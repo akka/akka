@@ -23,6 +23,7 @@ import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 
+import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
@@ -228,6 +229,56 @@ class ConnectionPoolSpec extends AkkaSpec("""
       acceptIncomingConnection()
       val (Success(_), 42) = responseOut.expectNext()
     }
+
+    "never close hot connections when minConnections key is given and >0 (minConnections = 1)" in new TestSetup() {
+      val close: HttpHeader = Connection("close")
+
+      // for lower bound of one connection
+      val minConnection = 1
+      val (requestIn, requestOut, responseOutSub, hcpMinConnection) =
+        cachedHostConnectionPool[Int](idleTimeout = 100.millis, minConnections = minConnection)
+      val gatewayConnection = hcpMinConnection.gateway
+
+      acceptIncomingConnection()
+      requestIn.sendNext(HttpRequest(uri = "/minimumslots/1", headers = immutable.Seq(close)) → 42)
+      responseOutSub.request(1)
+      requestOut.expectNextN(1)
+
+      condHolds(500.millis) { () ⇒
+        Await.result(gatewayConnection.poolStatus(), 100.millis).get shouldBe a[PoolInterfaceRunning]
+      }
+    }
+
+    "never close hot connections when minConnections key is given and >0 (minConnections = 5)" in new TestSetup() {
+      val close: HttpHeader = Connection("close")
+
+      // for lower bound of five connections
+      val minConnections = 5
+      val (requestIn, requestOut, responseOutSub, hcpMinConnection) = cachedHostConnectionPool[Int](
+        idleTimeout = 100.millis,
+        minConnections = minConnections,
+        maxConnections = minConnections + 10)
+
+      (0 until minConnections) foreach { _ ⇒ acceptIncomingConnection() }
+      (0 until minConnections) foreach { i ⇒
+        requestIn.sendNext(HttpRequest(uri = s"/minimumslots/5/$i", headers = immutable.Seq(close)) → 42)
+      }
+      responseOutSub.request(minConnections)
+      requestOut.expectNextN(minConnections)
+
+      val gatewayConnections = hcpMinConnection.gateway
+      condHolds(1000.millis) { () ⇒
+        val status = gatewayConnections.poolStatus()
+        Await.result(status, 100.millis).get shouldBe a[PoolInterfaceRunning]
+      }
+    }
+
+    "shutdown if idle and min connection has been set to 0" in new TestSetup() {
+      val (_, _, _, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second, minConnections = 0)
+      val gateway = hcp.gateway
+      Await.result(gateway.poolStatus(), 1500.millis).get shouldBe a[PoolInterfaceRunning]
+      awaitCond({ Await.result(gateway.poolStatus(), 1500.millis).isEmpty }, 2000.millis)
+    }
   }
 
   "The single-request client infrastructure" should {
@@ -325,24 +376,30 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
     def cachedHostConnectionPool[T](
       maxConnections:  Int                      = 2,
+      minConnections:  Int                      = 0,
       maxRetries:      Int                      = 2,
       maxOpenRequests: Int                      = 8,
       pipeliningLimit: Int                      = 1,
       idleTimeout:     Duration                 = 5.seconds,
       ccSettings:      ClientConnectionSettings = ClientConnectionSettings(system)) = {
-      val settings = new ConnectionPoolSettingsImpl(maxConnections, maxRetries, maxOpenRequests, pipeliningLimit,
-        idleTimeout, ClientConnectionSettings(system))
-      flowTestBench(Http().cachedHostConnectionPool[T](serverHostName, serverPort, settings))
+
+      val settings =
+        new ConnectionPoolSettingsImpl(maxConnections, minConnections,
+          maxRetries, maxOpenRequests, pipeliningLimit,
+          idleTimeout, ccSettings)
+      flowTestBench(
+        Http().cachedHostConnectionPool[T](serverHostName, serverPort, settings))
     }
 
     def superPool[T](
       maxConnections:  Int                      = 2,
+      minConnections:  Int                      = 0,
       maxRetries:      Int                      = 2,
       maxOpenRequests: Int                      = 8,
       pipeliningLimit: Int                      = 1,
       idleTimeout:     Duration                 = 5.seconds,
       ccSettings:      ClientConnectionSettings = ClientConnectionSettings(system)) = {
-      val settings = new ConnectionPoolSettingsImpl(maxConnections, maxRetries, maxOpenRequests, pipeliningLimit,
+      val settings = new ConnectionPoolSettingsImpl(maxConnections, minConnections, maxRetries, maxOpenRequests, pipeliningLimit,
         idleTimeout, ClientConnectionSettings(system))
       flowTestBench(Http().superPool[T](settings = settings))
     }
@@ -357,6 +414,22 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
     def connNr(r: HttpResponse): Int = r.headers.find(_ is "conn-nr").get.value.toInt
     def requestUri(r: HttpResponse): String = r.headers.find(_ is "req-uri").get.value
+
+    /**
+     * Makes sure the given condition "f" holds in the timer period of "in".
+     * The given condition function should throw if not met.
+     * Note: Execution of "condHolds" will take at least "in" time, so for big "in" it might drain the ime budget for tests.
+     */
+    def condHolds[T](in: FiniteDuration)(f: () ⇒ T): T = {
+      val end = System.nanoTime.nanos + in
+
+      var lastR = f()
+      while (System.nanoTime.nanos < end) {
+        lastR = f()
+        Thread.sleep(50)
+      }
+      lastR
+    }
   }
 
   case class ConnNrHeader(nr: Int) extends CustomHeader {
