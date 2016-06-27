@@ -368,6 +368,7 @@ private[http] object HttpServerBluePrint {
     val shape = new BidiShape(requestParsingIn, requestPrepOut, httpResponseIn, responseCtxOut)
 
     def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
+      val pullHttpResponseIn = () ⇒ pull(httpResponseIn)
       var openRequests = immutable.Queue[RequestStart]()
       var oneHundredContinueResponsePending = false
       var pullSuppressed = false
@@ -423,15 +424,8 @@ private[http] object HttpServerBluePrint {
             isEarlyResponse
 
           emit(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
-            () ⇒ {
-              if (close) {
-                complete(responseCtxOut)
-                // when the client closes the connection, we need to pull onc more time to get the
-                // request parser to complete (it will cause an incoming EntityStreamError)
-                if (requestStart.expect100Continue) pull(requestParsingIn)
-              } else pull(httpResponseIn)
-            }
-          )
+            pullHttpResponseIn)
+          if (close && requestStart.expect100Continue) pull(requestParsingIn)
         }
         override def onUpstreamFinish() =
           if (openRequests.isEmpty && isClosed(requestParsingIn)) completeStage()
