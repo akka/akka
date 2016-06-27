@@ -129,6 +129,34 @@ class HttpConfigurationSpec extends AkkaSpec {
         server.parserSettings.illegalHeaderWarnings should ===(On)
       }
     }
+
+    "set `akka.http.host-connection-pool.min-connections` only" in {
+      configuredSystem(
+        """
+          akka.http.host-connection-pool.min-connections = 42
+          akka.http.host-connection-pool.max-connections = 43
+        """.stripMargin) { sys ⇒
+
+        val pool = ConnectionPoolSettings(sys)
+        pool.getMinConnections should ===(42)
+        pool.getMaxConnections should ===(43)
+      }
+
+      configuredSystem(""" """) { sys ⇒
+
+        val pool = ConnectionPoolSettings(sys)
+        pool.minConnections should ===(0)
+      }
+
+      configuredSystem(
+        """
+          akka.http.host-connection-pool.min-connections = 101
+          akka.http.host-connection-pool.max-connections = 1
+        """.stripMargin) { sys ⇒
+
+        intercept[IllegalArgumentException] { ConnectionPoolSettings(sys) }
+      }
+    }
   }
 
   def configuredSystem(overrides: String)(block: ActorSystem ⇒ Unit) = {

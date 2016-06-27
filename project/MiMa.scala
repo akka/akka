@@ -3,6 +3,7 @@
  */
 package akka
 
+import com.typesafe.tools.mima.core.ProblemFilters
 import sbt._
 import sbt.Keys._
 import com.typesafe.tools.mima.plugin.MimaPlugin
@@ -890,7 +891,12 @@ object MiMa extends AutoPlugin {
       "2.4.8" -> Seq(
         // #20717 example snippet for akka http java dsl: SecurityDirectives
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage#MessageTransformations.addCredentials"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.addCredentials")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.addCredentials"),
+
+        // #20456 adding hot connection pool option
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ConnectionPoolSettings.getMinConnections"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.minConnections"),
+        FilterAnyProblemStartingWith("akka.http.impl")
       )
     )
   }
