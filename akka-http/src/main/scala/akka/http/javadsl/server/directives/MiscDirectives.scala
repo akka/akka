@@ -62,6 +62,25 @@ abstract class MiscDirectives extends MethodDirectives {
   }
 
   /**
+   * Fails the stream with [[akka.http.scaladsl.model.EntityStreamSizeException]] if its request entity size exceeds
+   * given limit. Limit given as parameter overrides limit configured with ``akka.http.parsing.max-content-length``.
+   *
+   * Beware that request entity size check is executed when entity is consumed.
+   */
+  def withSizeLimit(maxBytes: Long, inner: Supplier[Route]): Route = RouteAdapter {
+    D.withSizeLimit(maxBytes) { inner.get.delegate }
+  }
+
+  /**
+   * Disables the size limit (configured by `akka.http.parsing.max-content-length` by default) checking on the incoming
+   * [[akka.http.javadsl.model.HttpRequest]] entity.
+   * Can be useful when handling arbitrarily large data uploads in specific parts of your routes.
+   */
+  def withoutSizeLimit(inner: Supplier[Route]): Route = RouteAdapter {
+    D.withoutSizeLimit { inner.get.delegate }
+  }
+
+  /**
    * Inspects the request's `Accept-Language` header and determines,
    * which of the given language alternatives is preferred by the client.
    * (See http://tools.ietf.org/html/rfc7231#section-5.3.5 for more details on the
