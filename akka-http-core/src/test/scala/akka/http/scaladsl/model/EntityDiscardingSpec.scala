@@ -60,8 +60,8 @@ class EntityDiscardingSpec extends AkkaSpec {
       val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
       val bound = Http().bindAndHandleSync(
         req ⇒
-        HttpResponse(entity = HttpEntity(
-          ContentTypes.`text/csv(UTF-8)`, Source.fromIterator[ByteString](() ⇒ testData.iterator))),
+          HttpResponse(entity = HttpEntity(
+            ContentTypes.`text/csv(UTF-8)`, Source.fromIterator[ByteString](() ⇒ testData.iterator))),
         host, port).futureValue
 
       try {
