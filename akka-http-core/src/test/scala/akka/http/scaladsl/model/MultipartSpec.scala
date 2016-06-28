@@ -4,13 +4,13 @@
 
 package akka.http.scaladsl.model
 
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import org.scalatest.{BeforeAndAfterAll, Inside, Matchers, WordSpec}
+import org.scalatest.{ BeforeAndAfterAll, Inside, Matchers, WordSpec }
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
 import akka.actor.ActorSystem
 import headers._
@@ -43,7 +43,7 @@ class MultipartSpec extends WordSpec with Matchers with Inside with BeforeAndAft
       val result = streamed.toEntity(boundary = "boundary")
       result.contentType shouldBe MediaTypes.`multipart/mixed`.withBoundary("boundary").withCharset(HttpCharsets.`UTF-8`)
       val encoding = Await.result(result.dataBytes.runWith(Sink.seq), 1.second)
-      encoding .map(_.utf8String).mkString shouldBe "--boundary\r\nContent-Type: text/plain; charset=UTF-8\r\nETag: \"xzy\"\r\n\r\ndata\r\n--boundary--"
+      encoding.map(_.utf8String).mkString shouldBe "--boundary\r\nContent-Type: text/plain; charset=UTF-8\r\nETag: \"xzy\"\r\n\r\ndata\r\n--boundary--"
     }
   }
 

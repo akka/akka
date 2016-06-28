@@ -124,7 +124,7 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
 
     case Shutdown ⇒ // signal coming in from gateway
       log.debug("Shutting down host connection pool to {}:{}", hcps.host, hcps.port)
-      onComplete()
+      onCompleteThenStop()
       while (!inputBuffer.isEmpty) {
         val PoolRequest(request, responsePromise) = inputBuffer.dequeue()
         responsePromise.completeWith(gateway(request))
