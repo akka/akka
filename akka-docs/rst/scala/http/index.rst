@@ -9,6 +9,7 @@ Akka HTTP
    introduction
    configuration
    common/index
+   implications-of-streaming-http-entity
    low-level-server-side-api
    routing-dsl/index
    client-side/index

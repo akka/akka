@@ -8,6 +8,11 @@ defining RESTful web services. It picks up where the low-level API leaves off an
 functionality of typical web servers or frameworks, like deconstruction of URIs, content negotiation or
 static content serving.
 
+.. note::
+  It is recommended to read the :ref:`implications-of-streaming-http-entities` section, 
+  as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
+  from a background with non-"streaming first" HTTP Servers.
+
 .. toctree::
    :maxdepth: 1
 
