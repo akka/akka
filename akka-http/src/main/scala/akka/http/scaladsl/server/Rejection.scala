@@ -282,3 +282,6 @@ final case class CircuitBreakerOpenRejection(cause: CircuitBreakerOpenException)
  * (Custom marshallers can of course use it as well.)
  */
 final case class RejectionError(rejection: Rejection) extends RuntimeException
+
+case object PathMatcherExtractionFailedRejection
+  extends jserver.PathMatcherExtractionFailedRejection with Rejection

@@ -48,6 +48,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
     implicit val LIsTuple = pm.ev
     extract(ctx ⇒ pm(ctx.unmatchedPath)).flatMap {
       case Matched(rest, values) ⇒ tprovide(values) & mapRequestContext(_ withUnmatchedPath rest)
+      case Unextracted           ⇒ reject(PathMatcherExtractionFailedRejection)
       case Unmatched             ⇒ reject
     }
   }

@@ -5,6 +5,7 @@
 package akka.http.scaladsl.server
 
 import java.util.UUID
+import scala.util.{Failure, Success, Try}
 import scala.util.matching.Regex
 import scala.annotation.tailrec
 import akka.http.scaladsl.server.util.Tuple
@@ -45,7 +46,7 @@ abstract class PathMatcher[L](implicit val ev: Tuple[L]) extends (Path ⇒ PathM
 
   def tmap[R: Tuple](f: L ⇒ R): PathMatcher[R] = transform(_.map(f))
 
-  def tflatMap[R: Tuple](f: L ⇒ Option[R]): PathMatcher[R] = transform(_.flatMap(f))
+  def tflatMap[R: Tuple](f: L ⇒ Option[Try[R]]): PathMatcher[R] = transform(_.flatMap(f))
 
   /**
    * Same as `repeat(min = count, max = count)`.
@@ -92,10 +93,13 @@ abstract class PathMatcher[L](implicit val ev: Tuple[L]) extends (Path ⇒ PathM
                   case Matched(`remaining2`, _) ⇒ done1 // we made no progress, so "go back" to before the separator
                   case Matched(rest, result)    ⇒ Matched(rest, lift(extractions, result))
                   case Unmatched                ⇒ Unmatched
+                  case Unextracted              => Unextracted
                 }
                 case Unmatched ⇒ done1
+                case Unextracted => done1
               }
             case Unmatched ⇒ done
+            case Unextracted => done
           }
         } else done
       }
@@ -105,15 +109,16 @@ abstract class PathMatcher[L](implicit val ev: Tuple[L]) extends (Path ⇒ PathM
 object PathMatcher extends ImplicitPathMatcherConstruction {
   sealed abstract class Matching[+L: Tuple] {
     def map[R: Tuple](f: L ⇒ R): Matching[R]
-    def flatMap[R: Tuple](f: L ⇒ Option[R]): Matching[R]
+    def flatMap[R: Tuple](f: L ⇒ Option[Try[R]]): Matching[R]
     def andThen[R: Tuple](f: (Path, L) ⇒ Matching[R]): Matching[R]
     def orElse[R >: L](other: ⇒ Matching[R]): Matching[R]
   }
   case class Matched[L: Tuple](pathRest: Path, extractions: L) extends Matching[L] {
-    def map[R: Tuple](f: L ⇒ R) = Matched(pathRest, f(extractions))
-    def flatMap[R: Tuple](f: L ⇒ Option[R]) = f(extractions) match {
-      case Some(valuesR) ⇒ Matched(pathRest, valuesR)
-      case None          ⇒ Unmatched
+    def map[R: Tuple](f: L ⇒ R) =  Matched(pathRest, f(extractions))
+    def flatMap[R: Tuple](f: L ⇒ Option[Try[R]]) = f(extractions) match {
+      case Some(Success(valuesR)) ⇒ Matched(pathRest, valuesR)
+      case Some(Failure(e)) ⇒ Unextracted
+      case None ⇒ Unmatched
     }
     def andThen[R: Tuple](f: (Path, L) ⇒ Matching[R]) = f(pathRest, extractions)
     def orElse[R >: L](other: ⇒ Matching[R]) = this
@@ -121,9 +126,15 @@ object PathMatcher extends ImplicitPathMatcherConstruction {
   object Matched { val Empty = Matched(Path.Empty, ()) }
   case object Unmatched extends Matching[Nothing] {
     def map[R: Tuple](f: Nothing ⇒ R) = this
-    def flatMap[R: Tuple](f: Nothing ⇒ Option[R]) = this
+    def flatMap[R: Tuple](f: Nothing ⇒ Option[Try[R]]) = this
     def andThen[R: Tuple](f: (Path, Nothing) ⇒ Matching[R]) = this
     def orElse[R](other: ⇒ Matching[R]) = other
+  }
+  case object Unextracted extends Matching[Nothing] {
+    def map[R: Tuple](f: (Nothing) => R): Matching[R] = this
+    def flatMap[R: Tuple](f: (Nothing) => Option[Try[R]]): Matching[R] = this
+    def andThen[R: Tuple](f: (Path, Nothing) => Matching[R]): Matching[R] = this
+    def orElse[R](other: => Matching[R]): Matching[R] = other
   }
 
   /**
@@ -151,8 +162,8 @@ object PathMatcher extends ImplicitPathMatcherConstruction {
 
   implicit class PathMatcher1Ops[T](matcher: PathMatcher1[T]) {
     def map[R](f: T ⇒ R): PathMatcher1[R] = matcher.tmap { case Tuple1(e) ⇒ Tuple1(f(e)) }
-    def flatMap[R](f: T ⇒ Option[R]): PathMatcher1[R] =
-      matcher.tflatMap { case Tuple1(e) ⇒ f(e).map(x ⇒ Tuple1(x)) }
+    def flatMap[R](f: T ⇒ Option[Try[R]]): PathMatcher1[R] =
+      matcher.tflatMap { case Tuple1(e) ⇒ f(e).map(x ⇒ x.map(Tuple1(_))) }
   }
 
   implicit class EnhancedPathMatcher[L](underlying: PathMatcher[L]) {
@@ -161,6 +172,7 @@ object PathMatcher extends ImplicitPathMatcherConstruction {
         def apply(path: Path) = underlying(path) match {
           case Matched(rest, extractions) ⇒ Matched(rest, lift(extractions))
           case Unmatched                  ⇒ Matched(path, lift())
+          case Unextracted                ⇒ Matched(path, lift())
         }
       }
   }
@@ -432,7 +444,7 @@ trait PathMatchers {
             if (value == minusOne) digits(ix + 1, a)
             else if (value <= maxDivBase && value * base <= max - a) // protect from overflow
               digits(ix + 1, value * base + a)
-            else Unmatched
+            else Unextracted
           }
         }
         digits()
@@ -459,8 +471,11 @@ trait PathMatchers {
    */
   val DoubleNumber: PathMatcher1[Double] =
     PathMatcher("""[+-]?\d*\.?\d*""".r) flatMap { string ⇒
-      try Some(java.lang.Double.parseDouble(string))
-      catch { case _: NumberFormatException ⇒ None }
+      try Some(Success(java.lang.Double.parseDouble(string)))
+      catch {
+        case e: NumberFormatException ⇒ Some(Failure(e))
+        case _: Throwable => None
+      }
     }
 
   /**
@@ -470,8 +485,11 @@ trait PathMatchers {
    */
   val JavaUUID: PathMatcher1[UUID] =
     PathMatcher("""[\da-fA-F]{8}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{12}""".r) flatMap { string ⇒
-      try Some(UUID.fromString(string))
-      catch { case _: IllegalArgumentException ⇒ None }
+      try Some(Success(UUID.fromString(string)))
+      catch {
+        case e: IllegalArgumentException ⇒ Some(Failure(e))
+        case _: Throwable => None
+      }
     }
 
   /**
