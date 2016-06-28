@@ -4,13 +4,20 @@
 
 package akka.http.javadsl.model;
 
+import akka.http.impl.util.JavaAccessors;
+import akka.http.impl.util.Util;
+import akka.http.scaladsl.model.HttpEntity$;
+import akka.stream.javadsl.Source;
+import akka.util.ByteString;
+import scala.collection.immutable.List;
+import scala.collection.immutable.Nil$;
+
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Map;
 
-import akka.http.impl.util.JavaAccessors;
-import akka.http.scaladsl.model.HttpEntity$;
-import akka.util.ByteString;
-import akka.stream.javadsl.Source;
+import static akka.http.impl.util.Util.convertMapToScala;
+import static akka.http.impl.util.Util.convertArray;
 
 /** Constructors for HttpEntity instances */
 public final class HttpEntities {
@@ -40,6 +47,26 @@ public final class HttpEntities {
 
     public static HttpEntity.Strict create(ContentType contentType, ByteString bytes) {
         return HttpEntity$.MODULE$.apply((akka.http.scaladsl.model.ContentType) contentType, bytes);
+    }
+
+    public static Multipart.FormData fromParts(Multipart.FormData.BodyPart ... parts) {
+        return akka.http.scaladsl.model.Multipart.FormData$.MODULE$.applyNonStrict(convertArray(parts));
+    }
+
+    public static Multipart.FormData.Strict fromParts(Multipart.FormData.BodyPart.Strict ... parts) {
+        return akka.http.scaladsl.model.Multipart.FormData$.MODULE$.applyStrict(convertArray(parts));
+    }
+
+    public static Multipart.FormData.BodyPart create(String name, BodyPartEntity entity, Map<String, String> additionalDispositionParams) {
+        List nil = Nil$.MODULE$;
+        return akka.http.scaladsl.model.Multipart$FormData$BodyPart$.MODULE$.apply(name, (akka.http.scaladsl.model.BodyPartEntity) entity,
+                convertMapToScala(additionalDispositionParams), nil);
+    }
+
+    public static Multipart.FormData.BodyPart.Strict createStrict(String name, HttpEntity.Strict entity, Map<String, String> additionalDispositionParams) {
+        List nil = Nil$.MODULE$;
+        return akka.http.scaladsl.model.Multipart$FormData$BodyPart$StrictBuilder$.MODULE$.apply(name, (akka.http.scaladsl.model.HttpEntity.Strict) entity,
+                convertMapToScala(additionalDispositionParams), nil);
     }
 
     /**
@@ -87,7 +114,7 @@ public final class HttpEntities {
                 (akka.http.scaladsl.model.ContentType) contentType,
                 toScala(data));
     }
-    
+
     private static akka.stream.scaladsl.Source<ByteString,Object> toScala(Source<ByteString, ?> javaSource) {
         return (akka.stream.scaladsl.Source<ByteString,Object>)javaSource.asScala();
     }

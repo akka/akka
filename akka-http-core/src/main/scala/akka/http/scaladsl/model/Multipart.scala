@@ -328,6 +328,8 @@ object Multipart {
   object FormData {
     def apply(parts: Multipart.FormData.BodyPart.Strict*): Multipart.FormData.Strict = Strict(parts.toVector)
     def apply(parts: Multipart.FormData.BodyPart*): Multipart.FormData = Multipart.FormData(Source(parts.toVector))
+    def applyStrict(parts: Multipart.FormData.BodyPart.Strict*): Multipart.FormData.Strict = Strict(parts.toVector)
+    def applyNonStrict(parts: Multipart.FormData.BodyPart*): Multipart.FormData = Multipart.FormData(Source(parts.toVector))
 
     def apply(fields: Map[String, HttpEntity.Strict]): Multipart.FormData.Strict = Multipart.FormData.Strict {
       fields.map { case (name, entity) ⇒ Multipart.FormData.BodyPart.Strict(name, entity) }(collection.breakOut)
@@ -466,6 +468,14 @@ object Multipart {
         override def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[Multipart.FormData.BodyPart.Strict] =
           FastFuture.successful(this)
         override def productPrefix = "FormData.BodyPart.Strict"
+      }
+
+      /** Java API */
+      object StrictBuilder {
+        def apply(_name: String, _entity: HttpEntity.Strict,
+                  _additionalDispositionParams: Map[String, String]       = Map.empty,
+                  _additionalHeaders:           immutable.Seq[HttpHeader] = Nil): Multipart.FormData.BodyPart.Strict =
+          Strict(_name, _entity, _additionalDispositionParams, _additionalHeaders)
       }
     }
   }
