@@ -114,15 +114,20 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
           setTimestamp(v).
           build()
     }.toVector.asJava
-    dm.Status.newBuilder().addAllVersions(versions).build()
+    dm.Status.newBuilder()
+      .addAllVersions(versions)
+      .setReply(status.reply)
+      .build()
   }
 
   private def statusFromBinary(bytes: Array[Byte]): Status =
     statusFromProto(dm.Status.parseFrom(decompress(bytes)))
 
-  private def statusFromProto(status: dm.Status): Status =
+  private def statusFromProto(status: dm.Status): Status = {
+    val reply = if (status.hasReply) status.getReply else false
     Status(status.getVersionsList.asScala.map(v ⇒
-      addressFromProto(v.getAddress) → v.getTimestamp)(breakOut))
+      addressFromProto(v.getAddress) → v.getTimestamp)(breakOut), reply)
+  }
 
   private def deltaToProto(delta: Delta): dm.Delta = {
     val buckets = delta.buckets.map { b ⇒
