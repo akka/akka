@@ -5,7 +5,6 @@
 package akka.http.scaladsl.model.headers
 
 import akka.http.impl.model.JavaInitialization
-import akka.util.Unsafe
 
 import language.implicitConversions
 import scala.collection.immutable
@@ -16,12 +15,13 @@ import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.model.Uri
 import akka.http.impl.util.JavaMapping.Implicits._
 
-abstract class HttpOriginRange extends jm.headers.HttpOriginRange with ValueRenderable {
+trait HttpOriginRange extends jm.headers.HttpOriginRange with ValueRenderable {
   def matches(origin: HttpOrigin): Boolean
 
   /** Java API */
   def matches(origin: jm.headers.HttpOrigin): Boolean = matches(origin.asScala)
 }
+
 object HttpOriginRange {
   case object `*` extends HttpOriginRange {
     def matches(origin: HttpOrigin) = true
@@ -30,7 +30,7 @@ object HttpOriginRange {
 
   def apply(origins: HttpOrigin*): Default = Default(immutable.Seq(origins: _*))
 
-  final case class Default(origins: immutable.Seq[HttpOrigin]) extends HttpOriginRange {
+  final case class Default(origins: immutable.Seq[HttpOrigin]) extends jm.headers.HttpOriginRangeDefault with HttpOriginRange {
     def matches(origin: HttpOrigin): Boolean = origins contains origin
     def render[R <: Rendering](r: R): r.type = r ~~ origins
   }
@@ -43,6 +43,7 @@ object HttpOriginRange {
 final case class HttpOrigin(scheme: String, host: Host) extends jm.headers.HttpOrigin with ValueRenderable {
   def render[R <: Rendering](r: R): r.type = host.renderValue(r ~~ scheme ~~ "://")
 }
+
 object HttpOrigin {
   implicit val originsRenderer: Renderer[immutable.Seq[HttpOrigin]] = Renderer.seqRenderer(" ", "null")
 

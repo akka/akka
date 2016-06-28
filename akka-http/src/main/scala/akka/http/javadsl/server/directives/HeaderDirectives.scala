@@ -11,13 +11,11 @@ import akka.actor.ReflectiveDynamicAccess
 import scala.compat.java8.OptionConverters
 import scala.compat.java8.OptionConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
+import akka.http.javadsl.model.headers.HttpOriginRangeDefault
 import akka.http.javadsl.model.{ HttpHeader, StatusCodes }
-import akka.http.javadsl.model.headers.HttpOriginRange
 import akka.http.javadsl.server.{ InvalidOriginRejection, MissingHeaderRejection, Route }
-import akka.http.scaladsl.model.headers.HttpOriginRange.{ Default, `*` }
 import akka.http.scaladsl.model.headers.{ ModeledCustomHeader, ModeledCustomHeaderCompanion, Origin }
-import akka.http.scaladsl.server.directives.{ HeaderMagnet, BasicDirectives ⇒ B, HeaderDirectives ⇒ D }
-import akka.stream.ActorMaterializer
+import akka.http.scaladsl.server.directives.{ HeaderMagnet, HeaderDirectives ⇒ D }
 
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
@@ -34,12 +32,8 @@ abstract class HeaderDirectives extends FutureDirectives {
    *
    * @group header
    */
-  def checkSameOrigin(allowed: HttpOriginRange, inner: jf.Supplier[Route]): Route = RouteAdapter {
-    val a = allowed.asScala match {
-      case x: `*`.type ⇒ ???
-      case x: Default  ⇒ x
-    }
-    D.checkSameOrigin(a) { inner.get().delegate }
+  def checkSameOrigin(allowed: HttpOriginRangeDefault, inner: jf.Supplier[Route]): Route = RouteAdapter {
+    D.checkSameOrigin(allowed.asScala) { inner.get().delegate }
   }
 
   /**

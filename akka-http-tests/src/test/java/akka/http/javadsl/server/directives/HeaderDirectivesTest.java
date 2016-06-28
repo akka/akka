@@ -186,7 +186,7 @@ public class HeaderDirectivesTest extends JUnitRouteTest {
   public void testCheckSameOrigin() {
     final HttpOrigin validOriginHeader = HttpOrigin.create("http://localhost", Host.create("8080"));
 
-    final HttpOriginRange validOriginRange = HttpOriginRange.create(validOriginHeader);
+    final HttpOriginRangeDefault validOriginRange = HttpOriginRangeDefault.create(validOriginHeader);
 
     TestRoute route = testRoute(checkSameOrigin(validOriginRange, () -> complete("Result")));
 
