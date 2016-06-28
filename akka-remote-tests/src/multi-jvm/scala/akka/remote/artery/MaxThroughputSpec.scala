@@ -6,13 +6,14 @@ package akka.remote.artery
 import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.NANOSECONDS
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import akka.actor._
 import akka.remote.RemoteActorRefProvider
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
+import akka.remote.testkit.PerfFlamesSupport
 import akka.remote.testkit.STMultiNodeSpec
 import akka.serialization.ByteBufferSerializer
 import akka.serialization.SerializerWithStringManifest
@@ -199,7 +200,8 @@ class MaxThroughputSpecMultiJvmNode2 extends MaxThroughputSpec
 
 abstract class MaxThroughputSpec
   extends MultiNodeSpec(MaxThroughputSpec)
-  with STMultiNodeSpec with ImplicitSender {
+  with STMultiNodeSpec with ImplicitSender 
+  with PerfFlamesSupport {
 
   import MaxThroughputSpec._
 
@@ -268,6 +270,8 @@ abstract class MaxThroughputSpec
   def test(testSettings: TestSettings): Unit = {
     import testSettings._
     val receiverName = testName + "-rcv"
+
+    runPerfFlames(first, second)(delay = 5.seconds, time = 15.seconds)
 
     runOn(second) {
       val rep = reporter(testName)
