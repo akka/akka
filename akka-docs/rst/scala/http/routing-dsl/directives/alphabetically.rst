@@ -218,6 +218,7 @@ Directive                                   Description
 :ref:`-uploadedFile-`                       Streams one uploaded file from a multipart request to a file on disk
 :ref:`-validate-`                           Checks a given condition before running its inner route
 :ref:`-withoutRequestTimeout-`              Disables :ref:`request timeouts <request-timeout-scala>` for a given route.
+:ref:`-withoutSizeLimit-`                   Skips request entity size check
 :ref:`-withExecutionContext-`               Runs its inner route with the given alternative ``ExecutionContext``
 :ref:`-withMaterializer-`                   Runs its inner route with the given alternative ``Materializer``
 :ref:`-withLog-`                            Runs its inner route with the given alternative ``LoggingAdapter``
@@ -227,4 +228,5 @@ Directive                                   Description
 :ref:`-withRequestTimeoutResponse-`         Prepares the ``HttpResponse`` that is emitted if a request timeout is triggered.
                                             ``RequestContext => RequestContext`` function
 :ref:`-withSettings-`                       Runs its inner route with the given alternative ``RoutingSettings``
+:ref:`-withSizeLimit-`                      Applies request entity size check
 =========================================== ============================================================================
