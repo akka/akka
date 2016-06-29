@@ -427,17 +427,24 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     16,
     create = () ⇒ new ReusableInboundEnvelope, clear = inEnvelope ⇒ inEnvelope.asInstanceOf[ReusableInboundEnvelope].clear())
 
-  val (afrFileChannel, afrFlie, flightRecorder) = initializeFlightRecorder()
-
-  def createFlightRecorderEventSink(): EventSink = {
-    // FIXME there is some concurrency issue with the FlightRecorder, when shutting down.
-    //       It crashes the JVM.
-    // flightRecorder.createEventSink()
-    IgnoreEventSink
+  val (afrFileChannel, afrFlie, flightRecorder) = initializeFlightRecorder() match {
+    case None            ⇒ (None, None, None)
+    case Some((c, f, r)) ⇒ (Some(c), Some(f), Some(r))
   }
 
-  // !!! WARNING !!! This is *NOT* thread safe,
-  private val topLevelFREvents = createFlightRecorderEventSink()
+  def createFlightRecorderEventSink(synchr: Boolean = false): EventSink = {
+    flightRecorder match {
+      case Some(f) ⇒
+        val eventSink = f.createEventSink()
+        if (synchr) new SynchronizedEventSink(eventSink)
+        else eventSink
+      case None ⇒
+        IgnoreEventSink
+    }
+  }
+
+  private val topLevelFREvents =
+    createFlightRecorderEventSink(synchr = true)
 
   private val associationRegistry = new AssociationRegistry(
     remoteAddress ⇒ new Association(this, materializer, remoteAddress, controlSubject, largeMessageDestinations))
@@ -745,11 +752,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       }
       topLevelFREvents.loFreq(Transport_FlightRecorderClose, NoMetaData)
 
-      flightRecorder.close()
-      afrFileChannel.force(true)
-      afrFileChannel.close()
+      flightRecorder.foreach(_.close())
+      afrFileChannel.foreach(_.force(true))
+      afrFileChannel.foreach(_.close())
       // TODO: Be smarter about this in tests and make it always-on-for prod
-      afrFlie.delete()
+      afrFlie.foreach(_.delete())
       Done
     }
   }
@@ -893,13 +900,16 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .toMat(messageDispatcherSink)(Keep.both)
   }
 
-  private def initializeFlightRecorder(): (FileChannel, File, FlightRecorder) = {
-    // TODO: Figure out where to put it, currently using temporary files
-    val afrFile = File.createTempFile("artery", ".afr")
-    afrFile.deleteOnExit()
+  private def initializeFlightRecorder(): Option[(FileChannel, File, FlightRecorder)] = {
+    if (remoteSettings.FlightRecorderEnabled) {
+      // TODO: Figure out where to put it, currently using temporary files
+      val afrFile = File.createTempFile("artery", ".afr")
+      afrFile.deleteOnExit()
 
-    val fileChannel = FlightRecorder.prepareFileForFlightRecorder(afrFile)
-    (fileChannel, afrFile, new FlightRecorder(fileChannel))
+      val fileChannel = FlightRecorder.prepareFileForFlightRecorder(afrFile)
+      Some((fileChannel, afrFile, new FlightRecorder(fileChannel)))
+    } else
+      None
   }
 
   def inboundTestFlow: Flow[InboundEnvelope, InboundEnvelope, TestManagementApi] =

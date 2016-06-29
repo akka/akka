@@ -205,7 +205,7 @@ private[remote] final class HeaderBuilderImpl(inboundCompression: InboundCompres
   override def isNoSender: Boolean =
     (_senderActorRef eq null) && _senderActorRefIdx == EnvelopeBuffer.DeadLettersCode
   override def senderActorRef(originUid: Long): OptionVal[ActorRef] =
-    if (_senderActorRef eq null) inboundCompression.decompressActorRef(originUid, actorRefCompressionTableVersion, _senderActorRefIdx) 
+    if (_senderActorRef eq null) inboundCompression.decompressActorRef(originUid, actorRefCompressionTableVersion, _senderActorRefIdx)
     else OptionVal.None
   def senderActorRefPath: OptionVal[String] =
     OptionVal(_senderActorRef)
