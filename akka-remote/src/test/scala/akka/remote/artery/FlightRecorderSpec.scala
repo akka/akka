@@ -370,7 +370,7 @@ class FlightRecorderSpec extends AkkaSpec {
 
   }
 
-  def withFlightRecorder(body: (FlightRecorder, FlightRecorderReader, FileChannel) ⇒ Unit): Unit = {
+  private def withFlightRecorder(body: (FlightRecorder, FlightRecorderReader, FileChannel) ⇒ Unit): Unit = {
     val file = File.createTempFile("artery", ".afr")
     file.deleteOnExit()
 

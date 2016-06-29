@@ -17,7 +17,7 @@ private[remote] class ObjectPool[A <: AnyRef](capacity: Int, create: () ⇒ A, c
     else obj
   }
 
-  def release(obj: A) = {
+  def release(obj: A): Boolean = {
     clear(obj)
     (!pool.offer(obj))
   }
