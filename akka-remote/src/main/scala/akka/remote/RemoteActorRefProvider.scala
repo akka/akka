@@ -19,6 +19,7 @@ import akka.ConfigurationException
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.remote.artery.ArteryTransport
 import akka.util.OptionVal
+import akka.remote.artery.OutboundEnvelope
 
 /**
  * INTERNAL API
@@ -96,6 +97,10 @@ private[akka] object RemoteActorRefProvider {
         // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
         // the dead letter status
         if (seqOpt.isEmpty) super.!(m)(senderOption.orNull)
+      case env: OutboundEnvelope ⇒
+        super.!(env.message)(env.sender.orNull)
+      case DeadLetter(env: OutboundEnvelope, _, _) ⇒
+        super.!(env.message)(env.sender.orNull)
       case _ ⇒ super.!(message)(sender)
     }
 

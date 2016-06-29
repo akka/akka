@@ -10,7 +10,6 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import akka.Done
-import akka.remote.EndpointManager.Send
 import akka.remote.UniqueAddress
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import akka.stream.Attributes
@@ -48,21 +47,21 @@ private[akka] class SystemMessageDelivery(
   deadLetters:     ActorRef,
   resendInterval:  FiniteDuration,
   maxBufferSize:   Int)
-  extends GraphStage[FlowShape[Send, Send]] {
+  extends GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] {
 
   import SystemMessageDelivery._
 
-  val in: Inlet[Send] = Inlet("SystemMessageDelivery.in")
-  val out: Outlet[Send] = Outlet("SystemMessageDelivery.out")
-  override val shape: FlowShape[Send, Send] = FlowShape(in, out)
+  val in: Inlet[OutboundEnvelope] = Inlet("SystemMessageDelivery.in")
+  val out: Outlet[OutboundEnvelope] = Outlet("SystemMessageDelivery.out")
+  override val shape: FlowShape[OutboundEnvelope, OutboundEnvelope] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler with ControlMessageObserver {
 
       private var replyObserverAttached = false
       private var seqNo = 0L // sequence number for the first message will be 1
-      private val unacknowledged = new ArrayDeque[Send]
-      private var resending = new ArrayDeque[Send]
+      private val unacknowledged = new ArrayDeque[OutboundEnvelope]
+      private var resending = new ArrayDeque[OutboundEnvelope]
       private var resendingFromSeqNo = -1L
       private var stopping = false
 
@@ -156,43 +155,49 @@ private[akka] class SystemMessageDelivery(
 
       private def tryResend(): Unit = {
         if (isAvailable(out) && !resending.isEmpty)
-          push(out, resending.poll())
+          pushCopy(resending.poll())
+      }
+
+      // important to not send the buffered instance, since it's mutable
+      private def pushCopy(outboundEnvelope: OutboundEnvelope): Unit = {
+        push(out, outboundEnvelope.copy())
       }
 
       // InHandler
       override def onPush(): Unit = {
-        grab(in) match {
-          case s @ Send(_: HandshakeReq, _, _, _) ⇒
+        val outboundEnvelope = grab(in)
+        outboundEnvelope.message match {
+          case _: HandshakeReq ⇒
             // pass on HandshakeReq
             if (isAvailable(out))
-              push(out, s)
-          case s @ Send(ClearSystemMessageDelivery, _, _, _) ⇒
+              pushCopy(outboundEnvelope)
+          case ClearSystemMessageDelivery ⇒
             clear()
             pull(in)
-          case s @ Send(msg: ControlMessage, _, _, _) ⇒
+          case _: ControlMessage ⇒
             // e.g. ActorSystemTerminating, no need for acked delivery
             if (resending.isEmpty && isAvailable(out))
-              push(out, s)
+              pushCopy(outboundEnvelope)
             else {
-              resending.offer(s)
+              resending.offer(outboundEnvelope)
               tryResend()
             }
-          case s @ Send(msg: AnyRef, _, _, _) ⇒
+          case msg ⇒
             if (unacknowledged.size < maxBufferSize) {
               seqNo += 1
-              val sendMsg = s.copy(message = SystemMessageEnvelope(msg, seqNo, localAddress))
-              unacknowledged.offer(sendMsg)
+              val sendEnvelope = outboundEnvelope.withMessage(SystemMessageEnvelope(msg, seqNo, localAddress))
+              unacknowledged.offer(sendEnvelope)
               scheduleOnce(ResendTick, resendInterval)
               if (resending.isEmpty && isAvailable(out))
-                push(out, sendMsg)
+                pushCopy(sendEnvelope)
               else {
-                resending.offer(sendMsg)
+                resending.offer(sendEnvelope)
                 tryResend()
               }
             } else {
               // buffer overflow
               outboundContext.quarantine(reason = s"System message delivery buffer overflow, size [$maxBufferSize]")
-              deadLetters ! s
+              deadLetters ! outboundEnvelope
               pull(in)
             }
         }
