@@ -34,6 +34,8 @@ final class RemoteSettings(val config: Config) {
   val IdleCpuLevel: Int = getInt("akka.remote.artery.advanced.idle-cpu-level").requiring(level ⇒
     1 <= level && level <= 10, "idle-cpu-level must be between 1 and 10")
 
+  val FlightRecorderEnabled: Boolean = getBoolean("akka.remote.artery.advanced.flight-recorder.enabled")
+
   val ArteryCompressionSettings = CompressionSettings(getConfig("akka.remote.artery.advanced.compression"))
 
   val LogReceive: Boolean = getBoolean("akka.remote.log-received-messages")
