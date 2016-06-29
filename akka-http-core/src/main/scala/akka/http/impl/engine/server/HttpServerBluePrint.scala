@@ -392,7 +392,8 @@ private[http] object HttpServerBluePrint {
             case x: EntityStreamError if messageEndPending && openRequests.isEmpty ⇒
               // client terminated the connection after receiving an early response to 100-continue
               completeStage()
-            case x ⇒ push(requestPrepOut, x)
+            case x ⇒
+              push(requestPrepOut, x)
           }
         override def onUpstreamFinish() =
           if (openRequests.isEmpty) completeStage()
@@ -414,19 +415,17 @@ private[http] object HttpServerBluePrint {
           val isEarlyResponse = messageEndPending && openRequests.isEmpty
           if (isEarlyResponse && response.status.isSuccess)
             log.warning(
-              """Sending 2xx response before end of request was received...
-                |Note that the connection will be closed after this response. Also, many clients will not read early responses!
-                |Consider waiting for the request end before dispatching this response!""".stripMargin)
+              "Sending an 2xx 'early' response before end of request was received... " + 
+              "Note that the connection will be closed after this response. Also, many clients will not read early responses! " +
+              "Consider only issuing this response after the request data has been completely read!")
           val close = requestStart.closeRequested ||
-            requestStart.expect100Continue && oneHundredContinueResponsePending ||
-            isClosed(requestParsingIn) && openRequests.isEmpty ||
+            (requestStart.expect100Continue && oneHundredContinueResponsePending) ||
+            (isClosed(requestParsingIn) && openRequests.isEmpty) ||
             isEarlyResponse
+
           emit(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
             pullHttpResponseIn)
-          if (close) complete(responseCtxOut)
-          // when the client closes the connection, we need to pull onc more time to get the
-          // request parser to complete
-          if (close && isEarlyResponse) pull(requestParsingIn)
+          if (close && requestStart.expect100Continue) pull(requestParsingIn)
         }
         override def onUpstreamFinish() =
           if (openRequests.isEmpty && isClosed(requestParsingIn)) completeStage()
