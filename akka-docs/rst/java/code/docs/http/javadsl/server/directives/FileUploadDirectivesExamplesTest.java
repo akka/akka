@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 
-public class FileUploadDirectivesExampleTest extends JUnitRouteTest {
+public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
 
     @Test
     public void testUploadedFile() {
