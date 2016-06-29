@@ -116,7 +116,7 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
     }.toVector.asJava
     dm.Status.newBuilder()
       .addAllVersions(versions)
-      .setReply(status.reply)
+      .setReplyToStatus(status.isReplyToStatus)
       .build()
   }
 
@@ -124,9 +124,9 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
     statusFromProto(dm.Status.parseFrom(decompress(bytes)))
 
   private def statusFromProto(status: dm.Status): Status = {
-    val reply = if (status.hasReply) status.getReply else false
+    val isReplyToStatus = if (status.hasReplyToStatus) status.getReplyToStatus else false
     Status(status.getVersionsList.asScala.map(v ⇒
-      addressFromProto(v.getAddress) → v.getTimestamp)(breakOut), reply)
+      addressFromProto(v.getAddress) → v.getTimestamp)(breakOut), isReplyToStatus)
   }
 
   private def deltaToProto(delta: Delta): dm.Delta = {

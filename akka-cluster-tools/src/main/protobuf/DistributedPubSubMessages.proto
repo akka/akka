@@ -11,7 +11,7 @@ message Status {
     required int64 timestamp = 2;
   }
   repeated Version versions = 1;
-  optional bool reply = 2;
+  optional bool replyToStatus = 2;
 }
 
 message Delta {

@@ -36,15 +36,15 @@ public final class DistributedPubSubMessages {
     akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.VersionOrBuilder getVersionsOrBuilder(
         int index);
 
-    // optional bool reply = 2;
+    // optional bool replyToStatus = 2;
     /**
-     * <code>optional bool reply = 2;</code>
+     * <code>optional bool replyToStatus = 2;</code>
      */
-    boolean hasReply();
+    boolean hasReplyToStatus();
     /**
-     * <code>optional bool reply = 2;</code>
+     * <code>optional bool replyToStatus = 2;</code>
      */
-    boolean getReply();
+    boolean getReplyToStatus();
   }
   /**
    * Protobuf type {@code Status}
@@ -107,7 +107,7 @@ public final class DistributedPubSubMessages {
             }
             case 16: {
               bitField0_ |= 0x00000001;
-              reply_ = input.readBool();
+              replyToStatus_ = input.readBool();
               break;
             }
           }
@@ -801,25 +801,25 @@ public final class DistributedPubSubMessages {
       return versions_.get(index);
     }
 
-    // optional bool reply = 2;
-    public static final int REPLY_FIELD_NUMBER = 2;
-    private boolean reply_;
+    // optional bool replyToStatus = 2;
+    public static final int REPLYTOSTATUS_FIELD_NUMBER = 2;
+    private boolean replyToStatus_;
     /**
-     * <code>optional bool reply = 2;</code>
+     * <code>optional bool replyToStatus = 2;</code>
      */
-    public boolean hasReply() {
+    public boolean hasReplyToStatus() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>optional bool reply = 2;</code>
+     * <code>optional bool replyToStatus = 2;</code>
      */
-    public boolean getReply() {
-      return reply_;
+    public boolean getReplyToStatus() {
+      return replyToStatus_;
     }
 
     private void initFields() {
       versions_ = java.util.Collections.emptyList();
-      reply_ = false;
+      replyToStatus_ = false;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -843,7 +843,7 @@ public final class DistributedPubSubMessages {
         output.writeMessage(1, versions_.get(i));
       }
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBool(2, reply_);
+        output.writeBool(2, replyToStatus_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -860,7 +860,7 @@ public final class DistributedPubSubMessages {
       }
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += akka.protobuf.CodedOutputStream
-          .computeBoolSize(2, reply_);
+          .computeBoolSize(2, replyToStatus_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -985,7 +985,7 @@ public final class DistributedPubSubMessages {
         } else {
           versionsBuilder_.clear();
         }
-        reply_ = false;
+        replyToStatus_ = false;
         bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
@@ -1027,7 +1027,7 @@ public final class DistributedPubSubMessages {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000001;
         }
-        result.reply_ = reply_;
+        result.replyToStatus_ = replyToStatus_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -1070,8 +1070,8 @@ public final class DistributedPubSubMessages {
             }
           }
         }
-        if (other.hasReply()) {
-          setReply(other.getReply());
+        if (other.hasReplyToStatus()) {
+          setReplyToStatus(other.getReplyToStatus());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -1346,35 +1346,35 @@ public final class DistributedPubSubMessages {
         return versionsBuilder_;
       }
 
-      // optional bool reply = 2;
-      private boolean reply_ ;
+      // optional bool replyToStatus = 2;
+      private boolean replyToStatus_ ;
       /**
-       * <code>optional bool reply = 2;</code>
+       * <code>optional bool replyToStatus = 2;</code>
        */
-      public boolean hasReply() {
+      public boolean hasReplyToStatus() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>optional bool reply = 2;</code>
+       * <code>optional bool replyToStatus = 2;</code>
        */
-      public boolean getReply() {
-        return reply_;
+      public boolean getReplyToStatus() {
+        return replyToStatus_;
       }
       /**
-       * <code>optional bool reply = 2;</code>
+       * <code>optional bool replyToStatus = 2;</code>
        */
-      public Builder setReply(boolean value) {
+      public Builder setReplyToStatus(boolean value) {
         bitField0_ |= 0x00000002;
-        reply_ = value;
+        replyToStatus_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional bool reply = 2;</code>
+       * <code>optional bool replyToStatus = 2;</code>
        */
-      public Builder clearReply() {
+      public Builder clearReplyToStatus() {
         bitField0_ = (bitField0_ & ~0x00000002);
-        reply_ = false;
+        replyToStatus_ = false;
         onChanged();
         return this;
       }
@@ -7592,25 +7592,25 @@ public final class DistributedPubSubMessages {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\037DistributedPubSubMessages.proto\"s\n\006Sta" +
-      "tus\022!\n\010versions\030\001 \003(\0132\017.Status.Version\022\r" +
-      "\n\005reply\030\002 \001(\010\0327\n\007Version\022\031\n\007address\030\001 \002(" +
-      "\0132\010.Address\022\021\n\ttimestamp\030\002 \002(\003\"\256\001\n\005Delta" +
-      "\022\036\n\007buckets\030\001 \003(\0132\r.Delta.Bucket\0322\n\005Entr" +
-      "y\022\013\n\003key\030\001 \002(\t\022\017\n\007version\030\002 \002(\003\022\013\n\003ref\030\003" +
-      " \001(\t\032Q\n\006Bucket\022\027\n\005owner\030\001 \002(\0132\010.Address\022" +
-      "\017\n\007version\030\002 \002(\003\022\035\n\007content\030\003 \003(\0132\014.Delt" +
-      "a.Entry\"K\n\007Address\022\016\n\006system\030\001 \002(\t\022\020\n\010ho" +
-      "stname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010protocol\030\004",
-      " \001(\t\"F\n\004Send\022\014\n\004path\030\001 \002(\t\022\025\n\rlocalAffin" +
-      "ity\030\002 \002(\010\022\031\n\007payload\030\003 \002(\0132\010.Payload\"H\n\t" +
-      "SendToAll\022\014\n\004path\030\001 \002(\t\022\022\n\nallButSelf\030\002 " +
-      "\002(\010\022\031\n\007payload\030\003 \002(\0132\010.Payload\"3\n\007Publis" +
-      "h\022\r\n\005topic\030\001 \002(\t\022\031\n\007payload\030\003 \002(\0132\010.Payl" +
-      "oad\"Q\n\007Payload\022\027\n\017enclosedMessage\030\001 \002(\014\022" +
-      "\024\n\014serializerId\030\002 \002(\005\022\027\n\017messageManifest" +
-      "\030\004 \001(\014B$\n akka.cluster.pubsub.protobuf.m" +
-      "sgH\001"
+      "\n\037DistributedPubSubMessages.proto\"{\n\006Sta" +
+      "tus\022!\n\010versions\030\001 \003(\0132\017.Status.Version\022\025" +
+      "\n\rreplyToStatus\030\002 \001(\010\0327\n\007Version\022\031\n\007addr" +
+      "ess\030\001 \002(\0132\010.Address\022\021\n\ttimestamp\030\002 \002(\003\"\256" +
+      "\001\n\005Delta\022\036\n\007buckets\030\001 \003(\0132\r.Delta.Bucket" +
+      "\0322\n\005Entry\022\013\n\003key\030\001 \002(\t\022\017\n\007version\030\002 \002(\003\022" +
+      "\013\n\003ref\030\003 \001(\t\032Q\n\006Bucket\022\027\n\005owner\030\001 \002(\0132\010." +
+      "Address\022\017\n\007version\030\002 \002(\003\022\035\n\007content\030\003 \003(" +
+      "\0132\014.Delta.Entry\"K\n\007Address\022\016\n\006system\030\001 \002" +
+      "(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010pr",
+      "otocol\030\004 \001(\t\"F\n\004Send\022\014\n\004path\030\001 \002(\t\022\025\n\rlo" +
+      "calAffinity\030\002 \002(\010\022\031\n\007payload\030\003 \002(\0132\010.Pay" +
+      "load\"H\n\tSendToAll\022\014\n\004path\030\001 \002(\t\022\022\n\nallBu" +
+      "tSelf\030\002 \002(\010\022\031\n\007payload\030\003 \002(\0132\010.Payload\"3" +
+      "\n\007Publish\022\r\n\005topic\030\001 \002(\t\022\031\n\007payload\030\003 \002(" +
+      "\0132\010.Payload\"Q\n\007Payload\022\027\n\017enclosedMessag" +
+      "e\030\001 \002(\014\022\024\n\014serializerId\030\002 \002(\005\022\027\n\017message" +
+      "Manifest\030\004 \001(\014B$\n akka.cluster.pubsub.pr" +
+      "otobuf.msgH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -7622,7 +7622,7 @@ public final class DistributedPubSubMessages {
           internal_static_Status_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Status_descriptor,
-              new java.lang.String[] { "Versions", "Reply", });
+              new java.lang.String[] { "Versions", "ReplyToStatus", });
           internal_static_Status_Version_descriptor =
             internal_static_Status_descriptor.getNestedTypes().get(0);
           internal_static_Status_Version_fieldAccessorTable = new

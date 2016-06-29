@@ -140,20 +140,22 @@ class DistributedPubSubRestartSpec extends MultiNodeSpec(DistributedPubSubRestar
           system.name,
           ConfigFactory.parseString(s"akka.remote.netty.tcp.port=${Cluster(system).selfAddress.port.get}").withFallback(
             system.settings.config))
-        // don't join the old cluster
-        Cluster(newSystem).join(Cluster(newSystem).selfAddress)
-        val newMediator = DistributedPubSub(newSystem).mediator
-        val probe = TestProbe()(newSystem)
-        newMediator.tell(Subscribe("topic2", probe.ref), probe.ref)
-        probe.expectMsgType[SubscribeAck]
+        try {
+          // don't join the old cluster
+          Cluster(newSystem).join(Cluster(newSystem).selfAddress)
+          val newMediator = DistributedPubSub(newSystem).mediator
+          val probe = TestProbe()(newSystem)
+          newMediator.tell(Subscribe("topic2", probe.ref), probe.ref)
+          probe.expectMsgType[SubscribeAck]
 
-        // let them gossip, but Delta should not be exchanged
-        probe.expectNoMsg(5.seconds)
-        newMediator.tell(Internal.DeltaCount, probe.ref)
-        probe.expectMsg(0L)
+          // let them gossip, but Delta should not be exchanged
+          probe.expectNoMsg(5.seconds)
+          newMediator.tell(Internal.DeltaCount, probe.ref)
+          probe.expectMsg(0L)
 
-        newSystem.actorOf(Props[Shutdown], "shutdown")
-        Await.ready(newSystem.whenTerminated, 10.seconds)
+          newSystem.actorOf(Props[Shutdown], "shutdown")
+          Await.ready(newSystem.whenTerminated, 10.seconds)
+        } finally newSystem.terminate()
       }
 
     }

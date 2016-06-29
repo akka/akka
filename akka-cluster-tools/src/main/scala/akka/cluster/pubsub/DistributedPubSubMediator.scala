@@ -221,7 +221,7 @@ object DistributedPubSubMediator {
     }
 
     @SerialVersionUID(1L)
-    final case class Status(versions: Map[Address, Long], reply: Boolean) extends DistributedPubSubMessage
+    final case class Status(versions: Map[Address, Long], isReplyToStatus: Boolean) extends DistributedPubSubMessage
       with DeadLetterSuppression
     @SerialVersionUID(1L)
     final case class Delta(buckets: immutable.Iterable[Bucket]) extends DistributedPubSubMessage
@@ -619,7 +619,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
     case msg @ Unsubscribed(ack, ref) ⇒
       ref ! ack
 
-    case Status(otherVersions, reply) ⇒
+    case Status(otherVersions, isReplyToStatus) ⇒
       // only accept status from known nodes, otherwise old cluster with same address may interact
       // also accept from local for testing purposes
       if (nodes(sender().path.address) || sender().path.address.hasLocalScope) {
@@ -627,8 +627,8 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
         val delta = collectDelta(otherVersions)
         if (delta.nonEmpty)
           sender() ! Delta(delta)
-        if (!reply && otherHasNewerVersions(otherVersions))
-          sender() ! Status(versions = myVersions, reply = true) // it will reply with Delta
+        if (!isReplyToStatus && otherHasNewerVersions(otherVersions))
+          sender() ! Status(versions = myVersions, isReplyToStatus = true) // it will reply with Delta
       }
 
     case Delta(buckets) ⇒
@@ -796,7 +796,8 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
   def gossip(): Unit = selectRandomNode((nodes - selfAddress).toVector) foreach gossipTo
 
   def gossipTo(address: Address): Unit = {
-    context.actorSelection(self.path.toStringWithAddress(address)) ! Status(versions = myVersions, reply = false)
+    val sel = context.actorSelection(self.path.toStringWithAddress(address))
+    sel ! Status(versions = myVersions, isReplyToStatus = false)
   }
 
   def selectRandomNode(addresses: immutable.IndexedSeq[Address]): Option[Address] =
