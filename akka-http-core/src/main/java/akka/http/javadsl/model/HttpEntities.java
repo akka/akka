@@ -5,7 +5,6 @@
 package akka.http.javadsl.model;
 
 import akka.http.impl.util.JavaAccessors;
-import akka.http.impl.util.Util;
 import akka.http.scaladsl.model.HttpEntity$;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
