@@ -4,8 +4,9 @@
 
 package akka.http.scaladsl.server.directives
 
-import akka.http.scaladsl.model.{ StatusCodes, HttpMethods }
+import akka.http.scaladsl.model.{ ContentTypes, HttpEntity, StatusCodes, HttpMethods }
 import akka.http.scaladsl.server._
+import akka.stream.scaladsl.Source
 
 class MethodDirectivesSpec extends RoutingSpec {
 
@@ -20,6 +21,24 @@ class MethodDirectivesSpec extends RoutingSpec {
     }
     "let PUT requests pass" in {
       Put() ~> getOrPut ~> check { response shouldEqual Ok }
+    }
+  }
+
+  "head" should {
+    val headRoute = head {
+      println(s"Completing")
+      complete(HttpEntity.Default(
+        ContentTypes.`application/octet-stream`,
+        12345L,
+        Source.empty
+      ))
+    }
+
+    "allow manual complete" in {
+      Head() ~> headRoute ~> check {
+        println(s"Status ${response._1}")
+        status shouldEqual StatusCodes.OK
+      }
     }
   }
 
