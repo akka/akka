@@ -44,7 +44,7 @@ object Dependencies {
 
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val config        = "com.typesafe"                % "config"                       % "1.3.0"       // ApacheV2
-    val netty         = "io.netty"                    % "netty"                        % "3.10.3.Final" // ApacheV2
+    val netty         = "io.netty"                    % "netty"                        % "3.10.6.Final" // ApacheV2
     val scalaStm      = Def.setting { "org.scala-stm" %% "scala-stm" % scalaStmVersion.value } // Modified BSD (Scala)
 
     val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.5" // Scala License
