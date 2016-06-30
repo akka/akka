@@ -21,3 +21,10 @@ final case class HttpChallenge(scheme: String, realm: String,
   /** Java API */
   def getParams: util.Map[String, String] = params.asJava
 }
+
+object HttpChallenges {
+
+  def basic(realm: String): HttpChallenge = HttpChallenge("Basic", realm)
+
+  def oAuth2(realm: String): HttpChallenge = HttpChallenge("Bearer", realm)
+}
