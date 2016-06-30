@@ -23,7 +23,7 @@ import akka.stream.stage.TimerGraphStageLogic
 private[remote] class Encoder(
   uniqueLocalAddress: UniqueAddress,
   system:             ActorSystem,
-  compression:        OutboundCompression,
+  compression:        OutboundCompressions,
   bufferPool:         EnvelopeBufferPool)
   extends GraphStage[FlowShape[Send, EnvelopeBuffer]] {
 
@@ -35,8 +35,8 @@ private[remote] class Encoder(
     new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
       private val headerBuilder = HeaderBuilder.out(compression)
-      headerBuilder.version = ArteryTransport.Version
-      headerBuilder.uid = uniqueLocalAddress.uid
+      headerBuilder setVersion ArteryTransport.Version
+      headerBuilder setUid uniqueLocalAddress.uid
       private val localAddress = uniqueLocalAddress.address
       private val serialization = SerializationExtension(system)
       private val serializationInfo = Serialization.Information(localAddress, system)
@@ -48,7 +48,7 @@ private[remote] class Encoder(
         val envelope = bufferPool.acquire()
 
         // internally compression is applied by the builder:
-        headerBuilder.recipientActorRef = send.recipient
+        headerBuilder setRecipientActorRef send.recipient
 
         try {
           // avoiding currentTransportInformation.withValue due to thunk allocation
@@ -58,7 +58,7 @@ private[remote] class Encoder(
 
             send.senderOption match {
               case OptionVal.None    ⇒ headerBuilder.setNoSender()
-              case OptionVal.Some(s) ⇒ headerBuilder.senderActorRef = s
+              case OptionVal.Some(s) ⇒ headerBuilder setSenderActorRef s
             }
 
             MessageSerializer.serializeForArtery(serialization, send.message.asInstanceOf[AnyRef], headerBuilder, envelope)
@@ -109,7 +109,7 @@ private[remote] class Decoder(
   inboundContext:                  InboundContext,
   system:                          ExtendedActorSystem,
   resolveActorRefWithLocalAddress: String ⇒ InternalActorRef,
-  compression:                     InboundCompression,
+  compression:                     InboundCompressions, // TODO has to do demuxing on remote address It would seem, as decoder does not yet know
   bufferPool:                      EnvelopeBufferPool,
   inEnvelopePool:                  ObjectPool[InboundEnvelope]) extends GraphStage[FlowShape[EnvelopeBuffer, InboundEnvelope]] {
   val in: Inlet[EnvelopeBuffer] = Inlet("Artery.Decoder.in")
@@ -135,23 +135,29 @@ private[remote] class Decoder(
         val originUid = headerBuilder.uid
         val association = inboundContext.association(originUid)
 
-        val recipient: OptionVal[InternalActorRef] = headerBuilder.recipientActorRef match {
-          case OptionVal.Some(ref) ⇒ OptionVal(ref.asInstanceOf[InternalActorRef])
-          case OptionVal.None      ⇒ resolveRecipient(headerBuilder.recipientActorRefPath)
+        val recipient: OptionVal[InternalActorRef] = headerBuilder.recipientActorRef(originUid) match {
+          case OptionVal.Some(ref) ⇒
+            OptionVal(ref.asInstanceOf[InternalActorRef])
+          case OptionVal.None ⇒
+            // `get` on Path is safe because it surely is not a compressed value here
+            resolveRecipient(headerBuilder.recipientActorRefPath.get)
         }
 
-        val sender: InternalActorRef = headerBuilder.senderActorRef match {
-          case OptionVal.Some(ref) ⇒ ref.asInstanceOf[InternalActorRef]
-          case OptionVal.None      ⇒ resolveActorRefWithLocalAddress(headerBuilder.senderActorRefPath)
+        val sender: InternalActorRef = headerBuilder.senderActorRef(originUid) match {
+          case OptionVal.Some(ref) ⇒
+            ref.asInstanceOf[InternalActorRef]
+          case OptionVal.None ⇒
+            // `get` on Path is safe because it surely is not a compressed value here
+            resolveActorRefWithLocalAddress(headerBuilder.senderActorRefPath.get)
         }
 
         // --- hit refs and manifests for heavy-hitter counting
         association match {
           case OptionVal.Some(assoc) ⇒
             val remoteAddress = assoc.remoteAddress
-            compression.hitActorRef(remoteAddress, sender)
-            if (recipient.isDefined) compression.hitActorRef(remoteAddress, recipient.get)
-            compression.hitClassManifest(remoteAddress, headerBuilder.manifest)
+            compression.hitActorRef(originUid, headerBuilder.actorRefCompressionTableVersion, remoteAddress, sender)
+            if (recipient.isDefined) compression.hitActorRef(originUid, headerBuilder.actorRefCompressionTableVersion, remoteAddress, recipient.get)
+            compression.hitClassManifest(originUid, headerBuilder.classManifestCompressionTableVersion, remoteAddress, headerBuilder.manifest(originUid))
           case _ ⇒
             // we don't want to record hits for compression while handshake is still in progress.
             log.debug("Decoded message but unable to record hits for compression as no remoteAddress known. No association yet?")
@@ -160,7 +166,7 @@ private[remote] class Decoder(
 
         try {
           val deserializedMessage = MessageSerializer.deserializeForArtery(
-            system, serialization, headerBuilder, envelope)
+            system, originUid, serialization, headerBuilder, envelope)
 
           val decoded = inEnvelopePool.acquire()
           decoded.asInstanceOf[ReusableInboundEnvelope].init(
@@ -176,14 +182,14 @@ private[remote] class Decoder(
             // recipient for the first message that is sent to it, best effort retry
             scheduleOnce(RetryResolveRemoteDeployedRecipient(
               retryResolveRemoteDeployedRecipientAttempts,
-              headerBuilder.recipientActorRefPath, decoded), retryResolveRemoteDeployedRecipientInterval)
+              headerBuilder.recipientActorRefPath.get, decoded), retryResolveRemoteDeployedRecipientInterval) // FIXME IS THIS SAFE?
           } else
             push(out, decoded)
         } catch {
           case NonFatal(e) ⇒
             log.warning(
               "Failed to deserialize message with serializer id [{}] and manifest [{}]. {}",
-              headerBuilder.serializer, headerBuilder.manifest, e.getMessage)
+              headerBuilder.serializer, headerBuilder.manifest(originUid), e.getMessage)
             pull(in)
         } finally {
           bufferPool.release(envelope)

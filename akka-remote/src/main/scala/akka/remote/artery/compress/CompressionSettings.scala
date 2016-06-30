@@ -3,8 +3,12 @@
  */
 package akka.remote.artery.compress
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
+
+import scala.concurrent.duration._
 
 /** INTERNAL API */
 private[akka] class CompressionSettings(_config: Config) {
@@ -17,12 +21,14 @@ private[akka] class CompressionSettings(_config: Config) {
     private val c = _config.getConfig("actor-refs")
 
     val enabled = globalEnabled && c.getBoolean("enabled")
+    val advertisementInterval = c.getDuration("advertisement-interval", TimeUnit.MILLISECONDS).millis
     val max = c.getInt("max")
   }
   object manifests {
     private val c = _config.getConfig("manifests")
 
     val enabled = globalEnabled && c.getBoolean("enabled")
+    val advertisementInterval = c.getDuration("advertisement-interval", TimeUnit.MILLISECONDS).millis
     val max = c.getInt("max")
   }
 }

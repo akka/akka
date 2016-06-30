@@ -75,7 +75,7 @@ private[akka] class TestOutboundContext(
     _associationState.uniqueRemoteAddress.value match {
       case Some(Success(`peer`)) ⇒ // our value
       case _ ⇒
-        _associationState = _associationState.newIncarnation(Promise.successful(peer), NoOutboundCompression)
+        _associationState = _associationState.newIncarnation(Promise.successful(peer), NoOutboundCompressions)
     }
   }
 

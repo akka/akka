@@ -32,10 +32,9 @@ import akka.remote.ThisActorSystemQuarantinedEvent
 import akka.remote.UniqueAddress
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
-import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.remote.transport.AkkaPduCodec
 import akka.remote.transport.AkkaPduProtobufCodec
-import akka.remote.artery.compress.{ AdvertiseCompressionId, InboundCompressionImpl, CompressionProtocol }
+import akka.remote.artery.compress.{ InboundCompressionsImpl, CompressionProtocol }
 import akka.stream.AbruptTerminationException
 import akka.stream.ActorMaterializer
 import akka.stream.KillSwitches
@@ -203,7 +202,7 @@ private[akka] object AssociationState {
       incarnation = 1,
       uniqueRemoteAddressPromise = Promise(),
       quarantined = ImmutableLongMap.empty[QuarantinedTimestamp],
-      outboundCompression = NoOutboundCompression)
+      outboundCompression = NoOutboundCompressions)
 
   final case class QuarantinedTimestamp(nanoTime: Long) {
     override def toString: String =
@@ -218,7 +217,7 @@ private[akka] final class AssociationState(
   val incarnation:                Int,
   val uniqueRemoteAddressPromise: Promise[UniqueAddress],
   val quarantined:                ImmutableLongMap[AssociationState.QuarantinedTimestamp],
-  val outboundCompression:        OutboundCompression) {
+  val outboundCompression:        OutboundCompressions) {
 
   import AssociationState.QuarantinedTimestamp
 
@@ -244,7 +243,7 @@ private[akka] final class AssociationState(
     }
   }
 
-  def newIncarnation(remoteAddressPromise: Promise[UniqueAddress], compression: OutboundCompression): AssociationState =
+  def newIncarnation(remoteAddressPromise: Promise[UniqueAddress], compression: OutboundCompressions): AssociationState =
     new AssociationState(incarnation + 1, remoteAddressPromise, quarantined, compression)
 
   def newQuarantined(): AssociationState =
@@ -254,7 +253,7 @@ private[akka] final class AssociationState(
           incarnation,
           uniqueRemoteAddressPromise,
           quarantined = quarantined.updated(a.uid, QuarantinedTimestamp(System.nanoTime())),
-          outboundCompression = NoOutboundCompression) // after quarantine no compression needed anymore, drop it
+          outboundCompression = NoOutboundCompressions) // after quarantine no compression needed anymore, drop it
       case _ ⇒ this
     }
 
@@ -534,17 +533,17 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def runInboundStreams(): Unit = {
-    val noCompression = new NoInboundCompression(system) // TODO possibly enable on other channels too https://github.com/akka/akka/pull/20546/files#r68074082
-    val compression = createInboundCompressionTable(this)
+    val noCompressions = new NoInboundCompressions(system) // TODO possibly enable on other channels too https://github.com/akka/akka/pull/20546/files#r68074082
+    val compressions = createInboundCompressions(this)
 
-    runInboundControlStream(noCompression)
-    runInboundOrdinaryMessagesStream(compression)
+    runInboundControlStream(noCompressions)
+    runInboundOrdinaryMessagesStream(compressions)
     if (largeMessageDestinationsEnabled) {
       runInboundLargeMessagesStream()
     }
   }
 
-  private def runInboundControlStream(compression: InboundCompression): Unit = {
+  private def runInboundControlStream(compression: InboundCompressions): Unit = {
     val (ctrl, completed) =
       if (remoteSettings.TestMode) {
         val (mgmt, (ctrl, completed)) =
@@ -584,15 +583,15 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         inboundEnvelope.message match {
           case m: CompressionMessage ⇒
             m match {
-              case CompressionProtocol.ActorRefCompressionAdvertisement(from, ref, id) ⇒
-                log.debug("Incoming ActorRef compression advertisement from [{}], allocating: [{} => {}]", from, ref, id)
-                association(from.address).compression.allocateActorRefCompressionId(ref, id)
-                system.eventStream.publish(CompressionProtocol.Events.ReceivedCompressionAdvertisement(from, ref, id))
+              case CompressionProtocol.ActorRefCompressionAdvertisement(from, table) ⇒
+                log.debug("Incoming ActorRef compression advertisement from [{}], table: [{}]", from, table)
+                association(from.address).compression.applyActorRefCompressionTable(table)
+                system.eventStream.publish(CompressionProtocol.Events.ReceivedCompressionTable(from, table))
 
-              case CompressionProtocol.ClassManifestCompressionAdvertisement(from, manifest, id) ⇒
-                log.debug("Incoming Class Manifest compression advertisement from [{}], allocating: [{} => {}]", from, manifest, id)
-                association(from.address).compression.allocateClassManifestCompressionId(manifest, id)
-                system.eventStream.publish(CompressionProtocol.Events.ReceivedCompressionAdvertisement(from, manifest, id))
+              case CompressionProtocol.ClassManifestCompressionAdvertisement(from, table) ⇒
+                log.debug("Incoming Class Manifest compression advertisement from [{}], table: [{}]", from, table)
+                association(from.address).compression.applyClassManifestCompressionTable(table)
+                system.eventStream.publish(CompressionProtocol.Events.ReceivedCompressionTable(from, table))
             }
           case _ ⇒ // not interested in non CompressionMessages
         }
@@ -601,7 +600,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     attachStreamRestart("Inbound control stream", completed, () ⇒ runInboundControlStream(compression))
   }
 
-  private def runInboundOrdinaryMessagesStream(compression: InboundCompression): Unit = {
+  private def runInboundOrdinaryMessagesStream(compression: InboundCompressions): Unit = {
     val completed =
       if (remoteSettings.TestMode) {
         val (mgmt, c) = aeronSource(ordinaryStreamId, envelopePool)
@@ -622,7 +621,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def runInboundLargeMessagesStream(): Unit = {
-    val compression = new NoInboundCompression(system) // no compression on large message stream for now
+    val compression = new NoInboundCompressions(system) // no compression on large message stream for now
 
     val completed =
       if (remoteSettings.TestMode) {
@@ -738,7 +737,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     association(remoteAddress).quarantine(reason = "", uid.map(_.toLong))
   }
 
-  def outbound(outboundContext: OutboundContext, compression: OutboundCompression): Sink[Send, Future[Done]] = {
+  def outbound(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[Send, Future[Done]] = {
     Flow.fromGraph(killSwitch.flow[Send])
       .via(new OutboundHandshake(system, outboundContext, handshakeTimeout, handshakeRetryInterval, injectHandshakeInterval))
       .via(encoder(compression))
@@ -746,7 +745,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         envelopePool, giveUpSendAfter, flightRecorder.createEventSink()))(Keep.right)
   }
 
-  def outboundLarge(outboundContext: OutboundContext, compression: OutboundCompression): Sink[Send, Future[Done]] = {
+  def outboundLarge(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[Send, Future[Done]] = {
     Flow.fromGraph(killSwitch.flow[Send])
       .via(new OutboundHandshake(system, outboundContext, handshakeTimeout, handshakeRetryInterval, injectHandshakeInterval))
       .via(createEncoder(largeEnvelopePool, compression))
@@ -754,7 +753,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         envelopePool, giveUpSendAfter, flightRecorder.createEventSink()))(Keep.right)
   }
 
-  def outboundControl(outboundContext: OutboundContext, compression: OutboundCompression): Sink[Send, (OutboundControlIngress, Future[Done])] = {
+  def outboundControl(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[Send, (OutboundControlIngress, Future[Done])] = {
     Flow.fromGraph(killSwitch.flow[Send])
       .via(new OutboundHandshake(system, outboundContext, handshakeTimeout, handshakeRetryInterval, injectHandshakeInterval))
       .via(new SystemMessageDelivery(outboundContext, system.deadLetters, systemMessageResendInterval,
@@ -767,17 +766,17 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
   }
 
-  def createEncoder(compression: OutboundCompression, bufferPool: EnvelopeBufferPool): Flow[Send, EnvelopeBuffer, NotUsed] =
+  def createEncoder(compression: OutboundCompressions, bufferPool: EnvelopeBufferPool): Flow[Send, EnvelopeBuffer, NotUsed] =
     Flow.fromGraph(new Encoder(localAddress, system, compression, bufferPool))
 
-  private def createInboundCompressionTable(inboundContext: InboundContext): InboundCompression =
-    if (remoteSettings.ArteryCompressionSettings.enabled) new InboundCompressionImpl(system, inboundContext)
-    else new NoInboundCompression(system)
+  private def createInboundCompressions(inboundContext: InboundContext): InboundCompressions =
+    if (remoteSettings.ArteryCompressionSettings.enabled) new InboundCompressionsImpl(system, inboundContext)
+    else new NoInboundCompressions(system)
 
-  def createEncoder(pool: EnvelopeBufferPool, compression: OutboundCompression): Flow[Send, EnvelopeBuffer, NotUsed] =
+  def createEncoder(pool: EnvelopeBufferPool, compression: OutboundCompressions): Flow[Send, EnvelopeBuffer, NotUsed] =
     Flow.fromGraph(new Encoder(localAddress, system, compression, pool))
 
-  def encoder(compression: OutboundCompression): Flow[Send, EnvelopeBuffer, NotUsed] = createEncoder(envelopePool, compression)
+  def encoder(compression: OutboundCompressions): Flow[Send, EnvelopeBuffer, NotUsed] = createEncoder(envelopePool, compression)
 
   def aeronSource(streamId: Int, pool: EnvelopeBufferPool): Source[EnvelopeBuffer, NotUsed] =
     Source.fromGraph(new AeronSource(inboundChannel, streamId, aeron, taskRunner, pool,
@@ -788,14 +787,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     inboundEnvelopePool.release(m)
   }
 
-  def createDecoder(compression: InboundCompression, bufferPool: EnvelopeBufferPool): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
+  def createDecoder(compression: InboundCompressions, bufferPool: EnvelopeBufferPool): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
     val resolveActorRefWithLocalAddress: String ⇒ InternalActorRef =
       recipient ⇒ provider.resolveActorRefWithLocalAddress(recipient, localAddress.address)
     Flow.fromGraph(new Decoder(this, system, resolveActorRefWithLocalAddress, compression, bufferPool,
       inboundEnvelopePool))
   }
 
-  def decoder(compression: InboundCompression): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] =
+  def decoder(compression: InboundCompressions): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] =
     createDecoder(compression, envelopePool)
 
   def inboundSink: Sink[InboundEnvelope, Future[Done]] =
@@ -804,13 +803,13 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .via(new InboundQuarantineCheck(this))
       .toMat(messageDispatcherSink)(Keep.right)
 
-  def inboundFlow(compression: InboundCompression): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
+  def inboundFlow(compression: InboundCompressions): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
     Flow[EnvelopeBuffer]
       .via(killSwitch.flow)
       .via(decoder(compression))
   }
 
-  def inboundLargeFlow(compression: InboundCompression): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
+  def inboundLargeFlow(compression: InboundCompressions): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
     Flow[EnvelopeBuffer]
       .via(killSwitch.flow)
       .via(createDecoder(compression, largeEnvelopePool))

@@ -33,6 +33,14 @@ object CompressionIntegrationSpec {
        remote.artery.port = 0
        remote.handshake-timeout = 10s
        
+       remote.artery.advanced.compression {
+         enabled = on
+         actor-refs {
+           enabled = on
+           advertisement-interval = 3 seconds
+         }
+       }
+       
      }
   """)
 
@@ -67,11 +75,17 @@ class CompressionIntegrationSpec extends AkkaSpec(CompressionIntegrationSpec.com
       // cause testActor-1 to become a heavy hitter
       (1 to messagesToExchange).foreach { i ⇒ voidSel ! "hello" } // does not reply, but a hot receiver should be advertised
 
-      val a1 = aProbe.expectMsgType[Events.ReceivedCompressionAdvertisement](10.seconds)
+      val a1 = aProbe.expectMsgType[Events.ReceivedCompressionTable[ActorRef]](10.seconds)
       info("System [A] received: " + a1)
-      a1.id should ===(1)
-      a1.key.toString should include(testActor.path.name)
+      assertCompression[ActorRef](a1.table, 0, _ should ===(system.deadLetters))
+      assertCompression[ActorRef](a1.table, 1, _ should ===(testActor))
     }
+  }
+
+  def assertCompression[T](table: CompressionTable[T], id: Int, assertion: T ⇒ Unit): Unit = {
+    table.map.find(_._2 == id)
+      .orElse { throw new AssertionError(s"No key was compressed to the id [$id]! Table was: $table") }
+      .foreach(i ⇒ assertion(i._1))
   }
 
   def identify(_system: String, port: Int, name: String) = {
