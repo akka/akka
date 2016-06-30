@@ -12,7 +12,6 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.stream.javadsl.Framing;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
-import akka.util.ByteString$;
 import org.junit.Test;
 import java.io.File;
 import java.util.Arrays;
@@ -41,15 +40,14 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
         filenameMapping.put("filename", "data.csv");
 
         akka.http.javadsl.model.Multipart.FormData multipartForm =
-                HttpEntities.fromParts(HttpEntities.createStrict("csv",
+                Multiparts.createStrictFormDataFromParts(Multiparts.createFormDataBodyPartStrict("csv",
                         HttpEntities.create(ContentTypes.TEXT_PLAIN_UTF8,
                         "1,5,7\n11,13,17"), filenameMapping));
 
         // test:
         testRoute(route).run(HttpRequest.POST("/").withEntity(
                 multipartForm.toEntity(HttpCharsets.UTF_8, BodyPartRenderer
-                .randomBoundary(BodyPartRenderer.randomBoundary$default$1(),
-                        BodyPartRenderer.randomBoundary$default$2()))))
+                .randomBoundaryWithDefaults())))
                 .assertStatusCode(StatusCodes.OK);
         //#
     }
@@ -62,8 +60,8 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
             BiFunction<FileInfo, Source<ByteString, Object>, Route> processUploadedFile =
                     (metadata, byteSource) -> {
                         CompletionStage<Integer> sumF = byteSource.via(Framing.delimiter(
-                                ByteString$.MODULE$.apply("\n"), 1024))
-                                .mapConcat(s -> Arrays.asList(ByteString$.MODULE$.apply(s).utf8String().split(",")))
+                                ByteString.fromString("\n"), 1024))
+                                .mapConcat(bs -> Arrays.asList(bs.utf8String().split(",")))
                                 .map(s -> Integer.parseInt(s))
                                 .runFold(0, (acc, n) -> acc + n, ctx.getMaterializer());
                         return onSuccess(() -> sumF, sum -> complete("Sum: " + sum));
@@ -75,15 +73,14 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
         filenameMapping.put("filename", "primes.csv");
 
         akka.http.javadsl.model.Multipart.FormData multipartForm =
-                HttpEntities.fromParts(HttpEntities.createStrict("csv",
+                Multiparts.createStrictFormDataFromParts(
+                        Multiparts.createFormDataBodyPartStrict("csv",
                         HttpEntities.create(ContentTypes.TEXT_PLAIN_UTF8,
                         "2,3,5\n7,11,13,17,23\n29,31,37\n"), filenameMapping));
 
         // test:
         testRoute(route).run(HttpRequest.POST("/").withEntity(
-                multipartForm.toEntity(HttpCharsets.UTF_8, BodyPartRenderer
-                        .randomBoundary(BodyPartRenderer.randomBoundary$default$1(),
-                                BodyPartRenderer.randomBoundary$default$2()))))
+                multipartForm.toEntity(HttpCharsets.UTF_8, BodyPartRenderer.randomBoundaryWithDefaults())))
                 .assertStatusCode(StatusCodes.OK).assertEntityAs(Unmarshaller.entityToString(), "Sum: 178");
         //#
     }

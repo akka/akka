@@ -328,9 +328,16 @@ object Multipart {
   object FormData {
     def apply(parts: Multipart.FormData.BodyPart.Strict*): Multipart.FormData.Strict = Strict(parts.toVector)
     def apply(parts: Multipart.FormData.BodyPart*): Multipart.FormData = Multipart.FormData(Source(parts.toVector))
-    // SI-2991 workaround - two functions below. Remove when this issue is fixed
-    def applyStrict(parts: Multipart.FormData.BodyPart.Strict*): Multipart.FormData.Strict = Strict(parts.toVector)
-    def applyNonStrict(parts: Multipart.FormData.BodyPart*): Multipart.FormData = Multipart.FormData(Source(parts.toVector))
+
+    // FIXME: SI-2991 workaround - two functions below. Remove when (hopefully) this issue is fixed
+    /** INTERNAL API */
+    private[akka] def createStrict(parts: Multipart.FormData.BodyPart.Strict*): Multipart.FormData.Strict = Strict(parts.toVector)
+    /** INTERNAL API */
+    private[akka] def createNonStrict(parts: Multipart.FormData.BodyPart*): Multipart.FormData = Multipart.FormData(Source(parts.toVector))
+    /** INTERNAL API */
+    private[akka] def createStrict(fields: Map[String, akka.http.javadsl.model.HttpEntity.Strict]): Multipart.FormData.Strict = Multipart.FormData.Strict {
+      fields.map { case (name, entity: akka.http.scaladsl.model.HttpEntity.Strict) ⇒ Multipart.FormData.BodyPart.Strict(name, entity) }(collection.breakOut)
+    }
 
     def apply(fields: Map[String, HttpEntity.Strict]): Multipart.FormData.Strict = Multipart.FormData.Strict {
       fields.map { case (name, entity) ⇒ Multipart.FormData.BodyPart.Strict(name, entity) }(collection.breakOut)
@@ -471,12 +478,24 @@ object Multipart {
         override def productPrefix = "FormData.BodyPart.Strict"
       }
 
-      /** Java API */
-      object StrictBuilder {
-        def apply(_name: String, _entity: HttpEntity.Strict,
-                  _additionalDispositionParams: Map[String, String]       = Map.empty,
-                  _additionalHeaders:           immutable.Seq[HttpHeader] = Nil): Multipart.FormData.BodyPart.Strict =
-          Strict(_name, _entity, _additionalDispositionParams, _additionalHeaders)
+      /** INTERNAL API */
+      private[akka] object Builder {
+        def create(_name: String, _entity: BodyPartEntity,
+                   _additionalDispositionParams: Map[String, String],
+                   _additionalHeaders:           Iterable[akka.http.javadsl.model.HttpHeader]): Multipart.FormData.BodyPart = {
+          val _headers = _additionalHeaders.to[immutable.Seq] map { case h: akka.http.scaladsl.model.HttpHeader ⇒ h }
+          apply(_name, _entity, _additionalDispositionParams, _headers)
+        }
+      }
+
+      /** INTERNAL API */
+      private[akka] object StrictBuilder {
+        def createStrict(_name: String, _entity: HttpEntity.Strict,
+                         _additionalDispositionParams: Map[String, String],
+                         _additionalHeaders:           Iterable[akka.http.javadsl.model.HttpHeader]): Multipart.FormData.BodyPart.Strict = {
+          val _headers = _additionalHeaders.to[immutable.Seq] map { case h: akka.http.scaladsl.model.HttpHeader ⇒ h }
+          Strict(_name, _entity, _additionalDispositionParams, _headers)
+        }
       }
     }
   }
