@@ -108,6 +108,31 @@ reference needs to be passed as the first argument).
   Declaring one actor within another is very dangerous and breaks actor
   encapsulation. Never pass an actor’s ``this`` reference into :class:`Props`!
 
+Edge cases
+^^^^^^^^^^
+There are two edge cases in actor creation with :class:`Props`:
+
+* An actor with :class:`AnyVal` arguments.
+
+.. includecode:: code/docs/actor/ActorDocSpec.scala#props-edge-cases-value-class
+
+.. code-block:: scala
+    val valueClassProp = Props(classOf[ValueActor], new DurationInt(5)) // Unsupported
+
+* An actor with default constructor values.
+
+.. includecode:: code/docs/actor/ActorDocSpec.scala#props-edge-cases-default-values
+
+.. code-block:: scala
+    val defaultValueProp1 = Props(classOf[DefaultValueActor], 2.0) // Unsupported
+    val defaultValueProp2 = Props[DefaultValueActor2] // Unsupported
+    val defaultValueProp3 = Props(classOf[DefaultValueActor2]) // Unsupported
+
+In both cases an :class:`IllegalArgumentException` will be thrown stating
+no matching constructor could be found.
+
+The next topic explains a possible way to work around these edge cases.
+
 Recommended Practices
 ^^^^^^^^^^^^^^^^^^^^^
 
