@@ -320,30 +320,6 @@ class ActorDocSpec extends AkkaSpec("""
     // encourages to close over enclosing class
     val props7 = Props(new MyActor)
     //#creating-props-deprecated
-
-    //#props-edge-cases-value-class
-    // DurationInt is a Value Class, that is, it extends AnyVal
-    import scala.concurrent.duration.DurationInt
-    class ValueActor(duration: DurationInt) extends Actor {
-      def receive = {
-        case multiplier: Long => sender() ! (duration.seconds * multiplier)
-      }
-    }
-    //#props-edge-cases-value-class
-
-    //#props-edge-cases-default-values
-    class DefaultValueActor(a: Int, b: Int = 5) extends Actor {
-      def receive = {
-        case x: Int => sender() ! ((a + x) * b)
-      }
-    }
-
-    class DefaultValueActor2(b: Int = 5) extends Actor {
-      def receive = {
-        case x: Int => sender() ! (x * b)
-      }
-    }
-    //#props-edge-cases-default-values
   }
 
   "creating actor with Props" in {

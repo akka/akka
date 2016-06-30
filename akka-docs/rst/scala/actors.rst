@@ -114,24 +114,18 @@ There are two edge cases in actor creation with :class:`Props`:
 
 * An actor with :class:`AnyVal` arguments.
 
-.. includecode:: code/docs/actor/ActorDocSpec.scala#props-edge-cases-value-class
-
-.. code-block:: scala
-    val valueClassProp = Props(classOf[ValueActor], new DurationInt(5)) // Unsupported
+.. includecode:: code/docs/actor/PropsEdgeCaseSpec.scala#props-edge-cases-value-class
+.. includecode:: code/docs/actor/PropsEdgeCaseSpec.scala#props-edge-cases-value-class-example
 
 * An actor with default constructor values.
 
-.. includecode:: code/docs/actor/ActorDocSpec.scala#props-edge-cases-default-values
-
-.. code-block:: scala
-    val defaultValueProp1 = Props(classOf[DefaultValueActor], 2.0) // Unsupported
-    val defaultValueProp2 = Props[DefaultValueActor2] // Unsupported
-    val defaultValueProp3 = Props(classOf[DefaultValueActor2]) // Unsupported
+.. includecode:: code/docs/actor/PropsEdgeCaseSpec.scala#props-edge-cases-default-values
 
 In both cases an :class:`IllegalArgumentException` will be thrown stating
 no matching constructor could be found.
 
-The next topic explains a possible way to work around these edge cases.
+The next section explains the recommended ways to create :class:`Actor` props in a way,
+which simultaneously safe-guards against these edge cases.
 
 Recommended Practices
 ^^^^^^^^^^^^^^^^^^^^^
