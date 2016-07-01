@@ -89,9 +89,6 @@ private[akka] class TestOutboundContext(
       OptionVal.None))
   }
 
-  // FIXME we should be able to Send without a recipient ActorRef
-  override def dummyRecipient: RemoteActorRef = null
-
 }
 
 private[akka] class TestControlMessageSubject extends ControlMessageSubject {

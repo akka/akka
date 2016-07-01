@@ -24,7 +24,6 @@ import akka.actor.RootActorPath
 import akka.dispatch.sysmsg.SystemMessage
 import akka.event.Logging
 import akka.remote.{ LargeDestination, RegularDestination, RemoteActorRef, UniqueAddress }
-import akka.remote.EndpointManager.Send
 import akka.remote.artery.AeronSink.GaveUpSendingException
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
@@ -45,8 +44,8 @@ import akka.remote.artery.compress.CompressionProtocol._
  * INTERNAL API
  */
 private[remote] object Association {
-  final case class QueueWrapper(queue: Queue[Send]) extends SendQueue.ProducerApi[Send] {
-    override def offer(message: Send): Boolean = queue.offer(message)
+  final case class QueueWrapper(queue: Queue[OutboundEnvelope]) extends SendQueue.ProducerApi[OutboundEnvelope] {
+    override def offer(message: OutboundEnvelope): Boolean = queue.offer(message)
   }
 }
 
@@ -61,7 +60,8 @@ private[remote] class Association(
   val materializer:            Materializer,
   override val remoteAddress:  Address,
   override val controlSubject: ControlMessageSubject,
-  largeMessageDestinations:    WildcardTree[NotUsed])
+  largeMessageDestinations:    WildcardTree[NotUsed],
+  outboundEnvelopePool:        ObjectPool[ReusableOutboundEnvelope])
   extends AbstractAssociation with OutboundContext {
   import Association._
 
@@ -84,12 +84,12 @@ private[remote] class Association(
   /** Accesses the currently active outbound compression. */
   def compression: OutboundCompressions = associationState.outboundCompression
 
-  def createQueue(capacity: Int): Queue[Send] =
-    new ManyToOneConcurrentArrayQueue[Send](capacity)
+  def createQueue(capacity: Int): Queue[OutboundEnvelope] =
+    new ManyToOneConcurrentArrayQueue[OutboundEnvelope](capacity)
 
-  @volatile private[this] var queue: SendQueue.ProducerApi[Send] = QueueWrapper(createQueue(queueSize))
-  @volatile private[this] var largeQueue: SendQueue.ProducerApi[Send] = QueueWrapper(createQueue(largeQueueSize))
-  @volatile private[this] var controlQueue: SendQueue.ProducerApi[Send] = QueueWrapper(createQueue(controlQueueSize))
+  @volatile private[this] var queue: SendQueue.ProducerApi[OutboundEnvelope] = QueueWrapper(createQueue(queueSize))
+  @volatile private[this] var largeQueue: SendQueue.ProducerApi[OutboundEnvelope] = QueueWrapper(createQueue(largeQueueSize))
+  @volatile private[this] var controlQueue: SendQueue.ProducerApi[OutboundEnvelope] = QueueWrapper(createQueue(controlQueueSize))
   @volatile private[this] var _outboundControlIngress: OutboundControlIngress = _
   @volatile private[this] var materializing = new CountDownLatch(1)
 
@@ -165,48 +165,51 @@ private[remote] class Association(
   override def sendControl(message: ControlMessage): Unit =
     outboundControlIngress.sendControlMessage(message)
 
-  def send(message: Any, sender: OptionVal[ActorRef], recipient: RemoteActorRef): Unit = {
+  def send(message: Any, sender: OptionVal[ActorRef], recipient: OptionVal[RemoteActorRef]): Unit = {
+    def createOutboundEnvelope(): OutboundEnvelope =
+      outboundEnvelopePool.acquire().init(recipient, message.asInstanceOf[AnyRef], sender)
+
     // allow ActorSelectionMessage to pass through quarantine, to be able to establish interaction with new system
     // FIXME where is that ActorSelectionMessage check in old remoting?
     if (message.isInstanceOf[ActorSelectionMessage] || !associationState.isQuarantined() || message == ClearSystemMessageDelivery) {
-      // FIXME: Use a different envelope than the old Send, but make sure the new is handled by deadLetters properly
       message match {
         case _: SystemMessage | ClearSystemMessageDelivery | _: ControlMessage ⇒
-          val send = Send(message, sender, recipient, None)
-          if (!controlQueue.offer(send)) {
+          val outboundEnvelope = createOutboundEnvelope()
+          if (!controlQueue.offer(createOutboundEnvelope())) {
             quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
-            transport.system.deadLetters ! send
+            transport.system.deadLetters ! outboundEnvelope
           }
         case _: DaemonMsgCreate ⇒
           // DaemonMsgCreate is not a SystemMessage, but must be sent over the control stream because
           // remote deployment process depends on message ordering for DaemonMsgCreate and Watch messages.
           // It must also be sent over the ordinary message stream so that it arrives (and creates the
           // destination) before the first ordinary message arrives.
-          val send1 = Send(message, sender, recipient, None)
-          if (!controlQueue.offer(send1))
-            transport.system.deadLetters ! send1
-          val send2 = Send(message, sender, recipient, None)
-          if (!queue.offer(send2))
-            transport.system.deadLetters ! send2
+          val outboundEnvelope1 = createOutboundEnvelope()
+          if (!controlQueue.offer(outboundEnvelope1))
+            transport.system.deadLetters ! outboundEnvelope1
+          val outboundEnvelope2 = createOutboundEnvelope()
+          if (!queue.offer(outboundEnvelope2))
+            transport.system.deadLetters ! outboundEnvelope2
         case _ ⇒
-          val send = Send(message, sender, recipient, None)
+          val outboundEnvelope = createOutboundEnvelope()
           val offerOk =
             if (largeMessageChannelEnabled && isLargeMessageDestination(recipient))
-              largeQueue.offer(send)
+              largeQueue.offer(outboundEnvelope)
             else
-              queue.offer(send)
+              queue.offer(outboundEnvelope)
           if (!offerOk)
-            transport.system.deadLetters ! send
+            transport.system.deadLetters ! outboundEnvelope
       }
     } else if (log.isDebugEnabled)
       log.debug("Dropping message to quarantined system {}", remoteAddress)
   }
 
-  private def isLargeMessageDestination(recipient: ActorRef): Boolean = {
+  private def isLargeMessageDestination(recipient: OptionVal[RemoteActorRef]): Boolean = {
     recipient match {
-      case r: RemoteActorRef if r.cachedLargeMessageDestinationFlag ne null ⇒ r.cachedLargeMessageDestinationFlag eq LargeDestination
-      case r: RemoteActorRef ⇒
-        if (largeMessageDestinations.find(r.path.elements.iterator).data.isEmpty) {
+      case OptionVal.Some(r) ⇒
+        if (r.cachedLargeMessageDestinationFlag ne null)
+          r.cachedLargeMessageDestinationFlag eq LargeDestination
+        else if (largeMessageDestinations.find(r.path.elements.iterator).data.isEmpty) {
           r.cachedLargeMessageDestinationFlag = RegularDestination
           false
         } else {
@@ -214,16 +217,9 @@ private[remote] class Association(
           r.cachedLargeMessageDestinationFlag = LargeDestination
           true
         }
-      case _ ⇒ false
+      case OptionVal.None ⇒ false
     }
   }
-
-  // FIXME we should be able to Send without a recipient ActorRef
-  override val dummyRecipient: RemoteActorRef =
-    try transport.provider.resolveActorRef(RootActorPath(remoteAddress) / "system" / "dummy").asInstanceOf[RemoteActorRef]
-    catch {
-      case ex: Exception ⇒ throw new Exception("Bad dummy recipient! RemoteAddress: " + remoteAddress, ex)
-    }
 
   // OutboundContext
   override def quarantine(reason: String): Unit = {
@@ -247,7 +243,7 @@ private[remote] class Association(
                 // FIXME when we complete the switch to Long UID we must use Long here also, issue #20644
                 transport.eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, u.toInt))
                 // end delivery of system messages to that incarnation after this point
-                send(ClearSystemMessageDelivery, OptionVal.None, dummyRecipient)
+                send(ClearSystemMessageDelivery, OptionVal.None, OptionVal.None)
                 // try to tell the other system that we have quarantined it
                 sendControl(Quarantined(localAddress, peer))
               } else
@@ -306,14 +302,14 @@ private[remote] class Association(
     val (queueValue, (control, completed)) =
       if (transport.remoteSettings.TestMode) {
         val ((queueValue, mgmt), (control, completed)) =
-          Source.fromGraph(new SendQueue[Send])
+          Source.fromGraph(new SendQueue[OutboundEnvelope])
             .viaMat(transport.outboundTestFlow(this))(Keep.both)
             .toMat(transport.outboundControl(this, compression))(Keep.both)
             .run()(materializer)
         _testStages.add(mgmt)
         (queueValue, (control, completed))
       } else {
-        Source.fromGraph(new SendQueue[Send])
+        Source.fromGraph(new SendQueue[OutboundEnvelope])
           .toMat(transport.outboundControl(this, compression))(Keep.both)
           .run()(materializer)
       }
@@ -332,7 +328,7 @@ private[remote] class Association(
     })
   }
 
-  private def getOrCreateQueueWrapper(q: SendQueue.ProducerApi[Send], capacity: Int): QueueWrapper =
+  private def getOrCreateQueueWrapper(q: SendQueue.ProducerApi[OutboundEnvelope], capacity: Int): QueueWrapper =
     q match {
       case existing: QueueWrapper ⇒ existing
       case _ ⇒
@@ -346,14 +342,14 @@ private[remote] class Association(
 
     val (queueValue, completed) =
       if (transport.remoteSettings.TestMode) {
-        val ((queueValue, mgmt), completed) = Source.fromGraph(new SendQueue[Send])
+        val ((queueValue, mgmt), completed) = Source.fromGraph(new SendQueue[OutboundEnvelope])
           .viaMat(transport.outboundTestFlow(this))(Keep.both)
           .toMat(transport.outbound(this, compression))(Keep.both)
           .run()(materializer)
         _testStages.add(mgmt)
         (queueValue, completed)
       } else {
-        Source.fromGraph(new SendQueue[Send])
+        Source.fromGraph(new SendQueue[OutboundEnvelope])
           .toMat(transport.outbound(this, compression))(Keep.both)
           .run()(materializer)
       }
@@ -371,14 +367,14 @@ private[remote] class Association(
 
     val (queueValue, completed) =
       if (transport.remoteSettings.TestMode) {
-        val ((queueValue, mgmt), completed) = Source.fromGraph(new SendQueue[Send])
+        val ((queueValue, mgmt), completed) = Source.fromGraph(new SendQueue[OutboundEnvelope])
           .viaMat(transport.outboundTestFlow(this))(Keep.both)
           .toMat(transport.outboundLarge(this, compression))(Keep.both)
           .run()(materializer)
         _testStages.add(mgmt)
         (queueValue, completed)
       } else {
-        Source.fromGraph(new SendQueue[Send])
+        Source.fromGraph(new SendQueue[OutboundEnvelope])
           .toMat(transport.outboundLarge(this, compression))(Keep.both)
           .run()(materializer)
       }

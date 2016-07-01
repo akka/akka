@@ -16,10 +16,10 @@ import scala.concurrent.duration._
  */
 private[akka] trait PerfFlamesSupport { _: MultiNodeSpec ⇒
 
-  /** 
+  /**
    * Runs `perf-java-flames` script on given node (JVM process).
    * Refer to https://github.com/jrudolph/perf-map-agent for options and manual.
-   * 
+   *
    * Options are currently to be passed in via `export PERF_MAP_OPTIONS` etc.
    */
   def runPerfFlames(nodes: RoleName*)(delay: FiniteDuration, time: FiniteDuration = 15.seconds): Unit = {
@@ -53,6 +53,5 @@ private[akka] trait PerfFlamesSupport { _: MultiNodeSpec ⇒
     if (!isIt) println(s"WARN: perf-java-flames not available under [$perfJavaFlamesPath]! Skipping perf profiling.")
     isIt
   }
-    
 
 }

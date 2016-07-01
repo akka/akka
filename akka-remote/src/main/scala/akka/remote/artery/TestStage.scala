@@ -9,7 +9,6 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import akka.Done
 import akka.actor.Address
-import akka.remote.EndpointManager.Send
 import akka.remote.transport.ThrottlerTransportAdapter.Blackhole
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
@@ -59,10 +58,10 @@ private[remote] final case class TestManagementMessage(command: Any, done: Promi
  * INTERNAL API
  */
 private[remote] class OutboundTestStage(outboundContext: OutboundContext)
-  extends GraphStageWithMaterializedValue[FlowShape[Send, Send], TestManagementApi] {
-  val in: Inlet[Send] = Inlet("OutboundTestStage.in")
-  val out: Outlet[Send] = Outlet("OutboundTestStage.out")
-  override val shape: FlowShape[Send, Send] = FlowShape(in, out)
+  extends GraphStageWithMaterializedValue[FlowShape[OutboundEnvelope, OutboundEnvelope], TestManagementApi] {
+  val in: Inlet[OutboundEnvelope] = Inlet("OutboundTestStage.in")
+  val out: Outlet[OutboundEnvelope] = Outlet("OutboundTestStage.out")
+  override val shape: FlowShape[OutboundEnvelope, OutboundEnvelope] = FlowShape(in, out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val stoppedPromise = Promise[Done]()

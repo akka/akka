@@ -7,7 +7,6 @@ import akka.actor.ActorSystem
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.remote.EndpointManager.Send
 import akka.remote.UniqueAddress
 import akka.stream.Attributes
 import akka.stream.FlowShape
@@ -50,21 +49,23 @@ private[akka] object OutboundHandshake {
  * INTERNAL API
  */
 private[akka] class OutboundHandshake(
-  system:          ActorSystem,
-  outboundContext: OutboundContext, timeout: FiniteDuration,
-  retryInterval: FiniteDuration, injectHandshakeInterval: FiniteDuration)
-  extends GraphStage[FlowShape[Send, Send]] {
+  system:               ActorSystem,
+  outboundContext:      OutboundContext,
+  outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope],
+  timeout:              FiniteDuration,
+  retryInterval:        FiniteDuration, injectHandshakeInterval: FiniteDuration)
+  extends GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] {
 
-  val in: Inlet[Send] = Inlet("OutboundHandshake.in")
-  val out: Outlet[Send] = Outlet("OutboundHandshake.out")
-  override val shape: FlowShape[Send, Send] = FlowShape(in, out)
+  val in: Inlet[OutboundEnvelope] = Inlet("OutboundHandshake.in")
+  val out: Outlet[OutboundEnvelope] = Outlet("OutboundHandshake.out")
+  override val shape: FlowShape[OutboundEnvelope, OutboundEnvelope] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
       import OutboundHandshake._
 
       private var handshakeState: HandshakeState = Start
-      private var pendingMessage: Send = null
+      private var pendingMessage: OutboundEnvelope = null
       private var injectHandshakeTickScheduled = false
 
       // InHandler
@@ -127,7 +128,9 @@ private[akka] class OutboundHandshake(
       private def pushHandshakeReq(): Unit = {
         injectHandshakeTickScheduled = true
         scheduleOnce(InjectHandshakeTick, injectHandshakeInterval)
-        push(out, Send(HandshakeReq(outboundContext.localAddress), OptionVal.None, outboundContext.dummyRecipient, None))
+        val env: OutboundEnvelope = outboundEnvelopePool.acquire().init(
+          recipient = OptionVal.None, message = HandshakeReq(outboundContext.localAddress), sender = OptionVal.None)
+        push(out, env)
       }
 
       private def handshakeCompleted(): Unit = {
