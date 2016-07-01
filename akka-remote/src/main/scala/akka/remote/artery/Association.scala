@@ -171,7 +171,7 @@ private[remote] class Association(
     if (message.isInstanceOf[ActorSelectionMessage] || !associationState.isQuarantined() || message == ClearSystemMessageDelivery) {
       // FIXME: Use a different envelope than the old Send, but make sure the new is handled by deadLetters properly
       message match {
-        case _: SystemMessage | ClearSystemMessageDelivery ⇒
+        case _: SystemMessage | ClearSystemMessageDelivery | _: ControlMessage ⇒
           val send = Send(message, sender, recipient, None)
           if (!controlQueue.offer(send)) {
             quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")

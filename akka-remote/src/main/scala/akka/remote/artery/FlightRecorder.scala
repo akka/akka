@@ -38,6 +38,27 @@ private[remote] object IgnoreEventSink extends EventSink {
 
 /**
  * INTERNAL API
+ */
+private[remote] class SynchronizedEventSink(delegate: EventSink) extends EventSink {
+  override def alert(code: Int, metadata: Array[Byte]): Unit = synchronized {
+    delegate.alert(code, metadata)
+  }
+
+  override def loFreq(code: Int, metadata: Array[Byte]): Unit = synchronized {
+    delegate.loFreq(code, metadata)
+  }
+
+  override def flushHiFreqBatch(): Unit = synchronized {
+    delegate.flushHiFreqBatch()
+  }
+
+  override def hiFreq(code: Long, param: Long): Unit = synchronized {
+    delegate.hiFreq(code, param)
+  }
+}
+
+/**
+ * INTERNAL API
  *
  * Update clock at various resolutions and aquire the resulting timestamp.
  */
