@@ -169,6 +169,14 @@ private[akka] class SystemMessageDelivery(
           case s @ Send(ClearSystemMessageDelivery, _, _, _) ⇒
             clear()
             pull(in)
+          case s @ Send(msg: ControlMessage, _, _, _) ⇒
+            // e.g. ActorSystemTerminating, no need for acked delivery
+            if (resending.isEmpty && isAvailable(out))
+              push(out, s)
+            else {
+              resending.offer(s)
+              tryResend()
+            }
           case s @ Send(msg: AnyRef, _, _, _) ⇒
             if (unacknowledged.size < maxBufferSize) {
               seqNo += 1

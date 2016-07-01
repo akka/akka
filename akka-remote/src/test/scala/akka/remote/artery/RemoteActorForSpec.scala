@@ -51,36 +51,6 @@ class RemoteActorForSpec extends ArteryMultiNodeSpec("akka.loglevel=INFO") with 
       }(remoteSystem)
     }
 
-    // FIXME can't communicate with new ref looked up after starting a new instance (!?!)
-    "not send to remote re-created actor with same name" ignore {
-
-      def lookItUp() = localSystem.actorFor(s"artery://${remoteSystem.name}@localhost:$remotePort/user/re-created")
-
-      val echo1 = remoteSystem.actorOf(TestActors.echoActorProps, "re-created")
-      val remoteRef1 = lookItUp()
-      remoteRef1 ! 2
-      expectMsg(2)
-
-      // now stop and start a new actor with the same name
-      watch(echo1)
-      remoteSystem.stop(echo1)
-      expectTerminated(echo1)
-
-      val echo2 = remoteSystem.actorOf(TestActors.echoActorProps, "re-created")
-      val remoteRef2 = lookItUp()
-      remoteRef2 ! 2
-      expectMsg(2)
-
-      // the old ref should not interact with the
-      // new actor instance at the same path
-      remoteRef1 ! 3
-      expectNoMsg(1.second)
-
-      // and additionally, but it would have failed already
-      // if this wasn't true
-      remoteRef1.path.uid should !==(remoteRef2.path.uid)
-    }
-
     // FIXME needs remote deployment section
     "look-up actors across node boundaries" ignore {
       val l = localSystem.actorOf(Props(new Actor {

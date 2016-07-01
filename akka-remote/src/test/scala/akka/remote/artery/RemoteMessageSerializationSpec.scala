@@ -55,7 +55,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec("""
 
     "drop sent messages over payload size" in {
       val oversized = byteStringOfSize(maxPayloadBytes + 1)
-      EventFilter[OversizedPayloadException](pattern = ".*Discarding oversized payload sent.*", occurrences = 1).intercept {
+      EventFilter[OversizedPayloadException](start = "Failed to serialize oversized message", occurrences = 1).intercept {
         verifySend(oversized) {
           expectNoMsg(1.second) // No AssocitionErrorEvent should be published
         }

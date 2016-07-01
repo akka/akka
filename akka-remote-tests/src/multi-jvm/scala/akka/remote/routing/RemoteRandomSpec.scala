@@ -99,9 +99,6 @@ class RemoteRandomSpec(multiNodeConfig: RemoteRandomConfig) extends MultiNodeSpe
         // "Terminate" to a shut down node
         system.stop(actor)
         enterBarrier("done")
-
-        // FIXME this test has problems shutting down actor system when running with Artery
-        // [akka.actor.ActorSystemImpl(RemoteRandomSpec)] Failed to stop [RemoteRandomSpec] within [5 seconds]
       }
     }
   }
