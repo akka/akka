@@ -12,7 +12,7 @@ versions of the **experimental** part of Akka HTTP.
 
 .. note:: 
   Please note that experimental modules are allowed (and are expected to) break compatibility
-  in search of the bast API we can offer, before the API is frozen in a stable release. 
+  in search of the best API we can offer, before the API is frozen in a stable release. 
   
   Please read :ref:`BinCompatRules` to understand in depth what bin-compat rules are, and where they are applied.
 
