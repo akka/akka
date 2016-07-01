@@ -5,7 +5,7 @@
 package akka.http.scaladsl.server
 
 import java.util.UUID
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 import scala.util.matching.Regex
 import scala.annotation.tailrec
 import akka.http.scaladsl.server.util.Tuple
@@ -93,13 +93,13 @@ abstract class PathMatcher[L](implicit val ev: Tuple[L]) extends (Path ⇒ PathM
                   case Matched(`remaining2`, _) ⇒ done1 // we made no progress, so "go back" to before the separator
                   case Matched(rest, result)    ⇒ Matched(rest, lift(extractions, result))
                   case Unmatched                ⇒ Unmatched
-                  case Unextracted              => Unextracted
+                  case Unextracted              ⇒ Unextracted
                 }
-                case Unmatched ⇒ done1
-                case Unextracted => done1
+                case Unmatched   ⇒ done1
+                case Unextracted ⇒ done1
               }
-            case Unmatched ⇒ done
-            case Unextracted => done
+            case Unmatched   ⇒ done
+            case Unextracted ⇒ done
           }
         } else done
       }
@@ -114,11 +114,11 @@ object PathMatcher extends ImplicitPathMatcherConstruction {
     def orElse[R >: L](other: ⇒ Matching[R]): Matching[R]
   }
   case class Matched[L: Tuple](pathRest: Path, extractions: L) extends Matching[L] {
-    def map[R: Tuple](f: L ⇒ R) =  Matched(pathRest, f(extractions))
+    def map[R: Tuple](f: L ⇒ R) = Matched(pathRest, f(extractions))
     def flatMap[R: Tuple](f: L ⇒ Option[Try[R]]) = f(extractions) match {
       case Some(Success(valuesR)) ⇒ Matched(pathRest, valuesR)
-      case Some(Failure(e)) ⇒ Unextracted
-      case None ⇒ Unmatched
+      case Some(Failure(e))       ⇒ Unextracted
+      case None                   ⇒ Unmatched
     }
     def andThen[R: Tuple](f: (Path, L) ⇒ Matching[R]) = f(pathRest, extractions)
     def orElse[R >: L](other: ⇒ Matching[R]) = this
@@ -131,10 +131,10 @@ object PathMatcher extends ImplicitPathMatcherConstruction {
     def orElse[R](other: ⇒ Matching[R]) = other
   }
   case object Unextracted extends Matching[Nothing] {
-    def map[R: Tuple](f: (Nothing) => R): Matching[R] = this
-    def flatMap[R: Tuple](f: (Nothing) => Option[Try[R]]): Matching[R] = this
-    def andThen[R: Tuple](f: (Path, Nothing) => Matching[R]): Matching[R] = this
-    def orElse[R](other: => Matching[R]): Matching[R] = other
+    def map[R: Tuple](f: (Nothing) ⇒ R): Matching[R] = this
+    def flatMap[R: Tuple](f: (Nothing) ⇒ Option[Try[R]]): Matching[R] = this
+    def andThen[R: Tuple](f: (Path, Nothing) ⇒ Matching[R]): Matching[R] = this
+    def orElse[R](other: ⇒ Matching[R]): Matching[R] = other
   }
 
   /**
@@ -474,7 +474,7 @@ trait PathMatchers {
       try Some(Success(java.lang.Double.parseDouble(string)))
       catch {
         case e: NumberFormatException ⇒ Some(Failure(e))
-        case _: Throwable => None
+        case _: Throwable             ⇒ None
       }
     }
 
@@ -488,7 +488,7 @@ trait PathMatchers {
       try Some(Success(UUID.fromString(string)))
       catch {
         case e: IllegalArgumentException ⇒ Some(Failure(e))
-        case _: Throwable => None
+        case _: Throwable                ⇒ None
       }
     }
 

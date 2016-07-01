@@ -4,7 +4,7 @@
 
 package akka.http.scaladsl.server.directives
 
-import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import org.scalatest.Inside
 
@@ -414,12 +414,14 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
       Get("/foo") ~> Route.seal(route) ~> check { status shouldEqual NotFound }
     }
     "be raised" in {
-      Get("/foo/1.0/test") ~> route ~> check { rejection shouldEqual PathMatcherExtractionFailedRejection }
+      Get("/foo/a.0") ~>
+        path("foo" / DoubleNumber) { i ⇒ complete(s"$i") } ~>
+        check { rejection shouldEqual PathMatcherExtractionFailedRejection }
     }
   }
 
-  import akka.http.scaladsl.model.headers.Location
   import akka.http.scaladsl.model.Uri
+  import akka.http.scaladsl.model.headers.Location
 
   private def checkRedirectTo(expectedUri: Uri) =
     check {
