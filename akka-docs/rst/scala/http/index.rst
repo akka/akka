@@ -15,3 +15,4 @@ Akka HTTP
    server-side-https-support
    migration-from-spray
    migration-from-old-http-javadsl
+   migration-guide-2.4.x-experimental
