@@ -896,7 +896,11 @@ object MiMa extends AutoPlugin {
         // #20456 adding hot connection pool option
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ConnectionPoolSettings.getMinConnections"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.minConnections"),
-        FilterAnyProblemStartingWith("akka.http.impl")
+        FilterAnyProblemStartingWith("akka.http.impl"),
+        
+        // #20846 change of internal Status message
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages#StatusOrBuilder.getReplyToStatus"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages#StatusOrBuilder.hasReplyToStatus")
       )
     )
   }
