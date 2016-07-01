@@ -6,7 +6,6 @@ package akka.remote.artery
 import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.NANOSECONDS
-
 import scala.concurrent.duration._
 import akka.actor._
 import akka.remote.RemoteActorRefProvider
@@ -55,6 +54,12 @@ object MaxThroughputSpec extends MultiNodeConfig {
            # See akka-remote-tests/src/test/resources/aeron.properties
            #advanced.embedded-media-driver = off
            #advanced.aeron-dir = "target/aeron"
+           
+           #advanced.compression {
+           #  enabled = on
+           #  actor-refs.enabled = on
+           #  manifests.enabled = on
+           #}
          }
        }
        """)))

@@ -4,6 +4,7 @@
 
 package akka.remote.artery.compress
 
+import scala.language.existentials
 import akka.actor.{ ActorRef, Address }
 import akka.remote.UniqueAddress
 import akka.remote.artery.ControlMessage
@@ -19,14 +20,14 @@ object CompressionProtocol {
    * INTERNAL API
    * Sent by the "receiving" node after allocating a compression id to a given [[akka.actor.ActorRef]]
    */
-  private[remote] final case class ActorRefCompressionAdvertisement(from: UniqueAddress, ref: ActorRef, id: Int)
+  private[remote] final case class ActorRefCompressionAdvertisement(from: UniqueAddress, table: CompressionTable[ActorRef])
     extends ControlMessage with CompressionMessage
 
   /**
    * INTERNAL API
    * Sent by the "receiving" node after allocating a compression id to a given class manifest
    */
-  private[remote] final case class ClassManifestCompressionAdvertisement(from: UniqueAddress, manifest: String, id: Int)
+  private[remote] final case class ClassManifestCompressionAdvertisement(from: UniqueAddress, table: CompressionTable[String])
     extends ControlMessage with CompressionMessage
 
   /** INTERNAL API */
@@ -38,7 +39,7 @@ object CompressionProtocol {
     final case class HeavyHitterDetected(key: Any, id: Int, count: Long) extends Event
 
     /** INTERNAL API */
-    final case class ReceivedCompressionAdvertisement(from: UniqueAddress, key: Any, id: Int) extends Event
+    final case class ReceivedCompressionTable[T](from: UniqueAddress, table: CompressionTable[T]) extends Event
 
   }
 

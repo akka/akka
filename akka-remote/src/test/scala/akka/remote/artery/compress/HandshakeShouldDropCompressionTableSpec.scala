@@ -4,7 +4,7 @@
 
 package akka.remote.artery.compress
 
-import akka.actor.{ ActorIdentity, ActorSystem, Identify }
+import akka.actor.{ ActorIdentity, ActorRef, ActorSystem, Identify }
 import akka.remote.artery.compress.CompressionProtocol.Events
 import akka.testkit._
 import akka.util.Timeout
@@ -25,14 +25,17 @@ object HandshakeShouldDropCompressionTableSpec {
         
        actor.provider = "akka.remote.RemoteActorRefProvider"
        remote.artery.enabled = on
-       remote.artery.advanced {
-         compression.enabled = on
-         compression.debug = on
-       }
        remote.artery.hostname = localhost
        remote.artery.port = 0
        remote.handshake-timeout = 10s
-       
+
+       remote.artery.advanced.compression {
+         enabled = on
+         actor-refs {
+           enabled = on
+           advertisement-interval = 3 seconds
+         }
+       }
      }
   """)
 
@@ -42,7 +45,8 @@ object HandshakeShouldDropCompressionTableSpec {
 }
 
 class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDropCompressionTableSpec.commonConfig)
-  with ImplicitSender with BeforeAndAfter {
+  with ImplicitSender with BeforeAndAfter
+  with CompressionTestKit {
   import HandshakeShouldDropCompressionTableSpec._
 
   implicit val t = Timeout(3.seconds)
@@ -70,18 +74,16 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
       // cause testActor-1 to become a heavy hitter
       (1 to messagesToExchange).foreach { i ⇒ voidSel ! "hello" } // does not reply, but a hot receiver should be advertised
       // give it enough time to advertise first table
-      val a0 = aProbe.expectMsgType[Events.ReceivedCompressionAdvertisement](10.seconds)
+      val a0 = aProbe.expectMsgType[Events.ReceivedCompressionTable[ActorRef]](10.seconds)
       info("System [A] received: " + a0)
-      a0.id should ===(1)
-      a0.key.toString should include(testActor.path.name)
+      assertCompression[ActorRef](a0.table, 1, _.toString should include(testActor.path.name))
 
       // cause a1Probe to become a heavy hitter (we want to not have it in the 2nd compression table later)
       (1 to messagesToExchange).foreach { i ⇒ voidSel.tell("hello", a1Probe.ref) } // does not reply, but a hot receiver should be advertised
       // give it enough time to advertise first table
-      val a1 = aProbe.expectMsgType[Events.ReceivedCompressionAdvertisement](10.seconds)
+      val a1 = aProbe.expectMsgType[Events.ReceivedCompressionTable[ActorRef]](10.seconds)
       info("System [A] received: " + a1)
-      a1.id should ===(2)
-      a1.key.toString should include(a1Probe.ref.path.name)
+      assertCompression[ActorRef](a1.table, 2, _.toString should include(a1Probe.ref.path.name))
 
       log.warning("SHUTTING DOWN system {}...", systemB)
       shutdown(systemB)
@@ -92,17 +94,15 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
       systemB.actorOf(TestActors.blackholeProps, "void") // start it again
       (1 to messagesToExchange).foreach { i ⇒ voidSel ! "hello" } // does not reply, but a hot receiver should be advertised
       // compression triggered again
-      val a2 = aProbe.expectMsgType[Events.ReceivedCompressionAdvertisement](10.seconds)
+      val a2 = aProbe.expectMsgType[Events.ReceivedCompressionTable[ActorRef]](10.seconds)
       info("System [A] received: " + a2)
-      a2.id should ===(1)
-      a2.key.toString should include(testActor.path.name)
+      assertCompression[ActorRef](a2.table, 1, _.toString should include(testActor.path.name))
 
       (1 to messagesToExchange).foreach { i ⇒ voidSel.tell("hello", aNew2Probe.ref) } // does not reply, but a hot receiver should be advertised
       // compression triggered again
-      val a3 = aProbe.expectMsgType[Events.ReceivedCompressionAdvertisement](10.seconds)
+      val a3 = aProbe.expectMsgType[Events.ReceivedCompressionTable[ActorRef]](10.seconds)
       info("Received second compression: " + a3)
-      a3.id should ===(2)
-      a3.key.toString should include(aNew2Probe.ref.path.name)
+      assertCompression[ActorRef](a3.table, 2, _.toString should include(aNew2Probe.ref.path.name))
     }
 
   }

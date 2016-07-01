@@ -3,7 +3,8 @@
  */
 package akka.remote.artery
 
-import akka.actor.{ Address, InternalActorRef, ActorSystem, ActorRef }
+import akka.actor.{ ActorRef, ActorSystem, Address, InternalActorRef }
+import akka.remote.artery.compress.CompressionTable
 import akka.util.OptionVal
 
 /**
@@ -11,15 +12,15 @@ import akka.util.OptionVal
  *
  * Literarily, no compression!
  */
-final class NoInboundCompression(system: ActorSystem) extends InboundCompression {
-  override def hitActorRef(address: Address, ref: ActorRef): Unit = ()
-  override def decompressActorRef(idx: Int): OptionVal[ActorRef] =
+final class NoInboundCompressions(system: ActorSystem) extends InboundCompressions {
+  override def hitActorRef(originUid: Long, tableVersion: Int, remote: Address, ref: ActorRef): Unit = ()
+  override def decompressActorRef(originUid: Long, tableVersion: Int, idx: Int): OptionVal[ActorRef] =
     if (idx == -1) throw new IllegalArgumentException("Attemted decompression of illegal compression id: -1")
     else if (idx == 0) OptionVal.Some(system.deadLetters) // special case deadLetters  
     else OptionVal.None
 
-  override def hitClassManifest(address: Address, manifest: String): Unit = ()
-  override def decompressClassManifest(idx: Int): OptionVal[String] =
+  override def hitClassManifest(originUid: Long, tableVersion: Int, remote: Address, manifest: String): Unit = ()
+  override def decompressClassManifest(originUid: Long, tableVersion: Int, idx: Int): OptionVal[String] =
     if (idx == -1) throw new IllegalArgumentException("Attemted decompression of illegal compression id: -1")
     else OptionVal.None
 }
@@ -29,10 +30,10 @@ final class NoInboundCompression(system: ActorSystem) extends InboundCompression
  *
  * Literarily, no compression!
  */
-object NoOutboundCompression extends OutboundCompression {
-  override def allocateActorRefCompressionId(ref: ActorRef, id: Int): Unit = ()
+object NoOutboundCompressions extends OutboundCompressions {
+  override def applyActorRefCompressionTable(table: CompressionTable[ActorRef]): Unit = ()
   override def compressActorRef(ref: ActorRef): Int = -1
 
-  override def allocateClassManifestCompressionId(manifest: String, id: Int): Unit = ()
+  override def applyClassManifestCompressionTable(table: CompressionTable[String]): Unit = ()
   override def compressClassManifest(manifest: String): Int = -1
 }
