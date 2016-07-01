@@ -7,7 +7,6 @@ import java.util.ArrayDeque
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import akka.Done
-import akka.remote.EndpointManager.Send
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
@@ -160,12 +159,13 @@ private[akka] object OutboundControlJunction {
 /**
  * INTERNAL API
  */
-private[akka] class OutboundControlJunction(outboundContext: OutboundContext)
-  extends GraphStageWithMaterializedValue[FlowShape[Send, Send], OutboundControlJunction.OutboundControlIngress] {
+private[akka] class OutboundControlJunction(
+  outboundContext: OutboundContext, outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope])
+  extends GraphStageWithMaterializedValue[FlowShape[OutboundEnvelope, OutboundEnvelope], OutboundControlJunction.OutboundControlIngress] {
   import OutboundControlJunction._
-  val in: Inlet[Send] = Inlet("OutboundControlJunction.in")
-  val out: Outlet[Send] = Outlet("OutboundControlJunction.out")
-  override val shape: FlowShape[Send, Send] = FlowShape(in, out)
+  val in: Inlet[OutboundEnvelope] = Inlet("OutboundControlJunction.in")
+  val out: Outlet[OutboundEnvelope] = Outlet("OutboundControlJunction.out")
+  override val shape: FlowShape[OutboundEnvelope, OutboundEnvelope] = FlowShape(in, out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     // FIXME see issue #20503 related to CallbackWrapper, we might implement this in a better way
@@ -174,7 +174,7 @@ private[akka] class OutboundControlJunction(outboundContext: OutboundContext)
 
       private val sendControlMessageCallback = getAsyncCallback[ControlMessage](internalSendControlMessage)
       private val maxControlMessageBufferSize: Int = 1024 // FIXME config
-      private val buffer = new ArrayDeque[Send]
+      private val buffer = new ArrayDeque[OutboundEnvelope]
 
       override def preStart(): Unit = {
         initCallback(sendControlMessageCallback.invoke)
@@ -207,8 +207,9 @@ private[akka] class OutboundControlJunction(outboundContext: OutboundContext)
         }
       }
 
-      private def wrap(message: ControlMessage): Send =
-        Send(message, OptionVal.None, outboundContext.dummyRecipient, None)
+      private def wrap(message: ControlMessage): OutboundEnvelope =
+        outboundEnvelopePool.acquire().init(
+          recipient = OptionVal.None, message = message, sender = OptionVal.None)
 
       setHandlers(in, out, this)
     }

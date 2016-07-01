@@ -27,8 +27,7 @@ private[remote] final class InboundActorRefCompression(
   settings:       CompressionSettings,
   originUid:      Long,
   inboundContext: InboundContext,
-  heavyHitters:   TopHeavyHitters[ActorRef]
-) extends InboundCompression[ActorRef](system, settings, originUid, inboundContext, heavyHitters, _.path.toSerializationFormat) {
+  heavyHitters:   TopHeavyHitters[ActorRef]) extends InboundCompression[ActorRef](system, settings, originUid, inboundContext, heavyHitters, _.path.toSerializationFormat) {
 
   preAllocate(system.deadLetters)
 
@@ -55,8 +54,7 @@ final class InboundManifestCompression(
   settings:       CompressionSettings,
   originUid:      Long,
   inboundContext: InboundContext,
-  heavyHitters:   TopHeavyHitters[String]
-) extends InboundCompression[String](system, settings, originUid, inboundContext, heavyHitters, ConstantFun.scalaIdentityFunction) {
+  heavyHitters:   TopHeavyHitters[String]) extends InboundCompression[String](system, settings, originUid, inboundContext, heavyHitters, ConstantFun.scalaIdentityFunction) {
 
   scheduleNextTableAdvertisement()
   override protected def tableAdvertisementInterval = settings.manifests.advertisementInterval
@@ -144,7 +142,7 @@ private[remote] abstract class InboundCompression[T >: Null](
     } else {
       val count = cms.addAndEstimateCount(key, n)
 
-      // TODO optimise order of these, what is more expensive? 
+      // TODO optimise order of these, what is more expensive?
       // TODO (now the `previous` is, but if aprox datatype there it would be faster)... Needs pondering.
       val wasHeavyHitter = addAndCheckIfheavyHitterDetected(value, count)
       if (wasHeavyHitter)
@@ -160,7 +158,7 @@ private[remote] abstract class InboundCompression[T >: Null](
     key match {
       case null ⇒ true
       case ""   ⇒ true // empty class manifest for example
-      case _    ⇒ key.endsWith("/system/dummy") || key.endsWith("/") // TODO dummy likely shouldn't exist? can we remove it?
+      case _    ⇒ key.endsWith("/")
     }
   }
 

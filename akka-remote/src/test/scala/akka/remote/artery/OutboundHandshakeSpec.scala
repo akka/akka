@@ -31,16 +31,17 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
   val addressA = UniqueAddress(Address("artery", "sysA", "hostA", 1001), 1)
   val addressB = UniqueAddress(Address("artery", "sysB", "hostB", 1002), 2)
 
+  private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity = 16)
+
   private def setupStream(
     outboundContext: OutboundContext, timeout: FiniteDuration = 5.seconds,
     retryInterval:           FiniteDuration = 10.seconds,
     injectHandshakeInterval: FiniteDuration = 10.seconds): (TestPublisher.Probe[String], TestSubscriber.Probe[Any]) = {
 
-    val destination = null.asInstanceOf[RemoteActorRef] // not used
     TestSource.probe[String]
-      .map(msg ⇒ Send(msg, OptionVal.None, destination, None))
-      .via(new OutboundHandshake(system, outboundContext, timeout, retryInterval, injectHandshakeInterval))
-      .map { case Send(msg, _, _, _) ⇒ msg }
+      .map(msg ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, msg, OptionVal.None))
+      .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, timeout, retryInterval, injectHandshakeInterval))
+      .map(env ⇒ env.message)
       .toMat(TestSink.probe[Any])(Keep.both)
       .run()
   }

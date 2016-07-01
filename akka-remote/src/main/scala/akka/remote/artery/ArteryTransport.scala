@@ -21,7 +21,6 @@ import akka.actor.Cancellable
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.remote.AddressUidExtension
-import akka.remote.EndpointManager.Send
 import akka.remote.EventPublisher
 import akka.remote.RemoteActorRef
 import akka.remote.RemoteActorRefProvider
@@ -71,96 +70,6 @@ import org.agrona.concurrent.BusySpinIdleStrategy
 import scala.util.control.NonFatal
 import akka.actor.Props
 import akka.actor.Actor
-
-/**
- * INTERNAL API
- */
-private[akka] object InboundEnvelope {
-  def apply(
-    recipient:        OptionVal[InternalActorRef],
-    recipientAddress: Address,
-    message:          AnyRef,
-    sender:           OptionVal[ActorRef],
-    originUid:        Long,
-    association:      OptionVal[OutboundContext]): InboundEnvelope = {
-    val env = new ReusableInboundEnvelope
-    env.init(recipient, recipientAddress, message, sender, originUid, association)
-    env
-  }
-
-}
-
-/**
- * INTERNAL API
- */
-private[akka] trait InboundEnvelope {
-  def recipient: OptionVal[InternalActorRef]
-  def recipientAddress: Address
-  def message: AnyRef
-  def sender: OptionVal[ActorRef]
-  def originUid: Long
-  def association: OptionVal[OutboundContext]
-
-  def withMessage(message: AnyRef): InboundEnvelope
-
-  def withRecipient(ref: InternalActorRef): InboundEnvelope
-}
-
-/**
- * INTERNAL API
- */
-private[akka] final class ReusableInboundEnvelope extends InboundEnvelope {
-  private var _recipient: OptionVal[InternalActorRef] = OptionVal.None
-  private var _recipientAddress: Address = null
-  private var _message: AnyRef = null
-  private var _sender: OptionVal[ActorRef] = OptionVal.None
-  private var _originUid: Long = 0L
-  private var _association: OptionVal[OutboundContext] = OptionVal.None
-
-  override def recipient: OptionVal[InternalActorRef] = _recipient
-  override def recipientAddress: Address = _recipientAddress
-  override def message: AnyRef = _message
-  override def sender: OptionVal[ActorRef] = _sender
-  override def originUid: Long = _originUid
-  override def association: OptionVal[OutboundContext] = _association
-
-  override def withMessage(message: AnyRef): InboundEnvelope = {
-    _message = message
-    this
-  }
-
-  def withRecipient(ref: InternalActorRef): InboundEnvelope = {
-    _recipient = OptionVal(ref)
-    this
-  }
-
-  def clear(): Unit = {
-    _recipient = OptionVal.None
-    _recipientAddress = null
-    _message = null
-    _sender = OptionVal.None
-    _originUid = 0L
-    _association = OptionVal.None
-  }
-
-  def init(
-    recipient:        OptionVal[InternalActorRef],
-    recipientAddress: Address,
-    message:          AnyRef,
-    sender:           OptionVal[ActorRef],
-    originUid:        Long,
-    association:      OptionVal[OutboundContext]): Unit = {
-    _recipient = recipient
-    _recipientAddress = recipientAddress
-    _message = message
-    _sender = sender
-    _originUid = originUid
-    _association = association
-  }
-
-  override def toString: String =
-    s"InboundEnvelope($recipient, $recipientAddress, $message, $sender, $originUid, $association)"
-}
 
 /**
  * INTERNAL API
@@ -311,8 +220,6 @@ private[akka] trait OutboundContext {
    */
   def controlSubject: ControlMessageSubject
 
-  // FIXME we should be able to Send without a recipient ActorRef
-  def dummyRecipient: RemoteActorRef
 }
 
 /**
@@ -340,7 +247,7 @@ private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDurati
 
   override def preStart(): Unit = {
     val msg = ActorSystemTerminating(inboundContext.localAddress)
-    associations.foreach { a ⇒ a.send(msg, OptionVal.Some(self), a.dummyRecipient) }
+    associations.foreach { a ⇒ a.send(msg, OptionVal.Some(self), OptionVal.None) }
   }
 
   override def postStop(): Unit =
@@ -423,9 +330,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val envelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
   private val largeEnvelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumLargeFrameSize, ArteryTransport.MaximumPooledBuffers)
 
-  private val inboundEnvelopePool = new ObjectPool[InboundEnvelope](
-    16,
-    create = () ⇒ new ReusableInboundEnvelope, clear = inEnvelope ⇒ inEnvelope.asInstanceOf[ReusableInboundEnvelope].clear())
+  private val inboundEnvelopePool = ReusableInboundEnvelope.createObjectPool(capacity = 16)
+  // FIXME capacity of outboundEnvelopePool should probably be derived from the sendQueue capacity
+  //       times a factor (for reasonable number of outbound streams)
+  private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity = 3072 * 2)
 
   val (afrFileChannel, afrFlie, flightRecorder) = initializeFlightRecorder() match {
     case None            ⇒ (None, None, None)
@@ -447,7 +355,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     createFlightRecorderEventSink(synchr = true)
 
   private val associationRegistry = new AssociationRegistry(
-    remoteAddress ⇒ new Association(this, materializer, remoteAddress, controlSubject, largeMessageDestinations))
+    remoteAddress ⇒ new Association(this, materializer, remoteAddress, controlSubject, largeMessageDestinations,
+      outboundEnvelopePool))
 
   def remoteSettings: RemoteSettings = provider.remoteSettings
 
@@ -789,7 +698,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         a2
       }
 
-    a.send(message, sender, recipient)
+    a.send(message, sender, OptionVal.Some(recipient))
   }
 
   override def association(remoteAddress: Address): Association = {
@@ -813,28 +722,31 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     association(remoteAddress).quarantine(reason = "", uid.map(_.toLong))
   }
 
-  def outbound(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[Send, Future[Done]] = {
-    Flow.fromGraph(killSwitch.flow[Send])
-      .via(new OutboundHandshake(system, outboundContext, handshakeTimeout, handshakeRetryInterval, injectHandshakeInterval))
+  def outbound(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[OutboundEnvelope, Future[Done]] = {
+    Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
+      .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, handshakeTimeout,
+        handshakeRetryInterval, injectHandshakeInterval))
       .via(encoder(compression))
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), ordinaryStreamId, aeron, taskRunner,
         envelopePool, giveUpSendAfter, createFlightRecorderEventSink()))(Keep.right)
   }
 
-  def outboundLarge(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[Send, Future[Done]] = {
-    Flow.fromGraph(killSwitch.flow[Send])
-      .via(new OutboundHandshake(system, outboundContext, handshakeTimeout, handshakeRetryInterval, injectHandshakeInterval))
+  def outboundLarge(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[OutboundEnvelope, Future[Done]] = {
+    Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
+      .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, handshakeTimeout,
+        handshakeRetryInterval, injectHandshakeInterval))
       .via(createEncoder(largeEnvelopePool, compression))
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), largeStreamId, aeron, taskRunner,
         envelopePool, giveUpSendAfter, createFlightRecorderEventSink()))(Keep.right)
   }
 
-  def outboundControl(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[Send, (OutboundControlIngress, Future[Done])] = {
-    Flow.fromGraph(killSwitch.flow[Send])
-      .via(new OutboundHandshake(system, outboundContext, handshakeTimeout, handshakeRetryInterval, injectHandshakeInterval))
+  def outboundControl(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[OutboundEnvelope, (OutboundControlIngress, Future[Done])] = {
+    Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
+      .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, handshakeTimeout,
+        handshakeRetryInterval, injectHandshakeInterval))
       .via(new SystemMessageDelivery(outboundContext, system.deadLetters, systemMessageResendInterval,
         remoteSettings.SysMsgBufferSize))
-      .viaMat(new OutboundControlJunction(outboundContext))(Keep.right)
+      .viaMat(new OutboundControlJunction(outboundContext, outboundEnvelopePool))(Keep.right)
       .via(encoder(compression))
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), controlStreamId, aeron, taskRunner,
         envelopePool, Duration.Inf, createFlightRecorderEventSink()))(Keep.both)
@@ -842,17 +754,17 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
   }
 
-  def createEncoder(compression: OutboundCompressions, bufferPool: EnvelopeBufferPool): Flow[Send, EnvelopeBuffer, NotUsed] =
-    Flow.fromGraph(new Encoder(localAddress, system, compression, bufferPool))
+  def createEncoder(compression: OutboundCompressions, bufferPool: EnvelopeBufferPool): Flow[OutboundEnvelope, EnvelopeBuffer, NotUsed] =
+    Flow.fromGraph(new Encoder(localAddress, system, compression, outboundEnvelopePool, bufferPool))
 
   private def createInboundCompressions(inboundContext: InboundContext): InboundCompressions =
     if (remoteSettings.ArteryCompressionSettings.enabled) new InboundCompressionsImpl(system, inboundContext)
     else new NoInboundCompressions(system)
 
-  def createEncoder(pool: EnvelopeBufferPool, compression: OutboundCompressions): Flow[Send, EnvelopeBuffer, NotUsed] =
-    Flow.fromGraph(new Encoder(localAddress, system, compression, pool))
+  def createEncoder(pool: EnvelopeBufferPool, compression: OutboundCompressions): Flow[OutboundEnvelope, EnvelopeBuffer, NotUsed] =
+    Flow.fromGraph(new Encoder(localAddress, system, compression, outboundEnvelopePool, pool))
 
-  def encoder(compression: OutboundCompressions): Flow[Send, EnvelopeBuffer, NotUsed] = createEncoder(envelopePool, compression)
+  def encoder(compression: OutboundCompressions): Flow[OutboundEnvelope, EnvelopeBuffer, NotUsed] = createEncoder(envelopePool, compression)
 
   def aeronSource(streamId: Int, pool: EnvelopeBufferPool): Source[EnvelopeBuffer, NotUsed] =
     Source.fromGraph(new AeronSource(inboundChannel, streamId, aeron, taskRunner, pool,
@@ -860,7 +772,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   val messageDispatcherSink: Sink[InboundEnvelope, Future[Done]] = Sink.foreach[InboundEnvelope] { m ⇒
     messageDispatcher.dispatch(m.recipient.get, m.recipientAddress, m.message, m.sender)
-    inboundEnvelopePool.release(m)
+    m match {
+      case r: ReusableInboundEnvelope ⇒ inboundEnvelopePool.release(r)
+      case _                          ⇒
+    }
   }
 
   def createDecoder(compression: InboundCompressions, bufferPool: EnvelopeBufferPool): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
@@ -915,7 +830,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   def inboundTestFlow: Flow[InboundEnvelope, InboundEnvelope, TestManagementApi] =
     Flow.fromGraph(new InboundTestStage(this))
 
-  def outboundTestFlow(association: Association): Flow[Send, Send, TestManagementApi] =
+  def outboundTestFlow(association: Association): Flow[OutboundEnvelope, OutboundEnvelope, TestManagementApi] =
     Flow.fromGraph(new OutboundTestStage(association))
 
 }

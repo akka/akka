@@ -16,7 +16,6 @@ import akka.actor.InternalActorRef
 import akka.actor.PoisonPill
 import akka.actor.RootActorPath
 import akka.remote.{ AddressUidExtension, RARP, RemoteActorRef, UniqueAddress }
-import akka.remote.EndpointManager.Send
 import akka.remote.artery.SystemMessageDelivery._
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
@@ -62,41 +61,46 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
   val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
   implicit val mat = ActorMaterializer(matSettings)(system)
 
+  private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity = 16)
+
   override def afterTermination(): Unit = shutdown(systemB)
 
-  private def send(sendCount: Int, resendInterval: FiniteDuration, outboundContext: OutboundContext): Source[Send, NotUsed] = {
-    val remoteRef = null.asInstanceOf[RemoteActorRef] // not used
+  private def send(sendCount: Int, resendInterval: FiniteDuration, outboundContext: OutboundContext): Source[OutboundEnvelope, NotUsed] = {
     val deadLetters = TestProbe().ref
     Source(1 to sendCount)
-      .map(n ⇒ Send("msg-" + n, OptionVal.None, remoteRef, None))
+      .map(n ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, "msg-" + n, OptionVal.None))
       .via(new SystemMessageDelivery(outboundContext, deadLetters, resendInterval, maxBufferSize = 1000))
   }
 
-  private def inbound(inboundContext: InboundContext): Flow[Send, InboundEnvelope, NotUsed] = {
+  private def inbound(inboundContext: InboundContext): Flow[OutboundEnvelope, InboundEnvelope, NotUsed] = {
     val recipient = OptionVal.None // not used
-    Flow[Send]
-      .map {
-        case Send(sysEnv: SystemMessageEnvelope, _, _, _) ⇒
+    Flow[OutboundEnvelope]
+      .map(outboundEnvelope ⇒ outboundEnvelope.message match {
+        case sysEnv: SystemMessageEnvelope ⇒
           InboundEnvelope(recipient, addressB.address, sysEnv, OptionVal.None, addressA.uid,
             inboundContext.association(addressA.uid))
-      }
+      })
       .async
       .via(new SystemMessageAcker(inboundContext))
   }
 
-  private def drop(dropSeqNumbers: Vector[Long]): Flow[Send, Send, NotUsed] = {
-    Flow[Send]
+  private def drop(dropSeqNumbers: Vector[Long]): Flow[OutboundEnvelope, OutboundEnvelope, NotUsed] = {
+    Flow[OutboundEnvelope]
       .statefulMapConcat(() ⇒ {
         var dropping = dropSeqNumbers
 
         {
-          case s @ Send(SystemMessageEnvelope(_, seqNo, _), _, _, _) ⇒
-            val i = dropping.indexOf(seqNo)
-            if (i >= 0) {
-              dropping = dropping.updated(i, -1L)
-              Nil
-            } else
-              List(s)
+          outboundEnvelope ⇒
+            outboundEnvelope.message match {
+              case SystemMessageEnvelope(_, seqNo, _) ⇒
+                val i = dropping.indexOf(seqNo)
+                if (i >= 0) {
+                  dropping = dropping.updated(i, -1L)
+                  Nil
+                } else
+                  List(outboundEnvelope)
+              case _ ⇒ Nil
+            }
         }
       })
   }

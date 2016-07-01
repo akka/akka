@@ -33,17 +33,18 @@ class OutboundControlJunctionSpec extends AkkaSpec with ImplicitSender {
   val addressA = UniqueAddress(Address("artery", "sysA", "hostA", 1001), 1)
   val addressB = UniqueAddress(Address("artery", "sysB", "hostB", 1002), 2)
 
+  private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity = 16)
+
   "Control messages" must {
 
     "be injected via side channel" in {
       val inboundContext = new TestInboundContext(localAddress = addressA)
       val outboundContext = inboundContext.association(addressB.address)
-      val destination = null.asInstanceOf[RemoteActorRef] // not used
 
       val ((upstream, controlIngress), downstream) = TestSource.probe[String]
-        .map(msg ⇒ Send(msg, OptionVal.None, destination, None))
-        .viaMat(new OutboundControlJunction(outboundContext))(Keep.both)
-        .map { case Send(msg, _, _, _) ⇒ msg }
+        .map(msg ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, msg, OptionVal.None))
+        .viaMat(new OutboundControlJunction(outboundContext, outboundEnvelopePool))(Keep.both)
+        .map(env ⇒ env.message)
         .toMat(TestSink.probe[Any])(Keep.both)
         .run()
 

@@ -205,7 +205,7 @@ class MaxThroughputSpecMultiJvmNode2 extends MaxThroughputSpec
 
 abstract class MaxThroughputSpec
   extends MultiNodeSpec(MaxThroughputSpec)
-  with STMultiNodeSpec with ImplicitSender 
+  with STMultiNodeSpec with ImplicitSender
   with PerfFlamesSupport {
 
   import MaxThroughputSpec._
