@@ -198,14 +198,20 @@ public class CountMinSketch {
   // TODO replace with Scala's Murmur3, it's much faster
   private static class MurmurHash {
   
+    // FIXME: This overload isn't actually ever used
     public static int hash(Object o) {
       if (o == null) {
         return 0;
       }
+      if (o instanceof ActorRef) { // TODO possibly scary optimisation
+        // ActorRef hashcode is the ActorPath#uid, which is a random number assigned at its creation, 
+        // thus no hashing happens here - the value is already cached.
+        // TODO it should be thought over if this preciseness (just a random number, and not hashing) is good enough here?
+        return o.hashCode();
+      }
       if (o instanceof String) {
         return hash(((String) o).getBytes());
       }
-      // TODO consider calling hashCode on ActorRef here directly? It is just a random number though so possibly not as evenly distributed...?
       if (o instanceof Long) {
         return hashLong((Long) o);
       }

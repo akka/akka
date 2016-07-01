@@ -12,57 +12,57 @@ class HeavyHittersSpec extends WordSpecLike with Matchers {
     "should work" in {
       val hitters = new TopHeavyHitters[String](3)
       hitters.update("A", 10) shouldBe true
-      hitters.itemsSnapshot.toSet should ===(Set("A"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("A"))
 
       hitters.update("B", 20) shouldBe true
-      hitters.itemsSnapshot.toSet should ===(Set("A", "B"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("A", "B"))
 
       hitters.update("C", 1) shouldBe true
-      hitters.itemsSnapshot.toSet should ===(Set("A", "B", "C"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("A", "B", "C"))
 
       hitters.update("D", 100) shouldBe true
-      hitters.itemsSnapshot.toSet should ===(Set("A", "B", "D"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("A", "B", "D"))
 
       hitters.update("E", 200) shouldBe true
-      hitters.itemsSnapshot.toSet should ===(Set("B", "D", "E"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("B", "D", "E"))
 
       hitters.update("BB", 22) shouldBe true
-      hitters.itemsSnapshot.toSet should ===(Set("BB", "D", "E"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("BB", "D", "E"))
 
       hitters.update("a", 1) shouldBe false
-      hitters.itemsSnapshot.toSet should ===(Set("BB", "D", "E"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("BB", "D", "E"))
     }
 
     "correctly replace a hitter" in {
       val hitters = new TopHeavyHitters[String](3)
       hitters.update("A", 10) shouldBe true
-      hitters.itemsSnapshot.toSet should ===(Set("A"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("A"))
 
       hitters.update("A", 12) shouldBe false
       hitters.update("A", 22) shouldBe false
-      hitters.itemsSnapshot.toSet should ===(Set("A"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("A"))
     }
 
     "correctly drop least heavy hitter when more than N are inserted" in {
       val hitters = new TopHeavyHitters[String](3)
 
       hitters.update("A", 1) shouldBe true
-      hitters.itemsSnapshot.toSet should ===(Set("A"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("A"))
 
       hitters.update("B", 22) shouldBe true
-      hitters.itemsSnapshot.toSet should ===(Set("A", "B"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("A", "B"))
 
       hitters.update("C", 33) shouldBe true
-      hitters.itemsSnapshot.toSet should ===(Set("A", "B", "C"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("A", "B", "C"))
       hitters.lowestHitterWeight should ===(1)
 
       // first item which forces dropping least heavy hitter
       hitters.update("D", 100) shouldBe true
-      hitters.itemsSnapshot.toSet should ===(Set("B", "C", "D"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("B", "C", "D"))
 
       // second item which forces dropping least heavy hitter
       hitters.update("X", 999) shouldBe true
-      hitters.itemsSnapshot.toSet should ===(Set("X", "C", "D"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("X", "C", "D"))
     }
 
     "replace the right item even when hashCodes collide" in {
@@ -73,19 +73,19 @@ class HeavyHittersSpec extends WordSpecLike with Matchers {
       val b1 = MockHashCode("B", 1)
 
       hitters.update(a1, 1)
-      hitters.itemsSnapshot.toSet should ===(Set(a1))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set(a1))
       hitters.lowestHitterWeight should ===(0)
 
       hitters.update(b1, 2)
-      hitters.itemsSnapshot.toSet should ===(Set(a1, b1))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set(a1, b1))
       hitters.lowestHitterWeight should ===(1)
 
       hitters.update(a1, 10)
-      hitters.itemsSnapshot.toSet should ===(Set(a1, b1))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set(a1, b1))
       hitters.lowestHitterWeight should ===(2)
 
       hitters.update(b1, 100)
-      hitters.itemsSnapshot.toSet should ===(Set(a1, b1))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set(a1, b1))
       hitters.lowestHitterWeight should ===(10)
     }
 

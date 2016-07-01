@@ -52,7 +52,7 @@ private[akka] object MessageSerializer {
   def serializeForArtery(serialization: Serialization, message: AnyRef, headerBuilder: HeaderBuilder, envelope: EnvelopeBuffer): Unit = {
     val serializer = serialization.findSerializerFor(message)
 
-    headerBuilder.serializer = serializer.identifier
+    headerBuilder setSerializer serializer.identifier
 
     def manifest: String = serializer match {
       case ser: SerializerWithStringManifest ⇒ ser.manifest(message)
@@ -61,21 +61,21 @@ private[akka] object MessageSerializer {
 
     serializer match {
       case ser: ByteBufferSerializer ⇒
-        headerBuilder.manifest = manifest
+        headerBuilder setManifest manifest
         envelope.writeHeader(headerBuilder)
         ser.toBinary(message, envelope.byteBuffer)
       case _ ⇒
-        headerBuilder.manifest = manifest
+        headerBuilder setManifest manifest
         envelope.writeHeader(headerBuilder)
         envelope.byteBuffer.put(serializer.toBinary(message))
     }
   }
 
-  def deserializeForArtery(system: ExtendedActorSystem, serialization: Serialization, headerBuilder: HeaderBuilder,
+  def deserializeForArtery(system: ExtendedActorSystem, originUid: Long, serialization: Serialization, headerBuilder: HeaderBuilder,
                            envelope: EnvelopeBuffer): AnyRef = {
     serialization.deserializeByteBuffer(
       envelope.byteBuffer,
       headerBuilder.serializer,
-      headerBuilder.manifest)
+      headerBuilder.manifest(originUid)) // FIXME currently compression will not work for manifests
   }
 }

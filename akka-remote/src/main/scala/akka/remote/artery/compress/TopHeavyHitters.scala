@@ -30,8 +30,13 @@ private[remote] final class TopHeavyHitters[T](val max: Int) {
   private[this] val items: Array[T] = Array.ofDim[Object](max).asInstanceOf[Array[T]]
   private[this] val weights: Array[Long] = Array.ofDim(max)
 
-  /** Slow operation, mostly exposed for testing and debugging purposes, avoid using in hot paths. */
-  def itemsSnapshot: immutable.Seq[T] = Util.immutableSeq(items).filter(_ != null)
+  // TODO think if we could get away without copy
+  /** Returns copy(!) of items which are currently considered to be heavy hitters. */
+  def snapshot: Array[T] = {
+    val snap = Array.ofDim(max).asInstanceOf[Array[T]]
+    System.arraycopy(items, 0, snap, 0, items.length)
+    snap
+  }
 
   def toDebugString =
     s"""TopHeavyHitters(

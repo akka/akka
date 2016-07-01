@@ -60,8 +60,8 @@ class CodecBenchmark {
     create = () ⇒ new ReusableInboundEnvelope, clear = inEnvelope ⇒ inEnvelope.asInstanceOf[ReusableInboundEnvelope].clear()
   )
 
-  val compressionOut = NoOutboundCompression
-  val headerIn = HeaderBuilder.in(NoopInboundCompression)
+  val compressionOut = NoOutboundCompressions
+  val headerIn = HeaderBuilder.in(NoopInboundCompressions)
   val envelopeTemplateBuffer = ByteBuffer.allocate(ArteryTransport.MaximumFrameSize).order(ByteOrder.LITTLE_ENDIAN)
 
   val uniqueLocalAddress = UniqueAddress(
@@ -103,12 +103,12 @@ class CodecBenchmark {
     recipientStringB = remoteRefB.path.toSerializationFormatWithAddress(addressB)
 
     val envelope = new EnvelopeBuffer(envelopeTemplateBuffer)
-    headerIn.version = 1
-    headerIn.uid = 42
-    headerIn.serializer = 4
-    headerIn.senderActorRef = actorOnSystemA
-    headerIn.recipientActorRef = remoteRefB
-    headerIn.manifest = ""
+    headerIn setVersion 1
+    headerIn setUid 42
+    headerIn setSerializer 4
+    headerIn setSenderActorRef actorOnSystemA
+    headerIn setRecipientActorRef remoteRefB
+    headerIn setManifest ""
     envelope.writeHeader(headerIn)
     envelope.byteBuffer.put(payload)
     envelope.byteBuffer.flip()
@@ -169,7 +169,7 @@ class CodecBenchmark {
 
     val decoder: Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] =
       Flow.fromGraph(new Decoder(inboundContext, system.asInstanceOf[ExtendedActorSystem],
-        resolveActorRefWithLocalAddress, NoopInboundCompression, envelopePool, inboundEnvelopePool))
+        resolveActorRefWithLocalAddress, NoopInboundCompressions, envelopePool, inboundEnvelopePool))
 
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
       .map { _ =>
@@ -210,7 +210,7 @@ class CodecBenchmark {
 
     val decoder: Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] =
       Flow.fromGraph(new Decoder(inboundContext, system.asInstanceOf[ExtendedActorSystem],
-        resolveActorRefWithLocalAddress, NoopInboundCompression, envelopePool, inboundEnvelopePool))
+        resolveActorRefWithLocalAddress, NoopInboundCompressions, envelopePool, inboundEnvelopePool))
 
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
       .map(_ ⇒ Send(payload, OptionVal.None, remoteRefB, None))

@@ -9,8 +9,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
-import akka.remote.artery.compress.{ OutboundCompressionImpl, CompressionProtocol }
-
+import akka.remote.artery.compress.{ CompressionProtocol, CompressionTable, OutboundCompressionsImpl }
 import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.Promise
@@ -40,6 +39,7 @@ import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 import akka.util.OptionVal
 import akka.remote.QuarantinedEvent
 import akka.remote.DaemonMsgCreate
+import akka.remote.artery.compress.CompressionProtocol._
 
 /**
  * INTERNAL API
@@ -82,7 +82,7 @@ private[remote] class Association(
   // start sending (enqueuing) to the Association immediate after construction.
 
   /** Accesses the currently active outbound compression. */
-  def compression: OutboundCompression = associationState.outboundCompression
+  def compression: OutboundCompressions = associationState.outboundCompression
 
   def createQueue(capacity: Int): Queue[Send] =
     new ManyToOneConcurrentArrayQueue[Send](capacity)
@@ -283,19 +283,19 @@ private[remote] class Association(
 
   private def runOutboundStreams(): Unit = {
     // TODO no compression for control / large streams currently
-    val disableCompression = NoOutboundCompression
+    val disableCompression = NoOutboundCompressions
 
     // it's important to materialize the outboundControl stream first,
     // so that outboundControlIngress is ready when stages for all streams start
     runOutboundControlStream(disableCompression)
-    runOutboundOrdinaryMessagesStream(CurrentAssociationStateOutboundCompressionProxy)
+    runOutboundOrdinaryMessagesStream(CurrentAssociationStateOutboundCompressionsProxy)
 
     if (largeMessageChannelEnabled) {
       runOutboundLargeMessagesStream(disableCompression)
     }
   }
 
-  private def runOutboundControlStream(compression: OutboundCompression): Unit = {
+  private def runOutboundControlStream(compression: OutboundCompressions): Unit = {
     // stage in the control stream may access the outboundControlIngress before returned here
     // using CountDownLatch to make sure that materialization is completed before accessing outboundControlIngress
     materializing = new CountDownLatch(1)
@@ -340,7 +340,7 @@ private[remote] class Association(
         QueueWrapper(createQueue(capacity))
     }
 
-  private def runOutboundOrdinaryMessagesStream(compression: OutboundCompression): Unit = {
+  private def runOutboundOrdinaryMessagesStream(compression: OutboundCompressions): Unit = {
     val wrapper = getOrCreateQueueWrapper(queue, queueSize)
     queue = wrapper // use new underlying queue immediately for restarts
 
@@ -365,7 +365,7 @@ private[remote] class Association(
     attachStreamRestart("Outbound message stream", completed, _ ⇒ runOutboundOrdinaryMessagesStream(compression))
   }
 
-  private def runOutboundLargeMessagesStream(compression: OutboundCompression): Unit = {
+  private def runOutboundLargeMessagesStream(compression: OutboundCompressions): Unit = {
     val wrapper = getOrCreateQueueWrapper(queue, largeQueueSize)
     largeQueue = wrapper // use new underlying queue immediately for restarts
 
@@ -411,25 +411,25 @@ private[remote] class Association(
   }
 
   // TODO: Make sure that once other channels use Compression, each gets it's own
-  private def createOutboundCompressionTable(remoteAddress: Address): OutboundCompression = {
+  private def createOutboundCompressionTable(remoteAddress: Address): OutboundCompressions = {
     if (transport.provider.remoteSettings.ArteryCompressionSettings.enabled) {
-      val compression = new OutboundCompressionImpl(transport.system, remoteAddress)
+      val compression = new OutboundCompressionsImpl(transport.system, remoteAddress)
       // FIXME should use verion number of table instead of hashCode
       log.info("Creating Outbound compression table ({}) to [{}]", compression.hashCode, remoteAddress)
       compression
-    } else NoOutboundCompression
+    } else NoOutboundCompressions
   }
 
-  /*
+  /**
    * This proxy uses the current associationStates compression table, which is reset for a new incarnation.
    * This way the same outgoing stream will switch to using the new table without the need of restarting it.
    */
-  object CurrentAssociationStateOutboundCompressionProxy extends OutboundCompression {
-    override final def allocateActorRefCompressionId(ref: ActorRef, id: Int): Unit =
-      associationState.outboundCompression.allocateActorRefCompressionId(ref, id)
+  private object CurrentAssociationStateOutboundCompressionsProxy extends OutboundCompressions {
+    override def applyActorRefCompressionTable(table: CompressionTable[ActorRef]): Unit =
+      associationState.outboundCompression.applyActorRefCompressionTable(table)
 
-    override final def allocateClassManifestCompressionId(manifest: String, id: Int): Unit =
-      associationState.outboundCompression.allocateClassManifestCompressionId(manifest, id)
+    override def applyClassManifestCompressionTable(table: CompressionTable[String]): Unit =
+      associationState.outboundCompression.applyClassManifestCompressionTable(table)
 
     override final def compressActorRef(ref: ActorRef): Int =
       associationState.outboundCompression.compressActorRef(ref)
