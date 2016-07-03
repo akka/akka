@@ -24,5 +24,5 @@ public interface HttpOriginRange {
      */
     @Deprecated
     // FIXME: Remove in Akka 3.0
-    HttpOriginRange ALL = HttpOriginRanges.ALL;
+    public static final HttpOriginRange ALL = HttpOriginRanges.ALL;
 }
