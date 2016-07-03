@@ -15,7 +15,7 @@ import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.model.Uri
 import akka.http.impl.util.JavaMapping.Implicits._
 
-trait HttpOriginRange extends jm.headers.HttpOriginRange with ValueRenderable {
+abstract class HttpOriginRange extends jm.headers.HttpOriginRange with ValueRenderable {
   def matches(origin: HttpOrigin): Boolean
 
   /** Java API */
@@ -30,7 +30,7 @@ object HttpOriginRange {
 
   def apply(origins: HttpOrigin*): Default = Default(immutable.Seq(origins: _*))
 
-  final case class Default(origins: immutable.Seq[HttpOrigin]) extends jm.headers.HttpOriginRangeDefault with HttpOriginRange {
+  final case class Default(origins: immutable.Seq[HttpOrigin]) extends HttpOriginRange with jm.headers.HttpOriginRangeDefault {
     def matches(origin: HttpOrigin): Boolean = origins contains origin
     def render[R <: Rendering](r: R): r.type = r ~~ origins
   }
