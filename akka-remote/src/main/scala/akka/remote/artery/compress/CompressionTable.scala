@@ -5,7 +5,7 @@
 package akka.remote.artery.compress
 
 /** INTERNAL API: Versioned compression table to be advertised between systems */
-private[akka] final case class CompressionTable[T](version: Long, map: Map[T, Int]) {
+private[akka] final case class CompressionTable[T](version: Int, map: Map[T, Int]) {
 
   def invert: DecompressionTable[T] =
     if (map.isEmpty) DecompressionTable.empty[T].copy(version = version)

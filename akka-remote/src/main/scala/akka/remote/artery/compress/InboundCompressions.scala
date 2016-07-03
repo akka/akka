@@ -7,7 +7,7 @@ package akka.remote.artery.compress
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.{ ActorRef, ActorSystem, Address }
-import akka.event.Logging
+import akka.event.{ Logging, LoggingAdapter, NoLogging }
 import akka.remote.artery.{ InboundContext, OutboundContext }
 import akka.stream.impl.ConstantFun
 import akka.util.{ OptionVal, PrettyDuration }
@@ -43,9 +43,9 @@ private[remote] final class InboundActorRefCompression(
   scheduleNextTableAdvertisement()
   override protected def tableAdvertisementInterval = settings.actorRefs.advertisementInterval
 
-  def advertiseCompressionTable(association: OutboundContext, table: CompressionTable[ActorRef]): Unit = {
-    log.debug(s"Advertise ActorRef compression [$table] to [${association.remoteAddress}]")
-    association.sendControl(CompressionProtocol.ActorRefCompressionAdvertisement(inboundContext.localAddress, table))
+  override def advertiseCompressionTable(outboundContext: OutboundContext, table: CompressionTable[ActorRef]): Unit = {
+    log.debug(s"Advertise ActorRef compression [$table], from [${inboundContext.localAddress}] to [${outboundContext.remoteAddress}]")
+    outboundContext.sendControl(CompressionProtocol.ActorRefCompressionAdvertisement(inboundContext.localAddress, table))
   }
 }
 
@@ -59,9 +59,11 @@ final class InboundManifestCompression(
   scheduleNextTableAdvertisement()
   override protected def tableAdvertisementInterval = settings.manifests.advertisementInterval
 
-  override def advertiseCompressionTable(association: OutboundContext, table: CompressionTable[String]): Unit = {
-    log.debug(s"Advertise ClassManifest compression [$table] to [${association.remoteAddress}]")
-    association.sendControl(CompressionProtocol.ClassManifestCompressionAdvertisement(inboundContext.localAddress, table))
+  override lazy val log = NoLogging
+
+  override def advertiseCompressionTable(outboundContext: OutboundContext, table: CompressionTable[String]): Unit = {
+    log.debug(s"Advertise ClassManifest compression [$table] to [${outboundContext.remoteAddress}]")
+    outboundContext.sendControl(CompressionProtocol.ClassManifestCompressionAdvertisement(inboundContext.localAddress, table))
   }
 }
 
@@ -77,7 +79,7 @@ private[remote] abstract class InboundCompression[T >: Null](
   val heavyHitters:   TopHeavyHitters[T],
   convertKeyToString: T ⇒ String) { // TODO avoid converting to string, in order to use the ActorRef.hashCode!
 
-  val log = Logging(system, "InboundCompressionTable")
+  lazy val log = Logging(system, getClass.getSimpleName)
 
   // TODO atomic / state machine? the InbouncCompression could even extend ActomicReference[State]!
 
@@ -91,7 +93,7 @@ private[remote] abstract class InboundCompression[T >: Null](
 
   // 2 tables are used, one is "still in use", and the
   @volatile private[this] var activeTable = DecompressionTable.empty[T]
-  @volatile private[this] var nextTable = DecompressionTable.empty[T]
+  @volatile private[this] var nextTable = DecompressionTable.empty[T].copy(version = 1)
 
   // TODO calibrate properly (h/w have direct relation to preciseness and max capacity)
   private[this] val cms = new CountMinSketch(100, 100, System.currentTimeMillis().toInt)
@@ -112,14 +114,17 @@ private[remote] abstract class InboundCompression[T >: Null](
     if (tableVersion == -1) OptionVal.None // no compression, bail out early
     else if (tableVersion == activeVersion) {
       val value: T = activeTable.get(idx)
-      if (settings.debug) log.debug(s"Decompress [{}] => {}", idx, value)
+      //      if (settings.debug) log.debug(s"Decompress [{}] => {}", idx, value)
+      if (settings.debug) log.error(s"Decompress [{}] => {}", idx, value) // FIXME
       if (value != null) OptionVal.Some[T](value)
       else throw new UnknownCompressedIdException(idx)
     } else if (tableVersion < activeVersion) {
-      log.warning("Received value compressed with old table: [{}], current table version is: [{}]", tableVersion, activeVersion)
+      log.error("Received value compressed with old table: [{}], current table version is: [{}]", tableVersion, activeVersion)
       OptionVal.None
     } else if (tableVersion == nextTable.version) {
-      flipTables()
+      advertisementInProgress = false
+      log.error("Received first message compressed using nextTable, flipping to it (version: {})", nextTable.version)
+      startUsingNextTable()
       decompress(tableVersion, idx) // recurse, activeTable will not be able to handle this
     } else {
       // which means that incoming version was > nextTable.version, which likely is a bug
@@ -186,10 +191,8 @@ private[remote] abstract class InboundCompression[T >: Null](
    * INTERNAL / TESTING API
    * Used for manually triggering when a compression table should be advertised.
    * Note that most likely you'd want to set the advertisment-interval to `0` when using this.
-   *
-   * TODO: Technically this would be solvable by a "triggerable" scheduler.
    */
-  private[remote] def triggerNextTableAdvertisement(): Unit = // TODO expose and use in tests
+  private[remote] def triggerNextTableAdvertisement(): Unit = // TODO use this in tests for triggering
     runNextTableAdvertisement()
 
   def scheduleNextTableAdvertisement(): Unit =
@@ -200,9 +203,9 @@ private[remote] abstract class InboundCompression[T >: Null](
           log.debug("Scheduled {} advertisement in [{}] from now...", getClass.getSimpleName, PrettyDuration.format(tableAdvertisementInterval, includeNanos = false, 1))
         } catch {
           case ex: IllegalStateException ⇒
-            log.warning("Unable to schedule {} advertisement, " +
-              "likely system is shutting down. " +
-              "Reason: {}", getClass.getName, ex.getMessage)
+            // this is usually harmless
+            log.debug("Unable to schedule {} advertisement, " +
+              "likely system is shutting down. Reason: {}", getClass.getName, ex.getMessage)
         }
       case _ ⇒ // ignore...
     }
@@ -212,6 +215,8 @@ private[remote] abstract class InboundCompression[T >: Null](
       try runNextTableAdvertisement()
       finally scheduleNextTableAdvertisement()
   }
+
+  private[this] var advertisementInProgress = false
 
   /**
    * Entry point to advertising a new compression table.
@@ -223,19 +228,20 @@ private[remote] abstract class InboundCompression[T >: Null](
    * It must be advertised to the other side so it can start using it in its outgoing compression.
    * Triggers compression table advertisement. May be triggered by schedule or manually, i.e. for testing.
    */
-  def runNextTableAdvertisement() = { // TODO guard against re-entrancy?
-    inboundContext.association(originUid) match {
-      case OptionVal.Some(association) ⇒
-        val table = prepareCompressionAdvertisement()
-        nextTable = table.invert // TODO expensive, check if building the other way wouldn't be faster?
-        advertiseCompressionTable(association, table)
+  def runNextTableAdvertisement() =
+    if (!advertisementInProgress)
+      inboundContext.association(originUid) match {
+        case OptionVal.Some(association) ⇒
+          advertisementInProgress = true
+          val table = prepareCompressionAdvertisement()
+          nextTable = table.invert // TODO expensive, check if building the other way wouldn't be faster?
+          advertiseCompressionTable(association, table)
 
-      case OptionVal.None ⇒
-        // otherwise it's too early, association not ready yet.
-        // so we don't build the table since we would not be able to send it anyway.
-        log.warning("No Association for originUid [{}] yet, unable to advertise compression table.", originUid)
-    }
-  }
+        case OptionVal.None ⇒
+          // otherwise it's too early, association not ready yet.
+          // so we don't build the table since we would not be able to send it anyway.
+          log.warning("No Association for originUid [{}] yet, unable to advertise compression table.", originUid)
+      }
 
   /**
    * Must be implementeed by extending classes in order to send a [[akka.remote.artery.ControlMessage]]
@@ -244,7 +250,7 @@ private[remote] abstract class InboundCompression[T >: Null](
   protected def advertiseCompressionTable(association: OutboundContext, table: CompressionTable[T]): Unit
 
   /** Drop `activeTable` and start using the `nextTable` in its place. */
-  private def flipTables(): Unit = {
+  private def startUsingNextTable(): Unit = {
     log.debug("Swaping active decompression table to version {}.", nextTable.version)
     activeTable = nextTable
     nextTable = DecompressionTable.empty
@@ -260,11 +266,6 @@ private[remote] abstract class InboundCompression[T >: Null](
     s"""${getClass.getSimpleName}(countMinSketch: $cms, heavyHitters: $heavyHitters)"""
 
 }
-
-final class ExistingcompressedIdReuseAttemptException(id: Long, value: Any)
-  extends RuntimeException(
-    s"Attempted to re-allocate compressedId [$id] which is still in use for compressing [$value]! " +
-      s"This should never happen and is likely an implementation bug.")
 
 final class UnknownCompressedIdException(id: Long)
   extends RuntimeException(
