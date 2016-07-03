@@ -1,9 +1,13 @@
+/*
+ * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.remote.artery
 
 import java.nio.{ ByteBuffer, ByteOrder }
 
 import akka.actor._
-import akka.remote.artery.compress.{ CompressionTable, CompressionTestUtils }
+import akka.remote.artery.compress.{ CompressionTable, CompressionTestUtils, InboundCompressions, OutboundCompressions }
 import akka.testkit.AkkaSpec
 import akka.util.{ ByteString, OptionVal }
 

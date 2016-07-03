@@ -114,16 +114,15 @@ private[remote] abstract class InboundCompression[T >: Null](
     if (tableVersion == -1) OptionVal.None // no compression, bail out early
     else if (tableVersion == activeVersion) {
       val value: T = activeTable.get(idx)
-      //      if (settings.debug) log.debug(s"Decompress [{}] => {}", idx, value)
-      if (settings.debug) log.error(s"Decompress [{}] => {}", idx, value) // FIXME
+      if (settings.debug) log.debug(s"Decompress [{}] => {}", idx, value)
       if (value != null) OptionVal.Some[T](value)
       else throw new UnknownCompressedIdException(idx)
     } else if (tableVersion < activeVersion) {
-      log.error("Received value compressed with old table: [{}], current table version is: [{}]", tableVersion, activeVersion)
+      log.debug("Received value compressed with old table: [{}], current table version is: [{}]", tableVersion, activeVersion)
       OptionVal.None
     } else if (tableVersion == nextTable.version) {
       advertisementInProgress = false
-      log.error("Received first message compressed using nextTable, flipping to it (version: {})", nextTable.version)
+      log.debug("Received first value compressed using the next prepared compression table, flipping to it (version: {})", nextTable.version)
       startUsingNextTable()
       decompress(tableVersion, idx) // recurse, activeTable will not be able to handle this
     } else {
@@ -141,41 +140,11 @@ private[remote] abstract class InboundCompression[T >: Null](
    */
   // TODO not so happy about passing around address here, but in incoming there's no other earlier place to get it?
   def increment(remoteAddress: Address, value: T, n: Long): Unit = {
-    val key = convertKeyToString(value)
-    if (shouldIgnore(key)) {
-      // ignore...
-    } else {
-      val count = cms.addAndEstimateCount(key, n)
+    val count = cms.addObjectAndEstimateCount(value, n)
 
-      // TODO optimise order of these, what is more expensive?
-      // TODO (now the `previous` is, but if aprox datatype there it would be faster)... Needs pondering.
-      val wasHeavyHitter = addAndCheckIfheavyHitterDetected(value, count)
-      if (wasHeavyHitter)
-        log.debug(s"Heavy hitter detected: {} [count: {}]", value, count)
-      //      if (wasHeavyHitter && !wasCompressedPreviously(key)) {
-      //        val idx = prepareCompressionAdvertisement()
-      //        log.debug("Allocated compression id [" + idx + "] for [" + value + "], in association with [" + remoteAddress + "]")
-      //      }
-    }
-  }
-
-  private def shouldIgnore(key: String) = { // TODO this is hacky, if we'd do this we trigger compression too early (before association exists, so control messages fail)
-    key match {
-      case null ⇒ true
-      case ""   ⇒ true // empty class manifest for example
-      case _    ⇒ key.endsWith("/")
-    }
-  }
-
-  // TODO this must be optimised, we really don't want to scan the entire key-set each time to make sure
-  private def wasCompressedPreviously(key: String): Boolean = {
-    var i = 0
-    val len = activeTable.table.length
-    while (i < len) {
-      if (activeTable.table(i) == key) return true
-      i += 1
-    }
-    false
+    // TODO optimise order of these, what is more expensive?
+    // TODO (now the `previous` is, but if aprox datatype there it would be faster)... Needs pondering.
+    addAndCheckIfheavyHitterDetected(value, count)
   }
 
   /** Mutates heavy hitters */
