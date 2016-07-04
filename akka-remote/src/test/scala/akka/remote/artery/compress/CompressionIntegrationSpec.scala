@@ -22,7 +22,7 @@ object CompressionIntegrationSpec {
   val commonConfig = ConfigFactory.parseString(s"""
      akka {
        loglevel = INFO
-        
+
        actor.provider = "akka.remote.RemoteActorRefProvider"
        remote.artery.enabled = on
        remote.artery.advanced {
@@ -32,7 +32,7 @@ object CompressionIntegrationSpec {
        remote.artery.hostname = localhost
        remote.artery.port = 0
        remote.handshake-timeout = 10s
-       
+
        remote.artery.advanced.compression {
          enabled = on
          actor-refs {
@@ -40,7 +40,7 @@ object CompressionIntegrationSpec {
            advertisement-interval = 3 seconds
          }
        }
-       
+
      }
   """)
 
@@ -75,7 +75,7 @@ class CompressionIntegrationSpec extends AkkaSpec(CompressionIntegrationSpec.com
       // cause testActor-1 to become a heavy hitter
       (1 to messagesToExchange).foreach { i ⇒ voidSel ! "hello" } // does not reply, but a hot receiver should be advertised
 
-      val a1 = aProbe.expectMsgType[Events.ReceivedCompressionTable[ActorRef]](10.seconds)
+      val a1 = aProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](10.seconds)
       info("System [A] received: " + a1)
       assertCompression[ActorRef](a1.table, 0, _ should ===(system.deadLetters))
       assertCompression[ActorRef](a1.table, 1, _ should ===(testActor))

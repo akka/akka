@@ -25,8 +25,7 @@ private[remote] final case class DecompressionTable[T](version: Int, table: Arra
       s"(version: $version, " +
       (
         if (length == 0) "[empty]"
-        else s"table: [${table.zipWithIndex.map({ case (t, i) ⇒ s"$i -> $t" }).mkString(",")}"
-      ) + "])"
+        else s"table: [${table.zipWithIndex.map({ case (t, i) ⇒ s"$i -> $t" }).mkString(",")}") + "])"
 }
 
 /** INTERNAL API */

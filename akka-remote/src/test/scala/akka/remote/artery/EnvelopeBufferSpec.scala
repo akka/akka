@@ -34,14 +34,16 @@ class EnvelopeBufferSpec extends AkkaSpec {
     override def applyActorRefCompressionTable(table: CompressionTable[ActorRef]): Unit = ??? // dynamic allocating not needed in these tests
     override def actorRefCompressionTableVersion: Int = 0
     override def compressActorRef(ref: ActorRef): Int = refToIdx.getOrElse(ref, -1)
-    override def hitActorRef(originUid: Long, tableVersion: Int, remote: Address, ref: ActorRef): Unit = ()
+    override def hitActorRef(originUid: Long, tableVersion: Int, remote: Address, ref: ActorRef, n: Int): Unit = ()
     override def decompressActorRef(originUid: Long, tableVersion: Int, idx: Int): OptionVal[ActorRef] = OptionVal(idxToRef(idx))
+    override def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit = ()
 
     override def applyClassManifestCompressionTable(table: CompressionTable[String]): Unit = ??? // dynamic allocating not needed in these tests
     override def classManifestCompressionTableVersion: Int = 0
     override def compressClassManifest(manifest: String): Int = manifestToIdx.getOrElse(manifest, -1)
-    override def hitClassManifest(originUid: Long, tableVersion: Int, remote: Address, manifest: String): Unit = ()
+    override def hitClassManifest(originUid: Long, tableVersion: Int, remote: Address, manifest: String, n: Int): Unit = ()
     override def decompressClassManifest(originUid: Long, tableVersion: Int, idx: Int): OptionVal[String] = OptionVal(idxToManifest(idx))
+    override def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit = ()
   }
 
   "EnvelopeBuffer" must {

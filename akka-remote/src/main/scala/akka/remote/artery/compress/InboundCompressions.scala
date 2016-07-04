@@ -8,8 +8,8 @@ import akka.actor.{ ActorRef, ActorSystem, Address }
 import akka.event.{ Logging, NoLogging }
 import akka.remote.artery.{ InboundContext, OutboundContext }
 import akka.util.{ OptionVal, PrettyDuration }
-
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * INTERNAL API
@@ -33,9 +33,9 @@ private[remote] final class InboundActorRefCompression(
     allocations foreach { case ref ⇒ increment(null, ref, 100000) }
   }
 
-  override def decompress(tableId: Long, idx: Int): OptionVal[ActorRef] =
+  override def decompress(tableVersion: Int, idx: Int): OptionVal[ActorRef] =
     if (idx == 0) OptionVal.Some(system.deadLetters)
-    else super.decompress(tableId, idx)
+    else super.decompress(tableVersion, idx)
 
   scheduleNextTableAdvertisement()
   override protected def tableAdvertisementInterval = settings.actorRefs.advertisementInterval
@@ -87,7 +87,7 @@ private[remote] abstract class InboundCompression[T >: Null](
 
   // TODO have a marker that "advertised table XXX", so we don't generate a new-new one until the new one is in use?
 
-  // 2 tables are used, one is "still in use", and the
+  @volatile private[this] var oldTable = DecompressionTable.empty[T].copy(version = -1)
   @volatile private[this] var activeTable = DecompressionTable.empty[T]
   @volatile private[this] var nextTable = DecompressionTable.empty[T].copy(version = 1)
 
@@ -104,7 +104,8 @@ private[remote] abstract class InboundCompression[T >: Null](
    * @throws UnknownCompressedIdException if given id is not known, this may indicate a bug – such situation should not happen.
    */
   // not tailrec because we allow special casing in sub-class, however recursion is always at most 1 level deep
-  def decompress(incomingTableVersion: Long, idx: Int): OptionVal[T] = {
+  def decompress(incomingTableVersion: Int, idx: Int): OptionVal[T] = {
+    val oldVersion = oldTable.version
     val activeVersion = activeTable.version
 
     if (incomingTableVersion == -1) OptionVal.None // no compression, bail out early
@@ -112,13 +113,17 @@ private[remote] abstract class InboundCompression[T >: Null](
       val value: T = activeTable.get(idx)
       if (value != null) OptionVal.Some[T](value)
       else throw new UnknownCompressedIdException(idx)
+    } else if (incomingTableVersion == oldVersion) {
+      // must handle one old table due to messages in flight during advertisement
+      val value: T = oldTable.get(idx)
+      if (value != null) OptionVal.Some[T](value)
+      else throw new UnknownCompressedIdException(idx)
     } else if (incomingTableVersion < activeVersion) {
       log.warning("Received value compressed with old table: [{}], current table version is: [{}]", incomingTableVersion, activeVersion)
       OptionVal.None
     } else if (incomingTableVersion == nextTable.version) {
-      advertisementInProgress = false
       log.debug("Received first value compressed using the next prepared compression table, flipping to it (version: {})", nextTable.version)
-      startUsingNextTable()
+      confirmAdvertisement(incomingTableVersion)
       decompress(incomingTableVersion, idx) // recurse, activeTable will not be able to handle this
     } else {
       // which means that incoming version was > nextTable.version, which likely is a bug
@@ -127,6 +132,21 @@ private[remote] abstract class InboundCompression[T >: Null](
           "This should not happen! State: activeTable: {}, nextTable: {}, incoming tableVersion: {}",
         activeVersion, nextTable.version, incomingTableVersion)
       OptionVal.None
+    }
+  }
+
+  def confirmAdvertisement(tableVersion: Int): Unit = {
+    val currentInProgress = advertisementInProgress.get
+    currentInProgress match {
+      case null ⇒ // already confirmed
+      case inProgress if tableVersion == inProgress.version ⇒
+        if (advertisementInProgress.compareAndSet(currentInProgress, null)) {
+          log.debug("Confirmed compression table version {}", tableVersion)
+          startUsingNextTable()
+        }
+      case inProgress if tableVersion != inProgress.version ⇒
+        log.debug("Confirmed compression table version {} but in progress {}", tableVersion, inProgress.version)
+      case _ ⇒ // already confirmed
     }
 
   }
@@ -182,8 +202,7 @@ private[remote] abstract class InboundCompression[T >: Null](
       finally scheduleNextTableAdvertisement()
   }
 
-  // FIXME use AtomicBoolean instead?
-  @volatile private[this] var advertisementInProgress = false
+  private[this] val advertisementInProgress: AtomicReference[CompressionTable[T]] = new AtomicReference
 
   /**
    * Entry point to advertising a new compression table.
@@ -195,20 +214,33 @@ private[remote] abstract class InboundCompression[T >: Null](
    * It must be advertised to the other side so it can start using it in its outgoing compression.
    * Triggers compression table advertisement. May be triggered by schedule or manually, i.e. for testing.
    */
-  private[remote] def runNextTableAdvertisement() =
-    if (!advertisementInProgress)
-      inboundContext.association(originUid) match {
-        case OptionVal.Some(association) ⇒
-          advertisementInProgress = true
-          val table = prepareCompressionAdvertisement()
-          nextTable = table.invert // TODO expensive, check if building the other way wouldn't be faster?
-          advertiseCompressionTable(association, table)
+  private[remote] def runNextTableAdvertisement() = {
+    val currentInProgress = advertisementInProgress.get
+    currentInProgress match {
+      case null ⇒
+        inboundContext.association(originUid) match {
+          case OptionVal.Some(association) ⇒
+            val table = prepareCompressionAdvertisement()
+            if (advertisementInProgress.compareAndSet(currentInProgress, table)) {
+              nextTable = table.invert // TODO expensive, check if building the other way wouldn't be faster?
+              advertiseCompressionTable(association, table)
+            }
 
-        case OptionVal.None ⇒
-          // otherwise it's too early, association not ready yet.
-          // so we don't build the table since we would not be able to send it anyway.
-          log.warning("No Association for originUid [{}] yet, unable to advertise compression table.", originUid)
-      }
+          case OptionVal.None ⇒
+            // otherwise it's too early, association not ready yet.
+            // so we don't build the table since we would not be able to send it anyway.
+            log.warning("No Association for originUid [{}] yet, unable to advertise compression table.", originUid)
+        }
+
+      case inProgress ⇒
+        log.debug("Advertisment in progress for version {}, resending", inProgress.version)
+        inboundContext.association(originUid) match {
+          case OptionVal.Some(association) ⇒
+            advertiseCompressionTable(association, inProgress) // resend
+          case OptionVal.None ⇒
+        }
+    }
+  }
 
   /**
    * Must be implementeed by extending classes in order to send a [[akka.remote.artery.ControlMessage]]
@@ -219,6 +251,7 @@ private[remote] abstract class InboundCompression[T >: Null](
   /** Drop `activeTable` and start using the `nextTable` in its place. */
   private def startUsingNextTable(): Unit = {
     log.debug("Swaping active decompression table to version {}.", nextTable.version)
+    oldTable = activeTable
     activeTable = nextTable
     nextTable = DecompressionTable.empty
     // TODO we want to keep the currentTableVersion in State too, update here as well then

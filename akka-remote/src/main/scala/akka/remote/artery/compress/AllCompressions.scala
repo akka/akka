@@ -14,11 +14,13 @@ import akka.util.OptionVal
  * One per inbound message stream thus must demux by originUid to use the right tables.
  */
 private[remote] trait InboundCompressions {
-  def hitActorRef(originUid: Long, tableVersion: Int, remote: Address, ref: ActorRef): Unit
+  def hitActorRef(originUid: Long, tableVersion: Int, remote: Address, ref: ActorRef, n: Int): Unit
   def decompressActorRef(originUid: Long, tableVersion: Int, idx: Int): OptionVal[ActorRef]
+  def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit
 
-  def hitClassManifest(originUid: Long, tableVersion: Int, remote: Address, manifest: String): Unit
+  def hitClassManifest(originUid: Long, tableVersion: Int, remote: Address, manifest: String, n: Int): Unit
   def decompressClassManifest(originUid: Long, tableVersion: Int, idx: Int): OptionVal[String]
+  def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit
 }
 /**
  * INTERNAL API

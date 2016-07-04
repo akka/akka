@@ -15,6 +15,7 @@ import akka.util.{ ByteString, OptionVal, PrettyByteString }
 import akka.actor.EmptyLocalActorRef
 import akka.remote.artery.compress.{ InboundCompressions, OutboundCompressions, OutboundCompressionsImpl }
 import akka.stream.stage.TimerGraphStageLogic
+import java.util.concurrent.TimeUnit
 
 /**
  * INTERNAL API
@@ -48,6 +49,13 @@ private[remote] class Encoder(
         val envelope = bufferPool.acquire()
 
         // FIXME: OMG race between setting the version, and using the table!!!!
+        // incoming messages are concurrent to outgoing ones
+        // incoming message may be table advertisement
+        // which swaps the table in Outgoing*Compression for the new one (n+1)
+        // by itself it does so atomically,
+        // race: however here we store the compression table version separately from actually using it (storing the refs / manifests etc).
+        // so there is a slight race IF the table is swapped right between us setting the version n here [then the table being swapped to n+1] and then we use the n+1 version to compressions the compressions (which the receiving end will fail to read, since the encoding could be completely different, and it picks the table based on the version Int).
+        // A solution would be to getTable => use it to set and compress things
         headerBuilder setActorRefCompressionTableVersion compression.actorRefCompressionTableVersion
         headerBuilder setClassManifestCompressionTableVersion compression.classManifestCompressionTableVersion
 
@@ -113,6 +121,8 @@ private[remote] object Decoder {
     attemptsLeft:    Int,
     recipientPath:   String,
     inboundEnvelope: InboundEnvelope)
+
+  private object Tick
 }
 
 /**
@@ -125,6 +135,7 @@ private[remote] class Decoder(
   compression:                     InboundCompressions, // TODO has to do demuxing on remote address It would seem, as decoder does not yet know
   bufferPool:                      EnvelopeBufferPool,
   inEnvelopePool:                  ObjectPool[ReusableInboundEnvelope]) extends GraphStage[FlowShape[EnvelopeBuffer, InboundEnvelope]] {
+  import Decoder.Tick
   val in: Inlet[EnvelopeBuffer] = Inlet("Artery.Decoder.in")
   val out: Outlet[InboundEnvelope] = Outlet("Artery.Decoder.out")
   val shape: FlowShape[EnvelopeBuffer, InboundEnvelope] = FlowShape(in, out)
@@ -139,9 +150,22 @@ private[remote] class Decoder(
       private val retryResolveRemoteDeployedRecipientInterval = 50.millis
       private val retryResolveRemoteDeployedRecipientAttempts = 20
 
+      // adaptive sampling when rate > 1000 msg/s
+      private var messageCount = 0L
+      private val HeavyHitterMask = (1 << 8) - 1 // sample every 256nth message
+      private var adaptiveSampling = false
+      private val adaptiveSamplingRateThreshold = 1000
+      private var tickTimestamp = System.nanoTime()
+      private var tickMessageCount = 0L
+
       override protected def logSource = classOf[Decoder]
 
+      override def preStart(): Unit = {
+        schedulePeriodically(Tick, 1.seconds)
+      }
+
       override def onPush(): Unit = {
+        messageCount += 1
         val envelope = grab(in)
         envelope.parseHeader(headerBuilder)
 
@@ -166,22 +190,40 @@ private[remote] class Decoder(
             OptionVal.None
         }
 
-        // --- hit refs and manifests for heavy-hitter counting
-        association match {
-          case OptionVal.Some(assoc) ⇒
-            val remoteAddress = assoc.remoteAddress
-            if (sender.isDefined) compression.hitActorRef(originUid, headerBuilder.actorRefCompressionTableVersion, remoteAddress, sender.get)
-            if (recipient.isDefined) compression.hitActorRef(originUid, headerBuilder.actorRefCompressionTableVersion, remoteAddress, recipient.get)
-            compression.hitClassManifest(originUid, headerBuilder.classManifestCompressionTableVersion, remoteAddress, headerBuilder.manifest(originUid))
-          case _ ⇒
-            // we don't want to record hits for compression while handshake is still in progress.
-            log.debug("Decoded message but unable to record hits for compression as no remoteAddress known. No association yet?")
+        val classManifest = headerBuilder.manifest(originUid)
+
+        if (!adaptiveSampling || (messageCount & HeavyHitterMask) == 0) {
+          // --- hit refs and manifests for heavy-hitter counting
+          association match {
+            case OptionVal.Some(assoc) ⇒
+              val remoteAddress = assoc.remoteAddress
+              sender match {
+                case OptionVal.Some(snd) ⇒
+                  compression.hitActorRef(originUid, headerBuilder.actorRefCompressionTableVersion,
+                    remoteAddress, snd, 1)
+                case OptionVal.None ⇒
+              }
+
+              recipient match {
+                case OptionVal.Some(rcp) ⇒
+                  compression.hitActorRef(originUid, headerBuilder.actorRefCompressionTableVersion,
+                    remoteAddress, rcp, 1)
+                case OptionVal.None ⇒
+              }
+
+              compression.hitClassManifest(originUid, headerBuilder.classManifestCompressionTableVersion,
+                remoteAddress, classManifest, 1)
+
+            case _ ⇒
+              // we don't want to record hits for compression while handshake is still in progress.
+              log.debug("Decoded message but unable to record hits for compression as no remoteAddress known. No association yet?")
+          }
+          // --- end of hit refs and manifests for heavy-hitter counting
         }
-        // --- end of hit refs and manifests for heavy-hitter counting
 
         try {
           val deserializedMessage = MessageSerializer.deserializeForArtery(
-            system, originUid, serialization, headerBuilder, envelope)
+            system, originUid, serialization, headerBuilder.serializer, classManifest, envelope)
 
           val decoded = inEnvelopePool.acquire().init(
             recipient,
@@ -203,7 +245,7 @@ private[remote] class Decoder(
           case NonFatal(e) ⇒
             log.warning(
               "Failed to deserialize message with serializer id [{}] and manifest [{}]. {}",
-              headerBuilder.serializer, headerBuilder.manifest(originUid), e.getMessage)
+              headerBuilder.serializer, classManifest, e.getMessage)
             pull(in)
         } finally {
           bufferPool.release(envelope)
@@ -225,6 +267,19 @@ private[remote] class Decoder(
 
       override protected def onTimer(timerKey: Any): Unit = {
         timerKey match {
+          case Tick ⇒
+            val now = System.nanoTime()
+            val d = now - tickTimestamp
+            val oldAdaptiveSampling = adaptiveSampling
+            adaptiveSampling = (d == 0 ||
+              (messageCount - tickMessageCount) * TimeUnit.SECONDS.toNanos(1) / d > adaptiveSamplingRateThreshold)
+            if (!oldAdaptiveSampling && adaptiveSampling)
+              log.info("Turning on adaptive sampling ({}nth message) of compression hit counting", HeavyHitterMask + 1)
+            else if (oldAdaptiveSampling && !adaptiveSampling)
+              log.info("Turning off adaptive sampling of compression hit counting")
+            tickMessageCount = messageCount
+            tickTimestamp = now
+
           case RetryResolveRemoteDeployedRecipient(attemptsLeft, recipientPath, inboundEnvelope) ⇒
             resolveRecipient(recipientPath) match {
               case OptionVal.None ⇒
