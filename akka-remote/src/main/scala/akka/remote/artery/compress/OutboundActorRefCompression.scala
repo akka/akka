@@ -57,7 +57,7 @@ private[remote] class OutboundCompressionTable[T](system: ActorSystem, remoteAdd
   // (╯°□°）╯︵ ┻━┻
   @tailrec final def flipTable(activate: CompressionTable[T]): Unit = {
     val state = get()
-    if (state.version + 1 == activate.version)
+    if (state.version > activate.version) // TODO this should handle roll-over as we move to Byte
       if (compareAndSet(state, prepareState(activate)))
         log.debug(s"Successfully flipped compression table versions {}=>{}, for outgoing to [{}]", state.version, activate.version, remoteAddress)
       else

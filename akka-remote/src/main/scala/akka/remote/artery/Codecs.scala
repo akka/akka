@@ -13,7 +13,7 @@ import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.util.{ ByteString, OptionVal, PrettyByteString }
 import akka.actor.EmptyLocalActorRef
-import akka.remote.artery.compress.{ InboundCompressions, OutboundCompressions }
+import akka.remote.artery.compress.{ InboundCompressions, OutboundCompressions, OutboundCompressionsImpl }
 import akka.stream.stage.TimerGraphStageLogic
 
 /**
@@ -48,8 +48,7 @@ private[remote] class Encoder(
         val envelope = bufferPool.acquire()
 
         // FIXME: OMG race between setting the version, and using the table!!!!
-        val got = compression.actorRefCompressionTableVersion
-        headerBuilder setActorRefCompressionTableVersion got
+        headerBuilder setActorRefCompressionTableVersion compression.actorRefCompressionTableVersion
         headerBuilder setClassManifestCompressionTableVersion compression.classManifestCompressionTableVersion
 
         // internally compression is applied by the builder:

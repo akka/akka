@@ -4,12 +4,9 @@
 
 package akka.remote.artery.compress
 
-import java.util.concurrent.atomic.AtomicReference
-
 import akka.actor.{ ActorRef, ActorSystem, Address }
-import akka.event.{ Logging, LoggingAdapter, NoLogging }
+import akka.event.{ Logging, NoLogging }
 import akka.remote.artery.{ InboundContext, OutboundContext }
-import akka.stream.impl.ConstantFun
 import akka.util.{ OptionVal, PrettyDuration }
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
@@ -27,7 +24,7 @@ private[remote] final class InboundActorRefCompression(
   settings:       CompressionSettings,
   originUid:      Long,
   inboundContext: InboundContext,
-  heavyHitters:   TopHeavyHitters[ActorRef]) extends InboundCompression[ActorRef](system, settings, originUid, inboundContext, heavyHitters, _.path.toSerializationFormat) {
+  heavyHitters:   TopHeavyHitters[ActorRef]) extends InboundCompression[ActorRef](system, settings, originUid, inboundContext, heavyHitters) {
 
   preAllocate(system.deadLetters)
 
@@ -54,7 +51,7 @@ final class InboundManifestCompression(
   settings:       CompressionSettings,
   originUid:      Long,
   inboundContext: InboundContext,
-  heavyHitters:   TopHeavyHitters[String]) extends InboundCompression[String](system, settings, originUid, inboundContext, heavyHitters, ConstantFun.scalaIdentityFunction) {
+  heavyHitters:   TopHeavyHitters[String]) extends InboundCompression[String](system, settings, originUid, inboundContext, heavyHitters) {
 
   scheduleNextTableAdvertisement()
   override protected def tableAdvertisementInterval = settings.manifests.advertisementInterval
@@ -72,12 +69,11 @@ final class InboundManifestCompression(
  * Handles counting and detecting of heavy-hitters and compressing them via a table lookup.
  */
 private[remote] abstract class InboundCompression[T >: Null](
-  val system:         ActorSystem,
-  val settings:       CompressionSettings,
-  originUid:          Long,
-  inboundContext:     InboundContext,
-  val heavyHitters:   TopHeavyHitters[T],
-  convertKeyToString: T ⇒ String) { // TODO avoid converting to string, in order to use the ActorRef.hashCode!
+  val system:       ActorSystem,
+  val settings:     CompressionSettings,
+  originUid:        Long,
+  inboundContext:   InboundContext,
+  val heavyHitters: TopHeavyHitters[T]) {
 
   lazy val log = Logging(system, getClass.getSimpleName)
 
@@ -108,27 +104,28 @@ private[remote] abstract class InboundCompression[T >: Null](
    * @throws UnknownCompressedIdException if given id is not known, this may indicate a bug – such situation should not happen.
    */
   // not tailrec because we allow special casing in sub-class, however recursion is always at most 1 level deep
-  def decompress(tableVersion: Long, idx: Int): OptionVal[T] = {
-    val activeVersion = activeTable.version // TODO move into state
+  def decompress(incomingTableVersion: Long, idx: Int): OptionVal[T] = {
+    val activeVersion = activeTable.version
 
-    if (tableVersion == -1) OptionVal.None // no compression, bail out early
-    else if (tableVersion == activeVersion) {
+    if (incomingTableVersion == -1) OptionVal.None // no compression, bail out early
+    else if (incomingTableVersion == activeVersion) {
       val value: T = activeTable.get(idx)
-      if (settings.debug) log.debug(s"Decompress [{}] => {}", idx, value)
       if (value != null) OptionVal.Some[T](value)
       else throw new UnknownCompressedIdException(idx)
-    } else if (tableVersion < activeVersion) {
-      log.debug("Received value compressed with old table: [{}], current table version is: [{}]", tableVersion, activeVersion)
+    } else if (incomingTableVersion < activeVersion) {
+      log.warning("Received value compressed with old table: [{}], current table version is: [{}]", incomingTableVersion, activeVersion)
       OptionVal.None
-    } else if (tableVersion == nextTable.version) {
+    } else if (incomingTableVersion == nextTable.version) {
       advertisementInProgress = false
       log.debug("Received first value compressed using the next prepared compression table, flipping to it (version: {})", nextTable.version)
       startUsingNextTable()
-      decompress(tableVersion, idx) // recurse, activeTable will not be able to handle this
+      decompress(incomingTableVersion, idx) // recurse, activeTable will not be able to handle this
     } else {
       // which means that incoming version was > nextTable.version, which likely is a bug
-      log.error("Inbound message is using compression table version higher than the highest allocated table on this node. " +
-        "This should not happen! State: activeTable: {}, nextTable, incoming tableVersion: {}", activeVersion, nextTable, tableVersion)
+      log.error(
+        "Inbound message is using compression table version higher than the highest allocated table on this node. " +
+          "This should not happen! State: activeTable: {}, nextTable: {}, incoming tableVersion: {}",
+        activeVersion, Map(nextTable.table.zipWithIndex: _*), incomingTableVersion)
       OptionVal.None
     }
 
@@ -197,7 +194,7 @@ private[remote] abstract class InboundCompression[T >: Null](
    * It must be advertised to the other side so it can start using it in its outgoing compression.
    * Triggers compression table advertisement. May be triggered by schedule or manually, i.e. for testing.
    */
-  def runNextTableAdvertisement() =
+  private[remote] def runNextTableAdvertisement() =
     if (!advertisementInProgress)
       inboundContext.association(originUid) match {
         case OptionVal.Some(association) ⇒
