@@ -6,9 +6,11 @@ package akka.remote.artery
 import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.NANOSECONDS
+
 import scala.concurrent.duration._
 import akka.actor._
 import akka.remote.RemoteActorRefProvider
+import akka.remote.artery.compress.CompressionSettings
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -54,12 +56,14 @@ object MaxThroughputSpec extends MultiNodeConfig {
            # See akka-remote-tests/src/test/resources/aeron.properties
            #advanced.embedded-media-driver = off
            #advanced.aeron-dir = "target/aeron"
-           
-           #advanced.compression {
-           #  enabled = on
-           #  actor-refs.enabled = on
-           #  manifests.enabled = on
-           #}
+
+           advanced.compression {
+             enabled = off
+             actor-refs {
+               enabled = on
+               advertisement-interval = 1 second
+             }
+           }
          }
        }
        """)))
@@ -137,11 +141,14 @@ object MaxThroughputSpec extends MultiNodeConfig {
         println(
           s"=== MaxThroughput ${self.path.name}: " +
             f"throughput ${throughput * testSettings.senderReceiverPairs}%,.0f msg/s, " +
-            f"${throughput * payloadSize * testSettings.senderReceiverPairs}%,.0f bytes/s, " +
+            f"${throughput * payloadSize * testSettings.senderReceiverPairs}%,.0f bytes/s (payload), " +
+            f"${throughput * totalSize(context.system) * testSettings.senderReceiverPairs}%,.0f bytes/s (total" +
+            (if (CompressionSettings(context.system).enabled) ",compression" else "") + "), " +
             s"dropped ${totalMessages - totalReceived}, " +
             s"max round-trip $maxRoundTripMillis ms, " +
             s"burst size $burstSize, " +
             s"payload size $payloadSize, " +
+            s"total size ${totalSize(context.system)}, " +
             s"$took ms to deliver $totalReceived messages")
         plotRef ! PlotResult().add(testName, throughput * payloadSize * testSettings.senderReceiverPairs / 1024 / 1024)
         context.stop(self)
@@ -171,7 +178,10 @@ object MaxThroughputSpec extends MultiNodeConfig {
     totalMessages:       Long,
     burstSize:           Int,
     payloadSize:         Int,
-    senderReceiverPairs: Int)
+    senderReceiverPairs: Int) {
+    // data based on measurement
+    def totalSize(system: ActorSystem) = payloadSize + (if (CompressionSettings(system).enabled) 38 else 110)
+  }
 
   class TestSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with ByteBufferSerializer {
 
@@ -270,7 +280,8 @@ abstract class MaxThroughputSpec
       totalMessages = adjustedTotalMessages(20000),
       burstSize = 200, // don't exceed the send queue capacity 200*5*3=3000
       payloadSize = 100,
-      senderReceiverPairs = 5))
+      senderReceiverPairs = 5)
+  )
 
   def test(testSettings: TestSettings): Unit = {
     import testSettings._
