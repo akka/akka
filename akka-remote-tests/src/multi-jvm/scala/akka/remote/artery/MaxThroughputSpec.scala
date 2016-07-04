@@ -6,7 +6,6 @@ package akka.remote.artery
 import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.NANOSECONDS
-
 import scala.concurrent.duration._
 import akka.actor._
 import akka.remote.RemoteActorRefProvider
@@ -20,6 +19,8 @@ import akka.serialization.ByteBufferSerializer
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
+import akka.remote.artery.compress.CompressionProtocol.Events.ReceivedActorRefCompressionTable
+import akka.remote.RARP
 
 object MaxThroughputSpec extends MultiNodeConfig {
   val first = role("first")
@@ -32,7 +33,8 @@ object MaxThroughputSpec extends MultiNodeConfig {
        # for serious measurements you should increase the totalMessagesFactor (20)
        akka.test.MaxThroughputSpec.totalMessagesFactor = 1.0
        akka {
-         loglevel = ERROR
+         loglevel = INFO
+         log-dead-letters = 1000000
          # avoid TestEventListener
          loggers = ["akka.event.Logging$$DefaultLogger"]
          testconductor.barrier-timeout = ${barrierTimeout.toSeconds}s
@@ -58,11 +60,9 @@ object MaxThroughputSpec extends MultiNodeConfig {
            #advanced.aeron-dir = "target/aeron"
 
            advanced.compression {
-             enabled = off
-             actor-refs {
-               enabled = on
-               advertisement-interval = 1 second
-             }
+             enabled = on
+             actor-refs.advertisement-interval = 2 second
+             manifests.advertisement-interval = 2 second
            }
          }
        }
@@ -108,13 +108,39 @@ object MaxThroughputSpec extends MultiNodeConfig {
     var remaining = totalMessages
     var maxRoundTripMillis = 0L
 
+    context.system.eventStream.subscribe(self, classOf[ReceivedActorRefCompressionTable])
+
+    val compressionEnabled =
+      RARP(context.system).provider.transport.isInstanceOf[ArteryTransport] &&
+        RARP(context.system).provider.remoteSettings.ArteryCompressionSettings.enabled
+
     def receive = {
       case Run ⇒
-        // first some warmup
-        sendBatch()
-        // then Start, which will echo back here
-        target ! Start
+        if (compressionEnabled) {
+          target ! payload
+          context.setReceiveTimeout(1.second)
+          context.become(waitingForCompression)
+        } else {
+          sendBatch() // first some warmup
+          target ! Start // then Start, which will echo back here
+          context.become(active)
+        }
+    }
 
+    def waitingForCompression: Receive = {
+      case ReceivedActorRefCompressionTable(_, table) ⇒
+        if (table.map.contains(target)) {
+          sendBatch() // first some warmup
+          target ! Start // then Start, which will echo back here
+          context.setReceiveTimeout(Duration.Undefined)
+          context.become(active)
+        } else
+          target ! payload
+      case ReceiveTimeout ⇒
+        target ! payload
+    }
+
+    def active: Receive = {
       case Start ⇒
         println(s"${self.path.name}: Starting benchmark of $totalMessages messages with burst size " +
           s"$burstSize and payload size $payloadSize")
@@ -152,6 +178,8 @@ object MaxThroughputSpec extends MultiNodeConfig {
             s"$took ms to deliver $totalReceived messages")
         plotRef ! PlotResult().add(testName, throughput * payloadSize * testSettings.senderReceiverPairs / 1024 / 1024)
         context.stop(self)
+
+      case c: ReceivedActorRefCompressionTable ⇒
     }
 
     def sendBatch(): Unit = {
@@ -280,8 +308,7 @@ abstract class MaxThroughputSpec
       totalMessages = adjustedTotalMessages(20000),
       burstSize = 200, // don't exceed the send queue capacity 200*5*3=3000
       payloadSize = 100,
-      senderReceiverPairs = 5)
-  )
+      senderReceiverPairs = 5))
 
   def test(testSettings: TestSettings): Unit = {
     import testSettings._
