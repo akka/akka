@@ -5,11 +5,11 @@
 package akka.remote.artery.compress
 
 import java.util.concurrent.atomic.AtomicReference
-import java.{ util ⇒ ju }
 
 import akka.actor.{ ActorRef, ActorSystem, Address }
 import akka.event.{ Logging, LoggingAdapter }
 import akka.remote.artery.compress.OutboundCompression.OutboundCompressionState
+import akka.remote.artery.fastutil.objects.{ Object2IntArrayMap, Object2IntOpenHashMap }
 
 import scala.annotation.tailrec
 
@@ -69,16 +69,20 @@ private[remote] class OutboundCompressionTable[T](system: ActorSystem, remoteAdd
   }
 
   // TODO this is crazy hot-path; optimised FastUtil-like Object->int hash map would perform better here (and avoid Integer) allocs
-  final def compress(value: T): Int =
-    get().table.getOrDefault(value, NotCompressedId)
+  final def compress(value: T) = {
+    val t = get().table
+    t.getInt(value) // value for missing element was set via defaultValue(-1)
+  }
 
   private final def prepareState(activate: CompressionTable[T]): OutboundCompressionState[T] = {
     val size = activate.map.size
     // load factor is `1` since we will never grow this table beyond the initial size,
     // this way we can avoid any rehashing from happening.
-    val m = new ju.HashMap[T, Integer](size, 1.0f) // TODO could be replaced with primitive `int` specialized version
+    //    val m = new Object2IntArrayMap[T](size)
+    val m = new Object2IntOpenHashMap[T](size, 1.0f)
+    m.defaultReturnValue(NotCompressedId)
     activate.map.foreach {
-      case (key, value) ⇒ m.put(key, value) // TODO boxing :<
+      case (key, value) ⇒ m.put(key, value) // no boxing!
     }
     OutboundCompressionState(activate.version, m)
   }
@@ -102,13 +106,17 @@ private[remote] object OutboundCompression {
   // format: OFF
   final val DeadLettersId = 0
   final val NotCompressedId = -1
-
   // format: ON
 
   /** INTERNAL API */
-  private[remote] final case class OutboundCompressionState[T](version: Int, table: ju.Map[T, Integer])
+  private[remote] final case class OutboundCompressionState[T](
+    version: Int,
+    table:   akka.remote.artery.fastutil.objects.Object2IntMap[T]
+  )
   private[remote] object OutboundCompressionState {
-    def initial[T] = OutboundCompressionState[T](-1, ju.Collections.emptyMap())
+    private[this] val _initial: OutboundCompressionState[Any] = OutboundCompressionState(-1, new Object2IntArrayMap(1))
+    _initial.table.defaultReturnValue(NotCompressedId)
+    def initial[T] = _initial.asInstanceOf[OutboundCompressionState[T]]
   }
 
 }

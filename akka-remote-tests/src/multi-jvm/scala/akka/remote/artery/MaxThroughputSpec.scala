@@ -30,7 +30,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(
     ConfigFactory.parseString(s"""
        # for serious measurements you should increase the totalMessagesFactor (20)
-       akka.test.MaxThroughputSpec.totalMessagesFactor = 1.0
+       akka.test.MaxThroughputSpec.totalMessagesFactor = 50.0
        akka {
          loglevel = ERROR
          # avoid TestEventListener
@@ -58,7 +58,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
            #advanced.aeron-dir = "target/aeron"
 
            advanced.compression {
-             enabled = off
+             enabled = on
              actor-refs {
                enabled = on
                advertisement-interval = 1 second
@@ -262,25 +262,25 @@ abstract class MaxThroughputSpec
       totalMessages = adjustedTotalMessages(20000),
       burstSize = 1000,
       payloadSize = 100,
-      senderReceiverPairs = 1),
-    TestSettings(
-      testName = "1-to-1-size-1k",
-      totalMessages = adjustedTotalMessages(20000),
-      burstSize = 1000,
-      payloadSize = 1000,
-      senderReceiverPairs = 1),
-    TestSettings(
-      testName = "1-to-1-size-10k",
-      totalMessages = adjustedTotalMessages(10000),
-      burstSize = 1000,
-      payloadSize = 10000,
-      senderReceiverPairs = 1),
-    TestSettings(
-      testName = "5-to-5",
-      totalMessages = adjustedTotalMessages(20000),
-      burstSize = 200, // don't exceed the send queue capacity 200*5*3=3000
-      payloadSize = 100,
-      senderReceiverPairs = 5)
+      senderReceiverPairs = 1) //,
+  //      TestSettings(
+  //        testName = "1-to-1-size-1k",
+  //        totalMessages = adjustedTotalMessages(20000),
+  //        burstSize = 1000,
+  //        payloadSize = 1000,
+  //        senderReceiverPairs = 1),
+  //      TestSettings(
+  //        testName = "1-to-1-size-10k",
+  //        totalMessages = adjustedTotalMessages(10000),
+  //        burstSize = 1000,
+  //        payloadSize = 10000,
+  //        senderReceiverPairs = 1),
+  //    TestSettings(
+  //      testName = "5-to-5",
+  //      totalMessages = adjustedTotalMessages(20000),
+  //      burstSize = 200, // don't exceed the send queue capacity 200*5*3=3000
+  //      payloadSize = 100,
+  //      senderReceiverPairs = 5)
   )
 
   def test(testSettings: TestSettings): Unit = {
