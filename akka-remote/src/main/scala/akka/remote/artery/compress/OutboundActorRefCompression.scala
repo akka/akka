@@ -77,10 +77,8 @@ private[remote] class OutboundCompressionTable[T](system: ActorSystem, remoteAdd
     // load factor is `1` since we will never grow this table beyond the initial size,
     // this way we can avoid any rehashing from happening.
     val m = new ju.HashMap[T, Integer](size, 1.0f) // TODO could be replaced with primitive `int` specialized version
-    val it = activate.map.iterator
-    while (it.hasNext) {
-      val keyValue = it.next()
-      m.put(keyValue._1, keyValue._2) // TODO boxing :<
+    activate.map.foreach {
+      case (key, value) ⇒ m.put(key, value) // TODO boxing :<
     }
     OutboundCompressionState(activate.version, m)
   }

@@ -182,7 +182,8 @@ private[remote] abstract class InboundCompression[T >: Null](
       finally scheduleNextTableAdvertisement()
   }
 
-  private[this] var advertisementInProgress = false
+  // FIXME use AtomicBoolean instead?
+  @volatile private[this] var advertisementInProgress = false
 
   /**
    * Entry point to advertising a new compression table.
