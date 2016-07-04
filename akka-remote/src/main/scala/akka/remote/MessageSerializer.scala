@@ -71,11 +71,8 @@ private[akka] object MessageSerializer {
     }
   }
 
-  def deserializeForArtery(system: ExtendedActorSystem, originUid: Long, serialization: Serialization, headerBuilder: HeaderBuilder,
-                           envelope: EnvelopeBuffer): AnyRef = {
-    serialization.deserializeByteBuffer(
-      envelope.byteBuffer,
-      headerBuilder.serializer,
-      headerBuilder.manifest(originUid)) // FIXME currently compression will not work for manifests
+  def deserializeForArtery(system: ExtendedActorSystem, originUid: Long, serialization: Serialization,
+                           serializer: Int, classManifest: String, envelope: EnvelopeBuffer): AnyRef = {
+    serialization.deserializeByteBuffer(envelope.byteBuffer, serializer, classManifest)
   }
 }

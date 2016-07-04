@@ -61,7 +61,7 @@ private[remote] class OutboundCompressionTable[T](system: ActorSystem, remoteAdd
       else
         flipTable(activate) // retry
     else if (state.version == activate.version)
-      log.warning("Received duplicate compression table (version: {})! Ignoring it.", state.version)
+      log.debug("Received duplicate compression table (version: {})! Ignoring it.", state.version)
     else
       log.error("Received unexpected compression table with version nr [{}]! " +
         "Current version number is [{}].", activate.version, state.version)

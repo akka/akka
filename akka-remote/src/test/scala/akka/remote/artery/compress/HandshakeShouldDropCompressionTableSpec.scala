@@ -11,7 +11,7 @@ import akka.util.Timeout
 import akka.pattern.ask
 import akka.remote.RARP
 import akka.remote.artery.ArteryTransport
-import akka.remote.artery.compress.CompressionProtocol.Events.{ Event, ReceivedCompressionTable }
+import akka.remote.artery.compress.CompressionProtocol.Events.{ Event, ReceivedActorRefCompressionTable }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfter
 
@@ -82,7 +82,7 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
       waitForEcho(this, s"hello-$messagesToExchange")
       systemBTransport.triggerCompressionAdvertisements(actorRef = true, manifest = false)
 
-      val a0 = aProbe.expectMsgType[ReceivedCompressionTable[ActorRef]](10.seconds)
+      val a0 = aProbe.expectMsgType[ReceivedActorRefCompressionTable](10.seconds)
       info("System [A] received: " + a0)
       a0.table.map.keySet should contain(testActor)
 
@@ -91,7 +91,7 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
       waitForEcho(a1Probe, s"hello-$messagesToExchange")
       systemBTransport.triggerCompressionAdvertisements(actorRef = true, manifest = false)
 
-      val a1 = aProbe.expectMsgType[ReceivedCompressionTable[ActorRef]](10.seconds)
+      val a1 = aProbe.expectMsgType[ReceivedActorRefCompressionTable](10.seconds)
       info("System [A] received: " + a1)
       a1.table.map.keySet should contain(a1Probe.ref)
 
@@ -113,7 +113,7 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
       waitForEcho(this, s"hello-$messagesToExchange", max = 10.seconds)
       systemBTransport.triggerCompressionAdvertisements(actorRef = true, manifest = false)
 
-      val a2 = aNewProbe.expectMsgType[ReceivedCompressionTable[ActorRef]](10.seconds)
+      val a2 = aNewProbe.expectMsgType[ReceivedActorRefCompressionTable](10.seconds)
       info("System [A] received: " + a2)
       a2.table.map.keySet should contain(testActor)
 
@@ -122,7 +122,7 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
       waitForEcho(aNew2Probe, s"hello-$messagesToExchange")
       systemBTransport.triggerCompressionAdvertisements(actorRef = true, manifest = false)
 
-      val a3 = aNewProbe.expectMsgType[ReceivedCompressionTable[ActorRef]](10.seconds)
+      val a3 = aNewProbe.expectMsgType[ReceivedActorRefCompressionTable](10.seconds)
       info("Received second compression: " + a3)
       a3.table.map.keySet should contain(aNew2Probe.ref)
     }
