@@ -3,8 +3,8 @@
  */
 package akka.remote.artery
 
-import akka.actor.{ ActorRef, ActorSystem, Address, InternalActorRef }
-import akka.remote.artery.compress.CompressionTable
+import akka.actor.{ ActorRef, Address }
+import akka.remote.artery.compress.{ CompressionTable, InboundCompressions, OutboundCompressions }
 import akka.util.OptionVal
 
 /**
@@ -12,11 +12,10 @@ import akka.util.OptionVal
  *
  * Literarily, no compression!
  */
-final class NoInboundCompressions(system: ActorSystem) extends InboundCompressions {
+case object NoInboundCompressions extends InboundCompressions {
   override def hitActorRef(originUid: Long, tableVersion: Int, remote: Address, ref: ActorRef): Unit = ()
   override def decompressActorRef(originUid: Long, tableVersion: Int, idx: Int): OptionVal[ActorRef] =
     if (idx == -1) throw new IllegalArgumentException("Attemted decompression of illegal compression id: -1")
-    else if (idx == 0) OptionVal.Some(system.deadLetters) // special case deadLetters  
     else OptionVal.None
 
   override def hitClassManifest(originUid: Long, tableVersion: Int, remote: Address, manifest: String): Unit = ()
@@ -30,10 +29,12 @@ final class NoInboundCompressions(system: ActorSystem) extends InboundCompressio
  *
  * Literarily, no compression!
  */
-object NoOutboundCompressions extends OutboundCompressions {
+case object NoOutboundCompressions extends OutboundCompressions {
   override def applyActorRefCompressionTable(table: CompressionTable[ActorRef]): Unit = ()
+  override def actorRefCompressionTableVersion: Int = 0
   override def compressActorRef(ref: ActorRef): Int = -1
 
   override def applyClassManifestCompressionTable(table: CompressionTable[String]): Unit = ()
+  override def classManifestCompressionTableVersion: Int = 0
   override def compressClassManifest(manifest: String): Int = -1
 }

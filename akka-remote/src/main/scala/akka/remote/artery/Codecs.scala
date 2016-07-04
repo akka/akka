@@ -1,4 +1,3 @@
-
 /**
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
@@ -12,8 +11,9 @@ import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
-import akka.util.{ ByteString, OptionVal }
+import akka.util.{ ByteString, OptionVal, PrettyByteString }
 import akka.actor.EmptyLocalActorRef
+import akka.remote.artery.compress.{ InboundCompressions, OutboundCompressions, OutboundCompressionsImpl }
 import akka.stream.stage.TimerGraphStageLogic
 
 /**
@@ -46,6 +46,10 @@ private[remote] class Encoder(
       override def onPush(): Unit = {
         val outboundEnvelope = grab(in)
         val envelope = bufferPool.acquire()
+
+        // FIXME: OMG race between setting the version, and using the table!!!!
+        headerBuilder setActorRefCompressionTableVersion compression.actorRefCompressionTableVersion
+        headerBuilder setClassManifestCompressionTableVersion compression.classManifestCompressionTableVersion
 
         // internally compression is applied by the builder:
         outboundEnvelope.recipient match {
@@ -147,24 +151,26 @@ private[remote] class Decoder(
         val recipient: OptionVal[InternalActorRef] = headerBuilder.recipientActorRef(originUid) match {
           case OptionVal.Some(ref) ⇒
             OptionVal(ref.asInstanceOf[InternalActorRef])
-          case OptionVal.None ⇒
-            // `get` on Path is safe because it surely is not a compressed value here
+          case OptionVal.None if headerBuilder.recipientActorRefPath.isDefined ⇒
             resolveRecipient(headerBuilder.recipientActorRefPath.get)
+          case _ ⇒
+            OptionVal.None
         }
 
-        val sender: InternalActorRef = headerBuilder.senderActorRef(originUid) match {
+        val sender: OptionVal[InternalActorRef] = headerBuilder.senderActorRef(originUid) match {
           case OptionVal.Some(ref) ⇒
-            ref.asInstanceOf[InternalActorRef]
-          case OptionVal.None ⇒
-            // `get` on Path is safe because it surely is not a compressed value here
-            resolveActorRefWithLocalAddress(headerBuilder.senderActorRefPath.get)
+            OptionVal(ref.asInstanceOf[InternalActorRef])
+          case OptionVal.None if headerBuilder.senderActorRefPath.isDefined ⇒
+            OptionVal(resolveActorRefWithLocalAddress(headerBuilder.senderActorRefPath.get))
+          case _ ⇒
+            OptionVal.None
         }
 
         // --- hit refs and manifests for heavy-hitter counting
         association match {
           case OptionVal.Some(assoc) ⇒
             val remoteAddress = assoc.remoteAddress
-            compression.hitActorRef(originUid, headerBuilder.actorRefCompressionTableVersion, remoteAddress, sender)
+            if (sender.isDefined) compression.hitActorRef(originUid, headerBuilder.actorRefCompressionTableVersion, remoteAddress, sender.get)
             if (recipient.isDefined) compression.hitActorRef(originUid, headerBuilder.actorRefCompressionTableVersion, remoteAddress, recipient.get)
             compression.hitClassManifest(originUid, headerBuilder.classManifestCompressionTableVersion, remoteAddress, headerBuilder.manifest(originUid))
           case _ ⇒
@@ -181,7 +187,7 @@ private[remote] class Decoder(
             recipient,
             localAddress, // FIXME: Is this needed anymore? What should we do here?
             deserializedMessage,
-            OptionVal.Some(sender), // FIXME: No need for an option, decode simply to deadLetters instead
+            sender, // FIXME: No need for an option, decode simply to deadLetters instead
             originUid,
             association)
 

@@ -9,7 +9,9 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
-import akka.remote.artery.compress.{ CompressionProtocol, CompressionTable, OutboundCompressionsImpl }
+
+import akka.remote.artery.compress.{ CompressionProtocol, CompressionTable, OutboundCompressions, OutboundCompressionsImpl }
+
 import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.Promise
@@ -82,7 +84,7 @@ private[remote] class Association(
   // start sending (enqueuing) to the Association immediate after construction.
 
   /** Accesses the currently active outbound compression. */
-  def compression: OutboundCompressions = associationState.outboundCompression
+  def outboundCompression: OutboundCompressions = associationState.outboundCompressions
 
   def createQueue(capacity: Int): Queue[OutboundEnvelope] =
     new ManyToOneConcurrentArrayQueue[OutboundEnvelope](capacity)
@@ -144,9 +146,14 @@ private[remote] class Association(
     val current = associationState
     current.uniqueRemoteAddressPromise.trySuccess(peer)
     current.uniqueRemoteAddressValue() match {
-      case Some(`peer`) ⇒ // our value
+      case Some(`peer`) ⇒
+        // our value
+        if (current.outboundCompressions == NoOutboundCompressions) {
+          // enable outbound compression (here, since earlier we don't know the remote address)
+          swapState(current, current.withCompression(createOutboundCompressions(remoteAddress)))
+        }
       case _ ⇒
-        val newState = current.newIncarnation(Promise.successful(peer), createOutboundCompressionTable(remoteAddress))
+        val newState = current.newIncarnation(Promise.successful(peer), createOutboundCompressions(remoteAddress))
         if (swapState(current, newState)) {
           current.uniqueRemoteAddressValue() match {
             case Some(old) ⇒
@@ -407,11 +414,10 @@ private[remote] class Association(
   }
 
   // TODO: Make sure that once other channels use Compression, each gets it's own
-  private def createOutboundCompressionTable(remoteAddress: Address): OutboundCompressions = {
+  private def createOutboundCompressions(remoteAddress: Address): OutboundCompressions = {
     if (transport.provider.remoteSettings.ArteryCompressionSettings.enabled) {
       val compression = new OutboundCompressionsImpl(transport.system, remoteAddress)
-      // FIXME should use verion number of table instead of hashCode
-      log.info("Creating Outbound compression table ({}) to [{}]", compression.hashCode, remoteAddress)
+      log.debug("Creating Outbound compression table to [{}]", remoteAddress)
       compression
     } else NoOutboundCompressions
   }
@@ -421,17 +427,25 @@ private[remote] class Association(
    * This way the same outgoing stream will switch to using the new table without the need of restarting it.
    */
   private object CurrentAssociationStateOutboundCompressionsProxy extends OutboundCompressions {
-    override def applyActorRefCompressionTable(table: CompressionTable[ActorRef]): Unit =
-      associationState.outboundCompression.applyActorRefCompressionTable(table)
 
+    override def actorRefCompressionTableVersion: Int =
+      associationState.outboundCompressions.actorRefCompressionTableVersion
+    override def applyActorRefCompressionTable(table: CompressionTable[ActorRef]): Unit = {
+      associationState.outboundCompressions.applyActorRefCompressionTable(table)
+    }
+    override final def compressActorRef(ref: ActorRef): Int = {
+      associationState.outboundCompressions.compressActorRef(ref)
+    }
+
+    override def classManifestCompressionTableVersion: Int =
+      associationState.outboundCompressions.classManifestCompressionTableVersion
     override def applyClassManifestCompressionTable(table: CompressionTable[String]): Unit =
-      associationState.outboundCompression.applyClassManifestCompressionTable(table)
-
-    override final def compressActorRef(ref: ActorRef): Int =
-      associationState.outboundCompression.compressActorRef(ref)
-
+      associationState.outboundCompressions.applyClassManifestCompressionTable(table)
     override final def compressClassManifest(manifest: String): Int =
-      associationState.outboundCompression.compressClassManifest(manifest)
+      associationState.outboundCompressions.compressClassManifest(manifest)
+
+    override def toString =
+      s"${Logging.simpleName(getClass)}(current delegate: ${associationState.outboundCompressions})"
   }
 
   override def toString: String =

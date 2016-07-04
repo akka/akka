@@ -4,15 +4,15 @@
 
 package akka.remote.artery.compress;
 
-import akka.actor.Actor;
 import akka.actor.ActorRef;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Random;
 
 /**
  * INTERNAL API: Count-Min Sketch datastructure.
- *  
+ * 
+ * Not thread-safe.
+ * 
  * An Improved Data Stream Summary: The Count-Min Sketch and its Applications
  * https://web.archive.org/web/20060907232042/http://www.eecs.harvard.edu/~michaelm/CS222/countmin.pdf
  * 
@@ -31,14 +31,19 @@ public class CountMinSketch {
   private double eps;
   private double confidence;
 
+  private int[] recyclableCMSHashBuckets;
+  
+  
   public CountMinSketch(int depth, int width, int seed) {
     this.depth = depth;
     this.width = width;
     this.eps = 2.0 / width;
     this.confidence = 1 - 1 / Math.pow(2, depth);
+    recyclableCMSHashBuckets = preallocateHashBucketsArray(depth);
     initTablesWith(depth, width, seed);
   }
 
+  @SuppressWarnings("unused")
   public CountMinSketch(double epsOfTotalCount, double confidence, int seed) {
     // 2/w = eps ; w = 2/eps
     // 1/2^depth <= 1-confidence ; depth >= -log2 (1-confidence)
@@ -46,10 +51,12 @@ public class CountMinSketch {
     this.confidence = confidence;
     this.width = (int) Math.ceil(2 / epsOfTotalCount);
     this.depth = (int) Math.ceil(-Math.log(1 - confidence) / Math.log(2));
+    recyclableCMSHashBuckets = preallocateHashBucketsArray(depth);
     initTablesWith(depth, width, seed);
   }
 
-  CountMinSketch(int depth, int width, int size, long[] hashA, long[][] table) {
+  @SuppressWarnings("unused")
+  public CountMinSketch(int depth, int width, int size, long[] hashA, long[][] table) {
     this.depth = depth;
     this.width = width;
     this.eps = 2.0 / width;
@@ -57,6 +64,7 @@ public class CountMinSketch {
     this.hashA = hashA;
     this.table = table;
     this.size = size;
+    recyclableCMSHashBuckets = preallocateHashBucketsArray(depth);
   }
 
   private void initTablesWith(int depth, int width, int seed) {
@@ -75,11 +83,11 @@ public class CountMinSketch {
   }
 
   /** Referred to as {@code epsilon} in the whitepaper */
-  public double getRelativeError() {
+  public double relativeError() {
     return eps;
   }
 
-  public double getConfidence() {
+  public double confidence() {
     return confidence;
   }
 
@@ -108,7 +116,7 @@ public class CountMinSketch {
     size += count;
   }
 
-  public void add(String item, long count) {
+  public void addObject(Object item, long count) {
     if (count < 0) {
       // Actually for negative increments we'll need to use the median
       // instead of minimum, and accuracy will suffer somewhat.
@@ -116,19 +124,18 @@ public class CountMinSketch {
       // parameter to constructor.
       throw new IllegalArgumentException("Negative increments not implemented");
     }
-    // TODO we could reuse the arrays
-    final int[] buckets = MurmurHash.hashBuckets(item, depth, width); // TODO replace with Scala's Murmur3, it's much faster
+    MurmurHash.hashBuckets(item, recyclableCMSHashBuckets, width);
     for (int i = 0; i < depth; ++i) {
-      table[i][buckets[i]] += count;
+      table[i][recyclableCMSHashBuckets[i]] += count;
     }
     size += count;
   }
-
+  
   /**
    * Similar to {@code add}, however we reuse the fact that the hask buckets have to be calculated for {@code add}
    * already, and a separate {@code estimateCount} operation would have to calculate them again, so we do it all in one go.
    */
-  public long addAndEstimateCount(String item, long count) {
+  public long addObjectAndEstimateCount(Object item, long count) {
     if (count < 0) {
       // Actually for negative increments we'll need to use the median
       // instead of minimum, and accuracy will suffer somewhat.
@@ -136,14 +143,14 @@ public class CountMinSketch {
       // parameter to constructor.
       throw new IllegalArgumentException("Negative increments not implemented");
     }
-    final int[] buckets = MurmurHash.hashBuckets(item, depth, width);
+    MurmurHash.hashBuckets(item, recyclableCMSHashBuckets, width);
     for (int i = 0; i < depth; ++i) {
-      table[i][buckets[i]] += count;
+      table[i][recyclableCMSHashBuckets[i]] += count;
     }
     size += count;
-    return estimateCount(buckets);
+    return estimateCount(recyclableCMSHashBuckets);
   }
-
+  
   public long size() {
     return size;
   }
@@ -158,15 +165,6 @@ public class CountMinSketch {
       res = Math.min(res, table[i][hash(item, i)]);
     }
     return res;
-  }
-
-  /**
-   * The estimate is correct within {@code 'epsilon' * (total item count)},
-   * with probability {@code confidence}.
-   */
-  public long estimateCount(String item) {
-    int[] buckets = MurmurHash.hashBuckets(item, depth, width);
-    return estimateCount(buckets);
   }
 
   /**
@@ -198,7 +196,6 @@ public class CountMinSketch {
   // TODO replace with Scala's Murmur3, it's much faster
   private static class MurmurHash {
   
-    // FIXME: This overload isn't actually ever used
     public static int hash(Object o) {
       if (o == null) {
         return 0;
@@ -288,10 +285,14 @@ public class CountMinSketch {
     }
   
     public static int hashLong(long data) {
+      return hashLong(data, 0);
+    }
+    public static int hashLong(long data, int seed) {
       int m = 0x5bd1e995;
       int r = 24;
   
-      int h = 0;
+     int h = seed;
+      // int h = seed ^ length;
   
       int k = (int) data * m;
       k ^= k >>> r;
@@ -314,26 +315,39 @@ public class CountMinSketch {
     // http://www.eecs.harvard.edu/~kirsch/pubs/bbbf/esa06.pdf
     // does prove to work in actual tests, and is obviously faster
     // than performing further iterations of murmur.
-    public static int[] hashBuckets(String key, int hashCount, int max) {
-      byte[] b;
-      try {
-        b = key.getBytes("UTF-16");// TODO Use the Unsafe trick @patriknw used to access the backing array directly -- via Endre
-      } catch (UnsupportedEncodingException e) {
-        throw new RuntimeException(e);
-      }
-      return hashBuckets(b, hashCount, max);
+//    public static int[] hashBuckets(String key, int hashCount, int max) {
+//      byte[] b;
+//      try {
+//        b = key.getBytes("UTF-16");// TODO Use the Unsafe trick @patriknw used to access the backing array directly -- via Endre
+//      } catch (UnsupportedEncodingException e) {
+//        throw new RuntimeException(e);
+//      }
+//      return hashBuckets(b, hashCount, max);
+//    }
+    
+//    static int[] hashBuckets(byte[] b, int hashCount, int max) {
+//      // TODO we could reuse the arrays
+//      int[] result = preallocateHashBucketsArray(hashCount);
+//      int hash1 = hash(b, b.length, 0);
+//      int hash2 = hash(b, b.length, hash1);
+//      for (int i = 0; i < hashCount; i++) {
+//        result[i] = Math.abs((hash1 + i * hash2) % max);
+//      }
+//      return result;
+//    }
+    
+    /** Mutates passed in {@code hashBuckets} */
+    static void hashBuckets(Object item, int[] hashBuckets, int max) {
+      int hash1 = hash(item); // specialized hash for ActorRef and Strings
+      int hash2 = hashLong(hash1, hash1);
+      final int depth = hashBuckets.length;
+      for (int i = 0; i < depth; i++) 
+        hashBuckets[i] = Math.abs((hash1 + i * hash2) % max);
     }
-  
-    static int[] hashBuckets(byte[] b, int hashCount, int max) {
-      // TODO we could reuse the arrays
-      int[] result = new int[hashCount];
-      int hash1 = hash(b, b.length, 0);
-      int hash2 = hash(b, b.length, hash1);
-      for (int i = 0; i < hashCount; i++) {
-        result[i] = Math.abs((hash1 + i * hash2) % max);
-      }
-      return result;
-    }
+  }
+
+  public int[] preallocateHashBucketsArray(int depth) {
+    return new int[depth];
   }
 
   @Override

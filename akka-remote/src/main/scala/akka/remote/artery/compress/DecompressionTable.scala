@@ -5,8 +5,16 @@
 package akka.remote.artery.compress
 
 /** INTERNAL API */
-private[remote] final case class DecompressionTable[T](version: Long, table: Array[T]) {
-  def get(idx: Int): T = table(idx)
+private[remote] final case class DecompressionTable[T](version: Int, table: Array[T]) {
+  // TODO version maybe better as Long? // OR implement roll-over
+  private[this] val length = table.length
+
+  def get(idx: Int): T = {
+    if (idx >= length)
+      throw new IllegalArgumentException(s"Attempted decompression of unknown id: [$idx]! " +
+        s"Only $length ids allocated in table version [$version].")
+    table(idx)
+  }
 
   def invert: CompressionTable[T] =
     CompressionTable(version, Map(table.zipWithIndex: _*))
@@ -16,7 +24,7 @@ private[remote] final case class DecompressionTable[T](version: Long, table: Arr
     getClass.getName +
       s"(version: $version, " +
       (
-        if (table.length == 0) "[empty]"
+        if (length == 0) "[empty]"
         else s"table: [${table.zipWithIndex.map({ case (t, i) ⇒ s"$i -> $t" }).mkString(",")}"
       ) + "])"
 }

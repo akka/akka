@@ -9,6 +9,9 @@ import akka.remote.artery.compress.CompressionProtocol.Events
 import akka.testkit._
 import akka.util.Timeout
 import akka.pattern.ask
+import akka.remote.RARP
+import akka.remote.artery.ArteryTransport
+import akka.remote.artery.compress.CompressionProtocol.Events.{ Event, ReceivedCompressionTable }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfter
 
@@ -33,7 +36,8 @@ object HandshakeShouldDropCompressionTableSpec {
          enabled = on
          actor-refs {
            enabled = on
-           advertisement-interval = 3 seconds
+           # we'll trigger advertisement manually
+           advertisement-interval = 10 hours
          }
        }
      }
@@ -57,58 +61,78 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
   }
 
   "Outgoing compression table" must {
+    // FIXME this is failing, we must rethink how tables are identified and updated
     "be dropped on system restart" in {
       val messagesToExchange = 10
+      val systemATransport = RARP(system).provider.transport.asInstanceOf[ArteryTransport]
+      def systemBTransport = RARP(systemB).provider.transport.asInstanceOf[ArteryTransport]
 
       // listen for compression table events
       val aProbe = TestProbe()
       val a1Probe = TestProbe()
       val b1Probe = TestProbe()(systemB)
-      system.eventStream.subscribe(aProbe.ref, classOf[CompressionProtocol.Events.Event])
-      systemB.eventStream.subscribe(b1Probe.ref, classOf[CompressionProtocol.Events.Event])
+      system.eventStream.subscribe(aProbe.ref, classOf[Event])
+      systemB.eventStream.subscribe(b1Probe.ref, classOf[Event])
 
-      def voidSel = system.actorSelection(s"artery://systemB@localhost:$portB/user/void")
-      systemB.actorOf(TestActors.blackholeProps, "void")
+      def echoSel = system.actorSelection(s"artery://systemB@localhost:$portB/user/echo")
+      systemB.actorOf(TestActors.echoActorProps, "echo")
 
       // cause testActor-1 to become a heavy hitter
-      (1 to messagesToExchange).foreach { i ⇒ voidSel ! "hello" } // does not reply, but a hot receiver should be advertised
-      // give it enough time to advertise first table
-      val a0 = aProbe.expectMsgType[Events.ReceivedCompressionTable[ActorRef]](10.seconds)
+      (1 to messagesToExchange).foreach { i ⇒ echoSel ! s"hello-$i" } // does not reply, but a hot receiver should be advertised
+      waitForEcho(this, s"hello-$messagesToExchange")
+      systemBTransport.triggerCompressionAdvertisements(actorRef = true, manifest = false)
+
+      val a0 = aProbe.expectMsgType[ReceivedCompressionTable[ActorRef]](10.seconds)
       info("System [A] received: " + a0)
-      assertCompression[ActorRef](a0.table, 1, _.toString should include(testActor.path.name))
+      a0.table.map.keySet should contain(testActor)
 
       // cause a1Probe to become a heavy hitter (we want to not have it in the 2nd compression table later)
-      (1 to messagesToExchange).foreach { i ⇒ voidSel.tell("hello", a1Probe.ref) } // does not reply, but a hot receiver should be advertised
-      // give it enough time to advertise first table
-      val a1 = aProbe.expectMsgType[Events.ReceivedCompressionTable[ActorRef]](10.seconds)
+      (1 to messagesToExchange).foreach { i ⇒ echoSel.tell(s"hello-$i", a1Probe.ref) }
+      waitForEcho(a1Probe, s"hello-$messagesToExchange")
+      systemBTransport.triggerCompressionAdvertisements(actorRef = true, manifest = false)
+
+      val a1 = aProbe.expectMsgType[ReceivedCompressionTable[ActorRef]](10.seconds)
       info("System [A] received: " + a1)
-      assertCompression[ActorRef](a1.table, 2, _.toString should include(a1Probe.ref.path.name))
+      a1.table.map.keySet should contain(a1Probe.ref)
 
       log.warning("SHUTTING DOWN system {}...", systemB)
       shutdown(systemB)
       systemB = ActorSystem("systemB", configB)
-      Thread.sleep(5000)
+      Thread.sleep(1000)
       log.warning("SYSTEM READY {}...", systemB)
 
       val aNewProbe = TestProbe()
-      system.eventStream.subscribe(aNewProbe.ref, classOf[CompressionProtocol.Events.Event])
+      system.eventStream.subscribe(aNewProbe.ref, classOf[Event])
 
-      systemB.actorOf(TestActors.blackholeProps, "void") // start it again
-      (1 to messagesToExchange).foreach { i ⇒ voidSel ! "hello" } // does not reply, but a hot receiver should be advertised
-      // compression triggered again
-      val a2 = aNewProbe.expectMsgType[Events.ReceivedCompressionTable[ActorRef]](10.seconds)
+      systemB.actorOf(TestActors.echoActorProps, "echo") // start it again
+      (1 to 5) foreach { _ ⇒
+        // since some messages may end up being lost
+        (1 to messagesToExchange).foreach { i ⇒ echoSel ! s"hello-$i" } // does not reply, but a hot receiver should be advertised
+        Thread.sleep(100)
+      }
+      waitForEcho(this, s"hello-$messagesToExchange", max = 10.seconds)
+      systemBTransport.triggerCompressionAdvertisements(actorRef = true, manifest = false)
+
+      val a2 = aNewProbe.expectMsgType[ReceivedCompressionTable[ActorRef]](10.seconds)
       info("System [A] received: " + a2)
-      assertCompression[ActorRef](a2.table, 1, _.toString should include(testActor.path.name))
+      a2.table.map.keySet should contain(testActor)
 
       val aNew2Probe = TestProbe()
-      (1 to messagesToExchange).foreach { i ⇒ voidSel.tell("hello", aNew2Probe.ref) } // does not reply, but a hot receiver should be advertised
-      // compression triggered again
-      val a3 = aNewProbe.expectMsgType[Events.ReceivedCompressionTable[ActorRef]](10.seconds)
-      info("Received second compression: " + a3)
-      assertCompression[ActorRef](a3.table, 2, _.toString should include(aNew2Probe.ref.path.name))
-    }
+      (1 to messagesToExchange).foreach { i ⇒ echoSel.tell(s"hello-$i", aNew2Probe.ref) } // does not reply, but a hot receiver should be advertised
+      waitForEcho(aNew2Probe, s"hello-$messagesToExchange")
+      systemBTransport.triggerCompressionAdvertisements(actorRef = true, manifest = false)
 
+      val a3 = aNewProbe.expectMsgType[ReceivedCompressionTable[ActorRef]](10.seconds)
+      info("Received second compression: " + a3)
+      a3.table.map.keySet should contain(aNew2Probe.ref)
+    }
   }
+
+  def waitForEcho(probe: TestKit, m: String, max: Duration = 3.seconds): Any =
+    probe.fishForMessage(max = max, hint = s"waiting for '$m'") {
+      case `m` ⇒ true
+      case x   ⇒ false
+    }
 
   def identify(_system: String, port: Int, name: String) = {
     val selection =
