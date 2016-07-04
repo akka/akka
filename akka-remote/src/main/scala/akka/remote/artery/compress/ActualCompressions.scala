@@ -81,4 +81,18 @@ private[remote] final class InboundCompressionsImpl(
   override def hitClassManifest(originUid: Long, tableVersion: Int, address: Address, manifest: String): Unit = {
     classManifestsIn(originUid).increment(address, manifest, 1L)
   }
+
+  // testing utilities ---
+
+  /** INTERNAL API: for testing only */
+  private[remote] def runNextActorRefAdvertisement() = {
+    import scala.collection.JavaConverters._
+    _actorRefsIns.values().asScala.foreach { inbound ⇒ inbound.runNextTableAdvertisement() }
+  }
+
+  /** INTERNAL API: for testing only */
+  private[remote] def runNextClassManifestAdvertisement() = {
+    import scala.collection.JavaConverters._
+    _classManifestsIns.values().asScala.foreach { inbound ⇒ inbound.runNextTableAdvertisement() }
+  }
 }

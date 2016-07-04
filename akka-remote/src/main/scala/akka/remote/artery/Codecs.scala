@@ -13,18 +13,18 @@ import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.util.{ ByteString, OptionVal, PrettyByteString }
 import akka.actor.EmptyLocalActorRef
-import akka.remote.artery.compress.{ InboundCompressions, OutboundCompressions }
+import akka.remote.artery.compress.{ InboundCompressions, OutboundCompressions, OutboundCompressionsImpl }
 import akka.stream.stage.TimerGraphStageLogic
 
 /**
  * INTERNAL API
  */
 private[remote] class Encoder(
-  uniqueLocalAddress:   UniqueAddress,
-  system:               ActorSystem,
-  compression:          OutboundCompressions,
+  uniqueLocalAddress: UniqueAddress,
+  system: ActorSystem,
+  compression: OutboundCompressions,
   outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope],
-  bufferPool:           EnvelopeBufferPool)
+  bufferPool: EnvelopeBufferPool)
   extends GraphStage[FlowShape[OutboundEnvelope, EnvelopeBuffer]] {
 
   val in: Inlet[OutboundEnvelope] = Inlet("Artery.Encoder.in")
@@ -48,8 +48,7 @@ private[remote] class Encoder(
         val envelope = bufferPool.acquire()
 
         // FIXME: OMG race between setting the version, and using the table!!!!
-        val got = compression.actorRefCompressionTableVersion
-        headerBuilder setActorRefCompressionTableVersion got
+        headerBuilder setActorRefCompressionTableVersion compression.actorRefCompressionTableVersion
         headerBuilder setClassManifestCompressionTableVersion compression.classManifestCompressionTableVersion
 
         // internally compression is applied by the builder:
@@ -111,8 +110,8 @@ private[remote] class Encoder(
  */
 private[remote] object Decoder {
   private final case class RetryResolveRemoteDeployedRecipient(
-    attemptsLeft:    Int,
-    recipientPath:   String,
+    attemptsLeft: Int,
+    recipientPath: String,
     inboundEnvelope: InboundEnvelope)
 }
 
@@ -120,12 +119,12 @@ private[remote] object Decoder {
  * INTERNAL API
  */
 private[remote] class Decoder(
-  inboundContext:                  InboundContext,
-  system:                          ExtendedActorSystem,
+  inboundContext: InboundContext,
+  system: ExtendedActorSystem,
   resolveActorRefWithLocalAddress: String ⇒ InternalActorRef,
-  compression:                     InboundCompressions, // TODO has to do demuxing on remote address It would seem, as decoder does not yet know
-  bufferPool:                      EnvelopeBufferPool,
-  inEnvelopePool:                  ObjectPool[ReusableInboundEnvelope]) extends GraphStage[FlowShape[EnvelopeBuffer, InboundEnvelope]] {
+  compression: InboundCompressions, // TODO has to do demuxing on remote address It would seem, as decoder does not yet know
+  bufferPool: EnvelopeBufferPool,
+  inEnvelopePool: ObjectPool[ReusableInboundEnvelope]) extends GraphStage[FlowShape[EnvelopeBuffer, InboundEnvelope]] {
   val in: Inlet[EnvelopeBuffer] = Inlet("Artery.Decoder.in")
   val out: Outlet[InboundEnvelope] = Outlet("Artery.Decoder.out")
   val shape: FlowShape[EnvelopeBuffer, InboundEnvelope] = FlowShape(in, out)

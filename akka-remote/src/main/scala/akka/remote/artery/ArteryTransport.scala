@@ -33,7 +33,7 @@ import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.transport.AkkaPduCodec
 import akka.remote.transport.AkkaPduProtobufCodec
-import akka.remote.artery.compress.{ CompressionProtocol, InboundCompressions, InboundCompressionsImpl, OutboundCompressions }
+import akka.remote.artery.compress._
 import akka.stream.AbruptTerminationException
 import akka.stream.ActorMaterializer
 import akka.stream.KillSwitches
@@ -290,6 +290,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   @volatile private[this] var aeron: Aeron = _
   @volatile private[this] var aeronErrorLogTask: Cancellable = _
 
+  // this is only used to allow triggering compression advertisements or state from tests
+  @volatile private[this] var activeCompressions = Set.empty[InboundCompressions]
+
   override def localAddress: UniqueAddress = _localAddress
   override def defaultAddress: Address = localAddress.address
   override def addresses: Set[Address] = _addresses
@@ -423,7 +426,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           .threadingMode(ThreadingMode.DEDICATED)
           .conductorIdleStrategy(new BackoffIdleStrategy(1, 1, 1, 1))
           .receiverIdleStrategy(new BusySpinIdleStrategy)
-          .senderIdleStrategy(new BusySpinIdleStrategy);
+          .senderIdleStrategy(new BusySpinIdleStrategy)
       } else if (remoteSettings.IdleCpuLevel == 1) {
         driverContext
           .threadingMode(ThreadingMode.SHARED)
@@ -515,7 +518,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     val noCompressions = NoInboundCompressions // TODO possibly enable on other channels too https://github.com/akka/akka/pull/20546/files#r68074082
     val compressions = createInboundCompressions(this)
 
-    runInboundControlStream(noCompressions)
+    runInboundControlStream(noCompressions) // TODO should understand compressions too
     runInboundOrdinaryMessagesStream(compressions)
     if (largeMessageDestinationsEnabled) {
       runInboundLargeMessagesStream()
@@ -765,8 +768,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     Flow.fromGraph(new Encoder(localAddress, system, compression, outboundEnvelopePool, bufferPool))
 
   private def createInboundCompressions(inboundContext: InboundContext): InboundCompressions =
-    if (remoteSettings.ArteryCompressionSettings.enabled) new InboundCompressionsImpl(system, inboundContext)
-    else NoInboundCompressions
+    if (remoteSettings.ArteryCompressionSettings.enabled) {
+      val comp = new InboundCompressionsImpl(system, inboundContext)
+      activeCompressions += comp
+      comp
+    } else NoInboundCompressions
 
   def createEncoder(pool: EnvelopeBufferPool, compression: OutboundCompressions): Flow[OutboundEnvelope, EnvelopeBuffer, NotUsed] =
     Flow.fromGraph(new Encoder(localAddress, system, compression, outboundEnvelopePool, pool))
@@ -840,6 +846,17 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   def outboundTestFlow(association: Association): Flow[OutboundEnvelope, OutboundEnvelope, TestManagementApi] =
     Flow.fromGraph(new OutboundTestStage(association))
+
+  /** INTERNAL API: for testing only. */
+  private[remote] def triggerCompressionAdvertisements(actorRef: Boolean, manifest: Boolean) = {
+    activeCompressions.foreach {
+      case c: InboundCompressionsImpl if actorRef || manifest ⇒
+        log.info("Triggering compression table advertisement for {}", c)
+        if (actorRef) c.runNextActorRefAdvertisement()
+        if (manifest) c.runNextClassManifestAdvertisement()
+      case _ ⇒
+    }
+  }
 
 }
 

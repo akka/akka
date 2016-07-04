@@ -417,8 +417,7 @@ private[remote] class Association(
   private def createOutboundCompressions(remoteAddress: Address): OutboundCompressions = {
     if (transport.provider.remoteSettings.ArteryCompressionSettings.enabled) {
       val compression = new OutboundCompressionsImpl(transport.system, remoteAddress)
-      // FIXME should use verion number of table instead of hashCode
-      log.info("Creating Outbound compression table ({}) to [{}]", compression.hashCode, remoteAddress)
+      log.debug("Creating Outbound compression table to [{}]", remoteAddress)
       compression
     } else NoOutboundCompressions
   }
@@ -444,6 +443,9 @@ private[remote] class Association(
       associationState.outboundCompressions.applyClassManifestCompressionTable(table)
     override final def compressClassManifest(manifest: String): Int =
       associationState.outboundCompressions.compressClassManifest(manifest)
+
+    override def toString =
+      s"${Logging.simpleName(getClass)}(current delegate: ${associationState.outboundCompressions})"
   }
 
   override def toString: String =

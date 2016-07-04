@@ -17,7 +17,7 @@ class InvertCompressionTableBenchmark {
      a.r.artery.compress.CompressionTableBenchmark.invert_comp_to_decomp_1024           N/A  thrpt   20      5828.963 ±     281.631  ops/s
      a.r.artery.compress.CompressionTableBenchmark.invert_comp_to_decomp_256            N/A  thrpt   20     29040.889 ±     345.425  ops/s
    */
-  
+
   def randomName = ThreadLocalRandom.current().nextInt(1000).toString
   val compTable_256 = CompressionTable(2, Map(Vector.fill[String](256)(randomName).zipWithIndex: _*))
   val compTable_1024 = CompressionTable(3, Map(Vector.fill[String](1024)(randomName).zipWithIndex: _*))

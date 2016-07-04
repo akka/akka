@@ -20,9 +20,7 @@ private[remote] final class OutboundActorRefCompression(system: ActorSystem, rem
   flipTable(CompressionTable(
     version = 0,
     map = Map(
-      system.deadLetters → 0
-    )
-  ))
+      system.deadLetters → 0)))
 }
 
 /** INTERNAL API */
@@ -41,7 +39,7 @@ private[remote] class OutboundCompressionTable[T](system: ActorSystem, remoteAdd
   extends AtomicReference[OutboundCompressionState[T]](OutboundCompressionState.initial) { // TODO could be instead via Unsafe
   import OutboundCompression._
 
-  // TODO: The compression map may benefit from padding if we want multiple compressions to be running in parallel 
+  // TODO: The compression map may benefit from padding if we want multiple compressions to be running in parallel
 
   protected val log: LoggingAdapter = Logging(system, Logging.simpleName(getClass))
 
@@ -57,7 +55,7 @@ private[remote] class OutboundCompressionTable[T](system: ActorSystem, remoteAdd
   // (╯°□°）╯︵ ┻━┻
   @tailrec final def flipTable(activate: CompressionTable[T]): Unit = {
     val state = get()
-    if (state.version + 1 == activate.version)
+    if (activate.version > state.version) // TODO this should handle roll-over as we move to Byte
       if (compareAndSet(state, prepareState(activate)))
         log.debug(s"Successfully flipped compression table versions {}=>{}, for outgoing to [{}]", state.version, activate.version, remoteAddress)
       else
