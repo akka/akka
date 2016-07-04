@@ -24,7 +24,7 @@ object HandshakeShouldDropCompressionTableSpec {
 
   val commonConfig = ConfigFactory.parseString(s"""
      akka {
-       loglevel = DEBUG
+       loglevel = INFO
 
        actor.provider = "akka.remote.RemoteActorRefProvider"
        remote.artery.enabled = on
@@ -62,10 +62,10 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
 
   "Outgoing compression table" must {
     // FIXME this is failing, we must rethink how tables are identified and updated
-    "be dropped on system restart" ignore {
+    "be dropped on system restart" in {
       val messagesToExchange = 10
       val systemATransport = RARP(system).provider.transport.asInstanceOf[ArteryTransport]
-      val systemBTransport = RARP(systemB).provider.transport.asInstanceOf[ArteryTransport]
+      def systemBTransport = RARP(systemB).provider.transport.asInstanceOf[ArteryTransport]
 
       // listen for compression table events
       val aProbe = TestProbe()
@@ -118,7 +118,7 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
       a2.table.map.keySet should contain(testActor)
 
       val aNew2Probe = TestProbe()
-      (1 to messagesToExchange).foreach { i ⇒ echoSel.tell("hello", aNew2Probe.ref) } // does not reply, but a hot receiver should be advertised
+      (1 to messagesToExchange).foreach { i ⇒ echoSel.tell(s"hello-$i", aNew2Probe.ref) } // does not reply, but a hot receiver should be advertised
       waitForEcho(aNew2Probe, s"hello-$messagesToExchange")
       systemBTransport.triggerCompressionAdvertisements(actorRef = true, manifest = false)
 
@@ -131,7 +131,7 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
   def waitForEcho(probe: TestKit, m: String, max: Duration = 3.seconds): Any =
     probe.fishForMessage(max = max, hint = s"waiting for '$m'") {
       case `m` ⇒ true
-      case _   ⇒ false
+      case x   ⇒ false
     }
 
   def identify(_system: String, port: Int, name: String) = {
