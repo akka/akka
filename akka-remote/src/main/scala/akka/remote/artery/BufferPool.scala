@@ -9,7 +9,7 @@ import java.nio.{ ByteBuffer, ByteOrder }
 
 import akka.actor.{ ActorRef, Address }
 import akka.remote.artery.compress.CompressionProtocol._
-import akka.remote.artery.compress.{ CompressionTable, NoopInboundCompressions, NoopOutboundCompressions }
+import akka.remote.artery.compress.{ CompressionTable, InboundCompressions, OutboundCompressions }
 import akka.serialization.Serialization
 import org.agrona.concurrent.{ ManyToManyConcurrentArrayQueue, UnsafeBuffer }
 import akka.util.{ OptionVal, Unsafe }
@@ -54,6 +54,7 @@ private[remote] object EnvelopeBuffer {
   val VersionOffset = 0 // Int
   val UidOffset = 4 // Long
   val SerializerOffset = 12 // Int
+
   val SenderActorRefTagOffset = 16 // Int
   val RecipientActorRefTagOffset = 20 // Int
   val ClassManifestTagOffset = 24 // Int
@@ -70,41 +71,14 @@ private[remote] object EnvelopeBuffer {
   val StringValueFieldOffset = Unsafe.instance.objectFieldOffset(classOf[String].getDeclaredField("value"))
 }
 
-/**
- * INTERNAL API
- * Decompress and cause compression advertisements.
- *
- * One per inbound message stream thus must demux by originUid to use the right tables.
- */
-private[remote] trait InboundCompressions {
-  def hitActorRef(originUid: Long, tableVersion: Int, remote: Address, ref: ActorRef): Unit
-  def decompressActorRef(originUid: Long, tableVersion: Int, idx: Int): OptionVal[ActorRef]
-
-  def hitClassManifest(originUid: Long, tableVersion: Int, remote: Address, manifest: String): Unit
-  def decompressClassManifest(originUid: Long, tableVersion: Int, idx: Int): OptionVal[String]
-}
-/**
- * INTERNAL API
- * Compress outgoing data and handle compression advertisements to fill compression table.
- *
- * One per outgoing message stream.
- */
-private[remote] trait OutboundCompressions {
-  def applyActorRefCompressionTable(table: CompressionTable[ActorRef]): Unit
-  def compressActorRef(ref: ActorRef): Int
-
-  def applyClassManifestCompressionTable(table: CompressionTable[String]): Unit
-  def compressClassManifest(manifest: String): Int
-}
-
 /** INTERNAL API */
 private[remote] object HeaderBuilder {
 
   // We really only use the Header builder on one "side" or the other, thus in order to avoid having to split its impl
   // we inject no-op compression's of the "other side".  
 
-  def in(compression: InboundCompressions): HeaderBuilder = new HeaderBuilderImpl(compression, NoopOutboundCompressions)
-  def out(compression: OutboundCompressions): HeaderBuilder = new HeaderBuilderImpl(NoopInboundCompressions, compression)
+  def in(compression: InboundCompressions): HeaderBuilder = new HeaderBuilderImpl(compression, NoOutboundCompressions)
+  def out(compression: OutboundCompressions): HeaderBuilder = new HeaderBuilderImpl(NoInboundCompressions, compression)
 
   /** INTERNAL API, FOR TESTING ONLY */
   private[remote] def bothWays(in: InboundCompressions, out: OutboundCompressions): HeaderBuilder = new HeaderBuilderImpl(in, out)
@@ -170,8 +144,8 @@ private[remote] final class HeaderBuilderImpl(inboundCompression: InboundCompres
   // Fields only available for EnvelopeBuffer
   var _version: Int = _
   var _uid: Long = _
-  var _actorRefCompressionTableVersion: Int = -1
-  var _classManifestCompressionTableVersion: Int = -1
+  var _actorRefCompressionTableVersion: Int = 0
+  var _classManifestCompressionTableVersion: Int = 0
 
   var _senderActorRef: String = null
   var _senderActorRefIdx: Int = -1
@@ -247,17 +221,17 @@ private[remote] final class HeaderBuilderImpl(inboundCompression: InboundCompres
 
   override def toString =
     "HeaderBuilderImpl(" +
-      version + ", " +
-      actorRefCompressionTableVersion + ", " +
-      classManifestCompressionTableVersion + ", " +
-      uid + ", " +
-      _senderActorRef + ", " +
-      _senderActorRefIdx + ", " +
-      _recipientActorRef + ", " +
-      _recipientActorRefIdx + ", " +
-      _serializer + ", " +
-      _manifest + ", " +
-      _manifestIdx + ")"
+      "version:" + version + ", " +
+      "actorRefCompressionTableVersion:" + actorRefCompressionTableVersion + ", " +
+      "classManifestCompressionTableVersion:" + classManifestCompressionTableVersion + ", " +
+      "uid:" + uid + ", " +
+      "_senderActorRef:" + _senderActorRef + ", " +
+      "_senderActorRefIdx:" + _senderActorRefIdx + ", " +
+      "_recipientActorRef:" + _recipientActorRef + ", " +
+      "_recipientActorRefIdx:" + _recipientActorRefIdx + ", " +
+      "_serializer:" + _serializer + ", " +
+      "_manifest:" + _manifest + ", " +
+      "_manifestIdx:" + _manifestIdx + ")"
 
 }
 

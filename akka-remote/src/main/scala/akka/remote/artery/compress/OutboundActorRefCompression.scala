@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.{ util ⇒ ju }
 
 import akka.actor.{ ActorRef, ActorSystem, Address }
-import akka.event.Logging
+import akka.event.{ Logging, LoggingAdapter }
 import akka.remote.artery.compress.OutboundCompression.OutboundCompressionState
 
 import scala.annotation.tailrec
@@ -20,9 +20,14 @@ private[remote] final class OutboundActorRefCompression(system: ActorSystem, rem
   flipTable(CompressionTable(
     version = 0,
     map = Map(
-      system.deadLetters → 0
-    )
-  ))
+      system.deadLetters → 0)))
+}
+
+/** INTERNAL API */
+private[remote] final class OutboundClassManifestCompression(system: ActorSystem, remoteAddress: Address)
+  extends OutboundCompressionTable[String](system, remoteAddress) {
+
+  flipTable(CompressionTable(version = 0, Map.empty))
 }
 
 /**
@@ -34,9 +39,15 @@ private[remote] class OutboundCompressionTable[T](system: ActorSystem, remoteAdd
   extends AtomicReference[OutboundCompressionState[T]](OutboundCompressionState.initial) { // TODO could be instead via Unsafe
   import OutboundCompression._
 
-  // TODO: The compression map may benefit from padding if we want multiple compressions to be running in parallel 
+  // TODO: The compression map may benefit from padding if we want multiple compressions to be running in parallel
 
-  private[this] val log = Logging(system, "OutboundCompressionTable")
+  protected val log: LoggingAdapter = Logging(system, Logging.simpleName(getClass))
+
+  // TODO this exposes us to a race between setting the Version and USING the table...?
+  def activeCompressionTableVersion = {
+    val version = get.version
+    version
+  }
 
   /**
    * Flips the currently used compression table to the new one (iff the new one has a version number higher than the currently used one).
@@ -44,16 +55,16 @@ private[remote] class OutboundCompressionTable[T](system: ActorSystem, remoteAdd
   // (╯°□°）╯︵ ┻━┻
   @tailrec final def flipTable(activate: CompressionTable[T]): Unit = {
     val state = get()
-    if (state.version < activate.version) // TODO or we could demand it to be strictly `currentVersion + 1`
+    if (activate.version > state.version) // TODO this should handle roll-over as we move to Byte
       if (compareAndSet(state, prepareState(activate)))
-        log.debug("Successfully flipped compression table to version {}, for ourgoing connection to {}", activate.version, remoteAddress)
+        log.debug(s"Successfully flipped compression table versions {}=>{}, for outgoing to [{}]", state.version, activate.version, remoteAddress)
       else
         flipTable(activate) // retry
     else if (state.version == activate.version)
       log.warning("Received duplicate compression table (version: {})! Ignoring it.", state.version)
     else
       log.error("Received unexpected compression table with version nr [{}]! " +
-        "Current version number is []")
+        "Current version number is [{}].", activate.version, state.version)
 
   }
 
@@ -66,11 +77,8 @@ private[remote] class OutboundCompressionTable[T](system: ActorSystem, remoteAdd
     // load factor is `1` since we will never grow this table beyond the initial size,
     // this way we can avoid any rehashing from happening.
     val m = new ju.HashMap[T, Integer](size, 1.0f) // TODO could be replaced with primitive `int` specialized version
-    val it = activate.map.keysIterator
-    var i = 0
-    while (it.hasNext) {
-      m.put(it.next(), i) // TODO boxing :<
-      i += 1
+    activate.map.foreach {
+      case (key, value) ⇒ m.put(key, value) // TODO boxing :<
     }
     OutboundCompressionState(activate.version, m)
   }
@@ -98,7 +106,7 @@ private[remote] object OutboundCompression {
   // format: ON
 
   /** INTERNAL API */
-  private[remote] final case class OutboundCompressionState[T](version: Long, table: ju.Map[T, Integer])
+  private[remote] final case class OutboundCompressionState[T](version: Int, table: ju.Map[T, Integer])
   private[remote] object OutboundCompressionState {
     def initial[T] = OutboundCompressionState[T](-1, ju.Collections.emptyMap())
   }

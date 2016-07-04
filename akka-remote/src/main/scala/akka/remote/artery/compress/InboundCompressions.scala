@@ -4,12 +4,9 @@
 
 package akka.remote.artery.compress
 
-import java.util.concurrent.atomic.AtomicReference
-
 import akka.actor.{ ActorRef, ActorSystem, Address }
-import akka.event.Logging
+import akka.event.{ Logging, NoLogging }
 import akka.remote.artery.{ InboundContext, OutboundContext }
-import akka.stream.impl.ConstantFun
 import akka.util.{ OptionVal, PrettyDuration }
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
@@ -27,7 +24,7 @@ private[remote] final class InboundActorRefCompression(
   settings:       CompressionSettings,
   originUid:      Long,
   inboundContext: InboundContext,
-  heavyHitters:   TopHeavyHitters[ActorRef]) extends InboundCompression[ActorRef](system, settings, originUid, inboundContext, heavyHitters, _.path.toSerializationFormat) {
+  heavyHitters:   TopHeavyHitters[ActorRef]) extends InboundCompression[ActorRef](system, settings, originUid, inboundContext, heavyHitters) {
 
   preAllocate(system.deadLetters)
 
@@ -43,9 +40,9 @@ private[remote] final class InboundActorRefCompression(
   scheduleNextTableAdvertisement()
   override protected def tableAdvertisementInterval = settings.actorRefs.advertisementInterval
 
-  def advertiseCompressionTable(association: OutboundContext, table: CompressionTable[ActorRef]): Unit = {
-    log.debug(s"Advertise ActorRef compression [$table] to [${association.remoteAddress}]")
-    association.sendControl(CompressionProtocol.ActorRefCompressionAdvertisement(inboundContext.localAddress, table))
+  override def advertiseCompressionTable(outboundContext: OutboundContext, table: CompressionTable[ActorRef]): Unit = {
+    log.debug(s"Advertise ActorRef compression [$table], from [${inboundContext.localAddress}] to [${outboundContext.remoteAddress}]")
+    outboundContext.sendControl(CompressionProtocol.ActorRefCompressionAdvertisement(inboundContext.localAddress, table))
   }
 }
 
@@ -54,14 +51,16 @@ final class InboundManifestCompression(
   settings:       CompressionSettings,
   originUid:      Long,
   inboundContext: InboundContext,
-  heavyHitters:   TopHeavyHitters[String]) extends InboundCompression[String](system, settings, originUid, inboundContext, heavyHitters, ConstantFun.scalaIdentityFunction) {
+  heavyHitters:   TopHeavyHitters[String]) extends InboundCompression[String](system, settings, originUid, inboundContext, heavyHitters) {
 
   scheduleNextTableAdvertisement()
   override protected def tableAdvertisementInterval = settings.manifests.advertisementInterval
 
-  override def advertiseCompressionTable(association: OutboundContext, table: CompressionTable[String]): Unit = {
-    log.debug(s"Advertise ClassManifest compression [$table] to [${association.remoteAddress}]")
-    association.sendControl(CompressionProtocol.ClassManifestCompressionAdvertisement(inboundContext.localAddress, table))
+  override lazy val log = NoLogging
+
+  override def advertiseCompressionTable(outboundContext: OutboundContext, table: CompressionTable[String]): Unit = {
+    log.debug(s"Advertise ClassManifest compression [$table] to [${outboundContext.remoteAddress}]")
+    outboundContext.sendControl(CompressionProtocol.ClassManifestCompressionAdvertisement(inboundContext.localAddress, table))
   }
 }
 
@@ -70,14 +69,13 @@ final class InboundManifestCompression(
  * Handles counting and detecting of heavy-hitters and compressing them via a table lookup.
  */
 private[remote] abstract class InboundCompression[T >: Null](
-  val system:         ActorSystem,
-  val settings:       CompressionSettings,
-  originUid:          Long,
-  inboundContext:     InboundContext,
-  val heavyHitters:   TopHeavyHitters[T],
-  convertKeyToString: T ⇒ String) { // TODO avoid converting to string, in order to use the ActorRef.hashCode!
+  val system:       ActorSystem,
+  val settings:     CompressionSettings,
+  originUid:        Long,
+  inboundContext:   InboundContext,
+  val heavyHitters: TopHeavyHitters[T]) {
 
-  val log = Logging(system, "InboundCompressionTable")
+  lazy val log = Logging(system, getClass.getSimpleName)
 
   // TODO atomic / state machine? the InbouncCompression could even extend ActomicReference[State]!
 
@@ -91,7 +89,7 @@ private[remote] abstract class InboundCompression[T >: Null](
 
   // 2 tables are used, one is "still in use", and the
   @volatile private[this] var activeTable = DecompressionTable.empty[T]
-  @volatile private[this] var nextTable = DecompressionTable.empty[T]
+  @volatile private[this] var nextTable = DecompressionTable.empty[T].copy(version = 1)
 
   // TODO calibrate properly (h/w have direct relation to preciseness and max capacity)
   private[this] val cms = new CountMinSketch(100, 100, System.currentTimeMillis().toInt)
@@ -106,25 +104,28 @@ private[remote] abstract class InboundCompression[T >: Null](
    * @throws UnknownCompressedIdException if given id is not known, this may indicate a bug – such situation should not happen.
    */
   // not tailrec because we allow special casing in sub-class, however recursion is always at most 1 level deep
-  def decompress(tableVersion: Long, idx: Int): OptionVal[T] = {
-    val activeVersion = activeTable.version // TODO move into state
+  def decompress(incomingTableVersion: Long, idx: Int): OptionVal[T] = {
+    val activeVersion = activeTable.version
 
-    if (tableVersion == -1) OptionVal.None // no compression, bail out early
-    else if (tableVersion == activeVersion) {
+    if (incomingTableVersion == -1) OptionVal.None // no compression, bail out early
+    else if (incomingTableVersion == activeVersion) {
       val value: T = activeTable.get(idx)
-      if (settings.debug) log.debug(s"Decompress [{}] => {}", idx, value)
       if (value != null) OptionVal.Some[T](value)
       else throw new UnknownCompressedIdException(idx)
-    } else if (tableVersion < activeVersion) {
-      log.warning("Received value compressed with old table: [{}], current table version is: [{}]", tableVersion, activeVersion)
+    } else if (incomingTableVersion < activeVersion) {
+      log.warning("Received value compressed with old table: [{}], current table version is: [{}]", incomingTableVersion, activeVersion)
       OptionVal.None
-    } else if (tableVersion == nextTable.version) {
-      flipTables()
-      decompress(tableVersion, idx) // recurse, activeTable will not be able to handle this
+    } else if (incomingTableVersion == nextTable.version) {
+      advertisementInProgress = false
+      log.debug("Received first value compressed using the next prepared compression table, flipping to it (version: {})", nextTable.version)
+      startUsingNextTable()
+      decompress(incomingTableVersion, idx) // recurse, activeTable will not be able to handle this
     } else {
       // which means that incoming version was > nextTable.version, which likely is a bug
-      log.error("Inbound message is using compression table version higher than the highest allocated table on this node. " +
-        "This should not happen! State: activeTable: {}, nextTable, incoming tableVersion: {}", activeVersion, nextTable, tableVersion)
+      log.error(
+        "Inbound message is using compression table version higher than the highest allocated table on this node. " +
+          "This should not happen! State: activeTable: {}, nextTable: {}, incoming tableVersion: {}",
+        activeVersion, nextTable.version, incomingTableVersion)
       OptionVal.None
     }
 
@@ -136,41 +137,11 @@ private[remote] abstract class InboundCompression[T >: Null](
    */
   // TODO not so happy about passing around address here, but in incoming there's no other earlier place to get it?
   def increment(remoteAddress: Address, value: T, n: Long): Unit = {
-    val key = convertKeyToString(value)
-    if (shouldIgnore(key)) {
-      // ignore...
-    } else {
-      val count = cms.addAndEstimateCount(key, n)
+    val count = cms.addObjectAndEstimateCount(value, n)
 
-      // TODO optimise order of these, what is more expensive?
-      // TODO (now the `previous` is, but if aprox datatype there it would be faster)... Needs pondering.
-      val wasHeavyHitter = addAndCheckIfheavyHitterDetected(value, count)
-      if (wasHeavyHitter)
-        log.debug(s"Heavy hitter detected: {} [count: {}]", value, count)
-      //      if (wasHeavyHitter && !wasCompressedPreviously(key)) {
-      //        val idx = prepareCompressionAdvertisement()
-      //        log.debug("Allocated compression id [" + idx + "] for [" + value + "], in association with [" + remoteAddress + "]")
-      //      }
-    }
-  }
-
-  private def shouldIgnore(key: String) = { // TODO this is hacky, if we'd do this we trigger compression too early (before association exists, so control messages fail)
-    key match {
-      case null ⇒ true
-      case ""   ⇒ true // empty class manifest for example
-      case _    ⇒ key.endsWith("/")
-    }
-  }
-
-  // TODO this must be optimised, we really don't want to scan the entire key-set each time to make sure
-  private def wasCompressedPreviously(key: String): Boolean = {
-    var i = 0
-    val len = activeTable.table.length
-    while (i < len) {
-      if (activeTable.table(i) == key) return true
-      i += 1
-    }
-    false
+    // TODO optimise order of these, what is more expensive?
+    // TODO (now the `previous` is, but if aprox datatype there it would be faster)... Needs pondering.
+    addAndCheckIfheavyHitterDetected(value, count)
   }
 
   /** Mutates heavy hitters */
@@ -186,10 +157,8 @@ private[remote] abstract class InboundCompression[T >: Null](
    * INTERNAL / TESTING API
    * Used for manually triggering when a compression table should be advertised.
    * Note that most likely you'd want to set the advertisment-interval to `0` when using this.
-   *
-   * TODO: Technically this would be solvable by a "triggerable" scheduler.
    */
-  private[remote] def triggerNextTableAdvertisement(): Unit = // TODO expose and use in tests
+  private[remote] def triggerNextTableAdvertisement(): Unit = // TODO use this in tests for triggering
     runNextTableAdvertisement()
 
   def scheduleNextTableAdvertisement(): Unit =
@@ -200,9 +169,9 @@ private[remote] abstract class InboundCompression[T >: Null](
           log.debug("Scheduled {} advertisement in [{}] from now...", getClass.getSimpleName, PrettyDuration.format(tableAdvertisementInterval, includeNanos = false, 1))
         } catch {
           case ex: IllegalStateException ⇒
-            log.warning("Unable to schedule {} advertisement, " +
-              "likely system is shutting down. " +
-              "Reason: {}", getClass.getName, ex.getMessage)
+            // this is usually harmless
+            log.debug("Unable to schedule {} advertisement, " +
+              "likely system is shutting down. Reason: {}", getClass.getName, ex.getMessage)
         }
       case _ ⇒ // ignore...
     }
@@ -212,6 +181,9 @@ private[remote] abstract class InboundCompression[T >: Null](
       try runNextTableAdvertisement()
       finally scheduleNextTableAdvertisement()
   }
+
+  // FIXME use AtomicBoolean instead?
+  @volatile private[this] var advertisementInProgress = false
 
   /**
    * Entry point to advertising a new compression table.
@@ -223,19 +195,20 @@ private[remote] abstract class InboundCompression[T >: Null](
    * It must be advertised to the other side so it can start using it in its outgoing compression.
    * Triggers compression table advertisement. May be triggered by schedule or manually, i.e. for testing.
    */
-  def runNextTableAdvertisement() = { // TODO guard against re-entrancy?
-    inboundContext.association(originUid) match {
-      case OptionVal.Some(association) ⇒
-        val table = prepareCompressionAdvertisement()
-        nextTable = table.invert // TODO expensive, check if building the other way wouldn't be faster?
-        advertiseCompressionTable(association, table)
+  private[remote] def runNextTableAdvertisement() =
+    if (!advertisementInProgress)
+      inboundContext.association(originUid) match {
+        case OptionVal.Some(association) ⇒
+          advertisementInProgress = true
+          val table = prepareCompressionAdvertisement()
+          nextTable = table.invert // TODO expensive, check if building the other way wouldn't be faster?
+          advertiseCompressionTable(association, table)
 
-      case OptionVal.None ⇒
-        // otherwise it's too early, association not ready yet.
-        // so we don't build the table since we would not be able to send it anyway.
-        log.warning("No Association for originUid [{}] yet, unable to advertise compression table.", originUid)
-    }
-  }
+        case OptionVal.None ⇒
+          // otherwise it's too early, association not ready yet.
+          // so we don't build the table since we would not be able to send it anyway.
+          log.warning("No Association for originUid [{}] yet, unable to advertise compression table.", originUid)
+      }
 
   /**
    * Must be implementeed by extending classes in order to send a [[akka.remote.artery.ControlMessage]]
@@ -244,7 +217,7 @@ private[remote] abstract class InboundCompression[T >: Null](
   protected def advertiseCompressionTable(association: OutboundContext, table: CompressionTable[T]): Unit
 
   /** Drop `activeTable` and start using the `nextTable` in its place. */
-  private def flipTables(): Unit = {
+  private def startUsingNextTable(): Unit = {
     log.debug("Swaping active decompression table to version {}.", nextTable.version)
     activeTable = nextTable
     nextTable = DecompressionTable.empty
@@ -260,11 +233,6 @@ private[remote] abstract class InboundCompression[T >: Null](
     s"""${getClass.getSimpleName}(countMinSketch: $cms, heavyHitters: $heavyHitters)"""
 
 }
-
-final class ExistingcompressedIdReuseAttemptException(id: Long, value: Any)
-  extends RuntimeException(
-    s"Attempted to re-allocate compressedId [$id] which is still in use for compressing [$value]! " +
-      s"This should never happen and is likely an implementation bug.")
 
 final class UnknownCompressedIdException(id: Long)
   extends RuntimeException(

@@ -1,9 +1,13 @@
+/*
+ * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.remote.artery
 
 import java.nio.{ ByteBuffer, ByteOrder }
 
 import akka.actor._
-import akka.remote.artery.compress.{ CompressionTable, CompressionTestUtils }
+import akka.remote.artery.compress.{ CompressionTable, CompressionTestUtils, InboundCompressions, OutboundCompressions }
 import akka.testkit.AkkaSpec
 import akka.util.{ ByteString, OptionVal }
 
@@ -28,11 +32,13 @@ class EnvelopeBufferSpec extends AkkaSpec {
     val idxToManifest = manifestToIdx.map(_.swap)
 
     override def applyActorRefCompressionTable(table: CompressionTable[ActorRef]): Unit = ??? // dynamic allocating not needed in these tests
+    override def actorRefCompressionTableVersion: Int = 0
     override def compressActorRef(ref: ActorRef): Int = refToIdx.getOrElse(ref, -1)
     override def hitActorRef(originUid: Long, tableVersion: Int, remote: Address, ref: ActorRef): Unit = ()
     override def decompressActorRef(originUid: Long, tableVersion: Int, idx: Int): OptionVal[ActorRef] = OptionVal(idxToRef(idx))
 
     override def applyClassManifestCompressionTable(table: CompressionTable[String]): Unit = ??? // dynamic allocating not needed in these tests
+    override def classManifestCompressionTableVersion: Int = 0
     override def compressClassManifest(manifest: String): Int = manifestToIdx.getOrElse(manifest, -1)
     override def hitClassManifest(originUid: Long, tableVersion: Int, remote: Address, manifest: String): Unit = ()
     override def decompressClassManifest(originUid: Long, tableVersion: Int, idx: Int): OptionVal[String] = OptionVal(idxToManifest(idx))
