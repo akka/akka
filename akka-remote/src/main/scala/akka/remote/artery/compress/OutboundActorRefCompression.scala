@@ -4,6 +4,7 @@
 
 package akka.remote.artery.compress
 
+import java.util.Objects
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.{ ActorRef, ActorSystem, Address }
@@ -68,22 +69,27 @@ private[remote] class OutboundCompressionTable[T](system: ActorSystem, remoteAdd
 
   }
 
-  // TODO this is crazy hot-path; optimised FastUtil-like Object->int hash map would perform better here (and avoid Integer) allocs
-  final def compress(value: T) = {
-    val t = get().table
-    t.getInt(value) // value for missing element was set via defaultValue(-1)
-  }
+  final def compress(value: T) =
+    get().table.find(value)
 
   private final def prepareState(activate: CompressionTable[T]): OutboundCompressionState[T] = {
     val size = activate.map.size
     // load factor is `1` since we will never grow this table beyond the initial size,
     // this way we can avoid any rehashing from happening.
     //    val m = new Object2IntArrayMap[T](size)
-    val m = new Object2IntOpenHashMap[T](size, 1.0f)
-    m.defaultReturnValue(NotCompressedId)
-    activate.map.foreach {
-      case (key, value) ⇒ m.put(key, value) // no boxing!
+
+    //    val m = new Object2IntOpenHashMap[T](size, 1.0f)
+    //    m.defaultReturnValue(NotCompressedId)
+    //    activate.map.foreach {
+    //      case (key, value) ⇒ m.put(key, value) // no boxing!
+    //    }
+
+    val m = if (activate.map.isEmpty) new HashScanIndexMap[T](0) {
+      override def find(t: T): Int = -1
     }
+    else new HashScanIndexMap[T](size)
+    activate.map.toList.sortBy(_._2).iterator.foreach { case (t, i) ⇒ m.put(t, i) }
+
     OutboundCompressionState(activate.version, m)
   }
 
@@ -101,6 +107,39 @@ private[remote] class OutboundCompressionTable[T](system: ActorSystem, remoteAdd
 
 }
 
+class HashScanIndexMap[T](val size: Int) {
+  private[this] val hashes: Array[Int] = Array.ofDim(size)
+  private[this] val items: Array[T] = Array.ofDim[Object](size).asInstanceOf[Array[T]]
+
+  def find(t: T): Int =
+    findItemIdx(t.hashCode(), t)
+
+  def put(t: T, i: Int): Unit = {
+    hashes(i) = t.hashCode()
+    items(i) = t
+  }
+
+  private final def findItemIdx(hashCode: Int, t: T): Int =
+    findItemIdx(0, hashCode, t)
+  @tailrec private final def findItemIdx(searchFromIndex: Int, hashCode: Int, t: T): Int =
+    if (searchFromIndex == -1) -1
+    else if (Objects.equals(items(searchFromIndex), t)) searchFromIndex
+    else findItemIdx(findHashIdx(searchFromIndex + 1, hashCode), hashCode, t)
+
+  final private def findHashIdx(searchFromIndex: Int, hashCode: Int): Int =
+    findEqIndex(hashes, searchFromIndex, hashCode)
+
+  private final def findEqIndex(hashes: Array[Int], searchFromIndex: Int, hashCode: Int): Int = {
+    var i: Int = searchFromIndex
+    while (i < hashes.length) {
+      if (hashes(i) == hashCode) return i
+      i += 1
+    }
+    -1
+  }
+
+}
+
 /** INTERNAL API */
 private[remote] object OutboundCompression {
   // format: OFF
@@ -111,11 +150,10 @@ private[remote] object OutboundCompression {
   /** INTERNAL API */
   private[remote] final case class OutboundCompressionState[T](
     version: Int,
-    table:   akka.remote.artery.fastutil.objects.Object2IntMap[T]
+    table:   HashScanIndexMap[T]
   )
   private[remote] object OutboundCompressionState {
-    private[this] val _initial: OutboundCompressionState[Any] = OutboundCompressionState(-1, new Object2IntArrayMap(1))
-    _initial.table.defaultReturnValue(NotCompressedId)
+    private[this] val _initial: OutboundCompressionState[Any] = OutboundCompressionState(-1, new HashScanIndexMap[Any](1))
     def initial[T] = _initial.asInstanceOf[OutboundCompressionState[T]]
   }
 
