@@ -12,7 +12,7 @@ import akka.stream.testkit.Utils._
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
+import java.util.concurrent.ThreadLocalRandom.{ current ⇒ random }
 
 class FlowScanSpec extends AkkaSpec {
 

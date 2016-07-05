@@ -9,7 +9,7 @@ import akka.stream.impl.ConstantFun
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.TestSink
 
-import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
+import java.util.concurrent.ThreadLocalRandom.{ current ⇒ random }
 
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.testkit.AkkaSpec

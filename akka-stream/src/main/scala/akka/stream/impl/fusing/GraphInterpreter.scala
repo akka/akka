@@ -11,7 +11,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.stream._
 import akka.stream.impl.StreamLayout._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import scala.util.control.NonFatal
 import java.{ util ⇒ ju }
 import akka.stream.impl.fusing.GraphStages.MaterializedValueSource

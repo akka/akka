@@ -28,7 +28,7 @@ import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
 
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 
 object FlowGroupBySpec {
 
