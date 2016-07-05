@@ -9,6 +9,7 @@ import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.SubscriptionTimeoutException
+import akka.stream.scaladsl.Hub.HubImpl
 import akka.stream.stage._
 import akka.stream.scaladsl._
 import akka.stream.actor.ActorSubscriberMessage
@@ -98,6 +99,100 @@ final class FlattenMerge[T, M](breadth: Int) extends GraphStage[FlowShape[Graph[
   }
 
   override def toString: String = s"FlattenMerge($breadth)"
+}
+
+/**
+ * INTERNAL API
+ */
+final class FoldMerge[Id, In, Out](initial: Hub[Id, Out], f: (In, Hub[Id, Out]) ⇒ Hub[Id, Out]) extends GraphStage[FlowShape[In, Out]] {
+  private val in = Inlet[In]("fold.in")
+  private val out = Outlet[Out]("fold.out")
+
+  override def initialAttributes = DefaultAttributes.foldMerge
+  override val shape = FlowShape(in, out)
+
+  override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
+
+    var sources = immutable.Map.empty[Id, SubSinkInlet[Out]]
+    def activeSources = sources.size
+
+    var q: immutable.Queue[Id] = _
+
+    override def preStart(): Unit = {
+      q = immutable.Queue.empty
+      initial.asInstanceOf[HubImpl[Id, Out]].newSources.foreach((addSource _).tupled)
+    }
+
+    def pushOut(): Unit = {
+      val (srcId, newQ) = q.dequeue
+      q = newQ
+      val src = sources(srcId)
+      push(out, src.grab())
+      if (!src.isClosed) src.pull()
+      else removeSource(srcId)
+    }
+
+    setHandler(in, new InHandler {
+      override def onPush(): Unit = {
+        val inElement = grab(in)
+        val hub = f(inElement, new Hub.HubImpl[Id, Out](sources.keySet, immutable.Map.empty)).asInstanceOf[Hub.HubImpl[Id, Out]]
+        // The sources to remove are all the sources not in the current source ids and are in the new sources
+        // (if there is a new source, it replaces the existing the source with that id)
+        sources.keySet.foreach { id ⇒
+          if (!hub.sourceIds.contains(id) || hub.newSources.contains(id)) {
+            removeSource(id)
+          }
+        }
+        hub.newSources.foreach((addSource _).tupled)
+
+        tryPull(in)
+      }
+      override def onUpstreamFinish(): Unit = if (activeSources == 0) completeStage()
+    })
+
+    setHandler(out, new OutHandler {
+      override def onPull(): Unit = {
+        pull(in)
+        setHandler(out, outHandler)
+      }
+    })
+
+    val outHandler = new OutHandler {
+      // could be unavailable due to async input having been executed before this notification
+      override def onPull(): Unit = if (q.nonEmpty && isAvailable(out)) pushOut()
+    }
+
+    def addSource(id: Id, source: Graph[SourceShape[Out], _]): Unit = {
+      val sinkIn = new SubSinkInlet[Out]("FoldMergeSink")
+      sinkIn.setHandler(new InHandler {
+        override def onPush(): Unit = {
+          if (isAvailable(out)) {
+            push(out, sinkIn.grab())
+            sinkIn.pull()
+          } else {
+            q = q.enqueue(id)
+          }
+        }
+        override def onUpstreamFinish(): Unit = if (!sinkIn.isAvailable) removeSource(id)
+      })
+      sinkIn.pull()
+      sources += id -> sinkIn
+      Source.fromGraph(source).runWith(sinkIn.sink)(interpreter.subFusingMaterializer)
+    }
+
+    def removeSource(id: Id): Unit = {
+      val toRemove = sources(id)
+      if (!toRemove.isClosed) toRemove.cancel()
+      sources -= id
+      q = q.filterNot(_ == id)
+      if (activeSources == 0 && isClosed(in)) completeStage()
+    }
+
+    override def postStop(): Unit = sources.values.foreach(_.cancel())
+
+  }
+
+  override def toString: String = s"FoldMerge"
 }
 
 /**
