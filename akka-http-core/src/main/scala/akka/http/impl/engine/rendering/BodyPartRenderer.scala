@@ -139,4 +139,14 @@ private[http] object BodyPartRenderer {
     random.nextBytes(array)
     Base64.custom.encodeToString(array, false)
   }
+
+  /**
+   * Creates a new random number of default length and base64 encodes it (using a custom "safe" alphabet).
+   */
+  def randomBoundaryWithDefaults(): String = randomBoundary()
+
+  /**
+   * Creates a new random number of the given length and base64 encodes it (using a custom "safe" alphabet).
+   */
+  def randomBoundaryWithDefaultRandom(length: Int): String = randomBoundary(length)
 }
