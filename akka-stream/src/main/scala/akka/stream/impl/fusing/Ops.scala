@@ -315,7 +315,22 @@ private[akka] final case class Scan[In, Out](zero: Out, f: (Out, In) ⇒ Out) ex
           setHandlers(in, out, self)
         }
       })
-      setHandler(in, totallyIgnorantInput)
+
+      setHandler(in, new InHandler {
+        override def onPush(): Unit = ()
+        override def onUpstreamFinish(): Unit = setHandler(out, new OutHandler {
+          override def onPull(): Unit = {
+            push(out, aggregator)
+            completeStage()
+          }
+        })
+        override def onUpstreamFailure(ex: Throwable): Unit = setHandler(out, new OutHandler {
+          override def onPull(): Unit = {
+            push(out, aggregator)
+            failStage(ex)
+          }
+        })
+      })
 
       override def onPull(): Unit = pull(in)
       override def onPush(): Unit = {
