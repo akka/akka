@@ -5,7 +5,7 @@
 package akka.remote.artery.compress
 
 /* INTERNAL API */
-private[remote] trait CompressionTestKit {
+private[akka] trait CompressionTestKit {
   def assertCompression[T](table: CompressionTable[T], id: Int, assertion: T ⇒ Unit): Unit = {
     table.map.find(_._2 == id)
       .orElse { throw new AssertionError(s"No key was compressed to the id [$id]! Table was: $table") }
@@ -14,4 +14,4 @@ private[remote] trait CompressionTestKit {
 }
 
 /* INTERNAL API */
-private[remote] object CompressionTestKit extends CompressionTestKit
+private[akka] object CompressionTestKit extends CompressionTestKit

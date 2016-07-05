@@ -75,7 +75,7 @@ private[remote] object EnvelopeBuffer {
 private[remote] object HeaderBuilder {
 
   // We really only use the Header builder on one "side" or the other, thus in order to avoid having to split its impl
-  // we inject no-op compression's of the "other side".  
+  // we inject no-op compression's of the "other side".
 
   def in(compression: InboundCompressions): HeaderBuilder = new HeaderBuilderImpl(compression, NoOutboundCompressions)
   def out(compression: OutboundCompressions): HeaderBuilder = new HeaderBuilderImpl(NoInboundCompressions, compression)
@@ -193,7 +193,9 @@ private[remote] final class HeaderBuilderImpl(inboundCompression: InboundCompres
 
   def setRecipientActorRef(ref: ActorRef): Unit = {
     _recipientActorRefIdx = outboundCompression.compressActorRef(ref)
-    if (_recipientActorRefIdx == -1) _recipientActorRef = ref.path.toSerializationFormat
+    if (_recipientActorRefIdx == -1) {
+      _recipientActorRef = ref.path.toSerializationFormat
+    }
   }
   def recipientActorRef(originUid: Long): OptionVal[ActorRef] =
     if (_recipientActorRef eq null) inboundCompression.decompressActorRef(originUid, actorRefCompressionTableVersion, _recipientActorRefIdx)

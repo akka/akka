@@ -290,8 +290,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   @volatile private[this] var aeron: Aeron = _
   @volatile private[this] var aeronErrorLogTask: Cancellable = _
 
-  // this is only used to allow triggering compression advertisements or state from tests
-  @volatile private[this] var activeCompressions = Set.empty[InboundCompressions]
+  @volatile private[this] var inboundCompressions: Option[InboundCompressions] = None
 
   override def localAddress: UniqueAddress = _localAddress
   override def defaultAddress: Address = localAddress.address
@@ -517,6 +516,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def runInboundStreams(): Unit = {
     val noCompressions = NoInboundCompressions // TODO possibly enable on other channels too https://github.com/akka/akka/pull/20546/files#r68074082
     val compressions = createInboundCompressions(this)
+    inboundCompressions = Some(compressions)
 
     runInboundControlStream(noCompressions) // TODO should understand compressions too
     runInboundOrdinaryMessagesStream(compressions)
@@ -547,18 +547,27 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
     controlSubject.attach(new ControlMessageObserver {
       override def notify(inboundEnvelope: InboundEnvelope): Unit = {
+
         inboundEnvelope.message match {
           case m: CompressionMessage ⇒
+            import CompressionProtocol._
             m match {
-              case CompressionProtocol.ActorRefCompressionAdvertisement(from, table) ⇒
+              case ActorRefCompressionAdvertisement(from, table) ⇒
                 log.debug("Incoming ActorRef compression advertisement from [{}], table: [{}]", from, table)
-                association(from.address).outboundCompression.applyActorRefCompressionTable(table)
-                system.eventStream.publish(CompressionProtocol.Events.ReceivedCompressionTable(from, table))
-
-              case CompressionProtocol.ClassManifestCompressionAdvertisement(from, table) ⇒
+                val a = association(from.address)
+                a.outboundCompression.applyActorRefCompressionTable(table)
+                a.sendControl(ActorRefCompressionAdvertisementAck(localAddress, table.version))
+                system.eventStream.publish(Events.ReceivedActorRefCompressionTable(from, table))
+              case ActorRefCompressionAdvertisementAck(from, tableVersion) ⇒
+                inboundCompressions.foreach(_.confirmActorRefCompressionAdvertisement(from.uid, tableVersion))
+              case ClassManifestCompressionAdvertisement(from, table) ⇒
                 log.debug("Incoming Class Manifest compression advertisement from [{}], table: [{}]", from, table)
-                association(from.address).outboundCompression.applyClassManifestCompressionTable(table)
-                system.eventStream.publish(CompressionProtocol.Events.ReceivedCompressionTable(from, table))
+                val a = association(from.address)
+                a.outboundCompression.applyClassManifestCompressionTable(table)
+                a.sendControl(ClassManifestCompressionAdvertisementAck(localAddress, table.version))
+                system.eventStream.publish(Events.ReceivedClassManifestCompressionTable(from, table))
+              case ClassManifestCompressionAdvertisementAck(from, tableVersion) ⇒
+                inboundCompressions.foreach(_.confirmActorRefCompressionAdvertisement(from.uid, tableVersion))
             }
 
           case Quarantined(from, to) if to == localAddress ⇒
@@ -768,11 +777,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     Flow.fromGraph(new Encoder(localAddress, system, compression, outboundEnvelopePool, bufferPool))
 
   private def createInboundCompressions(inboundContext: InboundContext): InboundCompressions =
-    if (remoteSettings.ArteryCompressionSettings.enabled) {
-      val comp = new InboundCompressionsImpl(system, inboundContext)
-      activeCompressions += comp
-      comp
-    } else NoInboundCompressions
+    if (remoteSettings.ArteryCompressionSettings.enabled) new InboundCompressionsImpl(system, inboundContext)
+    else NoInboundCompressions
 
   def createEncoder(pool: EnvelopeBufferPool, compression: OutboundCompressions): Flow[OutboundEnvelope, EnvelopeBuffer, NotUsed] =
     Flow.fromGraph(new Encoder(localAddress, system, compression, outboundEnvelopePool, pool))
@@ -849,7 +855,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   /** INTERNAL API: for testing only. */
   private[remote] def triggerCompressionAdvertisements(actorRef: Boolean, manifest: Boolean) = {
-    activeCompressions.foreach {
+    inboundCompressions.foreach {
       case c: InboundCompressionsImpl if actorRef || manifest ⇒
         log.info("Triggering compression table advertisement for {}", c)
         if (actorRef) c.runNextActorRefAdvertisement()

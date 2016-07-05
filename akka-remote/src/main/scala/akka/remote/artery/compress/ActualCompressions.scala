@@ -17,14 +17,14 @@ private[remote] final class OutboundCompressionsImpl(system: ActorSystem, remote
   private val actorRefsOut = new OutboundActorRefCompression(system, remoteAddress)
   private val classManifestsOut = new OutboundClassManifestCompression(system, remoteAddress)
 
-  // actor ref compression --- 
+  // actor ref compression ---
 
   override def compressActorRef(ref: ActorRef): Int = actorRefsOut.compress(ref)
   override def actorRefCompressionTableVersion: Int = actorRefsOut.activeCompressionTableVersion
   override def applyActorRefCompressionTable(table: CompressionTable[ActorRef]): Unit =
     actorRefsOut.flipTable(table)
 
-  // class manifest compression --- 
+  // class manifest compression ---
 
   override def compressClassManifest(manifest: String): Int = classManifestsOut.compress(manifest)
   override def classManifestCompressionTableVersion: Int = classManifestsOut.activeCompressionTableVersion
@@ -39,8 +39,7 @@ private[remote] final class OutboundCompressionsImpl(system: ActorSystem, remote
  */
 private[remote] final class InboundCompressionsImpl(
   system:         ActorSystem,
-  inboundContext: InboundContext
-) extends InboundCompressions {
+  inboundContext: InboundContext) extends InboundCompressions {
 
   private val settings = CompressionSettings(system)
 
@@ -65,22 +64,23 @@ private[remote] final class InboundCompressionsImpl(
   private def classManifestsIn(originUid: Long): InboundManifestCompression =
     _classManifestsIns.computeIfAbsent(originUid, createInboundManifestsForOrigin)
 
-  // actor ref compression --- 
+  // actor ref compression ---
 
-  override def decompressActorRef(originUid: Long, tableVersion: Int, idx: Int): OptionVal[ActorRef] = {
+  override def decompressActorRef(originUid: Long, tableVersion: Int, idx: Int): OptionVal[ActorRef] =
     actorRefsIn(originUid).decompress(tableVersion, idx)
-  }
-  override def hitActorRef(originUid: Long, tableVersion: Int, address: Address, ref: ActorRef): Unit = {
-    actorRefsIn(originUid).increment(address, ref, 1L)
-  }
+  override def hitActorRef(originUid: Long, tableVersion: Int, address: Address, ref: ActorRef, n: Int): Unit =
+    actorRefsIn(originUid).increment(address, ref, n)
+  override def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit =
+    actorRefsIn(originUid).confirmAdvertisement(tableVersion)
 
-  // class manifest compression --- 
+  // class manifest compression ---
 
   override def decompressClassManifest(originUid: Long, tableVersion: Int, idx: Int): OptionVal[String] =
     classManifestsIn(originUid).decompress(tableVersion, idx)
-  override def hitClassManifest(originUid: Long, tableVersion: Int, address: Address, manifest: String): Unit = {
-    classManifestsIn(originUid).increment(address, manifest, 1L)
-  }
+  override def hitClassManifest(originUid: Long, tableVersion: Int, address: Address, manifest: String, n: Int): Unit =
+    classManifestsIn(originUid).increment(address, manifest, n)
+  override def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit =
+    actorRefsIn(originUid).confirmAdvertisement(tableVersion)
 
   // testing utilities ---
 

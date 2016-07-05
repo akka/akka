@@ -82,7 +82,7 @@ object AkkaBuild extends Build {
     protobuf,
     remote,
     remoteTests,
-    samples,
+//    samples,
     slf4j,
     stream,
     streamTestkit,
