@@ -3,11 +3,13 @@ package akka.http.javadsl.settings
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 
+/** INTERNAL API */
 trait SettingsCompanion[T] {
 
   /**
+   * WARNING: This MUST overriden in sub-classes as otherwise won't be usable (return type) from Java.
    * Creates an instance of settings using the configuration provided by the given ActorSystem.
-   *
+   * 
    * Java API
    */
   def create(system: ActorSystem): T = create(system.settings.config)
