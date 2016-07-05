@@ -71,10 +71,9 @@ class FlowScanSpec extends AkkaSpec {
         .expectNext(0)
         .expectComplete()
     }
-    "fail after emitting first element when upsrteam failed" in {
+    "fail when upstream failed" in {
       Source.failed[Int](TE("")).scan(0) { case (a, b) ⇒ a + b }.runWith(TestSink.probe[Int])
         .request(2)
-        .expectNext(0)
         .expectError(TE(""))
     }
   }
