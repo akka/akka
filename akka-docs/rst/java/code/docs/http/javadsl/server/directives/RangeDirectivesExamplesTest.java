@@ -21,6 +21,7 @@ import com.typesafe.config.ConfigFactory;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
@@ -58,14 +59,14 @@ public class RangeDirectivesExamplesTest extends JUnitRouteTest {
                         ByteRange.createSlice(0, 1), ByteRange.createSlice(1, 2), ByteRange.createSlice(6, 7))));
         response.assertHeaderKindNotExists("Content-Range");
 
-        final CompletionStage<ArrayList<Multipart.ByteRanges.BodyPart>> completionStage =
+        final CompletionStage<List<Multipart.ByteRanges.BodyPart>> completionStage =
                 response.entity(Unmarshaller.entityToMultipartByteRanges()).getParts()
                         .runFold(new ArrayList<>(), (acc, n) -> {
                             acc.add(n);
                             return acc;
                         }, materializer);
         try {
-            final ArrayList<Multipart.ByteRanges.BodyPart> bodyParts =
+            final List<Multipart.ByteRanges.BodyPart> bodyParts =
                     completionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
             assertResult(2, bodyParts.toArray().length);
 
