@@ -35,7 +35,7 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
 
   private val persistenceIdSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]] with mutable.MultiMap[String, ActorRef]
   private val tagSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]] with mutable.MultiMap[String, ActorRef]
-  private var allPersistenceIdsSubscribers = Set.empty[ActorRef]
+  private var persistenceIdsSubscribers = Set.empty[ActorRef]
 
   private var tagSequenceNr = Map.empty[String, Long]
   private val tagPersistenceIdPrefix = "$$$"
@@ -188,7 +188,7 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
     val tagKeys = tagSubscribers.collect { case (k, s) if s.contains(subscriber) ⇒ k }
     tagKeys.foreach { key ⇒ tagSubscribers.removeBinding(key, subscriber) }
 
-    allPersistenceIdsSubscribers -= subscriber
+    persistenceIdsSubscribers -= subscriber
   }
 
   protected def hasTagSubscribers: Boolean = tagSubscribers.nonEmpty
@@ -196,11 +196,11 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
   protected def addTagSubscriber(subscriber: ActorRef, tag: String): Unit =
     tagSubscribers.addBinding(tag, subscriber)
 
-  protected def hasAllPersistenceIdsSubscribers: Boolean = allPersistenceIdsSubscribers.nonEmpty
+  protected def hasPersistenceIdsSubscribers: Boolean = persistenceIdsSubscribers.nonEmpty
 
-  protected def addAllPersistenceIdsSubscriber(subscriber: ActorRef): Unit = {
-    allPersistenceIdsSubscribers += subscriber
-    subscriber ! LeveldbJournal.CurrentPersistenceIds(allPersistenceIds)
+  protected def addPersistenceIdsSubscriber(subscriber: ActorRef): Unit = {
+    persistenceIdsSubscribers += subscriber
+    subscriber ! LeveldbJournal.CurrentPersistenceIds(persistenceIds)
   }
 
   private def notifyPersistenceIdChange(persistenceId: String): Unit =
@@ -216,9 +216,9 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
     }
 
   override protected def newPersistenceIdAdded(id: String): Unit = {
-    if (hasAllPersistenceIdsSubscribers && !id.startsWith(tagPersistenceIdPrefix)) {
+    if (hasPersistenceIdsSubscribers && !id.startsWith(tagPersistenceIdPrefix)) {
       val added = LeveldbJournal.PersistenceIdAdded(id)
-      allPersistenceIdsSubscribers.foreach(_ ! added)
+      persistenceIdsSubscribers.foreach(_ ! added)
     }
   }
 

@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 
 import akka.actor.ExtendedActorSystem
 import akka.persistence.query.EventEnvelope
-import akka.persistence.query.journal.leveldb.AllPersistenceIdsPublisher
+import akka.persistence.query.journal.leveldb.PersistenceIdsPublisher
 import akka.persistence.query.journal.leveldb.EventsByPersistenceIdPublisher
 import akka.persistence.query.journal.leveldb.EventsByTagPublisher
 import akka.persistence.query.scaladsl._
@@ -36,7 +36,7 @@ import com.typesafe.config.Config
  * for the default [[LeveldbReadJournal#Identifier]]. See `reference.conf`.
  */
 class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends ReadJournal
-  with AllPersistenceIdsQuery
+  with PersistenceIdsQuery
   with CurrentPersistenceIdsQuery
   with EventsByPersistenceIdQuery
   with CurrentEventsByPersistenceIdQuery
@@ -49,7 +49,7 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
   private val maxBufSize: Int = config.getInt("max-buffer-size")
 
   /**
-   * `allPersistenceIds` is used for retrieving all `persistenceIds` of all
+   * `persistenceIds` is used for retrieving all `persistenceIds` of all
    * persistent actors.
    *
    * The returned event stream is unordered and you can expect different order for multiple
@@ -66,21 +66,21 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
    * The stream is completed with failure if there is a failure in executing the query in the
    * backend journal.
    */
-  override def allPersistenceIds(): Source[String, NotUsed] = {
+  override def persistenceIds(): Source[String, NotUsed] = {
     // no polling for this query, the write journal will push all changes, i.e.
     // no refreshInterval
-    Source.actorPublisher[String](AllPersistenceIdsPublisher.props(liveQuery = true, maxBufSize, writeJournalPluginId))
+    Source.actorPublisher[String](PersistenceIdsPublisher.props(liveQuery = true, maxBufSize, writeJournalPluginId))
       .mapMaterializedValue(_ ⇒ NotUsed)
-      .named("allPersistenceIds")
+      .named("persistenceIds")
   }
 
   /**
-   * Same type of query as [[#allPersistenceIds]] but the stream
+   * Same type of query as [[#persistenceIds]] but the stream
    * is completed immediately when it reaches the end of the "result set". Persistent
    * actors that are created after the query is completed are not included in the stream.
    */
   override def currentPersistenceIds(): Source[String, NotUsed] = {
-    Source.actorPublisher[String](AllPersistenceIdsPublisher.props(liveQuery = false, maxBufSize, writeJournalPluginId))
+    Source.actorPublisher[String](PersistenceIdsPublisher.props(liveQuery = false, maxBufSize, writeJournalPluginId))
       .mapMaterializedValue(_ ⇒ NotUsed)
       .named("currentPersistenceIds")
   }

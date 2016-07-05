@@ -12,7 +12,7 @@ package akka.persistence.query.javadsl
  * The interface is very open so that different journals may implement specific queries.
  *
  * There are a few pre-defined queries that a query implementation may implement,
- * such as [[EventsByPersistenceIdQuery]], [[AllPersistenceIdsQuery]] and [[EventsByTagQuery]]
+ * such as [[EventsByPersistenceIdQuery]], [[PersistenceIdsQuery]] and [[EventsByTagQuery]]
  * Implementation of these queries are optional and query (journal) plugins may define
  * their own specialized queries by implementing other methods.
  *

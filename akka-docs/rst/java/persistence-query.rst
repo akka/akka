@@ -75,18 +75,18 @@ significantly inefficient.
 
 The predefined queries are:
 
-AllPersistenceIdsQuery and CurrentPersistenceIdsQuery 
+PersistenceIdsQuery and CurrentPersistenceIdsQuery 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``allPersistenceIds`` which is designed to allow users to subscribe to a stream of all persistent ids in the system.
+``persistenceIds`` which is designed to allow users to subscribe to a stream of all persistent ids in the system.
 By default this stream should be assumed to be a "live" stream, which means that the journal should keep emitting new
 persistence ids as they come into the system:
 
-.. includecode:: code/docs/persistence/PersistenceQueryDocTest.java#all-persistence-ids-live
+.. includecode:: code/docs/persistence/PersistenceQueryDocTest.java#persistence-ids-live
 
 If your usage does not require a live stream, you can use the ``currentPersistenceIds`` query:
 
-.. includecode:: code/docs/persistence/PersistenceQueryDocTest.java#all-persistence-ids-snap
+.. includecode:: code/docs/persistence/PersistenceQueryDocTest.java#persistence-ids-snap
 
 EventsByPersistenceIdQuery and CurrentEventsByPersistenceIdQuery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

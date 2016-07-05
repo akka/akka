@@ -42,14 +42,14 @@ public class LeveldbPersistenceQueryDocTest {
     //#EventsByPersistenceId
   }
   
-  public void demonstrateAllPersistenceIds() {
-    //#AllPersistenceIds
+  public void demonstratePersistenceIds() {
+    //#PersistenceIds
     LeveldbReadJournal queries =
         PersistenceQuery.get(system).getReadJournalFor(LeveldbReadJournal.class, 
             LeveldbReadJournal.Identifier());
     
-    Source<String, NotUsed> source = queries.allPersistenceIds();
-    //#AllPersistenceIds
+    Source<String, NotUsed> source = queries.persistenceIds();
+    //#PersistenceIds
   }
   
   public void demonstrateEventsByTag() {

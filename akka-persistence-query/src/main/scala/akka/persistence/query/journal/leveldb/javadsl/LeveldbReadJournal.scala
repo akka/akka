@@ -27,7 +27,7 @@ import akka.stream.javadsl.Source
  */
 class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal)
   extends ReadJournal
-  with AllPersistenceIdsQuery
+  with PersistenceIdsQuery
   with CurrentPersistenceIdsQuery
   with EventsByPersistenceIdQuery
   with CurrentEventsByPersistenceIdQuery
@@ -35,7 +35,7 @@ class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.lev
   with CurrentEventsByTagQuery {
 
   /**
-   * `allPersistenceIds` is used for retrieving all `persistenceIds` of all
+   * `persistenceIds` is used for retrieving all `persistenceIds` of all
    * persistent actors.
    *
    * The returned event stream is unordered and you can expect different order for multiple
@@ -52,11 +52,11 @@ class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.lev
    * The stream is completed with failure if there is a failure in executing the query in the
    * backend journal.
    */
-  override def allPersistenceIds(): Source[String, NotUsed] =
-    scaladslReadJournal.allPersistenceIds().asJava
+  override def persistenceIds(): Source[String, NotUsed] =
+    scaladslReadJournal.persistenceIds().asJava
 
   /**
-   * Same type of query as [[#allPersistenceIds]] but the stream
+   * Same type of query as [[#persistenceIds]] but the stream
    * is completed immediately when it reaches the end of the "result set". Persistent
    * actors that are created after the query is completed are not included in the stream.
    */

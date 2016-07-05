@@ -64,14 +64,14 @@ class LeveldbPersistenceQueryDocSpec(config: String) extends AkkaSpec(config) {
       //#EventsByPersistenceId
     }
 
-    "demonstrate AllPersistenceIds" in {
-      //#AllPersistenceIds
+    "demonstrate PersistenceIds" in {
+      //#PersistenceIds
       implicit val mat = ActorMaterializer()(system)
       val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](
         LeveldbReadJournal.Identifier)
 
-      val src: Source[String, NotUsed] = queries.allPersistenceIds()
-      //#AllPersistenceIds
+      val src: Source[String, NotUsed] = queries.persistenceIds()
+      //#PersistenceIds
     }
 
     "demonstrate EventsByTag" in {
