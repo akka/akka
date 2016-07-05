@@ -851,6 +851,9 @@ object MiMa extends AutoPlugin {
         // internal api
         FilterAnyProblemStartingWith("akka.stream.impl"),
 
+        // #20888 new FoldAsync op for Flow
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.foldAsync"),
+
         // #20214 SNI disabling for single connections (AkkaSSLConfig being passed around)
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.ConnectionContext.sslConfig"), // class meant only for internal extension 
         
