@@ -54,6 +54,12 @@ object LatencySpec extends MultiNodeConfig {
          remote.artery {
            enabled = on
            advanced.idle-cpu-level=8
+
+           advanced.compression {
+             enabled = on
+             actor-refs.advertisement-interval = 2 second
+             manifests.advertisement-interval = 2 second
+           }
          }
        }
        """)))
@@ -89,14 +95,17 @@ object LatencySpec extends MultiNodeConfig {
 
     def receive = {
       case bytes: Array[Byte] ⇒
-        if (bytes.length != payloadSize) throw new IllegalArgumentException("Invalid message")
-        reporter.onMessage(1, payloadSize)
-        count += 1
-        val d = System.nanoTime() - sendTimes.get(count - 1)
-        histogram.recordValue(d)
-        if (count == totalMessages) {
-          printTotal(testName, bytes.length, histogram)
-          context.stop(self)
+        // length 0 is used for warmup
+        if (bytes.length != 0) {
+          if (bytes.length != payloadSize) throw new IllegalArgumentException("Invalid message")
+          reporter.onMessage(1, payloadSize)
+          count += 1
+          val d = System.nanoTime() - sendTimes.get(count - 1)
+          histogram.recordValue(d)
+          if (count == totalMessages) {
+            printTotal(testName, bytes.length, histogram)
+            context.stop(self)
+          }
         }
     }
 
@@ -227,12 +236,21 @@ abstract class LatencySpec
         histogram.reset()
         val receiver = system.actorOf(receiverProps(rep, testSettings, totalMessages, sendTimes, histogram, plotProbe.ref))
 
-        Source(1 to totalMessages)
-          .throttle(messageRate, 1.second, math.max(messageRate / 10, 1), ThrottleMode.Shaping)
+        // warmup for 3 seconds to init compression
+        val warmup = Source(1 to 30)
+          .throttle(10, 1.second, 10, ThrottleMode.Shaping)
           .runForeach { n ⇒
-            sendTimes.set(n - 1, System.nanoTime())
-            echo.tell(payload, receiver)
+            echo.tell(Array.emptyByteArray, receiver)
           }
+
+        warmup.foreach { _ ⇒
+          Source(1 to totalMessages)
+            .throttle(messageRate, 1.second, math.max(messageRate / 10, 1), ThrottleMode.Shaping)
+            .runForeach { n ⇒
+              sendTimes.set(n - 1, System.nanoTime())
+              echo.tell(payload, receiver)
+            }
+        }
 
         watch(receiver)
         expectTerminated(receiver, ((totalMessages / messageRate) + 10).seconds)
