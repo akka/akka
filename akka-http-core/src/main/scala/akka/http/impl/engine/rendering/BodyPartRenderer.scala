@@ -19,7 +19,7 @@ import akka.util.ByteString
 import HttpEntity._
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 
 /**
  * INTERNAL API
