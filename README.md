@@ -14,6 +14,12 @@ Actors also provide the abstraction for transparent distribution and the basis f
 
 Learn more at [akka.io](http://akka.io/).
 
+Reference Documentation
+-----------------------
+
+The reference documentation is available at [doc.akka.io](http://doc.akka.io), 
+for [Scala](http://doc.akka.io/docs/akka/current/scala.html) and [Java](http://doc.akka.io/docs/akka/current/scala.html).
+
 
 Community
 ---------
