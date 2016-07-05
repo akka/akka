@@ -75,11 +75,7 @@ Since actors are created in a strictly hierarchical fashion, there exists a
 unique sequence of actor names given by recursively following the supervision
 links between child and parent down towards the root of the actor system. This
 sequence can be seen as enclosing folders in a file system, hence we adopted
-the name “path” to refer to it. As in some real file-systems there also are
-“symbolic links”, i.e. one actor may be reachable using more than one path,
-where all but one involve some translation which decouples part of the path
-from the actor’s actual supervision ancestor line; these specialities are
-described in the sub-sections to follow.
+the name “path” to refer to it, although actor hierarchy has some fundamental difference from file system hierarchy.
 
 An actor path consists of an anchor, which identifies the actor system,
 followed by the concatenation of the path elements, from root guardian to the
@@ -142,6 +138,18 @@ One important aspect is that a physical actor path never spans multiple actor
 systems or JVMs. This means that the logical path (supervision hierarchy) and
 the physical path (actor deployment) of an actor may diverge if one of its
 ancestors is remotely supervised.
+
+
+Actor path alias or symbolic link?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+As in some real file-systems you might think of a “path alias” or “symbolic link” for an actor,
+i.e. one actor may be reachable using more than one path.
+However, you should note that actor hierarchy is different from file system hierarchy.
+You cannot freely create actor paths like symbolic links to refer to arbitrary actors.
+As described in the above logical and physical actor path sections,
+an actor path must be either logical path which represents supervision hierarchy, or
+physical path which represents actor deployment.
+
 
 How are Actor References obtained?
 ----------------------------------
