@@ -1,4 +1,6 @@
 *#
+*.log
+*.orig
 *.iml
 *.ipr
 *.iws

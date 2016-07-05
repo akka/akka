@@ -748,6 +748,7 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.validateAndWarnAboutLooseSettings")
       ),
       "2.4.4" -> Seq(
+          
         // #20080, #20081 remove race condition on HTTP client
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.gatewayFuture"),
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.Http#HostConnectionPool.copy"),
@@ -848,6 +849,19 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.client.ClusterClient.initialContactsSel")
       ),
       "2.4.6" -> Seq(
+          
+        // Remove useUntrustedMode which is an internal API and not used anywhere anymore
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.Remoting.useUntrustedMode"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteTransport.useUntrustedMode"),
+        
+        // Use OptionVal in remote Send envelope
+        FilterAnyProblemStartingWith("akka.remote.EndpointManager"),
+        FilterAnyProblemStartingWith("akka.remote.Remoting"),
+        FilterAnyProblemStartingWith("akka.remote.RemoteTransport"),
+        FilterAnyProblemStartingWith("akka.remote.InboundMessageDispatcher"),
+        FilterAnyProblemStartingWith("akka.remote.DefaultMessageDispatcher"),
+        FilterAnyProblemStartingWith("akka.remote.transport"),
+          
         // internal api
         FilterAnyProblemStartingWith("akka.stream.impl"),
 

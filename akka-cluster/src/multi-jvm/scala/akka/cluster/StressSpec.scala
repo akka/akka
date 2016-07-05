@@ -124,7 +124,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
     akka.actor.serialize-messages = off
     akka.actor.serialize-creators = off
-    akka.actor.provider = akka.cluster.ClusterActorRefProvider
+    akka.actor.provider = cluster
     akka.cluster {
       failure-detector.acceptable-heartbeat-pause =  5s
       auto-down-unreachable-after = 1s

@@ -14,6 +14,7 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Promise }
 import java.util.concurrent.TimeoutException
+import akka.util.OptionVal
 
 object AkkaProtocolSpec {
 
@@ -29,7 +30,7 @@ object AkkaProtocolSpec {
 
 }
 
-class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.RemoteActorRefProvider" """) with ImplicitSender {
+class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) with ImplicitSender {
 
   val conf = ConfigFactory.parseString(
     """
@@ -66,7 +67,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
   val codec = AkkaPduProtobufCodec
 
   val testMsg = WireFormats.SerializedMessage.newBuilder().setSerializerId(0).setMessage(PByteString.copyFromUtf8("foo")).build
-  val testEnvelope = codec.constructMessage(localAkkaAddress, testActor, testMsg, None)
+  val testEnvelope = codec.constructMessage(localAkkaAddress, testActor, testMsg, OptionVal.None)
   val testMsgPdu: ByteString = codec.constructPayload(testEnvelope)
 
   def testHeartbeat = InboundPayload(codec.constructHeartbeat)

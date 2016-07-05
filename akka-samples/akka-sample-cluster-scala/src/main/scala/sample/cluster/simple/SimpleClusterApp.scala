@@ -15,7 +15,7 @@ object SimpleClusterApp {
   def startup(ports: Seq[String]): Unit = {
     ports foreach { port =>
       // Override the configuration of the port
-      val config = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
+      val config = ConfigFactory.parseString("akka.remote.artery.port=" + port).
         withFallback(ConfigFactory.load())
 
       // Create an Akka system

@@ -7,32 +7,41 @@ import akka.testkit._
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.remote.testconductor.RoleName
 
-object PiercingShouldKeepQuarantineSpec extends MultiNodeConfig {
+class PiercingShouldKeepQuarantineConfig(artery: Boolean) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
   commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString("""
-      #akka.loglevel = INFO
-      #akka.remote.log-remote-lifecycle-events = INFO
+    ConfigFactory.parseString(s"""
       akka.remote.retry-gate-closed-for = 0.5s
-                              """)))
+      akka.remote.artery.enabled = $artery
+      """)))
 
+}
+
+class PiercingShouldKeepQuarantineSpecMultiJvmNode1 extends PiercingShouldKeepQuarantineSpec(
+  new PiercingShouldKeepQuarantineConfig(artery = false))
+class PiercingShouldKeepQuarantineSpecMultiJvmNode2 extends PiercingShouldKeepQuarantineSpec(
+  new PiercingShouldKeepQuarantineConfig(artery = false))
+
+class ArteryPiercingShouldKeepQuarantineSpecMultiJvmNode1 extends PiercingShouldKeepQuarantineSpec(
+  new PiercingShouldKeepQuarantineConfig(artery = true))
+class ArteryPiercingShouldKeepQuarantineSpecMultiJvmNode2 extends PiercingShouldKeepQuarantineSpec(
+  new PiercingShouldKeepQuarantineConfig(artery = true))
+
+object PiercingShouldKeepQuarantineSpec {
   class Subject extends Actor {
     def receive = {
       case "getuid" ⇒ sender() ! AddressUidExtension(context.system).addressUid
     }
   }
-
 }
 
-class PiercingShouldKeepQuarantineSpecMultiJvmNode1 extends PiercingShouldKeepQuarantineSpec
-class PiercingShouldKeepQuarantineSpecMultiJvmNode2 extends PiercingShouldKeepQuarantineSpec
-
-abstract class PiercingShouldKeepQuarantineSpec extends MultiNodeSpec(PiercingShouldKeepQuarantineSpec)
+abstract class PiercingShouldKeepQuarantineSpec(multiNodeConfig: PiercingShouldKeepQuarantineConfig)
+  extends MultiNodeSpec(multiNodeConfig)
   with STMultiNodeSpec
   with ImplicitSender {
-
+  import multiNodeConfig._
   import PiercingShouldKeepQuarantineSpec._
 
   override def initialParticipants = roles.size

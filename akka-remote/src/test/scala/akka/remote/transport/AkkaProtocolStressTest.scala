@@ -15,7 +15,7 @@ object AkkaProtocolStressTest {
     akka {
       #loglevel = DEBUG
       actor.serialize-messages = off
-      actor.provider = "akka.remote.RemoteActorRefProvider"
+      actor.provider = remote
 
       remote.log-remote-lifecycle-events = on
 
