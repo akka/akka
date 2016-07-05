@@ -158,6 +158,17 @@ private[remote] class Decoder(
       private var tickTimestamp = System.nanoTime()
       private var tickMessageCount = 0L
 
+      // accumulate hit counts when same target
+      private var previousSender = system.deadLetters
+      private var senderCount = 0 // count of previousSender
+      private var previousRecipient = system.deadLetters
+      private var recipientCount = 0 // count of previousRecipient
+      private var previousManifest = ""
+      private var manifestCount = 0 // count of previousManifest
+      private var previousOriginUid = 0L
+      private var previousRemoteAddress: Address = null
+      private val flushCountsAfter = 100
+
       override protected def logSource = classOf[Decoder]
 
       override def preStart(): Unit = {
@@ -199,21 +210,64 @@ private[remote] class Decoder(
               val remoteAddress = assoc.remoteAddress
               sender match {
                 case OptionVal.Some(snd) ⇒
-                  compression.hitActorRef(originUid, headerBuilder.actorRefCompressionTableVersion,
-                    remoteAddress, snd, 1)
+                  def hitActorRef(uid: Long, r: ActorRef, n: Int): Unit =
+                    compression.hitActorRef(uid, headerBuilder.actorRefCompressionTableVersion, remoteAddress, r, n)
+                  if (originUid == previousOriginUid && snd == previousSender) {
+                    senderCount += 1
+                    if (senderCount == flushCountsAfter) {
+                      hitActorRef(originUid, snd, senderCount)
+                      senderCount = 0
+                    }
+                  } else {
+                    if (senderCount > 0)
+                      hitActorRef(previousOriginUid, previousSender, senderCount) // flush previous count
+                    hitActorRef(originUid, snd, 1)
+                    senderCount = 0
+                    previousSender = snd
+                  }
+
                 case OptionVal.None ⇒
               }
 
               recipient match {
                 case OptionVal.Some(rcp) ⇒
-                  compression.hitActorRef(originUid, headerBuilder.actorRefCompressionTableVersion,
-                    remoteAddress, rcp, 1)
+                  def hitActorRef(uid: Long, r: ActorRef, n: Int): Unit =
+                    compression.hitActorRef(uid, headerBuilder.actorRefCompressionTableVersion, remoteAddress, r, n)
+                  if (originUid == previousOriginUid && rcp == previousRecipient) {
+                    recipientCount += 1
+                    if (recipientCount == flushCountsAfter) {
+                      hitActorRef(originUid, rcp, recipientCount)
+                      recipientCount = 0
+                    }
+                  } else {
+                    if (recipientCount > 0)
+                      hitActorRef(previousOriginUid, previousRecipient, recipientCount) // flush previous count
+                    hitActorRef(originUid, rcp, 1)
+                    recipientCount = 0
+                    previousRecipient = rcp
+                  }
+
                 case OptionVal.None ⇒
               }
 
-              compression.hitClassManifest(originUid, headerBuilder.classManifestCompressionTableVersion,
-                remoteAddress, classManifest, 1)
+              def hitClassManifest(uid: Long, m: String, n: Int): Unit =
+                compression.hitClassManifest(uid, headerBuilder.classManifestCompressionTableVersion, remoteAddress, m, n)
+              if (originUid == previousOriginUid && classManifest == previousManifest) {
+                manifestCount += 1
+                if (manifestCount == flushCountsAfter) {
+                  hitClassManifest(originUid, classManifest, manifestCount)
+                  manifestCount = 0
+                }
+              } else {
+                if (manifestCount > 0)
+                  hitClassManifest(previousOriginUid, previousManifest, manifestCount) // flush previous count
+                hitClassManifest(originUid, classManifest, 1)
+                manifestCount = 0
+                previousManifest = classManifest
+              }
 
+              previousOriginUid = originUid
+              previousRemoteAddress = remoteAddress
             case _ ⇒
               // we don't want to record hits for compression while handshake is still in progress.
               log.debug("Decoded message but unable to record hits for compression as no remoteAddress known. No association yet?")
@@ -279,6 +333,19 @@ private[remote] class Decoder(
               log.info("Turning off adaptive sampling of compression hit counting")
             tickMessageCount = messageCount
             tickTimestamp = now
+
+            if (senderCount > 0) {
+              compression.hitActorRef(previousOriginUid, headerBuilder.classManifestCompressionTableVersion, previousRemoteAddress, previousSender, senderCount)
+              senderCount = 0
+            }
+            if (recipientCount > 0) {
+              compression.hitActorRef(previousOriginUid, headerBuilder.classManifestCompressionTableVersion, previousRemoteAddress, previousRecipient, recipientCount)
+              recipientCount = 0
+            }
+            if (manifestCount > 0) {
+              compression.hitClassManifest(previousOriginUid, headerBuilder.classManifestCompressionTableVersion, previousRemoteAddress, previousManifest, manifestCount)
+              manifestCount = 0
+            }
 
           case RetryResolveRemoteDeployedRecipient(attemptsLeft, recipientPath, inboundEnvelope) ⇒
             resolveRecipient(recipientPath) match {
