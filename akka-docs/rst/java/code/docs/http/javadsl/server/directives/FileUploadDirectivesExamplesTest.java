@@ -12,8 +12,11 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.stream.javadsl.Framing;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
+import org.junit.Ignore;
 import org.junit.Test;
 import java.io.File;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -77,6 +80,50 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
                         Multiparts.createFormDataBodyPartStrict("csv",
                         HttpEntities.create(ContentTypes.TEXT_PLAIN_UTF8,
                         "2,3,5\n7,11,13,17,23\n29,31,37\n"), filenameMapping));
+
+        // test:
+        testRoute(route).run(HttpRequest.POST("/").withEntity(
+                multipartForm.toEntity(HttpCharsets.UTF_8, BodyPartRenderer.randomBoundaryWithDefaults())))
+                .assertStatusCode(StatusCodes.OK).assertEntityAs(Unmarshaller.entityToString(), "Sum: 178");
+        //#
+    }
+
+    @Ignore("compileOnly")
+    @Test
+    public void testFileProcessing() {
+        //#fileProcessing
+        final Route route = extractRequestContext(ctx -> {
+            // function (FileInfo, Source<ByteString,Object>) => Route to process the file contents
+            BiFunction<FileInfo, Source<ByteString, Object>, Route> processUploadedFile =
+                    (metadata, byteSource) -> {
+                        CompletionStage<Integer> sumF = byteSource.via(Framing.delimiter(
+                                ByteString.fromString("\n"), 1024))
+                                .mapConcat(bs -> Arrays.asList(bs.utf8String().split(",")))
+                                .map(s -> Integer.parseInt(s))
+                                .runFold(0, (acc, n) -> acc + n, ctx.getMaterializer());
+                        return onSuccess(() -> sumF, sum -> complete("Sum: " + sum));
+                    };
+            return fileUpload("csv", processUploadedFile);
+        });
+
+        Map<String, String> filenameMapping = new HashMap<>();
+        filenameMapping.put("filename", "primes.csv");
+
+        String prefix = "primes";
+        String suffix = ".csv";
+
+        File tempFile = null;
+        try {
+            tempFile = File.createTempFile(prefix, suffix);
+            tempFile.deleteOnExit();
+            Files.write(tempFile.toPath(), Arrays.asList("2,3,5", "7,11,13,17,23", "29,31,37"), Charset.forName("UTF-8"));
+        } catch (Exception e) {
+            // ignore
+        }
+
+
+        akka.http.javadsl.model.Multipart.FormData multipartForm =
+                Multiparts.createFormDataFromPath("csv", ContentTypes.TEXT_PLAIN_UTF8, tempFile.toPath());
 
         // test:
         testRoute(route).run(HttpRequest.POST("/").withEntity(

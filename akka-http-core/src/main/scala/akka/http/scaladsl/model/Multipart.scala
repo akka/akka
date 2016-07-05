@@ -212,7 +212,7 @@ object Multipart {
 
     /** Java API */
     override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.Multipart.General.Strict] =
-      super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.General.Strict]].toJava
+      super.toStrict(timeoutMillis, materializer).toScala.asInstanceOf[Future[jm.Multipart.General.Strict]].toJava
   }
   object General {
     def apply(mediaType: MediaType.Multipart, parts: BodyPart.Strict*): Strict = Strict(mediaType, parts.toVector)
@@ -258,7 +258,7 @@ object Multipart {
 
       /** Java API */
       override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.Multipart.General.BodyPart.Strict] =
-        super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.General.BodyPart.Strict]].toJava
+        super.toStrict(timeoutMillis, materializer).toScala.asInstanceOf[Future[jm.Multipart.General.BodyPart.Strict]].toJava
 
       private[BodyPart] def tryCreateFormDataBodyPart[T](f: (String, Map[String, String], immutable.Seq[HttpHeader]) ⇒ T): Try[T] = {
         val params = dispositionParams
@@ -323,7 +323,7 @@ object Multipart {
 
     /** Java API */
     override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.Multipart.FormData.Strict] =
-      super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.FormData.Strict]].toJava
+      super.toStrict(timeoutMillis, materializer).toScala.asInstanceOf[Future[jm.Multipart.FormData.Strict]].toJava
   }
   object FormData {
     def apply(parts: Multipart.FormData.BodyPart.Strict*): Multipart.FormData.Strict = Strict(parts.toVector)
@@ -436,7 +436,7 @@ object Multipart {
 
       /** Java API */
       override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.Multipart.FormData.BodyPart.Strict] =
-        super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.FormData.BodyPart.Strict]].toJava
+        super.toStrict(timeoutMillis, materializer).toScala.asInstanceOf[Future[jm.Multipart.FormData.BodyPart.Strict]].toJava
     }
     object BodyPart {
       def apply(_name: String, _entity: BodyPartEntity,
@@ -518,7 +518,7 @@ object Multipart {
 
     /** Java API */
     override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.Multipart.ByteRanges.Strict] =
-      super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.ByteRanges.Strict]].toJava
+      super.toStrict(timeoutMillis, materializer).toScala.asInstanceOf[Future[jm.Multipart.ByteRanges.Strict]].toJava
   }
   object ByteRanges {
     def apply(parts: Multipart.ByteRanges.BodyPart.Strict*): Strict = Strict(parts.toVector)
@@ -593,7 +593,7 @@ object Multipart {
 
       /** Java API */
       override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.Multipart.ByteRanges.BodyPart.Strict] =
-        super.toStrict(timeoutMillis, materializer).asInstanceOf[Future[jm.Multipart.ByteRanges.BodyPart.Strict]].toJava
+        super.toStrict(timeoutMillis, materializer).toScala.asInstanceOf[Future[jm.Multipart.ByteRanges.BodyPart.Strict]].toJava
     }
     object BodyPart {
       def apply(_contentRange: ContentRange, _entity: BodyPartEntity, _rangeUnit: RangeUnit = RangeUnits.Bytes,
