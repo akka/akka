@@ -609,7 +609,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         publish(latestGossip)
       case Some(_) ⇒ // already down
       case None ⇒
-        logInfo("Ignoring down of unknown node [{}] as [{}]", address)
+        logInfo("Ignoring down of unknown node [{}]", address)
     }
 
   }
