@@ -5,6 +5,7 @@ package akka.http.javadsl.settings
 
 import java.util.{ Optional, Random }
 
+import akka.actor.ActorSystem
 import akka.http.impl.settings.ServerSettingsImpl
 import akka.http.javadsl.model.headers.Host
 import akka.http.javadsl.model.headers.Server
@@ -71,4 +72,5 @@ object ServerSettings extends SettingsCompanion[ServerSettings] {
 
   override def create(config: Config): ServerSettings = ServerSettingsImpl(config)
   override def create(configOverrides: String): ServerSettings = ServerSettingsImpl(configOverrides)
+  override def create(system: ActorSystem): ServerSettings = create(system.settings.config)
 }

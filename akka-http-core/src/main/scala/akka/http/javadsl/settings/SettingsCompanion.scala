@@ -10,7 +10,7 @@ trait SettingsCompanion[T] {
    *
    * Java API
    */
-  final def create(system: ActorSystem): T = create(system.settings.config)
+  def create(system: ActorSystem): T = create(system.settings.config)
 
   /**
    * Creates an instance of settings using the given Config.
