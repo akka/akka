@@ -3,10 +3,9 @@
  */
 package akka.remote.artery
 
-import java.net.InetAddress
 import java.util.concurrent.Executors
-import scala.collection.AbstractIterator
-import scala.concurrent.Await
+import java.util.concurrent.atomic.AtomicLongArray
+import java.util.concurrent.locks.LockSupport
 import scala.concurrent.duration._
 import akka.actor._
 import akka.remote.testconductor.RoleName
@@ -14,21 +13,11 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Source
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-import io.aeron.Aeron
-import io.aeron.driver.MediaDriver
-import java.util.concurrent.CyclicBarrier
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLongArray
 import org.HdrHistogram.Histogram
+import akka.stream.scaladsl.Source
 import akka.stream.ThrottleMode
-import java.io.StringWriter
-import java.io.PrintStream
-import java.io.OutputStreamWriter
-import java.io.BufferedOutputStream
-import java.io.ByteArrayOutputStream
 
 object LatencySpec extends MultiNodeConfig {
   val first = role("first")
@@ -38,7 +27,7 @@ object LatencySpec extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).withFallback(
     ConfigFactory.parseString(s"""
-       # for serious measurements you should increase the totalMessagesFactor (10) and repeatCount (3)
+       # for serious measurements you should increase the totalMessagesFactor (30) and repeatCount (3)
        akka.test.LatencySpec.totalMessagesFactor = 1.0
        akka.test.LatencySpec.repeatCount = 1
        akka {
@@ -53,7 +42,7 @@ object LatencySpec extends MultiNodeConfig {
          }
          remote.artery {
            enabled = on
-           advanced.idle-cpu-level=8
+           advanced.idle-cpu-level=7
 
            advanced.compression {
              enabled = on
@@ -92,24 +81,27 @@ object LatencySpec extends MultiNodeConfig {
     import settings._
 
     var count = 0
+    var startTime = System.nanoTime()
+    val taskRunnerMetrics = new TaskRunnerMetrics(context.system)
 
     def receive = {
       case bytes: Array[Byte] ⇒
-        // length 0 is used for warmup
         if (bytes.length != 0) {
+          if (count == 0)
+            startTime = System.nanoTime()
           if (bytes.length != payloadSize) throw new IllegalArgumentException("Invalid message")
           reporter.onMessage(1, payloadSize)
           count += 1
           val d = System.nanoTime() - sendTimes.get(count - 1)
           histogram.recordValue(d)
           if (count == totalMessages) {
-            printTotal(testName, bytes.length, histogram)
+            printTotal(testName, bytes.length, histogram, System.nanoTime() - startTime)
             context.stop(self)
           }
         }
     }
 
-    def printTotal(testName: String, payloadSize: Long, histogram: Histogram): Unit = {
+    def printTotal(testName: String, payloadSize: Long, histogram: Histogram, totalDurationNanos: Long): Unit = {
       import scala.collection.JavaConverters._
       val percentiles = histogram.percentiles(5)
       def percentile(p: Double): Double =
@@ -118,12 +110,17 @@ object LatencySpec extends MultiNodeConfig {
             value.getPercentileLevelIteratedTo < (p + 0.5) ⇒ value.getValueIteratedTo / 1000.0
         }.getOrElse(Double.NaN)
 
+      val throughput = 1000.0 * histogram.getTotalCount / math.min(1, totalDurationNanos.nanos.toMillis)
+
       println(s"=== Latency $testName: RTT " +
         f"50%%ile: ${percentile(50.0)}%.0f µs, " +
         f"90%%ile: ${percentile(90.0)}%.0f µs, " +
-        f"99%%ile: ${percentile(99.0)}%.0f µs, ")
+        f"99%%ile: ${percentile(99.0)}%.0f µs, " +
+        f"rate: ${throughput}%,.0f msg/s")
       println("Histogram of RTT latencies in microseconds.")
       histogram.outputPercentileDistribution(System.out, 1000.0)
+
+      taskRunnerMetrics.printHistograms()
 
       val plots = LatencyPlots(
         PlotResult().add(testName, percentile(50.0)),
@@ -155,22 +152,10 @@ abstract class LatencySpec
 
   var plots = LatencyPlots()
 
-  val aeron = {
-    val ctx = new Aeron.Context
-    val driver = MediaDriver.launchEmbedded()
-    ctx.aeronDirectoryName(driver.aeronDirectoryName)
-    Aeron.connect(ctx)
-  }
-
   lazy implicit val mat = ActorMaterializer()(system)
   import system.dispatcher
 
   override def initialParticipants = roles.size
-
-  def channel(roleName: RoleName) = {
-    val a = node(roleName).address
-    s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
-  }
 
   lazy val reporterExecutor = Executors.newFixedThreadPool(1)
   def reporter(name: String): TestRateReporter = {
@@ -196,6 +181,11 @@ abstract class LatencySpec
 
   val scenarios = List(
     TestSettings(
+      testName = "warmup",
+      messageRate = 10000,
+      payloadSize = 100,
+      repeat = repeatCount),
+    TestSettings(
       testName = "rate-100-size-100",
       messageRate = 100,
       payloadSize = 100,
@@ -208,6 +198,11 @@ abstract class LatencySpec
     TestSettings(
       testName = "rate-10000-size-100",
       messageRate = 10000,
+      payloadSize = 100,
+      repeat = repeatCount),
+    TestSettings(
+      testName = "rate-20000-size-100",
+      messageRate = 20000,
       payloadSize = 100,
       repeat = repeatCount),
     TestSettings(
@@ -244,16 +239,33 @@ abstract class LatencySpec
           }
 
         warmup.foreach { _ ⇒
-          Source(1 to totalMessages)
-            .throttle(messageRate, 1.second, math.max(messageRate / 10, 1), ThrottleMode.Shaping)
-            .runForeach { n ⇒
-              sendTimes.set(n - 1, System.nanoTime())
-              echo.tell(payload, receiver)
+
+          var i = 0
+          var adjust = 0L
+          // increase the rate somewhat to compensate for overhead, based on heuristics
+          val adjustRateFactor =
+            if (messageRate <= 100) 1.05
+            else if (messageRate <= 1000) 1.1
+            else if (messageRate <= 10000) 1.2
+            else if (messageRate <= 20000) 1.3
+            else 1.4
+          val targetDelay = (SECONDS.toNanos(1) / (messageRate * adjustRateFactor)).toLong
+          while (i < totalMessages) {
+            LockSupport.parkNanos(targetDelay - adjust)
+            val now = System.nanoTime()
+            sendTimes.set(i, now)
+            if (i >= 1) {
+              val diff = now - sendTimes.get(i - 1)
+              adjust = math.max(0L, (diff - targetDelay) / 2)
             }
+
+            echo.tell(payload, receiver)
+            i += 1
+          }
         }
 
         watch(receiver)
-        expectTerminated(receiver, ((totalMessages / messageRate) + 10).seconds)
+        expectTerminated(receiver, ((totalMessages / messageRate) + 20).seconds)
         val p = plotProbe.expectMsgType[LatencyPlots]
         // only use the last repeat for the plots
         if (n == repeat) {

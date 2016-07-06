@@ -3,7 +3,7 @@
  */
 package akka.remote.artery
 
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.MICROSECONDS
 import scala.util.control.NonFatal
 import akka.actor.ExtendedActorSystem
 import akka.dispatch.AbstractNodeQueue
@@ -80,12 +80,29 @@ private[akka] object TaskRunner {
     override def toString(): String =
       elements.filterNot(_ eq null).mkString("[", ",", "]")
   }
+
+  def createIdleStrategy(idleCpuLevel: Int): IdleStrategy = {
+    if (idleCpuLevel == 1) {
+      val maxParkMicros = 400
+      new BackoffIdleStrategy(100, 1, MICROSECONDS.toNanos(1), MICROSECONDS.toNanos(maxParkMicros))
+    } else if (idleCpuLevel == 10)
+      new BusySpinIdleStrategy
+    else {
+      // spin between 100 to 10000 depending on idleCpuLevel
+      val spinning = 1100 * idleCpuLevel - 1000
+      val yielding = 5 * idleCpuLevel
+      val minParkNanos = 1
+      // park between 250 and 10 micros depending on idleCpuLevel
+      val maxParkNanos = MICROSECONDS.toNanos(280 - 30 * idleCpuLevel)
+      new BackoffIdleStrategy(spinning, yielding, 1, maxParkNanos)
+    }
+  }
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class TaskRunner(system: ExtendedActorSystem, idleCpuLevel: Int) extends Runnable {
+private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: Int) extends Runnable {
   import TaskRunner._
 
   private val log = Logging(system, getClass)
@@ -93,21 +110,7 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, idleCpuLevel: Int) e
   private[this] val cmdQueue = new CommandQueue
   private[this] val tasks = new ArrayBag[Task]
 
-  // TODO the backoff strategy should be measured and tuned
-  private val idleStrategy: IdleStrategy = {
-    if (idleCpuLevel == 1) {
-      val maxParkMicros = 400
-      new BackoffIdleStrategy(1, 1, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(maxParkMicros))
-    } else if (idleCpuLevel == 10)
-      new BusySpinIdleStrategy
-    else {
-      val spinning = 100000 * idleCpuLevel
-      val yielding = 2 * idleCpuLevel
-      val maxParkMicros = 40 * (11 - idleCpuLevel)
-      new BackoffIdleStrategy(
-        spinning, yielding, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(maxParkMicros))
-    }
-  }
+  private val idleStrategy = createIdleStrategy(idleCpuLevel)
   private var reset = false
 
   def start(): Unit = {
@@ -132,8 +135,8 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, idleCpuLevel: Int) e
     try {
       running = true
       while (running) {
-        executeTasks()
         processCommand(cmdQueue.poll())
+        executeTasks()
         if (reset) {
           reset = false
           idleStrategy.reset()
