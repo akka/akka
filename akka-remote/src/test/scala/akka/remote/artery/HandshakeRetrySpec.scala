@@ -20,11 +20,10 @@ object HandshakeRetrySpec {
      akka {
        actor.provider = remote
        remote.artery.enabled = on
-       remote.artery.compression.enabled = on
        remote.artery.hostname = localhost
        remote.artery.port = 0
        remote.handshake-timeout = 10s
-       
+
      }
   """)
 

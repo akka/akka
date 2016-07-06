@@ -45,7 +45,6 @@ object LatencySpec extends MultiNodeConfig {
            advanced.idle-cpu-level=7
 
            advanced.compression {
-             enabled = on
              actor-refs.advertisement-interval = 2 second
              manifests.advertisement-interval = 2 second
            }
@@ -73,11 +72,11 @@ object LatencySpec extends MultiNodeConfig {
   }
 
   def receiverProps(reporter: RateReporter, settings: TestSettings, totalMessages: Int,
-                    sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef): Props =
+    sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef): Props =
     Props(new Receiver(reporter, settings, totalMessages, sendTimes, histogram, plotsRef))
 
   class Receiver(reporter: RateReporter, settings: TestSettings, totalMessages: Int,
-                 sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef) extends Actor {
+    sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef) extends Actor {
     import settings._
 
     var count = 0
@@ -131,10 +130,10 @@ object LatencySpec extends MultiNodeConfig {
   }
 
   final case class TestSettings(
-    testName:    String,
+    testName: String,
     messageRate: Int, // msg/s
     payloadSize: Int,
-    repeat:      Int)
+    repeat: Int)
 
 }
 
