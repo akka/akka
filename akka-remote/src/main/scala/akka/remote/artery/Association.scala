@@ -310,14 +310,16 @@ private[remote] class Association(
       if (transport.remoteSettings.TestMode) {
         val ((queueValue, mgmt), (control, completed)) =
           Source.fromGraph(new SendQueue[OutboundEnvelope])
+            .via(transport.outboundControlPart1(this))
             .viaMat(transport.outboundTestFlow(this))(Keep.both)
-            .toMat(transport.outboundControl(this, compression))(Keep.both)
+            .toMat(transport.outboundControlPart2(this, compression))(Keep.both)
             .run()(materializer)
         _testStages.add(mgmt)
         (queueValue, (control, completed))
       } else {
         Source.fromGraph(new SendQueue[OutboundEnvelope])
-          .toMat(transport.outboundControl(this, compression))(Keep.both)
+          .via(transport.outboundControlPart1(this))
+          .toMat(transport.outboundControlPart2(this, compression))(Keep.both)
           .run()(materializer)
       }
 
