@@ -177,7 +177,7 @@ Triggering the flow of elements programmatically
 In other words, even if the stream would be able to flow (not being backpressured) we want to hold back elements until a
 trigger signal arrives.
 
-This recipe solves the problem by simply zipping the stream of ``Message`` elments with the stream of ``Trigger``
+This recipe solves the problem by simply zipping the stream of ``Message`` elements with the stream of ``Trigger``
 signals. Since ``Zip`` produces pairs, we simply map the output stream selecting the first element of the pair.
 
 .. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeManualTrigger.java#manually-triggered-stream
@@ -227,7 +227,7 @@ a special ``reduce`` operation that collapses multiple upstream elements into on
 the speed of the upstream unaffected by the downstream.
 
 When the upstream is faster, the reducing process of the ``conflate`` starts. Our reducer function simply takes
-the freshest element. This cin a simple dropping operation.
+the freshest element. This in a simple dropping operation.
 
 .. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeSimpleDrop.java#simple-drop
 

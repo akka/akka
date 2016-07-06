@@ -7,7 +7,7 @@ Introduction
 Motivation
 ==========
 
-The way we consume services from the internet today includes many instances of
+The way we consume services from the Internet today includes many instances of
 streaming data, both downloading from a service as well as uploading to it or
 peer-to-peer data transfers. Regarding data as a stream of elements instead of
 in its entirety is very useful because it matches the way computers send and
