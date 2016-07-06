@@ -26,7 +26,6 @@ object CompressionIntegrationSpec {
        actor.provider = "akka.remote.RemoteActorRefProvider"
        remote.artery.enabled = on
        remote.artery.advanced {
-         compression.enabled = on
          compression.debug = on
        }
        remote.artery.hostname = localhost

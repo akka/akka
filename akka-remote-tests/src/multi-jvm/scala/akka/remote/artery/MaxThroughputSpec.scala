@@ -60,7 +60,6 @@ object MaxThroughputSpec extends MultiNodeConfig {
            #advanced.aeron-dir = "target/aeron"
 
            advanced.compression {
-             enabled = on
              actor-refs.advertisement-interval = 2 second
              manifests.advertisement-interval = 2 second
            }
@@ -102,7 +101,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
   }
 
   def senderProps(target: ActorRef, testSettings: TestSettings, plotRef: ActorRef,
-                  printTaskRunnerMetrics: Boolean): Props =
+    printTaskRunnerMetrics: Boolean): Props =
     Props(new Sender(target, testSettings, plotRef, printTaskRunnerMetrics))
 
   class Sender(target: ActorRef, testSettings: TestSettings, plotRef: ActorRef, printTaskRunnerMetrics: Boolean)
@@ -212,10 +211,10 @@ object MaxThroughputSpec extends MultiNodeConfig {
   }
 
   final case class TestSettings(
-    testName:            String,
-    totalMessages:       Long,
-    burstSize:           Int,
-    payloadSize:         Int,
+    testName: String,
+    totalMessages: Long,
+    burstSize: Int,
+    payloadSize: Int,
     senderReceiverPairs: Int) {
     // data based on measurement
     def totalSize(system: ActorSystem) = payloadSize + (if (CompressionSettings(system).enabled) 38 else 110)
