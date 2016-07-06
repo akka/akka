@@ -24,7 +24,7 @@ We encourage changes that make it easier to achieve our goals in an efficient wa
 The below steps are how to get a patch into a main development branch (e.g. `master`). 
 The steps are exactly the same for everyone involved in the project (be it core team, or first time contributor).
 
-1. Make sure there is an issue exists in the [issue tracker](https://github.com/akka/akka/issues) for the work you want to contribute. 
+1. Make sure an issue exists in the [issue tracker](https://github.com/akka/akka/issues) for the work you want to contribute. 
    - If there is no ticket for it, [create one](https://github.com/akka/akka/issues/new) first.
 1. [Fork the project](https://github.com/akka/akka#fork-destination-box) on GitHub. You'll need to create a feature-branch for your work on your fork, as this way you'll be able to submit a PullRequest against the mainline Akka.
 1. Create a branch on your fork and work on the feature. For example: `git checkout -b wip-custom-headers-akka-http`
