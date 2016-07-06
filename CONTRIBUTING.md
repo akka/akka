@@ -43,7 +43,7 @@ The last group of special tags indicate specific states a ticket is in:
 
 Pull Request validation states:
 
-- `validating => [tested | needs-attention` - signify pull request validation status
+- `validating => [tested | needs-attention]` - signify pull request validation status
 
 # Akka contributing guidelines
 
