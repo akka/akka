@@ -2,6 +2,8 @@
 
 In case of questions about the contribution process or for discussion of specific issues please visit the [akka/dev gitter chat](https://gitter.im/akka/dev).
 
+# Navigating around the project & codebase
+
 ## Branches summary
 
 Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
@@ -10,6 +12,38 @@ Depending on which version (or sometimes module) you want to work on, you should
 * `release-2.3` – maintenance branch of Akka 2.3.x
 * `artery-dev` – work on the upcoming remoting implementation, codenamed "artery"
 * similarly `release-2.#` branches contain legacy versions of Akka
+
+## Tags
+
+Akka uses tags to categorise issues into groups or mark their phase in development.
+
+Most notably many tags start `t:` prefix (as in `topic:`), which categorises issues in terms of which module they relate to. Examples are:
+
+- [t:core](https://github.com/akka/akka/issues?utf8=%E2%9C%93&q=is%3Aissue%20is%3Aopen%20label%3At%3Acore)
+- [t:stream](https://github.com/akka/akka/issues?q=is%3Aissue+is%3Aopen+label%3At%3Astream)
+- see [all tags here](https://github.com/akka/akka/labels)
+
+In general *all issues are open for anyone working on them*, however if you're new to the project and looking for an issue
+that will be accepted and likely is a nice one to get started you should check out the following tags:
+
+- [community](https://github.com/akka/akka/labels/community) - which identifies issues that the core team will likely not have time to work on, or the issue is a nice entry level ticket. If you're not sure how to solve a ticket but would like to work on it feel free to ask in the issue about clarification or tips.
+- [nice-to-have (low-priority)](https://github.com/akka/akka/labels/nice-to-have%20%28low-prio%29) - are tasks which make sense, however are not very high priority (in face of other very high priority issues). If you see something interesting in this list, a contribution would be really wonderful!
+
+Another group of tickets are those which start from a number. They're used to signal in what phase of development an issue is:
+
+- [0 - new](https://github.com/akka/akka/labels/0%20-%20new) - is assigned when a ticket is unclear on it's purpose or if it is valid or not. Sometimes the additional tag `discuss` is used to mark such tickets, if they propose large scale changed and need more discussion before moving into triaged (or being closed as invalid)
+- [1 - triaged](https://github.com/akka/akka/labels/1%20-%20triaged) - roughly speaking means "this ticket makes sense". Triaged tickets are safe to pick up for contributing in terms of likeliness of a patch for it being accepted. It is not recommended to start working on a ticket that is not triaged.
+- [2 - pick next](https://github.com/akka/akka/labels/2%20-%20pick%20next) - used to mark issues which are next up in the queue to be worked on. Sometimes it's also used to mark which PRs are expected to be reviewed/merged for the next release. The tag is non-binding, and mostly used as organisational helper.
+- [3 - in progress](https://github.com/akka/akka/labels/3%20-%20in%20progress) - means someone is working on this ticket. If you see a ticket that has the tag, however seems inactive, it could have been an omission with removing the tag, feel free to ping the ticket then if it's still being worked on.
+
+The last group of special tags indicate specific states a ticket is in:
+
+- [bug](https://github.com/akka/akka/labels/failed) - bugs take priority in being fixed above features. The core team dedicates a number of days to working on bugs each sprint. Bugs which have reproducers are also great for community contributions as they're well isolated. Sometimes we're not as lucky to have reproducers though, then a bugfix should also include a test reproducing the original error along with the fix.
+- [failed](https://github.com/akka/akka/labels/failed) - tickets indicate a Jenkins failure (for example from a nightly build). These tickets usually start with the `FAILED: ...` message, and include a stacktrace + link to the Jenkins failure. The tickets are collected and worked on with priority to keep the build stable and healthy. Often times it may be simple timeout issues (Jenkins boxes are slow), though sometimes real bugs are discovered this way.
+
+Pull Request validation states:
+
+- `validating => [tested | needs-attention` - signify pull request validation status
 
 # Akka contributing guidelines
 
@@ -41,6 +75,15 @@ The steps are exactly the same for everyone involved in the project (be it core 
 1. If the code change needs to be applied to other branches as well (for example a bugfix needing to be backported to a previous version), one of the team will either ask you to submit a PR with the same commit to the old branch, or do this for you.
    - Backport pull requests such as these are marked using the phrase`for validation` in the title to make the purpose clear in the pull request list. They can be merged once validation passes without additional review (if no conflicts).
 1. Once everything is said and done, your Pull Request gets merged :tada: Your feature will be available with the next “earliest” release milestone (i.e. if back-ported so that it will be in release x.y.z, find the relevant milestone for that release). And of course you will be given credit for the fix in the release stats during the release's announcement. You've made it!
+
+The TL;DR; of the above very precise workflow version is:
+
+1. Fork Akka
+2. Hack and test on your feature (on a branch)
+3. Submit a PR
+4. Sign the CLA if necessary
+4. Keep polishing it until received enough LGTM
+5. Profit!
 
 ## The `validatePullRequest` task
 
@@ -213,7 +256,7 @@ Thus we ask Java contributions to follow these simple guidelines:
 
 - 2 spaces
 - `{` on same line as method name
-- common sense
+- in all other aspects, follow the [Oracle Java Style Guide](http://www.oracle.com/technetwork/java/codeconvtoc-136057.html)
 
 ## Contributing Modules
 
