@@ -52,7 +52,7 @@ abstract class HttpsServerExampleSpec extends WordSpec with Matchers
     tmf.init(ks)
 
     val sslContext: SSLContext = SSLContext.getInstance("TLS")
-    sslContext.init(keyManagerFactory.getKeyManagers, tmf.getTrustManagers, SecureRandom.getInstanceStrong)
+    sslContext.init(keyManagerFactory.getKeyManagers, tmf.getTrustManagers, new SecureRandom)
     val https: HttpsConnectionContext = ConnectionContext.https(sslContext)
 
     // sets default context to HTTPS – all Http() bound servers for this ActorSystem will use HTTPS from now on
