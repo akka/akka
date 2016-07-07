@@ -33,11 +33,7 @@ object CompressionIntegrationSpec {
        remote.handshake-timeout = 10s
 
        remote.artery.advanced.compression {
-         enabled = on
-         actor-refs {
-           enabled = on
-           advertisement-interval = 3 seconds
-         }
+         actor-refs.advertisement-interval = 3 seconds
        }
 
      }
