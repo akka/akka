@@ -36,7 +36,7 @@ Submitting Pull Requests
 
 .. note:: *A pull request is worth a thousand +1's.* -- Old Klangian Proverb
 
-Pull Requests fixing issues or adding functionality are are very welcome.
+Pull Requests fixing issues or adding functionality are very welcome.
 Please read [CONTRIBUTING.md](https://github.com/akka/akka/blob/master/CONTRIBUTING.md) for
 more information about contributing to Akka.
 
