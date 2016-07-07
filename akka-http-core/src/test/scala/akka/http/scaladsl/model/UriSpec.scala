@@ -639,5 +639,14 @@ class UriSpec extends WordSpec with Matchers {
       val uri = Uri(s"http://foo.bar/$slashes")
       uri.toString // was reported to throw StackOverflowException in Spray's URI
     }
+
+    "survive parsing a URI with thousands of query string values" in {
+      val uriString = (1 to 2000).map("a=" + _).mkString("http://foo.bar/?", "&", "")
+      val uri = Uri(uriString)
+      val query = uri.query()
+      query.size shouldEqual 2000
+      query.head._2 shouldEqual "1"
+      query.last._2 shouldEqual "2000"
+    }
   }
 }
