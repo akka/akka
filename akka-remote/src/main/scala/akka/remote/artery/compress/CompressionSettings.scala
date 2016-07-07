@@ -13,21 +13,18 @@ import scala.concurrent.duration._
 /** INTERNAL API */
 private[akka] class CompressionSettings(_config: Config) {
   val enabled = _config.getBoolean("enabled")
-  @inline private def globalEnabled = enabled
 
   val debug = _config.getBoolean("debug")
 
   object actorRefs {
     private val c = _config.getConfig("actor-refs")
 
-    val enabled = globalEnabled && c.getBoolean("enabled")
     val advertisementInterval = c.getDuration("advertisement-interval", TimeUnit.MILLISECONDS).millis
     val max = c.getInt("max")
   }
   object manifests {
     private val c = _config.getConfig("manifests")
 
-    val enabled = globalEnabled && c.getBoolean("enabled")
     val advertisementInterval = c.getDuration("advertisement-interval", TimeUnit.MILLISECONDS).millis
     val max = c.getInt("max")
   }
