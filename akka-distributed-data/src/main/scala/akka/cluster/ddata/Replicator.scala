@@ -276,12 +276,14 @@ object Replicator {
   final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef) extends ReplicatorMessage
   /**
    * Unregister a subscriber.
-   * @see [[Replicator.Subscribe]]
+    *
+    * @see [[Replicator.Subscribe]]
    */
   final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef) extends ReplicatorMessage
   /**
    * The data value is retrieved with [[#get]] using the typed key.
-   * @see [[Replicator.Subscribe]]
+    *
+    * @see [[Replicator.Subscribe]]
    */
   final case class Changed[A <: ReplicatedData](key: Key[A])(data: A) extends ReplicatorMessage {
     /**
@@ -1120,8 +1122,10 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       weaklyUpNodes += m.address
 
   def receiveMemberUp(m: Member): Unit =
-    if (matchingRole(m) && m.address != selfAddress)
+    if (matchingRole(m) && m.address != selfAddress) {
       nodes += m.address
+      weaklyUpNodes -= m.address
+    }
 
   def receiveMemberRemoved(m: Member): Unit = {
     if (m.address == selfAddress)
@@ -1259,7 +1263,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   def receiveGetReplicaCount(): Unit = {
     // selfAddress is not included in the set
-    sender() ! ReplicaCount(nodes.size + weaklyUpNodes.size + 1)
+    sender() ! ReplicaCount(nodes.size + 1)
   }
 
 }
