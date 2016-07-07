@@ -765,18 +765,26 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         envelopePool, giveUpSendAfter, createFlightRecorderEventSink()))(Keep.right)
   }
 
-  def outboundControl(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[OutboundEnvelope, (OutboundControlIngress, Future[Done])] = {
+  /**
+   * The outbound stream is defined as two parts to be able to add test stage in-between.
+   * System messages must not be dropped before the SystemMessageDelivery stage.
+   */
+  def outboundControlPart1(outboundContext: OutboundContext): Flow[OutboundEnvelope, OutboundEnvelope, SharedKillSwitch] = {
     Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
       .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, handshakeTimeout,
         handshakeRetryInterval, injectHandshakeInterval))
       .via(new SystemMessageDelivery(outboundContext, system.deadLetters, systemMessageResendInterval,
         remoteSettings.SysMsgBufferSize))
+
+    // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
+  }
+
+  def outboundControlPart2(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[OutboundEnvelope, (OutboundControlIngress, Future[Done])] = {
+    Flow[OutboundEnvelope]
       .viaMat(new OutboundControlJunction(outboundContext, outboundEnvelopePool))(Keep.right)
       .via(encoder(compression))
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), controlStreamId, aeron, taskRunner,
         envelopePool, Duration.Inf, createFlightRecorderEventSink()))(Keep.both)
-
-    // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
   }
 
   def createEncoder(compression: OutboundCompressions, bufferPool: EnvelopeBufferPool): Flow[OutboundEnvelope, EnvelopeBuffer, NotUsed] =
