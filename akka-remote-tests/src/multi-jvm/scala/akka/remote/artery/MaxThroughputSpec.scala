@@ -101,7 +101,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
   }
 
   def senderProps(target: ActorRef, testSettings: TestSettings, plotRef: ActorRef,
-    printTaskRunnerMetrics: Boolean): Props =
+                  printTaskRunnerMetrics: Boolean): Props =
     Props(new Sender(target, testSettings, plotRef, printTaskRunnerMetrics))
 
   class Sender(target: ActorRef, testSettings: TestSettings, plotRef: ActorRef, printTaskRunnerMetrics: Boolean)
@@ -211,10 +211,10 @@ object MaxThroughputSpec extends MultiNodeConfig {
   }
 
   final case class TestSettings(
-    testName: String,
-    totalMessages: Long,
-    burstSize: Int,
-    payloadSize: Int,
+    testName:            String,
+    totalMessages:       Long,
+    burstSize:           Int,
+    payloadSize:         Int,
     senderReceiverPairs: Int) {
     // data based on measurement
     def totalSize(system: ActorSystem) = payloadSize + (if (CompressionSettings(system).enabled) 38 else 110)
@@ -306,7 +306,7 @@ abstract class MaxThroughputSpec
       senderReceiverPairs = 1),
     TestSettings(
       testName = "1-to-1",
-      totalMessages = adjustedTotalMessages(20000),
+      totalMessages = adjustedTotalMessages(50000),
       burstSize = 1000,
       payloadSize = 100,
       senderReceiverPairs = 1),

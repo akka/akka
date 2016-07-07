@@ -72,11 +72,11 @@ object LatencySpec extends MultiNodeConfig {
   }
 
   def receiverProps(reporter: RateReporter, settings: TestSettings, totalMessages: Int,
-    sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef): Props =
+                    sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef): Props =
     Props(new Receiver(reporter, settings, totalMessages, sendTimes, histogram, plotsRef))
 
   class Receiver(reporter: RateReporter, settings: TestSettings, totalMessages: Int,
-    sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef) extends Actor {
+                 sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef) extends Actor {
     import settings._
 
     var count = 0
@@ -109,7 +109,7 @@ object LatencySpec extends MultiNodeConfig {
             value.getPercentileLevelIteratedTo < (p + 0.5) ⇒ value.getValueIteratedTo / 1000.0
         }.getOrElse(Double.NaN)
 
-      val throughput = 1000.0 * histogram.getTotalCount / math.min(1, totalDurationNanos.nanos.toMillis)
+      val throughput = 1000.0 * histogram.getTotalCount / math.max(1, totalDurationNanos.nanos.toMillis)
 
       println(s"=== Latency $testName: RTT " +
         f"50%%ile: ${percentile(50.0)}%.0f µs, " +
@@ -130,10 +130,10 @@ object LatencySpec extends MultiNodeConfig {
   }
 
   final case class TestSettings(
-    testName: String,
+    testName:    String,
     messageRate: Int, // msg/s
     payloadSize: Int,
-    repeat: Int)
+    repeat:      Int)
 
 }
 
@@ -224,6 +224,15 @@ abstract class LatencySpec
       val echo = identifyEcho()
       val plotProbe = TestProbe()
 
+      // increase the rate somewhat to compensate for overhead, based on heuristics
+      // will also be adjusted based on measurement when using > 1 repeat
+      @volatile var adjustRateFactor =
+        if (messageRate <= 100) 1.05
+        else if (messageRate <= 1000) 1.1
+        else if (messageRate <= 10000) 1.2
+        else if (messageRate <= 20000) 1.3
+        else 1.4
+
       for (n ← 1 to repeat) {
         echo ! Reset
         expectMsg(Reset)
@@ -238,16 +247,8 @@ abstract class LatencySpec
           }
 
         warmup.foreach { _ ⇒
-
           var i = 0
           var adjust = 0L
-          // increase the rate somewhat to compensate for overhead, based on heuristics
-          val adjustRateFactor =
-            if (messageRate <= 100) 1.05
-            else if (messageRate <= 1000) 1.1
-            else if (messageRate <= 10000) 1.2
-            else if (messageRate <= 20000) 1.3
-            else 1.4
           val targetDelay = (SECONDS.toNanos(1) / (messageRate * adjustRateFactor)).toLong
           while (i < totalMessages) {
             LockSupport.parkNanos(targetDelay - adjust)
@@ -261,6 +262,13 @@ abstract class LatencySpec
             echo.tell(payload, receiver)
             i += 1
           }
+
+          // measure rate and adjust for next repeat round
+          val d = (sendTimes.get(totalMessages - 1) - sendTimes.get(0))
+          val measuredRate = totalMessages * SECONDS.toNanos(1) / math.max(1, d)
+          val previousTargetRate = messageRate * adjustRateFactor
+          adjustRateFactor = (previousTargetRate / math.max(1, measuredRate))
+          println(s"Measured send rate $measuredRate msg/s (new adjustment facor: $adjustRateFactor)")
         }
 
         watch(receiver)
