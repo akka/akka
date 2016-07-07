@@ -152,8 +152,7 @@ private[remote] class Decoder(
 
       // adaptive sampling when rate > 1000 msg/s
       private var messageCount = 0L
-      private val HeavyHitterMask = (1 << 8) - 1 // sample every 256nth message
-      private var adaptiveSampling = false
+      private var heavyHitterMask = 0 // 0 => no sampling, otherwise power of two - 1
       private val adaptiveSamplingRateThreshold = 1000
       private var tickTimestamp = System.nanoTime()
       private var tickMessageCount = 0L
@@ -192,7 +191,7 @@ private[remote] class Decoder(
 
         val classManifest = headerBuilder.manifest(originUid)
 
-        if (!adaptiveSampling || (messageCount & HeavyHitterMask) == 0) {
+        if ((messageCount & heavyHitterMask) == 0) {
           // --- hit refs and manifests for heavy-hitter counting
           association match {
             case OptionVal.Some(assoc) ⇒
@@ -269,14 +268,18 @@ private[remote] class Decoder(
         timerKey match {
           case Tick ⇒
             val now = System.nanoTime()
-            val d = now - tickTimestamp
-            val oldAdaptiveSampling = adaptiveSampling
-            adaptiveSampling = (d == 0 ||
-              (messageCount - tickMessageCount) * TimeUnit.SECONDS.toNanos(1) / d > adaptiveSamplingRateThreshold)
-            if (!oldAdaptiveSampling && adaptiveSampling)
-              log.info("Turning on adaptive sampling ({}nth message) of compression hit counting", HeavyHitterMask + 1)
-            else if (oldAdaptiveSampling && !adaptiveSampling)
-              log.info("Turning off adaptive sampling of compression hit counting")
+            val d = math.max(1, now - tickTimestamp)
+            val rate = (messageCount - tickMessageCount) * TimeUnit.SECONDS.toNanos(1) / d
+            val oldHeavyHitterMask = heavyHitterMask
+            heavyHitterMask =
+              if (rate < adaptiveSamplingRateThreshold) 0 // no sampling
+              else if (rate < adaptiveSamplingRateThreshold * 10) (1 << 6) - 1 // sample every 64nth message
+              else if (rate < adaptiveSamplingRateThreshold * 100) (1 << 7) - 1 // sample every 128nth message
+              else (1 << 8) - 1 // sample every 256nth message
+            if (oldHeavyHitterMask > 0 && heavyHitterMask == 0)
+              log.debug("Turning off adaptive sampling of compression hit counting")
+            else if (oldHeavyHitterMask != heavyHitterMask)
+              log.debug("Turning on adaptive sampling ({}nth message) of compression hit counting", heavyHitterMask + 1)
             tickMessageCount = messageCount
             tickTimestamp = now
 
