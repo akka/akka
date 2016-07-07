@@ -33,9 +33,7 @@ object HandshakeShouldDropCompressionTableSpec {
        remote.handshake-timeout = 10s
 
        remote.artery.advanced.compression {
-         enabled = on
          actor-refs {
-           enabled = on
            # we'll trigger advertisement manually
            advertisement-interval = 10 hours
          }
