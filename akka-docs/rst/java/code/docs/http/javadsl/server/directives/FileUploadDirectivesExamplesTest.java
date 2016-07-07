@@ -29,11 +29,6 @@ import java.util.function.BiFunction;
 
 public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
 
-  @Override
-  public FiniteDuration awaitDuration() {
-    return FiniteDuration.create(3, TimeUnit.SECONDS); // because file access
-  }
-
   @Test
   public void testUploadedFile() {
     //#uploadedFile
