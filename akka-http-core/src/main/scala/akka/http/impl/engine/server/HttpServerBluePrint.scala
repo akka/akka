@@ -415,9 +415,9 @@ private[http] object HttpServerBluePrint {
           val isEarlyResponse = messageEndPending && openRequests.isEmpty
           if (isEarlyResponse && response.status.isSuccess)
             log.warning(
-              "Sending an 2xx 'early' response before end of request was received... " + 
-              "Note that the connection will be closed after this response. Also, many clients will not read early responses! " +
-              "Consider only issuing this response after the request data has been completely read!")
+              "Sending an 2xx 'early' response before end of request was received... " +
+                "Note that the connection will be closed after this response. Also, many clients will not read early responses! " +
+                "Consider only issuing this response after the request data has been completely read!")
           val close = requestStart.closeRequested ||
             (requestStart.expect100Continue && oneHundredContinueResponsePending) ||
             (isClosed(requestParsingIn) && openRequests.isEmpty) ||
