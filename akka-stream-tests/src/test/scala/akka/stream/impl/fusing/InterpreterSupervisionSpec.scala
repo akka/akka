@@ -100,10 +100,10 @@ class InterpreterSupervisionSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnNext(114)))
     }
 
-    "resume when Map throws before Grouped" in new OneBoundedSetup[Int](Seq(
-      Map((x: Int) ⇒ x + 1, resumingDecider),
-      Map((x: Int) ⇒ if (x <= 0) throw TE else x + 10, resumingDecider),
-      Grouped(3))) {
+    "resume when Map throws before Grouped" in new OneBoundedSetup[Int](
+      Map((x: Int) ⇒ x + 1, resumingDecider).toGS,
+      Map((x: Int) ⇒ if (x <= 0) throw TE else x + 10, resumingDecider).toGS,
+      Grouped(3)) {
 
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
@@ -120,10 +120,10 @@ class InterpreterSupervisionSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnNext(Vector(13, 14, 15))))
     }
 
-    "complete after resume when Map throws before Grouped" in new OneBoundedSetup[Int](Seq(
-      Map((x: Int) ⇒ x + 1, resumingDecider),
-      Map((x: Int) ⇒ if (x <= 0) throw TE else x + 10, resumingDecider),
-      Grouped(1000))) {
+    "complete after resume when Map throws before Grouped" in new OneBoundedSetup[Int](
+      Map((x: Int) ⇒ x + 1, resumingDecider).toGS,
+      Map((x: Int) ⇒ if (x <= 0) throw TE else x + 10, resumingDecider).toGS,
+      Grouped(1000)) {
 
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
