@@ -47,6 +47,7 @@ Directive                                   Description
                                             via the ``Accept-Encoding`` header (from a user-defined set)
 :ref:`-entity-`                             Extracts the request entity unmarshalled to a given type
 :ref:`-extract-`                            Extracts a single value using a ``RequestContext ⇒ T`` function
+:ref:`-extractDataBytes-`                   Extracts the entities data bytes as a stream ``Source[ByteString, Any]``
 :ref:`-extractClientIP-`                    Extracts the client's IP from either the ``X-Forwarded-``,
                                             ``Remote-Address`` or ``X-Real-IP`` header
 :ref:`-extractCredentials-`                 Extracts the potentially present ``HttpCredentials`` provided with the
@@ -58,6 +59,7 @@ Directive                                   Description
 :ref:`-extractMethod-`                      Extracts the request method
 :ref:`-extractRequest-`                     Extracts the current ``HttpRequest`` instance
 :ref:`-extractRequestContext-`              Extracts the ``RequestContext`` itself
+:ref:`-extractRequestEntity-`               Extracts the ``RequestEntity`` from the ``RequestContext``
 :ref:`-extractScheme-`                      Extracts the URI scheme from the request
 :ref:`-extractSettings-`                    Extracts the ``RoutingSettings`` from the ``RequestContext``
 :ref:`-extractUnmatchedPath-`               Extracts the yet unmatched path from the ``RequestContext``
@@ -216,6 +218,7 @@ Directive                                   Description
 :ref:`-uploadedFile-`                       Streams one uploaded file from a multipart request to a file on disk
 :ref:`-validate-`                           Checks a given condition before running its inner route
 :ref:`-withoutRequestTimeout-`              Disables :ref:`request timeouts <request-timeout-scala>` for a given route.
+:ref:`-withoutSizeLimit-`                   Skips request entity size check
 :ref:`-withExecutionContext-`               Runs its inner route with the given alternative ``ExecutionContext``
 :ref:`-withMaterializer-`                   Runs its inner route with the given alternative ``Materializer``
 :ref:`-withLog-`                            Runs its inner route with the given alternative ``LoggingAdapter``
@@ -225,4 +228,5 @@ Directive                                   Description
 :ref:`-withRequestTimeoutResponse-`         Prepares the ``HttpResponse`` that is emitted if a request timeout is triggered.
                                             ``RequestContext => RequestContext`` function
 :ref:`-withSettings-`                       Runs its inner route with the given alternative ``RoutingSettings``
+:ref:`-withSizeLimit-`                      Applies request entity size check
 =========================================== ============================================================================

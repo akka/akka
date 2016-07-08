@@ -165,9 +165,12 @@ public class BidiFlowDocTest extends AbstractJavaTest {
 
             @Override
             public void onUpstreamFinish() throws Exception {
+              // either we are done
               if (stash.isEmpty()) completeStage();
+              // or we still have bytes to emit
               // wait with completion and let run() complete when the
               // rest of the stash has been sent downstream
+              else if (isAvailable(out)) run();
             }
           });
 

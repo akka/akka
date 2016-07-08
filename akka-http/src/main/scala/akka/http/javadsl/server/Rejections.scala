@@ -27,8 +27,13 @@ import scala.collection.JavaConverters._
  * A rejection encapsulates a specific reason why a Route was not able to handle a request. Rejections are gathered
  * up over the course of a Route evaluation and finally converted to [[akka.http.scaladsl.model.HttpResponse]]s by the
  * `handleRejections` directive, if there was no way for the request to be completed.
+ *
+ * If providing custom rejections, extend [[CustomRejection]] instead.
  */
 trait Rejection
+
+/** To be extended by user-provided custom rejections, such that they may be consumed in either Java or Scala DSLs. */
+trait CustomRejection extends akka.http.scaladsl.server.Rejection
 
 /**
  * Rejection created by method filters.

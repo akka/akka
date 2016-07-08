@@ -68,6 +68,12 @@ class HeaderSpec extends FreeSpec with Matchers {
         headers.`Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains") shouldEqual Right(headers.`Strict-Transport-Security`(30, true))
         headers.`Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains; preload") shouldEqual Right(headers.`Strict-Transport-Security`(30, true))
       }
+      "successful parse run with additional values" in {
+        headers.`Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains; preload; dummy") shouldEqual
+          Right(headers.`Strict-Transport-Security`(30, true))
+        headers.`Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains; dummy; preload") shouldEqual
+          Right(headers.`Strict-Transport-Security`(30, true))
+      }
       "failing parse run" in {
         val Left(List(ErrorInfo(summary, detail))) = `Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains; preload;")
         summary shouldEqual "Illegal HTTP header 'Strict-Transport-Security': Invalid input 'EOI', expected OWS or token0 (line 1, column 40)"

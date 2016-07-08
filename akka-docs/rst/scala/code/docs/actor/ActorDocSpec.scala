@@ -50,6 +50,19 @@ class ActorWithArgs(arg: String) extends Actor {
   def receive = { case _ => () }
 }
 
+//#actor-with-value-class-argument
+class Argument(val value: String) extends AnyVal
+class ValueClassActor(arg: Argument) extends Actor {
+  def receive = { case _ => () }
+}
+
+object ValueClassActor {
+  def props1(arg: Argument) = Props(classOf[ValueClassActor], arg) // fails at runtime
+  def props2(arg: Argument) = Props(classOf[ValueClassActor], arg.value) // ok
+  def props3(arg: Argument) = Props(new ValueClassActor(arg)) // ok
+}
+//#actor-with-value-class-argument
+
 class DemoActorWrapper extends Actor {
   //#props-factory
   object DemoActor {
@@ -312,7 +325,7 @@ class ActorDocSpec extends AkkaSpec("""
 
     val props1 = Props[MyActor]
     val props2 = Props(new ActorWithArgs("arg")) // careful, see below
-    val props3 = Props(classOf[ActorWithArgs], "arg")
+    val props3 = Props(classOf[ActorWithArgs], "arg") // no support for value class arguments
     //#creating-props
 
     //#creating-props-deprecated

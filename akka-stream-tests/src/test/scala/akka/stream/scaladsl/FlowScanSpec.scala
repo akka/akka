@@ -12,7 +12,7 @@ import akka.stream.testkit.Utils._
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
+import java.util.concurrent.ThreadLocalRandom.{ current ⇒ random }
 
 class FlowScanSpec extends AkkaSpec {
 
@@ -63,6 +63,18 @@ class FlowScanSpec extends AkkaSpec {
       }.withAttributes(supervisionStrategy(Supervision.resumingDecider))
       Source(List(1, 3, -1, 5, 7)).via(scan).runWith(TestSink.probe)
         .toStrict(1.second) should ===(Seq(0, 1, 4, 9, 16))
+    }
+
+    "scan normally for empty source" in {
+      Source.empty[Int].scan(0) { case (a, b) ⇒ a + b }.runWith(TestSink.probe[Int])
+        .request(2)
+        .expectNext(0)
+        .expectComplete()
+    }
+    "fail when upstream failed" in {
+      Source.failed[Int](TE("")).scan(0) { case (a, b) ⇒ a + b }.runWith(TestSink.probe[Int])
+        .request(2)
+        .expectError(TE(""))
     }
   }
 }

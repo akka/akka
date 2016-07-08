@@ -8,8 +8,10 @@ import java.util.function.{ Function ⇒ JFunction }
 
 import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.settings.ParserSettings
-import akka.http.scaladsl.settings.RoutingSettings
+import akka.http.javadsl.settings.RoutingSettings
 import akka.japi.Util
+import akka.stream.javadsl.Source
+import akka.util.ByteString
 
 import scala.concurrent.ExecutionContextExecutor
 import akka.http.impl.model.JavaUri
@@ -73,6 +75,10 @@ abstract class BasicDirectives {
     D.mapRouteResult(route ⇒ f(route.asJava).asScala) { inner.get.delegate }
   }
 
+  def mapRouteResultPF(f: PartialFunction[RouteResult, RouteResult], inner: Supplier[Route]): Route = RouteAdapter {
+    D.mapRouteResult(route ⇒ f(route.asJava).asScala) { inner.get.delegate }
+  }
+
   def mapRouteResultFuture(f: JFunction[CompletionStage[RouteResult], CompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
     D.mapRouteResultFuture(stage ⇒
       f(toJava(stage.fast.map(_.asJava)(ExecutionContexts.sameThreadExecutionContext))).toScala.fast.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)) {
@@ -84,11 +90,15 @@ abstract class BasicDirectives {
     D.mapRouteResultWith(r ⇒ f(r.asJava).toScala.fast.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)) { inner.get.delegate }
   }
 
+  def mapRouteResultWithPF(f: PartialFunction[RouteResult, CompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
+    D.mapRouteResultWith(r ⇒ f(r.asJava).toScala.fast.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)) { inner.get.delegate }
+  }
+
   /**
    * Runs the inner route with settings mapped by the given function.
    */
   def mapSettings(f: JFunction[RoutingSettings, RoutingSettings], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapSettings(rs ⇒ f(rs)) { inner.get.delegate }
+    D.mapSettings(rs ⇒ f(rs.asJava).asScala) { inner.get.delegate }
   }
 
   /**
@@ -176,7 +186,7 @@ abstract class BasicDirectives {
    * Extracts the current http request entity.
    */
   @CorrespondsTo("extract")
-  def extractEntity(inner: java.util.function.Function[RequestEntity, Route]): Route = RouteAdapter {
+  def extractEntity(inner: JFunction[RequestEntity, Route]): Route = RouteAdapter {
     D.extractRequest { rq ⇒
       inner.apply(rq.entity).delegate
     }
@@ -216,10 +226,17 @@ abstract class BasicDirectives {
   }
 
   /**
+   * Runs its inner route with the given alternative [[akka.stream.Materializer]].
+   */
+  def withMaterializer(mat: Materializer, inner: Supplier[Route]): Route = RouteAdapter {
+    D.withMaterializer(mat) { inner.get.delegate }
+  }
+
+  /**
    * Runs its inner route with the given alternative [[RoutingSettings]].
    */
   def withSettings(s: RoutingSettings, inner: Supplier[Route]): Route = RouteAdapter {
-    D.withSettings(s) { inner.get.delegate }
+    D.withSettings(s.asScala) { inner.get.delegate }
   }
 
   /**
@@ -253,5 +270,17 @@ abstract class BasicDirectives {
   def extractRequestContext(inner: JFunction[RequestContext, Route]) = RouteAdapter {
     D.extractRequestContext { ctx ⇒ inner.apply(JavaMapping.toJava(ctx)(server.RoutingJavaMapping.RequestContext)).delegate }
   }
+
+  /**
+   * Extracts the entities `dataBytes` [[akka.stream.javadsl.Source]] from the [[akka.http.javadsl.server.RequestContext]].
+   */
+  def extractDataBytes(inner: JFunction[Source[ByteString, Any], Route]) = RouteAdapter {
+    D.extractRequest { ctx ⇒ inner.apply(ctx.entity.dataBytes.asJava).delegate }
+  }
+
+  /**
+   * Extracts the [[akka.http.javadsl.model.RequestEntity]] from the [[akka.http.javadsl.server.RequestContext]].
+   */
+  def extractRequestEntity(inner: JFunction[RequestEntity, Route]): Route = extractEntity(inner)
 
 }

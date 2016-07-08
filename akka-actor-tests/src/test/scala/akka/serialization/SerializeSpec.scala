@@ -18,6 +18,8 @@ import akka.pattern.ask
 import org.apache.commons.codec.binary.Hex.encodeHex
 import java.nio.ByteOrder
 import java.nio.ByteBuffer
+import akka.actor.NoSerializationVerificationNeeded
+import test.akka.serialization.NoVerification
 
 object SerializationTests {
 
@@ -443,24 +445,72 @@ class DefaultSerializationWarningSpec extends AkkaSpec(
   ConfigFactory.parseString("akka.actor.warn-about-java-serializer-usage = on")) {
 
   val ser = SerializationExtension(system)
-  val messagePrefix = "Using the default Java serializer for class.*"
+  val messagePrefix = "Using the default Java serializer for class"
 
   "Using the default Java serializer" must {
 
     "log a warning when serializing classes outside of java.lang package" in {
-      EventFilter.warning(message = messagePrefix) intercept {
+      EventFilter.warning(start = messagePrefix, occurrences = 1) intercept {
         ser.serializerFor(classOf[java.math.BigDecimal])
       }
     }
 
     "not log warning when serializing classes from java.lang package" in {
-      EventFilter.warning(message = messagePrefix, occurrences = 0) intercept {
+      EventFilter.warning(start = messagePrefix, occurrences = 0) intercept {
         ser.serializerFor(classOf[java.lang.String])
       }
     }
 
   }
 
+}
+
+class NoVerificationWarningSpec extends AkkaSpec(
+  ConfigFactory.parseString(
+    "akka.actor.warn-about-java-serializer-usage = on\n" +
+      "akka.actor.warn-on-no-serialization-verification = on")) {
+
+  val ser = SerializationExtension(system)
+  val messagePrefix = "Using the default Java serializer for class"
+
+  "When warn-on-no-serialization-verification = on, using the default Java serializer" must {
+
+    "log a warning on classes without extending NoSerializationVerificationNeeded" in {
+      EventFilter.warning(start = messagePrefix, occurrences = 1) intercept {
+        ser.serializerFor(classOf[java.math.BigDecimal])
+      }
+    }
+
+    "still log warning on classes extending NoSerializationVerificationNeeded" in {
+      EventFilter.warning(start = messagePrefix, occurrences = 1) intercept {
+        ser.serializerFor(classOf[NoVerification])
+      }
+    }
+  }
+}
+
+class NoVerificationWarningOffSpec extends AkkaSpec(
+  ConfigFactory.parseString(
+    "akka.actor.warn-about-java-serializer-usage = on\n" +
+      "akka.actor.warn-on-no-serialization-verification = off")) {
+
+  val ser = SerializationExtension(system)
+  val messagePrefix = "Using the default Java serializer for class"
+
+  "When warn-on-no-serialization-verification = off, using the default Java serializer" must {
+
+    "log a warning on classes without extending NoSerializationVerificationNeeded" in {
+      EventFilter.warning(start = messagePrefix, occurrences = 1) intercept {
+        ser.serializerFor(classOf[java.math.BigDecimal])
+      }
+    }
+
+    "not log warning on classes extending NoSerializationVerificationNeeded" in {
+      EventFilter.warning(start = messagePrefix, occurrences = 0) intercept {
+        ser.serializerFor(classOf[NoVerification])
+      }
+    }
+  }
 }
 
 protected[akka] trait TestSerializable

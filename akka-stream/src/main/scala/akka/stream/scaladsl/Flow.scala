@@ -25,7 +25,7 @@ import akka.NotUsed
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
  */
-final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
+final class Flow[-In, +Out, +Mat](override val module: Module)
   extends FlowOpsMat[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
 
   override val shape: FlowShape[In, Out] = module.shape.asInstanceOf[FlowShape[In, Out]]
@@ -335,7 +335,7 @@ object RunnableGraph {
 /**
  * Flow with attached input and output, can be executed.
  */
-final case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Module) extends Graph[ClosedShape, Mat] {
+final case class RunnableGraph[+Mat](val module: StreamLayout.Module) extends Graph[ClosedShape, Mat] {
   require(module.isRunnable)
   override def shape = ClosedShape
 
@@ -672,7 +672,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def grouped(n: Int): Repr[immutable.Seq[Out]] = andThen(Grouped(n))
+  def grouped(n: Int): Repr[immutable.Seq[Out]] = via(Grouped(n))
 
   /**
    * Ensure stream boundedness by limiting the number of elements from upstream.
@@ -736,7 +736,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def sliding(n: Int, step: Int = 1): Repr[immutable.Seq[Out]] = andThen(Sliding(n, step))
+  def sliding(n: Int, step: Int = 1): Repr[immutable.Seq[Out]] = via(Sliding(n, step))
 
   /**
    * Similar to `fold` but is not a terminal operation,
@@ -777,7 +777,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.scan]]
    */
-  def fold[T](zero: T)(f: (T, Out) ⇒ T): Repr[T] = andThen(Fold(zero, f))
+  def fold[T](zero: T)(f: (T, Out) ⇒ T): Repr[T] = via(Fold(zero, f))
 
   /**
    * Similar to `fold` but uses first element as zero element.
@@ -1584,7 +1584,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def log(name: String, extract: Out ⇒ Any = ConstantFun.scalaIdentityFunction)(implicit log: LoggingAdapter = null): Repr[Out] =
-    andThen(Stages.Log(name, extract.asInstanceOf[Any ⇒ Any], Option(log)))
+    via(Log(name, extract.asInstanceOf[Any ⇒ Any], Option(log)))
 
   /**
    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.

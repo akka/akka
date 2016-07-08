@@ -118,7 +118,7 @@ If, however, your marshaller also needs to set things like the response status c
 or any headers then a ``ToEntityMarshaller[T]`` won't work. You'll need to fall down to providing a
 ``ToResponseMarshaller[T]`` or a ``ToRequestMarshaller[T]`` directly.
 
-For writing you own marshallers you won't have to "manually" implement the ``Marshaller`` trait directly.
+For writing your own marshallers you won't have to "manually" implement the ``Marshaller`` trait directly.
 Rather, it should be possible to use one of the convenience construction helpers defined on the ``Marshaller``
 companion:
 

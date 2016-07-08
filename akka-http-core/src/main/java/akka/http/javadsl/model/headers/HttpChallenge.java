@@ -20,4 +20,12 @@ public abstract class HttpChallenge {
     public static HttpChallenge create(String scheme, String realm, Map<String, String> params) {
         return new akka.http.scaladsl.model.headers.HttpChallenge(scheme, realm, Util.convertMapToScala(params));
     }
+
+    public static HttpChallenge createBasic(String realm) {
+        return create("Basic", realm);
+    }
+
+    public static HttpChallenge createOAuth2(String realm) {
+        return create("Bearer", realm);
+    }
 }

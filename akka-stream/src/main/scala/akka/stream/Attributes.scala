@@ -143,7 +143,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   /**
    * INTERNAL API
    */
-  private[akka] def nameOrDefault(default: String = "unknown-operation"): String = {
+  def nameOrDefault(default: String = "unknown-operation"): String = {
     @tailrec def concatNames(i: Iterator[Attribute], first: String, buf: StringBuilder): String =
       if (i.hasNext)
         i.next() match {
@@ -187,7 +187,7 @@ object Attributes {
   /**
    * INTERNAL API
    */
-  private[akka] def apply(attribute: Attribute): Attributes =
+  def apply(attribute: Attribute): Attributes =
     apply(List(attribute))
 
   val none: Attributes = Attributes()

@@ -9,9 +9,9 @@ import akka.stream.ActorAttributes._
 import akka.stream.Attributes.LogLevels
 import akka.stream.Supervision._
 import akka.stream.testkit.ScriptedTest
-import akka.stream.javadsl
-import akka.stream.{ ActorMaterializer, Materializer, Attributes }
+import akka.stream._
 import akka.testkit.TestProbe
+
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.util.control.NoStackTrace
@@ -29,7 +29,7 @@ class FlowLogSpec extends AkkaSpec("akka.loglevel = DEBUG") with ScriptedTest {
 
   "A Log" must {
 
-    val supervisorPath = ActorMaterializer.downcast(mat).supervisor.path
+    val supervisorPath = ActorMaterializerHelper.downcast(mat).supervisor.path
     val LogSrc = s"akka.stream.Log($supervisorPath)"
     val LogClazz = classOf[Materializer]
 

@@ -11,11 +11,13 @@ import akka.stream.Attributes._
 import akka.stream.impl.SinkModule
 import akka.stream.impl.StreamLayout.Module
 import akka.util.ByteString
+
 import scala.annotation.tailrec
-import scala.concurrent.{ Promise, Await }
+import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration._
 import akka.stream._
 import akka.stream.Supervision.resumingDecider
+import akka.stream.impl.fusing.GroupBy
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import org.reactivestreams.Publisher
@@ -26,7 +28,7 @@ import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
 
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 
 object FlowGroupBySpec {
 
@@ -375,6 +377,37 @@ class FlowGroupBySpec extends AkkaSpec {
         subscriber.expectNext() should ===(byteString)
       }
       upstreamSubscription.sendComplete()
+    }
+
+    "work if pull is exercised from both substream and main stream (#20829)" in assertAllStagesStopped {
+      val upstream = TestPublisher.probe[Int]()
+      val downstreamMaster = TestSubscriber.probe[Source[Int, NotUsed]]()
+
+      Source
+        .fromPublisher(upstream)
+        .via(new GroupBy[Int, Boolean](2, elem ⇒ elem == 0))
+        .runWith(Sink.fromSubscriber(downstreamMaster))
+
+      val substream = TestSubscriber.probe[Int]()
+
+      downstreamMaster.request(1)
+      upstream.sendNext(1)
+      downstreamMaster.expectNext().runWith(Sink.fromSubscriber(substream))
+
+      // Read off first buffered element from subsource
+      substream.request(1)
+      substream.expectNext(1)
+
+      // Both will attempt to pull upstream
+      substream.request(1)
+      substream.expectNoMsg(100.millis)
+      downstreamMaster.request(1)
+      downstreamMaster.expectNoMsg(100.millis)
+
+      // Cleanup, not part of the actual test
+      substream.cancel()
+      downstreamMaster.cancel()
+      upstream.sendComplete()
     }
 
     "work with random demand" in assertAllStagesStopped {
