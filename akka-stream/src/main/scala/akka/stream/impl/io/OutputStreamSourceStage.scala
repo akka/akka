@@ -21,6 +21,7 @@ import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.ActorAttributes.Dispatcher
 import scala.concurrent.ExecutionContext
 import akka.stream.ActorMaterializer
+import akka.stream.ActorMaterializerHelper
 
 private[stream] object OutputStreamSourceStage {
   sealed trait AdapterToStageMessage
@@ -112,7 +113,7 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
         }
 
       override def preStart(): Unit = {
-        dispatcher = ActorMaterializer.downcast(materializer).system.dispatchers.lookup(dispatcherId)
+        dispatcher = ActorMaterializerHelper.downcast(materializer).system.dispatchers.lookup(dispatcherId)
         super.preStart()
       }
 

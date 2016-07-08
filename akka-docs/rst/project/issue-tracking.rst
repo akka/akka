@@ -19,11 +19,7 @@ have reproducible test cases that you can share.
 Roadmaps
 ^^^^^^^^
 
-Please refer to the `Akka roadmap
-<https://docs.google.com/document/d/18W9-fKs55wiFNjXL9q50PYOnR7-nnsImzJqHOPPbM4E/pub>`_
-in order to find out the general theme of work to be done for upcoming versions
-of Akka.
-
+Short and long-term plans are published in the [akka/akka-meta](https://github.com/akka/akka-meta/issues) repository.
 
 Creating tickets
 ----------------
@@ -34,5 +30,15 @@ You can create a `new ticket <https://github.com/akka/akka/issues/new>`_ if you
 have registered a GitHub user account.
 
 Thanks a lot for reporting bugs and suggesting features!
+
+Submitting Pull Requests
+------------------------
+
+.. note:: *A pull request is worth a thousand +1's.* -- Old Klangian Proverb
+
+Pull Requests fixing issues or adding functionality are very welcome.
+Please read [CONTRIBUTING.md](https://github.com/akka/akka/blob/master/CONTRIBUTING.md) for
+more information about contributing to Akka.
+
 
 

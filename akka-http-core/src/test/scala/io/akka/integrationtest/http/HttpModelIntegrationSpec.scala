@@ -150,6 +150,7 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
 
     "be able to wrap HttpHeaders with custom typed headers" in {
 
+      // TODO potentially use the integration for Play / Lagom APIs?
       // This HTTP model is typed. It uses Akka HTTP types internally, but
       // no Akka HTTP types are visible to users. This typed model is a
       // model that Play Framework may eventually move to.

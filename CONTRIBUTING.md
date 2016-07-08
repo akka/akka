@@ -2,17 +2,7 @@
 
 In case of questions about the contribution process or for discussion of specific issues please visit the [akka/dev gitter chat](https://gitter.im/akka/dev).
 
-## Infrastructure
-
-* [Akka Contributor License Agreement](http://www.lightbend.com/contribute/cla)
-* [Akka Issue Tracker](http://doc.akka.io/docs/akka/current/project/issue-tracking.html)
-* [Scalariform](https://github.com/daniel-trinh/scalariform)
-
-# Lightbend Project & Developer Guidelines
-
-These guidelines are meant to be a living document that should be changed and adapted as needed. We encourage changes that make it easier to achieve our goals in an efficient way.
-
-These guidelines mainly apply to Lightbend’s “mature” projects - not necessarily to projects of the type ‘collection of scripts’ etc.
+# Navigating around the project & codebase
 
 ## Branches summary
 
@@ -20,37 +10,80 @@ Depending on which version (or sometimes module) you want to work on, you should
 
 * `master` – active development branch of Akka 2.4.x
 * `release-2.3` – maintenance branch of Akka 2.3.x
+* `artery-dev` – work on the upcoming remoting implementation, codenamed "artery"
 * similarly `release-2.#` branches contain legacy versions of Akka
+
+## Tags
+
+Akka uses tags to categorise issues into groups or mark their phase in development.
+
+Most notably many tags start `t:` prefix (as in `topic:`), which categorises issues in terms of which module they relate to. Examples are:
+
+- [t:core](https://github.com/akka/akka/issues?utf8=%E2%9C%93&q=is%3Aissue%20is%3Aopen%20label%3At%3Acore)
+- [t:stream](https://github.com/akka/akka/issues?q=is%3Aissue+is%3Aopen+label%3At%3Astream)
+- see [all tags here](https://github.com/akka/akka/labels)
+
+In general *all issues are open for anyone working on them*, however if you're new to the project and looking for an issue
+that will be accepted and likely is a nice one to get started you should check out the following tags:
+
+- [community](https://github.com/akka/akka/labels/community) - which identifies issues that the core team will likely not have time to work on, or the issue is a nice entry level ticket. If you're not sure how to solve a ticket but would like to work on it feel free to ask in the issue about clarification or tips.
+- [nice-to-have (low-priority)](https://github.com/akka/akka/labels/nice-to-have%20%28low-prio%29) - are tasks which make sense, however are not very high priority (in face of other very high priority issues). If you see something interesting in this list, a contribution would be really wonderful!
+
+Another group of tickets are those which start from a number. They're used to signal in what phase of development an issue is:
+
+- [0 - new](https://github.com/akka/akka/labels/0%20-%20new) - is assigned when a ticket is unclear on it's purpose or if it is valid or not. Sometimes the additional tag `discuss` is used to mark such tickets, if they propose large scale changed and need more discussion before moving into triaged (or being closed as invalid)
+- [1 - triaged](https://github.com/akka/akka/labels/1%20-%20triaged) - roughly speaking means "this ticket makes sense". Triaged tickets are safe to pick up for contributing in terms of likeliness of a patch for it being accepted. It is not recommended to start working on a ticket that is not triaged.
+- [2 - pick next](https://github.com/akka/akka/labels/2%20-%20pick%20next) - used to mark issues which are next up in the queue to be worked on. Sometimes it's also used to mark which PRs are expected to be reviewed/merged for the next release. The tag is non-binding, and mostly used as organisational helper.
+- [3 - in progress](https://github.com/akka/akka/labels/3%20-%20in%20progress) - means someone is working on this ticket. If you see a ticket that has the tag, however seems inactive, it could have been an omission with removing the tag, feel free to ping the ticket then if it's still being worked on.
+
+The last group of special tags indicate specific states a ticket is in:
+
+- [bug](https://github.com/akka/akka/labels/failed) - bugs take priority in being fixed above features. The core team dedicates a number of days to working on bugs each sprint. Bugs which have reproducers are also great for community contributions as they're well isolated. Sometimes we're not as lucky to have reproducers though, then a bugfix should also include a test reproducing the original error along with the fix.
+- [failed](https://github.com/akka/akka/labels/failed) - tickets indicate a Jenkins failure (for example from a nightly build). These tickets usually start with the `FAILED: ...` message, and include a stacktrace + link to the Jenkins failure. The tickets are collected and worked on with priority to keep the build stable and healthy. Often times it may be simple timeout issues (Jenkins boxes are slow), though sometimes real bugs are discovered this way.
+
+Pull Request validation states:
+
+- `validating => [tested | needs-attention]` - signify pull request validation status
+
+# Akka contributing guidelines
+
+These guidelines apply to all Akka projects, by which we mean both the `akka/akka` repository,
+as well as any plugins or additional repos located under the Akka GitHub organisation.
+
+These guidelines are meant to be a living document that should be changed and adapted as needed.
+We encourage changes that make it easier to achieve our goals in an efficient way.
 
 ## General Workflow
 
-This is the process for committing code into master. There are of course exceptions to these rules, for example minor changes to comments and documentation, fixing a broken build etc.
+The below steps are how to get a patch into a main development branch (e.g. `master`). 
+The steps are exactly the same for everyone involved in the project (be it core team, or first time contributor).
 
-1. Make sure you have signed the Lightbend CLA, if not, [sign it online](http://www.lightbend.com/contribute/cla).
-2. Before starting to work on a feature or a fix, make sure that:
-    1. There is a ticket for your work in the project's issue tracker. If not, create it first.
-    2. The ticket has been scheduled for the current milestone.
-    3. The ticket is estimated by the team.
-    4. The ticket have been discussed and prioritized by the team.
-3. You should always perform your work in a Git feature branch. The branch should be given a descriptive name that explains its intent. Some teams also like adding the ticket number and/or the [GitHub](http://github.com) user ID to the branch name, these details is up to each of the individual teams.
+1. Make sure an issue exists in the [issue tracker](https://github.com/akka/akka/issues) for the work you want to contribute. 
+   - If there is no ticket for it, [create one](https://github.com/akka/akka/issues/new) first.
+1. [Fork the project](https://github.com/akka/akka#fork-destination-box) on GitHub. You'll need to create a feature-branch for your work on your fork, as this way you'll be able to submit a PullRequest against the mainline Akka.
+1. Create a branch on your fork and work on the feature. For example: `git checkout -b wip-custom-headers-akka-http`
+   - Please make sure to follow the general quality guidelines (specified below) when developing your patch.
+   - Please write additional tests covering your feature and adjust existing ones if needed before submitting your Pull Request. The `validatePullRequest` sbt task ([explained below](#validatePullRequest)) may come in handy to verify your changes are correct.
+1. Once your feature is complete, prepare the commit following our [commit message guidelines](#commit-message-guidelines). For example, a good commit message would be: `Adding compression support for Manifests #22222` (note the reference to the ticket it aimed to resolve).
+1. Now it's finally time to [submit the Pull Request](https://help.github.com/articles/using-pull-requests)!
+1. If you have not already done so, you will be asked by our CLA bot to [sign the Lightbend CLA](http://www.lightbend.com/contribute/cla) online CLA stands for Contributor License Agreement and is a way of protecting intellectual property disputes from harming the project.
+1. If you're not already on the contributors white-list, the @akka-ci bot will ask `Can one of the repo owners verify this patch?`, to which a core member will reply by commenting `OK TO TEST`. This is just a sanity check to prevent malicious code from being run on the Jenkins cluster.
+1. Now both committers and interested people will review your code. This process is to ensure the code we merge is of the best possible quality, and that no silly mistakes slip though. You're expected to follow-up these comments by adding new commits to the same branch. The commit messages of those commits can be more lose, for example: `Removed debugging using printline`, as they all will be squashed into one commit before merging into the main branch.
+    - The community and team are really nice people, so don't be afraid to ask follow up questions if you didn't understand some comment, or would like to clarify how to continue with a given feature. We're here to help, so feel free to ask and discuss any kind of questions you might have during review!
+1. After the review you should fix the issues as needed (pushing a new commit for new review etc.), iterating until the reviewers give their thumbs up–which is signalled usually by a comment saying `LGTM`, which means "Looks Good To Me". 
+    - In general a PR is expected to get 2 LGTMs from the team before it is merged. If the PR is trivial, or under under special circumstances (such as most of the team being on vacation, a PR was very thoroughly reviewed/tested and surely is correct) one LGTM may be fine as well.
+1. If the code change needs to be applied to other branches as well (for example a bugfix needing to be backported to a previous version), one of the team will either ask you to submit a PR with the same commit to the old branch, or do this for you.
+   - Backport pull requests such as these are marked using the phrase`for validation` in the title to make the purpose clear in the pull request list. They can be merged once validation passes without additional review (if no conflicts).
+1. Once everything is said and done, your Pull Request gets merged :tada: Your feature will be available with the next “earliest” release milestone (i.e. if back-ported so that it will be in release x.y.z, find the relevant milestone for that release). And of course you will be given credit for the fix in the release stats during the release's announcement. You've made it!
 
-    Akka prefers the committer name as part of the branch name, the ticket number is optional.
+The TL;DR; of the above very precise workflow version is:
 
-4. When the feature or fix is completed you should open a [Pull Request](https://help.github.com/articles/using-pull-requests) on GitHub.
-5. The Pull Request should be reviewed by other maintainers (as many as feasible/practical). Note that the maintainers can consist of outside contributors, both within and outside Lightbend. Outside contributors (for example from EPFL or independent committers) are encouraged to participate in the review process, it is not a closed process.
-6. After the review you should fix the issues as needed (pushing a new commit for new review etc.), iterating until the reviewers give their thumbs up.
-
-    When the branch conflicts with its merge target (either by way of git merge conflict or failing CI tests), do **not** merge the target branch into your feature branch. Instead rebase your branch onto the target branch. Merges complicate the git history, especially for the squashing which is necessary later (see below).
-
-7. Once the code has passed review the Pull Request can be merged into the master branch. For this purpose the commits which were added on the feature branch should be squashed into a single commit. This can be done using the command `git rebase -i master` (or the appropriate target branch), `pick`ing the first commit and `squash`ing all following ones.
-
-    Also make sure that the commit message conforms to the syntax specified below.
-
-8. If the code change needs to be applied to other branches as well, create pull requests against those branches which contain the change after rebasing it onto the respective branch and await successful verification by the continuous integration infrastructure; then merge those pull requests.
-
-    Please mark these pull requests with `(for validation)` in the title to make the purpose clear in the pull request list.
-
-9. Once everything is said and done, associate the ticket with the “earliest” release milestone (i.e. if back-ported so that it will be in release x.y.z, find the relevant milestone for that release) and close it.
+1. Fork Akka
+2. Hack and test on your feature (on a branch)
+3. Submit a PR
+4. Sign the CLA if necessary
+4. Keep polishing it until received enough LGTM
+5. Profit!
 
 ## The `validatePullRequest` task
 
@@ -77,40 +110,61 @@ target PR branch you can do so by setting the PR_TARGET_BRANCH environment varia
 PR_TARGET_BRANCH=origin/example sbt validatePullRequest
 ```
 
+## Binary compatibility
+Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
+](http://doc.akka.io/docs/akka/snapshot/common/binary-compatibility-rules.html) section of the documentation.
+
+Akka uses MiMa (which is short for [Lightbend Migration Manager](https://github.com/typesafehub/migration-manager)) to
+validate binary compatibility of incoming Pull Requests. If your PR fails due to binary compatibility issues, you may see 
+an error like this:
+
+```
+[info] akka-stream: found 1 potential binary incompatibilities while checking against com.typesafe.akka:akka-stream_2.11:2.4.2  (filtered 222)
+[error]  * method foldAsync(java.lang.Object,scala.Function2)akka.stream.scaladsl.FlowOps in trait akka.stream.scaladsl.FlowOps is present only in current version
+[error]    filter with: ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.foldAsync")
+```
+
+In such situations it's good to consult with a core team member if the violation can be safely ignored (by adding the above snippet to `project/MiMa.scala`), or if it would indeed break binary compatibility.
+
+Situations when it may be fine to ignore a MiMa issued warning include:
+
+- if it is touching any class marked as `private[akka]`, `/** INTERNAL API*/` or similar markers
+- if it is concerning internal classes (often recognisable by package names like `dungeon`, `impl`, `internal` etc.)
+- if it is adding API to classes / traits which are only meant for extension by Akka itself, i.e. should not be extended by end-users
+- other tricky situations
+
+
 ## Pull Request Requirements
 
 For a Pull Request to be considered at all it has to meet these requirements:
 
-1. Live up to the current code standard:
-   - Not violate [DRY](http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself).
-   - [Boy Scout Rule](http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule) needs to have been applied.
-2. Regardless if the code introduces new features or fixes bugs or regressions, it must have comprehensive tests.
-3. The code must be well documented in the Lightbend's standard documentation format (see the ‘Documentation’ section below).
-4. The commit messages must properly describe the changes, see further below.
-5. All Lightbend projects must include Lightbend copyright notices.  Each project can choose between one of two approaches:
+1. Regardless if the code introduces new features or fixes bugs or regressions, it must have comprehensive tests.
+1. The code must be well documented in the Lightbend's standard documentation format (see the ‘Documentation’ section below).
+1. The commit messages must properly describe the changes, see further below.
+1. All Lightbend projects must include Lightbend copyright notices.  Each project can choose between one of two approaches:
 
     1. All source files in the project must have a Lightbend copyright notice in the file header.
-    2. The Notices file for the project includes the Lightbend copyright notice and no other files contain copyright notices.  See http://www.apache.org/legal/src-headers.html for instructions for managing this approach for copyrights.
+    1. The Notices file for the project includes the Lightbend copyright notice and no other files contain copyright notices.  See http://www.apache.org/legal/src-headers.html for instructions for managing this approach for copyrights.
 
     Akka uses the first choice, having copyright notices in every file header.
 
-    Other guidelines to follow for copyright notices:
 
-    - Use a form of ``Copyright (C) 2011-2016 Lightbend Inc. <http://www.lightbend.com>``, where the start year is when the project or file was first created and the end year is the last time the project or file was modified.
-    - Never delete or change existing copyright notices, just add additional info.  
-    - Do not use ``@author`` tags since it does not encourage [Collective Code Ownership](http://www.extremeprogramming.org/rules/collective.html). However, each project should make sure that the contributors gets the credit they deserve—in a text file or page on the project website and in the release notes etc.
+### Additional guidelines
+
+Some additional guidelines regarding source code are:
+
+- files should start with a ``Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>`` copyright header 
+- keep the code [DRY](http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself)
+- apply the [Boy Scout Rule](http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule) whenever you have the chance to
+- Never delete or change existing copyright notices, just add additional info.  
+- Do not use ``@author`` tags since it does not encourage [Collective Code Ownership](http://www.extremeprogramming.org/rules/collective.html).
+  - Contributors , each project should make sure that the contributors gets the credit they deserve—in a text file or page on the project website and in the release notes etc.
 
 If these requirements are not met then the code should **not** be merged into master, or even reviewed - regardless of how good or important it is. No exceptions.
 
 Whether or not a pull request (or parts of it) shall be back- or forward-ported will be discussed on the pull request discussion page, it shall therefore not be part of the commit messages. If desired the intent can be expressed in the pull request description.
 
-## Continuous Integration
-
-Each project should be configured to use a continuous integration (CI) tool (i.e. a build server à la Jenkins). Lightbend has a [Jenkins server farm](https://jenkins.akka.io/) that can be used. The CI tool should, on each push to master, build the **full** distribution and run **all** tests, and if something fails it should email out a notification with the failure report to the committer and the core team. The CI tool should also be used in conjunction with a Pull Request validator (discussed below).
-
 ## Documentation
-
-All documentation should be generated using the sbt-site-plugin, *or* publish artifacts to a repository that can be consumed by the Lightbend stack.
 
 All documentation must abide by the following maxims:
 
@@ -141,12 +195,6 @@ Which licenses are compatible with Apache 2 are defined in [this doc](http://www
 
 Each project must also create and maintain a list of all dependencies and their licenses, including all their transitive dependencies. This can be done either in the documentation or in the build file next to each dependency.
 
-## Work In Progress
-
-It is ok to work on a public feature branch in the GitHub repository. Something that can sometimes be useful for early feedback etc. If so, then it is preferable to name the branch accordingly. This can be done by either prefixing the name with ``wip-`` as in ‘Work In Progress’, or using hierarchical names like ``wip/..``, ``feature/..`` or ``topic/..``. Either way is fine as long as it is clear that it is work in progress and not ready for merge. This work can temporarily have a lower standard. However, to be merged into master it will have to go through the regular process outlined above, with Pull Request, review etc..
-
-Also, to facilitate both well-formed commits and working together, the ``wip`` and ``feature``/``topic`` identifiers also have special meaning.   Any branch labelled with ``wip`` is considered “git-unstable” and may be rebased and have its history rewritten.   Any branch with ``feature``/``topic`` in the name is considered “stable” enough for others to depend on when a group is working on a feature.
-
 ## Creating Commits And Writing Commit Messages
 
 Follow these guidelines when creating public commits and writing commit messages.
@@ -160,7 +208,7 @@ Follow these guidelines when creating public commits and writing commit messages
 
 3. Following the single line description should be a blank line followed by an enumerated list with the details of the commit.
 
-4. Add keywords for your commit (depending on the degree of automation we reach, the list may change over time):
+4. You can request review by a specific team member  for your commit (depending on the degree of automation we reach, the list may change over time):
     * ``Review by @gituser`` - if you want to notify someone on the team. The others can, and are encouraged to participate.
 
 Example:
@@ -171,9 +219,8 @@ Example:
     * Details 2
     * Details 3
 
-## How To Enforce These Guidelines?
+## Pull request validation workflow details
 
-### Make Use of Pull Request Validator
 Akka uses [Jenkins GitHub pull request builder plugin](https://wiki.jenkins-ci.org/display/JENKINS/GitHub+pull+request+builder+plugin)
 that automatically merges the code, builds it, runs the tests and comments on the Pull Request in GitHub.
 
@@ -198,7 +245,18 @@ the validator to test all projects.
 
 ## Source style
 
+### Scala style 
+
 Akka uses [Scalariform](https://github.com/daniel-trinh/scalariform) to enforce some of the code style rules.
+
+### Java style
+
+Java code is currently not automatically reformatted by sbt (expecting to have a plugin to do this soon).
+Thus we ask Java contributions to follow these simple guidelines:
+
+- 2 spaces
+- `{` on same line as method name
+- in all other aspects, follow the [Oracle Java Style Guide](http://www.oracle.com/technetwork/java/codeconvtoc-136057.html)
 
 ## Contributing Modules
 
@@ -209,3 +267,20 @@ akka-contrib subproject), then when the feature is hardened, well documented and
 tested it becomes an officially supported Akka feature.
 
 [List of experimental Akka features](http://doc.akka.io/docs/akka/current/experimental/index.html)
+
+# Supporting infrastructure
+
+## Continuous Integration
+
+Each project should be configured to use a continuous integration (CI) tool (i.e. a build server à la Jenkins). 
+
+Lightbend is sponsoring a [Jenkins server farm](https://jenkins.akka.io/), sometimes referred to as "the Lausanne cluster".
+The cluster is made out of real bare-metal boxes, and maintained by the Akka team (and other very helpful people at Lightbend).
+
+In addition to PR Validation the cluster is also used for nightly and performance test runs. 
+
+## Related links
+
+* [Akka Contributor License Agreement](http://www.lightbend.com/contribute/cla)
+* [Akka Issue Tracker](http://doc.akka.io/docs/akka/current/project/issue-tracking.html)
+* [Scalariform](https://github.com/daniel-trinh/scalariform)

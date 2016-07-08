@@ -3,6 +3,7 @@
  */
 package akka
 
+import com.typesafe.tools.mima.core.ProblemFilters
 import sbt._
 import sbt.Keys._
 import com.typesafe.tools.mima.plugin.MimaPlugin
@@ -887,9 +888,36 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Framing#LengthFieldFramingStage.onUpstreamFinish"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Framing#LengthFieldFramingStage.onPull"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Framing#LengthFieldFramingStage.postStop"),
+
+        // #20414 Allow different ActorMaterializer subtypes
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorMaterializer.downcast"),
         
         // #20531 adding refuseUid to Gated
-        FilterAnyProblem("akka.remote.EndpointManager$Gated")
+        FilterAnyProblem("akka.remote.EndpointManager$Gated"),
+
+        // #20683
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage.discardEntityBytes"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.discardEntityBytes"),
+
+        // #20288 migrate BodyPartRenderer to GraphStage
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.BodyPartRenderer.streamed")
+      ),
+      "2.4.8" -> Seq(
+        // #20717 example snippet for akka http java dsl: SecurityDirectives
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage#MessageTransformations.addCredentials"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.addCredentials"),
+
+        // #20456 adding hot connection pool option
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ConnectionPoolSettings.getMinConnections"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.minConnections"),
+        FilterAnyProblemStartingWith("akka.http.impl"),
+        
+        // #20846 change of internal Status message
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages#StatusOrBuilder.getReplyToStatus"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages#StatusOrBuilder.hasReplyToStatus"),
+
+        // #20543 GraphStage subtypes should not be private to akka
+        ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.stream.ActorMaterializer.actorOf")
       )
     )
   }

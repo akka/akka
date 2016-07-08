@@ -13,10 +13,11 @@ import akka.http.scaladsl.{ marshalling, model, unmarshalling }
 import akka.util.ByteString
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
+
 import scala.concurrent.ExecutionContext
 import scala.annotation.varargs
 import akka.http.javadsl.model.HttpEntity
-import akka.http.scaladsl.model.{ ContentTypeRange, ContentTypes, FormData }
+import akka.http.scaladsl.model.{ ContentTypeRange, ContentTypes, FormData, Multipart }
 import akka.http.scaladsl
 import akka.http.javadsl.model.ContentType
 import akka.http.javadsl.model.HttpRequest
@@ -57,6 +58,7 @@ object Unmarshaller {
   def entityToCharArray: Unmarshaller[HttpEntity, Array[Char]]       = unmarshalling.Unmarshaller.charArrayUnmarshaller
   def entityToString: Unmarshaller[HttpEntity, String]               = unmarshalling.Unmarshaller.stringUnmarshaller
   def entityToUrlEncodedFormData: Unmarshaller[HttpEntity, FormData] = unmarshalling.Unmarshaller.defaultUrlEncodedFormDataUnmarshaller
+  def entityToMultipartByteRanges: Unmarshaller[HttpEntity, Multipart.ByteRanges] = unmarshalling.MultipartUnmarshallers.defaultMultipartByteRangesUnmarshaller
   // format: ON
 
   val requestToEntity: Unmarshaller[HttpRequest, RequestEntity] =

@@ -4,6 +4,9 @@ Route TestKit
 One of Akka HTTP's design goals is good testability of the created services.
 For services built with the Routing DSL Akka HTTP provides a dedicated testkit that makes efficient testing of
 route logic easy and convenient. This "route test DSL" is made available with the *akka-http-testkit* module.
+To use it include the following dependency::
+
+  "com.typesafe.akka" %% "akka-http-testkit" % "@version@"
 
 
 Usage

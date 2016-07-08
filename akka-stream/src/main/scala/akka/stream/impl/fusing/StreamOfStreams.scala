@@ -121,7 +121,7 @@ final class PrefixAndTail[T](n: Int) extends GraphStage[FlowShape[T, (immutable.
     private val SubscriptionTimer = "SubstreamSubscriptionTimer"
 
     override protected def onTimer(timerKey: Any): Unit = {
-      val materializer = ActorMaterializer.downcast(interpreter.materializer)
+      val materializer = ActorMaterializerHelper.downcast(interpreter.materializer)
       val timeoutSettings = materializer.settings.subscriptionTimeoutSettings
       val timeout = timeoutSettings.timeout
 
@@ -150,7 +150,7 @@ final class PrefixAndTail[T](n: Int) extends GraphStage[FlowShape[T, (immutable.
     }
 
     private def openSubstream(): Source[T, NotUsed] = {
-      val timeout = ActorMaterializer.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
+      val timeout = ActorMaterializerHelper.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
       tailSource = new SubSourceOutlet[T]("TailSource")
       tailSource.setHandler(subHandler)
       setKeepGoing(true)
@@ -254,7 +254,7 @@ final class GroupBy[T, K](maxSubstreams: Int, keyFor: T ⇒ K) extends GraphStag
     private def needToPull: Boolean = !(hasBeenPulled(in) || isClosed(in) || hasNextElement)
 
     override def preStart(): Unit =
-      timeout = ActorMaterializer.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
+      timeout = ActorMaterializerHelper.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
 
     override def onPull(): Unit = {
       substreamWaitingToBePushed match {
@@ -269,7 +269,7 @@ final class GroupBy[T, K](maxSubstreams: Int, keyFor: T ⇒ K) extends GraphStag
               subSubstreamSource.push(nextElementValue)
               clearNextElement()
             }
-          } else tryPull(in)
+          } else if (!hasBeenPulled(in)) tryPull(in)
       }
     }
 
@@ -424,7 +424,7 @@ final class Split[T](decision: Split.SplitDecision, p: T ⇒ Boolean, substreamC
     private var substreamCancelled = false
 
     override def preStart(): Unit = {
-      timeout = ActorMaterializer.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
+      timeout = ActorMaterializerHelper.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
     }
 
     setHandler(out, new OutHandler {

@@ -26,8 +26,15 @@ public class JavaTestServer extends AllDirectives { // or import static Directiv
 
     final Route index = path("", () ->
         withRequestTimeout(timeout, this::mkTimeoutResponse, () -> {
-          silentSleep(5000); // too long, trigger failure
+          silentSleep(5000); // too long, but note that this will NOT activate withRequestTimeout, see below
           return complete(index());
+        })
+      );
+
+    final Route requestTimeout = path("timeout", () ->
+        withRequestTimeout(timeout, this::mkTimeoutResponse, () -> {
+          // here timeout will work
+          return completeOKWithFutureString(neverEndingFuture(index()));
         })
       );
 
@@ -58,7 +65,7 @@ public class JavaTestServer extends AllDirectives { // or import static Directiv
 
 
     return get(() ->
-      index.orElse(secure).orElse(ping).orElse(crash).orElse(inner)
+      index.orElse(secure).orElse(ping).orElse(crash).orElse(inner).orElse(requestTimeout)
     );
   }
 
@@ -70,10 +77,14 @@ public class JavaTestServer extends AllDirectives { // or import static Directiv
     }
   }
 
+  private CompletableFuture<String> neverEndingFuture(String futureContent) {
+    return new CompletableFuture<>().thenApply((string) -> futureContent);
+  }
+
   private HttpResponse mkTimeoutResponse(HttpRequest request) {
     return HttpResponse.create()
       .withStatus(StatusCodes.ENHANCE_YOUR_CALM)
-      .withEntity("Unable to serve response within time limit, please enchance your calm.");
+      .withEntity("Unable to serve response within time limit, please enhance your calm.");
   }
 
   private String index() {
@@ -85,6 +96,7 @@ public class JavaTestServer extends AllDirectives { // or import static Directiv
       "          <li><a href=\"/ping\">/ping</a></li>\n" +
       "          <li><a href=\"/secure\">/secure</a> Use any username and '&lt;username&gt;-password' as credentials</li>\n" +
       "          <li><a href=\"/crash\">/crash</a></li>\n" +
+      "          <li><a href=\"/timeout\">/timeout</a> Demonstrates timeout </li>\n" +
       "        </ul>\n" +
       "      </body>\n" +
       "    </html>\n";

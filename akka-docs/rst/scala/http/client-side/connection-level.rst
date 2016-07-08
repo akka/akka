@@ -7,6 +7,10 @@ The connection-level API is the lowest-level client-side API Akka HTTP provides.
 HTTP connections are opened and closed and how requests are to be send across which connection. As such it offers the
 highest flexibility at the cost of providing the least convenience.
 
+.. note::
+  It is recommended to first read the :ref:`implications-of-streaming-http-entities` section, 
+  as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
+  from a background with non-"streaming first" HTTP Clients.
 
 Opening HTTP Connections
 ------------------------

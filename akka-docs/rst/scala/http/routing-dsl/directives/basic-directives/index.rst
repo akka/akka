@@ -17,11 +17,13 @@ on two axes: a) provide a constant value or extract a value from the ``RequestCo
 a single value or a tuple of values.
 
   * :ref:`-extract-`
+  * :ref:`-extractDataBytes-`
   * :ref:`-extractExecutionContext-`
   * :ref:`-extractMaterializer-`
   * :ref:`-extractLog-`
   * :ref:`-extractRequest-`
   * :ref:`-extractRequestContext-`
+  * :ref:`-extractRequestEntity-`
   * :ref:`-extractSettings-`
   * :ref:`-extractUnmatchedPath-`
   * :ref:`-extractUri-`
@@ -94,10 +96,12 @@ Alphabetically
    cancelRejections
    extract
    extractExecutionContext
+   extractDataBytes
    extractMaterializer
    extractLog
    extractRequest
    extractRequestContext
+   extractRequestEntity
    extractSettings
    extractUnmatchedPath
    extractUri

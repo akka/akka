@@ -4,7 +4,7 @@
 
 package akka.http.scaladsl.marshalling
 
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import akka.event.{ NoLogging, LoggingAdapter }
 import akka.http.impl.engine.rendering.BodyPartRenderer
 import akka.http.scaladsl.model._

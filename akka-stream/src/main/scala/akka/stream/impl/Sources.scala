@@ -31,7 +31,7 @@ private[stream] object QueueSource {
 /**
  * INTERNAL API
  */
-final private[stream] class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStrategy) extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueueWithComplete[T]] {
+final class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStrategy) extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueueWithComplete[T]] {
   import QueueSource._
 
   val out = Outlet[T]("queueSource.out")
@@ -185,7 +185,7 @@ final private[stream] class QueueSource[T](maxBuffer: Int, overflowStrategy: Ove
   }
 }
 
-private[akka] final class SourceQueueAdapter[T](delegate: SourceQueueWithComplete[T]) extends akka.stream.javadsl.SourceQueueWithComplete[T] {
+final class SourceQueueAdapter[T](delegate: SourceQueueWithComplete[T]) extends akka.stream.javadsl.SourceQueueWithComplete[T] {
   def offer(elem: T): CompletionStage[QueueOfferResult] = delegate.offer(elem).toJava
   def watchCompletion(): CompletionStage[Done] = delegate.watchCompletion().toJava
   def complete(): Unit = delegate.complete()
@@ -195,7 +195,7 @@ private[akka] final class SourceQueueAdapter[T](delegate: SourceQueueWithComplet
 /**
  * INTERNAL API
  */
-private[stream] final class UnfoldResourceSource[T, S](
+final class UnfoldResourceSource[T, S](
   create:   () ⇒ S,
   readData: (S) ⇒ Option[T],
   close:    (S) ⇒ Unit) extends GraphStage[SourceShape[T]] {
@@ -252,7 +252,7 @@ private[stream] final class UnfoldResourceSource[T, S](
   override def toString = "UnfoldResourceSource"
 }
 
-private[stream] final class UnfoldResourceSourceAsync[T, S](
+final class UnfoldResourceSourceAsync[T, S](
   create:   () ⇒ Future[S],
   readData: (S) ⇒ Future[Option[T]],
   close:    (S) ⇒ Future[Done]) extends GraphStage[SourceShape[T]] {

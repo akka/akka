@@ -5,13 +5,14 @@ package akka.stream.impl.io
 
 import java.io.OutputStream
 import java.nio.file.{ Path, StandardOpenOption }
-import akka.stream.IOResult
+
+import akka.stream._
 import akka.stream.impl.SinkModule
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
-import akka.stream.{ ActorMaterializer, MaterializationContext, Attributes, SinkShape }
 import akka.stream.ActorAttributes.Dispatcher
 import akka.util.ByteString
+
 import scala.concurrent.{ Future, Promise }
 
 /**
@@ -25,7 +26,7 @@ private[akka] final class FileSink(f: Path, options: Set[StandardOpenOption], va
   override protected def label: String = s"FileSink($f, $options)"
 
   override def create(context: MaterializationContext) = {
-    val materializer = ActorMaterializer.downcast(context.materializer)
+    val materializer = ActorMaterializerHelper.downcast(context.materializer)
     val settings = materializer.effectiveSettings(context.effectiveAttributes)
 
     val ioResultPromise = Promise[IOResult]()
@@ -51,7 +52,7 @@ private[akka] final class OutputStreamSink(createOutput: () ⇒ OutputStream, va
   extends SinkModule[ByteString, Future[IOResult]](shape) {
 
   override def create(context: MaterializationContext) = {
-    val materializer = ActorMaterializer.downcast(context.materializer)
+    val materializer = ActorMaterializerHelper.downcast(context.materializer)
     val settings = materializer.effectiveSettings(context.effectiveAttributes)
     val ioResultPromise = Promise[IOResult]()
 

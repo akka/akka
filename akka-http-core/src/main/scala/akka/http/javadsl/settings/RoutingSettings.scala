@@ -3,6 +3,7 @@
  */
 package akka.http.javadsl.settings
 
+import akka.actor.ActorSystem
 import akka.http.impl.settings.RoutingSettingsImpl
 import com.typesafe.config.Config
 
@@ -30,4 +31,5 @@ abstract class RoutingSettings private[akka] () { self: RoutingSettingsImpl ⇒
 object RoutingSettings extends SettingsCompanion[RoutingSettings] {
   override def create(config: Config): RoutingSettings = RoutingSettingsImpl(config)
   override def create(configOverrides: String): RoutingSettings = RoutingSettingsImpl(configOverrides)
+  override def create(system: ActorSystem): RoutingSettings = create(system.settings.config)
 }

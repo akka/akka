@@ -76,7 +76,7 @@ Custom Unmarshallers
 
 Akka HTTP gives you a few convenience tools for constructing unmarshallers for your own types.
 Usually you won't have to "manually" implement the ``Unmarshaller`` trait directly.
-Rather, it should be possible to use one of the convenience construction helpers defined on the ``Marshaller``
+Rather, it should be possible to use one of the convenience construction helpers defined on the ``Unmarshaller``
 companion:
 
 .. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/Unmarshaller.scala

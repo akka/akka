@@ -221,11 +221,14 @@ object DistributedPubSubMediator {
     }
 
     @SerialVersionUID(1L)
-    final case class Status(versions: Map[Address, Long]) extends DistributedPubSubMessage
+    final case class Status(versions: Map[Address, Long], isReplyToStatus: Boolean) extends DistributedPubSubMessage
       with DeadLetterSuppression
     @SerialVersionUID(1L)
     final case class Delta(buckets: immutable.Iterable[Bucket]) extends DistributedPubSubMessage
       with DeadLetterSuppression
+
+    // Only for testing purposes, to verify replication
+    case object DeltaCount
 
     case object GossipTick
 
@@ -500,6 +503,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
 
   var registry: Map[Address, Bucket] = Map.empty.withDefault(a ⇒ Bucket(a, 0L, TreeMap.empty))
   var nodes: Set[Address] = Set.empty
+  var deltaCount = 0L
 
   // the version is a timestamp because it is also used when pruning removed entries
   val nextVersion = {
@@ -615,15 +619,21 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
     case msg @ Unsubscribed(ack, ref) ⇒
       ref ! ack
 
-    case Status(otherVersions) ⇒
-      // gossip chat starts with a Status message, containing the bucket versions of the other node
-      val delta = collectDelta(otherVersions)
-      if (delta.nonEmpty)
-        sender() ! Delta(delta)
-      if (otherHasNewerVersions(otherVersions))
-        sender() ! Status(versions = myVersions) // it will reply with Delta
+    case Status(otherVersions, isReplyToStatus) ⇒
+      // only accept status from known nodes, otherwise old cluster with same address may interact
+      // also accept from local for testing purposes
+      if (nodes(sender().path.address) || sender().path.address.hasLocalScope) {
+        // gossip chat starts with a Status message, containing the bucket versions of the other node
+        val delta = collectDelta(otherVersions)
+        if (delta.nonEmpty)
+          sender() ! Delta(delta)
+        if (!isReplyToStatus && otherHasNewerVersions(otherVersions))
+          sender() ! Status(versions = myVersions, isReplyToStatus = true) // it will reply with Delta
+      }
 
     case Delta(buckets) ⇒
+      deltaCount += 1
+
       // reply from Status message in the gossip chat
       // the Delta contains potential updates (newer versions) from the other node
       // only accept deltas/buckets from known nodes, otherwise there is a risk of
@@ -666,6 +676,12 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
       if (matchingRole(m))
         nodes += m.address
 
+    case MemberLeft(m) ⇒
+      if (matchingRole(m)) {
+        nodes -= m.address
+        registry -= m.address
+      }
+
     case MemberRemoved(m, _) ⇒
       if (m.address == selfAddress)
         context stop self
@@ -683,6 +699,9 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
         }
       }.sum
       sender() ! count
+
+    case DeltaCount ⇒
+      sender() ! deltaCount
   }
 
   private def sendToDeadLetters(msg: Any) = context.system.deadLetters ! DeadLetter(msg, sender(), context.self)
@@ -783,7 +802,8 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
   def gossip(): Unit = selectRandomNode((nodes - selfAddress).toVector) foreach gossipTo
 
   def gossipTo(address: Address): Unit = {
-    context.actorSelection(self.path.toStringWithAddress(address)) ! Status(versions = myVersions)
+    val sel = context.actorSelection(self.path.toStringWithAddress(address))
+    sel ! Status(versions = myVersions, isReplyToStatus = false)
   }
 
   def selectRandomNode(addresses: immutable.IndexedSeq[Address]): Option[Address] =

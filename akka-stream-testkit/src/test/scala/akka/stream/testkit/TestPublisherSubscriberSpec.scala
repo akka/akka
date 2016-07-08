@@ -59,5 +59,20 @@ class TestPublisherSubscriberSpec extends AkkaSpec {
       upstreamSubscription.sendComplete()
     }
 
+    "properly update pendingRequest in expectRequest" in {
+      val upstream = TestPublisher.probe[Int]()
+      val downstream = TestSubscriber.manualProbe[Int]()
+
+      Source.fromPublisher(upstream).runWith(Sink.fromSubscriber(downstream))
+
+      downstream
+        .expectSubscription()
+        .request(10)
+
+      upstream.expectRequest() should ===(10)
+      upstream.sendNext(1)
+      downstream.expectNext(1)
+    }
+
   }
 }

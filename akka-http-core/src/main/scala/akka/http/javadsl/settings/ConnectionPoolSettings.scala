@@ -3,6 +3,7 @@
  */
 package akka.http.javadsl.settings
 
+import akka.actor.ActorSystem
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
 import com.typesafe.config.Config
 
@@ -14,6 +15,7 @@ import akka.http.impl.util.JavaMapping.Implicits._
  */
 abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSettingsImpl ⇒
   def getMaxConnections: Int
+  def getMinConnections: Int
   def getMaxRetries: Int
   def getMaxOpenRequests: Int
   def getPipeliningLimit: Int
@@ -33,4 +35,5 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
 object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] {
   override def create(config: Config): ConnectionPoolSettings = ConnectionPoolSettingsImpl(config)
   override def create(configOverrides: String): ConnectionPoolSettings = ConnectionPoolSettingsImpl(configOverrides)
+  override def create(system: ActorSystem): ConnectionPoolSettings = create(system.settings.config)
 }
