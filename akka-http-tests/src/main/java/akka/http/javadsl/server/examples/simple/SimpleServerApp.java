@@ -139,7 +139,7 @@ public class SimpleServerApp extends AllDirectives { // or import Directives.*
         tmf.init(ks);
 
         final SSLContext sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(), SecureRandom.getInstanceStrong());
+        sslContext.init(keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
 
         https = ConnectionContext.https(sslContext);
 
