@@ -121,6 +121,7 @@ Streaming of HTTP message entities is supported through subclasses of ``HttpEnti
 to deal with streamed entities when receiving a request as well as, in many cases, when constructing responses.
 See :ref:`HttpEntity-java` for a description of the alternatives.
 
+.. _http-closing-connection-low-level-java:
 
 Closing a connection
 ~~~~~~~~~~~~~~~~~~~~
