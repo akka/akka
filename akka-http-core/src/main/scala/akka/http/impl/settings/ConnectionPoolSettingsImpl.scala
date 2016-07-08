@@ -13,6 +13,7 @@ import scala.concurrent.duration.Duration
 /** INTERNAL API */
 private[akka] final case class ConnectionPoolSettingsImpl(
   val maxConnections:     Int,
+  val minConnections:     Int,
   val maxRetries:         Int,
   val maxOpenRequests:    Int,
   val pipeliningLimit:    Int,
@@ -21,6 +22,8 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   extends ConnectionPoolSettings {
 
   require(maxConnections > 0, "max-connections must be > 0")
+  require(minConnections >= 0, "min-connections must be >= 0")
+  require(minConnections <= maxConnections, "min-connections must be <= max-connections")
   require(maxRetries >= 0, "max-retries must be >= 0")
   require(maxOpenRequests > 0 && (maxOpenRequests & (maxOpenRequests - 1)) == 0, "max-open-requests must be a power of 2 > 0")
   require(pipeliningLimit > 0, "pipelining-limit must be > 0")
@@ -33,6 +36,7 @@ object ConnectionPoolSettingsImpl extends SettingsCompanion[ConnectionPoolSettin
   def fromSubConfig(root: Config, c: Config) = {
     ConnectionPoolSettingsImpl(
       c getInt "max-connections",
+      c getInt "min-connections",
       c getInt "max-retries",
       c getInt "max-open-requests",
       c getInt "pipelining-limit",

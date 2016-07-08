@@ -303,13 +303,11 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
   "mapRouteResult" in {
     //#mapRouteResult
     // this directive is a joke, don't do that :-)
-    val makeEverythingOk = mapRouteResult { r =>
-      r match {
-        case Complete(response) =>
-          // "Everything is OK!"
-          Complete(response.copy(status = 200))
-        case _ => r
-      }
+    val makeEverythingOk = mapRouteResult {
+      case Complete(response) =>
+        // "Everything is OK!"
+        Complete(response.copy(status = 200))
+      case r => r
     }
 
     val route =
@@ -591,11 +589,9 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     //#mapRouteResultWith-0
     case object MyCustomRejection extends Rejection
     val rejectRejections = // not particularly useful directive
-      mapRouteResultWith { res =>
-        res match {
-          case Rejected(_) => Future(Rejected(List(AuthorizationFailedRejection)))
-          case _           => Future(res)
-        }
+      mapRouteResultWith {
+        case Rejected(_) => Future(Rejected(List(AuthorizationFailedRejection)))
+        case res         => Future(res)
       }
     val route =
       rejectRejections {
@@ -694,7 +690,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
 
     // tests:
     Get("/") ~> route ~> check {
-      responseAs[String] shouldEqual s"RoutingSettings.renderVanityFooter = true"
+      responseAs[String] shouldEqual "RoutingSettings.renderVanityFooter = true"
     }
     //#
   }
@@ -767,7 +763,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
       pathPrefix("123") {
         ignoring456 {
           path("abc") {
-            complete(s"Content")
+            complete("Content")
           }
         }
       }
@@ -796,6 +792,37 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     }
     Get("/abc/456") ~> route ~> check {
       responseAs[String] shouldEqual "Unmatched: '/456'"
+    }
+    //#
+  }
+  "extractRequestEntity-example" in {
+    //#extractRequestEntity-example
+    val route =
+      extractRequestEntity { entity =>
+        complete(s"Request entity content-type is ${entity.contentType}")
+      }
+
+    // tests:
+    val httpEntity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "req")
+    Post("/abc", httpEntity) ~> route ~> check {
+      responseAs[String] shouldEqual s"Request entity content-type is text/plain; charset=UTF-8"
+    }
+    //#
+  }
+  "extractDataBytes-example" in {
+    //#extractDataBytes-example
+    val route =
+      extractDataBytes { data ⇒
+        val sum = data.runFold(0) { (acc, i) ⇒ acc + i.utf8String.toInt }
+        onSuccess(sum) { s ⇒
+          complete(HttpResponse(entity = HttpEntity(s.toString)))
+        }
+      }
+
+    // tests:
+    val dataBytes = Source.fromIterator(() ⇒ Iterator.range(1, 10).map(x ⇒ ByteString(x.toString)))
+    Post("/abc", HttpEntity(ContentTypes.`text/plain(UTF-8)`, data = dataBytes)) ~> route ~> check {
+      responseAs[String] shouldEqual "45"
     }
     //#
   }

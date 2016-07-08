@@ -3,7 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
+import java.util.concurrent.ThreadLocalRandom.{ current ⇒ random }
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._

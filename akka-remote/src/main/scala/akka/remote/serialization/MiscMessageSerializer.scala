@@ -12,9 +12,13 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
 
   private lazy val serialization = SerializationExtension(system)
 
+  private val NoneSerialized = Array.empty[Byte]
+
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
     case identify: Identify      ⇒ serializeIdentify(identify)
     case identity: ActorIdentity ⇒ serializeActorIdentity(identity)
+    case Some(value)             ⇒ serializeSome(value)
+    case None                    ⇒ NoneSerialized
     case _                       ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
   }
 
@@ -37,6 +41,12 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       .build()
       .toByteArray
   }
+
+  private def serializeSome(someValue: Any): Array[Byte] =
+    ContainerFormats.Option.newBuilder()
+      .setValue(payloadBuilder(someValue))
+      .build()
+      .toByteArray
 
   private def actorRefBuilder(actorRef: ActorRef): ContainerFormats.ActorRef.Builder =
     ContainerFormats.ActorRef.newBuilder()
@@ -66,15 +76,19 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
 
   private val IdentifyManifest = "A"
   private val ActorIdentifyManifest = "B"
+  private val OptionManifest = "C"
 
   private val fromBinaryMap = Map[String, Array[Byte] ⇒ AnyRef](
     IdentifyManifest → deserializeIdentify,
-    ActorIdentifyManifest → deserializeActorIdentity)
+    ActorIdentifyManifest → deserializeActorIdentity,
+    OptionManifest → deserializeOption
+  )
 
   override def manifest(o: AnyRef): String =
     o match {
       case _: Identify      ⇒ IdentifyManifest
       case _: ActorIdentity ⇒ ActorIdentifyManifest
+      case _: Option[Any]   ⇒ OptionManifest
       case _ ⇒
         throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
     }
@@ -105,6 +119,15 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
 
   private def deserializeActorRef(actorRef: ContainerFormats.ActorRef): ActorRef =
     serialization.system.provider.resolveActorRef(actorRef.getPath)
+
+  private def deserializeOption(bytes: Array[Byte]): Option[Any] = {
+    if (bytes.length == 0)
+      None
+    else {
+      val optionProto = ContainerFormats.Option.parseFrom(bytes)
+      Some(deserializePayload(optionProto.getValue))
+    }
+  }
 
   private def deserializePayload(payload: ContainerFormats.Payload): Any = {
     val manifest = if (payload.hasMessageManifest) payload.getMessageManifest.toStringUtf8 else ""

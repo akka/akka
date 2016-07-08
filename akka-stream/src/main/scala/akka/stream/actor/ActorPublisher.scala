@@ -183,7 +183,7 @@ trait ActorPublisher[T] extends Actor {
    * otherwise `onNext` will throw `IllegalStateException`.
    */
   def onNext(element: T): Unit = lifecycleState match {
-    case Active | PreSubscriber | CompleteThenStop ⇒
+    case Active | PreSubscriber ⇒
       if (demand > 0) {
         demand -= 1
         tryOnNext(subscriber, element)
@@ -192,7 +192,7 @@ trait ActorPublisher[T] extends Actor {
           "onNext is not allowed when the stream has not requested elements, totalDemand was 0")
     case _: ErrorEmitted ⇒
       throw new IllegalStateException("onNext must not be called after onError")
-    case Completed ⇒
+    case Completed | CompleteThenStop ⇒
       throw new IllegalStateException("onNext must not be called after onComplete")
     case Canceled ⇒ // drop
   }
@@ -302,11 +302,10 @@ trait ActorPublisher[T] extends Actor {
           tryOnSubscribe(sub, CancelledSubscription)
           tryOnComplete(sub)
         case Active | Canceled ⇒
-          tryOnSubscribe(sub, CancelledSubscription)
-          tryOnError(
-            sub,
-            if (subscriber == sub) ReactiveStreamsCompliance.canNotSubscribeTheSameSubscriberMultipleTimesException
-            else ReactiveStreamsCompliance.canNotSubscribeTheSameSubscriberMultipleTimesException)
+          if (subscriber eq sub)
+            rejectDuplicateSubscriber(sub)
+          else
+            rejectAdditionalSubscriber(sub, "ActorPublisher")
       }
 
     case Cancel ⇒
@@ -470,3 +469,24 @@ object AbstractActorPublisher {
  * @see [[akka.stream.actor.ActorPublisher]]
  */
 abstract class AbstractActorPublisher[T] extends AbstractActor with ActorPublisher[T]
+
+/**
+ * Java API compatible with lambda expressions.
+ * This class adds a Stash to {@link AbstractActorPublisher}.
+ * @see [[akka.stream.actor.ActorPublisher]] and [[akka.stream.actor.AbstractActorWithStash]]
+ */
+abstract class AbstractActorPublisherWithStash[T] extends AbstractActor with ActorPublisher[T] with Stash
+
+/**
+ * Java API compatible with lambda expressions.
+ * This class adds an unbounded Stash to {@link AbstractActorPublisher}.
+ * @see [[akka.stream.actor.ActorPublisher]] and [[akka.stream.actor.AbstractActorWithUnboundedStash]]
+ */
+abstract class AbstractActorPublisherWithUnboundedStash[T] extends AbstractActor with ActorPublisher[T] with UnboundedStash
+
+/**
+ * Java API compatible with lambda expressions.
+ * This class adds an unrestricted Stash to {@link AbstractActorPublisher}.
+ * @see [[akka.stream.actor.ActorPublisher]] and [[akka.stream.actor.AbstractActorWithUnrestrictedStash]]
+ */
+abstract class AbstractActorPublisherWithUnrestrictedStash[T] extends AbstractActor with ActorPublisher[T] with UnrestrictedStash

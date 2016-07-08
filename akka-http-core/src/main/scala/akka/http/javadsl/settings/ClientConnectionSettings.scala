@@ -5,6 +5,7 @@ package akka.http.javadsl.settings
 
 import java.util.{ Optional, Random }
 
+import akka.actor.ActorSystem
 import akka.http.impl.settings.ClientConnectionSettingsImpl
 import akka.http.javadsl.model.headers.UserAgent
 import akka.io.Inet.SocketOption
@@ -42,4 +43,5 @@ abstract class ClientConnectionSettings private[akka] () { self: ClientConnectio
 object ClientConnectionSettings extends SettingsCompanion[ClientConnectionSettings] {
   def create(config: Config): ClientConnectionSettings = ClientConnectionSettingsImpl(config)
   def create(configOverrides: String): ClientConnectionSettings = ClientConnectionSettingsImpl(configOverrides)
+  override def create(system: ActorSystem): ClientConnectionSettings = create(system.settings.config)
 }

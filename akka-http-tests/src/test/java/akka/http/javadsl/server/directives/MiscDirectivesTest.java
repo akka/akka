@@ -11,12 +11,14 @@ import akka.http.javadsl.model.Uri;
 import akka.http.javadsl.model.headers.RawHeader;
 import akka.http.javadsl.model.headers.XForwardedFor;
 import akka.http.javadsl.model.headers.XRealIp;
+import akka.http.javadsl.server.Unmarshaller;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import org.junit.Test;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 
 public class MiscDirectivesTest extends JUnitRouteTest {
 
@@ -71,6 +73,28 @@ public class MiscDirectivesTest extends JUnitRouteTest {
     route
       .run(HttpRequest.create())
       .assertStatusCode(StatusCodes.NOT_FOUND);
+  }
+
+  @Test
+  public void testWithSizeLimit() {
+    TestRoute route = testRoute(withSizeLimit(500, () ->
+      entity(Unmarshaller.entityToString(), (entity) -> complete("ok"))
+    ));
+
+    route
+      .run(withEntityOfSize(500))
+      .assertStatusCode(StatusCodes.OK);
+
+    route
+      .run(withEntityOfSize(501))
+      .assertStatusCode(StatusCodes.BAD_REQUEST);
+
+  }
+
+  private HttpRequest withEntityOfSize(int sizeLimit) {
+    char[] charArray = new char[sizeLimit];
+    Arrays.fill(charArray, '0');
+    return HttpRequest.POST("/").withEntity(new String(charArray));
   }
 
 }

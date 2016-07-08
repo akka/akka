@@ -18,7 +18,7 @@ import akka.stream.testkit.{ GraphStageMessages, TestSinkStage }
 import akka.testkit.TestProbe
 import akka.util.ByteString
 import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import scala.concurrent.{ Await, Future }
 import scala.util.control.NoStackTrace
 import akka.testkit.AkkaSpec

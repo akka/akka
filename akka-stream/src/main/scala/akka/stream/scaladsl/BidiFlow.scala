@@ -10,7 +10,7 @@ import akka.stream.impl.Timers
 
 import scala.concurrent.duration.FiniteDuration
 
-final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val module: Module) extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
+final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](override val module: Module) extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
   override def shape = module.shape.asInstanceOf[BidiShape[I1, O1, I2, O2]]
 
   def asJava: javadsl.BidiFlow[I1, O1, I2, O2, Mat] = new javadsl.BidiFlow(this)

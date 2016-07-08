@@ -168,7 +168,11 @@ object TestPublisher {
       this
     }
 
-    def expectRequest(): Long = subscription.expectRequest()
+    def expectRequest(): Long = {
+      val requests = subscription.expectRequest()
+      pendingRequests += requests
+      requests
+    }
 
     def expectCancellation(): Self = {
       subscription.expectCancellation()
@@ -252,7 +256,14 @@ object TestSubscriber {
      * Expect and return a stream element.
      */
     def expectNext(): I = {
-      val t = probe.remainingOr(probe.testKitSettings.SingleExpectDefaultTimeout.dilated)
+      expectNext(probe.testKitSettings.SingleExpectDefaultTimeout.dilated)
+    }
+
+    /**
+     * Expect and return a stream element during specified time or timeout.
+     */
+    def expectNext(d: FiniteDuration): I = {
+      val t = probe.remainingOr(d)
       probe.receiveOne(t) match {
         case null         ⇒ throw new AssertionError(s"Expected OnNext(_), yet no element signaled during $t")
         case OnNext(elem) ⇒ elem.asInstanceOf[I]
@@ -598,6 +609,9 @@ object TestSubscriber {
       this
     }
 
+    /**
+     * Request and expect a stream element.
+     */
     def requestNext(element: T): Self = {
       subscription.request(1)
       expectNext(element)
@@ -609,9 +623,20 @@ object TestSubscriber {
       this
     }
 
+    /**
+     * Request and expect a stream element.
+     */
     def requestNext(): T = {
       subscription.request(1)
       expectNext()
+    }
+
+    /**
+     * Request and expect a stream element during the specified time or timeout.
+     */
+    def requestNext(d: FiniteDuration): T = {
+      subscription.request(1)
+      expectNext(d)
     }
   }
 }

@@ -5,6 +5,7 @@ package akka.http.javadsl.settings
 
 import java.util.Optional
 
+import akka.actor.ActorSystem
 import akka.http.impl.engine.parsing.BodyPartParser
 import akka.http.impl.settings.ParserSettingsImpl
 import java.{ util ⇒ ju }
@@ -83,4 +84,5 @@ object ParserSettings extends SettingsCompanion[ParserSettings] {
 
   override def create(config: Config): ParserSettings = ParserSettingsImpl(config)
   override def create(configOverrides: String): ParserSettings = ParserSettingsImpl(configOverrides)
+  override def create(system: ActorSystem): ParserSettings = create(system.settings.config)
 }

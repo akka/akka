@@ -26,7 +26,7 @@ import scala.util.{ Failure, Success, Try }
  * A `Sink` is a set of stream processing steps that has one open input and an attached output.
  * Can be used as a `Subscriber`
  */
-final class Sink[-In, +Mat](private[stream] override val module: Module)
+final class Sink[-In, +Mat](override val module: Module)
   extends Graph[SinkShape[In], Mat] {
 
   override val shape: SinkShape[In] = module.shape.asInstanceOf[SinkShape[In]]
@@ -89,7 +89,7 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
 object Sink {
 
   /** INTERNAL API */
-  private[stream] def shape[T](name: String): SinkShape[T] = SinkShape(Inlet(name + ".in"))
+  def shape[T](name: String): SinkShape[T] = SinkShape(Inlet(name + ".in"))
 
   /**
    * A graph with the shape of a sink logically is a sink, this method makes
@@ -348,4 +348,18 @@ object Sink {
    */
   def queue[T](): Sink[T, SinkQueueWithCancel[T]] =
     Sink.fromGraph(new QueueSink())
+
+  /**
+   * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
+   * because of completion or error.
+   *
+   * If `sinkFactory` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Stop]] the `Future` will be completed with failure. For all other supervision options it will
+   * try to create sink with next element
+   *
+   * `fallback` will be executed when there was no elements and completed is received from upstream.
+   */
+  def lazyInit[T, M](sinkFactory: T ⇒ Future[Sink[T, M]], fallback: () ⇒ M): Sink[T, Future[M]] =
+    Sink.fromGraph(new LazySink(sinkFactory, fallback))
+
 }

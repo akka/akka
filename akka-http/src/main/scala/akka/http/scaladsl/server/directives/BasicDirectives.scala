@@ -5,6 +5,9 @@
 package akka.http.scaladsl.server
 package directives
 
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
+
 import scala.concurrent.{ Future, ExecutionContextExecutor }
 import scala.collection.immutable
 import akka.event.LoggingAdapter
@@ -284,6 +287,20 @@ trait BasicDirectives {
    * @group basic
    */
   def extractRequestContext: Directive1[RequestContext] = BasicDirectives._extractRequestContext
+
+  /**
+   * Extracts the [[akka.http.scaladsl.model.RequestEntity]] from the [[akka.http.scaladsl.server.RequestContext]].
+   *
+   * @group basic
+   */
+  def extractRequestEntity: Directive1[RequestEntity] = BasicDirectives._extractRequestEntity
+
+  /**
+   * Extracts the entities `dataBytes` [[akka.stream.scaladsl.Source]] from the [[akka.http.scaladsl.server.RequestContext]].
+   *
+   * @group basic
+   */
+  def extractDataBytes: Directive1[Source[ByteString, Any]] = BasicDirectives._extractDataBytes
 }
 
 object BasicDirectives extends BasicDirectives {
@@ -296,4 +313,6 @@ object BasicDirectives extends BasicDirectives {
   private val _extractSettings: Directive1[RoutingSettings] = extract(_.settings)
   private val _extractParserSettings: Directive1[ParserSettings] = extract(_.parserSettings)
   private val _extractRequestContext: Directive1[RequestContext] = extract(conforms)
+  private val _extractRequestEntity: Directive1[RequestEntity] = extract(_.request.entity)
+  private val _extractDataBytes: Directive1[Source[ByteString, Any]] = extract(_.request.entity.dataBytes)
 }

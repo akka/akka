@@ -244,7 +244,11 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
                                           settings: ClientConnectionSettings, connectionContext: ConnectionContext,
                                           log: LoggingAdapter): Flow[SslTlsOutbound, SslTlsInbound, Future[OutgoingConnection]] = {
     val tlsStage = sslTlsStage(connectionContext, Client, Some(host → port))
-    val transportFlow = Tcp().outgoingConnection(new InetSocketAddress(host, port), localAddress,
+    // The InetSocketAddress representing the remote address must be created unresolved because akka.io.TcpOutgoingConnection will
+    // not attempt DNS resolution if the InetSocketAddress is already resolved. That behavior is problematic when it comes to
+    // connection pools since it means that new connections opened by the pool in the future can end up using a stale IP address.
+    // By passing an unresolved InetSocketAddress instead, we ensure that DNS resolution is performed for every new connection.
+    val transportFlow = Tcp().outgoingConnection(InetSocketAddress.createUnresolved(host, port), localAddress,
       settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
 
     tlsStage.joinMat(transportFlow) { (_, tcpConnFuture) ⇒

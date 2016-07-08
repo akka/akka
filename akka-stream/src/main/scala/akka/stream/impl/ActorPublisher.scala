@@ -14,7 +14,7 @@ import org.reactivestreams.Subscription
 /**
  * INTERNAL API
  */
-private[akka] object ActorPublisher {
+object ActorPublisher {
   val NormalShutdownReasonMessage = "Cannot subscribe to shut-down Publisher"
   class NormalShutdownException extends IllegalStateException(NormalShutdownReasonMessage) with NoStackTrace
   val NormalShutdownReason: Throwable = new NormalShutdownException
@@ -35,7 +35,7 @@ private[akka] object ActorPublisher {
  * When you instantiate this class, or its subclasses, you MUST send an ExposedPublisher message to the wrapped
  * ActorRef! If you don't need to subclass, prefer the apply() method on the companion object which takes care of this.
  */
-private[akka] class ActorPublisher[T](val impl: ActorRef) extends Publisher[T] {
+class ActorPublisher[T](val impl: ActorRef) extends Publisher[T] {
   import ReactiveStreamsCompliance._
 
   // The subscriber of an subscription attempt is first placed in this list of pending subscribers.

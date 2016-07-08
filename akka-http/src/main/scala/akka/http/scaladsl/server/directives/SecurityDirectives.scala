@@ -13,13 +13,15 @@ import akka.http.scaladsl.util.FastFuture._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection.{ CredentialsRejected, CredentialsMissing }
 
-import scala.util.{ Try, Success }
+import scala.util.Success
 
 /**
  * Provides directives for securing an inner route using the standard Http authentication headers [[`WWW-Authenticate`]]
- * and [[Authorization]]. Most prominently, HTTP Basic authentication as defined in RFC 2617.
+ * and [[Authorization]]. Most prominently, HTTP Basic authentication and OAuth 2.0 Authorization Framework
+ * as defined in RFC 2617 and RFC 6750 respectively.
  *
  * See: <a href="https://www.ietf.org/rfc/rfc2617.txt">RFC 2617</a>.
+ * See: <a href="https://www.ietf.org/rfc/rfc6750.txt">RFC 6750</a>.
  *
  * @groupname security Security directives
  * @groupprio security 220
@@ -95,7 +97,7 @@ trait SecurityDirectives {
       authenticateOrRejectWithChallenge[BasicHttpCredentials, T] { cred ⇒
         authenticator(Credentials(cred)).fast.map {
           case Some(t) ⇒ AuthenticationResult.success(t)
-          case None    ⇒ AuthenticationResult.failWithChallenge(challengeFor(realm))
+          case None    ⇒ AuthenticationResult.failWithChallenge(HttpChallenges.basic(realm))
         }
       }
     }
@@ -146,7 +148,7 @@ trait SecurityDirectives {
       authenticateOrRejectWithChallenge[OAuth2BearerToken, T] { cred ⇒
         authenticator(Credentials(cred)).fast.map {
           case Some(t) ⇒ AuthenticationResult.success(t)
-          case None    ⇒ AuthenticationResult.failWithChallenge(challengeFor(realm))
+          case None    ⇒ AuthenticationResult.failWithChallenge(HttpChallenges.oAuth2(realm))
         }
       }
     }
@@ -248,13 +250,6 @@ trait SecurityDirectives {
         }
       }
     }
-
-  /**
-   * Creates a `Basic` [[HttpChallenge]] for the given realm.
-   *
-   * @group security
-   */
-  def challengeFor(realm: String) = HttpChallenge(scheme = "Basic", realm = realm, params = Map.empty)
 }
 
 object SecurityDirectives extends SecurityDirectives
@@ -268,24 +263,35 @@ sealed trait Credentials
 object Credentials {
   case object Missing extends Credentials
   abstract case class Provided(identifier: String) extends Credentials {
+
+    /**
+     * First applies the passed in `hasher` function to the received secret part of the Credentials
+     * and then safely compares the passed in `secret` with the hashed received secret.
+     * This method can be used if the secret is not stored in plain text.
+     * Use of this method instead of manual String equality testing is recommended in order to guard against timing attacks.
+     *
+     * See also [[EnhancedString#secure_==]], for more information.
+     */
+    def verify(secret: String, hasher: String ⇒ String): Boolean
+
     /**
      * Safely compares the passed in `secret` with the received secret part of the Credentials.
      * Use of this method instead of manual String equality testing is recommended in order to guard against timing attacks.
      *
      * See also [[EnhancedString#secure_==]], for more information.
      */
-    def verify(secret: String): Boolean
+    def verify(secret: String): Boolean = verify(secret, x ⇒ x)
   }
 
   def apply(cred: Option[HttpCredentials]): Credentials = {
     cred match {
       case Some(BasicHttpCredentials(username, receivedSecret)) ⇒
         new Credentials.Provided(username) {
-          def verify(secret: String): Boolean = secret secure_== receivedSecret
+          def verify(secret: String, hasher: String ⇒ String): Boolean = secret secure_== hasher(receivedSecret)
         }
       case Some(OAuth2BearerToken(token)) ⇒
         new Credentials.Provided(token) {
-          def verify(secret: String): Boolean = secret secure_== token
+          def verify(secret: String, hasher: String ⇒ String): Boolean = secret secure_== hasher(token)
         }
       case Some(GenericHttpCredentials(scheme, token, params)) ⇒
         throw new UnsupportedOperationException("cannot verify generic HTTP credentials")

@@ -22,10 +22,10 @@ class RouteDirectivesExamplesSpec extends RoutingSpec {
           complete(StatusCodes.OK)
         } ~
         path("c") {
-          complete(StatusCodes.Created, "bar")
+          complete(StatusCodes.Created -> "bar")
         } ~
         path("d") {
-          complete(201, "bar")
+          complete(201 -> "bar")
         } ~
         path("e") {
           complete(StatusCodes.Created, List(`Content-Type`(`text/plain(UTF-8)`)), "bar")

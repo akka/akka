@@ -8,18 +8,22 @@ import java.io.File
 import java.nio.file.Path
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.Optional
+import java.util.concurrent.CompletionStage
 
+import scala.compat.java8.FutureConverters
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Future, ExecutionContext }
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters._
-import scala.reflect.{ classTag, ClassTag }
+import scala.reflect.{ ClassTag, classTag }
+import akka.Done
 import akka.parboiled2.CharUtils
 import akka.stream.Materializer
-import akka.util.{ HashCode, ByteString }
+import akka.util.{ ByteString, HashCode }
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.util.FastFuture._
+import akka.stream.scaladsl.Sink
 import headers._
 import akka.http.impl.util.JavaMapping.Implicits._
 
@@ -36,6 +40,10 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def headers: immutable.Seq[HttpHeader]
   def entity: ResponseEntity
   def protocol: HttpProtocol
+
+  /** Drains entity stream */
+  def discardEntityBytes(mat: Materializer): HttpMessage.DiscardedEntity =
+    new HttpMessage.DiscardedEntity(entity.dataBytes.runWith(Sink.ignore)(mat))
 
   /** Returns a copy of this message with the list of headers set to the given ones. */
   def withHeaders(headers: HttpHeader*): Self = withHeaders(headers.toList)
@@ -101,6 +109,8 @@ sealed trait HttpMessage extends jm.HttpMessage {
 
   def addHeader(header: jm.HttpHeader): Self = mapHeaders(_ :+ header.asInstanceOf[HttpHeader])
 
+  def addCredentials(credentials: jm.headers.HttpCredentials): Self = addHeader(jm.headers.Authorization.create(credentials))
+
   /** Removes the header with the given name (case-insensitive) */
   def removeHeader(headerName: String): Self = {
     val lowerHeaderName = headerName.toRootLowerCase
@@ -139,6 +149,46 @@ object HttpMessage {
       case HttpProtocols.`HTTP/1.1` ⇒ connectionHeader.isDefined && connectionHeader.get.hasClose
       case HttpProtocols.`HTTP/1.0` ⇒ connectionHeader.isEmpty || !connectionHeader.get.hasKeepAlive
     }
+
+  /**
+   * Represents the the currently being-drained HTTP Entity which triggers completion of the contained
+   * Future once the entity has been drained for the given HttpMessage completely.
+   */
+  final class DiscardedEntity(f: Future[Done]) extends akka.http.javadsl.model.HttpMessage.DiscardedEntity {
+    /**
+     * This future completes successfully once the underlying entity stream has been
+     * successfully drained (and fails otherwise).
+     */
+    def future: Future[Done] = f
+
+    /**
+     * This future completes successfully once the underlying entity stream has been
+     * successfully drained (and fails otherwise).
+     */
+    def completionStage: CompletionStage[Done] = FutureConverters.toJava(f)
+  }
+
+  /** Adds Scala DSL idiomatic methods to [[HttpMessage]], e.g. versions of methods with an implicit [[Materializer]]. */
+  implicit final class HttpMessageScalaDSLSugar(val httpMessage: HttpMessage) extends AnyVal {
+    /**
+     * Discards the entities data bytes by running the `dataBytes` Source contained by the `entity` of this HTTP message.
+     *
+     * Note: It is crucial that entities are either discarded, or consumed by running the underlying [[akka.stream.scaladsl.Source]]
+     * as otherwise the lack of consuming of the data will trigger back-pressure to the underlying TCP connection
+     * (as designed), however possibly leading to an idle-timeout that will close the connection, instead of
+     * just having ignored the data.
+     *
+     * Warning: It is not allowed to discard and/or consume the the `entity.dataBytes` more than once
+     * as the stream is directly attached to the "live" incoming data source from the underlying TCP connection.
+     * Allowing it to be consumable twice would require buffering the incoming data, thus defeating the purpose
+     * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
+     * "stream can cannot be materialized more than once" exception.
+     *
+     * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
+     */
+    def discardEntityBytes()(implicit mat: Materializer): HttpMessage.DiscardedEntity =
+      httpMessage.discardEntityBytes(mat)
+  }
 }
 
 /**

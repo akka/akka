@@ -5,7 +5,7 @@ package akka.stream.scaladsl
 
 import akka.stream.testkit.scaladsl.TestSink
 
-import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
+import java.util.concurrent.ThreadLocalRandom.{ current ⇒ random }
 import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
 import akka.stream.testkit.Utils._

@@ -132,6 +132,7 @@ object KillSwitches {
  * multiple streams might be linked with the switch. For details see the documentation of the concrete subclasses of
  * this interface.
  */
+//#kill-switch
 trait KillSwitch {
   /**
    * After calling [[KillSwitch#shutdown()]] the linked [[Graph]]s of [[FlowShape]] are completed normally.
@@ -142,6 +143,7 @@ trait KillSwitch {
    */
   def abort(ex: Throwable): Unit
 }
+//#kill-switch
 
 /**
  * A [[UniqueKillSwitch]] is always a result of a materialization (unlike [[SharedKillSwitch]] which is constructed
@@ -182,7 +184,7 @@ final class UniqueKillSwitch private[stream] (private val promise: Promise[Done]
 /**
  * A [[SharedKillSwitch]] is a provider for [[Graph]]s of [[FlowShape]] that can be completed or failed from the outside.
  * A [[Graph]] returned by the switch can be materialized arbitrary amount of times: every newly materialized [[Graph]]
- * belongs to the switch from which it was aquired. Multiple [[SharedKillSwitch]] instances are isolated from each other,
+ * belongs to the switch from which it was acquired. Multiple [[SharedKillSwitch]] instances are isolated from each other,
  * shutting down or aborting on instance does not affect the [[Graph]]s provided by another instance.
  *
  * After calling [[SharedKillSwitch#shutdown()]] all materialized, running instances of all [[Graph]]s provided by the
@@ -226,7 +228,7 @@ final class SharedKillSwitch private[stream] (val name: String) extends KillSwit
   def abort(reason: Throwable): Unit = shutdownPromise.tryFailure(reason)
 
   /**
-   * Retrurns a typed Flow of a requested type that will be linked to this [[SharedKillSwitch]] instance. By invoking
+   * Returns a typed Flow of a requested type that will be linked to this [[SharedKillSwitch]] instance. By invoking
    * [[SharedKillSwitch#shutdown()]] or [[SharedKillSwitch#abort()]] all running instances of all provided [[Graph]]s by this
    * switch will be stopped normally or failed.
    *

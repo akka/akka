@@ -684,7 +684,7 @@ class HttpServerSpec extends AkkaSpec(
 
       // client then closes the connection
       netIn.sendComplete()
-      requests.expectComplete() // this should happen, but never does
+      requests.expectComplete()
       netOut.expectComplete()
     })
 

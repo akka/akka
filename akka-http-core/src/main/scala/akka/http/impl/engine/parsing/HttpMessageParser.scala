@@ -84,6 +84,8 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
         case NotEnoughDataException ⇒
           // we are missing a try/catch{continue} wrapper somewhere
           throw new IllegalStateException("unexpected NotEnoughDataException", NotEnoughDataException)
+        case IllegalHeaderException(error) ⇒
+          failMessageStart(StatusCodes.BadRequest, error)
       }) match {
         case Trampoline(x) ⇒ run(x)
         case x             ⇒ x

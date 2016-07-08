@@ -7,6 +7,10 @@ As opposed to the :ref:`connection-level-api` the host-level API relieves you fr
 connections. It autonomously manages a configurable pool of connections to *one particular target endpoint* (i.e.
 host/port combination).
 
+.. note::
+  It is recommended to first read the :ref:`implications-of-streaming-http-entities` section, 
+  as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
+  from a background with non-"streaming first" HTTP Clients.
 
 Requesting a Host Connection Pool
 ---------------------------------

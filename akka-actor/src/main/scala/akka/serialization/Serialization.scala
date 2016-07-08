@@ -315,13 +315,20 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   }
 
   private val isJavaSerializationWarningEnabled = settings.config.getBoolean("akka.actor.warn-about-java-serializer-usage")
+  private val isWarningOnNoVerificationEnabled = settings.config.getBoolean("akka.actor.warn-on-no-serialization-verification")
 
   private def shouldWarnAboutJavaSerializer(serializedClass: Class[_], serializer: Serializer) = {
+
+    def suppressWarningOnNonSerializationVerification(serializedClass: Class[_]) = {
+      //suppressed, only when warn-on-no-serialization-verification = off, and extending NoSerializationVerificationNeeded
+      !isWarningOnNoVerificationEnabled && classOf[NoSerializationVerificationNeeded].isAssignableFrom(serializedClass)
+    }
+
     isJavaSerializationWarningEnabled &&
       serializer.isInstanceOf[JavaSerializer] &&
       !serializedClass.getName.startsWith("akka.") &&
-      !serializedClass.getName.startsWith("java.lang.")
+      !serializedClass.getName.startsWith("java.lang.") &&
+      !suppressWarningOnNonSerializationVerification(serializedClass)
   }
-
 }
 

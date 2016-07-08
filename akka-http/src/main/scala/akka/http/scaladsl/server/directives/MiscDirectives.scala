@@ -6,6 +6,7 @@ package akka.http.scaladsl.server
 package directives
 
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.directives.BasicDirectives._
 import headers._
 
 /**
@@ -71,6 +72,27 @@ trait MiscDirectives {
     BasicDirectives.extractRequest.map { request ⇒
       LanguageNegotiator(request.headers).pickLanguage(first :: List(more: _*)) getOrElse first
     }
+
+  /**
+   * Fails the stream with [[akka.http.scaladsl.model.EntityStreamSizeException]] if its request entity size exceeds
+   * given limit. Limit given as parameter overrides limit configured with `akka.http.parsing.max-content-length`.
+   *
+   * Beware that request entity size check is executed when entity is consumed.
+   *
+   * @group misc
+   */
+  def withSizeLimit(maxBytes: Long): Directive0 =
+    mapRequestContext(_.mapRequest(_.mapEntity(_.withSizeLimit(maxBytes))))
+
+  /**
+   *
+   * Disables the size limit (configured by `akka.http.parsing.max-content-length` by default) checking on the incoming
+   * [[HttpRequest]] entity.
+   * Can be useful when handling arbitrarily large data uploads in specific parts of your routes.
+   *
+   * @group misc
+   */
+  def withoutSizeLimit: Directive0 = MiscDirectives._withoutSizeLimit
 }
 
 object MiscDirectives extends MiscDirectives {
@@ -95,4 +117,7 @@ object MiscDirectives extends MiscDirectives {
       case Complete(response) if response.entity.isKnownEmpty ⇒ Rejected(Nil)
       case x ⇒ x
     }
+
+  private val _withoutSizeLimit: Directive0 =
+    mapRequestContext(_.mapRequest(_.mapEntity(_.withoutSizeLimit)))
 }

@@ -34,7 +34,7 @@ abstract class RouteTest extends AllDirectives {
   implicit def materializer: Materializer
   implicit def executionContext: ExecutionContextExecutor = system.dispatcher
 
-  protected def awaitDuration: FiniteDuration = 500.millis
+  protected def awaitDuration: FiniteDuration = 3.seconds
 
   protected def defaultHostInfo: DefaultHostInfo = DefaultHostInfo(Host.create("example.com"), false)
 

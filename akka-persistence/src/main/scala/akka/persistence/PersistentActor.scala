@@ -4,10 +4,13 @@
 package akka.persistence
 
 import java.lang.{ Iterable ⇒ JIterable }
+
 import akka.actor._
 import akka.japi.Procedure
 import akka.japi.Util
 import com.typesafe.config.Config
+
+import scala.util.control.NoStackTrace
 
 abstract class RecoveryCompleted
 /**
@@ -97,6 +100,8 @@ object Recovery {
    */
   val none: Recovery = Recovery(toSequenceNr = 0L)
 }
+
+final class RecoveryTimedOut(message: String) extends RuntimeException(message) with NoStackTrace
 
 /**
  * This defines how to handle the current received message which failed to stash, when the size of
@@ -286,7 +291,7 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    *
    * @see [[Recovery]]
    */
-  @throws(classOf[Exception])
+  @throws(classOf[Throwable])
   def onReceiveRecover(msg: Any): Unit
 
   /**
@@ -294,7 +299,7 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    * communication with other actors). On successful validation, one or more events are
    * derived from a command and these events are then persisted by calling `persist`.
    */
-  @throws(classOf[Exception])
+  @throws(classOf[Throwable])
   def onReceiveCommand(msg: Any): Unit
 }
 

@@ -24,7 +24,11 @@ a ``path`` directive will always be empty).
 Depending on the type of its ``PathMatcher`` argument the ``path`` directive extracts zero or more values from the URI.
 If the match fails the request is rejected with an :ref:`empty rejection set <empty rejections>`.
 
+.. note:: The empty string (also called empty word or identity) is a **neutral element** of string concatenation operation,
+ so it will match everything, but remember that ``path`` requires whole remaining path being matched, so (``/``) will succeed
+ and (``/whatever``) will fail. The :ref:`-pathPrefix-java-` provides more liberal behaviour.
+
 
 Example
 -------
-TODO: Example snippets for JavaDSL are subject to community contributions! Help us complete the docs, read more about it here: `write example snippets for Akka HTTP Java DSL #20466 <https://github.com/akka/akka/issues/20466>`_.
+.. includecode:: ../../../../code/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java#path-dsl

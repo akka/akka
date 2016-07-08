@@ -4,10 +4,16 @@
 
 package akka.http.javadsl.model;
 
+import akka.Done;
+import akka.stream.Materializer;
+import akka.http.javadsl.model.headers.HttpCredentials;
 import akka.util.ByteString;
+import scala.concurrent.Future;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 
 /**
  * The base type for an Http message (request or response).
@@ -55,7 +61,44 @@ public interface HttpMessage {
      */
     ResponseEntity entity();
 
-    public static interface MessageTransformations<Self> {
+    /**
+     * Discards the entities data bytes by running the {@code dataBytes} Source contained by the {@code entity} 
+     * of this HTTP message.
+     * 
+     * Note: It is crucial that entities are either discarded, or consumed by running the underlying [[Source]]
+     * as otherwise the lack of consuming of the data will trigger back-pressure to the underlying TCP connection
+     * (as designed), however possibly leading to an idle-timeout that will close the connection, instead of 
+     * just having ignored the data.
+     *  
+     * Warning: It is not allowed to discard and/or consume the the {@code entity.dataBytes} more than once
+     * as the stream is directly attached to the "live" incoming data source from the underlying TCP connection.
+     * Allowing it to be consumable twice would require buffering the incoming data, thus defeating the purpose
+     * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
+     * "stream can cannot be materialized more than once" exception.
+     * 
+     * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
+     */
+    DiscardedEntity discardEntityBytes(Materializer materializer);
+
+    /**
+     * Represents the the currently being-drained HTTP Entity which triggers completion of the contained
+     * Future once the entity has been drained for the given HttpMessage completely.
+     */
+    interface DiscardedEntity {
+        /**
+         * This future completes successfully once the underlying entity stream has been
+         * successfully drained (and fails otherwise).
+         */
+        Future<Done> future();
+
+        /**
+         * This future completes successfully once the underlying entity stream has been
+         * successfully drained (and fails otherwise).
+         */
+        CompletionStage<Done> completionStage();
+    }
+
+    interface MessageTransformations<Self> {
         /**
          * Returns a copy of this message with a new protocol.
          */
@@ -70,6 +113,11 @@ public interface HttpMessage {
          * Returns a copy of this message with the given headers added to the list of headers.
          */
         Self addHeaders(Iterable<HttpHeader> headers);
+
+        /**
+         * Returns a copy of this message with the given http credential header added to the list of headers.
+         */
+        Self addCredentials(HttpCredentials credentials);
 
         /**
          * Returns a copy of this message with all headers of the given name (case-insensitively) removed.
