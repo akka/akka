@@ -18,7 +18,7 @@ import scala.collection.immutable
 /**
  * INTERNAL API
  */
-private[stream] object Stages {
+object Stages {
 
   object DefaultAttributes {
     val IODispatcher = ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
@@ -127,6 +127,7 @@ private[stream] object Stages {
     val actorRefWithAck = name("actorRefWithAckSink")
     val actorSubscriberSink = name("actorSubscriberSink")
     val queueSink = name("queueSink")
+    val lazySink = name("lazySink")
     val outputStreamSink = name("outputStreamSink") and IODispatcher
     val inputStreamSink = name("inputStreamSink") and IODispatcher
     val fileSink = name("fileSink") and IODispatcher
@@ -157,26 +158,6 @@ private[stream] object Stages {
 
   final case class Map[In, Out](f: In ⇒ Out, attributes: Attributes = map) extends SymbolicStage[In, Out] {
     override def create(attr: Attributes): Stage[In, Out] = fusing.Map(f, supervision(attr))
-  }
-
-  final case class Log[T](name: String, extract: T ⇒ Any, loggingAdapter: Option[LoggingAdapter], attributes: Attributes = log) extends SymbolicStage[T, T] {
-    override def create(attr: Attributes): Stage[T, T] = fusing.Log(name, extract, loggingAdapter, supervision(attr))
-  }
-
-  final case class Grouped[T](n: Int, attributes: Attributes = grouped) extends SymbolicStage[T, immutable.Seq[T]] {
-    require(n > 0, "n must be greater than 0")
-    override def create(attr: Attributes): Stage[T, immutable.Seq[T]] = fusing.Grouped(n)
-  }
-
-  final case class Sliding[T](n: Int, step: Int, attributes: Attributes = sliding) extends SymbolicStage[T, immutable.Seq[T]] {
-    require(n > 0, "n must be greater than 0")
-    require(step > 0, "step must be greater than 0")
-
-    override def create(attr: Attributes): Stage[T, immutable.Seq[T]] = fusing.Sliding(n, step)
-  }
-
-  final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out, attributes: Attributes = fold) extends SymbolicStage[In, Out] {
-    override def create(attr: Attributes): Stage[In, Out] = fusing.Fold(zero, f, supervision(attr))
   }
 
   final case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy, attributes: Attributes = buffer) extends SymbolicStage[T, T] {

@@ -454,7 +454,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
       val thirdAddress = node(third).address
 
       runOn(first) {
-        mediator ! Status(versions = Map.empty)
+        mediator ! Status(versions = Map.empty, isReplyToStatus = false)
         val deltaBuckets = expectMsgType[Delta].buckets
         deltaBuckets.size should ===(3)
         deltaBuckets.find(_.owner == firstAddress).get.content.size should ===(10)
@@ -469,15 +469,15 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
         for (i ← 0 until many)
           mediator ! Put(createChatUser("u" + (1000 + i)))
 
-        mediator ! Status(versions = Map.empty)
+        mediator ! Status(versions = Map.empty, isReplyToStatus = false)
         val deltaBuckets1 = expectMsgType[Delta].buckets
         deltaBuckets1.map(_.content.size).sum should ===(500)
 
-        mediator ! Status(versions = deltaBuckets1.map(b ⇒ b.owner → b.version).toMap)
+        mediator ! Status(versions = deltaBuckets1.map(b ⇒ b.owner → b.version).toMap, isReplyToStatus = false)
         val deltaBuckets2 = expectMsgType[Delta].buckets
         deltaBuckets1.map(_.content.size).sum should ===(500)
 
-        mediator ! Status(versions = deltaBuckets2.map(b ⇒ b.owner → b.version).toMap)
+        mediator ! Status(versions = deltaBuckets2.map(b ⇒ b.owner → b.version).toMap, isReplyToStatus = false)
         val deltaBuckets3 = expectMsgType[Delta].buckets
 
         deltaBuckets3.map(_.content.size).sum should ===(10 + 9 + 2 + many - 500 - 500)

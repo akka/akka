@@ -65,6 +65,89 @@ class MiscDirectivesSpec extends RoutingSpec {
     }
   }
 
+  "the withSizeLimit directive" should {
+    "not apply if entity is not consumed" in {
+      val route = withSizeLimit(500) { completeOk }
+
+      Post("/abc", entityOfSize(500)) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+
+      Post("/abc", entityOfSize(501)) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "apply if entity is consumed" in {
+      val route = withSizeLimit(500) {
+        entity(as[String]) { _ ⇒
+          completeOk
+        }
+      }
+
+      Post("/abc", entityOfSize(500)) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+
+      Post("/abc", entityOfSize(501)) ~> Route.seal(route) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "properly handle nested directives by applying innermost `withSizeLimit` directive" in {
+      val route =
+        withSizeLimit(500) {
+          withSizeLimit(800) {
+            entity(as[String]) { _ ⇒
+              completeOk
+            }
+          }
+        }
+
+      Post("/abc", entityOfSize(800)) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+
+      Post("/abc", entityOfSize(801)) ~> Route.seal(route) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+
+      val route2 =
+        withSizeLimit(500) {
+          withSizeLimit(400) {
+            entity(as[String]) { _ ⇒
+              completeOk
+            }
+          }
+        }
+
+      Post("/abc", entityOfSize(400)) ~> route2 ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+
+      Post("/abc", entityOfSize(401)) ~> Route.seal(route2) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+  }
+
+  "the withoutSizeLimit directive" should {
+    "skip request entity size verification" in {
+      val route =
+        withSizeLimit(500) {
+          withoutSizeLimit {
+            entity(as[String]) { _ ⇒
+              completeOk
+            }
+          }
+        }
+
+      Post("/abc", entityOfSize(501)) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+  }
+
   implicit class AddStringToIn(acceptLanguageHeaderString: String) {
     def test(body: ((String*) ⇒ String) ⇒ Unit): Unit =
       s"properly handle `$acceptLanguageHeaderString`" in {
@@ -88,4 +171,6 @@ class MiscDirectivesSpec extends RoutingSpec {
   }
 
   def remoteAddress(ip: String) = RemoteAddress(InetAddress.getByName(ip))
+
+  private def entityOfSize(size: Int) = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "0" * size)
 }

@@ -40,6 +40,10 @@ Depending on your needs you can either use the low-level API directly or rely on
 :ref:`Routing DSL <http-high-level-server-side-api>` which can make the definition of more complex service logic much
 easier.
 
+.. note::
+  It is recommended to read the :ref:`implications-of-streaming-http-entities` section, 
+  as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
+  from a background with non-"streaming first" HTTP Servers.
 
 Streams and HTTP
 ----------------
@@ -123,6 +127,7 @@ See :ref:`HttpEntity-scala` for a description of the alternatives.
 If you rely on the :ref:`http-marshalling-scala` and/or :ref:`http-unmarshalling-scala` facilities provided by
 Akka HTTP then the conversion of custom types to and from streamed entities can be quite convenient.
 
+.. _http-closing-connection-low-level:
 
 Closing a connection
 ~~~~~~~~~~~~~~~~~~~~

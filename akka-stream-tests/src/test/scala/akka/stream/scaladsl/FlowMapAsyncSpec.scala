@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import scala.util.control.NoStackTrace
 import akka.stream.ActorMaterializer
 import akka.stream.testkit._

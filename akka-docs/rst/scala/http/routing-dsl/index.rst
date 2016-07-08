@@ -8,6 +8,11 @@ defining RESTful web services. It picks up where the low-level API leaves off an
 functionality of typical web servers or frameworks, like deconstruction of URIs, content negotiation or
 static content serving.
 
+.. note::
+  It is recommended to read the :ref:`implications-of-streaming-http-entities` section, 
+  as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
+  from a background with non-"streaming first" HTTP Servers.
+
 .. toctree::
    :maxdepth: 1
 
@@ -58,7 +63,7 @@ Bind failures
 ^^^^^^^^^^^^^
 For example the server might be unable to bind to the given port. For example when the port
 is already taken by another application, or if the port is privileged (i.e. only usable by ``root``).
-In this case the "binding future" will fail immediatly, and we can react to if by listening on the Future's completion:
+In this case the "binding future" will fail immediately, and we can react to if by listening on the Future's completion:
 
 .. includecode2:: ../../code/docs/http/scaladsl/HttpServerExampleSpec.scala
   :snippet: binding-failure-high-level-example

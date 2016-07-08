@@ -87,7 +87,7 @@ public final class HttpEntities {
                 (akka.http.scaladsl.model.ContentType) contentType,
                 toScala(data));
     }
-    
+
     private static akka.stream.scaladsl.Source<ByteString,Object> toScala(Source<ByteString, ?> javaSource) {
         return (akka.stream.scaladsl.Source<ByteString,Object>)javaSource.asScala();
     }

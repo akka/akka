@@ -15,7 +15,7 @@ import akka.util.{ ByteString, ByteStringBuilder }
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import scala.util.Random
 
 class FramingSpec extends AkkaSpec {

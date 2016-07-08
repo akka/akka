@@ -464,7 +464,8 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
      * @return duration to when the breaker will attempt a reset by transitioning to half-open
      */
     private def remainingDuration(): FiniteDuration = {
-      val diff = System.nanoTime() - get
+      val fromOpened = System.nanoTime() - get
+      val diff = resetTimeout.toNanos - fromOpened
       if (diff <= 0L) Duration.Zero
       else diff.nanos
     }

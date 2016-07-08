@@ -81,6 +81,11 @@ verified during construction of the :class:`Props` object, resulting in an
 :class:`IllegalArgumentException` if no or multiple matching constructors are
 found.
 
+.. note::
+
+  The recommended approach to create the actor :class:`Props` is not supported
+  for cases when the actor constructor takes value classes as arguments.
+
 Dangerous Variants
 ^^^^^^^^^^^^^^^^^^
 
@@ -107,6 +112,25 @@ reference needs to be passed as the first argument).
 
   Declaring one actor within another is very dangerous and breaks actor
   encapsulation. Never pass an actor’s ``this`` reference into :class:`Props`!
+
+Edge cases
+^^^^^^^^^^
+There are two edge cases in actor creation with :class:`Props`:
+
+* An actor with :class:`AnyVal` arguments.
+
+.. includecode:: code/docs/actor/PropsEdgeCaseSpec.scala#props-edge-cases-value-class
+.. includecode:: code/docs/actor/PropsEdgeCaseSpec.scala#props-edge-cases-value-class-example
+
+* An actor with default constructor values.
+
+.. includecode:: code/docs/actor/PropsEdgeCaseSpec.scala#props-edge-cases-default-values
+
+In both cases an :class:`IllegalArgumentException` will be thrown stating
+no matching constructor could be found.
+
+The next section explains the recommended ways to create :class:`Actor` props in a way,
+which simultaneously safe-guards against these edge cases.
 
 Recommended Practices
 ^^^^^^^^^^^^^^^^^^^^^
@@ -161,6 +185,18 @@ not be empty or start with ``$``, but it may contain URL encoded characters
 another child to the same parent an :class:`InvalidActorNameException` is thrown.
 
 Actors are automatically started asynchronously when created.
+
+Value classes as constructor arguments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The recommended way to instantiate actor props uses reflection at runtime
+to determine the correct actor constructor to be invoked and due to technical
+limitations is not supported when said constructor takes arguments that are
+value classes.
+In these cases you should either unpack the arguments or create the props by
+calling the constructor manually:
+
+.. includecode:: code/docs/actor/ActorDocSpec.scala#actor-with-value-class-argument
 
 Dependency Injection
 --------------------

@@ -6,11 +6,11 @@ package docs.http.scaladsl.server
 
 import akka.http.scaladsl.model.ws.BinaryMessage
 import akka.stream.scaladsl.Sink
+import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
 
-class WebSocketExampleSpec extends WordSpec with Matchers {
-  "core-example" in {
-    pending // compile-time only test
+class WebSocketExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
+  "core-example" in compileOnlySpec {
     //#websocket-example-using-core
     import akka.actor.ActorSystem
     import akka.stream.ActorMaterializer
@@ -49,7 +49,9 @@ class WebSocketExampleSpec extends WordSpec with Matchers {
           case Some(upgrade) => upgrade.handleMessages(greeterWebSocketService)
           case None          => HttpResponse(400, entity = "Not a valid websocket request!")
         }
-      case _: HttpRequest => HttpResponse(404, entity = "Unknown resource!")
+      case r: HttpRequest =>
+        r.discardEntityBytes() // important to drain incoming HTTP Entity stream
+        HttpResponse(404, entity = "Unknown resource!")
     }
     //#websocket-request-handling
 
@@ -64,8 +66,7 @@ class WebSocketExampleSpec extends WordSpec with Matchers {
       .flatMap(_.unbind()) // trigger unbinding from the port
       .onComplete(_ => system.terminate()) // and shutdown when done
   }
-  "routing-example" in {
-    pending // compile-time only test
+  "routing-example" in compileOnlySpec {
     import akka.actor.ActorSystem
     import akka.stream.ActorMaterializer
     import akka.stream.scaladsl.{ Source, Flow }
@@ -85,6 +86,7 @@ class WebSocketExampleSpec extends WordSpec with Matchers {
         .collect {
           case tm: TextMessage => TextMessage(Source.single("Hello ") ++ tm.textStream)
           // ignore binary messages
+          // TODO #20096 in case a Streamed message comes in, we should runWith(Sink.ignore) its data
         }
 
     //#websocket-routing

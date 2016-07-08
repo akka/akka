@@ -14,7 +14,6 @@ import akka.http.javadsl.model.ws.TextMessage;
 import akka.http.javadsl.model.ws.WebSocketRequest;
 import akka.http.javadsl.model.ws.WebSocketUpgradeResponse;
 import akka.japi.Pair;
-import akka.japi.function.Procedure;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
@@ -63,9 +62,9 @@ public class WebSocketClientExampleTest {
     // The first value in the pair is a CompletionStage<WebSocketUpgradeResponse> that
     // completes when the WebSocket request has connected successfully (or failed)
     final CompletionStage<Done> connected = pair.first().thenApply(upgrade -> {
-      // just like a regular http request we can get 404 NotFound,
-      // with a response body, that will be available from upgrade.response
-      if (upgrade.response().status().equals(StatusCodes.OK)) {
+      // just like a regular http request we can access response status which is available via upgrade.response.status
+      // status code 101 (Switching Protocols) indicates that server support WebSockets
+      if (upgrade.response().status().equals(StatusCodes.SWITCHING_PROTOCOLS)) {
         return Done.getInstance();
       } else {
         throw new RuntimeException("Connection failed: " + upgrade.response().status());
@@ -220,9 +219,9 @@ public class WebSocketClientExampleTest {
 
     CompletionStage<Done> connected = upgradeCompletion.thenApply(upgrade->
     {
-      // just like a regular http request we can get 404 NotFound,
-      // with a response body, that will be available from upgrade.response
-      if (upgrade.response().status().equals(StatusCodes.OK)) {
+      // just like a regular http request we can access response status which is available via upgrade.response.status
+      // status code 101 (Switching Protocols) indicates that server support WebSockets
+      if (upgrade.response().status().equals(StatusCodes.SWITCHING_PROTOCOLS)) {
         return Done.getInstance();
       } else {
         throw new RuntimeException(("Connection failed: " + upgrade.response().status()));

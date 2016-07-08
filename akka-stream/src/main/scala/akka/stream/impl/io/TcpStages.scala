@@ -295,7 +295,7 @@ private[stream] object TcpConnectionStage {
 /**
  * INTERNAL API
  */
-private[stream] class IncomingConnectionStage(connection: ActorRef, remoteAddress: InetSocketAddress, halfClose: Boolean)
+class IncomingConnectionStage(connection: ActorRef, remoteAddress: InetSocketAddress, halfClose: Boolean)
   extends GraphStage[FlowShape[ByteString, ByteString]] {
   import TcpConnectionStage._
 

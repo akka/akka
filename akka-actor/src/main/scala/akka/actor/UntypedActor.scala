@@ -98,7 +98,7 @@ abstract class UntypedActor extends Actor {
    * To be implemented by concrete UntypedActor, this defines the behavior of the
    * UntypedActor.
    */
-  @throws(classOf[Exception])
+  @throws(classOf[Throwable])
   def onReceive(message: Any): Unit
 
   /**

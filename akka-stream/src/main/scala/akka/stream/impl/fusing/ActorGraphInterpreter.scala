@@ -5,26 +5,25 @@ package akka.stream.impl.fusing
 
 import java.util
 import java.util.concurrent.TimeoutException
+
 import akka.actor._
 import akka.event.Logging
 import akka.stream._
-import akka.stream.impl._
 import akka.stream.impl.ReactiveStreamsCompliance._
-import akka.stream.impl.StreamLayout.{ CompositeModule, CopiedModule, Module, AtomicModule }
-import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic, GraphAssembly }
+import akka.stream.impl.StreamLayout.{ AtomicModule, CompositeModule, CopiedModule, Module }
+import akka.stream.impl.{ SubFusingActorMaterializerImpl, _ }
+import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, GraphAssembly, UpstreamBoundaryStageLogic }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 import org.reactivestreams.{ Subscriber, Subscription }
-import scala.concurrent.forkjoin.ThreadLocalRandom
-import scala.util.control.NonFatal
-import akka.stream.impl.ActorMaterializerImpl
-import akka.stream.impl.SubFusingActorMaterializerImpl
+
 import scala.annotation.tailrec
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
  */
-private[stream] final case class GraphModule(assembly: GraphAssembly, shape: Shape, attributes: Attributes,
-                                             matValIDs: Array[Module]) extends AtomicModule {
+final case class GraphModule(assembly: GraphAssembly, shape: Shape, attributes: Attributes,
+                             matValIDs: Array[Module]) extends AtomicModule {
 
   override def withAttributes(newAttr: Attributes): Module = copy(attributes = newAttr)
 
@@ -45,7 +44,7 @@ private[stream] final case class GraphModule(assembly: GraphAssembly, shape: Sha
 /**
  * INTERNAL API
  */
-private[stream] object ActorGraphInterpreter {
+object ActorGraphInterpreter {
   trait BoundaryEvent extends DeadLetterSuppression with NoSerializationVerificationNeeded {
     def shell: GraphInterpreterShell
   }
@@ -307,14 +306,14 @@ private[stream] object ActorGraphInterpreter {
 /**
  * INTERNAL API
  */
-private[stream] final class GraphInterpreterShell(
+final class GraphInterpreterShell(
   assembly:    GraphAssembly,
   inHandlers:  Array[InHandler],
   outHandlers: Array[OutHandler],
   logics:      Array[GraphStageLogic],
   shape:       Shape,
   settings:    ActorMaterializerSettings,
-  val mat:     ActorMaterializerImpl) {
+  val mat:     ExtendedActorMaterializer) {
 
   import ActorGraphInterpreter._
 
@@ -527,7 +526,7 @@ private[stream] final class GraphInterpreterShell(
 /**
  * INTERNAL API
  */
-private[stream] class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor with ActorLogging {
+class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor with ActorLogging {
   import ActorGraphInterpreter._
 
   var activeInterpreters = Set.empty[GraphInterpreterShell]
@@ -553,11 +552,11 @@ private[stream] class ActorGraphInterpreter(_initial: GraphInterpreterShell) ext
   private val eventLimit: Int = _initial.mat.settings.syncProcessingLimit
   private var currentLimit: Int = eventLimit
   //this is a var in order to save the allocation when no short-circuiting actually happens
-  private var shortCircuitBuffer: util.LinkedList[Any] = null
+  private var shortCircuitBuffer: util.ArrayDeque[Any] = null
 
   def enqueueToShortCircuit(input: Any): Unit = {
-    if (shortCircuitBuffer == null) shortCircuitBuffer = new util.LinkedList[Any]()
-    shortCircuitBuffer.add(input)
+    if (shortCircuitBuffer == null) shortCircuitBuffer = new util.ArrayDeque[Any]()
+    shortCircuitBuffer.addLast(input)
   }
 
   def registerShell(shell: GraphInterpreterShell): ActorRef = {

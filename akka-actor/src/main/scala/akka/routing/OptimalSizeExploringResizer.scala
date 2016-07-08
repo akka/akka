@@ -6,7 +6,7 @@ package akka.routing
 import java.time.LocalDateTime
 
 import scala.collection.immutable
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import scala.concurrent.duration._
 
 import com.typesafe.config.Config

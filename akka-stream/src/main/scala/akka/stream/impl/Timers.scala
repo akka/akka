@@ -23,7 +23,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
  *  - if the timer fires before the event happens, these stages all fail the stream
  *  - otherwise, these streams do not interfere with the element flow, ordinary completion or failure
  */
-private[stream] object Timers {
+object Timers {
   private def idleTimeoutCheckInterval(timeout: FiniteDuration): FiniteDuration = {
     import scala.concurrent.duration._
     FiniteDuration(

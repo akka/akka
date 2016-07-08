@@ -23,7 +23,7 @@ import akka.stream.TLSProtocol._
 /**
  * INTERNAL API.
  */
-private[akka] object TLSActor {
+object TLSActor {
 
   def props(
     settings:     ActorMaterializerSettings,
@@ -46,7 +46,7 @@ private[akka] object TLSActor {
 /**
  * INTERNAL API.
  */
-private[akka] class TLSActor(
+class TLSActor(
   settings:          ActorMaterializerSettings,
   sslContext:        SSLContext,
   externalSslConfig: Option[AkkaSSLConfig],
@@ -477,7 +477,6 @@ private[akka] class TLSActor(
   // see here: https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#SNIExamples
   // resolves: https://github.com/akka/akka/issues/19287
   private def applySNI(params: NegotiateNewSession): Unit = {
-    println("sslConfig.config.loose.disableSNI = " + sslConfig.config.loose.disableSNI)
     for {
       sslParams ← params.sslParameters
       (hostname, _) ← hostInfo

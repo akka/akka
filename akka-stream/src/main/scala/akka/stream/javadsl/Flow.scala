@@ -73,7 +73,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   import scala.collection.JavaConverters._
 
   override def shape: FlowShape[In, Out] = delegate.shape
-  private[stream] def module: StreamLayout.Module = delegate.module
+  def module: StreamLayout.Module = delegate.module
 
   override def toString: String = delegate.toString
 

@@ -3,23 +3,27 @@
  */
 package docs.stream;
 
+//#stream-imports
+import akka.stream.*;
+import akka.stream.javadsl.*;
+//#stream-imports
+
+//#other-imports
+import akka.Done;
+import akka.NotUsed;
+import akka.actor.ActorSystem;
+import akka.util.ByteString;
+
 import java.nio.file.Paths;
 import java.math.BigInteger;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.*;
-
-import akka.Done;
-import akka.NotUsed;
-import akka.actor.ActorSystem;
-//#imports
-import akka.stream.*;
-import akka.stream.javadsl.*;
-//#imports
-import akka.util.ByteString;
 import scala.concurrent.duration.Duration;
+//#other-imports
+
+import org.junit.*;
 
 /**
  * This class is not meant to be run as a test in the test suite, but it

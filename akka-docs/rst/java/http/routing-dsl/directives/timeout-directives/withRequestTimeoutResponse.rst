@@ -23,4 +23,5 @@ To learn more about various timeouts in Akka HTTP and how to configure them see 
 
 Example
 -------
-TODO: Example snippets for JavaDSL are subject to community contributions! Help us complete the docs, read more about it here: `write example snippets for Akka HTTP Java DSL #20466 <https://github.com/akka/akka/issues/20466>`_.
+.. includecode2:: ../../../../code/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java
+   :snippet: withRequestTimeoutResponse

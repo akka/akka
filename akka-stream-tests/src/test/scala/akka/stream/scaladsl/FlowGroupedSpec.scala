@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import scala.collection.immutable
-import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
+import java.util.concurrent.ThreadLocalRandom.{ current ⇒ random }
 
 import akka.stream.ActorMaterializerSettings
 import akka.testkit.AkkaSpec
