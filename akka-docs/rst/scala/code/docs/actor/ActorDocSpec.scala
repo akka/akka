@@ -53,7 +53,7 @@ class ActorWithArgs(arg: String) extends Actor {
 //#actor-with-value-class-argument
 class Argument(val value: String) extends AnyVal
 class ValueClassActor(arg: Argument) extends Actor {
-  def receive = {case _ => () }
+  def receive = { case _ => () }
 }
 
 object ValueClassActor {

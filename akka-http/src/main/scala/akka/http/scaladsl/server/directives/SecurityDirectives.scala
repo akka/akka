@@ -265,22 +265,22 @@ object Credentials {
   abstract case class Provided(identifier: String) extends Credentials {
 
     /**
-      * First applies the passed in `hasher` function to the received secret part of the Credentials
-      * and then safely compares the passed in `secret` with the hashed received secret.
-      * This method can be used if the secret is not stored in plain text.
-      * Use of this method instead of manual String equality testing is recommended in order to guard against timing attacks.
-      *
-      * See also [[EnhancedString#secure_==]], for more information.
-      */
+     * First applies the passed in `hasher` function to the received secret part of the Credentials
+     * and then safely compares the passed in `secret` with the hashed received secret.
+     * This method can be used if the secret is not stored in plain text.
+     * Use of this method instead of manual String equality testing is recommended in order to guard against timing attacks.
+     *
+     * See also [[EnhancedString#secure_==]], for more information.
+     */
     def verify(secret: String, hasher: String ⇒ String): Boolean
-    
+
     /**
      * Safely compares the passed in `secret` with the received secret part of the Credentials.
      * Use of this method instead of manual String equality testing is recommended in order to guard against timing attacks.
      *
      * See also [[EnhancedString#secure_==]], for more information.
      */
-    def verify(secret: String): Boolean = verify(secret, x => x)
+    def verify(secret: String): Boolean = verify(secret, x ⇒ x)
   }
 
   def apply(cred: Option[HttpCredentials]): Credentials = {
