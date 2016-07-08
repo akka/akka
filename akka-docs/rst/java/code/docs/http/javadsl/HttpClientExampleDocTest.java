@@ -71,7 +71,10 @@ public class HttpClientExampleDocTest {
       final String name;
       public ExamplePerson(String name) { this.name = name; }
     }
-    ExamplePerson parse(ByteString line) { return new ExamplePerson(line.utf8String()); }
+    
+    public ExamplePerson parse(ByteString line) { 
+      return new ExamplePerson(line.utf8String()); 
+    }
     //#manual-entity-consume-example-2
   
     void manualEntityConsumeExample2() {
