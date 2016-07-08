@@ -33,7 +33,7 @@ In addition to that, you may enjoy following:
 
 - The [Akka Team Blog](http://blog.akka.io)
 - [@akkateam](https://twitter.com/akkateam) on Twitter
-- Questions tagged [#akka on StackOverflow](stackoverflow.com/questions/tagged/akka)
+- Questions tagged [#akka on StackOverflow](http://stackoverflow.com/questions/tagged/akka)
 
 Contributing
 ------------
