@@ -18,7 +18,7 @@ import scala.collection.immutable
 /**
  * INTERNAL API
  */
-private[stream] object Stages {
+object Stages {
 
   object DefaultAttributes {
     val IODispatcher = ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")

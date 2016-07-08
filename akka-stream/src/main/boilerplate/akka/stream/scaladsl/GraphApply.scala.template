@@ -58,8 +58,8 @@ trait GraphApply {
 /**
  * INTERNAL API
  */
-private[stream] object GraphApply {
-  final class GraphImpl[S <: Shape, Mat](override val shape: S, private[stream] override val module: StreamLayout.Module)
+object GraphApply {
+  final class GraphImpl[S <: Shape, Mat](override val shape: S, override val module: StreamLayout.Module)
     extends Graph[S, Mat] {
     
     override def toString: String = s"Graph($shape, $module)"
@@ -68,5 +68,17 @@ private[stream] object GraphApply {
       new GraphImpl(shape, module.withAttributes(attr))
 
     override def named(name: String): Graph[S, Mat] = withAttributes(Attributes.name(name))
+  }
+}
+
+/**
+ * INTERNAL API
+ */
+object ModuleExtractor {
+  def unapply[S <: Shape, Mat](graph: Graph[S, Mat]): Option[Module] = graph match {
+    case module: Module =>
+      Some(module)
+    case _ =>
+      None
   }
 }

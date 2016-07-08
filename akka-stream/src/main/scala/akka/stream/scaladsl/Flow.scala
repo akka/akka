@@ -25,7 +25,7 @@ import akka.NotUsed
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
  */
-final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
+final class Flow[-In, +Out, +Mat](override val module: Module)
   extends FlowOpsMat[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
 
   override val shape: FlowShape[In, Out] = module.shape.asInstanceOf[FlowShape[In, Out]]
@@ -335,7 +335,7 @@ object RunnableGraph {
 /**
  * Flow with attached input and output, can be executed.
  */
-final case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Module) extends Graph[ClosedShape, Mat] {
+final case class RunnableGraph[+Mat](val module: StreamLayout.Module) extends Graph[ClosedShape, Mat] {
   require(module.isRunnable)
   override def shape = ClosedShape
 

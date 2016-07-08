@@ -38,7 +38,7 @@ import akka.event.Logging
 /**
  * INTERNAL API
  */
-private[akka] abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) extends AtomicModule {
+abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) extends AtomicModule {
 
   /**
    * Create the Subscriber or VirtualPublisher that consumes the incoming
@@ -125,7 +125,7 @@ private[akka] final class FanoutPublisherSink[In](
  * Attaches a subscriber to this stream which will just discard all received
  * elements.
  */
-private[akka] final class SinkholeSink(val attributes: Attributes, shape: SinkShape[Any]) extends SinkModule[Any, Future[Done]](shape) {
+final class SinkholeSink(val attributes: Attributes, shape: SinkShape[Any]) extends SinkModule[Any, Future[Done]](shape) {
 
   override def create(context: MaterializationContext) = {
     val effectiveSettings = ActorMaterializerHelper.downcast(context.materializer).effectiveSettings(context.effectiveAttributes)
@@ -141,7 +141,7 @@ private[akka] final class SinkholeSink(val attributes: Attributes, shape: SinkSh
  * INTERNAL API
  * Attaches a subscriber to this stream.
  */
-private[akka] final class SubscriberSink[In](subscriber: Subscriber[In], val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
+final class SubscriberSink[In](subscriber: Subscriber[In], val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
 
   override def create(context: MaterializationContext) = (subscriber, NotUsed)
 
@@ -153,7 +153,7 @@ private[akka] final class SubscriberSink[In](subscriber: Subscriber[In], val att
  * INTERNAL API
  * A sink that immediately cancels its upstream upon materialization.
  */
-private[akka] final class CancelSink(val attributes: Attributes, shape: SinkShape[Any]) extends SinkModule[Any, NotUsed](shape) {
+final class CancelSink(val attributes: Attributes, shape: SinkShape[Any]) extends SinkModule[Any, NotUsed](shape) {
   override def create(context: MaterializationContext): (Subscriber[Any], NotUsed) = (new CancellingSubscriber[Any], NotUsed)
   override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, NotUsed] = new CancelSink(attributes, shape)
   override def withAttributes(attr: Attributes): AtomicModule = new CancelSink(attr, amendShape(attr))
@@ -164,7 +164,7 @@ private[akka] final class CancelSink(val attributes: Attributes, shape: SinkShap
  * Creates and wraps an actor into [[org.reactivestreams.Subscriber]] from the given `props`,
  * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorSubscriber]].
  */
-private[akka] final class ActorSubscriberSink[In](props: Props, val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, ActorRef](shape) {
+final class ActorSubscriberSink[In](props: Props, val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, ActorRef](shape) {
 
   override def create(context: MaterializationContext) = {
     val subscriberRef = ActorMaterializerHelper.downcast(context.materializer).actorOf(context, props)
@@ -178,9 +178,9 @@ private[akka] final class ActorSubscriberSink[In](props: Props, val attributes: 
 /**
  * INTERNAL API
  */
-private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any,
-                                           val attributes: Attributes,
-                                           shape:          SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
+final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any,
+                             val attributes: Attributes,
+                             shape:          SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
 
   override def create(context: MaterializationContext) = {
     val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
@@ -197,7 +197,7 @@ private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any
     new ActorRefSink[In](ref, onCompleteMessage, attr, amendShape(attr))
 }
 
-private[akka] final class LastOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
+final class LastOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
 
   val in: Inlet[T] = Inlet("lastOption.in")
 
@@ -234,7 +234,7 @@ private[akka] final class LastOptionStage[T] extends GraphStageWithMaterializedV
   override def toString: String = "LastOptionStage"
 }
 
-private[akka] final class HeadOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
+final class HeadOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
 
   val in: Inlet[T] = Inlet("headOption.in")
 
@@ -266,7 +266,7 @@ private[akka] final class HeadOptionStage[T] extends GraphStageWithMaterializedV
   override def toString: String = "HeadOptionStage"
 }
 
-private[akka] final class SeqStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[immutable.Seq[T]]] {
+final class SeqStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[immutable.Seq[T]]] {
   val in = Inlet[T]("seq.in")
 
   override def toString: String = "SeqStage"
@@ -315,7 +315,7 @@ private[stream] object QueueSink {
 /**
  * INTERNAL API
  */
-final private[stream] class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkShape[T], SinkQueueWithCancel[T]] {
+final class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkShape[T], SinkQueueWithCancel[T]] {
   type Requested[E] = Promise[Option[E]]
 
   val in = Inlet[T]("queueSink.in")
@@ -406,7 +406,7 @@ final private[stream] class QueueSink[T]() extends GraphStageWithMaterializedVal
   }
 }
 
-private[akka] final class SinkQueueAdapter[T](delegate: SinkQueueWithCancel[T]) extends akka.stream.javadsl.SinkQueueWithCancel[T] {
+final class SinkQueueAdapter[T](delegate: SinkQueueWithCancel[T]) extends akka.stream.javadsl.SinkQueueWithCancel[T] {
   import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ same }
   def pull(): CompletionStage[Optional[T]] = delegate.pull().map(_.asJava)(same).toJava
   def cancel(): Unit = delegate.cancel()

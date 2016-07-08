@@ -26,7 +26,7 @@ import scala.util.{ Failure, Success, Try }
  * A `Sink` is a set of stream processing steps that has one open input and an attached output.
  * Can be used as a `Subscriber`
  */
-final class Sink[-In, +Mat](private[stream] override val module: Module)
+final class Sink[-In, +Mat](override val module: Module)
   extends Graph[SinkShape[In], Mat] {
 
   override val shape: SinkShape[In] = module.shape.asInstanceOf[SinkShape[In]]
@@ -89,7 +89,7 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
 object Sink {
 
   /** INTERNAL API */
-  private[stream] def shape[T](name: String): SinkShape[T] = SinkShape(Inlet(name + ".in"))
+  def shape[T](name: String): SinkShape[T] = SinkShape(Inlet(name + ".in"))
 
   /**
    * A graph with the shape of a sink logically is a sink, this method makes

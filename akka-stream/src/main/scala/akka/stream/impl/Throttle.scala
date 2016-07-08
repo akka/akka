@@ -14,7 +14,7 @@ import scala.concurrent.duration.{ FiniteDuration, _ }
 /**
  * INTERNAL API
  */
-private[stream] class Throttle[T](
+class Throttle[T](
   cost:            Int,
   per:             FiniteDuration,
   maximumBurst:    Int,

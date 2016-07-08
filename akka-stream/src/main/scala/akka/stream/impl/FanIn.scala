@@ -11,14 +11,14 @@ import org.reactivestreams.{ Subscription, Subscriber }
 /**
  * INTERNAL API
  */
-private[akka] object FanIn {
+object FanIn {
 
   final case class OnError(id: Int, cause: Throwable) extends DeadLetterSuppression with NoSerializationVerificationNeeded
   final case class OnComplete(id: Int) extends DeadLetterSuppression with NoSerializationVerificationNeeded
   final case class OnNext(id: Int, e: Any) extends DeadLetterSuppression with NoSerializationVerificationNeeded
   final case class OnSubscribe(id: Int, subscription: Subscription) extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
-  private[akka] final case class SubInput[T](impl: ActorRef, id: Int) extends Subscriber[T] {
+  final case class SubInput[T](impl: ActorRef, id: Int) extends Subscriber[T] {
     override def onError(cause: Throwable): Unit = {
       ReactiveStreamsCompliance.requireNonNullException(cause)
       impl ! OnError(id, cause)
@@ -252,7 +252,7 @@ private[akka] object FanIn {
 /**
  * INTERNAL API
  */
-private[akka] abstract class FanIn(val settings: ActorMaterializerSettings, val inputCount: Int) extends Actor with ActorLogging with Pump {
+abstract class FanIn(val settings: ActorMaterializerSettings, val inputCount: Int) extends Actor with ActorLogging with Pump {
   import FanIn._
 
   protected val primaryOutputs: Outputs = new SimpleOutputs(self, this)
