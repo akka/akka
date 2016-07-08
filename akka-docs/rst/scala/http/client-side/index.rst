@@ -6,6 +6,10 @@ Consuming HTTP-based Services (Client-Side)
 All client-side functionality of Akka HTTP, for consuming HTTP-based services offered by other endpoints, is currently
 provided by the ``akka-http-core`` module.
 
+It is recommended to first read the :ref:`implications-of-streaming-http-entities` section, 
+as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
+from a background with non-"streaming first" HTTP Clients.
+
 Depending on your application's specific needs you can choose from three different API levels:
 
 :ref:`connection-level-api`

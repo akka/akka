@@ -4,25 +4,36 @@
 
 package docs.http.javadsl.server;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.IncomingConnection;
 import akka.http.javadsl.ServerBinding;
+import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.*;
+import akka.http.javadsl.model.headers.Connection;
+import akka.http.javadsl.server.Route;
+import akka.http.javadsl.server.Unmarshaller;
 import akka.japi.function.Function;
 import akka.stream.ActorMaterializer;
+import akka.stream.IOResult;
 import akka.stream.Materializer;
+import akka.stream.javadsl.FileIO;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
+import scala.concurrent.ExecutionContextExecutor;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+
+import static akka.http.javadsl.server.Directives.*;
 
 @SuppressWarnings("unused")
 public class HttpServerExampleDocTest {
@@ -205,4 +216,113 @@ public class HttpServerExampleDocTest {
   public static void main(String[] args) throws Exception {
     fullServerExample();
   }
+  
+
+  //#consume-entity-directive
+  class Bid {
+    final String userId;
+    final int bid;
+
+    Bid(String userId, int bid) {
+      this.userId = userId;
+      this.bid = bid; 
+    }
+  }
+  //#consume-entity-directive
+
+  void consumeEntityUsingEntityDirective() {
+    //#consume-entity-directive
+    final ActorSystem system = ActorSystem.create();
+    final ExecutionContextExecutor dispatcher = system.dispatcher();
+    final ActorMaterializer materializer = ActorMaterializer.create(system);
+    
+    final Unmarshaller<HttpEntity, Bid> asBid = Jackson.unmarshaller(Bid.class);
+
+    final Route s = path("bid", () ->
+      put(() ->
+        entity(asBid, bid ->
+          // incoming entity is fully consumed and converted into a Bid
+          complete("The bid was: " + bid)
+        )
+      )
+    );
+    //#consume-entity-directive
+      }
+      
+  void consumeEntityUsingRawDataBytes() {
+    //#consume-raw-dataBytes
+    final ActorSystem system = ActorSystem.create();
+    final ExecutionContextExecutor dispatcher = system.dispatcher();
+    final ActorMaterializer materializer = ActorMaterializer.create(system);
+
+    final Route s =
+      put(() ->
+        path("lines", () ->
+          withoutSizeLimit(() ->
+            extractDataBytes(bytes -> {
+              final CompletionStage<IOResult> res = bytes.runWith(FileIO.toPath(new File("/tmp/example.out").toPath()), materializer);
+
+              return onComplete(() -> res, ioResult ->
+                // we only want to respond once the incoming data has been handled:
+                complete("Finished writing data :" + ioResult));
+            })
+          )
+        )
+      );
+
+    //#consume-raw-dataBytes
+  }
+      
+  void discardEntityUsingRawBytes() {
+    //#discard-discardEntityBytes
+    final ActorSystem system = ActorSystem.create();
+    final ExecutionContextExecutor dispatcher = system.dispatcher();
+    final ActorMaterializer materializer = ActorMaterializer.create(system);
+
+    final Route s =
+      put(() ->
+        path("lines", () ->
+          withoutSizeLimit(() ->
+            extractRequest(r -> {
+              final CompletionStage<Done> res = r.discardEntityBytes(materializer).completionStage();
+
+              return onComplete(() -> res, done ->
+                // we only want to respond once the incoming data has been handled:
+                complete("Finished writing data :" + done));
+            })
+          )
+        )
+      );
+    //#discard-discardEntityBytes
+  }
+      
+  void discardEntityManuallyCloseConnections() {
+        //#discard-close-connections
+    final ActorSystem system = ActorSystem.create();
+    final ExecutionContextExecutor dispatcher = system.dispatcher();
+    final ActorMaterializer materializer = ActorMaterializer.create(system);
+
+    final Route s =
+      put(() ->
+        path("lines", () ->
+          withoutSizeLimit(() ->
+            extractDataBytes(bytes -> {
+              // Closing connections, method 1 (eager):
+              // we deem this request as illegal, and close the connection right away:
+              bytes.runWith(Sink.cancelled(), materializer);  // "brutally" closes the connection
+
+              // Closing connections, method 2 (graceful):
+              // consider draining connection and replying with `Connection: Close` header
+              // if you want the client to close after this request/reply cycle instead:
+              return respondWithHeader(Connection.create("close"), () -> 
+                complete(StatusCodes.FORBIDDEN, "Not allowed!")
+              );
+            })
+          )
+        )
+      );
+        //#discard-close-connections
+      }
+    
+  
 }
