@@ -42,7 +42,32 @@ abstract class ExtendedActorMaterializer extends ActorMaterializer {
   /**
    * INTERNAL API
    */
-  def actorOf(context: MaterializationContext, props: Props): ActorRef
+  override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
+    val dispatcher =
+      if (props.deploy.dispatcher == Deploy.NoDispatcherGiven) effectiveSettings(context.effectiveAttributes).dispatcher
+      else props.dispatcher
+    actorOf(props, context.stageName, dispatcher)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  protected def actorOf(props: Props, name: String, dispatcher: String): ActorRef = {
+    supervisor match {
+      case ref: LocalActorRef ⇒
+        ref.underlying.attachChild(props.withDispatcher(dispatcher), name, systemService = false)
+      case ref: RepointableActorRef ⇒
+        if (ref.isStarted)
+          ref.underlying.asInstanceOf[ActorCell].attachChild(props.withDispatcher(dispatcher), name, systemService = false)
+        else {
+          implicit val timeout = ref.system.settings.CreationTimeout
+          val f = (supervisor ? StreamSupervisor.Materialize(props.withDispatcher(dispatcher), name)).mapTo[ActorRef]
+          Await.result(f, timeout.duration)
+        }
+      case unknown ⇒
+        throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${unknown.getClass.getName}]")
+    }
+  }
 
   /**
    * INTERNAL API
@@ -220,30 +245,6 @@ private[akka] case class ActorMaterializerImpl(
     case other                    ⇒ other
   })
 
-  override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
-    val dispatcher =
-      if (props.deploy.dispatcher == Deploy.NoDispatcherGiven) effectiveSettings(context.effectiveAttributes).dispatcher
-      else props.dispatcher
-    actorOf(props, context.stageName, dispatcher)
-  }
-
-  private[akka] def actorOf(props: Props, name: String, dispatcher: String): ActorRef = {
-    supervisor match {
-      case ref: LocalActorRef ⇒
-        ref.underlying.attachChild(props.withDispatcher(dispatcher), name, systemService = false)
-      case ref: RepointableActorRef ⇒
-        if (ref.isStarted)
-          ref.underlying.asInstanceOf[ActorCell].attachChild(props.withDispatcher(dispatcher), name, systemService = false)
-        else {
-          implicit val timeout = ref.system.settings.CreationTimeout
-          val f = (supervisor ? StreamSupervisor.Materialize(props.withDispatcher(dispatcher), name)).mapTo[ActorRef]
-          Await.result(f, timeout.duration)
-        }
-      case unknown ⇒
-        throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${unknown.getClass.getName}]")
-    }
-  }
-
 }
 
 private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMaterializer, registerShell: GraphInterpreterShell ⇒ ActorRef) extends Materializer {
@@ -263,7 +264,7 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
 /**
  * INTERNAL API
  */
-private[akka] object FlowNames extends ExtensionId[FlowNames] with ExtensionIdProvider {
+object FlowNames extends ExtensionId[FlowNames] with ExtensionIdProvider {
   override def get(system: ActorSystem): FlowNames = super.get(system)
   override def lookup() = FlowNames
   override def createExtension(system: ExtendedActorSystem): FlowNames = new FlowNames
@@ -272,14 +273,14 @@ private[akka] object FlowNames extends ExtensionId[FlowNames] with ExtensionIdPr
 /**
  * INTERNAL API
  */
-private[akka] class FlowNames extends Extension {
+class FlowNames extends Extension {
   val name = SeqActorName("Flow")
 }
 
 /**
  * INTERNAL API
  */
-private[akka] object StreamSupervisor {
+object StreamSupervisor {
   def props(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean): Props =
     Props(new StreamSupervisor(settings, haveShutDown)).withDeploy(Deploy.local)
 
@@ -301,7 +302,7 @@ private[akka] object StreamSupervisor {
   case object PrintDebugDump
 }
 
-private[akka] class StreamSupervisor(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean) extends Actor {
+class StreamSupervisor(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean) extends Actor {
   import akka.stream.impl.StreamSupervisor._
 
   override def supervisorStrategy = SupervisorStrategy.stoppingStrategy

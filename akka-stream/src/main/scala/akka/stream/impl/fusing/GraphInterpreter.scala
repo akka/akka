@@ -21,7 +21,7 @@ import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
  *
  * (See the class for the documentation of the internals)
  */
-private[akka] object GraphInterpreter {
+object GraphInterpreter {
   /**
    * Compile time constant, enable it for debug logging to the console.
    */
@@ -346,7 +346,7 @@ private[akka] object GraphInterpreter {
  * be modeled, or even dissolved (if preempted and a "stealing" external event is injected; for example the non-cycle
  * edge of a balance is pulled, dissolving the original cycle).
  */
-private[stream] final class GraphInterpreter(
+final class GraphInterpreter(
   private val assembly: GraphInterpreter.GraphAssembly,
   val materializer:     Materializer,
   val log:              LoggingAdapter,

@@ -23,7 +23,7 @@ import akka.stream.TLSProtocol._
 /**
  * INTERNAL API.
  */
-private[akka] object TLSActor {
+object TLSActor {
 
   def props(
     settings:     ActorMaterializerSettings,
@@ -46,7 +46,7 @@ private[akka] object TLSActor {
 /**
  * INTERNAL API.
  */
-private[akka] class TLSActor(
+class TLSActor(
   settings:          ActorMaterializerSettings,
   sslContext:        SSLContext,
   externalSslConfig: Option[AkkaSSLConfig],

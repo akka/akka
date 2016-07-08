@@ -1004,7 +1004,7 @@ abstract class MaterializerSession(val topLevel: StreamLayout.Module, val initia
 /**
  * INTERNAL API
  */
-private[akka] final case class ProcessorModule[In, Out, Mat](
+final case class ProcessorModule[In, Out, Mat](
   val createProcessor: () ⇒ (Processor[In, Out], Mat),
   attributes:          Attributes                     = DefaultAttributes.processor) extends StreamLayout.AtomicModule {
   val inPort = Inlet[In]("ProcessorModule.in")

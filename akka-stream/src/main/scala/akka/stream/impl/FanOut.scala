@@ -12,7 +12,7 @@ import org.reactivestreams.Subscription
 /**
  * INTERNAL API
  */
-private[akka] object FanOut {
+object FanOut {
 
   final case class SubstreamRequestMore(id: Int, demand: Long) extends DeadLetterSuppression with NoSerializationVerificationNeeded
   final case class SubstreamCancel(id: Int) extends DeadLetterSuppression with NoSerializationVerificationNeeded
@@ -247,7 +247,7 @@ private[akka] object FanOut {
 /**
  * INTERNAL API
  */
-private[akka] abstract class FanOut(val settings: ActorMaterializerSettings, val outputCount: Int) extends Actor with ActorLogging with Pump {
+abstract class FanOut(val settings: ActorMaterializerSettings, val outputCount: Int) extends Actor with ActorLogging with Pump {
   import FanOut._
 
   protected val outputBunch = new OutputBunch(outputCount, self, this)
