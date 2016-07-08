@@ -40,7 +40,7 @@ class MethodDirectivesSpec extends RoutingSpec {
       Head() ~> headRoute ~> check {
         status shouldEqual StatusCodes.OK
 
-        val lengthF = response._3.dataBytes.runFold(0)((c, _) => c+1)
+        val lengthF = response._3.dataBytes.runFold(0)((c, _) ⇒ c + 1)
         val length = Await.result(lengthF, Duration(100, "millis"))
         length shouldEqual 0
       }

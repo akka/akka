@@ -5,14 +5,14 @@
 package docs.http.scaladsl
 
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.model.{RequestEntity, StatusCodes}
+import akka.http.scaladsl.model.{ RequestEntity, StatusCodes }
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestActors
 import docs.CompileOnlySpec
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{ Matchers, WordSpec }
 
 import scala.language.postfixOps
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class HttpServerExampleSpec extends WordSpec with Matchers
   with CompileOnlySpec {
@@ -588,7 +588,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     //#consume-entity-directive
   }
   
-  "consume entity using raw dataBytes" in compileOnlySpec {
+  "consume entity using raw dataBytes to file" in compileOnlySpec {
     //#consume-raw-dataBytes
     import akka.actor.ActorSystem
     import akka.stream.scaladsl.FileIO
@@ -617,13 +617,13 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     //#consume-raw-dataBytes
   }
   
-  "consume entity using raw dataBytes" in compileOnlySpec {
+  "drain entity using request#discardEntityBytes" in compileOnlySpec {
     //#discard-discardEntityBytes
     import akka.actor.ActorSystem
     import akka.stream.scaladsl.FileIO
     import akka.http.scaladsl.server.Directives._
     import akka.stream.ActorMaterializer
-    import akka.http.scaladsl.model.RequestEntity
+    import akka.http.scaladsl.model.HttpRequest
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
@@ -633,12 +633,12 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     val route =
       (put & path("lines")) {
         withoutSizeLimit {
-          extractRequestEntity { entity: RequestEntity =>
-            val finishedWriting = entity.dat
+          extractRequest { r: HttpRequest =>
+            val finishedWriting = r.discardEntityBytes().future
             
             // we only want to respond once the incoming data has been handled:
-            onComplete(finishedWriting) { ioResult =>
-              complete("Finished writing data: " + ioResult)
+            onComplete(finishedWriting) { done =>
+              complete("Drained all data from connection... (" + done + ")")
             }
           }
         }

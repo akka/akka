@@ -31,15 +31,13 @@ It is encouraged to use various streaming techniques to utilise the underlying i
 for example by framing the incoming chunks, parsing them line-by-line and the connecting the flow into another 
 destination Sink, such as a File or other Akka Streams connector:
 
-.. includecode:: ../code/docs/http/javadsl/HttpClientExampleDocTest.java
-   :include: manual-entity-consume-example-1
+.. includecode:: ../code/docs/http/javadsl/HttpClientExampleDocTest.java#manual-entity-consume-example-1
 
 however sometimes the need may arise to consume the entire entity as ``Strict`` entity (which means that it is
 completely loaded into memory). Akka HTTP provides a special ``toStrict(timeout, materializer)`` method which can be used to 
 eagerly consume the entity and make it available in memory:
 
-.. includecode:: ../code/docs/http/javadsl/HttpClientExampleDocTest.java
-   :include: manual-entity-consume-example-2
+.. includecode:: ../code/docs/http/javadsl/HttpClientExampleDocTest.java#manual-entity-consume-example-2
 
      
 Discarding the HTTP Response Entity (Client)
@@ -53,13 +51,11 @@ It does so by piping the incoming bytes directly into an ``Sink.ignore``.
 
 The two snippets below are equivalent, and work the same way on the server-side for incoming HTTP Requests:
 
-.. includecode:: ../code/docs/http/javadsl/HttpClientExampleDocTest.java
-   :include: manual-entity-discard-example-1
+.. includecode:: ../code/docs/http/javadsl/HttpClientExampleDocTest.java#manual-entity-discard-example-1
 
 Or the equivalent low-level code achieving the same result:
 
-.. includecode:: ../code/docs/http/javadsl/HttpClientExampleDocTest.java
-     :include: manual-entity-discard-example-2
+.. includecode:: ../code/docs/http/javadsl/HttpClientExampleDocTest.java#manual-entity-discard-example-2
 
 Server-Side handling of streaming HTTP Entities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -76,14 +72,12 @@ Consuming the HTTP Request Entity (Server)
 The simplest way of consuming the incoming request entity is to simply transform it into an actual domain object,
 for example by using the :ref:`-entity-java-` directive:
 
-.. includecode:: ../code/docs/http/javadsl/HttpServerExampleDocTest.java
-   :include: consume-entity-directive
+.. includecode:: ../code/docs/http/javadsl/server/HttpServerExampleDocTest.java#consume-entity-directive
 
 Of course you can access the raw dataBytes as well and run the underlying stream, for example piping it into an
 FileIO Sink, that signals completion via a ``CompletionStage<IoResult>`` once all the data has been written into the file:
 
-.. includecode:: ../code/docs/http/javadsl/HttpServerExampleDocTest.java
-   :include: consume-raw-dataBytes
+.. includecode:: ../code/docs/http/javadsl/server/HttpServerExampleDocTest.java#consume-raw-dataBytes
 
 Discarding the HTTP Request Entity (Server)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -98,8 +92,7 @@ pending on the same connection still.
 
 In order to discard the databytes explicitly you can invoke the ``discardEntityBytes`` bytes of the incoming ``HTTPRequest``:
 
-.. includecode:: ../code/docs/http/javadsl/HttpServerExampleDocTest.java
-   :include: discard-discardEntityBytes
+.. includecode:: ../code/docs/http/javadsl/server/HttpServerExampleDocTest.java#discard-discardEntityBytes
 
 A related concept is *cancelling* the incoming ``entity.getDataBytes()`` stream, which results in Akka HTTP 
 *abruptly closing the connection from the Client*. This may be useful when you detect that the given user should not be allowed to make any
@@ -108,8 +101,7 @@ This can be done by attaching the incoming ``entity.getDataBytes()`` to a ``Sink
 the entity stream, which in turn will cause the underlying connection to be shut-down by the server – 
 effectively hard-aborting the incoming request:
 
-.. includecode:: ../code/docs/http/javadsl/HttpServerExampleDocTest.java
-   :include: discard-close-connections
+.. includecode:: ../code/docs/http/javadsl/server/HttpServerExampleDocTest.java#discard-close-connections
 
 Closing connections is also explained in depth in the :ref:`http-closing-connection-low-level-java` section of the docs.
 
