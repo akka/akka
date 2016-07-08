@@ -1,7 +1,7 @@
 .. _-parameters-java-:
 
 parameters
-=========
+==========
 Extracts multiple *query* parameter values from the request.
 
 Description
