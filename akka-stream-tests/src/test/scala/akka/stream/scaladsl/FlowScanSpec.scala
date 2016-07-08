@@ -64,5 +64,18 @@ class FlowScanSpec extends AkkaSpec {
       Source(List(1, 3, -1, 5, 7)).via(scan).runWith(TestSink.probe)
         .toStrict(1.second) should ===(Seq(0, 1, 4, 9, 16))
     }
+
+    "scan normally for empty source" in {
+      Source.empty[Int].scan(0) { case (a, b) ⇒ a + b }.runWith(TestSink.probe[Int])
+        .request(2)
+        .expectNext(0)
+        .expectComplete()
+    }
+    "fail after emitting first element when upsrteam failed" in {
+      Source.failed[Int](TE("")).scan(0) { case (a, b) ⇒ a + b }.runWith(TestSink.probe[Int])
+        .request(2)
+        .expectNext(0)
+        .expectError(TE(""))
+    }
   }
 }
