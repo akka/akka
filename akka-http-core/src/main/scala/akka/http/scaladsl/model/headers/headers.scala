@@ -336,7 +336,8 @@ object Connection extends ModeledCompanion[Connection] {
   def apply(first: String, more: String*): Connection = apply(immutable.Seq(first +: more: _*))
   implicit val tokensRenderer = Renderer.defaultSeqRenderer[String] // cache
 }
-final case class Connection(tokens: immutable.Seq[String]) extends RequestResponseHeader {
+final case class Connection(tokens: immutable.Seq[String]) extends jm.headers.Connection
+  with RequestResponseHeader {
   require(tokens.nonEmpty, "tokens must not be empty")
   import Connection.tokensRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ tokens

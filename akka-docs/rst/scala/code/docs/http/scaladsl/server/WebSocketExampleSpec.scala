@@ -49,7 +49,9 @@ class WebSocketExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
           case Some(upgrade) => upgrade.handleMessages(greeterWebSocketService)
           case None          => HttpResponse(400, entity = "Not a valid websocket request!")
         }
-      case _: HttpRequest => HttpResponse(404, entity = "Unknown resource!")
+      case r: HttpRequest =>
+        r.discardEntityBytes() // important to drain incoming HTTP Entity stream
+        HttpResponse(404, entity = "Unknown resource!")
     }
     //#websocket-request-handling
 
@@ -84,6 +86,7 @@ class WebSocketExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
         .collect {
           case tm: TextMessage => TextMessage(Source.single("Hello ") ++ tm.textStream)
           // ignore binary messages
+          // TODO #20096 in case a Streamed message comes in, we should runWith(Sink.ignore) its data
         }
 
     //#websocket-routing

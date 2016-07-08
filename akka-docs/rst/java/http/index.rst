@@ -37,6 +37,7 @@ akka-http-jackson
    routing-dsl/index
    client-side/index
    common/index
+   implications-of-streaming-http-entity
    configuration
    server-side-https-support
 
