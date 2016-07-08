@@ -160,22 +160,6 @@ object Stages {
     override def create(attr: Attributes): Stage[In, Out] = fusing.Map(f, supervision(attr))
   }
 
-  final case class Grouped[T](n: Int, attributes: Attributes = grouped) extends SymbolicStage[T, immutable.Seq[T]] {
-    require(n > 0, "n must be greater than 0")
-    override def create(attr: Attributes): Stage[T, immutable.Seq[T]] = fusing.Grouped(n)
-  }
-
-  final case class Sliding[T](n: Int, step: Int, attributes: Attributes = sliding) extends SymbolicStage[T, immutable.Seq[T]] {
-    require(n > 0, "n must be greater than 0")
-    require(step > 0, "step must be greater than 0")
-
-    override def create(attr: Attributes): Stage[T, immutable.Seq[T]] = fusing.Sliding(n, step)
-  }
-
-  final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out, attributes: Attributes = fold) extends SymbolicStage[In, Out] {
-    override def create(attr: Attributes): Stage[In, Out] = fusing.Fold(zero, f, supervision(attr))
-  }
-
   final case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy, attributes: Attributes = buffer) extends SymbolicStage[T, T] {
     require(size > 0, s"Buffer size must be larger than zero but was [$size]")
     override def create(attr: Attributes): Stage[T, T] = fusing.Buffer(size, overflowStrategy)

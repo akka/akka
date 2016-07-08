@@ -169,7 +169,7 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(Cancel, OnComplete, OnNext(3)))
     }
 
-    "implement fold" in new OneBoundedSetup[Int](Seq(Fold(0, (agg: Int, x: Int) ⇒ agg + x, stoppingDecider))) {
+    "implement fold" in new OneBoundedSetup[Int](Fold(0, (agg: Int, x: Int) ⇒ agg + x)) {
       lastEvents() should be(Set.empty)
 
       downstream.requestOne()
@@ -188,7 +188,7 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnNext(3), OnComplete))
     }
 
-    "implement fold with proper cancel" in new OneBoundedSetup[Int](Seq(Fold(0, (agg: Int, x: Int) ⇒ agg + x, stoppingDecider))) {
+    "implement fold with proper cancel" in new OneBoundedSetup[Int](Fold(0, (agg: Int, x: Int) ⇒ agg + x)) {
 
       lastEvents() should be(Set.empty)
 
@@ -208,7 +208,7 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(Cancel))
     }
 
-    "work if fold completes while not in a push position" in new OneBoundedSetup[Int](Seq(Fold(0, (agg: Int, x: Int) ⇒ agg + x, stoppingDecider))) {
+    "work if fold completes while not in a push position" in new OneBoundedSetup[Int](Fold(0, (agg: Int, x: Int) ⇒ agg + x)) {
 
       lastEvents() should be(Set.empty)
 
@@ -219,7 +219,7 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnComplete, OnNext(0)))
     }
 
-    "implement grouped" in new OneBoundedSetup[Int](Seq(Grouped(3))) {
+    "implement grouped" in new OneBoundedSetup[Int](Grouped(3)) {
       lastEvents() should be(Set.empty)
 
       downstream.requestOne()
@@ -490,9 +490,9 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnNext(1), OnComplete))
     }
 
-    "work with pushAndFinish if upstream completes with pushAndFinish and downstream immediately pulls" in new OneBoundedSetup[Int](Seq(
-      new PushFinishStage,
-      Fold(0, (x: Int, y: Int) ⇒ x + y, stoppingDecider))) {
+    "work with pushAndFinish if upstream completes with pushAndFinish and downstream immediately pulls" in new OneBoundedSetup[Int](
+      (new PushFinishStage).toGS,
+      Fold(0, (x: Int, y: Int) ⇒ x + y)) {
 
       lastEvents() should be(Set.empty)
 
@@ -618,6 +618,7 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
           push(out, lastElem)
         }
 
+        // note that the default value of lastElem will be always pushed if the upstream closed at the very begining without a pulling
         override def onPull(): Unit = {
           if (isClosed(in)) {
             push(out, lastElem)
