@@ -39,7 +39,22 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def entity: ResponseEntity
   def protocol: HttpProtocol
 
-  /** Drains entity stream */
+  /**
+   * Discards the entities data bytes by running the `dataBytes` Source contained in this HttpMessage.
+   *
+   * Note: It is crucial that entities are either discarded, or consumed by running the underlying [[akka.stream.scaladsl.Source]]
+   * as otherwise the lack of consuming of the data will trigger back-pressure to the underlying TCP connection
+   * (as designed), however possibly leading to an idle-timeout that will close the connection, instead of
+   * just having ignored the data.
+   *
+   * Warning: It is not allowed to discard and/or consume the `entity.dataBytes` more than once
+   * as the stream is directly attached to the "live" incoming data source from the underlying TCP connection.
+   * Allowing it to be consumable twice would require buffering the incoming data, thus defeating the purpose
+   * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
+   * "stream can cannot be materialized more than once" exception.
+   *
+   * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
+   */
   def discardEntityBytes(mat: Materializer): HttpMessage.DiscardedEntity = entity.discardBytes()(mat)
 
   /** Returns a copy of this message with the list of headers set to the given ones. */
