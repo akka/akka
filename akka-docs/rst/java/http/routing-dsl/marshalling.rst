@@ -13,7 +13,7 @@ of an HTTP request or response (depending on whether used on the client or serve
 Marshalling
 -----------
 
-On the server-side marshalling is used to convert a application-domain object to a response (entity). Requests can
+On the server-side marshalling is used to convert an application-domain object to a response (entity). Requests can
 contain an ``Accept`` header that lists acceptable content types for the client. A marshaller contains the logic to
 negotiate the result content types based on the ``Accept`` and the ``AcceptCharset`` headers.
 
@@ -30,7 +30,7 @@ These marshallers are provided by akka-http:
 Unmarshalling
 -------------
 
-On the server-side unmarshalling is used to convert a request (entity) to a application-domain object. This is done
+On the server-side unmarshalling is used to convert a request (entity) to an application-domain object. This is done
 in the ``MarshallingDirectives.request`` or ``MarshallingDirectives.entity`` directive. There are several unmarshallers
 provided by akka-http: 
 

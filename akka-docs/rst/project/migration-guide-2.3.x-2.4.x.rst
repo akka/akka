@@ -125,10 +125,10 @@ FSM notifies on same state transitions
 When changing states in an Finite-State-Machine Actor (``FSM``), state transition events are emitted and can be handled by the user
 either by registering ``onTransition`` handlers or by subscribing to these events by sending it an ``SubscribeTransitionCallBack`` message.
 
-Previously in ``2.3.x`` when an ``FSM`` was in state ``A`` and performed an ``goto(A)`` transition, no state transition notification would be sent.
+Previously in ``2.3.x`` when an ``FSM`` was in state ``A`` and performed a ``goto(A)`` transition, no state transition notification would be sent.
 This is because it would effectively stay in the same state, and was deemed to be semantically equivalent to calling ``stay()``.
 
-In ``2.4.x`` when an ``FSM`` performs a any ``goto(X)`` transition, it will always trigger state transition events.
+In ``2.4.x`` when an ``FSM`` performs an any ``goto(X)`` transition, it will always trigger state transition events.
 Which turns out to be useful in many systems where same-state transitions actually should have an effect.
 
 In case you do *not* want to trigger a state transition event when effectively performing an ``X->X`` transition, use ``stay()`` instead.
