@@ -907,7 +907,10 @@ object MiMa extends AutoPlugin {
       ),
       "2.4.9" -> Seq(
         // #20994 adding new decode method, since we're on JDK7+ now
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.util.ByteString.decodeString")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.util.ByteString.decodeString"),
+
+        // #20508  HTTP: Document how to be able to support custom request methods
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMethod.getRequestEntityAcceptance")
       )
     )
   }
