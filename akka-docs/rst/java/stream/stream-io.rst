@@ -100,7 +100,7 @@ Akka Streams provide simple Sources and Sinks that can work with :class:`ByteStr
 on files.
 
 
-Streaming data from a file is as easy as creating a `FileIO.fromFile` given a target file, and an optional
+Streaming data from a file is as easy as creating a `FileIO.fromPath` given a target path, and an optional
 ``chunkSize`` which determines the buffer size determined as one "element" in such stream:
 
 .. includecode:: ../code/docs/stream/io/StreamFileDocTest.java#file-source

@@ -138,8 +138,8 @@ IO Sources / Sinks materialize IOResult
 
 Materialized values of the following sources and sinks:
 
-  * ``FileIO.fromFile``
-  * ``FileIO.toFile``
+  * ``FileIO.fromPath``
+  * ``FileIO.toPath``
   * ``StreamConverters.fromInputStream``
   * ``StreamConverters.fromOutputStream``
 

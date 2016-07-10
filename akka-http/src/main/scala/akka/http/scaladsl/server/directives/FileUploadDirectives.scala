@@ -4,10 +4,10 @@
 package akka.http.scaladsl.server.directives
 
 import java.io.File
-
-import akka.http.scaladsl.server.{ MissingFormFieldRejection, Directive1 }
+import akka.http.scaladsl.server.{ Directive1, MissingFormFieldRejection }
 import akka.http.scaladsl.model.{ ContentType, Multipart }
 import akka.util.ByteString
+
 import scala.concurrent.Future
 import scala.util.{ Failure, Success }
 import akka.stream.scaladsl._
@@ -41,7 +41,7 @@ trait FileUploadDirectives {
         case (fileInfo, bytes) ⇒
 
           val destination = File.createTempFile("akka-http-upload", ".tmp")
-          val uploadedF: Future[(FileInfo, File)] = bytes.runWith(FileIO.toFile(destination))
+          val uploadedF: Future[(FileInfo, File)] = bytes.runWith(FileIO.toPath(destination.toPath))
             .map(_ ⇒ (fileInfo, destination))
 
           onComplete[(FileInfo, File)](uploadedF).flatMap {
