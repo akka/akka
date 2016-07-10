@@ -276,14 +276,14 @@ object Replicator {
   final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef) extends ReplicatorMessage
   /**
    * Unregister a subscriber.
-    *
-    * @see [[Replicator.Subscribe]]
+   *
+   * @see [[Replicator.Subscribe]]
    */
   final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef) extends ReplicatorMessage
   /**
    * The data value is retrieved with [[#get]] using the typed key.
-    *
-    * @see [[Replicator.Subscribe]]
+   *
+   * @see [[Replicator.Subscribe]]
    */
   final case class Changed[A <: ReplicatedData](key: Key[A])(data: A) extends ReplicatorMessage {
     /**
