@@ -8,7 +8,7 @@ import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.model.RequestEntityAcceptance._
 
-sealed trait RequestEntityAcceptance {
+sealed trait RequestEntityAcceptance extends jm.RequestEntityAcceptance {
   def isEntityAccepted: Boolean
 }
 object RequestEntityAcceptance {
@@ -36,6 +36,7 @@ final case class HttpMethod private[http] (
   requestEntityAcceptance: RequestEntityAcceptance) extends jm.HttpMethod with SingletonValueRenderable {
   override def isEntityAccepted: Boolean = requestEntityAcceptance.isEntityAccepted
   override def toString: String = s"HttpMethod($value)"
+  override def getRequestEntityAcceptance: jm.RequestEntityAcceptance = requestEntityAcceptance
 }
 
 object HttpMethod {
