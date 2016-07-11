@@ -26,12 +26,14 @@ object Dependencies {
         case "2.12.0-M2" => "2.2.5-M2"
         case "2.12.0-M3" => "2.2.5-M3"
         case "2.12.0-M4" => "2.2.6"
+        case "2.12.0-M5" => "3.0.0-RC4"
         case _ => "2.2.4"
       }
     },
     java8CompatVersion := {
       scalaVersion.value match {
         case "2.12.0-M4" => "0.8.0-RC1"
+        case "2.12.0-M5" => "0.8.0-RC3"
         case _ => "0.7.0"
       }
     }
