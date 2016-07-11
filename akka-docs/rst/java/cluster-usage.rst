@@ -741,5 +741,5 @@ For this purpose you can define a separate dispatcher to be used for the cluster
     indication that you are running blocking or CPU intensive actors/tasks on the default-dispatcher.
     Use dedicated dispatchers for such actors/tasks instead of running them on the default-dispatcher,
     because that may starve system internal tasks.
-    Related config properties: ``[akka.cluster.use-dispatcher = akka.cluster.cluster-dispatcher]``.
-    Corresponding default values: ``[akka.cluster.use-dispatcher = ]``
+    Related config properties: ``akka.cluster.use-dispatcher = akka.cluster.cluster-dispatcher``.
+    Corresponding default values: ``akka.cluster.use-dispatcher =``.
