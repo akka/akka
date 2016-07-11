@@ -18,7 +18,7 @@ Reference Documentation
 -----------------------
 
 The reference documentation is available at [doc.akka.io](http://doc.akka.io), 
-for [Scala](http://doc.akka.io/docs/akka/current/scala.html) and [Java](http://doc.akka.io/docs/akka/current/scala.html).
+for [Scala](http://doc.akka.io/docs/akka/current/scala.html) and [Java](http://doc.akka.io/docs/akka/current/java.html).
 
 
 Community
