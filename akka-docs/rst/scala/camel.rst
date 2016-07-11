@@ -277,7 +277,7 @@ messages to endpoints.
 
 .. includecode:: code/docs/camel/Producers.scala#ProducerTemplate
 
-For initiating a a two-way message exchange, one of the
+For initiating a two-way message exchange, one of the
 ``ProducerTemplate.request*`` methods must be used.
 
 .. includecode:: code/docs/camel/Producers.scala#RequestProducerTemplate
