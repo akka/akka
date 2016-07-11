@@ -33,7 +33,7 @@ object Dependencies {
     java8CompatVersion := {
       scalaVersion.value match {
         case "2.12.0-M4" => "0.8.0-RC1"
-        case "2.12.0-m5" => "0.8.0-RC3"
+        case "2.12.0-M5" => "0.8.0-RC3"
         case _ => "0.7.0"
       }
     }
