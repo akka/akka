@@ -281,7 +281,7 @@ Actors may also use a Camel `ProducerTemplate`_ for producing messages to endpoi
 
 .. includecode:: code/docs/camel/MyActor.java#ProducerTemplate
 
-For initiating a a two-way message exchange, one of the
+For initiating a two-way message exchange, one of the
 ``ProducerTemplate.request*`` methods must be used.
 
 .. includecode:: code/docs/camel/RequestBodyActor.java#RequestProducerTemplate

@@ -212,12 +212,12 @@ For snapshot versions, the snapshot repository needs to be added as well:
 Using Akka with Eclipse
 -----------------------
 
-Setup SBT project and then use `sbteclipse <https://github.com/typesafehub/sbteclipse>`_ to generate a Eclipse project.
+Setup SBT project and then use `sbteclipse <https://github.com/typesafehub/sbteclipse>`_ to generate an Eclipse project.
 
 Using Akka with IntelliJ IDEA
 -----------------------------
 
-Setup SBT project and then use `sbt-idea <https://github.com/mpeltonen/sbt-idea>`_ to generate a IntelliJ IDEA project.
+Setup SBT project and then use `sbt-idea <https://github.com/mpeltonen/sbt-idea>`_ to generate an IntelliJ IDEA project.
 
 Using Akka with NetBeans
 ------------------------

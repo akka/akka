@@ -141,7 +141,7 @@ Finally, there are two methods available for convenience to complete the stage a
 
 
 In some cases it is inconvenient and error prone to react on the regular state machine events with the
-signal based API described above. For those cases there is a API which allows for a more declarative sequencing
+signal based API described above. For those cases there is an API which allows for a more declarative sequencing
 of actions which will greatly simplify some use cases at the cost of some extra allocations. The difference
 between the two APIs could be described as that the first one is signal driven from the outside, while this API
 is more active and drives its surroundings.
