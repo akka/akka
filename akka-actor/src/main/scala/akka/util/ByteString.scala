@@ -7,7 +7,8 @@ package akka.util
 import java.io.{ ObjectInputStream, ObjectOutputStream }
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable ⇒ JIterable }
-import scala.annotation.varargs
+
+import scala.annotation.{ tailrec, varargs }
 import scala.collection.IndexedSeqOptimized
 import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.collection.immutable
@@ -147,6 +148,20 @@ object ByteString {
 
     private[akka] def writeToOutputStream(os: ObjectOutputStream): Unit =
       toByteString1.writeToOutputStream(os)
+
+    override def copyToBuffer(buffer: ByteBuffer): Int =
+      writeToBuffer(buffer, offset = 0)
+
+    /** INTERNAL API: Specialized for internal use, writing multiple ByteString1C into the same ByteBuffer. */
+    private[akka] def writeToBuffer(buffer: ByteBuffer, offset: Int): Int = {
+      val copyLength = math.min(buffer.remaining, offset + length)
+      if (copyLength > 0) {
+        buffer.put(bytes, offset, copyLength)
+        drop(copyLength)
+      }
+      copyLength
+    }
+
   }
 
   private[akka] object ByteString1 extends Companion {
@@ -188,6 +203,19 @@ object ByteString {
     def isCompact: Boolean = (length == bytes.length)
 
     private[akka] def byteStringCompanion = ByteString1
+
+    override def copyToBuffer(buffer: ByteBuffer): Int =
+      writeToBuffer(buffer)
+
+    /** INTERNAL API: Specialized for internal use, writing multiple ByteString1C into the same ByteBuffer. */
+    private[akka] def writeToBuffer(buffer: ByteBuffer): Int = {
+      val copyLength = math.min(buffer.remaining, length)
+      if (copyLength > 0) {
+        buffer.put(bytes, startIndex, copyLength)
+        drop(copyLength)
+      }
+      copyLength
+    }
 
     def compact: CompactByteString =
       if (isCompact) ByteString1C(bytes) else ByteString1C(toArray)
@@ -311,6 +339,14 @@ object ByteString {
     private[akka] def byteStringCompanion = ByteStrings
 
     def isCompact: Boolean = if (bytestrings.length == 1) bytestrings.head.isCompact else false
+
+    override def copyToBuffer(buffer: ByteBuffer): Int = {
+      @tailrec def copyItToTheBuffer(buffer: ByteBuffer, i: Int, written: Int): Int =
+        if (i < bytestrings.length) copyItToTheBuffer(buffer, i + 1, written + bytestrings(i).writeToBuffer(buffer))
+        else written
+
+      copyItToTheBuffer(buffer, 0, 0)
+    }
 
     def compact: CompactByteString = {
       if (isCompact) bytestrings.head.compact
@@ -452,7 +488,11 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
    * @param buffer a ByteBuffer to copy bytes to
    * @return the number of bytes actually copied
    */
-  def copyToBuffer(buffer: ByteBuffer): Int = iterator.copyToBuffer(buffer)
+  def copyToBuffer(buffer: ByteBuffer): Int = {
+    // TODO: remove this impl, make it an abstract method when possible
+    // specialized versions of this method exist in sub-classes, we keep this impl for binary compatibility, it never is actually invoked
+    iterator.copyToBuffer(buffer)
+  }
 
   /**
    * Create a new ByteString with all contents compacted into a single,
