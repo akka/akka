@@ -341,7 +341,8 @@ object ByteIterator {
     def getDoubles(xs: Array[Double], offset: Int, n: Int)(implicit byteOrder: ByteOrder): this.type =
       getToArray(xs, offset, n, 8) { getDouble(byteOrder) } { current.getDoubles(_, _, _)(byteOrder) }
 
-    def copyToBuffer(buffer: ByteBuffer): Int = {
+    override def copyToBuffer(buffer: ByteBuffer): Int = {
+      // the fold here is better than indexing into the LinearSeq
       val n = iterators.foldLeft(0) { _ + _.copyToBuffer(buffer) }
       normalize()
       n
