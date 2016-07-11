@@ -31,6 +31,7 @@ You can join these groups and chats to discuss and ask Akka related questions:
 
 In addition to that, you may enjoy following:
 
+- The [news](http://akka.io/news) section of the page, which is updated whenever a new version is released 
 - The [Akka Team Blog](http://blog.akka.io)
 - [@akkateam](https://twitter.com/akkateam) on Twitter
 - Questions tagged [#akka on StackOverflow](http://stackoverflow.com/questions/tagged/akka)
