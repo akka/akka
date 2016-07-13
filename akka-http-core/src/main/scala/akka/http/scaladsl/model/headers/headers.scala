@@ -21,7 +21,7 @@ import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.model._
 
 sealed abstract class ModeledCompanion[T: ClassTag] extends Renderable {
-  val name = getClass.getSimpleName.replace("$minus", "-").dropRight(1) // trailing $
+  val name = ModeledCompanion.nameFromClass(getClass)
   val lowercaseName = name.toRootLowerCase
   private[this] val nameBytes = name.asciiBytes
   final def render[R <: Rendering](r: R): r.type = r ~~ nameBytes ~~ ':' ~~ ' '
@@ -35,6 +35,14 @@ sealed abstract class ModeledCompanion[T: ClassTag] extends Renderable {
       case HttpHeader.ParsingResult.Ok(header: T, Nil) ⇒ Right(header)
       case res                                         ⇒ Left(res.errors)
     }
+}
+/** INTERNAL API */
+private[akka] object ModeledCompanion {
+  def nameFromClass[T](clazz: Class[T]): String = {
+    val name = clazz.getSimpleName.replace("$minus", "-")
+    if (name.last == '$') name.dropRight(1) // trailing $
+    else name
+  }
 }
 
 sealed trait ModeledHeader extends HttpHeader with Serializable {
