@@ -34,7 +34,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
   }
 
   "The headerValueByType directive" should {
-    lazy val route =
+    val route =
       headerValueByType[Origin]() { origin ⇒
         complete(s"The first origin was ${origin.origins.head}")
       }
@@ -48,6 +48,16 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
       Get("abc") ~> route ~> check {
         inside(rejection) {
           case MissingHeaderRejection("Origin") ⇒
+        }
+      }
+    }
+    "reject a request for missing header, and format it properly when header included special characters (e.g. `-`)" in {
+      val route = headerValueByType[`User-Agent`]() { agent ⇒
+        complete(s"Agent: ${agent}")
+      }
+      Get("abc") ~> route ~> check {
+        inside(rejection) {
+          case MissingHeaderRejection("User-Agent") ⇒
         }
       }
     }
