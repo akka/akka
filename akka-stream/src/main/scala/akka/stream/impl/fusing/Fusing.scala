@@ -437,7 +437,7 @@ private[stream] object Fusing {
     }
 
   private implicit class NonNull[T](val x: T) extends AnyVal {
-    def nonNull(msg: String): T =
+    def nonNull(msg: ⇒ String): T =
       if (x != null) x
       else throw new IllegalArgumentException("null encountered: " + msg)
   }
