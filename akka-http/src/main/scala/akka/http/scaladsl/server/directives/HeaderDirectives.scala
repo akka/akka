@@ -7,7 +7,7 @@ package directives
 
 import akka.http.impl.util._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{ HttpOriginRange, ModeledCustomHeader, ModeledCustomHeaderCompanion, Origin }
+import akka.http.scaladsl.model.headers._
 
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
@@ -91,7 +91,7 @@ trait HeaderDirectives {
    * @group header
    */
   def headerValueByType[T](magnet: HeaderMagnet[T]): Directive1[T] =
-    headerValuePF(magnet.extractPF) | reject(MissingHeaderRejection(magnet.runtimeClass.getSimpleName))
+    headerValuePF(magnet.extractPF) | reject(MissingHeaderRejection(magnet.headerName))
 
   //#optional-header
   /**
@@ -159,6 +159,7 @@ object HeaderDirectives extends HeaderDirectives
 trait HeaderMagnet[T] {
   def classTag: ClassTag[T]
   def runtimeClass: Class[T]
+  def headerName = ModeledCompanion.nameFromClass(runtimeClass)
 
   /**
    * Returns a partial function that checks if the input value is of runtime type
