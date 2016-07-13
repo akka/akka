@@ -25,7 +25,7 @@ addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.3.3")
 
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "0.2.2")
 
-addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.3")
+addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.10")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.0-RC1")
 
