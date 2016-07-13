@@ -20,6 +20,7 @@ a single value or a tuple of values.
   * :ref:`-extractDataBytes-`
   * :ref:`-extractExecutionContext-`
   * :ref:`-extractMaterializer-`
+  * :ref:`-extractStrictEntity-`
   * :ref:`-extractLog-`
   * :ref:`-extractRequest-`
   * :ref:`-extractRequestContext-`
@@ -45,6 +46,7 @@ Transforming the Request(Context)
   * :ref:`-withMaterializer-`
   * :ref:`-withLog-`
   * :ref:`-withSettings-`
+  * :ref:`-toStrictEntity-`
 
 
 .. _Response Transforming Directives:
@@ -98,6 +100,7 @@ Alphabetically
    extractExecutionContext
    extractDataBytes
    extractMaterializer
+   extractStrictEntity
    extractLog
    extractRequest
    extractRequestContext
@@ -124,6 +127,7 @@ Alphabetically
    recoverRejections
    recoverRejectionsWith
    textract
+   toStrictEntity
    tprovide
    withExecutionContext
    withMaterializer

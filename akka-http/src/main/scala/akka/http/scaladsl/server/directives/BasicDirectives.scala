@@ -8,15 +8,19 @@ package directives
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, ExecutionContextExecutor }
 import scala.collection.immutable
 import akka.event.LoggingAdapter
+import akka.stream.impl.ConstantFun.scalaIdentityFunction
 import akka.stream.Materializer
 import akka.http.scaladsl.settings.{ RoutingSettings, ParserSettings }
 import akka.http.scaladsl.server.util.Tuple
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture._
+
+import scala.util.{ Failure, Success }
 
 /**
  * @groupname basic Basic directives
@@ -301,6 +305,51 @@ trait BasicDirectives {
    * @group basic
    */
   def extractDataBytes: Directive1[Source[ByteString, Any]] = BasicDirectives._extractDataBytes
+
+  /**
+   * WARNING: This will read the entire request entity into memory regardless of size and effectively disable streaming.
+   *
+   * Converts the HttpEntity from the [[akka.http.scaladsl.server.RequestContext]] into an
+   * [[akka.http.scaladsl.model.HttpEntity.Strict]] and extracts it, or fails the route if unable to drain the
+   * entire request body within the timeout.
+   *
+   * @param timeout The directive is failed if the stream isn't completed after the given timeout.
+   * @group basic
+   */
+  def extractStrictEntity(timeout: FiniteDuration): Directive1[HttpEntity.Strict] =
+    extract { ctx ⇒
+      import ctx.materializer
+
+      ctx.request.entity.toStrict(timeout)
+
+    }.flatMap { entity ⇒
+      import FutureDirectives._
+
+      onComplete(entity).flatMap {
+        case Success(x) ⇒ provide(x)
+        case Failure(t) ⇒ StandardRoute(_.fail(t))
+      }
+    }
+
+  /**
+   * WARNING: This will read the entire request entity into memory regardless of size and effectively disable streaming.
+   *
+   * Extracts the [[akka.http.scaladsl.server.RequestContext]] itself with the strict HTTP entity,
+   * or fails the route if unable to drain the entire request body within the timeout.
+   *
+   * @param timeout The directive is failed if the stream isn't completed after the given timeout.
+   * @group basic
+   */
+  def toStrictEntity(timeout: FiniteDuration): Directive0 =
+    Directive { inner ⇒ ctx ⇒
+      import ctx.{ executionContext, materializer }
+
+      ctx.request.entity.toStrict(timeout).flatMap { strictEntity ⇒
+        val newCtx = ctx.mapRequest(_.copy(entity = strictEntity))
+        inner(())(newCtx)
+      }
+    }
+
 }
 
 object BasicDirectives extends BasicDirectives {
@@ -312,7 +361,7 @@ object BasicDirectives extends BasicDirectives {
   private val _extractLog: Directive1[LoggingAdapter] = extract(_.log)
   private val _extractSettings: Directive1[RoutingSettings] = extract(_.settings)
   private val _extractParserSettings: Directive1[ParserSettings] = extract(_.parserSettings)
-  private val _extractRequestContext: Directive1[RequestContext] = extract(conforms)
+  private val _extractRequestContext: Directive1[RequestContext] = extract(scalaIdentityFunction)
   private val _extractRequestEntity: Directive1[RequestEntity] = extract(_.request.entity)
   private val _extractDataBytes: Directive1[Source[ByteString, Any]] = extract(_.request.entity.dataBytes)
 }
