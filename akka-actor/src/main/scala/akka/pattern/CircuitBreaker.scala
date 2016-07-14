@@ -3,18 +3,24 @@
  */
 package akka.pattern
 
-import java.util.concurrent.atomic.{ AtomicInteger, AtomicLong, AtomicBoolean }
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger, AtomicLong }
+
 import akka.AkkaException
 import akka.actor.Scheduler
 import akka.util.Unsafe
+
 import scala.util.control.NoStackTrace
-import java.util.concurrent.{ Callable, CopyOnWriteArrayList }
-import scala.concurrent.{ ExecutionContext, Future, Promise, Await }
+import java.util.concurrent.{ Callable, CompletionStage, CopyOnWriteArrayList }
+
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.duration._
 import scala.concurrent.TimeoutException
 import scala.util.control.NonFatal
 import scala.util.Success
 import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+import akka.japi.function.Creator
+
+import scala.compat.java8.FutureConverters
 
 /**
  * Companion object providing factory methods for Circuit Breaker which runs callbacks in caller's thread
@@ -122,6 +128,18 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
    *   `scala.concurrent.TimeoutException` if the call timed out
    */
   def callWithCircuitBreaker[T](body: Callable[Future[T]]): Future[T] = withCircuitBreaker(body.call)
+
+  /**
+   * Java API (8) for [[#withCircuitBreaker]]
+   *
+   * @param body Call needing protected
+   * @return [[java.util.concurrent.CompletionStage]] containing the call result or a
+   *   `scala.concurrent.TimeoutException` if the call timed out
+   */
+  def callWithCircuitBreakerCS[T](body: Callable[CompletionStage[T]]): CompletionStage[T] =
+    FutureConverters.toJava[T](callWithCircuitBreaker(new Callable[Future[T]] {
+      override def call(): Future[T] = FutureConverters.toScala(body.call())
+    }))
 
   /**
    * Wraps invocations of synchronous calls that need to be protected
