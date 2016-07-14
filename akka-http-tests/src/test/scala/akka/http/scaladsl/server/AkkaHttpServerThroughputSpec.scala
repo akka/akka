@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.server
 
+import java.io.{ BufferedWriter, FileWriter }
 import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
@@ -30,7 +31,9 @@ class AkkaHttpServerThroughputSpec(config: String) extends AkkaSpec(config)
     """
       akka {
         stream.materializer.debug.fuzzing-mode = off
+        
         test.AkkaHttpServerThroughputSpec {
+          writeCsv = off
           rate = 10000
           duration = 30s
           
@@ -75,6 +78,8 @@ class AkkaHttpServerThroughputSpec(config: String) extends AkkaSpec(config)
   val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
   val binding = Http().bindAndHandle(routes, hostname, port)
 
+  val writeCsv = system.settings.config.getBoolean("akka.test.AkkaHttpServerThroughputSpec.writeCsv")
+
   val totalRequestsFactor = system.settings.config.getDouble("akka.test.AkkaHttpServerThroughputSpec.totalRequestsFactor")
   val requests = Math.round(10000 * totalRequestsFactor)
   val rate = system.settings.config.getInt("akka.test.AkkaHttpServerThroughputSpec.rate")
@@ -106,14 +111,14 @@ class AkkaHttpServerThroughputSpec(config: String) extends AkkaSpec(config)
     }
     "have good throughput (ab) (short-lived connections)" in ifAbAvailable {
       val id = s"Throughput_AB-short-lived_pong_R:${rate}_C:${connections}_p:"
-      val abOptions = s"-c $connections -n $requests -g $id.tsv -e $id.csv"
+      val abOptions = s"-c $connections -n $requests"
       val output = s"""ab $abOptions $url_ping""".!!.split("\n")
       infoThe(output)
       printAbPercentiles(id, output)
     }
     "have good throughput (ab) (long-lived connections)" in ifAbAvailable {
       val id = s"Throughput_AB_pong_shortLived_R:${rate}_C:${connections}_p:"
-      val abOptions = s"-c $connections -n $requests -g $id.tsv -e $id.csv"
+      val abOptions = s"-c $connections -n $requests"
       info(s"""ab $abOptions $url_ping""")
       val output = s"""ab $abOptions $url_ping""".!!.split("\n")
       infoThe(output)
@@ -140,10 +145,21 @@ class AkkaHttpServerThroughputSpec(config: String) extends AkkaSpec(config)
       }
   }
 
-  def infoThe(lines: Array[String]): Unit =
+  private def infoThe(lines: Array[String]): Unit =
     lines.foreach(l ⇒ info("  " + l))
 
-  def printWrkPercentiles(prefix: String, lines: Array[String]): Unit = {
+  private def dumpToCsv(prefix: String, titles: Seq[String], values: Seq[String]): Unit =
+    if (writeCsv) {
+      val w = new BufferedWriter(new FileWriter(prefix + ".csv"))
+      w.write(titles.reverse.map(it ⇒ "\"" + it + "\"").mkString(","))
+      w.write("\n")
+      w.write(values.reverse.map(it ⇒ "\"" + it + "\"").mkString(","))
+      w.write("\n")
+      w.flush()
+      w.close()
+    }
+
+  private def printWrkPercentiles(prefix: String, lines: Array[String]): Unit = {
     val percentilesToPrint = 8
 
     def durationAsMs(d: String): Long = {
@@ -154,26 +170,46 @@ class AkkaHttpServerThroughputSpec(config: String) extends AkkaSpec(config)
     var i = 0
     val correctedDistributionStartsHere = lines.zipWithIndex.find(p ⇒ p._1 contains "Latency Distribution").map(_._2).get
 
+    var titles = List.empty[String]
+    var metrics = List.empty[String]
     i = correctedDistributionStartsHere + 1 // skip header
     while (i < correctedDistributionStartsHere + 1 + percentilesToPrint) {
       val line = lines(i).trim
       val percentile = line.takeWhile(_ != '%')
-      println(prefix + percentile + "_corrected," + durationAsMs(line.drop(percentile.length + 1).trim))
+
+      val title = prefix + percentile + "_corrected"
+      val duration = durationAsMs(line.drop(percentile.length + 1).trim)
+
+      titles ::= title
+      metrics ::= duration.toString
+      println(title + "," + duration)
+
       i += 1
     }
+    dumpToCsv(prefix + "_corrected", titles, metrics)
 
     val uncorrectedDistributionStartsHere = lines.zipWithIndex.find(p ⇒ p._1 contains "Uncorrected Latency").map(_._2).get
 
+    titles = List.empty
+    metrics = List.empty
     i = uncorrectedDistributionStartsHere + 1 // skip header
     while (i < uncorrectedDistributionStartsHere + 1 + percentilesToPrint) {
       val line = lines(i).trim
       val percentile = line.takeWhile(_ != '%')
-      println(prefix + percentile + "_uncorrected," + durationAsMs(line.drop(percentile.length + 1).trim))
+
+      val title = prefix + percentile + "_uncorrected"
+      val duration = durationAsMs(line.drop(percentile.length + 1).trim)
+
+      titles ::= title
+      metrics ::= duration.toString
+      println(title + "," + duration)
+
       i += 1
     }
+    dumpToCsv(prefix + "_uncorrected", titles, metrics)
   }
 
-  def printAbPercentiles(prefix: String, lines: Array[String]): Unit = {
+  private def printAbPercentiles(prefix: String, lines: Array[String]): Unit = {
     val percentilesToPrint = 9
 
     def durationAsMs(d: String): Long =
@@ -182,17 +218,26 @@ class AkkaHttpServerThroughputSpec(config: String) extends AkkaSpec(config)
     var i = 0
     val correctedDistributionStartsHere = lines.zipWithIndex.find(p ⇒ p._1 contains "Percentage of the requests").map(_._2).get
 
+    var titles = List.empty[String]
+    var metrics = List.empty[String]
     i = correctedDistributionStartsHere + 1 // skip header
     while (i < correctedDistributionStartsHere + 1 + percentilesToPrint) {
       val line = lines(i).trim
       val percentile = line.takeWhile(_ != '%')
-      println(prefix + percentile + "," + durationAsMs(line.drop(percentile.length + 1).replace("(longest request)", "").trim + "ms"))
+      val title = prefix + percentile
+      val duration = durationAsMs(line.drop(percentile.length + 1).replace("(longest request)", "").trim + "ms")
+
+      titles ::= title
+      metrics ::= duration.toString
+      println(title + "," + duration)
+
       i += 1
     }
+    dumpToCsv(prefix, titles, metrics)
   }
 
-  var _ifWrk2Available: Option[Boolean] = None
-  @tailrec final def ifWrk2Available(test: ⇒ Unit): Unit = {
+  private var _ifWrk2Available: Option[Boolean] = None
+  @tailrec private final def ifWrk2Available(test: ⇒ Unit): Unit = {
     _ifWrk2Available match {
       case Some(false) ⇒ throw new TestPendingException()
       case Some(true)  ⇒ test
@@ -206,7 +251,7 @@ class AkkaHttpServerThroughputSpec(config: String) extends AkkaSpec(config)
   }
 
   var _ifAbAvailable: Option[Boolean] = None
-  @tailrec final def ifAbAvailable(test: ⇒ Unit): Unit = {
+  @tailrec private final def ifAbAvailable(test: ⇒ Unit): Unit = {
     _ifAbAvailable match {
       case Some(false) ⇒ throw new TestPendingException()
       case Some(true)  ⇒ test
