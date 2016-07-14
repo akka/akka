@@ -105,7 +105,7 @@ The following operations are available for *input* ports:
 The events corresponding to an *input* port can be received in an :class:`AbstractInHandler` instance registered to the
 input port using ``setHandler(in, handler)``. This handler has three callbacks:
 
-* ``onPush()`` is called when the output port has now a new element. Now it is possible to acquire this element using
+* ``onPush()`` is called when the input port has now a new element. Now it is possible to acquire this element using
   ``grab(in)`` and/or call ``pull(in)`` on the port to request the next element. It is not mandatory to grab the
   element, but if it is pulled while the element has not been grabbed it will drop the buffered element.
 * ``onUpstreamFinish()`` is called once the upstream has completed and no longer can be pulled for new elements.
