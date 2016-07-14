@@ -29,6 +29,7 @@ class AkkaHttpServerThroughputSpec(config: String) extends AkkaSpec(config)
   def this() = this(
     """
       akka {
+        stream.materializer.debug.fuzzing-mode = off
         test.AkkaHttpServerThroughputSpec {
           rate = 10000
           duration = 30s
