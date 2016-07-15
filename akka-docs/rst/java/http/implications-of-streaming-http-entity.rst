@@ -23,12 +23,12 @@ Client-Side handling of streaming HTTP Entities
 Consuming the HTTP Response Entity (Client)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The most commong use-case of course is consuming the response entity, which can be done via
+The most common use-case of course is consuming the response entity, which can be done via
 running the underlying ``dataBytes`` Source. This is as simple as running the dataBytes source,
 (or on the server-side using directives such as 
 
 It is encouraged to use various streaming techniques to utilise the underlying infrastructure to its fullest,
-for example by framing the incoming chunks, parsing them line-by-line and the connecting the flow into another 
+for example by framing the incoming chunks, parsing them line-by-line and then connecting the flow into another
 destination Sink, such as a File or other Akka Streams connector:
 
 .. includecode:: ../code/docs/http/javadsl/HttpClientExampleDocTest.java#manual-entity-consume-example-1
@@ -108,7 +108,7 @@ Closing connections is also explained in depth in the :ref:`http-closing-connect
 Pending: Automatic discarding of not used entities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Under certin conditions is is possible to detect an entity is very unlikely to be used by the user for a given request,
+Under certain conditions it is possible to detect an entity is very unlikely to be used by the user for a given request,
 and issue warnings or discard the entity automatically. This advanced feature has not been implemented yet, see the below
 note and issues for further discussion and ideas.
 
