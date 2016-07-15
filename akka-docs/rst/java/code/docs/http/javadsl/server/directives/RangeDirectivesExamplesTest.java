@@ -11,7 +11,7 @@ import akka.http.javadsl.model.headers.ContentRange;
 import akka.http.javadsl.model.headers.Range;
 import akka.http.javadsl.model.headers.RangeUnits;
 import akka.http.javadsl.server.Route;
-import akka.http.javadsl.server.Unmarshaller;
+import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRouteResult;
 import akka.stream.ActorMaterializer;

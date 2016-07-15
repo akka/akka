@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.http.javadsl.server
+package akka.http.javadsl.unmarshalling
 
 import java.util.concurrent.CompletionStage
 
@@ -21,7 +21,7 @@ object StringUnmarshaller {
 /**
  * INTERNAL API
  */
-private[server] object StringUnmarshallerPredef extends akka.http.scaladsl.unmarshalling.PredefinedFromStringUnmarshallers {
+private[unmarshalling] object StringUnmarshallerPredef extends akka.http.scaladsl.unmarshalling.PredefinedFromStringUnmarshallers {
 
 }
 

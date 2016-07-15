@@ -11,8 +11,8 @@ import akka.http.javadsl.model.FormData;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.server.StringUnmarshallers;
-import akka.http.javadsl.server.StringUnmarshaller;
-import akka.http.javadsl.server.Unmarshaller;
+import akka.http.javadsl.unmarshalling.StringUnmarshaller;
+import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.japi.Pair;
 
