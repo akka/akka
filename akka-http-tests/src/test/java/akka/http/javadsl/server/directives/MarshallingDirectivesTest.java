@@ -14,7 +14,7 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 
 import org.junit.Test;
-import akka.http.javadsl.server.Unmarshaller;
+import akka.http.javadsl.unmarshalling.Unmarshaller;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

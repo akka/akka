@@ -6,7 +6,7 @@ package akka.http.javadsl.server.directives
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.HttpEntity
 import akka.http.javadsl.server.Route
-import akka.http.javadsl.server.Unmarshaller
+import akka.http.javadsl.unmarshalling.Unmarshaller
 
 import akka.http.scaladsl.server.directives.{ MarshallingDirectives ⇒ D }
 

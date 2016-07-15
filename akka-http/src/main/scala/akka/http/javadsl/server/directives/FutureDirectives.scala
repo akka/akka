@@ -8,12 +8,13 @@ import java.util.concurrent.CompletionStage
 import java.util.function.{ Function ⇒ JFunction }
 import java.util.function.Supplier
 
+import akka.http.javadsl.marshalling.Marshaller
 import akka.http.javadsl.model.RequestEntity
 
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Try
-import akka.http.javadsl.server.{ Marshaller, Route }
+import akka.http.javadsl.server.Route
 import akka.http.scaladsl.server.directives.{ CompleteOrRecoverWithMagnet, FutureDirectives ⇒ D }
 import akka.pattern.CircuitBreaker
 

@@ -1,5 +1,9 @@
 package akka.http.javadsl.server;
 
+import akka.http.javadsl.unmarshalling.StringUnmarshaller;
+import akka.http.javadsl.unmarshalling.StringUnmarshallerPredef;
+import akka.http.javadsl.unmarshalling.Unmarshaller;
+
 import java.util.function.Function;
 
 public class StringUnmarshallers {
