@@ -1,50 +1,88 @@
-/*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+/**
+ * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
  */
-
-package akka.http.scaladsl.server
+package akka.http
 
 import java.io.{ BufferedWriter, FileWriter }
 import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
+import akka.actor.{ Actor, ActorIdentity, ActorRef, Identify, Props }
+import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.{ ContentTypes, HttpEntity }
+import akka.http.scaladsl.server.{ Directives, Route }
 import akka.http.scaladsl.{ Http, TestUtils }
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
-import akka.testkit.AkkaSpec
-import akka.util.ByteString
-import org.scalatest.exceptions.TestPendingException
+import akka.testkit.{ ImplicitSender, LongRunningTest }
+import akka.util.{ ByteString, Timeout }
+import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.exceptions.TestPendingException
 
 import scala.annotation.tailrec
-import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.concurrent.{ Await, Promise }
 import scala.util.Try
 
-class AkkaHttpServerThroughputSpec(config: String) extends AkkaSpec(config)
-  with ScalaFutures {
+object AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeConfig {
 
-  override def expectedTestDuration = 1.hour
-
-  def this() = this(
+  commonConfig(ConfigFactory.parseString(
     """
       akka {
+        actor.provider = "akka.remote.RemoteActorRefProvider"
         stream.materializer.debug.fuzzing-mode = off
+
+        testconductor.barrier-timeout = 20m
         
-        test.AkkaHttpServerThroughputSpec {
-          writeCsv = off
+        test.AkkaHttpServerLatencySpec {
+          writeCsv = on # TODO SWITCH BACK
           rate = 10000
           duration = 30s
           
           totalRequestsFactor = 1.0
         }
       }
-    """.stripMargin
-  )
+    """))
 
-  implicit val dispatcher = system.dispatcher
-  implicit val mat = ActorMaterializer()
+  val server = role("server")
+  val loadGenerator = role("loadGenerator")
+
+  final case class LoadGenCommand(cmd: String)
+  final case class LoadGenResults(results: String) {
+    def lines = results.split("\n")
+  }
+  final case class SetServerPort(port: Int)
+  class HttpLoadGeneratorActor(serverPort: Promise[Int]) extends Actor {
+    override def receive: Receive = {
+      case SetServerPort(port) ⇒
+        serverPort.success(port)
+        context become ready(port)
+      case other ⇒
+        throw new RuntimeException("No server port known! Initialize with SetServerPort() first! Got: " + other)
+    }
+
+    def ready(port: Int): Receive = {
+      case LoadGenCommand(cmd) ⇒
+        import scala.sys.process._
+        val res = cmd.!! // blocking. DON'T DO THIS AT HOME, KIDS!
+        sender() ! LoadGenResults(res)
+    }
+  }
+}
+
+class AkkaHttpServerLatencyMultiNodeSpecMultiJvmNode1 extends MultiNodeSpecSpec
+class AkkaHttpServerLatencyMultiNodeSpecMultiJvmNode2 extends MultiNodeSpecSpec
+
+class MultiNodeSpecSpec extends MultiNodeSpec(AkkaHttpServerLatencyMultiNodeSpec) with STMultiNodeSpec
+  with ScalaFutures with ImplicitSender {
+
+  import AkkaHttpServerLatencyMultiNodeSpec._
+
+  override implicit def patienceConfig: PatienceConfig = PatienceConfig(10.seconds, interval = 300.millis)
+
+  def initialParticipants = 2
 
   val MediumByteString = ByteString(Vector.fill(1024)(0.toByte): _*)
 
@@ -54,9 +92,9 @@ class AkkaHttpServerThroughputSpec(config: String) extends AkkaSpec(config)
   val source_100x: Source[ByteString, NotUsed] = Source.repeat(MediumByteString).take(100)
   val tenXResponseLength = array_10x.length
   val hundredXResponseLength = array_100x.length
-
+  
   // format: OFF
-  val routes = {
+  val routes: Route = {
     import Directives._
     
     path("ping") {
@@ -75,54 +113,77 @@ class AkkaHttpServerThroughputSpec(config: String) extends AkkaSpec(config)
   }
   // format: ON
 
-  val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
-  val binding = Http().bindAndHandle(routes, hostname, port)
+  val writeCsv = system.settings.config.getBoolean("akka.test.AkkaHttpServerLatencySpec.writeCsv")
 
-  val writeCsv = system.settings.config.getBoolean("akka.test.AkkaHttpServerThroughputSpec.writeCsv")
-
-  val totalRequestsFactor = system.settings.config.getDouble("akka.test.AkkaHttpServerThroughputSpec.totalRequestsFactor")
+  val totalRequestsFactor = system.settings.config.getDouble("akka.test.AkkaHttpServerLatencySpec.totalRequestsFactor")
   val requests = Math.round(10000 * totalRequestsFactor)
-  val rate = system.settings.config.getInt("akka.test.AkkaHttpServerThroughputSpec.rate")
-  val testDuration = system.settings.config.getDuration("akka.test.AkkaHttpServerThroughputSpec.duration", TimeUnit.SECONDS)
+  val rate = system.settings.config.getInt("akka.test.AkkaHttpServerLatencySpec.rate")
+  val testDuration = system.settings.config.getDuration("akka.test.AkkaHttpServerLatencySpec.duration", TimeUnit.SECONDS)
   val connections: Long = 10
 
+  override def binding = _binding
+  var _binding: Option[ServerBinding] = None
+
+  val serverPortPromise: Promise[Int] = Promise()
+  def serverPort: Int = serverPortPromise.future.futureValue
+  def serverHost: String = node(server).address.host.get
+
   // --- urls
-  val url_ping = s"http://127.0.0.1:$port/ping"
-  def url_longResponseStream(int: Int) = s"http://127.0.0.1:$port/long-response-stream/$int"
-  def url_longResponseArray(int: Int) = s"http://127.0.0.1:$port/long-response-array/$int"
+  def url_ping = s"http://$serverHost:$serverPort/ping"
+  def url_longResponseStream(int: Int) = s"http://$serverHost:$serverPort/long-response-stream/$int"
+  def url_longResponseArray(int: Int) = s"http://$serverHost:$serverPort/long-response-array/$int"
   // ---
 
-  "HttpServer" should {
-    import scala.sys.process._
+  "Akka HTTP" must {
+    implicit val dispatcher = system.dispatcher
+    implicit val mat = ActorMaterializer()
 
-    Await.ready(binding, 3.seconds)
+    "start Akka HTTP" taggedAs LongRunningTest in {
+      enterBarrier("startup")
 
-    "a warmup" in ifWrk2Available {
+      runOn(loadGenerator) {
+        system.actorOf(Props(classOf[HttpLoadGeneratorActor], serverPortPromise), "load-gen")
+      }
+      enterBarrier("load-gen-ready")
+
+      runOn(server) {
+        val (_, _, port) = TestUtils.temporaryServerHostnameAndPort()
+        info(s"Binding Akka HTTP Server to port: $port @ ${myself}")
+        val futureBinding = Http().bindAndHandle(routes, "0.0.0.0", port)
+
+        _binding = Some(futureBinding.futureValue)
+        setServerPort(port)
+      }
+
+      enterBarrier("http-server-running")
+    }
+
+    "warmup" taggedAs LongRunningTest in {
+      val id = "warmup"
+
       val wrkOptions = s"""-d 30s -R $rate -c $connections -t $connections"""
-      s"""wrk $wrkOptions $url_ping""".!!.split("\n")
-      info("warmup complete.")
+      runLoadTest(id)(s"""wrk $wrkOptions $url_ping""")
     }
 
-    "have good throughput on PONG response (keep-alive)" in ifWrk2Available {
+    "have good Latency on PONG response (keep-alive)" taggedAs LongRunningTest in ifWrk2Available {
+      val id = s"Latency_pong_R:${rate}_C:${connections}_p:"
+
       val wrkOptions = s"""-d ${testDuration}s -R $rate -c $connections -t $connections --u_latency"""
-      val output = s"""wrk $wrkOptions $url_ping""".!!.split("\n")
-      infoThe(output)
-      printWrkPercentiles(s"Throughput_pong_R:${rate}_C:${connections}_p:", output)
+      runLoadTest(id)(s"""wrk $wrkOptions $url_ping""")
     }
-    "have good throughput (ab) (short-lived connections)" in ifAbAvailable {
-      val id = s"Throughput_AB-short-lived_pong_R:${rate}_C:${connections}_p:"
+
+    "have good Latency (ab) (short-lived connections)" taggedAs LongRunningTest in ifAbAvailable {
+      val id = s"Latency_AB-short-lived_pong_R:${rate}_C:${connections}_p:"
+
       val abOptions = s"-c $connections -n $requests"
-      val output = s"""ab $abOptions $url_ping""".!!.split("\n")
-      infoThe(output)
-      printAbPercentiles(id, output)
+      runLoadTest(id)(s"""ab $abOptions $url_ping""")
     }
-    "have good throughput (ab) (long-lived connections)" in ifAbAvailable {
-      val id = s"Throughput_AB_pong_shortLived_R:${rate}_C:${connections}_p:"
+
+    "have good Latency (ab) (long-lived connections)" taggedAs LongRunningTest in ifAbAvailable {
+      val id = s"Latency_AB_pong_shortLived_R:${rate}_C:${connections}_p:"
+
       val abOptions = s"-c $connections -n $requests"
-      info(s"""ab $abOptions $url_ping""")
-      val output = s"""ab $abOptions $url_ping""".!!.split("\n")
-      infoThe(output)
-      printAbPercentiles(s"Throughput_ab_pong_R:${rate}_C:${connections}_p:", output)
+      runLoadTest(id)(s"""ab $abOptions $url_ping""")
     }
 
     List(
@@ -130,23 +191,53 @@ class AkkaHttpServerThroughputSpec(config: String) extends AkkaSpec(config)
       100 → hundredXResponseLength
     ) foreach {
         case (n, lenght) ⇒
-          s"have good throughput (streaming-response($lenght), keep-alive)" in {
+          s"have good Latency (streaming-response($lenght), keep-alive)" taggedAs LongRunningTest in {
+            val id = s"Latency_stream($lenght)_R:${rate}_C:${connections}_p:"
+
             val wrkOptions = s"""-d ${testDuration}s -R $rate -c $connections -t $connections --u_latency"""
-            val output = s"""wrk $wrkOptions ${url_longResponseStream(n)}""".!!.split("\n")
-            infoThe(output)
-            printWrkPercentiles(s"Throughput_stream($lenght)_R:${rate}_C:${connections}_p:", output)
+            runLoadTest(id)(s"""wrk $wrkOptions ${url_longResponseStream(n)}""")
           }
-          s"have good throughput (array-response($lenght), keep-alive)" in {
+          s"have good Latency (array-response($lenght), keep-alive)" taggedAs LongRunningTest in {
+            val id = s"Latency_array($lenght)_R:${rate}_C:${connections}_p:"
+
             val wrkOptions = s"""-d ${testDuration}s -R $rate -c $connections -t $connections --u_latency"""
-            val output = s"""wrk $wrkOptions ${url_longResponseArray(n)}""".!!.split("\n")
-            infoThe(output)
-            printWrkPercentiles(s"Throughput_array($lenght)_R:${rate}_C:${connections}_p:", output)
+            runLoadTest(id)(s"""wrk $wrkOptions ${url_longResponseArray(n)}""")
           }
       }
   }
 
-  private def infoThe(lines: Array[String]): Unit =
-    lines.foreach(l ⇒ info("  " + l))
+  def runLoadTest(id: String)(cmd: String) = {
+    runOn(loadGenerator) {
+      info(s"${id} => running: $cmd")
+      import akka.pattern.ask
+      implicit val timeout = Timeout(30.minutes) // we don't want to timeout here
+
+      val res = (loadGeneratorActor ? LoadGenCommand(cmd)).mapTo[LoadGenResults]
+      val results = Await.result(res, timeout.duration)
+
+      if (id contains "warmup") ()
+      else if (cmd startsWith "wrk") printWrkPercentiles(id, results.lines)
+      else if (cmd startsWith "ab") printAbPercentiles(id, results.lines)
+      else throw new NotImplementedError(s"Unable to handle [$cmd] results!")
+    }
+
+    enterBarrier(s"load-test-complete-id:${id}")
+  }
+
+  def setServerPort(p: Int): Unit = {
+    serverPortPromise.success(p)
+    loadGeneratorActor ! SetServerPort(p)
+  }
+
+  lazy val loadGeneratorActor: ActorRef = {
+    if (isNode(loadGenerator)) {
+      system.actorSelection("/user/load-gen") ! Identify(None)
+      expectMsgType[ActorIdentity].ref.get
+    } else {
+      system.actorSelection(node(loadGenerator) / "user" / "load-gen") ! Identify(None)
+      expectMsgType[ActorIdentity].ref.get
+    }
+  }
 
   private def dumpToCsv(prefix: String, titles: Seq[String], values: Seq[String]): Unit =
     if (writeCsv) {
@@ -157,6 +248,9 @@ class AkkaHttpServerThroughputSpec(config: String) extends AkkaSpec(config)
       w.write("\n")
       w.flush()
       w.close()
+
+      println("====:" + titles.reverse.map(it ⇒ "\"" + it + "\"").mkString(",") + "\n")
+      println("====:" + values.reverse.map(it ⇒ "\"" + it + "\"").mkString(",") + "\n")
     }
 
   private def printWrkPercentiles(prefix: String, lines: Array[String]): Unit = {
@@ -166,6 +260,8 @@ class AkkaHttpServerThroughputSpec(config: String) extends AkkaSpec(config)
       val dd = d.replace("us", "µs") // Scala Duration does not parse "us"
       Duration(dd).toMillis
     }
+
+    println("lines.mkString() = " + lines.mkString("\n"))
 
     var i = 0
     val correctedDistributionStartsHere = lines.zipWithIndex.find(p ⇒ p._1 contains "Latency Distribution").map(_._2).get
@@ -264,7 +360,4 @@ class AkkaHttpServerThroughputSpec(config: String) extends AkkaSpec(config)
     }
   }
 
-  override protected def beforeTermination(): Unit = {
-    binding.futureValue.unbind().futureValue
-  }
 }
