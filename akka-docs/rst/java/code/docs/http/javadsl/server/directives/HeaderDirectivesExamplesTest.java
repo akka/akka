@@ -14,7 +14,6 @@ import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.headers.Host;
 import akka.http.javadsl.model.headers.HttpOrigin;
 import akka.http.javadsl.model.headers.HttpOriginRange;
-import akka.http.javadsl.model.headers.HttpOriginRangeDefault;
 import akka.http.javadsl.model.headers.Origin;
 import akka.http.javadsl.model.headers.RawHeader;
 import akka.http.javadsl.server.Route;
@@ -236,7 +235,7 @@ public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
     final HttpOrigin validOriginHeader =
             HttpOrigin.create("http://localhost", Host.create("8080"));
 
-    final HttpOriginRangeDefault validOriginRange = HttpOriginRangeDefault.create(validOriginHeader);
+    final HttpOriginRange validOriginRange = HttpOriginRange.create(validOriginHeader);
 
     final TestRoute route = testRoute(
             checkSameOrigin(validOriginRange,

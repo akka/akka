@@ -30,7 +30,7 @@ object HttpOriginRange {
 
   def apply(origins: HttpOrigin*): Default = Default(immutable.Seq(origins: _*))
 
-  final case class Default(origins: immutable.Seq[HttpOrigin]) extends HttpOriginRange with jm.headers.HttpOriginRangeDefault {
+  final case class Default(origins: immutable.Seq[HttpOrigin]) extends HttpOriginRange {
     def matches(origin: HttpOrigin): Boolean = origins contains origin
     def render[R <: Rendering](r: R): r.type = r ~~ origins
   }

@@ -20,7 +20,6 @@ import akka.http.scaladsl.{ model ⇒ sm }
 import akka.http.javadsl.{ settings ⇒ js }
 
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.javadsl.model.headers.HttpOriginRangeDefault
 
 import scala.util.Try
 
@@ -226,7 +225,6 @@ private[http] object JavaMapping {
   implicit object HttpEncodingRange extends Inherited[jm.headers.HttpEncodingRange, sm.headers.HttpEncodingRange]
   implicit object HttpOrigin extends Inherited[jm.headers.HttpOrigin, sm.headers.HttpOrigin]
   implicit object HttpOriginRange extends Inherited[jm.headers.HttpOriginRange, sm.headers.HttpOriginRange]
-  implicit object HttpOriginRangeDefault extends Inherited[HttpOriginRangeDefault, sm.headers.HttpOriginRange.Default]
   implicit object Language extends Inherited[jm.headers.Language, sm.headers.Language]
   implicit object LanguageRange extends Inherited[jm.headers.LanguageRange, sm.headers.LanguageRange]
   implicit object LinkParam extends Inherited[jm.headers.LinkParam, sm.headers.LinkParam]
