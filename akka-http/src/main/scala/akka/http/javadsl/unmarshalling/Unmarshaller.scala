@@ -2,36 +2,24 @@
  * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.http.javadsl.server
+package akka.http.javadsl.unmarshalling
 
-import akka.http.impl.util.JavaMapping
-import akka.http.javadsl.server.RoutingJavaMapping
-import akka.http.scaladsl.marshalling._
-import akka.http.scaladsl.unmarshalling.{ FromEntityUnmarshaller, FromRequestUnmarshaller }
-import akka.http.scaladsl.unmarshalling.Unmarshaller.{ EnhancedFromEntityUnmarshaller, EnhancedUnmarshaller, UnsupportedContentTypeException }
-import akka.http.scaladsl.{ marshalling, model, unmarshalling }
-import akka.util.ByteString
-import akka.http.scaladsl.util.FastFuture
-import akka.http.scaladsl.util.FastFuture._
-
-import scala.concurrent.ExecutionContext
-import scala.annotation.varargs
-import akka.http.javadsl.model.HttpEntity
-import akka.http.scaladsl.model.{ ContentTypeRange, ContentTypes, FormData, Multipart }
-import akka.http.scaladsl
-import akka.http.javadsl.model.ContentType
-import akka.http.javadsl.model.HttpRequest
-import akka.http.javadsl.model.RequestEntity
-import akka.http.javadsl.model.MediaType
 import java.util.concurrent.CompletionStage
 
-import scala.compat.java8.FutureConverters._
-import scala.collection.JavaConverters._
+import akka.http.impl.util.JavaMapping
 import akka.http.impl.util.JavaMapping.Implicits._
-import RoutingJavaMapping._
+import akka.http.javadsl.model.{ HttpEntity, HttpRequest, MediaType, RequestEntity }
+import akka.http.scaladsl.model.{ ContentTypeRange, ContentTypes, FormData, Multipart }
+import akka.http.scaladsl.unmarshalling
+import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
+import akka.http.scaladsl.unmarshalling.Unmarshaller.{ EnhancedFromEntityUnmarshaller, UnsupportedContentTypeException }
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
+import akka.util.ByteString
 
+import scala.collection.JavaConverters._
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.ExecutionContext
 import scala.language.implicitConversions
 
 object Unmarshaller {

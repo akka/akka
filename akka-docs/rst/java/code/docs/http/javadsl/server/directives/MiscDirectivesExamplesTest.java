@@ -6,7 +6,7 @@ package docs.http.javadsl.server.directives;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.Route;
-import akka.http.javadsl.server.Unmarshaller;
+import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import org.junit.Test;
 

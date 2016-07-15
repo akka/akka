@@ -13,7 +13,7 @@ import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.scaladsl.model._
 
-trait Unmarshaller[-A, B] extends akka.http.javadsl.server.Unmarshaller[A, B] {
+trait Unmarshaller[-A, B] extends akka.http.javadsl.unmarshalling.Unmarshaller[A, B] {
 
   implicit final def asScala: Unmarshaller[A, B] = this
 

@@ -6,7 +6,7 @@ package docs.http.javadsl.server.directives;
 import akka.http.impl.engine.rendering.BodyPartRenderer;
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.server.Route;
-import akka.http.javadsl.server.Unmarshaller;
+import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.http.javadsl.server.directives.FileInfo;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.stream.javadsl.Framing;
@@ -14,8 +14,6 @@ import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import org.junit.Ignore;
 import org.junit.Test;
-import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -24,7 +22,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {

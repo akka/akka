@@ -2,31 +2,20 @@
  * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.http.javadsl.server
+package akka.http.javadsl.marshalling
 
 import java.util.function
 
 import akka.http.impl.util.JavaMapping
+import akka.http.javadsl.model.{ ContentType, HttpHeader, HttpResponse, MediaType, RequestEntity, StatusCode }
+import akka.http.scaladsl
 import akka.http.scaladsl.marshalling
+import akka.http.scaladsl.marshalling._
+import akka.http.scaladsl.model.{ FormData, HttpCharset }
 import akka.japi.Util
+import akka.util.ByteString
 
 import scala.concurrent.ExecutionContext
-import akka.http.javadsl.model.ContentType
-import akka.http.javadsl.model.MediaType
-import akka.http.scaladsl
-import akka.http.javadsl.model.HttpEntity
-import akka.http.scaladsl.marshalling._
-import akka.http.javadsl.model.HttpResponse
-import akka.http.javadsl.model.HttpRequest
-import akka.http.javadsl.model.RequestEntity
-import akka.util.ByteString
-import akka.http.scaladsl.model.{ FormData, HttpCharset }
-import akka.http.javadsl.model.StatusCode
-import akka.http.javadsl.model.HttpHeader
-
-import scala.collection.JavaConverters._
-import akka.http.impl.util.JavaMapping.Implicits._
-
 import scala.language.implicitConversions
 
 object Marshaller {
