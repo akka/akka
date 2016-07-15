@@ -180,9 +180,9 @@ class MultiNodeSpecSpec extends MultiNodeSpec(AkkaHttpServerLatencyMultiNodeSpec
     }
 
     "have good Latency (ab) (long-lived connections)" taggedAs LongRunningTest in ifAbAvailable {
-      val id = s"Latency_AB_pong_shortLived_R:${rate}_C:${connections}_p:"
+      val id = s"Latency_AB_pong_long-lived_R:${rate}_C:${connections}_p:"
 
-      val abOptions = s"-c $connections -n $requests"
+      val abOptions = s"-c $connections -n $requests -k"
       runLoadTest(id)(s"""ab $abOptions $url_ping""")
     }
 
