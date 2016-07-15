@@ -98,9 +98,9 @@ final case class MalformedHeaderRejection(headerName: String, errorMsg: String, 
  * Rejection created by [[akka.http.scaladsl.server.directives.HeaderDirectives.checkSameOrigin]].
  * Signals that the request was rejected because `Origin` header value is invalid.
  */
-final case class InvalidOriginRejection(invalidOrigins: immutable.Seq[SHttpOrigin])
+final case class InvalidOriginRejection(allowedOrigins: immutable.Seq[SHttpOrigin])
   extends jserver.InvalidOriginRejection with Rejection {
-  override def getInvalidOrigins: java.util.List[JHttpOrigin] = invalidOrigins.map(_.asJava).asJava
+  override def getAllowedOrigins: java.util.List[JHttpOrigin] = allowedOrigins.map(_.asJava).asJava
 }
 
 /**
