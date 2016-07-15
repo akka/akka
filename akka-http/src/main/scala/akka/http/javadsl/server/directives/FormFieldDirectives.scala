@@ -8,10 +8,12 @@ import java.util.AbstractMap.SimpleImmutableEntry
 import java.util.Optional
 import java.util.function.{ Function ⇒ JFunction }
 
+import akka.http.javadsl.unmarshalling.Unmarshaller
+
 import scala.collection.JavaConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
 
-import akka.http.javadsl.server.{ Route, Unmarshaller }
+import akka.http.javadsl.server.Route
 
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 import akka.http.scaladsl.server.directives.ParameterDirectives._

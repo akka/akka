@@ -6,6 +6,8 @@ package akka.http.javadsl.server.directives
 
 import java.io.File
 
+import akka.http.javadsl.marshalling.Marshaller
+
 import scala.annotation.varargs
 import scala.collection.JavaConverters._
 import akka.http.javadsl.model.ContentType
@@ -27,7 +29,7 @@ abstract class DirectoryListing {
 }
 
 trait DirectoryRenderer {
-  def directoryMarshaller(renderVanityFooter: Boolean): akka.http.javadsl.server.Marshaller[DirectoryListing, RequestEntity]
+  def directoryMarshaller(renderVanityFooter: Boolean): Marshaller[DirectoryListing, RequestEntity]
 }
 
 /**

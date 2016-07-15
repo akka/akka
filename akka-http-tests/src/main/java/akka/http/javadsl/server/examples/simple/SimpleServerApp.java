@@ -34,7 +34,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static akka.http.javadsl.server.PathMatchers.integerSegment;
-import static akka.http.javadsl.server.Unmarshaller.entityToString;
+import static akka.http.javadsl.unmarshalling.Unmarshaller.entityToString;
 
 public class SimpleServerApp extends AllDirectives { // or import Directives.*
 
