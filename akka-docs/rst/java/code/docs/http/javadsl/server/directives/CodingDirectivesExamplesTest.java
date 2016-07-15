@@ -16,7 +16,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 
-import static akka.http.javadsl.server.Unmarshaller.entityToString;
+import static akka.http.javadsl.unmarshalling.Unmarshaller.entityToString;
 
 public class CodingDirectivesExamplesTest extends JUnitRouteTest {
 

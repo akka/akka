@@ -8,8 +8,8 @@ import java.io.IOException;
 import akka.http.javadsl.model.HttpEntity;
 import akka.http.javadsl.model.MediaTypes;
 import akka.http.javadsl.model.RequestEntity;
-import akka.http.javadsl.server.Marshaller;
-import akka.http.javadsl.server.Unmarshaller;
+import akka.http.javadsl.marshalling.Marshaller;
+import akka.http.javadsl.unmarshalling.Unmarshaller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;

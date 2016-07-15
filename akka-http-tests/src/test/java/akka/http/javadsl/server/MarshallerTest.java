@@ -7,6 +7,7 @@ package akka.http.javadsl.server;
 
 import java.util.function.Function;
 
+import akka.http.javadsl.marshalling.Marshaller;
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.model.headers.*;
 import org.junit.Test;
