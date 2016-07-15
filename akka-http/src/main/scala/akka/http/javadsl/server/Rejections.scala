@@ -110,7 +110,7 @@ trait MalformedHeaderRejection extends Rejection {
  * Signals that the request was rejected because `Origin` header value is invalid.
  */
 trait InvalidOriginRejection extends Rejection {
-  def getInvalidOrigins: java.util.List[akka.http.javadsl.model.headers.HttpOrigin]
+  def getAllowedOrigins: java.util.List[akka.http.javadsl.model.headers.HttpOrigin]
 }
 
 /**
