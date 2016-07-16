@@ -201,5 +201,5 @@ Persistence extension uses LevelDB based plugins for own development and keeps r
 However previously LevelDB was a ``compile`` scope dependency, and now it is an ``optional;provided`` dependency.
 To continue using LevelDB based persistence plugins it is now required for related user projects
 to include an additional explicit dependency declaration for the LevelDB artifacts. 
-This change allows production akka deployments to avoid need for the LevelDB provisioning. 
+This change allows production Akka deployments to avoid need for the LevelDB provisioning.
 Please see persistence extension ``reference.conf`` for details. 

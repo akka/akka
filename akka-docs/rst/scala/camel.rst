@@ -415,7 +415,7 @@ Here's an actor endpoint URI example containing an actor path::
    akka://some-system/user/myconsumer?autoAck=false&replyTimeout=100+millis
 
 In the following example, a custom route to an actor is created, using the
-actor's path. the akka camel package contains an implicit ``toActorRouteDefinition`` that allows for a route to
+actor's path. the Akka camel package contains an implicit ``toActorRouteDefinition`` that allows for a route to
 reference an ``ActorRef`` directly as shown in the below example, The route starts from a `Jetty`_ endpoint and
 ends at the target actor.
 
