@@ -4,7 +4,7 @@
 
 package akka.http.scaladsl.coding
 
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, ResponseEntity, RequestEntity }
+import akka.http.scaladsl.model.{ HttpEntity, HttpProtocols, HttpRequest, HttpResponse, ResponseEntity, RequestEntity }
 import akka.util.ByteString
 import akka.stream.scaladsl.Flow
 
@@ -24,7 +24,15 @@ object DataMapper {
         t.transformDataBytes(transformer)
     }
 
-  implicit val mapRequest: DataMapper[HttpRequest] = mapMessage(mapRequestEntity)((m, f) ⇒ m.withEntity(f(m.entity)))
+  implicit val mapRequest: DataMapper[HttpRequest] =
+    mapMessage(mapRequestEntity) { (m, f) ⇒
+      val entity = f(m.entity)
+      if (m.protocol.value == HttpProtocols.`HTTP/1.0`.value && entity.isChunked) {
+        // upgrade protocol, because HTTP/1.0 does not support chunking
+        m.copy(protocol = HttpProtocols.`HTTP/1.1`, entity = entity)
+      } else
+        m.withEntity(entity)
+    }
   implicit val mapResponse: DataMapper[HttpResponse] = mapMessage(mapResponseEntity)((m, f) ⇒ m.withEntity(f(m.entity)))
 
   def mapMessage[T, E](entityMapper: DataMapper[E])(mapEntity: (T, E ⇒ E) ⇒ T): DataMapper[T] =
