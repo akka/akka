@@ -43,7 +43,7 @@ Contributions are *very* welcome!
 If you see an issue that you'd like to see fixed, the best way to make it happen is to help out by submitting a PullRequest implementing it.
 
 Refer to the [CONTRIBUTING.md](https://github.com/akka/akka/blob/master/CONTRIBUTING.md) file for more details about the workflow,
-and general hints how to prepare your pull request. You can also chat ask for clarifications or guidance in github issues directly,
+and general hints how to prepare your pull request. You can also chat ask for clarifications or guidance in GitHub issues directly,
 or in the akka/dev chat if a more real time communication would be of benefit.
 
 A chat room is available for all questions related to *developing and contributing* to Akka:

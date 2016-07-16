@@ -224,7 +224,7 @@ Example:
 Akka uses [Jenkins GitHub pull request builder plugin](https://wiki.jenkins-ci.org/display/JENKINS/GitHub+pull+request+builder+plugin)
 that automatically merges the code, builds it, runs the tests and comments on the Pull Request in GitHub.
 
-Upon a submission of a Pull Request the Github pull request builder plugin will post a following comment:
+Upon a submission of a Pull Request the GitHub pull request builder plugin will post a following comment:
 
     Can one of the repo owners verify this patch?
 
