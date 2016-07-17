@@ -261,7 +261,7 @@ object AkkaBuild extends Build {
     base = file("akka-http-tests"),
     dependencies = Seq(
       httpTestkit % "test", streamTestkit % "test->test", testkit % "test->test", httpSprayJson, httpXml, httpJackson, 
-      multiNodeTestkit, cluster %"test->test", remoteTests % "test->test") // required for multi-node latency/throughput Spec
+      multiNodeTestkit, remoteTests % "test->test") // required for multi-node latency/throughput Spec
   ).configs(MultiJvm)
 
   lazy val httpMarshallersScala = Project(
