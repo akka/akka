@@ -83,7 +83,7 @@ private[http] object OutgoingConnectionBlueprint {
       val responseParsingMerge = b.add {
         // the initial header parser we initially use for every connection,
         // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
-        val rootParser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings) { info ⇒
+        val rootParser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings, log) { info ⇒
           if (parserSettings.illegalHeaderWarnings)
             logParsingError(info withSummaryPrepended "Illegal response header", log, parserSettings.errorLoggingVerbosity)
         })
