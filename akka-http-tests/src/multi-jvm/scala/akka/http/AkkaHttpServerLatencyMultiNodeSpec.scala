@@ -31,6 +31,7 @@ object AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString(
     """
       akka {
+        actor.default-mailbox.mailbox-type = "akka.dispatch.UnboundedMailbox"
         actor.provider = "akka.remote.RemoteActorRefProvider"
         stream.materializer.debug.fuzzing-mode = off
 
@@ -49,6 +50,31 @@ object AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeConfig {
   val server = role("server")
   val loadGenerator = role("loadGenerator")
 
+  private var _ifWrk2Available: Option[Boolean] = None
+  final def ifWrk2Available(test: ⇒ Unit): Unit =
+    if (isWrk2Available) test else throw new TestPendingException() 
+  final def isWrk2Available: Boolean = 
+    _ifWrk2Available getOrElse {
+        import scala.sys.process._
+        val wrkExitCode = Try("""wrk""".!).getOrElse(-1)
+
+        _ifWrk2Available = Some(wrkExitCode == 1) // app found, help displayed
+        isWrk2Available
+    }
+
+  private var _abAvailable: Option[Boolean] = None
+  final def ifAbAvailable(test: ⇒ Unit): Unit =
+    if (isAbAvailable) test else throw new TestPendingException()
+  
+  final def isAbAvailable: Boolean = 
+    _abAvailable getOrElse {
+      import scala.sys.process._
+      val abExitCode = Try("""ab -h""".!).getOrElse(-1)
+      _abAvailable = Some(abExitCode == 22) // app found, help displayed (22 return code is when -h runs in ab, weird but true)
+      isAbAvailable
+    }
+  
+  
   final case class LoadGenCommand(cmd: String)
   final case class LoadGenResults(results: String) {
     def lines = results.split("\n")
@@ -63,19 +89,27 @@ object AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeConfig {
         throw new RuntimeException("No server port known! Initialize with SetServerPort() first! Got: " + other)
     }
 
+    import scala.sys.process._
     def ready(port: Int): Receive = {
-      case LoadGenCommand(cmd) ⇒
-        import scala.sys.process._
-        val res = cmd.!! // blocking. DON'T DO THIS AT HOME, KIDS!
+      case LoadGenCommand(cmd) if cmd startsWith "wrk" ⇒
+        val res = 
+          if (isWrk2Available) cmd.!! // blocking. DON'T DO THIS AT HOME, KIDS!
+          else "=== WRK NOT AVAILABLE ==="
+        sender() ! LoadGenResults(res)
+      
+      case LoadGenCommand(cmd) if cmd startsWith "ab" ⇒
+        val res = 
+          if (isAbAvailable) cmd.!! // blocking. DON'T DO THIS AT HOME, KIDS!
+          else "=== AB NOT AVAILABLE ==="
         sender() ! LoadGenResults(res)
     }
   }
 }
 
-class AkkaHttpServerLatencyMultiNodeSpecMultiJvmNode1 extends MultiNodeSpecSpec
-class AkkaHttpServerLatencyMultiNodeSpecMultiJvmNode2 extends MultiNodeSpecSpec
+class AkkaHttpServerLatencyMultiNodeSpecMultiJvmNode1 extends AkkaHttpServerLatencyMultiNodeSpec
+class AkkaHttpServerLatencyMultiNodeSpecMultiJvmNode2 extends AkkaHttpServerLatencyMultiNodeSpec
 
-class MultiNodeSpecSpec extends MultiNodeSpec(AkkaHttpServerLatencyMultiNodeSpec) with STMultiNodeSpec
+class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLatencyMultiNodeSpec) with STMultiNodeSpec
   with ScalaFutures with ImplicitSender {
 
   import AkkaHttpServerLatencyMultiNodeSpec._
@@ -112,8 +146,6 @@ class MultiNodeSpecSpec extends MultiNodeSpec(AkkaHttpServerLatencyMultiNodeSpec
     }
   }
   // format: ON
-
-  val writeCsv = system.settings.config.getBoolean("akka.test.AkkaHttpServerLatencySpec.writeCsv")
 
   val totalRequestsFactor = system.settings.config.getDouble("akka.test.AkkaHttpServerLatencySpec.totalRequestsFactor")
   val requests = Math.round(10000 * totalRequestsFactor)
@@ -158,7 +190,7 @@ class MultiNodeSpecSpec extends MultiNodeSpec(AkkaHttpServerLatencyMultiNodeSpec
       enterBarrier("http-server-running")
     }
 
-    "warmup" taggedAs LongRunningTest in {
+    "warmup" taggedAs LongRunningTest in ifWrk2Available {
       val id = "warmup"
 
       val wrkOptions = s"""-d 30s -R $rate -c $connections -t $connections"""
@@ -239,19 +271,10 @@ class MultiNodeSpecSpec extends MultiNodeSpec(AkkaHttpServerLatencyMultiNodeSpec
     }
   }
 
-  private def dumpToCsv(prefix: String, titles: Seq[String], values: Seq[String]): Unit =
-    if (writeCsv) {
-      val w = new BufferedWriter(new FileWriter(prefix + ".csv"))
-      w.write(titles.reverse.map(it ⇒ "\"" + it + "\"").mkString(","))
-      w.write("\n")
-      w.write(values.reverse.map(it ⇒ "\"" + it + "\"").mkString(","))
-      w.write("\n")
-      w.flush()
-      w.close()
-
-      println("====:" + titles.reverse.map(it ⇒ "\"" + it + "\"").mkString(",") + "\n")
-      println("====:" + values.reverse.map(it ⇒ "\"" + it + "\"").mkString(",") + "\n")
-    }
+  private def renderResults(prefix: String, titles: Seq[String], values: Seq[String]): Unit = {
+    println("====:" + titles.reverse.map(it ⇒ "\"" + it + "\"").mkString(",") + "\n")
+    println("====:" + values.reverse.map(it ⇒ "\"" + it + "\"").mkString(",") + "\n")
+  }
 
   private def printWrkPercentiles(prefix: String, lines: Array[String]): Unit = {
     val percentilesToPrint = 8
@@ -260,8 +283,6 @@ class MultiNodeSpecSpec extends MultiNodeSpec(AkkaHttpServerLatencyMultiNodeSpec
       val dd = d.replace("us", "µs") // Scala Duration does not parse "us"
       Duration(dd).toMillis
     }
-
-    println("lines.mkString() = " + lines.mkString("\n"))
 
     var i = 0
     val correctedDistributionStartsHere = lines.zipWithIndex.find(p ⇒ p._1 contains "Latency Distribution").map(_._2).get
@@ -282,7 +303,7 @@ class MultiNodeSpecSpec extends MultiNodeSpec(AkkaHttpServerLatencyMultiNodeSpec
 
       i += 1
     }
-    dumpToCsv(prefix + "_corrected", titles, metrics)
+    renderResults(prefix + "_corrected", titles, metrics)
 
     val uncorrectedDistributionStartsHere = lines.zipWithIndex.find(p ⇒ p._1 contains "Uncorrected Latency").map(_._2).get
 
@@ -302,7 +323,7 @@ class MultiNodeSpecSpec extends MultiNodeSpec(AkkaHttpServerLatencyMultiNodeSpec
 
       i += 1
     }
-    dumpToCsv(prefix + "_uncorrected", titles, metrics)
+    renderResults(prefix + "_uncorrected", titles, metrics)
   }
 
   private def printAbPercentiles(prefix: String, lines: Array[String]): Unit = {
@@ -329,35 +350,7 @@ class MultiNodeSpecSpec extends MultiNodeSpec(AkkaHttpServerLatencyMultiNodeSpec
 
       i += 1
     }
-    dumpToCsv(prefix, titles, metrics)
-  }
-
-  private var _ifWrk2Available: Option[Boolean] = None
-  @tailrec private final def ifWrk2Available(test: ⇒ Unit): Unit = {
-    _ifWrk2Available match {
-      case Some(false) ⇒ throw new TestPendingException()
-      case Some(true)  ⇒ test
-      case None ⇒
-        import scala.sys.process._
-
-        val wrk = Try("""wrk""".!).getOrElse(-1)
-        _ifWrk2Available = Some(wrk == 1) // app found, help displayed
-        ifWrk2Available(test)
-    }
-  }
-
-  var _ifAbAvailable: Option[Boolean] = None
-  @tailrec private final def ifAbAvailable(test: ⇒ Unit): Unit = {
-    _ifAbAvailable match {
-      case Some(false) ⇒ throw new TestPendingException()
-      case Some(true)  ⇒ test
-      case None ⇒
-        import scala.sys.process._
-
-        val wrk = Try("""ab -h""".!).getOrElse(-1)
-        _ifAbAvailable = Some(wrk == 22) // app found, help displayed (22 return code is when -h runs in ab, weird but true)
-        ifAbAvailable(test)
-    }
+    renderResults(prefix, titles, metrics)
   }
 
 }
