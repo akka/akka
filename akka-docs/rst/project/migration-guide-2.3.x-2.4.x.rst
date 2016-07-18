@@ -191,7 +191,7 @@ i.e. if defined it takes precedence over ``max-total-nr-of-instances``.
 
 Logger names use full class name 
 ================================
-Previously, few places in akka used "simple" logger names, such as ``Cluster`` or ``Remoting``.
+Previously, few places in Akka used "simple" logger names, such as ``Cluster`` or ``Remoting``.
 Now they use full class names, such as ``akka.cluster.Cluster`` or ``akka.remote.Remoting``,
 in order to allow package level log level definitions and ease source code lookup. 
 In case you used specific "simple" logger name based rules in your ``logback.xml`` configurations,
@@ -226,7 +226,7 @@ Please see :ref:`deployment-scenarios` for more information.
 New Cluster Metrics Extension 
 =============================
 Previously, cluster metrics functionality was located in the ``akka-cluster`` jar.
-Now it is split out and moved into a separate akka module: ``akka-cluster-metrics`` jar.
+Now it is split out and moved into a separate Akka module: ``akka-cluster-metrics`` jar.
 The module comes with few enhancements, such as use of Kamon sigar-loader 
 for native library provisioning as well as use of statistical averaging of metrics data.
 Note that both old and new metrics configuration entries in the ``reference.conf`` 

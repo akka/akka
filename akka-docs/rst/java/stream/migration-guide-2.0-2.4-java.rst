@@ -42,7 +42,7 @@ completion but there is no actual value attached to the completion. It is used t
 occurrences of ``Future<BoxedUnit>`` with ``Future<Done>`` in Java and ``Future[Unit]`` with
 ``Future[Done]`` in Scala.
 
-All previous usage of ``Unit`` and ``BoxedUnit`` for these two cases in the akka streams APIs
+All previous usage of ``Unit`` and ``BoxedUnit`` for these two cases in the Akka Streams APIs
 has been updated.
 
 This means that Java code like this::
