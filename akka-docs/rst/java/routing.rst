@@ -46,7 +46,9 @@ outside of actors.
 .. note::
 
     In general, any message sent to a router will be sent onwards to its routees, but there is one exception.
-    The special :ref:`broadcast-messages-java` will send to *all* of a router's routees 
+    The special :ref:`broadcast-messages-java` will send to *all* of a router's routees.
+    However, do not use :ref:`broadcast-messages-java` when you use :ref:`balancing-pool-java` for routees
+    as described in :ref:`router-special-messages-java`.
 
 A Router Actor
 ^^^^^^^^^^^^^^
@@ -275,6 +277,10 @@ All routees share the same mailbox.
    can interact in a stateful fashion with other services in the back-end before
    replying to the original client. The other advantage is that it does not place
    a restriction on the message queue implementation as BalancingPool does.
+
+.. note::
+   Do not use :ref:`broadcast-messages-java` when you use :ref:`balancing-pool-java` for routers,
+   as described in :ref:`router-special-messages-java`.
 
 BalancingPool defined in configuration:
 
@@ -521,6 +527,11 @@ to every routee of a router.
 In this example the router receives the ``Broadcast`` message, extracts its payload
 (``"Watch out for Davy Jones' locker"``), and then sends the payload on to all of the router's
 routees. It is up to each routee actor to handle the received payload message.
+
+.. note::
+   Do not use :ref:`broadcast-messages-java` when you use :ref:`balancing-pool-java` for routers.
+   Routees on :ref:`balancing-pool-java` shares the same mailbox instance, thus some routees can
+   possibly get the broadcast message multiple times, while other routees get no broadcast message.
 
 PoisonPill Messages
 -------------------
