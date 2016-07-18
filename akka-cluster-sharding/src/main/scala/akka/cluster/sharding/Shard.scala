@@ -6,16 +6,18 @@ package akka.cluster.sharding
 import java.net.URLEncoder
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
+import akka.actor.ActorSystem
 import akka.actor.Deploy
 import akka.actor.Props
 import akka.actor.Terminated
-import akka.cluster.sharding.Shard.{ ShardCommand }
+import akka.cluster.sharding.Shard.ShardCommand
 import akka.persistence.PersistentActor
 import akka.persistence.SnapshotOffer
 import akka.actor.Actor
 import akka.persistence.RecoveryCompleted
 import akka.persistence.SaveSnapshotFailure
 import akka.persistence.SaveSnapshotSuccess
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -321,17 +323,19 @@ private[akka] class PersistentShard(
   with PersistentActor with ActorLogging {
 
   import ShardRegion.{ EntityId, Msg }
-  import Shard.{ State, RestartEntity, EntityStopped, EntityStarted }
+  import Shard.{ State, RestartEntity, RestartEntities, EntityStopped, EntityStarted }
   import settings.tuningParameters._
+  import akka.pattern.pipe
 
-  import akka.actor.ExtendedActorSystem
-  import akka.util.Collections.EmptyImmutableSeq
-  import com.typesafe.config.{ ConfigFactory, Config }
-
-  val entityRecoveryStrategy: EntityRecoveryStrategy =
-    context.system.asInstanceOf[ExtendedActorSystem].dynamicAccess.createInstanceFor[EntityRecoveryConfigurator](
-      settings.tuningParameters.entityRecoveryStrategy, EmptyImmutableSeq
-    ).map(_.create(retrieveEntityRecoveryConfig())).get
+  val rememberedEntitiesRecoveryStrategy: EntityRecoveryStrategy =
+    entityRecoveryStrategy match {
+      case "all" ⇒ EntityRecoveryStrategy.allStrategy()
+      case "constant" ⇒ EntityRecoveryStrategy.constantStrategy(
+        context.system,
+        entityRecoveryConstantRateStrategyFrequency,
+        entityRecoveryConstantRateStrategyNumberOfEntities
+      )
+    }
 
   override def persistenceId = s"/sharding/${typeName}Shard/${shardId}"
 
@@ -361,7 +365,7 @@ private[akka] class PersistentShard(
     case EntityStopped(id)                 ⇒ state = state.copy(state.entities - id)
     case SnapshotOffer(_, snapshot: State) ⇒ state = snapshot
     case RecoveryCompleted ⇒
-      entityRecoveryStrategy.recoverEntities(context, state.entities)
+      restartRememberedEntities()
       super.initialized()
       log.debug("Shard recovery completed {}", shardId)
   }
@@ -405,60 +409,45 @@ private[akka] class PersistentShard(
     }
   }
 
-  private def retrieveEntityRecoveryConfig(): Config = {
-    val path = settings.tuningParameters.entityRecoveryStrategyConfigPath
-    if (path.isEmpty)
-      ConfigFactory.empty()
-    else
-      context.system.settings.config.getConfig(path)
-  }
-}
-
-abstract class EntityRecoveryStrategy {
-  import ShardRegion.EntityId
-  import akka.actor.ActorContext
-  def recoverEntities(context: ActorContext, entities: Set[EntityId])
-}
-
-final class AllAtOnceEntityRecoveryStrategy extends EntityRecoveryStrategy {
-  import ShardRegion.EntityId
-  import akka.actor.ActorContext
-  import Shard.RestartEntities
-  override def recoverEntities(context: ActorContext, entities: Set[EntityId]): Unit =
-    if (entities.nonEmpty)
-      context.self ! RestartEntities(entities)
-}
-
-final class ConstantRateEntityRecoveryStrategy(val frequency: FiniteDuration, val numberOfEntities: Int) extends EntityRecoveryStrategy {
-  import ShardRegion.EntityId
-  import akka.actor.ActorContext
-  import Shard.RestartEntities
-  override def recoverEntities(context: ActorContext, entities: Set[EntityId]): Unit = {
-    entities.grouped(numberOfEntities).foldLeft(frequency) {
-      case (interval, entityIds) ⇒
-        import context.dispatcher
-        context.system.scheduler.scheduleOnce(interval, context.self, RestartEntities(entityIds))
-        interval + frequency
+  private def restartRememberedEntities(): Unit = {
+    rememberedEntitiesRecoveryStrategy.recoverEntities(state.entities).foreach { scheduledRecovery ⇒
+      import context.dispatcher
+      scheduledRecovery.filter(_.nonEmpty).map(RestartEntities).pipeTo(self)
     }
   }
 }
 
-trait EntityRecoveryConfigurator {
-  import com.typesafe.config.Config
-  def create(config: Config): EntityRecoveryStrategy
+object EntityRecoveryStrategy {
+  def allStrategy(): EntityRecoveryStrategy = new AllAtOnceEntityRecoveryStrategy()
+
+  def constantStrategy(actorSystem: ActorSystem, frequency: FiniteDuration, numberOfEntities: Int): EntityRecoveryStrategy =
+    new ConstantRateEntityRecoveryStrategy(actorSystem, frequency, numberOfEntities)
 }
 
-final class AllAtOnceEntityRecoveryConfigurator extends EntityRecoveryConfigurator {
-  import com.typesafe.config.Config
-  override def create(config: Config): EntityRecoveryStrategy = new AllAtOnceEntityRecoveryStrategy()
+trait EntityRecoveryStrategy {
+  import ShardRegion.EntityId
+  import scala.concurrent.Future
+
+  def recoverEntities(entities: Set[EntityId]): Set[Future[Set[EntityId]]]
 }
 
-final class ConstantRateEntityRecoveryConfigurator extends EntityRecoveryConfigurator {
-  import com.typesafe.config.Config
-  import scala.concurrent.duration._
-  override def create(config: Config): EntityRecoveryStrategy = new ConstantRateEntityRecoveryStrategy(
-    config.getDuration("frequency", MILLISECONDS).millis,
-    config.getInt("number-of-entities")
-  )
+final class AllAtOnceEntityRecoveryStrategy extends EntityRecoveryStrategy {
+  import ShardRegion.EntityId
+  override def recoverEntities(entities: Set[EntityId]): Set[Future[Set[EntityId]]] =
+    if (entities.isEmpty) Set.empty else Set(Future.successful(entities))
 }
 
+final class ConstantRateEntityRecoveryStrategy(actorSystem: ActorSystem, frequency: FiniteDuration, numberOfEntities: Int) extends EntityRecoveryStrategy {
+  import ShardRegion.EntityId
+  import akka.pattern.after
+  import actorSystem.dispatcher
+
+  override def recoverEntities(entities: Set[EntityId]): Set[Future[Set[EntityId]]] =
+    entities.grouped(numberOfEntities).foldLeft((frequency, Set[Future[Set[EntityId]]]())) {
+      case ((interval, scheduledEntityIds), entityIds) ⇒
+        (interval + frequency, scheduledEntityIds + scheduleEntities(interval, entityIds))
+    }._2
+
+  private def scheduleEntities(interval: FiniteDuration, entityIds: Set[EntityId]) =
+    after(interval, actorSystem.scheduler)(Future.successful[Set[EntityId]](entityIds))
+}

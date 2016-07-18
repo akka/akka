@@ -1,43 +1,37 @@
 package akka.cluster.sharding
 
-import akka.actor.{ Actor, Deploy, Props }
-import akka.cluster.sharding.Shard.RestartEntities
 import akka.cluster.sharding.ShardRegion.EntityId
-import akka.testkit.{ AkkaSpec, TestProbe }
-import com.typesafe.config.ConfigFactory
+import akka.testkit.AkkaSpec
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
 class AllAtOnceEntityRecoveryStrategySpec extends AkkaSpec {
-  val strategy = new AllAtOnceEntityRecoveryConfigurator().create(ConfigFactory.empty())
+  val strategy = EntityRecoveryStrategy.allStrategy()
+
+  import system.dispatcher
 
   "AllAtOnceEntityRecoveryStrategy" must {
     "recover entities" in {
-      val probe = TestProbe()
-      val probeRef = probe.ref
-      val shard = system.actorOf(Props(new Actor {
-        def receive = {
-          case "recover"          ⇒ strategy.recoverEntities(context, Set[EntityId]("1", "2", "3"))
-          case RestartEntities(e) ⇒ probeRef ! e
-        }
-      }).withDeploy(Deploy.local))
+      val entities = Set[EntityId]("1", "2", "3", "4", "5")
+      val startTime = System.currentTimeMillis()
+      val resultWithTimes = strategy.recoverEntities(entities).map(
+        _.map(entityIds ⇒ (entityIds, System.currentTimeMillis() - startTime))
+      )
 
-      shard ! "recover"
-      probe.expectMsg(Set[EntityId]("1", "2", "3"))
+      val result = Await.result(Future.sequence(resultWithTimes), 4 seconds).toList.sortWith(_._2 < _._2)
+      result.size should ===(1)
+
+      val scheduledEntities = result.map(_._1)
+      scheduledEntities.head should ===(entities)
+
+      val times = result.map(_._2)
+      times.head should ===(0L +- 20L)
     }
 
     "not recover when no entities to recover" in {
-      val probe = TestProbe()
-      val probeRef = probe.ref
-      val shard = system.actorOf(Props(new Actor {
-        def receive = {
-          case "recover"          ⇒ strategy.recoverEntities(context, Set[EntityId]())
-          case RestartEntities(e) ⇒ probeRef ! e
-        }
-      }).withDeploy(Deploy.local))
-
-      shard ! "recover"
-      probe.expectNoMsg(1 second)
+      val result = strategy.recoverEntities(Set[EntityId]())
+      result.size should ===(0)
     }
   }
 }

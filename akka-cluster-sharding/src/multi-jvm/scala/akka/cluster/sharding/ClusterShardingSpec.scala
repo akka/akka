@@ -115,9 +115,8 @@ object ClusterShardingSpec {
 }
 
 abstract class ClusterShardingSpecConfig(
-  val mode:                     String,
-  val entityRecoveryStrategy:   String = "akka.cluster.sharding.AllAtOnceEntityRecoveryConfigurator",
-  val entityRecoveryConfigPath: String = "")
+  val mode:                   String,
+  val entityRecoveryStrategy: String = "all")
   extends MultiNodeConfig {
 
   val controller = role("controller")
@@ -150,7 +149,6 @@ abstract class ClusterShardingSpecConfig(
       rebalance-interval = 2 s
       state-store-mode = "$mode"
       entity-recovery-strategy = "$entityRecoveryStrategy"
-      entity-recovery-strategy-config-path = "$entityRecoveryConfigPath"
       entity-recovery-constant-rate-strategy {
         frequency = 1 ms
         number-of-entities = 1
@@ -190,13 +188,11 @@ object PersistentClusterShardingSpecConfig extends ClusterShardingSpecConfig("pe
 object DDataClusterShardingSpecConfig extends ClusterShardingSpecConfig("ddata")
 object PersistentClusterShardingWithEntityRecoverySpecConfig extends ClusterShardingSpecConfig(
   "persistence",
-  "akka.cluster.sharding.ConstantRateEntityRecoveryConfigurator",
-  "akka.cluster.sharding.entity-recovery-constant-rate-strategy"
+  "all"
 )
 object DDataClusterShardingWithEntityRecoverySpecConfig extends ClusterShardingSpecConfig(
   "ddata",
-  "akka.cluster.sharding.ConstantRateEntityRecoveryConfigurator",
-  "akka.cluster.sharding.entity-recovery-constant-rate-strategy"
+  "constant"
 )
 
 class PersistentClusterShardingSpec extends ClusterShardingSpec(PersistentClusterShardingSpecConfig)

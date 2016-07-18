@@ -40,7 +40,8 @@ object ClusterShardingSettings {
       waitingForStateTimeout = config.getDuration("waiting-for-state-timeout", MILLISECONDS).millis,
       updatingStateTimeout = config.getDuration("updating-state-timeout", MILLISECONDS).millis,
       entityRecoveryStrategy = config.getString("entity-recovery-strategy"),
-      entityRecoveryStrategyConfigPath = config.getString("entity-recovery-strategy-config-path"))
+      entityRecoveryConstantRateStrategyFrequency = config.getDuration("entity-recovery-constant-rate-strategy.frequency", MILLISECONDS).millis,
+      entityRecoveryConstantRateStrategyNumberOfEntities = config.getInt("entity-recovery-constant-rate-strategy.number-of-entities"))
 
     val coordinatorSingletonSettings = ClusterSingletonManagerSettings(config.getConfig("coordinator-singleton"))
 
@@ -73,21 +74,26 @@ object ClusterShardingSettings {
     if (role == "") None else Option(role)
 
   class TuningParameters(
-    val coordinatorFailureBackoff:                    FiniteDuration,
-    val retryInterval:                                FiniteDuration,
-    val bufferSize:                                   Int,
-    val handOffTimeout:                               FiniteDuration,
-    val shardStartTimeout:                            FiniteDuration,
-    val shardFailureBackoff:                          FiniteDuration,
-    val entityRestartBackoff:                         FiniteDuration,
-    val rebalanceInterval:                            FiniteDuration,
-    val snapshotAfter:                                Int,
-    val leastShardAllocationRebalanceThreshold:       Int,
-    val leastShardAllocationMaxSimultaneousRebalance: Int,
-    val waitingForStateTimeout:                       FiniteDuration,
-    val updatingStateTimeout:                         FiniteDuration,
-    val entityRecoveryStrategy:                       String,
-    val entityRecoveryStrategyConfigPath:             String) {
+    val coordinatorFailureBackoff:                          FiniteDuration,
+    val retryInterval:                                      FiniteDuration,
+    val bufferSize:                                         Int,
+    val handOffTimeout:                                     FiniteDuration,
+    val shardStartTimeout:                                  FiniteDuration,
+    val shardFailureBackoff:                                FiniteDuration,
+    val entityRestartBackoff:                               FiniteDuration,
+    val rebalanceInterval:                                  FiniteDuration,
+    val snapshotAfter:                                      Int,
+    val leastShardAllocationRebalanceThreshold:             Int,
+    val leastShardAllocationMaxSimultaneousRebalance:       Int,
+    val waitingForStateTimeout:                             FiniteDuration,
+    val updatingStateTimeout:                               FiniteDuration,
+    val entityRecoveryStrategy:                             String,
+    val entityRecoveryConstantRateStrategyFrequency:        FiniteDuration,
+    val entityRecoveryConstantRateStrategyNumberOfEntities: Int) {
+
+    require(
+      entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",
+      s"Unknown 'entity-recovery-strategy' [$entityRecoveryStrategy], valid values are 'all' or 'constant'")
 
     def this(
       coordinatorFailureBackoff:                    FiniteDuration,
@@ -117,8 +123,9 @@ object ClusterShardingSettings {
         leastShardAllocationMaxSimultaneousRebalance,
         waitingForStateTimeout,
         updatingStateTimeout,
-        "akka.cluster.sharding.AllAtOnceEntityRecoveryConfigurator",
-        ""
+        "all",
+        100 milliseconds,
+        5
       )
     }
   }
