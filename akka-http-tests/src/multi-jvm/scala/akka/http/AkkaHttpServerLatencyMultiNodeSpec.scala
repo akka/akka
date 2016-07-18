@@ -276,13 +276,14 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
     println("====:" + values.reverse.map(it ⇒ "\"" + it + "\"").mkString(",") + "\n")
   }
 
+  private def durationAsMs(d: String): Long = {
+    val dd = d.replace("us", "µs") // Scala Duration does not parse "us"
+    val ddd = if (dd endsWith "m") dd.replace("m", " minutes") else dd
+    Duration(ddd).toMillis
+  }
+
   private def printWrkPercentiles(prefix: String, lines: Array[String]): Unit = {
     val percentilesToPrint = 8
-
-    def durationAsMs(d: String): Long = {
-      val dd = d.replace("us", "µs") // Scala Duration does not parse "us"
-      Duration(dd).toMillis
-    }
 
     var i = 0
     val correctedDistributionStartsHere = lines.zipWithIndex.find(p ⇒ p._1 contains "Latency Distribution").map(_._2).get
@@ -328,9 +329,6 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
 
   private def printAbPercentiles(prefix: String, lines: Array[String]): Unit = {
     val percentilesToPrint = 9
-
-    def durationAsMs(d: String): Long =
-      Duration(d).toMillis
 
     var i = 0
     val correctedDistributionStartsHere = lines.zipWithIndex.find(p ⇒ p._1 contains "Percentage of the requests").map(_._2).get
