@@ -64,11 +64,11 @@ This type of router actor comes in two distinct flavors:
 * Group - The routee actors are created externally to the router and the router sends
   messages to the specified path using actor selection, without watching for termination.  
 
-The settings for a router actor can be defined in configuration or programmatically. 
-Although router actors can be defined in the configuration file, they must still be created
-programmatically, i.e. you cannot make a router through external configuration alone.
-If you define the router actor in the configuration file then these settings will be used
-instead of any programmatically provided parameters.
+The settings for a router actor can be defined in configuration or programmatically.
+In order to make an actor to make use of an externally configurable router the ``FromConfig`` props wrapper must be used
+to denote that the actor accepts routing settings from configuration.
+This is in contrast with Remote Deployment where such marker props is not necessary.
+If the props of an actor is NOT wrapped in ``FromConfig`` it will ignore the router section of the deployment configuration.
 
 You send messages to the routees via the router actor in the same way as for ordinary actors,
 i.e. via its ``ActorRef``. The router actor forwards messages onto its routees without changing 
