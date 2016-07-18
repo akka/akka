@@ -136,8 +136,8 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
           Thread.sleep(500.millis.dilated.toMillis)
         }
       }
-      within(300.millis) {
-        awaitCond(breaker().currentFailureCount == 1, 100.millis.dilated)
+      within(400.millis) {
+        awaitCond(breaker().currentFailureCount == 1, 200.millis.dilated)
       }
     }
   }
