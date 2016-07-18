@@ -8,7 +8,7 @@ FSM
 Overview
 ========
 
-The FSM (Finite State Machine) is available as a mixin for the akka Actor and
+The FSM (Finite State Machine) is available as a mixin for the Akka Actor and
 is best described in the `Erlang design principles
 <http://www.erlang.org/documentation/doc-4.8.2/doc/design_principles/fsm.html>`_
 

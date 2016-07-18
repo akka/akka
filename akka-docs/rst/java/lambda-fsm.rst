@@ -9,7 +9,7 @@ Overview
 ========
 
 The FSM (Finite State Machine) is available as an abstract base class that implements
-an akka Actor and is best described in the `Erlang design principles
+an Akka Actor and is best described in the `Erlang design principles
 <http://www.erlang.org/documentation/doc-4.8.2/doc/design_principles/fsm.html>`_
 
 A FSM can be described as a set of relations of the form:
