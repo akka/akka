@@ -369,6 +369,10 @@ object HttpEntity {
 
     override def productPrefix = "HttpEntity.Default"
 
+    override def toString: String = {
+      s"$productPrefix($contentType,$contentLength bytes total)"
+    }
+
     /** Java API */
     override def getContentLength = contentLength
   }
@@ -414,6 +418,10 @@ object HttpEntity {
     override def withData(data: Source[ByteString, Any]): HttpEntity.CloseDelimited = copy(data = data)
 
     override def productPrefix = "HttpEntity.CloseDelimited"
+
+    override def toString: String = {
+      s"$productPrefix($contentType)"
+    }
   }
 
   /**
@@ -431,6 +439,10 @@ object HttpEntity {
     override def withData(data: Source[ByteString, Any]): HttpEntity.IndefiniteLength = copy(data = data)
 
     override def productPrefix = "HttpEntity.IndefiniteLength"
+
+    override def toString: String = {
+      s"$productPrefix($contentType)"
+    }
   }
 
   /**
@@ -468,6 +480,10 @@ object HttpEntity {
       if (contentType == this.contentType) this else copy(contentType = contentType)
 
     override def productPrefix = "HttpEntity.Chunked"
+
+    override def toString: String = {
+      s"$productPrefix($contentType)"
+    }
 
     /** Java API */
     def getChunks: stream.javadsl.Source[jm.HttpEntity.ChunkStreamPart, AnyRef] =
