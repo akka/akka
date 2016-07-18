@@ -549,20 +549,14 @@ object HttpEntity {
    * to entity constructors.
    */
   def limitableByteSource[Mat](source: Source[ByteString, Mat]): Source[ByteString, Mat] =
-    limitable(source, sizeOfByteString)
+    source.via(new Limitable(sizeOfByteString))
 
   /**
    * Turns the given source into one that respects the `withSizeLimit` calls when used as a parameter
    * to entity constructors.
    */
   def limitableChunkSource[Mat](source: Source[ChunkStreamPart, Mat]): Source[ChunkStreamPart, Mat] =
-    limitable(source, sizeOfChunkStreamPart)
-
-  /**
-   * INTERNAL API
-   */
-  private def limitable[Out, Mat](source: Source[Out, Mat], sizeOf: Out ⇒ Int): Source[Out, Mat] =
-    source.via(Flow[Out].via(new Limitable[Out](sizeOf)))
+    source.via(new Limitable(sizeOfChunkStreamPart))
 
   /**
    * INTERNAL API
