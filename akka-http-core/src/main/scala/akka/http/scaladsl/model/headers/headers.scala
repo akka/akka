@@ -377,7 +377,8 @@ object `Content-Length` extends ModeledCompanion[`Content-Length`]
  * Instances of this class will only be created transiently during header parsing and will never appear
  * in HttpMessage.header. To access the Content-Length, see subclasses of HttpEntity.
  */
-final case class `Content-Length` private[http] (length: Long) extends RequestResponseHeader {
+final case class `Content-Length` private[http] (length: Long) extends jm.headers.ContentLength
+  with RequestResponseHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ length
   protected def companion = `Content-Length`
 }
