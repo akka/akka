@@ -436,12 +436,6 @@ private[stream] object Fusing {
       case Ignore ⇒ Ignore
     }
 
-  private implicit class NonNull[T](val x: T) extends AnyVal {
-    def nonNull(msg: String): T =
-      if (x != null) x
-      else throw new IllegalArgumentException("null encountered: " + msg)
-  }
-
   /**
    * INTERNAL API
    *
@@ -671,8 +665,8 @@ private[stream] object Fusing {
      */
     def wire(out: OutPort, in: InPort, indent: Int): Unit = {
       if (Debug) println("  " * indent + s"wiring $out (${hash(out)}) -> $in (${hash(in)})")
-      val newOut = removeMapping(out, newOuts) nonNull s"$out (${hash(out)})"
-      val newIn = removeMapping(in, newIns) nonNull s"$in (${hash(in)})"
+      val newOut = nonNullForPort(removeMapping(out, newOuts), out)
+      val newIn = nonNullForPort(removeMapping(in, newIns), in)
       downstreams.put(newOut, newIn)
       upstreams.put(newIn, newOut)
     }
@@ -683,10 +677,10 @@ private[stream] object Fusing {
     def rewire(oldShape: Shape, newShape: Shape, indent: Int): Unit = {
       if (Debug) println("  " * indent + s"rewiring ${printShape(oldShape)} -> ${printShape(newShape)}")
       oldShape.inlets.iterator.zip(newShape.inlets.iterator).foreach {
-        case (oldIn, newIn) ⇒ addMapping(newIn, removeMapping(oldIn, newIns) nonNull s"$oldIn (${hash(oldIn)})", newIns)
+        case (oldIn, newIn) ⇒ addMapping(newIn, nonNullForPort(removeMapping(oldIn, newIns), oldIn), newIns)
       }
       oldShape.outlets.iterator.zip(newShape.outlets.iterator).foreach {
-        case (oldOut, newOut) ⇒ addMapping(newOut, removeMapping(oldOut, newOuts) nonNull s"$oldOut (${hash(oldOut)})", newOuts)
+        case (oldOut, newOut) ⇒ addMapping(newOut, nonNullForPort(removeMapping(oldOut, newOuts), oldOut), newOuts)
       }
     }
 
@@ -701,6 +695,13 @@ private[stream] object Fusing {
      */
     def newOutlets(old: immutable.Seq[Outlet[_]]): immutable.Seq[Outlet[_]] =
       old.map(o ⇒ newOuts.get(o).head.outlet)
+
+    // optimization - specialized null check avoiding allocation or creation of unused strings
+    private def nonNullForPort[T](t: T, port: AnyRef): T = {
+      if (t != null) t
+      else throw new IllegalArgumentException(s"null encountered: $port (${hash(port)})")
+    }
+
   }
 
   /**
