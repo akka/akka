@@ -147,15 +147,16 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     connections.mapAsyncUnordered(settings.maxConnections) {
       case incoming: Tcp.IncomingConnection ⇒
         try {
-          fullLayer.joinMat(incoming.flow)(Keep.left).run().recover {
-            // Ignore incoming errors from the connection as they will cancel the binding.
-            // As far as it is known currently, these errors can only happen if a TCP error bubbles up
-            // from the TCP layer through the HTTP layer to the Http.IncomingConnection.flow.
-            // See https://github.com/akka/akka/issues/17992
-            case NonFatal(ex) ⇒
-              ex.fillInStackTrace()
-              Done
-          }(ExecutionContexts.sameThreadExecutionContext)
+          fullLayer.addAttributes(HttpAttributes.remoteAddress(Some(incoming.remoteAddress)))
+            .joinMat(incoming.flow)(Keep.left)
+            .run().recover {
+              // Ignore incoming errors from the connection as they will cancel the binding.
+              // As far as it is known currently, these errors can only happen if a TCP error bubbles up
+              // from the TCP layer through the HTTP layer to the Http.IncomingConnection.flow.
+              // See https://github.com/akka/akka/issues/17992
+              case NonFatal(ex) ⇒
+                Done
+            }(ExecutionContexts.sameThreadExecutionContext)
         } catch {
           case NonFatal(e) ⇒
             log.error(e, "Could not materialize handling flow for {}", incoming)
