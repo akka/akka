@@ -300,7 +300,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
     "support `rawRequestUriHeader` setting" in new Test {
       override protected def newParser: HttpRequestParser =
-        new HttpRequestParser(parserSettings, rawRequestUriHeader = true, _headerParser = HttpHeaderParser(parserSettings)())
+        new HttpRequestParser(parserSettings, rawRequestUriHeader = true, headerParser = HttpHeaderParser(parserSettings)())
 
       """GET /f%6f%6fbar?q=b%61z HTTP/1.1
         |Host: ping
@@ -557,7 +557,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     def multiParse(parser: HttpRequestParser)(input: Seq[String]): Seq[Either[RequestOutput, StrictEqualHttpRequest]] =
       Source(input.toList)
         .map(bytes ⇒ SessionBytes(TLSPlacebo.dummySession, ByteString(bytes)))
-        .via(parser.stage).named("parser")
+        .via(parser).named("parser")
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
         .prefixAndTail(1)
         .collect {
