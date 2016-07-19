@@ -11,7 +11,7 @@ import org.openjdk.jmh.annotations._
 
 @State(Scope.Benchmark)
 @Measurement(timeUnit = TimeUnit.MILLISECONDS)
-class ByteString_dropSliceTake_Benchmark {
+class ByteString_decode_Benchmark {
 
   val _bs_mini = ByteString(Array.ofDim[Byte](128 * 4))
   val _bs_small = ByteString(Array.ofDim[Byte](1024 * 1))
@@ -77,14 +77,6 @@ class ByteString_dropSliceTake_Benchmark {
 
   // 18 == "http://example.com", a typical url length 
 
-  @Benchmark
-  def bs_large_drop_0: ByteString =
-    bs_large.drop(0)
-  @Benchmark
-  def bss_large_drop_0: ByteString =
-    bss_large.drop(0)
-
-  @Benchmark
   def bs_large_drop_18: ByteString =
     bs_large.drop(18)
   @Benchmark

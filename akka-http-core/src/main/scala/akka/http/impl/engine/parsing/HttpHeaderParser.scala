@@ -473,7 +473,7 @@ private[http] object HttpHeaderParser {
   private[parsing] class ModeledHeaderValueParser(headerName: String, maxHeaderValueLength: Int, maxValueCount: Int, settings: HeaderParser.Settings)
     extends HeaderValueParser(headerName, maxValueCount) {
     def apply(hhp: HttpHeaderParser, input: ByteString, valueStart: Int, onIllegalHeader: ErrorInfo ⇒ Unit): (HttpHeader, Int) = {
-      // TODO: optimize by running the header value parser directly on the input ByteString (rather than an extracted String)
+      // TODO: optimize by running the header value parser directly on the input ByteString (rather than an extracted String); seems done?
       val (headerValue, endIx) = scanHeaderValue(hhp, input, valueStart, valueStart + maxHeaderValueLength + 2)()
       val trimmedHeaderValue = headerValue.trim
       val header = HeaderParser.parseFull(headerName, trimmedHeaderValue, settings) match {
