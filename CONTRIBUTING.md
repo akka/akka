@@ -184,12 +184,13 @@ For larger projects that have invested a lot of time and resources into their cu
 Akka generates JavaDoc-style API documentation using the [genjavadoc](https://github.com/typesafehub/genjavadoc) sbt plugin, since the sources are written mostly in Scala.
 
 Generating JavaDoc is not enabled by default, as it's not needed on day-to-day development as it's expected to just work.
-If you'd like to check if you links and formatting looks good in JavaDoc (and not only in ScalaDoc), you can generate it by following these steps:
-
+If you'd like to check if you links and formatting looks good in JavaDoc (and not only in ScalaDoc), you can generate it by running:
 
 ```
 sbt -Dakka.genjavadoc.enabled=true javaunidoc:doc
 ```
+
+Which will generate JavaDoc style docs in `./target/javaunidoc/index.html`
 
 ## External Dependencies
 
