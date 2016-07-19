@@ -904,6 +904,10 @@ object MiMa extends AutoPlugin {
 
         // #20543 GraphStage subtypes should not be private to akka
         ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.stream.ActorMaterializer.actorOf")
+      ),
+      "2.4.9" -> Seq(
+        // #20994 adding new decode method, since we're on JDK7+ now
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.util.ByteString.decodeString")
       )
     )
   }

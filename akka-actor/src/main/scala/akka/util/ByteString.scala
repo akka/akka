@@ -15,7 +15,7 @@ import scala.collection.immutable
 import scala.collection.immutable.{ IndexedSeq, VectorBuilder, VectorIterator }
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
-import java.nio.charset.StandardCharsets
+import java.nio.charset.{ Charset, StandardCharsets }
 
 object ByteString {
 
@@ -139,6 +139,9 @@ object ByteString {
     override def asByteBuffers: scala.collection.immutable.Iterable[ByteBuffer] = List(asByteBuffer)
 
     override def decodeString(charset: String): String =
+      if (isEmpty) "" else new String(bytes, charset)
+
+    override def decodeString(charset: Charset): String =
       if (isEmpty) "" else new String(bytes, charset)
 
     override def ++(that: ByteString): ByteString = {
@@ -279,7 +282,10 @@ object ByteString {
 
     def asByteBuffers: scala.collection.immutable.Iterable[ByteBuffer] = List(asByteBuffer)
 
-    def decodeString(charset: String): String =
+    override def decodeString(charset: String): String =
+      new String(if (length == bytes.length) bytes else toArray, charset)
+
+    override def decodeString(charset: Charset): String = // avoids Charset.forName lookup in String internals
       new String(if (length == bytes.length) bytes else toArray, charset)
 
     def ++(that: ByteString): ByteString = {
@@ -420,6 +426,9 @@ object ByteString {
     def asByteBuffers: scala.collection.immutable.Iterable[ByteBuffer] = bytestrings map { _.asByteBuffer }
 
     def decodeString(charset: String): String = compact.decodeString(charset)
+
+    def decodeString(charset: Charset): String =
+      compact.decodeString(charset)
 
     private[akka] def writeToOutputStream(os: ObjectOutputStream): Unit = {
       os.writeInt(bytestrings.length)
@@ -671,8 +680,15 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
 
   /**
    * Decodes this ByteString using a charset to produce a String.
+   * If you have a [[Charset]] instance available, use `decodeString(charset: java.nio.charset.Charset` instead.
    */
   def decodeString(charset: String): String
+
+  /**
+   * Decodes this ByteString using a charset to produce a String.
+   * Avoids Charset.forName lookup in String internals, thus is preferable to `decodeString(charset: String)`.
+   */
+  def decodeString(charset: Charset): String
 
   /**
    * map method that will automatically cast Int back into Byte.
