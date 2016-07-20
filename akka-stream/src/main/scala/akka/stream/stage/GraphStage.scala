@@ -346,7 +346,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
     if ((portState & (InReady | InClosed | OutClosed)) == InReady) {
       it.portStates(connection) = portState ^ PullStartFlip
-      it.enqueue(connection)
+      it.chasePull(connection)
     } else {
       // Detailed error information should not add overhead to the hot path
       require(!isClosed(in), s"Cannot pull closed port ($in)")
@@ -446,7 +446,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
     if ((portState & (OutReady | OutClosed | InClosed)) == OutReady && (elem != null)) {
       it.connectionSlots(connection) = elem
-      it.enqueue(connection)
+      it.chasePush(connection)
     } else {
       // Restore state for the error case
       it.portStates(connection) = portState
