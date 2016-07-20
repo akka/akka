@@ -12,7 +12,7 @@ import org.openjdk.jmh.infra.Blackhole
 
 @State(Scope.Benchmark)
 @Measurement(timeUnit = TimeUnit.MILLISECONDS)
-class ByteStringBenchmark {
+class ByteString_copyToBuffer_Benchmark {
 
   val _bs_mini = ByteString(Array.ofDim[Byte](128 * 4))
   val _bs_small = ByteString(Array.ofDim[Byte](1024 * 1))
@@ -83,16 +83,10 @@ class ByteStringBenchmark {
     bss_large.copyToBuffer(buf)
   }
 
-  //  /** compact + copy */
-  //  @Benchmark
-  //  def bss_large_c_copyToBuffer: Int =
-  //    bss_large.compact.copyToBuffer(buf)
-
   /** Pre-compacted */
   @Benchmark
   def bss_large_pc_copyToBuffer(): Int = {
     buf.flip()
     bss_pc_large.copyToBuffer(buf)
   }
-
 }

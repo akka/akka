@@ -1,4 +1,5 @@
 *#
+*.jfr
 *.iml
 *.ipr
 *.iws

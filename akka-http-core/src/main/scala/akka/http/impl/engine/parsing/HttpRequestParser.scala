@@ -101,8 +101,8 @@ private[http] class HttpRequestParser(
 
     val uriEnd = findUriEnd()
     try {
-      uriBytes = input.iterator.slice(uriStart, uriEnd).toArray[Byte] // TODO: can we reduce allocations here?
-      uri = Uri.parseHttpRequestTarget(uriBytes, mode = uriParsingMode)
+      uriBytes = input.slice(uriStart, uriEnd).toArray[Byte] // TODO: can we reduce allocations here?
+      uri = Uri.parseHttpRequestTarget(uriBytes, mode = uriParsingMode) // TODO ByteStringParserInput?
     } catch {
       case IllegalUriException(info) ⇒ throw new ParsingException(BadRequest, info)
     }
