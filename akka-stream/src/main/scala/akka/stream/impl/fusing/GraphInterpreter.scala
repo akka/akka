@@ -650,7 +650,7 @@ final class GraphInterpreter(
     elem
   }
 
-  private def enqueue(connection: Int): Unit = {
+  def enqueue(connection: Int): Unit = {
     if (Debug) if (queueTail - queueHead > mask) new Exception(s"$Name internal queue full ($queueStatus) + $connection").printStackTrace()
     eventQueue(queueTail & mask) = connection
     queueTail += 1
@@ -685,23 +685,6 @@ final class GraphInterpreter(
     } catch {
       case NonFatal(e) ⇒
         log.error(e, s"Error during postStop in [{}]: {}", assembly.stages(logic.stageId), e.getMessage)
-    }
-  }
-
-  private[stream] def push(connection: Int, elem: Any): Unit = {
-    val currentState = portStates(connection)
-    portStates(connection) = currentState ^ PushStartFlip
-    if ((currentState & InClosed) == 0) {
-      connectionSlots(connection) = elem
-      enqueue(connection)
-    }
-  }
-
-  private[stream] def pull(connection: Int): Unit = {
-    val currentState = portStates(connection)
-    portStates(connection) = currentState ^ PullStartFlip
-    if ((currentState & OutClosed) == 0) {
-      enqueue(connection)
     }
   }
 
