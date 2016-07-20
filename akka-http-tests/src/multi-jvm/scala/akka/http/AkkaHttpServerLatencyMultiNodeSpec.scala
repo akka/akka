@@ -52,29 +52,28 @@ object AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeConfig {
 
   private var _ifWrk2Available: Option[Boolean] = None
   final def ifWrk2Available(test: ⇒ Unit): Unit =
-    if (isWrk2Available) test else throw new TestPendingException() 
-  final def isWrk2Available: Boolean = 
+    if (isWrk2Available) test else throw new TestPendingException()
+  final def isWrk2Available: Boolean =
     _ifWrk2Available getOrElse {
-        import scala.sys.process._
-        val wrkExitCode = Try("""wrk""".!).getOrElse(-1)
+      import scala.sys.process._
+      val wrkExitCode = Try("""wrk""".!).getOrElse(-1)
 
-        _ifWrk2Available = Some(wrkExitCode == 1) // app found, help displayed
-        isWrk2Available
+      _ifWrk2Available = Some(wrkExitCode == 1) // app found, help displayed
+      isWrk2Available
     }
 
   private var _abAvailable: Option[Boolean] = None
   final def ifAbAvailable(test: ⇒ Unit): Unit =
     if (isAbAvailable) test else throw new TestPendingException()
-  
-  final def isAbAvailable: Boolean = 
+
+  final def isAbAvailable: Boolean =
     _abAvailable getOrElse {
       import scala.sys.process._
       val abExitCode = Try("""ab -h""".!).getOrElse(-1)
       _abAvailable = Some(abExitCode == 22) // app found, help displayed (22 return code is when -h runs in ab, weird but true)
       isAbAvailable
     }
-  
-  
+
   final case class LoadGenCommand(cmd: String)
   final case class LoadGenResults(results: String) {
     def lines = results.split("\n")
@@ -92,13 +91,13 @@ object AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeConfig {
     import scala.sys.process._
     def ready(port: Int): Receive = {
       case LoadGenCommand(cmd) if cmd startsWith "wrk" ⇒
-        val res = 
+        val res =
           if (isWrk2Available) cmd.!! // blocking. DON'T DO THIS AT HOME, KIDS!
           else "=== WRK NOT AVAILABLE ==="
         sender() ! LoadGenResults(res)
-      
+
       case LoadGenCommand(cmd) if cmd startsWith "ab" ⇒
-        val res = 
+        val res =
           if (isAbAvailable) cmd.!! // blocking. DON'T DO THIS AT HOME, KIDS!
           else "=== AB NOT AVAILABLE ==="
         sender() ! LoadGenResults(res)
