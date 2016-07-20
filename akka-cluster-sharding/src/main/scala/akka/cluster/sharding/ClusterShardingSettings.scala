@@ -95,6 +95,7 @@ object ClusterShardingSettings {
       entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",
       s"Unknown 'entity-recovery-strategy' [$entityRecoveryStrategy], valid values are 'all' or 'constant'")
 
+    // included for binary compatibility
     def this(
       coordinatorFailureBackoff:                    FiniteDuration,
       retryInterval:                                FiniteDuration,
