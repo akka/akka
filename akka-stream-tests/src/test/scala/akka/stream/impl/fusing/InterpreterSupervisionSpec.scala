@@ -6,11 +6,9 @@ package akka.stream.impl.fusing
 import akka.stream.testkit.StreamSpec
 
 import scala.util.control.NoStackTrace
-import akka.stream.Supervision
-import akka.stream.stage.Context
-import akka.stream.stage.PushPullStage
-import akka.stream.stage.Stage
-import akka.stream.stage.SyncDirective
+import akka.stream.{ ActorAttributes, Attributes, Supervision }
+import akka.stream.stage._
+import akka.testkit.AkkaSpec
 
 class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit {
   import Supervision.stoppingDecider
@@ -21,16 +19,22 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
     override def toString = "TE"
   }
 
+  class ResumingMap[In, Out](_f: In ⇒ Out) extends Map(_f) {
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+      super.createLogic(inheritedAttributes.and(ActorAttributes.supervisionStrategy(resumingDecider)))
+  }
+
   "Interpreter error handling" must {
 
-    "handle external failure" in new OneBoundedSetup[Int](Seq(Map((x: Int) ⇒ x + 1, stoppingDecider))) {
+    "handle external failure" in new OneBoundedSetup[Int](Map((x: Int) ⇒ x + 1)) {
       lastEvents() should be(Set.empty)
 
       upstream.onError(TE)
       lastEvents() should be(Set(OnError(TE)))
     }
 
-    "emit failure when op throws" in new OneBoundedSetup[Int](Seq(Map((x: Int) ⇒ if (x == 0) throw TE else x, stoppingDecider))) {
+    "emit failure when op throws" in new OneBoundedSetup[Int](Map((x: Int) ⇒ if (x == 0) throw TE else x)) {
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
       upstream.onNext(2)
@@ -42,10 +46,10 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       lastEvents() should be(Set(Cancel, OnError(TE)))
     }
 
-    "emit failure when op throws in middle of the chain" in new OneBoundedSetup[Int](Seq(
-      Map((x: Int) ⇒ x + 1, stoppingDecider),
-      Map((x: Int) ⇒ if (x == 0) throw TE else x + 10, stoppingDecider),
-      Map((x: Int) ⇒ x + 100, stoppingDecider))) {
+    "emit failure when op throws in middle of the chain" in new OneBoundedSetup[Int](
+      Map((x: Int) ⇒ x + 1),
+      Map((x: Int) ⇒ if (x == 0) throw TE else x + 10),
+      Map((x: Int) ⇒ x + 100)) {
 
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
@@ -58,7 +62,9 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       lastEvents() should be(Set(Cancel, OnError(TE)))
     }
 
-    "resume when Map throws" in new OneBoundedSetup[Int](Seq(Map((x: Int) ⇒ if (x == 0) throw TE else x, resumingDecider))) {
+    "resume when Map throws" in new OneBoundedSetup[Int](
+      new ResumingMap((x: Int) ⇒ if (x == 0) throw TE else x)
+    ) {
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
       upstream.onNext(2)
@@ -82,10 +88,11 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       lastEvents() should be(Set(OnNext(4)))
     }
 
-    "resume when Map throws in middle of the chain" in new OneBoundedSetup[Int](Seq(
-      Map((x: Int) ⇒ x + 1, resumingDecider),
-      Map((x: Int) ⇒ if (x == 0) throw TE else x + 10, resumingDecider),
-      Map((x: Int) ⇒ x + 100, resumingDecider))) {
+    "resume when Map throws in middle of the chain" in new OneBoundedSetup[Int](
+      new ResumingMap((x: Int) ⇒ x + 1),
+      new ResumingMap((x: Int) ⇒ if (x == 0) throw TE else x + 10),
+      new ResumingMap((x: Int) ⇒ x + 100)
+    ) {
 
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
@@ -102,8 +109,8 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
     }
 
     "resume when Map throws before Grouped" in new OneBoundedSetup[Int](
-      Map((x: Int) ⇒ x + 1, resumingDecider).toGS,
-      Map((x: Int) ⇒ if (x <= 0) throw TE else x + 10, resumingDecider).toGS,
+      new ResumingMap((x: Int) ⇒ x + 1),
+      new ResumingMap((x: Int) ⇒ if (x <= 0) throw TE else x + 10),
       Grouped(3)) {
 
       downstream.requestOne()
@@ -122,8 +129,8 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
     }
 
     "complete after resume when Map throws before Grouped" in new OneBoundedSetup[Int](
-      Map((x: Int) ⇒ x + 1, resumingDecider).toGS,
-      Map((x: Int) ⇒ if (x <= 0) throw TE else x + 10, resumingDecider).toGS,
+      new ResumingMap((x: Int) ⇒ x + 1),
+      new ResumingMap((x: Int) ⇒ if (x <= 0) throw TE else x + 10),
       Grouped(1000)) {
 
       downstream.requestOne()

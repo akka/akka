@@ -475,7 +475,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def map[T](f: Out ⇒ T): Repr[T] = andThen(Map(f))
+  def map[T](f: Out ⇒ T): Repr[T] = via(Map(f))
 
   /**
    * Transform each input element into an `Iterable` of output elements that is

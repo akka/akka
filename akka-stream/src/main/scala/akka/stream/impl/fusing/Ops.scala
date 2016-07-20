@@ -25,10 +25,33 @@ import akka.stream.impl.Stages.DefaultAttributes
 /**
  * INTERNAL API
  */
-final case class Map[In, Out](f: In ⇒ Out, decider: Supervision.Decider) extends PushStage[In, Out] {
-  override def onPush(elem: In, ctx: Context[Out]): SyncDirective = ctx.push(f(elem))
+// FIXME: Not final because InterpreterSupervisionSpec. Some better option is needed here
+case class Map[In, Out](f: In ⇒ Out) extends GraphStage[FlowShape[In, Out]] {
+  val in = Inlet[In]("Map.in")
+  val out = Outlet[Out]("Map.out")
+  override val shape = FlowShape(in, out)
+  override def initialAttributes: Attributes = DefaultAttributes.map
 
-  override def decide(t: Throwable): Supervision.Directive = decider(t)
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with InHandler with OutHandler {
+      private def decider =
+        inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+
+      override def onPush(): Unit = {
+        try {
+          push(out, f(grab(in)))
+        } catch {
+          case NonFatal(ex) ⇒ decider(ex) match {
+            case Supervision.Stop ⇒ failStage(ex)
+            case _                ⇒ pull(in)
+          }
+        }
+      }
+
+      override def onPull(): Unit = pull(in)
+
+      setHandlers(in, out, this)
+    }
 }
 
 /**
