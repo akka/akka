@@ -179,6 +179,19 @@ For more info, or for a starting point for new projects, look at the [Lightbend 
 
 For larger projects that have invested a lot of time and resources into their current documentation and samples scheme (like for example Play), it is understandable that it will take some time to migrate to this new model. In these cases someone from the project needs to take the responsibility of manual QA and verifier for the documentation and samples.
 
+### JavaDoc
+
+Akka generates JavaDoc-style API documentation using the [genjavadoc](https://github.com/typesafehub/genjavadoc) sbt plugin, since the sources are written mostly in Scala.
+
+Generating JavaDoc is not enabled by default, as it's not needed on day-to-day development as it's expected to just work.
+If you'd like to check if you links and formatting looks good in JavaDoc (and not only in ScalaDoc), you can generate it by running:
+
+```
+sbt -Dakka.genjavadoc.enabled=true javaunidoc:doc
+```
+
+Which will generate JavaDoc style docs in `./target/javaunidoc/index.html`
+
 ## External Dependencies
 
 All the external runtime dependencies for the project, including transitive dependencies, must have an open source license that is equal to, or compatible with, [Apache 2](http://www.apache.org/licenses/LICENSE-2.0).
