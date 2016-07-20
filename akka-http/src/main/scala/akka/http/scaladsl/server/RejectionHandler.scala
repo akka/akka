@@ -122,9 +122,9 @@ object RejectionHandler {
   import Directives._
 
   /**
-   * Creates a new default [[RejectionHandler]] instance.
+   * Default [[RejectionHandler]] instance.
    */
-  def default =
+  final val default =
     newBuilder()
       .handleAll[SchemeRejection] { rejections ⇒
         val schemes = rejections.map(_.supported).mkString(", ")
