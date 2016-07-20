@@ -14,7 +14,7 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
   val halfLength = chainLength / 2
   val repetition = 100
 
-  val map = Map((x: Int) ⇒ x + 1, stoppingDecider).toGS
+  val map = Map((x: Int) ⇒ x + 1)
 
   // GraphStages can be reused
   val dropOne = Drop(1)

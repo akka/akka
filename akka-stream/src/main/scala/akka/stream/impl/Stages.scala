@@ -156,10 +156,6 @@ object Stages {
 
   }
 
-  final case class Map[In, Out](f: In ⇒ Out, attributes: Attributes = map) extends SymbolicStage[In, Out] {
-    override def create(attr: Attributes): Stage[In, Out] = fusing.Map(f, supervision(attr))
-  }
-
   final case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy, attributes: Attributes = buffer) extends SymbolicStage[T, T] {
     require(size > 0, s"Buffer size must be larger than zero but was [$size]")
     override def create(attr: Attributes): Stage[T, T] = fusing.Buffer(size, overflowStrategy)
