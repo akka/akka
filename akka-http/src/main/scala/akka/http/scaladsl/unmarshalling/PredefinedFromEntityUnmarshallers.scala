@@ -35,7 +35,7 @@ trait PredefinedFromEntityUnmarshallers extends MultipartUnmarshallers {
   implicit def stringUnmarshaller: FromEntityUnmarshaller[String] =
     byteStringUnmarshaller mapWithInput { (entity, bytes) ⇒
       if (entity.isKnownEmpty) ""
-      else bytes.decodeString(Unmarshaller.bestUnmarshallingCharsetFor(entity).nioCharset.name)
+      else bytes.decodeString(Unmarshaller.bestUnmarshallingCharsetFor(entity).nioCharset)
     }
 
   implicit def defaultUrlEncodedFormDataUnmarshaller: FromEntityUnmarshaller[FormData] =
