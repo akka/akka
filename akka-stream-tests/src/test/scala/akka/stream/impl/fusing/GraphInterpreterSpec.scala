@@ -368,11 +368,8 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
       sink.requestOne(eventLimit = 0)
       source.onComplete(eventLimit = 3)
-      lastEvents() should ===(Set(OnNext(sink, "C")))
-
-      sink.requestOne()
-      lastEvents() should ===(Set(OnComplete(sink)))
-
+      // OnComplete arrives early due to push chasing
+      lastEvents() should ===(Set(OnNext(sink, "C"), OnComplete(sink)))
     }
   }
 

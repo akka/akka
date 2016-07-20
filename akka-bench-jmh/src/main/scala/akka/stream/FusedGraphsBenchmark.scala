@@ -161,6 +161,15 @@ class FusedGraphsBenchmark {
       fuse(
         testSource
           .map(addFunc)
+          .map(addFunc)
+          .map(addFunc)
+          .map(addFunc)
+          .map(addFunc)
+          .map(addFunc)
+          .map(addFunc)
+          .map(addFunc)
+          .map(addFunc)
+          .map(addFunc)
           .toMat(testSink)(Keep.right)
       )
 
