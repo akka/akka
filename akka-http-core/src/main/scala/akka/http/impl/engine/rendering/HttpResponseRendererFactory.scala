@@ -19,6 +19,7 @@ import akka.http.impl.util._
 import RenderSupport._
 import HttpProtocols._
 import headers._
+import scala.concurrent.duration._
 
 /**
  * INTERNAL API
@@ -27,6 +28,9 @@ private[http] class HttpResponseRendererFactory(
   serverHeader:           Option[headers.Server],
   responseHeaderSizeHint: Int,
   log:                    LoggingAdapter) {
+
+  final val TimeDriftToleranceNanos = 1.second.toNanos
+  val clock = new NanosFastClock(TimeDriftToleranceNanos)
 
   private val renderDefaultServerHeader: Rendering ⇒ Unit =
     serverHeader match {
@@ -37,18 +41,24 @@ private[http] class HttpResponseRendererFactory(
     }
 
   // as an optimization we cache the Date header of the last second here
-  @volatile private[this] var cachedDateHeader: (Long, Array[Byte]) = (0L, null)
+  @volatile private[this] var cachedDateHeader: Array[Byte] = {
+    val r = new ByteArrayRendering(48) // TODO pooling
+    DateTime(System.currentTimeMillis()).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
+    r.get
+  }
 
-  private def dateHeader: Array[Byte] = {
-    var (cachedSeconds, cachedBytes) = cachedDateHeader
-    val now = currentTimeMillis()
-    if (now / 1000 > cachedSeconds) {
-      cachedSeconds = now / 1000
-      val r = new ByteArrayRendering(48)
-      DateTime(now).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
+  def dateHeader: Array[Byte] = {
+    var cachedBytes = cachedDateHeader
+
+    val nanosSinceLast = clock.updateHighSpeed()
+    if (nanosSinceLast > TimeDriftToleranceNanos) {
+      val wallClockMs = clock.updateWallClock()
+      val r = new ByteArrayRendering(48) // TODO pooling
+      DateTime(wallClockMs).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
       cachedBytes = r.get
-      cachedDateHeader = cachedSeconds → cachedBytes
+      cachedDateHeader = cachedBytes
     }
+
     cachedBytes
   }
 
@@ -219,7 +229,7 @@ private[http] class HttpResponseRendererFactory(
           def byteStrings(entityBytes: ⇒ Source[ByteString, Any]): Source[ResponseRenderingOutput, Any] =
             renderByteStrings(r, entityBytes, skipEntity = noEntity).map(ResponseRenderingOutput.HttpData(_))
 
-          def completeResponseRendering(entity: ResponseEntity): StrictOrStreamed =
+          @tailrec def completeResponseRendering(entity: ResponseEntity): StrictOrStreamed =
             entity match {
               case HttpEntity.Strict(_, data) ⇒
                 renderHeaders(headers.toList)

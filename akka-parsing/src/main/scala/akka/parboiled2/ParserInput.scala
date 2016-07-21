@@ -18,8 +18,11 @@ package akka.parboiled2
 
 import scala.annotation.tailrec
 import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 
-trait ParserInput {
+import akka.parboiled2.ParserInput.DefaultParserInput
+
+trait ParserInput extends Any {
   /**
    * Returns the character at the given (zero-based) index.
    * Note: this method is hot and should be small and efficient.
