@@ -110,9 +110,9 @@ class HttpBlueprintBenchmark {
     Flow.fromSinkAndSource(Sink.cancelled, Source.empty)
 
   @Benchmark
-  @OperationsPerInvocation(100)
-  def run_100_reqs(blackhole: Blackhole) = {
-    val n = 100
+  @OperationsPerInvocation(100 * 1000)
+  def run_10000_reqs(blackhole: Blackhole) = {
+    val n = 100 * 1000
     val latch = new CountDownLatch(n)
 
     val replyCountdown = reply map { x =>
@@ -126,9 +126,9 @@ class HttpBlueprintBenchmark {
   }
 
   @Benchmark
-  @OperationsPerInvocation(100 * 1000)
-  def run_10000_reqs(blackhole: Blackhole) = {
-    val n = 100 * 1000
+  @OperationsPerInvocation(10 * 1000)
+  def run_1000_reqs(blackhole: Blackhole) = {
+    val n = 10 * 1000
     val latch = new CountDownLatch(n)
 
     val replyCountdown = reply map { x =>
