@@ -132,15 +132,15 @@ private[http] final class HttpRequestParser(
           RequestUriTooLong,
           s"URI length exceeds the configured limit of $maxUriLength characters")
 
-    val uriEnd = findUriEnd()
-    try {
-      uriBytes = input.slice(uriStart, uriEnd).toArray[Byte] // TODO: can we reduce allocations here?
-      uri = Uri.parseHttpRequestTarget(uriBytes, mode = uriParsingMode) // TODO ByteStringParserInput?
-    } catch {
-      case IllegalUriException(info) ⇒ throw new ParsingException(BadRequest, info)
+      val uriEnd = findUriEnd()
+      try {
+        uriBytes = input.slice(uriStart, uriEnd).toArray[Byte] // TODO: can we reduce allocations here?
+        uri = Uri.parseHttpRequestTarget(uriBytes, mode = uriParsingMode) // TODO ByteStringParserInput?
+      } catch {
+        case IllegalUriException(info) ⇒ throw new ParsingException(BadRequest, info)
+      }
+      uriEnd + 1
     }
-    uriEnd + 1
-  }
 
     def badProtocol = throw new ParsingException(HTTPVersionNotSupported)
 
