@@ -50,7 +50,7 @@ object TestServer extends App {
           case None          ⇒ HttpResponse(400, entity = "Not a valid websocket request!")
         }
       case _: HttpRequest ⇒ HttpResponse(404, entity = "Unknown resource!")
-    }, interface = "0.0.0.0", port = 9001)
+    }, interface = "localhost", port = 9001)
 
     Await.result(binding, 1.second) // throws if binding fails
     println("Server online at http://localhost:9001")
