@@ -57,7 +57,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   private[this] final val DefaultPortForProtocol = -1 // any negative value
 
-  def prefusedConfiguredLayer(settings: ServerSettings, connectionContext: ConnectionContext, log: LoggingAdapter)(implicit mat: Materializer): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
+  private def fuseServerLayer(settings: ServerSettings, connectionContext: ConnectionContext, log: LoggingAdapter)(implicit mat: Materializer): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
     val httpLayer = serverLayer(settings, None, log)
     val tlsStage = sslTlsStage(connectionContext, Server)
     BidiFlow.fromGraph(Fusing.aggressive(GraphDSL.create() { implicit b ⇒
@@ -105,7 +105,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
            log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Source[IncomingConnection, Future[ServerBinding]] = {
     val effectivePort = if (port >= 0) port else connectionContext.defaultPort
 
-    val fullLayer = prefusedConfiguredLayer(settings, connectionContext, log)
+    val fullLayer = fuseServerLayer(settings, connectionContext, log)
 
     val connections: Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
       Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
@@ -139,7 +139,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
       Flow[HttpRequest]
         .watchTermination()(Keep.right)
         .viaMat(handler)(Keep.left)
-        .joinMat(prefusedConfiguredLayer(settings, connectionContext, log))(Keep.left)))
+        .joinMat(fuseServerLayer(settings, connectionContext, log))(Keep.left)))
 
     val connections: Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
       Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)

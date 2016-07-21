@@ -6,7 +6,7 @@ package akka.http.impl.engine.parsing
 
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
 
-import scala.annotation.tailrec
+import scala.annotation.{ switch, tailrec }
 import akka.http.scaladsl.settings.ParserSettings
 import akka.util.ByteString
 import akka.http.impl.engine.ws.Handshake
@@ -42,7 +42,7 @@ private[http] final class HttpRequestParser(
 
     import HttpMessageParser._
 
-    override def settings = self.settings
+    override val settings = self.settings
     override val headerParser = self.headerParser.createShallowCopy()
 
     private[this] var method: HttpMethod = _
@@ -53,7 +53,7 @@ private[http] final class HttpRequestParser(
     override def onPull(): Unit = handleParserOutput(doPull())
 
     override def onUpstreamFinish(): Unit =
-      if (shouldComplete()) completeStage()
+      if (super.shouldComplete()) completeStage()
       else if (isAvailable(out)) handleParserOutput(doPull())
 
     setHandlers(in, out, this)
@@ -66,13 +66,13 @@ private[http] final class HttpRequestParser(
       }
     }
 
-    def parseMessage(input: ByteString, offset: Int): StateResult = {
+    override def parseMessage(input: ByteString, offset: Int): StateResult = {
       var cursor = parseMethod(input, offset)
       cursor = parseRequestTarget(input, cursor)
       cursor = parseProtocol(input, cursor)
       if (byteChar(input, cursor) == '\r' && byteChar(input, cursor + 1) == '\n')
         parseHeaderLines(input, cursor + 2)
-      else badProtocol
+      else onBadProtocol
     }
 
     def parseMethod(input: ByteString, cursor: Int): Int = {
@@ -103,7 +103,7 @@ private[http] final class HttpRequestParser(
         else parseCustomMethod()
 
       import HttpMethods._
-      byteChar(input, cursor) match {
+      (byteChar(input, cursor): @switch) match {
         case 'G' ⇒ parseMethod(GET)
         case 'P' ⇒ byteChar(input, cursor + 1) match {
           case 'O' ⇒ parseMethod(POST, 2)
@@ -142,12 +142,12 @@ private[http] final class HttpRequestParser(
       uriEnd + 1
     }
 
-    def badProtocol = throw new ParsingException(HTTPVersionNotSupported)
+    override def onBadProtocol() = throw new ParsingException(HTTPVersionNotSupported)
 
     // http://tools.ietf.org/html/rfc7230#section-3.3
-    def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
-                    clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
-                    expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult =
+    override def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
+                             clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
+                             expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult =
       if (hostHeaderPresent || protocol == HttpProtocols.`HTTP/1.0`) {
         def emitRequestStart(
           createEntity: EntityCreator[RequestOutput, RequestEntity],

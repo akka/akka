@@ -28,12 +28,9 @@ import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
  */
 private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
 
-  protected def settings: ParserSettings
-  protected def headerParser: HttpHeaderParser
-
   import HttpMessageParser._
 
-  protected val result = new ListBuffer[Output]
+  protected final val result = new ListBuffer[Output]
   private[this] var state: ByteString ⇒ StateResult = startNewMessage(_, 0)
   private[this] var protocol: HttpProtocol = `HTTP/1.1`
   protected var completionHandling: CompletionHandling = CompletionOk
@@ -42,7 +39,16 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
   private[this] var lastSession: SSLSession = null // used to prevent having to recreate header on each message
   private[this] var tlsSessionInfoHeader: `Tls-Session-Info` = null
 
-  def initialHeaderBuffer: ListBuffer[HttpHeader] =
+  protected def settings: ParserSettings
+  protected def headerParser: HttpHeaderParser
+  /** invoked if the specified protocol is unknown */
+  protected def onBadProtocol(): Nothing
+  protected def parseMessage(input: ByteString, offset: Int): HttpMessageParser.StateResult
+  protected def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
+                            clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
+                            expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): HttpMessageParser.StateResult
+
+  protected final def initialHeaderBuffer: ListBuffer[HttpHeader] =
     if (settings.includeTlsSessionInfoHeader && tlsSessionInfoHeader != null) ListBuffer(tlsSessionInfoHeader)
     else ListBuffer()
 
@@ -73,14 +79,14 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
     doPull()
   }
 
-  final def doPull(): Output =
+  protected final def doPull(): Output =
     if (result.nonEmpty) {
       val head = result.head
       result.remove(0) // faster than `ListBuffer::drop`
       head
     } else if (terminated) StreamEnd else NeedMoreData
 
-  final def shouldComplete(): Boolean = {
+  protected final def shouldComplete(): Boolean = {
     completionHandling() match {
       case Some(x) ⇒ emit(x)
       case None    ⇒ // nothing to do
@@ -95,23 +101,23 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
     catch { case NotEnoughDataException ⇒ continue(input, offset)(startNewMessage) }
   }
 
-  def parseProtocol(input: ByteString, cursor: Int): Int = {
+  protected final def parseProtocol(input: ByteString, cursor: Int): Int = {
     def c(ix: Int) = byteChar(input, cursor + ix)
     if (c(0) == 'H' && c(1) == 'T' && c(2) == 'T' && c(3) == 'P' && c(4) == '/' && c(5) == '1' && c(6) == '.') {
       protocol = c(7) match {
         case '0' ⇒ `HTTP/1.0`
         case '1' ⇒ `HTTP/1.1`
-        case _   ⇒ badProtocol
+        case _   ⇒ onBadProtocol
       }
       cursor + 8
-    } else badProtocol
+    } else onBadProtocol
   }
 
-  @tailrec final def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = initialHeaderBuffer,
-                                      headerCount: Int = 0, ch: Option[Connection] = None,
-                                      clh: Option[`Content-Length`] = None, cth: Option[`Content-Type`] = None,
-                                      teh: Option[`Transfer-Encoding`] = None, e100c: Boolean = false,
-                                      hh: Boolean = false): StateResult =
+  @tailrec protected final def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = initialHeaderBuffer,
+                                                headerCount: Int = 0, ch: Option[Connection] = None,
+                                                clh: Option[`Content-Length`] = None, cth: Option[`Content-Type`] = None,
+                                                teh: Option[`Transfer-Encoding`] = None, e100c: Boolean = false,
+                                                hh: Boolean = false): StateResult =
     if (headerCount < settings.maxHeaderCount) {
       var lineEnd = 0
       val resultHeader =
@@ -158,12 +164,12 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
     } else failMessageStart(s"HTTP message contains more than the configured limit of ${settings.maxHeaderCount} headers")
 
   // work-around for compiler complaining about non-tail-recursion if we inline this method
-  def parseHeaderLinesAux(headers: ListBuffer[HttpHeader], headerCount: Int, ch: Option[Connection],
-                          clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
-                          e100c: Boolean, hh: Boolean)(input: ByteString, lineStart: Int): StateResult =
+  private def parseHeaderLinesAux(headers: ListBuffer[HttpHeader], headerCount: Int, ch: Option[Connection],
+                                  clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
+                                  e100c: Boolean, hh: Boolean)(input: ByteString, lineStart: Int): StateResult =
     parseHeaderLines(input, lineStart, headers, headerCount, ch, clh, cth, teh, e100c, hh)
 
-  def parseFixedLengthBody(
+  protected final def parseFixedLengthBody(
     remainingBodyBytes: Long,
     isLastMessage:      Boolean)(input: ByteString, bodyStart: Int): StateResult = {
     val remainingInputBytes = input.length - bodyStart
@@ -182,7 +188,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
     } else continue(input, bodyStart)(parseFixedLengthBody(remainingBodyBytes, isLastMessage))
   }
 
-  def parseChunk(input: ByteString, offset: Int, isLastMessage: Boolean, totalBytesRead: Long): StateResult = {
+  protected final def parseChunk(input: ByteString, offset: Int, isLastMessage: Boolean, totalBytesRead: Long): StateResult = {
     @tailrec def parseTrailer(extension: String, lineStart: Int, headers: List[HttpHeader] = Nil,
                               headerCount: Int = 0): StateResult = {
       var errorInfo: ErrorInfo = null
@@ -246,9 +252,9 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
     }
   }
 
-  def emit(output: Output): Unit = result += output
+  protected def emit(output: Output): Unit = result += output
 
-  def continue(input: ByteString, offset: Int)(next: (ByteString, Int) ⇒ StateResult): StateResult = {
+  protected final def continue(input: ByteString, offset: Int)(next: (ByteString, Int) ⇒ StateResult): StateResult = {
     state =
       math.signum(offset - input.length) match {
         case -1 ⇒
@@ -260,30 +266,30 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
     done()
   }
 
-  def continue(next: (ByteString, Int) ⇒ StateResult): StateResult = {
+  protected final def continue(next: (ByteString, Int) ⇒ StateResult): StateResult = {
     state = next(_, 0)
     done()
   }
 
-  def failMessageStart(summary: String): StateResult = failMessageStart(summary, "")
-  def failMessageStart(summary: String, detail: String): StateResult = failMessageStart(StatusCodes.BadRequest, summary, detail)
-  def failMessageStart(status: StatusCode): StateResult = failMessageStart(status, status.defaultMessage)
-  def failMessageStart(status: StatusCode, summary: String, detail: String = ""): StateResult = failMessageStart(status, ErrorInfo(summary, detail))
-  def failMessageStart(status: StatusCode, info: ErrorInfo): StateResult = {
+  protected final def failMessageStart(summary: String): StateResult = failMessageStart(summary, "")
+  protected final def failMessageStart(summary: String, detail: String): StateResult = failMessageStart(StatusCodes.BadRequest, summary, detail)
+  protected final def failMessageStart(status: StatusCode): StateResult = failMessageStart(status, status.defaultMessage)
+  protected final def failMessageStart(status: StatusCode, summary: String, detail: String = ""): StateResult = failMessageStart(status, ErrorInfo(summary, detail))
+  protected final def failMessageStart(status: StatusCode, info: ErrorInfo): StateResult = {
     emit(MessageStartError(status, info))
     setCompletionHandling(CompletionOk)
     terminate()
   }
 
-  def failEntityStream(summary: String): StateResult = failEntityStream(summary, "")
-  def failEntityStream(summary: String, detail: String): StateResult = failEntityStream(ErrorInfo(summary, detail))
-  def failEntityStream(info: ErrorInfo): StateResult = {
+  protected final def failEntityStream(summary: String): StateResult = failEntityStream(summary, "")
+  protected final def failEntityStream(summary: String, detail: String): StateResult = failEntityStream(ErrorInfo(summary, detail))
+  protected final def failEntityStream(info: ErrorInfo): StateResult = {
     emit(EntityStreamError(info))
     setCompletionHandling(CompletionOk)
     terminate()
   }
 
-  def terminate(): StateResult = {
+  protected final def terminate(): StateResult = {
     terminated = true
     done()
   }
@@ -294,19 +300,19 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
    */
   private def done(): StateResult = null // StateResult is a phantom type
 
-  def contentType(cth: Option[`Content-Type`]) = cth match {
+  protected final def contentType(cth: Option[`Content-Type`]) = cth match {
     case Some(x) ⇒ x.contentType
     case None    ⇒ ContentTypes.`application/octet-stream`
   }
 
-  def emptyEntity(cth: Option[`Content-Type`]) =
+  protected final def emptyEntity(cth: Option[`Content-Type`]) =
     StrictEntityCreator(if (cth.isDefined) HttpEntity.empty(cth.get.contentType) else HttpEntity.Empty)
 
-  def strictEntity(cth: Option[`Content-Type`], input: ByteString, bodyStart: Int,
-                   contentLength: Int) =
+  protected final def strictEntity(cth: Option[`Content-Type`], input: ByteString, bodyStart: Int,
+                                   contentLength: Int) =
     StrictEntityCreator(HttpEntity.Strict(contentType(cth), input.slice(bodyStart, bodyStart + contentLength)))
 
-  def defaultEntity[A <: ParserOutput](cth: Option[`Content-Type`], contentLength: Long) =
+  protected final def defaultEntity[A <: ParserOutput](cth: Option[`Content-Type`], contentLength: Long) =
     StreamedEntityCreator[A, UniversalEntity] { entityParts ⇒
       val data = entityParts.collect {
         case EntityPart(bytes)       ⇒ bytes
@@ -315,7 +321,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
       HttpEntity.Default(contentType(cth), contentLength, HttpEntity.limitableByteSource(data))
     }
 
-  def chunkedEntity[A <: ParserOutput](cth: Option[`Content-Type`]) =
+  protected final def chunkedEntity[A <: ParserOutput](cth: Option[`Content-Type`]) =
     StreamedEntityCreator[A, RequestEntity] { entityChunks ⇒
       val chunks = entityChunks.collect {
         case EntityChunk(chunk)      ⇒ chunk
@@ -324,20 +330,15 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
       HttpEntity.Chunked(contentType(cth), HttpEntity.limitableChunkSource(chunks))
     }
 
-  def addTransferEncodingWithChunkedPeeled(headers: List[HttpHeader], teh: `Transfer-Encoding`): List[HttpHeader] =
+  protected final def addTransferEncodingWithChunkedPeeled(headers: List[HttpHeader], teh: `Transfer-Encoding`): List[HttpHeader] =
     teh.withChunkedPeeled match {
       case Some(x) ⇒ x :: headers
       case None    ⇒ headers
     }
 
-  def setCompletionHandling(completionHandling: CompletionHandling): Unit =
+  protected final def setCompletionHandling(completionHandling: CompletionHandling): Unit =
     this.completionHandling = completionHandling
 
-  protected def badProtocol: Nothing
-  protected def parseMessage(input: ByteString, offset: Int): HttpMessageParser.StateResult
-  protected def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
-                            clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
-                            expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): HttpMessageParser.StateResult
 }
 
 /**

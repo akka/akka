@@ -414,7 +414,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       def excerciseRecombining(xs: ByteString, from: Int, until: Int) = {
         val (tmp, c) = xs.splitAt(until)
         val (a, b) = tmp.splitAt(from)
-        (a ++ b ++ c) should ===(xs) 
+        (a ++ b ++ c) should ===(xs)
       }
       "recombining - edge cases" in {
         excerciseRecombining(ByteStrings(Vector(ByteString1(Array[Byte](1)), ByteString1(Array[Byte](2)))), -2147483648, 112121212)

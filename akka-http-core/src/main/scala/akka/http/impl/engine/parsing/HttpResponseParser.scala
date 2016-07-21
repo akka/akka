@@ -30,7 +30,7 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
   private[this] var statusCode: StatusCode = StatusCodes.OK
 
   // Note that this GraphStage mutates the HttpMessageParser instance, use with caution.
-  val stage = new GraphStage[FlowShape[SessionBytes, ResponseOutput]] {
+  final val stage = new GraphStage[FlowShape[SessionBytes, ResponseOutput]] {
     val in: Inlet[SessionBytes] = Inlet("HttpResponseParser.in")
     val out: Outlet[ResponseOutput] = Outlet("HttpResponseParser.out")
     override val shape: FlowShape[SessionBytes, ResponseOutput] = FlowShape(in, out)
@@ -56,9 +56,9 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
       }
   }
 
-  def createShallowCopy(): HttpResponseParser = new HttpResponseParser(settings, headerParser.createShallowCopy())
+  final def createShallowCopy(): HttpResponseParser = new HttpResponseParser(settings, headerParser.createShallowCopy())
 
-  def setContextForNextResponse(responseContext: ResponseContext): Unit =
+  final def setContextForNextResponse(responseContext: ResponseContext): Unit =
     if (contextForCurrentResponse.isEmpty) contextForCurrentResponse = Some(responseContext)
 
   final def onPull(): ResponseOutput =
@@ -77,7 +77,7 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
     result.isEmpty
   }
 
-  override def emit(output: ResponseOutput): Unit = {
+  override final def emit(output: ResponseOutput): Unit = {
     if (output == MessageEnd) contextForCurrentResponse = None
     super.emit(output)
   }
@@ -88,15 +88,15 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
       if (byteChar(input, cursor) == ' ') {
         cursor = parseStatus(input, cursor + 1)
         parseHeaderLines(input, cursor)
-      } else badProtocol
+      } else onBadProtocol()
     } else {
       emit(NeedNextRequestMethod)
       continue(input, offset)(startNewMessage)
     }
 
-  override def badProtocol = throw new ParsingException("The server-side HTTP version is not supported")
+  override final def onBadProtocol() = throw new ParsingException("The server-side HTTP version is not supported")
 
-  def parseStatus(input: ByteString, cursor: Int): Int = {
+  private def parseStatus(input: ByteString, cursor: Int): Int = {
     def badStatusCode = throw new ParsingException("Illegal response status code")
     def parseStatusCode() = {
       def intValue(offset: Int): Int = {
@@ -130,9 +130,9 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
   def handleInformationalResponses: Boolean = true
 
   // http://tools.ietf.org/html/rfc7230#section-3.3
-  protected def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
-                            clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
-                            expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult = {
+  protected final def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
+                                  clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
+                                  expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult = {
 
     def emitResponseStart(
       createEntity: EntityCreator[ResponseOutput, ResponseEntity],
@@ -207,7 +207,7 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
     } else finishEmptyResponse()
   }
 
-  def parseToCloseBody(input: ByteString, bodyStart: Int, totalBytesRead: Long): StateResult = {
+  private def parseToCloseBody(input: ByteString, bodyStart: Int, totalBytesRead: Long): StateResult = {
     val newTotalBytes = totalBytesRead + math.max(0, input.length - bodyStart)
     if (input.length > bodyStart)
       emit(EntityPart(input.drop(bodyStart).compact))
