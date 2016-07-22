@@ -220,7 +220,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * INTERNAL API
    */
   // Using common array to reduce overhead for small port counts
-  private[stream] val portToConn = Array.ofDim[Int](handlers.length)
+  private[stream] val portToConn = Array.ofDim[Connection](handlers.length)
 
   /**
    * INTERNAL API
@@ -318,8 +318,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     if (_interpreter != null) _interpreter.setHandler(conn(out), handler)
   }
 
-  private def conn(in: Inlet[_]): Int = portToConn(in.id)
-  private def conn(out: Outlet[_]): Int = portToConn(out.id + inCount)
+  private def conn(in: Inlet[_]): Connection = portToConn(in.id)
+  private def conn(out: Outlet[_]): Connection = portToConn(out.id + inCount)
 
   /**
    * Retrieves the current callback for the events on the given [[Outlet]]
@@ -341,11 +341,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   final protected def pull[T](in: Inlet[T]): Unit = {
     val connection = conn(in)
-    val portState = interpreter.portStates(connection)
+    val portState = connection.portState
     val it = interpreter
 
     if ((portState & (InReady | InClosed | OutClosed)) == InReady) {
-      it.portStates(connection) = portState ^ PullStartFlip
+      connection.portState = portState ^ PullStartFlip
       it.chasePull(connection)
     } else {
       // Detailed error information should not add overhead to the hot path
@@ -354,7 +354,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
       // There were no errors, the pull was simply ignored as the target stage already closed its port. We
       // still need to track proper state though.
-      it.portStates(connection) = portState ^ PullStartFlip
+      connection.portState = portState ^ PullStartFlip
     }
   }
 
@@ -381,18 +381,18 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final protected def grab[T](in: Inlet[T]): T = {
     val connection = conn(in)
     val it = interpreter
-    val elem = it.connectionSlots(connection)
+    val elem = connection.slot
 
     // Fast path
-    if ((it.portStates(connection) & (InReady | InFailed)) == InReady && (elem.asInstanceOf[AnyRef] ne Empty)) {
-      it.connectionSlots(connection) = Empty
+    if ((connection.portState & (InReady | InFailed)) == InReady && (elem.asInstanceOf[AnyRef] ne Empty)) {
+      connection.slot = Empty
       elem.asInstanceOf[T]
     } else {
       // Slow path
       require(isAvailable(in), s"Cannot get element from already empty input port ($in)")
-      val failed = it.connectionSlots(connection).asInstanceOf[Failed]
+      val failed = connection.slot.asInstanceOf[Failed]
       val elem = failed.previousElem.asInstanceOf[T]
-      it.connectionSlots(connection) = Failed(failed.ex, Empty)
+      connection.slot = Failed(failed.ex, Empty)
       elem
     }
   }
@@ -401,7 +401,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Indicates whether there is already a pending pull for the given input port. If this method returns true
    * then [[isAvailable()]] must return false for that same port.
    */
-  final protected def hasBeenPulled[T](in: Inlet[T]): Boolean = (interpreter.portStates(conn(in)) & (InReady | InClosed)) == 0
+  final protected def hasBeenPulled[T](in: Inlet[T]): Boolean = (conn(in).portState & (InReady | InClosed)) == 0
 
   /**
    * Indicates whether there is an element waiting at the given input port. [[grab()]] can be used to retrieve the
@@ -412,14 +412,14 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final protected def isAvailable[T](in: Inlet[T]): Boolean = {
     val connection = conn(in)
 
-    val normalArrived = (interpreter.portStates(conn(in)) & (InReady | InFailed)) == InReady
+    val normalArrived = (conn(in).portState & (InReady | InFailed)) == InReady
 
     // Fast path
-    if (normalArrived) interpreter.connectionSlots(connection).asInstanceOf[AnyRef] ne Empty
+    if (normalArrived) connection.slot.asInstanceOf[AnyRef] ne Empty
     else {
       // Slow path on failure
-      if ((interpreter.portStates(conn(in)) & (InReady | InFailed)) == (InReady | InFailed)) {
-        interpreter.connectionSlots(connection) match {
+      if ((connection.portState & (InReady | InFailed)) == (InReady | InFailed)) {
+        connection.slot match {
           case Failed(_, elem) ⇒ elem.asInstanceOf[AnyRef] ne Empty
           case _               ⇒ false // This can only be Empty actually (if a cancel was concurrent with a failure)
         }
@@ -430,7 +430,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   /**
    * Indicates whether the port has been closed. A closed port cannot be pulled.
    */
-  final protected def isClosed[T](in: Inlet[T]): Boolean = (interpreter.portStates(conn(in)) & InClosed) != 0
+  final protected def isClosed[T](in: Inlet[T]): Boolean = (conn(in).portState & InClosed) != 0
 
   /**
    * Emits an element through the given output port. Calling this method twice before a [[pull()]] has been arrived
@@ -439,17 +439,17 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   final protected def push[T](out: Outlet[T], elem: T): Unit = {
     val connection = conn(out)
-    val portState = interpreter.portStates(connection)
+    val portState = connection.portState
     val it = interpreter
 
-    it.portStates(connection) = portState ^ PushStartFlip
+    connection.portState = portState ^ PushStartFlip
 
     if ((portState & (OutReady | OutClosed | InClosed)) == OutReady && (elem != null)) {
-      it.connectionSlots(connection) = elem
+      connection.slot = elem
       it.chasePush(connection)
     } else {
       // Restore state for the error case
-      it.portStates(connection) = portState
+      connection.portState = portState
 
       // Detailed error information should not add overhead to the hot path
       ReactiveStreamsCompliance.requireNonNullElement(elem)
@@ -457,7 +457,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       require(!isClosed(out), s"Cannot pull closed port ($out)")
 
       // No error, just InClosed caused the actual pull to be ignored, but the status flag still needs to be flipped
-      it.portStates(connection) = portState ^ PushStartFlip
+      connection.portState = portState ^ PushStartFlip
     }
   }
 
@@ -523,12 +523,12 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Return true if the given output port is ready to be pushed.
    */
   final def isAvailable[T](out: Outlet[T]): Boolean =
-    (interpreter.portStates(conn(out)) & (OutReady | OutClosed)) == OutReady
+    (conn(out).portState & (OutReady | OutClosed)) == OutReady
 
   /**
    * Indicates whether the port has been closed. A closed port cannot be pushed.
    */
-  final protected def isClosed[T](out: Outlet[T]): Boolean = (interpreter.portStates(conn(out)) & OutClosed) != 0
+  final protected def isClosed[T](out: Outlet[T]): Boolean = (conn(out).portState & OutClosed) != 0
 
   /**
    * Read a number of elements from the given inlet and continue with the given function,
