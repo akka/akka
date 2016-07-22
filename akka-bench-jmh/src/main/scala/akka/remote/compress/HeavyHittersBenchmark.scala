@@ -81,9 +81,9 @@ class HeavyHittersBenchmark {
   @Benchmark
   @OperationsPerInvocation(8192)
   def updateExistingHitter(blackhole: Blackhole): Unit = {
-    var i = 0
+    var i: Int = 0
     while (i < 8192) {
-      blackhole.consume(topN.update("HEAVY_HITTER", Long.MaxValue)) // definitely a heavy hitter
+      blackhole.consume(topN.update(preallocatedStrings(i % 16), Long.MaxValue)) // definitely a heavy hitter
       i += 1
     }
   }

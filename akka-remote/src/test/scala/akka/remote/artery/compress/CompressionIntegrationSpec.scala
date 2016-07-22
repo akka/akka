@@ -72,15 +72,11 @@ class CompressionIntegrationSpec extends AkkaSpec(CompressionIntegrationSpec.com
 
       val a1 = aProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](10.seconds)
       info("System [A] received: " + a1)
-      assertCompression[ActorRef](a1.table, 0, _ should ===(system.deadLetters))
-      assertCompression[ActorRef](a1.table, 1, _ should ===(testActor))
+      println(a1.table.toString)
+      val compressionSet = a1.table.map.keys
+      compressionSet should contain(system.deadLetters)
+      compressionSet should contain(testActor)
     }
-  }
-
-  def assertCompression[T](table: CompressionTable[T], id: Int, assertion: T ⇒ Unit): Unit = {
-    table.map.find(_._2 == id)
-      .orElse { throw new AssertionError(s"No key was compressed to the id [$id]! Table was: $table") }
-      .foreach(i ⇒ assertion(i._1))
   }
 
   def identify(_system: String, port: Int, name: String) = {
