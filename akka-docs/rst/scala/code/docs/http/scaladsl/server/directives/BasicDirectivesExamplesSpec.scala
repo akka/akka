@@ -805,7 +805,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     // tests:
     val httpEntity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "req")
     Post("/abc", httpEntity) ~> route ~> check {
-      responseAs[String] shouldEqual s"Request entity content-type is text/plain; charset=UTF-8"
+      responseAs[String] shouldEqual "Request entity content-type is text/plain; charset=UTF-8"
     }
     //#
   }
