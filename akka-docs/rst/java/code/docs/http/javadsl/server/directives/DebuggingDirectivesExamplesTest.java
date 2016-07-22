@@ -48,7 +48,7 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
 
     // logs just the request method at info level
     Function<HttpRequest, LogEntry> requestMethodAsInfo = (request) -> 
-      LogEntry.create(request.method().toString(), InfoLevel());
+      LogEntry.create(request.method().name(), InfoLevel());
 
     final Route routeUsingFunction = get(() -> 
       logRequest(requestMethodAsInfo, () -> complete("logged")));
@@ -70,7 +70,7 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
         (response.status().isSuccess())  ? 
             Optional.of(
               LogEntry.create(
-                request.method().toString() + ":" + response.status().intValue(), 
+                request.method().name() + ":" + response.status().intValue(),
                 InfoLevel()))
           : Optional.empty(); // not a successful response
 
@@ -80,7 +80,7 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
         (!rejections.isEmpty())  ? 
           Optional.of(
             LogEntry.create(
-                rejections
+              rejections
                 .stream()
                 .map(Rejection::toString)
                 .collect(Collectors.joining(", ")), 
@@ -116,7 +116,7 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
       LogEntry.create(
         rejections
         .stream()
-        .map(rejection->rejection.toString())
+        .map(rejection -> rejection.toString())
         .collect(Collectors.joining(", ")), 
       InfoLevel());
 
