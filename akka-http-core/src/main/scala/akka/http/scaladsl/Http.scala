@@ -9,6 +9,7 @@ import java.util.concurrent.CompletionStage
 import javax.net.ssl._
 
 import akka.actor._
+import akka.dispatch.ExecutionContexts
 import akka.event.{ Logging, LoggingAdapter }
 import akka.http.impl.engine.HttpConnectionTimeoutException
 import akka.http.impl.engine.client.PoolMasterActor.{ PoolSize, ShutdownAll }
@@ -26,6 +27,7 @@ import akka.{ Done, NotUsed }
 import akka.stream._
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
+import akka.util.ByteString
 import com.typesafe.config.Config
 import com.typesafe.sslconfig.akka._
 import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
@@ -55,6 +57,27 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   private[this] final val DefaultPortForProtocol = -1 // any negative value
 
+  private def fuseServerLayer(settings: ServerSettings, connectionContext: ConnectionContext, log: LoggingAdapter)(implicit mat: Materializer): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
+    val httpLayer = serverLayer(settings, None, log)
+    val tlsStage = sslTlsStage(connectionContext, Server)
+    BidiFlow.fromGraph(Fusing.aggressive(GraphDSL.create() { implicit b ⇒
+      import GraphDSL.Implicits._
+      val http = b.add(httpLayer)
+      val tls = b.add(tlsStage)
+
+      val timeouts = b.add(Flow[ByteString].recover {
+        case t: TimeoutException ⇒ throw new HttpConnectionTimeoutException(t.getMessage)
+      })
+
+      tls.out2 ~> http.in2
+      tls.in1 <~ http.out1
+
+      tls.out1 ~> timeouts.in
+
+      BidiShape(http.in1, timeouts.out, tls.in2, http.out2)
+    }))
+  }
+
   /**
    * Creates a [[akka.stream.scaladsl.Source]] of [[akka.http.scaladsl.Http.IncomingConnection]] instances which represents a prospective HTTP server binding
    * on the given `endpoint`.
@@ -81,14 +104,14 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
            settings:          ServerSettings    = ServerSettings(system),
            log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Source[IncomingConnection, Future[ServerBinding]] = {
     val effectivePort = if (port >= 0) port else connectionContext.defaultPort
-    val tlsStage = sslTlsStage(connectionContext, Server)
+
+    val fullLayer = fuseServerLayer(settings, connectionContext, log)
+
     val connections: Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
       Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
     connections.map {
       case Tcp.IncomingConnection(localAddress, remoteAddress, flow) ⇒
-        val layer = serverLayer(settings, Some(remoteAddress), log)
-        val flowWithTimeoutRecovered = flow.via(MapError { case t: TimeoutException ⇒ new HttpConnectionTimeoutException(t.getMessage) })
-        IncomingConnection(localAddress, remoteAddress, layer atop tlsStage join flowWithTimeoutRecovered)
+        IncomingConnection(localAddress, remoteAddress, fullLayer join flow)
     }.mapMaterializedValue {
       _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(fm.executionContext)
     }
@@ -110,30 +133,39 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
-    def handleOneConnection(incomingConnection: IncomingConnection): Future[Done] =
-      try
-        incomingConnection.flow
-          .watchTermination()(Keep.right)
-          .joinMat(handler)(Keep.left)
-          .run()
-      catch {
-        case NonFatal(e) ⇒
-          log.error(e, "Could not materialize handling flow for {}", incomingConnection)
-          throw e
-      }
+    val effectivePort = if (port >= 0) port else connectionContext.defaultPort
 
-    bind(interface, port, connectionContext, settings, log)
-      .mapAsyncUnordered(settings.maxConnections) { connection ⇒
-        handleOneConnection(connection).recoverWith {
-          // Ignore incoming errors from the connection as they will cancel the binding.
-          // As far as it is known currently, these errors can only happen if a TCP error bubbles up
-          // from the TCP layer through the HTTP layer to the Http.IncomingConnection.flow.
-          // See https://github.com/akka/akka/issues/17992
-          case NonFatal(_) ⇒ Future.successful(())
-        }(fm.executionContext)
-      }
-      .to(Sink.ignore)
-      .run()
+    val fullLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(Fusing.aggressive(
+      Flow[HttpRequest]
+        .watchTermination()(Keep.right)
+        .viaMat(handler)(Keep.left)
+        .joinMat(fuseServerLayer(settings, connectionContext, log))(Keep.left)))
+
+    val connections: Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
+      Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
+
+    connections.mapAsyncUnordered(settings.maxConnections) {
+      case incoming: Tcp.IncomingConnection ⇒
+        try {
+          fullLayer.addAttributes(HttpAttributes.remoteAddress(Some(incoming.remoteAddress)))
+            .joinMat(incoming.flow)(Keep.left)
+            .run().recover {
+              // Ignore incoming errors from the connection as they will cancel the binding.
+              // As far as it is known currently, these errors can only happen if a TCP error bubbles up
+              // from the TCP layer through the HTTP layer to the Http.IncomingConnection.flow.
+              // See https://github.com/akka/akka/issues/17992
+              case NonFatal(ex) ⇒
+                Done
+            }(ExecutionContexts.sameThreadExecutionContext)
+        } catch {
+          case NonFatal(e) ⇒
+            log.error(e, "Could not materialize handling flow for {}", incoming)
+            throw e
+        }
+    }.mapMaterializedValue {
+      _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(fm.executionContext)
+    }.to(Sink.ignore).run()
+
   }
 
   /**
