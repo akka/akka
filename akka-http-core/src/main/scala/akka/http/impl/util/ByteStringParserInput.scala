@@ -1,8 +1,10 @@
+/**
+ * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.http.impl.util
 
-import java.nio.charset.{ Charset, StandardCharsets }
+import java.nio.charset.StandardCharsets
 
-import akka.parboiled2.ParserInput
 import akka.parboiled2.ParserInput.DefaultParserInput
 import akka.util.ByteString
 
