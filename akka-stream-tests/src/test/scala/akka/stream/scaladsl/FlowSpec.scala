@@ -65,10 +65,10 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
       Array(null, stage.shape.out),
       Array(-1, 0))
 
-    val (inHandlers, outHandlers, logics) =
+    val (connections, logics) =
       assembly.materialize(Attributes.none, assembly.stages.map(_.module), new java.util.HashMap, _ ⇒ ())
 
-    val shell = new GraphInterpreterShell(assembly, inHandlers, outHandlers, logics, stage.shape, settings,
+    val shell = new GraphInterpreterShell(assembly, connections, logics, stage.shape, settings,
       materializer.asInstanceOf[ActorMaterializerImpl])
 
     val props = Props(new BrokenActorInterpreter(shell, "a3"))
