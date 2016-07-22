@@ -10,9 +10,7 @@ Signature
 
     def logRequestResult(marker: String)(implicit log: LoggingContext): Directive0
     def logRequestResult(marker: String, level: LogLevel)(implicit log: LoggingContext): Directive0
-    def logRequestResult(show: HttpRequest => HttpResponsePart => Option[LogEntry])
-                          (implicit log: LoggingContext): Directive0
-    def logRequestResult(show: HttpRequest => Any => Option[LogEntry])(implicit log: LoggingContext): Directive0
+    def logRequestResult(show: HttpRequest => RouteResult => Option[LogEntry])(implicit log: LoggingContext): Directive0
 
 The signature shown is simplified, the real signature uses magnets. [1]_
 
