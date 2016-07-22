@@ -312,6 +312,20 @@ with a ``thread-pool-executor`` hinting the number of allocated threads explicit
 
 .. includecode:: code/docs/routing/RouterDocSpec.scala#config-balancing-pool3
 
+It is also possible to change the ``mailbox`` used by the balancing dispatcher for
+scenarios where the default unbounded mailbox is not well suited. An example of such
+a scenario could arise whether there exists the need to manage priority for each message.
+You can then implement a priority mailbox and configure your dispatcher:
+
+.. includecode:: code/docs/routing/RouterDocSpec.scala#config-balancing-pool4
+
+.. note::
+
+   Bear in mind that ``BalancingDispatcher`` requires a message queue that must be thread-safe for
+   multiple concurrent consumers. So it is mandatory for the message queue backing a custom mailbox
+   for this kind of dispatcher to implement akka.dispatch.MultipleConsumerSemantics. See details
+   on how to implement your custom mailbox in :ref:`mailboxes-scala`.
+
 There is no Group variant of the BalancingPool.
 
 SmallestMailboxPool
