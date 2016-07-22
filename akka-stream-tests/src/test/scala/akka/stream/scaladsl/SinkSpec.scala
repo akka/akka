@@ -16,9 +16,8 @@ import akka.testkit.DefaultTimeout
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
-import akka.testkit.AkkaSpec
 
-class SinkSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
+class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   import GraphDSL.Implicits._
 

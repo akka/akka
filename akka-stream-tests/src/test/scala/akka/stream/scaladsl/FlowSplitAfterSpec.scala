@@ -6,9 +6,7 @@ package akka.stream.scaladsl
 import akka.NotUsed
 import akka.stream._
 import akka.stream.Supervision.resumingDecider
-import akka.testkit.AkkaSpec
-import akka.stream.testkit.TestPublisher
-import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.testkit.Utils._
 import org.reactivestreams.Publisher
 import scala.concurrent.Await
@@ -24,7 +22,7 @@ object FlowSplitAfterSpec {
 
 }
 
-class FlowSplitAfterSpec extends AkkaSpec {
+class FlowSplitAfterSpec extends StreamSpec {
   import FlowSplitAfterSpec._
 
   val settings = ActorMaterializerSettings(system)

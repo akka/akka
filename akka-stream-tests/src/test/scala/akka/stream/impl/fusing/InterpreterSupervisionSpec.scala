@@ -3,15 +3,16 @@
  */
 package akka.stream.impl.fusing
 
+import akka.stream.testkit.StreamSpec
+
 import scala.util.control.NoStackTrace
 import akka.stream.Supervision
 import akka.stream.stage.Context
 import akka.stream.stage.PushPullStage
 import akka.stream.stage.Stage
 import akka.stream.stage.SyncDirective
-import akka.testkit.AkkaSpec
 
-class InterpreterSupervisionSpec extends AkkaSpec with GraphInterpreterSpecKit {
+class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit {
   import Supervision.stoppingDecider
   import Supervision.resumingDecider
   import Supervision.restartingDecider

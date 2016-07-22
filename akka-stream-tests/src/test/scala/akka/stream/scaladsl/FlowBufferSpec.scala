@@ -10,9 +10,8 @@ import akka.stream.{ BufferOverflowException, ActorMaterializer, ActorMaterializ
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._
-import akka.testkit.AkkaSpec
 
-class FlowBufferSpec extends AkkaSpec {
+class FlowBufferSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 1, maxSize = 1)

@@ -4,15 +4,14 @@
 package akka.stream.scaladsl
 
 import scala.collection.immutable
-import scala.concurrent.{ Await }
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.testkit.AkkaSpec
 
-class FlowPrefixAndTailSpec extends AkkaSpec {
+class FlowPrefixAndTailSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)

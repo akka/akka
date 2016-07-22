@@ -8,11 +8,11 @@ import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, Failed, GraphAssembly, UpstreamBoundaryStageLogic }
 import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, _ }
-import akka.testkit.AkkaSpec
+import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
 import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
 
-trait GraphInterpreterSpecKit extends AkkaSpec {
+trait GraphInterpreterSpecKit extends StreamSpec {
 
   val logger = Logging(system, "InterpreterSpecKit")
 

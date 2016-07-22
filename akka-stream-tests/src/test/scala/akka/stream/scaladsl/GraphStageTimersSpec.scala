@@ -7,7 +7,6 @@ import akka.actor.ActorRef
 import akka.stream.{ Attributes, ActorMaterializer }
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage.{ TimerGraphStageLogic, OutHandler, AsyncCallback, InHandler }
-import akka.testkit.AkkaSpec
 import akka.testkit.TestDuration
 
 import scala.concurrent.Promise
@@ -36,7 +35,7 @@ object GraphStageTimersSpec {
 
 }
 
-class GraphStageTimersSpec extends AkkaSpec {
+class GraphStageTimersSpec extends StreamSpec {
   import GraphStageTimersSpec._
 
   implicit val materializer = ActorMaterializer()

@@ -10,9 +10,8 @@ import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.testkit.AkkaSpec
 
-class FlowFromFutureSpec extends AkkaSpec {
+class FlowFromFutureSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
 

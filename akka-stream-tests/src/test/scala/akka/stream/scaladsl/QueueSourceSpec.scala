@@ -3,23 +3,19 @@
  */
 package akka.stream.scaladsl
 
-import akka.actor.{ Status }
+import akka.actor.Status
 import akka.pattern.pipe
 import akka.stream._
 import akka.stream.impl.QueueSource
 import akka.stream.testkit.Utils._
-import akka.testkit.{ AkkaSpec, TestProbe }
+import akka.testkit.TestProbe
 import scala.concurrent.duration._
 import scala.concurrent._
 import akka.Done
-import org.scalatest.concurrent.ScalaFutures
-import akka.testkit.AkkaSpec
-import akka.stream.testkit.TestSubscriber
-import akka.stream.testkit.TestSourceStage
-import akka.stream.testkit.GraphStageMessages
+import akka.stream.testkit.{ StreamSpec, TestSubscriber, TestSourceStage, GraphStageMessages }
 import akka.stream.testkit.scaladsl.TestSink
 
-class QueueSourceSpec extends AkkaSpec {
+class QueueSourceSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
   implicit val ec = system.dispatcher
   val pause = 300.millis

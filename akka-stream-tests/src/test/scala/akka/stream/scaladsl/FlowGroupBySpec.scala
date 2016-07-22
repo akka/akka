@@ -26,7 +26,6 @@ import org.scalactic.ConversionCheckedTripleEquals
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.AkkaSpec
 
 import java.util.concurrent.ThreadLocalRandom
 
@@ -38,7 +37,7 @@ object FlowGroupBySpec {
 
 }
 
-class FlowGroupBySpec extends AkkaSpec {
+class FlowGroupBySpec extends StreamSpec {
   import FlowGroupBySpec._
 
   val settings = ActorMaterializerSettings(system)

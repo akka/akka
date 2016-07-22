@@ -11,9 +11,8 @@ import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 import scala.util.control.NoStackTrace
-import akka.testkit.AkkaSpec
 
-class FlowTakeWhileSpec extends AkkaSpec {
+class FlowTakeWhileSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
 

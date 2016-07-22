@@ -10,10 +10,8 @@ import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
-import scala.util.control.NoStackTrace
-import akka.testkit.AkkaSpec
 
-class FlowDropWhileSpec extends AkkaSpec {
+class FlowDropWhileSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
 

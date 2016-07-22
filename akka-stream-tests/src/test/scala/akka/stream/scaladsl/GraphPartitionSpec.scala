@@ -9,9 +9,8 @@ import akka.stream.testkit.Utils._
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.testkit.AkkaSpec
 
-class GraphPartitionSpec extends AkkaSpec {
+class GraphPartitionSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)

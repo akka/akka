@@ -11,9 +11,8 @@ import org.reactivestreams.Publisher
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.testkit.EventFilter
-import akka.testkit.AkkaSpec
 
-class GraphUnzipWithSpec extends AkkaSpec {
+class GraphUnzipWithSpec extends StreamSpec {
 
   import GraphDSL.Implicits._
 

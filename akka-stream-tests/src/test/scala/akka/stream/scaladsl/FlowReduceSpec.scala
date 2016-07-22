@@ -3,15 +3,16 @@
  */
 package akka.stream.scaladsl
 
+import akka.stream.testkit.StreamSpec
+
 import scala.concurrent.Await
 import scala.util.control.NoStackTrace
 
 import akka.stream.ActorMaterializer
-import akka.testkit.AkkaSpec
 import akka.stream.testkit.Utils._
 import scala.concurrent.duration._
 
-class FlowReduceSpec extends AkkaSpec {
+class FlowReduceSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
 
   "A Reduce" must {

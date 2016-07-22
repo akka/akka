@@ -4,18 +4,15 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.testkit.AkkaSpec
 import akka.stream.{ ActorMaterializerSettings, ActorMaterializer }
 import scala.concurrent._
 import scala.concurrent.duration._
-import org.scalatest.concurrent.ScalaFutures
-import org.scalactic.ConversionCheckedTripleEquals
-import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import org.scalatest.exceptions.TestFailedException
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestLatch
 
-class FlowFlattenMergeSpec extends AkkaSpec {
+class FlowFlattenMergeSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
   import system.dispatcher
 

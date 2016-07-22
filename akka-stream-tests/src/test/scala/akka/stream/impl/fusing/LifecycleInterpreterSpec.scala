@@ -6,12 +6,12 @@ package akka.stream.impl.fusing
 import akka.stream.Attributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage._
-import akka.testkit.AkkaSpec
+import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
 
 import scala.concurrent.duration._
 
-class LifecycleInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
+class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
   import akka.stream.Supervision._
 
   "Interpreter" must {
