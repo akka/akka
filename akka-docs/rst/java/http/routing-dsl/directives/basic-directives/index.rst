@@ -19,6 +19,7 @@ a single value or a tuple of values.
   * :ref:`-extract-java-`
   * :ref:`-extractExecutionContext-java-`
   * :ref:`-extractMaterializer-java-`
+  * :ref:`-extractStrictEntity-java-`
   * :ref:`-extractLog-java-`
   * :ref:`-extractRequest-java-`
   * :ref:`-extractRequestContext-java-`
@@ -41,6 +42,7 @@ Transforming the Request(Context)
   * :ref:`-withMaterializer-java-`
   * :ref:`-withLog-java-`
   * :ref:`-withSettings-java-`
+  * :ref:`-toStrictEntity-java-`
 
 
 .. _Response Transforming Directives-java:
@@ -93,6 +95,7 @@ Alphabetically
    extract
    extractExecutionContext
    extractMaterializer
+   extractStrictEntity
    extractLog
    extractRequest
    extractRequestContext
@@ -117,6 +120,7 @@ Alphabetically
    provide
    recoverRejections
    recoverRejectionsWith
+   toStrictEntity
    withExecutionContext
    withMaterializer
    withLog
