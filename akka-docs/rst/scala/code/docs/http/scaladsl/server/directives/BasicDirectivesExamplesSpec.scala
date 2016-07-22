@@ -826,5 +826,40 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     }
     //#
   }
+  "extractStrictEntity-example" in {
+    //#extractStrictEntity-example
+    import scala.concurrent.duration._
+    val route = extractStrictEntity(3.seconds) { entity =>
+      complete(entity.data.utf8String)
+    }
+
+    // tests:
+    val dataBytes = Source.fromIterator(() ⇒ Iterator.range(1, 10).map(x ⇒ ByteString(x.toString)))
+    Post("/", HttpEntity(ContentTypes.`text/plain(UTF-8)`, data = dataBytes)) ~> route ~> check {
+      responseAs[String] shouldEqual "123456789"
+    }
+    //#
+  }
+  "toStrictEntity-example" in {
+    //#toStrictEntity-example
+    import scala.concurrent.duration._
+    val route = toStrictEntity(3.seconds) {
+      extractRequest { req =>
+        req.entity match {
+          case strict: HttpEntity.Strict =>
+            complete(s"Request entity is strict, data=${strict.data.utf8String}")
+          case _ =>
+            complete("Ooops, request entity is not strict!")
+        }
+      }
+    }
+
+    // tests:
+    val dataBytes = Source.fromIterator(() ⇒ Iterator.range(1, 10).map(x ⇒ ByteString(x.toString)))
+    Post("/", HttpEntity(ContentTypes.`text/plain(UTF-8)`, data = dataBytes)) ~> route ~> check {
+      responseAs[String] shouldEqual "Request entity is strict, data=123456789"
+    }
+    //#
+  }
 
 }

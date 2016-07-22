@@ -3,6 +3,7 @@
  */
 package docs.http.javadsl.server.directives;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.dispatch.ExecutionContexts;
 import akka.event.Logging;
@@ -31,14 +32,17 @@ import akka.util.ByteString;
 import org.junit.Ignore;
 import org.junit.Test;
 import scala.concurrent.ExecutionContextExecutor;
+import scala.concurrent.duration.FiniteDuration;
 
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -783,6 +787,55 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(HttpRequest.GET("/abc/456"))
       .assertEntity("Unmatched: '/456'");
     //#extractUnmatchedPath
+  }
+
+  @Test
+  public void testExtractStrictEntity() {
+    //#extractStrictEntity
+    final FiniteDuration timeout = FiniteDuration.create(3, TimeUnit.SECONDS);
+    final Route route = extractStrictEntity(timeout, strict ->
+      complete(strict.getData().utf8String())
+    );
+
+    // tests:
+    final Iterator iterator = Arrays.asList(
+      ByteString.fromString("1"),
+      ByteString.fromString("2"),
+      ByteString.fromString("3")).iterator();
+    final Source<ByteString, NotUsed> dataBytes = Source.fromIterator(() -> iterator);
+    testRoute(route).run(
+      HttpRequest.POST("/")
+        .withEntity(HttpEntities.create(ContentTypes.TEXT_PLAIN_UTF8, dataBytes))
+    ).assertEntity("123");
+    //#extractStrictEntity
+  }
+
+  @Test
+  public void testToStrictEntity() {
+    //#toStrictEntity
+    final FiniteDuration timeout = FiniteDuration.create(3, TimeUnit.SECONDS);
+    final Route route = toStrictEntity(timeout, () ->
+      extractRequest(req -> {
+        if (req.entity() instanceof HttpEntity.Strict) {
+          final HttpEntity.Strict strict = (HttpEntity.Strict)req.entity();
+          return complete("Request entity is strict, data=" + strict.getData().utf8String());
+        } else {
+          return complete("Ooops, request entity is not strict!");
+        }
+      })
+    );
+
+    // tests:
+    final Iterator iterator = Arrays.asList(
+      ByteString.fromString("1"),
+      ByteString.fromString("2"),
+      ByteString.fromString("3")).iterator();
+    final Source<ByteString, NotUsed> dataBytes = Source.fromIterator(() -> iterator);
+    testRoute(route).run(
+      HttpRequest.POST("/")
+        .withEntity(HttpEntities.create(ContentTypes.TEXT_PLAIN_UTF8, dataBytes))
+    ).assertEntity("Request entity is strict, data=123");
+    //#toStrictEntity
   }
 
 }
