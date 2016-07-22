@@ -549,14 +549,14 @@ object HttpEntity {
    * to entity constructors.
    */
   def limitableByteSource[Mat](source: Source[ByteString, Mat]): Source[ByteString, Mat] =
-    limitable(source, sizeOfByteString)
+    source.via(new Limitable(sizeOfByteString))
 
   /**
    * Turns the given source into one that respects the `withSizeLimit` calls when used as a parameter
    * to entity constructors.
    */
   def limitableChunkSource[Mat](source: Source[ChunkStreamPart, Mat]): Source[ChunkStreamPart, Mat] =
-    limitable(source, sizeOfChunkStreamPart)
+    source.via(new Limitable(sizeOfChunkStreamPart))
 
   /**
    * INTERNAL API
@@ -564,35 +564,46 @@ object HttpEntity {
   private val sizeOfByteString: ByteString ⇒ Int = _.size
   private val sizeOfChunkStreamPart: ChunkStreamPart ⇒ Int = _.data.size
 
-  /**
-   * INTERNAL API
-   */
-  private def limitable[Out, Mat](source: Source[Out, Mat], sizeOf: Out ⇒ Int): Source[Out, Mat] =
-    source.via(Flow[Out].transform { () ⇒
-      new PushStage[Out, Out] {
-        var maxBytes = -1L
-        var bytesLeft = Long.MaxValue
+  private val limitableDefaults = Attributes.name("limitable")
 
-        override def preStart(ctx: LifecycleContext) =
-          ctx.attributes.getFirst[SizeLimit] match {
-            case Some(limit: SizeLimit) if limit.isDisabled ⇒
-            // "no limit"
-            case Some(SizeLimit(bytes, cl @ Some(contentLength))) ⇒
-              if (contentLength > bytes) throw EntityStreamSizeException(bytes, cl)
-            // else we still count but never throw an error
-            case Some(SizeLimit(bytes, None)) ⇒
-              maxBytes = bytes
-              bytesLeft = bytes
-            case None ⇒
-          }
+  private final class Limitable[T](sizeOf: T ⇒ Int) extends GraphStage[FlowShape[T, T]] {
+    val in = Inlet[T]("Limitable.in")
+    val out = Outlet[T]("Limitable.out")
+    override val shape = FlowShape.of(in, out)
+    override protected val initialAttributes: Attributes = limitableDefaults
 
-        def onPush(elem: Out, ctx: stage.Context[Out]): stage.SyncDirective = {
-          bytesLeft -= sizeOf(elem)
-          if (bytesLeft >= 0) ctx.push(elem)
-          else ctx.fail(EntityStreamSizeException(maxBytes))
+    override def createLogic(attributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+      private var maxBytes = -1L
+      private var bytesLeft = Long.MaxValue
+
+      override def preStart(): Unit = {
+        attributes.getFirst[SizeLimit] match {
+          case Some(limit: SizeLimit) if limit.isDisabled ⇒
+          // "no limit"
+          case Some(SizeLimit(bytes, cl @ Some(contentLength))) ⇒
+            if (contentLength > bytes) throw EntityStreamSizeException(bytes, cl)
+          // else we still count but never throw an error
+          case Some(SizeLimit(bytes, None)) ⇒
+            maxBytes = bytes
+            bytesLeft = bytes
+          case None ⇒
         }
       }
-    }.named("limitable"))
+
+      override def onPush(): Unit = {
+        val elem = grab(in)
+        bytesLeft -= sizeOf(elem)
+        if (bytesLeft >= 0) push(out, elem)
+        else failStage(EntityStreamSizeException(maxBytes))
+      }
+
+      override def onPull(): Unit = {
+        pull(in)
+      }
+
+      setHandlers(in, out, this)
+    }
+  }
 
   /**
    * INTERNAL API
