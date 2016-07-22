@@ -20,11 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Promise
 import java.util.concurrent.LinkedBlockingQueue
 import scala.annotation.tailrec
-import org.scalatest.concurrent.ScalaFutures
-import org.scalactic.ConversionCheckedTripleEquals
-import akka.testkit.AkkaSpec
 
-class FlowMapAsyncUnorderedSpec extends AkkaSpec {
+class FlowMapAsyncUnorderedSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 

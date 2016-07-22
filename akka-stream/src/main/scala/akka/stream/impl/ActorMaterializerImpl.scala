@@ -283,8 +283,8 @@ class FlowNames extends Extension {
 object StreamSupervisor {
   def props(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean): Props =
     Props(new StreamSupervisor(settings, haveShutDown)).withDeploy(Deploy.local)
-
-  private val actorName = SeqActorName("StreamSupervisor")
+  private[stream] val baseName = "StreamSupervisor"
+  private val actorName = SeqActorName(baseName)
   def nextName(): String = actorName.next()
 
   final case class Materialize(props: Props, name: String)
