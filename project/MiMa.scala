@@ -907,7 +907,15 @@ object MiMa extends AutoPlugin {
       ),
       "2.4.9" -> Seq(
         // #20994 adding new decode method, since we're on JDK7+ now
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.util.ByteString.decodeString")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.util.ByteString.decodeString"),
+        ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.stream.ActorMaterializer.actorOf"),
+
+        // #20628 migrate Masker to GraphStage
+        ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.ws.Masking$Masking"),
+        ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.ws.Masking$Masker"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.ws.Masking#Masker.initial"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.engine.ws.Masking$Masker$Running"),
+        ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.ws.Masking$Unmasking")
       )
     )
   }
