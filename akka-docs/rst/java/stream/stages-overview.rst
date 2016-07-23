@@ -1252,6 +1252,20 @@ If materialized values needs to be collected ``prependMat`` is available.
 
 **completes** when all upstreams complete
 
+orElse
+^^^^^^
+When and only if the first source completes without emitting any elements, the elements from the second source
+are emitted. If the first source emits any elements the second source cancelled.
+
+On errors the stage is failed regardless of source of the error.
+
+**emits** when an element is available from first stream or first stream closed without emitting any elements and an element
+is available from the second stream
+
+**backpressures** when downstream backpressures
+
+**completes** when the first stream completes after emitting at least one element or else when the second stream completes
+
 interleave
 ^^^^^^^^^^
 Emits a specifiable number of elements from the original source, then from the provided source and repeats. If one

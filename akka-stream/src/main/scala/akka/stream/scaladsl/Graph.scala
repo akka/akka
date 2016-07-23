@@ -11,7 +11,9 @@ import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout._
 import akka.stream.scaladsl.Partition.PartitionOutOfBoundsException
-import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import com.sun.org.apache.xalan.internal.xsltc.runtime.output.TransletOutputHandlerFactory
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -911,6 +913,79 @@ final class Concat[T](val inputPorts: Int) extends GraphStage[UniformFanInShape[
   }
 
   override def toString: String = s"Concat($inputPorts)"
+}
+
+object OrElse {
+  def apply[T]() = new OrElse[T]
+}
+
+/**
+ * Takes two streams and passes the first through, the second stream is only passed
+ * through if the first stream completes without passing any elements through. When
+ * the first element is passed through from the first input the second upstream is
+ * cancelled.
+ *
+ * On errors the stage is failed regardless of source of the error.
+ *
+ * '''Emits when''' element is available from first stream or first stream closed without emitting any elements and an element
+ *                  is available from the second stream
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' the first stream completes after emitting at least one element or else when the second stream completes
+ *
+ * '''Cancels when''' downstream cancels
+ */
+private[stream] final class OrElse[T] extends GraphStage[UniformFanInShape[T, T]] {
+  val in1 = Inlet[T]("OrElse.in1")
+  val in2 = Inlet[T]("OrElse.in2")
+  val out = Outlet[T]("OrElse.out")
+
+  override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in1, in2)
+
+  override protected def initialAttributes: Attributes = DefaultAttributes.orElse
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
+
+    private[this] var currentIn = in1
+    private[this] var in1Pushed = false
+
+    override def onPull(): Unit = {
+      pull(currentIn)
+    }
+
+    setHandler(in1, new InHandler {
+      override def onPush(): Unit = {
+        if (!in1Pushed) {
+          in1Pushed = true
+          cancel(in2)
+        }
+        val elem = grab(in1)
+        push(out, elem)
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        if (!in1Pushed) {
+          currentIn = in2
+          if (isAvailable(out)) pull(in2)
+        } else {
+          completeStage()
+        }
+      }
+    })
+
+    setHandler(in2, new InHandler {
+      override def onPush(): Unit = {
+        val elem = grab(in2)
+        push(out, elem)
+      }
+    })
+
+    setHandler(out, this)
+  }
+
+  override def toString: String = s"OrElse"
+
 }
 
 object GraphDSL extends GraphApply {
