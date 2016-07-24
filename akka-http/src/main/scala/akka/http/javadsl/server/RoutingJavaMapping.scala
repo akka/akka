@@ -10,7 +10,9 @@ import akka.http.impl.util.JavaMapping._
 import akka.http.impl.util._
 import akka.http.{ javadsl, scaladsl }
 import akka.http.scaladsl.server.{ directives ⇒ sdirectives }
+import akka.http.scaladsl.{ common ⇒ scommon }
 import akka.http.javadsl.server.{ directives ⇒ jdirectives }
+import akka.http.javadsl.{ common ⇒ jcommon }
 import scala.collection.immutable
 
 /**
@@ -42,6 +44,8 @@ private[http] object RoutingJavaMapping {
     override def toJava(scalaObject: scaladsl.server.RequestContext): javadsl.server.RequestContext = javadsl.server.RequestContext.wrap(scalaObject)
   }
   implicit object convertRouteResult extends Inherited[javadsl.server.RouteResult, scaladsl.server.RouteResult]
+
+  implicit object convertSourceRenderingMode extends Inherited[jcommon.SourceRenderingMode, scommon.SourceRenderingMode]
 
   implicit object convertDirectoryRenderer extends Inherited[jdirectives.DirectoryRenderer, sdirectives.FileAndResourceDirectives.DirectoryRenderer]
   implicit object convertContentTypeResolver extends Inherited[jdirectives.ContentTypeResolver, sdirectives.ContentTypeResolver]

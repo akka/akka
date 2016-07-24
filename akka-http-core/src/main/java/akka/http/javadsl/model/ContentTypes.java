@@ -25,6 +25,9 @@ public final class ContentTypes {
   public static final ContentType.WithCharset TEXT_XML_UTF8 =
           akka.http.scaladsl.model.ContentTypes.text$divxml$u0028UTF$minus8$u0029();
 
+  public static final ContentType.WithCharset TEXT_CSV_UTF8 =
+          akka.http.scaladsl.model.ContentTypes.text$divcsv$u0028UTF$minus8$u0029();
+
   public static ContentType.Binary create(MediaType.Binary mediaType) {
     return ContentType$.MODULE$.apply((akka.http.scaladsl.model.MediaType.Binary) mediaType);
   }

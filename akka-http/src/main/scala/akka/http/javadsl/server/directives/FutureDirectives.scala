@@ -31,6 +31,16 @@ abstract class FutureDirectives extends FormFieldDirectives {
   }
 
   /**
+   * "Unwraps" a `CompletionStage<T>` and runs the inner route after future
+   * completion with the future's value as an extraction of type `Try<T>`.
+   */
+  def onComplete[T](cs: CompletionStage[T], inner: JFunction[Try[T], Route]) = RouteAdapter {
+    D.onComplete(cs.toScala.recover(unwrapCompletionException)) { value ⇒
+      inner(value).delegate
+    }
+  }
+
+  /**
    * "Unwraps" a `CompletionStage[T]` and runs the inner route after future
    * completion with the future's value as an extraction of type `T` if
    * the supplied `CircuitBreaker` is closed.

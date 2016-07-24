@@ -115,3 +115,18 @@ object Framing {
     scaladsl.Framing.simpleFramingProtocol(maximumMessageLength).asJava
 
 }
+
+/**
+ * Wrapper around a framing Flow (as provided by [[Framing.delimiter]] for example.
+ * Used for providing a framing implicitly for other components which may need one (such as framed entity streaming in Akka HTTP).
+ */
+trait Framing {
+  def asScala: akka.stream.scaladsl.Framing =
+    this match {
+      case f: akka.stream.scaladsl.Framing ⇒ f
+      case _ ⇒ new akka.stream.scaladsl.Framing {
+        override def flow = getFlow.asScala
+      }
+    }
+  def getFlow: Flow[ByteString, ByteString, NotUsed]
+}
