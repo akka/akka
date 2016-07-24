@@ -907,7 +907,11 @@ object MiMa extends AutoPlugin {
       ),
       "2.4.9" -> Seq(
         // #20994 adding new decode method, since we're on JDK7+ now
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.util.ByteString.decodeString")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.util.ByteString.decodeString"),
+
+        // #20976 provide different options to deal with the illegal response header value
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.getIllegalResponseHeaderValueProcessingMode"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ParserSettings.illegalResponseHeaderValueProcessingMode")
       )
     )
   }

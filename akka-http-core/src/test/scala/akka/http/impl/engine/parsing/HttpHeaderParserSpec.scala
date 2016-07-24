@@ -246,6 +246,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
     val parser = {
       val p = HttpHeaderParser.unprimed(
         settings = ParserSettings(system),
+        system.log,
         warnOnIllegalHeader = info ⇒ system.log.warning(info.formatPretty))
       if (primed) HttpHeaderParser.prime(p) else p
     }
