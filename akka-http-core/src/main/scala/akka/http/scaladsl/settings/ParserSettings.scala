@@ -34,6 +34,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   def cookieParsingMode: ParserSettings.CookieParsingMode
   def illegalHeaderWarnings: Boolean
   def errorLoggingVerbosity: ParserSettings.ErrorLoggingVerbosity
+  def illegalResponseHeaderValueProcessingMode: ParserSettings.IllegalResponseHeaderValueProcessingMode
   def headerValueCacheLimits: Map[String, Int]
   def includeTlsSessionInfoHeader: Boolean
   def customMethods: String ⇒ Option[HttpMethod]
@@ -56,6 +57,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   override def getMaxUriLength = maxUriLength
   override def getMaxMethodLength = maxMethodLength
   override def getErrorLoggingVerbosity: js.ParserSettings.ErrorLoggingVerbosity = errorLoggingVerbosity
+  override def getIllegalResponseHeaderValueProcessingMode = illegalResponseHeaderValueProcessingMode
 
   override def getCustomMethods = new Function[String, Optional[akka.http.javadsl.model.HttpMethod]] {
     override def apply(t: String) = OptionConverters.toJava(customMethods(t))
@@ -100,10 +102,12 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
     val map = types.map(c ⇒ (c.mainType, c.subType) → c).toMap
     self.copy(customMediaTypes = (main, sub) ⇒ map.get((main, sub)))
   }
+  def withIllegalResponseHeaderValueProcessingMode(newValue: ParserSettings.IllegalResponseHeaderValueProcessingMode): ParserSettings =
+    self.copy(illegalResponseHeaderValueProcessingMode = newValue)
 }
 
 object ParserSettings extends SettingsCompanion[ParserSettings] {
-  trait CookieParsingMode extends akka.http.javadsl.settings.ParserSettings.CookieParsingMode
+  sealed trait CookieParsingMode extends akka.http.javadsl.settings.ParserSettings.CookieParsingMode
   object CookieParsingMode {
     case object RFC6265 extends CookieParsingMode
     case object Raw extends CookieParsingMode
@@ -114,7 +118,7 @@ object ParserSettings extends SettingsCompanion[ParserSettings] {
     }
   }
 
-  trait ErrorLoggingVerbosity extends akka.http.javadsl.settings.ParserSettings.ErrorLoggingVerbosity
+  sealed trait ErrorLoggingVerbosity extends akka.http.javadsl.settings.ParserSettings.ErrorLoggingVerbosity
   object ErrorLoggingVerbosity {
     case object Off extends ErrorLoggingVerbosity
     case object Simple extends ErrorLoggingVerbosity
@@ -126,6 +130,21 @@ object ParserSettings extends SettingsCompanion[ParserSettings] {
         case "simple" ⇒ Simple
         case "full"   ⇒ Full
         case x        ⇒ throw new IllegalArgumentException(s"[$x] is not a legal `error-logging-verbosity` setting")
+      }
+  }
+
+  sealed trait IllegalResponseHeaderValueProcessingMode extends akka.http.javadsl.settings.ParserSettings.IllegalResponseHeaderValueProcessingMode
+  object IllegalResponseHeaderValueProcessingMode {
+    case object Error extends IllegalResponseHeaderValueProcessingMode
+    case object Warn extends IllegalResponseHeaderValueProcessingMode
+    case object Ignore extends IllegalResponseHeaderValueProcessingMode
+
+    def apply(string: String): IllegalResponseHeaderValueProcessingMode =
+      string.toRootLowerCase match {
+        case "error"  ⇒ Error
+        case "warn"   ⇒ Warn
+        case "ignore" ⇒ Ignore
+        case x        ⇒ throw new IllegalArgumentException(s"[$x] is not a legal `illegal-response-header-value-processing-mode` setting")
       }
   }
 

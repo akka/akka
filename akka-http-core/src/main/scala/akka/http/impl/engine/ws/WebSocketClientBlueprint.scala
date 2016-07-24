@@ -62,7 +62,7 @@ object WebSocketClientBlueprint {
         new GraphStageLogic(shape) with InHandler with OutHandler {
           // a special version of the parser which only parses one message and then reports the remaining data
           // if some is available
-          val parser = new HttpResponseParser(settings.parserSettings, HttpHeaderParser(settings.parserSettings)()) {
+          val parser = new HttpResponseParser(settings.parserSettings, HttpHeaderParser(settings.parserSettings, log)()) {
             var first = true
             override def handleInformationalResponses = false
             override protected def parseMessage(input: ByteString, offset: Int): StateResult = {
