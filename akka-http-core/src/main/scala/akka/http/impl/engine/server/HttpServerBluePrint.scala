@@ -211,7 +211,7 @@ private[http] object HttpServerBluePrint {
     // the initial header parser we initially use for every connection,
     // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
     val rootParser = new HttpRequestParser(parserSettings, rawRequestUriHeader,
-      HttpHeaderParser(parserSettings) { info ⇒
+      HttpHeaderParser(parserSettings, log) { info ⇒
         if (parserSettings.illegalHeaderWarnings)
           logParsingError(info withSummaryPrepended "Illegal request header", log, parserSettings.errorLoggingVerbosity)
       })
