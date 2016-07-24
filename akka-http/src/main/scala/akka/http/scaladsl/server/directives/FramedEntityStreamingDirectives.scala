@@ -146,21 +146,29 @@ trait FramedEntityStreamingDirectives extends MarshallingDirectives {
   private final def asSourceOfInternal[T](framing: FramingWithContentType, marshalling: (ExecutionContext, Materializer) => Flow[ByteString, ByteString, NotUsed]#ReprMat[T, NotUsed]): RequestToSourceUnmarshaller[T] =
     Unmarshaller.withMaterializer[HttpRequest, Source[T, NotUsed]] { implicit ec ⇒ implicit mat ⇒ req ⇒
       val entity = req.entity
-      if (!framing.matches(entity.contentType)) {
-        val supportedContentTypes = framing.supported
-        FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(supportedContentTypes))
-      } else {
+      if (framing.matches(entity.contentType)) {
         val bytes = entity.dataBytes
         val frames = bytes.viaMat(framing.flow)(Keep.right)
         val elements = frames.viaMat(marshalling(ec, mat))(Keep.right)
-        val stream = elements.mapMaterializedValue(_ => NotUsed)
-//        val stream = Source.single(entity.transformDataBytes(framing.flow)).via(marshalling(ec, mat)).mapMaterializedValue(_ => NotUsed)  
-        FastFuture.successful(stream)
-      }
+        FastFuture.successful(elements)
+
+      } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(framing.supported))
     }
   // format: ON
 
   // TODO note to self - we need the same of ease of streaming stuff for the client side - i.e. the twitter firehose case.
+
+  implicit def _asSourceUnmarshaller[T](implicit fem: FromEntityUnmarshaller[T], framing: FramingWithContentType): FromRequestUnmarshaller[Source[T, NotUsed]] = {
+    Unmarshaller.withMaterializer[HttpRequest, Source[T, NotUsed]] { implicit ec ⇒ implicit mat ⇒ req ⇒
+      val entity = req.entity
+      if (framing.matches(entity.contentType)) {
+        val bytes = entity.dataBytes
+        val frames = bytes.viaMat(framing.flow)(Keep.right)
+        val elements = frames.viaMat(Flow[ByteString].map(HttpEntity(entity.contentType, _)).mapAsync(1)(Unmarshal(_).to[T](fem, ec, mat)))(Keep.right)
+        FastFuture.successful(elements)
+      } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(framing.supported))
+    }
+  }
 
   implicit def _sourceMarshaller[T, M](implicit m: ToEntityMarshaller[T], mode: SourceRenderingMode): ToResponseMarshaller[Source[T, M]] =
     Marshaller[Source[T, M], HttpResponse] { implicit ec ⇒ source ⇒
