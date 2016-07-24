@@ -3,35 +3,25 @@
  */
 package akka.http.javadsl.server.directives
 
-import akka.http.javadsl.model.{ ContentType, HttpEntity }
-import akka.util.ByteString
-import java.util.{ List ⇒ JList, Map ⇒ JMap }
-import java.util.AbstractMap.SimpleImmutableEntry
-import java.util.Optional
 import java.util.function.{ Function ⇒ JFunction }
+import java.util.{ List ⇒ JList, Map ⇒ JMap }
 
 import akka.NotUsed
-
-import scala.collection.JavaConverters._
-import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.common.{ FramingWithContentType, SourceRenderingMode }
+import akka.http.javadsl.model.{ HttpEntity, _ }
 import akka.http.javadsl.server.{ Marshaller, Route, Unmarshaller }
-import akka.http.javadsl.model._
-import akka.http.scaladsl.marshalling.{ ToResponseMarshallable, ToResponseMarshaller }
+import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.server.{ Directives ⇒ D }
-import akka.http.scaladsl.unmarshalling
 import akka.stream.javadsl.Source
+import akka.util.ByteString
 
 /** EXPERIMENTAL API */
 abstract class FramedEntityStreamingDirectives extends TimeoutDirectives {
-  // important import, as we implicitly resolve some marshallers inside the below directives
-  import akka.http.scaladsl.server.directives.FramedEntityStreamingDirectives._
 
   @CorrespondsTo("asSourceOf")
-  def entityasSourceOf[T](um: Unmarshaller[HttpEntity, T], framing: FramingWithContentType,
+  def entityasSourceOf[T](um: Unmarshaller[ByteString, T], framing: FramingWithContentType,
                           inner: java.util.function.Function[Source[T, NotUsed], Route]): Route = RouteAdapter {
-    val sum = um.asScalaCastInput[akka.http.scaladsl.model.HttpEntity]
-    D.entity(D.asSourceOf[T](framing.asScala)(sum)) { s: akka.stream.scaladsl.Source[T, NotUsed] ⇒
+    D.entity(D.asSourceOf[T](framing.asScala)(um.asScala)) { s: akka.stream.scaladsl.Source[T, NotUsed] ⇒
       inner(s.asJava).delegate
     }
   }
@@ -39,10 +29,9 @@ abstract class FramedEntityStreamingDirectives extends TimeoutDirectives {
   @CorrespondsTo("asSourceOfAsync")
   def entityAsSourceAsyncOf[T](
     parallelism: Int,
-    um:          Unmarshaller[HttpEntity, T], framing: FramingWithContentType,
+    um:          Unmarshaller[ByteString, T], framing: FramingWithContentType,
     inner: java.util.function.Function[Source[T, NotUsed], Route]): Route = RouteAdapter {
-    val sum = um.asScalaCastInput[akka.http.scaladsl.model.HttpEntity]
-    D.entity(D.asSourceOfAsync[T](parallelism, framing.asScala)(sum)) { s: akka.stream.scaladsl.Source[T, NotUsed] ⇒
+    D.entity(D.asSourceOfAsync[T](parallelism, framing.asScala)(um.asScala)) { s: akka.stream.scaladsl.Source[T, NotUsed] ⇒
       inner(s.asJava).delegate
     }
   }
@@ -50,18 +39,16 @@ abstract class FramedEntityStreamingDirectives extends TimeoutDirectives {
   @CorrespondsTo("asSourceOfAsyncUnordered")
   def entityAsSourceAsyncUnorderedOf[T](
     parallelism: Int,
-    um:          Unmarshaller[HttpEntity, T], framing: FramingWithContentType,
+    um:          Unmarshaller[ByteString, T], framing: FramingWithContentType,
     inner: java.util.function.Function[Source[T, NotUsed], Route]): Route = RouteAdapter {
-    val sum = um.asScalaCastInput[akka.http.scaladsl.model.HttpEntity]
-    D.entity(D.asSourceOfAsyncUnordered[T](parallelism, framing.asScala)(sum)) { s: akka.stream.scaladsl.Source[T, NotUsed] ⇒
+    D.entity(D.asSourceOfAsyncUnordered[T](parallelism, framing.asScala)(um.asScala)) { s: akka.stream.scaladsl.Source[T, NotUsed] ⇒
       inner(s.asJava).delegate
     }
   }
 
-  // implicit used internally, Java caller does not benefit or use it
+  // implicits used internally, Java caller does not benefit or use it
   @CorrespondsTo("complete")
   def completeWithSource[T, M](implicit source: Source[T, M], m: Marshaller[T, ByteString], rendering: SourceRenderingMode): Route = RouteAdapter {
-    import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
     implicit val mm = _sourceMarshaller(m.map(ByteStringAsEntityFn), rendering)
     val response = ToResponseMarshallable(source)
     D.complete(response)
@@ -75,8 +62,8 @@ abstract class FramedEntityStreamingDirectives extends TimeoutDirectives {
   }
 
   implicit private def _sourceMarshaller[T, M](implicit m: Marshaller[T, HttpEntity], rendering: SourceRenderingMode) = {
-    import akka.http.javadsl.server.RoutingJavaMapping._
     import akka.http.javadsl.server.RoutingJavaMapping.Implicits._
+    import akka.http.javadsl.server.RoutingJavaMapping._
     val mm = m.asScalaCastOutput
     D._sourceMarshaller[T, M](mm, rendering.asScala).compose({ h: akka.stream.javadsl.Source[T, M] ⇒ h.asScala })
   }

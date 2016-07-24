@@ -11,48 +11,150 @@ import akka.http.scaladsl.unmarshalling.{ Unmarshal, Unmarshaller, _ }
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.impl.ConstantFun
-import akka.stream.scaladsl.{ Flow, Source }
+import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.util.ByteString
 
 import scala.concurrent.ExecutionContext
 import scala.language.implicitConversions
 
 /**
- * Allows the [[MarshallingDirectives.entity]] directive to extract a `stream[T]` for framed messages.
- * See `JsonEntityStreamingSupport` and classes extending it, such as `SprayJsonSupport` to get marshallers.
+ * Allows the [[MarshallingDirectives.entity]] directive to extract a [[Source]] of elements.
+ *
+ * See [[akka.http.scaladsl.server.EntityStreamingSupport]] for useful default [[FramingWithContentType]] instances and
+ * support traits such as `SprayJsonSupport` (or your other favourite JSON library) to provide the needed [[Marshaller]] s.
  */
 trait FramedEntityStreamingDirectives extends MarshallingDirectives {
   import FramedEntityStreamingDirectives._
 
   type RequestToSourceUnmarshaller[T] = FromRequestUnmarshaller[Source[T, NotUsed]]
 
-  // TODO DOCS
-
-  final def asSourceOf[T](implicit um: Unmarshaller[HttpEntity, T], framing: FramingWithContentType): RequestToSourceUnmarshaller[T] =
+  /**
+   * Extracts entity as [[Source]] of elements of type `T`.
+   * This is achieved by applying the implicitly provided (in the following order):
+   *
+   * - 1st: [[FramingWithContentType]] in order to chunk-up the incoming [[ByteString]]s according to the
+   *        `Content-Type` aware framing (for example, [[akka.http.scaladsl.server.EntityStreamingSupport.bracketCountingJsonFraming]]).
+   * - 2nd: [[Unmarshaller]] (from [[ByteString]] to `T`) for each of the respective "chunks" (e.g. for each JSON element contained within an array).
+   *
+   * The request will be rejected with an [[akka.http.scaladsl.server.UnsupportedRequestContentTypeRejection]] if
+   * its [[ContentType]] is not supported by the used `framing` or `unmarshaller`.
+   *
+   * It is recommended to use the [[akka.http.scaladsl.server.EntityStreamingSupport]] trait in conjunction with this
+   * directive as it helps provide the right [[FramingWithContentType]] and [[SourceRenderingMode]] for the most
+   * typical usage scenarios (JSON, CSV, ...).
+   *
+   * Cancelling extracted [[Source]] closes the connection abruptly (same as cancelling the `entity.dataBytes`).
+   *
+   * If looking to improve marshalling performance in face of many elements (possibly of different sizes),
+   * you may be interested in using [[asSourceOfAsyncUnordered]] instead.
+   *
+   * See also [[MiscDirectives.withoutSizeLimit]] as you may want to allow streaming infinite streams of data in this route.
+   * By default the uploaded data is limited by the `akka.http.parsing.max-content-length`.
+   */
+  final def asSourceOf[T](implicit um: Unmarshaller[ByteString, T], framing: FramingWithContentType): RequestToSourceUnmarshaller[T] =
     asSourceOfAsync(1)(um, framing)
-  final def asSourceOf[T](framing: FramingWithContentType)(implicit um: Unmarshaller[HttpEntity, T]): RequestToSourceUnmarshaller[T] =
+
+  /**
+   * Extracts entity as [[Source]] of elements of type `T`.
+   * This is achieved by applying the implicitly provided (in the following order):
+   *
+   * - 1st: [[FramingWithContentType]] in order to chunk-up the incoming [[ByteString]]s according to the
+   *        `Content-Type` aware framing (for example, [[akka.http.scaladsl.server.EntityStreamingSupport.bracketCountingJsonFraming]]).
+   * - 2nd: [[Unmarshaller]] (from [[ByteString]] to `T`) for each of the respective "chunks" (e.g. for each JSON element contained within an array).
+   *
+   * The request will be rejected with an [[akka.http.scaladsl.server.UnsupportedRequestContentTypeRejection]] if
+   * its [[ContentType]] is not supported by the used `framing` or `unmarshaller`.
+   *
+   * It is recommended to use the [[akka.http.scaladsl.server.EntityStreamingSupport]] trait in conjunction with this
+   * directive as it helps provide the right [[FramingWithContentType]] and [[SourceRenderingMode]] for the most
+   * typical usage scenarios (JSON, CSV, ...).
+   *
+   * Cancelling extracted [[Source]] closes the connection abruptly (same as cancelling the `entity.dataBytes`).
+   *
+   * If looking to improve marshalling performance in face of many elements (possibly of different sizes),
+   * you may be interested in using [[asSourceOfAsyncUnordered]] instead.
+   *
+   * See also [[MiscDirectives.withoutSizeLimit]] as you may want to allow streaming infinite streams of data in this route.
+   * By default the uploaded data is limited by the `akka.http.parsing.max-content-length`.
+   */
+  final def asSourceOf[T](framing: FramingWithContentType)(implicit um: Unmarshaller[ByteString, T]): RequestToSourceUnmarshaller[T] =
     asSourceOfAsync(1)(um, framing)
 
-  final def asSourceOfAsync[T](parallelism: Int)(implicit um: Unmarshaller[HttpEntity, T], framing: FramingWithContentType): RequestToSourceUnmarshaller[T] =
-    asSourceOfInternal[T](framing, (ec, mat) ⇒ Flow[HttpEntity].mapAsync(parallelism)(Unmarshal(_).to[T](um, ec, mat)))
-  final def asSourceOfAsync[T](parallelism: Int, framing: FramingWithContentType)(implicit um: Unmarshaller[HttpEntity, T]): RequestToSourceUnmarshaller[T] =
+  /**
+   * Similar to [[asSourceOf]] however will apply at most `parallelism` unmarshallers in parallel.
+   *
+   * The source elements emitted preserve the order in which they are sent in the incoming [[HttpRequest]].
+   * If you want to sacrivice ordering in favour of (potential) slight performance improvements in reading the input
+   * you may want to use [[asSourceOfAsyncUnordered]] instead, which lifts the ordering guarantee.
+   *
+   * Refer to [[asSourceOf]] for more in depth-documentation and guidelines.
+   *
+   * If looking to improve marshalling performance in face of many elements (possibly of different sizes),
+   * you may be interested in using [[asSourceOfAsyncUnordered]] instead.
+   *
+   * See also [[MiscDirectives.withoutSizeLimit]] as you may want to allow streaming infinite streams of data in this route.
+   * By default the uploaded data is limited by the `akka.http.parsing.max-content-length`.
+   */
+  final def asSourceOfAsync[T](parallelism: Int)(implicit um: Unmarshaller[ByteString, T], framing: FramingWithContentType): RequestToSourceUnmarshaller[T] =
+    asSourceOfInternal[T](framing, (ec, mat) ⇒ Flow[ByteString].mapAsync(parallelism)(Unmarshal(_).to[T](um, ec, mat)))
+
+  /**
+   * Similar to [[asSourceOf]] however will apply at most `parallelism` unmarshallers in parallel.
+   *
+   * The source elements emitted preserve the order in which they are sent in the incoming [[HttpRequest]].
+   * If you want to sacrivice ordering in favour of (potential) slight performance improvements in reading the input
+   * you may want to use [[asSourceOfAsyncUnordered]] instead, which lifts the ordering guarantee.
+   *
+   * Refer to [[asSourceOf]] for more in depth-documentation and guidelines.
+   *
+   * See also [[MiscDirectives.withoutSizeLimit]] as you may want to allow streaming infinite streams of data in this route.
+   * By default the uploaded data is limited by the `akka.http.parsing.max-content-length`.
+   */
+  final def asSourceOfAsync[T](parallelism: Int, framing: FramingWithContentType)(implicit um: Unmarshaller[ByteString, T]): RequestToSourceUnmarshaller[T] =
     asSourceOfAsync(parallelism)(um, framing)
 
-  final def asSourceOfAsyncUnordered[T](parallelism: Int)(implicit um: Unmarshaller[HttpEntity, T], framing: FramingWithContentType): RequestToSourceUnmarshaller[T] =
-    asSourceOfInternal[T](framing, (ec, mat) ⇒ Flow[HttpEntity].mapAsyncUnordered(parallelism)(Unmarshal(_).to[T](um, ec, mat)))
-  final def asSourceOfAsyncUnordered[T](parallelism: Int, framing: FramingWithContentType)(implicit um: Unmarshaller[HttpEntity, T]): RequestToSourceUnmarshaller[T] =
+  /**
+   * Similar to [[asSourceOfAsync]], as it will apply at most `parallelism` unmarshallers in parallel.
+   *
+   * The source elements emitted preserve the order in which they are sent in the incoming [[HttpRequest]].
+   * If you want to sacrivice ordering in favour of (potential) slight performance improvements in reading the input
+   * you may want to use [[asSourceOfAsyncUnordered]] instead, which lifts the ordering guarantee.
+   *
+   * Refer to [[asSourceOf]] for more in depth-documentation and guidelines.
+   *
+   * See also [[MiscDirectives.withoutSizeLimit]] as you may want to allow streaming infinite streams of data in this route.
+   * By default the uploaded data is limited by the `akka.http.parsing.max-content-length`.
+   */
+  final def asSourceOfAsyncUnordered[T](parallelism: Int)(implicit um: Unmarshaller[ByteString, T], framing: FramingWithContentType): RequestToSourceUnmarshaller[T] =
+    asSourceOfInternal[T](framing, (ec, mat) ⇒ Flow[ByteString].mapAsyncUnordered(parallelism)(Unmarshal(_).to[T](um, ec, mat)))
+  /**
+   * Similar to [[asSourceOfAsync]], as it will apply at most `parallelism` unmarshallers in parallel.
+   *
+   * The source elements emitted preserve the order in which they are sent in the incoming [[HttpRequest]].
+   * If you want to sacrivice ordering in favour of (potential) slight performance improvements in reading the input
+   * you may want to use [[asSourceOfAsyncUnordered]] instead, which lifts the ordering guarantee.
+   *
+   * Refer to [[asSourceOf]] for more in depth-documentation and guidelines.
+   *
+   * See also [[MiscDirectives.withoutSizeLimit]] as you may want to allow streaming infinite streams of data in this route.
+   * By default the uploaded data is limited by the `akka.http.parsing.max-content-length`.
+   */
+  final def asSourceOfAsyncUnordered[T](parallelism: Int, framing: FramingWithContentType)(implicit um: Unmarshaller[ByteString, T]): RequestToSourceUnmarshaller[T] =
     asSourceOfAsyncUnordered(parallelism)(um, framing)
 
   // format: OFF
-  private def asSourceOfInternal[T](framing: FramingWithContentType, marshalling: (ExecutionContext, Materializer) => Flow[HttpEntity, ByteString, NotUsed]#ReprMat[T, NotUsed]): RequestToSourceUnmarshaller[T] =
+  private final def asSourceOfInternal[T](framing: FramingWithContentType, marshalling: (ExecutionContext, Materializer) => Flow[ByteString, ByteString, NotUsed]#ReprMat[T, NotUsed]): RequestToSourceUnmarshaller[T] =
     Unmarshaller.withMaterializer[HttpRequest, Source[T, NotUsed]] { implicit ec ⇒ implicit mat ⇒ req ⇒
       val entity = req.entity
       if (!framing.matches(entity.contentType)) {
         val supportedContentTypes = framing.supported
         FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(supportedContentTypes))
       } else {
-//        val stream = entity.dataBytes.via(framing.flow).via(marshalling(ec, mat)).mapMaterializedValue(_ => NotUsed)  
-        val stream = Source.single(entity.transformDataBytes(framing.flow)).via(marshalling(ec, mat)).mapMaterializedValue(_ => NotUsed)  
+        val bytes = entity.dataBytes
+        val frames = bytes.viaMat(framing.flow)(Keep.right)
+        val elements = frames.viaMat(marshalling(ec, mat))(Keep.right)
+        val stream = elements.mapMaterializedValue(_ => NotUsed)
+//        val stream = Source.single(entity.transformDataBytes(framing.flow)).via(marshalling(ec, mat)).mapMaterializedValue(_ => NotUsed)  
         FastFuture.successful(stream)
       }
     }
@@ -108,6 +210,11 @@ trait FramedEntityStreamingDirectives extends MarshallingDirectives {
     new EnableSpecialSourceRenderingModes(source)
 
 }
+/**
+ * Allows the [[MarshallingDirectives.entity]] directive to extract a [[Source]] of elements.
+ *
+ * See [[FramedEntityStreamingDirectives]] for detailed documentation.
+ */
 object FramedEntityStreamingDirectives extends FramedEntityStreamingDirectives {
   sealed class AsyncSourceRenderingMode
   final class AsyncRenderingOf[T](val source: Source[T, Any], val parallelism: Int) extends AsyncSourceRenderingMode
@@ -115,6 +222,7 @@ object FramedEntityStreamingDirectives extends FramedEntityStreamingDirectives {
 
 }
 
+/** Provides DSL for special rendering modes, e.g. `complete(source.renderAsync)` */
 final class EnableSpecialSourceRenderingModes[T](val source: Source[T, Any]) extends AnyVal {
   /**
    * Causes the response stream to be marshalled asynchronously (up to `parallelism` elements at once),

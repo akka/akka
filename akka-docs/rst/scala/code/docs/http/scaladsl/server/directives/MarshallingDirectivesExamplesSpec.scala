@@ -71,8 +71,8 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
     // tests:
     Get("/") ~> route ~> check {
       mediaType shouldEqual `application/json`
-      responseAs[String] should include(""""name": "Jane"""")
-      responseAs[String] should include(""""favoriteNumber": 42""")
+      responseAs[String] should include(""""name":"Jane"""")
+      responseAs[String] should include(""""favoriteNumber":42""")
     }
   }
 
@@ -95,8 +95,8 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
     Post("/", HttpEntity(`application/json`, """{ "name": "Jane", "favoriteNumber" : 42 }""")) ~>
       route ~> check {
         mediaType shouldEqual `application/json`
-        responseAs[String] should include(""""name": "Jane"""")
-        responseAs[String] should include(""""favoriteNumber": 42""")
+        responseAs[String] should include(""""name":"Jane"""")
+        responseAs[String] should include(""""favoriteNumber":42""")
       }
   }
 }

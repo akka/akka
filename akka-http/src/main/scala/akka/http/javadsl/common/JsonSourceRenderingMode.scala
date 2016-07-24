@@ -10,6 +10,8 @@ import akka.http.javadsl.model.{ ContentType, ContentTypes }
  * Specialised rendering mode for streaming elements as JSON.
  *
  * See also: <a href="https://en.wikipedia.org/wiki/JSON_Streaming">JSON Streaming on Wikipedia</a>.
+ *
+ * See [[JsonSourceRenderingModes]] for commonly used pre-defined rendering modes.
  */
 trait JsonSourceRenderingMode extends SourceRenderingMode {
   override val contentType: ContentType.WithFixedCharset =

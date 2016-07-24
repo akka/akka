@@ -21,7 +21,7 @@ class JsonFramingSpec extends AkkaSpec {
   implicit val mat = ActorMaterializer()
 
   "collecting multiple json" should {
-    "xoxo parse json array" in {
+    "parse json array" in {
       val input =
         """
           |[
@@ -38,9 +38,9 @@ class JsonFramingSpec extends AkkaSpec {
         }
 
       result.futureValue shouldBe Seq(
-        """{ "name" : "john" }""".stripMargin,
-        """{ "name" : "jack" }""".stripMargin,
-        """{ "name" : "katie" }""".stripMargin)
+        """{ "name" : "john" }""",
+        """{ "name" : "jack" }""",
+        """{ "name" : "katie" }""")
     }
 
     "emit single json element from string" in {
@@ -56,7 +56,7 @@ class JsonFramingSpec extends AkkaSpec {
           case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
         }
 
-      Await.result(result, 3.seconds) shouldBe Seq("""{ "name": "john" }""".stripMargin)
+      Await.result(result, 3.seconds) shouldBe Seq("""{ "name": "john" }""")
     }
 
     "parse line delimited" in {
@@ -73,9 +73,9 @@ class JsonFramingSpec extends AkkaSpec {
         }
 
       Await.result(result, 3.seconds) shouldBe Seq(
-        """{ "name": "john" }""".stripMargin,
-        """{ "name": "jack" }""".stripMargin,
-        """{ "name": "katie" }""".stripMargin)
+        """{ "name": "john" }""",
+        """{ "name": "jack" }""",
+        """{ "name": "katie" }""")
     }
 
     "parse comma delimited" in {
@@ -91,7 +91,7 @@ class JsonFramingSpec extends AkkaSpec {
         }
 
       result.futureValue shouldBe Seq(
-        """{ "name": "john" }""".stripMargin,
+        """{ "name": "john" }""",
         """{ "name": "jack" }""",
         """{ "name": "katie" }""")
     }
@@ -121,7 +121,6 @@ class JsonFramingSpec extends AkkaSpec {
     }
   }
 
-  // TODO fold these specs into the previous section
   "collecting json buffer" when {
     "nothing is supplied" should {
       "return nothing" in {
@@ -378,7 +377,7 @@ class JsonFramingSpec extends AkkaSpec {
       "returns none until valid json is encountered" in {
         val buffer = new JsonBracketCounting()
 
-        """{ "name": "john"""".stripMargin.foreach {
+        """{ "name": "john"""".foreach {
           c ⇒
             buffer.offer(ByteString(c))
             buffer.poll() should ===(None)
@@ -434,7 +433,7 @@ class JsonFramingSpec extends AkkaSpec {
       probe.ensureSubscription()
       probe
         .request(1)
-        .expectNext(ByteString("""{ "name": "john" }""")) // FIXME we should not impact the given json in Framing
+        .expectNext(ByteString("""{ "name": "john" }"""))
         .request(1)
         .expectNext(ByteString("""{ "name": "jack" }"""))
         .request(1)

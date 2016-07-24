@@ -5,13 +5,13 @@
 package docs.http.scaladsl.server.directives
 
 import akka.NotUsed
+import akka.http.scaladsl.common.{ FramingWithContentType, JsonSourceRenderingModes }
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Accept
-import akka.http.scaladsl.server.{ UnsupportedRequestContentTypeRejection, UnacceptedResponseContentTypeRejection, JsonSourceRenderingMode }
+import akka.http.scaladsl.server.{ UnacceptedResponseContentTypeRejection, UnsupportedRequestContentTypeRejection }
 import akka.stream.scaladsl.{ Flow, Source }
 import docs.http.scaladsl.server.RoutingSpec
-import spray.json.{ JsValue, JsObject, DefaultJsonProtocol }
 
 import scala.concurrent.Future
 
@@ -30,7 +30,7 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
 
   //#formats
   object MyJsonProtocol extends spray.json.DefaultJsonProtocol {
-    implicit val userFormat = jsonFormat2(Tweet.apply)
+    implicit val tweetFormat = jsonFormat2(Tweet.apply)
     implicit val measurementFormat = jsonFormat2(Measurement.apply)
   }
   //#
@@ -43,19 +43,22 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     import MyJsonProtocol._
 
     // [3] pick json rendering mode:
-    implicit val jsonRenderingMode = JsonSourceRenderingMode.LineByLine
+    // HINT: if you extend `akka.http.scaladsl.server.EntityStreamingSupport` 
+    //       it'll guide you to do so via abstract defs
+    val maximumObjectLength = 128
+    implicit val jsonRenderingMode = JsonSourceRenderingModes.LineByLine
 
     val route =
-      path("users") {
-        val users: Source[Tweet, NotUsed] = getTweets()
-        complete(ToResponseMarshallable(users))
+      path("tweets") {
+        val tweets: Source[Tweet, NotUsed] = getTweets()
+        complete(ToResponseMarshallable(tweets))
       }
 
     // tests:
     val AcceptJson = Accept(MediaRange(MediaTypes.`application/json`))
     val AcceptXml = Accept(MediaRange(MediaTypes.`text/xml`))
 
-    Get("/users").withHeaders(AcceptJson) ~> route ~> check {
+    Get("/tweets").withHeaders(AcceptJson) ~> route ~> check {
       responseAs[String] shouldEqual
         """{"uid":1,"txt":"#Akka rocks!"}""" + "\n" +
         """{"uid":2,"txt":"Streaming is so hot right now!"}""" + "\n" +
@@ -63,7 +66,7 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     }
 
     // endpoint can only marshal Json, so it will *reject* requests for application/xml:
-    Get("/users").withHeaders(AcceptXml) ~> route ~> check {
+    Get("/tweets").withHeaders(AcceptXml) ~> route ~> check {
       handled should ===(false)
       rejection should ===(UnacceptedResponseContentTypeRejection(Set(ContentTypes.`application/json`)))
     }
@@ -72,19 +75,19 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
   "response-streaming-modes" in {
     import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
     import MyJsonProtocol._
-    implicit val jsonRenderingMode = JsonSourceRenderingMode.LineByLine
+    implicit val jsonRenderingMode = JsonSourceRenderingModes.LineByLine
 
     //#async-rendering
-    path("users") {
-      val users: Source[Tweet, NotUsed] = getTweets()
-      complete(users.renderAsync(parallelism = 8))
+    path("tweets") {
+      val tweets: Source[Tweet, NotUsed] = getTweets()
+      complete(tweets.renderAsync(parallelism = 8))
     }
     //#
 
     //#async-unordered-rendering
-    path("users" / "unordered") {
-      val users: Source[Tweet, NotUsed] = getTweets()
-      complete(users.renderAsyncUnordered(parallelism = 8))
+    path("tweets" / "unordered") {
+      val tweets: Source[Tweet, NotUsed] = getTweets()
+      complete(tweets.renderAsyncUnordered(parallelism = 8))
     }
     //#
   }
@@ -94,7 +97,9 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 
     // [1.1] import framing mode
-    implicit val jsonFramingMode = akka.http.scaladsl.server.JsonEntityFramingSupport.bracketCountingJsonFraming(Int.MaxValue)
+    import akka.http.scaladsl.server.EntityStreamingSupport
+    implicit val jsonFramingMode: FramingWithContentType =
+      EntityStreamingSupport.bracketCountingJsonFraming(Int.MaxValue)
 
     // [2] import "my protocol", for unmarshalling Measurement objects:
     import MyJsonProtocol._
@@ -106,14 +111,10 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
       path("metrics") {
         // [4] extract Source[Measurement, _]
         entity(asSourceOf[Measurement]) { measurements =>
-          println("measurements = " + measurements)
           val measurementsSubmitted: Future[Int] =
             measurements
               .via(persistMetrics)
-              .runFold(0) { (cnt, _) =>
-                  println("cnt = " + cnt)
-                  cnt + 1
-              }
+              .runFold(0) { (cnt, _) => cnt + 1 }
 
           complete {
             measurementsSubmitted.map(n => Map("msg" -> s"""Total metrics received: $n"""))
