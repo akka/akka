@@ -4,13 +4,10 @@
 package akka.http.scaladsl.server
 
 import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.event.Logging
 import akka.http.scaladsl.common.{ FramingWithContentType, SourceRenderingMode }
-import akka.http.scaladsl.model.{ ContentTypeRange, ContentTypes, MediaRange, MediaRanges }
+import akka.http.scaladsl.model.{ ContentTypeRange, ContentTypes, MediaRanges }
 import akka.stream.scaladsl.{ Flow, Framing }
 import akka.util.ByteString
-import com.typesafe.config.Config
 
 /**
  * Entity streaming support, independent of used Json parsing library etc.
@@ -45,13 +42,7 @@ trait EntityStreamingSupportBase {
    * Useful for accepting `text/csv` uploads as a stream of rows.
    */
   def newLineFraming(maximumObjectLength: Int, supportedContentTypes: ContentTypeRange): FramingWithContentType =
-    new FramingWithContentType {
-      override final val flow: Flow[ByteString, ByteString, NotUsed] =
-        Flow[ByteString].via(Framing.delimiter(ByteString("\n"), maximumObjectLength))
-
-      override final val supported: ContentTypeRange =
-        ContentTypeRange(MediaRanges.`text/*`)
-    }
+    new TextNewLineFraming(maximumObjectLength, supportedContentTypes)
 }
 
 /**
@@ -66,4 +57,12 @@ object EntityStreamingSupport extends EntityStreamingSupportBase
 final class ApplicationJsonBracketCountingFraming(maximumObjectLength: Int) extends FramingWithContentType {
   override final val flow = Flow[ByteString].via(akka.stream.scaladsl.JsonFraming.bracketCounting(maximumObjectLength))
   override final val supported = ContentTypeRange(ContentTypes.`application/json`)
+}
+
+final class TextNewLineFraming(maximumLineLength: Int, supportedContentTypes: ContentTypeRange) extends FramingWithContentType {
+  override final val flow: Flow[ByteString, ByteString, NotUsed] =
+    Flow[ByteString].via(Framing.delimiter(ByteString("\n"), maximumLineLength))
+
+  override final val supported: ContentTypeRange =
+    ContentTypeRange(MediaRanges.`text/*`)
 }
