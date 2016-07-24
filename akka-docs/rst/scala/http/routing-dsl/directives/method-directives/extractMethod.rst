@@ -22,3 +22,13 @@ print what type of request it was - independent of what actual HttpMethod it was
 
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala
    :snippet: extractMethod-example
+
+
+Custom Http Method
+------------------
+
+When you define a custom HttpMethod, you can define a route using extractMethod.
+
+.. includecode:: ../../../../code/docs/http/scaladsl/server/directives/CustomHttpMethodSpec.scala
+   :include: application-custom
+
