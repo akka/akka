@@ -89,8 +89,7 @@ object TestServer extends App {
           complete(ToResponseMarshallable(tweets))
         } ~
         post {
-          entity(asSourceOf[Tweet]) { tweets ⇒
-          // entity(asSourceOf[Tweet](bracketCountingJsonFraming(1024))) { tweets: Source[Tweet, NotUsed] ⇒
+          entity(as[Source[Tweet, NotUsed]]) { tweets ⇒
             complete(s"Total tweets received: " + tweets.runFold(0)({ case (acc, t) => acc + 1 }))
           }
         }
