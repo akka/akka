@@ -16,6 +16,7 @@ import akka.japi.Util
 import akka.util.ByteString
 
 import scala.concurrent.ExecutionContext
+import scala.annotation.unchecked.uncheckedVariance
 import scala.language.implicitConversions
 
 object Marshaller {
@@ -56,29 +57,29 @@ object Marshaller {
   // TODO make sure these are actually usable in a sane way
 
   def wrapEntity[A, C](f: function.BiFunction[ExecutionContext, C, A], m: Marshaller[A, RequestEntity], mediaType: MediaType): Marshaller[C, RequestEntity] = {
-    val scalaMarshaller = m.asScalaToEntityMarshaller
+    val scalaMarshaller = m.asScalaCastOutput
     fromScala(scalaMarshaller.wrapWithEC(mediaType.asScala) { ctx ⇒ c: C ⇒ f(ctx, c) }(ContentTypeOverrider.forEntity))
   }
 
   def wrapEntity[A, C, E <: RequestEntity](f: function.Function[C, A], m: Marshaller[A, E], mediaType: MediaType): Marshaller[C, RequestEntity] = {
-    val scalaMarshaller = m.asScalaToEntityMarshaller
+    val scalaMarshaller = m.asScalaCastOutput
     fromScala(scalaMarshaller.wrap(mediaType.asScala)((in: C) ⇒ f.apply(in))(ContentTypeOverrider.forEntity))
   }
 
   def entityToOKResponse[A](m: Marshaller[A, _ <: RequestEntity]): Marshaller[A, HttpResponse] = {
-    fromScala(marshalling.Marshaller.fromToEntityMarshaller[A]()(m.asScalaToEntityMarshaller))
+    fromScala(marshalling.Marshaller.fromToEntityMarshaller[A]()(m.asScalaCastOutput))
   }
 
   def entityToResponse[A, R <: RequestEntity](status: StatusCode, m: Marshaller[A, R]): Marshaller[A, HttpResponse] = {
-    fromScala(marshalling.Marshaller.fromToEntityMarshaller[A](status.asScala)(m.asScalaToEntityMarshaller))
+    fromScala(marshalling.Marshaller.fromToEntityMarshaller[A](status.asScala)(m.asScalaCastOutput))
   }
 
   def entityToResponse[A](status: StatusCode, headers: java.lang.Iterable[HttpHeader], m: Marshaller[A, _ <: RequestEntity]): Marshaller[A, HttpResponse] = {
-    fromScala(marshalling.Marshaller.fromToEntityMarshaller[A](status.asScala, Util.immutableSeq(headers).map(_.asScala))(m.asScalaToEntityMarshaller)) // TODO can we avoid the map() ?
+    fromScala(marshalling.Marshaller.fromToEntityMarshaller[A](status.asScala, Util.immutableSeq(headers).map(_.asScala))(m.asScalaCastOutput)) // TODO can we avoid the map() ?
   }
 
   def entityToOKResponse[A](headers: java.lang.Iterable[HttpHeader], m: Marshaller[A, _ <: RequestEntity]): Marshaller[A, HttpResponse] = {
-    fromScala(marshalling.Marshaller.fromToEntityMarshaller[A](headers = Util.immutableSeq(headers).map(_.asScala))(m.asScalaToEntityMarshaller)) // TODO avoid the map()
+    fromScala(marshalling.Marshaller.fromToEntityMarshaller[A](headers = Util.immutableSeq(headers).map(_.asScala))(m.asScalaCastOutput)) // TODO avoid the map()
   }
 
   // these are methods not varargs to avoid call site warning about unchecked type params
@@ -140,13 +141,14 @@ object Marshaller {
     m.asScala.map(_.asScala)
 }
 
-class Marshaller[A, B] private (implicit val asScala: marshalling.Marshaller[A, B]) {
+class Marshaller[-A, +B] private (implicit val asScala: marshalling.Marshaller[A, B]) {
   import Marshaller.fromScala
 
+  /** INTERNAL API: involves unsafe cast (however is very fast) */
   // TODO would be nice to not need this special case
-  def asScalaToEntityMarshaller[C]: marshalling.Marshaller[A, C] = asScala.asInstanceOf[marshalling.Marshaller[A, C]]
+  private[akka] def asScalaCastOutput[C]: marshalling.Marshaller[A, C] = asScala.asInstanceOf[marshalling.Marshaller[A, C]]
 
-  def map[C](f: function.Function[B, C]): Marshaller[A, C] = fromScala(asScala.map(f.apply))
+  def map[C](f: function.Function[B @uncheckedVariance, C]): Marshaller[A, C] = fromScala(asScala.map(f.apply))
 
-  def compose[C](f: function.Function[C, A]): Marshaller[C, B] = fromScala(asScala.compose(f.apply))
+  def compose[C](f: function.Function[C, A @uncheckedVariance]): Marshaller[C, B] = fromScala(asScala.compose(f.apply))
 }
