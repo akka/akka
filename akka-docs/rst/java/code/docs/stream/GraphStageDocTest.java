@@ -95,6 +95,40 @@ public class GraphStageDocTest extends AbstractJavaTest {
   }
   //#simple-source
 
+  //#simple-sink
+  public class StdoutSink extends GraphStage<SinkShape<Integer>> {
+    public final Inlet<Integer> in = Inlet.create("StdoutSink.in");
+
+    private final SinkShape<Integer> shape = SinkShape.of(in);
+    @Override
+    public SinkShape<Integer> shape() {
+      return shape;
+    }
+
+    @Override
+    public GraphStageLogic createLogic(Attributes inheritedAttributes) {
+      return new GraphStageLogic(shape()) {
+
+        // This requests one element at the Sink startup.
+        @Override
+        public void preStart() {
+          pull(in);
+        }
+
+        {
+          setHandler(in, new AbstractInHandler() {
+            @Override
+            public void onPush() throws Exception {
+              Integer element = grab(in);
+              System.out.println(element);
+              pull(in);
+            }
+          });
+        }
+      };
+    }
+  }
+  //#simple-sink
 
   @Test
   public void demonstrateCustomSourceUsage() throws Exception {
@@ -116,6 +150,14 @@ public class GraphStageDocTest extends AbstractJavaTest {
     assertEquals(result2.toCompletableFuture().get(3, TimeUnit.SECONDS), (Integer) 5050);
   }
 
+  @Test
+  public void demonstrateCustomSinkUsage() throws Exception {
+    Graph<SinkShape<Integer>, NotUsed> sinkGraph = new StdoutSink();
+
+    Sink<Integer, NotUsed> mySink = Sink.fromGraph(sinkGraph);
+
+    Source.from(Arrays.asList(1, 2, 3)).runWith(mySink, mat);
+  }
 
   //#one-to-one
   public class Map<A, B> extends GraphStage<FlowShape<A, B>> {
