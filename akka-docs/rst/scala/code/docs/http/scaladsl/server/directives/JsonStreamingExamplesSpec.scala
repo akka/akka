@@ -105,7 +105,7 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     val route =
       path("metrics") {
         // [4] extract Source[Measurement, _]
-        entity(stream[Measurement]) { measurements =>
+        entity(asSourceOf[Measurement]) { measurements =>
           println("measurements = " + measurements)
           val measurementsSubmitted: Future[Int] =
             measurements
