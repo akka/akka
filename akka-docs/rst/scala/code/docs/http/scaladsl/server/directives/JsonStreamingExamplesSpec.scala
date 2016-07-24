@@ -111,6 +111,8 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
       path("metrics") {
         // [4] extract Source[Measurement, _]
         entity(asSourceOf[Measurement]) { measurements =>
+          // alternative syntax:
+          // entity(as[Source[Measurement, NotUsed]]) { measurements =>
           val measurementsSubmitted: Future[Int] =
             measurements
               .via(persistMetrics)
