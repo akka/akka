@@ -12,7 +12,6 @@ import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout._
 import akka.stream.scaladsl.Partition.PartitionOutOfBoundsException
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
-import com.sun.org.apache.xalan.internal.xsltc.runtime.output.TransletOutputHandlerFactory
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
