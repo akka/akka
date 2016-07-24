@@ -17,6 +17,7 @@ import akka.http.javadsl.common.JsonSourceRenderingModes;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
+import akka.util.ByteString;
 import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
 
@@ -64,7 +65,7 @@ public class JavaTestServer extends AllDirectives { // or import static Directiv
       path("java", () -> completeOKWithFutureString(CompletableFuture.supplyAsync(() -> { throw new RuntimeException("Boom!"); }))))
     );
 
-    final Unmarshaller<HttpEntity, JavaTweet> JavaTweets = Jackson.unmarshaller(JavaTweet.class);
+    final Unmarshaller<ByteString, JavaTweet> JavaTweets = Jackson.byteStringUnmarshaller(JavaTweet.class);
     final Route tweets = path("tweets", () ->
       get(() -> 
         parameter(StringUnmarshallers.INTEGER, "n", n -> {

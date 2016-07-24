@@ -8,15 +8,18 @@ import akka.util.ByteString
 
 import scala.annotation.switch
 
-object JsonBracketCounting {
+/**
+ * INTERNAL API: Use [[akka.stream.scaladsl.JsonFraming]] instead.
+ */
+private[akka] object JsonBracketCounting {
 
-  final val SquareBraceStart = "[".getBytes.head
-  final val SquareBraceEnd = "]".getBytes.head
-  final val CurlyBraceStart = "{".getBytes.head
-  final val CurlyBraceEnd = "}".getBytes.head
-  final val DoubleQuote = "\"".getBytes.head
-  final val Backslash = "\\".getBytes.head
-  final val Comma = ",".getBytes.head
+  final val SquareBraceStart = '['.toByte
+  final val SquareBraceEnd = ']'.toByte
+  final val CurlyBraceStart = '{'.toByte
+  final val CurlyBraceEnd = '}'.toByte
+  final val DoubleQuote = '\''.toByte
+  final val Backslash = '\\'.toByte
+  final val Comma = ','.toByte
 
   final val LineBreak = '\n'.toByte
   final val LineBreak2 = '\r'.toByte
@@ -31,13 +34,15 @@ object JsonBracketCounting {
 }
 
 /**
+ * INTERNAL API: Use [[akka.stream.scaladsl.JsonFraming]] instead.
+ *
  * **Mutable** framing implementation that given any number of [[ByteString]] chunks, can emit JSON objects contained within them.
  * Typically JSON objects are separated by new-lines or comas, however a top-level JSON Array can also be understood and chunked up
  * into valid JSON objects by this framing implementation.
  *
  * Leading whitespace between elements will be trimmed.
  */
-class JsonBracketCounting(maximumObjectLength: Int = Int.MaxValue) {
+private[akka] class JsonBracketCounting(maximumObjectLength: Int = Int.MaxValue) {
   import JsonBracketCounting._
 
   private var buffer: ByteString = ByteString.empty
