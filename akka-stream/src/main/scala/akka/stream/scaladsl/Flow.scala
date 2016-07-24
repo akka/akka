@@ -1818,7 +1818,7 @@ trait FlowOps[+Out, +Mat] {
   def orElse[U >: Out, Mat2](alternative: Graph[SourceShape[U], Mat2]): Repr[U] =
     via(orElseGraph(alternative))
 
-  protected def orElseGraph[U >: Out, Mat2](alternative: Graph[SourceShape[U], Mat2]): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
+  private def orElseGraph[U >: Out, Mat2](alternative: Graph[SourceShape[U], Mat2]): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
     GraphDSL.create(alternative) { implicit b ⇒ alternative ⇒
       val orElse = b.add(OrElse[U]())
 
