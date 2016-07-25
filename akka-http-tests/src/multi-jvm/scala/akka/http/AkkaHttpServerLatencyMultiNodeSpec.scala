@@ -293,7 +293,8 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
     val percentilesToPrint = 8
 
     var i = 0
-    val correctedDistributionStartsHere = lines.zipWithIndex.find(p ⇒ p._1 contains "Latency Distribution").map(_._2).get
+    val linesWithIndex = lines.zipWithIndex
+    val correctedDistributionStartsHere = linesWithIndex.find(p ⇒ p._1 contains "Latency Distribution").map(_._2).get
 
     var titles = List.empty[String]
     var metrics = List.empty[String]
@@ -313,7 +314,7 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
     }
     renderResults(prefix + "_corrected", titles, metrics)
 
-    val uncorrectedDistributionStartsHere = lines.zipWithIndex.find(p ⇒ p._1 contains "Uncorrected Latency").map(_._2).get
+    val uncorrectedDistributionStartsHere = linesWithIndex.find(p ⇒ p._1 contains "Uncorrected Latency").map(_._2).get
 
     titles = List.empty
     metrics = List.empty
@@ -332,6 +333,35 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
       i += 1
     }
     renderResults(prefix + "_uncorrected", titles, metrics)
+
+    titles = List.empty
+    metrics = List.empty
+    val rpsLineNumber = linesWithIndex.find(p ⇒ p._1 contains "Requests/sec:").map(_._2).get
+
+    i = rpsLineNumber
+    val rps = lines(i).replace("Requests/sec:", "").trim
+
+    val rpsTitle = prefix + "requests-per-second"
+    titles ::= rpsTitle
+    metrics ::= rps.toDouble.toInt.toString
+    println(rpsTitle + "," + rps)
+    renderResults(prefix + "_RPS", titles, metrics)
+
+    def transferAsBytes(s: String): Long =
+      ConfigFactory.parseString(s"it=${s}").getMemorySize("it").toBytes
+
+    titles = List.empty
+    metrics = List.empty
+    val transferLineNumber = linesWithIndex.find(p ⇒ p._1 contains "Transfer/sec:").map(_._2).get
+    i = transferLineNumber
+
+    val tps = lines(i).replace("Transfer/sec:", "").trim
+
+    val tpsTitle = prefix + "transfer-per-second"
+    titles ::= tpsTitle
+    metrics ::= transferAsBytes(tps).toString
+    println(tpsTitle + "," + tps)
+    renderResults(prefix + "_TPS", titles, metrics)
   }
 
   private def printAbPercentiles(prefix: String, lines: Array[String]): Unit = {
