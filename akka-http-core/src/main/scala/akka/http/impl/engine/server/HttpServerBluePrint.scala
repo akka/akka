@@ -383,7 +383,7 @@ private[http] object HttpServerBluePrint {
               push(requestPrepOut, rs)
             case MessageEnd ⇒
               messageEndPending = false
-              push(requestPrepOut, MessageEnd)
+              if(isAvailable(requestPrepOut)) push(requestPrepOut, MessageEnd)
             case MessageStartError(status, info) ⇒ finishWithIllegalRequestError(status, info)
             case x: EntityStreamError if messageEndPending && openRequests.isEmpty ⇒
               // client terminated the connection after receiving an early response to 100-continue
@@ -421,7 +421,7 @@ private[http] object HttpServerBluePrint {
 
           emit(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
             pullHttpResponseIn)
-          if (close && requestStart.expect100Continue) pull(requestParsingIn)
+          if (!isClosed(requestParsingIn) && close && requestStart.expect100Continue) pull(requestParsingIn)
         }
         override def onUpstreamFinish() =
           if (openRequests.isEmpty && isClosed(requestParsingIn)) completeStage()
