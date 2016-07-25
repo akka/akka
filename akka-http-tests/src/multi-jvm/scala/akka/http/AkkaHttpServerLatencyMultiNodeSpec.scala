@@ -35,10 +35,11 @@ object AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeConfig {
         actor.provider = "akka.remote.RemoteActorRefProvider"
         stream.materializer.debug.fuzzing-mode = off
 
-        testconductor.barrier-timeout = 20m
+        testconductor.barrier-timeout = 30m
         
         test.AkkaHttpServerLatencySpec {
-          writeCsv = on # TODO SWITCH BACK
+          enable = off
+          
           rate = 10000
           duration = 30s
           
@@ -146,6 +147,7 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
   }
   // format: ON
 
+  val enableSpec = system.settings.config.getBoolean("akka.test.AkkaHttpServerLatencySpec.enable")
   val totalRequestsFactor = system.settings.config.getDouble("akka.test.AkkaHttpServerLatencySpec.totalRequestsFactor")
   val requests = Math.round(10000 * totalRequestsFactor)
   val rate = system.settings.config.getInt("akka.test.AkkaHttpServerLatencySpec.rate")
@@ -165,76 +167,82 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
   def url_longResponseArray(int: Int) = s"http://$serverHost:$serverPort/long-response-array/$int"
   // ---
 
-  "Akka HTTP" must {
-    implicit val dispatcher = system.dispatcher
-    implicit val mat = ActorMaterializer()
+  if (enableSpec) {
+    "Akka HTTP" must {
+      implicit val dispatcher = system.dispatcher
+      implicit val mat = ActorMaterializer()
 
-    "start Akka HTTP" taggedAs LongRunningTest in {
-      enterBarrier("startup")
+      "start Akka HTTP" taggedAs LongRunningTest in {
+        enterBarrier("startup")
 
-      runOn(loadGenerator) {
-        system.actorOf(Props(classOf[HttpLoadGeneratorActor], serverPortPromise), "load-gen")
+        runOn(loadGenerator) {
+          system.actorOf(Props(classOf[HttpLoadGeneratorActor], serverPortPromise), "load-gen")
+        }
+        enterBarrier("load-gen-ready")
+
+        runOn(server) {
+          val (_, _, port) = TestUtils.temporaryServerHostnameAndPort()
+          info(s"Binding Akka HTTP Server to port: $port @ ${myself}")
+          val futureBinding = Http().bindAndHandle(routes, "0.0.0.0", port)
+
+          _binding = Some(futureBinding.futureValue)
+          setServerPort(port)
+        }
+
+        enterBarrier("http-server-running")
       }
-      enterBarrier("load-gen-ready")
 
-      runOn(server) {
-        val (_, _, port) = TestUtils.temporaryServerHostnameAndPort()
-        info(s"Binding Akka HTTP Server to port: $port @ ${myself}")
-        val futureBinding = Http().bindAndHandle(routes, "0.0.0.0", port)
+      "warmup" taggedAs LongRunningTest in ifWrk2Available {
+        val id = "warmup"
 
-        _binding = Some(futureBinding.futureValue)
-        setServerPort(port)
+        val wrkOptions = s"""-d 30s -R $rate -c $connections -t $connections"""
+        runLoadTest(id)(s"""wrk $wrkOptions $url_ping""")
       }
 
-      enterBarrier("http-server-running")
-    }
+      "have good Latency on PONG response (keep-alive)" taggedAs LongRunningTest in ifWrk2Available {
+        val id = s"Latency_pong_R:${rate}_C:${connections}_p:"
 
-    "warmup" taggedAs LongRunningTest in ifWrk2Available {
-      val id = "warmup"
-
-      val wrkOptions = s"""-d 30s -R $rate -c $connections -t $connections"""
-      runLoadTest(id)(s"""wrk $wrkOptions $url_ping""")
-    }
-
-    "have good Latency on PONG response (keep-alive)" taggedAs LongRunningTest in ifWrk2Available {
-      val id = s"Latency_pong_R:${rate}_C:${connections}_p:"
-
-      val wrkOptions = s"""-d ${testDuration}s -R $rate -c $connections -t $connections --u_latency"""
-      runLoadTest(id)(s"""wrk $wrkOptions $url_ping""")
-    }
-
-    "have good Latency (ab) (short-lived connections)" taggedAs LongRunningTest in ifAbAvailable {
-      val id = s"Latency_AB-short-lived_pong_R:${rate}_C:${connections}_p:"
-
-      val abOptions = s"-c $connections -n $requests"
-      runLoadTest(id)(s"""ab $abOptions $url_ping""")
-    }
-
-    "have good Latency (ab) (long-lived connections)" taggedAs LongRunningTest in ifAbAvailable {
-      val id = s"Latency_AB_pong_long-lived_R:${rate}_C:${connections}_p:"
-
-      val abOptions = s"-c $connections -n $requests -k"
-      runLoadTest(id)(s"""ab $abOptions $url_ping""")
-    }
-
-    List(
-      10 → tenXResponseLength,
-      100 → hundredXResponseLength
-    ) foreach {
-        case (n, lenght) ⇒
-          s"have good Latency (streaming-response($lenght), keep-alive)" taggedAs LongRunningTest in {
-            val id = s"Latency_stream($lenght)_R:${rate}_C:${connections}_p:"
-
-            val wrkOptions = s"""-d ${testDuration}s -R $rate -c $connections -t $connections --u_latency"""
-            runLoadTest(id)(s"""wrk $wrkOptions ${url_longResponseStream(n)}""")
-          }
-          s"have good Latency (array-response($lenght), keep-alive)" taggedAs LongRunningTest in {
-            val id = s"Latency_array($lenght)_R:${rate}_C:${connections}_p:"
-
-            val wrkOptions = s"""-d ${testDuration}s -R $rate -c $connections -t $connections --u_latency"""
-            runLoadTest(id)(s"""wrk $wrkOptions ${url_longResponseArray(n)}""")
-          }
+        val wrkOptions = s"""-d ${testDuration}s -R $rate -c $connections -t $connections --u_latency"""
+        runLoadTest(id)(s"""wrk $wrkOptions $url_ping""")
       }
+
+      "have good Latency (ab) (short-lived connections)" taggedAs LongRunningTest in ifAbAvailable {
+        val id = s"Latency_AB-short-lived_pong_R:${rate}_C:${connections}_p:"
+
+        val abOptions = s"-c $connections -n $requests"
+        runLoadTest(id)(s"""ab $abOptions $url_ping""")
+      }
+
+      "have good Latency (ab) (long-lived connections)" taggedAs LongRunningTest in ifAbAvailable {
+        val id = s"Latency_AB_pong_long-lived_R:${rate}_C:${connections}_p:"
+
+        val abOptions = s"-c $connections -n $requests -k"
+        runLoadTest(id)(s"""ab $abOptions $url_ping""")
+      }
+
+      List(
+        10 → tenXResponseLength,
+        100 → hundredXResponseLength
+      ) foreach {
+          case (n, lenght) ⇒
+            s"have good Latency (streaming-response($lenght), keep-alive)" taggedAs LongRunningTest in {
+              val id = s"Latency_stream($lenght)_R:${rate}_C:${connections}_p:"
+
+              val wrkOptions = s"""-d ${testDuration}s -R $rate -c $connections -t $connections --u_latency"""
+              runLoadTest(id)(s"""wrk $wrkOptions ${url_longResponseStream(n)}""")
+            }
+            s"have good Latency (array-response($lenght), keep-alive)" taggedAs LongRunningTest in {
+              val id = s"Latency_array($lenght)_R:${rate}_C:${connections}_p:"
+
+              val wrkOptions = s"""-d ${testDuration}s -R $rate -c $connections -t $connections --u_latency"""
+              runLoadTest(id)(s"""wrk $wrkOptions ${url_longResponseArray(n)}""")
+            }
+        }
+    }
+  } else {
+    "Akka HTTP" must {
+      "enable these performance tests by running with -Dakka.test.AkkaHttpServerLatencySpec.enable=on" in pending
+    }
   }
 
   def runLoadTest(id: String)(cmd: String) = {
@@ -285,7 +293,8 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
     val percentilesToPrint = 8
 
     var i = 0
-    val correctedDistributionStartsHere = lines.zipWithIndex.find(p ⇒ p._1 contains "Latency Distribution").map(_._2).get
+    val linesWithIndex = lines.zipWithIndex
+    val correctedDistributionStartsHere = linesWithIndex.find(p ⇒ p._1 contains "Latency Distribution").map(_._2).get
 
     var titles = List.empty[String]
     var metrics = List.empty[String]
@@ -305,7 +314,7 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
     }
     renderResults(prefix + "_corrected", titles, metrics)
 
-    val uncorrectedDistributionStartsHere = lines.zipWithIndex.find(p ⇒ p._1 contains "Uncorrected Latency").map(_._2).get
+    val uncorrectedDistributionStartsHere = linesWithIndex.find(p ⇒ p._1 contains "Uncorrected Latency").map(_._2).get
 
     titles = List.empty
     metrics = List.empty
@@ -324,6 +333,35 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
       i += 1
     }
     renderResults(prefix + "_uncorrected", titles, metrics)
+
+    titles = List.empty
+    metrics = List.empty
+    val rpsLineNumber = linesWithIndex.find(p ⇒ p._1 contains "Requests/sec:").map(_._2).get
+
+    i = rpsLineNumber
+    val rps = lines(i).replace("Requests/sec:", "").trim
+
+    val rpsTitle = prefix + "requests-per-second"
+    titles ::= rpsTitle
+    metrics ::= rps.toDouble.toInt.toString
+    println(rpsTitle + "," + rps)
+    renderResults(prefix + "_RPS", titles, metrics)
+
+    def transferAsBytes(s: String): Long =
+      ConfigFactory.parseString(s"it=${s}").getMemorySize("it").toBytes
+
+    titles = List.empty
+    metrics = List.empty
+    val transferLineNumber = linesWithIndex.find(p ⇒ p._1 contains "Transfer/sec:").map(_._2).get
+    i = transferLineNumber
+
+    val tps = lines(i).replace("Transfer/sec:", "").trim
+
+    val tpsTitle = prefix + "transfer-per-second"
+    titles ::= tpsTitle
+    metrics ::= transferAsBytes(tps).toString
+    println(tpsTitle + "," + tps)
+    renderResults(prefix + "_TPS", titles, metrics)
   }
 
   private def printAbPercentiles(prefix: String, lines: Array[String]): Unit = {
