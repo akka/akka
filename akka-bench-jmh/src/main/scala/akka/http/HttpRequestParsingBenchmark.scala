@@ -11,6 +11,7 @@ import akka.actor.ActorSystem
 import akka.http.impl.engine.parsing.ParserOutput.RequestOutput
 import akka.http.impl.engine.parsing.{ HttpHeaderParser, HttpMessageParser, HttpRequestParser }
 import akka.http.scaladsl.settings.ParserSettings
+import akka.event.NoLogging
 import akka.stream.TLSProtocol.SessionBytes
 import akka.stream.scaladsl.RunnableGraph
 import akka.stream.{ ActorMaterializer, Attributes }
@@ -30,7 +31,7 @@ class HttpRequestParsingBenchmark {
   implicit val system: ActorSystem = ActorSystem("HttpRequestParsingBenchmark")
   implicit val materializer = ActorMaterializer()
   val parserSettings = ParserSettings(system)
-  val parser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings)())
+  val parser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings, NoLogging)())
   val dummySession = SSLContext.getDefault.createSSLEngine.getSession
   val requestBytes = SessionBytes(
     dummySession,
