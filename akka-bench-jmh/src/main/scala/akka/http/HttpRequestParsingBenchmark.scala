@@ -30,7 +30,7 @@ class HttpRequestParsingBenchmark {
   implicit val system: ActorSystem = ActorSystem("HttpRequestParsingBenchmark")
   implicit val materializer = ActorMaterializer()
   val parserSettings = ParserSettings(system)
-  val parser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings)())
+  val parser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings, NoLogging)())
   val dummySession = SSLContext.getDefault.createSSLEngine.getSession
   val requestBytes = SessionBytes(
     dummySession,
