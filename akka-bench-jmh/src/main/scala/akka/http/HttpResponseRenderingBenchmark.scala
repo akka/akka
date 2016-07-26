@@ -164,6 +164,25 @@ class HttpResponseRenderingBenchmark extends HttpResponseRendererFactory(
       requestMethod = HttpMethods.GET
     )
 
+  /**
+   * HTTP/1.1 200 OK
+   * Server: Akka HTTP 2.4.x
+   * Date: Tue, 26 Jul 2016 15:26:53 GMT
+   * Content-Type: application/json
+   * Content-Length: 315
+   *
+   * [{"id":4174,"randomNumber":331},{"id":51,"randomNumber":6544},{"id":4462,"randomNumber":952},{"id":2221,"randomNumber":532},{"id":9276,"randomNumber":3097},{"id":3056,"randomNumber":7293},{"id":6964,"randomNumber":620},{"id":675,"randomNumber":6601},{"id":8414,"randomNumber":6569},{"id":2753,"randomNumber":4065}]
+   */
+  val jsonLongRawResponse =
+    ResponseRenderingContext(
+      response = HttpResponse(
+        200,
+        headers = Nil,
+        entity = HttpEntity(ContentTypes.`application/json`, """[{"id":4174,"randomNumber":331},{"id":51,"randomNumber":6544},{"id":4462,"randomNumber":952},{"id":2221,"randomNumber":532},{"id":9276,"randomNumber":3097},{"id":3056,"randomNumber":7293},{"id":6964,"randomNumber":620},{"id":675,"randomNumber":6601},{"id":8414,"randomNumber":6569},{"id":2753,"randomNumber":4065}]""")
+      ),
+      requestMethod = HttpMethods.GET
+    )
+
   @Benchmark
   @OperationsPerInvocation(100 * 1000)
   def simple_response(blackhole: Blackhole): Unit =
@@ -173,6 +192,18 @@ class HttpResponseRenderingBenchmark extends HttpResponseRendererFactory(
   @OperationsPerInvocation(100 * 1000)
   def json_response(blackhole: Blackhole): Unit =
     renderToImpl(jsonResponse, blackhole, n = 100 * 1000).await()
+
+  /*
+  Difference between 27 and 315 bytes long JSON is:
+  
+  [info] Benchmark                                                   Mode  Cnt        Score       Error  Units
+  [info] HttpResponseRenderingBenchmark.json_long_raw_response      thrpt   20  1 932 331.049 ± 64125.621  ops/s
+  [info] HttpResponseRenderingBenchmark.json_response               thrpt   20  1 973 232.941 ± 18568.314  ops/s
+   */
+  @Benchmark
+  @OperationsPerInvocation(100 * 1000)
+  def json_long_raw_response(blackhole: Blackhole): Unit =
+    renderToImpl(jsonLongRawResponse, blackhole, n = 100 * 1000).await()
 
   class JitSafeLatch[A](blackhole: Blackhole, n: Int) extends GraphStageWithMaterializedValue[SinkShape[A], CountDownLatch] {
     val in = Inlet[A]("JitSafeLatch.in")
@@ -211,137 +242,3 @@ class HttpResponseRenderingBenchmark extends HttpResponseRendererFactory(
 
 }
 
-//object Render extends HttpResponseRendererFactory(
-//  serverHeader = Some(Server("Akka HTTP 2.4.x")),
-//  responseHeaderSizeHint = 64,
-//  log = NoLogging
-//) {
-//
-//  val config = ConfigFactory.parseString(
-//    """
-//      akka {
-//        loglevel = "ERROR"
-//      }""".stripMargin
-//  ).withFallback(ConfigFactory.load())
-//
-//  implicit val system = ActorSystem("HttpResponseRenderingBenchmark", config)
-//  implicit val materializer = ActorMaterializer()
-//
-//  import system.dispatcher
-//
-//  val requestRendered = ByteString(
-//    "GET / HTTP/1.1\r\n" +
-//      "Accept: */*\r\n" +
-//      "Accept-Encoding: gzip, deflate\r\n" +
-//      "Connection: keep-alive\r\n" +
-//      "Host: example.com\r\n" +
-//      "User-Agent: HTTPie/0.9.3\r\n" +
-//      "\r\n"
-//  )
-//
-//  def TCPPlacebo(requests: Int): Flow[ByteString, ByteString, NotUsed] =
-//    Flow.fromSinkAndSource(
-//      Flow[ByteString].takeWhile(it => !(it.utf8String contains "Connection: close")) to Sink.ignore,
-//      Source.repeat(requestRendered).take(requests)
-//    )
-//
-//  def TlsPlacebo = TLSPlacebo()
-//
-//  val requestRendering: Flow[HttpRequest, String, NotUsed] =
-//    Http()
-//      .clientLayer(headers.Host("blah.com"))
-//      .atop(TlsPlacebo)
-//      .join {
-//        Flow[ByteString].map { x ⇒
-//          val response = s"HTTP/1.1 200 OK\r\nContent-Length: ${x.size}\r\n\r\n"
-//          ByteString(response) ++ x
-//        }
-//      }
-//      .mapAsync(1)(response => Unmarshal(response).to[String])
-//
-//  def renderResponse: Future[String] = Source.single(HttpRequest(uri = "/foo"))
-//    .via(requestRendering)
-//    .runWith(Sink.head)
-//
-//  var request: HttpRequest = _
-//  var pool: Flow[(HttpRequest, Int), (Try[HttpResponse], Int), _] = _
-//
-//  val simpleResponse =
-//    ResponseRenderingContext(
-//      response = HttpResponse(
-//        200,
-//        headers = Nil,
-//        entity = HttpEntity("ENTITY")
-//      ),
-//      requestMethod = HttpMethods.GET
-//    )
-//
-//  val jsonResponse =
-//    ResponseRenderingContext(
-//      response = HttpResponse(
-//        200,
-//        headers = Nil,
-//        entity = HttpEntity(ContentTypes.`application/json`, """{"message":"Hello, World!"}""")
-//      ),
-//      requestMethod = HttpMethods.GET
-//    )
-//
-//  def main(args: Array[String]): Unit = {
-//    implicit val system = ActorSystem("HttpResponseRenderingBenchmark", config)
-//    implicit val materializer = ActorMaterializer()
-//
-//    println("------ simple response ---------")
-//    renderToImpl(simpleResponse, null, 1, print = true)
-//    println("--------------------------------")
-//    println()
-//    println("------ json response ---------")
-//    renderToImpl(jsonResponse, null, 1, print = true)
-//    println("--------------------------------")
-//
-//    system.terminate()
-//  }
-//
-//  class JitSafeLatch[A](blackhole: Blackhole, n: Int) extends GraphStageWithMaterializedValue[SinkShape[A], CountDownLatch] {
-//    val in = Inlet[A]("JitSafeLatch.in")
-//    override val shape = SinkShape(in)
-//
-//    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, CountDownLatch) = {
-//      val latch = new CountDownLatch(n)
-//      val logic = new GraphStageLogic(shape) with InHandler {
-//
-//        override def preStart(): Unit = pull(in)
-//        override def onPush(): Unit = {
-//          val element = grab(in)
-//          if (blackhole ne null) blackhole.consume(element)
-//          latch.countDown()
-//          pull(in)
-//        }
-//
-//        setHandler(in, this)
-//      }
-//
-//      (logic, latch)
-//    }
-//  }
-//
-//  def renderToImpl(ctx: ResponseRenderingContext, blackhole: Blackhole, n: Int, print: Boolean = false)(implicit mat: Materializer): CountDownLatch = {
-//    val latch =
-//      if (print)
-//        Source.repeat(ctx).take(n) // never send upstream completion
-//          .via(renderer.named("renderer"))
-//          .map(out => {
-//            println(out.asInstanceOf[HttpData].bytes.utf8String)
-//            out
-//          })
-//          .runWith(new JitSafeLatch[ResponseRenderingOutput](blackhole, n))
-//      else
-//        (Source.repeat(ctx).take(n) ++ Source.maybe[ResponseRenderingContext]) // never send upstream completion
-//          .via(renderer.named("renderer"))
-//          .runWith(new JitSafeLatch[ResponseRenderingOutput](blackhole, n))
-//
-//    latch
-//  }
-//
-//  override def currentTimeMillis(): Long = System.currentTimeMillis() // DateTime(2011, 8, 25, 9, 10, 29).clicks // provide a stable date for testing  
-//
-//}

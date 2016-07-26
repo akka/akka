@@ -30,7 +30,7 @@ private[http] class HttpResponseRendererFactory(
   responseHeaderSizeHint: Int,
   log:                    LoggingAdapter) {
   import HttpResponseRendererFactory._
-  
+
   final private val clock = new NanosFastClock(TimeDriftToleranceNanos)
 
   private val renderDefaultServerHeader: Rendering ⇒ Unit =
