@@ -13,14 +13,13 @@ import scala.concurrent.duration._
  * Clock which can be triggered from the outside to update it's time (otherwise returns the last observed time,
  * adjusted by a
  */
-abstract class FastClock {
+private[akka] abstract class FastClock {
   def updateHighSpeed(): Long
 
   def highSpeedPart: Long
 }
 
-// nano trusting nano time...
-final class NanosFastClock(nanosTrustLimit: Long) extends FastClock {
+private[akka] final class NanosFastClock(nanosTrustLimit: Long) extends FastClock {
   private[this] var wallClock: Long = 0
   private[this] var highSpeedClock: Long = 0
   private[this] var highSpeedClockOffset: Long = 0
@@ -35,7 +34,7 @@ final class NanosFastClock(nanosTrustLimit: Long) extends FastClock {
     wallClock
   }
 
-  /** Updates internal highSpeed part and returns number of nanoseconds since last `update...()` call*/
+  /** Updates internal highSpeed part and returns number of nanoseconds since last `update...()` call */
   override def updateHighSpeed(): Long = {
     highSpeedClock = System.nanoTime() - highSpeedClockOffset
     highSpeedClock

@@ -76,7 +76,7 @@ class HttpRequestParsingBenchmark {
   [info] HttpRequestParsingBenchmark.parse_10000_requests          small  thrpt   20      358 982.157 ± 93745.863  ops/s
   [info] HttpRequestParsingBenchmark.parse_10000_requests          large  thrpt   20      388 335.666 ± 16990.715  ops/s
   
-  // after
+  // after:
   [info] HttpRequestParsingBenchmark.parse_10000_requests_val      small  thrpt   20      623 975.879 ± 6191.897  ops/s
   [info] HttpRequestParsingBenchmark.parse_10000_requests_val      large  thrpt   20      507 460.283 ± 4735.843  ops/s
   */
