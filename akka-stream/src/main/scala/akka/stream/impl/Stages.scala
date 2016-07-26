@@ -129,7 +129,7 @@ object Stages {
     val lazySink = name("lazySink")
     val cancellablePublisherSink = name("cancellablePublisherSink")
     val fanoutPublisherSink = name("fanoutPublisherSink")
-    val advancedPublisherSink = name("advancedPublisherSink")
+    val advancedPublisherSink = name("advancedPublisherSink") and inputBuffer(16, 16)
     val outputStreamSink = name("outputStreamSink") and IODispatcher
     val inputStreamSink = name("inputStreamSink") and IODispatcher
     val fileSink = name("fileSink") and IODispatcher

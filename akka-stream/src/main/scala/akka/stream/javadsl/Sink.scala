@@ -80,7 +80,7 @@ object Sink {
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]] with additional cancel method.
    * The difference from [[Sink.asPublisher]] is that sink is still doing backpressure without publishers
    * connected and does not finalize stream when last publisher cancels. It completes state when cancel
-   * is called or complete came from upsream.
+   * is called or complete came from upstream.
    *
    * The materialized `Publisher` will support multiple `Subscriber`s and
    * the size of the `inputBuffer` configured for this stage becomes the maximum number of elements that
