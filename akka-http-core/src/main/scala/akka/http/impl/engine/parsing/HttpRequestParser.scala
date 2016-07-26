@@ -15,6 +15,7 @@ import akka.http.scaladsl.model._
 import headers._
 import StatusCodes._
 import ParserOutput._
+import akka.http.impl.util.ByteStringParserInput
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.stream.TLSProtocol.SessionBytes
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
@@ -47,7 +48,7 @@ private[http] final class HttpRequestParser(
 
     private[this] var method: HttpMethod = _
     private[this] var uri: Uri = _
-    private[this] var uriBytes: Array[Byte] = _
+    private[this] var uriBytes: ByteString = _
 
     override def onPush(): Unit = handleParserOutput(parseSessionBytes(grab(in)))
     override def onPull(): Unit = handleParserOutput(doPull())
@@ -134,8 +135,8 @@ private[http] final class HttpRequestParser(
 
       val uriEnd = findUriEnd()
       try {
-        uriBytes = input.slice(uriStart, uriEnd).toArray[Byte] // TODO: can we reduce allocations here?
-        uri = Uri.parseHttpRequestTarget(uriBytes, mode = uriParsingMode) // TODO ByteStringParserInput?
+        uriBytes = input.slice(uriStart, uriEnd)
+        uri = Uri.parseHttpRequestTarget(new ByteStringParserInput(uriBytes), mode = uriParsingMode)
       } catch {
         case IllegalUriException(info) ⇒ throw new ParsingException(BadRequest, info)
       }
@@ -153,7 +154,7 @@ private[http] final class HttpRequestParser(
           createEntity: EntityCreator[RequestOutput, RequestEntity],
           headers:      List[HttpHeader]                            = headers) = {
           val allHeaders0 =
-            if (rawRequestUriHeader) `Raw-Request-URI`(new String(uriBytes, HttpCharsets.`US-ASCII`.nioCharset)) :: headers
+            if (rawRequestUriHeader) `Raw-Request-URI`(uriBytes.decodeString(HttpCharsets.`US-ASCII`.nioCharset)) :: headers
             else headers
 
           val allHeaders =

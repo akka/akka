@@ -13,9 +13,12 @@ import Parser.DeliveryScheme.Either
 import Uri._
 
 // format: OFF
-
-// http://tools.ietf.org/html/rfc3986
-private[http] class UriParser(val input: ParserInput,
+/**
+ * INTERNAL API
+ *
+ * http://tools.ietf.org/html/rfc3986
+ */
+private[http] final class UriParser(val input: ParserInput,
                               val uriParsingCharset: Charset,
                               val uriParsingMode: Uri.ParsingMode,
                               val maxValueStackSize: Int) extends Parser(maxValueStackSize)
