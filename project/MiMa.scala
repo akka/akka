@@ -909,6 +909,9 @@ object MiMa extends AutoPlugin {
         // #20994 adding new decode method, since we're on JDK7+ now
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.util.ByteString.decodeString"),
 
+        // #20508  HTTP: Document how to be able to support custom request methods
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMethod.getRequestEntityAcceptance"),
+        
         // #20976 provide different options to deal with the illegal response header value
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.getIllegalResponseHeaderValueProcessingMode"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ParserSettings.illegalResponseHeaderValueProcessingMode")
