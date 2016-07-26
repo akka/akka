@@ -11,6 +11,7 @@ import akka.actor.ActorSystem
 import akka.http.impl.engine.parsing.ParserOutput.RequestOutput
 import akka.http.impl.engine.parsing.{ HttpHeaderParser, HttpMessageParser, HttpRequestParser }
 import akka.http.scaladsl.settings.ParserSettings
+import akka.event.NoLogging
 import akka.stream.TLSProtocol.SessionBytes
 import akka.stream.scaladsl.RunnableGraph
 import akka.stream.{ ActorMaterializer, Attributes }
