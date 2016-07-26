@@ -17,3 +17,9 @@ print what type of request it was - independent of what actual HttpMethod it was
 
 .. includecode:: ../../../../code/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java#extractMethod
 
+Custom Http Method
+------------------
+
+When you define a custom HttpMethod, you can define a route using extractMethod.
+
+ .. includecode:: ../../../../code/docs/http/javadsl/server/directives/CustomHttpMethodExamplesTest.java#customHttpMethod
