@@ -160,8 +160,8 @@ private[http] final class HttpRequestParser(
           val allHeaders =
             if (method == HttpMethods.GET) {
               Handshake.Server.websocketUpgrade(headers, hostHeaderPresent) match {
-              case OptionVal.Some(upgrade) ⇒ upgrade :: allHeaders0
-              case OptionVal.None          ⇒ allHeaders0
+                case OptionVal.Some(upgrade) ⇒ upgrade :: allHeaders0
+                case OptionVal.None          ⇒ allHeaders0
               }
             } else allHeaders0
 
