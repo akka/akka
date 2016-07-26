@@ -61,6 +61,14 @@ source as any other built-in one:
 
 .. includecode:: ../code/docs/stream/GraphStageDocSpec.scala#simple-source-usage
 
+Similarly, to create a custom :class:`Sink` one can register a subclass :class:`InHandler` with the stage :class:`Inlet`.
+The ``onPush()`` callback is used to signal the handler a new element has been pushed to the stage,
+and can hence be grabbed and used. ``onPush()`` can be overridden to provide custom behaviour.
+Please note, most Sinks would need to request upstream elements as soon as they are created: this can be
+done by calling ``pull(inlet)`` in the ``preStart()`` callback.
+
+.. includecode:: ../code/docs/stream/GraphStageDocSpec.scala#custom-sink-example
+
 Port states, InHandler and OutHandler
 -------------------------------------
 
