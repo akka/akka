@@ -23,9 +23,7 @@ import akka.util.{ ByteString, HashCode }
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.util.FastFuture._
-import akka.stream.scaladsl.Sink
 import headers._
-import akka.http.impl.util.JavaMapping.Implicits._
 
 /**
  * Common base class of HttpRequest and HttpResponse.
@@ -42,8 +40,7 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def protocol: HttpProtocol
 
   /** Drains entity stream */
-  def discardEntityBytes(mat: Materializer): HttpMessage.DiscardedEntity =
-    new HttpMessage.DiscardedEntity(entity.dataBytes.runWith(Sink.ignore)(mat))
+  def discardEntityBytes(mat: Materializer): HttpMessage.DiscardedEntity = entity.discardBytes()(mat)
 
   /** Returns a copy of this message with the list of headers set to the given ones. */
   def withHeaders(headers: HttpHeader*): Self = withHeaders(headers.toList)
@@ -151,7 +148,7 @@ object HttpMessage {
     }
 
   /**
-   * Represents the the currently being-drained HTTP Entity which triggers completion of the contained
+   * Represents the currently being-drained HTTP Entity which triggers completion of the contained
    * Future once the entity has been drained for the given HttpMessage completely.
    */
   final class DiscardedEntity(f: Future[Done]) extends akka.http.javadsl.model.HttpMessage.DiscardedEntity {
@@ -178,7 +175,7 @@ object HttpMessage {
      * (as designed), however possibly leading to an idle-timeout that will close the connection, instead of
      * just having ignored the data.
      *
-     * Warning: It is not allowed to discard and/or consume the the `entity.dataBytes` more than once
+     * Warning: It is not allowed to discard and/or consume the `entity.dataBytes` more than once
      * as the stream is directly attached to the "live" incoming data source from the underlying TCP connection.
      * Allowing it to be consumable twice would require buffering the incoming data, thus defeating the purpose
      * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
