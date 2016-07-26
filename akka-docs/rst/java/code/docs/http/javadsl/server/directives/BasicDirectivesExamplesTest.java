@@ -790,6 +790,45 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
   }
 
   @Test
+  public void testExtractRequestEntity() {
+    //#extractRequestEntity
+    final Route route = extractRequestEntity(entity ->
+      complete("Request entity content-type is " + entity.getContentType())
+    );
+
+    // tests:
+    testRoute(route).run(
+      HttpRequest.POST("/abc")
+        .withEntity(HttpEntities.create(ContentTypes.TEXT_PLAIN_UTF8, "req"))
+    ).assertEntity("Request entity content-type is text/plain; charset=UTF-8");
+    //#extractRequestEntity
+  }
+
+  @Test
+  public void testExtractDataBytes() {
+    //#extractDataBytes
+    final Route route = extractDataBytes(data -> {
+      final CompletionStage<Integer> sum = data.runFold(0, (acc, i) ->
+        acc + Integer.valueOf(i.utf8String()), materializer());
+      return onSuccess(() -> sum, s ->
+        complete(HttpResponse.create().withEntity(HttpEntities.create(s.toString()))));
+    });
+
+    // tests:
+    final Iterator iterator = Arrays.asList(
+      ByteString.fromString("1"),
+      ByteString.fromString("2"),
+      ByteString.fromString("3")).iterator();
+    final Source<ByteString, NotUsed> dataBytes = Source.fromIterator(() -> iterator);
+
+    testRoute(route).run(
+      HttpRequest.POST("abc")
+        .withEntity(HttpEntities.create(ContentTypes.TEXT_PLAIN_UTF8, dataBytes))
+    ).assertEntity("6");
+    //#extractDataBytes
+  }
+
+  @Test
   public void testExtractStrictEntity() {
     //#extractStrictEntity
     final FiniteDuration timeout = FiniteDuration.create(3, TimeUnit.SECONDS);
