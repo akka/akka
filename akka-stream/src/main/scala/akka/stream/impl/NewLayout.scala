@@ -164,7 +164,7 @@ object NewLayout {
       val builderKey = outOwners(out)
       val submodule = pendingBuilders(builderKey)
 
-      val result = submodule.assign(out, relativeSlot)
+      val result = submodule.assign(out.mappedTo, relativeSlot)
       if (result.isComplete) {
         // Remove the builder (and associated data), and append its traversal
 
@@ -194,7 +194,7 @@ object NewLayout {
         while (inIterator.hasNext) {
           val in = inIterator.next()
           // Calculate offset in the current scope
-          newInOffsets = newInOffsets.updated(in, inSlots + submodule.offsetOf(in))
+          newInOffsets = newInOffsets.updated(in, inSlots + submodule.offsetOf(in.mappedTo))
         }
 
         copy(
@@ -213,13 +213,13 @@ object NewLayout {
         while (inIterator.hasNext) {
           val in = inIterator.next()
           // Calculate offset in the current scope
-          newInOffsets = newInOffsets.updated(in, inSlots + submodule.offsetOf(in))
+          newInOffsets = newInOffsets.updated(in, inSlots + submodule.offsetOf(in.mappedTo))
         }
 
         val outIterator = shape.outlets.iterator
         while (outIterator.hasNext) {
           val out = outIterator.next()
-          newOutOffsets = newOutOffsets.updated(out, outSlots + submodule.offsetOf(out))
+          newOutOffsets = newOutOffsets.updated(out, outSlots + submodule.offsetOf(out.mappedTo))
           newOutOwners = newOutOwners.updated(out, builderKey)
         }
 

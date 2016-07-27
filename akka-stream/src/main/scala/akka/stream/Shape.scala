@@ -22,6 +22,12 @@ sealed abstract class InPort { self: Inlet[_] ⇒
    * INTERNAL API
    */
   @volatile private[stream] var id: Int = -1
+
+  /**
+   * INTERNAL API
+   */
+  @volatile private[stream] var mappedTo: InPort = this
+
   /**
    * INTERNAL API
    */
@@ -41,6 +47,12 @@ sealed abstract class OutPort { self: Outlet[_] ⇒
    * INTERNAL API
    */
   @volatile private[stream] var id: Int = -1
+
+  /**
+   * INTERNAL API
+   */
+  @volatile private[stream] var mappedTo: OutPort = this
+
   /**
    * INTERNAL API
    */

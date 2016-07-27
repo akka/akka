@@ -170,7 +170,7 @@ class TraversalBuilderSpec extends AkkaSpec {
 
     "work with a remapped Source and Sink" in {
       val remappedShape = SourceShape(Outlet[Any]("remapped.out"))
-      remappedShape.out.id = 0
+      remappedShape.out.mappedTo = source.out
 
       val builder = sink.traversal
         .add(source.traversal, remappedShape)
@@ -258,9 +258,90 @@ class TraversalBuilderSpec extends AkkaSpec {
       mat.inlets(2) should ===(flow1.in)
     }
 
-    "work with a Flow wired to its imported self" in pending
+    "work with a Flow wired to its imported self" in {
+      val remappedShape = FlowShape(Inlet[Any]("Remapped.in"), Outlet[Any]("Remapped.out"))
+      remappedShape.in.mappedTo = flow1.in
+      remappedShape.out.mappedTo = flow1.out
 
-    "work with a nested Flow chain" in pending
+      val builder = source.traversal
+        .add(flow1.traversal, flow1.shape)
+        .add(flow1.traversal, remappedShape)
+        .add(sink.traversal, sink.shape)
+        .wire(source.out, flow1.in)
+        .wire(flow1.out, remappedShape.in)
+        .wire(remappedShape.out, sink.in)
+
+      printTraversal(builder.traversal)
+      val mat = testMaterialize(builder)
+
+      println(mat)
+
+      mat.connections should ===(3)
+      mat.outlets(0) should ===(source.out)
+      mat.inlets(0) should ===(flow1.in)
+      mat.outlets(1) should ===(flow1.out)
+      mat.inlets(1) should ===(flow1.in)
+      mat.outlets(2) should ===(flow1.out)
+      mat.inlets(2) should ===(sink.in)
+    }
+
+    "work with a nested Flow chain" in {
+      val nestedFlowShape = FlowShape(flow1.in, flow2.out)
+
+      val nestedFlows =
+        flow1.traversal
+          .add(flow2.traversal, flow2.shape)
+          .wire(flow1.out, flow2.in)
+
+      val builder = source.traversal
+        .add(nestedFlows, nestedFlowShape)
+        .add(sink.traversal, sink.shape)
+        .wire(source.out, flow1.in)
+        .wire(flow2.out, sink.in)
+
+      printTraversal(builder.traversal)
+      val mat = testMaterialize(builder)
+
+      println(mat)
+
+      mat.connections should ===(3)
+      mat.outlets(0) should ===(source.out)
+      mat.inlets(0) should ===(flow1.in)
+      mat.outlets(1) should ===(flow1.out)
+      mat.inlets(1) should ===(flow2.in)
+      mat.outlets(2) should ===(flow2.out)
+      mat.inlets(2) should ===(sink.in)
+    }
+
+    "work with a nested Flow chain, imported" in {
+      val importedFlowShape = FlowShape(Inlet[Any]("imported.in"), Outlet[Any]("imported.out"))
+      importedFlowShape.in.mappedTo = flow1.in
+      importedFlowShape.out.mappedTo = flow2.out
+
+      val nestedFlows =
+        flow1.traversal
+          .add(flow2.traversal, flow2.shape)
+          .wire(flow1.out, flow2.in)
+
+      val builder = source.traversal
+        .add(nestedFlows, importedFlowShape)
+        .add(sink.traversal, sink.shape)
+        .wire(source.out, importedFlowShape.in)
+        .wire(importedFlowShape.out, sink.in)
+
+      printTraversal(builder.traversal)
+      val mat = testMaterialize(builder)
+
+      println(mat)
+
+      mat.connections should ===(3)
+      mat.outlets(0) should ===(source.out)
+      mat.inlets(0) should ===(flow1.in)
+      mat.outlets(1) should ===(flow1.out)
+      mat.inlets(1) should ===(flow2.in)
+      mat.outlets(2) should ===(flow2.out)
+      mat.inlets(2) should ===(sink.in)
+    }
 
     "work with a Flow wired to self" in pending
 
