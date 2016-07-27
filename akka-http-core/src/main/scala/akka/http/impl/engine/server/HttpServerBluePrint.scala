@@ -421,7 +421,7 @@ private[http] object HttpServerBluePrint {
 
           emit(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
             pullHttpResponseIn)
-          if (close && requestStart.expect100Continue) pull(requestParsingIn)
+          if (!isClosed(requestParsingIn) && close && requestStart.expect100Continue) pull(requestParsingIn)
         }
         override def onUpstreamFinish() =
           if (openRequests.isEmpty && isClosed(requestParsingIn)) completeStage()
