@@ -32,7 +32,6 @@ class TraversalBuilderSpec extends AkkaSpec {
     val outlets = Array.ofDim[OutPort](connections)
 
     var inOffs = 0
-    var outOffs = 0
 
     var current: Traversal = b.traversal
     var traversalStack: List[Traversal] = current :: Nil
@@ -44,16 +43,19 @@ class TraversalBuilderSpec extends AkkaSpec {
       while (current != EmptyTraversal) {
         current match {
           case MaterializeAtomic(mod, outToSlot) ⇒
+            println(s"materialize: $mod inOffs = $inOffs")
             mod.shape.inlets.zipWithIndex.foreach {
               case (in, i) ⇒
+                println(s"in $in (id = ${in.id}) assigned to ${inOffs + i}")
                 inlets(inOffs + i) = in
             }
             mod.shape.outlets.zipWithIndex.foreach {
               case (out, i) ⇒
-                outlets(outOffs + out.id + outToSlot(out.id)) = out
+                println(s"out $out (id = ${out.id}) assigned to ${inOffs} + ${outToSlot(out.id)} =" +
+                  s" ${inOffs + outToSlot(out.id)}")
+                outlets(inOffs + outToSlot(out.id)) = out
             }
             inOffs += mod.shape.inlets.size
-            outOffs += mod.shape.outlets.size
             current = current.next
           case Concat(first, next) ⇒
             traversalStack = next :: traversalStack
@@ -293,6 +295,13 @@ class TraversalBuilderSpec extends AkkaSpec {
           .add(flow2.traversal, flow2.shape)
           .wire(flow1.out, flow2.in)
 
+      println(nestedFlows)
+
+      println(source.traversal
+        .add(nestedFlows, nestedFlowShape)
+        .add(sink.traversal, sink.shape)
+        .wire(source.out, flow1.in))
+
       val builder = source.traversal
         .add(nestedFlows, nestedFlowShape)
         .add(sink.traversal, sink.shape)
@@ -343,7 +352,21 @@ class TraversalBuilderSpec extends AkkaSpec {
       mat.inlets(2) should ===(sink.in)
     }
 
-    "work with a Flow wired to self" in pending
+    "work with a Flow wired to self" in {
+      val builder = flow1.traversal.wire(flow1.out, flow1.in)
+
+      printTraversal(builder.traversal)
+
+      val mat = testMaterialize(builder)
+
+      println(mat)
+
+      mat.connections should ===(1)
+      mat.outlets(0) should ===(flow1.out)
+      mat.inlets(0) should ===(flow1.in)
+    }
+
+    "work with a Flow wired to self embedded in a larger graph" in pending
 
   }
 

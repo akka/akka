@@ -69,7 +69,7 @@ object NewLayout {
 
   final case class AtomicTraversalBuilder(module: AtomicModule, outToSlot: Array[Int], unwiredOuts: Int) extends TraversalBuilder {
 
-    override def traversal: Traversal = MaterializeAtomic(module, outToSlot)
+    override val traversal: Traversal = MaterializeAtomic(module, outToSlot)
 
     override def add(submodule: TraversalBuilder, shape: Shape): TraversalBuilder = {
       CompositeTraversalBuilder().add(this, module.shape).add(submodule, shape)
@@ -78,7 +78,7 @@ object NewLayout {
     override val inSlots: Int = module.shape.inlets.size
     override val outSlots: Int = module.shape.outlets.size
 
-    override def offsetOf(out: OutPort): Int = out.id
+    override def offsetOf(out: OutPort): Int = 0
     override def offsetOf(in: InPort): Int = in.id
 
     // Initialize port IDs
@@ -116,14 +116,14 @@ object NewLayout {
   }
 
   final case class CompositeTraversalBuilder(
-    reverseTraversal: List[BuilderKey]                  = Nil,
-    inSlots:          Int                               = 0,
-    outSlots:         Int                               = 0,
-    inOffsets:        Map[InPort, Int]                  = Map.empty,
-    outOffsets:       Map[OutPort, Int]                 = Map.empty,
-    pendingBuilders:  Map[BuilderKey, TraversalBuilder] = Map.empty,
-    outOwners:        Map[OutPort, BuilderKey]          = Map.empty,
-    unwiredOuts:      Int                               = 0
+    reverseTraversal:   List[BuilderKey]                  = Nil,
+    inSlots:            Int                               = 0,
+    outSlots:           Int                               = 0,
+    inOffsets:          Map[InPort, Int]                  = Map.empty,
+    inBaseOffsetForOut: Map[OutPort, Int]                 = Map.empty,
+    pendingBuilders:    Map[BuilderKey, TraversalBuilder] = Map.empty,
+    outOwners:          Map[OutPort, BuilderKey]          = Map.empty,
+    unwiredOuts:        Int                               = 0
   ) extends TraversalBuilder {
 
     override def toString: String =
@@ -133,13 +133,13 @@ object NewLayout {
          |  inSlots = $inSlots
          |  outSlots = $outSlots
          |  inOffsets = $inOffsets
-         |  outOffsets = $outOffsets
+         |  inBaseOffsetForOut = $inBaseOffsetForOut
          |  outOwners = $outOwners
          |  unwiredOuts = $unwiredOuts
          |)
        """.stripMargin
 
-    override def offsetOf(out: OutPort): Int = outOffsets(out)
+    override def offsetOf(out: OutPort): Int = inBaseOffsetForOut(out)
     override def offsetOf(in: InPort): Int = inOffsets(in)
 
     private[this] var _cachedTraversal: Traversal = _
@@ -169,7 +169,7 @@ object NewLayout {
         // Remove the builder (and associated data), and append its traversal
 
         copy(
-          outOffsets = outOffsets - out,
+          inBaseOffsetForOut = inBaseOffsetForOut - out,
           outOwners = outOwners - out,
           pendingBuilders = pendingBuilders.updated(builderKey, result),
           // pendingBuilders = pendingBuilders - builderKey,
@@ -206,7 +206,7 @@ object NewLayout {
         )
       } else {
         var newInOffsets = inOffsets
-        var newOutOffsets = outOffsets
+        var newOutOffsets = inBaseOffsetForOut
         var newOutOwners = outOwners
 
         val inIterator = shape.inlets.iterator
@@ -219,7 +219,7 @@ object NewLayout {
         val outIterator = shape.outlets.iterator
         while (outIterator.hasNext) {
           val out = outIterator.next()
-          newOutOffsets = newOutOffsets.updated(out, outSlots + submodule.offsetOf(out.mappedTo))
+          newOutOffsets = newOutOffsets.updated(out, inSlots + submodule.offsetOf(out.mappedTo))
           newOutOwners = newOutOwners.updated(out, builderKey)
         }
 
@@ -228,7 +228,7 @@ object NewLayout {
           inSlots = inSlots + submodule.inSlots,
           outSlots = outSlots + submodule.outSlots,
           inOffsets = newInOffsets,
-          outOffsets = newOutOffsets,
+          inBaseOffsetForOut = newOutOffsets,
           outOwners = newOutOwners,
           pendingBuilders = pendingBuilders.updated(builderKey, submodule),
           unwiredOuts = unwiredOuts + submodule.unwiredOuts
