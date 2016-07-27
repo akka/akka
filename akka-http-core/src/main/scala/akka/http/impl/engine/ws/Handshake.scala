@@ -66,21 +66,17 @@ private[http] object Handshake {
      */
     def websocketUpgrade(headers: List[HttpHeader], hostHeaderPresent: Boolean): OptionVal[UpgradeToWebSocket] = {
 
-      // Host header is validated in general HTTP logic
-      // val host = HttpHeader.fastFind[Host](headers)
-
-      // Origin header is optional and, if required, should be validated
-      // on higher levels (routing, application logic)
-      // val origin = HttpHeader.fastFind[Origin](headers)
-
-      // Extension support is optional in WS and currently unsupported.
-      // TODO See #18709
-      // val extensions = HttpHeader.findFast[`Sec-WebSocket-Extensions`](headers)
-
+      // notes on Headers that re REQUIRE to be present here:
+      // - Host header is validated in general HTTP logic
+      // - Origin header is optional and, if required, should be validated
+      //   on higher levels (routing, application logic)
+      // 
+      // TODO See #18709 Extension support is optional in WS and currently unsupported.
+      // 
       // these are not needed directly, we verify their presence and correctness only:
-      // val upgrade = HttpHeader.fastFind[Upgrade](headers)
-      // val connection = HttpHeader.fastFind[Connection](headers)
-      // val version = HttpHeader.fastFind[`Sec-WebSocket-Version`](headers)
+      // - Upgrade
+      // - Connection
+      // - `Sec-WebSocket-Version`
       def hasAllRequiredWebsocketUpgradeHeaders: Boolean = {
         // single-pass through the headers list while collecting all needed requirements
         // this way we avoid scanning the requirements list 3 times (as we would with collect/find)

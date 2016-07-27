@@ -120,9 +120,14 @@ class HttpResponseRenderingBenchmark extends HttpResponseRendererFactory(
   // baseline for this optimisation is the above results (after collectFirst).
   
   // after introducing pre-rendered ContentType headers:
-  [info] Benchmark                                            Mode  Cnt        Score       Error  Units
-  [info] HttpResponseRenderingBenchmark.json_response        thrpt   20  2 024 715.373 ± 16 990.783  ops/s
-  [info] HttpResponseRenderingBenchmark.simple_response      thrpt   20  1 993 392.529 ± 59 871.846  ops/s
+  
+  normal clock
+  [info] HttpResponseRenderingBenchmark.json_long_raw_response  thrpt   20  1738558.895 ± 159612.661  ops/s
+  [info] HttpResponseRenderingBenchmark.json_response           thrpt   20  1714176.824 ± 100011.642  ops/s
+
+  "fast clock"
+  [info] HttpResponseRenderingBenchmark.json_long_raw_response  thrpt   20  1 528 632.480 ± 44934.827  ops/s
+  [info] HttpResponseRenderingBenchmark.json_response           thrpt   20  1 517 383.792 ± 28256.716  ops/s
   
    */
 
@@ -184,6 +189,7 @@ class HttpResponseRenderingBenchmark extends HttpResponseRendererFactory(
     )
 
   @Benchmark
+  @Threads(8)
   @OperationsPerInvocation(100 * 1000)
   def simple_response(blackhole: Blackhole): Unit =
     renderToImpl(simpleResponse, blackhole, n = 100 * 1000).await()

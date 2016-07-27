@@ -144,7 +144,11 @@ sealed trait HttpMessage extends jm.HttpMessage {
   /** Java API */
   def getHeaders: JIterable[jm.HttpHeader] = (headers: immutable.Seq[jm.HttpHeader]).asJava
   /** Java API */
-  def getHeader[T <: jm.HttpHeader](headerClass: Class[T]): Optional[T] = ???
+  def getHeader[T <: jm.HttpHeader](headerClass: Class[T]): Optional[T] =
+    HttpHeader.fastFind[jm.HttpHeader](headerClass.asInstanceOf[Class[jm.HttpHeader]], headers) match {
+      case OptionVal.Some(h) ⇒ Optional.of(h.asInstanceOf[T])
+      case _                 ⇒ Optional.empty()
+    }
   /** Java API */
   def getHeader(headerName: String): Optional[jm.HttpHeader] = {
     val lowerCased = headerName.toRootLowerCase

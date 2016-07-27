@@ -31,7 +31,7 @@ private object RenderSupport {
   private[this] final val PreRenderedContentTypes = {
     val m = new java.util.HashMap[ContentType, Array[Byte]](16)
     def preRenderContentType(ct: ContentType) =
-      m.put(ct, (new ByteArrayRendering(32) ~~ ct ~~ CrLf).get)
+      m.put(ct, (new ByteArrayRendering(32) ~~ headers.`Content-Type` ~~ ct ~~ CrLf).get)
 
     import ContentTypes._
     preRenderContentType(`application/json`)

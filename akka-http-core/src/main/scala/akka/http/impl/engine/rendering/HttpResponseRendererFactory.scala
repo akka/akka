@@ -29,9 +29,6 @@ private[http] class HttpResponseRendererFactory(
   serverHeader:           Option[headers.Server],
   responseHeaderSizeHint: Int,
   log:                    LoggingAdapter) {
-  import HttpResponseRendererFactory._
-
-  final private val clock = new NanosFastClock(TimeDriftToleranceNanos)
 
   private val renderDefaultServerHeader: Rendering ⇒ Unit =
     serverHeader match {
@@ -42,24 +39,18 @@ private[http] class HttpResponseRendererFactory(
     }
 
   // as an optimization we cache the Date header of the last second here
-  @volatile private[this] var cachedDateHeader: Array[Byte] = {
-    val r = new ByteArrayRendering(48) // TODO pooling
-    DateTime(System.currentTimeMillis()).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
-    r.get
-  }
+  @volatile private[this] var cachedDateHeader: (Long, Array[Byte]) = (0L, null)
 
-  def dateHeader: Array[Byte] = {
-    var cachedBytes = cachedDateHeader
-
-    val nanosSinceLast = clock.updateHighSpeed()
-    if (nanosSinceLast > TimeDriftToleranceNanos) {
-      val wallClockMs = clock.updateWallClock()
+  private def dateHeader: Array[Byte] = {
+    var (cachedSeconds, cachedBytes) = cachedDateHeader
+    val now = currentTimeMillis()
+    if (now / 1000 > cachedSeconds) {
+      cachedSeconds = now / 1000
       val r = new ByteArrayRendering(48)
-      DateTime(wallClockMs).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
+      DateTime(now).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
       cachedBytes = r.get
-      cachedDateHeader = cachedBytes
+      cachedDateHeader = cachedSeconds → cachedBytes
     }
-
     cachedBytes
   }
 
@@ -283,11 +274,6 @@ private[http] class HttpResponseRendererFactory(
   case object DontClose extends CloseMode
   case object CloseConnection extends CloseMode
   case class SwitchToWebSocket(handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]]) extends CloseMode
-}
-
-object HttpResponseRendererFactory {
-  // Deliberately without type ascription to make it a compile-time constant (last verified 2.11.8)
-  final val TimeDriftToleranceNanos = 1000000000 // == 1.second.toNanos
 }
 
 /**

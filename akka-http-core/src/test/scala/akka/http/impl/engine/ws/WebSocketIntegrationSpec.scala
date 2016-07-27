@@ -3,7 +3,7 @@
  */
 package akka.http.impl.engine.ws
 
-import scala.concurrent.{ Await, Promise }
+import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration.DurationInt
 import org.scalactic.ConversionCheckedTripleEquals
 import org.scalatest.concurrent.ScalaFutures

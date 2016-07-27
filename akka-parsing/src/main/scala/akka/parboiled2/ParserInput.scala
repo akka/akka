@@ -22,7 +22,7 @@ import java.nio.charset.StandardCharsets
 
 import akka.parboiled2.ParserInput.DefaultParserInput
 
-trait ParserInput extends Any {
+trait ParserInput {
   /**
    * Returns the character at the given (zero-based) index.
    * Note: this method is hot and should be small and efficient.
