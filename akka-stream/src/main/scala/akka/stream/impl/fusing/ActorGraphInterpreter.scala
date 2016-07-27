@@ -5,98 +5,93 @@ package akka.stream.impl.fusing
 
 import java.util
 import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor._
 import akka.event.Logging
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance._
-import akka.stream.impl.StreamLayout.{ AtomicModule, CompositeModule, CopiedModule, Module }
+import akka.stream.impl.fusing.GraphInterpreter.{ Connection, DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic }
 import akka.stream.impl.{ SubFusingActorMaterializerImpl, _ }
-import akka.stream.impl.fusing.GraphInterpreter.{ Connection, DownstreamBoundaryStageLogic, GraphAssembly, UpstreamBoundaryStageLogic }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
-import org.reactivestreams.{ Subscriber, Subscription }
+import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
  */
-final case class GraphModule(assembly: GraphAssembly, shape: Shape, attributes: Attributes,
-                             matValIDs: Array[Module]) extends AtomicModule {
-
-  override def withAttributes(newAttr: Attributes): Module = copy(attributes = newAttr)
-
-  override final def carbonCopy: Module = CopiedModule(shape.deepCopy(), Attributes.none, this)
-
-  override final def replaceShape(newShape: Shape): Module =
-    if (newShape != shape) CompositeModule(this, newShape)
-    else this
-
-  override def toString: String =
-    s"""GraphModule
-       |  ${assembly.toString.replace("\n", "\n  ")}
-       |  shape=$shape, attributes=$attributes
-       |  matVals=
-       |    ${matValIDs.mkString("\n    ")}""".stripMargin
-}
-
-/**
- * INTERNAL API
- */
 object ActorGraphInterpreter {
+
+  object ResumeActor extends DeadLetterSuppression with NoSerializationVerificationNeeded
+
   trait BoundaryEvent extends DeadLetterSuppression with NoSerializationVerificationNeeded {
     def shell: GraphInterpreterShell
+    def execute(eventLimit: Int): Int
   }
 
-  final case class OnError(shell: GraphInterpreterShell, id: Int, cause: Throwable) extends BoundaryEvent
-  final case class OnComplete(shell: GraphInterpreterShell, id: Int) extends BoundaryEvent
-  final case class OnNext(shell: GraphInterpreterShell, id: Int, e: Any) extends BoundaryEvent
-  final case class OnSubscribe(shell: GraphInterpreterShell, id: Int, subscription: Subscription) extends BoundaryEvent
-
-  final case class RequestMore(shell: GraphInterpreterShell, id: Int, demand: Long) extends BoundaryEvent
-  final case class Cancel(shell: GraphInterpreterShell, id: Int) extends BoundaryEvent
-  final case class SubscribePending(shell: GraphInterpreterShell, id: Int) extends BoundaryEvent
-  final case class ExposedPublisher(shell: GraphInterpreterShell, id: Int, publisher: ActorPublisher[Any]) extends BoundaryEvent
-
-  final case class AsyncInput(shell: GraphInterpreterShell, logic: GraphStageLogic, evt: Any, handler: (Any) ⇒ Unit) extends BoundaryEvent
-
-  case class Resume(shell: GraphInterpreterShell) extends BoundaryEvent
-  case class Abort(shell: GraphInterpreterShell) extends BoundaryEvent
-
-  final class BoundaryPublisher(parent: ActorRef, shell: GraphInterpreterShell, id: Int) extends ActorPublisher[Any](parent) {
-    override val wakeUpMsg = ActorGraphInterpreter.SubscribePending(shell, id)
-  }
-
-  final class BoundarySubscription(parent: ActorRef, shell: GraphInterpreterShell, id: Int) extends Subscription {
-    override def request(elements: Long): Unit = parent ! RequestMore(shell, id, elements)
-    override def cancel(): Unit = parent ! Cancel(shell, id)
-    override def toString = s"BoundarySubscription[$parent, $id]"
-  }
-
-  final class BoundarySubscriber(parent: ActorRef, shell: GraphInterpreterShell, id: Int) extends Subscriber[Any] {
-    override def onError(cause: Throwable): Unit = {
-      ReactiveStreamsCompliance.requireNonNullException(cause)
-      parent ! OnError(shell, id, cause)
+  trait SimpleBoundaryEvent extends BoundaryEvent {
+    final override def execute(eventLimit: Int): Int = {
+      val wasNotShutdown = !shell.interpreter.isStageCompleted(logic)
+      execute()
+      if (wasNotShutdown) shell.interpreter.afterStageHasRun(logic)
+      shell.runBatch(eventLimit)
     }
-    override def onComplete(): Unit = parent ! OnComplete(shell, id)
-    override def onNext(element: Any): Unit = {
-      ReactiveStreamsCompliance.requireNonNullElement(element)
-      parent ! OnNext(shell, id, element)
-    }
-    override def onSubscribe(subscription: Subscription): Unit = {
-      ReactiveStreamsCompliance.requireNonNullSubscription(subscription)
-      parent ! OnSubscribe(shell, id, subscription)
-    }
+
+    def logic: GraphStageLogic
+
+    def execute(): Unit
   }
 
   def props(shell: GraphInterpreterShell): Props =
     Props(new ActorGraphInterpreter(shell)).withDeploy(Deploy.local)
 
-  class BatchingActorInputBoundary(size: Int, id: Int) extends UpstreamBoundaryStageLogic[Any] {
+  class BatchingActorInputBoundary(
+    size:             Int,
+    shell:            GraphInterpreterShell,
+    publisher:        Publisher[Any],
+    internalPortName: String) extends UpstreamBoundaryStageLogic[Any] {
+
+    final case class OnError(shell: GraphInterpreterShell, cause: Throwable) extends SimpleBoundaryEvent {
+      override def execute(): Unit = {
+        if (GraphInterpreter.Debug) println(s"${interpreter.Name}  onError port=$internalPortName")
+        BatchingActorInputBoundary.this.onError(cause)
+      }
+
+      override def logic: GraphStageLogic = BatchingActorInputBoundary.this
+    }
+    final case class OnComplete(shell: GraphInterpreterShell) extends SimpleBoundaryEvent {
+      override def execute(): Unit = {
+        if (GraphInterpreter.Debug) println(s"${interpreter.Name}  onComplete port=$internalPortName")
+        BatchingActorInputBoundary.this.onComplete()
+      }
+
+      override def logic: GraphStageLogic = BatchingActorInputBoundary.this
+    }
+    final case class OnNext(shell: GraphInterpreterShell, e: Any) extends SimpleBoundaryEvent {
+      override def execute(): Unit = {
+        if (GraphInterpreter.Debug) println(s"${interpreter.Name} onNext $e port=$internalPortName")
+        BatchingActorInputBoundary.this.onNext(e)
+      }
+
+      override def logic: GraphStageLogic = BatchingActorInputBoundary.this
+    }
+    final case class OnSubscribe(shell: GraphInterpreterShell, subscription: Subscription) extends SimpleBoundaryEvent {
+      override def execute(): Unit = {
+        if (GraphInterpreter.Debug) println(s"${interpreter.Name}  onSubscribe port=$internalPortName")
+        shell.subscribeArrived()
+        BatchingActorInputBoundary.this.onSubscribe(subscription)
+      }
+
+      override def logic: GraphStageLogic = BatchingActorInputBoundary.this
+    }
+
     require(size > 0, "buffer size cannot be zero")
     require((size & (size - 1)) == 0, "buffer size must be a power of two")
 
+    private var actor: ActorRef = ActorRef.noSender
     private var upstream: Subscription = _
     private val inputBuffer = Array.ofDim[AnyRef](size)
     private var inputBufferElements = 0
@@ -108,8 +103,35 @@ object ActorGraphInterpreter {
     private def requestBatchSize = math.max(1, inputBuffer.length / 2)
     private var batchRemaining = requestBatchSize
 
-    val out: Outlet[Any] = Outlet[Any]("UpstreamBoundary" + id)
+    val out: Outlet[Any] = Outlet[Any]("UpstreamBoundary:" + internalPortName)
     out.id = 0
+
+    def setActor(actor: ActorRef): Unit = this.actor = actor
+
+    override def preStart(): Unit = {
+      publisher.subscribe(
+        new Subscriber[Any] {
+          override def onError(t: Throwable): Unit = {
+            ReactiveStreamsCompliance.requireNonNullException(t)
+            actor ! OnError(shell, t)
+          }
+
+          override def onSubscribe(s: Subscription): Unit = {
+            ReactiveStreamsCompliance.requireNonNullSubscription(s)
+            actor ! OnSubscribe(shell, s)
+          }
+
+          override def onComplete(): Unit = {
+            actor ! OnComplete(shell)
+          }
+
+          override def onNext(t: Any): Unit = {
+            ReactiveStreamsCompliance.requireNonNullElement(t)
+            actor ! OnNext(shell, t)
+          }
+        }
+      )
+    }
 
     private def dequeue(): Any = {
       val elem = inputBuffer(nextInputElementCursor)
@@ -174,9 +196,9 @@ object ActorGraphInterpreter {
 
     def onSubscribe(subscription: Subscription): Unit = {
       require(subscription != null, "Subscription cannot be null")
-      if (upstreamCompleted)
+      if (upstreamCompleted) {
         tryCancel(subscription)
-      else if (downstreamCanceled) {
+      } else if (downstreamCanceled) {
         upstreamCompleted = true
         tryCancel(subscription)
       } else {
@@ -204,14 +226,107 @@ object ActorGraphInterpreter {
       override def toString: String = BatchingActorInputBoundary.this.toString
     })
 
-    override def toString: String = s"BatchingActorInputBoundary(id=$id, fill=$inputBufferElements/$size, completed=$upstreamCompleted, canceled=$downstreamCanceled)"
+    override def toString: String = s"BatchingActorInputBoundary(forPort=$internalPortName, fill=$inputBufferElements/$size, completed=$upstreamCompleted, canceled=$downstreamCanceled)"
   }
 
-  private[stream] class ActorOutputBoundary(actor: ActorRef, shell: GraphInterpreterShell, id: Int) extends DownstreamBoundaryStageLogic[Any] {
-    val in: Inlet[Any] = Inlet[Any]("UpstreamBoundary" + id)
+  final case class SubscribePending(boundary: ActorOutputBoundary) extends SimpleBoundaryEvent {
+    override def execute(): Unit = boundary.subscribePending()
+
+    override def shell: GraphInterpreterShell = boundary.shell
+
+    override def logic: GraphStageLogic = boundary
+  }
+
+  final case class RequestMore(boundary: ActorOutputBoundary, demand: Long) extends SimpleBoundaryEvent {
+    override def execute(): Unit = {
+      if (GraphInterpreter.Debug) println(s"${boundary.shell.interpreter.Name}  request  $demand port=${boundary.internalPortName}")
+      boundary.requestMore(demand)
+    }
+    override def shell: GraphInterpreterShell = boundary.shell
+    override def logic: GraphStageLogic = boundary
+  }
+  final case class Cancel(boundary: ActorOutputBoundary) extends SimpleBoundaryEvent {
+    override def execute(): Unit = {
+      if (GraphInterpreter.Debug) println(s"${boundary.shell.interpreter.Name}  cancel port=${boundary.internalPortName}")
+      boundary.cancel()
+    }
+
+    override def shell: GraphInterpreterShell = boundary.shell
+    override def logic: GraphStageLogic = boundary
+  }
+
+  private[stream] class OutputBoundaryPublisher(boundary: ActorOutputBoundary, internalPortName: String) extends Publisher[Any] {
+    import ReactiveStreamsCompliance._
+
+    // The subscriber of an subscription attempt is first placed in this list of pending subscribers.
+    // The actor will call takePendingSubscribers to remove it from the list when it has received the
+    // SubscribePending message. The AtomicReference is set to null by the shutdown method, which is
+    // called by the actor from postStop. Pending (unregistered) subscription attempts are denied by
+    // the shutdown method. Subscription attempts after shutdown can be denied immediately.
+    private val pendingSubscribers = new AtomicReference[immutable.Seq[Subscriber[Any]]](Nil)
+
+    protected val wakeUpMsg: Any = SubscribePending(boundary)
+
+    override def subscribe(subscriber: Subscriber[_ >: Any]): Unit = {
+      requireNonNullSubscriber(subscriber)
+      @tailrec def doSubscribe(): Unit = {
+        val current = pendingSubscribers.get
+        if (current eq null)
+          reportSubscribeFailure(subscriber)
+        else {
+          if (pendingSubscribers.compareAndSet(current, subscriber +: current)) {
+            if (boundary.getActor ne null) boundary.getActor ! wakeUpMsg
+          } else {
+            doSubscribe() // CAS retry
+          }
+        }
+      }
+
+      doSubscribe()
+    }
+
+    def takePendingSubscribers(): immutable.Seq[Subscriber[Any]] = {
+      val pending = pendingSubscribers.getAndSet(Nil)
+      if (pending eq null) Nil else pending.reverse
+    }
+
+    def shutdown(reason: Option[Throwable]): Unit = {
+      shutdownReason = reason
+      pendingSubscribers.getAndSet(null) match {
+        case null    ⇒ // already called earlier
+        case pending ⇒ pending foreach reportSubscribeFailure
+      }
+    }
+
+    @volatile private var shutdownReason: Option[Throwable] = None
+
+    private def reportSubscribeFailure(subscriber: Subscriber[Any]): Unit =
+      try shutdownReason match {
+        case Some(e: SpecViolation) ⇒ // ok, not allowed to call onError
+        case Some(e) ⇒
+          tryOnSubscribe(subscriber, CancelledSubscription)
+          tryOnError(subscriber, e)
+        case None ⇒
+          tryOnSubscribe(subscriber, CancelledSubscription)
+          tryOnComplete(subscriber)
+      } catch {
+        case _: SpecViolation ⇒ // nothing to do
+      }
+
+    override def toString: String = s"Publisher[$internalPortName]"
+  }
+
+  private[stream] class ActorOutputBoundary(val shell: GraphInterpreterShell, val internalPortName: String)
+    extends DownstreamBoundaryStageLogic[Any] {
+
+    val in: Inlet[Any] = Inlet[Any]("UpstreamBoundary:" + internalPortName)
     in.id = 0
 
-    private var exposedPublisher: ActorPublisher[Any] = _
+    val publisher = new OutputBoundaryPublisher(this, internalPortName)
+
+    @volatile private var actor: ActorRef = null
+    def setActor(actor: ActorRef): Unit = this.actor = actor
+    def getActor: ActorRef = this.actor
 
     private var subscriber: Subscriber[Any] = _
     private var downstreamDemand: Long = 0L
@@ -231,7 +346,7 @@ object ActorGraphInterpreter {
       // No need to complete if had already been cancelled, or we closed earlier
       if (!(upstreamCompleted || downstreamCompleted)) {
         upstreamCompleted = true
-        if (exposedPublisher ne null) exposedPublisher.shutdown(None)
+        publisher.shutdown(None)
         if (subscriber ne null) tryOnComplete(subscriber)
       }
     }
@@ -241,7 +356,7 @@ object ActorGraphInterpreter {
       if (!(downstreamCompleted || upstreamCompleted)) {
         upstreamCompleted = true
         upstreamFailed = Some(e)
-        if (exposedPublisher ne null) exposedPublisher.shutdown(Some(e))
+        publisher.shutdown(Some(e))
         if ((subscriber ne null) && !e.isInstanceOf[SpecViolation]) tryOnError(subscriber, e)
       }
     }
@@ -261,24 +376,21 @@ object ActorGraphInterpreter {
     })
 
     def subscribePending(): Unit =
-      exposedPublisher.takePendingSubscribers() foreach { sub ⇒
+      publisher.takePendingSubscribers() foreach { sub ⇒
         if (subscriber eq null) {
           subscriber = sub
-          tryOnSubscribe(subscriber, new BoundarySubscription(actor, shell, id))
-          if (GraphInterpreter.Debug) println(s"${interpreter.Name}  subscribe subscriber=$sub")
+          val subscription = new Subscription {
+            override def request(elements: Long): Unit = actor ! RequestMore(ActorOutputBoundary.this, elements)
+            override def cancel(): Unit = actor ! Cancel(ActorOutputBoundary.this)
+            override def toString = s"BoundarySubscription[$actor, $internalPortName]"
+          }
+
+          tryOnSubscribe(subscriber, subscription)
+          // TODO: add interpreter name back
+          if (GraphInterpreter.Debug) println(s" subscribe subscriber=$sub")
         } else
           rejectAdditionalSubscriber(subscriber, s"${Logging.simpleName(this)}")
       }
-
-    def exposedPublisher(publisher: ActorPublisher[Any]): Unit = {
-      exposedPublisher = publisher
-      upstreamFailed match {
-        case _: Some[_] ⇒
-          publisher.shutdown(upstreamFailed)
-        case _ ⇒
-          if (upstreamCompleted) publisher.shutdown(None)
-      }
-    }
 
     def requestMore(elements: Long): Unit = {
       if (elements < 1) {
@@ -295,11 +407,11 @@ object ActorGraphInterpreter {
     def cancel(): Unit = {
       downstreamCompleted = true
       subscriber = null
-      exposedPublisher.shutdown(Some(new ActorPublisher.NormalShutdownException))
+      publisher.shutdown(Some(new ActorPublisher.NormalShutdownException))
       cancel(in)
     }
 
-    override def toString: String = s"ActorOutputBoundary(id=$id, demand=$downstreamDemand, finished=$downstreamCompleted)"
+    override def toString: String = s"ActorOutputBoundary(port=$internalPortName, demand=$downstreamDemand, finished=$downstreamCompleted)"
   }
 
 }
@@ -308,21 +420,51 @@ object ActorGraphInterpreter {
  * INTERNAL API
  */
 final class GraphInterpreterShell(
-  assembly:    GraphAssembly,
-  connections: Array[Connection],
-  logics:      Array[GraphStageLogic],
-  shape:       Shape,
-  settings:    ActorMaterializerSettings,
-  val mat:     ExtendedActorMaterializer) {
+  var connections: Array[Connection],
+  var logics:      Array[GraphStageLogic],
+  settings:        ActorMaterializerSettings,
+  val mat:         ExtendedActorMaterializer) {
 
   import ActorGraphInterpreter._
 
   private var self: ActorRef = _
   lazy val log = Logging(mat.system.eventStream, self)
 
+  final case class AsyncInput(shell: GraphInterpreterShell, logic: GraphStageLogic, evt: Any, handler: (Any) ⇒ Unit) extends BoundaryEvent {
+    override def execute(eventLimit: Int): Int = {
+      if (!waitingForShutdown) {
+        interpreter.runAsyncInput(logic, evt, handler)
+        if (eventLimit == 1 && interpreter.isSuspended) {
+          sendResume(true)
+          0
+        } else runBatch(eventLimit - 1)
+      } else eventLimit
+    }
+  }
+
+  final case class ResumeShell(shell: GraphInterpreterShell) extends BoundaryEvent {
+    override def execute(eventLimit: Int): Int = {
+      if (!waitingForShutdown) {
+        if (GraphInterpreter.Debug) println(s"${interpreter.Name}  resume")
+        if (interpreter.isSuspended) runBatch(eventLimit) else eventLimit
+      } else eventLimit
+    }
+  }
+
+  final case class Abort(shell: GraphInterpreterShell) extends BoundaryEvent {
+    override def execute(eventLimit: Int): Int = {
+      if (waitingForShutdown) {
+        subscribesPending = 0
+        tryAbort(new TimeoutException("Streaming actor has been already stopped processing (normally), but not all of its " +
+          s"inputs or outputs have been subscribed in [${settings.subscriptionTimeoutSettings.timeout}}]. Aborting actor now."))
+      }
+      0
+    }
+  }
+
   private var enqueueToShortCircuit: (Any) ⇒ Unit = _
 
-  lazy val interpreter: GraphInterpreter = new GraphInterpreter(assembly, mat, log, logics, connections,
+  lazy val interpreter: GraphInterpreter = new GraphInterpreter(mat, log, logics, connections,
     (logic, event, handler) ⇒ {
       val asyncInput = AsyncInput(this, logic, event, handler)
       val currentInterpreter = GraphInterpreter.currentInterpreterOrNull
@@ -331,11 +473,11 @@ final class GraphInterpreterShell(
       else enqueueToShortCircuit(asyncInput)
     }, settings.fuzzingMode, self)
 
-  private val inputs = new Array[BatchingActorInputBoundary](shape.inlets.size)
-  private val outputs = new Array[ActorOutputBoundary](shape.outlets.size)
+  // TODO: really needed?
+  private var subscribesPending = 0
 
-  private var subscribesPending = inputs.length
-  private var publishersPending = outputs.length
+  private var inputs: List[BatchingActorInputBoundary] = Nil
+  private var outputs: List[ActorOutputBoundary] = Nil
 
   def dumpWaits(): Unit = interpreter.dumpWaits()
 
@@ -352,7 +494,8 @@ final class GraphInterpreterShell(
    *  - if the event limit is greater than maxInputBufferSize * (ins + outs) than there will always be expand activity
    *  because no data can enter “fast enough” from the outside
    */
-  val shellEventLimit = settings.maxInputBufferSize * (assembly.ins.length + assembly.outs.length)
+  // TODO: Fix event limit heuristic
+  val shellEventLimit = settings.maxInputBufferSize * 16
   // Limits the number of events processed by the interpreter on an abort event.
   // TODO: Better heuristic here
   private val abortLimit = shellEventLimit * 2
@@ -363,101 +506,42 @@ final class GraphInterpreterShell(
     this.self = self
     this.enqueueToShortCircuit = enqueueToShortCircuit
     var i = 0
-    while (i < inputs.length) {
-      val in = new BatchingActorInputBoundary(settings.maxInputBufferSize, i)
-      inputs(i) = in
-      interpreter.attachUpstreamBoundary(connections(i), in)
+    while (i < logics.length) {
+      logics(i) match {
+        case in: BatchingActorInputBoundary ⇒
+          in.setActor(self)
+          subscribesPending += 1
+          inputs ::= in
+        case out: ActorOutputBoundary ⇒
+          out.setActor(self)
+          out.subscribePending()
+          outputs ::= out
+        case _ ⇒
+      }
       i += 1
     }
-    val offset = assembly.connectionCount - outputs.length
-    i = 0
-    while (i < outputs.length) {
-      val out = new ActorOutputBoundary(self, this, i)
-      outputs(i) = out
-      interpreter.attachDownstreamBoundary(connections(i + offset), out)
-      i += 1
-    }
+
     interpreter.init(subMat)
     runBatch(eventLimit)
   }
 
-  def receive(event: BoundaryEvent, eventLimit: Int): Int = {
+  def processEvent(event: BoundaryEvent, eventLimit: Int): Int = {
     resumeScheduled = false
-    if (waitingForShutdown) {
-      event match {
-        case ExposedPublisher(_, id, publisher) ⇒
-          outputs(id).exposedPublisher(publisher)
-          publishersPending -= 1
-          if (canShutDown) interpreterCompleted = true
-        case OnSubscribe(_, _, sub) ⇒
-          tryCancel(sub)
-          subscribesPending -= 1
-          if (canShutDown) interpreterCompleted = true
-        case Abort(_) ⇒
-          // Not waiting anymore, leak is unlikely due to the timeout we have waited
-          publishersPending = 0
-          subscribesPending = 0
-          tryAbort(new TimeoutException("Streaming actor has been already stopped processing (normally), but not all of its " +
-            s"inputs or outputs have been subscribed in [${settings.subscriptionTimeoutSettings.timeout}}]. Aborting actor now."))
-        case _ ⇒ // Ignore, there is nothing to do anyway
-      }
-      eventLimit
-    } else event match {
-      // Cases that are most likely on the hot path, in decreasing order of frequency
-      case OnNext(_, id: Int, e: Any) ⇒
-        if (GraphInterpreter.Debug) println(s"${interpreter.Name}  onNext $e id=$id")
-        inputs(id).onNext(e)
-        runBatch(eventLimit)
-      case RequestMore(_, id: Int, demand: Long) ⇒
-        if (GraphInterpreter.Debug) println(s"${interpreter.Name}  request  $demand id=$id")
-        outputs(id).requestMore(demand)
-        runBatch(eventLimit)
-      case Resume(_) ⇒
-        if (GraphInterpreter.Debug) println(s"${interpreter.Name}  resume")
-        if (interpreter.isSuspended) runBatch(eventLimit) else eventLimit
-      case AsyncInput(_, logic, event, handler) ⇒
-        interpreter.runAsyncInput(logic, event, handler)
-        if (eventLimit == 1 && interpreter.isSuspended) {
-          sendResume(true)
-          0
-        } else runBatch(eventLimit - 1)
-
-      // Initialization and completion messages
-      case OnError(_, id: Int, cause: Throwable) ⇒
-        if (GraphInterpreter.Debug) println(s"${interpreter.Name}  onError id=$id")
-        inputs(id).onError(cause)
-        runBatch(eventLimit)
-      case OnComplete(_, id: Int) ⇒
-        if (GraphInterpreter.Debug) println(s"${interpreter.Name}  onComplete id=$id")
-        inputs(id).onComplete()
-        runBatch(eventLimit)
-      case OnSubscribe(_, id: Int, subscription: Subscription) ⇒
-        if (GraphInterpreter.Debug) println(s"${interpreter.Name}  onSubscribe id=$id")
-        subscribesPending -= 1
-        inputs(id).onSubscribe(subscription)
-        runBatch(eventLimit)
-      case Cancel(_, id: Int) ⇒
-        if (GraphInterpreter.Debug) println(s"${interpreter.Name}  cancel id=$id")
-        outputs(id).cancel()
-        runBatch(eventLimit)
-      case SubscribePending(_, id: Int) ⇒
-        outputs(id).subscribePending()
-        eventLimit
-      case ExposedPublisher(_, id, publisher) ⇒
-        publishersPending -= 1
-        outputs(id).exposedPublisher(publisher)
-        eventLimit
-    }
+    event.execute(eventLimit)
   }
 
   private var interpreterCompleted = false
   def isTerminated: Boolean = interpreterCompleted && canShutDown
 
-  private def canShutDown: Boolean = subscribesPending + publishersPending == 0
+  private def canShutDown: Boolean = subscribesPending == 0
+
+  def subscribeArrived(): Unit = {
+    subscribesPending -= 1
+  }
 
   private var waitingForShutdown: Boolean = false
 
-  private val resume = Resume(this)
+  private val resume = ResumeShell(this)
 
   def sendResume(sendResume: Boolean): Unit = {
     resumeScheduled = true
@@ -495,6 +579,7 @@ final class GraphInterpreterShell(
    *  - a new error is encountered
    */
   def tryAbort(ex: Throwable): Unit = {
+    ex.printStackTrace()
     val reason = ex match {
       case s: SpecViolation ⇒
         new IllegalStateException("Shutting down because of violation of the Reactive Streams specification.", s)
@@ -520,7 +605,8 @@ final class GraphInterpreterShell(
     }
   }
 
-  override def toString: String = s"GraphInterpreterShell\n  ${assembly.toString.replace("\n", "\n  ")}"
+  // TODO: Fix debug string
+  override def toString: String = s"GraphInterpreterShell\n" //  ${assembly.toString.replace("\n", "\n  ")}"
 }
 
 /**
@@ -561,7 +647,7 @@ class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor with 
 
   def registerShell(shell: GraphInterpreterShell): ActorRef = {
     newShells ::= shell
-    enqueueToShortCircuit(Resume)
+    enqueueToShortCircuit(shell.ResumeShell(shell))
     self
   }
 
@@ -592,15 +678,15 @@ class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor with 
     while (!shortCircuitBuffer.isEmpty && currentLimit > 0 && activeInterpreters.nonEmpty)
       shortCircuitBuffer.poll() match {
         case b: BoundaryEvent ⇒ processEvent(b)
-        case Resume           ⇒ finishShellRegistration()
+        case ResumeActor      ⇒ finishShellRegistration()
       }
-    if (!shortCircuitBuffer.isEmpty && currentLimit == 0) self ! Resume
+    if (!shortCircuitBuffer.isEmpty && currentLimit == 0) self ! ResumeActor
   }
 
   private def processEvent(b: BoundaryEvent): Unit = {
     val shell = b.shell
     if (!shell.isTerminated && (shell.isInitialized || tryInit(shell))) {
-      try currentLimit = shell.receive(b, currentLimit)
+      try currentLimit = shell.processEvent(b, currentLimit)
       catch {
         case NonFatal(e) ⇒ shell.tryAbort(e)
       }
@@ -618,7 +704,7 @@ class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor with 
       processEvent(b)
       if (shortCircuitBuffer != null) shortCircuitBatch()
 
-    case Resume ⇒
+    case ResumeActor ⇒
       currentLimit = eventLimit
       if (shortCircuitBuffer != null) shortCircuitBatch()
 

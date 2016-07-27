@@ -10,7 +10,7 @@ import akka.actor.Cancellable
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.stream.FlowMonitorState._
-import akka.stream._
+import akka.stream.{ Shape, _ }
 import akka.stream.scaladsl._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
@@ -18,26 +18,25 @@ import akka.stream.stage._
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.impl.StreamLayout._
-import akka.stream.impl.ReactiveStreamsCompliance
+import akka.stream.impl.{ LinearTraversalBuilder, ReactiveStreamsCompliance }
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.util.Try
 
 /**
  * INTERNAL API
  */
-final case class GraphStageModule(
-  shape:      Shape,
+// TODO: Fix variance issues
+final case class GraphStageModule[+S <: Shape @uncheckedVariance, +M](
+  shape:      S,
   attributes: Attributes,
-  stage:      GraphStageWithMaterializedValue[Shape, Any]) extends AtomicModule {
-  override def carbonCopy: Module = CopiedModule(shape.deepCopy(), Attributes.none, this)
+  stage:      GraphStageWithMaterializedValue[S, M]) extends AtomicModule[S, M] {
 
-  override def replaceShape(s: Shape): Module =
-    if (s != shape) CompositeModule(this, s)
-    else this
-
-  override def withAttributes(attributes: Attributes): Module =
+  override def withAttributes(attributes: Attributes): AtomicModule[S, M] =
     if (attributes ne this.attributes) new GraphStageModule(shape, attributes, stage)
     else this
+
+  override private[stream] def traversalBuilder = LinearTraversalBuilder.fromModule(this)
 
   override def toString: String = f"GraphStage($stage) [${System.identityHashCode(this)}%08x]"
 }
@@ -258,32 +257,6 @@ object GraphStages {
     }
 
     override def toString: String = s"TickSource($initialDelay, $interval, $tick)"
-  }
-
-  /**
-   * INTERNAL API.
-   *
-   * This source is not reusable, it is only created internally.
-   */
-  final class MaterializedValueSource[T](val computation: MaterializedValueNode, val out: Outlet[T]) extends GraphStage[SourceShape[T]] {
-    def this(computation: MaterializedValueNode) = this(computation, Outlet[T]("matValue"))
-    override def initialAttributes: Attributes = DefaultAttributes.materializedValueSource
-    override val shape = SourceShape(out)
-
-    private val promise = Promise[T]
-    def setValue(t: T): Unit = promise.success(t)
-
-    def copySrc: MaterializedValueSource[T] = new MaterializedValueSource(computation, out)
-
-    override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
-      setHandler(out, eagerTerminateOutput)
-      override def preStart(): Unit = {
-        val cb = getAsyncCallback[T](t ⇒ emit(out, t, () ⇒ completeStage()))
-        promise.future.foreach(cb.invoke)(ExecutionContexts.sameThreadExecutionContext)
-      }
-    }
-
-    override def toString: String = s"MaterializedValueSource($computation)"
   }
 
   final class SingleSource[T](val elem: T) extends GraphStage[SourceShape[T]] {

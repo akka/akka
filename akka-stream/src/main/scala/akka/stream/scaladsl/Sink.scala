@@ -8,7 +8,6 @@ import akka.dispatch.ExecutionContexts
 import akka.actor.{ ActorRef, Props, Status }
 import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
@@ -24,12 +23,14 @@ import scala.util.{ Failure, Success, Try }
  * A `Sink` is a set of stream processing steps that has one open input.
  * Can be used as a `Subscriber`
  */
-final class Sink[-In, +Mat](override val module: Module)
+final class Sink[-In, +Mat](
+  override val traversalBuilder: LinearTraversalBuilder,
+  override val shape:            SinkShape[In]
+)
   extends Graph[SinkShape[In], Mat] {
 
-  override val shape: SinkShape[In] = module.shape.asInstanceOf[SinkShape[In]]
-
-  override def toString: String = s"Sink($shape, $module)"
+  // TODO: Debug string
+  override def toString: String = s"Sink($shape)"
 
   /**
    * Transform this Sink by applying a function to each *incoming* upstream element before
@@ -52,7 +53,10 @@ final class Sink[-In, +Mat](override val module: Module)
    * Transform only the materialized value of this Sink, leaving all other properties as they were.
    */
   def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): Sink[In, Mat2] =
-    new Sink(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
+    new Sink(
+      traversalBuilder.transformMat(f.asInstanceOf[Any ⇒ Any]),
+      shape
+    )
 
   /**
    * Change the attributes of this [[Sink]] to the given ones and seal the list
@@ -62,7 +66,10 @@ final class Sink[-In, +Mat](override val module: Module)
    * only to the contained processing stages).
    */
   override def withAttributes(attr: Attributes): Sink[In, Mat] =
-    new Sink(module.withAttributes(attr))
+    new Sink(
+      traversalBuilder.setAttributes(attr),
+      shape
+    )
 
   /**
    * Add the given attributes to this Sink. Further calls to `withAttributes`
@@ -71,7 +78,7 @@ final class Sink[-In, +Mat](override val module: Module)
    * only to the contained processing stages).
    */
   override def addAttributes(attr: Attributes): Sink[In, Mat] =
-    withAttributes(module.attributes and attr)
+    withAttributes(traversalBuilder.attributes and attr)
 
   /**
    * Add a ``name`` attribute to this Sink.
@@ -81,7 +88,11 @@ final class Sink[-In, +Mat](override val module: Module)
   /**
    * Put an asynchronous boundary around this `Sink`
    */
-  override def async: Sink[In, Mat] = addAttributes(Attributes.asyncBoundary)
+  override def async: Sink[In, Mat] =
+    new Sink(
+      traversalBuilder.makeIsland(GraphStageTag),
+      shape
+    )
 
   /**
    * Converts this Scala DSL element to it's Java DSL counterpart.
@@ -102,20 +113,23 @@ object Sink {
     g match {
       case s: Sink[T, M]         ⇒ s
       case s: javadsl.Sink[T, M] ⇒ s.asScala
-      case other                 ⇒ new Sink(other.module)
+      case other ⇒ new Sink(
+        LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right),
+        other.shape
+      )
     }
 
   /**
    * Helper to create [[Sink]] from `Subscriber`.
    */
   def fromSubscriber[T](subscriber: Subscriber[T]): Sink[T, NotUsed] =
-    new Sink(new SubscriberSink(subscriber, DefaultAttributes.subscriberSink, shape("SubscriberSink")))
+    fromGraph(new SubscriberSink(subscriber, DefaultAttributes.subscriberSink, shape("SubscriberSink")))
 
   /**
    * A `Sink` that immediately cancels its upstream after materialization.
    */
   def cancelled[T]: Sink[T, NotUsed] =
-    new Sink[Any, NotUsed](new CancelSink(DefaultAttributes.cancelledSink, shape("CancelledSink")))
+    fromGraph[Any, NotUsed](new CancelSink(DefaultAttributes.cancelledSink, shape("CancelledSink")))
 
   /**
    * A `Sink` that materializes into a `Future` of the first value received.
@@ -181,7 +195,7 @@ object Sink {
    * reject any additional `Subscriber`s.
    */
   def asPublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
-    new Sink(
+    fromGraph(
       if (fanout) new FanoutPublisherSink[T](DefaultAttributes.fanoutPublisherSink, shape("FanoutPublisherSink"))
       else new PublisherSink[T](DefaultAttributes.publisherSink, shape("PublisherSink")))
 
@@ -327,7 +341,7 @@ object Sink {
    * limiting stage in front of this `Sink`.
    */
   def actorRef[T](ref: ActorRef, onCompleteMessage: Any): Sink[T, NotUsed] =
-    new Sink(new ActorRefSink(ref, onCompleteMessage, DefaultAttributes.actorRefSink, shape("ActorRefSink")))
+    fromGraph(new ActorRefSink(ref, onCompleteMessage, DefaultAttributes.actorRefSink, shape("ActorRefSink")))
 
   /**
    * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
@@ -356,7 +370,7 @@ object Sink {
   @deprecated("Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
   def actorSubscriber[T](props: Props): Sink[T, ActorRef] = {
     require(classOf[ActorSubscriber].isAssignableFrom(props.actorClass()), "Actor must be ActorSubscriber")
-    new Sink(new ActorSubscriberSink(props, DefaultAttributes.actorSubscriberSink, shape("ActorSubscriberSink")))
+    fromGraph(new ActorSubscriberSink(props, DefaultAttributes.actorSubscriberSink, shape("ActorSubscriberSink")))
   }
 
   /**

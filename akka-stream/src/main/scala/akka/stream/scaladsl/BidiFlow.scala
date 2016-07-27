@@ -4,14 +4,15 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream._
-import akka.stream.impl.StreamLayout.Module
-import akka.stream.impl.Timers
+import akka.stream.{ BidiShape, _ }
+import akka.stream.impl.{ LinearTraversalBuilder, Timers, TraversalBuilder }
 
 import scala.concurrent.duration.FiniteDuration
 
-final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](override val module: Module) extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
-  override def shape = module.shape.asInstanceOf[BidiShape[I1, O1, I2, O2]]
+final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
+  override val traversalBuilder: TraversalBuilder,
+  override val shape:            BidiShape[I1, O1, I2, O2]
+) extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
 
   def asJava: javadsl.BidiFlow[I1, O1, I2, O2, Mat] = new javadsl.BidiFlow(this)
 
@@ -55,14 +56,14 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](override val module: Module) exte
    * flow into the materialized value of the resulting BidiFlow.
    */
   def atopMat[OO1, II2, Mat2, M](bidi: Graph[BidiShape[O1, OO1, II2, I2], Mat2])(combine: (Mat, Mat2) ⇒ M): BidiFlow[I1, OO1, II2, O2, M] = {
-    val copy = bidi.module.carbonCopy
-    val ins = copy.shape.inlets
-    val outs = copy.shape.outlets
-    new BidiFlow(module
-      .compose(copy, combine)
-      .wire(shape.out1, ins(0))
-      .wire(outs(1), shape.in2)
-      .replaceShape(BidiShape(shape.in1, outs(0), ins(1), shape.out2)))
+    val newBidiShape = bidi.shape.deepCopy()
+
+    new BidiFlow(
+      traversalBuilder.add(bidi.traversalBuilder, newBidiShape, combine)
+        .wire(shape.out1, newBidiShape.in1)
+        .wire(newBidiShape.out2, shape.in2),
+      BidiShape(shape.in1, newBidiShape.out1, newBidiShape.in2, shape.out2)
+    )
   }
 
   /**
@@ -105,26 +106,38 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](override val module: Module) exte
    * flow into the materialized value of the resulting [[Flow]].
    */
   def joinMat[Mat2, M](flow: Graph[FlowShape[O1, I2], Mat2])(combine: (Mat, Mat2) ⇒ M): Flow[I1, O2, M] = {
-    val copy = flow.module.carbonCopy
-    val in = copy.shape.inlets.head
-    val out = copy.shape.outlets.head
-    new Flow(module
-      .compose(copy, combine)
-      .wire(shape.out1, in)
-      .wire(out, shape.in2)
-      .replaceShape(FlowShape(shape.in1, shape.out2)))
+    val newFlowShape = flow.shape.deepCopy()
+
+    val resultBuilder = traversalBuilder
+      .add(flow.traversalBuilder, newFlowShape, combine)
+      .wire(shape.out1, newFlowShape.in)
+      .wire(newFlowShape.out, shape.in2)
+
+    val newShape = FlowShape(shape.in1, shape.out2)
+
+    new Flow(
+      LinearTraversalBuilder.fromBuilder(resultBuilder, newShape, Keep.right),
+      newShape
+    )
   }
 
   /**
    * Turn this BidiFlow around by 180 degrees, logically flipping it upside down in a protocol stack.
    */
-  def reversed: BidiFlow[I2, O2, I1, O1, Mat] = new BidiFlow(module.replaceShape(BidiShape(shape.in2, shape.out2, shape.in1, shape.out1)))
+  def reversed: BidiFlow[I2, O2, I1, O1, Mat] =
+    new BidiFlow(
+      traversalBuilder,
+      BidiShape(shape.in2, shape.out2, shape.in1, shape.out1)
+    )
 
   /**
    * Transform only the materialized value of this BidiFlow, leaving all other properties as they were.
    */
   def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): BidiFlow[I1, O1, I2, O2, Mat2] =
-    new BidiFlow(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
+    new BidiFlow(
+      traversalBuilder.transformMat(f.asInstanceOf[Any ⇒ Any]),
+      shape
+    )
 
   /**
    * Change the attributes of this [[Source]] to the given ones and seal the list
@@ -134,7 +147,10 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](override val module: Module) exte
    * only to the contained processing stages).
    */
   override def withAttributes(attr: Attributes): BidiFlow[I1, O1, I2, O2, Mat] =
-    new BidiFlow(module.withAttributes(attr))
+    new BidiFlow(
+      traversalBuilder.setAttributes(attr),
+      shape
+    )
 
   /**
    * Add the given attributes to this Source. Further calls to `withAttributes`
@@ -143,7 +159,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](override val module: Module) exte
    * only to the contained processing stages).
    */
   override def addAttributes(attr: Attributes): BidiFlow[I1, O1, I2, O2, Mat] =
-    withAttributes(module.attributes and attr)
+    withAttributes(traversalBuilder.attributes and attr)
 
   /**
    * Add a ``name`` attribute to this Flow.
@@ -169,7 +185,11 @@ object BidiFlow {
     graph match {
       case bidi: BidiFlow[I1, O1, I2, O2, Mat]         ⇒ bidi
       case bidi: javadsl.BidiFlow[I1, O1, I2, O2, Mat] ⇒ bidi.asScala
-      case other                                       ⇒ new BidiFlow(other.module)
+      case other ⇒
+        new BidiFlow(
+          other.traversalBuilder,
+          other.shape
+        )
     }
 
   /**
@@ -193,9 +213,17 @@ object BidiFlow {
    */
   def fromFlowsMat[I1, O1, I2, O2, M1, M2, M](
     flow1: Graph[FlowShape[I1, O1], M1],
-    flow2: Graph[FlowShape[I2, O2], M2])(combine: (M1, M2) ⇒ M): BidiFlow[I1, O1, I2, O2, M] =
-    fromGraph(GraphDSL.create(flow1, flow2)(combine) { implicit b ⇒ (f1, f2) ⇒ BidiShape(f1.in, f1.out, f2.in, f2.out)
-    })
+    flow2: Graph[FlowShape[I2, O2], M2])(combine: (M1, M2) ⇒ M): BidiFlow[I1, O1, I2, O2, M] = {
+    val newFlow1Shape = flow1.shape.deepCopy()
+    val newFlow2Shape = flow2.shape.deepCopy()
+
+    new BidiFlow(
+      TraversalBuilder.empty()
+        .add(flow1.traversalBuilder, newFlow1Shape, Keep.right)
+        .add(flow2.traversalBuilder, newFlow2Shape, combine),
+      BidiShape(newFlow1Shape.in, newFlow1Shape.out, newFlow2Shape.in, newFlow2Shape.out)
+    )
+  }
 
   /**
    * Wraps two Flows to create a ''BidiFlow''. The materialized value of the resulting BidiFlow is Unit.

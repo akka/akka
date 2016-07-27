@@ -6,11 +6,15 @@ package akka.stream
 import java.util.Optional
 
 import akka.event.Logging
+
 import scala.annotation.tailrec
-import scala.reflect.{ classTag, ClassTag }
+import scala.reflect.{ ClassTag, classTag }
 import akka.japi.function
 import akka.stream.impl.StreamLayout._
 import java.net.URLEncoder
+
+import akka.stream.impl.TraversalBuilder
+
 import scala.compat.java8.OptionConverters._
 
 /**
@@ -233,11 +237,8 @@ object Attributes {
    * Compute a name by concatenating all Name attributes that the given module
    * has, returning the given default value if none are found.
    */
-  def extractName(mod: Module, default: String): String = {
-    mod match {
-      case CopiedModule(_, attr, copyOf) ⇒ (attr and copyOf.attributes).nameOrDefault(default)
-      case _                             ⇒ mod.attributes.nameOrDefault(default)
-    }
+  def extractName(builder: TraversalBuilder, default: String): String = {
+    builder.attributes.nameOrDefault(default)
   }
 }
 
