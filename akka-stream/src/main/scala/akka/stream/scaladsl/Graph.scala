@@ -7,15 +7,14 @@ import akka.NotUsed
 import akka.stream._
 import akka.stream.impl._
 import akka.stream.impl.fusing.GraphStages
-import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.StreamLayout._
 import akka.stream.scaladsl.Partition.PartitionOutOfBoundsException
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.concurrent.Promise
 import scala.util.control.NoStackTrace
 
 object Merge {
@@ -991,13 +990,13 @@ private[stream] final class OrElse[T] extends GraphStage[UniformFanInShape[T, T]
 object GraphDSL extends GraphApply {
 
   class Builder[+M] private[stream] () {
-    private var moduleInProgress: Module = EmptyModule
+    private var traversalBuilderInProgress: TraversalBuilder = TraversalBuilder.empty()
 
     /**
      * INTERNAL API
      */
     private[GraphDSL] def addEdge[T, U >: T](from: Outlet[T], to: Inlet[U]): Unit =
-      moduleInProgress = moduleInProgress.wire(from, to)
+      traversalBuilderInProgress = traversalBuilderInProgress.wire(from, to)
 
     /**
      * Import a graph into this module, performing a deep copy, discarding its
@@ -1005,10 +1004,9 @@ object GraphDSL extends GraphApply {
      * connected.
      */
     def add[S <: Shape](graph: Graph[S, _]): S = {
-      if (StreamLayout.Debug) StreamLayout.validate(graph.module)
-      val copy = graph.module.carbonCopy
-      moduleInProgress = moduleInProgress.compose(copy, Keep.left)
-      graph.shape.copyFromPorts(copy.shape.inlets, copy.shape.outlets).asInstanceOf[S]
+      val newShape = graph.shape.deepCopy()
+      traversalBuilderInProgress = traversalBuilderInProgress.add(graph.traversalBuilder, newShape, Keep.left)
+      newShape.asInstanceOf[S]
     }
 
     /**
@@ -1018,10 +1016,13 @@ object GraphDSL extends GraphApply {
      * Flow, Sink and Graph.
      */
     private[stream] def add[S <: Shape, A](graph: Graph[S, _], transform: (A) ⇒ Any): S = {
-      if (StreamLayout.Debug) StreamLayout.validate(graph.module)
-      val copy = graph.module.carbonCopy
-      moduleInProgress = moduleInProgress.compose(copy.transformMaterializedValue(transform.asInstanceOf[Any ⇒ Any]), Keep.right)
-      graph.shape.copyFromPorts(copy.shape.inlets, copy.shape.outlets).asInstanceOf[S]
+      val newShape = graph.shape.deepCopy()
+      traversalBuilderInProgress = traversalBuilderInProgress.add(
+        graph.traversalBuilder.transformMat(transform),
+        newShape,
+        Keep.right
+      )
+      newShape.asInstanceOf[S]
     }
 
     /**
@@ -1031,10 +1032,9 @@ object GraphDSL extends GraphApply {
      * Flow, Sink and Graph.
      */
     private[stream] def add[S <: Shape, A, B](graph: Graph[S, _], combine: (A, B) ⇒ Any): S = {
-      if (StreamLayout.Debug) StreamLayout.validate(graph.module)
-      val copy = graph.module.carbonCopy
-      moduleInProgress = moduleInProgress.compose(copy, combine)
-      graph.shape.copyFromPorts(copy.shape.inlets, copy.shape.outlets).asInstanceOf[S]
+      val newShape = graph.shape.deepCopy()
+      traversalBuilderInProgress = traversalBuilderInProgress.add(graph.traversalBuilder, newShape, combine)
+      newShape.asInstanceOf[S]
     }
 
     /**
@@ -1052,26 +1052,19 @@ object GraphDSL extends GraphApply {
      * @return The outlet that will emit the materialized value.
      */
     def materializedValue: Outlet[M @uncheckedVariance] = {
-      /*
-       * This brings the graph into a homogenous shape: if only one `add` has
-       * been performed so far, the moduleInProgress will be a CopiedModule
-       * that upon the next `composeNoMat` will be wrapped together with the
-       * MaterializedValueSource into a CompositeModule, leading to its
-       * relevant computation being an Atomic() for the CopiedModule. This is
-       * what we must reference, and we can only get this reference if we
-       * create that computation up-front: just making one up will not work
-       * because that computation node would not be part of the tree and
-       * the source would not be triggered.
-       */
-      if (moduleInProgress.isInstanceOf[CopiedModule]) {
-        moduleInProgress = CompositeModule(moduleInProgress, moduleInProgress.shape)
-      }
-      val source = new MaterializedValueSource[M](moduleInProgress.materializedValueComputation)
-      moduleInProgress = moduleInProgress.composeNoMat(source.module)
-      source.out
+      val promise = Promise[M]
+      val source = Source.fromFuture(promise.future)
+
+      traversalBuilderInProgress = traversalBuilderInProgress
+        .transformMat { mat: M ⇒
+          promise.trySuccess(mat)
+          mat
+        }
+        .add(source.traversalBuilder, source.shape, Keep.left)
+      source.shape.out
     }
 
-    private[stream] def module: Module = moduleInProgress
+    private[stream] def traversalBuilder: TraversalBuilder = traversalBuilderInProgress
 
     /** Converts this Scala DSL element to it's Java DSL counterpart. */
     def asJava: javadsl.GraphDSL.Builder[M] = new javadsl.GraphDSL.Builder()(this)
@@ -1083,7 +1076,7 @@ object GraphDSL extends GraphApply {
     private[stream] def findOut[I, O](b: Builder[_], junction: UniformFanOutShape[I, O], n: Int): Outlet[O] = {
       if (n == junction.outArray.length)
         throw new IllegalArgumentException(s"no more outlets free on $junction")
-      else if (b.module.downstreams.contains(junction.out(n))) findOut(b, junction, n + 1)
+      else if (!b.traversalBuilder.isUnwired(junction.out(n))) findOut(b, junction, n + 1)
       else junction.out(n)
     }
 
@@ -1091,7 +1084,7 @@ object GraphDSL extends GraphApply {
     private[stream] def findIn[I, O](b: Builder[_], junction: UniformFanInShape[I, O], n: Int): Inlet[I] = {
       if (n == junction.inSeq.length)
         throw new IllegalArgumentException(s"no more inlets free on $junction")
-      else if (b.module.upstreams.contains(junction.in(n))) findIn(b, junction, n + 1)
+      else if (!b.traversalBuilder.isUnwired(junction.in(n))) findIn(b, junction, n + 1)
       else junction.in(n)
     }
 
@@ -1111,7 +1104,7 @@ object GraphDSL extends GraphApply {
         def bind(n: Int): Unit = {
           if (n == junction.inSeq.length)
             throw new IllegalArgumentException(s"no more inlets free on $junction")
-          else if (b.module.upstreams.contains(junction.in(n))) bind(n + 1)
+          else if (!b.traversalBuilder.isUnwired(junction.in(n))) bind(n + 1)
           else b.addEdge(importAndGetPort(b), junction.in(n))
         }
         bind(0)
@@ -1154,7 +1147,7 @@ object GraphDSL extends GraphApply {
         def bind(n: Int): Unit = {
           if (n == junction.outArray.length)
             throw new IllegalArgumentException(s"no more outlets free on $junction")
-          else if (b.module.downstreams.contains(junction.out(n))) bind(n + 1)
+          else if (!b.traversalBuilder.isUnwired(junction.out(n))) bind(n + 1)
           else b.addEdge(junction.out(n), importAndGetPortReverse(b))
         }
         bind(0)

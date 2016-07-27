@@ -49,9 +49,8 @@ object Flow {
    */
   def fromGraph[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] =
     g match {
-      case f: Flow[I, O, M]                          ⇒ f
-      case f: scaladsl.Flow[I, O, M] if f.isIdentity ⇒ _identity.asInstanceOf[Flow[I, O, M]]
-      case other                                     ⇒ new Flow(scaladsl.Flow.fromGraph(other))
+      case f: Flow[I, O, M] ⇒ f
+      case other            ⇒ new Flow(scaladsl.Flow.fromGraph(other))
     }
 
   /**
@@ -74,7 +73,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   import scala.collection.JavaConverters._
 
   override def shape: FlowShape[In, Out] = delegate.shape
-  def module: StreamLayout.Module = delegate.module
+  override def traversalBuilder = delegate.traversalBuilder
 
   override def toString: String = delegate.toString
 
@@ -2047,8 +2046,8 @@ object RunnableGraph {
 
   /** INTERNAL API */
   private final class RunnableGraphAdapter[Mat](runnable: scaladsl.RunnableGraph[Mat]) extends RunnableGraph[Mat] {
-    def shape = ClosedShape
-    def module = runnable.module
+    override def shape = ClosedShape
+    override def traversalBuilder = runnable.traversalBuilder
 
     override def toString: String = runnable.toString
 
@@ -2083,7 +2082,7 @@ abstract class RunnableGraph[+Mat] extends Graph[ClosedShape, Mat] {
   override def withAttributes(attr: Attributes): RunnableGraph[Mat]
 
   override def addAttributes(attr: Attributes): RunnableGraph[Mat] =
-    withAttributes(module.attributes and attr)
+    withAttributes(traversalBuilder.attributes and attr)
 
   override def named(name: String): RunnableGraph[Mat] =
     withAttributes(Attributes.name(name))

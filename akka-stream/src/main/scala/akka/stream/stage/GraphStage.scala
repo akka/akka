@@ -12,9 +12,9 @@ import akka.actor._
 import akka.annotation.ApiMayChange
 import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
-import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
-import akka.stream.impl.ReactiveStreamsCompliance
+import akka.stream.impl.{ ReactiveStreamsCompliance, TraversalBuilder }
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{ immutable, mutable }
@@ -28,11 +28,11 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
 
   protected def initialAttributes: Attributes = Attributes.none
 
-  final override lazy val module: Module = GraphStageModule(shape, initialAttributes, this)
+  final override lazy val traversalBuilder: TraversalBuilder = TraversalBuilder.atomic(GraphStageModule(shape, initialAttributes, this))
 
   final override def withAttributes(attr: Attributes): Graph[S, M] = new Graph[S, M] {
     override def shape = GraphStageWithMaterializedValue.this.shape
-    override def module = GraphStageWithMaterializedValue.this.module.withAttributes(attr)
+    override def traversalBuilder = GraphStageWithMaterializedValue.this.traversalBuilder.setAttributes(attr)
 
     override def withAttributes(attr: Attributes) = GraphStageWithMaterializedValue.this.withAttributes(attr)
   }

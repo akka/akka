@@ -5,7 +5,7 @@ package akka.stream.impl.fusing
 
 import akka.event.NoLogging
 import akka.stream._
-import akka.stream.impl.fusing.GraphInterpreter.{ GraphAssembly, DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic }
+import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic }
 import akka.stream.stage._
 import java.{ util ⇒ ju }
 
@@ -107,7 +107,6 @@ private[akka] class IteratorInterpreter[I, O](
   private val downstream = IteratorDownstream[O]()
 
   private def init(): Unit = {
-    import GraphInterpreter.Boundary
 
     var i = 0
     val length = stages.length
@@ -119,9 +118,9 @@ private[akka] class IteratorInterpreter[I, O](
     val stagesArray = Array.ofDim[GraphStageWithMaterializedValue[Shape, Any]](length)
 
     ins(length) = null
-    inOwners(length) = Boundary
+    inOwners(length) = length
     outs(0) = null
-    outOwners(0) = Boundary
+    outOwners(0) = 0
 
     val stagesIterator = stages.iterator
     while (stagesIterator.hasNext) {
@@ -133,22 +132,24 @@ private[akka] class IteratorInterpreter[I, O](
       outOwners(i + 1) = i
       i += 1
     }
-    val assembly = new GraphAssembly(stagesArray, attributes, ins, inOwners, outs, outOwners)
 
-    val (connections, logics) =
-      assembly.materialize(Attributes.none, assembly.stages.map(_.module), new ju.HashMap, _ ⇒ ())
-    val interpreter = new GraphInterpreter(
-      assembly,
-      NoMaterializer,
-      NoLogging,
-      logics,
-      connections,
-      (_, _, _) ⇒ throw new UnsupportedOperationException("IteratorInterpreter does not support asynchronous events."),
-      fuzzingMode = false,
-      null)
-    interpreter.attachUpstreamBoundary(connections(0), upstream)
-    interpreter.attachDownstreamBoundary(connections(length), downstream)
-    interpreter.init(null)
+    // TODO: Fix this (assembly is gone)
+    //    val assembly = new GraphAssembly(stagesArray, attributes, ins, inOwners, outs, outOwners)
+    //
+    //    val (connections, logics)
+    //
+    //    val interpreter = new GraphInterpreter(
+    //      assembly,
+    //      NoMaterializer,
+    //      NoLogging,
+    //      logics,
+    //      connections,
+    //      (_, _, _) ⇒ throw new UnsupportedOperationException("IteratorInterpreter does not support asynchronous events."),
+    //      fuzzingMode = false,
+    //      null)
+    //    interpreter.attachUpstreamBoundary(connections(0), upstream)
+    //    interpreter.attachDownstreamBoundary(connections(length), downstream)
+    //    interpreter.init(null)
   }
 
   init()

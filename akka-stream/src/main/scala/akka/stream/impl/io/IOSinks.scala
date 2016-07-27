@@ -8,7 +8,6 @@ import java.nio.file.{ Path, StandardOpenOption }
 
 import akka.stream._
 import akka.stream.impl.SinkModule
-import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.ActorAttributes.Dispatcher
 import akka.util.ByteString
@@ -40,7 +39,7 @@ private[akka] final class FileSink(f: Path, options: Set[StandardOpenOption], va
   override protected def newInstance(shape: SinkShape[ByteString]): SinkModule[ByteString, Future[IOResult]] =
     new FileSink(f, options, attributes, shape)
 
-  override def withAttributes(attr: Attributes): Module =
+  override def withAttributes(attr: Attributes): SinkModule[ByteString, Future[IOResult]] =
     new FileSink(f, options, attr, amendShape(attr))
 }
 
@@ -67,6 +66,6 @@ private[akka] final class OutputStreamSink(createOutput: () ⇒ OutputStream, va
   override protected def newInstance(shape: SinkShape[ByteString]): SinkModule[ByteString, Future[IOResult]] =
     new OutputStreamSink(createOutput, attributes, shape, autoFlush)
 
-  override def withAttributes(attr: Attributes): Module =
+  override def withAttributes(attr: Attributes): SinkModule[ByteString, Future[IOResult]] =
     new OutputStreamSink(createOutput, attr, amendShape(attr), autoFlush)
 }

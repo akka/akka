@@ -7,7 +7,7 @@ import java.nio.file.{ Files, Path, StandardOpenOption }
 
 import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
-import akka.stream.impl.ActorMaterializerImpl
+import akka.stream.impl.PhasedFusingActorMaterializer
 import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.scaladsl.{ FileIO, Sink, Source }
@@ -109,7 +109,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
         try {
           Source.fromIterator(() ⇒ Iterator.continually(TestByteStrings.head)).runWith(FileIO.toPath(f))(materializer)
 
-          materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+          materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
           val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSink").get
           assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
         } finally shutdown(sys)
@@ -130,7 +130,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
             .withAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher"))
             .run()(materializer)
 
-          materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+          materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
           val ref = expectMsgType[Children].children.find(_.path.toString contains "File").get
           assertDispatcher(ref, "akka.actor.default-dispatcher")
         } finally shutdown(sys)

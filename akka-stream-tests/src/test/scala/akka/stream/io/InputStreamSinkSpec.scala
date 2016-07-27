@@ -5,20 +5,23 @@ package akka.stream.io
 
 import java.io.{ IOException, InputStream }
 import java.util.concurrent.TimeoutException
+
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.Attributes.inputBuffer
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.io.InputStreamSinkStage
-import akka.stream.impl.{ ActorMaterializerImpl, StreamSupervisor }
+import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.scaladsl.{ Keep, Source, StreamConverters }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.testkit.{ StreamSpec, GraphStageMessages, TestSinkStage }
+import akka.stream.testkit.{ GraphStageMessages, StreamSpec, TestSinkStage }
 import akka.testkit.TestProbe
 import akka.util.ByteString
+
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
+
 import scala.concurrent.{ Await, Future }
 import scala.util.control.NoStackTrace
 
@@ -203,7 +206,7 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       val materializer = ActorMaterializer()(sys)
       try {
         TestSource.probe[ByteString].runWith(StreamConverters.asInputStream())(materializer)
-        materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+        materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "inputStreamSink").get
         assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
       } finally shutdown(sys)

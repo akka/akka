@@ -128,50 +128,50 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none).named("name")
 
-      s.module.attributes.getFirst[Name] shouldEqual Some(Name("name"))
-      s.module.attributes.getFirst[AsyncBoundary.type] shouldEqual (Some(AsyncBoundary))
+      s.traversalBuilder.attributes.getFirst[Name] shouldEqual Some(Name("name"))
+      s.traversalBuilder.attributes.getFirst[AsyncBoundary.type] shouldEqual (Some(AsyncBoundary))
     }
 
     "given one attribute of a class should correctly get it as first attribute with default value" in {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none).named("name")
 
-      s.module.attributes.getFirst[Name](Name("default")) shouldEqual Name("name")
+      s.traversalBuilder.attributes.getFirst[Name](Name("default")) shouldEqual Name("name")
     }
 
     "given one attribute of a class should correctly get it as last attribute with default value" in {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none).named("name")
 
-      s.module.attributes.get[Name](Name("default")) shouldEqual Name("name")
+      s.traversalBuilder.attributes.get[Name](Name("default")) shouldEqual Name("name")
     }
 
     "given no attributes of a class when getting first attribute with default value should get default value" in {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none)
 
-      s.module.attributes.getFirst[Name](Name("default")) shouldEqual Name("default")
+      s.traversalBuilder.attributes.getFirst[Name](Name("default")) shouldEqual Name("default")
     }
 
     "given no attributes of a class when getting last attribute with default value should get default value" in {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none)
 
-      s.module.attributes.get[Name](Name("default")) shouldEqual Name("default")
+      s.traversalBuilder.attributes.get[Name](Name("default")) shouldEqual Name("default")
     }
 
     "given multiple attributes of a class when getting first attribute with default value should get first attribute" in {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none).named("name").named("another_name")
 
-      s.module.attributes.getFirst[Name](Name("default")) shouldEqual Name("name")
+      s.traversalBuilder.attributes.getFirst[Name](Name("default")) shouldEqual Name("name")
     }
 
     "given multiple attributes of a class when getting last attribute with default value should get last attribute" in {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none).named("name").named("another_name")
 
-      s.module.attributes.get[Name](Name("default")) shouldEqual Name("another_name")
+      s.traversalBuilder.attributes.get[Name](Name("default")) shouldEqual Name("another_name")
     }
 
     "support contramap" in {

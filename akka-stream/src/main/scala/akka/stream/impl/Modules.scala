@@ -8,6 +8,7 @@ import akka.actor._
 import akka.stream._
 import akka.stream.impl.StreamLayout.AtomicModule
 import org.reactivestreams._
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.Promise
 import akka.event.Logging
@@ -15,29 +16,30 @@ import akka.event.Logging
 /**
  * INTERNAL API
  */
-abstract class SourceModule[+Out, +Mat](val shape: SourceShape[Out]) extends AtomicModule {
+abstract class SourceModule[+Out, +Mat](val shape: SourceShape[Out]) extends AtomicModule[SourceShape[Out], Mat] {
 
   protected def label: String = Logging.simpleName(this)
   final override def toString: String = f"$label [${System.identityHashCode(this)}%08x]"
 
   def create(context: MaterializationContext): (Publisher[Out] @uncheckedVariance, Mat)
 
-  override def replaceShape(s: Shape): AtomicModule =
-    if (s != shape) throw new UnsupportedOperationException("cannot replace the shape of a Source, you need to wrap it in a Graph for that")
-    else this
-
-  // This is okay since the only caller of this method is right below.
+  // TODO: Remove this, no longer needed?
   protected def newInstance(shape: SourceShape[Out] @uncheckedVariance): SourceModule[Out, Mat]
 
-  override def carbonCopy: AtomicModule = newInstance(SourceShape(shape.out.carbonCopy()))
+  // TODO: Amendshape changed the name of ports. Is it needed anymore?
+
+  def attributes: Attributes
 
   protected def amendShape(attr: Attributes): SourceShape[Out] = {
-    val thisN = attributes.nameOrDefault(null)
+    val thisN = traversalBuilder.attributes.nameOrDefault(null)
     val thatN = attr.nameOrDefault(null)
 
     if ((thatN eq null) || thisN == thatN) shape
     else shape.copy(out = Outlet(thatN + ".out"))
   }
+
+  override private[stream] def traversalBuilder = LinearTraversalBuilder.fromModule(this, attributes).makeIsland(SourceModuleIslandTag)
+
 }
 
 /**
@@ -53,7 +55,7 @@ final class SubscriberSource[Out](val attributes: Attributes, shape: SourceShape
   }
 
   override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Subscriber[Out]] = new SubscriberSource[Out](attributes, shape)
-  override def withAttributes(attr: Attributes): AtomicModule = new SubscriberSource[Out](attr, amendShape(attr))
+  override def withAttributes(attr: Attributes): SourceModule[Out, Subscriber[Out]] = new SubscriberSource[Out](attr, amendShape(attr))
 }
 
 /**
@@ -70,7 +72,7 @@ final class PublisherSource[Out](p: Publisher[Out], val attributes: Attributes, 
   override def create(context: MaterializationContext) = (p, NotUsed)
 
   override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, NotUsed] = new PublisherSource[Out](p, attributes, shape)
-  override def withAttributes(attr: Attributes): AtomicModule = new PublisherSource[Out](p, attr, amendShape(attr))
+  override def withAttributes(attr: Attributes): SourceModule[Out, NotUsed] = new PublisherSource[Out](p, attr, amendShape(attr))
 }
 
 /**
@@ -83,7 +85,7 @@ final class MaybeSource[Out](val attributes: Attributes, shape: SourceShape[Out]
     new MaybePublisher[Out](p, attributes.nameOrDefault("MaybeSource"))(context.materializer.executionContext) → p
   }
   override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Promise[Option[Out]]] = new MaybeSource[Out](attributes, shape)
-  override def withAttributes(attr: Attributes): AtomicModule = new MaybeSource(attr, amendShape(attr))
+  override def withAttributes(attr: Attributes): SourceModule[Out, Promise[Option[Out]]] = new MaybeSource(attr, amendShape(attr))
 }
 
 /**
@@ -100,7 +102,7 @@ final class ActorPublisherSource[Out](props: Props, val attributes: Attributes, 
 
   override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, ActorRef] =
     new ActorPublisherSource[Out](props, attributes, shape)
-  override def withAttributes(attr: Attributes): AtomicModule = new ActorPublisherSource(props, attr, amendShape(attr))
+  override def withAttributes(attr: Attributes): SourceModule[Out, ActorRef] = new ActorPublisherSource(props, attr, amendShape(attr))
 }
 
 /**
@@ -120,6 +122,6 @@ final class ActorRefSource[Out](
 
   override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, ActorRef] =
     new ActorRefSource[Out](bufferSize, overflowStrategy, attributes, shape)
-  override def withAttributes(attr: Attributes): AtomicModule =
+  override def withAttributes(attr: Attributes): SourceModule[Out, ActorRef] =
     new ActorRefSource(bufferSize, overflowStrategy, attr, amendShape(attr))
 }
