@@ -123,7 +123,7 @@ class SecurityDirectivesSpec extends RoutingSpec {
   }
   "authentication directives" should {
     "properly stack" in {
-      val otherChallenge = HttpChallenge("MyAuth", "MyRealm2")
+      val otherChallenge = HttpChallenge("MyAuth", Some("MyRealm2"))
       val otherAuth: Directive1[String] = authenticateOrRejectWithChallenge { (cred: Option[HttpCredentials]) ⇒
         Future.successful(Left(otherChallenge))
       }
