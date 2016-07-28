@@ -111,6 +111,11 @@ object WebSocketClientBlueprint {
           override def onPull(): Unit = pull(in)
 
           setHandlers(in, out, this)
+
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            result.tryFailure(new RuntimeException("Connection failed.", ex))
+            super.onUpstreamFailure(ex)
+          }
         }
 
       override def toString = "UpgradeStage"
