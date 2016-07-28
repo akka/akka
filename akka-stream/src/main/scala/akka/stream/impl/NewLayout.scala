@@ -45,22 +45,26 @@ object NewLayout {
     override def concat(that: Traversal): Traversal = that
   }
 
+  private def initShape(shape: Shape): Unit = {
+    // Initialize port IDs
+    val inIter = shape.inlets.iterator
+    var i = 0
+    while (inIter.hasNext) {
+      inIter.next.id = i
+      i += 1
+    }
+
+    val outIter = shape.outlets.iterator
+    i = 0
+    while (outIter.hasNext) {
+      outIter.next.id = i
+      i += 1
+    }
+  }
+
   object TraversalBuilder {
     def atomic(module: AtomicModule): TraversalBuilder = {
-      // Initialize port IDs
-      val inIter = module.shape.inlets.iterator
-      var i = 0
-      while (inIter.hasNext) {
-        inIter.next.id = i
-        i += 1
-      }
-
-      val outIter = module.shape.outlets.iterator
-      i = 0
-      while (outIter.hasNext) {
-        outIter.next.id = i
-        i += 1
-      }
+      initShape(module.shape)
 
       if (module.outPorts.isEmpty) {
         CompletedTraversalBuilder(
