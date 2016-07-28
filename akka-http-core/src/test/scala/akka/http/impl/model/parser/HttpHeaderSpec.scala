@@ -373,7 +373,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
     "Proxy-Authenticate" in {
       "Proxy-Authenticate: Basic realm=\"WallyWorld\",attr=\"val>ue\", Fancy realm=\"yeah\"" =!=
-        `Proxy-Authenticate`(HttpChallenge("Basic", "WallyWorld", Map("attr" → "val>ue")), HttpChallenge("Fancy", "yeah"))
+        `Proxy-Authenticate`(HttpChallenge("Basic", Some("WallyWorld"), Map("attr" → "val>ue")), HttpChallenge("Fancy", Some("yeah")))
     }
 
     "Proxy-Authorization" in {
@@ -544,11 +544,13 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     }
 
     "WWW-Authenticate" in {
+      "WWW-Authenticate: Basic" =!=
+        `WWW-Authenticate`(HttpChallenge("Basic", None))
       "WWW-Authenticate: Basic realm=\"WallyWorld\"" =!=
-        `WWW-Authenticate`(HttpChallenge("Basic", "WallyWorld"))
+        `WWW-Authenticate`(HttpChallenge("Basic", Some("WallyWorld")))
       "WWW-Authenticate: BaSiC rEaLm=WallyWorld" =!=
         `WWW-Authenticate`(HttpChallenge("BaSiC", "WallyWorld")).renderedTo("BaSiC realm=\"WallyWorld\"")
-      "WWW-Authenticate: Basic realm=\"foo<bar\"" =!= `WWW-Authenticate`(HttpChallenge("Basic", "foo<bar"))
+      "WWW-Authenticate: Basic realm=\"foo<bar\"" =!= `WWW-Authenticate`(HttpChallenge("Basic", Some("foo<bar")))
       """WWW-Authenticate: Digest
                            realm="testrealm@host.com",
                            qop="auth,auth-int",
@@ -559,9 +561,9 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
           "nonce" → "dcd98b7102dd2f0e8b11d0f600bfb0c093", "opaque" → "5ccc069c403ebaf9f0171e9517f40e41"))).renderedTo(
           "Digest realm=\"testrealm@host.com\",qop=\"auth,auth-int\",nonce=dcd98b7102dd2f0e8b11d0f600bfb0c093,opaque=5ccc069c403ebaf9f0171e9517f40e41")
       "WWW-Authenticate: Basic realm=\"WallyWorld\",attr=\"val>ue\", Fancy realm=\"yeah\"" =!=
-        `WWW-Authenticate`(HttpChallenge("Basic", "WallyWorld", Map("attr" → "val>ue")), HttpChallenge("Fancy", "yeah"))
+        `WWW-Authenticate`(HttpChallenge("Basic", Some("WallyWorld"), Map("attr" → "val>ue")), HttpChallenge("Fancy", Some("yeah")))
       """WWW-Authenticate: Fancy realm="Secure Area",nonce=42""" =!=
-        `WWW-Authenticate`(HttpChallenge("Fancy", "Secure Area", Map("nonce" → "42")))
+        `WWW-Authenticate`(HttpChallenge("Fancy", Some("Secure Area"), Map("nonce" → "42")))
     }
 
     "X-Forwarded-For" in {

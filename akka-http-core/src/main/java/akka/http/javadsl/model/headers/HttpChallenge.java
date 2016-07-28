@@ -5,6 +5,8 @@
 package akka.http.javadsl.model.headers;
 
 import akka.http.impl.util.Util;
+import akka.japi.Option;
+
 
 import java.util.Map;
 
@@ -14,11 +16,28 @@ public abstract class HttpChallenge {
 
     public abstract Map<String, String> getParams();
 
+    /**
+     * @deprecated Use constructor with optional realm parameter instead.
+     */
+    @Deprecated
     public static HttpChallenge create(String scheme, String realm) {
-        return new akka.http.scaladsl.model.headers.HttpChallenge(scheme, realm, Util.emptyMap);
+        return akka.http.scaladsl.model.headers.HttpChallenge.apply(scheme, scala.Option.apply(realm), Util.emptyMap);
     }
+
+    /**
+     * @deprecated Use constructor with optional realm parameter instead.
+     */
+    @Deprecated
     public static HttpChallenge create(String scheme, String realm, Map<String, String> params) {
-        return new akka.http.scaladsl.model.headers.HttpChallenge(scheme, realm, Util.convertMapToScala(params));
+        return akka.http.scaladsl.model.headers.HttpChallenge.apply(scheme, scala.Option.apply(realm), Util.convertMapToScala(params));
+    }
+
+    public static HttpChallenge create(String scheme, Option<String> realm) {
+        return akka.http.scaladsl.model.headers.HttpChallenge.apply(scheme, realm.asScala(), Util.emptyMap);
+    }
+
+    public static HttpChallenge create(String scheme, Option<String> realm, Map<String, String> params) {
+        return akka.http.scaladsl.model.headers.HttpChallenge.apply(scheme, realm.asScala(), Util.convertMapToScala(params));
     }
 
     public static HttpChallenge createBasic(String realm) {

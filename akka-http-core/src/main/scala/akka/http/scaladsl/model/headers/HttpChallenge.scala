@@ -13,13 +13,24 @@ final case class HttpChallenge(scheme: String, realm: String,
                                params: Map[String, String] = Map.empty) extends jm.headers.HttpChallenge with ValueRenderable {
 
   def render[R <: Rendering](r: R): r.type = {
-    r ~~ scheme ~~ " realm=" ~~#! realm
+    r ~~ scheme
+    if (realm != null) r ~~ " realm=" ~~#! realm
     if (params.nonEmpty) params.foreach { case (k, v) ⇒ r ~~ ',' ~~ k ~~ '=' ~~# v }
     r
   }
 
   /** Java API */
   def getParams: util.Map[String, String] = params.asJava
+}
+
+// FIXME: AbstractFunction3 required for bin compat. remove in Akka 3.0 and change realm in case class to option #20786
+object HttpChallenge extends scala.runtime.AbstractFunction3[String, String, Map[String, String], HttpChallenge] {
+
+  def apply(scheme: String, realm: Option[String]): HttpChallenge =
+    HttpChallenge(scheme, realm.orNull, Map.empty[String, String])
+
+  def apply(scheme: String, realm: Option[String], params: Map[String, String]): HttpChallenge =
+    HttpChallenge(scheme, realm.orNull, params)
 }
 
 object HttpChallenges {
