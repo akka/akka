@@ -939,7 +939,7 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.Deployer.lookup"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.WildcardTree.apply"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.WildcardTree.find"),
-        
+
         // #20942 ClusterSingleton
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.singleton.ClusterSingletonManager.addRemoved"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.singleton.ClusterSingletonManager.selfAddressOption")
