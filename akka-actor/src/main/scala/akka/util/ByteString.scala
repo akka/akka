@@ -382,7 +382,7 @@ object ByteString {
       } else throw new IndexOutOfBoundsException(idx.toString)
     }
 
-    // Avoid `iterator` in performance sensitive code, call ops directly on ByteString instead
+    /** Avoid `iterator` in performance sensitive code, call ops directly on ByteString instead */
     override def iterator: ByteIterator.MultiByteArrayIterator =
       ByteIterator.MultiByteArrayIterator(bytestrings.toStream map { _.iterator })
 
