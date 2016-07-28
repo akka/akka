@@ -20,11 +20,14 @@ import org.scalatest.concurrent.Eventually
 import java.net.InetSocketAddress
 
 import akka.Done
+import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
 import akka.util.ByteString
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.{ AkkaSpec, EventFilter }
+
+import scala.util.{ Failure, Success }
 
 class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.fuzzing-mode=off")
   with Eventually {
@@ -194,6 +197,21 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
       binding.unbind()
     }
 
+  }
+
+  "A websocket client" should {
+    "fail the materialized future if the request fails" in {
+      val flow = Http().webSocketClientFlow(
+        WebSocketRequest("ws://127.0.0.1:65535/no/server/here"),
+        settings = ClientConnectionSettings(system).withConnectingTimeout(250.millis))
+
+      val future = Source.maybe[Message].viaMat(flow)(Keep.right).toMat(Sink.ignore)(Keep.left).run()
+      import system.dispatcher
+      whenReady(future.map(r ⇒ Success(r)).recover { case ex ⇒ Failure(ex) }) { resTry ⇒
+        resTry.isFailure should ===(true)
+        resTry.failed.get.getMessage should ===("Connection failed.")
+      }
+    }
   }
 
 }
