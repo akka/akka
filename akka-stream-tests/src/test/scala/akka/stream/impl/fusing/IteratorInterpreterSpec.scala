@@ -3,13 +3,13 @@
  */
 package akka.stream.impl.fusing
 
-import akka.testkit.AkkaSpec
+import akka.stream.testkit.StreamSpec
 import akka.util.ByteString
 import akka.stream.stage._
 import akka.stream.{ Attributes, Supervision }
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 
-class IteratorInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
+class IteratorInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
   import Supervision.stoppingDecider
 
   "IteratorInterpreter" must {

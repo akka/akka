@@ -8,15 +8,15 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.stream.ActorMaterializer
 import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
+import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils._
-import akka.testkit.AkkaSpec
 import akka.testkit.{ TestLatch, TestProbe }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-class SinkForeachParallelSpec extends AkkaSpec {
+class SinkForeachParallelSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 

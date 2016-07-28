@@ -6,11 +6,9 @@ package akka.stream.scaladsl
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.{ TestSource, TestSink }
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.duration._
-import akka.testkit.AkkaSpec
 
-class FlowIntersperseSpec extends AkkaSpec {
+class FlowIntersperseSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)

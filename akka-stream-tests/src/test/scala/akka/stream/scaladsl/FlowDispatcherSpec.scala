@@ -3,12 +3,12 @@
  */
 package akka.stream.scaladsl
 
+import akka.stream.testkit.StreamSpec
 import akka.testkit.TestProbe
-import akka.testkit.AkkaSpec
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 
-class FlowDispatcherSpec extends AkkaSpec(s"my-dispatcher = $${akka.test.stream-dispatcher}") {
+class FlowDispatcherSpec extends StreamSpec(s"my-dispatcher = $${akka.test.stream-dispatcher}") {
 
   val defaultSettings = ActorMaterializerSettings(system)
 

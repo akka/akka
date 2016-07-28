@@ -5,12 +5,12 @@ package akka.stream.impl.fusing
 
 import akka.stream.impl.ConstantFun
 import akka.stream.stage._
-import akka.testkit.AkkaSpec
+import akka.stream.testkit.StreamSpec
 import akka.testkit.EventFilter
 
 import akka.stream._
 
-class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
+class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
   import Supervision.stoppingDecider
 
   /*

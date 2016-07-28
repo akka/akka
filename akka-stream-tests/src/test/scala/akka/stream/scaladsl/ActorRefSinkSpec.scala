@@ -10,7 +10,6 @@ import akka.stream.testkit.scaladsl._
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
-import akka.testkit.AkkaSpec
 
 object ActorRefSinkSpec {
   case class Fw(ref: ActorRef) extends Actor {
@@ -20,7 +19,7 @@ object ActorRefSinkSpec {
   }
 }
 
-class ActorRefSinkSpec extends AkkaSpec {
+class ActorRefSinkSpec extends StreamSpec {
   import ActorRefSinkSpec._
   implicit val materializer = ActorMaterializer()
 

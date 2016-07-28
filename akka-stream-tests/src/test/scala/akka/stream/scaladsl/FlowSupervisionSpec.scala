@@ -13,9 +13,8 @@ import akka.stream.Supervision
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.ActorAttributes
 import akka.NotUsed
-import akka.testkit.AkkaSpec
 
-class FlowSupervisionSpec extends AkkaSpec {
+class FlowSupervisionSpec extends StreamSpec {
   import ActorAttributes.supervisionStrategy
 
   implicit val materializer = ActorMaterializer()(system)

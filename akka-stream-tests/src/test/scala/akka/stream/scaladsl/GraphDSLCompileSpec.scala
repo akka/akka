@@ -6,14 +6,13 @@ package akka.stream.scaladsl
 import akka.stream.{ ClosedShape, ActorMaterializer, OverflowStrategy }
 import akka.stream.testkit._
 import akka.stream.stage._
-import akka.testkit.AkkaSpec
 
 object GraphDSLCompileSpec {
   class Fruit
   class Apple extends Fruit
 }
 
-class GraphDSLCompileSpec extends AkkaSpec {
+class GraphDSLCompileSpec extends StreamSpec {
   import GraphDSLCompileSpec._
 
   implicit val materializer = ActorMaterializer()

@@ -7,9 +7,8 @@ import akka.stream.{ SourceShape, ClosedShape, ActorMaterializer, ActorMateriali
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._
-import akka.testkit.AkkaSpec
 
-class GraphBalanceSpec extends AkkaSpec {
+class GraphBalanceSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)

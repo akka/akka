@@ -3,16 +3,13 @@
  */
 package akka.stream.scaladsl
 
-import org.scalactic.ConversionCheckedTripleEquals
-import org.scalatest.concurrent.ScalaFutures
-import akka.testkit.AkkaSpec
 import akka.stream._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.Utils
+import akka.stream.testkit.{ StreamSpec, Utils }
 
-class FlowDetacherSpec extends AkkaSpec {
+class FlowDetacherSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 

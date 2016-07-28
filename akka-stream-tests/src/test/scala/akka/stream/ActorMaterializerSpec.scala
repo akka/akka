@@ -3,12 +3,13 @@ package akka.stream
 import akka.actor.{ ActorSystem, Props }
 import akka.stream.impl.{ StreamSupervisor, ActorMaterializerImpl }
 import akka.stream.scaladsl.{ Sink, Source }
-import akka.testkit.{ AkkaSpec, TestActor, ImplicitSender }
+import akka.stream.testkit.StreamSpec
+import akka.testkit.{ TestActor, ImplicitSender }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class ActorMaterializerSpec extends AkkaSpec with ImplicitSender {
+class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
 
   "ActorMaterializer" must {
 

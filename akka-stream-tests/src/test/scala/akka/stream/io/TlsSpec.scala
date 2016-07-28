@@ -21,7 +21,7 @@ import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.testkit.{ AkkaSpec, EventFilter }
+import akka.testkit.EventFilter
 import akka.util.ByteString
 import javax.net.ssl._
 
@@ -83,7 +83,7 @@ object TlsSpec {
 
 }
 
-class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off") {
+class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off") {
   import TlsSpec._
 
   import system.dispatcher

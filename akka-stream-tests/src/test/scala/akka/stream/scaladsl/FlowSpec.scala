@@ -23,7 +23,6 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.stream.impl.fusing.GraphInterpreterShell
-import akka.testkit.AkkaSpec
 
 object FlowSpec {
   class Fruit
@@ -32,7 +31,7 @@ object FlowSpec {
 
 }
 
-class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
+class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
   import FlowSpec._
 
   val settings = ActorMaterializerSettings(system)

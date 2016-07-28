@@ -8,16 +8,15 @@ import akka.event.{ DummyClassForStringSources, Logging }
 import akka.stream.ActorAttributes._
 import akka.stream.Attributes.LogLevels
 import akka.stream.Supervision._
-import akka.stream.testkit.ScriptedTest
+import akka.stream.testkit.{ StreamSpec, ScriptedTest }
 import akka.stream._
-import akka.testkit.TestProbe
+import akka.testkit.{ AkkaSpec, TestProbe }
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.util.control.NoStackTrace
-import akka.testkit.AkkaSpec
 
-class FlowLogSpec extends AkkaSpec("akka.loglevel = DEBUG") with ScriptedTest {
+class FlowLogSpec extends StreamSpec("akka.loglevel = DEBUG") with ScriptedTest {
 
   implicit val mat: Materializer = ActorMaterializer()
 

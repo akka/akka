@@ -5,12 +5,12 @@ package akka.stream.impl
 
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.testkit.AkkaSpec
+import akka.stream.testkit.StreamSpec
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
 import scala.concurrent.duration._
 
-class StreamLayoutSpec extends AkkaSpec {
+class StreamLayoutSpec extends StreamSpec {
   import StreamLayout._
 
   def testAtomic(inPortCount: Int, outPortCount: Int): Module = new AtomicModule {

@@ -14,10 +14,9 @@ import akka.stream._
 import akka.stream.testkit._
 import akka.NotUsed
 import akka.testkit.EventFilter
-import akka.testkit.AkkaSpec
 import scala.collection.immutable
 
-class SourceSpec extends AkkaSpec with DefaultTimeout {
+class SourceSpec extends StreamSpec with DefaultTimeout {
 
   implicit val materializer = ActorMaterializer()
   implicit val config = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))

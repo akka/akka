@@ -10,15 +10,14 @@ import akka.stream.impl.ReactiveStreamsCompliance.SpecViolation
 import akka.stream.scaladsl._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.{ TestPublisher, TestSubscriber }
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.testkit.EventFilter
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.testkit.AkkaSpec
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
-class ActorGraphInterpreterSpec extends AkkaSpec {
+class ActorGraphInterpreterSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
 
   "ActorGraphInterpreter" must {

@@ -9,13 +9,13 @@ import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import akka.testkit.{ AkkaSpec, TestProbe }
+import akka.testkit.TestProbe
 import akka.util.ByteString
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class OutputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
+class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)
