@@ -85,6 +85,8 @@ The TL;DR; of the above very precise workflow version is:
 4. Keep polishing it until received enough LGTM
 5. Profit!
 
+Note that the Akka sbt project is large, so `sbt` needs to be run with lots of heap (1-2 Gb). This can be specified using a command line argument `sbt -mem 2048` or in the environment variable `SBT_OPTS` but then as a regular JVM memory flag, for example `SBT_OPTS=-Xmx2G`, on some platforms you can also edit the global defaults for sbt in `/usr/local/etc/sbtopts`.
+
 ## The `validatePullRequest` task
 
 The Akka build includes a special task called `validatePullRequest` which investigates the changes made as well as dirty
