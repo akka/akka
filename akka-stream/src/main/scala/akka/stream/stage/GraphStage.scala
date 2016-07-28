@@ -1309,14 +1309,12 @@ private[akka] trait CallbackWrapper[T] extends AsyncCallback[T] {
     callbackState.get() match {
       case Initialized(cb)          ⇒ cb(arg)
       case list @ NotInitialized(l) ⇒ callbackState.compareAndSet(list, NotInitialized(arg :: l))
-      case Stopped(cb) ⇒
-        lock.unlock()
-        cb(arg)
+      case Stopped(cb)              ⇒ cb(arg)
     }
   }
 
   private[this] def locked(body: ⇒ Unit): Unit = {
     lock.lock()
-    try body finally if (lock.isLocked) lock.unlock()
+    try body finally lock.unlock()
   }
 }
