@@ -45,44 +45,9 @@ object NewLayout {
     override def concat(that: Traversal): Traversal = that
   }
 
-  trait TraversalBuilder {
-
-    def add(submodule: TraversalBuilder, shape: Shape): TraversalBuilder
-
-    def wire(out: OutPort, in: InPort): TraversalBuilder
-
-    def offsetOf(out: OutPort): Int
-
-    def offsetOf(in: InPort): Int
-
-    def assign(out: OutPort, relativeSlot: Int): TraversalBuilder
-
-    final def isComplete: Boolean = unwiredOuts == 0
-
-    def inSlots: Int
-    def outSlots: Int
-
-    def traversal: Traversal
-
-    def unwiredOuts: Int
-  }
-
-  final case class AtomicTraversalBuilder(module: AtomicModule, outToSlot: Array[Int], unwiredOuts: Int) extends TraversalBuilder {
-
-    override val traversal: Traversal = MaterializeAtomic(module, outToSlot)
-
-    override def add(submodule: TraversalBuilder, shape: Shape): TraversalBuilder = {
-      CompositeTraversalBuilder().add(this, module.shape).add(submodule, shape)
-    }
-
-    override val inSlots: Int = module.shape.inlets.size
-    override val outSlots: Int = module.shape.outlets.size
-
-    override def offsetOf(out: OutPort): Int = 0
-    override def offsetOf(in: InPort): Int = in.id
-
-    // Initialize port IDs
-    {
+  object TraversalBuilder {
+    def atomic(module: AtomicModule): TraversalBuilder = {
+      // Initialize port IDs
       val inIter = module.shape.inlets.iterator
       var i = 0
       while (inIter.hasNext) {
@@ -96,17 +61,100 @@ object NewLayout {
         outIter.next.id = i
         i += 1
       }
+
+      if (module.outPorts.isEmpty) {
+        CompletedTraversalBuilder(
+          traversal = Some(MaterializeAtomic(module, Array.ofDim[Int](module.shape.outlets.size))),
+          inSlots = module.shape.inlets.size,
+          inToOffset = module.shape.inlets.map(in ⇒ in → in.id).toMap
+        )
+      } else {
+        AtomicTraversalBuilder(
+          module,
+          Array.ofDim[Int](module.shape.outlets.size),
+          module.shape.outlets.size
+        )
+      }
+    }
+  }
+
+  trait TraversalBuilder {
+
+    def add(submodule: TraversalBuilder, shape: Shape): TraversalBuilder
+
+    def wire(out: OutPort, in: InPort): TraversalBuilder
+
+    def offsetOfModule(out: OutPort): Int
+
+    def offsetOf(in: InPort): Int
+
+    def assign(out: OutPort, relativeSlot: Int): TraversalBuilder
+
+    def isComplete: Boolean
+
+    def inSlots: Int
+
+    def traversal: Option[Traversal] = None
+
+    def unwiredOuts: Int
+  }
+
+  final case class CompletedTraversalBuilder(override val traversal: Some[Traversal], inSlots: Int, inToOffset: Map[InPort, Int]) extends TraversalBuilder {
+
+    override def add(submodule: TraversalBuilder, shape: Shape): TraversalBuilder = {
+      val key = new BuilderKey
+      CompositeTraversalBuilder(
+        reverseTraversal = key :: Nil,
+        inSlots = inSlots,
+        inOffsets = inToOffset,
+        pendingBuilders = Map(key → this)
+      ).add(submodule, shape)
     }
 
+    override def offsetOf(in: InPort): Int = inToOffset(in)
+
+    override def isComplete: Boolean = true
+
+    override def wire(out: OutPort, in: InPort): TraversalBuilder =
+      throw new UnsupportedOperationException("Cannot wire ports in a completed builder.")
+
+    override def unwiredOuts: Int = 0
+
+    override def assign(out: OutPort, relativeSlot: Int): TraversalBuilder =
+      throw new UnsupportedOperationException("Cannot assign ports to slots in a completed builder.")
+
+    override def offsetOfModule(out: OutPort): Int =
+      throw new UnsupportedOperationException("Cannot look up offsets in a completed builder.")
+
+  }
+
+  final case class AtomicTraversalBuilder(module: AtomicModule, outToSlot: Array[Int], unwiredOuts: Int) extends TraversalBuilder {
+
+    override def add(submodule: TraversalBuilder, shape: Shape): TraversalBuilder = {
+      CompositeTraversalBuilder().add(this, module.shape).add(submodule, shape)
+    }
+
+    override val inSlots: Int = module.shape.inlets.size
+
+    override def offsetOfModule(out: OutPort): Int = 0
+    override def offsetOf(in: InPort): Int = in.id
+    override def isComplete: Boolean = false
+
     override def wire(out: OutPort, in: InPort): TraversalBuilder = {
-      // TODO: Check that ports really belong
-      assign(out, offsetOf(in) - offsetOf(out))
+      assign(out, offsetOf(in) - offsetOfModule(out))
     }
 
     override def assign(out: OutPort, relativeSlot: Int): TraversalBuilder = {
       val newOutToSlot = java.util.Arrays.copyOf(outToSlot, outToSlot.length)
       newOutToSlot(out.id) = relativeSlot
-      copy(outToSlot = newOutToSlot, unwiredOuts = unwiredOuts - 1)
+      val newUnwiredOuts = unwiredOuts - 1
+      if (newUnwiredOuts == 0) {
+        CompletedTraversalBuilder(
+          traversal = Some(MaterializeAtomic(module, newOutToSlot)),
+          inSlots = inSlots,
+          inToOffset = module.shape.inlets.map(in ⇒ in → in.id).toMap
+        )
+      } else copy(outToSlot = newOutToSlot, unwiredOuts = newUnwiredOuts)
     }
 
   }
@@ -118,7 +166,6 @@ object NewLayout {
   final case class CompositeTraversalBuilder(
     reverseTraversal:   List[BuilderKey]                  = Nil,
     inSlots:            Int                               = 0,
-    outSlots:           Int                               = 0,
     inOffsets:          Map[InPort, Int]                  = Map.empty,
     inBaseOffsetForOut: Map[OutPort, Int]                 = Map.empty,
     pendingBuilders:    Map[BuilderKey, TraversalBuilder] = Map.empty,
@@ -131,7 +178,6 @@ object NewLayout {
          |CompositeTraversal(
          |  reverseTraversal = $reverseTraversal
          |  inSlots = $inSlots
-         |  outSlots = $outSlots
          |  inOffsets = $inOffsets
          |  inBaseOffsetForOut = $inBaseOffsetForOut
          |  outOwners = $outOwners
@@ -139,24 +185,24 @@ object NewLayout {
          |)
        """.stripMargin
 
-    override def offsetOf(out: OutPort): Int = inBaseOffsetForOut(out)
+    override def offsetOfModule(out: OutPort): Int = inBaseOffsetForOut(out)
     override def offsetOf(in: InPort): Int = inOffsets(in)
+    override def isComplete = false
 
-    private[this] var _cachedTraversal: Traversal = _
-
-    // Only call if module is completed!!
-    override def traversal: Traversal = {
-      if (_cachedTraversal ne null) _cachedTraversal
-      else {
-        var result: Traversal = EmptyTraversal
+    def completeIfPossible: TraversalBuilder = {
+      if (unwiredOuts == 0) {
+        var traversal: Traversal = EmptyTraversal
         var remaining = reverseTraversal
         while (remaining.nonEmpty) {
-          result = pendingBuilders(remaining.head).traversal.concat(result)
+          traversal = pendingBuilders(remaining.head).traversal.get.concat(traversal)
           remaining = remaining.tail
         }
-        _cachedTraversal = result
-        result
-      }
+        CompletedTraversalBuilder(
+          traversal = Some(traversal),
+          inSlots,
+          inOffsets
+        )
+      } else this
     }
 
     override def assign(out: OutPort, relativeSlot: Int): TraversalBuilder = {
@@ -165,7 +211,7 @@ object NewLayout {
       val submodule = pendingBuilders(builderKey)
 
       val result = submodule.assign(out.mappedTo, relativeSlot)
-      if (result.isComplete) {
+      val wired = if (result.isComplete) {
         // Remove the builder (and associated data), and append its traversal
 
         copy(
@@ -182,13 +228,15 @@ object NewLayout {
           pendingBuilders = pendingBuilders.updated(builderKey, result)
         )
       }
+
+      wired.completeIfPossible
     }
 
     // Requires that a remapped Shape's ports contain the same ID as their target ports!
     def add(submodule: TraversalBuilder, shape: Shape): TraversalBuilder = {
       val builderKey = new BuilderKey
 
-      if (submodule.isComplete) {
+      val added = if (submodule.isComplete) {
         var newInOffsets = inOffsets
         val inIterator = shape.inlets.iterator
         while (inIterator.hasNext) {
@@ -200,7 +248,6 @@ object NewLayout {
         copy(
           reverseTraversal = builderKey :: reverseTraversal,
           inSlots = inSlots + submodule.inSlots,
-          outSlots = outSlots + submodule.outSlots,
           pendingBuilders = pendingBuilders.updated(builderKey, submodule),
           inOffsets = newInOffsets
         )
@@ -219,14 +266,13 @@ object NewLayout {
         val outIterator = shape.outlets.iterator
         while (outIterator.hasNext) {
           val out = outIterator.next()
-          newOutOffsets = newOutOffsets.updated(out, inSlots + submodule.offsetOf(out.mappedTo))
+          newOutOffsets = newOutOffsets.updated(out, inSlots + submodule.offsetOfModule(out.mappedTo))
           newOutOwners = newOutOwners.updated(out, builderKey)
         }
 
         copy(
           reverseTraversal = builderKey :: reverseTraversal,
           inSlots = inSlots + submodule.inSlots,
-          outSlots = outSlots + submodule.outSlots,
           inOffsets = newInOffsets,
           inBaseOffsetForOut = newOutOffsets,
           outOwners = newOutOwners,
@@ -234,10 +280,12 @@ object NewLayout {
           unwiredOuts = unwiredOuts + submodule.unwiredOuts
         )
       }
+
+      added.completeIfPossible
     }
 
     def wire(out: OutPort, in: InPort): TraversalBuilder = {
-      copy(inOffsets = inOffsets - in).assign(out, offsetOf(in) - offsetOf(out))
+      copy(inOffsets = inOffsets - in).assign(out, offsetOf(in) - offsetOfModule(out))
     }
 
   }

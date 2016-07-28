@@ -25,7 +25,6 @@ class TraversalBuilderSpec extends AkkaSpec {
 
   def testMaterialize(b: TraversalBuilder): MaterializationResult = {
     require(b.isComplete, "Traversal builder must be complete")
-    require(b.inSlots == b.outSlots, "A complete builder must have equal number of in and out slots")
 
     val connections = b.inSlots
     val inlets = Array.ofDim[InPort](connections)
@@ -33,7 +32,7 @@ class TraversalBuilderSpec extends AkkaSpec {
 
     var inOffs = 0
 
-    var current: Traversal = b.traversal
+    var current: Traversal = b.traversal.get
     var traversalStack: List[Traversal] = current :: Nil
 
     while (traversalStack.nonEmpty) {
@@ -98,7 +97,7 @@ class TraversalBuilderSpec extends AkkaSpec {
       val out = Outlet[Any]("testSource.out")
       override val shape: Shape = SourceShape(out)
       override val attributes: Attributes = Attributes.name("testSource")
-      val traversal = AtomicTraversalBuilder(this, Array(0), 1)
+      val traversal = TraversalBuilder.atomic(this)
 
       override def withAttributes(attributes: Attributes): Module = ???
       override def carbonCopy: Module = ???
@@ -110,7 +109,7 @@ class TraversalBuilderSpec extends AkkaSpec {
       val in = Inlet[Any]("testSink.in")
       override val shape: Shape = SinkShape(in)
       override val attributes: Attributes = Attributes.name("testSink")
-      val traversal = AtomicTraversalBuilder(this, Array(), 0)
+      val traversal = TraversalBuilder.atomic(this)
 
       override def withAttributes(attributes: Attributes): Module = ???
       override def carbonCopy: Module = ???
@@ -123,7 +122,7 @@ class TraversalBuilderSpec extends AkkaSpec {
       val out = Outlet[Any](s"testFlow$tag.out")
       override val shape: Shape = FlowShape(in, out)
       override val attributes: Attributes = Attributes.name(s"testFlow$tag")
-      val traversal = AtomicTraversalBuilder(this, Array(0), 1)
+      val traversal = TraversalBuilder.atomic(this)
 
       override def withAttributes(attributes: Attributes): Module = ???
       override def carbonCopy: Module = ???
@@ -139,12 +138,17 @@ class TraversalBuilderSpec extends AkkaSpec {
     // ADD closed shape, (and composite closed shape)
 
     "work with a single Source and Sink" in {
+      println(source.traversal
+        .add(sink.traversal, sink.shape))
+
       val builder =
         source.traversal
           .add(sink.traversal, sink.shape)
           .wire(source.out, sink.in)
 
-      printTraversal(builder.traversal)
+      println(builder)
+
+      printTraversal(builder.traversal.get)
       val mat = testMaterialize(builder)
 
       mat.connections should ===(1)
@@ -162,7 +166,7 @@ class TraversalBuilderSpec extends AkkaSpec {
           .add(nestedBuilder, source.shape)
           .wire(source.out, sink.in)
 
-      printTraversal(builder.traversal)
+      printTraversal(builder.traversal.get)
       val mat = testMaterialize(builder)
 
       mat.connections should ===(1)
@@ -178,7 +182,7 @@ class TraversalBuilderSpec extends AkkaSpec {
         .add(source.traversal, remappedShape)
         .wire(remappedShape.out, sink.in)
 
-      printTraversal(builder.traversal)
+      printTraversal(builder.traversal.get)
       val mat = testMaterialize(builder)
 
       mat.connections should ===(1)
@@ -195,7 +199,7 @@ class TraversalBuilderSpec extends AkkaSpec {
         .wire(flow1.out, flow2.in)
         .wire(flow2.out, sink.in)
 
-      printTraversal(builder.traversal)
+      printTraversal(builder.traversal.get)
       val mat = testMaterialize(builder)
 
       println(mat)
@@ -218,7 +222,7 @@ class TraversalBuilderSpec extends AkkaSpec {
         .wire(flow1.out, flow2.in)
         .wire(source.out, flow1.in)
 
-      printTraversal(builder.traversal)
+      printTraversal(builder.traversal.get)
       val mat = testMaterialize(builder)
 
       println(mat)
@@ -246,7 +250,7 @@ class TraversalBuilderSpec extends AkkaSpec {
         .wire(source.out, flow1.in)
         .wire(flow1.out, flow2.in)
 
-      printTraversal(builder.traversal)
+      printTraversal(builder.traversal.get)
       val mat = testMaterialize(builder)
 
       println(mat)
@@ -273,7 +277,7 @@ class TraversalBuilderSpec extends AkkaSpec {
         .wire(flow1.out, remappedShape.in)
         .wire(remappedShape.out, sink.in)
 
-      printTraversal(builder.traversal)
+      printTraversal(builder.traversal.get)
       val mat = testMaterialize(builder)
 
       println(mat)
@@ -308,7 +312,7 @@ class TraversalBuilderSpec extends AkkaSpec {
         .wire(source.out, flow1.in)
         .wire(flow2.out, sink.in)
 
-      printTraversal(builder.traversal)
+      printTraversal(builder.traversal.get)
       val mat = testMaterialize(builder)
 
       println(mat)
@@ -338,7 +342,7 @@ class TraversalBuilderSpec extends AkkaSpec {
         .wire(source.out, importedFlowShape.in)
         .wire(importedFlowShape.out, sink.in)
 
-      printTraversal(builder.traversal)
+      printTraversal(builder.traversal.get)
       val mat = testMaterialize(builder)
 
       println(mat)
@@ -355,7 +359,7 @@ class TraversalBuilderSpec extends AkkaSpec {
     "work with a Flow wired to self" in {
       val builder = flow1.traversal.wire(flow1.out, flow1.in)
 
-      printTraversal(builder.traversal)
+      printTraversal(builder.traversal.get)
 
       val mat = testMaterialize(builder)
 
