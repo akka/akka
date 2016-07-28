@@ -113,7 +113,7 @@ object WebSocketClientBlueprint {
           setHandlers(in, out, this)
 
           override def onUpstreamFailure(ex: Throwable): Unit = {
-            result.tryFailure(new RuntimeException("Connection failed..", ex))
+            result.tryFailure(new RuntimeException("Connection failed.", ex))
             super.onUpstreamFailure(ex)
           }
         }

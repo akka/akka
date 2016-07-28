@@ -209,7 +209,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
       import system.dispatcher
       whenReady(future.map(r ⇒ Success(r)).recover { case ex ⇒ Failure(ex) }) { resTry ⇒
         resTry.isFailure should ===(true)
-        resTry.failed.get.getMessage should ===("Connection failed..")
+        resTry.failed.get.getMessage should ===("Connection failed.")
       }
     }
   }
