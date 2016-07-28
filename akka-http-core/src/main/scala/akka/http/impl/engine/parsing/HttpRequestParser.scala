@@ -8,7 +8,7 @@ import java.lang.{ StringBuilder ⇒ JStringBuilder }
 
 import scala.annotation.{ switch, tailrec }
 import akka.http.scaladsl.settings.ParserSettings
-import akka.util.ByteString
+import akka.util.{ ByteString, OptionVal }
 import akka.http.impl.engine.ws.Handshake
 import akka.http.impl.model.parser.CharacterClasses
 import akka.http.scaladsl.model._
@@ -160,8 +160,8 @@ private[http] final class HttpRequestParser(
           val allHeaders =
             if (method == HttpMethods.GET) {
               Handshake.Server.websocketUpgrade(headers, hostHeaderPresent) match {
-                case Some(upgrade) ⇒ upgrade :: allHeaders0
-                case None          ⇒ allHeaders0
+                case OptionVal.Some(upgrade) ⇒ upgrade :: allHeaders0
+                case OptionVal.None          ⇒ allHeaders0
               }
             } else allHeaders0
 

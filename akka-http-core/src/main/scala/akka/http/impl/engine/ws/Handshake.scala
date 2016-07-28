@@ -5,6 +5,7 @@
 package akka.http.impl.engine.ws
 
 import java.util.Random
+
 import scala.collection.immutable
 import scala.collection.immutable.Seq
 import scala.reflect.ClassTag
@@ -12,7 +13,8 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.ws.{ Message, UpgradeToWebSocket }
 import akka.http.scaladsl.model._
-import akka.stream.{ Graph, FlowShape }
+import akka.stream.{ FlowShape, Graph }
+import akka.util.OptionVal
 
 /**
  * Server-side implementation of the WebSocket handshake
@@ -62,50 +64,63 @@ private[http] object Handshake {
      *        to speak.  The interpretation of this header field is discussed
      *        in Section 9.1.
      */
-    def websocketUpgrade(headers: List[HttpHeader], hostHeaderPresent: Boolean): Option[UpgradeToWebSocket] = {
-      def find[T <: HttpHeader: ClassTag]: Option[T] =
-        headers.collectFirst {
-          case t: T ⇒ t
+    def websocketUpgrade(headers: List[HttpHeader], hostHeaderPresent: Boolean): OptionVal[UpgradeToWebSocket] = {
+
+      // notes on Headers that re REQUIRE to be present here:
+      // - Host header is validated in general HTTP logic
+      // - Origin header is optional and, if required, should be validated
+      //   on higher levels (routing, application logic)
+      // 
+      // TODO See #18709 Extension support is optional in WS and currently unsupported.
+      // 
+      // these are not needed directly, we verify their presence and correctness only:
+      // - Upgrade
+      // - Connection
+      // - `Sec-WebSocket-Version`
+      def hasAllRequiredWebsocketUpgradeHeaders: Boolean = {
+        // single-pass through the headers list while collecting all needed requirements
+        // this way we avoid scanning the requirements list 3 times (as we would with collect/find)
+        val it = headers.iterator
+        var requirementsMet = 0
+        val targetRequirements = 3
+        while (it.hasNext && (requirementsMet != targetRequirements)) it.next() match {
+          case u: Upgrade                 ⇒ if (u.hasWebSocket) requirementsMet += 1
+          case c: Connection              ⇒ if (c.hasUpgrade) requirementsMet += 1
+          case v: `Sec-WebSocket-Version` ⇒ if (v.hasVersion(CurrentWebSocketVersion)) requirementsMet += 1
+          case _                          ⇒ // continue...
         }
+        requirementsMet == targetRequirements
+      }
 
-      // Host header is validated in general HTTP logic
-      // val host = find[Host]
-      val upgrade = find[Upgrade]
-      val connection = find[Connection]
-      val key = find[`Sec-WebSocket-Key`]
-      val version = find[`Sec-WebSocket-Version`]
-      // Origin header is optional and, if required, should be validated
-      // on higher levels (routing, application logic)
-      // val origin = find[Origin]
-      val protocol = find[`Sec-WebSocket-Protocol`]
-      val clientSupportedSubprotocols = protocol.toList.flatMap(_.protocols)
-      // Extension support is optional in WS and currently unsupported.
-      // TODO See #18709
-      // val extensions = find[`Sec-WebSocket-Extensions`]
+      if (hasAllRequiredWebsocketUpgradeHeaders) {
+        val key = HttpHeader.fastFind(classOf[`Sec-WebSocket-Key`], headers)
+        if (key.isDefined && key.get.isValid) {
+          val protocol = HttpHeader.fastFind(classOf[`Sec-WebSocket-Protocol`], headers)
 
-      if (upgrade.exists(_.hasWebSocket) &&
-        connection.exists(_.hasUpgrade) &&
-        version.exists(_.hasVersion(CurrentWebSocketVersion)) &&
-        key.exists(k ⇒ k.isValid)) {
-
-        val header = new UpgradeToWebSocketLowLevel {
-          def requestedProtocols: Seq[String] = clientSupportedSubprotocols
-
-          def handle(handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]], subprotocol: Option[String]): HttpResponse = {
-            require(
-              subprotocol.forall(chosen ⇒ clientSupportedSubprotocols.contains(chosen)),
-              s"Tried to choose invalid subprotocol '$subprotocol' which wasn't offered by the client: [${requestedProtocols.mkString(", ")}]")
-            buildResponse(key.get, handler, subprotocol)
+          val clientSupportedSubprotocols = protocol match {
+            case OptionVal.Some(p) ⇒ p.protocols
+            case _                 ⇒ Nil
           }
 
-          def handleFrames(handlerFlow: Graph[FlowShape[FrameEvent, FrameEvent], Any], subprotocol: Option[String]): HttpResponse =
-            handle(Left(handlerFlow), subprotocol)
+          val header = new UpgradeToWebSocketLowLevel {
+            def requestedProtocols: Seq[String] = clientSupportedSubprotocols
 
-          override def handleMessages(handlerFlow: Graph[FlowShape[Message, Message], Any], subprotocol: Option[String] = None): HttpResponse =
-            handle(Right(handlerFlow), subprotocol)
-        }
-        Some(header)
-      } else None
+            def handle(handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]], subprotocol: Option[String]): HttpResponse = {
+              require(
+                subprotocol.forall(chosen ⇒ clientSupportedSubprotocols.contains(chosen)),
+                s"Tried to choose invalid subprotocol '$subprotocol' which wasn't offered by the client: [${requestedProtocols.mkString(", ")}]")
+              buildResponse(key.get, handler, subprotocol)
+            }
+
+            def handleFrames(handlerFlow: Graph[FlowShape[FrameEvent, FrameEvent], Any], subprotocol: Option[String]): HttpResponse =
+              handle(Left(handlerFlow), subprotocol)
+
+            override def handleMessages(handlerFlow: Graph[FlowShape[Message, Message], Any], subprotocol: Option[String] = None): HttpResponse =
+              handle(Right(handlerFlow), subprotocol)
+          }
+          OptionVal.Some(header)
+        } else OptionVal.None
+      } else OptionVal.None
     }
 
     /*
