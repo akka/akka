@@ -14,16 +14,15 @@ import akka.stream.impl.{ ActorMaterializerImpl, StreamSupervisor }
 import akka.stream.scaladsl.{ Keep, Source, StreamConverters }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.testkit.{ GraphStageMessages, TestSinkStage }
+import akka.stream.testkit.{ StreamSpec, GraphStageMessages, TestSinkStage }
 import akka.testkit.TestProbe
 import akka.util.ByteString
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
 import scala.concurrent.{ Await, Future }
 import scala.util.control.NoStackTrace
-import akka.testkit.AkkaSpec
 
-class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
+class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
   import system.dispatcher
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")

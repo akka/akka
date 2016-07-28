@@ -8,7 +8,6 @@ import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream._
 import org.reactivestreams.Subscriber
-import akka.testkit.AkkaSpec
 
 object GraphFlowSpec {
   val source1 = Source(0 to 3)
@@ -36,7 +35,7 @@ object GraphFlowSpec {
   val stdResult = Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 }
 
-class GraphFlowSpec extends AkkaSpec {
+class GraphFlowSpec extends StreamSpec {
 
   import GraphFlowSpec._
 

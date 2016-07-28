@@ -6,9 +6,8 @@ import scala.concurrent.duration._
 import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.testkit.AkkaSpec
 
-class GraphBroadcastSpec extends AkkaSpec {
+class GraphBroadcastSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)

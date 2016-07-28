@@ -4,6 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
+import akka.stream.testkit.StreamSpec
 import org.reactivestreams.Publisher
 
 import scala.collection.immutable.Seq
@@ -11,9 +12,8 @@ import scala.concurrent.Future
 
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
-import akka.testkit.AkkaSpec
 
-class FlowCompileSpec extends AkkaSpec {
+class FlowCompileSpec extends StreamSpec {
 
   val intSeq = Source(Seq(1, 2, 3))
   val strSeq = Source(Seq("a", "b", "c"))

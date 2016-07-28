@@ -6,16 +6,14 @@ package akka.stream.scaladsl
 import akka.actor.Status
 import akka.pattern.pipe
 import akka.stream.Attributes.inputBuffer
-import akka.stream.{ ActorMaterializer }
+import akka.stream.ActorMaterializer
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
-import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.testkit.AkkaSpec
 
-class QueueSinkSpec extends AkkaSpec {
+class QueueSinkSpec extends StreamSpec {
   implicit val ec = system.dispatcher
   implicit val materializer = ActorMaterializer()
 

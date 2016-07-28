@@ -5,9 +5,9 @@ package akka.stream.impl.fusing
 
 import akka.stream.impl.ConstantFun
 import akka.stream.Supervision
-import akka.testkit.AkkaSpec
+import akka.stream.testkit.StreamSpec
 
-class InterpreterStressSpec extends AkkaSpec with GraphInterpreterSpecKit {
+class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
   import Supervision.stoppingDecider
 
   val chainLength = 1000 * 1000

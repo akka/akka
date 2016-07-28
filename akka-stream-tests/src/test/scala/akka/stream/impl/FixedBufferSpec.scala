@@ -3,10 +3,10 @@
  */
 package akka.stream.impl
 
-import akka.testkit.AkkaSpec
+import akka.stream.testkit.StreamSpec
 import akka.stream.ActorMaterializerSettings
 
-class FixedBufferSpec extends AkkaSpec {
+class FixedBufferSpec extends StreamSpec {
 
   for (size ← List(1, 3, 4)) {
 

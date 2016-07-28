@@ -7,7 +7,7 @@ import akka.actor.{ Actor, ActorRef, Props }
 import akka.routing.{ ActorRefRoutee, RoundRobinRoutingLogic, Router }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
-import akka.testkit.AkkaSpec
+import akka.stream.testkit.StreamSpec
 import akka.testkit.ImplicitSender
 import org.reactivestreams.Subscription
 
@@ -103,7 +103,7 @@ object ActorSubscriberSpec {
   }
 }
 
-class ActorSubscriberSpec extends AkkaSpec with ImplicitSender {
+class ActorSubscriberSpec extends StreamSpec with ImplicitSender {
   import ActorSubscriberMessage._
   import ActorSubscriberSpec._
 

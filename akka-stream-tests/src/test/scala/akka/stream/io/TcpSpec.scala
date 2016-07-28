@@ -19,9 +19,8 @@ import scala.concurrent.{ Promise, Await }
 import scala.concurrent.duration._
 import java.net.BindException
 import akka.testkit.EventFilter
-import akka.testkit.AkkaSpec
 
-class TcpSpec extends AkkaSpec("akka.stream.materializer.subscription-timeout.timeout = 2s") with TcpHelper {
+class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.timeout = 2s") with TcpHelper {
 
   "Outgoing TCP stream" must {
 

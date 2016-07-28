@@ -11,10 +11,9 @@ import akka.stream._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSource
-import akka.testkit.AkkaSpec
 import akka.util.ByteString
 
-class SinkAsJavaStreamSpec extends AkkaSpec(UnboundedMailboxConfig) {
+class SinkAsJavaStreamSpec extends StreamSpec(UnboundedMailboxConfig) {
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)
 

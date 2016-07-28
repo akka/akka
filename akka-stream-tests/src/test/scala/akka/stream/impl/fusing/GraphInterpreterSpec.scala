@@ -4,13 +4,13 @@
 package akka.stream.impl.fusing
 
 import akka.NotUsed
+import akka.stream.testkit.StreamSpec
 import akka.stream.{ OverflowStrategy, Attributes }
 import akka.stream.stage.AbstractStage.PushPullGraphStage
-import akka.testkit.AkkaSpec
 import akka.stream.scaladsl.{ Merge, Broadcast, Balance, Zip }
 import GraphInterpreter._
 
-class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
+class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
   import GraphStages._
 
   "GraphInterpreter" must {
