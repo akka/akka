@@ -86,11 +86,13 @@ object TestServer extends App {
       (path("tweets") & parameter('n.as[Int])) { n => 
         get {
           val tweets = Source.repeat(Tweet("Hello, world!")).take(n)
-          complete(ToResponseMarshallable(tweets))
+          complete(tweets)
         } ~
         post {
           entity(as[Source[Tweet, NotUsed]]) { tweets ⇒
-            complete(s"Total tweets received: " + tweets.runFold(0)({ case (acc, t) => acc + 1 }))
+            onComplete(tweets.runFold(0)({ case (acc, t) => acc + 1 })) { count => 
+              complete(s"Total tweets received: " + count)
+            }
           }
         }
       }

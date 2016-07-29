@@ -143,7 +143,7 @@ private[akka] class JsonObjectParser(maximumObjectLength: Int = Int.MaxValue) {
       isStartOfEscapeSequence = false
       pos += 1
     } else {
-      throw new FramingException(s"Invalid JSON encountered as position [$pos] of [$buffer]")
+      throw new FramingException(s"Invalid JSON encountered at position [$pos] of [$buffer]")
     }
 
   @inline private final def insideObject: Boolean =
