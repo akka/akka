@@ -5,7 +5,7 @@ package akka.stream.scaladsl
 
 import akka.NotUsed
 import akka.stream.Attributes
-import akka.stream.impl.JsonBracketCounting
+import akka.stream.impl.JsonObjectParser
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage.{ InHandler, OutHandler, GraphStageLogic }
 import akka.util.ByteString
@@ -42,7 +42,7 @@ object JsonFraming {
    */
   def bracketCounting(maximumObjectLength: Int): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].via(new SimpleLinearGraphStage[ByteString] {
-      private[this] val buffer = new JsonBracketCounting(maximumObjectLength)
+      private[this] val buffer = new JsonObjectParser(maximumObjectLength)
 
       override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
         setHandlers(in, out, this)
