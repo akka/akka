@@ -3,7 +3,7 @@
 Source Streaming
 ================
 
-Akka HTTP supports completing a request with an Akka ``Source<T, ?>``, which makes it possible to very easily build
+Akka HTTP supports completing a request with an Akka ``Source<T, ?>``, which makes it possible to easily build
 streaming end-to-end APIs which apply back-pressure throughout the entire stack. 
 
 It is possible to complete requests with raw ``Source<ByteString, ?>``, however often it is more convenient to 

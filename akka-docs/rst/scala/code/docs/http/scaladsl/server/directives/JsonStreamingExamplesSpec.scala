@@ -45,13 +45,12 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     // [3] pick json rendering mode:
     // HINT: if you extend `akka.http.scaladsl.server.EntityStreamingSupport` 
     //       it'll guide you to do so via abstract defs
-    val maximumObjectLength = 128
     implicit val jsonRenderingMode = JsonSourceRenderingModes.LineByLine
 
     val route =
       path("tweets") {
         val tweets: Source[Tweet, NotUsed] = getTweets()
-        complete(ToResponseMarshallable(tweets))
+        complete(tweets)
       }
 
     // tests:
@@ -104,7 +103,7 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     // [2] import "my protocol", for unmarshalling Measurement objects:
     import MyJsonProtocol._
 
-    // [3] prepareyour persisting logic here
+    // [3] prepare your persisting logic here
     val persistMetrics = Flow[Measurement]
 
     val route =

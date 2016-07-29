@@ -148,7 +148,7 @@ trait FramedEntityStreamingDirectives extends MarshallingDirectives {
       val entity = req.entity
       if (framing.matches(entity.contentType)) {
         val bytes = entity.dataBytes
-        val frames = bytes.viaMat(framing.flow)(Keep.right)
+        val frames = bytes.via(framing.flow)
         val elements = frames.viaMat(marshalling(ec, mat))(Keep.right)
         FastFuture.successful(elements)
 
