@@ -11,7 +11,7 @@ import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.ExceptionHandler;
 import akka.http.javadsl.server.RejectionHandler;
 import akka.http.javadsl.server.Route;
-import akka.http.javadsl.server.StringUnmarshallers;
+import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import akka.http.scaladsl.server.MethodRejection;

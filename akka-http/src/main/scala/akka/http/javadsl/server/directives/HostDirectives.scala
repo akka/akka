@@ -13,7 +13,7 @@ import java.util.regex.Pattern
 
 import scala.collection.JavaConverters._
 
-import akka.http.javadsl.server.RegexConverters.toScala
+import akka.http.javadsl.common.RegexConverters.toScala
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 
 abstract class HostDirectives extends HeaderDirectives {

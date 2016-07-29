@@ -1,4 +1,7 @@
-package akka.http.javadsl.server;
+/*
+ * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ */
+package akka.http.javadsl.common;
 
 import java.util.regex.Pattern;
 
@@ -6,7 +9,7 @@ import scala.collection.Seq;
 import scala.collection.immutable.VectorBuilder;
 import scala.util.matching.Regex;
 
-public class RegexConverters {
+public final class RegexConverters {
     private static final Seq<String> empty = new VectorBuilder<String>().result();
     
     /**

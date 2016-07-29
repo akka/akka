@@ -18,6 +18,7 @@ import akka.http.javadsl.marshalling.Marshaller;
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.model.headers.Accept;
 import akka.http.javadsl.model.headers.RawHeader;
+import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
 import org.junit.Test;
 
