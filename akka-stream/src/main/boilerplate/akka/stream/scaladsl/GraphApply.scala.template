@@ -67,7 +67,7 @@ object GraphApply {
     override def withAttributes(attr: Attributes): Graph[S, Mat] =
       new GraphImpl(shape, module.withAttributes(attr))
 
-    override def named(name: String): Graph[S, Mat] = withAttributes(Attributes.name(name))
+    override def named(name: String): Graph[S, Mat] = addAttributes(Attributes.name(name))
   }
 }
 
