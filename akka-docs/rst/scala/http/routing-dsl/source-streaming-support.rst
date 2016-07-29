@@ -3,7 +3,7 @@
 Source Streaming
 ================
 
-Akka HTTP supports completing a request with an Akka ``Source[T, _]``, which makes it possible to very easily build
+Akka HTTP supports completing a request with an Akka ``Source[T, _]``, which makes it possible to easily build
 streaming end-to-end APIs which apply back-pressure throughout the entire stack. 
 
 It is possible to complete requests with raw ``Source[ByteString, _]``, however often it is more convenient to 
@@ -99,7 +99,7 @@ Implementing custom (Un)Marshaller support for JSON streaming
 
 While not provided by Akka HTTP directly, the infrastructure is extensible and by investigating how ``SprayJsonSupport``
 is implemented it is certainly possible to provide the same infrastructure for other marshaller implementations (such as
-Play JSON, or Jackson directly for example). Such support traits will want to extend the ``JsonEntityStreamingSupport`` trait.
+Play JSON, or Jackson directly for example). Such support traits will want to extend the ``EntityStreamingSupport`` trait.
 
 The following types that may need to be implemented by a custom framed-streaming support library are:
 
@@ -108,4 +108,4 @@ The following types that may need to be implemented by a custom framed-streaming
 - ``FramingWithContentType`` which is needed to be able to split incoming ``ByteString`` chunks into frames
   of the higher-level data type format that is understood by the provided unmarshallers.
   In the case of JSON it means chunking up ByteStrings such that each emitted element corresponds to exactly one JSON object,
-  this framing is implemented in ``JsonEntityStreamingSupport``.
+  this framing is implemented in ``EntityStreamingSupport``.

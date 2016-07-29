@@ -4,15 +4,15 @@
 
 package akka.http.scaladsl.marshallers.sprayjson
 
+import akka.http.scaladsl.marshalling.{ Marshaller, ToByteStringMarshaller, ToEntityMarshaller }
+import akka.http.scaladsl.model.MediaTypes.`application/json`
+import akka.http.scaladsl.model.{ HttpCharsets, MediaTypes }
+import akka.http.scaladsl.unmarshalling.{ FromEntityUnmarshaller, Unmarshaller }
 import akka.http.scaladsl.util.FastFuture
 import akka.util.ByteString
+import spray.json._
 
 import scala.language.implicitConversions
-import akka.http.scaladsl.marshalling.{Marshaller, ToByteStringMarshaller, ToEntityMarshaller}
-import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
-import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, MediaTypes}
-import akka.http.scaladsl.model.MediaTypes.`application/json`
-import spray.json._
 
 /**
  * A trait providing automatic to and from JSON marshalling/unmarshalling using an in-scope *spray-json* protocol.
@@ -24,7 +24,11 @@ trait SprayJsonSupport {
     sprayJsValueUnmarshaller.map(jsonReader[T].read)
   implicit def sprayJsonByteStringUnmarshaller[T](implicit reader: RootJsonReader[T]): Unmarshaller[ByteString, T] =
     Unmarshaller.withMaterializer[ByteString, JsValue](_ ⇒ implicit mat ⇒ { bs ⇒
-      FastFuture.successful(JsonParser(bs.toArray[Byte]))
+      // .compact so addressing into any address is very fast (also for large chunks)
+      // TODO we could optimise ByteStrings to better handle lienear access like this (or provide ByteStrings.linearAccessOptimised) 
+      // TODO IF it's worth it. 
+      val parserInput = new SprayJsonByteStringParserInput(bs.compact)
+      FastFuture.successful(JsonParser(parserInput))
     }).map(jsonReader[T].read)
   implicit def sprayJsValueUnmarshaller: FromEntityUnmarshaller[JsValue] =
     Unmarshaller.byteStringUnmarshaller.forContentTypes(`application/json`).mapWithCharset { (data, charset) ⇒
