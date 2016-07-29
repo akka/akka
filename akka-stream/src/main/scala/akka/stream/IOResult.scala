@@ -3,7 +3,11 @@
  */
 package akka.stream
 
+import java.util.Objects
+
 import akka.Done
+
+import scala.runtime.AbstractFunction2
 import scala.util.{ Failure, Success, Try }
 
 /**
@@ -12,7 +16,11 @@ import scala.util.{ Failure, Success, Try }
  * @param count Numeric value depending on context, for example IO operations performed or bytes processed.
  * @param status Status of the result. Can be either [[akka.Done]] or an exception.
  */
-final case class IOResult private[stream] (count: Long, status: Try[Done]) {
+final case class IOResult private (count: Long, status: Try[Done])
+  extends Serializable with Product {
+
+  def withCount(value: Long): IOResult = copy(count = value)
+  def withStatus(value: Try[Done]): IOResult = copy(status = value)
 
   /**
    * Java API: Numeric value depending on context, for example IO operations performed or bytes processed.
@@ -33,4 +41,13 @@ final case class IOResult private[stream] (count: Long, status: Try[Done]) {
     case Success(_) ⇒ throw new UnsupportedOperationException("IO operation was successful.")
   }
 
+}
+
+object IOResult extends AbstractFunction2[Long, Try[Done], IOResult] {
+
+  def createSuccessful(count: Long): IOResult =
+    new IOResult(count, Success(Done))
+
+  def createFailed(count: Long, ex: Throwable): IOResult =
+    new IOResult(count, Failure(ex))
 }
