@@ -5,6 +5,7 @@ package akka.http.javadsl.server;
 
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.unmarshalling.Unmarshaller;
 import org.junit.Test;
 
 import java.util.Arrays;

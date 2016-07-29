@@ -8,7 +8,7 @@ package directives
 import java.io.File
 import java.net.{ URI, URL }
 
-import akka.http.javadsl.model
+import akka.http.javadsl.{ marshalling, model }
 import akka.stream.ActorAttributes
 import akka.stream.scaladsl.{ FileIO, StreamConverters }
 
@@ -272,10 +272,10 @@ object FileAndResourceDirectives extends FileAndResourceDirectives {
 
     def marshaller(renderVanityFooter: Boolean): ToEntityMarshaller[DirectoryListing]
 
-    final override def directoryMarshaller(renderVanityFooter: Boolean): akka.http.javadsl.server.Marshaller[JDL, JRE] = {
+    final override def directoryMarshaller(renderVanityFooter: Boolean): marshalling.Marshaller[JDL, JRE] = {
       val combined = Marshaller.combined[JDL, SDL, SRE](x ⇒ JavaMapping.toScala(x)(RoutingJavaMapping.convertDirectoryListing))(marshaller(renderVanityFooter))
         .map(_.asJava)
-      akka.http.javadsl.server.Marshaller.fromScala(combined)
+      marshalling.Marshaller.fromScala(combined)
     }
 
   }
