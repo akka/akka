@@ -10,6 +10,7 @@ import akka.event.LoggingAdapter
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl.marshalling.{ Marshal, ToResponseMarshallable }
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 
@@ -46,6 +47,18 @@ private[http] class RequestContextImpl(
 
   override def reject(rejections: Rejection*): Future[RouteResult] =
     FastFuture.successful(RouteResult.Rejected(rejections.toList))
+
+  override def redirect(uri: Uri, redirectionType: Redirection): Future[RouteResult] = {
+    //# red-impl
+    complete(HttpResponse(
+      status = redirectionType,
+      headers = headers.Location(uri) :: Nil,
+      entity = redirectionType.htmlTemplate match {
+        case ""       ⇒ HttpEntity.Empty
+        case template ⇒ HttpEntity(ContentTypes.`text/html(UTF-8)`, template format uri)
+      }))
+    //#
+  }
 
   override def fail(error: Throwable): Future[RouteResult] =
     FastFuture.failed(error)
