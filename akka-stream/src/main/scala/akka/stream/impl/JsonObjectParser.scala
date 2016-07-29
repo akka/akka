@@ -11,7 +11,7 @@ import scala.annotation.switch
 /**
  * INTERNAL API: Use [[akka.stream.scaladsl.JsonFraming]] instead.
  */
-private[akka] object JsonBracketCounting {
+private[akka] object JsonObjectParser {
 
   final val SquareBraceStart = '['.toByte
   final val SquareBraceEnd = ']'.toByte
@@ -42,8 +42,8 @@ private[akka] object JsonBracketCounting {
  *
  * Leading whitespace between elements will be trimmed.
  */
-private[akka] class JsonBracketCounting(maximumObjectLength: Int = Int.MaxValue) {
-  import JsonBracketCounting._
+private[akka] class JsonObjectParser(maximumObjectLength: Int = Int.MaxValue) {
+  import JsonObjectParser._
 
   private var buffer: ByteString = ByteString.empty
 

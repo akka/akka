@@ -5,7 +5,7 @@ package akka.stream
 
 import java.util.concurrent.TimeUnit
 
-import akka.stream.impl.JsonBracketCounting
+import akka.stream.impl.JsonObjectParser
 import akka.util.ByteString
 import org.openjdk.jmh.annotations._
 
@@ -35,7 +35,7 @@ class JsonFramingBenchmark {
         |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
         |{"fname":"Hank","name":"Smith","age":42,"id":1337,"boardMember":false}""".stripMargin)
 
-  val bracket = new JsonBracketCounting
+  val bracket = new JsonObjectParser
 
   @Setup(Level.Invocation)
   def init(): Unit = {

@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.ActorMaterializer
-import akka.stream.impl.JsonBracketCounting
+import akka.stream.impl.JsonObjectParser
 import akka.stream.scaladsl.Framing.FramingException
 import akka.stream.scaladsl.{ JsonFraming, Framing, Source }
 import akka.stream.testkit.scaladsl.TestSink
@@ -124,7 +124,7 @@ class JsonFramingSpec extends AkkaSpec {
   "collecting json buffer" when {
     "nothing is supplied" should {
       "return nothing" in {
-        val buffer = new JsonBracketCounting()
+        val buffer = new JsonObjectParser()
         buffer.poll() should ===(None)
       }
     }
@@ -132,25 +132,25 @@ class JsonFramingSpec extends AkkaSpec {
     "valid json is supplied" which {
       "has one object" should {
         "successfully parse empty object" in {
-          val buffer = new JsonBracketCounting()
+          val buffer = new JsonObjectParser()
           buffer.offer(ByteString("""{}"""))
           buffer.poll().get.utf8String shouldBe """{}"""
         }
 
         "successfully parse single field having string value" in {
-          val buffer = new JsonBracketCounting()
+          val buffer = new JsonObjectParser()
           buffer.offer(ByteString("""{ "name": "john"}"""))
           buffer.poll().get.utf8String shouldBe """{ "name": "john"}"""
         }
 
         "successfully parse single field having string value containing space" in {
-          val buffer = new JsonBracketCounting()
+          val buffer = new JsonObjectParser()
           buffer.offer(ByteString("""{ "name": "john doe"}"""))
           buffer.poll().get.utf8String shouldBe """{ "name": "john doe"}"""
         }
 
         "successfully parse single field having string value containing curly brace" in {
-          val buffer = new JsonBracketCounting()
+          val buffer = new JsonObjectParser()
 
           buffer.offer(ByteString("""{ "name": "john{"""))
           buffer.offer(ByteString("}"))
@@ -161,7 +161,7 @@ class JsonFramingSpec extends AkkaSpec {
         }
 
         "successfully parse single field having string value containing curly brace and escape character" in {
-          val buffer = new JsonBracketCounting()
+          val buffer = new JsonObjectParser()
 
           buffer.offer(ByteString("""{ "name": "john"""))
           buffer.offer(ByteString("\\\""))
@@ -177,19 +177,19 @@ class JsonFramingSpec extends AkkaSpec {
         }
 
         "successfully parse single field having integer value" in {
-          val buffer = new JsonBracketCounting()
+          val buffer = new JsonObjectParser()
           buffer.offer(ByteString("""{ "age": 101}"""))
           buffer.poll().get.utf8String shouldBe """{ "age": 101}"""
         }
 
         "successfully parse single field having decimal value" in {
-          val buffer = new JsonBracketCounting()
+          val buffer = new JsonObjectParser()
           buffer.offer(ByteString("""{ "age": 101}"""))
           buffer.poll().get.utf8String shouldBe """{ "age": 101}"""
         }
 
         "successfully parse single field having nested object" in {
-          val buffer = new JsonBracketCounting()
+          val buffer = new JsonObjectParser()
           buffer.offer(ByteString(
             """
               |{  "name": "john",
@@ -210,7 +210,7 @@ class JsonFramingSpec extends AkkaSpec {
         }
 
         "successfully parse single field having multiple level of nested object" in {
-          val buffer = new JsonBracketCounting()
+          val buffer = new JsonObjectParser()
           buffer.offer(ByteString(
             """
               |{  "name": "john",
@@ -239,7 +239,7 @@ class JsonFramingSpec extends AkkaSpec {
 
       "has nested array" should {
         "successfully parse" in {
-          val buffer = new JsonBracketCounting()
+          val buffer = new JsonObjectParser()
           buffer.offer(ByteString(
             """
               |{  "name": "john",
@@ -264,7 +264,7 @@ class JsonFramingSpec extends AkkaSpec {
 
       "has complex object graph" should {
         "successfully parse" in {
-          val buffer = new JsonBracketCounting()
+          val buffer = new JsonObjectParser()
           buffer.offer(ByteString(
             """
               |{
@@ -318,13 +318,13 @@ class JsonFramingSpec extends AkkaSpec {
 
       "has multiple fields" should {
         "parse successfully" in {
-          val buffer = new JsonBracketCounting()
+          val buffer = new JsonObjectParser()
           buffer.offer(ByteString("""{ "name": "john", "age": 101}"""))
           buffer.poll().get.utf8String shouldBe """{ "name": "john", "age": 101}"""
         }
 
         "parse successfully despite valid whitespaces around json" in {
-          val buffer = new JsonBracketCounting()
+          val buffer = new JsonObjectParser()
           buffer.offer(ByteString(
             """
               |
@@ -351,7 +351,7 @@ class JsonFramingSpec extends AkkaSpec {
               |  }
             """.stripMargin
 
-          val buffer = new JsonBracketCounting()
+          val buffer = new JsonObjectParser()
           buffer.offer(ByteString(input))
 
           buffer.poll().get.utf8String shouldBe
@@ -375,7 +375,7 @@ class JsonFramingSpec extends AkkaSpec {
       }
 
       "returns none until valid json is encountered" in {
-        val buffer = new JsonBracketCounting()
+        val buffer = new JsonObjectParser()
 
         """{ "name": "john"""".foreach {
           c ⇒
@@ -389,13 +389,13 @@ class JsonFramingSpec extends AkkaSpec {
 
       "invalid json is supplied" should {
         "fail if it's broken from the start" in {
-          val buffer = new JsonBracketCounting()
+          val buffer = new JsonObjectParser()
           buffer.offer(ByteString("""THIS IS NOT VALID { "name": "john"}"""))
           a[FramingException] shouldBe thrownBy { buffer.poll() }
         }
 
         "fail if it's broken at the end" in {
-          val buffer = new JsonBracketCounting()
+          val buffer = new JsonObjectParser()
           buffer.offer(ByteString("""{ "name": "john"} THIS IS NOT VALID"""))
           buffer.poll() // first emitting the valid element
           a[FramingException] shouldBe thrownBy { buffer.poll() }
