@@ -927,7 +927,11 @@ object MiMa extends AutoPlugin {
         
         // #
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpEntity.discardBytes"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.discardBytes")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.discardBytes"),
+
+        // #20630 corrected return types of java methods
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.javadsl.RunnableGraph#RunnableGraphAdapter.named"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.RunnableGraph.withAttributes")
       )
     )
   }
