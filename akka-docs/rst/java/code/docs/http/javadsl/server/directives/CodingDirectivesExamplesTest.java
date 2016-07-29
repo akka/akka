@@ -7,7 +7,7 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.AcceptEncoding;
 import akka.http.javadsl.model.headers.ContentEncoding;
 import akka.http.javadsl.model.headers.HttpEncodings;
-import akka.http.javadsl.server.Coder;
+import akka.http.javadsl.coding.Coder;
 import akka.http.javadsl.server.Rejections;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
