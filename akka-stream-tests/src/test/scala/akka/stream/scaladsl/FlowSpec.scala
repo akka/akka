@@ -7,7 +7,7 @@ import akka.NotUsed
 import akka.actor._
 import akka.stream.Supervision._
 import akka.stream.impl._
-import akka.stream.impl.fusing.{ ActorGraphInterpreter }
+import akka.stream.impl.fusing.ActorGraphInterpreter
 import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
 import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.testkit.Utils._
@@ -591,7 +591,10 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
 
     "suitably override attribute handling methods" in {
       import Attributes._
-      val f: Flow[Int, Int, NotUsed] = Flow[Int].async.addAttributes(none).named("")
+      val f: Flow[Int, Int, NotUsed] = Flow[Int].map(_ + 1).async.addAttributes(none).named("name")
+
+      f.module.attributes.getFirst[Name] shouldEqual Some(Name("name"))
+      f.module.attributes.getFirst[Attributes.AsyncBoundary.type] shouldEqual Some(AsyncBoundary)
     }
   }
 
