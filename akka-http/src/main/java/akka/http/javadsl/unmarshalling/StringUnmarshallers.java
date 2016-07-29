@@ -1,12 +1,11 @@
-package akka.http.javadsl.server;
-
-import akka.http.javadsl.unmarshalling.StringUnmarshaller;
-import akka.http.javadsl.unmarshalling.StringUnmarshallerPredef;
-import akka.http.javadsl.unmarshalling.Unmarshaller;
+/*
+ * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ */
+package akka.http.javadsl.unmarshalling;
 
 import java.util.function.Function;
 
-public class StringUnmarshallers {
+public final class StringUnmarshallers {
   /**
    * An unmarshaller that returns the input String unchanged.
    */

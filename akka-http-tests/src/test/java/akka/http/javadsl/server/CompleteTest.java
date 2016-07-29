@@ -4,7 +4,7 @@
 
 package akka.http.javadsl.server;
 
-import static akka.http.javadsl.server.StringUnmarshallers.INTEGER;
+import static akka.http.javadsl.unmarshalling.StringUnmarshallers.INTEGER;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;

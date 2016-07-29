@@ -85,8 +85,8 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
         .toMat(Sink.ignore)(Keep.left)
         .run()
 
-      whenReady(future.failed) { ex =>
-        ex.getMessage should === ("Connection failed.")
+      whenReady(future.failed) { ex ⇒
+        ex.getMessage should ===("Connection failed.")
       }
     }
 

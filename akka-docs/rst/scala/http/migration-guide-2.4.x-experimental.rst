@@ -24,3 +24,19 @@ Akka HTTP 2.4.7 -> 2.4.8
 The `challengeFor` directive was actually more like a factory for `HttpChallenge`,
 thus it was moved to become such. It is now available as `akka.http.javadsl.model.headers.HttpChallenge#create[Basic|OAuth2]`
 for JavaDSL and `akka.http.scaladsl.model.headers.HttpChallenges#[basic|oAuth2]` for ScalaDSL.
+
+Akka HTTP 2.4.8 -> 2.4.9
+------------------------
+
+Java DSL Package structure changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+We have aligned the package structure of the Java based DSL with the Scala based DSL
+and moved classes that was in the wrong or unexpected places around a bit. This means
+that Java DSL users must update their imports as follows:
+
+Classes dealing with unmarshalling and unmarshalling used to reside in `akka.http.javadsl.server`
+but are now available from the packages `akka.http.javadsl.unmarshalling` and `akka.http.javadsl.marshalling`.
+
+`akka.http.javadsl.server.Coder` is now `akka.http.javadsl.coding.Coder`
+
+`akka.http.javadsl.server.RegexConverters` is now `akka.http.javadsl.common.RegexConverters`
