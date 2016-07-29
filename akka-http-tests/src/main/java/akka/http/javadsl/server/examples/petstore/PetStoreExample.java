@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static akka.http.javadsl.server.Directives.*;
-import static akka.http.javadsl.server.StringUnmarshallers.INTEGER;
+import static akka.http.javadsl.unmarshalling.StringUnmarshallers.INTEGER;
 
 public class PetStoreExample {
 

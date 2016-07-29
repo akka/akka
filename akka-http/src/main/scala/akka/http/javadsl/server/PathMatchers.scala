@@ -12,7 +12,7 @@ import scala.collection.JavaConverters._
 
 import akka.http.scaladsl.server.{ PathMatcher ⇒ SPathMatcher }
 import akka.http.scaladsl.server.{ PathMatchers ⇒ SPathMatchers }
-import akka.http.javadsl.server.RegexConverters.toScala
+import akka.http.javadsl.common.RegexConverters.toScala
 
 final class PathMatchers
 
