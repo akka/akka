@@ -167,6 +167,24 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
   def callWithSyncCircuitBreaker[T](body: Callable[T]): T = withSyncCircuitBreaker(body.call)
 
   /**
+   * Mark a successful call through CircuitBreaker. Sometimes the callee of CircuitBreaker sends back a message to the
+   * caller Actor. In such a case, it is convenient to mark a successful call instead of using Future
+   * via [[withCircuitBreaker]]
+   */
+  def succeed(): Unit = {
+    currentState.callSucceeds()
+  }
+
+  /**
+   * Mark a failed call through CircuitBreaker. Sometimes the callee of CircuitBreaker sends back a message to the
+   * caller Actor. In such a case, it is convenient to mark a failed call instead of using Future
+   * via [[withCircuitBreaker]]
+   */
+  def fail(): Unit = {
+    currentState.callFails()
+  }
+
+  /**
    * Adds a callback to execute when circuit breaker opens
    *
    * The callback is run in the [[scala.concurrent.ExecutionContext]] supplied in the constructor.
