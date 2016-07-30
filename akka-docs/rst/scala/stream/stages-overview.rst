@@ -1208,6 +1208,17 @@ Fan-out the stream to several streams. Each upstream element is emitted to the f
 
 **completes** when upstream completes
 
+partition
+^^^^^^^^^
+Fan-out the stream to several streams. Each upstream element is emitted to one downstream consumer according to the
+partitioner function applied to the element.
+
+**emits** when the chosen output stops backpressuring and there is an input element available
+
+**backpressures** when the chosen output backpressures
+
+**completes** when upstream completes and no output is pending
+
 
 Watching status stages
 ----------------------
