@@ -1,21 +1,25 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
- */
+  * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+  */
 
 package akka.pattern
 
-import java.util.concurrent.{ TimeUnit, CountDownLatch }
+import java.util.concurrent.{TimeUnit, CountDownLatch}
 
 import akka.pattern.TestActor.NormalException
-import akka.testkit.{ ImplicitSender, AkkaSpec, TestProbe, filterException }
+import akka.testkit.{ImplicitSender, AkkaSpec, TestProbe, filterException}
 import scala.concurrent.duration._
 import akka.actor._
 import scala.language.postfixOps
 
 object TestActor {
+
   class TestException(msg: String) extends Exception(msg)
+
   class StoppingException extends TestException("stopping exception")
+
   class NormalException extends TestException("normal exception")
+
   def props(probe: ActorRef): Props = Props(new TestActor(probe))
 }
 
@@ -24,11 +28,11 @@ class TestActor(probe: ActorRef) extends Actor {
   probe ! "STARTED"
 
   def receive = {
-    case "DIE"                      ⇒ context.stop(self)
-    case "THROW"                    ⇒ throw new TestActor.NormalException
+    case "DIE" ⇒ context.stop(self)
+    case "THROW" ⇒ throw new TestActor.NormalException
     case "THROW_STOPPING_EXCEPTION" ⇒ throw new TestActor.StoppingException
-    case ("TO_PARENT", msg)         ⇒ context.parent ! msg
-    case other                      ⇒ probe ! other
+    case ("TO_PARENT", msg) ⇒ context.parent ! msg
+    case other ⇒ probe ! other
   }
 }
 
@@ -36,6 +40,7 @@ object TestParentActor {
   def props(probe: ActorRef, supervisorProps: Props): Props =
     Props(new TestParentActor(probe, supervisorProps))
 }
+
 class TestParentActor(probe: ActorRef, supervisorProps: Props) extends Actor {
   val supervisor = context.actorOf(supervisorProps)
 
@@ -48,7 +53,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
 
   def supervisorProps(probeRef: ActorRef) = {
     val options = Backoff.onFailure(TestActor.props(probeRef), "someChildName", 200 millis, 10 seconds, 0.0)
-      .withSupervisorStrategy(OneForOneStrategy(maxNrOfRetries = 4) {
+      .withSupervisorStrategy(OneForOneStrategy(maxNrOfRetries = 4, withinTimeRange = 30 seconds) {
         case _: TestActor.StoppingException ⇒ SupervisorStrategy.Stop
       })
     BackoffSupervisor.props(options)
@@ -182,6 +187,28 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
             probe.expectMsg(4 seconds, "STARTED")
           }
         }
+        // Superviser should've terminated.
+        probe.expectTerminated(supervisor)
+      }
+    }
+
+    "respect withinTimeRange property of OneForOneStrategy" in {
+      val probe = TestProbe()
+      // The minimum backoff needs to be larger than "withinTimeRange" - otherwise it'll reset
+      val options = Backoff.onFailure(TestActor.props(probe.ref), "someChildName", 500 millis, 10 seconds, 0.0)
+        .withSupervisorStrategy(OneForOneStrategy(withinTimeRange = 300 millis) {
+          case _: TestActor.StoppingException ⇒ SupervisorStrategy.Stop
+        })
+      val supervisor = system.actorOf(BackoffSupervisor.props(options))
+      probe.expectMsg("STARTED")
+      filterException[TestActor.TestException] {
+        probe.watch(supervisor)
+        // Throw something immediately, we should get restarted
+        supervisor ! "THROW"
+        probe.expectMsg("STARTED")
+        // AFter waiting longer than the time range, throw again, we should not be restarted.
+        Thread.sleep(320)
+        supervisor ! "THROW"
         // Superviser should've terminated.
         probe.expectTerminated(supervisor)
       }
