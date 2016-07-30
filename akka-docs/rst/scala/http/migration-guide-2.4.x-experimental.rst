@@ -34,9 +34,9 @@ We have aligned the package structure of the Java based DSL with the Scala based
 and moved classes that were in the wrong or unexpected places around a bit. This means
 that Java DSL users must update their imports as follows:
 
-Classes dealing with unmarshalling and unmarshalling used to reside in ``akka.http.javadsl.server``
+Classes dealing with unmarshalling and marshalling used to reside in ``akka.http.javadsl.server``,
 but are now available from the packages ``akka.http.javadsl.unmarshalling`` and ``akka.http.javadsl.marshalling``.
 
-``akka.http.javadsl.server.Coder`` is now ``akka.http.javadsl.coding.Coder``
+``akka.http.javadsl.server.Coder`` is now ``akka.http.javadsl.coding.Coder``.
 
-``akka.http.javadsl.server.RegexConverters`` is now ``akka.http.javadsl.common.RegexConverters``
+``akka.http.javadsl.server.RegexConverters`` is now ``akka.http.javadsl.common.RegexConverters``.
