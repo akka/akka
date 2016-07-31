@@ -21,6 +21,9 @@ For detailed documentation for client-side HTTPS support refer to :ref:`clientSi
 
 .. _akka.http.scaladsl.Http: https://github.com/akka/akka/blob/master/akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala
 
+
+.. _ssl-config-scala:
+
 SSL-Config
 ----------
 
@@ -57,6 +60,9 @@ keystores using the JDK keytool utility can be found `here <https://docs.oracle.
 SSL-Config provides a more targeted guide on generating certificates, so we recommend you start with the guide
 titled `Generating X.509 Certificates <http://typesafehub.github.io/ssl-config/CertificateGeneration.html>`_.
 
+
+.. _using-https-scala:
+
 Using HTTPS
 -----------
 
@@ -71,13 +77,33 @@ or passing it in explicitly when binding the server:
 .. includecode2:: ../code/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
    :snippet: low-level-default
 
+Once you configured the HTTPS context, you can set it as default:
+
+.. includecode2:: ../code/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
+   :snippet: set-low-level-context-default
+
 It is also possible to pass in the context to specific ``bind...`` (or client) calls, like displayed below:
 
 .. includecode2:: ../code/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
    :snippet: bind-low-level-context
 
 
+Running both HTTP and HTTPS
+---------------------------
+If you want to run HTTP and HTTPS servers in a single application, you can call ``bind...`` methods twice,
+one for HTTPS, and the other for HTTP.
 
+When configuring HTTPS, you can do it up like explained in the above :ref:`using-https-scala` section,
+
+.. includecode2:: ../code/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
+   :snippet: low-level-default
+
+or via :ref:`ssl-config-scala` (not explained here though).
+
+Then, call ``bind...`` methods twice like below. The passed ``https`` context is from the above code snippet.
+
+.. includecode2:: ../code/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
+   :snippet: both-https-and-http
 
 Further reading
 ---------------
