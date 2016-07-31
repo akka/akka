@@ -915,72 +915,76 @@ final class Concat[T](val inputPorts: Int) extends GraphStage[UniformFanInShape[
 }
 
 object OrElse {
-  def apply[T]() = new OrElse[T]
+  private val singleton = new OrElse[Nothing]
+  def apply[T]() = singleton.asInstanceOf[OrElse[T]]
 }
 
 /**
- * Takes two streams and passes the first through, the second stream is only passed
- * through if the first stream completes without passing any elements through. When
- * the first element is passed through from the first input the second upstream is
- * cancelled.
+ * Takes two streams and passes the first through, the secondary stream is only passed
+ * through if the primary stream completes without passing any elements through. When
+ * the first element is passed through from the primary the secondary is cancelled.
+ * Both incoming streams are materialized when the stage is materialized.
  *
  * On errors the stage is failed regardless of source of the error.
  *
- * '''Emits when''' element is available from first stream or first stream closed without emitting any elements and an element
- *                  is available from the second stream
+ * '''Emits when''' element is available from primary stream or the primary stream closed without emitting any elements and an element
+ *                  is available from the secondary stream
  *
  * '''Backpressures when''' downstream backpressures
  *
- * '''Completes when''' the first stream completes after emitting at least one element or else when the second stream completes
+ * '''Completes when''' the primary stream completes after emitting at least one element or else when the secondary stream completes
  *
  * '''Cancels when''' downstream cancels
  */
 private[stream] final class OrElse[T] extends GraphStage[UniformFanInShape[T, T]] {
-  val in1 = Inlet[T]("OrElse.in1")
-  val in2 = Inlet[T]("OrElse.in2")
+  val primary = Inlet[T]("OrElse.primary")
+  val secondary = Inlet[T]("OrElse.secondary")
   val out = Outlet[T]("OrElse.out")
 
-  override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in1, in2)
+  override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, primary, secondary)
 
   override protected def initialAttributes: Attributes = DefaultAttributes.orElse
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler with InHandler {
 
-    private[this] var currentIn = in1
-    private[this] var in1Pushed = false
+    private[this] var currentIn = primary
+    private[this] var primaryPushed = false
 
     override def onPull(): Unit = {
       pull(currentIn)
     }
 
-    setHandler(in1, new InHandler {
+    // for the primary inHandler
+    override def onPush(): Unit = {
+      if (!primaryPushed) {
+        primaryPushed = true
+        cancel(secondary)
+      }
+      val elem = grab(primary)
+      push(out, elem)
+    }
+
+    // for the primary inHandler
+    override def onUpstreamFinish(): Unit = {
+      if (!primaryPushed && !isClosed(secondary)) {
+        currentIn = secondary
+        if (isAvailable(out)) pull(secondary)
+      } else {
+        completeStage()
+      }
+    }
+
+    setHandler(secondary, new InHandler {
       override def onPush(): Unit = {
-        if (!in1Pushed) {
-          in1Pushed = true
-          cancel(in2)
-        }
-        val elem = grab(in1)
-        push(out, elem)
+        push(out, grab(secondary))
       }
 
       override def onUpstreamFinish(): Unit = {
-        if (!in1Pushed) {
-          currentIn = in2
-          if (isAvailable(out)) pull(in2)
-        } else {
-          completeStage()
-        }
+        if (isClosed(primary)) completeStage()
       }
     })
 
-    setHandler(in2, new InHandler {
-      override def onPush(): Unit = {
-        val elem = grab(in2)
-        push(out, elem)
-      }
-    })
-
-    setHandler(out, this)
+    setHandlers(primary, out, this)
   }
 
   override def toString: String = s"OrElse"

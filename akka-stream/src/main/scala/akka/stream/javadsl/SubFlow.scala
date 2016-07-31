@@ -983,7 +983,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
     new SubFlow(delegate.prepend(that))
 
   /**
-   * Provides an alternative that will be consumed if this source completes without any
+   * Provides a secondary source that will be consumed if this source completes without any
    * elements passing by. As soon as the first element comes through this stream, the alternative
    * will be cancelled.
    *
@@ -1003,8 +1003,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * '''Cancels when''' downstream cancels and additionally the alternative is cancelled as soon as an element passes
    *                    by from this stream.
    */
-  def orElse[T >: Out, M](alternative: Graph[SourceShape[T], M]): javadsl.SubFlow[In, T, Mat] =
-    new SubFlow(delegate.orElse(alternative))
+  def orElse[T >: Out, M](secondary: Graph[SourceShape[T], M]): javadsl.SubFlow[In, T, Mat] =
+    new SubFlow(delegate.orElse(secondary))
 
   /**
    * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes

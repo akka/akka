@@ -640,7 +640,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.prependMat(that)(combinerToScala(matF)))
 
   /**
-   * Provides an alternative that will be consumed if this source completes without any
+   * Provides a secondary source that will be consumed if this source completes without any
    * elements passing by. As soon as the first element comes through this stream, the alternative
    * will be cancelled.
    *
@@ -660,8 +660,21 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * '''Cancels when''' downstream cancels and additionally the alternative is cancelled as soon as an element passes
    *                    by from this stream.
    */
-  def orElse[T >: Out, M](alternative: Graph[SourceShape[T], M]): javadsl.Source[T, Mat] =
-    new Source(delegate.orElse(alternative))
+  def orElse[T >: Out, M](secondary: Graph[SourceShape[T], M]): javadsl.Source[T, Mat] =
+    new Source(delegate.orElse(secondary))
+
+  /**
+   * Provides a secondary source that will be consumed if this source completes without any
+   * elements passing by. As soon as the first element comes through this stream, the alternative
+   * will be cancelled.
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   *
+   * @see [[#orElse]]
+   */
+  def orElseMat[T >: Out, M, M2](secondary: Graph[SourceShape[T], M], matF: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
+    new Source(delegate.orElseMat(secondary)(combinerToScala(matF)))
 
   /**
    * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes

@@ -1795,7 +1795,7 @@ trait FlowOps[+Out, +Mat] {
     }
 
   /**
-   * Provides an alternative that will be consumed if this stream completes without any
+   * Provides a secondary source that will be consumed if this stream completes without any
    * elements passing by. As soon as the first element comes through this stream, the alternative
    * will be cancelled.
    *
@@ -1815,14 +1815,14 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels and additionally the alternative is cancelled as soon as an element passes
    *                    by from this stream.
    */
-  def orElse[U >: Out, Mat2](alternative: Graph[SourceShape[U], Mat2]): Repr[U] =
-    via(orElseGraph(alternative))
+  def orElse[U >: Out, Mat2](secondary: Graph[SourceShape[U], Mat2]): Repr[U] =
+    via(orElseGraph(secondary))
 
-  private def orElseGraph[U >: Out, Mat2](alternative: Graph[SourceShape[U], Mat2]): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
-    GraphDSL.create(alternative) { implicit b ⇒ alternative ⇒
+  protected def orElseGraph[U >: Out, Mat2](secondary: Graph[SourceShape[U], Mat2]): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
+    GraphDSL.create(secondary) { implicit b ⇒ secondary ⇒
       val orElse = b.add(OrElse[U]())
 
-      alternative ~> orElse.in(1)
+      secondary ~> orElse.in(1)
 
       FlowShape(orElse.in(0), orElse.out)
     }
@@ -2064,6 +2064,30 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def prependMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
     viaMat(prependGraph(that))(matF)
+
+  /**
+   * Provides a secondary source that will be consumed if this stream completes without any
+   * elements passing by. As soon as the first element comes through this stream, the alternative
+   * will be cancelled.
+   *
+   * Note that this Flow will be materialized together with the [[Source]] and just kept
+   * from producing elements by asserting back-pressure until its time comes or it gets
+   * cancelled.
+   *
+   * On errors the stage is failed regardless of source of the error.
+   *
+   * '''Emits when''' element is available from first stream or first stream closed without emitting any elements and an element
+   *                  is available from the second stream
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' the first stream completes after emitting at least one element or else when the second stream completes
+   *
+   * '''Cancels when''' downstream cancels and additionally the alternative is cancelled as soon as an element passes
+   *                    by from this stream.
+   */
+  def orElseMat[U >: Out, Mat2, Mat3](secondary: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
+    viaMat(orElseGraph(secondary))(matF)
 
   /**
    * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
