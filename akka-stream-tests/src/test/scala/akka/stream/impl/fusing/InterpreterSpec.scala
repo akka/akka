@@ -4,6 +4,7 @@
 package akka.stream.impl.fusing
 
 import akka.stream.impl.ConstantFun
+import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage._
 import akka.stream.testkit.StreamSpec
 import akka.testkit.EventFilter
@@ -464,8 +465,8 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
     }
 
-    "work with pushAndFinish if upstream completes with pushAndFinish" in new OneBoundedSetup[Int](Seq(
-      new PushFinishStage)) {
+    "work with pushAndFinish if upstream completes with pushAndFinish" in new OneBoundedSetup[Int](
+      new PushFinishStage) {
 
       lastEvents() should be(Set.empty)
 
@@ -476,10 +477,10 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnNext(0), OnComplete))
     }
 
-    "work with pushAndFinish if indirect upstream completes with pushAndFinish" in new OneBoundedSetup[Int](Seq(
-      Map((x: Any) ⇒ x, stoppingDecider),
+    "work with pushAndFinish if indirect upstream completes with pushAndFinish" in new OneBoundedSetup[Int](
+      Map((x: Any) ⇒ x, stoppingDecider).toGS,
       new PushFinishStage,
-      Map((x: Any) ⇒ x, stoppingDecider))) {
+      Map((x: Any) ⇒ x, stoppingDecider).toGS) {
 
       lastEvents() should be(Set.empty)
 
@@ -491,7 +492,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
     }
 
     "work with pushAndFinish if upstream completes with pushAndFinish and downstream immediately pulls" in new OneBoundedSetup[Int](
-      (new PushFinishStage).toGS,
+      new PushFinishStage,
       Fold(0, (x: Int, y: Int) ⇒ x + y)) {
 
       lastEvents() should be(Set.empty)
@@ -503,11 +504,19 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnNext(1), OnComplete))
     }
 
-    "report error if pull is called while op is terminating" in new OneBoundedSetup[Int](Seq(new PushPullStage[Any, Any] {
-      override def onPull(ctx: Context[Any]): SyncDirective = ctx.pull()
-      override def onPush(elem: Any, ctx: Context[Any]): SyncDirective = ctx.pull()
-      override def onUpstreamFinish(ctx: Context[Any]): TerminationDirective = ctx.absorbTermination()
-    })) {
+    "report error if pull is called while op is terminating" in new OneBoundedSetup[Int](new SimpleLinearGraphStage[Any] {
+      override def createLogic(attributes: Attributes): GraphStageLogic =
+        new GraphStageLogic(shape) with InHandler with OutHandler {
+
+          override def onPull(): Unit = pull(in)
+
+          override def onPush(): Unit = pull(in)
+
+          override def onUpstreamFinish(): Unit = {
+            if (isAvailable(out)) onPull()
+          }
+        }
+    }) {
       lastEvents() should be(Set.empty)
 
       downstream.requestOne()
@@ -636,15 +645,23 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
   }
 
   // This test is related to issue #17351
-  private[akka] class PushFinishStage(onPostStop: () ⇒ Unit = () ⇒ ()) extends PushStage[Any, Any] {
-    override def onPush(elem: Any, ctx: Context[Any]): SyncDirective =
-      ctx.pushAndFinish(elem)
+  private[akka] class PushFinishStage(onPostStop: () ⇒ Unit = () ⇒ ()) extends SimpleLinearGraphStage[Any] {
+    override def createLogic(attributes: Attributes): GraphStageLogic =
+      new GraphStageLogic(shape) with InHandler with OutHandler {
 
-    override def onUpstreamFinish(ctx: Context[Any]): TerminationDirective =
-      ctx.fail(akka.stream.testkit.Utils.TE("Cannot happen"))
+        override def onPush(): Unit = {
+          push(out, grab(in))
+          completeStage()
+        }
 
-    override def postStop(): Unit =
-      onPostStop()
+        override def onPull(): Unit = pull(in)
+
+        override def onUpstreamFinish(): Unit = failStage(akka.stream.testkit.Utils.TE("Cannot happen"))
+
+        override def postStop(): Unit = onPostStop()
+
+        setHandlers(in, out, this)
+      }
   }
 
 }
