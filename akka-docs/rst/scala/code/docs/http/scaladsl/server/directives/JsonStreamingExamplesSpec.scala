@@ -5,13 +5,15 @@
 package docs.http.scaladsl.server.directives
 
 import akka.NotUsed
-import akka.http.scaladsl.common.{ FramingWithContentType, JsonSourceRenderingModes }
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
+import akka.http.scaladsl.common.{ EntityStreamingSupport, JsonEntityStreamingSupport }
+import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.{ UnacceptedResponseContentTypeRejection, UnsupportedRequestContentTypeRejection }
 import akka.stream.scaladsl.{ Flow, Source }
+import akka.util.ByteString
 import docs.http.scaladsl.server.RoutingSpec
+import spray.json.JsValue
 
 import scala.concurrent.Future
 
@@ -29,39 +31,41 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
       Tweet(3, "You cannot enter the same river twice.")))
 
   //#formats
-  object MyJsonProtocol extends spray.json.DefaultJsonProtocol {
+  object MyJsonProtocol
+    extends akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+    with spray.json.DefaultJsonProtocol {
+
     implicit val tweetFormat = jsonFormat2(Tweet.apply)
     implicit val measurementFormat = jsonFormat2(Measurement.apply)
   }
   //#
 
   "spray-json-response-streaming" in {
-    // [1] import generic spray-json marshallers support:
-    import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-
-    // [2] import "my protocol", for marshalling Tweet objects:
+    // [1] import "my protocol", for marshalling Tweet objects:
     import MyJsonProtocol._
 
-    // [3] pick json rendering mode:
-    // HINT: if you extend `akka.http.scaladsl.server.EntityStreamingSupport` 
-    //       it'll guide you to do so via abstract defs
-    implicit val jsonRenderingMode = JsonSourceRenderingModes.LineByLine
+    // [2] pick a Source rendering support trait:
+    // Note that the default support renders the Source as JSON Array
+    implicit val jsonStreamingSupport: JsonEntityStreamingSupport = EntityStreamingSupport.json()
 
     val route =
       path("tweets") {
+        // [3] simply complete a request with a source of tweets:
         val tweets: Source[Tweet, NotUsed] = getTweets()
         complete(tweets)
       }
 
-    // tests:
+    // tests ------------------------------------------------------------
     val AcceptJson = Accept(MediaRange(MediaTypes.`application/json`))
     val AcceptXml = Accept(MediaRange(MediaTypes.`text/xml`))
 
     Get("/tweets").withHeaders(AcceptJson) ~> route ~> check {
       responseAs[String] shouldEqual
-        """{"uid":1,"txt":"#Akka rocks!"}""" + "\n" +
-        """{"uid":2,"txt":"Streaming is so hot right now!"}""" + "\n" +
-        """{"uid":3,"txt":"You cannot enter the same river twice."}"""
+        """[""" +
+        """{"uid":1,"txt":"#Akka rocks!"},""" +
+        """{"uid":2,"txt":"Streaming is so hot right now!"},""" +
+        """{"uid":3,"txt":"You cannot enter the same river twice."}""" +
+        """]"""
     }
 
     // endpoint can only marshal Json, so it will *reject* requests for application/xml:
@@ -71,44 +75,115 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     }
   }
 
-  "response-streaming-modes" in {
-    import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+  "line-by-line-json-response-streaming" in {
     import MyJsonProtocol._
-    implicit val jsonRenderingMode = JsonSourceRenderingModes.LineByLine
 
-    //#async-rendering
-    path("tweets") {
-      val tweets: Source[Tweet, NotUsed] = getTweets()
-      complete(tweets.renderAsync(parallelism = 8))
-    }
-    //#
+    // Configure the EntityStreamingSupport to render the elements as:
+    // {"example":42}
+    // {"example":43}
+    // ...
+    // {"example":1000}
+    val start = ByteString.empty
+    val sep = ByteString("\n")
+    val end = ByteString.empty
 
-    //#async-unordered-rendering
-    path("tweets" / "unordered") {
-      val tweets: Source[Tweet, NotUsed] = getTweets()
-      complete(tweets.renderAsyncUnordered(parallelism = 8))
+    implicit val jsonStreamingSupport = EntityStreamingSupport.json()
+      .withFramingRenderer(Flow[ByteString].intersperse(start, sep, end))
+
+    val route =
+      path("tweets") {
+        // [3] simply complete a request with a source of tweets:
+        val tweets: Source[Tweet, NotUsed] = getTweets()
+        complete(tweets)
+      }
+
+    // tests ------------------------------------------------------------
+    val AcceptJson = Accept(MediaRange(MediaTypes.`application/json`))
+
+    Get("/tweets").withHeaders(AcceptJson) ~> route ~> check {
+      responseAs[String] shouldEqual
+        """{"uid":1,"txt":"#Akka rocks!"}""" + "\n" +
+        """{"uid":2,"txt":"Streaming is so hot right now!"}""" + "\n" +
+        """{"uid":3,"txt":"You cannot enter the same river twice."}"""
     }
-    //#
+  }
+
+  "csv-example" in {
+    // [1] provide a marshaller to ByteString
+    implicit val tweetAsCsv = Marshaller.strict[Tweet, ByteString] { t =>
+      Marshalling.WithFixedContentType(ContentTypes.`text/csv(UTF-8)`, () => {
+        val txt = t.txt.replaceAll(",", ".")
+        val uid = t.uid
+        ByteString(List(uid, txt).mkString(","))
+      })
+    }
+
+    // [2] enable csv streaming:
+    implicit val csvStreaming = EntityStreamingSupport.csv()
+
+    val route =
+      path("tweets") {
+        val tweets: Source[Tweet, NotUsed] = getTweets()
+        complete(tweets)
+      }
+
+    // tests ------------------------------------------------------------
+    val AcceptCsv = Accept(MediaRange(MediaTypes.`text/csv`))
+
+    Get("/tweets").withHeaders(AcceptCsv) ~> route ~> check {
+      responseAs[String] shouldEqual
+        """|1,#Akka rocks!
+           |2,Streaming is so hot right now!
+           |3,You cannot enter the same river twice."""
+        .stripMargin
+    }
+  }
+
+  "response-streaming-modes" in {
+
+    {
+      //#async-rendering 
+      import MyJsonProtocol._
+      implicit val jsonStreamingSupport: JsonEntityStreamingSupport =
+        EntityStreamingSupport.json()
+          .withParallelMarshalling(parallelism = 8, unordered = false)
+
+      path("tweets") {
+        val tweets: Source[Tweet, NotUsed] = getTweets()
+        complete(tweets)
+      }
+      //#
+    }
+
+    {
+
+      //#async-unordered-rendering
+      import MyJsonProtocol._
+      implicit val jsonStreamingSupport: JsonEntityStreamingSupport =
+        EntityStreamingSupport.json()
+          .withParallelMarshalling(parallelism = 8, unordered = true)
+
+      path("tweets" / "unordered") {
+        val tweets: Source[Tweet, NotUsed] = getTweets()
+        complete(tweets)
+      }
+      //#
+    }
   }
 
   "spray-json-request-streaming" in {
-    // [1] import generic spray-json (un)marshallers support:
-    import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-
-    // [1.1] import framing mode
-    import akka.http.scaladsl.server.EntityStreamingSupport
-    implicit val jsonFramingMode: FramingWithContentType =
-      EntityStreamingSupport.bracketCountingJsonFraming(Int.MaxValue)
-
-    // [2] import "my protocol", for unmarshalling Measurement objects:
+    // [1] import "my protocol", for unmarshalling Measurement objects:
     import MyJsonProtocol._
 
-    // [3] prepare your persisting logic here
+    // [2] enable Json Streaming
+    implicit val jsonStreamingSupport = EntityStreamingSupport.json()
+
+    // prepare your persisting logic here
     val persistMetrics = Flow[Measurement]
 
     val route =
       path("metrics") {
-        // [4] extract Source[Measurement, _]
+        // [3] extract Source[Measurement, _]
         entity(asSourceOf[Measurement]) { measurements =>
           // alternative syntax:
           // entity(as[Source[Measurement, NotUsed]]) { measurements =>
@@ -123,7 +198,8 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
         }
       }
 
-    // tests:
+    // tests ------------------------------------------------------------
+    // uploading an array or newline separated values works out of the box
     val data = HttpEntity(
       ContentTypes.`application/json`,
       """
