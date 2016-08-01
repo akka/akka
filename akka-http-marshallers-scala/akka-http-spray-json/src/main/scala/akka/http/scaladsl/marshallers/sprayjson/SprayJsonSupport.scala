@@ -4,11 +4,14 @@
 
 package akka.http.scaladsl.marshallers.sprayjson
 
-import akka.http.scaladsl.marshalling.{ Marshaller, ToByteStringMarshaller, ToEntityMarshaller }
+import akka.NotUsed
+import akka.http.scaladsl.common.EntityStreamingSupport
+import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.{ HttpCharsets, MediaTypes }
-import akka.http.scaladsl.unmarshalling.{ FromEntityUnmarshaller, Unmarshaller }
+import akka.http.scaladsl.unmarshalling.{ FromEntityUnmarshaller, FromRequestUnmarshaller, Unmarshaller }
 import akka.http.scaladsl.util.FastFuture
+import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.util.ByteString
 import spray.json._
 
@@ -44,7 +47,19 @@ trait SprayJsonSupport {
     sprayJsValueMarshaller compose writer.write
   implicit def sprayJsValueMarshaller(implicit printer: JsonPrinter = CompactPrinter): ToEntityMarshaller[JsValue] =
     Marshaller.StringMarshaller.wrap(MediaTypes.`application/json`)(printer)
-  implicit def sprayByteStringMarshaller[T](implicit writer: RootJsonFormat[T], printer: JsonPrinter = CompactPrinter): ToByteStringMarshaller[T] =
-    sprayJsValueMarshaller.map(s ⇒ ByteString(s.toString)) compose writer.write
+
+  // support for as[Source[T, NotUsed]]
+  implicit def sprayJsonSourceReader[T](implicit rootJsonReader: RootJsonReader[T], support: EntityStreamingSupport): FromRequestUnmarshaller[Source[T, NotUsed]] =
+    Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat ⇒ r ⇒
+      if (support.supported.matches(r.entity.contentType)) {
+        val bytes = r.entity.dataBytes
+        val frames = bytes.via(support.framingDecoder)
+        val unmarshalling =
+          if (support.unordered) Flow[ByteString].mapAsyncUnordered(support.parallelism)(bs ⇒ sprayJsonByteStringUnmarshaller(rootJsonReader)(bs))
+          else Flow[ByteString].mapAsync(support.parallelism)(bs ⇒ sprayJsonByteStringUnmarshaller(rootJsonReader)(bs))
+        val elements = frames.viaMat(unmarshalling)(Keep.right)
+        FastFuture.successful(elements)
+      } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(support.supported))
+    }
 }
 object SprayJsonSupport extends SprayJsonSupport

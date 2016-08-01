@@ -7,10 +7,12 @@ import java.util.function.{ Function ⇒ JFunction }
 import java.util.{ List ⇒ JList, Map ⇒ JMap }
 
 import akka.NotUsed
-import akka.http.javadsl.common.{ FramingWithContentType, SourceRenderingMode }
+import akka.http.javadsl.common.EntityStreamingSupport
+import akka.http.javadsl.marshalling.Marshaller
 import akka.http.javadsl.model.{ HttpEntity, _ }
-import akka.http.javadsl.server.{ Marshaller, Route, Unmarshaller }
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
+import akka.http.javadsl.server.Route
+import akka.http.javadsl.unmarshalling.Unmarshaller
+import akka.http.scaladsl.marshalling.{ Marshalling, ToByteStringMarshaller, ToResponseMarshallable }
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 import akka.stream.javadsl.Source
 import akka.util.ByteString
@@ -18,54 +20,37 @@ import akka.util.ByteString
 /** EXPERIMENTAL API */
 abstract class FramedEntityStreamingDirectives extends TimeoutDirectives {
 
+  import akka.http.javadsl.server.RoutingJavaMapping._
+  import akka.http.javadsl.server.RoutingJavaMapping.Implicits._
+
   @CorrespondsTo("asSourceOf")
-  def entityasSourceOf[T](um: Unmarshaller[ByteString, T], framing: FramingWithContentType,
+  def entityAsSourceOf[T](um: Unmarshaller[ByteString, T], support: EntityStreamingSupport,
                           inner: java.util.function.Function[Source[T, NotUsed], Route]): Route = RouteAdapter {
-    D.entity(D.asSourceOf[T](framing.asScala)(um.asScala)) { s: akka.stream.scaladsl.Source[T, NotUsed] ⇒
+    val umm = D.asSourceOf(um.asScala, support.asScala)
+    D.entity(umm) { s: akka.stream.scaladsl.Source[T, NotUsed] ⇒
       inner(s.asJava).delegate
     }
   }
 
-  @CorrespondsTo("asSourceOfAsync")
-  def entityAsSourceAsyncOf[T](
-    parallelism: Int,
-    um:          Unmarshaller[ByteString, T], framing: FramingWithContentType,
-    inner: java.util.function.Function[Source[T, NotUsed], Route]): Route = RouteAdapter {
-    D.entity(D.asSourceOfAsync[T](parallelism, framing.asScala)(um.asScala)) { s: akka.stream.scaladsl.Source[T, NotUsed] ⇒
-      inner(s.asJava).delegate
-    }
-  }
-
-  @CorrespondsTo("asSourceOfAsyncUnordered")
-  def entityAsSourceAsyncUnorderedOf[T](
-    parallelism: Int,
-    um:          Unmarshaller[ByteString, T], framing: FramingWithContentType,
-    inner: java.util.function.Function[Source[T, NotUsed], Route]): Route = RouteAdapter {
-    D.entity(D.asSourceOfAsyncUnordered[T](parallelism, framing.asScala)(um.asScala)) { s: akka.stream.scaladsl.Source[T, NotUsed] ⇒
-      inner(s.asJava).delegate
-    }
-  }
-
-  // implicits used internally, Java caller does not benefit or use it
+  // implicits and multiple parameter lists used internally, Java caller does not benefit or use it
   @CorrespondsTo("complete")
-  def completeWithSource[T, M](implicit source: Source[T, M], m: Marshaller[T, ByteString], rendering: SourceRenderingMode): Route = RouteAdapter {
-    implicit val mm = _sourceMarshaller(m.map(ByteStringAsEntityFn), rendering)
-    val response = ToResponseMarshallable(source)
+  def completeWithSource[T, M](source: Source[T, M])(implicit m: Marshaller[T, ByteString], support: EntityStreamingSupport): Route = RouteAdapter {
+    import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
+    val mm = m.map(ByteStringAsEntityFn).asScalaCastOutput[akka.http.scaladsl.model.RequestEntity]
+    val mmm = fromEntityStreamingSupportAndEntityMarshaller[T, M](support.asScala, mm)
+    val response = ToResponseMarshallable(source.asScala)(mmm)
     D.complete(response)
   }
 
+  // implicits and multiple parameter lists used internally, Java caller does not benefit or use it
   @CorrespondsTo("complete")
-  def completeOKWithSource[T, M](implicit source: Source[T, M], m: Marshaller[T, RequestEntity], rendering: SourceRenderingMode): Route = RouteAdapter {
-    implicit val mm = _sourceMarshaller[T, M](m, rendering)
-    val response = ToResponseMarshallable(source)
+  def completeOKWithSource[T, M](source: Source[T, M])(implicit m: Marshaller[T, RequestEntity], support: EntityStreamingSupport): Route = RouteAdapter {
+    import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
+    // don't try this at home:
+    val mm = m.asScalaCastOutput[akka.http.scaladsl.model.RequestEntity].map(_.httpEntity.asInstanceOf[akka.http.scaladsl.model.RequestEntity])
+    implicit val mmm = fromEntityStreamingSupportAndEntityMarshaller[T, M](support.asScala, mm)
+    val response = ToResponseMarshallable(source.asScala)
     D.complete(response)
-  }
-
-  implicit private def _sourceMarshaller[T, M](implicit m: Marshaller[T, HttpEntity], rendering: SourceRenderingMode) = {
-    import akka.http.javadsl.server.RoutingJavaMapping.Implicits._
-    import akka.http.javadsl.server.RoutingJavaMapping._
-    val mm = m.asScalaCastOutput
-    D._sourceMarshaller[T, M](mm, rendering.asScala).compose({ h: akka.stream.javadsl.Source[T, M] ⇒ h.asScala })
   }
 
   private[this] val ByteStringAsEntityFn = new java.util.function.Function[ByteString, HttpEntity]() {

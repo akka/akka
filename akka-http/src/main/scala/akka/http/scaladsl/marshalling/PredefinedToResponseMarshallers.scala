@@ -4,12 +4,19 @@
 
 package akka.http.scaladsl.marshalling
 
+import akka.http.scaladsl.common.EntityStreamingSupport
 import akka.stream.impl.ConstantFun
 
 import scala.collection.immutable
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.ContentNegotiator
+import akka.http.scaladsl.util.FastFuture
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
+
+import scala.language.higherKinds
 
 trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImplicits {
 
@@ -41,6 +48,37 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
     Marshaller(implicit ec ⇒ {
       case (status, headers, value) ⇒ mt(value).fast map (_ map (_ map (HttpResponse(status, headers, _))))
     })
+
+  implicit def fromEntityStreamingSupportAndByteStringMarshaller[T, M](implicit s: EntityStreamingSupport, m: ToByteStringMarshaller[T]): ToResponseMarshaller[Source[T, M]] = {
+    Marshaller[Source[T, M], HttpResponse] { implicit ec ⇒ source ⇒
+      FastFuture successful {
+        Marshalling.WithFixedContentType(s.contentType, () ⇒ {
+          val availableMarshallingsPerElement = source.mapAsync(1) { t ⇒ m(t)(ec) }
+
+          // TODO optimise such that we pick the optimal marshalling only once (headAndTail needed?)
+          // TODO, NOTE: this is somewhat duplicated from Marshal.scala it could be made DRYer
+          val bestMarshallingPerElement = availableMarshallingsPerElement mapConcat { marshallings ⇒
+            // pick the Marshalling that matches our EntityStreamingSupport
+            (s.contentType match {
+              case best @ (_: ContentType.Binary | _: ContentType.WithFixedCharset) ⇒
+                marshallings collectFirst { case Marshalling.WithFixedContentType(`best`, marshal) ⇒ marshal }
+
+              case best @ ContentType.WithCharset(bestMT, bestCS) ⇒
+                marshallings collectFirst {
+                  case Marshalling.WithFixedContentType(`best`, marshal) ⇒ marshal
+                  case Marshalling.WithOpenCharset(`bestMT`, marshal)    ⇒ () ⇒ marshal(bestCS)
+                }
+            }).toList
+          }
+          val marshalledElements: Source[ByteString, M] =
+            bestMarshallingPerElement.map(_.apply()) // marshal!
+              .via(s.framingRenderer)
+
+          HttpResponse(entity = HttpEntity(s.contentType, marshalledElements))
+        }) :: Nil
+      }
+    }
+  }
 }
 
 trait LowPriorityToResponseMarshallerImplicits {
@@ -48,6 +86,40 @@ trait LowPriorityToResponseMarshallerImplicits {
     liftMarshaller(m)
   implicit def liftMarshaller[T](implicit m: ToEntityMarshaller[T]): ToResponseMarshaller[T] =
     PredefinedToResponseMarshallers.fromToEntityMarshaller()
+
+  // FIXME deduplicate this!!!
+  implicit def fromEntityStreamingSupportAndEntityMarshaller[T, M](implicit s: EntityStreamingSupport, m: ToEntityMarshaller[T]): ToResponseMarshaller[Source[T, M]] = {
+    Marshaller[Source[T, M], HttpResponse] { implicit ec ⇒ source ⇒
+      FastFuture successful {
+        Marshalling.WithFixedContentType(s.contentType, () ⇒ {
+          val availableMarshallingsPerElement = source.mapAsync(1) { t ⇒ m(t)(ec) }
+
+          // TODO optimise such that we pick the optimal marshalling only once (headAndTail needed?)
+          // TODO, NOTE: this is somewhat duplicated from Marshal.scala it could be made DRYer
+          val bestMarshallingPerElement = availableMarshallingsPerElement mapConcat { marshallings ⇒
+            // pick the Marshalling that matches our EntityStreamingSupport
+            (s.contentType match {
+              case best @ (_: ContentType.Binary | _: ContentType.WithFixedCharset) ⇒
+                marshallings collectFirst { case Marshalling.WithFixedContentType(`best`, marshal) ⇒ marshal }
+
+              case best @ ContentType.WithCharset(bestMT, bestCS) ⇒
+                marshallings collectFirst {
+                  case Marshalling.WithFixedContentType(`best`, marshal) ⇒ marshal
+                  case Marshalling.WithOpenCharset(`bestMT`, marshal)    ⇒ () ⇒ marshal(bestCS)
+                }
+            }).toList
+          }
+          val marshalledElements: Source[ByteString, M] =
+            bestMarshallingPerElement.map(_.apply()) // marshal!
+              .flatMapConcat(_.dataBytes) // extract raw dataBytes
+              .via(s.framingRenderer)
+
+          HttpResponse(entity = HttpEntity(s.contentType, marshalledElements))
+        }) :: Nil
+      }
+    }
+  }
+
 }
 
 object PredefinedToResponseMarshallers extends PredefinedToResponseMarshallers
