@@ -206,8 +206,8 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
         .connect(passThrough.out, Downstream)
         .init()
 
-      interpreter.complete(0)
-      interpreter.cancel(1)
+      interpreter.complete(interpreter.connections(0))
+      interpreter.cancel(interpreter.connections(1))
       interpreter.execute(2)
 
       expectMsg("postStop2")

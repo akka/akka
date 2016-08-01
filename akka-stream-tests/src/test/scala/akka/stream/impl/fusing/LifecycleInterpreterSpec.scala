@@ -84,9 +84,9 @@ class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
     }
 
     "onError when preStart fails with stages after" in new OneBoundedSetup[String](
-      Map((x: Int) ⇒ x, stoppingDecider).toGS,
+      Map((x: Int) ⇒ x),
       PreStartFailer(() ⇒ throw TE("Boom!")),
-      Map((x: Int) ⇒ x, stoppingDecider).toGS) {
+      Map((x: Int) ⇒ x)) {
       lastEvents() should ===(Set(Cancel, OnError(TE("Boom!"))))
     }
 
@@ -112,9 +112,9 @@ class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
     }
 
     "postStop when pushAndFinish called with pushAndFinish if indirect upstream completes with pushAndFinish" in new OneBoundedSetup[String](
-      Map((x: Any) ⇒ x, stoppingDecider).toGS,
+      Map((x: Any) ⇒ x),
       new PushFinishStage(onPostStop = () ⇒ testActor ! "stop"),
-      Map((x: Any) ⇒ x, stoppingDecider).toGS) {
+      Map((x: Any) ⇒ x)) {
 
       lastEvents() should be(Set.empty)
 
