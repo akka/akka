@@ -134,12 +134,12 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
     path("ping") {
       complete("PONG!")
     } ~
-    path("long-response-stream" / IntNumber) { n =>
+    path("long-response-array" / IntNumber) { n =>
       if (n == 10) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, array_10x))
       else if (n == 100) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, array_10x))
       else throw new RuntimeException(s"Not implemented for ${n}")
     } ~
-    path("long-response-array" / IntNumber) { n =>
+    path("long-response-stream" / IntNumber) { n =>
       if (n == 10) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, source_100x))
       else if (n == 100) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, source_100x))
       else throw new RuntimeException(s"Not implemented for ${n}")
