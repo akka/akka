@@ -38,7 +38,10 @@ object ClusterShardingSettings {
       leastShardAllocationMaxSimultaneousRebalance =
         config.getInt("least-shard-allocation-strategy.max-simultaneous-rebalance"),
       waitingForStateTimeout = config.getDuration("waiting-for-state-timeout", MILLISECONDS).millis,
-      updatingStateTimeout = config.getDuration("updating-state-timeout", MILLISECONDS).millis)
+      updatingStateTimeout = config.getDuration("updating-state-timeout", MILLISECONDS).millis,
+      entityRecoveryStrategy = config.getString("entity-recovery-strategy"),
+      entityRecoveryConstantRateStrategyFrequency = config.getDuration("entity-recovery-constant-rate-strategy.frequency", MILLISECONDS).millis,
+      entityRecoveryConstantRateStrategyNumberOfEntities = config.getInt("entity-recovery-constant-rate-strategy.number-of-entities"))
 
     val coordinatorSingletonSettings = ClusterSingletonManagerSettings(config.getConfig("coordinator-singleton"))
 
@@ -71,19 +74,62 @@ object ClusterShardingSettings {
     if (role == "") None else Option(role)
 
   class TuningParameters(
-    val coordinatorFailureBackoff:                    FiniteDuration,
-    val retryInterval:                                FiniteDuration,
-    val bufferSize:                                   Int,
-    val handOffTimeout:                               FiniteDuration,
-    val shardStartTimeout:                            FiniteDuration,
-    val shardFailureBackoff:                          FiniteDuration,
-    val entityRestartBackoff:                         FiniteDuration,
-    val rebalanceInterval:                            FiniteDuration,
-    val snapshotAfter:                                Int,
-    val leastShardAllocationRebalanceThreshold:       Int,
-    val leastShardAllocationMaxSimultaneousRebalance: Int,
-    val waitingForStateTimeout:                       FiniteDuration,
-    val updatingStateTimeout:                         FiniteDuration)
+    val coordinatorFailureBackoff:                          FiniteDuration,
+    val retryInterval:                                      FiniteDuration,
+    val bufferSize:                                         Int,
+    val handOffTimeout:                                     FiniteDuration,
+    val shardStartTimeout:                                  FiniteDuration,
+    val shardFailureBackoff:                                FiniteDuration,
+    val entityRestartBackoff:                               FiniteDuration,
+    val rebalanceInterval:                                  FiniteDuration,
+    val snapshotAfter:                                      Int,
+    val leastShardAllocationRebalanceThreshold:             Int,
+    val leastShardAllocationMaxSimultaneousRebalance:       Int,
+    val waitingForStateTimeout:                             FiniteDuration,
+    val updatingStateTimeout:                               FiniteDuration,
+    val entityRecoveryStrategy:                             String,
+    val entityRecoveryConstantRateStrategyFrequency:        FiniteDuration,
+    val entityRecoveryConstantRateStrategyNumberOfEntities: Int) {
+
+    require(
+      entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",
+      s"Unknown 'entity-recovery-strategy' [$entityRecoveryStrategy], valid values are 'all' or 'constant'")
+
+    // included for binary compatibility
+    def this(
+      coordinatorFailureBackoff:                    FiniteDuration,
+      retryInterval:                                FiniteDuration,
+      bufferSize:                                   Int,
+      handOffTimeout:                               FiniteDuration,
+      shardStartTimeout:                            FiniteDuration,
+      shardFailureBackoff:                          FiniteDuration,
+      entityRestartBackoff:                         FiniteDuration,
+      rebalanceInterval:                            FiniteDuration,
+      snapshotAfter:                                Int,
+      leastShardAllocationRebalanceThreshold:       Int,
+      leastShardAllocationMaxSimultaneousRebalance: Int,
+      waitingForStateTimeout:                       FiniteDuration,
+      updatingStateTimeout:                         FiniteDuration) = {
+      this(
+        coordinatorFailureBackoff,
+        retryInterval,
+        bufferSize,
+        handOffTimeout,
+        shardStartTimeout,
+        shardFailureBackoff,
+        entityRestartBackoff,
+        rebalanceInterval,
+        snapshotAfter,
+        leastShardAllocationRebalanceThreshold,
+        leastShardAllocationMaxSimultaneousRebalance,
+        waitingForStateTimeout,
+        updatingStateTimeout,
+        "all",
+        100 milliseconds,
+        5
+      )
+    }
+  }
 }
 
 /**
