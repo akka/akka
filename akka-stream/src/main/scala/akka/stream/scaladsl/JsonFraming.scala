@@ -17,6 +17,7 @@ object JsonFraming {
 
   /**
    * Returns a Flow that implements a "brace counting" based framing stage for emitting valid JSON chunks.
+   * It scans the incoming data stream for valid JSON objects and returns chunks of ByteStrings containing only those valid chunks.
    *
    * Typical examples of data that one may want to frame using this stage include:
    *
@@ -40,7 +41,7 @@ object JsonFraming {
    * @param maximumObjectLength The maximum length of allowed frames while decoding. If the maximum length is exceeded
    *                            this Flow will fail the stream.
    */
-  def bracketCounting(maximumObjectLength: Int): Flow[ByteString, ByteString, NotUsed] =
+  def objectScanner(maximumObjectLength: Int): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].via(new SimpleLinearGraphStage[ByteString] {
       private[this] val buffer = new JsonObjectParser(maximumObjectLength)
 
@@ -67,6 +68,6 @@ object JsonFraming {
           }
         }
       }
-    }).named("jsonFraming(BracketCounting)")
+    }).named("JsonFraming.objectScanner")
 
 }

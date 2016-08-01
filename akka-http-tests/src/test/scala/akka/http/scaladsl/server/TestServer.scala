@@ -13,8 +13,9 @@ import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.common.{ FramingWithContentType, JsonSourceRenderingModes, SourceRenderingMode }
+import akka.http.scaladsl.common.EntityStreamingSupport
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
+import spray.json.RootJsonReader
 
 import scala.concurrent.duration._
 import scala.io.StdIn
@@ -30,20 +31,12 @@ object TestServer extends App {
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
 
-  // --------- json streaming ---------
   import spray.json.DefaultJsonProtocol._
   import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
   final case class Tweet(message: String)
   implicit val tweetFormat = jsonFormat1(Tweet)
 
-  // FIXME: Need to be able to support composive framing with content type (!!!!!!!)
-  import akka.http.scaladsl.server.EntityStreamingSupport._
-  /* override if extending EntityStreamingSupport */
-  implicit val incomingEntityStreamFraming: FramingWithContentType = bracketCountingJsonFraming(128)
-  /* override if extending EntityStreamingSupport */
-  implicit val outgoingEntityStreamRendering: SourceRenderingMode = JsonSourceRenderingModes.LineByLine
-
-  // --------- end of json streaming ---------
+  implicit val jsonStreaming = EntityStreamingSupport.json()
 
   import ScalaXmlSupport._
   import Directives._
@@ -65,13 +58,7 @@ object TestServer extends App {
       } ~
       path("secure") {
         authenticateBasicPF("My very secure site", auth) { user ⇒
-          complete(<html>
-            <body>Hello
-              <b>
-                {user}
-              </b>
-              . Access has been granted!</body>
-          </html>)
+          complete(<html> <body> Hello <b>{user}</b>. Access has been granted! </body> </html>)
         }
       } ~
       path("ping") {
@@ -89,6 +76,14 @@ object TestServer extends App {
           complete(tweets)
         } ~
         post {
+          entity(asSourceOf[Tweet]) { tweets ⇒
+            onComplete(tweets.runFold(0)({ case (acc, t) => acc + 1 })) { count => 
+              complete(s"Total tweets received: " + count)
+            }
+          }
+        } ~
+        put {
+          // checking the alternative syntax also works:
           entity(as[Source[Tweet, NotUsed]]) { tweets ⇒
             onComplete(tweets.runFold(0)({ case (acc, t) => acc + 1 })) { count => 
               complete(s"Total tweets received: " + count)
@@ -103,7 +98,7 @@ object TestServer extends App {
 
   val bindingFuture = Http().bindAndHandle(routes, interface = "0.0.0.0", port = 8080)
 
-  println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
+  println(s"Server online at http://0.0.0.0:8080/\nPress RETURN to stop...")
   StdIn.readLine()
 
   bindingFuture.flatMap(_.unbind()).onComplete(_ ⇒ system.terminate())

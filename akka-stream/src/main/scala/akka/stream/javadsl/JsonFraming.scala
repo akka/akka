@@ -34,7 +34,7 @@ object JsonFraming {
    * @param maximumObjectLength The maximum length of allowed frames while decoding. If the maximum length is exceeded
    *                            this Flow will fail the stream.
    */
-  def bracketCounting(maximumObjectLength: Int): Flow[ByteString, ByteString, NotUsed] =
-    akka.stream.scaladsl.JsonFraming.bracketCounting(maximumObjectLength).asJava
+  def objectScanner(maximumObjectLength: Int): Flow[ByteString, ByteString, NotUsed] =
+    akka.stream.scaladsl.JsonFraming.objectScanner(maximumObjectLength).asJava
 
 }

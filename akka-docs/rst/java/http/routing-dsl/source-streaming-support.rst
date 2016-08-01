@@ -3,18 +3,15 @@
 Source Streaming
 ================
 
-Akka HTTP supports completing a request with an Akka ``Source<T, ?>``, which makes it possible to easily build
-streaming end-to-end APIs which apply back-pressure throughout the entire stack. 
+Akka HTTP supports completing a request with an Akka ``Source<T, _>``, which makes it possible to easily build
+and consume streaming end-to-end APIs which apply back-pressure throughout the entire stack. 
 
-It is possible to complete requests with raw ``Source<ByteString, ?>``, however often it is more convenient to 
+It is possible to complete requests with raw ``Source<ByteString, _>``, however often it is more convenient to 
 stream on an element-by-element basis, and allow Akka HTTP to handle the rendering internally - for example as a JSON array,
 or CSV stream (where each element is separated by a new-line).
 
 In the following sections we investigate how to make use of the JSON Streaming infrastructure,
-however the general hints apply to any kind of element-by-element streaming you could imagine. 
-
-It is possible to implement your own framing for any content type you might need, including bianary formats 
-by implementing :class:`FramingWithContentType`.
+however the general hints apply to any kind of element-by-element streaming you could imagine.
 
 JSON Streaming
 ==============
@@ -24,7 +21,7 @@ objects as a continuous HTTP request or response. The elements are most often se
 however do not have to be. Concatenating elements side-by-side or emitting "very long" JSON array is also another
 use case.
 
-In the below examples, we'll be refering to the ``User`` and ``Measurement`` case classes as our model, which are defined as:
+In the below examples, we'll be refering to the ``Tweet`` and ``Measurement`` case classes as our model, which are defined as:
 
 .. includecode:: ../../code/docs/http/javadsl/server/JsonStreamingExamplesTest.java#models
 
@@ -36,11 +33,21 @@ Responding with JSON Streams
 In this example we implement an API representing an infinite stream of tweets, very much like Twitter's `Streaming API`_.
 
 Firstly, we'll need to get some additional marshalling infrastructure set up, that is able to marshal to and from an
-Akka Streams ``Source<T, ?>``. One such trait, containing the needed marshallers is ``SprayJsonSupport``, which uses
-spray-json (a high performance json parser library), and is shipped as part of Akka HTTP in the
-``akka-http-spray-json-experimental`` module.
+Akka Streams ``Source<T,_>``. Here we'll use the ``Jackson`` helper class from ``akka-http-jackson`` (a separate library
+that you should add as a dependency if you want to use Jackson with Akka HTTP).
 
-The last bit of setup, before we can render a streaming json response
+First we enable JSON Streaming by making an implicit ``EntityStreamingSupport`` instance available (Step 1).
+
+The default mode of rendering a ``Source`` is to represent it as an JSON Array. If you want to change this representation
+for example to use Twitter style new-line separated JSON objects, you can do so by configuring the support trait accordingly.
+
+In Step 1.1. we demonstrate to configure configude the rendering to be new-line separated, and also how parallel marshalling 
+can be applied. We configure the Support object to render the JSON as series of new-line separated JSON objects,
+simply by providing the ``start``, ``sep`` and ``end`` ByteStrings, which will be emitted at the apropriate
+places in the rendered stream. Although this format is *not* valid JSON, it is pretty popular since parsing it is relatively
+simple - clients need only to find the new-lines and apply JSON unmarshalling for an entire line of JSON.
+
+The final step is simply completing a request using a Source of tweets, as simple as that:
 
 .. includecode:: ../../code/docs/http/javadsl/server/JsonStreamingExamplesTest.java#response-streaming
 
@@ -60,15 +67,25 @@ will be applied automatically thanks to using Akka HTTP/Streams).
 
 .. includecode:: ../../code/docs/http/javadsl/server/JsonStreamingExamplesTest.java#incoming-request-streaming
 
-Implementing custom (Un)Marshaller support for JSON streaming
--------------------------------------------------------------
 
-The following types that may need to be implemented by a custom framed-streaming support library are:
+Simple CSV streaming example
+----------------------------
 
-- ``SourceRenderingMode`` which can customise how to render the begining / between-elements and ending of such 
-  stream (while writing a response, i.e. by calling ``complete(source)``).
-  Implementations for JSON are available in ``akka.http.scaladsl.common.JsonSourceRenderingMode``.
-- ``FramingWithContentType`` which is needed to be able to split incoming ``ByteString`` 
-  chunks into frames of the higher-level data type format that is understood by the provided unmarshallers.
-  In the case of JSON it means chunking up ByteStrings such that each emitted element corresponds to exactly one JSON object,
-  this framing is implemented in ``EntityStreamingSupport``.
+Akka HTTP provides another ``EntityStreamingSupport`` out of the box, namely ``csv`` (comma-separated values).
+For completeness, we demonstrate its usage in the below snippet. As you'll notice, switching betweeen streaming
+modes is fairly simple, one only has to make sure that an implicit ``Marshaller`` of the requested type is available,
+and that the streaming support operates on the same ``Content-Type`` as the rendered values. Otherwise you'll see
+an error during runtime that the marshaller did not expose the expected content type and thus we can not render
+the streaming response).
+
+.. includecode:: ../../code/docs/http/javadsl/server/JsonStreamingExamplesTest.java#csv-example
+
+Implementing custom EntityStreamingSupport traits
+-------------------------------------------------
+
+The ``EntityStreamingSupport`` infrastructure is open for extension and not bound to any single format, content type
+or marshalling library. The provided JSON support does not rely on Spray JSON directly, but uses ``Marshaller<T, ByteString>``
+instances, which can be provided using any JSON marshalling library (such as Circe, Jawn or Play JSON).
+
+When implementing a custom support trait, one should simply extend the ``EntityStreamingSupport`` abstract class,
+and implement all of it's methods. It's best to use the existing implementations as a guideline.

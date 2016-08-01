@@ -8,12 +8,13 @@ import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
+import akka.http.javadsl.common.EntityStreamingSupport;
 import akka.http.javadsl.marshallers.jackson.Jackson;
-import akka.http.javadsl.model.HttpEntity;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.model.StatusCodes;
-import akka.http.javadsl.common.JsonSourceRenderingModes;
+import akka.http.javadsl.unmarshalling.StringUnmarshallers;
+import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
@@ -70,12 +71,12 @@ public class JavaTestServer extends AllDirectives { // or import static Directiv
       get(() -> 
         parameter(StringUnmarshallers.INTEGER, "n", n -> {
           final Source<JavaTweet, NotUsed> tws = Source.repeat(new JavaTweet("Hello World!")).take(n);
-          return completeOKWithSource(tws, Jackson.marshaller(), JsonSourceRenderingModes.arrayCompact());
+          return completeOKWithSource(tws, Jackson.marshaller(), EntityStreamingSupport.json());
         })
       ).orElse(
       post(() ->
         extractMaterializer(mat -> 
-          entityasSourceOf(JavaTweets, null, sourceOfTweets -> {
+          entityAsSourceOf(JavaTweets, null, sourceOfTweets -> {
             final CompletionStage<Integer> tweetsCount = sourceOfTweets.runFold(0, (acc, tweet) -> acc + 1, mat);
             return onComplete(tweetsCount, c -> complete("Total number of tweets: " + c));
           })
