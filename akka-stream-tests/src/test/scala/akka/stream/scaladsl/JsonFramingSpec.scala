@@ -6,11 +6,9 @@ package akka.stream.scaladsl
 import akka.stream.ActorMaterializer
 import akka.stream.impl.JsonObjectParser
 import akka.stream.scaladsl.Framing.FramingException
-import akka.stream.scaladsl.{ JsonFraming, Framing, Source }
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
-import org.scalatest.concurrent.ScalaFutures
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Await
@@ -26,21 +24,22 @@ class JsonFramingSpec extends AkkaSpec {
         """
           |[
           | { "name" : "john" },
+          | { "name" : "Ég get etið gler án þess að meiða mig" },
           | { "name" : "jack" },
-          | { "name" : "katie" }
           |]
           |""".stripMargin // also should complete once notices end of array
 
       val result = Source.single(ByteString(input))
-        .via(JsonFraming.bracketCounting(Int.MaxValue))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
         .runFold(Seq.empty[String]) {
           case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
         }
 
       result.futureValue shouldBe Seq(
         """{ "name" : "john" }""",
-        """{ "name" : "jack" }""",
-        """{ "name" : "katie" }""")
+        """{ "name" : "Ég get etið gler án þess að meiða mig" }""",
+        """{ "name" : "jack" }"""
+      )
     }
 
     "emit single json element from string" in {
@@ -50,7 +49,7 @@ class JsonFramingSpec extends AkkaSpec {
         """.stripMargin
 
       val result = Source.single(ByteString(input))
-        .via(JsonFraming.bracketCounting(Int.MaxValue))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
         .take(1)
         .runFold(Seq.empty[String]) {
           case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
@@ -67,7 +66,7 @@ class JsonFramingSpec extends AkkaSpec {
         """.stripMargin
 
       val result = Source.single(ByteString(input))
-        .via(JsonFraming.bracketCounting(Int.MaxValue))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
         .runFold(Seq.empty[String]) {
           case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
         }
@@ -85,7 +84,7 @@ class JsonFramingSpec extends AkkaSpec {
         """.stripMargin
 
       val result = Source.single(ByteString(input))
-        .via(JsonFraming.bracketCounting(Int.MaxValue))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
         .runFold(Seq.empty[String]) {
           case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
         }
@@ -109,7 +108,7 @@ class JsonFramingSpec extends AkkaSpec {
         """"}]"""").map(ByteString(_))
 
       val result = Source.apply(input)
-        .via(JsonFraming.bracketCounting(Int.MaxValue))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
         .runFold(Seq.empty[String]) {
           case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
         }
@@ -410,7 +409,7 @@ class JsonFramingSpec extends AkkaSpec {
         """.stripMargin
 
       val result = Source.single(ByteString(input))
-        .via(JsonFraming.bracketCounting(5)).map(_.utf8String)
+        .via(JsonFraming.objectScanner(5)).map(_.utf8String)
         .runFold(Seq.empty[String]) {
           case (acc, entry) ⇒ acc ++ Seq(entry)
         }
@@ -427,7 +426,7 @@ class JsonFramingSpec extends AkkaSpec {
         """{ "name": "very very long name somehow. how did this happen?" }""").map(s ⇒ ByteString(s))
 
       val probe = Source(input)
-        .via(JsonFraming.bracketCounting(48))
+        .via(JsonFraming.objectScanner(48))
         .runWith(TestSink.probe)
 
       probe.ensureSubscription()
