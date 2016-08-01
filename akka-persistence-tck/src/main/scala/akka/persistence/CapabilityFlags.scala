@@ -21,7 +21,7 @@ object CapabilityFlag {
   def on(): CapabilityFlag =
     new CapabilityFlag { override def value = true }
   def off(): CapabilityFlag =
-    new CapabilityFlag { override def value = true }
+    new CapabilityFlag { override def value = false }
 
   /** Java DSL */
   def create(`val`: Boolean): CapabilityFlag =
