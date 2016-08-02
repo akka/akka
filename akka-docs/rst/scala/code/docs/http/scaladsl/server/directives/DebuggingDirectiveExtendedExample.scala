@@ -1,8 +1,8 @@
-package com.knoldus.logging
+/*
+ * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 
-/**
-  * Created by shiv4nsh on 18/7/16.
-  */
+package docs.http.scaladsl.server.directives
 
 import akka.actor.ActorSystem
 import akka.event.{LoggingAdapter, Logging}
