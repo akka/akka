@@ -224,4 +224,4 @@ When you combine directives producing extractions with the ``&`` operator all ex
 
 Directives offer a great way of constructing your web service logic from small building blocks in a plug and play
 fashion while maintaining DRYness and full type-safety. If the large range of :ref:`Predefined Directives` does not
-fully satisfy your needs you can also very easily create :ref:`Custom Directives`.
+fully satisfy your needs you can also easily create :ref:`Custom Directives`.

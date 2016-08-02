@@ -3,15 +3,22 @@
  */
 package akka.http.javadsl.server;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
+import akka.http.javadsl.common.EntityStreamingSupport;
+import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.model.StatusCodes;
+import akka.http.javadsl.unmarshalling.StringUnmarshallers;
+import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Source;
+import akka.util.ByteString;
 import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
 
@@ -55,18 +62,41 @@ public class JavaTestServer extends AllDirectives { // or import static Directiv
       );
 
     final Route crash = path("crash", () ->
-      path("scala", () -> completeOKWithFutureString(akka.dispatch.Futures.<String>failed(new Exception("Boom!")))).orElse(
-      path("java", () -> completeOKWithFutureString(CompletableFuture.<String>supplyAsync(() -> { throw new RuntimeException("Boom!"); }))))
+      path("scala", () -> completeOKWithFutureString(akka.dispatch.Futures.failed(new Exception("Boom!")))).orElse(
+      path("java", () -> completeOKWithFutureString(CompletableFuture.supplyAsync(() -> { throw new RuntimeException("Boom!"); }))))
     );
 
+    final Unmarshaller<ByteString, JavaTweet> JavaTweets = Jackson.byteStringUnmarshaller(JavaTweet.class);
+    final Route tweets = path("tweets", () ->
+      get(() -> 
+        parameter(StringUnmarshallers.INTEGER, "n", n -> {
+          final Source<JavaTweet, NotUsed> tws = Source.repeat(new JavaTweet("Hello World!")).take(n);
+          return completeOKWithSource(tws, Jackson.marshaller(), EntityStreamingSupport.json());
+        })
+      ).orElse(
+      post(() ->
+        extractMaterializer(mat -> 
+          entityAsSourceOf(JavaTweets, null, sourceOfTweets -> {
+            final CompletionStage<Integer> tweetsCount = sourceOfTweets.runFold(0, (acc, tweet) -> acc + 1, mat);
+            return onComplete(tweetsCount, c -> complete("Total number of tweets: " + c));
+          })
+        )
+      ))
+    );
+    
     final Route inner = path("inner", () ->
       getFromResourceDirectory("someDir")
     );
 
 
-    return get(() ->
-      index.orElse(secure).orElse(ping).orElse(crash).orElse(inner).orElse(requestTimeout)
-    );
+    return index
+      .orElse(secure)
+      .orElse(ping)
+      .orElse(crash)
+      .orElse(inner)
+      .orElse(requestTimeout)
+      .orElse(tweets)
+    ;
   }
 
   private void silentSleep(int millis) {
@@ -113,7 +143,7 @@ public class JavaTestServer extends AllDirectives { // or import static Directiv
 
     final Flow<HttpRequest, HttpResponse, ?> flow = createRoute().flow(system, mat);
     final CompletionStage<ServerBinding> binding =
-      Http.get(system).bindAndHandle(flow, ConnectHttp.toHost("127.0.0.1"), mat);
+      Http.get(system).bindAndHandle(flow, ConnectHttp.toHost("127.0.0.1", 8080), mat);
 
     System.console().readLine("Press [ENTER] to quit...");
     shutdown(binding);
@@ -130,5 +160,22 @@ public class JavaTestServer extends AllDirectives { // or import static Directiv
         throw new RuntimeException(e);
       }
     });
+  }
+  
+  private static final class JavaTweet {
+    private String message;
+
+    public JavaTweet(String message) {
+      this.message = message;
+    }
+
+    public void setMessage(String message) {
+      this.message = message;
+    }
+
+    public String getMessage() {
+      return message;
+    }
+    
   }
 }
