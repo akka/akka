@@ -610,8 +610,16 @@ final class Balance[T](val outputPorts: Int, waitForAllDownstreams: Boolean) ext
 
     private def dequeueAndDispatch(): Unit = {
       val out = pendingQueue.dequeue()
-      push(out, grab(in))
-      if (!noPending) pull(in)
+      if (out ne null) {
+        // the out triggering the pull may since closed
+        if (!isClosed(out)) {
+          push(out, grab(in))
+          if (!noPending) pull(in)
+        } else {
+          // try to find one that isn't closed in that case
+          dequeueAndDispatch()
+        }
+      }
     }
 
     setHandler(in, new InHandler {
