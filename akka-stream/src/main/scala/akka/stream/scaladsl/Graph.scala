@@ -608,15 +608,17 @@ final class Balance[T](val outputPorts: Int, waitForAllDownstreams: Boolean) ext
     private var needDownstreamPulls: Int = if (waitForAllDownstreams) outputPorts else 0
     private var downstreamsRunning: Int = outputPorts
 
+    @tailrec
     private def dequeueAndDispatch(): Unit = {
       val out = pendingQueue.dequeue()
+      // out is null if depleted pendingQueue without reaching
+      // an out that is not closed, in which case we just return
       if (out ne null) {
-        // the out triggering the pull may since closed
         if (!isClosed(out)) {
           push(out, grab(in))
           if (!noPending) pull(in)
         } else {
-          // try to find one that isn't closed in that case
+          // try to find one output that isn't closed
           dequeueAndDispatch()
         }
       }
