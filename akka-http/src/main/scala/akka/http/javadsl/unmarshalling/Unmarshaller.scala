@@ -101,6 +101,9 @@ abstract class Unmarshaller[-A, B] extends UnmarshallerBase[A, B] {
 
   implicit def asScala: akka.http.scaladsl.unmarshalling.Unmarshaller[A, B]
 
+  /** INTERNAL API */
+  private[akka] def asScalaCastInput[I]: unmarshalling.Unmarshaller[I, B] = asScala.asInstanceOf[unmarshalling.Unmarshaller[I, B]]
+
   def unmarshall(a: A, ec: ExecutionContext, mat: Materializer): CompletionStage[B] = asScala.apply(a)(ec, mat).toJava
 
   /**
