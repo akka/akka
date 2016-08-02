@@ -16,6 +16,8 @@ import scala.concurrent.duration._
 
 class JsonFramingSpec extends AkkaSpec {
 
+  override implicit val patience = PatienceConfig(timeout = 10.seconds)
+  
   implicit val mat = ActorMaterializer()
 
   "collecting multiple json" should {
@@ -79,9 +81,7 @@ class JsonFramingSpec extends AkkaSpec {
 
     "parse comma delimited" in {
       val input =
-        """
-          | { "name": "john" }, { "name": "jack" }, { "name": "katie" }
-        """.stripMargin
+        """  { "name": "john" }, { "name": "jack" }, { "name": "katie" }  """
 
       val result = Source.single(ByteString(input))
         .via(JsonFraming.objectScanner(Int.MaxValue))
