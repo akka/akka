@@ -91,7 +91,7 @@ object ConsistentHashingRouter {
    * INTERNAL API
    */
   private[akka] def hashMappingAdapter(mapper: ConsistentHashMapper): ConsistentHashMapping = {
-    case message if (mapper.hashKey(message).asInstanceOf[AnyRef] ne null) ⇒
+    case message if mapper.hashKey(message).asInstanceOf[AnyRef] ne null ⇒
       mapper.hashKey(message)
   }
 
