@@ -63,14 +63,21 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     } yield (xs, from, until)
   }
 
-  def testSer(obj: AnyRef) = {
+  def serialize(obj: AnyRef): Array[Byte] = {
     val os = new ByteArrayOutputStream
     val bos = new ObjectOutputStream(os)
     bos.writeObject(obj)
-    val arr = os.toByteArray
-    val is = new ObjectInputStream(new ByteArrayInputStream(arr))
+    os.toByteArray
+  }
 
-    is.readObject == obj
+  def deserialize(bytes: Array[Byte]): AnyRef = {
+    val is = new ObjectInputStream(new ByteArrayInputStream(bytes))
+
+    is.readObject
+  }
+
+  def testSer(obj: AnyRef) = {
+    deserialize(serialize(obj)) == obj
   }
 
   def hexFromSer(obj: AnyRef) = {
@@ -528,6 +535,13 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
         check { bs: ByteString ⇒
           testSer(bs)
         }
+      }
+
+      "with a large concatenated bytestring" in {
+        // coverage for #20901
+        val original = ByteString(Array.fill[Byte](1000)(1)) ++ ByteString(Array.fill[Byte](1000)(2))
+
+        deserialize(serialize(original)) shouldEqual original
       }
     }
   }
