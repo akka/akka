@@ -47,21 +47,13 @@ trait FramedEntityStreamingDirectives extends MarshallingDirectives {
    * Extracts entity as [[Source]] of elements of type `T`.
    * This is achieved by applying the implicitly provided (in the following order):
    *
-   * - 1st: [[FramingFlow]] in order to chunk-up the incoming [[ByteString]]s according to the
-   *        `Content-Type` aware framing (for example, [[common.EntityStreamingSupport.bracketCountingJsonFraming]]).
-   * - 2nd: [[Unmarshaller]] (from [[ByteString]] to `T`) for each of the respective "chunks" (e.g. for each JSON element contained within an array).
+   * - 1st: chunk-up the incoming [[ByteString]]s by applying the `Content-Type`-aware framing
+   * - 2nd: apply the [[Unmarshaller]] (from [[ByteString]] to `T`) for each of the respective "chunks" (e.g. for each JSON element contained within an array).
    *
    * The request will be rejected with an [[akka.http.scaladsl.server.UnsupportedRequestContentTypeRejection]] if
    * its [[ContentType]] is not supported by the used `framing` or `unmarshaller`.
    *
-   * It is recommended to use the [[common.EntityStreamingSupport]] trait in conjunction with this
-   * directive as it helps provide the right [[FramingFlow]] and [[SourceRenderingMode]] for the most
-   * typical usage scenarios (JSON, CSV, ...).
-   *
    * Cancelling extracted [[Source]] closes the connection abruptly (same as cancelling the `entity.dataBytes`).
-   *
-   * If looking to improve marshalling performance in face of many elements (possibly of different sizes),
-   * you may be interested in using [[asSourceOfAsyncUnordered]] instead.
    *
    * See also [[MiscDirectives.withoutSizeLimit]] as you may want to allow streaming infinite streams of data in this route.
    * By default the uploaded data is limited by the `akka.http.parsing.max-content-length`.
