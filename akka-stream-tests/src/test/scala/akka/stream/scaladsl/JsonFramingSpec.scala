@@ -16,8 +16,6 @@ import scala.concurrent.duration._
 
 class JsonFramingSpec extends AkkaSpec {
 
-  override implicit val patience = PatienceConfig(timeout = 10.seconds)
-  
   implicit val mat = ActorMaterializer()
 
   "collecting multiple json" should {

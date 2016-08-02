@@ -56,8 +56,12 @@ object JsonFraming {
         override def onPull(): Unit =
           tryPopBuffer()
 
-        override def onUpstreamFinish(): Unit =
-          if (buffer.isEmpty) completeStage()
+        override def onUpstreamFinish(): Unit = {
+          try buffer.poll() match {
+            case Some(json) ⇒ emit(out, json, () ⇒ completeStage())
+            case _          ⇒ completeStage()
+          }
+        }
 
         def tryPopBuffer() = {
           try buffer.poll() match {

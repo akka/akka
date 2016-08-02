@@ -33,7 +33,8 @@ class JsonFramingBenchmark {
         |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
         |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
         |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
-        |{"fname":"Hank","name":"Smith","age":42,"id":1337,"boardMember":false}""".stripMargin)
+        |{"fname":"Hank","name":"Smith","age":42,"id":1337,"boardMember":false}""".stripMargin
+    )
 
   val bracket = new JsonObjectParser
 
