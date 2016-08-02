@@ -17,6 +17,7 @@ on two axes: a) provide a constant value or extract a value from the ``RequestCo
 a single value or a tuple of values.
 
   * :ref:`-extract-java-`
+  * :ref:`-extractActorSystem-java-`
   * :ref:`-extractDataBytes-java-`
   * :ref:`-extractExecutionContext-java-`
   * :ref:`-extractMaterializer-java-`
@@ -95,6 +96,7 @@ Alphabetically
    cancelRejection
    cancelRejections
    extract
+   extractActorSystem
    extractDataBytes
    extractExecutionContext
    extractMaterializer
