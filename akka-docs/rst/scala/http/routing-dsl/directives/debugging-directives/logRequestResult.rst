@@ -32,11 +32,11 @@ Example
    :snippet: logRequestResult
 
 
-LongerExample : Logging the request and the response time of every request.
+LongerExample
 -------------
 
-This example will showcase the advance case of logging. It shows how can we log the request and response time using debugging directives
+This example will showcase the advance case of logging. It shows how can we log the request and response time using debugging directives.
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/DebuggingDirectiveExtendedExample..scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/DebuggingDirectiveExtendedExampleSpec..scala
    :snippet: logRequestResultExtendedExample
 
