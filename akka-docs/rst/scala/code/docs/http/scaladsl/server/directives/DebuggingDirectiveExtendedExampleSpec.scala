@@ -9,6 +9,8 @@ import akka.event.Logging.LogLevel
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.RouteResult.Complete
 import akka.http.scaladsl.server.directives.{LoggingMagnet, LogEntry, DebuggingDirectives}
+import docs.http.scaladsl.server.RoutingSpec
+import Console._
 
 //This example shows how to log client request and response time using DebuggingDirective
 
@@ -25,12 +27,12 @@ class DebuggingDirectiveExtendedExampleSpec extends RoutingSpec {
           val responseTimestamp: Long = System.currentTimeMillis()
           val elapsedTime: Long = responseTimestamp - requestTimestamp
           val loggingString = "Logged Request:" + req.method + ":" + req.uri + ":" + resp.status + ":" + elapsedTime
-          // The red and green methods are part of the scala-rainbow library for displaying the color of the request according to the 
+          // This is for displaying the color of the request according to the 
           // response time of that request.( i.e if responseTime > THRESHOLD_VALUE then it is RED or else GREEN)
-          val coloredLoggingString = if (elapsedTime > THRESHOLD_VALUE) {
-            loggingString.red
+         val coloredLoggingString = if (elapsedTime > THRESHOLD_VALUE) {
+            RED + loggingString + RESET
           } else {
-            loggingString.green
+           GREEN + loggingString + RESET
           }
           LogEntry(coloredLoggingString, level)
         case anythingElse =>
