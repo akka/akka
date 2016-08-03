@@ -30,3 +30,13 @@ Example
 
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala
    :snippet: logRequestResult
+
+
+Example for logging response time.
+----------------------------------
+
+This example will showcase the advance logging using the DebuggingDirective. 
+In this example we are logging the client request and the response time taken by request to be fullfilled
+
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala
+   :snippet: logRequestResultWithResponseTime
