@@ -26,7 +26,7 @@ In the below examples, we'll be refering to the ``Tweet`` and ``Measurement`` ca
 .. includecode2:: ../../code/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala
    :snippet: models
 
-And as always with spray-json, we provide our (Un)Marshaller instances as implicit values uding the ``jsonFormat##``
+And as always with spray-json, we provide our (Un)Marshaller instances as implicit values using the ``jsonFormat##``
 method to generate them statically:
 
 .. includecode2:: ../../code/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala
