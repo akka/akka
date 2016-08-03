@@ -111,7 +111,7 @@ object ByteString {
     def readFromInputStream(is: ObjectInputStream): ByteString1C = {
       val length = is.readInt()
       val arr = new Array[Byte](length)
-      is.read(arr, 0, length)
+      is.readFully(arr, 0, length)
       ByteString1C(arr)
     }
   }
