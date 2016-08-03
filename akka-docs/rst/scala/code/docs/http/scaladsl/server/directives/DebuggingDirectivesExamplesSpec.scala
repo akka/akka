@@ -95,4 +95,36 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual "logged"
     }
   }
+  "logRequestResultWithResponseTime" in {
+
+    def akkaResponseTimeLoggingFunction(loggingAdapter: LoggingAdapter,
+                                        requestTimestamp: Long,
+                                        level: LogLevel = Logging.InfoLevel)(req: HttpRequest)(res: Any): Unit = {
+      val entry = res match {
+        case Complete(resp) =>
+          val responseTimestamp: Long = System.currentTimeMillis()
+          val elapsedTime: Long = responseTimestamp - requestTimestamp
+          val loggingString = s"""Logged Request:${req.method}:${req.uri}:${resp.status}:${elapsedTime}"""
+          LogEntry(loggingString, level)
+        case anythingElse =>
+          LogEntry(s"$anythingElse", level)
+      }
+      entry.logTo(loggingAdapter)
+    }
+    def printResponseTime(log: LoggingAdapter) = {
+      val requestTimestamp = System.currentTimeMillis()
+      akkaResponseTimeLoggingFunction(log, requestTimestamp)(_)
+    }
+
+    val logResponseTime = DebuggingDirectives.logRequestResult(LoggingMagnet(printResponseTime(_)))
+
+    Get("/lessTime") ~> logResponseTime(complete("loggedWithGreen")) ~> check {
+      responseAs[String] shouldEqual "loggedWithGreen"
+    }
+    Get("/moreTime") ~> logResponseTime(requestContext => {
+      complete("loggedWithRed").apply(requestContext)
+    }) ~> check {
+      responseAs[String] shouldEqual "loggedWithRed"
+    }
+  }
 }
