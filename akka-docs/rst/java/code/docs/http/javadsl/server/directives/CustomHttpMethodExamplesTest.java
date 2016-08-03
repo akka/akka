@@ -18,6 +18,7 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -67,8 +68,8 @@ public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
     CompletionStage<HttpResponse> response = http.singleRequest(request, materializer);
     //#customHttpMethod
 
-    assertResult(StatusCodes.OK, response.toCompletableFuture().get().status());
-    assertResult(
+    assertEquals(StatusCodes.OK, response.toCompletableFuture().get().status());
+    assertEquals(
       "This is a BOLT request.",
       response.toCompletableFuture().get().entity().toStrict(3000, materializer).toCompletableFuture().get().getData().utf8String()
     );

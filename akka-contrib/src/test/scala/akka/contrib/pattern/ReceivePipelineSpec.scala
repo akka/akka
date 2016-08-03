@@ -326,7 +326,7 @@ class PersistentReceivePipelineSpec(config: Config) extends AkkaSpec(config) wit
       totaller ! 6
       totaller ! "get"
       expectMsg(6)
-      probe.expectMsg(99)
+      probe.expectMsg(99L)
     }
   }
 }

@@ -3,6 +3,7 @@
  */
 package akka.persistence.scalatest
 
+import org.scalactic.source.Position
 import org.scalatest.exceptions.TestCanceledException
 import org.scalatest.words.StringVerbBlockRegistration
 
@@ -37,8 +38,8 @@ trait MayVerb {
      *
      * @see <a href="https://www.rfc-editor.org/rfc/rfc2119.txt">RFC 2119</a>
      */
-    def may(right: ⇒ Unit)(implicit fun: StringVerbBlockRegistration) {
-      fun(leftSideString, "may", right _)
+    def may(right: ⇒ Unit)(implicit fun: StringVerbBlockRegistration, pos: Position) {
+      fun(leftSideString, "may", pos, right _)
     }
   }
 

@@ -19,6 +19,7 @@ import akka.util.ByteString;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,16 +69,16 @@ public class RangeDirectivesExamplesTest extends JUnitRouteTest {
         try {
             final List<Multipart.ByteRanges.BodyPart> bodyParts =
                     completionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
-            assertResult(2, bodyParts.toArray().length);
+            assertEquals(2, bodyParts.toArray().length);
 
             final Multipart.ByteRanges.BodyPart part1 = bodyParts.get(0);
-            assertResult(bytes028Range, part1.getContentRange());
-            assertResult(ByteString.fromString("ABC"),
+            assertEquals(bytes028Range, part1.getContentRange());
+            assertEquals(ByteString.fromString("ABC"),
                     part1.toStrict(1000, materializer).toCompletableFuture().get().getEntity().getData());
 
             final Multipart.ByteRanges.BodyPart part2 = bodyParts.get(1);
-            assertResult(bytes678Range, part2.getContentRange());
-            assertResult(ByteString.fromString("GH"),
+            assertEquals(bytes678Range, part2.getContentRange());
+            assertEquals(ByteString.fromString("GH"),
                     part2.toStrict(1000, materializer).toCompletableFuture().get().getEntity().getData());
 
         } catch (Exception e) {
