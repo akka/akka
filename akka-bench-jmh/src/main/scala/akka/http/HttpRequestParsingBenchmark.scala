@@ -16,6 +16,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.TLSProtocol.SessionBytes
 import akka.stream.scaladsl._
 import akka.util.ByteString
+import akka.util.ByteString.{ ByteString1C, ByteStrings }
 import org.openjdk.jmh.annotations.{ OperationsPerInvocation, _ }
 import org.openjdk.jmh.infra.Blackhole
 
@@ -33,12 +34,13 @@ class HttpRequestParsingBenchmark {
   val parser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings, NoLogging)())
   val dummySession = SSLContext.getDefault.createSSLEngine.getSession
 
-  @Param(Array("small", "large"))
+  @Param(Array("small", "large", "bytestrings"))
   var req: String = ""
 
   def request = req match {
     case "small" => requestBytesSmall
     case "large" => requestBytesLarge
+    case "bytestrings" => requestBytesByteStrings
   }
 
   val requestBytesSmall: SessionBytes = SessionBytes(
@@ -70,15 +72,35 @@ class HttpRequestParsingBenchmark {
     )
   )
 
+  val requestBytesByteStrings: SessionBytes = SessionBytes(
+    dummySession,
+    ByteStrings(
+    Vector.fill(10)(
+      ByteString(
+      """|GET / HTTP/1.1
+            |Accept: */*
+            |Accept-Encoding: gzip, deflate
+            |Connection: keep-alive
+            |Host: example.com
+            |User-Agent: HTTPie/0.9.3
+            |
+            |""".stripMargin.replaceAll("\n", "\r\n")
+    ).asInstanceOf[ByteString1C].toByteString1
+    )
+  ).asInstanceOf[ByteStrings].fastScannable
+  )
+
   /*
   // before:
   [info] Benchmark                                                 (req)   Mode  Cnt            Score       Error  Units
-  [info] HttpRequestParsingBenchmark.parse_10000_requests          small  thrpt   20      358 982.157 ± 93745.863  ops/s
-  [info] HttpRequestParsingBenchmark.parse_10000_requests          large  thrpt   20      388 335.666 ± 16990.715  ops/s
-  
+  [info] HttpRequestParsingBenchmark.parse_10000_requests_val      small  thrpt   20      358 982.157 ± 93745.863  ops/s
+  [info] HttpRequestParsingBenchmark.parse_10000_requests_val      large  thrpt   20      388 335.666 ± 16990.715  ops/s
+  [info] HttpRequestParsingBenchmark.parse_10000_requests_val  bytestrings  thrpt 20       17 417.961 ± 1604.765  ops/s
+
   // after:
   [info] HttpRequestParsingBenchmark.parse_10000_requests_val      small  thrpt   20      623 975.879 ± 6191.897  ops/s
   [info] HttpRequestParsingBenchmark.parse_10000_requests_val      large  thrpt   20      507 460.283 ± 4735.843  ops/s
+  [info] HttpRequestParsingBenchmark.parse_10000_requests_val  bytestrings  thrpt 20       35 900.308 ± 620.414  ops/s
   */
 
   val httpMessageParser = Flow.fromGraph(parser)

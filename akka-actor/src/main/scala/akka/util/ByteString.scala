@@ -9,9 +9,8 @@ import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable ⇒ JIterable }
 
 import scala.annotation.{ tailrec, varargs }
-import scala.collection.IndexedSeqOptimized
+import scala.collection.{ immutable, IndexedSeqOptimized }
 import scala.collection.mutable.{ Builder, WrappedArray }
-import scala.collection.immutable
 import scala.collection.immutable.{ IndexedSeq, VectorBuilder, VectorIterator }
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
@@ -297,7 +296,8 @@ object ByteString {
           if ((bytes eq b.bytes) && (startIndex + length == b.startIndex))
             new ByteString1(bytes, startIndex, length + b.length)
           else ByteStrings(this, b)
-        case bs: ByteStrings ⇒ ByteStrings(this, bs)
+        case bs: ByteStrings               ⇒ ByteStrings(this, bs)
+        case fibs: FastIndexingByteStrings ⇒ ByteStrings(this, fibs.bss)
       }
     }
 
@@ -363,12 +363,55 @@ object ByteString {
     }
   }
 
+  final class FastIndexingByteStrings(private[akka] val bss: ByteStrings) extends ByteString with Serializable {
+    private var hintPos = 0
+    private var hintOffset = 0
+
+    def apply(idx: Int): Byte = {
+      @tailrec def seek(i: Int): Unit = {
+        if (i >= hintOffset + bss.bytestrings(hintPos).length) {
+          hintOffset += bss.bytestrings(hintPos).length
+          hintPos += 1
+          seek(i)
+        } else if (i < hintOffset) {
+          hintOffset -= bss.bytestrings(hintPos).length
+          hintPos -= 1
+          seek(i)
+        }
+      }
+
+      if (0 <= idx && idx < bss.length) {
+        seek(idx)
+        bss.bytestrings(hintPos)(idx - hintOffset)
+      } else throw new IndexOutOfBoundsException(idx.toString)
+    }
+
+    override def iterator: ByteIterator.MultiByteArrayIterator = bss.iterator
+    override private[akka] def byteStringCompanion: Companion = bss.byteStringCompanion
+    override def isCompact: Boolean = bss.isCompact
+    override def copyToBuffer(buffer: ByteBuffer): Int = bss.copyToBuffer(buffer)
+    override def decodeString(charset: String): String = bss.decodeString(charset)
+    override def decodeString(charset: Charset): String = bss.decodeString(charset)
+    override def asByteBuffers: immutable.Iterable[ByteBuffer] = bss.asByteBuffers
+    override def asByteBuffer: ByteBuffer = bss.asByteBuffer
+    override private[akka] def writeToOutputStream(os: ObjectOutputStream): Unit = bss.writeToOutputStream(os)
+    override def compact: CompactByteString = bss.compact
+    override def ++(that: ByteString): ByteString = bss.++(that)
+    override def take(n: Int): ByteString = bss.take(n)
+    override def dropRight(n: Int): ByteString = bss.dropRight(n)
+    override def slice(from: Int, until: Int): ByteString = bss.slice(from, until)
+    override def drop(n: Int): ByteString = bss.drop(n)
+    override def length: Int = bss.length
+  }
+
   /**
    * A ByteString with 2 or more fragments.
    */
   final class ByteStrings private (private[akka] val bytestrings: Vector[ByteString1], val length: Int) extends ByteString with Serializable {
     if (bytestrings.isEmpty) throw new IllegalArgumentException("bytestrings must not be empty")
     if (bytestrings.head.isEmpty) throw new IllegalArgumentException("bytestrings.head must not be empty")
+
+    def fastScannable: FastIndexingByteStrings = new FastIndexingByteStrings(this)
 
     def apply(idx: Int): Byte = {
       if (0 <= idx && idx < length) {
@@ -390,9 +433,10 @@ object ByteString {
       if (that.isEmpty) this
       else if (this.isEmpty) that
       else that match {
-        case b: ByteString1C ⇒ ByteStrings(this, b.toByteString1)
-        case b: ByteString1  ⇒ ByteStrings(this, b)
-        case bs: ByteStrings ⇒ ByteStrings(this, bs)
+        case b: ByteString1C               ⇒ ByteStrings(this, b.toByteString1)
+        case b: ByteString1                ⇒ ByteStrings(this, b)
+        case bs: ByteStrings               ⇒ ByteStrings(this, bs)
+        case fibs: FastIndexingByteStrings ⇒ ByteStrings(this, fibs.bss)
       }
     }
 

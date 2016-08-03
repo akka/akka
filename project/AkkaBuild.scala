@@ -134,7 +134,7 @@ object AkkaBuild extends Build {
     base = file("akka-bench-jmh"),
     dependencies = Seq(
       actor,
-      http, stream, streamTests,
+      http, httpSprayJson, stream, streamTests,
       persistence, distributedData,
       testkit
     ).map(_ % "compile;compile->test;provided->provided")
