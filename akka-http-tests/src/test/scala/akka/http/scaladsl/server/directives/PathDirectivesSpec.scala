@@ -6,6 +6,7 @@ package akka.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
+import org.scalactic.source.Position
 import org.scalatest.Inside
 
 class PathDirectivesSpec extends RoutingSpec with Inside {
@@ -15,83 +16,83 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
 
   """path("foo")""" should {
     val test = testFor(path("foo") { echoUnmatchedPath })
-    "reject [/bar]" in test()
-    "reject [/foobar]" in test()
-    "reject [/foo/bar]" in test()
-    "accept [/foo] and clear the unmatchedPath" in test("")
-    "reject [/foo/]" in test()
+    "reject [/bar]" inThe test()
+    "reject [/foobar]" inThe test()
+    "reject [/foo/bar]" inThe test()
+    "accept [/foo] and clear the unmatchedPath" inThe test("")
+    "reject [/foo/]" inThe test()
   }
 
   """pathPrefix("")""" should {
     val test = testFor(pathPrefix("") { echoUnmatchedPath })
 
     // Should match everything because pathPrefix is used and "" is a neutral element.
-    "accept [/] and clear the unmatchedPath=" in test("")
-    "accept [/foo] and clear the unmatchedPath" in test("foo")
-    "accept [/foo/] and clear the unmatchedPath" in test("foo/")
-    "accept [/bar/] and clear the unmatchedPath" in test("bar/")
+    "accept [/] and clear the unmatchedPath=" inThe test("")
+    "accept [/foo] and clear the unmatchedPath" inThe test("foo")
+    "accept [/foo/] and clear the unmatchedPath" inThe test("foo/")
+    "accept [/bar/] and clear the unmatchedPath" inThe test("bar/")
   }
 
   """path("" | "foo")""" should {
     val test = testFor(path("" | "foo") { echoUnmatchedPath })
 
     // Should not match anything apart of "/", because path requires whole path being matched.
-    "accept [/] and clear the unmatchedPath=" in test("")
-    "reject [/foo]" in test()
-    "reject [/foo/]" in test()
-    "reject [/bar/]" in test()
+    "accept [/] and clear the unmatchedPath=" inThe test("")
+    "reject [/foo]" inThe test()
+    "reject [/foo/]" inThe test()
+    "reject [/bar/]" inThe test()
   }
 
   """path("") ~ path("foo")""" should {
     val test = testFor(path("")(echoUnmatchedPath) ~ path("foo")(echoUnmatchedPath))
 
     // Should match both because ~ operator is used for two exclusive routes.
-    "accept [/] and clear the unmatchedPath=" in test("")
-    "accept [/foo] and clear the unmatchedPath=" in test("")
+    "accept [/] and clear the unmatchedPath=" inThe test("")
+    "accept [/foo] and clear the unmatchedPath=" inThe test("")
   }
 
   """path("foo" /)""" should {
     val test = testFor(path("foo" /) { echoUnmatchedPath })
-    "reject [/foo]" in test()
-    "accept [/foo/] and clear the unmatchedPath" in test("")
+    "reject [/foo]" inThe test()
+    "accept [/foo/] and clear the unmatchedPath" inThe test("")
   }
 
   """path("")""" should {
     val test = testFor(path("") { echoUnmatchedPath })
-    "reject [/foo]" in test()
+    "reject [/foo]" inThe test()
     "accept [/] and clear the unmatchedPath" in test("")
   }
 
   """pathPrefix("foo")""" should {
     val test = testFor(pathPrefix("foo") { echoUnmatchedPath })
-    "reject [/bar]" in test()
-    "accept [/foobar]" in test("bar")
-    "accept [/foo/bar]" in test("/bar")
-    "accept [/foo] and clear the unmatchedPath" in test("")
-    "accept [/foo/] and clear the unmatchedPath" in test("/")
+    "reject [/bar]" inThe test()
+    "accept [/foobar]" inThe test("bar")
+    "accept [/foo/bar]" inThe test("/bar")
+    "accept [/foo] and clear the unmatchedPath" inThe test("")
+    "accept [/foo/] and clear the unmatchedPath" inThe test("/")
   }
 
   """pathPrefix("foo" / "bar")""" should {
     val test = testFor(pathPrefix("foo" / "bar") { echoUnmatchedPath })
-    "reject [/bar]" in test()
-    "accept [/foo/bar]" in test("")
-    "accept [/foo/bar/baz]" in test("/baz")
+    "reject [/bar]" inThe test()
+    "accept [/foo/bar]" inThe test("")
+    "accept [/foo/bar/baz]" inThe test("/baz")
   }
 
   """pathPrefix("ab[cd]+".r)""" should {
     val test = testFor(pathPrefix("ab[cd]+".r) { echoCaptureAndUnmatchedPath })
-    "reject [/bar]" in test()
-    "reject [/ab/cd]" in test()
-    "accept [/abcdef]" in test("abcd:ef")
-    "accept [/abcdd/ef]" in test("abcdd:/ef")
+    "reject [/bar]" inThe test()
+    "reject [/ab/cd]" inThe test()
+    "accept [/abcdef]" inThe test("abcd:ef")
+    "accept [/abcdd/ef]" inThe test("abcdd:/ef")
   }
 
   """pathPrefix("ab(cd)".r)""" should {
     val test = testFor(pathPrefix("ab(cd)+".r) { echoCaptureAndUnmatchedPath })
-    "reject [/bar]" in test()
-    "reject [/ab/cd]" in test()
-    "accept [/abcdef]" in test("cd:ef")
-    "accept [/abcde/fg]" in test("cd:e/fg")
+    "reject [/bar]" inThe test()
+    "reject [/ab/cd]" inThe test()
+    "accept [/abcdef]" inThe test("cd:ef")
+    "accept [/abcde/fg]" inThe test("cd:e/fg")
   }
 
   "pathPrefix(regex)" should {
@@ -102,11 +103,11 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
 
   "pathPrefix(IntNumber)" should {
     val test = testFor(pathPrefix(IntNumber) { echoCaptureAndUnmatchedPath })
-    "accept [/23]" in test("23:")
-    "accept [/12345yes]" in test("12345:yes")
-    "reject [/]" in test()
-    "reject [/abc]" in test()
-    "reject [/2147483648]" in test() // > Int.MaxValue
+    "accept [/23]" inThe test("23:")
+    "accept [/12345yes]" inThe test("12345:yes")
+    "reject [/]" inThe test()
+    "reject [/abc]" inThe test()
+    "reject [/2147483648]" inThe test() // > Int.MaxValue
   }
 
   "pathPrefix(CustomShortNumber)" should {
@@ -115,200 +116,200 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     }
 
     val test = testFor(pathPrefix(CustomShortNumber) { echoCaptureAndUnmatchedPath })
-    "accept [/23]" in test("23:")
-    "accept [/12345yes]" in test("12345:yes")
-    "reject [/]" in test()
-    "reject [/abc]" in test()
-    "reject [/33000]" in test() // > Short.MaxValue
+    "accept [/23]" inThe test("23:")
+    "accept [/12345yes]" inThe test("12345:yes")
+    "reject [/]" inThe test()
+    "reject [/abc]" inThe test()
+    "reject [/33000]" inThe test() // > Short.MaxValue
   }
 
   "pathPrefix(JavaUUID)" should {
     val test = testFor(pathPrefix(JavaUUID) { echoCaptureAndUnmatchedPath })
-    "accept [/bdea8652-f26c-40ca-8157-0b96a2a8389d]" in test("bdea8652-f26c-40ca-8157-0b96a2a8389d:")
-    "accept [/bdea8652-f26c-40ca-8157-0b96a2a8389dyes]" in test("bdea8652-f26c-40ca-8157-0b96a2a8389d:yes")
-    "reject [/]" in test()
-    "reject [/abc]" in test()
+    "accept [/bdea8652-f26c-40ca-8157-0b96a2a8389d]" inThe test("bdea8652-f26c-40ca-8157-0b96a2a8389d:")
+    "accept [/bdea8652-f26c-40ca-8157-0b96a2a8389dyes]" inThe test("bdea8652-f26c-40ca-8157-0b96a2a8389d:yes")
+    "reject [/]" inThe test()
+    "reject [/abc]" inThe test()
   }
 
   "pathPrefix(Map(\"red\" -> 1, \"green\" -> 2, \"blue\" -> 3))" should {
     val test = testFor(pathPrefix(Map("red" → 1, "green" → 2, "blue" → 3)) { echoCaptureAndUnmatchedPath })
-    "accept [/green]" in test("2:")
-    "accept [/redsea]" in test("1:sea")
-    "reject [/black]" in test()
+    "accept [/green]" inThe test("2:")
+    "accept [/redsea]" inThe test("1:sea")
+    "reject [/black]" inThe test()
   }
 
   "pathPrefix(Map.empty)" should {
     val test = testFor(pathPrefix(Map[String, Int]()) { echoCaptureAndUnmatchedPath })
-    "reject [/black]" in test()
+    "reject [/black]" inThe test()
   }
 
   "pathPrefix(Segment)" should {
     val test = testFor(pathPrefix(Segment) { echoCaptureAndUnmatchedPath })
-    "accept [/abc]" in test("abc:")
-    "accept [/abc/]" in test("abc:/")
-    "accept [/abc/def]" in test("abc:/def")
-    "reject [/]" in test()
+    "accept [/abc]" inThe test("abc:")
+    "accept [/abc/]" inThe test("abc:/")
+    "accept [/abc/def]" inThe test("abc:/def")
+    "reject [/]" inThe test()
   }
 
   "pathPrefix(Segments)" should {
     val test = testFor(pathPrefix(Segments) { echoCaptureAndUnmatchedPath })
-    "accept [/]" in test("List():")
-    "accept [/a/b/c]" in test("List(a, b, c):")
-    "accept [/a/b/c/]" in test("List(a, b, c):/")
+    "accept [/]" inThe test("List():")
+    "accept [/a/b/c]" inThe test("List(a, b, c):")
+    "accept [/a/b/c/]" inThe test("List(a, b, c):/")
   }
 
   """pathPrefix(separateOnSlashes("a/b"))""" should {
     val test = testFor(pathPrefix(separateOnSlashes("a/b")) { echoUnmatchedPath })
-    "accept [/a/b]" in test("")
-    "accept [/a/b/]" in test("/")
-    "reject [/a/c]" in test()
+    "accept [/a/b]" inThe test("")
+    "accept [/a/b/]" inThe test("/")
+    "reject [/a/c]" inThe test()
   }
   """pathPrefix(separateOnSlashes("abc"))""" should {
     val test = testFor(pathPrefix(separateOnSlashes("abc")) { echoUnmatchedPath })
-    "accept [/abc]" in test("")
-    "accept [/abcdef]" in test("def")
-    "reject [/ab]" in test()
+    "accept [/abc]" inThe test("")
+    "accept [/abcdef]" inThe test("def")
+    "reject [/ab]" inThe test()
   }
 
   """pathPrefixTest("a" / Segment ~ Slash)""" should {
     val test = testFor(pathPrefixTest("a" / Segment ~ Slash) { echoCaptureAndUnmatchedPath })
-    "accept [/a/bc/]" in test("bc:/a/bc/")
-    "reject [/a/bc]" in test()
-    "reject [/a/]" in test()
+    "accept [/a/bc/]" inThe test("bc:/a/bc/")
+    "reject [/a/bc]" inThe test()
+    "reject [/a/]" inThe test()
   }
 
   """pathSuffix("edit" / Segment)""" should {
     val test = testFor(pathSuffix("edit" / Segment) { echoCaptureAndUnmatchedPath })
-    "accept [/orders/123/edit]" in test("123:/orders/")
-    "reject [/orders/123/ed]" in test()
-    "reject [/edit]" in test()
+    "accept [/orders/123/edit]" inThe test("123:/orders/")
+    "reject [/orders/123/ed]" inThe test()
+    "reject [/edit]" inThe test()
   }
 
   """pathSuffix("foo" / "bar" ~ "baz")""" should {
     val test = testFor(pathSuffix("foo" / "bar" ~ "baz") { echoUnmatchedPath })
-    "accept [/orders/barbaz/foo]" in test("/orders/")
-    "reject [/orders/bazbar/foo]" in test()
+    "accept [/orders/barbaz/foo]" inThe test("/orders/")
+    "reject [/orders/bazbar/foo]" inThe test()
   }
 
   "pathSuffixTest(Slash)" should {
     val test = testFor(pathSuffixTest(Slash) { echoUnmatchedPath })
-    "accept [/]" in test("/")
-    "accept [/foo/]" in test("/foo/")
-    "reject [/foo]" in test()
+    "accept [/]" inThe test("/")
+    "accept [/foo/]" inThe test("/foo/")
+    "reject [/foo]" inThe test()
   }
 
   """pathPrefix("foo" | "bar")""" should {
     val test = testFor(pathPrefix("foo" | "bar") { echoUnmatchedPath })
-    "accept [/foo]" in test("")
-    "accept [/foops]" in test("ps")
-    "accept [/bar]" in test("")
-    "reject [/baz]" in test()
+    "accept [/foo]" inThe test("")
+    "accept [/foops]" inThe test("ps")
+    "accept [/bar]" inThe test("")
+    "reject [/baz]" inThe test()
   }
 
   """pathSuffix(!"foo")""" should {
     val test = testFor(pathSuffix(!"foo") { echoUnmatchedPath })
-    "accept [/bar]" in test("/bar")
-    "reject [/foo]" in test()
+    "accept [/bar]" inThe test("/bar")
+    "reject [/foo]" inThe test()
   }
 
   "pathPrefix(IntNumber?)" should {
     val test = testFor(pathPrefix(IntNumber?) { echoCaptureAndUnmatchedPath })
-    "accept [/12]" in test("Some(12):")
-    "accept [/12a]" in test("Some(12):a")
-    "accept [/foo]" in test("None:foo")
+    "accept [/12]" inThe test("Some(12):")
+    "accept [/12a]" inThe test("Some(12):a")
+    "accept [/foo]" inThe test("None:foo")
   }
 
   """pathPrefix("foo"?)""" should {
     val test = testFor(pathPrefix("foo"?) { echoUnmatchedPath })
-    "accept [/foo]" in test("")
-    "accept [/fool]" in test("l")
-    "accept [/bar]" in test("bar")
+    "accept [/foo]" inThe test("")
+    "accept [/fool]" inThe test("l")
+    "accept [/bar]" inThe test("bar")
   }
 
   """pathPrefix("foo") & pathEnd""" should {
     val test = testFor((pathPrefix("foo") & pathEnd) { echoUnmatchedPath })
-    "reject [/foobar]" in test()
-    "reject [/foo/bar]" in test()
-    "accept [/foo] and clear the unmatchedPath" in test("")
-    "reject [/foo/]" in test()
+    "reject [/foobar]" inThe test()
+    "reject [/foo/bar]" inThe test()
+    "accept [/foo] and clear the unmatchedPath" inThe test("")
+    "reject [/foo/]" inThe test()
   }
 
   """pathPrefix("foo") & pathEndOrSingleSlash""" should {
     val test = testFor((pathPrefix("foo") & pathEndOrSingleSlash) { echoUnmatchedPath })
-    "reject [/foobar]" in test()
-    "reject [/foo/bar]" in test()
-    "accept [/foo] and clear the unmatchedPath" in test("")
-    "accept [/foo/] and clear the unmatchedPath" in test("")
+    "reject [/foobar]" inThe test()
+    "reject [/foo/bar]" inThe test()
+    "accept [/foo] and clear the unmatchedPath" inThe test("")
+    "accept [/foo/] and clear the unmatchedPath" inThe test("")
   }
 
   """pathPrefix(IntNumber.repeat(separator = "."))""" should {
     {
       val test = testFor(pathPrefix(IntNumber.repeat(min = 2, max = 5, separator = ".")) { echoCaptureAndUnmatchedPath })
-      "reject [/foo]" in test()
-      "reject [/1foo]" in test()
-      "reject [/1.foo]" in test()
-      "accept [/1.2foo]" in test("List(1, 2):foo")
-      "accept [/1.2.foo]" in test("List(1, 2):.foo")
-      "accept [/1.2.3foo]" in test("List(1, 2, 3):foo")
-      "accept [/1.2.3.foo]" in test("List(1, 2, 3):.foo")
-      "accept [/1.2.3.4foo]" in test("List(1, 2, 3, 4):foo")
-      "accept [/1.2.3.4.foo]" in test("List(1, 2, 3, 4):.foo")
-      "accept [/1.2.3.4.5foo]" in test("List(1, 2, 3, 4, 5):foo")
-      "accept [/1.2.3.4.5.foo]" in test("List(1, 2, 3, 4, 5):.foo")
-      "accept [/1.2.3.4.5.6foo]" in test("List(1, 2, 3, 4, 5):.6foo")
-      "accept [/1.2.3.]" in test("List(1, 2, 3):.")
-      "accept [/1.2.3/]" in test("List(1, 2, 3):/")
-      "accept [/1.2.3./]" in test("List(1, 2, 3):./")
+      "reject [/foo]" inThe test()
+      "reject [/1foo]" inThe test()
+      "reject [/1.foo]" inThe test()
+      "accept [/1.2foo]" inThe test("List(1, 2):foo")
+      "accept [/1.2.foo]" inThe test("List(1, 2):.foo")
+      "accept [/1.2.3foo]" inThe test("List(1, 2, 3):foo")
+      "accept [/1.2.3.foo]" inThe test("List(1, 2, 3):.foo")
+      "accept [/1.2.3.4foo]" inThe test("List(1, 2, 3, 4):foo")
+      "accept [/1.2.3.4.foo]" inThe test("List(1, 2, 3, 4):.foo")
+      "accept [/1.2.3.4.5foo]" inThe test("List(1, 2, 3, 4, 5):foo")
+      "accept [/1.2.3.4.5.foo]" inThe test("List(1, 2, 3, 4, 5):.foo")
+      "accept [/1.2.3.4.5.6foo]" inThe test("List(1, 2, 3, 4, 5):.6foo")
+      "accept [/1.2.3.]" inThe test("List(1, 2, 3):.")
+      "accept [/1.2.3/]" inThe test("List(1, 2, 3):/")
+      "accept [/1.2.3./]" inThe test("List(1, 2, 3):./")
     }
     {
       val test = testFor(pathPrefix(IntNumber.repeat(2, ".")) { echoCaptureAndUnmatchedPath })
-      "reject [/bar]" in test()
-      "reject [/1bar]" in test()
-      "reject [/1.bar]" in test()
-      "accept [/1.2bar]" in test("List(1, 2):bar")
-      "accept [/1.2.bar]" in test("List(1, 2):.bar")
-      "accept [/1.2.3bar]" in test("List(1, 2):.3bar")
+      "reject [/bar]" inThe test()
+      "reject [/1bar]" inThe test()
+      "reject [/1.bar]" inThe test()
+      "accept [/1.2bar]" inThe test("List(1, 2):bar")
+      "accept [/1.2.bar]" inThe test("List(1, 2):.bar")
+      "accept [/1.2.3bar]" inThe test("List(1, 2):.3bar")
     }
   }
 
   """rawPathPrefix(Slash ~ "a" / Segment ~ Slash)""" should {
     val test = testFor(rawPathPrefix(Slash ~ "a" / Segment ~ Slash) { echoCaptureAndUnmatchedPath })
-    "accept [/a/bc/]" in test("bc:")
-    "reject [/a/bc]" in test()
-    "reject [/ab/]" in test()
+    "accept [/a/bc/]" inThe test("bc:")
+    "reject [/a/bc]" inThe test()
+    "reject [/ab/]" inThe test()
   }
 
   """rawPathPrefixTest(Slash ~ "a" / Segment ~ Slash)""" should {
     val test = testFor(rawPathPrefixTest(Slash ~ "a" / Segment ~ Slash) { echoCaptureAndUnmatchedPath })
-    "accept [/a/bc/]" in test("bc:/a/bc/")
-    "reject [/a/bc]" in test()
-    "reject [/ab/]" in test()
+    "accept [/a/bc/]" inThe test("bc:/a/bc/")
+    "reject [/a/bc]" inThe test()
+    "reject [/ab/]" inThe test()
   }
 
   "PathMatchers" should {
     {
       val test = testFor(path(Remaining.tmap { case Tuple1(s) ⇒ Tuple1(s.split('-').toList) }) { echoComplete })
-      "support the hmap modifier in accept [/yes-no]" in test("List(yes, no)")
+      "support the hmap modifier in accept [/yes-no]" inThe test("List(yes, no)")
     }
     {
       val test = testFor(path(Remaining.map(_.split('-').toList)) { echoComplete })
-      "support the map modifier in accept [/yes-no]" in test("List(yes, no)")
+      "support the map modifier in accept [/yes-no]" inThe test("List(yes, no)")
     }
     {
       val test = testFor(path(Remaining.tflatMap { case Tuple1(s) ⇒ Some(s).filter("yes" ==).map(x ⇒ Tuple1(x)) }) { echoComplete })
-      "support the hflatMap modifier in accept [/yes]" in test("yes")
-      "support the hflatMap modifier in reject [/blub]" in test()
+      "support the hflatMap modifier in accept [/yes]" inThe test("yes")
+      "support the hflatMap modifier in reject [/blub]" inThe test()
     }
     {
       val test = testFor(path(Remaining.flatMap(s ⇒ Some(s).filter("yes" ==))) { echoComplete })
-      "support the flatMap modifier in accept [/yes]" in test("yes")
-      "support the flatMap modifier reject [/blub]" in test()
+      "support the flatMap modifier in accept [/yes]" inThe test("yes")
+      "support the flatMap modifier reject [/blub]" inThe test()
     }
   }
 
   implicit class WithIn(str: String) {
-    def in(f: String ⇒ Unit) = convertToWordSpecStringWrapper(str) in f(str)
-    def in(body: ⇒ Unit) = convertToWordSpecStringWrapper(str) in body
+    def inThe(f: String ⇒ Unit) = convertToWordSpecStringWrapper(str) in f(str)
+    def inThe(body: ⇒ Unit) = convertToWordSpecStringWrapper(str) in body
   }
 
   case class testFor(route: Route) {

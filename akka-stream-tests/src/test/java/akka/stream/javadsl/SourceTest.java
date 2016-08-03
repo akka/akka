@@ -767,7 +767,7 @@ public class SourceTest extends StreamTest {
       try {
         Source.maybe().initialTimeout(Duration.create(1, "second")).runWith(Sink.head(), materializer)
             .toCompletableFuture().get(3, TimeUnit.SECONDS);
-        fail("A TimeoutException was expected");
+        org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
         throw e.getCause();
       }
@@ -782,7 +782,7 @@ public class SourceTest extends StreamTest {
       try {
         Source.maybe().completionTimeout(Duration.create(1, "second")).runWith(Sink.head(), materializer)
             .toCompletableFuture().get(3, TimeUnit.SECONDS);
-        fail("A TimeoutException was expected");
+        org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
         throw e.getCause();
       }
@@ -797,7 +797,7 @@ public class SourceTest extends StreamTest {
       try {
         Source.maybe().idleTimeout(Duration.create(1, "second")).runWith(Sink.head(), materializer)
             .toCompletableFuture().get(3, TimeUnit.SECONDS);
-        fail("A TimeoutException was expected");
+        org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
         throw e.getCause();
       }
