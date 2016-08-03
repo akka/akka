@@ -3,6 +3,7 @@
  */
 package akka
 
+import com.typesafe.sbt.osgi.OsgiKeys
 import com.typesafe.sbt.osgi.SbtOsgi._
 import sbt._
 import sbt.Keys._
@@ -13,7 +14,10 @@ object OSGi {
   // in the .../bundles directory which makes testing locally published artifacts
   // a pain. Create bundles but publish them to the normal .../jars directory.
   def osgiSettings = defaultOsgiSettings ++ Seq(
-    packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap
+    packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap,
+    // This will fail the build instead of accidentally removing classes from the resulting artifact.
+    // Each package contained in a project MUST be known to be private or exported, if it's undecided we MUST resolve this
+    OsgiKeys.failOnUndecidedPackage := true 
   )
 
   val actor = osgiSettings ++ Seq(
@@ -52,10 +56,17 @@ object OSGi {
 
   val httpCore = exports(Seq("akka.http.*"), imports = Seq(scalaJava8CompatImport()))
 
-  val http = exports(Seq("akka.http.impl.server",
-    "akka.http.scaladsl.server.*", "akka.http.javadsl.server.*",
-    "akka.http.scaladsl.client", "akka.http.scaladsl.coding", "akka.http.scaladsl.common",
-    "akka.http.scaladsl.marshalling", "akka.http.scaladsl.unmarshalling"),
+  val http = exports(Seq("akka.http.impl.server") ++ 
+    Seq(
+      "akka.http.$DSL$.server.*",
+      "akka.http.$DSL$.client.*",
+      "akka.http.$DSL$.coding.*",
+      "akka.http.$DSL$.common.*",
+      "akka.http.$DSL$.marshalling.*",
+      "akka.http.$DSL$.unmarshalling.*"
+    ) flatMap { p =>
+      Seq(p.replace("$DSL$", "scaladsl"), p.replace("$DSL$", "javadsl"))  
+    },
     imports = Seq(
       scalaJava8CompatImport(),
       akkaImport("akka.stream.*"),
