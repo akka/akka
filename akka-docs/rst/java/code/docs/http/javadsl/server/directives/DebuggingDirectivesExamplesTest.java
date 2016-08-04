@@ -135,8 +135,8 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
     // handle request to optionally generate a log entry
 
     BiFunction<HttpRequest, HttpResponse , Optional<LogEntry>> requestMethodAsInfo=
-     (request, response) ->{
-     Long requestTime=System.nanoTime();
+     (request, response) -> {
+     Long requestTime = System.nanoTime();
       return printResponseTime(request,response,requestTime);
 	};
      
@@ -163,17 +163,15 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
   }
 
    // A function for the logging of Time
-  public static Optional<LogEntry> printResponseTime(HttpRequest request, HttpResponse response, Long requestTime){
-    if(response.status().isSuccess())
-    {
-      Long elapsedTime=(requestTime - System.nanoTime()) / 1000000;
+  public static Optional<LogEntry> printResponseTime(HttpRequest request, HttpResponse response, Long requestTime) {
+    if(response.status().isSuccess()) {
+      Long elapsedTime = (requestTime - System.nanoTime()) / 1000000;
        return Optional.of(
               LogEntry.create(
                       "Logged Request:"+request.method().name()+":"+request.getUri()+":"+response.status()+":"+elapsedTime,
                       InfoLevel()));
-    }
-    else{
-    	 return Optional.empty();  //not a successfull response
+    } else {
+       return Optional.empty();  //not a successfull response
     }
   }
 }
