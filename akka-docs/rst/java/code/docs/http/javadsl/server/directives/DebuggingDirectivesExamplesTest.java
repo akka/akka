@@ -127,5 +127,52 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
       .assertEntity("logged");
     //#logResult
   }
+   @Test
+  public void testLogRequestResultWithResponseTime() {
+    //#logRequestResultWithResponseTime
+    // using logRequestResultOptional for generating Response Time
 
+    // handle request to optionally generate a log entry
+
+    BiFunction<HttpRequest, HttpResponse , Optional<LogEntry>> requestMethodAsInfo=
+     (request, response) ->{
+     Long requestTime=System.nanoTime();
+      return printResponseTime(request,response,requestTime);
+	};
+     
+    // handle rejections to optionally generate a log entry
+    BiFunction<HttpRequest, List<Rejection>, Optional<LogEntry>> rejectionsAsInfo = 
+      (request, rejections) ->
+        (!rejections.isEmpty())  ? 
+          Optional.of(
+            LogEntry.create(
+              rejections
+                .stream()
+                .map(Rejection::toString)
+                .collect(Collectors.joining(", ")), 
+              InfoLevel()))
+          : Optional.empty(); // no rejections
+
+    final Route route = get(() -> logRequestResultOptional(
+            requestMethodAsInfo,
+      rejectionsAsInfo,
+      () -> complete("logged")));
+    // tests:
+    testRoute(route).run(HttpRequest.GET("/")).assertEntity("logged");
+    //#logRequestResult
+  }
+ // A function for the logging of Time
+  public static Optional<LogEntry> printResponseTime(HttpRequest request, HttpResponse response, Long requestTime){
+    if(response.status().isSuccess())
+    {
+      Long elapsedTime=(requestTime - System.nanoTime()) / 1000;
+       return Optional.of(
+              LogEntry.create(
+                      "Logged Request:"+request.method().name()+":"+request.getUri()+":"+response.status()+":"+elapsedTime,
+                      InfoLevel()));
+    }
+    else{
+     return Optional.empty();//not a successfull response
+    }
+  }
 }
