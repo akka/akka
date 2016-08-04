@@ -13,7 +13,7 @@ addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.6.0")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "0.7.1")
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.6.0")
+addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.1")
 
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.9")
 
@@ -26,6 +26,8 @@ addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.3.3")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "0.2.2")
 
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.11")
+
+addSbtPlugin("pl.project13.sbt" % "sbt-jol" % "0.1.1")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.0-RC1")
 
