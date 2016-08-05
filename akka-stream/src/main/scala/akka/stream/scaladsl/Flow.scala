@@ -1825,6 +1825,14 @@ trait FlowOps[+Out, +Mat] {
 
   def named(name: String): Repr[Out]
 
+  /**
+   * Put an asynchronous boundary around this `Flow`.
+   * 
+   * If this is a `SubFlow` (created e.g. by `groupBy`), this creates an
+   * asynchronous boundary around each materialized sub-flow, not the
+   * super-flow. That way, the super-flow will communicate with sub-flows
+   * asynchronously.
+   */
   def async: Repr[Out]
 
   /** INTERNAL API */
