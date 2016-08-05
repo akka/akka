@@ -54,10 +54,13 @@ abstract class HttpsServerExampleSpec extends WordSpec with Matchers
     val sslContext: SSLContext = SSLContext.getInstance("TLS")
     sslContext.init(keyManagerFactory.getKeyManagers, tmf.getTrustManagers, new SecureRandom)
     val https: HttpsConnectionContext = ConnectionContext.https(sslContext)
+    //#
 
-    // sets default context to HTTPS – all Http() bound servers for this ActorSystem will use HTTPS from now on
-    Http().setDefaultServerHttpContext(https)
-
+    //#both-https-and-http
+    // you can run both HTTP and HTTPS in the same application as follows:
+    val commonRoutes: Route = get { complete("Hello world!") }
+    Http().bindAndHandle(commonRoutes, "127.0.0.1", 443, connectionContext = https)
+    Http().bindAndHandle(commonRoutes, "127.0.0.1", 80)
     //#
 
     //#bind-low-level-context
@@ -67,6 +70,14 @@ abstract class HttpsServerExampleSpec extends WordSpec with Matchers
     val routes: Route = get { complete("Hello world!") }
     Http().bindAndHandle(routes, "127.0.0.1", 8080, connectionContext = https)
     //#
+
+    //#set-low-level-context-default
+    // sets default context to HTTPS – all Http() bound servers for this ActorSystem will use HTTPS from now on
+    Http().setDefaultServerHttpContext(https)
+    Http().bindAndHandle(routes, "127.0.0.1", 9090, connectionContext = https)
+    //#
+
+    system.terminate()
   }
 
 }
