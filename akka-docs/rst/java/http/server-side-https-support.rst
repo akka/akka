@@ -21,6 +21,8 @@ For detailed documentation for client-side HTTPS support refer to :ref:`clientSi
 
 .. _akka.http.javadsl.Http: https://github.com/akka/akka/blob/master/akka-http-core/src/main/scala/akka/http/javadsl/Http.scala
 
+.. _ssl-config-java:
+
 SSL-Config
 ----------
 
@@ -57,6 +59,8 @@ keystores using the JDK keytool utility can be found `here <https://docs.oracle.
 SSL-Config provides a more targeted guide on generating certificates, so we recommend you start with the guide
 titled `Generating X.509 Certificates <http://typesafehub.github.io/ssl-config/CertificateGeneration.html>`_.
 
+.. _using-https-java:
+
 Using HTTPS
 -----------
 
@@ -64,11 +68,34 @@ Once you have obtained the server certificate, using it is as simple as preparin
 and either setting it as the default one to be used by all servers started by the given ``Http`` extension
 or passing it in explicitly when binding the server.
 
-The below example shows how setting up HTTPS works when using the ``akka.http.javadsl.server.HttpApp`` convenience class:
+The below example shows how setting up HTTPS works when using the ``akka.http.javadsl.server.HttpApp`` convenience class.
+Firstly you will create and configure an instance of ``akka.http.javadsl.HttpsConnectionContext`` :
+
+.. includecode2:: ../../../../akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java
+   :snippet: https-http-config
+
+Then pass it to ``akka.http.javadsl.Http`` class's ``setDefaultServerHttpContext`` method, like in the below ``main`` method.
 
 .. includecode2:: ../../../../akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java
    :snippet: https-http-app
 
+Running both HTTP and HTTPS
+---------------------------
+If you want to run HTTP and HTTPS servers in a single application, you can call ``bind...`` methods twice,
+one for HTTPS, and the other for HTTP.
+
+When configuring HTTPS, you can do it up like explained in the above :ref:`using-https-java` section,
+
+.. includecode2:: ../../../../akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java
+   :snippet: https-http-config
+
+or via :ref:`ssl-config-java` (not explained here though).
+
+Then, call ``bind...`` methods twice like below.
+The blow ``SimpleServerApp.useHttps(system)`` is calling the above defined HTTP ``public static HttpsConnectionContext useHttps(ActorSystem system)`` method.
+
+.. includecode2:: ../../../../akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerHttpHttpsApp.java
+   :snippet: both-https-and-http
 
 Further reading
 ---------------
