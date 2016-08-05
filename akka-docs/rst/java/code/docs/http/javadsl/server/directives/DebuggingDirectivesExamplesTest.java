@@ -68,7 +68,6 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
   public void testLogRequestResult() {
     //#logRequestResult
     // using logRequestResult
-
     // handle request to optionally generate a log entry
     BiFunction<HttpRequest, HttpResponse, Optional<LogEntry>> requestMethodAsInfo =
       (request, response) ->
@@ -137,7 +136,6 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
   public void testLogRequestResultWithResponseTime() {
     //#logRequestResultWithResponseTime
     // using logRequestResultOptional for generating Response Time
-
     // handle request to optionally generate a log entry
 
     BiFunction<HttpRequest, HttpResponse, Optional<LogEntry>> requestMethodAsInfo =
