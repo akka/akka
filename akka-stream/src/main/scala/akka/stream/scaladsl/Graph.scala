@@ -50,7 +50,6 @@ final class Merge[T] private (val inputPorts: Int, val eagerComplete: Boolean) e
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-    private var initialized = false
 
     private val pendingQueue = FixedSizeBuffer[Inlet[T]](inputPorts)
     private def pending: Boolean = pendingQueue.nonEmpty
@@ -60,11 +59,21 @@ final class Merge[T] private (val inputPorts: Int, val eagerComplete: Boolean) e
 
     override def preStart(): Unit = in.foreach(tryPull)
 
+    @tailrec
     private def dequeueAndDispatch(): Unit = {
       val in = pendingQueue.dequeue()
-      push(out, grab(in))
-      if (upstreamsClosed && !pending) completeStage()
-      else tryPull(in)
+      if (in == null) {
+        // in is null if we reached the end of the queue
+        if (upstreamsClosed) completeStage()
+      } else if (isAvailable(in)) {
+        push(out, grab(in))
+        if (upstreamsClosed && !pending) completeStage()
+        else tryPull(in)
+      } else {
+        // in was closed after being enqueued
+        // try next in queue
+        dequeueAndDispatch()
+      }
     }
 
     in.foreach { i ⇒
