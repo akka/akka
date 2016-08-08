@@ -10,6 +10,8 @@ are left to the streaming APIs and are easily implementable as patterns in user-
 Common timeouts
 ---------------
 
+.. _idle-timeouts-scala:
+
 Idle timeouts
 ^^^^^^^^^^^^^
 
