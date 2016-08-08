@@ -49,7 +49,7 @@ final class Merge[T] private (val inputPorts: Int, val eagerComplete: Boolean) e
   override def initialAttributes = DefaultAttributes.merge
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
 
     private val pendingQueue = FixedSizeBuffer[Inlet[T]](inputPorts)
     private def pending: Boolean = pendingQueue.nonEmpty
@@ -99,12 +99,12 @@ final class Merge[T] private (val inputPorts: Int, val eagerComplete: Boolean) e
       })
     }
 
-    setHandler(out, new OutHandler {
-      override def onPull(): Unit = {
-        if (pending)
-          dequeueAndDispatch()
-      }
-    })
+    override def onPull(): Unit = {
+      if (pending)
+        dequeueAndDispatch()
+    }
+
+    setHandler(out, this)
   }
 
   override def toString = "Merge"
