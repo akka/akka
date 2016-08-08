@@ -106,7 +106,7 @@ sealed trait HttpMessage extends jm.HttpMessage {
     val clazz = classTag[T].runtimeClass.asInstanceOf[Class[T]]
     HttpHeader.fastFind[T](clazz, headers) match {
       case OptionVal.Some(h)                     ⇒ Some(h)
-      case _ if clazz == classOf[`Content-Type`] ⇒ Some(entity.contentType).asInstanceOf[Option[T]]
+      case _ if clazz == classOf[`Content-Type`] ⇒ Some(`Content-Type`(entity.contentType)).asInstanceOf[Option[T]]
       case _                                     ⇒ None
     }
   }
