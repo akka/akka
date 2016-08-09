@@ -4,11 +4,11 @@
 
 package docs.http.scaladsl.server.directives
 
-import akka.event.{LoggingAdapter, Logging}
+import akka.event.{ LoggingAdapter, Logging }
 import akka.event.Logging.LogLevel
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.server.RouteResult
-import akka.http.scaladsl.server.RouteResult.{Rejected, Complete}
+import akka.http.scaladsl.server.RouteResult.{ Rejected, Complete }
 import akka.http.scaladsl.server.directives.{ DebuggingDirectives, LogEntry, LoggingMagnet }
 import docs.http.scaladsl.server.RoutingSpec
 
@@ -99,9 +99,10 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
   }
   "logRequestResultWithResponseTime" in {
 
-    def akkaResponseTimeLoggingFunction(loggingAdapter: LoggingAdapter,
-                                        requestTimestamp: Long,
-                                        level: LogLevel = Logging.InfoLevel)(req: HttpRequest)(res: Any): Unit = {
+    def akkaResponseTimeLoggingFunction(
+      loggingAdapter:   LoggingAdapter,
+      requestTimestamp: Long,
+      level:            LogLevel       = Logging.InfoLevel)(req: HttpRequest)(res: Any): Unit = {
       val entry = res match {
         case Complete(resp) =>
           val responseTimestamp: Long = System.nanoTime
