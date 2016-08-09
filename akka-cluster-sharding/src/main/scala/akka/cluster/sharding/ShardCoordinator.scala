@@ -153,7 +153,7 @@ object ShardCoordinator {
           case (_, v) ⇒ v.filterNot(s ⇒ rebalanceInProgress(s))
         }.maxBy(_.size)
         if (mostShards.size - leastShards.size >= rebalanceThreshold)
-          Future.successful(Set(mostShards.head))
+          Future.successful(mostShards.take(maxSimultaneousRebalance - rebalanceInProgress.size).toSet)
         else
           emptyRebalanceResult
       } else emptyRebalanceResult
