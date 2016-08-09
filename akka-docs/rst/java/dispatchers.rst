@@ -44,6 +44,10 @@ And here's another example that uses the "thread-pool-executor":
 
 .. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#my-thread-pool-dispatcher-config
 
+.. note::
+  The thread pool executor dispatcher is implemented using by a ``java.util.concurrent.ThreadPoolExecutor``.
+  You can read more about it in the JDK's `ThreadPoolExecutor documentation`_.
+
 For more options, see the default-dispatcher section of the :ref:`configuration`.
 
 Then you create the actor as usual and define the dispatcher in the deployment configuration.
@@ -65,6 +69,7 @@ of programmatically provided parameter.
     where you'd use periods to denote sub-sections, like this: ``"foo.bar.my-dispatcher"``
 
 .. _ForkJoinPool documentation: https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ForkJoinPool.html
+.. _ThreadPoolExecutor documentation: https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ThreadPoolExecutor.html
 
 Types of dispatchers
 --------------------
