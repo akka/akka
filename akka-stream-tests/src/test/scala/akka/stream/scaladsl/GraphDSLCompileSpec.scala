@@ -3,7 +3,9 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.{ ClosedShape, ActorMaterializer, OverflowStrategy }
+import akka.NotUsed
+import akka.stream.impl.fusing.GraphStages
+import akka.stream.{ ActorMaterializer, ClosedShape, FlowShape, OverflowStrategy }
 import akka.stream.testkit._
 import akka.stream.stage._
 
@@ -338,6 +340,19 @@ class GraphDSLCompileSpec extends StreamSpec {
         (in1 via f1) ~> (f2 to out1)
         ClosedShape
       }).run()
+    }
+
+    "suitably override attribute handling methods" in {
+      import akka.stream.Attributes._
+      val ga = GraphDSL.create() { implicit b ⇒
+        import GraphDSL.Implicits._
+        val id = b.add(GraphStages.Identity)
+
+        FlowShape(id.in, id.out)
+      }.async.addAttributes(none).named("useless")
+
+      ga.module.attributes.getFirst[Name] shouldEqual Some(Name("useless"))
+      ga.module.attributes.getFirst[AsyncBoundary.type] shouldEqual (Some(AsyncBoundary))
     }
   }
 }
