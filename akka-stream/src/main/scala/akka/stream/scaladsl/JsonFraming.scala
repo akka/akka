@@ -36,16 +36,17 @@ object JsonFraming {
    * elements are separated by multiple newlines or other whitespace characters. And of course is insensitive
    * (and does not impact the emitting frame) to the JSON object's internal formatting.
    *
-   * Framing raw JSON values (such as integers or strings) is supported as well.
-   *
    * @param maximumObjectLength The maximum length of allowed frames while decoding. If the maximum length is exceeded
    *                            this Flow will fail the stream.
    */
   def objectScanner(maximumObjectLength: Int): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].via(new SimpleLinearGraphStage[ByteString] {
-      private[this] val buffer = new JsonObjectParser(maximumObjectLength)
+
+      override protected def initialAttributes: Attributes = Attributes.name("JsonFraming.objectScanner")
 
       override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
+        private val buffer = new JsonObjectParser(maximumObjectLength)
+
         setHandlers(in, out, this)
 
         override def onPush(): Unit = {
@@ -57,8 +58,8 @@ object JsonFraming {
           tryPopBuffer()
 
         override def onUpstreamFinish(): Unit = {
-          try buffer.poll() match {
-            case Some(json) ⇒ emit(out, json, () ⇒ completeStage())
+          buffer.poll() match {
+            case Some(json) ⇒ emit(out, json)
             case _          ⇒ completeStage()
           }
         }
@@ -72,6 +73,6 @@ object JsonFraming {
           }
         }
       }
-    }).named("JsonFraming.objectScanner")
+    })
 
 }

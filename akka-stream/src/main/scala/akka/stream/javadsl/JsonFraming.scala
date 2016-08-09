@@ -29,8 +29,6 @@ object JsonFraming {
    * elements are separated by multiple newlines or other whitespace characters. And of course is insensitive
    * (and does not impact the emitting frame) to the JSON object's internal formatting.
    *
-   * Framing raw JSON values (such as integers or strings) is supported as well.
-   *
    * @param maximumObjectLength The maximum length of allowed frames while decoding. If the maximum length is exceeded
    *                            this Flow will fail the stream.
    */
