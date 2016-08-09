@@ -147,8 +147,11 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     connections.mapAsyncUnordered(settings.maxConnections) {
       case incoming: Tcp.IncomingConnection ⇒
         try {
-          fullLayer.addAttributes(HttpAttributes.remoteAddress(Some(incoming.remoteAddress)))
-            .joinMat(incoming.flow)(Keep.left)
+          val layer =
+            if (settings.remoteAddressHeader) fullLayer.addAttributes(HttpAttributes.remoteAddress(Some(incoming.remoteAddress)))
+            else fullLayer
+
+          layer.joinMat(incoming.flow)(Keep.left)
             .run().recover {
               // Ignore incoming errors from the connection as they will cancel the binding.
               // As far as it is known currently, these errors can only happen if a TCP error bubbles up
