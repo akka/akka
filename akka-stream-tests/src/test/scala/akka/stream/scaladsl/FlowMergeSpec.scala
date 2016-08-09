@@ -116,6 +116,8 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       up2.expectRequest()
       up1.sendNext(7)
       up2.sendNext(8)
+      // there is a race here, the 8 needs to be queued before the
+      // source completes (it failed consistently on my machine, before bugfix)
       up2.sendComplete()
       down.request(1)
       down.expectNext()

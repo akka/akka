@@ -65,10 +65,10 @@ final class Merge[T] private (val inputPorts: Int, val eagerComplete: Boolean) e
       if (in == null) {
         // in is null if we reached the end of the queue
         if (upstreamsClosed) completeStage()
-      } else if (isAvailable(in)) {
+      } else if (!isClosed(in)) {
         push(out, grab(in))
         if (upstreamsClosed && !pending) completeStage()
-        else tryPull(in)
+        else pull(in)
       } else {
         // in was closed after being enqueued
         // try next in queue
