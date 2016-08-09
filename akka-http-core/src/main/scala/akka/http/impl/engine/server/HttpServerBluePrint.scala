@@ -65,7 +65,8 @@ private[http] object HttpServerBluePrint {
         websocketSupport(settings, log) atop
         tlsSupport
 
-    theStack.withAttributes(HttpAttributes.remoteAddress(remoteAddress))
+    if (settings.remoteAddressHeader && remoteAddress.isDefined) theStack.withAttributes(HttpAttributes.remoteAddress(remoteAddress))
+    else theStack
   }
 
   val tlsSupport: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, SessionBytes, NotUsed] =

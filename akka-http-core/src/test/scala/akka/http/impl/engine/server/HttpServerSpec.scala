@@ -4,26 +4,28 @@
 
 package akka.http.impl.engine.server
 
-import java.net.{ InetAddress, InetSocketAddress }
+import java.net.{InetAddress, InetSocketAddress}
+
+import akka.http.impl.util._
+import akka.http.scaladsl.Http.ServerLayer
+import akka.http.scaladsl.model.HttpEntity._
+import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.model.MediaTypes._
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.settings.ServerSettings
-import scala.reflect.ClassTag
-import scala.util.Random
+import akka.stream.scaladsl._
+import akka.stream.testkit.Utils.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.{ActorMaterializer, Fusing}
+import akka.testkit.AkkaSpec
+import akka.util.ByteString
+import org.scalatest.Inside
+
 import scala.annotation.tailrec
 import scala.concurrent.duration._
-import org.scalatest.Inside
-import org.scalatest.concurrent.ScalaFutures
-import akka.util.ByteString
-import akka.stream.scaladsl._
-import akka.stream.ActorMaterializer
-import akka.stream.testkit._
-import akka.http.scaladsl.model._
-import akka.http.impl.util._
-import headers._
-import HttpEntity._
-import MediaTypes._
-import HttpMethods._
-import Utils.assertAllStagesStopped
-import akka.testkit.AkkaSpec
+import scala.reflect.ClassTag
+import scala.util.Random
 
 class HttpServerSpec extends AkkaSpec(
   """akka.loggers = []
@@ -801,6 +803,32 @@ class HttpServerSpec extends AkkaSpec(
 
       override def settings: ServerSettings =
         super.settings.withRemoteAddressHeader(true)
+
+      send("""GET / HTTP/1.1
+             |Host: example.com
+             |
+             |""".stripMarginWithNewline("\r\n"))
+
+      val request = expectRequest()
+      request.headers should contain(`Remote-Address`(RemoteAddress(theAddress, Some(8080))))
+
+      shutdownBlueprint()
+    })
+
+    "support remote-address-header when blueprint not constructed with it" in assertAllStagesStopped(new TestSetup {
+      // coverage for #21130
+      lazy val theAddress = InetAddress.getByName("127.5.2.1")
+
+      override def settings: ServerSettings =
+        super.settings.withRemoteAddressHeader(true)
+
+      // this is the normal behavior for bindAndHandle(flow), it will set an attribute
+      // with remote ip before flow is materialized, rather than from the blueprint apply method
+      override def modifyServer(server: ServerLayer): ServerLayer = {
+        BidiFlow.fromGraph(Fusing.aggressive(server).withAttributes(
+          HttpAttributes.remoteAddress(Some(new InetSocketAddress(theAddress, 8080)))
+        ))
+      }
 
       send("""GET / HTTP/1.1
              |Host: example.com

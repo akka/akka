@@ -5,9 +5,11 @@
 package akka.http.impl.engine.server
 
 import java.net.InetSocketAddress
+
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.TLSProtocol._
+
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorSystem
 import akka.event.NoLogging
@@ -16,8 +18,9 @@ import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.http.impl.util._
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.{ ProductVersion, Server }
-import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 
 abstract class HttpServerTestSetupBase {
   implicit def system: ActorSystem
@@ -30,11 +33,14 @@ abstract class HttpServerTestSetupBase {
     .withServerHeader(Some(Server(List(ProductVersion("akka-http", "test")))))
   def remoteAddress: Option[InetSocketAddress] = None
 
+  // hook to modify server, for example add attributes
+  def modifyServer(server: Http.ServerLayer): Http.ServerLayer = server
+
   val (netIn, netOut) = {
     val netIn = TestPublisher.probe[ByteString]()
     val netOut = ByteStringSinkProbe()
 
-    RunnableGraph.fromGraph(GraphDSL.create(HttpServerBluePrint(settings, remoteAddress = remoteAddress, log = NoLogging)) { implicit b ⇒ server ⇒
+    RunnableGraph.fromGraph(GraphDSL.create(modifyServer(HttpServerBluePrint(settings, remoteAddress = remoteAddress, log = NoLogging))) { implicit b ⇒ server ⇒
       import GraphDSL.Implicits._
       Source.fromPublisher(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> server.in2
       server.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x }.buffer(1, OverflowStrategy.backpressure) ~> netOut.sink
