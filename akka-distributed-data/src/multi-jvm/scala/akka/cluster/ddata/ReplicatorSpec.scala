@@ -41,7 +41,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
   implicit val cluster = Cluster(system)
   val replicator = system.actorOf(Replicator.props(
     ReplicatorSettings(system).withGossipInterval(1.second).withMaxDeltaElements(10)), "replicator")
-  val timeout = 2.seconds.dilated
+  val timeout = 3.seconds.dilated
   val writeTwo = WriteTo(2, timeout)
   val writeMajority = WriteMajority(timeout)
   val writeAll = WriteAll(timeout)
@@ -112,7 +112,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
         val c4 = c3 + 1
         // too strong consistency level
         replicator ! Update(KeyA, GCounter(), writeTwo)(_ + 1)
-        expectMsg(UpdateTimeout(KeyA, None))
+        expectMsg(timeout + 1.second, UpdateTimeout(KeyA, None))
         replicator ! Get(KeyA, ReadLocal)
         expectMsg(GetSuccess(KeyA, None)(c4)).dataValue should be(c4)
         changedProbe.expectMsg(Changed(KeyA)(c4)).dataValue should be(c4)
@@ -347,9 +347,9 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
       val c40 = expectMsgPF() { case g @ GetSuccess(KeyD, _) ⇒ g.get(KeyD) }
       c40.value should be(40)
       replicator ! Update(KeyD, GCounter() + 1, writeTwo)(_ + 1)
-      expectMsg(UpdateTimeout(KeyD, None))
+      expectMsg(timeout + 1.second, UpdateTimeout(KeyD, None))
       replicator ! Update(KeyD, GCounter(), writeTwo)(_ + 1)
-      expectMsg(UpdateTimeout(KeyD, None))
+      expectMsg(timeout + 1.second, UpdateTimeout(KeyD, None))
     }
     runOn(first) {
       for (n ← 1 to 30) {
@@ -466,7 +466,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 
     runOn(first, second) {
       replicator ! Get(KeyE2, readAll, Some(998))
-      expectMsg(GetFailure(KeyE2, Some(998)))
+      expectMsg(timeout + 1.second, GetFailure(KeyE2, Some(998)))
       replicator ! Get(KeyE2, ReadLocal)
       expectMsg(NotFound(KeyE2, None))
     }
