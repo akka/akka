@@ -356,7 +356,11 @@ final case class RunnableGraph[+Mat](val module: StreamLayout.Module) extends Gr
   override def withAttributes(attr: Attributes): RunnableGraph[Mat] =
     new RunnableGraph(module.withAttributes(attr))
 
-  override def named(name: String): RunnableGraph[Mat] = withAttributes(Attributes.name(name))
+  override def named(name: String): RunnableGraph[Mat] =
+    addAttributes(Attributes.name(name))
+
+  override def async: RunnableGraph[Mat] =
+    addAttributes(Attributes.asyncBoundary)
 }
 
 /**

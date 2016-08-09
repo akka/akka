@@ -108,7 +108,10 @@ class BidiFlowSpec extends StreamSpec {
 
     "suitably override attribute handling methods" in {
       import Attributes._
-      val b: BidiFlow[Int, Long, ByteString, String, NotUsed] = bidi.withAttributes(name("")).async.named("")
+      val b: BidiFlow[Int, Long, ByteString, String, NotUsed] = bidi.async.addAttributes(none).named("name")
+
+      b.module.attributes.getFirst[Name] shouldEqual Some(Name("name"))
+      b.module.attributes.getFirst[AsyncBoundary.type] shouldEqual Some(AsyncBoundary)
     }
 
   }
