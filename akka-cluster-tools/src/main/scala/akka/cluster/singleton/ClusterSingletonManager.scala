@@ -504,6 +504,12 @@ class ClusterSingletonManager(
       addRemoved(m.uniqueAddress)
       // transition when OldestChanged
       stay using YoungerData(None)
+
+    case Event(HandOverToMe, _) ⇒
+      // this node was probably quickly restarted with same hostname:port,
+      // confirm that the old singleton instance has been stopped
+      sender() ! HandOverDone
+      stay
   }
 
   when(BecomingOldest) {
