@@ -96,5 +96,32 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       up1.expectSubscription().expectCancellation()
       up2.expectSubscription().expectCancellation()
     }
+
+    "not try to grab from a closed input previously enqueued" in assertAllStagesStopped {
+      // Coverage for #21138
+      val up1 = TestPublisher.probe[Int]()
+      val up2 = TestPublisher.probe[Int]()
+      val down = TestSubscriber.probe[Int]()
+
+      Source.fromPublisher(up1)
+        .merge(Source.fromPublisher(up2), eagerComplete = true)
+        .to(Sink.fromSubscriber(down))
+        .run
+
+      up1.ensureSubscription()
+      up2.ensureSubscription()
+      down.ensureSubscription()
+
+      up1.expectRequest()
+      up2.expectRequest()
+      up1.sendNext(7)
+      up2.sendNext(8)
+      // there is a race here, the 8 needs to be queued before the
+      // source completes (it failed consistently on my machine, before bugfix)
+      up2.sendComplete()
+      down.request(1)
+      down.expectNext()
+
+    }
   }
 }
