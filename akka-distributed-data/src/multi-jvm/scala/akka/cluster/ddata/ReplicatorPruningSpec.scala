@@ -42,7 +42,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
   val replicator = system.actorOf(Replicator.props(
     ReplicatorSettings(system).withGossipInterval(1.second)
       .withPruning(pruningInterval = 1.second, maxPruningDissemination)), "replicator")
-  val timeout = 2.seconds.dilated
+  val timeout = 3.seconds.dilated
 
   val KeyA = GCounterKey("A")
   val KeyB = ORSetKey[String]("B")
