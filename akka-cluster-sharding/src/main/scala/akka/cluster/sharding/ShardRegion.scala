@@ -413,8 +413,8 @@ class ShardRegion(
     case msg: CoordinatorMessage                 ⇒ receiveCoordinatorMessage(msg)
     case cmd: ShardRegionCommand                 ⇒ receiveCommand(cmd)
     case query: ShardRegionQuery                 ⇒ receiveQuery(query)
-    case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
     case msg: RestartShard                       ⇒ deliverMessage(msg, sender())
+    case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
   }
 
   def receiveClusterState(state: CurrentClusterState): Unit = {
@@ -454,7 +454,7 @@ class ShardRegion(
       regionByShard.get(shard) match {
         case Some(r) if r == self && ref != self ⇒
           // should not happen, inconsistency between ShardRegion and ShardCoordinator
-          throw new IllegalStateException(s"Unexpected change of shard [${shard}] from self to [${ref}]")
+          throw new IllegalStateException(s"Unexpected change of shard [$shard] from self to [$ref]")
         case _ ⇒
       }
       regionByShard = regionByShard.updated(shard, ref)
@@ -546,7 +546,7 @@ class ShardRegion(
   }
 
   def receiveTerminated(ref: ActorRef): Unit = {
-    if (coordinator.exists(_ == ref))
+    if (coordinator.contains(ref))
       coordinator = None
     else if (regions.contains(ref)) {
       val shards = regions(ref)
@@ -711,7 +711,7 @@ class ShardRegion(
           case Some(ref) ⇒
             log.debug("Forwarding request for shard [{}] to [{}]", shardId, ref)
             ref.tell(msg, snd)
-          case None if (shardId == null || shardId == "") ⇒
+          case None if shardId == null || shardId == "" ⇒
             log.warning("Shard must not be empty, dropping message [{}]", msg.getClass.getName)
             context.system.deadLetters ! msg
           case None ⇒
