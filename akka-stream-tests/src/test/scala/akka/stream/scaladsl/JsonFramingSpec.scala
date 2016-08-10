@@ -175,6 +175,12 @@ class JsonFramingSpec extends AkkaSpec {
           buffer.poll().get.utf8String shouldBe """{ "name": "john doe"}"""
         }
 
+        "successfully parse single field having string value containing single quote" in {
+          val buffer = new JsonObjectParser()
+          buffer.offer(ByteString("""{ "name": "john o'doe"}"""))
+          buffer.poll().get.utf8String shouldBe """{ "name": "john o'doe"}"""
+        }
+
         "successfully parse single field having string value containing curly brace" in {
           val buffer = new JsonObjectParser()
 

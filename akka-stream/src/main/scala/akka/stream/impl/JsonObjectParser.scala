@@ -17,7 +17,7 @@ private[akka] object JsonObjectParser {
   final val SquareBraceEnd = ']'.toByte
   final val CurlyBraceStart = '{'.toByte
   final val CurlyBraceEnd = '}'.toByte
-  final val DoubleQuote = '\''.toByte
+  final val DoubleQuote = '"'.toByte
   final val Backslash = '\\'.toByte
   final val Comma = ','.toByte
 
