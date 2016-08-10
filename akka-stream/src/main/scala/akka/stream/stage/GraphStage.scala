@@ -950,11 +950,13 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   /**
    * Invoked before any external events are processed, at the startup of the stage.
    */
+  @throws(classOf[Exception])
   def preStart(): Unit = ()
 
   /**
    * Invoked after processing of external events stopped because the stage is about to stop or fail.
    */
+  @throws(classOf[Exception])
   def postStop(): Unit = ()
 
   /**
