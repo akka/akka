@@ -3,23 +3,20 @@
  */
 package akka.stream.scaladsl
 
-import java.util.{ Spliterators, Spliterator }
-import java.util.stream.StreamSupport
-
 import akka.{ Done, NotUsed }
 import akka.dispatch.ExecutionContexts
-import akka.actor.{ Status, ActorRef, Props }
+import akka.actor.{ ActorRef, Props, Status }
 import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
-import akka.stream.stage.{ Context, PushStage, SyncDirective, TerminationDirective }
+import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, InHandler }
 import akka.stream.{ javadsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
+
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.duration.Duration.Inf
-import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
 /**
@@ -265,23 +262,35 @@ object Sink {
    */
   def onComplete[T](callback: Try[Done] ⇒ Unit): Sink[T, NotUsed] = {
 
-    def newOnCompleteStage(): PushStage[T, NotUsed] = {
-      new PushStage[T, NotUsed] {
-        override def onPush(elem: T, ctx: Context[NotUsed]): SyncDirective = ctx.pull()
+    def newOnCompleteStage(): GraphStage[FlowShape[T, NotUsed]] = {
+      new GraphStage[FlowShape[T, NotUsed]] {
 
-        override def onUpstreamFailure(cause: Throwable, ctx: Context[NotUsed]): TerminationDirective = {
-          callback(Failure(cause))
-          ctx.fail(cause)
-        }
+        val in = Inlet[T]("in")
+        val out = Outlet[NotUsed]("out")
+        override val shape = FlowShape.of(in, out)
 
-        override def onUpstreamFinish(ctx: Context[NotUsed]): TerminationDirective = {
-          callback(Success(Done))
-          ctx.finish()
-        }
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+          new GraphStageLogic(shape) with InHandler with OutHandler {
+
+            override def onPush(): Unit = pull(in)
+
+            override def onPull(): Unit = pull(in)
+
+            override def onUpstreamFailure(cause: Throwable): Unit = {
+              callback(Failure(cause))
+              failStage(cause)
+            }
+
+            override def onUpstreamFinish(): Unit = {
+              callback(Success(Done))
+              completeStage()
+            }
+
+            setHandlers(in, out, this)
+          }
       }
     }
-
-    Flow[T].transform(newOnCompleteStage).to(Sink.ignore).named("onCompleteSink")
+    Flow[T].via(newOnCompleteStage()).to(Sink.ignore).named("onCompleteSink")
   }
 
   /**
