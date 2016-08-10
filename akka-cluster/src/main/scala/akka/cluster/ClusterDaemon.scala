@@ -85,25 +85,25 @@ private[cluster] object InternalClusterAction {
    * If a node is uninitialized it will reply to `InitJoin` with
    * `InitJoinNack`.
    */
-  case object JoinSeedNode
+  case object JoinSeedNode extends DeadLetterSuppression
 
   /**
    * see JoinSeedNode
    */
   @SerialVersionUID(1L)
-  case object InitJoin extends ClusterMessage
+  case object InitJoin extends ClusterMessage with DeadLetterSuppression
 
   /**
    * see JoinSeedNode
    */
   @SerialVersionUID(1L)
-  final case class InitJoinAck(address: Address) extends ClusterMessage
+  final case class InitJoinAck(address: Address) extends ClusterMessage with DeadLetterSuppression
 
   /**
    * see JoinSeedNode
    */
   @SerialVersionUID(1L)
-  final case class InitJoinNack(address: Address) extends ClusterMessage
+  final case class InitJoinNack(address: Address) extends ClusterMessage with DeadLetterSuppression
 
   /**
    * Marker interface for periodic tick messages
