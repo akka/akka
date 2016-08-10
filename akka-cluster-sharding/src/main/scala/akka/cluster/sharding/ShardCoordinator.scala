@@ -367,8 +367,8 @@ object ShardCoordinator {
     }
 
     def stoppingShard: Receive = {
-      case ShardStopped(shard) ⇒ done(ok = true)
-      case ReceiveTimeout      ⇒ done(ok = false)
+      case ShardStopped(`shard`) ⇒ done(ok = true)
+      case ReceiveTimeout        ⇒ done(ok = false)
     }
 
     def done(ok: Boolean): Unit = {
