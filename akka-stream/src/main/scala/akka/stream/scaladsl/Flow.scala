@@ -3,10 +3,9 @@
  */
 package akka.stream.scaladsl
 
-import akka.event.{ Logging, LoggingAdapter }
+import akka.event.LoggingAdapter
 import akka.stream._
 import akka.Done
-import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.stream.impl.fusing._
@@ -1831,7 +1830,7 @@ trait FlowOps[+Out, +Mat] {
 
   /**
    * Put an asynchronous boundary around this `Flow`.
-   * 
+   *
    * If this is a `SubFlow` (created e.g. by `groupBy`), this creates an
    * asynchronous boundary around each materialized sub-flow, not the
    * super-flow. That way, the super-flow will communicate with sub-flows
