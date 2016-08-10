@@ -284,6 +284,7 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends PersistenceSpec(c
       probeA.expectMsg(Action(2, "a-2")) // re-delivered
       // a-4 was re-delivered but lost
       probeA.expectMsgAllOf(
+        30.seconds,
         Action(5, "a-5"), // re-delivered
         Action(4, "a-4")) // re-delivered, 3rd time
 
@@ -340,7 +341,7 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends PersistenceSpec(c
       probe.expectMsg(ReqAck)
       probe.expectMsg(ReqAck)
       probe.expectMsg(ReqAck)
-      val unconfirmed = probe.receiveWhile(5.seconds) {
+      val unconfirmed = probe.receiveWhile(15.seconds) {
         case UnconfirmedWarning(unconfirmed) ⇒ unconfirmed
       }.flatten
       unconfirmed.map(_.destination).toSet should ===(Set(probeA.ref.path, probeB.ref.path))
@@ -371,7 +372,7 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends PersistenceSpec(c
       for (n ← 1 to N) {
         snd.tell(Req("c-" + n), probe.ref)
       }
-      val deliverWithin = 20.seconds
+      val deliverWithin = 60.seconds
       probeA.receiveN(N, deliverWithin).map { case a: Action ⇒ a.payload }.toSet should ===((1 to N).map(n ⇒ "a-" + n).toSet)
       probeB.receiveN(N, deliverWithin).map { case a: Action ⇒ a.payload }.toSet should ===((1 to N).map(n ⇒ "b-" + n).toSet)
       probeC.receiveN(N, deliverWithin).map { case a: Action ⇒ a.payload }.toSet should ===((1 to N).map(n ⇒ "c-" + n).toSet)
@@ -398,7 +399,7 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends PersistenceSpec(c
       // without throttling, at each round half of the messages would go through
       var toDeliver = (1 to N).filter(_ % 2 == 0).map(_.toLong).toSet
       for (n ← 1 to N if n % 2 == 0) {
-        toDeliver -= probeA.expectMsgType[Action].id
+        toDeliver -= probeA.expectMsgType[Action](20.seconds).id
         probeA.expectNoMsg(100.millis)
       }
 

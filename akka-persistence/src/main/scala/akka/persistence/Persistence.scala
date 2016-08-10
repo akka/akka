@@ -49,7 +49,7 @@ final class PersistenceSettings(config: Config) {
 
     val redeliverRandomPart: Double = {
       val value = config.getDouble("at-least-once-delivery.redeliver-random-part")
-      require(value > 0, "akka.persistence.at-least-once-delivery.redeliver-random-part should be grater then 0. was = " + value)
+      require(value >= 0, "akka.persistence.at-least-once-delivery.redeliver-random-part should be greater or equal 0. was = " + value)
       value
     }
 

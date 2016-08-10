@@ -241,7 +241,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
         s"Too many unconfirmed messages, maximum allowed is [$maxUnconfirmedMessages]")
 
     val deliveryId = nextDeliverySequenceNr()
-    val now = if (recoveryRunning) { System.nanoTime() - redeliverInterval.toNanos } else System.nanoTime()
+    val now = if (recoveryRunning) { System.nanoTime() - redeliverInterval.toNanos } else System.nanoTime() + redeliverInterval.toNanos
     val d = Delivery(destination, deliveryIdToMessage(deliveryId), now, attempt = 0)
 
     if (recoveryRunning)
@@ -298,14 +298,16 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
 
   private def redeliverOverdue(): Unit = {
     val now = System.nanoTime()
-    val deadline = now - redeliverInterval.toNanos // move to next attemt
+    val deadline = now - (redeliverInterval.toNanos / 2) // move to next attemt
     var warnings = Vector.empty[UnconfirmedDelivery]
 
     // Scala doesn't provide any power using integer  base and exponent
     // Implementation based on exponentiation by squaring
     def pow(base: Long, exponent: Int): Long = {
-      if (exponent == 0) {
+      if (exponent <= 0) {
         1
+      } else if (exponent == 1) {
+        base
       } else if ((exponent & 1L) == 1L) {
         base * pow(base, exponent - 1)
       } else {
@@ -313,8 +315,6 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
         result * result
       }
     }
-
-    val part = 0.2
 
     unconfirmed
       .iterator
