@@ -19,6 +19,7 @@ import akka.stream.actor.ActorSubscriberMessage
 
 abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
 
+  @throws(classOf[Exception])
   def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, M)
 
   protected def initialAttributes: Attributes = Attributes.none
@@ -42,6 +43,7 @@ abstract class GraphStage[S <: Shape] extends GraphStageWithMaterializedValue[S,
   final override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, NotUsed) =
     (createLogic(inheritedAttributes), NotUsed)
 
+  @throws(classOf[Exception])
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic
 }
 
@@ -948,11 +950,13 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   /**
    * Invoked before any external events are processed, at the startup of the stage.
    */
+  @throws(classOf[Exception])
   def preStart(): Unit = ()
 
   /**
    * Invoked after processing of external events stopped because the stage is about to stop or fail.
    */
+  @throws(classOf[Exception])
   def postStop(): Unit = ()
 
   /**
@@ -1155,6 +1159,7 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
    *
    * @param timerKey key of the scheduled timer
    */
+  @throws(classOf[Exception])
   protected def onTimer(timerKey: Any): Unit = ()
 
   // Internal hooks to avoid reliance on user calling super in postStop
