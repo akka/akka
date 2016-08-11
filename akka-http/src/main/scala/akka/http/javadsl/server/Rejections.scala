@@ -290,6 +290,11 @@ trait TransformationRejection extends Rejection {
   def getTransform: JFunction[JIterable[Rejection], JIterable[Rejection]]
 }
 
+trait PathMatcherExtractionFailedRejection extends Rejection
+object PathMatcherExtractionFailedRejection extends PathMatcherExtractionFailedRejection {
+  def get = scaladsl.server.PathMatcherExtractionFailedRejection
+}
+
 /**
  * A Throwable wrapping a Rejection.
  * Can be used for marshalling `Future[T]` or `Try[T]` instances, whose failure side is supposed to trigger a route

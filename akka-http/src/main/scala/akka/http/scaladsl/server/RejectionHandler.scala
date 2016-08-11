@@ -135,6 +135,10 @@ object RejectionHandler {
         complete((MethodNotAllowed, List(Allow(methods)), "HTTP method not allowed, supported methods: " + names.mkString(", ")))
       }
       .handle {
+        case PathMatcherExtractionFailedRejection ⇒
+          complete((NotFound, "The requested resource could not be found"))
+      }
+      .handle {
         case AuthorizationFailedRejection ⇒
           complete((Forbidden, "The supplied authentication is not authorized to access this resource"))
       }

@@ -8,6 +8,8 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import org.scalatest.Inside
 
+import scala.util.Success
+
 class PathDirectivesSpec extends RoutingSpec with Inside {
   val echoUnmatchedPath = extractUnmatchedPath { echoComplete }
   def echoCaptureAndUnmatchedPath[T]: T ⇒ Route =
@@ -295,12 +297,12 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
       "support the map modifier in accept [/yes-no]" in test("List(yes, no)")
     }
     {
-      val test = testFor(path(Remaining.tflatMap { case Tuple1(s) ⇒ Some(s).filter("yes" ==).map(x ⇒ Tuple1(x)) }) { echoComplete })
+      val test = testFor(path(Remaining.tflatMap { case Tuple1(s) ⇒ Some(s).filter("yes" ==).map(x ⇒ Success(Tuple1(x))) }) { echoComplete })
       "support the hflatMap modifier in accept [/yes]" in test("yes")
       "support the hflatMap modifier in reject [/blub]" in test()
     }
     {
-      val test = testFor(path(Remaining.flatMap(s ⇒ Some(s).filter("yes" ==))) { echoComplete })
+      val test = testFor(path(Remaining.flatMap(s ⇒ Some(Success(s).filter("yes" ==)))) { echoComplete })
       "support the flatMap modifier in accept [/yes]" in test("yes")
       "support the flatMap modifier reject [/blub]" in test()
     }
@@ -392,8 +394,34 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     }
   }
 
-  import akka.http.scaladsl.model.headers.Location
+  "Path matcher extraction failed rejection" should {
+    val route =
+      pathPrefix("foo") {
+        path(IntNumber / "test") { i ⇒ complete(s"$i") } ~
+          path("bar") { complete("ok") }
+      }
+
+    "not be raised, when path is correct" in {
+      Get("/foo/1/test") ~> route ~> check { responseAs[String] shouldEqual "1" }
+    }
+    "not be raised, when next route matched" in {
+      Get("/foo/bar") ~> route ~> check { responseAs[String] shouldEqual "ok" }
+    }
+    "not be raised, when the part route not found" in {
+      Get("/foo/xy") ~> Route.seal(route) ~> check { status shouldEqual NotFound }
+    }
+    "not be raised, when the full route not found" in {
+      Get("/foo") ~> Route.seal(route) ~> check { status shouldEqual NotFound }
+    }
+    "be raised" in {
+      Get("/foo/a.0") ~>
+        path("foo" / DoubleNumber) { i ⇒ complete(s"$i") } ~>
+        check { rejection shouldEqual PathMatcherExtractionFailedRejection }
+    }
+  }
+
   import akka.http.scaladsl.model.Uri
+  import akka.http.scaladsl.model.headers.Location
 
   private def checkRedirectTo(expectedUri: Uri) =
     check {
