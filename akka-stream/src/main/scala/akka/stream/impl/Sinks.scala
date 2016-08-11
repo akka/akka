@@ -75,7 +75,7 @@ abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) extends AtomicModu
  * elements to fill the internal buffers it will assert back-pressure until
  * a subscriber connects and creates demand for elements to be emitted.
  */
-private[akka] class PublisherSink[In](finalizeOnLastSubscriptionCompletion: Boolean, val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, Publisher[In]](shape) {
+private[akka] class PublisherSink[In](val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, Publisher[In]](shape) {
 
   /*
    * This method is the reason why SinkModule.create may return something that is
@@ -83,14 +83,14 @@ private[akka] class PublisherSink[In](finalizeOnLastSubscriptionCompletion: Bool
    * subscription a VirtualProcessor would perform (and it also saves overhead).
    */
   override def create(context: MaterializationContext): (AnyRef, Publisher[In]) = {
-    val proc = new VirtualPublisher[In](finalizeOnLastSubscriptionCompletion)
+    val proc = new VirtualPublisher[In]()
     (proc, proc)
   }
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
-    new PublisherSink[In](finalizeOnLastSubscriptionCompletion, attributes, shape)
+    new PublisherSink[In](attributes, shape)
   override def withAttributes(attr: Attributes): AtomicModule =
-    new PublisherSink[In](finalizeOnLastSubscriptionCompletion, attr, amendShape(attr))
+    new PublisherSink[In](attr, amendShape(attr))
 }
 
 /**
@@ -533,23 +533,16 @@ private[stream] object AdvancedPublisherSink {
   case object FanoutWithDrainIfNoSubscribtions extends Directive
   case object DrainIfNoSubscribtions extends Directive
 
-  def apply[T](fanout: Boolean, finalizeOnLastSubscriptionCompletion: Boolean): AdvancedPublisherSink[T] =
-    new AdvancedPublisherSink[T](getDirective(fanout, finalizeOnLastSubscriptionCompletion))
+  def createPublisherSink[T](): AdvancedPublisherSink[T] = new AdvancedPublisherSink[T](Fanout)
 
-  def getDirective(fanout: Boolean, finalizeOnLastSubscriptionCompletion: Boolean): Directive = {
-    require(fanout || !finalizeOnLastSubscriptionCompletion) //for single subscription have Publisher Sink
-    (fanout, finalizeOnLastSubscriptionCompletion) match {
-      case (true, true)   ⇒ Fanout
-      case (true, false)  ⇒ FanoutWithDrainIfNoSubscribtions
-      case (false, false) ⇒ DrainIfNoSubscribtions
-    }
-  }
+  def createDurablePublisherSink[T](fanout: Boolean): AdvancedPublisherSink[T] =
+    new AdvancedPublisherSink[T](if (fanout) FanoutWithDrainIfNoSubscribtions else DrainIfNoSubscribtions)
 }
 
 /**
  * INTERNAL API
  */
-final private[stream] class AdvancedPublisherSink[T](strategy: AdvancedPublisherSink.Directive) extends GraphStageWithMaterializedValue[SinkShape[T], KillSwitchPublisher[T]] {
+final private[stream] class AdvancedPublisherSink[T](strategy: AdvancedPublisherSink.Directive) extends GraphStageWithMaterializedValue[SinkShape[T], Publisher[T]] {
   val in = Inlet[T]("AdvancedPublisherSink.in")
   override def initialAttributes = DefaultAttributes.advancedPublisherSink
   override val shape: SinkShape[T] = SinkShape.of(in)
@@ -669,14 +662,11 @@ final private[stream] class AdvancedPublisherSink[T](strategy: AdvancedPublisher
       }
     }
 
-    (stageLogic, new KillSwitchPublisher[T] {
+    (stageLogic, new Publisher[T] {
       override def subscribe(subs: Subscriber[_ >: T]): Unit = {
         ReactiveStreamsCompliance.requireNonNullSubscriber(subs)
         stageLogic.invoke(Subscribe(subs))
       }
-
-      override def shutdown(): Unit = stageLogic.invoke(Shutdown)
-      override def abort(ex: Throwable): Unit = stageLogic.invoke(Abort(ex))
     })
   }
 }

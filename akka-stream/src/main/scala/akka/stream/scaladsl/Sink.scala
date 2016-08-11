@@ -183,7 +183,7 @@ object Sink {
    * reject any additional `Subscriber`s.
    */
   def asPublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
-    if (fanout) Sink.fromGraph(AdvancedPublisherSink.createPublisherSink[T]()).named("FanoutPublisherSink")
+    if (fanout) Sink.fromGraph(AdvancedPublisherSink.createPublisherSink[T]())
     else new Sink(new PublisherSink[T](DefaultAttributes.publisherSink, shape("PublisherSink")))
 
   /**

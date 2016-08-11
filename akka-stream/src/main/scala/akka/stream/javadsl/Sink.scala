@@ -15,7 +15,7 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 import java.util.concurrent.CompletionStage
-import scala.compat.java8.FutureConverters.FutureOps
+import scala.compat.java8.FutureConverters._
 
 /** Java API */
 object Sink {
@@ -262,6 +262,21 @@ object Sink {
    */
   def queue[T](): Sink[T, SinkQueue[T]] =
     new Sink(scaladsl.Sink.queue[T]().mapMaterializedValue(new SinkQueueAdapter(_)))
+
+  /**
+   * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
+   * because of completion or error.
+   *
+   * If `sinkFactory` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Stop]] the `Future` will be completed with failure. For all other supervision options it will
+   * try to create sink with next element
+   *
+   * `fallback` will be executed when there was no elements and completed is received from upstream.
+   */
+  def lazyInit[T, M](sinkFactory: function.Function[T, CompletionStage[Sink[T, M]]], fallback: function.Creator[M]): Sink[T, CompletionStage[M]] =
+    new Sink(scaladsl.Sink.lazyInit[T, M](
+      t ⇒ sinkFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext),
+      () ⇒ fallback.create()).mapMaterializedValue(_.toJava))
 }
 
 /**

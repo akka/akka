@@ -769,7 +769,7 @@ private[stream] final class VirtualProcessor[T] extends AtomicReference[AnyRef] 
  * to the `Subscriber` after having hooked it up with the real `Publisher`, hence
  * the use of `Inert.subscriber` as a tombstone.
  */
-private[impl] class VirtualPublisher[T](finalizeOnLastSubscriptionCompletion: Boolean) extends AtomicReference[AnyRef] with Publisher[T] {
+private[impl] class VirtualPublisher[T]() extends AtomicReference[AnyRef] with Publisher[T] {
   import ReactiveStreamsCompliance._
   import VirtualProcessor.Inert
 
