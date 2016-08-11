@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
-import akka.stream.{ KillSwitches, ActorMaterializerSettings, ActorMaterializer }
+import akka.stream.{ Attributes, KillSwitches, ActorMaterializerSettings, ActorMaterializer }
 
 import akka.testkit.AkkaSpec
 import akka.stream.testkit.Utils._
@@ -17,7 +17,7 @@ class AdvancedPublisherSinkSpec extends AkkaSpec {
   "A FunoutWithDrainPublisherSink" must {
 
     "work in happy case" in assertAllStagesStopped {
-      val pub = Source.single(1).runWith(Sink.asPublisher[Int](true, false))
+      val pub = Source.single(1).runWith(Sink.asDurablePublisher[Int](true))
       val sub = TestSubscriber.probe[Int]
       pub.subscribe(sub)
       sub.request(1)
@@ -29,7 +29,7 @@ class AdvancedPublisherSinkSpec extends AkkaSpec {
       val sub1 = TestSubscriber.probe[Int]
       val sub2 = TestSubscriber.probe[Int]
       val src = TestPublisher.probe[Int]()
-      val pub = Source.fromPublisher(src).runWith(Sink.asPublisher[Int](true, false))
+      val pub = Source.fromPublisher(src).runWith(Sink.asDurablePublisher[Int](true))
 
       pub.subscribe(sub1)
       sub1.request(1)
@@ -53,7 +53,7 @@ class AdvancedPublisherSinkSpec extends AkkaSpec {
 
     "drain buffer first before cancel all publishers" in assertAllStagesStopped {
       val src = TestPublisher.probe[Int]()
-      val pub = Source.fromPublisher(src).runWith(Sink.asPublisher[Int](true, false))
+      val pub = Source.fromPublisher(src).runWith(Sink.asDurablePublisher[Int](true))
       val sub1 = TestSubscriber.probe[Int]
       val sub2 = TestSubscriber.probe[Int]
 
@@ -76,7 +76,7 @@ class AdvancedPublisherSinkSpec extends AkkaSpec {
   "A DrainWithSingleSubscriptionPublisherSink" must {
 
     "work in happy case" in assertAllStagesStopped {
-      val pub = Source.single(1).runWith(Sink.asPublisher[Int](false, false))
+      val pub = Source.single(1).runWith(Sink.asDurablePublisher[Int](false))
       val sub = TestSubscriber.probe[Int]
       pub.subscribe(sub)
       sub.request(1)
@@ -88,7 +88,7 @@ class AdvancedPublisherSinkSpec extends AkkaSpec {
       val sub1 = TestSubscriber.probe[Int]
       val sub2 = TestSubscriber.probe[Int]
       val src = TestPublisher.probe[Int]()
-      val pub = Source.fromPublisher(src).runWith(Sink.asPublisher[Int](false, false))
+      val pub = Source.fromPublisher(src).runWith(Sink.asDurablePublisher[Int](false))
 
       pub.subscribe(sub1)
       sub1.request(1)
@@ -114,7 +114,7 @@ class AdvancedPublisherSinkSpec extends AkkaSpec {
       val src = TestPublisher.probe[Int]()
       val sub1 = TestSubscriber.probe[Int]
       val sub2 = TestSubscriber.probe[Int]
-      val pub = Source.fromPublisher(src).runWith(Sink.asPublisher[Int](false, false))
+      val pub = Source.fromPublisher(src).runWith(Sink.asDurablePublisher[Int](false))
       pub.subscribe(sub1)
       pub.subscribe(sub2)
       sub2.expectSubscriptionAndError()
@@ -122,12 +122,8 @@ class AdvancedPublisherSinkSpec extends AkkaSpec {
     }
 
     "drain buffer first before cancel publisher" in assertAllStagesStopped {
-      val settings = ActorMaterializerSettings(system)
-        .withInputBuffer(initialSize = 1, maxSize = 1)
-      val mat = ActorMaterializer(settings)
-
       val src = TestPublisher.probe[Int]()
-      val pub = Source.fromPublisher(src).runWith(Sink.asPublisher[Int](false, false))(mat)
+      val pub = Source.fromPublisher(src).runWith(Sink.asDurablePublisher[Int](false).withAttributes(Attributes.inputBuffer(1, 1)))
       val sub1 = TestSubscriber.probe[Int]
 
       pub.subscribe(sub1)

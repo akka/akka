@@ -183,7 +183,7 @@ object Sink {
    * reject any additional `Subscriber`s.
    */
   def asPublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
-    if (fanout) Sink.fromGraph(AdvancedPublisherSink[T](true, true)).named("FanoutPublisherSink")
+    if (fanout) Sink.fromGraph(AdvancedPublisherSink.createPublisherSink[T]()).named("FanoutPublisherSink")
     else new Sink(new PublisherSink[T](DefaultAttributes.publisherSink, shape("PublisherSink")))
 
   /**
@@ -199,10 +199,8 @@ object Sink {
    *
    * @see [[#asPublisher]]
    */
-  def asPublisher[T](fanout: Boolean, finalizeOnLastSubscriptionCompletion: Boolean): Sink[T, Publisher[T]] =
-    if (fanout || !finalizeOnLastSubscriptionCompletion)
-      Sink.fromGraph(AdvancedPublisherSink[T](fanout, finalizeOnLastSubscriptionCompletion))
-    else new Sink(new PublisherSink[T](DefaultAttributes.publisherSink, shape("PublisherSink")))
+  def asDurablePublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
+    Sink.fromGraph(AdvancedPublisherSink.createDurablePublisherSink[T](fanout))
 
   /**
    * A `Sink` that will consume the stream and discard the elements.
