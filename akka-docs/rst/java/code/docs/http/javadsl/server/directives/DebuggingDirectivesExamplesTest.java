@@ -31,7 +31,7 @@ import akka.http.javadsl.server.directives.LogEntry;
 
 import java.util.List;
 
-import akka.http.scaladsl.server.Rejection;
+import akka.http.javadsl.server.Rejection;
 
 import static akka.event.Logging.InfoLevel;
 
