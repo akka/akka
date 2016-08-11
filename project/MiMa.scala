@@ -934,7 +934,12 @@ object MiMa extends AutoPlugin {
 
         // #20630 corrected return types of java methods
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.javadsl.RunnableGraph#RunnableGraphAdapter.named"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.RunnableGraph.withAttributes")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.RunnableGraph.withAttributes"),
+
+        // #19872 double wildcard for actor deployment config
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.Deployer.lookup"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.WildcardTree.apply"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.WildcardTree.find")
       )
     )
   }

@@ -413,10 +413,18 @@ topics. An example may look like this:
 
 You can use asterisks as wildcard matches for the actor path sections, so you could specify:
 ``/*/sampleActor`` and that would match all ``sampleActor`` on that level in the hierarchy.
-You can also use wildcard in the last position to match all actors at a certain level:
-``/someParent/*``. Non-wildcard matches always have higher priority to match than wildcards, so:
-``/foo/bar`` is considered **more specific** than ``/foo/*`` and only the highest priority match is used.
-Please note that it **cannot** be used to partially match section, like this: ``/foo*/bar``, ``/f*o/bar`` etc.
+In addition, please note:
+
+ - you can also use wildcards in the last position to match all actors at a certain level: ``/someParent/*``
+ - you can use double-wildcards in the last position to match all child actors and their children
+   recursively: ``/someParent/**``
+ - non-wildcard matches always have higher priority to match than wildcards, and single wildcard matches
+   have higher priority than double-wildcards, so: ``/foo/bar`` is considered **more specific** than
+   ``/foo/*``, which is considered **more specific** than ``/foo/**``. Only the highest priority match is used
+ - wildcards **cannot** be used to partially match section, like this: ``/foo*/bar``, ``/f*o/bar`` etc.
+
+.. note::
+    Double-wildcards can only be placed in the last position.
 
 Listing of the Reference Configuration
 --------------------------------------
