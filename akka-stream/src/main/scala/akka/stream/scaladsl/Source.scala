@@ -136,7 +136,7 @@ final class Source[+Out, +Mat](override val module: Module)
   override def addAttributes(attr: Attributes): Repr[Out] = withAttributes(module.attributes and attr)
 
   /**
-   * Add a ``name`` attribute to this Flow.
+   * Add a ``name`` attribute to this Source.
    */
   override def named(name: String): Repr[Out] = addAttributes(Attributes.name(name))
 
@@ -145,7 +145,9 @@ final class Source[+Out, +Mat](override val module: Module)
    */
   override def async: Repr[Out] = addAttributes(Attributes.asyncBoundary)
 
-  /** Converts this Scala DSL element to it's Java DSL counterpart. */
+  /**
+   * Converts this Scala DSL element to it's Java DSL counterpart.
+   */
   def asJava: javadsl.Source[Out, Mat] = new javadsl.Source(this)
 
   /**
@@ -436,7 +438,7 @@ object Source {
   }
 
   /**
-   * Creates a `Source` that is materialized as an [[akka.stream.SourceQueue]].
+   * Creates a `Source` that is materialized as an [[akka.stream.scaladsl.SourceQueue]].
    * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
    * otherwise they will be buffered until request for demand is received. Elements in the buffer will be discarded
    * if downstream is terminated.
@@ -445,7 +447,7 @@ object Source {
    * there is no space available in the buffer.
    *
    * Acknowledgement mechanism is available.
-   * [[akka.stream.SourceQueue.offer]] returns ``Future[StreamCallbackStatus[Boolean]]`` which completes with `Success(true)`
+   * [[akka.stream.scaladsl.SourceQueue.offer]] returns ``Future[StreamCallbackStatus[Boolean]]`` which completes with `Success(true)`
    * if element was added to buffer or sent downstream. It completes with `Success(false)` if element was dropped. Can also complete
    * with [[akka.stream.StreamCallbackStatus.Failure]] - when stream failed or [[akka.stream.StreamCallbackStatus.StreamCompleted]]
    * when downstream is completed.
@@ -453,7 +455,7 @@ object Source {
    * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete last `offer():Future`
    * call when buffer is full.
    *
-   * You can watch accessibility of stream with [[akka.stream.SourceQueue.watchCompletion]].
+   * You can watch accessibility of stream with [[akka.stream.scaladsl.SourceQueue.watchCompletion]].
    * It returns future that completes with success when stream is completed or fail when stream is failed.
    *
    * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait for downstream demand.
