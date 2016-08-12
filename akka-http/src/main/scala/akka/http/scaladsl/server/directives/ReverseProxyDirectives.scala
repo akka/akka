@@ -22,9 +22,6 @@ import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 
-/**
- * Created by tpfeifer on 8/5/16.
- */
 trait ReverseProxyDirectives {
   type RequestInterceptor = (HttpRequest) ⇒ HttpRequest
   type ResponseInterceptor = ((HttpResponse) ⇒ HttpResponse)
@@ -86,8 +83,8 @@ case object ProxyHeaderRequestInterceptor extends ((HttpRequest) ⇒ HttpRequest
     val xRealIpPF: PartialFunction[HttpHeader, `X-Real-Ip`] = { case h: `X-Real-Ip` ⇒ h }
     val xForwardedForPF: PartialFunction[HttpHeader, `X-Forwarded-For`] = { case h: `X-Forwarded-For` ⇒ h }
 
-    var xRealIpHeaderOption = headers.collectFirst(xRealIpPF)
-    var xForwardedForHeaderOption = headers.collectFirst(xForwardedForPF)
+    val xRealIpHeaderOption = headers.collectFirst(xRealIpPF)
+    val xForwardedForHeaderOption = headers.collectFirst(xForwardedForPF)
     //TODO: Add `Via` HttpHeader as defined in https://tools.ietf.org/html/rfc2616#section-14.45 in akka.http.scaladsl.model.headers
     //var viaHeaderOption: Option[HttpHeader] = headers.collectFirst({case h: HttpHeader if "via".equalsIgnoreCase(h.name) => h})
 
@@ -96,18 +93,12 @@ case object ProxyHeaderRequestInterceptor extends ((HttpRequest) ⇒ HttpRequest
 
     val ipOption = xRealIpOption.orElse(xForwardedForHeaderOption.flatMap(_.addresses.headOption).orElse(remoteAddressOption))
 
-    ipOption.foreach { ip ⇒
-      xRealIpHeaderOption = Some(`X-Real-Ip`(ip))
+    val updatedXRealIpHeaderOption = ipOption.map(`X-Real-Ip`(_))
+    val updatedXForwardedForHeaderOption = remoteAddressOption.map(remoteAddresss ⇒ xForwardedForHeaderOption.fold(`X-Forwarded-For`(remoteAddresss))(h ⇒ `X-Forwarded-For`(h.addresses ++ Seq(remoteAddresss))))
 
-    }
-    remoteAddressOption.foreach { remoteAddresss ⇒
-      xForwardedForHeaderOption = Some(xForwardedForHeaderOption.fold(`X-Forwarded-For`(remoteAddresss))(h ⇒ `X-Forwarded-For`(h.addresses ++ Seq(remoteAddresss))))
-      //viaHeaderOption = viaHeaderOption.fold()()
-    }
-
-    val updatedHeaders = headers.filterNot((xRealIpPF orElse xForwardedForPF).isDefinedAt(_)) ++ (xRealIpHeaderOption.toSeq ++ xForwardedForHeaderOption.toSeq)
+    val updatedHeaders = headers.filterNot((xRealIpPF orElse xForwardedForPF).isDefinedAt(_)) ++ (updatedXRealIpHeaderOption.toSeq ++ updatedXForwardedForHeaderOption.toSeq)
     httpRequest.withHeaders(updatedHeaders)
-    
+
     //TODO: This has some security implications: What to do with cookies, authentication data, etc.?
   }
 }

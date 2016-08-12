@@ -36,7 +36,7 @@ trait Directives extends RouteConcatenation
   with SchemeDirectives
   with SecurityDirectives
   with WebSocketDirectives
-  with ReverseProxyDirectives
   with FramedEntityStreamingDirectives
+  with ReverseProxyDirectives
 
 object Directives extends Directives
