@@ -89,8 +89,8 @@ object Sink {
    *
    * @see [[#asPublisher]]
    */
-  def asDurablePublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
-    new Sink(scaladsl.Sink.asDurablePublisher(fanout))
+  def asLongLivedPublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
+    new Sink(scaladsl.Sink.asLongLivedPublisher(fanout))
 
   /**
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized

@@ -199,7 +199,7 @@ object Sink {
    *
    * @see [[#asPublisher]]
    */
-  def asDurablePublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
+  def asLongLivedPublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
     Sink.fromGraph(AdvancedPublisherSink.createDurablePublisherSink[T](fanout))
 
   /**

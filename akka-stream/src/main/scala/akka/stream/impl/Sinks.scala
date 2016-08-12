@@ -530,13 +530,13 @@ private[stream] object AdvancedPublisherSink {
 
   sealed trait Directive
   case object Fanout extends Directive
-  case object FanoutWithDrainIfNoSubscribtions extends Directive
-  case object DrainIfNoSubscribtions extends Directive
+  case object FanoutWithDrainIfNoSubscriptions extends Directive
+  case object DrainIfNoSubscriptions extends Directive
 
   def createPublisherSink[T](): AdvancedPublisherSink[T] = new AdvancedPublisherSink[T](Fanout)
 
   def createDurablePublisherSink[T](fanout: Boolean): AdvancedPublisherSink[T] =
-    new AdvancedPublisherSink[T](if (fanout) FanoutWithDrainIfNoSubscribtions else DrainIfNoSubscribtions)
+    new AdvancedPublisherSink[T](if (fanout) FanoutWithDrainIfNoSubscriptions else DrainIfNoSubscriptions)
 }
 
 /**
@@ -584,7 +584,7 @@ final private[stream] class AdvancedPublisherSink[T](strategy: AdvancedPublisher
       private val callback: AsyncCallback[PublisherSinkMessages[T]] =
         getAsyncCallback {
           case Subscribe(subscriber) ⇒ strategy match {
-            case DrainIfNoSubscribtions if cursors.nonEmpty ⇒ rejectAdditionalSubscriber(subscriber, "Sink.asPublisher(fanout = false)")
+            case DrainIfNoSubscriptions if cursors.nonEmpty ⇒ rejectAdditionalSubscriber(subscriber, "Sink.asPublisher(fanout = false)")
             case _ ⇒ registerSubscriber(subscriber.asInstanceOf[Subscriber[_ >: T]])
           }
           case RequestMore(subscriber, elements) ⇒ moreRequested(subscriber, elements)
@@ -638,7 +638,7 @@ final private[stream] class AdvancedPublisherSink[T](strategy: AdvancedPublisher
 
       override protected def shutdownWhenNoMoreSubscriptions(): Boolean = {
         strategy match {
-          case FanoutWithDrainIfNoSubscribtions | DrainIfNoSubscribtions if upstreamCompleted ⇒
+          case FanoutWithDrainIfNoSubscriptions | DrainIfNoSubscriptions if upstreamCompleted ⇒
             completeStage()
             true
           case _ ⇒
