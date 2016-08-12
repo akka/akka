@@ -323,6 +323,23 @@ Invoke a callback when the stream has completed or failed.
 
 **backpressures** never
 
+lazyInit
+^^^^^^^^
+Invoke sinkFactory function to create a real sink upon receiving the first element. Internal ``Sink`` will not be created if there are no elements,
+because of completion or error. `fallback` will be invoked if there was no elements and completed is received from upstream.
+
+**cancels** never
+
+**backpressures** when initialized and when created sink backpressures
+
+queue
+^^^^^
+Materialize a ``SinkQueue`` that can be pulled to trigger demand through the sink. The queue contains
+a buffer in case stream emitting elements faster than queue pulling them.
+
+**cancels** when  ``SinkQueue.cancel`` is called
+
+**backpressures** when buffer has some space
 
 fold
 ^^^^
