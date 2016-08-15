@@ -33,15 +33,11 @@ and systems design much simpler you may want to read Pat Helland's excellent `Im
 
 Since with `Event Sourcing`_ the **events are immutable** and usually never deleted – the way schema evolution is handled
 differs from how one would go about it in a mutable database setting (e.g. in typical CRUD database applications).
+
 The system needs to be able to continue to work in the presence of "old" events which were stored under the "old" schema.
 We also want to limit complexity in the business logic layer, exposing a consistent view over all of the events of a given
 type to :class:`PersistentActor` s and :ref:`persistence queries <persistence-query-scala>`. This allows the business logic layer to focus on solving business problems
 instead of having to explicitly deal with different schemas.
-
-The system needs to be able to continue to work in the presence of "old" events which were stored under the "old" schema,
-and we want to limit the complexity to the data layer, exposing a consistent view over all of the events of a given type
-to :class:`PersistentActor` s and persistence queries, which allows these layers to focus on the business problems instead
-handling the different schemas explicitly in the business logic layers.
 
 
 In summary, schema evolution in event sourced systems exposes the following characteristics:
