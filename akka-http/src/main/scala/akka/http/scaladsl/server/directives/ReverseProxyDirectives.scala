@@ -8,8 +8,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.{ HostConnectionPool, OutgoingConnection }
 import akka.http.scaladsl.model.Uri.Authority
-import akka.http.scaladsl.model.{ HttpResponse, _ }
 import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.{ HttpResponse, _ }
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives._
 import akka.http.scaladsl.server.directives.FutureDirectives._
@@ -23,59 +23,70 @@ import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 
 trait ReverseProxyDirectives {
-  type RequestInterceptor = (HttpRequest) ⇒ HttpRequest
-  type ResponseInterceptor = ((HttpResponse) ⇒ HttpResponse)
   type RequestExecutor = ((HttpRequest) ⇒ Future[HttpResponse])
 
-  def completeUnmatchedPathWithReverseProxy(authority: Authority, circuitBreakerOption: Option[CircuitBreaker] = None, responseInterceptor: ResponseInterceptor = identity[HttpResponse](_))(implicit system: ActorSystem): Route = {
-    forward(authority, circuitBreakerOption).tapply(x ⇒ complete(x._1.map(responseInterceptor)))
+  def completeUnmatchedPathWithReverseProxy(authority: Authority, configOption: Option[ReverseProxyConfig] = None): Route = {
+    forward(authority, configOption).tapply(x ⇒ complete(x._1))
   }
 
-  def forward(authority: Authority, circuitBreakerOption: Option[CircuitBreaker] = None)(implicit system: ActorSystem): Directive1[Try[HttpResponse]] = {
+  def forward(authority: Authority, configOption: Option[ReverseProxyConfig] = None): Directive1[Try[HttpResponse]] = {
     extractUri.flatMap { uri ⇒
       val forwardUri: Uri = uri.withAuthority(authority)
-      forwardToUri(forwardUri, circuitBreakerOption)
+      forwardToUri(forwardUri, configOption)
     }
   }
 
-  def forwardUnmatchedPath(authority: Authority, circuitBreakerOption: Option[CircuitBreaker] = None)(implicit system: ActorSystem): Directive1[Try[HttpResponse]] = {
+  def forwardUnmatchedPath(authority: Authority, configOption: Option[ReverseProxyConfig] = None): Directive1[Try[HttpResponse]] = {
     extractUnmatchedPath.flatMap { unmatched ⇒
       extractUri.flatMap { uri ⇒
         val forwardUri: Uri = uri.withAuthority(authority).withPath(unmatched)
-        forwardToUri(forwardUri, circuitBreakerOption)
+        forwardToUri(forwardUri, configOption)
       }
     }
   }
 
-  def forwardToUri(uri: Uri, circuitBreakerOption: Option[CircuitBreaker] = None)(implicit system: ActorSystem): Directive1[Try[HttpResponse]] = {
-    extractMaterializer.flatMap { implicit mat ⇒
-      val requestUriInterceptor = ProxyUriRequestInterceptor(uri).andThen(ProxyHeaderRequestInterceptor)
-      //TODO: select executor from configuration
-      val executor = CachedHostConnectionPoolRequestExecutor()
-      forwardRequest(executor, requestUriInterceptor, circuitBreakerOption)
+  def forwardToUri(uri: Uri, configOption: Option[ReverseProxyConfig] = None): Directive1[Try[HttpResponse]] = {
+    val requestUriInterceptor = ProxyUriRequestInterceptor(uri).andThen(ProxyHeaderRequestInterceptor)
+    mapRequest(requestUriInterceptor).tflatMap { _ ⇒
+      forwardRequest(configOption)
     }
   }
 
-  def forwardRequest(requestExecutor: RequestExecutor, requestInterceptor: RequestInterceptor, circuitBreakerOption: Option[CircuitBreaker] = None): Directive1[Try[HttpResponse]] = {
+  def forwardRequest(configOption: Option[ReverseProxyConfig] = None): Directive1[Try[HttpResponse]] = {
     extractExecutionContext.flatMap { implicit ec ⇒
-      extractMaterializer.flatMap { implicit mat ⇒
-        extractRequest.flatMap { request ⇒
-          val interceptedRequest: HttpRequest = requestInterceptor(request)
-          val responseFuture: Future[HttpResponse] = requestExecutor(interceptedRequest)
-          circuitBreakerOption.fold(onComplete(responseFuture))(circuitBreaker ⇒ onCompleteWithBreaker(circuitBreaker)(responseFuture))
+      extractRequest.flatMap { request ⇒
+        getOrCreateDefaultConfig(configOption).flatMap { reverseProxyConfig ⇒
+          val responseFuture: Future[HttpResponse] = reverseProxyConfig.requestExecutor.apply(request)
+          reverseProxyConfig.circuitBreakerOption match {
+            case Some(circuitBreaker) ⇒ onCompleteWithBreaker(circuitBreaker)(responseFuture)
+            case None                 ⇒ onComplete(responseFuture)
+          }
+        }
+      }
+    }
+  }
+
+  private[akka] def getOrCreateDefaultConfig(configOption: Option[ReverseProxyConfig]): Directive1[ReverseProxyConfig] = {
+    configOption match {
+      case Some(config) ⇒ provide(config)
+      case None ⇒ {
+        extractMaterializer.flatMap { mat ⇒
+          extractActorSystem.flatMap { system ⇒
+            provide(ReverseProxyConfig(None, CachedHostConnectionPoolRequestExecutor()(system, mat)))
+          }
         }
       }
     }
   }
 }
 
-case class ProxyUriRequestInterceptor(val uri: Uri) extends ((HttpRequest) ⇒ HttpRequest) {
+private[akka] case class ProxyUriRequestInterceptor(val uri: Uri) extends ((HttpRequest) ⇒ HttpRequest) {
   override def apply(httpRequest: HttpRequest): HttpRequest = {
     httpRequest.withUri(uri)
   }
 }
 
-case object ProxyHeaderRequestInterceptor extends ((HttpRequest) ⇒ HttpRequest) {
+private[akka] case object ProxyHeaderRequestInterceptor extends ((HttpRequest) ⇒ HttpRequest) {
   override def apply(httpRequest: HttpRequest): HttpRequest = {
     val headers: Seq[HttpHeader] = httpRequest.headers
     val remoteAddressHeaderOption = headers.collectFirst({ case h: `Remote-Address` ⇒ h })
@@ -140,3 +151,13 @@ case class CachedHostConnectionPoolRequestExecutor(implicit val system: ActorSys
   }
 }
 
+case class ReverseProxyConfig(
+  val circuitBreakerOption: Option[CircuitBreaker],
+  val requestExecutor:      (HttpRequest) ⇒ Future[HttpResponse]
+)
+
+/*
+object ReverseProxyConfig extends SettingsCompanion[ReverseProxyConfig]("akka.http"){
+  override def fromSubConfig(root: Config, c: Config): ReverseProxyConfig = ???
+}
+*/ 
