@@ -862,4 +862,17 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     //#
   }
 
+  "extractActorSystem-example" in {
+    //#extractActorSystem-example
+    val route = extractActorSystem { actorSystem =>
+      complete(s"Actor System extracted, hash=${actorSystem.hashCode()}")
+    }
+
+    // tests:
+    Get("/") ~> route ~> check {
+      responseAs[String] shouldEqual s"Actor System extracted, hash=${system.hashCode()}"
+    }
+    //#
+  }
+
 }
