@@ -877,4 +877,17 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     //#toStrictEntity
   }
 
+  @Test
+  public void testExtractActorSystem() {
+    //#extractActorSystem
+    final Route route = extractActorSystem(actorSystem ->
+      complete("Actor System extracted, hash=" + actorSystem.hashCode())
+    );
+
+    // tests:
+    testRoute(route).run(HttpRequest.GET("/"))
+      .assertEntity("Actor System extracted, hash=" + system().hashCode());
+    //#extractActorSystem
+  }
+
 }
