@@ -47,6 +47,10 @@ trait SprayJsonSupport {
     sprayJsValueMarshaller compose writer.write
   implicit def sprayJsValueMarshaller(implicit printer: JsonPrinter = CompactPrinter): ToEntityMarshaller[JsValue] =
     Marshaller.StringMarshaller.wrap(MediaTypes.`application/json`)(printer)
+  implicit def sprayJsValueByteStringMarshaller(implicit printer: JsonPrinter = CompactPrinter): ToByteStringMarshaller[JsValue] =
+    Marshaller.strict(js => Marshalling.WithFixedContentType(ContentTypes.`application/json`, () => ByteString(printer(js))))
+  implicit def sprayJsonByteStringMarshaller[T](implicit writer: RootJsonWriter[T], printer: JsonPrinter = CompactPrinter): ToByteStringMarshaller[T] =
+    sprayJsValueByteStringMarshaller compose writer.write
 
   // support for as[Source[T, NotUsed]]
   implicit def sprayJsonSourceReader[T](implicit rootJsonReader: RootJsonReader[T], support: EntityStreamingSupport): FromRequestUnmarshaller[Source[T, NotUsed]] =

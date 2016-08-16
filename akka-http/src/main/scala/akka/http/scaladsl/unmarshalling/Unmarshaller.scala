@@ -28,6 +28,9 @@ trait Unmarshaller[-A, B] extends akka.http.javadsl.unmarshalling.Unmarshaller[A
   def flatMap[C](f: ExecutionContext ⇒ Materializer ⇒ B ⇒ Future[C]): Unmarshaller[A, C] =
     transform(implicit ec ⇒ mat ⇒ _.fast flatMap f(ec)(mat))
 
+  def flatMap[C](u: Unmarshaller[_ >: B, C]): Unmarshaller[A, C] =
+    flatMap { ctx ⇒ mat ⇒ b ⇒ u.apply(b)(ctx, mat) }
+
   def recover[C >: B](pf: ExecutionContext ⇒ Materializer ⇒ PartialFunction[Throwable, C]): Unmarshaller[A, C] =
     transform(implicit ec ⇒ mat ⇒ _.fast recover pf(ec)(mat))
 
