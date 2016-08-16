@@ -5,6 +5,7 @@
 package akka.http.scaladsl.server
 package directives
 
+import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
@@ -13,7 +14,7 @@ import scala.concurrent.{ Future, ExecutionContextExecutor }
 import scala.collection.immutable
 import akka.event.LoggingAdapter
 import akka.stream.impl.ConstantFun.scalaIdentityFunction
-import akka.stream.Materializer
+import akka.stream.{ ActorMaterializerHelper, Materializer }
 import akka.http.scaladsl.settings.{ RoutingSettings, ParserSettings }
 import akka.http.scaladsl.server.util.Tuple
 import akka.http.scaladsl.util.FastFuture
@@ -236,6 +237,16 @@ trait BasicDirectives {
    * @group basic
    */
   def extractMaterializer: Directive1[Materializer] = BasicDirectives._extractMaterializer
+
+  /**
+   * Extracts the [[akka.actor.ActorSystem]] if the available Materializer is an [[akka.stream.ActorMaterializer]].
+   * Otherwise throws an exception as it won't be able to extract the system from arbitrary materializers.
+   *
+   * @group basic
+   */
+  def extractActorSystem: Directive1[ActorSystem] = extract { ctx ⇒
+    ActorMaterializerHelper.downcast(ctx.materializer).system
+  }
 
   /**
    * Runs its inner route with the given alternative [[akka.event.LoggingAdapter]].
