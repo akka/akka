@@ -37,13 +37,15 @@ Akka is very modular and consists of several JARs containing different features.
 
 - ``akka-cluster`` – Cluster membership management, elastic routers.
 
-- ``akka-osgi`` – utilities for using Akka in OSGi containers
+- ``akka-osgi`` – Utilities for using Akka in OSGi containers
 
 - ``akka-osgi-aries`` – Aries blueprint for provisioning actor systems
 
 - ``akka-remote`` – Remote Actors
 
 - ``akka-slf4j`` – SLF4J Logger (event bus listener)
+
+- ``akka-stream`` – Reactive stream processing
 
 - ``akka-testkit`` – Toolkit for testing Actor systems
 
