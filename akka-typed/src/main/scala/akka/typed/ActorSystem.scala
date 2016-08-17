@@ -118,6 +118,11 @@ trait ActorSystem[-T] extends ActorRef[T] { this: internal.ActorRefImpl[T] ⇒
   def deadLetters[U]: ActorRef[U]
 
   /**
+   * Return a reference to this system’s [[akka.typed.patterns.Receptionist$]]
+   */
+  def receptionist: ActorRef[patterns.Receptionist.Command]
+
+  /**
    * Create a string representation of the actor hierarchy within this system.
    *
    * The format of the string is subject to change, i.e. no stable “API”.

@@ -65,12 +65,12 @@ object ActorCell {
  * INTERNAL API
  */
 private[typed] class ActorCell[T](
-  override val system:           ActorSystem[Nothing],
+  override val system: ActorSystem[Nothing],
   protected val initialBehavior: Behavior[T],
   override val executionContext: ExecutionContextExecutor,
-  override val mailboxCapacity:  Int,
-  val parent:                    ActorRefImpl[Nothing])
-  extends ActorContext[T] with Runnable with SupervisionMechanics[T] with DeathWatch[T] {
+  override val mailboxCapacity: Int,
+  val parent: ActorRefImpl[Nothing])
+    extends ActorContext[T] with Runnable with SupervisionMechanics[T] with DeathWatch[T] {
   import ActorCell._
 
   /*
@@ -149,7 +149,7 @@ private[typed] class ActorCell[T](
     nextName += 1
     val ref = new FunctionRef[U](
       self.path / name,
-      (msg, _) ⇒ send(f(msg)),
+      (msg, _) ⇒ { val m = f(msg); if (m != null) send(m) },
       (self) ⇒ sendSystem(DeathWatchNotification(self, null)))
     childrenMap = childrenMap.updated(name, ref)
     ref

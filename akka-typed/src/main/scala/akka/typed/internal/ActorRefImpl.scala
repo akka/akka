@@ -82,7 +82,7 @@ private[typed] final class FunctionRef[-T](
 /**
  * The mechanics for synthetic ActorRefs that have a lifecycle and support being watched.
  */
-private[typed] abstract class WatchableRef[-T](_p: a.ActorPath) extends ActorRef[T](_p) with ActorRefImpl[T] {
+private[typed] abstract class WatchableRef[-T](_path: a.ActorPath) extends ActorRef[T](_path) with ActorRefImpl[T] {
   import WatchableRef._
 
   /**

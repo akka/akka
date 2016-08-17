@@ -52,6 +52,9 @@ private[typed] class ActorSystemAdapter[-T](val untyped: a.ActorSystemImpl)
   override def uptime: Long = untyped.uptime
   override def printTree: String = untyped.printTree
 
+  override val receptionist: ActorRef[patterns.Receptionist.Command] =
+    ActorRefAdapter(untyped.systemActorOf(PropsAdapter(Props(patterns.Receptionist.behavior)), "receptionist"))
+
   import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 
   override def terminate(): scala.concurrent.Future[akka.typed.Terminated] =
