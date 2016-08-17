@@ -24,8 +24,8 @@ independently for each of those using the following keys::
 
     akka.http.server.idle-timeout
     akka.http.client.idle-timeout
-    akka.http.http-connection-pool.idle-timeout
-    akka.http.http-connection-pool.client.idle-timeout
+    akka.http.host-connection-pool.idle-timeout
+    akka.http.host-connection-pool.client.idle-timeout
 
 .. note::
   For the connection pooled client side the idle period is counted only when the pool has no pending requests waiting.
