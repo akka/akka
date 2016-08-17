@@ -51,5 +51,8 @@ private[typed] class ActorSystemStub(val name: String)
     override def newThread(r: Runnable): Thread = new Thread(r)
   }
 
+  val receptionistInbox = Inbox[patterns.Receptionist.Command]("receptionist")
+  override def receptionist: ActorRef[patterns.Receptionist.Command] = receptionistInbox.ref
+
   override def printTree: String = "no tree for ActorSystemStub"
 }

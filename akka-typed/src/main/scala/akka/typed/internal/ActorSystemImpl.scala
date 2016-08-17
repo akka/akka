@@ -223,6 +223,9 @@ private[typed] class ActorSystemImpl[-T](
     systemGuardian ? CreateSystemActor(props)
   }
 
+  override val receptionist: ActorRef[patterns.Receptionist.Command] =
+    ActorRef(systemActorOf(Props(patterns.Receptionist.behavior), "receptionist")(settings.CreationTimeout))
+
   def printTree: String = {
     def printNode(node: ActorRefImpl[Nothing], indent: String): String = {
       node match {
