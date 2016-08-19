@@ -9,7 +9,7 @@ import akka.http.scaladsl.common.EntityStreamingSupport
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.{ HttpCharsets, MediaTypes }
-import akka.http.scaladsl.unmarshalling.{ FromEntityUnmarshaller, FromRequestUnmarshaller, Unmarshaller }
+import akka.http.scaladsl.unmarshalling.{ FromByteStringUnmarshaller, FromEntityUnmarshaller, Unmarshaller }
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.util.ByteString
@@ -25,10 +25,10 @@ trait SprayJsonSupport {
     sprayJsonUnmarshaller(reader)
   implicit def sprayJsonUnmarshaller[T](implicit reader: RootJsonReader[T]): FromEntityUnmarshaller[T] =
     sprayJsValueUnmarshaller.map(jsonReader[T].read)
-  implicit def sprayJsonByteStringUnmarshaller[T](implicit reader: RootJsonReader[T]): Unmarshaller[ByteString, T] =
+  implicit def sprayJsonByteStringUnmarshaller[T](implicit reader: RootJsonReader[T]): FromByteStringUnmarshaller[T] =
     Unmarshaller.withMaterializer[ByteString, JsValue](_ ⇒ implicit mat ⇒ { bs ⇒
       // .compact so addressing into any address is very fast (also for large chunks)
-      // TODO we could optimise ByteStrings to better handle lienear access like this (or provide ByteStrings.linearAccessOptimised) 
+      // TODO we could optimise ByteStrings to better handle linear access like this (or provide ByteStrings.linearAccessOptimised)
       // TODO IF it's worth it. 
       val parserInput = new SprayJsonByteStringParserInput(bs.compact)
       FastFuture.successful(JsonParser(parserInput))
@@ -40,6 +40,19 @@ trait SprayJsonSupport {
         else ParserInput(data.decodeString(charset.nioCharset))
       JsonParser(input)
     }
+  // support for as[Source[T, NotUsed]]
+  implicit def sprayJsonSourceReader[T](implicit reader: RootJsonReader[T], support: EntityStreamingSupport): FromEntityUnmarshaller[Source[T, NotUsed]] =
+    Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat ⇒ e ⇒
+      if (support.supported.matches(e.contentType)) {
+        val frames = e.dataBytes.via(support.framingDecoder)
+        val unmarshal = sprayJsonByteStringUnmarshaller(reader)(_)
+        val unmarshallingFlow =
+          if (support.unordered) Flow[ByteString].mapAsyncUnordered(support.parallelism)(unmarshal)
+          else Flow[ByteString].mapAsync(support.parallelism)(unmarshal)
+        val elements = frames.viaMat(unmarshallingFlow)(Keep.right)
+        FastFuture.successful(elements)
+      } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(support.supported))
+    }
 
   implicit def sprayJsonMarshallerConverter[T](writer: RootJsonWriter[T])(implicit printer: JsonPrinter = CompactPrinter): ToEntityMarshaller[T] =
     sprayJsonMarshaller[T](writer, printer)
@@ -47,19 +60,5 @@ trait SprayJsonSupport {
     sprayJsValueMarshaller compose writer.write
   implicit def sprayJsValueMarshaller(implicit printer: JsonPrinter = CompactPrinter): ToEntityMarshaller[JsValue] =
     Marshaller.StringMarshaller.wrap(MediaTypes.`application/json`)(printer)
-
-  // support for as[Source[T, NotUsed]]
-  implicit def sprayJsonSourceReader[T](implicit rootJsonReader: RootJsonReader[T], support: EntityStreamingSupport): FromRequestUnmarshaller[Source[T, NotUsed]] =
-    Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat ⇒ r ⇒
-      if (support.supported.matches(r.entity.contentType)) {
-        val bytes = r.entity.dataBytes
-        val frames = bytes.via(support.framingDecoder)
-        val unmarshalling =
-          if (support.unordered) Flow[ByteString].mapAsyncUnordered(support.parallelism)(bs ⇒ sprayJsonByteStringUnmarshaller(rootJsonReader)(bs))
-          else Flow[ByteString].mapAsync(support.parallelism)(bs ⇒ sprayJsonByteStringUnmarshaller(rootJsonReader)(bs))
-        val elements = frames.viaMat(unmarshalling)(Keep.right)
-        FastFuture.successful(elements)
-      } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(support.supported))
-    }
 }
 object SprayJsonSupport extends SprayJsonSupport
