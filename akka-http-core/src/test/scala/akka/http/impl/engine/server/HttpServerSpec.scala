@@ -4,7 +4,7 @@
 
 package akka.http.impl.engine.server
 
-import java.net.{InetAddress, InetSocketAddress}
+import java.net.{ InetAddress, InetSocketAddress }
 
 import akka.http.impl.util._
 import akka.http.scaladsl.Http.ServerLayer
@@ -17,7 +17,7 @@ import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.scaladsl._
 import akka.stream.testkit.Utils.assertAllStagesStopped
 import akka.stream.testkit._
-import akka.stream.{ActorMaterializer, Fusing}
+import akka.stream.{ ActorMaterializer, Fusing }
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 import org.scalatest.Inside

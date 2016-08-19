@@ -14,8 +14,6 @@ import akka.stream._
 import akka.stream.scaladsl._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.common.EntityStreamingSupport
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
-import spray.json.RootJsonReader
 
 import scala.concurrent.duration._
 import scala.io.StdIn
