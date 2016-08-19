@@ -13,7 +13,6 @@ import akka.http.scaladsl.server.{ UnacceptedResponseContentTypeRejection, Unsup
 import akka.stream.scaladsl.{ Flow, Source }
 import akka.util.ByteString
 import docs.http.scaladsl.server.RoutingSpec
-import spray.json.JsValue
 
 import scala.concurrent.Future
 
@@ -24,11 +23,11 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
   case class Measurement(id: String, value: Int)
   //#
 
-  def getTweets() =
-    Source(List(
-      Tweet(1, "#Akka rocks!"),
-      Tweet(2, "Streaming is so hot right now!"),
-      Tweet(3, "You cannot enter the same river twice.")))
+  val tweets = List(
+    Tweet(1, "#Akka rocks!"),
+    Tweet(2, "Streaming is so hot right now!"),
+    Tweet(3, "You cannot enter the same river twice."))
+  def getTweets = Source(tweets)
 
   //#formats
   object MyJsonProtocol
@@ -51,7 +50,7 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     val route =
       path("tweets") {
         // [3] simply complete a request with a source of tweets:
-        val tweets: Source[Tweet, NotUsed] = getTweets()
+        val tweets: Source[Tweet, NotUsed] = getTweets
         complete(tweets)
       }
 
@@ -93,7 +92,7 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     val route =
       path("tweets") {
         // [3] simply complete a request with a source of tweets:
-        val tweets: Source[Tweet, NotUsed] = getTweets()
+        val tweets: Source[Tweet, NotUsed] = getTweets
         complete(tweets)
       }
 
@@ -123,7 +122,7 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
 
     val route =
       path("tweets") {
-        val tweets: Source[Tweet, NotUsed] = getTweets()
+        val tweets: Source[Tweet, NotUsed] = getTweets
         complete(tweets)
       }
 
@@ -132,10 +131,9 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
 
     Get("/tweets").withHeaders(AcceptCsv) ~> route ~> check {
       responseAs[String] shouldEqual
-        """|1,#Akka rocks!
-           |2,Streaming is so hot right now!
-           |3,You cannot enter the same river twice."""
-        .stripMargin
+        "1,#Akka rocks!" + "\n" +
+        "2,Streaming is so hot right now!" + "\n" +
+        "3,You cannot enter the same river twice."
     }
   }
 
@@ -149,7 +147,7 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
           .withParallelMarshalling(parallelism = 8, unordered = false)
 
       path("tweets") {
-        val tweets: Source[Tweet, NotUsed] = getTweets()
+        val tweets: Source[Tweet, NotUsed] = getTweets
         complete(tweets)
       }
       //#
@@ -164,7 +162,7 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
           .withParallelMarshalling(parallelism = 8, unordered = true)
 
       path("tweets" / "unordered") {
-        val tweets: Source[Tweet, NotUsed] = getTweets()
+        val tweets: Source[Tweet, NotUsed] = getTweets
         complete(tweets)
       }
       //#

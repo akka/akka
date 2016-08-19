@@ -14,7 +14,6 @@ import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import java.util.concurrent.ThreadLocalRandom
-import scala.util.Random
 import scala.util.control.NoStackTrace
 import org.scalatest.{ Inspectors, WordSpec }
 import akka.util.ByteString
