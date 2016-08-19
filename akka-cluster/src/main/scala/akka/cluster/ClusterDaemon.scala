@@ -508,8 +508,15 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
           // new node will retry join
           logInfo("New incarnation of existing member [{}] is trying to join. " +
             "Existing will be removed from the cluster and then new member will be allowed to join.", m)
-          if (m.status != Down)
+          if (m.status != Down) {
+            // we can confirm it as terminated/unreachable immediately
+            val newReachability = latestGossip.overview.reachability.terminated(selfUniqueAddress, m.uniqueAddress)
+            val newOverview = latestGossip.overview.copy(reachability = newReachability)
+            val newGossip = latestGossip.copy(overview = newOverview)
+            updateLatestGossip(newGossip)
+
             downing(m.address)
+          }
         case None ⇒
           // remove the node from the failure detector
           failureDetector.remove(node.address)
@@ -609,7 +616,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         publish(latestGossip)
       case Some(_) ⇒ // already down
       case None ⇒
-        logInfo("Ignoring down of unknown node [{}] as [{}]", address)
+        logInfo("Ignoring down of unknown node [{}]", address)
     }
 
   }
@@ -1259,10 +1266,10 @@ private[cluster] class OnMemberStatusChangedListener(callback: Runnable, status:
   import ClusterEvent._
   private val cluster = Cluster(context.system)
   private val to = status match {
-    case Up ⇒
-      classOf[MemberUp]
-    case Removed ⇒
-      classOf[MemberRemoved]
+    case Up      ⇒ classOf[MemberUp]
+    case Removed ⇒ classOf[MemberRemoved]
+    case other ⇒ throw new IllegalArgumentException(
+      s"Expected Up or Removed in OnMemberStatusChangedListener, got [$other]")
   }
 
   override def preStart(): Unit =
@@ -1305,10 +1312,10 @@ private[cluster] class OnMemberStatusChangedListener(callback: Runnable, status:
 @SerialVersionUID(1L)
 private[cluster] final case class GossipStats(
   receivedGossipCount: Long = 0L,
-  mergeCount:          Long = 0L,
-  sameCount:           Long = 0L,
-  newerCount:          Long = 0L,
-  olderCount:          Long = 0L) {
+  mergeCount: Long = 0L,
+  sameCount: Long = 0L,
+  newerCount: Long = 0L,
+  olderCount: Long = 0L) {
 
   def incrementMergeCount(): GossipStats =
     copy(mergeCount = mergeCount + 1, receivedGossipCount = receivedGossipCount + 1)
@@ -1348,5 +1355,5 @@ private[cluster] final case class GossipStats(
 @SerialVersionUID(1L)
 private[cluster] final case class VectorClockStats(
   versionSize: Int = 0,
-  seenLatest:  Int = 0)
+  seenLatest: Int = 0)
 

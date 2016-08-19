@@ -939,7 +939,11 @@ object MiMa extends AutoPlugin {
         // #19872 double wildcard for actor deployment config
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.Deployer.lookup"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.WildcardTree.apply"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.WildcardTree.find")
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.WildcardTree.find"),
+        
+        // #20942 ClusterSingleton
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.singleton.ClusterSingletonManager.addRemoved"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.singleton.ClusterSingletonManager.selfAddressOption")
       )
     )
   }
