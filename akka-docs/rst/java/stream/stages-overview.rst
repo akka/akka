@@ -570,7 +570,7 @@ it returns false the element is discarded.
 
 **completes** when upstream completes
 
-filteNot
+filterNot
 ^^^^^^^^
 Filter the incoming elements using a predicate. If the predicate returns false the element is passed downstream, if
 it returns true the element is discarded.
@@ -768,9 +768,11 @@ Evaluated cost of each element defines how many elements will be allowed to trav
 
 log
 ^^^
-Log elements flowing through the stream as well as completion and erroring.
+Log elements flowing through the stream as well as completion and erroring. By default element and
+completion signals are logged on debug level, and errors are logged on Error level.
+This can be changed by calling ``Attributes.createLogLevels(...)`` on the given Flow.
 
-**emits** when the mapping function returns an element
+**emits** when upstream emits
 
 **backpressures** when downstream backpressures
 
