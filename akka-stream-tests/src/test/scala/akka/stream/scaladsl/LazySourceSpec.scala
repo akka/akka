@@ -37,6 +37,16 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       constructed.get() should ===(false)
     }
 
+    "fail the materialized value when downstream cancels without ever consuming any element" in {
+      val matF = Source.fromGraph(LazySource(() ⇒ Source(List(1, 2, 3))))
+        .toMat(Sink.cancelled)(Keep.left)
+        .run()
+
+      intercept[RuntimeException] {
+        matF.futureValue
+      }
+    }
+
     "stop consuming when downstream has cancelled" in {
       val outProbe = TestSubscriber.probe[Int]()
       val inProbe = TestPublisher.probe[Int]()
@@ -62,7 +72,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       matF.value shouldEqual None
       probe.request(1)
       probe.expectNext(1)
-      matF.value shouldEqual Some(Success(Done))
+      matF.futureValue should ===(Done)
 
       probe.cancel()
     }
@@ -78,7 +88,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       inProbe.sendNext(27)
       outProbe.expectNext(27)
       inProbe.sendError(TE("OMG Who set that on fire!?!"))
-      outProbe.expectError()
+      outProbe.expectError() shouldEqual TE("OMG Who set that on fire!?!")
     }
   }
 
