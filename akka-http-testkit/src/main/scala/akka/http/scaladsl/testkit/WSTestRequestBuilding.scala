@@ -9,11 +9,11 @@ import akka.http.scaladsl.model.headers.{ UpgradeProtocol, Upgrade, `Sec-WebSock
 import akka.http.scaladsl.model.{ StatusCodes, HttpResponse, HttpRequest, Uri }
 import akka.http.scaladsl.model.ws.{ UpgradeToWebSocket, Message }
 import scala.collection.immutable
-import akka.stream.{ Graph, FlowShape }
+import akka.stream.{ Materializer, Graph, FlowShape }
 import akka.stream.scaladsl.Flow
 
-trait WSTestRequestBuilding { self: RouteTest ⇒
-  def WS(uri: Uri, clientSideHandler: Flow[Message, Message, Any], subprotocols: Seq[String] = Nil)(): HttpRequest =
+trait WSTestRequestBuilding {
+  def WS(uri: Uri, clientSideHandler: Flow[Message, Message, Any], subprotocols: Seq[String] = Nil)(implicit materializer: Materializer): HttpRequest =
     HttpRequest(uri = uri)
       .addHeader(new InternalCustomHeader("UpgradeToWebSocketTestHeader") with UpgradeToWebSocket {
         def requestedProtocols: immutable.Seq[String] = subprotocols.toList
@@ -28,3 +28,5 @@ trait WSTestRequestBuilding { self: RouteTest ⇒
         }
       })
 }
+
+object WSTestRequestBuilding extends WSTestRequestBuilding
