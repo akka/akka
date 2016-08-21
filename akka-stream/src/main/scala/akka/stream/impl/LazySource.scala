@@ -14,10 +14,10 @@ import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
 object LazySource {
-  def apply[T, M](createSource: ⇒ Source[T, M]): LazySource[T, M] = new LazySource[T, M](createSource)
+  def apply[T, M](sourceFactory: () ⇒ Source[T, M]) = new LazySource[T, M](sourceFactory)
 }
 
-final class LazySource[T, M](createSource: ⇒ Source[T, M]) extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
+final class LazySource[T, M](sourceFactory: () ⇒ Source[T, M]) extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
   val out = Outlet[T]("LazySource.out")
   override val shape = SourceShape(out)
 
@@ -25,40 +25,31 @@ final class LazySource[T, M](createSource: ⇒ Source[T, M]) extends GraphStageW
     val matPromise = Promise[M]()
     val logic = new GraphStageLogic(shape) with OutHandler {
 
-      var sinkQueue: SinkQueueWithCancel[T] = _
-
-      val cb = getAsyncCallback[Try[Option[T]]] {
-        case Success(Some(t))            ⇒ emit(out, t)
-        case Success(None)               ⇒ completeStage()
-        case Failure(ex) if NonFatal(ex) ⇒ failStage(ex)
-      }.invoke _
-
       override def onPull(): Unit = {
-        if (sinkQueue eq null) {
-          // first pull since starting, create and connect actual source
-          try {
-            val source = createSource
-            val (mat, queue) = source.toMat(new QueueSink().addAttributes(Attributes.inputBuffer(1, 1)))(Keep.both).run()(materializer)
-            matPromise.success(mat)
-            sinkQueue = queue
-            doPull()
-          } catch {
-            case ex if NonFatal(ex) ⇒
-              matPromise.failure(ex)
-              failStage(ex)
+        val source = sourceFactory()
+        val subSink = new SubSinkInlet[T]("LazySource")
+        subSink.pull()
+
+        setHandler(out, new OutHandler {
+          override def onPull(): Unit = {
+            subSink.pull()
           }
-        } else {
-          doPull()
-        }
-      }
 
-      private def doPull(): Unit = {
-        sinkQueue.pull().onComplete(cb)(materializer.executionContext)
-      }
+          override def onDownstreamFinish(): Unit = {
+            subSink.cancel()
+            completeStage()
+          }
+        })
 
-      override def onDownstreamFinish(): Unit = {
-        if (sinkQueue ne null) sinkQueue.cancel()
-        super.onDownstreamFinish()
+        subSink.setHandler(new InHandler {
+          override def onPush(): Unit = {
+            push(out, subSink.grab())
+          }
+        })
+
+        // TODO shouldn't this be tryComplete(Try(...)) to fail mat value on fail to materialize source?
+        // currently cargo-culting the LazySink
+        matPromise.trySuccess(source.toMat(subSink.sink)(Keep.left).run()(subFusingMaterializer))
       }
 
       setHandler(out, this)
