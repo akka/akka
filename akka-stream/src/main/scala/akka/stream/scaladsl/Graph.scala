@@ -932,7 +932,8 @@ object OrElse {
  *
  * '''Backpressures when''' downstream backpressures
  *
- * '''Completes when''' the primary stream completes after emitting at least one element or else when the secondary stream completes
+ * '''Completes when''' the primary stream completes after emitting at least one element, when the primary stream completes
+ *                      without emitting and the secondary stream already has completed or when the secondary stream completes
  *
  * '''Cancels when''' downstream cancels
  */

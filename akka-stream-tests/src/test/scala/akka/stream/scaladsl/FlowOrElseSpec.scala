@@ -102,6 +102,7 @@ class FlowOrElseSpec extends AkkaSpec {
     "complete when both inputs completes without emitting elements, regardless of order" in new OrElseProbedFlow {
       outProbe.ensureSubscription()
       inProbe2.sendComplete()
+      outProbe.expectNoMsg() // make sure it did not complete here
       inProbe1.sendComplete()
       outProbe.expectComplete()
     }
