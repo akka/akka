@@ -207,8 +207,9 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
       def receive = {
         case HttpResponse(StatusCodes.OK, headers, entity, _) =>
           log.info("Got response, body: " + entity.dataBytes.runFold(ByteString(""))(_ ++ _))
-        case HttpResponse(code, _, _, _) =>
+        case resp @ HttpResponse(code, _, _, _) =>
           log.info("Request failed, response code: " + code)
+          resp.discardEntityBytes()
       }
 
     }
