@@ -19,15 +19,11 @@ object Dependencies {
     crossScalaVersions := Seq("2.11.8"), // "2.12.0-M4"
     scalaVersion := crossScalaVersions.value.head,
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.7"),
-    scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.11.6"),
+    scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.13.2"),
     scalaTestVersion := {
       scalaVersion.value match {
-        case "2.12.0-M1" => "2.2.5-M1"
-        case "2.12.0-M2" => "2.2.5-M2"
-        case "2.12.0-M3" => "2.2.5-M3"
-        case "2.12.0-M4" => "2.2.6"
-        case "2.12.0-M5" => "3.0.0-RC4"
-        case _ => "2.2.4"
+        case "2.12.0-M5" => "3.0.0"
+        case _ => "3.0.0"
       }
     },
     java8CompatVersion := {

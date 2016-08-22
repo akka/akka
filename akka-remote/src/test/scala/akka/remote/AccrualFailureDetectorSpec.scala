@@ -188,7 +188,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
       fd.heartbeat() //2000
       fd.heartbeat() //2500
       val phi2 = fd.phi //3000
-      phi2 should ===(phi1.plusOrMinus(0.001))
+      phi2 should ===(phi1 +- (0.001))
     }
 
   }

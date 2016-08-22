@@ -41,14 +41,14 @@ public class JavaAPITestBase extends JUnitSuite {
     String s : Option.some("abc")) {
       return;
     }
-    fail("for-loop not entered");
+    org.junit.Assert.fail("for-loop not entered");
   }
 
   @Test
   public void shouldNotEnterForLoop() {
     for (@SuppressWarnings("unused")
     Object o : Option.none()) {
-      fail("for-loop entered");
+      org.junit.Assert.fail("for-loop entered");
     }
   }
 

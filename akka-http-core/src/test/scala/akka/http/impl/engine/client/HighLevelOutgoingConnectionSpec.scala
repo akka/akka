@@ -16,7 +16,7 @@ import akka.testkit.AkkaSpec
 import akka.http.scaladsl.{ Http, TestUtils }
 import akka.http.scaladsl.model._
 import akka.stream.testkit.Utils
-import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 class HighLevelOutgoingConnectionSpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withFuzzing(true))
@@ -38,8 +38,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
         .mapAsync(4)(_.entity.toStrict(1.second))
         .map { r ⇒ val s = r.data.utf8String; log.debug(s); s.toInt }
         .runFold(0)(_ + _)
-
-      result.futureValue(PatienceConfig(10.seconds)) shouldEqual N * (N + 1) / 2
+      result.futureValue(Timeout(10.seconds)) should ===(N * (N + 1) / 2)
       binding.futureValue.unbind()
     }
 
@@ -73,7 +72,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
         .map { r ⇒ val s = r.data.utf8String; log.debug(s); s.toInt }
         .runFold(0)(_ + _)
 
-      result.futureValue(PatienceConfig(10.seconds)) shouldEqual C * N * (N + 1) / 2
+      result.futureValue(Timeout(10.seconds)) should ===(C * N * (N + 1) / 2)
       binding.futureValue.unbind()
     }
 

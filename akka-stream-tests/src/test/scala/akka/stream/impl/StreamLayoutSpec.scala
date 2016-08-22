@@ -7,6 +7,7 @@ import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.testkit.StreamSpec
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration._
 
@@ -126,7 +127,7 @@ class StreamLayoutSpec extends StreamSpec {
     }
 
     // Seen tests run in 9-10 seconds, these test cases are heavy on the GC
-    val veryPatient = PatienceConfig(20.seconds)
+    val veryPatient = Timeout(20.seconds)
 
     "not fail materialization when building a large graph with simple computation" when {
 
