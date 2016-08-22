@@ -430,7 +430,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
           .run()
 
       // make sure that the server has bound to the socket
-      val binding = Await.result(bindingFuture, 100.millis)
+      val binding = Await.result(bindingFuture, 1.second)
 
       val testInput = (0 to 255).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
@@ -451,7 +451,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
           .run()
 
       // make sure that the server has bound to the socket
-      val binding = Await.result(bindingFuture, 100.millis)
+      val binding = Await.result(bindingFuture, 1.second)
 
       val echoConnection = Tcp().outgoingConnection(serverAddress)
 
