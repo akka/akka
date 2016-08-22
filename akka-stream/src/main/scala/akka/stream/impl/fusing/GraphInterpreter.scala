@@ -47,8 +47,6 @@ object GraphInterpreter {
   final val KeepGoingFlag = 0x4000000
   final val KeepGoingMask = 0x3ffffff
 
-  final val ChaseLimit = 16
-
   /**
    * Marker object that indicates that a port holds no element since it was already grabbed. The port is still pullable,
    * but there is no more element to grab.
@@ -401,13 +399,7 @@ final class GraphInterpreter(
   val context:          ActorRef) {
   import GraphInterpreter._
 
-  // Maintains additional information for events, basically elements in-flight, or failure.
-  // Other events are encoded in the portStates bitfield.
-  //val connectionSlots = Array.fill[Any](assembly.connectionCount)(Empty)
-
-  // Bitfield encoding pending events and various states for efficient querying and updates. See the documentation
-  // of the class for a full description.
-  //val portStates = Array.fill[Int](assembly.connectionCount)(InReady)
+  private[this] val ChaseLimit = if (fuzzingMode) 0 else 16
 
   /**
    * INTERNAL API
