@@ -4,10 +4,10 @@
 package akka.stream.impl
 
 import scala.util.Random
-import org.scalatest.{ ShouldMatchers, WordSpec }
+import org.scalatest.{ Matchers, WordSpec }
 import akka.stream.impl.ResizableMultiReaderRingBuffer._
 
-class ResizableMultiReaderRingBufferSpec extends WordSpec with ShouldMatchers {
+class ResizableMultiReaderRingBufferSpec extends WordSpec with Matchers {
 
   "A ResizableMultiReaderRingBuffer" should {
 

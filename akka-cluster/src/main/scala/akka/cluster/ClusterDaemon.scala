@@ -1312,10 +1312,10 @@ private[cluster] class OnMemberStatusChangedListener(callback: Runnable, status:
 @SerialVersionUID(1L)
 private[cluster] final case class GossipStats(
   receivedGossipCount: Long = 0L,
-  mergeCount: Long = 0L,
-  sameCount: Long = 0L,
-  newerCount: Long = 0L,
-  olderCount: Long = 0L) {
+  mergeCount:          Long = 0L,
+  sameCount:           Long = 0L,
+  newerCount:          Long = 0L,
+  olderCount:          Long = 0L) {
 
   def incrementMergeCount(): GossipStats =
     copy(mergeCount = mergeCount + 1, receivedGossipCount = receivedGossipCount + 1)
@@ -1355,5 +1355,5 @@ private[cluster] final case class GossipStats(
 @SerialVersionUID(1L)
 private[cluster] final case class VectorClockStats(
   versionSize: Int = 0,
-  seenLatest: Int = 0)
+  seenLatest:  Int = 0)
 

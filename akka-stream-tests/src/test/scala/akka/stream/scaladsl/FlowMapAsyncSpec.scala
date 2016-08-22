@@ -7,6 +7,7 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
+
 import scala.util.control.NoStackTrace
 import akka.stream.ActorMaterializer
 import akka.stream.testkit._
@@ -16,10 +17,13 @@ import akka.testkit.TestProbe
 import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.Supervision.resumingDecider
 import akka.stream.impl.ReactiveStreamsCompliance
+
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.LinkedBlockingQueue
+
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 class FlowMapAsyncSpec extends StreamSpec {
 
@@ -245,7 +249,7 @@ class FlowMapAsyncSpec extends StreamSpec {
         Source(1 to N)
           .mapAsync(parallelism)(i ⇒ deferred())
           .runFold(0)((c, _) ⇒ c + 1)
-          .futureValue(PatienceConfig(3.seconds)) should ===(N)
+          .futureValue(Timeout(3.seconds)) should ===(N)
       } finally {
         timer.interrupt()
       }
