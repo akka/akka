@@ -18,6 +18,7 @@ class ByteStringParserInputSpec extends WordSpec with Matchers {
 
     "slice the bytes correctly into a string" in {
       parser.sliceString(0, 3) should ===("abc")
+      parser.sliceString(3, 5) should ===("de")
     }
 
     "slice the bytes correctly into a char array" in {
