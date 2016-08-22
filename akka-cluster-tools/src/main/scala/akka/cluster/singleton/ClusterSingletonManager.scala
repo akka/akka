@@ -608,6 +608,9 @@ class ClusterSingletonManager(
           // already oldest
           stay
         case Some(a) if !selfExited && removed.contains(a) ⇒
+          // The member removal was not completed and the old removed node is considered
+          // oldest again. Safest is to terminate the singleton instance and goto Younger.
+          // This node will become oldest again when the other is removed again.
           gotoHandingOver(singleton, singletonTerminated, None)
         case Some(a) ⇒
           // send TakeOver request in case the new oldest doesn't know previous oldest
@@ -683,7 +686,9 @@ class ClusterSingletonManager(
     if (removed.contains(cluster.selfUniqueAddress)) {
       logInfo("Self removed, stopping ClusterSingletonManager")
       stop()
-    } else
+    } else if (handOverTo.isEmpty)
+      goto(Younger) using YoungerData(None)
+    else
       goto(End) using EndData
   }
 
