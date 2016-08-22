@@ -185,6 +185,36 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
   }
 
   /**
+   * Return true if the internal state is Closed. WARNING: It is a "power API" call which you should use with care.
+   * Ordinal use cases of CircuitBreaker expects a remote call to return Future, as in withCircuitBreaker.
+   * So, if you check the state by yourself, and make a remote call outside CircuitBreaker, you should
+   * manage the state yourself.
+   */
+  def isClosed: Boolean = {
+    currentState == Closed
+  }
+
+  /**
+   * Return true if the internal state is Open. WARNING: It is a "power API" call which you should use with care.
+   * Ordinal use cases of CircuitBreaker expects a remote call to return Future, as in withCircuitBreaker.
+   * So, if you check the state by yourself, and make a remote call outside CircuitBreaker, you should
+   * manage the state yourself.
+   */
+  def isOpen: Boolean = {
+    currentState == Open
+  }
+
+  /**
+   * Return true if the internal state is HalfOpen. WARNING: It is a "power API" call which you should use with care.
+   * Ordinal use cases of CircuitBreaker expects a remote call to return Future, as in withCircuitBreaker.
+   * So, if you check the state by yourself, and make a remote call outside CircuitBreaker, you should
+   * manage the state yourself.
+   */
+  def isHalfOpen: Boolean = {
+    currentState == HalfOpen
+  }
+
+  /**
    * Adds a callback to execute when circuit breaker opens
    *
    * The callback is run in the [[scala.concurrent.ExecutionContext]] supplied in the constructor.
@@ -207,7 +237,6 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
 
   /**
    * Adds a callback to execute when circuit breaker transitions to half-open
-   *
    * The callback is run in the [[scala.concurrent.ExecutionContext]] supplied in the constructor.
    *
    * @param callback Handler to be invoked on state change
