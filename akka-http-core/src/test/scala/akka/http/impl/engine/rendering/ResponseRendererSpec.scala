@@ -611,7 +611,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
               case ResponseRenderingOutput.HttpData(bytes)      ⇒ bytes
               case _: ResponseRenderingOutput.SwitchToWebSocket ⇒ throw new IllegalStateException("Didn't expect websocket response")
             }
-            .groupedWithin(1000, 100.millis)
+            .groupedWithin(1000, 200.millis)
             .watchTermination()(Keep.right)
             .toMat(Sink.head)(Keep.both).run()
 
@@ -620,7 +620,10 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
           case Some(close) ⇒
             // we try to find out if the renderer has already flagged completion even without the upstream being completed
             try {
-              Await.ready(wasCompletedFuture, 100.millis)
+              // note how this relates to the groupedWithin timeout above which will always
+              // close the stream, so only streams closed before that was _actually_ closed
+              // by the server blueprint
+              Await.ready(wasCompletedFuture, 150.millis)
               Some(true)
             } catch {
               case NonFatal(_) ⇒ Some(false)
