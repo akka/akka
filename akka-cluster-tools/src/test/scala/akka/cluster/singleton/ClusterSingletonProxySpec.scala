@@ -68,7 +68,7 @@ object ClusterSingletonProxySpec {
                   min-nr-of-members = 2
                 }
 
-                actor.provider = "akka.cluster.ClusterActorRefProvider"
+                actor.provider = "cluster"
 
                 remote {
                   log-remote-lifecycle-events = off

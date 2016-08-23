@@ -153,7 +153,7 @@ object MetricsConfig {
         gossip-interval = 1s
       }
     }
-    akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+    akka.actor.provider = remote
   """
 
   /** Test w/o cluster, with collection disabled. */
@@ -163,7 +163,7 @@ object MetricsConfig {
         enabled = off
       }
     }
-    akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+    akka.actor.provider = remote
   """
 
   /** Test in cluster, with manual collection activation, collector mock, fast. */
@@ -178,7 +178,7 @@ object MetricsConfig {
         fallback = false
       }
     }
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.actor.provider = "cluster"
   """
 }
 

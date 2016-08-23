@@ -27,7 +27,7 @@ import org.apache.commons.io.FileUtils
 object RemoveInternalClusterShardingDataSpec {
   val config = """
     akka.loglevel = INFO
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.actor.provider = "cluster"
     akka.remote.netty.tcp.port = 0
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
     akka.persistence.journal.leveldb {

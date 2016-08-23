@@ -11,7 +11,7 @@ import collection.immutable.SortedSet
 import akka.testkit.AkkaSpec
 
 class ClusterMessageSerializerSpec extends AkkaSpec(
-  "akka.actor.provider = akka.cluster.ClusterActorRefProvider") {
+  "akka.actor.provider = cluster") {
 
   val serializer = new ClusterMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
 

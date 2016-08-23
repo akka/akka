@@ -28,7 +28,7 @@ import com.typesafe.config.ConfigFactory
 class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
   "ReplicatedDataSerializerSpec",
   ConfigFactory.parseString("""
-    akka.actor.provider=akka.cluster.ClusterActorRefProvider
+    akka.actor.provider=cluster
     akka.remote.netty.tcp.port=0
     """))) with WordSpecLike with Matchers with BeforeAndAfterAll {
 

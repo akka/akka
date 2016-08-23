@@ -7,8 +7,9 @@ package akka.remote
 import akka.remote.WireFormats._
 import akka.protobuf.ByteString
 import akka.actor.ExtendedActorSystem
-import akka.serialization.SerializationExtension
-import akka.serialization.SerializerWithStringManifest
+import akka.remote.artery.{ EnvelopeBuffer, HeaderBuilder }
+import akka.serialization.{ Serialization, SerializationExtension, SerializerWithStringManifest }
+import akka.serialization.ByteBufferSerializer
 
 /**
  * INTERNAL API
@@ -46,5 +47,32 @@ private[akka] object MessageSerializer {
           builder.setMessageManifest(ByteString.copyFromUtf8(message.getClass.getName))
     }
     builder.build
+  }
+
+  def serializeForArtery(serialization: Serialization, message: AnyRef, headerBuilder: HeaderBuilder, envelope: EnvelopeBuffer): Unit = {
+    val serializer = serialization.findSerializerFor(message)
+
+    headerBuilder setSerializer serializer.identifier
+
+    def manifest: String = serializer match {
+      case ser: SerializerWithStringManifest ⇒ ser.manifest(message)
+      case _                                 ⇒ if (serializer.includeManifest) message.getClass.getName else ""
+    }
+
+    serializer match {
+      case ser: ByteBufferSerializer ⇒
+        headerBuilder setManifest manifest
+        envelope.writeHeader(headerBuilder)
+        ser.toBinary(message, envelope.byteBuffer)
+      case _ ⇒
+        headerBuilder setManifest manifest
+        envelope.writeHeader(headerBuilder)
+        envelope.byteBuffer.put(serializer.toBinary(message))
+    }
+  }
+
+  def deserializeForArtery(system: ExtendedActorSystem, originUid: Long, serialization: Serialization,
+                           serializer: Int, classManifest: String, envelope: EnvelopeBuffer): AnyRef = {
+    serialization.deserializeByteBuffer(envelope.byteBuffer, serializer, classManifest)
   }
 }
