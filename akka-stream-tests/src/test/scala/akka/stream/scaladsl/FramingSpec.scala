@@ -5,6 +5,7 @@ package akka.stream.scaladsl
 
 import java.nio.ByteOrder
 import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.atomic.AtomicLong
 
 import akka.stream.scaladsl.Framing.FramingException
 import akka.stream.stage.{ GraphStage, _ }
@@ -40,8 +41,8 @@ class FramingSpec extends StreamSpec {
             val nextChunkSize =
               if (rechunkBuffer.isEmpty) 0
               else ThreadLocalRandom.current().nextInt(0, rechunkBuffer.size + 1)
-            val newChunk = rechunkBuffer.take(nextChunkSize)
-            rechunkBuffer = rechunkBuffer.drop(nextChunkSize)
+            val newChunk = rechunkBuffer.take(nextChunkSize).compact
+            rechunkBuffer = rechunkBuffer.drop(nextChunkSize).compact
             if (isClosed(in) && rechunkBuffer.isEmpty) {
               push(out, newChunk)
               completeStage()
@@ -86,14 +87,14 @@ class FramingSpec extends StreamSpec {
 
     "work with various delimiters and test sequences" in {
       for (delimiter ← delimiterBytes; _ ← 1 to 100) {
-        val f = Source(completeTestSequences(delimiter))
+        val testSequence = completeTestSequences(delimiter)
+        val f = Source(testSequence)
           .map(_ ++ delimiter)
           .via(rechunk)
           .via(Framing.delimiter(delimiter, 256))
-          .grouped(1000)
-          .runWith(Sink.head)
+          .runWith(Sink.seq)
 
-        Await.result(f, 3.seconds) should be(completeTestSequences(delimiter))
+        Await.result(f, 3.seconds) should ===(testSequence)
       }
     }
 
