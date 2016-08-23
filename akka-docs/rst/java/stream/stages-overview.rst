@@ -570,6 +570,17 @@ it returns false the element is discarded.
 
 **completes** when upstream completes
 
+filterNot
+^^^^^^^^
+Filter the incoming elements using a predicate. If the predicate returns false the element is passed downstream, if
+it returns true the element is discarded.
+
+**emits** when the given predicate returns false for the element
+
+**backpressures** when the given predicate returns false for the element and downstream backpressures
+
+**completes** when upstream completes
+
 collect
 ^^^^^^^
 Apply a partial function to each incoming element, if the partial function is defined for a value the returned
@@ -623,6 +634,17 @@ fold
 ^^^^
 Start with current value ``zero`` and then apply the current and next value to the given function, when upstream
 complete the current value is emitted downstream.
+
+**emits** when upstream completes
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes
+
+reduce
+^^^^^^
+Start with first element and then apply the current and next value to the given function, when upstream
+complete the current value is emitted downstream. Similar to ``fold``.
 
 **emits** when upstream completes
 
@@ -713,6 +735,59 @@ a function has to be provided to calculate the individual cost of each element.
 
 **completes** when upstream completes
 
+intersperse
+^^^^^^^^^^^
+Intersperse stream with provided element similar to ``List.mkString``. It can inject start and end marker elements to stream.
+
+**emits** when upstream emits an element or before with the `start` element if provided
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes
+
+limit
+^^^^^
+Limit number of element from upstream to given ``max`` number.
+
+**emits** when upstream emits and the number of emitted elements has not reached max
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes and the number of emitted elements has not reached max
+
+limitWeighted
+^^^^^^^^^^^^^
+Ensure stream boundedness by evaluating the cost of incoming elements using a cost function.
+Evaluated cost of each element defines how many elements will be allowed to travel downstream.
+
+**emits** when upstream emits and the number of emitted elements has not reached max
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes and the number of emitted elements has not reached max
+
+log
+^^^
+Log elements flowing through the stream as well as completion and erroring. By default element and
+completion signals are logged on debug level, and errors are logged on Error level.
+This can be changed by calling ``Attributes.createLogLevels(...)`` on the given Flow.
+
+**emits** when upstream emits
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes
+
+recoverWithRetries
+^^^^^^^^^^^^^^^^^^
+Switch to alternative Source on flow failure. It stays in effect after a failure has been recovered up to ``attempts``
+number of times. Each time a failure is fed into the partial function and a new Source may be materialized.
+
+**emits** when element is available from the upstream or upstream is failed and element is available from alternative Source
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes or upstream failed with exception partial function can handle
 
 
 Asynchronous processing stages
