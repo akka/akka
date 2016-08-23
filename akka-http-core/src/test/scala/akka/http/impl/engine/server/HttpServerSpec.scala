@@ -860,10 +860,10 @@ class HttpServerSpec extends AkkaSpec(
         netOut.expectComplete()
       })
 
-      "are programmatically increased (not expiring)" in assertAllStagesStopped(new RequestTimeoutTestSetup(10.millis) {
+      "are programmatically increased (not expiring)" in assertAllStagesStopped(new RequestTimeoutTestSetup(50.millis) {
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
-        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(50.millis))
-        netOut.expectNoBytes(30.millis)
+        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(250.millis))
+        netOut.expectNoBytes(150.millis)
         responses.sendNext(HttpResponse())
         expectResponseWithWipedDate(
           """HTTP/1.1 200 OK
@@ -877,10 +877,10 @@ class HttpServerSpec extends AkkaSpec(
         netOut.expectComplete()
       })
 
-      "are programmatically increased (expiring)" in assertAllStagesStopped(new RequestTimeoutTestSetup(10.millis) {
+      "are programmatically increased (expiring)" in assertAllStagesStopped(new RequestTimeoutTestSetup(50.millis) {
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
-        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(50.millis))
-        netOut.expectNoBytes(30.millis)
+        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(250.millis))
+        netOut.expectNoBytes(150.millis)
         expectResponseWithWipedDate(
           """HTTP/1.1 503 Service Unavailable
             |Server: akka-http/test
@@ -895,9 +895,9 @@ class HttpServerSpec extends AkkaSpec(
         netOut.expectComplete()
       })
 
-      "are programmatically decreased" in assertAllStagesStopped(new RequestTimeoutTestSetup(50.millis) {
+      "are programmatically decreased" in assertAllStagesStopped(new RequestTimeoutTestSetup(250.millis) {
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
-        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(10.millis))
+        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(50.millis))
         val mark = System.nanoTime()
         expectResponseWithWipedDate(
           """HTTP/1.1 503 Service Unavailable
@@ -908,7 +908,7 @@ class HttpServerSpec extends AkkaSpec(
             |
             |The server was not able to produce a timely response to your request.
             |Please try again in a short while!""")
-        (System.nanoTime() - mark) should be < (40 * 1000000L)
+        (System.nanoTime() - mark) should be < (200 * 1000000L)
 
         netIn.sendComplete()
         netOut.expectComplete()
