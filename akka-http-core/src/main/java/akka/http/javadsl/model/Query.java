@@ -14,6 +14,7 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.StreamSupport;
 
 public abstract class Query {
     /**
@@ -97,6 +98,16 @@ public abstract class Query {
     @SafeVarargs
     public static Query create(Pair<String, String>... params) {
         return new JavaQuery(UriJavaAccessor.queryApply(params));
+    }
+
+    /**
+     * Returns a Query from the given parameters.
+     */
+    public static Query create(Iterable<Pair<String, String>> params) {
+        @SuppressWarnings("unchecked")
+        final Pair<String, String>[] paramsArray =
+                StreamSupport.stream(params.spliterator(), false).toArray(Pair[]::new);
+        return create(paramsArray);
     }
 
     /**
