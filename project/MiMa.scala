@@ -906,10 +906,9 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.stream.ActorMaterializer.actorOf"),
 
         // Interpreter internals change
-        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.stage.GraphStageLogic.portToConn")
-      ),
-      "2.4.9" -> Seq(
-        // #20994 adding new decode method, since we're on JDK7+ now
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.stage.GraphStageLogic.portToConn"),
+        
+	// #20994 adding new decode method, since we're on JDK7+ now
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.util.ByteString.decodeString"),
 
         // #20508  HTTP: Document how to be able to support custom request methods
@@ -944,6 +943,8 @@ object MiMa extends AutoPlugin {
         // #20942 ClusterSingleton
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.singleton.ClusterSingletonManager.addRemoved"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.singleton.ClusterSingletonManager.selfAddressOption")
+      ),
+      "2.4.9" -> Seq(
       )
     )
   }
