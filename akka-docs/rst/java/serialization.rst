@@ -39,7 +39,7 @@ and neither is a subtype of the other, a warning will be issued.
 
   If you are using Scala for your message protocol and your messages are contained
   inside of a Scala object, then in order to reference those messages, you will need
-  use the de-sugared path. For a message named ``Message`` contained inside
+  use the fully qualified Java class name. For a message named ``Message`` contained inside
   the Scala object named ``Wrapper`` you would need to reference it as
   ``Wrapper$Message`` instead of ``Wrapper.Message``.
 
