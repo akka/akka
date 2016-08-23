@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * subscribe calls * because of the need of linearizing the history message sequence and the possibility of sometimes
  * watching a few actors too much - we opt for the 2nd choice here.
  */
-private[akka] class EventStreamUnsubscriber(eventStream: EventStream, debug: Boolean = false) extends Actor {
+protected[akka] class EventStreamUnsubscriber(eventStream: EventStream, debug: Boolean = false) extends Actor {
 
   import EventStreamUnsubscriber._
 

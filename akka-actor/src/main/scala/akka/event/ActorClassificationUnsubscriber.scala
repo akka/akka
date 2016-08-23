@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger
  *
  * Watches all actors which subscribe on the given event stream, and unsubscribes them from it when they are Terminated.
  */
-private[akka] class ActorClassificationUnsubscriber(bus: ManagedActorClassification, debug: Boolean) extends Actor with Stash {
+protected[akka] class ActorClassificationUnsubscriber(bus: ManagedActorClassification, debug: Boolean) extends Actor with Stash {
 
   import ActorClassificationUnsubscriber._
 
