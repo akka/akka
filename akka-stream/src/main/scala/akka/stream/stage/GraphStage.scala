@@ -343,8 +343,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   final protected def pull[T](in: Inlet[T]): Unit = {
     val connection = conn(in)
-    val portState = connection.portState
     val it = interpreter
+    val portState = connection.portState
 
     if ((portState & (InReady | InClosed | OutClosed)) == InReady) {
       connection.portState = portState ^ PullStartFlip
@@ -441,8 +441,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   final protected def push[T](out: Outlet[T], elem: T): Unit = {
     val connection = conn(out)
-    val portState = connection.portState
     val it = interpreter
+    val portState = connection.portState
 
     connection.portState = portState ^ PushStartFlip
 
