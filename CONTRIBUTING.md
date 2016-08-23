@@ -273,6 +273,17 @@ Thus we ask Java contributions to follow these simple guidelines:
 - `{` on same line as method name
 - in all other aspects, follow the [Oracle Java Style Guide](http://www.oracle.com/technetwork/java/codeconvtoc-136057.html)
 
+### Preferred ways to use timeouts in tests
+
+There is a number of ways timeouts can be used in Akka tests. If you're sure a spec is really fast, a default of `300.millis` (this DSL is obtained from importing `scala.concurrent.duration._`) is ok, however very often this is not enough as Jenkins server may GC heavily causing spurious errorstest failures, thus the following ways to use timeouts are recommended (in order of preference):
+
+* `remaining` is first choice (requires `within` block)
+* `remainingOrDefault` is second choice
+* `3.seconds` is third choice if not using testkit
+* lower timeouts must come with a very good reason (e.g. Awaiting on a known to be "already completed" `Future`)
+
+You can read up on remaining and friends in [TestKit.scala](https://github.com/akka/akka/blob/master/akka-testkit/src/main/scala/akka/testkit/TestKit.scala)
+
 ## Contributing Modules
 
 For external contributions of entire features, the normal way is to establish it
