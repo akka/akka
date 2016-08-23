@@ -275,7 +275,9 @@ Thus we ask Java contributions to follow these simple guidelines:
 
 ### Preferred ways to use timeouts in tests
 
-There is a number of ways timeouts can be used in Akka tests. Please note that usually giving a larger timeout *does not slow down the tests*, as in an `expectMessage` call for example it usually will complete quickly. The reason to use larger timeouts is to guard against fleaky tests, so if GC kicks in right in the middle of an `expect*` it will be able to still pass. Of course, some timing sensitive tests may need to be more fancy about timing.
+Avoid short test timeouts, since Jenkins server may GC heavily causing spurious test failures. GC pause or other hiccup of 2 seconds is common in our CI environment. Please note that usually giving a larger timeout *does not slow down the tests*, as in an `expectMessage` call for example it usually will complete quickly.
+
+There is a number of ways timeouts can be defined in Akka tests. The following ways to use timeouts are recommended (in order of preference): 
 
 * `remaining` is first choice (requires `within` block)
 * `remainingOrDefault` is second choice
