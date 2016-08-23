@@ -522,7 +522,7 @@ final case class Grouped[T](n: Int) extends GraphStage[FlowShape[T, immutable.Se
 /**
  * INTERNAL API
  */
-final case class LimitWeighted[T](n: Long, costFn: T ⇒ Long) extends GraphStage[FlowShape[T, T]] {
+final case class LimitWeighted[T](val n: Long, val costFn: T ⇒ Long) extends GraphStage[FlowShape[T, T]] {
   val in = Inlet[T]("LimitWeighted.in")
   val out = Outlet[T]("LimitWeighted.out")
   override val shape = FlowShape(in, out)
@@ -554,7 +554,7 @@ final case class LimitWeighted[T](n: Long, costFn: T ⇒ Long) extends GraphStag
 /**
  * INTERNAL API
  */
-final case class Sliding[T](n: Int, step: Int) extends GraphStage[FlowShape[T, immutable.Seq[T]]] {
+final case class Sliding[T](val n: Int, val step: Int) extends GraphStage[FlowShape[T, immutable.Seq[T]]] {
   require(n > 0, "n must be greater than 0")
   require(step > 0, "step must be greater than 0")
 
@@ -672,7 +672,7 @@ final case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy) extend
 /**
  * INTERNAL API
  */
-final case class Batch[In, Out](max: Long, costFn: In ⇒ Long, seed: In ⇒ Out, aggregate: (Out, In) ⇒ Out)
+final case class Batch[In, Out](val max: Long, val costFn: In ⇒ Long, val seed: In ⇒ Out, val aggregate: (Out, In) ⇒ Out)
   extends GraphStage[FlowShape[In, Out]] {
 
   val in = Inlet[In]("Batch.in")
@@ -798,7 +798,7 @@ final case class Batch[In, Out](max: Long, costFn: In ⇒ Long, seed: In ⇒ Out
 /**
  * INTERNAL API
  */
-final class Expand[In, Out](extrapolate: In ⇒ Iterator[Out]) extends GraphStage[FlowShape[In, Out]] {
+final class Expand[In, Out](val extrapolate: In ⇒ Iterator[Out]) extends GraphStage[FlowShape[In, Out]] {
   private val in = Inlet[In]("expand.in")
   private val out = Outlet[Out]("expand.out")
 
@@ -1127,7 +1127,7 @@ private[stream] object TimerKeys {
   case object GroupedWithinTimerKey
 }
 
-final class GroupedWithin[T](n: Int, d: FiniteDuration) extends GraphStage[FlowShape[T, immutable.Seq[T]]] {
+final class GroupedWithin[T](val n: Int, val d: FiniteDuration) extends GraphStage[FlowShape[T, immutable.Seq[T]]] {
   require(n > 0, "n must be greater than 0")
   require(d > Duration.Zero)
 
@@ -1203,7 +1203,7 @@ final class GroupedWithin[T](n: Int, d: FiniteDuration) extends GraphStage[FlowS
   }
 }
 
-final class Delay[T](d: FiniteDuration, strategy: DelayOverflowStrategy) extends SimpleLinearGraphStage[T] {
+final class Delay[T](val d: FiniteDuration, val strategy: DelayOverflowStrategy) extends SimpleLinearGraphStage[T] {
   private[this] def timerName = "DelayedTimer"
   override def initialAttributes: Attributes = DefaultAttributes.delay
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
@@ -1289,7 +1289,7 @@ final class Delay[T](d: FiniteDuration, strategy: DelayOverflowStrategy) extends
   override def toString = "Delay"
 }
 
-final class TakeWithin[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
+final class TakeWithin[T](val timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     setHandler(in, new InHandler {
@@ -1309,7 +1309,7 @@ final class TakeWithin[T](timeout: FiniteDuration) extends SimpleLinearGraphStag
   override def toString = "TakeWithin"
 }
 
-final class DropWithin[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
+final class DropWithin[T](val timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
 
     private var allow = false
@@ -1335,7 +1335,7 @@ final class DropWithin[T](timeout: FiniteDuration) extends SimpleLinearGraphStag
 /**
  * INTERNAL API
  */
-final class Reduce[T](f: (T, T) ⇒ T) extends SimpleLinearGraphStage[T] {
+final class Reduce[T](val f: (T, T) ⇒ T) extends SimpleLinearGraphStage[T] {
   override def initialAttributes: Attributes = DefaultAttributes.reduce
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler { self ⇒
@@ -1379,7 +1379,7 @@ private[stream] object RecoverWith {
   val InfiniteRetries = -1
 }
 
-final class RecoverWith[T, M](maximumRetries: Int, pf: PartialFunction[Throwable, Graph[SourceShape[T], M]]) extends SimpleLinearGraphStage[T] {
+final class RecoverWith[T, M](val maximumRetries: Int, val pf: PartialFunction[Throwable, Graph[SourceShape[T], M]]) extends SimpleLinearGraphStage[T] {
   require(maximumRetries >= -1, "number of retries must be non-negative or equal to -1")
   override def initialAttributes = DefaultAttributes.recoverWith
 
