@@ -14,7 +14,7 @@ Cluster metrics information is primarily used for load-balancing routers,
 and can also be used to implement advanced metrics-based node life cycles,
 such as "Node Let-it-crash" when CPU steal time becomes excessive.
 
-Cluster Metrics Extension is a separate akka module delivered in ``akka-cluster-metrics`` jar.
+Cluster Metrics Extension is a separate Akka module delivered in ``akka-cluster-metrics`` jar.
 
 To enable usage of the extension you need to add the following dependency to your project:
 ::

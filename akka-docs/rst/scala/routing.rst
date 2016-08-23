@@ -46,7 +46,10 @@ outside of actors.
 .. note::
 
     In general, any message sent to a router will be sent onwards to its routees, but there is one exception.
-    The special :ref:`broadcast-messages-scala` will send to *all* of a router's routees 
+    The special :ref:`broadcast-messages-scala` will send to *all* of a router's routees.
+    However, do not use :ref:`broadcast-messages-scala` when you use :ref:`balancing-pool-scala` for routees
+    as described in :ref:`router-special-messages-scala`.
+
 
 A Router Actor
 ^^^^^^^^^^^^^^
@@ -63,10 +66,10 @@ This type of router actor comes in two distinct flavors:
   messages to the specified path using actor selection, without watching for termination.  
 
 The settings for a router actor can be defined in configuration or programmatically. 
-Although router actors can be defined in the configuration file, they must still be created
-programmatically, i.e. you cannot make a router through external configuration alone.
-If you define the router actor in the configuration file then these settings will be used
-instead of any programmatically provided parameters.
+In order to make an actor to make use of an externally configurable router the ``FromConfig`` props wrapper must be used
+to denote that the actor accepts routing settings from configuration.
+This is in contrast with Remote Deployment where such marker props is not necessary.
+If the props of an actor is NOT wrapped in FromConfig it will ignore the router section of the deployment configuration.
 
 You send messages to the routees via the router actor in the same way as for ordinary actors,
 i.e. via its ``ActorRef``. The router actor forwards messages onto its routees without changing 
@@ -275,6 +278,11 @@ All routees share the same mailbox.
    replying to the original client. The other advantage is that it does not place
    a restriction on the message queue implementation as BalancingPool does.
 
+.. note::
+   Do not use :ref:`broadcast-messages-scala` when you use :ref:`balancing-pool-scala` for routers.
+   as described in :ref:`router-special-messages-scala`,
+
+
 BalancingPool defined in configuration:
 
 .. includecode:: code/docs/routing/RouterDocSpec.scala#config-balancing-pool
@@ -303,6 +311,20 @@ routees are expected to perform blocking operations it may be useful to replace 
 with a ``thread-pool-executor`` hinting the number of allocated threads explicitly:
 
 .. includecode:: code/docs/routing/RouterDocSpec.scala#config-balancing-pool3
+
+It is also possible to change the ``mailbox`` used by the balancing dispatcher for
+scenarios where the default unbounded mailbox is not well suited. An example of such
+a scenario could arise whether there exists the need to manage priority for each message.
+You can then implement a priority mailbox and configure your dispatcher:
+
+.. includecode:: code/docs/routing/RouterDocSpec.scala#config-balancing-pool4
+
+.. note::
+
+   Bear in mind that ``BalancingDispatcher`` requires a message queue that must be thread-safe for
+   multiple concurrent consumers. So it is mandatory for the message queue backing a custom mailbox
+   for this kind of dispatcher to implement akka.dispatch.MultipleConsumerSemantics. See details
+   on how to implement your custom mailbox in :ref:`mailboxes-scala`.
 
 There is no Group variant of the BalancingPool.
 
@@ -520,6 +542,12 @@ to every routee of a router.
 In this example the router receives the ``Broadcast`` message, extracts its payload
 (``"Watch out for Davy Jones' locker"``), and then sends the payload on to all of the router's
 routees. It is up to each routee actor to handle the received payload message.
+
+.. note::
+   Do not use :ref:`broadcast-messages-scala` when you use :ref:`balancing-pool-scala` for routers.
+   Routees on :ref:`balancing-pool-scala` shares the same mailbox instance, thus some routees can
+   possibly get the broadcast message multiple times, while other routees get no broadcast message.
+
 
 PoisonPill Messages
 -------------------

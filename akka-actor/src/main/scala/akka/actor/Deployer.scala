@@ -7,7 +7,7 @@ package akka.actor
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.routing._
-import akka.util.WildcardTree
+import akka.util.WildcardIndex
 import com.typesafe.config._
 
 import scala.annotation.tailrec
@@ -132,7 +132,7 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
   import scala.collection.JavaConverters._
 
   private val resizerEnabled: Config = ConfigFactory.parseString("resizer.enabled=on")
-  private val deployments = new AtomicReference(WildcardTree[Deploy]())
+  private val deployments = new AtomicReference(WildcardIndex[Deploy]())
   private val config = settings.config.getConfig("akka.actor.deployment")
   protected val default = config.getConfig("default")
   val routerTypeMapping: Map[String, String] =
@@ -146,20 +146,18 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
     case _                          ⇒ None
   } foreach deploy
 
-  def lookup(path: ActorPath): Option[Deploy] = lookup(path.elements.drop(1).iterator)
+  def lookup(path: ActorPath): Option[Deploy] = lookup(path.elements.drop(1))
 
-  def lookup(path: Iterable[String]): Option[Deploy] = lookup(path.iterator)
-
-  def lookup(path: Iterator[String]): Option[Deploy] = deployments.get().find(path).data
+  def lookup(path: Iterable[String]): Option[Deploy] = deployments.get().find(path)
 
   def deploy(d: Deploy): Unit = {
-    @tailrec def add(path: Array[String], d: Deploy, w: WildcardTree[Deploy] = deployments.get): Unit = {
-      for (i ← 0 until path.length) path(i) match {
+    @tailrec def add(path: Array[String], d: Deploy, w: WildcardIndex[Deploy] = deployments.get): Unit = {
+      for (i ← path.indices) path(i) match {
         case "" ⇒ throw new InvalidActorNameException(s"Actor name in deployment [${d.path}] must not be empty")
         case el ⇒ ActorPath.validatePathElement(el, fullPath = d.path)
       }
 
-      if (!deployments.compareAndSet(w, w.insert(path.iterator, d))) add(path, d)
+      if (!deployments.compareAndSet(w, w.insert(path, d))) add(path, d)
     }
 
     add(d.path.split("/").drop(1), d)

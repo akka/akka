@@ -33,13 +33,13 @@ a ``Strict`` subclass for each kind of message which contains data as a strict, 
 When receiving data from the network connection the WebSocket implementation tries to create a ``Strict`` message whenever
 possible, i.e. when the complete data was received in one chunk. However, the actual chunking of messages over a network
 connection and through the various streaming abstraction layers is not deterministic from the perspective of the
-application. Therefore, application code must be able to handle both streaming and strict messages and not expect
+application. Therefore, application code must be able to handle both streamed and strict messages and not expect
 certain messages to be strict. (Particularly, note that tests against ``localhost`` will behave differently than tests
 against remote peers where data is received over a physical network connection.)
 
 For sending data, use ``TextMessage.apply(text: String)`` to create a ``Strict`` message which is often the natural
 choice when the complete message has already been assembled. Otherwise, use ``TextMessage.apply(textStream: Source[String, Any])``
-to create a streaming message from an Akka Stream source.
+to create a streamed message from an Akka Stream source.
 
 Server API
 ----------
@@ -94,6 +94,11 @@ and then responds with another text message that contains a greeting:
 
 .. includecode:: ../../code/docs/http/scaladsl/server/WebSocketExampleSpec.scala
    :include: websocket-handler
+
+.. note::
+  Inactive WebSocket connections will be dropped according to the :ref:`idle-timeout settings <idle-timeouts-scala>`.
+  In case you need to keep inactive connections alive, you can either tweak your idle-timeout or inject
+  'keep-alive' messages regularly.
 
 Routing support
 ---------------

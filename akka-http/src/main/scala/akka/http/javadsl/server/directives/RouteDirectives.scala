@@ -6,6 +6,7 @@ package akka.http.javadsl.server.directives
 import java.util.concurrent.CompletionStage
 
 import akka.dispatch.ExecutionContexts
+import akka.http.javadsl.marshalling.Marshaller
 import akka.http.scaladsl.server._
 import akka.japi.Util
 
@@ -18,7 +19,7 @@ import akka.http.javadsl.model.HttpResponse
 import akka.http.javadsl.model.RequestEntity
 import akka.http.javadsl.model.StatusCode
 import akka.http.javadsl.model.Uri
-import akka.http.javadsl.server.{ RoutingJavaMapping, Rejection, Marshaller, Route }
+import akka.http.javadsl.server.{ RoutingJavaMapping, Rejection, Route }
 import akka.http.scaladsl
 import akka.http.scaladsl.marshalling.Marshaller._
 import akka.http.scaladsl.marshalling.ToResponseMarshallable

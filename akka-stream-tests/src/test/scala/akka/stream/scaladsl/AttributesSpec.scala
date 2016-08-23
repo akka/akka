@@ -14,9 +14,7 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import akka.stream.impl.SinkModule
 import akka.stream.impl.StreamLayout.Module
-import org.scalatest.concurrent.ScalaFutures
 import akka.stream.impl.SinkholeSubscriber
-import akka.testkit.AkkaSpec
 
 object AttributesSpec {
 
@@ -38,7 +36,7 @@ object AttributesSpec {
 
 }
 
-class AttributesSpec extends AkkaSpec {
+class AttributesSpec extends StreamSpec {
   import AttributesSpec._
 
   val settings = ActorMaterializerSettings(system)

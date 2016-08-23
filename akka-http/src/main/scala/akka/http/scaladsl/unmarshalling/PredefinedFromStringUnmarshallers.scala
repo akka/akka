@@ -6,8 +6,14 @@ package akka.http.scaladsl.unmarshalling
 
 import scala.collection.immutable
 import akka.http.scaladsl.util.FastFuture
+import akka.util.ByteString
 
 trait PredefinedFromStringUnmarshallers {
+
+  implicit def _fromStringUnmarshallerFromByteStringUnmarshaller[T](implicit bsum: FromByteStringUnmarshaller[T]): Unmarshaller[String, T] = {
+    val bs = Unmarshaller.strict[String, ByteString](s ⇒ ByteString(s))
+    bs.flatMap(implicit ec ⇒ implicit mat ⇒ bsum(_))
+  }
 
   implicit val byteFromStringUnmarshaller: Unmarshaller[String, Byte] =
     numberUnmarshaller(_.toByte, "8-bit signed integer")

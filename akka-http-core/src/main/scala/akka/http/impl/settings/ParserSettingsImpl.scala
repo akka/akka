@@ -5,7 +5,7 @@
 package akka.http.impl.settings
 
 import akka.http.scaladsl.settings.ParserSettings
-import akka.http.scaladsl.settings.ParserSettings.{ ErrorLoggingVerbosity, CookieParsingMode }
+import akka.http.scaladsl.settings.ParserSettings.{ IllegalResponseHeaderValueProcessingMode, ErrorLoggingVerbosity, CookieParsingMode }
 import akka.stream.impl.ConstantFun
 import com.typesafe.config.Config
 import scala.collection.JavaConverters._
@@ -14,24 +14,25 @@ import akka.http.impl.util._
 
 /** INTERNAL API */
 private[akka] final case class ParserSettingsImpl(
-  maxUriLength:                Int,
-  maxMethodLength:             Int,
-  maxResponseReasonLength:     Int,
-  maxHeaderNameLength:         Int,
-  maxHeaderValueLength:        Int,
-  maxHeaderCount:              Int,
-  maxContentLength:            Long,
-  maxChunkExtLength:           Int,
-  maxChunkSize:                Int,
-  uriParsingMode:              Uri.ParsingMode,
-  cookieParsingMode:           CookieParsingMode,
-  illegalHeaderWarnings:       Boolean,
-  errorLoggingVerbosity:       ParserSettings.ErrorLoggingVerbosity,
-  headerValueCacheLimits:      Map[String, Int],
-  includeTlsSessionInfoHeader: Boolean,
-  customMethods:               String ⇒ Option[HttpMethod],
-  customStatusCodes:           Int ⇒ Option[StatusCode],
-  customMediaTypes:            MediaTypes.FindCustom)
+  maxUriLength:                             Int,
+  maxMethodLength:                          Int,
+  maxResponseReasonLength:                  Int,
+  maxHeaderNameLength:                      Int,
+  maxHeaderValueLength:                     Int,
+  maxHeaderCount:                           Int,
+  maxContentLength:                         Long,
+  maxChunkExtLength:                        Int,
+  maxChunkSize:                             Int,
+  uriParsingMode:                           Uri.ParsingMode,
+  cookieParsingMode:                        CookieParsingMode,
+  illegalHeaderWarnings:                    Boolean,
+  errorLoggingVerbosity:                    ErrorLoggingVerbosity,
+  illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode,
+  headerValueCacheLimits:                   Map[String, Int],
+  includeTlsSessionInfoHeader:              Boolean,
+  customMethods:                            String ⇒ Option[HttpMethod],
+  customStatusCodes:                        Int ⇒ Option[StatusCode],
+  customMediaTypes:                         MediaTypes.FindCustom)
   extends akka.http.scaladsl.settings.ParserSettings {
 
   require(maxUriLength > 0, "max-uri-length must be > 0")
@@ -76,6 +77,7 @@ object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.ht
       CookieParsingMode(c getString "cookie-parsing-mode"),
       c getBoolean "illegal-header-warnings",
       ErrorLoggingVerbosity(c getString "error-logging-verbosity"),
+      IllegalResponseHeaderValueProcessingMode(c getString "illegal-response-header-value-processing-mode"),
       cacheConfig.entrySet.asScala.map(kvp ⇒ kvp.getKey → cacheConfig.getInt(kvp.getKey))(collection.breakOut),
       c getBoolean "tls-session-info-header",
       noCustomMethods,

@@ -3,14 +3,14 @@
  */
 package akka.stream.scaladsl
 
+import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.{ TestSource, TestSink }
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import akka.testkit.AkkaSpec
 import akka.stream.FlowMonitorState._
 
 import scala.concurrent.duration._
 
-class FlowMonitorSpec extends AkkaSpec {
+class FlowMonitorSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
 

@@ -11,7 +11,7 @@ import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.server.AllDirectives;
 import akka.http.javadsl.server.Route;
-import akka.http.javadsl.server.StringUnmarshallers;
+import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import akka.http.javadsl.server.examples.simple.SimpleServerApp;
 import akka.stream.ActorMaterializer;
 

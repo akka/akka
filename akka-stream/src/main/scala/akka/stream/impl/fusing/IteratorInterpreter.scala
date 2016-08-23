@@ -137,20 +137,19 @@ private[akka] class IteratorInterpreter[I, O](
     }
     val assembly = new GraphAssembly(stagesArray, attributes, ins, inOwners, outs, outOwners)
 
-    val (inHandlers, outHandlers, logics) =
+    val (connections, logics) =
       assembly.materialize(Attributes.none, assembly.stages.map(_.module), new ju.HashMap, _ ⇒ ())
     val interpreter = new GraphInterpreter(
       assembly,
       NoMaterializer,
       NoLogging,
-      inHandlers,
-      outHandlers,
       logics,
+      connections,
       (_, _, _) ⇒ throw new UnsupportedOperationException("IteratorInterpreter does not support asynchronous events."),
       fuzzingMode = false,
       null)
-    interpreter.attachUpstreamBoundary(0, upstream)
-    interpreter.attachDownstreamBoundary(length, downstream)
+    interpreter.attachUpstreamBoundary(connections(0), upstream)
+    interpreter.attachDownstreamBoundary(connections(length), downstream)
     interpreter.init(null)
   }
 

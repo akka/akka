@@ -4,12 +4,12 @@
 
 package akka.http.javadsl.model;
 
+import akka.Done;
 import akka.http.impl.util.Util;
-import akka.http.javadsl.model.headers.EntityTagRanges;
-import akka.http.scaladsl.model.HttpEntity$;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
+import scala.concurrent.Future;
 
 import java.util.OptionalLong;
 import java.util.concurrent.CompletionStage;
@@ -141,6 +141,43 @@ public interface HttpEntity {
      * is likely to take a long time.
      */
     CompletionStage<HttpEntity.Strict> toStrict(long timeoutMillis, Materializer materializer);
+
+    /**
+     * Discards the entities data bytes by running the {@code dataBytes} Source contained in this entity.
+     *
+     * Note: It is crucial that entities are either discarded, or consumed by running the underlying [[Source]]
+     * as otherwise the lack of consuming of the data will trigger back-pressure to the underlying TCP connection
+     * (as designed), however possibly leading to an idle-timeout that will close the connection, instead of
+     * just having ignored the data.
+     *
+     * Warning: It is not allowed to discard and/or consume the {@code dataBytes} more than once
+     * as the stream is directly attached to the "live" incoming data source from the underlying TCP connection.
+     * Allowing it to be consumable twice would require buffering the incoming data, thus defeating the purpose
+     * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
+     * "stream can cannot be materialized more than once" exception.
+     *
+     * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
+     */
+    HttpMessage.DiscardedEntity discardBytes(Materializer materializer);
+
+
+    /**
+     * Represents the currently being-drained HTTP Entity which triggers completion of the contained
+     * Future once the entity has been drained for the given HttpMessage completely.
+     */
+    interface DiscardedEntity {
+        /**
+         * This future completes successfully once the underlying entity stream has been
+         * successfully drained (and fails otherwise).
+         */
+        Future<Done> future();
+
+        /**
+         * This future completes successfully once the underlying entity stream has been
+         * successfully drained (and fails otherwise).
+         */
+        CompletionStage<Done> completionStage();
+    }
 
     /**
      * The entity type which consists of a predefined fixed ByteString of data.

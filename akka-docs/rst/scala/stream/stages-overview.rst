@@ -168,7 +168,7 @@ Wrap any resource that can be opened, queried for next element (in a blocking wa
 
 **completes** when read function returns ``None``
 
-unfoldAsyncResource
+unfoldResourceAsync
 ^^^^^^^^^^^^^^^^^^^
 Wrap any resource that can be opened, queried for next element (in a blocking way) and closed using three distinct functions into a source.
 Functions return ``Future`` to achieve asynchronous processing
@@ -312,6 +312,23 @@ Invoke a callback when the stream has completed or failed.
 
 **backpressures** never
 
+lazyInit
+^^^^^^^^
+Invoke sinkFactory function to create a real sink upon receiving the first element. Internal ``Sink`` will not be created if there are no elements,
+because of completion or error. `fallback` will be invoked if there was no elements and completed is received from upstream.
+
+**cancels** never
+
+**backpressures** when initialized and when created sink backpressures
+
+queue
+^^^^^
+Materialize a ``SinkQueue`` that can be pulled to trigger demand through the sink. The queue contains
+a buffer in case stream emitting elements faster than queue pulling them.
+
+**cancels** when  ``SinkQueue.cancel`` is called
+
+**backpressures** when buffer has some space
 
 fold
 ^^^^
@@ -559,6 +576,17 @@ it returns false the element is discarded.
 
 **completes** when upstream completes
 
+filterNot
+^^^^^^^^^
+Filter the incoming elements using a predicate. If the predicate returns false the element is passed downstream, if
+it returns true the element is discarded.
+
+**emits** when the given predicate returns false for the element
+
+**backpressures** when the given predicate returns false for the element and downstream backpressures
+
+**completes** when upstream completes
+
 collect
 ^^^^^^^
 Apply a partial function to each incoming element, if the partial function is defined for a value the returned
@@ -612,6 +640,17 @@ fold
 ^^^^
 Start with current value ``zero`` and then apply the current and next value to the given function, when upstream
 complete the current value is emitted downstream.
+
+**emits** when upstream completes
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes
+
+reduce
+^^^^^^
+Start with first element and then apply the current and next value to the given function, when upstream
+complete the current value is emitted downstream. Similar to ``fold``.
 
 **emits** when upstream completes
 
@@ -702,6 +741,60 @@ a function has to be provided to calculate the individual cost of each element.
 **backpressures** when downstream backpressures
 
 **completes** when upstream completes
+
+intersperse
+^^^^^^^^^^^
+Intersperse stream with provided element similar to ``List.mkString``. It can inject start and end marker elements to stream.
+
+**emits** when upstream emits an element or before with the `start` element if provided
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes
+
+limit
+^^^^^
+Limit number of element from upstream to given ``max`` number.
+
+**emits** when upstream emits and the number of emitted elements has not reached max
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes and the number of emitted elements has not reached max
+
+limitWeighted
+^^^^^^^^^^^^^
+Ensure stream boundedness by evaluating the cost of incoming elements using a cost function.
+Evaluated cost of each element defines how many elements will be allowed to travel downstream.
+
+**emits** when upstream emits and the number of emitted elements has not reached max
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes and the number of emitted elements has not reached max
+
+log
+^^^
+Log elements flowing through the stream as well as completion and erroring. By default element and
+completion signals are logged on debug level, and errors are logged on Error level.
+This can be changed by calling ``Attributes.logLevels(...)`` on the given Flow.
+
+**emits** when upstream emits
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes
+
+recoverWithRetries
+^^^^^^^^^^^^^^^^^^
+Switch to alternative Source on flow failure. It stays in effect after a failure has been recovered up to ``attempts``
+number of times. Each time a failure is fed into the partial function and a new Source may be materialized.
+
+**emits** when element is available from the upstream or upstream is failed and element is available from alternative Source
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes or upstream failed with exception provided partial function can handle
 
 
 Asynchronous processing stages
@@ -1139,6 +1232,16 @@ After completion of the original upstream the elements of the given source will 
 
 **completes** when all upstreams complete
 
+++
+^^
+Just a shorthand for concat
+
+**emits** when the current stream has an element available; if the current input completes, it tries the next one
+
+**backpressures** when downstream backpressures
+
+**completes** when all upstreams complete
+
 prepend
 ^^^^^^^
 Prepends the given source to the flow, consuming it until completion before the original source is consumed.
@@ -1207,6 +1310,17 @@ Fan-out the stream to several streams. Each upstream element is emitted to the f
 **backpressures** when all of the outputs backpressure
 
 **completes** when upstream completes
+
+partition
+^^^^^^^^^
+Fan-out the stream to several streams. Each upstream element is emitted to one downstream consumer according to the
+partitioner function applied to the element.
+
+**emits** when the chosen output stops backpressuring and there is an input element available
+
+**backpressures** when the chosen output backpressures
+
+**completes** when upstream completes and no output is pending
 
 
 Watching status stages

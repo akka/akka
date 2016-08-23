@@ -309,7 +309,7 @@ object Source {
   }
 
   /**
-   * Creates a `Source` that is materialized as an [[akka.stream.SourceQueue]].
+   * Creates a `Source` that is materialized as an [[akka.stream.javadsl.SourceQueue]].
    * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
    * otherwise they will be buffered until request for demand is received. Elements in the buffer will be discarded
    * if downstream is terminated.
@@ -318,15 +318,15 @@ object Source {
    * there is no space available in the buffer.
    *
    * Acknowledgement mechanism is available.
-   * [[akka.stream.SourceQueue.offer]] returns `CompletionStage<StreamCallbackStatus<Boolean>>` which completes with `Success(true)`
+   * [[akka.stream.javadsl.SourceQueue.offer]] returns `CompletionStage<StreamCallbackStatus<Boolean>>` which completes with `Success(true)`
    * if element was added to buffer or sent downstream. It completes with `Success(false)` if element was dropped. Can also complete
-   * with [[akka.stream.StreamCallbackStatus.Failure]] - when stream failed or [[akka.stream.StreamCallbackStatus.StreamCompleted]]
+   * with [[akka.stream.javadsl.StreamCallbackStatus.Failure]] - when stream failed or [[akka.stream.StreamCallbackStatus.StreamCompleted]]
    * when downstream is completed.
    *
    * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete last `offer():CompletionStage`
    * call when buffer is full.
    *
-   * You can watch accessibility of stream with [[akka.stream.SourceQueue.watchCompletion]].
+   * You can watch accessibility of stream with [[akka.stream.javadsl.SourceQueue.watchCompletion]].
    * It returns future that completes with success when stream is completed or fail when stream is failed.
    *
    * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait for downstream demand.
@@ -376,7 +376,7 @@ object Source {
 
   /**
    * Start a new `Source` from some resource which can be opened, read and closed.
-   * It's similar to `unfoldResource` but takes functions that return `CopletionStage` instead of plain values.
+   * It's similar to `unfoldResource` but takes functions that return `CompletionStage` instead of plain values.
    *
    * You can use the supervision strategy to handle exceptions for `read` function or failures of produced `Futures`.
    * All exceptions thrown by `create` or `close` as well as fails of returned futures will fail the stream.
@@ -418,7 +418,9 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
 
   override def toString: String = delegate.toString
 
-  /** Converts this Java DSL element to its Scala DSL counterpart. */
+  /**
+   * Converts this Java DSL element to its Scala DSL counterpart.
+   */
   def asScala: scaladsl.Source[Out, Mat] = delegate
 
   /**
@@ -909,6 +911,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    */
   def recoverWithRetries[T >: Out](attempts: Int, pf: PartialFunction[Throwable, _ <: Graph[SourceShape[T], NotUsed]]): Source[T, Mat @uncheckedVariance] =
     new Source(delegate.recoverWithRetries(attempts, pf))
+
   /**
    * Transform each input element into an `Iterable` of output elements that is
    * then flattened into the output stream.
@@ -1553,7 +1556,6 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * '''Cancels when''' downstream cancels
    *
-   * @param seed Provides the first state for extrapolation using the first unconsumed element
    * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
    *                    state.
    */
@@ -2001,7 +2003,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.addAttributes(attr))
 
   /**
-   * Add a ``name`` attribute to this Flow.
+   * Add a ``name`` attribute to this Source.
    */
   override def named(name: String): javadsl.Source[Out, Mat] =
     new Source(delegate.named(name))

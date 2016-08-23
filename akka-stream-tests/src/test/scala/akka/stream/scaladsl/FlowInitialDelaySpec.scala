@@ -2,12 +2,11 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.TimeoutException
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import akka.stream.testkit.{ Utils, TestSubscriber }
+import akka.stream.testkit.{ StreamSpec, Utils, TestSubscriber }
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.testkit.AkkaSpec
 
-class FlowInitialDelaySpec extends AkkaSpec {
+class FlowInitialDelaySpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)

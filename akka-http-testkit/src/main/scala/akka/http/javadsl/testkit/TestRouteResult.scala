@@ -5,10 +5,10 @@
 package akka.http.javadsl.testkit
 
 import akka.http.javadsl.server.RouteResult
+import akka.http.javadsl.unmarshalling.Unmarshaller
 
 import scala.reflect.ClassTag
 import scala.concurrent.ExecutionContext
-import scala.concurrent.Await
 import scala.concurrent.duration.FiniteDuration
 import akka.util.ByteString
 import akka.stream.Materializer
@@ -17,7 +17,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.impl.util._
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.javadsl.server.{ Rejection, RoutingJavaMapping, Unmarshaller }
+import akka.http.javadsl.server.{ Rejection, RoutingJavaMapping }
 import RoutingJavaMapping._
 import akka.http.javadsl.model._
 
@@ -103,7 +103,7 @@ abstract class TestRouteResult(_result: RouteResult, awaitAtMost: FiniteDuration
   /**
    * Returns the first header of the response which is of the given class.
    */
-  def header[T <: HttpHeader](clazz: Class[T]): T =
+  def header[T >: Null <: HttpHeader](clazz: Class[T]): T =
     response.header(ClassTag(clazz))
       .getOrElse(doFail(s"Expected header of type ${clazz.getSimpleName} but wasn't found."))
 
@@ -172,7 +172,7 @@ abstract class TestRouteResult(_result: RouteResult, awaitAtMost: FiniteDuration
     assertEqualsKind(expected, entityBytes, "entity")
 
   /**
-   * Assert on the response entity to equal the given object after applying an [[akka.http.javadsl.server.Unmarshaller]].
+   * Assert on the response entity to equal the given object after applying an [[akka.http.javadsl.unmarshalling.Unmarshaller]].
    */
   def assertEntityAs[T <: AnyRef](unmarshaller: Unmarshaller[HttpEntity, T], expected: T): TestRouteResult =
     assertEqualsKind(expected, entity(unmarshaller), "entity")

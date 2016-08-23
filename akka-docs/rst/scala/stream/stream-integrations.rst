@@ -15,7 +15,7 @@ For more advanced use cases the :class:`ActorPublisher` and :class:`ActorSubscri
 provided to support implementing Reactive Streams :class:`Publisher` and :class:`Subscriber` with
 an :class:`Actor`.
 
-These can be consumed by other Reactive Stream libraries or used as a
+These can be consumed by other Reactive Stream libraries or used as an
 Akka Streams :class:`Source` or :class:`Sink`.
 
 .. warning::

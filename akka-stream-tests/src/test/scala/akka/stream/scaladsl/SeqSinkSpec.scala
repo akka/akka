@@ -3,13 +3,12 @@
  */
 package akka.stream.scaladsl
 
+import akka.stream.testkit.StreamSpec
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import akka.testkit.AkkaSpec
 import scala.collection.immutable
 import scala.concurrent.{ Future, Await }
-import scala.concurrent.duration._
 
-class SeqSinkSpec extends AkkaSpec {
+class SeqSinkSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)

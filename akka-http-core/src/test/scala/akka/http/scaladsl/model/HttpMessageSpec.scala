@@ -4,7 +4,9 @@
 
 package akka.http.scaladsl.model
 
+import akka.util.ByteString
 import headers.Host
+import headers.`Content-Type`
 import org.scalatest.{ Matchers, WordSpec }
 
 class HttpMessageSpec extends WordSpec with Matchers {
@@ -29,4 +31,12 @@ class HttpMessageSpec extends WordSpec with Matchers {
       fail("http://example.com/", Host("example.com", 8080))
     }
   }
+
+  "HttpMessage" should {
+    "not throw a ClassCastException on header[`Content-Type`]" in {
+      val entity = HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, ByteString.fromString("hello akka"))
+      HttpResponse(entity = entity).header[`Content-Type`] shouldBe Some(`Content-Type`(ContentTypes.`text/plain(UTF-8)`))
+    }
+  }
+
 }

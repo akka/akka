@@ -15,7 +15,7 @@ object HttpHeaderParserTestBed extends App {
   val system = ActorSystem("HttpHeaderParserTestBed", testConf)
 
   val parser = HttpHeaderParser.prime {
-    HttpHeaderParser.unprimed(ParserSettings(system), warnOnIllegalHeader = info ⇒ system.log.warning(info.formatPretty))
+    HttpHeaderParser.unprimed(ParserSettings(system), system.log, warnOnIllegalHeader = info ⇒ system.log.warning(info.formatPretty))
   }
 
   println {

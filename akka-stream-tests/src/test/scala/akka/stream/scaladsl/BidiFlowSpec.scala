@@ -4,16 +4,15 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
+import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils._
-import org.scalactic.ConversionCheckedTripleEquals
 import akka.util.ByteString
 import akka.stream._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.collection.immutable
-import akka.testkit.AkkaSpec
 
-class BidiFlowSpec extends AkkaSpec {
+class BidiFlowSpec extends StreamSpec {
   import Attributes._
   import GraphDSL.Implicits._
 
@@ -109,7 +108,10 @@ class BidiFlowSpec extends AkkaSpec {
 
     "suitably override attribute handling methods" in {
       import Attributes._
-      val b: BidiFlow[Int, Long, ByteString, String, NotUsed] = bidi.withAttributes(name("")).async.named("")
+      val b: BidiFlow[Int, Long, ByteString, String, NotUsed] = bidi.async.addAttributes(none).named("name")
+
+      b.module.attributes.getFirst[Name] shouldEqual Some(Name("name"))
+      b.module.attributes.getFirst[AsyncBoundary.type] shouldEqual Some(AsyncBoundary)
     }
 
   }

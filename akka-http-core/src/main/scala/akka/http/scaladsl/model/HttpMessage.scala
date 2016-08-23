@@ -19,13 +19,11 @@ import scala.reflect.{ ClassTag, classTag }
 import akka.Done
 import akka.parboiled2.CharUtils
 import akka.stream.Materializer
-import akka.util.{ ByteString, HashCode }
+import akka.util.{ ByteString, HashCode, OptionVal }
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.util.FastFuture._
-import akka.stream.scaladsl.Sink
 import headers._
-import akka.http.impl.util.JavaMapping.Implicits._
 
 /**
  * Common base class of HttpRequest and HttpResponse.
@@ -41,9 +39,23 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def entity: ResponseEntity
   def protocol: HttpProtocol
 
-  /** Drains entity stream */
-  def discardEntityBytes(mat: Materializer): HttpMessage.DiscardedEntity =
-    new HttpMessage.DiscardedEntity(entity.dataBytes.runWith(Sink.ignore)(mat))
+  /**
+   * Discards the entities data bytes by running the `dataBytes` Source contained in this HttpMessage.
+   *
+   * Note: It is crucial that entities are either discarded, or consumed by running the underlying [[akka.stream.scaladsl.Source]]
+   * as otherwise the lack of consuming of the data will trigger back-pressure to the underlying TCP connection
+   * (as designed), however possibly leading to an idle-timeout that will close the connection, instead of
+   * just having ignored the data.
+   *
+   * Warning: It is not allowed to discard and/or consume the `entity.dataBytes` more than once
+   * as the stream is directly attached to the "live" incoming data source from the underlying TCP connection.
+   * Allowing it to be consumable twice would require buffering the incoming data, thus defeating the purpose
+   * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
+   * "stream can cannot be materialized more than once" exception.
+   *
+   * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
+   */
+  def discardEntityBytes(mat: Materializer): HttpMessage.DiscardedEntity = entity.discardBytes()(mat)
 
   /** Returns a copy of this message with the list of headers set to the given ones. */
   def withHeaders(headers: HttpHeader*): Self = withHeaders(headers.toList)
@@ -90,14 +102,13 @@ sealed trait HttpMessage extends jm.HttpMessage {
   }
 
   /** Returns the first header of the given type if there is one */
-  def header[T <: jm.HttpHeader: ClassTag]: Option[T] = {
-    val erasure = classTag[T].runtimeClass
-    headers.find(erasure.isInstance).asInstanceOf[Option[T]] match {
-      case header: Some[T]                         ⇒ header
-      case _ if erasure == classOf[`Content-Type`] ⇒ Some(entity.contentType).asInstanceOf[Option[T]]
-      case _                                       ⇒ None
+  def header[T >: Null <: jm.HttpHeader: ClassTag]: Option[T] = {
+    val clazz = classTag[T].runtimeClass.asInstanceOf[Class[T]]
+    HttpHeader.fastFind[T](clazz, headers) match {
+      case OptionVal.Some(h)                     ⇒ Some(h)
+      case _ if clazz == classOf[`Content-Type`] ⇒ Some(`Content-Type`(entity.contentType)).asInstanceOf[Option[T]]
+      case _                                     ⇒ None
     }
-
   }
 
   /**
@@ -133,7 +144,11 @@ sealed trait HttpMessage extends jm.HttpMessage {
   /** Java API */
   def getHeaders: JIterable[jm.HttpHeader] = (headers: immutable.Seq[jm.HttpHeader]).asJava
   /** Java API */
-  def getHeader[T <: jm.HttpHeader](headerClass: Class[T]): Optional[T] = header(ClassTag(headerClass)).asJava
+  def getHeader[T <: jm.HttpHeader](headerClass: Class[T]): Optional[T] =
+    HttpHeader.fastFind[jm.HttpHeader](headerClass.asInstanceOf[Class[jm.HttpHeader]], headers) match {
+      case OptionVal.Some(h) ⇒ Optional.of(h.asInstanceOf[T])
+      case _                 ⇒ Optional.empty()
+    }
   /** Java API */
   def getHeader(headerName: String): Optional[jm.HttpHeader] = {
     val lowerCased = headerName.toRootLowerCase
@@ -151,7 +166,7 @@ object HttpMessage {
     }
 
   /**
-   * Represents the the currently being-drained HTTP Entity which triggers completion of the contained
+   * Represents the currently being-drained HTTP Entity which triggers completion of the contained
    * Future once the entity has been drained for the given HttpMessage completely.
    */
   final class DiscardedEntity(f: Future[Done]) extends akka.http.javadsl.model.HttpMessage.DiscardedEntity {
@@ -178,7 +193,7 @@ object HttpMessage {
      * (as designed), however possibly leading to an idle-timeout that will close the connection, instead of
      * just having ignored the data.
      *
-     * Warning: It is not allowed to discard and/or consume the the `entity.dataBytes` more than once
+     * Warning: It is not allowed to discard and/or consume the `entity.dataBytes` more than once
      * as the stream is directly attached to the "live" incoming data source from the underlying TCP connection.
      * Allowing it to be consumable twice would require buffering the incoming data, thus defeating the purpose
      * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
@@ -310,14 +325,22 @@ object HttpRequest {
    * include a valid [[akka.http.scaladsl.model.headers.Host]] header or if URI authority and [[akka.http.scaladsl.model.headers.Host]] header don't match.
    */
   def effectiveUri(uri: Uri, headers: immutable.Seq[HttpHeader], securedConnection: Boolean, defaultHostHeader: Host): Uri = {
-    val hostHeader = headers.collectFirst { case x: Host ⇒ x }
+    def findHost(headers: immutable.Seq[HttpHeader]): OptionVal[Host] = {
+      val it = headers.iterator
+      while (it.hasNext) it.next() match {
+        case h: Host ⇒ return OptionVal.Some(h)
+        case _       ⇒ // continue ...
+      }
+      OptionVal.None
+    }
+    val hostHeader: OptionVal[Host] = findHost(headers)
     if (uri.isRelative) {
       def fail(detail: String) =
         throw IllegalUriException(s"Cannot establish effective URI of request to `$uri`, request has a relative URI and $detail")
       val Host(host, port) = hostHeader match {
-        case None                 ⇒ if (defaultHostHeader.isEmpty) fail("is missing a `Host` header") else defaultHostHeader
-        case Some(x) if x.isEmpty ⇒ if (defaultHostHeader.isEmpty) fail("an empty `Host` header") else defaultHostHeader
-        case Some(x)              ⇒ x
+        case OptionVal.None                 ⇒ if (defaultHostHeader.isEmpty) fail("is missing a `Host` header") else defaultHostHeader
+        case OptionVal.Some(x) if x.isEmpty ⇒ if (defaultHostHeader.isEmpty) fail("an empty `Host` header") else defaultHostHeader
+        case OptionVal.Some(x)              ⇒ x
       }
       uri.toEffectiveHttpRequestUri(host, port, securedConnection)
     } else // http://tools.ietf.org/html/rfc7230#section-5.4

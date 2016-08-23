@@ -805,7 +805,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     // tests:
     val httpEntity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "req")
     Post("/abc", httpEntity) ~> route ~> check {
-      responseAs[String] shouldEqual s"Request entity content-type is text/plain; charset=UTF-8"
+      responseAs[String] shouldEqual "Request entity content-type is text/plain; charset=UTF-8"
     }
     //#
   }
@@ -823,6 +823,54 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     val dataBytes = Source.fromIterator(() ⇒ Iterator.range(1, 10).map(x ⇒ ByteString(x.toString)))
     Post("/abc", HttpEntity(ContentTypes.`text/plain(UTF-8)`, data = dataBytes)) ~> route ~> check {
       responseAs[String] shouldEqual "45"
+    }
+    //#
+  }
+  "extractStrictEntity-example" in {
+    //#extractStrictEntity-example
+    import scala.concurrent.duration._
+    val route = extractStrictEntity(3.seconds) { entity =>
+      complete(entity.data.utf8String)
+    }
+
+    // tests:
+    val dataBytes = Source.fromIterator(() ⇒ Iterator.range(1, 10).map(x ⇒ ByteString(x.toString)))
+    Post("/", HttpEntity(ContentTypes.`text/plain(UTF-8)`, data = dataBytes)) ~> route ~> check {
+      responseAs[String] shouldEqual "123456789"
+    }
+    //#
+  }
+  "toStrictEntity-example" in {
+    //#toStrictEntity-example
+    import scala.concurrent.duration._
+    val route = toStrictEntity(3.seconds) {
+      extractRequest { req =>
+        req.entity match {
+          case strict: HttpEntity.Strict =>
+            complete(s"Request entity is strict, data=${strict.data.utf8String}")
+          case _ =>
+            complete("Ooops, request entity is not strict!")
+        }
+      }
+    }
+
+    // tests:
+    val dataBytes = Source.fromIterator(() ⇒ Iterator.range(1, 10).map(x ⇒ ByteString(x.toString)))
+    Post("/", HttpEntity(ContentTypes.`text/plain(UTF-8)`, data = dataBytes)) ~> route ~> check {
+      responseAs[String] shouldEqual "Request entity is strict, data=123456789"
+    }
+    //#
+  }
+
+  "extractActorSystem-example" in {
+    //#extractActorSystem-example
+    val route = extractActorSystem { actorSystem =>
+      complete(s"Actor System extracted, hash=${actorSystem.hashCode()}")
+    }
+
+    // tests:
+    Get("/") ~> route ~> check {
+      responseAs[String] shouldEqual s"Actor System extracted, hash=${system.hashCode()}"
     }
     //#
   }

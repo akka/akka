@@ -10,9 +10,8 @@ import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.testkit.TestProbe
 import org.reactivestreams.{ Publisher, Subscriber }
-import akka.testkit.AkkaSpec
 
-class FlowTimedSpec extends AkkaSpec with ScriptedTest {
+class FlowTimedSpec extends StreamSpec with ScriptedTest {
 
   import scala.concurrent.duration._
 

@@ -12,7 +12,7 @@ import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance._
 import akka.stream.impl.StreamLayout.{ AtomicModule, CompositeModule, CopiedModule, Module }
 import akka.stream.impl.{ SubFusingActorMaterializerImpl, _ }
-import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, GraphAssembly, UpstreamBoundaryStageLogic }
+import akka.stream.impl.fusing.GraphInterpreter.{ Connection, DownstreamBoundaryStageLogic, GraphAssembly, UpstreamBoundaryStageLogic }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 import org.reactivestreams.{ Subscriber, Subscription }
 
@@ -308,8 +308,7 @@ object ActorGraphInterpreter {
  */
 final class GraphInterpreterShell(
   assembly:    GraphAssembly,
-  inHandlers:  Array[InHandler],
-  outHandlers: Array[OutHandler],
+  connections: Array[Connection],
   logics:      Array[GraphStageLogic],
   shape:       Shape,
   settings:    ActorMaterializerSettings,
@@ -322,7 +321,7 @@ final class GraphInterpreterShell(
 
   private var enqueueToShortCircuit: (Any) ⇒ Unit = _
 
-  lazy val interpreter: GraphInterpreter = new GraphInterpreter(assembly, mat, log, inHandlers, outHandlers, logics,
+  lazy val interpreter: GraphInterpreter = new GraphInterpreter(assembly, mat, log, logics, connections,
     (logic, event, handler) ⇒ {
       val asyncInput = AsyncInput(this, logic, event, handler)
       val currentInterpreter = GraphInterpreter.currentInterpreterOrNull
@@ -366,7 +365,7 @@ final class GraphInterpreterShell(
     while (i < inputs.length) {
       val in = new BatchingActorInputBoundary(settings.maxInputBufferSize, i)
       inputs(i) = in
-      interpreter.attachUpstreamBoundary(i, in)
+      interpreter.attachUpstreamBoundary(connections(i), in)
       i += 1
     }
     val offset = assembly.connectionCount - outputs.length
@@ -374,7 +373,7 @@ final class GraphInterpreterShell(
     while (i < outputs.length) {
       val out = new ActorOutputBoundary(self, this, i)
       outputs(i) = out
-      interpreter.attachDownstreamBoundary(i + offset, out)
+      interpreter.attachDownstreamBoundary(connections(i + offset), out)
       i += 1
     }
     interpreter.init(subMat)

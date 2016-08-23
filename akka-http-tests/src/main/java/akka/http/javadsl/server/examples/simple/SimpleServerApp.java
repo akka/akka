@@ -4,7 +4,6 @@
 
 package akka.http.javadsl.server.examples.simple;
 
-//#https-http-app
 
 import akka.NotUsed;
 import static akka.http.javadsl.server.PathMatchers.segment;
@@ -17,6 +16,7 @@ import akka.http.javadsl.HttpsConnectionContext;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.server.*;
+import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
 
@@ -34,10 +34,12 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static akka.http.javadsl.server.PathMatchers.integerSegment;
-import static akka.http.javadsl.server.Unmarshaller.entityToString;
+import static akka.http.javadsl.unmarshalling.Unmarshaller.entityToString;
 
 public class SimpleServerApp extends AllDirectives { // or import Directives.*
 
+
+  //#https-http-app
   public Route multiply(int x, int y) {
     int result = x * y;
     return complete(String.format("%d * %d = %d", x, y, result));
@@ -102,7 +104,10 @@ public class SimpleServerApp extends AllDirectives { // or import Directives.*
     final Http http = Http.get(system);
 
     boolean useHttps = false; // pick value from anywhere
-    useHttps(system, http, useHttps);
+    if ( useHttps ) {
+      HttpsConnectionContext https = useHttps(system);
+      http.setDefaultServerHttpContext(https);
+    }
 
     final SimpleServerApp app = new SimpleServerApp();
     final Flow<HttpRequest, HttpResponse, NotUsed> flow = app.createRoute().flow(system, materializer);
@@ -113,12 +118,12 @@ public class SimpleServerApp extends AllDirectives { // or import Directives.*
     System.in.read();
     system.terminate();
   }
+  //#
 
+  //#https-http-config
   // ** CONFIGURING ADDITIONAL SETTINGS ** //
 
-  public static void useHttps(ActorSystem system, Http http, boolean useHttps) {
-    if (useHttps) {
-
+  public static HttpsConnectionContext useHttps(ActorSystem system) {
       HttpsConnectionContext https = null;
       try {
         // initialise the keystore
@@ -149,9 +154,7 @@ public class SimpleServerApp extends AllDirectives { // or import Directives.*
         system.log().error("Exception while ", e);
       }
 
-      http.setDefaultServerHttpContext(https);
-    }
+      return https;
   }
-
+  //#
 }
-//#

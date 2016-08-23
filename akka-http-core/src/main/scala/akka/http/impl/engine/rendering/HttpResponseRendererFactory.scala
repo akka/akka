@@ -7,11 +7,11 @@ package akka.http.impl.engine.rendering
 import akka.NotUsed
 import akka.http.impl.engine.ws.{ FrameEvent, UpgradeToWebSocketResponseHeader }
 import akka.http.scaladsl.model.ws.Message
-import akka.stream.{ Outlet, Inlet, Attributes, FlowShape, Graph }
+import akka.stream.{ Attributes, FlowShape, Graph, Inlet, Outlet }
 
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
-import akka.util.ByteString
+import akka.util.{ ByteString, OptionVal }
 import akka.stream.scaladsl.{ Flow, Source }
 import akka.stream.stage._
 import akka.http.scaladsl.model._
@@ -19,6 +19,8 @@ import akka.http.impl.util._
 import RenderSupport._
 import HttpProtocols._
 import headers._
+
+import scala.concurrent.duration._
 
 /**
  * INTERNAL API
@@ -129,9 +131,17 @@ private[http] class HttpResponseRendererFactory(
 
           @tailrec def renderHeaders(remaining: List[HttpHeader], alwaysClose: Boolean = false,
                                      connHeader: Connection = null, serverSeen: Boolean = false,
-                                     transferEncodingSeen: Boolean = false, dateSeen: Boolean = false): Unit =
+                                     transferEncodingSeen: Boolean = false, dateSeen: Boolean = false): Unit = {
             remaining match {
               case head :: tail ⇒ head match {
+                case x: Server ⇒
+                  render(x)
+                  renderHeaders(tail, alwaysClose, connHeader, serverSeen = true, transferEncodingSeen, dateSeen)
+
+                case x: Date ⇒
+                  render(x)
+                  renderHeaders(tail, alwaysClose, connHeader, serverSeen, transferEncodingSeen, dateSeen = true)
+
                 case x: `Content-Length` ⇒
                   suppressionWarning(log, x, "explicit `Content-Length` header is not allowed. Use the appropriate HttpEntity subtype.")
                   renderHeaders(tail, alwaysClose, connHeader, serverSeen, transferEncodingSeen, dateSeen)
@@ -139,10 +149,6 @@ private[http] class HttpResponseRendererFactory(
                 case x: `Content-Type` ⇒
                   suppressionWarning(log, x, "explicit `Content-Type` header is not allowed. Set `HttpResponse.entity.contentType` instead.")
                   renderHeaders(tail, alwaysClose, connHeader, serverSeen, transferEncodingSeen, dateSeen)
-
-                case x: Date ⇒
-                  render(x)
-                  renderHeaders(tail, alwaysClose, connHeader, serverSeen, transferEncodingSeen, dateSeen = true)
 
                 case x: `Transfer-Encoding` ⇒
                   x.withChunkedPeeled match {
@@ -158,10 +164,6 @@ private[http] class HttpResponseRendererFactory(
                 case x: Connection ⇒
                   val connectionHeader = if (connHeader eq null) x else Connection(x.tokens ++ connHeader.tokens)
                   renderHeaders(tail, alwaysClose, connectionHeader, serverSeen, transferEncodingSeen, dateSeen)
-
-                case x: Server ⇒
-                  render(x)
-                  renderHeaders(tail, alwaysClose, connHeader, serverSeen = true, transferEncodingSeen, dateSeen)
 
                 case x: CustomHeader ⇒
                   if (x.renderInResponses) render(x)
@@ -205,13 +207,15 @@ private[http] class HttpResponseRendererFactory(
                   r ~~ Connection ~~ (if (close) CloseBytes else KeepAliveBytes) ~~ CrLf
                 else if (connHeader != null && connHeader.hasUpgrade) {
                   r ~~ connHeader ~~ CrLf
-                  headers
-                    .collectFirst { case u: UpgradeToWebSocketResponseHeader ⇒ u }
-                    .foreach { header ⇒ closeMode = SwitchToWebSocket(header.handler) }
+                  HttpHeader.fastFind(classOf[UpgradeToWebSocketResponseHeader], headers) match {
+                    case OptionVal.Some(header) ⇒ closeMode = SwitchToWebSocket(header.handler)
+                    case _                      ⇒ // nothing to do here...
+                  }
                 }
                 if (mustRenderTransferEncodingChunkedHeader && !transferEncodingSeen)
                   r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
             }
+          }
 
           def renderContentLengthHeader(contentLength: Long) =
             if (status.allowsEntity) r ~~ `Content-Length` ~~ contentLength ~~ CrLf else r
@@ -219,7 +223,7 @@ private[http] class HttpResponseRendererFactory(
           def byteStrings(entityBytes: ⇒ Source[ByteString, Any]): Source[ResponseRenderingOutput, Any] =
             renderByteStrings(r, entityBytes, skipEntity = noEntity).map(ResponseRenderingOutput.HttpData(_))
 
-          def completeResponseRendering(entity: ResponseEntity): StrictOrStreamed =
+          @tailrec def completeResponseRendering(entity: ResponseEntity): StrictOrStreamed =
             entity match {
               case HttpEntity.Strict(_, data) ⇒
                 renderHeaders(headers.toList)

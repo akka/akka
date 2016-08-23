@@ -133,10 +133,10 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       val breaker = CircuitBreakerSpec.shortCallTimeoutCb()
       Future {
         breaker().withSyncCircuitBreaker {
-          Thread.sleep(500.millis.dilated.toMillis)
+          Thread.sleep(1.second.dilated.toMillis)
         }
       }
-      within(300.millis) {
+      within(900.millis) {
         awaitCond(breaker().currentFailureCount == 1, 100.millis.dilated)
       }
     }
@@ -219,7 +219,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       val breaker = CircuitBreakerSpec.shortCallTimeoutCb()
 
       val fut = breaker().withCircuitBreaker(Future {
-        Thread.sleep(150.millis.dilated.toMillis);
+        Thread.sleep(150.millis.dilated.toMillis)
         throwException
       })
       checkLatch(breaker.openLatch)

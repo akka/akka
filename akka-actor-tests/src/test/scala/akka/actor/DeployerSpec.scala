@@ -60,6 +60,12 @@ object DeployerSpec {
         "/*/some" {
           router = scatter-gather-pool
         }
+        "/double/**" {
+          router = random-pool
+        }
+        "/double/more/**" {
+          router = round-robin-pool
+        }
       }
       """, ConfigParseOptions.defaults)
 
@@ -74,7 +80,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
 
     "be able to parse 'akka.actor.deployment._' with all default values" in {
       val service = "/service1"
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
+      val deployment = system.asInstanceOf[ExtendedActorSystem].provider.deployer.lookup(service.split("/").drop(1))
 
       deployment should ===(Some(
         Deploy(
@@ -88,13 +94,13 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
 
     "use None deployment for undefined service" in {
       val service = "/undefined"
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
+      val deployment = system.asInstanceOf[ExtendedActorSystem].provider.deployer.lookup(service.split("/").drop(1))
       deployment should ===(None)
     }
 
     "be able to parse 'akka.actor.deployment._' with dispatcher config" in {
       val service = "/service3"
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
+      val deployment = system.asInstanceOf[ExtendedActorSystem].provider.deployer.lookup(service.split("/").drop(1))
 
       deployment should ===(Some(
         Deploy(
@@ -108,7 +114,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
 
     "be able to parse 'akka.actor.deployment._' with mailbox config" in {
       val service = "/service4"
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
+      val deployment = system.asInstanceOf[ExtendedActorSystem].provider.deployer.lookup(service.split("/").drop(1))
 
       deployment should ===(Some(
         Deploy(
@@ -186,8 +192,15 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       assertRouting("/somewildcardmatch/some", ScatterGatherFirstCompletedPool(nrOfInstances = 1, within = 2 seconds), "/*/some")
     }
 
+    "be able to use double wildcards" in {
+      assertRouting("/double/wildcardmatch", RandomPool(1), "/double/**")
+      assertRouting("/double/wildcardmatch/anothermatch", RandomPool(1), "/double/**")
+      assertRouting("/double/more/anothermatch", RoundRobinPool(1), "/double/more/**")
+      assertNoRouting("/double")
+    }
+
     "have correct router mappings" in {
-      val mapping = system.asInstanceOf[ActorSystemImpl].provider.deployer.routerTypeMapping
+      val mapping = system.asInstanceOf[ExtendedActorSystem].provider.deployer.routerTypeMapping
       mapping("from-code") should ===(classOf[akka.routing.NoRouter].getName)
       mapping("round-robin-pool") should ===(classOf[akka.routing.RoundRobinPool].getName)
       mapping("round-robin-group") should ===(classOf[akka.routing.RoundRobinGroup].getName)
@@ -203,8 +216,13 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       mapping("consistent-hashing-group") should ===(classOf[akka.routing.ConsistentHashingGroup].getName)
     }
 
+    def assertNoRouting(service: String): Unit = {
+      val deployment = system.asInstanceOf[ExtendedActorSystem].provider.deployer.lookup(service.split("/").drop(1))
+      deployment shouldNot be(defined)
+    }
+
     def assertRouting(service: String, expected: RouterConfig, expectPath: String): Unit = {
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
+      val deployment = system.asInstanceOf[ExtendedActorSystem].provider.deployer.lookup(service.split("/").drop(1))
       deployment.map(_.path).getOrElse("NOT FOUND") should ===(expectPath)
       deployment.get.routerConfig.getClass should ===(expected.getClass)
       deployment.get.scope should ===(NoScopeGiven)

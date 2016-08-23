@@ -10,7 +10,7 @@ import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.testkit.TestEvent.Mute
-import akka.testkit.{ AkkaSpec, EventFilter, ImplicitSender, TestProbe }
+import akka.testkit.{ EventFilter, ImplicitSender, TestProbe }
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
@@ -145,7 +145,7 @@ object ActorPublisherSpec {
 
 }
 
-class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with ImplicitSender {
+class ActorPublisherSpec extends StreamSpec(ActorPublisherSpec.config) with ImplicitSender {
 
   import akka.stream.actor.ActorPublisherSpec._
 

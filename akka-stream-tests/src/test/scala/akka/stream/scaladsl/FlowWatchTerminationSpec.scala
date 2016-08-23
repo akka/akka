@@ -6,16 +6,14 @@ package akka.stream.scaladsl
 import akka.Done
 import akka.pattern.pipe
 import akka.stream._
-import akka.testkit.AkkaSpec
+import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-import org.scalactic.ConversionCheckedTripleEquals
-import org.scalatest.concurrent.ScalaFutures
 
 import scala.util.control.NoStackTrace
 import scala.concurrent.duration._
 
-class FlowWatchTerminationSpec extends AkkaSpec {
+class FlowWatchTerminationSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
 

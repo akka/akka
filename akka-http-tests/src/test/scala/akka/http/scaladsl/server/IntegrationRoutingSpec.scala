@@ -18,6 +18,7 @@ import scala.concurrent.Await
 private[akka] trait IntegrationRoutingSpec extends WordSpecLike with Matchers with BeforeAndAfterAll
   with Directives with RequestBuilding
   with ScalaFutures with IntegrationPatience {
+  import IntegrationRoutingSpec._
 
   implicit val system = ActorSystem(AkkaSpec.getCallerName(getClass))
   implicit val mat = ActorMaterializer()
@@ -30,8 +31,6 @@ private[akka] trait IntegrationRoutingSpec extends WordSpecLike with Matchers wi
   implicit class DSL(request: HttpRequest) {
     def ~!>(route: Route) = new Prepped(request, route)
   }
-
-  final case class Prepped(request: HttpRequest, route: Route)
 
   implicit class Checking(p: Prepped) {
     def ~!>(checking: HttpResponse ⇒ Unit) = {
@@ -46,4 +45,8 @@ private[akka] trait IntegrationRoutingSpec extends WordSpecLike with Matchers wi
     }
   }
 
+}
+
+object IntegrationRoutingSpec {
+  final case class Prepped(request: HttpRequest, route: Route)
 }

@@ -4,8 +4,6 @@
 
 package docs.http.scaladsl
 
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.server.Directives
 import org.scalatest.{ Matchers, WordSpec }
 
 class SprayJsonExampleSpec extends WordSpec with Matchers {
@@ -13,7 +11,9 @@ class SprayJsonExampleSpec extends WordSpec with Matchers {
   def compileOnlySpec(body: => Unit) = ()
 
   "spray-json example" in compileOnlySpec {
-    //#example
+    //#minimal-spray-json-example
+    import akka.http.scaladsl.server.Directives
+    import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
     import spray.json._
 
     // domain model

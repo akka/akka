@@ -4,14 +4,20 @@
 package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.stream.scaladsl.Framing
 import akka.util.ByteString
 import docs.http.scaladsl.server.RoutingSpec
+import akka.testkit.TestDuration
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 class FileUploadDirectivesExamplesSpec extends RoutingSpec {
 
   override def testConfigSource = "akka.actor.default-mailbox.mailbox-type = \"akka.dispatch.UnboundedMailbox\""
+
+  // test touches disk, so give it some time
+  implicit val routeTimeout = RouteTestTimeout(3.seconds.dilated)
 
   "uploadedFile" in {
 
