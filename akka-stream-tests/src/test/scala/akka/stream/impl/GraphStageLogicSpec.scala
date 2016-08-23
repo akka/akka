@@ -219,6 +219,32 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
       interpreter.isStageCompleted(interpreter.logics(1)) should ===(false)
     }
 
+    "not allow push from constructor" in {
+      object source extends GraphStage[SourceShape[Int]] {
+        val out = Outlet[Int]("out")
+        override val shape = SourceShape(out)
+        override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
+          push(out, 1)
+        }
+      }
+
+      val ex = intercept[IllegalStateException] { Source.fromGraph(source).runWith(Sink.ignore) }
+      ex.getMessage should startWith("not yet initialized: only setHandler is allowed in GraphStageLogic constructor")
+    }
+
+    "not allow pull from constructor" in {
+      object sink extends GraphStage[SinkShape[Int]] {
+        val in = Inlet[Int]("in")
+        override val shape = SinkShape(in)
+        override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
+          pull(in)
+        }
+      }
+
+      val ex = intercept[IllegalStateException] { Source.single(1).runWith(sink) }
+      ex.getMessage should startWith("not yet initialized: only setHandler is allowed in GraphStageLogic constructor")
+    }
+
   }
 
 }
