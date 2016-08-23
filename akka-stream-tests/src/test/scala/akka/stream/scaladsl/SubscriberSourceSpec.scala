@@ -4,13 +4,13 @@
 package akka.stream.scaladsl
 
 import akka.stream.ActorMaterializer
+import akka.stream.testkit.StreamSpec
 
-import akka.testkit.AkkaSpec
 import scala.concurrent.duration._
 
 import scala.concurrent.Await
 
-class SubscriberSourceSpec extends AkkaSpec {
+class SubscriberSourceSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 

@@ -7,7 +7,7 @@ import akka.NotUsed
 import akka.actor._
 import akka.stream.Supervision._
 import akka.stream.impl._
-import akka.stream.impl.fusing.{ ActorGraphInterpreter }
+import akka.stream.impl.fusing.ActorGraphInterpreter
 import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
 import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.testkit.Utils._
@@ -23,7 +23,6 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.stream.impl.fusing.GraphInterpreterShell
-import akka.testkit.AkkaSpec
 
 object FlowSpec {
   class Fruit
@@ -32,7 +31,7 @@ object FlowSpec {
 
 }
 
-class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
+class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
   import FlowSpec._
 
   val settings = ActorMaterializerSettings(system)
@@ -56,7 +55,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
   }
 
   val faultyFlow: Flow[Any, Any, NotUsed] ⇒ Flow[Any, Any, NotUsed] = in ⇒ in.via({
-    val stage = new PushPullGraphStage((_) ⇒ fusing.Map({ x: Any ⇒ x }, stoppingDecider), Attributes.none)
+    val stage = fusing.Map({ x: Any ⇒ x })
 
     val assembly = new GraphAssembly(
       Array(stage),
@@ -66,10 +65,10 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       Array(null, stage.shape.out),
       Array(-1, 0))
 
-    val (inHandlers, outHandlers, logics) =
+    val (connections, logics) =
       assembly.materialize(Attributes.none, assembly.stages.map(_.module), new java.util.HashMap, _ ⇒ ())
 
-    val shell = new GraphInterpreterShell(assembly, inHandlers, outHandlers, logics, stage.shape, settings,
+    val shell = new GraphInterpreterShell(assembly, connections, logics, stage.shape, settings,
       materializer.asInstanceOf[ActorMaterializerImpl])
 
     val props = Props(new BrokenActorInterpreter(shell, "a3"))
@@ -592,7 +591,10 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     "suitably override attribute handling methods" in {
       import Attributes._
-      val f: Flow[Int, Int, NotUsed] = Flow[Int].async.addAttributes(none).named("")
+      val f: Flow[Int, Int, NotUsed] = Flow[Int].map(_ + 1).async.addAttributes(none).named("name")
+
+      f.module.attributes.getFirst[Name] shouldEqual Some(Name("name"))
+      f.module.attributes.getFirst[Attributes.AsyncBoundary.type] shouldEqual Some(AsyncBoundary)
     }
   }
 

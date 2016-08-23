@@ -4,14 +4,19 @@
 
 package akka.http.scaladsl.model
 
-import akka.http.scaladsl.settings.ParserSettings
+import java.nio.charset.StandardCharsets
 
-import scala.util.{ Success, Failure }
-import akka.parboiled2.ParseError
+import scala.util.{ Failure, Success }
+import akka.parboiled2.{ ParseError, ParserInput }
 import akka.http.impl.util.ToStringRenderable
 import akka.http.impl.model.parser.{ CharacterClasses, HeaderParser }
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.model.headers._
+import akka.parboiled2.ParserInput.DefaultParserInput
+import akka.util.{ ByteString, OptionVal }
+
+import scala.annotation.tailrec
+import scala.collection.immutable
 
 /**
  * The model of an HTTP header. In its most basic form headers are simple name-value pairs. Header names
@@ -79,6 +84,16 @@ object HttpHeader {
           ParsingResult.Error(info.left.get.withSummaryPrepended(s"Illegal HTTP header value"))
       }
     } else ParsingResult.Error(ErrorInfo(s"Illegal HTTP header name", name))
+
+  /** INTERNAL API */
+  private[akka] def fastFind[T >: Null <: jm.HttpHeader](clazz: Class[T], headers: immutable.Seq[HttpHeader]): OptionVal[T] = {
+    val it = headers.iterator
+    while (it.hasNext) it.next() match {
+      case h if clazz.isInstance(h) ⇒ return OptionVal.Some[T](h.asInstanceOf[T])
+      case _                        ⇒ // continue ...
+    }
+    OptionVal.None.asInstanceOf[OptionVal[T]]
+  }
 
   sealed trait ParsingResult {
     def errors: List[ErrorInfo]

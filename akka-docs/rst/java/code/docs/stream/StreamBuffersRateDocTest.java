@@ -65,7 +65,7 @@ public class StreamBuffersRateDocTest extends AbstractJavaTest {
     final Flow<Integer, Integer, NotUsed> flow1 =
       Flow.of(Integer.class)
       .map(elem -> elem * 2).async()
-      .withAttributes(Attributes.inputBuffer(1, 1)); // the buffer size of this map is 1
+      .addAttributes(Attributes.inputBuffer(1, 1)); // the buffer size of this map is 1
     final Flow<Integer, Integer, NotUsed> flow2 =
       flow1.via(
         Flow.of(Integer.class)

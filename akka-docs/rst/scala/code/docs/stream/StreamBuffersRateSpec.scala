@@ -30,7 +30,7 @@ class StreamBuffersRateSpec extends AkkaSpec {
 
     //#section-buffer
     val section = Flow[Int].map(_ * 2).async
-      .withAttributes(Attributes.inputBuffer(initial = 1, max = 1)) // the buffer size of this map is 1
+      .addAttributes(Attributes.inputBuffer(initial = 1, max = 1)) // the buffer size of this map is 1
     val flow = section.via(Flow[Int].map(_ / 2)).async // the buffer size of this map is the default
     //#section-buffer
   }

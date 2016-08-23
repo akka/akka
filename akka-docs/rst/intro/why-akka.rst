@@ -19,7 +19,7 @@ but also in the size of applications it is useful for. The core of Akka, akka-ac
 is very small and easily dropped into an existing project where you need
 asynchronicity and lockless concurrency without hassle.
 
-You can choose to include only the parts of akka you need in your application.
+You can choose to include only the parts of Akka you need in your application.
 With CPUs growing more and more cores every cycle, Akka is the alternative that
 provides outstanding performance even if you're only running it on one machine.
 Akka also supplies a wide array of concurrency-paradigms, allowing users to choose

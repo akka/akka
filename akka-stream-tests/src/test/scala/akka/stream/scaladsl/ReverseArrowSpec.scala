@@ -5,9 +5,8 @@ import akka.stream._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalactic.ConversionCheckedTripleEquals
-import akka.testkit.AkkaSpec
 
-class ReverseArrowSpec extends AkkaSpec {
+class ReverseArrowSpec extends StreamSpec {
   import GraphDSL.Implicits._
 
   implicit val materializer = ActorMaterializer()

@@ -60,7 +60,7 @@ and :ref:`Scala <cluster_usage_scala>` documentation chapters.
 Persistence
 -----------
 
-State changes experience by an actor can optionally be persisted and replayed when the actor is started or
+State changes experienced by an actor can optionally be persisted and replayed when the actor is started or
 restarted. This allows actors to recover their state, even after JVM crashes or when being migrated
 to another node.
 

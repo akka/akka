@@ -40,7 +40,7 @@ object Merge {
  *
  * '''Cancels when''' downstream cancels
  */
-final class Merge[T] private (val inputPorts: Int, val eagerComplete: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
+final class Merge[T](val inputPorts: Int, val eagerComplete: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
   // one input might seem counter intuitive but saves us from special handling in other places
   require(inputPorts >= 1, "A Merge must have one or more input ports")
 
@@ -49,8 +49,7 @@ final class Merge[T] private (val inputPorts: Int, val eagerComplete: Boolean) e
   override def initialAttributes = DefaultAttributes.merge
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-    private var initialized = false
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
 
     private val pendingQueue = FixedSizeBuffer[Inlet[T]](inputPorts)
     private def pending: Boolean = pendingQueue.nonEmpty
@@ -60,11 +59,21 @@ final class Merge[T] private (val inputPorts: Int, val eagerComplete: Boolean) e
 
     override def preStart(): Unit = in.foreach(tryPull)
 
+    @tailrec
     private def dequeueAndDispatch(): Unit = {
       val in = pendingQueue.dequeue()
-      push(out, grab(in))
-      if (upstreamsClosed && !pending) completeStage()
-      else tryPull(in)
+      if (in == null) {
+        // in is null if we reached the end of the queue
+        if (upstreamsClosed) completeStage()
+      } else if (isAvailable(in)) {
+        push(out, grab(in))
+        if (upstreamsClosed && !pending) completeStage()
+        else tryPull(in)
+      } else {
+        // in was closed after being enqueued
+        // try next in queue
+        dequeueAndDispatch()
+      }
     }
 
     in.foreach { i ⇒
@@ -90,12 +99,12 @@ final class Merge[T] private (val inputPorts: Int, val eagerComplete: Boolean) e
       })
     }
 
-    setHandler(out, new OutHandler {
-      override def onPull(): Unit = {
-        if (pending)
-          dequeueAndDispatch()
-      }
-    })
+    override def onPull(): Unit = {
+      if (pending)
+        dequeueAndDispatch()
+    }
+
+    setHandler(out, this)
   }
 
   override def toString = "Merge"
@@ -137,7 +146,7 @@ object MergePreferred {
  *
  * A `Broadcast` has one `in` port and 2 or more `out` ports.
  */
-final class MergePreferred[T] private (val secondaryPorts: Int, val eagerComplete: Boolean) extends GraphStage[MergePreferred.MergePreferredShape[T]] {
+final class MergePreferred[T](val secondaryPorts: Int, val eagerComplete: Boolean) extends GraphStage[MergePreferred.MergePreferredShape[T]] {
   require(secondaryPorts >= 1, "A MergePreferred must have more than 0 secondary input ports")
 
   override def initialAttributes = DefaultAttributes.mergePreferred
@@ -249,7 +258,7 @@ object Interleave {
  * '''Cancels when''' downstream cancels
  *
  */
-final class Interleave[T] private (val inputPorts: Int, val segmentSize: Int, val eagerClose: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
+final class Interleave[T](val inputPorts: Int, val segmentSize: Int, val eagerClose: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
   require(inputPorts > 1, "input ports must be > 1")
   require(segmentSize > 0, "segmentSize must be > 0")
 
@@ -388,7 +397,7 @@ object Broadcast {
  *   If eagerCancel is enabled: when any downstream cancels; otherwise: when all downstreams cancel
  *
  */
-final class Broadcast[T](private val outputPorts: Int, eagerCancel: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
+final class Broadcast[T](val outputPorts: Int, val eagerCancel: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
   // one output might seem counter intuitive but saves us from special handling in other places
   require(outputPorts >= 1, "A Broadcast must have one or more output ports")
   val in: Inlet[T] = Inlet[T]("Broadcast.in")
@@ -487,7 +496,7 @@ object Partition {
  *   when all downstreams cancel
  */
 
-final class Partition[T](outputPorts: Int, partitioner: T ⇒ Int) extends GraphStage[UniformFanOutShape[T, T]] {
+final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int) extends GraphStage[UniformFanOutShape[T, T]] {
 
   val in: Inlet[T] = Inlet[T]("Partition.in")
   val out: Seq[Outlet[T]] = Seq.tabulate(outputPorts)(i ⇒ Outlet[T]("Partition.out" + i))
@@ -593,7 +602,7 @@ object Balance {
  *
  * '''Cancels when''' all downstreams cancel
  */
-final class Balance[T](val outputPorts: Int, waitForAllDownstreams: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
+final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
   // one output might seem counter intuitive but saves us from special handling in other places
   require(outputPorts >= 1, "A Balance must have one or more output ports")
   val in: Inlet[T] = Inlet[T]("Balance.in")
@@ -608,10 +617,20 @@ final class Balance[T](val outputPorts: Int, waitForAllDownstreams: Boolean) ext
     private var needDownstreamPulls: Int = if (waitForAllDownstreams) outputPorts else 0
     private var downstreamsRunning: Int = outputPorts
 
+    @tailrec
     private def dequeueAndDispatch(): Unit = {
       val out = pendingQueue.dequeue()
-      push(out, grab(in))
-      if (!noPending) pull(in)
+      // out is null if depleted pendingQueue without reaching
+      // an out that is not closed, in which case we just return
+      if (out ne null) {
+        if (!isClosed(out)) {
+          push(out, grab(in))
+          if (!noPending) pull(in)
+        } else {
+          // try to find one output that isn't closed
+          dequeueAndDispatch()
+        }
+      }
     }
 
     setHandler(in, new InHandler {
@@ -851,7 +870,7 @@ object Concat {
  *
  * '''Cancels when''' downstream cancels
  */
-final class Concat[T](inputPorts: Int) extends GraphStage[UniformFanInShape[T, T]] {
+final class Concat[T](val inputPorts: Int) extends GraphStage[UniformFanInShape[T, T]] {
   require(inputPorts > 1, "A Concat must have more than 1 input ports")
   val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i ⇒ Inlet[T]("Concat.in" + i))
   val out: Outlet[T] = Outlet[T]("Concat.out")

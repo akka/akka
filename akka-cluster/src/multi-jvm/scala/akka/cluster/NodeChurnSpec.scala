@@ -74,12 +74,15 @@ abstract class NodeChurnSpec
     }
   }
 
-  def awaitRemoved(additionaSystems: Vector[ActorSystem]): Unit = {
+  def awaitRemoved(additionaSystems: Vector[ActorSystem], round: Int): Unit = {
     awaitMembersUp(roles.size, timeout = 40.seconds)
-    within(20.seconds) {
+    enterBarrier("removed-" + round)
+    within(3.seconds) {
       awaitAssert {
         additionaSystems.foreach { s ⇒
-          Cluster(s).isTerminated should be(true)
+          withClue(s"Cluster(s).self:") {
+            Cluster(s).isTerminated should be(true)
+          }
         }
       }
     }
@@ -113,7 +116,7 @@ abstract class NodeChurnSpec
           else
             Cluster(node).leave(Cluster(node).selfAddress)
         }
-        awaitRemoved(systems)
+        awaitRemoved(systems, n)
         enterBarrier("members-removed-" + n)
         systems.foreach(_.terminate().await)
         log.info("end of round-" + n)

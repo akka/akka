@@ -28,6 +28,20 @@ private object RenderSupport {
   val KeepAliveBytes = "Keep-Alive".asciiBytes
   val CloseBytes = "close".asciiBytes
 
+  private[this] final val PreRenderedContentTypes = {
+    val m = new java.util.HashMap[ContentType, Array[Byte]](16)
+    def preRenderContentType(ct: ContentType) =
+      m.put(ct, (new ByteArrayRendering(32) ~~ headers.`Content-Type` ~~ ct ~~ CrLf).get)
+
+    import ContentTypes._
+    preRenderContentType(`application/json`)
+    preRenderContentType(`text/plain(UTF-8)`)
+    preRenderContentType(`text/xml(UTF-8)`)
+    preRenderContentType(`text/html(UTF-8)`)
+    preRenderContentType(`text/csv(UTF-8)`)
+    m
+  }
+
   def CrLf = Rendering.CrLf
 
   implicit val trailerRenderer = Renderer.genericSeqRenderer[Renderable, HttpHeader](CrLf, Rendering.Empty)
@@ -42,9 +56,14 @@ private object RenderSupport {
     })
   }
 
-  def renderEntityContentType(r: Rendering, entity: HttpEntity) =
-    if (entity.contentType != ContentTypes.NoContentType) r ~~ headers.`Content-Type` ~~ entity.contentType ~~ CrLf
-    else r
+  def renderEntityContentType(r: Rendering, entity: HttpEntity) = {
+    val ct = entity.contentType
+    if (ct != ContentTypes.NoContentType) {
+      val preRendered = PreRenderedContentTypes.get(ct)
+      if (preRendered ne null) r ~~ preRendered // re-use pre-rendered
+      else r ~~ headers.`Content-Type` ~~ ct ~~ CrLf // render ad-hoc
+    } else r // don't render
+  }
 
   def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Source[ByteString, Any],
                         skipEntity: Boolean = false): Source[ByteString, Any] = {

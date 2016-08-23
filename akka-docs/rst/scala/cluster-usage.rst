@@ -785,3 +785,13 @@ For this purpose you can define a separate dispatcher to be used for the cluster
       parallelism-max = 4
     }
   }
+
+.. note::
+    Normally it should not be necessary to configure a separate dispatcher for the Cluster.
+    The default-dispatcher should be sufficient for performing the Cluster tasks, i.e. ``akka.cluster.use-dispatcher``
+    should not be changed. If you have Cluster related problems when using the default-dispatcher that is typically an
+    indication that you are running blocking or CPU intensive actors/tasks on the default-dispatcher.
+    Use dedicated dispatchers for such actors/tasks instead of running them on the default-dispatcher,
+    because that may starve system internal tasks.
+    Related config properties: ``akka.cluster.use-dispatcher = akka.cluster.cluster-dispatcher``.
+    Corresponding default values: ``akka.cluster.use-dispatcher =``.

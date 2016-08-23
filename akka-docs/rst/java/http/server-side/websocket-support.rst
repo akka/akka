@@ -40,7 +40,7 @@ the notion of a "strict" message to represent cases where a whole message was re
 When receiving data from the network connection the WebSocket implementation tries to create a strict message whenever
 possible, i.e. when the complete data was received in one chunk. However, the actual chunking of messages over a network
 connection and through the various streaming abstraction layers is not deterministic from the perspective of the
-application. Therefore, application code must be able to handle both streaming and strict messages and not expect
+application. Therefore, application code must be able to handle both streamed and strict messages and not expect
 certain messages to be strict. (Particularly, note that tests against ``localhost`` will behave differently than tests
 against remote peers where data is received over a physical network connection.)
 
@@ -103,6 +103,11 @@ and then responds with another text message that contains a greeting:
 
 .. includecode:: ../../code/docs/http/javadsl/server/WebSocketCoreExample.java
    :include: websocket-handler
+
+.. note::
+  Inactive WebSocket connections will be dropped according to the :ref:`idle-timeout settings <idle-timeouts-java>`.
+  In case you need to keep inactive connections alive, you can either tweak your idle-timeout or inject
+  'keep-alive' messages regularly.
 
 Routing support
 ---------------

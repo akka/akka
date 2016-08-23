@@ -33,8 +33,8 @@ This is how you enable automatic support for (un)marshalling from and to JSON wi
 
 Once you have done this (un)marshalling between JSON and your type ``T`` should work nicely and transparently.
 
-.. includecode:: ../../code/docs/http/scaladsl/SprayJsonExampleSpec.scala
-  :include: example
+.. includecode2:: ../../code/docs/http/scaladsl/SprayJsonExampleSpec.scala
+  :snippet: minimal-spray-json-example
 
 4. By default, spray-json marshals your types to pretty printed json by implicit conversion using PrettyPrinter, as defined in
    ``implicit def sprayJsonMarshallerConverter[T](writer: RootJsonWriter[T])(implicit printer: JsonPrinter = PrettyPrinter): ToEntityMarshaller[T]``.

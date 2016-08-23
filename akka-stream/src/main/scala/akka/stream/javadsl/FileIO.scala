@@ -34,7 +34,7 @@ object FileIO {
   def toFile(f: File): javadsl.Sink[ByteString, CompletionStage[IOResult]] = toPath(f.toPath)
 
   /**
-   * Creates a Sink that writes incoming [[ByteString]] elements to the given file.
+   * Creates a Sink that writes incoming [[ByteString]] elements to the given file path.
    * Overwrites existing files, if you want to append to an existing file use [[#file(Path, util.Set[StandardOpenOption])]].
    *
    * Materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
@@ -43,7 +43,7 @@ object FileIO {
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
-   * @param f The file to write to
+   * @param f The file path to write to
    */
   def toPath(f: Path): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
     new Sink(scaladsl.FileIO.toPath(f).toCompletionStage())
@@ -65,7 +65,7 @@ object FileIO {
     toPath(f.toPath)
 
   /**
-   * Creates a Sink that writes incoming [[ByteString]] elements to the given file.
+   * Creates a Sink that writes incoming [[ByteString]] elements to the given file path.
    *
    * Materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
    * and a possible exception if IO operation was not completed successfully.
@@ -73,7 +73,7 @@ object FileIO {
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
-   * @param f The file to write to
+   * @param f The file path to write to
    * @param options File open options
    */
   def toPath(f: Path, options: util.Set[StandardOpenOption]): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
@@ -89,6 +89,8 @@ object FileIO {
    *
    * It materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
    * and a possible exception if IO operation was not completed successfully.
+   *
+   * @param f         the file to read from
    */
   @deprecated("Use `fromPath` instead.", "2.4.5")
   def fromFile(f: File): javadsl.Source[ByteString, CompletionStage[IOResult]] = fromPath(f.toPath)
@@ -103,6 +105,8 @@ object FileIO {
    *
    * It materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
    * and a possible exception if IO operation was not completed successfully.
+   *
+   * @param f         the file path to read from
    */
   def fromPath(f: Path): javadsl.Source[ByteString, CompletionStage[IOResult]] = fromPath(f, 8192)
 
@@ -116,6 +120,8 @@ object FileIO {
    *
    * It materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
    * and a possible exception if IO operation was not completed successfully.
+   * @param f         the file to read from
+   * @param chunkSize the size of each read operation
    */
   @deprecated("Use `fromPath` instead.", "2.4.5")
   def fromFile(f: File, chunkSize: Int): javadsl.Source[ByteString, CompletionStage[IOResult]] =
@@ -131,6 +137,9 @@ object FileIO {
    *
    * It materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
    * and a possible exception if IO operation was not completed successfully.
+   *
+   * @param f         the file path to read from
+   * @param chunkSize the size of each read operation
    */
   def fromPath(f: Path, chunkSize: Int): javadsl.Source[ByteString, CompletionStage[IOResult]] =
     new Source(scaladsl.FileIO.fromPath(f, chunkSize).toCompletionStage())

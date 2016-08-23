@@ -234,6 +234,7 @@ object ByteIterator {
       new MultiByteArrayIterator(clonedIterators)
     }
 
+    /** For performance sensitive code, call take() directly on ByteString (it's optimised there) */
     final override def take(n: Int): this.type = {
       var rest = n
       val builder = new ListBuffer[ByteArrayIterator]
@@ -249,7 +250,8 @@ object ByteIterator {
       normalize()
     }
 
-    @tailrec final override def drop(n: Int): this.type =
+    /** For performance sensitive code, call drop() directly on ByteString (it's optimised there) */
+    final override def drop(n: Int): this.type =
       if ((n > 0) && !isEmpty) {
         val nCurrent = math.min(n, current.len)
         current.drop(n)
@@ -341,7 +343,9 @@ object ByteIterator {
     def getDoubles(xs: Array[Double], offset: Int, n: Int)(implicit byteOrder: ByteOrder): this.type =
       getToArray(xs, offset, n, 8) { getDouble(byteOrder) } { current.getDoubles(_, _, _)(byteOrder) }
 
-    def copyToBuffer(buffer: ByteBuffer): Int = {
+    /** For performance sensitive code, call copyToBuffer() directly on ByteString (it's optimised there) */
+    override def copyToBuffer(buffer: ByteBuffer): Int = {
+      // the fold here is better than indexing into the LinearSeq
       val n = iterators.foldLeft(0) { _ + _.copyToBuffer(buffer) }
       normalize()
       n
@@ -635,6 +639,7 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
    * @param buffer a ByteBuffer to copy bytes to
    * @return the number of bytes actually copied
    */
+  /** For performance sensitive code, call take() directly on ByteString (it's optimised there) */
   def copyToBuffer(buffer: ByteBuffer): Int
 
   /**

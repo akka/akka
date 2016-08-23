@@ -107,8 +107,8 @@ actors in the hierarchy from the root up. Examples are::
   "akka://my-sys/user/service-a/worker1"                   // purely local
   "akka.tcp://my-sys@host.example.com:5678/user/service-b" // remote
 
-Here, ``akka.tcp`` is the default remote transport for the 2.2 release; other transports
-are pluggable. A remote host using UDP would be accessible by using ``akka.udp``.
+Here, ``akka.tcp`` is the default remote transport for the 2.4 release; other transports
+are pluggable.
 The interpretation of the host and port part (i.e. ``host.example.com:5678`` in the example)
 depends on the transport mechanism used, but it must abide by the URI structural rules.
 

@@ -5,7 +5,6 @@
 package akka.http.scaladsl.model.headers
 
 import akka.http.impl.model.JavaInitialization
-import akka.util.Unsafe
 
 import language.implicitConversions
 import scala.collection.immutable
@@ -22,6 +21,7 @@ abstract class HttpOriginRange extends jm.headers.HttpOriginRange with ValueRend
   /** Java API */
   def matches(origin: jm.headers.HttpOrigin): Boolean = matches(origin.asScala)
 }
+
 object HttpOriginRange {
   case object `*` extends HttpOriginRange {
     def matches(origin: HttpOrigin) = true
@@ -43,6 +43,7 @@ object HttpOriginRange {
 final case class HttpOrigin(scheme: String, host: Host) extends jm.headers.HttpOrigin with ValueRenderable {
   def render[R <: Rendering](r: R): r.type = host.renderValue(r ~~ scheme ~~ "://")
 }
+
 object HttpOrigin {
   implicit val originsRenderer: Renderer[immutable.Seq[HttpOrigin]] = Renderer.seqRenderer(" ", "null")
 

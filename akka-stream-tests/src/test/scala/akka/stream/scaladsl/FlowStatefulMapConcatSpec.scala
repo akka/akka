@@ -7,9 +7,8 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ ActorMaterializer, ActorAttributes, Supervision, ActorMaterializerSettings }
 import akka.stream.testkit._
 import scala.util.control.NoStackTrace
-import akka.testkit.AkkaSpec
 
-class FlowStatefulMapConcatSpec extends AkkaSpec with ScriptedTest {
+class FlowStatefulMapConcatSpec extends StreamSpec with ScriptedTest {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)

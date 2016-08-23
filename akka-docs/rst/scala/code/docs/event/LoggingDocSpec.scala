@@ -152,12 +152,13 @@ class LoggingDocSpec extends AkkaSpec {
 
   "demonstrate superclass subscriptions on eventStream" in {
     def println(s: String) = ()
-    //#superclass-subscription-eventstream
-    abstract class AllKindsOfMusic { def artist: String }
-    case class Jazz(artist: String) extends AllKindsOfMusic
-    case class Electronic(artist: String) extends AllKindsOfMusic
 
     new AnyRef {
+      //#superclass-subscription-eventstream
+      abstract class AllKindsOfMusic { def artist: String }
+      case class Jazz(artist: String) extends AllKindsOfMusic
+      case class Electronic(artist: String) extends AllKindsOfMusic
+
       class Listener extends Actor {
         def receive = {
           case m: Jazz       => println(s"${self.path.name} is listening to: ${m.artist}")

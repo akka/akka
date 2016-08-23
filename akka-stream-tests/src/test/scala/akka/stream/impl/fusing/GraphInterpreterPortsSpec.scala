@@ -3,10 +3,10 @@
  */
 package akka.stream.impl.fusing
 
-import akka.testkit.AkkaSpec
+import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils._
 
-class GraphInterpreterPortsSpec extends AkkaSpec with GraphInterpreterSpecKit {
+class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit {
 
   "Port states" must {
 

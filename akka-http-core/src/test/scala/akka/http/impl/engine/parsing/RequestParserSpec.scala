@@ -42,7 +42,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.loglevel = WARNING
     akka.http.parsing.max-header-value-length = 32
-    akka.http.parsing.max-uri-length = 20
+    akka.http.parsing.max-uri-length = 40
     akka.http.parsing.max-content-length = 4000000000""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
@@ -76,6 +76,14 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |Host: example.com
           |
           |""" should parseTo(HttpRequest(headers = List(Host("example.com"))))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
+      "with absolute uri in request-target" in new Test {
+        """GET http://127.0.0.1:8080/hello HTTP/1.1
+          |Host: 127.0.0.1:8080
+          |
+          |""" should parseTo(HttpRequest(uri = "http://127.0.0.1:8080/hello", headers = List(Host("127.0.0.1", 8080))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
@@ -300,7 +308,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
     "support `rawRequestUriHeader` setting" in new Test {
       override protected def newParser: HttpRequestParser =
-        new HttpRequestParser(parserSettings, rawRequestUriHeader = true, _headerParser = HttpHeaderParser(parserSettings)())
+        new HttpRequestParser(parserSettings, rawRequestUriHeader = true, headerParser = HttpHeaderParser(parserSettings, system.log)())
 
       """GET /f%6f%6fbar?q=b%61z HTTP/1.1
         |Host: ping
@@ -408,9 +416,9 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "a too-long URI" in new Test {
-        "GET /23456789012345678901 HTTP/1.1" should parseToError(
+        "GET /2345678901234567890123456789012345678901 HTTP/1.1" should parseToError(
           RequestUriTooLong,
-          ErrorInfo("URI length exceeds the configured limit of 20 characters"))
+          ErrorInfo("URI length exceeds the configured limit of 40 characters"))
       }
 
       "HTTP version 1.2" in new Test {
@@ -557,7 +565,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     def multiParse(parser: HttpRequestParser)(input: Seq[String]): Seq[Either[RequestOutput, StrictEqualHttpRequest]] =
       Source(input.toList)
         .map(bytes ⇒ SessionBytes(TLSPlacebo.dummySession, ByteString(bytes)))
-        .via(parser.stage).named("parser")
+        .via(parser).named("parser")
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
         .prefixAndTail(1)
         .collect {
@@ -582,7 +590,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         .awaitResult(awaitAtMost)
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
-    protected def newParser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings)())
+    protected def newParser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings, system.log)())
 
     private def compactEntity(entity: RequestEntity): Future[RequestEntity] =
       entity match {

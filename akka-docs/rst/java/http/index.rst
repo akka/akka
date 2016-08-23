@@ -40,5 +40,6 @@ akka-http-jackson
    implications-of-streaming-http-entity
    configuration
    server-side-https-support
+   ../../scala/http/migration-guide-2.4.x-experimental
 
 .. _jackson: https://github.com/FasterXML/jackson

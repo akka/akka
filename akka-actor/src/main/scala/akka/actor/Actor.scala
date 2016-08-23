@@ -61,7 +61,7 @@ case object Kill extends Kill {
  * is returned in the `ActorIdentity` message as `correlationId`.
  */
 @SerialVersionUID(1L)
-final case class Identify(messageId: Any) extends AutoReceivedMessage
+final case class Identify(messageId: Any) extends AutoReceivedMessage with NotInfluenceReceiveTimeout
 
 /**
  * Reply to [[akka.actor.Identify]]. Contains

@@ -3,27 +3,27 @@
  */
 package akka.stream.impl.fusing
 
-import akka.testkit.AkkaSpec
+import akka.stream.testkit.StreamSpec
 import akka.util.ByteString
 import akka.stream.stage._
 import akka.stream.{ Attributes, Supervision }
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 
-class IteratorInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
+class IteratorInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
   import Supervision.stoppingDecider
 
   "IteratorInterpreter" must {
 
     "work in the happy case" in {
       val itr = new IteratorInterpreter[Int, Int]((1 to 10).iterator, Seq(
-        Map((x: Int) ⇒ x + 1, stoppingDecider).toGS)).iterator
+        Map((x: Int) ⇒ x + 1))).iterator
 
       itr.toSeq should be(2 to 11)
     }
 
     "hasNext should not affect elements" in {
       val itr = new IteratorInterpreter[Int, Int]((1 to 10).iterator, Seq(
-        Map((x: Int) ⇒ x, stoppingDecider).toGS)).iterator
+        Map((x: Int) ⇒ x))).iterator
 
       itr.hasNext should be(true)
       itr.hasNext should be(true)
@@ -42,7 +42,7 @@ class IteratorInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
 
     "throw exceptions on empty iterator" in {
       val itr = new IteratorInterpreter[Int, Int](List(1).iterator, Seq(
-        Map((x: Int) ⇒ x, stoppingDecider).toGS)).iterator
+        Map((x: Int) ⇒ x))).iterator
 
       itr.next() should be(1)
       a[NoSuchElementException] should be thrownBy { itr.next() }
@@ -50,7 +50,7 @@ class IteratorInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
 
     "throw exceptions when op in chain throws" in {
       val itr = new IteratorInterpreter[Int, Int](List(1, 2, 3).iterator, Seq(
-        Map((n: Int) ⇒ if (n == 2) throw new ArithmeticException() else n, stoppingDecider).toGS)).iterator
+        Map((n: Int) ⇒ if (n == 2) throw new ArithmeticException() else n))).iterator
 
       itr.next() should be(1)
       itr.hasNext should be(true)
@@ -60,7 +60,7 @@ class IteratorInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
 
     "work with an empty iterator" in {
       val itr = new IteratorInterpreter[Int, Int](Iterator.empty, Seq(
-        Map((x: Int) ⇒ x + 1, stoppingDecider).toGS)).iterator
+        Map((x: Int) ⇒ x + 1))).iterator
 
       itr.hasNext should be(false)
       a[NoSuchElementException] should be thrownBy { itr.next() }

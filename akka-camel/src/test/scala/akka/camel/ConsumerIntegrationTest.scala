@@ -123,13 +123,13 @@ class ConsumerIntegrationTest extends WordSpec with Matchers with NonSharedCamel
     }
 
     "Error passing consumer supports redelivery through route modification" in {
-      val ref = start(new FailingOnceConsumer("direct:failing-once-concumer") {
+      val ref = start(new FailingOnceConsumer("direct:failing-once-consumer") {
         override def onRouteDefinition = (rd: RouteDefinition) ⇒ {
-          rd.onException(classOf[TestException]).maximumRedeliveries(1).end
+          rd.onException(classOf[TestException]).redeliveryDelay(0L).maximumRedeliveries(1).end
         }
       }, name = "direct-failing-once-consumer")
       filterEvents(EventFilter[TestException](occurrences = 1)) {
-        camel.sendTo("direct:failing-once-concumer", msg = "hello") should ===("accepted: hello")
+        camel.sendTo("direct:failing-once-consumer", msg = "hello") should ===("accepted: hello")
       }
       stop(ref)
     }

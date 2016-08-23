@@ -8,11 +8,11 @@ import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Props }
 import akka.dispatch.ExecutionContexts
 import akka.japi.function
-import akka.stream.impl.{ LazySink, StreamLayout, SinkQueueAdapter }
+import akka.stream.impl.{ StreamLayout, SinkQueueAdapter }
 import akka.stream.{ javadsl, scaladsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.compat.java8.OptionConverters._
-import scala.concurrent.{ Future, ExecutionContext }
+import scala.concurrent.ExecutionContext
 import scala.util.Try
 import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters._
@@ -110,7 +110,7 @@ object Sink {
   /**
    * A `Sink` that materializes into a `CompletionStage` of the first value received.
    * If the stream completes before signaling at least a single element, the CompletionStage will be failed with a [[NoSuchElementException]].
-   * If the stream signals an error errors before signaling at least a single element, the CompletionStage will be failed with the streams exception.
+   * If the stream signals an error before signaling at least a single element, the CompletionStage will be failed with the streams exception.
    *
    * See also [[headOption]].
    */
@@ -266,7 +266,7 @@ object Sink {
 /**
  * Java API
  *
- * A `Sink` is a set of stream processing steps that has one open input and an attached output.
+ * A `Sink` is a set of stream processing steps that has one open input.
  * Can be used as a `Subscriber`
  */
 final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[In], Mat] {
@@ -276,7 +276,9 @@ final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[Sink
 
   override def toString: String = delegate.toString
 
-  /** Converts this Sink to its Scala DSL counterpart */
+  /**
+   * Converts this Sink to its Scala DSL counterpart.
+   */
   def asScala: scaladsl.Sink[In, Mat] = delegate
 
   /**
@@ -303,7 +305,7 @@ final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[Sink
     new Sink(delegate.mapMaterializedValue(f.apply _))
 
   /**
-   * Change the attributes of this [[Source]] to the given ones and seal the list
+   * Change the attributes of this [[Sink]] to the given ones and seal the list
    * of attributes. This means that further calls will not be able to remove these
    * attributes, but instead add new ones. Note that this
    * operation has no effect on an empty Flow (because the attributes apply
@@ -313,7 +315,7 @@ final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[Sink
     new Sink(delegate.withAttributes(attr))
 
   /**
-   * Add the given attributes to this Source. Further calls to `withAttributes`
+   * Add the given attributes to this Sink. Further calls to `withAttributes`
    * will not remove these attributes. Note that this
    * operation has no effect on an empty Flow (because the attributes apply
    * only to the contained processing stages).
@@ -322,7 +324,7 @@ final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[Sink
     new Sink(delegate.addAttributes(attr))
 
   /**
-   * Add a ``name`` attribute to this Flow.
+   * Add a ``name`` attribute to this Sink.
    */
   override def named(name: String): javadsl.Sink[In, Mat] =
     new Sink(delegate.named(name))

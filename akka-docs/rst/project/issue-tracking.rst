@@ -19,7 +19,7 @@ have reproducible test cases that you can share.
 Roadmaps
 ^^^^^^^^
 
-Short and long-term plans are published in the [akka/akka-meta](https://github.com/akka/akka-meta/issues) repository.
+Short and long-term plans are published in the `akka/akka-meta <https://github.com/akka/akka-meta/issues>`_ repository.
 
 Creating tickets
 ----------------
@@ -37,7 +37,7 @@ Submitting Pull Requests
 .. note:: *A pull request is worth a thousand +1's.* -- Old Klangian Proverb
 
 Pull Requests fixing issues or adding functionality are very welcome.
-Please read [CONTRIBUTING.md](https://github.com/akka/akka/blob/master/CONTRIBUTING.md) for
+Please read `CONTRIBUTING.md <https://github.com/akka/akka/blob/master/CONTRIBUTING.md>`_ for
 more information about contributing to Akka.
 
 

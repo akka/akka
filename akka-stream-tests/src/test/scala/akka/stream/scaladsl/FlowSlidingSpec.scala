@@ -7,12 +7,10 @@ import akka.stream.testkit.Utils._
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 import org.scalacheck.Gen
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import akka.pattern.pipe
-import akka.testkit.AkkaSpec
 
-class FlowSlidingSpec extends AkkaSpec with GeneratorDrivenPropertyChecks {
+class FlowSlidingSpec extends StreamSpec with GeneratorDrivenPropertyChecks {
   import system.dispatcher
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)

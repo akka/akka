@@ -24,13 +24,12 @@ import akka.util.ByteString
 import akka.util.Timeout
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.testkit.AkkaSpec
 
 object FileSourceSpec {
   final case class Settings(chunkSize: Int, readAhead: Int)
 }
 
-class FileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
+class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)

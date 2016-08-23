@@ -7,8 +7,10 @@ package akka.http.javadsl.server;
 
 import java.util.function.Function;
 
+import akka.http.javadsl.marshalling.Marshaller;
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.model.headers.*;
+import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import org.junit.Test;
 
 import akka.http.javadsl.testkit.JUnitRouteTest;

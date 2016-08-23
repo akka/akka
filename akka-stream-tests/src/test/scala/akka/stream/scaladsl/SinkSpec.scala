@@ -16,9 +16,8 @@ import akka.testkit.DefaultTimeout
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
-import akka.testkit.AkkaSpec
 
-class SinkSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
+class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   import GraphDSL.Implicits._
 
@@ -128,7 +127,10 @@ class SinkSpec extends AkkaSpec with DefaultTimeout with ScalaFutures {
 
     "suitably override attribute handling methods" in {
       import Attributes._
-      val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none).named("")
+      val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none).named("name")
+
+      s.module.attributes.getFirst[Name] shouldEqual Some(Name("name"))
+      s.module.attributes.getFirst[AsyncBoundary.type] shouldEqual (Some(AsyncBoundary))
     }
 
     "support contramap" in {

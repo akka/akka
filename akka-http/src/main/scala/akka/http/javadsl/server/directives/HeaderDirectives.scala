@@ -11,12 +11,12 @@ import akka.actor.ReflectiveDynamicAccess
 import scala.compat.java8.OptionConverters
 import scala.compat.java8.OptionConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
+import akka.http.javadsl.model.headers.{ HttpOriginRange, HttpOriginRanges }
 import akka.http.javadsl.model.{ HttpHeader, StatusCodes }
-import akka.http.javadsl.model.headers.HttpOriginRange
 import akka.http.javadsl.server.{ InvalidOriginRejection, MissingHeaderRejection, Route }
+import akka.http.scaladsl.model.headers.HttpOriginRange.Default
 import akka.http.scaladsl.model.headers.{ ModeledCustomHeader, ModeledCustomHeaderCompanion, Origin }
-import akka.http.scaladsl.server.directives.{ HeaderMagnet, BasicDirectives ⇒ B, HeaderDirectives ⇒ D }
-import akka.stream.ActorMaterializer
+import akka.http.scaladsl.server.directives.{ HeaderMagnet, HeaderDirectives ⇒ D }
 
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
@@ -33,9 +33,16 @@ abstract class HeaderDirectives extends FutureDirectives {
    *
    * @group header
    */
-  def checkSameOrigin(allowed: HttpOriginRange, inner: jf.Supplier[Route]): Route = RouteAdapter {
-    D.checkSameOrigin(allowed.asScala) { inner.get().delegate }
-  }
+  // TODO When breaking binary compatibility this should become HttpOriginRange.Default, see https://github.com/akka/akka/pull/20776/files#r70049845
+  def checkSameOrigin(allowed: HttpOriginRange, inner: jf.Supplier[Route]): Route =
+    allowed match {
+      case HttpOriginRanges.ALL | HttpOriginRange.ALL | akka.http.scaladsl.model.headers.HttpOriginRange.`*` ⇒ pass(inner)
+      case _ ⇒ RouteAdapter {
+        // safe, we know it's not the `*` header
+        val default = allowed.asInstanceOf[akka.http.scaladsl.model.headers.HttpOriginRange.Default]
+        D.checkSameOrigin(default) { inner.get().delegate }
+      }
+    }
 
   /**
    * Extracts an HTTP header value using the given function. If the function result is undefined for all headers the

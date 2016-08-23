@@ -141,14 +141,23 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
       "Default" in {
         val entity = Default(tpe, 11, source(abc, de, fgh, ijk))
         entity.toString must include(entity.productPrefix)
+        entity.toString must include("11")
+        entity.toString mustNot include("Source")
       }
       "CloseDelimited" in {
         val entity = CloseDelimited(tpe, source(abc, de, fgh, ijk))
         entity.toString must include(entity.productPrefix)
+        entity.toString mustNot include("Source")
       }
       "Chunked" in {
         val entity = Chunked(tpe, source(Chunk(abc)))
         entity.toString must include(entity.productPrefix)
+        entity.toString mustNot include("Source")
+      }
+      "IndefiniteLength" in {
+        val entity = IndefiniteLength(tpe, source(abc, de, fgh, ijk))
+        entity.toString must include(entity.productPrefix)
+        entity.toString mustNot include("Source")
       }
     }
     "support withoutSizeLimit" - {

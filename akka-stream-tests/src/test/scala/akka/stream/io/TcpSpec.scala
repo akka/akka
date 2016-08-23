@@ -4,24 +4,26 @@
 package akka.stream.io
 
 import akka.NotUsed
-import akka.actor.{ ActorSystem, Kill }
+import akka.actor.{ ActorSystem, Address, Kill }
 import akka.io.Tcp._
 import akka.stream.scaladsl.Tcp.IncomingConnection
 import akka.stream.scaladsl.{ Flow, _ }
 import akka.stream.testkit.TestUtils.temporaryServerAddress
+
 import scala.util.control.NonFatal
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.{ ActorMaterializer, BindFailedException, StreamTcpException }
 import akka.util.{ ByteString, Helpers }
-import scala.collection.immutable
-import scala.concurrent.{ Promise, Await }
-import scala.concurrent.duration._
-import java.net.BindException
-import akka.testkit.EventFilter
-import akka.testkit.AkkaSpec
 
-class TcpSpec extends AkkaSpec("akka.stream.materializer.subscription-timeout.timeout = 2s") with TcpHelper {
+import scala.collection.immutable
+import scala.concurrent.{ Await, Promise }
+import scala.concurrent.duration._
+import java.net.{ BindException, InetSocketAddress }
+
+import akka.testkit.EventFilter
+
+class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.timeout = 2s") with TcpHelper {
 
   "Outgoing TCP stream" must {
 
@@ -74,6 +76,18 @@ class TcpSpec extends AkkaSpec("akka.stream.materializer.subscription-timeout.ti
       serverConnection.confirmedClose()
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
 
+    }
+
+    "fail the materialized future when the connection fails" in assertAllStagesStopped {
+      val tcpWriteProbe = new TcpWriteProbe()
+      val future = Source.fromPublisher(tcpWriteProbe.publisherProbe)
+        .viaMat(Tcp().outgoingConnection(InetSocketAddress.createUnresolved("example.com", 666), connectTimeout = 1.second))(Keep.right)
+        .toMat(Sink.ignore)(Keep.left)
+        .run()
+
+      whenReady(future.failed) { ex ⇒
+        ex.getMessage should ===("Connection failed.")
+      }
     }
 
     "work when client closes write, then remote closes write" in assertAllStagesStopped {
@@ -416,7 +430,7 @@ class TcpSpec extends AkkaSpec("akka.stream.materializer.subscription-timeout.ti
           .run()
 
       // make sure that the server has bound to the socket
-      val binding = Await.result(bindingFuture, 100.millis)
+      val binding = Await.result(bindingFuture, remainingOrDefault)
 
       val testInput = (0 to 255).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
@@ -437,7 +451,7 @@ class TcpSpec extends AkkaSpec("akka.stream.materializer.subscription-timeout.ti
           .run()
 
       // make sure that the server has bound to the socket
-      val binding = Await.result(bindingFuture, 100.millis)
+      val binding = Await.result(bindingFuture, remainingOrDefault)
 
       val echoConnection = Tcp().outgoingConnection(serverAddress)
 
@@ -541,7 +555,7 @@ class TcpSpec extends AkkaSpec("akka.stream.materializer.subscription-timeout.ti
         val bindingFuture = Tcp().bindAndHandle(Flow[ByteString], address.getHostName, address.getPort)(mat2)
 
         // Ensure server is running
-        Await.ready(bindingFuture, 3.seconds)
+        Await.ready(bindingFuture, remainingOrDefault)
         // and is possible to communicate with
         Await.result(
           Source.single(ByteString(0)).via(Tcp().outgoingConnection(address)).runWith(Sink.ignore),

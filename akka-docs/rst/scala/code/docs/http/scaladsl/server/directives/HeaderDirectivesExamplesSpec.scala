@@ -209,13 +209,13 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
     val invalidOriginHeader = Origin(invalidHttpOrigin)
     Get("abc") ~> invalidOriginHeader ~> route ~> check {
       inside(rejection) {
-        case InvalidOriginRejection(invalidOrigins) ⇒
-          invalidOrigins shouldEqual Seq(invalidHttpOrigin)
+        case InvalidOriginRejection(allowedOrigins) ⇒
+          allowedOrigins shouldEqual Seq(correctOrigin)
       }
     }
     Get("abc") ~> invalidOriginHeader ~> Route.seal(route) ~> check {
       status shouldEqual StatusCodes.Forbidden
-      responseAs[String] should include(s"${invalidHttpOrigin.value}")
+      responseAs[String] should include(s"${correctOrigin.value}")
     }
   }
 }

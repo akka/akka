@@ -28,7 +28,7 @@ HTTP result can be found in ``WebSocketUpgradeResponse.response``
 Message
 -------
 Messages sent and received over a WebSocket can be either :class:`TextMessage` s or :class:`BinaryMessage` s and each
-of those can be either strict (all data in one chunk) or streaming. In typical applications messages will be strict as
+of those can be either strict (all data in one chunk) or streamed. In typical applications messages will be strict as
 WebSockets are usually deployed to communicate using small messages not stream data, the protocol does however
 allow this (by not marking the first fragment as final, as described in `rfc 6455 section 5.2`__).
 
@@ -37,7 +37,7 @@ __ https://tools.ietf.org/html/rfc6455#section-5.2
 The strict text is available from ``TextMessage.getStrictText`` and strict binary data from
 ``BinaryMessage.getStrictData``.
 
-For streaming messages ``BinaryMessage.getStreamedData`` and ``TextMessage.getStreamedText`` is used to access the data.
+For streamed messages ``BinaryMessage.getStreamedData`` and ``TextMessage.getStreamedText`` is used to access the data.
 In these cases the data is provided as a ``Source<ByteString, NotUsed>`` for binary and ``Source<String, NotUsed>``
 for text messages.
 

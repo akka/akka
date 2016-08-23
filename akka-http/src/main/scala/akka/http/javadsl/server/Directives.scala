@@ -5,11 +5,11 @@
 package akka.http.javadsl.server
 
 import akka.http.impl.util.JavaMapping
-import akka.http.javadsl.server.directives.TimeoutDirectives
+import akka.http.javadsl.server.directives.{ FramedEntityStreamingDirectives, TimeoutDirectives }
 
 import scala.annotation.varargs
 
-abstract class AllDirectives extends TimeoutDirectives
+abstract class AllDirectives extends FramedEntityStreamingDirectives
 
 /**
  * INTERNAL API

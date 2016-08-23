@@ -127,6 +127,7 @@ private[akka] object NettySSLSupport {
           val sslEngine = context.createSSLEngine
           sslEngine.setUseClientMode(true)
           sslEngine.setEnabledCipherSuites(settings.SSLEnabledAlgorithms.toArray)
+          sslEngine.setEnabledProtocols(settings.SSLProtocol.toArray)
           sslEngine
         })
       case None ⇒

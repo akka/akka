@@ -8,9 +8,8 @@ import akka.stream.{ Supervision, ActorAttributes, ActorMaterializer, ActorMater
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import scala.util.control.NoStackTrace
-import akka.testkit.AkkaSpec
 
-class FlowMapConcatSpec extends AkkaSpec with ScriptedTest {
+class FlowMapConcatSpec extends StreamSpec with ScriptedTest {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)

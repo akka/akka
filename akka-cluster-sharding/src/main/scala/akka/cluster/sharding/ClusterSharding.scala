@@ -258,7 +258,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * @param entityProps the `Props` of the entity actors that will be created by the `ShardRegion`
    * @param settings configuration settings, see [[ClusterShardingSettings]]
    * @param messageExtractor functions to extract the entity id, shard id, and the message to send to the
-   *   entity from the incoming message
+   *   entity from the incoming message, see [[ShardRegion.MessageExtractor]]
    * @param allocationStrategy possibility to use a custom shard allocation and
    *   rebalancing logic
    * @param handOffStopMessage the message that will be sent to entities when they are to be stopped
