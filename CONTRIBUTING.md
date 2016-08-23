@@ -275,12 +275,14 @@ Thus we ask Java contributions to follow these simple guidelines:
 
 ### Preferred ways to use timeouts in tests
 
-There is a number of ways timeouts can be used in Akka tests. If you're sure a spec is really fast, a default of `300.millis` (this DSL is obtained from importing `scala.concurrent.duration._`) is ok, however very often this is not enough as Jenkins server may GC heavily causing spurious errorstest failures, thus the following ways to use timeouts are recommended (in order of preference):
+There is a number of ways timeouts can be used in Akka tests. Please note that usually giving a larger timeout *does not slow down the tests*, as in an `expectMessage` call for example it usually will complete quickly. The reason to use larger timeouts is to guard against fleaky tests, so if GC kicks in right in the middle of an `expect*` it will be able to still pass. Of course, some timing sensitive tests may need to be more fancy about timing.
 
 * `remaining` is first choice (requires `within` block)
 * `remainingOrDefault` is second choice
 * `3.seconds` is third choice if not using testkit
 * lower timeouts must come with a very good reason (e.g. Awaiting on a known to be "already completed" `Future`)
+
+Special care should be given `expectNoMsg` calls, which indeed will wait the entire timeout before continuing, therefore a shorter timeout should be used in those, for example `200` or `300.millis`.
 
 You can read up on remaining and friends in [TestKit.scala](https://github.com/akka/akka/blob/master/akka-testkit/src/main/scala/akka/testkit/TestKit.scala)
 
