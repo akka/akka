@@ -54,6 +54,8 @@ private[remote] object RARP extends ExtensionId[RARP] with ExtensionIdProvider {
  * Messages marked with this trait will be sent before other messages when buffering is active.
  * This means that these messages don't obey normal message ordering.
  * It is used for failure detector heartbeat messages.
+ *
+ * In Artery this is not used, and instead a preconfigured set of destinations select the priority lane.
  */
 private[akka] trait PriorityMessage
 

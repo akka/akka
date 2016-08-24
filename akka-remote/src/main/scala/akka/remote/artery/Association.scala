@@ -25,11 +25,12 @@ import akka.actor.Address
 import akka.actor.RootActorPath
 import akka.dispatch.sysmsg.SystemMessage
 import akka.event.Logging
-import akka.remote.{ LargeDestination, RegularDestination, RemoteActorRef, UniqueAddress }
+import akka.remote._
 import akka.remote.artery.AeronSink.GaveUpSendingException
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.remote.artery.OutboundHandshake.HandshakeTimeoutException
+import akka.remote.artery.SendQueue.ProducerApi
 import akka.remote.artery.SystemMessageDelivery.ClearSystemMessageDelivery
 import akka.stream.AbruptTerminationException
 import akka.stream.Materializer
@@ -38,8 +39,6 @@ import akka.stream.scaladsl.Source
 import akka.util.{ Unsafe, WildcardIndex }
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 import akka.util.OptionVal
-import akka.remote.QuarantinedEvent
-import akka.remote.DaemonMsgCreate
 import akka.remote.artery.compress.CompressionProtocol._
 
 /**
@@ -63,6 +62,7 @@ private[remote] class Association(
   override val remoteAddress:  Address,
   override val controlSubject: ControlMessageSubject,
   largeMessageDestinations:    WildcardIndex[NotUsed],
+  priorityMessageDestinations: WildcardIndex[NotUsed],
   outboundEnvelopePool:        ObjectPool[ReusableOutboundEnvelope])
   extends AbstractAssociation with OutboundContext {
   import Association._
@@ -89,6 +89,7 @@ private[remote] class Association(
     new ManyToOneConcurrentArrayQueue[OutboundEnvelope](capacity)
 
   @volatile private[this] var queue: SendQueue.ProducerApi[OutboundEnvelope] = QueueWrapper(createQueue(queueSize))
+  @volatile private[this] var priorityQueue: SendQueue.ProducerApi[OutboundEnvelope] = QueueWrapper(createQueue(queueSize))
   @volatile private[this] var largeQueue: SendQueue.ProducerApi[OutboundEnvelope] = QueueWrapper(createQueue(largeQueueSize))
   @volatile private[this] var controlQueue: SendQueue.ProducerApi[OutboundEnvelope] = QueueWrapper(createQueue(controlQueueSize))
   @volatile private[this] var _outboundControlIngress: OutboundControlIngress = _
@@ -198,11 +199,8 @@ private[remote] class Association(
             transport.system.deadLetters ! outboundEnvelope2
         case _ ⇒
           val outboundEnvelope = createOutboundEnvelope()
-          val offerOk =
-            if (transport.largeMessageChannelEnabled && isLargeMessageDestination(recipient))
-              largeQueue.offer(outboundEnvelope)
-            else
-              queue.offer(outboundEnvelope)
+          val queue = selectQueue(recipient)
+          val offerOk = queue.offer(outboundEnvelope)
           if (!offerOk)
             transport.system.deadLetters ! outboundEnvelope
       }
@@ -210,20 +208,30 @@ private[remote] class Association(
       log.debug("Dropping message to quarantined system {}", remoteAddress)
   }
 
-  private def isLargeMessageDestination(recipient: OptionVal[RemoteActorRef]): Boolean = {
+  @tailrec
+  private def selectQueue(recipient: OptionVal[RemoteActorRef]): ProducerApi[OutboundEnvelope] = {
     recipient match {
       case OptionVal.Some(r) ⇒
-        if (r.cachedLargeMessageDestinationFlag ne null)
-          r.cachedLargeMessageDestinationFlag eq LargeDestination
-        else if (largeMessageDestinations.find(r.path.elements).isEmpty) {
-          r.cachedLargeMessageDestinationFlag = RegularDestination
-          false
-        } else {
-          log.debug("Using large message stream for {}", r.path)
-          r.cachedLargeMessageDestinationFlag = LargeDestination
-          true
+        r.cachedMessageDestinationFlag match {
+          case RegularDestination  ⇒ queue
+          case PriorityDestination ⇒ priorityQueue
+          case LargeDestination    ⇒ largeQueue
+          case null ⇒
+            // only happens when messages are sent to new remote destination
+            // and is then cached on the RemoteActorRef
+            val elements = r.path.elements
+            if (priorityMessageDestinations.find(elements).isDefined) {
+              log.debug("Using priority message stream for {}", r.path)
+              r.cachedMessageDestinationFlag = PriorityDestination
+            } else if (transport.largeMessageChannelEnabled && largeMessageDestinations.find(elements).isDefined) {
+              log.debug("Using large message stream for {}", r.path)
+              r.cachedMessageDestinationFlag = LargeDestination
+            } else {
+              r.cachedMessageDestinationFlag = RegularDestination
+            }
+            selectQueue(recipient)
         }
-      case OptionVal.None ⇒ false
+      case OptionVal.None ⇒ queue
     }
   }
 
@@ -290,6 +298,7 @@ private[remote] class Association(
     // it's important to materialize the outboundControl stream first,
     // so that outboundControlIngress is ready when stages for all streams start
     runOutboundControlStream(disableCompression)
+    runOutboundPriorityMessagesStream(CurrentAssociationStateOutboundCompressionsProxy)
     runOutboundOrdinaryMessagesStream(CurrentAssociationStateOutboundCompressionsProxy)
 
     if (transport.largeMessageChannelEnabled) {
@@ -369,8 +378,33 @@ private[remote] class Association(
     attachStreamRestart("Outbound message stream", completed, _ ⇒ runOutboundOrdinaryMessagesStream(compression))
   }
 
+  private def runOutboundPriorityMessagesStream(compression: OutboundCompressions): Unit = {
+    val wrapper = getOrCreateQueueWrapper(priorityQueue, queueSize)
+    priorityQueue = wrapper // use new underlying queue immediately for restarts
+
+    val (queueValue, completed) =
+      if (transport.remoteSettings.TestMode) {
+        val ((queueValue, mgmt), completed) = Source.fromGraph(new SendQueue[OutboundEnvelope])
+          .viaMat(transport.outboundTestFlow(this))(Keep.both)
+          .toMat(transport.outboundPriority(this, compression))(Keep.both)
+          .run()(materializer)
+        _testStages.add(mgmt)
+        (queueValue, completed)
+      } else {
+        Source.fromGraph(new SendQueue[OutboundEnvelope])
+          .toMat(transport.outboundPriority(this, compression))(Keep.both)
+          .run()(materializer)
+      }
+
+    queueValue.inject(wrapper.queue)
+    // replace with the materialized value, still same underlying queue
+    priorityQueue = queueValue
+
+    attachStreamRestart("Outbound priority message stream", completed, _ ⇒ runOutboundPriorityMessagesStream(compression))
+  }
+
   private def runOutboundLargeMessagesStream(compression: OutboundCompressions): Unit = {
-    val wrapper = getOrCreateQueueWrapper(queue, largeQueueSize)
+    val wrapper = getOrCreateQueueWrapper(largeQueue, largeQueueSize)
     largeQueue = wrapper // use new underlying queue immediately for restarts
 
     val (queueValue, completed) =
