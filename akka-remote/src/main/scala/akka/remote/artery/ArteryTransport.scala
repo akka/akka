@@ -340,7 +340,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
 
   private val controlStreamId = 1
-  private val priorityStreamId = 2
   private val ordinaryStreamId = 3
   private val largeStreamId = 4
 
@@ -545,7 +544,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
     runInboundControlStream(noCompressions) // TODO should understand compressions too
     runInboundOrdinaryMessagesStream(compressions)
-    runInboundPriorityMessagesStream(compressions)
     if (largeMessageChannelEnabled) {
       runInboundLargeMessagesStream()
     }
@@ -634,26 +632,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       }
 
     attachStreamRestart("Inbound message stream", completed, () ⇒ runInboundOrdinaryMessagesStream(compression))
-  }
-
-  private def runInboundPriorityMessagesStream(compression: InboundCompressions): Unit = {
-    val completed =
-      if (remoteSettings.TestMode) {
-        val (mgmt, c) = aeronSource(priorityStreamId, envelopePool)
-          .via(inboundPriorityFlow(compression))
-          .viaMat(inboundTestFlow)(Keep.right)
-          .toMat(inboundSink)(Keep.both)
-          .run()(materializer)
-        testStages.add(mgmt)
-        c
-      } else {
-        aeronSource(priorityStreamId, envelopePool)
-          .via(inboundPriorityFlow(compression))
-          .toMat(inboundSink)(Keep.right)
-          .run()(materializer)
-      }
-
-    attachStreamRestart("Inbound priority message stream", completed, () ⇒ runInboundPriorityMessagesStream(compression))
   }
 
   private def runInboundLargeMessagesStream(): Unit = {
@@ -790,9 +768,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   def outbound(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[OutboundEnvelope, Future[Done]] =
     createOutboundSink(ordinaryStreamId, outboundContext, compression, envelopePool)
 
-  def outboundPriority(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[OutboundEnvelope, Future[Done]] =
-    createOutboundSink(priorityStreamId, outboundContext, compression, envelopePool)
-
   def outboundLarge(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[OutboundEnvelope, Future[Done]] =
     createOutboundSink(largeStreamId, outboundContext, compression, largeEnvelopePool)
 
@@ -869,12 +844,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .toMat(messageDispatcherSink)(Keep.right)
 
   def inboundFlow(compression: InboundCompressions): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
-    Flow[EnvelopeBuffer]
-      .via(killSwitch.flow)
-      .via(decoder(compression))
-  }
-
-  def inboundPriorityFlow(compression: InboundCompressions): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
     Flow[EnvelopeBuffer]
       .via(killSwitch.flow)
       .via(decoder(compression))
