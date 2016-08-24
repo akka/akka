@@ -6,6 +6,13 @@ package akka.remote.artery.compress
 
 /** INTERNAL API: Versioned compression table to be advertised between systems */
 private[akka] final case class CompressionTable[T](version: Int, map: Map[T, Int]) {
+  import CompressionTable.NotCompressedId
+
+  def compress(value: T): Int =
+    map.get(value) match {
+      case Some(id) ⇒ id
+      case None     ⇒ NotCompressedId
+    }
 
   def invert: DecompressionTable[T] =
     if (map.isEmpty) DecompressionTable.empty[T].copy(version = version)
@@ -25,6 +32,8 @@ private[akka] final case class CompressionTable[T](version: Int, map: Map[T, Int
 }
 /** INTERNAL API */
 private[remote] object CompressionTable {
+  final val NotCompressedId = -1
+
   private[this] val _empty = new CompressionTable[Any](0, Map.empty)
   def empty[T] = _empty.asInstanceOf[CompressionTable[T]]
 }

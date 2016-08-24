@@ -10,40 +10,23 @@ import akka.testkit.AkkaSpec
 class OutboundCompressionSpec extends AkkaSpec {
   import CompressionTestUtils._
 
-  val remoteAddress = Address("artery", "example", "localhost", 0)
-
-  "OutboundCompression" must {
-    "not compress not-known values" in {
-      val table = new OutboundActorRefCompression(system, remoteAddress)
-      table.compress(minimalRef("banana")) should ===(-1)
-    }
-  }
-
-  "OutboundActorRefCompression" must {
+  "Outbound ActorRef compression" must {
     val alice = minimalRef("alice")
     val bob = minimalRef("bob")
 
-    "always compress /deadLetters" in {
-      val table = new OutboundActorRefCompression(system, remoteAddress)
-      table.compress(system.deadLetters) should ===(0)
-    }
-
     "not compress unknown actor ref" in {
-      val table = new OutboundActorRefCompression(system, remoteAddress)
+      val table = CompressionTable.empty[ActorRef]
       table.compress(alice) should ===(-1) // not compressed
     }
 
     "compress previously registered actor ref" in {
-      val compression = new OutboundActorRefCompression(system, remoteAddress)
       val table = CompressionTable(1, Map(system.deadLetters → 0, alice → 1))
-      compression.flipTable(table)
-      compression.compress(alice) should ===(1) // compressed
-      compression.compress(bob) should ===(-1) // not compressed
+      table.compress(alice) should ===(1) // compressed
+      table.compress(bob) should ===(-1) // not compressed
 
       val table2 = table.copy(2, map = table.map.updated(bob, 2))
-      compression.flipTable(table2)
-      compression.compress(alice) should ===(1) // compressed
-      compression.compress(bob) should ===(2) // compressed
+      table2.compress(alice) should ===(1) // compressed
+      table2.compress(bob) should ===(2) // compressed
     }
   }
 

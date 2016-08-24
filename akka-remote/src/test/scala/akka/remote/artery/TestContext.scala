@@ -18,6 +18,7 @@ import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.util.OptionVal
 import akka.actor.InternalActorRef
+import akka.dispatch.ExecutionContexts
 
 private[akka] class TestInboundContext(
   override val localAddress: UniqueAddress,
@@ -47,10 +48,13 @@ private[akka] class TestInboundContext(
   override def association(uid: Long): OptionVal[OutboundContext] =
     OptionVal(associationsByUid.get(uid))
 
-  override def completeHandshake(peer: UniqueAddress): Unit = {
+  override def completeHandshake(peer: UniqueAddress): Future[Done] = {
     val a = association(peer.address).asInstanceOf[TestOutboundContext]
-    a.completeHandshake(peer)
-    associationsByUid.put(peer.uid, a)
+    val done = a.completeHandshake(peer)
+    done.foreach { _ ⇒
+      associationsByUid.put(peer.uid, a)
+    }(ExecutionContexts.sameThreadExecutionContext)
+    done
   }
 
   protected def createAssociation(remoteAddress: Address): TestOutboundContext =
@@ -70,13 +74,14 @@ private[akka] class TestOutboundContext(
     _associationState
   }
 
-  def completeHandshake(peer: UniqueAddress): Unit = synchronized {
+  def completeHandshake(peer: UniqueAddress): Future[Done] = synchronized {
     _associationState.uniqueRemoteAddressPromise.trySuccess(peer)
     _associationState.uniqueRemoteAddress.value match {
       case Some(Success(`peer`)) ⇒ // our value
       case _ ⇒
-        _associationState = _associationState.newIncarnation(Promise.successful(peer), NoOutboundCompressions)
+        _associationState = _associationState.newIncarnation(Promise.successful(peer))
     }
+    Future.successful(Done)
   }
 
   override def quarantine(reason: String): Unit = synchronized {
