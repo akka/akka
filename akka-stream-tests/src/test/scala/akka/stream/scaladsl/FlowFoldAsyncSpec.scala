@@ -60,7 +60,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
 
     "propagate an error" in assertAllStagesStopped {
       val error = new Exception with NoStackTrace
-      val future = inputSource.map(x ⇒ if (x > 50) throw error else x).runFoldAsync[NotUsed](NotUsed)(Keep.noneAsync)
+      val future = inputSource.map(x ⇒ if (x > 50) throw error else x).runFoldAsync[NotUsed](NotUsed)(noneAsync)
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
     }
 
@@ -262,4 +262,10 @@ class FlowFoldAsyncSpec extends StreamSpec {
       upstream.expectCancellation()
     }
   }
+
+  // Keep
+  def noneAsync[L, R]: (L, R) ⇒ Future[NotUsed] = { (_: Any, _: Any) ⇒
+    Future.successful(NotUsed)
+  }.asInstanceOf[(L, R) ⇒ Future[NotUsed]]
+
 }
