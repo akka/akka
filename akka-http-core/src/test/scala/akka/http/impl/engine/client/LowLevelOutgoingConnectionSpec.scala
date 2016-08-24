@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.client
 
+import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import org.scalatest.Inside
@@ -323,6 +325,65 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         netOut.expectComplete()
         netInSub.sendComplete()
         responses.expectComplete()
+      }
+    }
+
+    "process the illegal response header value properly" which {
+
+      val illegalChar = '\u0001'
+      val escapeChar = "\\u%04x" format illegalChar.toInt
+
+      "catch illegal response header value by default" in new TestSetup {
+        sendStandardRequest()
+        sendWireData(
+          s"""HTTP/1.1 200 OK
+              |Some-Header: value1$illegalChar
+              |Other-Header: value2
+              |
+              |""")
+
+        responsesSub.request(1)
+        val error @ IllegalResponseException(info) = responses.expectError()
+        info.summary shouldEqual s"""Illegal character '$escapeChar' in header value"""
+        netOut.expectError(error)
+        requestsSub.expectCancellation()
+        netInSub.expectCancellation()
+      }
+
+      val ignoreConfig =
+        """
+          akka.http.parsing.illegal-response-header-value-processing-mode = ignore
+        """
+      "ignore illegal response header value if setting the config to ignore" in new TestSetup(config = ignoreConfig) {
+        sendStandardRequest()
+        sendWireData(
+          s"""HTTP/1.1 200 OK
+              |Some-Header: value1$illegalChar
+              |Other-Header: value2
+              |
+              |""")
+
+        val HttpResponse(_, headers, _, _) = expectResponse()
+        val headerStr = headers.map(h ⇒ s"${h.name}: ${h.value}").mkString(",")
+        headerStr shouldEqual "Some-Header: value1,Other-Header: value2"
+      }
+
+      val warnConfig =
+        """
+          akka.http.parsing.illegal-response-header-value-processing-mode = warn
+        """
+      "ignore illegal response header value and log a warning message if setting the config to warn" in new TestSetup(config = warnConfig) {
+        sendStandardRequest()
+        sendWireData(
+          s"""HTTP/1.1 200 OK
+              |Some-Header: value1$illegalChar
+              |Other-Header: value2
+              |
+              |""")
+
+        val HttpResponse(_, headers, _, _) = expectResponse()
+        val headerStr = headers.map(h ⇒ s"${h.name}: ${h.value}").mkString(",")
+        headerStr shouldEqual "Some-Header: value1,Other-Header: value2"
       }
     }
 
@@ -808,13 +869,14 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
     }
   }
 
-  class TestSetup(maxResponseContentLength: Int = -1) {
+  class TestSetup(maxResponseContentLength: Int = -1, config: String = "") {
     val requests = TestPublisher.manualProbe[HttpRequest]()
     val responses = TestSubscriber.manualProbe[HttpResponse]()
 
     def settings = {
-      val s = ClientConnectionSettings(system)
-        .withUserAgentHeader(Some(`User-Agent`(List(ProductVersion("akka-http", "test")))))
+      val s = ClientConnectionSettings(
+        ConfigFactory.parseString(config).withFallback(system.settings.config)
+      ).withUserAgentHeader(Some(`User-Agent`(List(ProductVersion("akka-http", "test")))))
       if (maxResponseContentLength < 0) s
       else s.withParserSettings(s.parserSettings.withMaxContentLength(maxResponseContentLength))
     }
@@ -873,5 +935,6 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
       responsesSub.request(1)
       responses.expectNext()
     }
+
   }
 }

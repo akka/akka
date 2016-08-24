@@ -74,7 +74,7 @@ be configured as follows::
   my-blocking-dispatcher {
     type = Dispatcher
     executor = "thread-pool-executor"
-    thread-pool-executer {
+    thread-pool-executor {
       // or in Akka 2.4.2+
       fixed-pool-size = 16
     }
@@ -83,7 +83,7 @@ be configured as follows::
 
 There are many dispatcher options available which can be found in :ref:`dispatchers-scala`.
 
-Here ``thread-pool-executer`` is used, which has a hard limit of threads, it can
+Here ``thread-pool-executor`` is used, which has a hard limit of threads, it can
 keep available for blocking operations. The size settings depend on the app
 functionality and the number of cores the server has.
 

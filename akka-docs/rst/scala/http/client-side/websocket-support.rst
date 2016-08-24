@@ -27,13 +27,13 @@ HTTP result can be found in ``WebSocketUpgradeResponse.response``
 Message
 -------
 Messages sent and received over a WebSocket can be either :class:`TextMessage` s or :class:`BinaryMessage` s and each
-of those has two subtypes :class:`Strict` or :class:`Streaming`. In typical applications messages will be ``Strict`` as
+of those has two subtypes :class:`Strict` or :class:`Streamed`. In typical applications messages will be ``Strict`` as
 WebSockets are usually deployed to communicate using small messages not stream data, the protocol does however
 allow this (by not marking the first fragment as final, as described in `rfc 6455 section 5.2`__).
 
 __ https://tools.ietf.org/html/rfc6455#section-5.2
 
-For such streaming messages :class:`BinaryMessage.Streaming` and :class:`TextMessage.Streaming` will be used. In these cases
+For such streamed messages :class:`BinaryMessage.Streamed` and :class:`TextMessage.Streamed` will be used. In these cases
 the data is provided as a ``Source[ByteString, NotUsed]`` for binary and ``Source[String, NotUsed]`` for text messages.
 
 

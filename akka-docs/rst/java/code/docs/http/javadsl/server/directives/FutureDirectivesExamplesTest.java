@@ -8,7 +8,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import akka.http.javadsl.model.HttpRequest;
-import akka.http.javadsl.server.Marshaller;
+import akka.http.javadsl.marshalling.Marshaller;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.scaladsl.model.StatusCodes;

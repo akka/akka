@@ -495,7 +495,7 @@ Akka behind NAT or in a Docker container
 ----------------------------------------
 
 In setups involving Network Address Translation (NAT), Load Balancers or Docker
-containers the hostname and port pair that akka binds to will be different than the "logical"
+containers the hostname and port pair that Akka binds to will be different than the "logical"
 host name and port pair that is used to connect to the system from the outside. This requires
 special configuration that sets both the logical and the bind pairs for remoting.
 

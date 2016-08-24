@@ -575,7 +575,7 @@ trait LoggingPersistentFSM[S, D, E] extends PersistentFSMBase[S, D, E] { this: A
         case a: ActorRef          ⇒ a.toString
         case _                    ⇒ "unknown"
       }
-      log.debug("processing " + event + " from " + srcstr)
+      log.debug("processing {} from {} in state {}", event, srcstr, stateName)
     }
 
     if (logDepth > 0) {

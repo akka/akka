@@ -1,10 +1,10 @@
-.. _stream-dynamic-scala:
+.. _stream-dynamic-java:
 
 #######################
 Dynamic stream handling
 #######################
 
-.. _kill-switch-scala:
+.. _kill-switch-java:
 
 Controlling graph completion with KillSwitch
 --------------------------------------------
@@ -24,7 +24,7 @@ Graph completion is performed by both
 
 A ``KillSwitch`` can control the completion of one or multiple streams, and therefore comes in two different flavours.
 
-.. _unique-kill-switch-scala:
+.. _unique-kill-switch-java:
 
 UniqueKillSwitch
 ^^^^^^^^^^^^^^^^
@@ -40,7 +40,7 @@ below for usage examples.
 
 .. includecode:: ../code/docs/stream/KillSwitchDocTest.java#unique-abort
 
-.. _shared-kill-switch-scala:
+.. _shared-kill-switch-java:
 
 SharedKillSwitch
 ^^^^^^^^^^^^^^^^

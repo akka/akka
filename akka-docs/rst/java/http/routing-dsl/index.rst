@@ -18,6 +18,7 @@ To use the high-level API you need to add a dependency to the ``akka-http-experi
    directives/index
    marshalling
    exception-handling
+   source-streaming-support
    rejections
    testkit
    
@@ -51,7 +52,6 @@ in the :ref:`exception-handling-java` section of the documtnation. You can use t
 
 File uploads
 ^^^^^^^^^^^^
-TODO not possible in Java DSL since there
 
 For high level directives to handle uploads see the :ref:`FileUploadDirectives-java`.
 

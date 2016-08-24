@@ -61,8 +61,9 @@ object StrictForm {
           fsu(value.entity.data.decodeString(charsetName))
       })
 
-    @implicitNotFound("In order to unmarshal a `StrictForm.Field` to type `${T}` you need to supply a " +
-      "`FromStringUnmarshaller[${T}]` and/or a `FromEntityUnmarshaller[${T}]`")
+    @implicitNotFound(msg =
+      s"In order to unmarshal a `StrictForm.Field` to type `$${T}` you need to supply a " +
+        s"`FromStringUnmarshaller[$${T}]` and/or a `FromEntityUnmarshaller[$${T}]`")
     sealed trait FieldUnmarshaller[T] {
       def unmarshalString(value: String)(implicit ec: ExecutionContext, mat: Materializer): Future[T]
       def unmarshalPart(value: Multipart.FormData.BodyPart.Strict)(implicit ec: ExecutionContext, mat: Materializer): Future[T]

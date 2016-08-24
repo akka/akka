@@ -804,7 +804,7 @@ public class FlowTest extends StreamTest {
       try {
         Source.<Integer> maybe().via(Flow.of(Integer.class).initialTimeout(Duration.create(1, "second")))
             .runWith(Sink.<Integer> head(), materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
-        fail("A TimeoutException was expected");
+        org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
         throw e.getCause();
       }
@@ -820,7 +820,7 @@ public class FlowTest extends StreamTest {
       try {
         Source.<Integer> maybe().via(Flow.of(Integer.class).completionTimeout(Duration.create(1, "second")))
             .runWith(Sink.<Integer> head(), materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
-        fail("A TimeoutException was expected");
+        org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
         throw e.getCause();
       }
@@ -835,7 +835,7 @@ public class FlowTest extends StreamTest {
       try {
         Source.<Integer> maybe().via(Flow.of(Integer.class).idleTimeout(Duration.create(1, "second")))
             .runWith(Sink.<Integer> head(), materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
-        fail("A TimeoutException was expected");
+        org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
         throw e.getCause();
       }

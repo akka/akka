@@ -4,9 +4,6 @@
 package akka.http.javadsl.server
 
 import akka.http.impl.util.JavaMapping
-import akka.http.javadsl.server.RoutingJavaMapping
-import akka.http.javadsl.model.ContentTypeRange
-import akka.http.scaladsl.model
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server._
 import akka.http.javadsl.model._
@@ -110,7 +107,7 @@ trait MalformedHeaderRejection extends Rejection {
  * Signals that the request was rejected because `Origin` header value is invalid.
  */
 trait InvalidOriginRejection extends Rejection {
-  def getInvalidOrigins: java.util.List[akka.http.javadsl.model.headers.HttpOrigin]
+  def getAllowedOrigins: java.util.List[akka.http.javadsl.model.headers.HttpOrigin]
 }
 
 /**

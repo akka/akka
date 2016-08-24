@@ -42,8 +42,15 @@ class RecipeByteStrings extends RecipeSpec {
 
             override def onUpstreamFinish(): Unit = {
               if (buffer.isEmpty) completeStage()
-              // elements left in buffer, keep accepting downstream pulls
-              // and push from buffer until buffer is emitted
+              else {
+                // There are elements left in buffer, so
+                // we keep accepting downstream pulls and push from buffer until emptied.
+                //
+                // It might be though, that the upstream finished while it was pulled, in which
+                // case we will not get an onPull from the downstream, because we already had one.
+                // In that case we need to emit from the buffer.
+                if (isAvailable(out)) emitChunk()
+              }
             }
           })
 

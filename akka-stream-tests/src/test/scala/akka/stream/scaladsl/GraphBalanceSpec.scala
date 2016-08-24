@@ -3,13 +3,13 @@ package akka.stream.scaladsl
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.Future
-import akka.stream.{ SourceShape, ClosedShape, ActorMaterializer, ActorMaterializerSettings }
+import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._
-import akka.testkit.AkkaSpec
+import akka.util.ByteString
 
-class GraphBalanceSpec extends AkkaSpec {
+class GraphBalanceSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
@@ -257,6 +257,36 @@ class GraphBalanceSpec extends AkkaSpec {
       bsub.expectCancellation()
     }
 
+    // Bug #20943
+    "not push output twice" in assertAllStagesStopped {
+      val p1 = TestPublisher.manualProbe[Int]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
+
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+        val balance = b.add(Balance[Int](2))
+        Source.fromPublisher(p1.getPublisher) ~> balance.in
+        balance.out(0) ~> Sink.fromSubscriber(c1)
+        balance.out(1) ~> Sink.fromSubscriber(c2)
+        ClosedShape
+      }).run()
+
+      val bsub = p1.expectSubscription()
+      val sub1 = c1.expectSubscription()
+      val sub2 = c2.expectSubscription()
+
+      sub1.request(1)
+      p1.expectRequest(bsub, 16)
+      bsub.sendNext(1)
+      c1.expectNext(1)
+
+      sub2.request(1)
+      sub2.cancel()
+      bsub.sendNext(2)
+
+      sub1.cancel()
+      bsub.expectCancellation()
+    }
   }
 
 }

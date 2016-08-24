@@ -9,11 +9,10 @@ import java.util.concurrent.ThreadLocalRandom.{ current ⇒ random }
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, ThrottleMode }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.testkit.AkkaSpec
 
 import scala.concurrent.Await
 
-class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
+class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
 
   val settings = ActorMaterializerSettings(system)
 

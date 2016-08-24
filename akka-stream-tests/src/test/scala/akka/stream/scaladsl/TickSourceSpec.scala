@@ -7,21 +7,17 @@ import scala.concurrent.duration._
 import akka.stream.{ ClosedShape, ActorMaterializer }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.testkit.AkkaSpec
 
-class TickSourceSpec extends AkkaSpec {
+class TickSourceSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 
   "A Flow based on tick publisher" must {
     "produce ticks" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[String]()
-      Source.tick(1.second, 500.millis, "tick").to(Sink.fromSubscriber(c)).run()
+      Source.tick(1.second, 1.second, "tick").to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
-      sub.request(3)
-      c.expectNoMsg(600.millis)
-      c.expectNext("tick")
-      c.expectNoMsg(200.millis)
+      sub.request(2)
       c.expectNext("tick")
       c.expectNoMsg(200.millis)
       c.expectNext("tick")
@@ -85,13 +81,11 @@ class TickSourceSpec extends AkkaSpec {
 
     "be possible to cancel" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[String]()
-      val tickSource = Source.tick(1.second, 500.millis, "tick")
+      val tickSource = Source.tick(1.second, 1.second, "tick")
       val cancellable = tickSource.to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
-      sub.request(3)
+      sub.request(2)
       c.expectNoMsg(600.millis)
-      c.expectNext("tick")
-      c.expectNoMsg(200.millis)
       c.expectNext("tick")
       c.expectNoMsg(200.millis)
       c.expectNext("tick")

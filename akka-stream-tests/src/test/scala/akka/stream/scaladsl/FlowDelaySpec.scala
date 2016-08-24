@@ -7,15 +7,14 @@ import akka.Done
 import akka.stream.Attributes._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.{ TestPublisher, TestSubscriber }
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.{ ActorMaterializer, Attributes, BufferOverflowException, DelayOverflowStrategy }
 
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.testkit.AkkaSpec
 
-class FlowDelaySpec extends AkkaSpec {
+class FlowDelaySpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 

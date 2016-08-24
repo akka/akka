@@ -23,6 +23,7 @@ static content serving.
    exception-handling
    path-matchers
    case-class-extraction
+   source-streaming-support
    testkit
    websocket-support
 

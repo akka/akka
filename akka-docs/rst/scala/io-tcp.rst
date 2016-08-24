@@ -190,7 +190,7 @@ For back-pressuring writes there are three modes of operation
 
 These write back-pressure models (with the exception of the second which is rather specialised) are
 demonstrated in complete examples below. The full and contiguous source is
-available `on github <@github@/akka-docs/rst/scala/code/docs/io/EchoServer.scala>`_.
+available `on GitHub <@github@/akka-docs/rst/scala/code/docs/io/EchoServer.scala>`_.
 
 For back-pressuring reads there are two modes of operation
 

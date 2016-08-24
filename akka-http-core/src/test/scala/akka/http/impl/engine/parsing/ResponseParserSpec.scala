@@ -320,7 +320,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     protected def parserSettings: ParserSettings = ParserSettings(system)
 
     def newParserStage(requestMethod: HttpMethod = GET) = {
-      val parser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings)())
+      val parser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings, system.log)())
       parser.setContextForNextResponse(HttpResponseParser.ResponseContext(requestMethod, None))
       parser.stage
     }

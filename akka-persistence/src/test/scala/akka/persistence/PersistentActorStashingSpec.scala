@@ -166,7 +166,7 @@ abstract class PersistentActorStashingSpec(config: Config) extends PersistenceSp
 
       cmds foreach (persistentActor ! _)
       persistentActor ! GetState
-      expectMsg(evts)
+      expectMsg(evts.toList)
     }
   }
 

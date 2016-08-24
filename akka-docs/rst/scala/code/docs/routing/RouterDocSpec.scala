@@ -101,6 +101,18 @@ akka.actor.deployment {
   }
 }
 #//#config-balancing-pool3
+
+#//#config-balancing-pool4
+akka.actor.deployment {
+  /parent/router10c {
+    router = balancing-pool
+    nr-of-instances = 5
+    pool-dispatcher {
+      mailbox = myapp.myprioritymailbox
+    }
+  }
+}
+#//#config-balancing-pool4
     
 #//#config-smallest-mailbox-pool
 akka.actor.deployment {

@@ -719,7 +719,14 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         Await.result(p.future, timeout.duration) should ===(message)
       }
     }
-    "always cast successfully using mapTo" in { f((future, message) ⇒ (evaluating { Await.result(future.mapTo[java.lang.Thread], timeout.duration) } should produce[java.lang.Exception]).getMessage should ===(message)) }
+    "always cast successfully using mapTo" in {
+      f((future, message) ⇒ {
+        val exception = the[java.lang.Exception] thrownBy {
+          Await.result(future.mapTo[java.lang.Thread], timeout.duration)
+        }
+        exception.getMessage should ===(message)
+      })
+    }
   }
 
   implicit def arbFuture: Arbitrary[Future[Int]] = Arbitrary(for (n ← arbitrary[Int]) yield Future(n))

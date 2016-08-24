@@ -211,9 +211,9 @@ private[akka] case class ActorMaterializerImpl(
 
       private def matGraph(graph: GraphModule, effectiveAttributes: Attributes, matVal: ju.Map[Module, Any]): Unit = {
         val calculatedSettings = effectiveSettings(effectiveAttributes)
-        val (inHandlers, outHandlers, logics) = graph.assembly.materialize(effectiveAttributes, graph.matValIDs, matVal, registerSrc)
+        val (connections, logics) = graph.assembly.materialize(effectiveAttributes, graph.matValIDs, matVal, registerSrc)
 
-        val shell = new GraphInterpreterShell(graph.assembly, inHandlers, outHandlers, logics, graph.shape,
+        val shell = new GraphInterpreterShell(graph.assembly, connections, logics, graph.shape,
           calculatedSettings, ActorMaterializerImpl.this)
 
         val impl =
@@ -283,8 +283,8 @@ class FlowNames extends Extension {
 object StreamSupervisor {
   def props(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean): Props =
     Props(new StreamSupervisor(settings, haveShutDown)).withDeploy(Deploy.local)
-
-  private val actorName = SeqActorName("StreamSupervisor")
+  private[stream] val baseName = "StreamSupervisor"
+  private val actorName = SeqActorName(baseName)
   def nextName(): String = actorName.next()
 
   final case class Materialize(props: Props, name: String)

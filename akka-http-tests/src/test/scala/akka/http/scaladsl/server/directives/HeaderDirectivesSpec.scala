@@ -34,7 +34,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
   }
 
   "The headerValueByType directive" should {
-    lazy val route =
+    val route =
       headerValueByType[Origin]() { origin ⇒
         complete(s"The first origin was ${origin.origins.head}")
       }
@@ -48,6 +48,16 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
       Get("abc") ~> route ~> check {
         inside(rejection) {
           case MissingHeaderRejection("Origin") ⇒
+        }
+      }
+    }
+    "reject a request for missing header, and format it properly when header included special characters (e.g. `-`)" in {
+      val route = headerValueByType[`User-Agent`]() { agent ⇒
+        complete(s"Agent: ${agent}")
+      }
+      Get("abc") ~> route ~> check {
+        inside(rejection) {
+          case MissingHeaderRejection("User-Agent") ⇒
         }
       }
     }
@@ -183,12 +193,12 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
       val invalidOriginHeader = Origin(invalidHttpOrigin)
       Get("abc") ~> invalidOriginHeader ~> route ~> check {
         inside(rejection) {
-          case InvalidOriginRejection(invalidOrigins) ⇒ invalidOrigins shouldEqual Seq(invalidHttpOrigin)
+          case InvalidOriginRejection(allowedOrigins) ⇒ allowedOrigins shouldEqual Seq(correctOrigin)
         }
       }
       Get("abc") ~> invalidOriginHeader ~> Route.seal(route) ~> check {
         status shouldEqual StatusCodes.Forbidden
-        responseAs[String] should include(s"${invalidHttpOrigin.value}")
+        responseAs[String] should include(s"${correctOrigin.value}")
       }
     }
   }

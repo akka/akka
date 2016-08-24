@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.stream.IntStream;
 
 import akka.testkit.TestActors;
+import org.junit.Assert;
 import org.junit.Test;
 
 import akka.japi.Creator;
@@ -209,7 +210,7 @@ public class ActorCreationTest extends JUnitSuite {
   public void testWrongAnonymousClassStaticCreator() {
     try {
       Props.create(new C() {}); // has implicit reference to outer class
-      fail("Should have detected this is not a real static class, and thrown");
+      org.junit.Assert.fail("Should have detected this is not a real static class, and thrown");
     } catch (IllegalArgumentException e) {
       assertEquals("cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level", e.getMessage());
     }
@@ -278,7 +279,7 @@ public class ActorCreationTest extends JUnitSuite {
         // captures enclosing class
       };
       Props.create(anonymousCreatorFromStaticMethod);
-      fail("Should have detected this is not a real static class, and thrown");
+      org.junit.Assert.fail("Should have detected this is not a real static class, and thrown");
     } catch (IllegalArgumentException e) {
       assertEquals("cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level", e.getMessage());
     }
@@ -296,7 +297,7 @@ public class ActorCreationTest extends JUnitSuite {
     assertEquals(TestActor.class, p.actorClass());
     try {
       TestActor.propsUsingLamdaWithoutClass(17);
-      fail("Should have detected lambda erasure, and thrown");
+      org.junit.Assert.fail("Should have detected lambda erasure, and thrown");
     } catch (IllegalArgumentException e) {
       assertEquals("erased Creator types are unsupported, use Props.create(actorClass, creator) instead",
           e.getMessage());

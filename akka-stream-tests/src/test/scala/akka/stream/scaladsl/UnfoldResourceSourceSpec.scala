@@ -11,16 +11,14 @@ import akka.stream.Supervision._
 import akka.stream.{ ActorMaterializer, _ }
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.{ ActorMaterializerImpl, StreamSupervisor }
-import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.util.{ ByteString, Timeout }
-import akka.testkit.AkkaSpec
+import akka.util.ByteString
 
 import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
-class UnfoldResourceSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
+class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)

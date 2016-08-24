@@ -65,7 +65,8 @@ private[http] object HttpServerBluePrint {
         websocketSupport(settings, log) atop
         tlsSupport
 
-    theStack.withAttributes(HttpAttributes.remoteAddress(remoteAddress))
+    if (settings.remoteAddressHeader && remoteAddress.isDefined) theStack.withAttributes(HttpAttributes.remoteAddress(remoteAddress))
+    else theStack
   }
 
   val tlsSupport: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, SessionBytes, NotUsed] =
@@ -211,7 +212,7 @@ private[http] object HttpServerBluePrint {
     // the initial header parser we initially use for every connection,
     // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
     val rootParser = new HttpRequestParser(parserSettings, rawRequestUriHeader,
-      HttpHeaderParser(parserSettings) { info ⇒
+      HttpHeaderParser(parserSettings, log) { info ⇒
         if (parserSettings.illegalHeaderWarnings)
           logParsingError(info withSummaryPrepended "Illegal request header", log, parserSettings.errorLoggingVerbosity)
       })
@@ -228,11 +229,7 @@ private[http] object HttpServerBluePrint {
       case x ⇒ x
     }
 
-    Flow[SessionBytes].via(
-      // each connection uses a single (private) request parser instance for all its requests
-      // which builds a cache of all header instances seen on that connection
-      rootParser.createShallowCopy().stage).named("rootParser")
-      .map(establishAbsoluteUri)
+    Flow[SessionBytes].via(rootParser).map(establishAbsoluteUri)
   }
 
   def rendering(settings: ServerSettings, log: LoggingAdapter): Flow[ResponseRenderingContext, ResponseRenderingOutput, NotUsed] = {
@@ -425,7 +422,7 @@ private[http] object HttpServerBluePrint {
 
           emit(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
             pullHttpResponseIn)
-          if (close && requestStart.expect100Continue) pull(requestParsingIn)
+          if (!isClosed(requestParsingIn) && close && requestStart.expect100Continue) pull(requestParsingIn)
         }
         override def onUpstreamFinish() =
           if (openRequests.isEmpty && isClosed(requestParsingIn)) completeStage()

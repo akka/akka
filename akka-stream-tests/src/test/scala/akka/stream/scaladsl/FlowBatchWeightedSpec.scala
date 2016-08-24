@@ -6,9 +6,8 @@ package akka.stream.scaladsl
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 import scala.concurrent.duration._
-import akka.testkit.AkkaSpec
 
-class FlowBatchWeightedSpec extends AkkaSpec {
+class FlowBatchWeightedSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)

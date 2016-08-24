@@ -193,7 +193,7 @@ object Framing {
         } else if (buffer.slice(possibleMatchPos, possibleMatchPos + separatorBytes.size) == separatorBytes) {
           // Found a match
           val parsedFrame = buffer.slice(0, possibleMatchPos).compact
-          buffer = buffer.drop(possibleMatchPos + separatorBytes.size)
+          buffer = buffer.drop(possibleMatchPos + separatorBytes.size).compact
           nextPossibleMatch = 0
           if (isClosed(in) && buffer.isEmpty) {
             push(out, parsedFrame)

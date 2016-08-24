@@ -273,7 +273,9 @@ abstract class CustomRouterConfig extends RouterConfig {
 }
 
 /**
- * Router configuration which has no default, i.e. external configuration is required.
+ * Wraps a [[akka.actor.Props]] to mark the actor as externally configurable to be used with a router.
+ * If a [[akka.actor.Props]] is not wrapped with [[FromConfig]] then the actor will ignore the router part of the deployment section
+ * in the configuration.
  */
 case object FromConfig extends FromConfig {
   /**
@@ -290,7 +292,9 @@ case object FromConfig extends FromConfig {
 }
 
 /**
- * Java API: Router configuration which has no default, i.e. external configuration is required.
+ * Java API: Wraps a [[akka.actor.Props]] to mark the actor as externally configurable to be used with a router.
+ * If a [[akka.actor.Props]] is not wrapped with [[FromConfig]] then the actor will ignore the router part of the deployment section
+ * in the configuration.
  *
  * This can be used when the dispatcher to be used for the head Router needs to be configured
  * (defaults to default-dispatcher).

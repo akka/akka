@@ -12,7 +12,7 @@ import java.util.Map;
 import org.junit.Test;
 
 import akka.http.javadsl.model.HttpRequest;
-import akka.http.javadsl.server.StringUnmarshallers;
+import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 
