@@ -14,7 +14,7 @@ import akka.actor.ActorLogging
 
 object StartupWithOneThreadSpec {
   val config = """
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.actor.provider = "cluster"
     akka.actor.creation-timeout = 10s
     akka.remote.netty.tcp.port = 0
 

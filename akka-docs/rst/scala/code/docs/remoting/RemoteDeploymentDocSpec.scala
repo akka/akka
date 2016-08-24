@@ -19,7 +19,7 @@ object RemoteDeploymentDocSpec {
 }
 
 class RemoteDeploymentDocSpec extends AkkaSpec("""
-    akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+    akka.actor.provider = remote
     akka.remote.netty.tcp {
       port = 0
     }

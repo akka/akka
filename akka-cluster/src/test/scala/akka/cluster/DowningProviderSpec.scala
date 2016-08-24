@@ -38,7 +38,7 @@ class DowningProviderSpec extends WordSpec with Matchers {
     """
       akka {
         loglevel = WARNING
-        actor.provider = "akka.cluster.ClusterActorRefProvider"
+        actor.provider = "cluster"
         remote {
           netty.tcp {
             hostname = "127.0.0.1"

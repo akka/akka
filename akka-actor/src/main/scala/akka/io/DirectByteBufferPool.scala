@@ -83,10 +83,10 @@ private[akka] class DirectByteBufferPool(defaultBufferSize: Int, maxPoolEntries:
    */
   private final def tryCleanDirectByteBuffer(toBeDestroyed: ByteBuffer): Unit = try {
     if (toBeDestroyed.isDirect) {
-      val cleanerMethod = toBeDestroyed.getClass().getMethod("cleaner")
+      val cleanerMethod = toBeDestroyed.getClass.getMethod("cleaner")
       cleanerMethod.setAccessible(true)
       val cleaner = cleanerMethod.invoke(toBeDestroyed)
-      val cleanMethod = cleaner.getClass().getMethod("clean")
+      val cleanMethod = cleaner.getClass.getMethod("clean")
       cleanMethod.setAccessible(true)
       cleanMethod.invoke(cleaner)
     }
