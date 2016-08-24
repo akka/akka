@@ -30,6 +30,15 @@ object Sink {
     new Sink(scaladsl.Sink.fold[U, In](zero)(f.apply).toCompletionStage())
 
   /**
+   * A `Sink` that will invoke the given asynchronous function for every received element, giving it its previous
+   * output (or the given `zero` value) and the element as input.
+   * The returned [[java.util.concurrent.CompletionStage]] will be completed with value of the final
+   * function evaluation when the input stream ends, or completed with `Failure`
+   * if there is a failure is signaled in the stream.
+   */
+  def foldAsync[U, In](zero: U, f: function.Function2[U, In, CompletionStage[U]]): javadsl.Sink[In, CompletionStage[U]] = new Sink(scaladsl.Sink.foldAsync[U, In](zero)(f(_, _).toScala).toCompletionStage())
+
+  /**
    * A `Sink` that will invoke the given function for every received element, giving it its previous
    * output (from the second element) and the element as input.
    * The returned [[java.util.concurrent.CompletionStage]] will be completed with value of the final

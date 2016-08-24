@@ -45,6 +45,7 @@ object Stages {
     val dropWhile = name("dropWhile")
     val scan = name("scan")
     val fold = name("fold")
+    val foldAsync = name("foldAsync")
     val reduce = name("reduce")
     val intersperse = name("intersperse")
     val buffer = name("buffer")
