@@ -80,6 +80,31 @@ object NewLayout {
         )
       }
     }
+
+    val wireInPlace: Array[Int] = Array(0)
+    val wireForward: Array[Int] = Array(1)
+    val noWire: Array[Int] = Array()
+
+    def linear(module: AtomicModule): LinearTraversalBuilder = {
+      require(module.inPorts.size <= 1, "Modules with more than one input port cannot be linear.")
+      require(module.outPorts.size <= 1, "Modules with more than one input port cannot be linear.")
+      initShape(module.shape)
+
+      val inPortOpt = module.inPorts.headOption
+      val outPortOpt = module.outPorts.headOption
+
+      val wiring = if (outPortOpt.isDefined) {
+        if (inPortOpt.isDefined) wireForward
+        else wireInPlace
+      } else noWire
+
+      LinearTraversalBuilder(
+        inPortOpt,
+        outPortOpt,
+        if (inPortOpt.isDefined) 1 else 0,
+        traversalSoFar = MaterializeAtomic(module, wiring)
+      )
+    }
   }
 
   trait TraversalBuilder {
@@ -161,6 +186,46 @@ object NewLayout {
       } else copy(outToSlot = newOutToSlot, unwiredOuts = newUnwiredOuts)
     }
 
+  }
+
+  final case class LinearTraversalBuilder(
+    inPort:               Option[InPort],
+    outPort:              Option[OutPort],
+    override val inSlots: Int,
+    traversalSoFar:       Traversal
+  ) extends TraversalBuilder {
+
+    override def traversal: Option[Traversal] =
+      if (isComplete) Some(traversalSoFar) else None
+
+    override def add(submodule: TraversalBuilder, shape: Shape): TraversalBuilder =
+      throw new UnsupportedOperationException("Linear traversal cannot add arbitrary modules.")
+
+    override def wire(out: OutPort, in: InPort): TraversalBuilder =
+      throw new UnsupportedOperationException("Linear traversal cannot wire arbitrary modules.")
+
+    override def offsetOfModule(out: OutPort): Int =
+      throw new UnsupportedOperationException("Linear traversal cannot look up offset of arbitrary out ports.")
+
+    override def offsetOf(in: InPort): Int =
+      throw new UnsupportedOperationException("Linear traversal cannot look up offset of arbitrary in ports.")
+
+    override def assign(out: OutPort, relativeSlot: Int): TraversalBuilder =
+      throw new UnsupportedOperationException("Linear traversal cannot assign offset of arbitrary out port.")
+
+    override def isComplete: Boolean = inPort.isEmpty && outPort.isEmpty
+
+    override def unwiredOuts: Int = if (outPort.isDefined) 1 else 0
+
+    def append(other: LinearTraversalBuilder): LinearTraversalBuilder = {
+      // TODO: Reverse concatenation to favor left-to-right construnction (not too deep Concat trees)
+      copy(
+        outPort = other.outPort,
+        inSlots = inSlots + other.inSlots,
+        traversalSoFar = this.traversalSoFar.concat(other.traversalSoFar)
+      )
+
+    }
   }
 
   class BuilderKey {
