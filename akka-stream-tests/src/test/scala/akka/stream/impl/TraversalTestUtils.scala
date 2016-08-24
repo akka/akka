@@ -97,18 +97,25 @@ object TraversalTestUtils {
     }
   }
 
+  /**
+   * This test method emulates a materialization run. It simply puts input and output ports into slots of an Array.
+   * After running this method, it can be tested that ports that are meant to be wired together have been put into
+   * corresponding slots of the [[MaterializationResult]].
+   */
   def testMaterialize(b: TraversalBuilder): MaterializationResult = {
-    require(b.isComplete, "Traversal builder must be complete")
+    require(b.isTraversalComplete, "Traversal builder must be complete")
 
     val connections = b.inSlots
     val inlets = Array.ofDim[InPort](connections)
     val outlets = Array.ofDim[OutPort](connections)
 
+    // Track next assignable number for input ports
     var inOffs = 0
 
     var current: Traversal = b.traversal.get
     var traversalStack: List[Traversal] = current :: Nil
 
+    // Due to how Concat works, we need a stack. This probably can be optimized for the most common cases.
     while (traversalStack.nonEmpty) {
       current = traversalStack.head
       traversalStack = traversalStack.tail
@@ -120,16 +127,20 @@ object TraversalTestUtils {
             mod.shape.inlets.zipWithIndex.foreach {
               case (in, i) ⇒
                 println(s"in $in (id = ${in.id}) assigned to ${inOffs + i}")
+                // Input ports are simply assigned consecutively.
                 inlets(inOffs + i) = in
             }
             mod.shape.outlets.zipWithIndex.foreach {
               case (out, i) ⇒
                 println(s"out $out (id = ${out.id}) assigned to ${inOffs} + ${outToSlot(out.id)} =" +
                   s" ${inOffs + outToSlot(out.id)}")
+                // Output ports are assigned relative to the "base offset" of the module (inOffs) using
+                // the lookup table provided by MaterializeAtomic
                 outlets(inOffs + outToSlot(out.id)) = out
             }
             inOffs += mod.shape.inlets.size
             current = current.next
+          // And that's it ;)
           case Concat(first, next) ⇒
             traversalStack = next :: traversalStack
             current = first
