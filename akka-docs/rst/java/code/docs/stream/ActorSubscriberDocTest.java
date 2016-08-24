@@ -26,8 +26,10 @@ import docs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.concurrent.duration.Duration;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
@@ -231,7 +233,7 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
           assertEquals(String.format("Expected %d, but got %s", i, got.get(i)), WorkerPoolProtocol.done(i), got.get(i));
         }
         assertEquals(String.format("Expected 117 messages but got %d", i), i, 117);
-        expectTerminated(worker);
+        expectTerminated(Duration.create(10, TimeUnit.SECONDS), worker);
       }
     };
   }

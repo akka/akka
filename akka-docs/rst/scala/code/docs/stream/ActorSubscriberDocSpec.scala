@@ -16,6 +16,7 @@ import akka.stream.actor.MaxInFlightRequestStrategy
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.testkit.AkkaSpec
+import scala.concurrent.duration._
 
 object ActorSubscriberDocSpec {
   //#worker-pool
@@ -87,7 +88,7 @@ class ActorSubscriberDocSpec extends AkkaSpec {
 
     watch(worker)
     receiveN(N).toSet should be((1 to N).map(WorkerPool.Done).toSet)
-    expectTerminated(worker)
+    expectTerminated(worker, 10.seconds)
   }
 
 }
