@@ -18,6 +18,10 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
     val flow1 = new LinearTestFlow("1")
     val flow2 = new LinearTestFlow("2")
 
+    val compositeSource = new CompositeTestSource
+    val compositeSink = new CompositeTestSink
+    val compositeFlow = new CompositeTestFlow("C1")
+
     // ADD closed shape, (and composite closed shape)
 
     "work with a single Source and Sink" in {
@@ -247,11 +251,109 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       mat.inlets(1) should ===(flow1.in)
     }
 
-    "be able to be embedded in a composite (with different wiring order)" in pending
+    "be able to be used with a composite source" in {
+      val builder =
+        compositeSource.traversal
+          .add(sink.traversal, sink.shape)
+          .wire(compositeSource.out, sink.in)
+
+      printTraversal(builder.traversal.get)
+
+      val mat = testMaterialize(builder)
+
+      println(mat)
+
+      mat.connections should ===(1)
+      mat.outlets(0) should ===(compositeSource.out)
+      mat.inlets(0) should ===(sink.in)
+    }
+
+    "be able to be used with a composite sink" in {
+      val builder =
+        compositeSink.traversal
+          .add(source.traversal, source.shape)
+          .wire(source.out, compositeSink.in)
+
+      printTraversal(builder.traversal.get)
+
+      val mat = testMaterialize(builder)
+
+      println(mat)
+
+      mat.connections should ===(1)
+      mat.outlets(0) should ===(source.out)
+      mat.inlets(0) should ===(compositeSink.in)
+    }
+
+    "be able to be joined with a composite flow" in {
+      val embeddedFlow =
+        flow1.traversal
+          .append(flow2.traversal)
+
+      val builder =
+        compositeFlow.traversal
+          .add(embeddedFlow, FlowShape(flow1.in, flow2.out))
+          .wire(compositeFlow.out, flow1.in)
+          .wire(flow2.out, compositeFlow.in)
+
+      printTraversal(builder.traversal.get)
+
+      val mat = testMaterialize(builder)
+
+      println(mat)
+
+      mat.connections should ===(3)
+      mat.outlets(0) should ===(flow2.out)
+      mat.inlets(0) should ===(compositeFlow.in)
+      mat.outlets(1) should ===(flow1.out)
+      mat.inlets(1) should ===(flow2.in)
+      mat.outlets(2) should ===(compositeFlow.out)
+      mat.inlets(2) should ===(flow1.in)
+    }
+
+    "be able to use a linear flow with composite source and sink" in {
+      val builder =
+        compositeSource.traversal
+          .add(compositeSink.traversal, compositeSink.shape)
+          .add(flow1.traversal, flow1.shape)
+          .wire(compositeSource.out, flow1.in)
+          .wire(flow1.out, compositeSink.in)
+
+      printTraversal(builder.traversal.get)
+
+      val mat = testMaterialize(builder)
+
+      println(mat)
+
+      mat.connections should ===(2)
+      mat.outlets(0) should ===(flow1.out)
+      mat.inlets(0) should ===(compositeSink.in)
+      mat.outlets(1) should ===(compositeSource.out)
+      mat.inlets(1) should ===(flow1.in)
+    }
+
+    "be able to add a flow to an empty composite and join to itself" in {
+      val builder =
+        CompositeTraversalBuilder()
+          .add(flow1.traversal, flow1.shape)
+          .wire(flow1.out, flow1.in)
+
+      printTraversal(builder.traversal.get)
+
+      val mat = testMaterialize(builder)
+
+      println(mat)
+
+      mat.connections should ===(1)
+      mat.outlets(0) should ===(flow1.out)
+      mat.inlets(0) should ===(flow1.in)
+    }
 
     "be able embed a composite in a linear traversal" in pending
 
     "be able embed a composite (constructed in reverse) in a linear traversal" in pending
+
+    "be able to use a composite flow with a linear source and sink" in pending
 
   }
 

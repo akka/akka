@@ -193,8 +193,7 @@ object NewLayout {
     traversalSoFar:       Traversal
   ) extends TraversalBuilder {
 
-    override def traversal: Option[Traversal] =
-      if (isComplete) Some(traversalSoFar) else None
+    override def traversal: Option[Traversal] = Some(traversalSoFar)
 
     override def add(submodule: TraversalBuilder, shape: Shape): TraversalBuilder =
       throw new UnsupportedOperationException("Linear traversal cannot add arbitrary modules.")
@@ -225,16 +224,22 @@ object NewLayout {
     }
 
     override def offsetOfModule(out: OutPort): Int =
-      throw new UnsupportedOperationException("Linear traversal cannot look up offset of arbitrary modules.")
+      if (outPort.contains(out)) 0
+      else
+        throw new IllegalArgumentException(s"Port $out cannot be accessed in this builder")
 
     override def offsetOf(in: InPort): Int = {
-      if (inPort.contains(in)) 0
+      if (inPort.contains(in)) inSlots - 1
       else
         throw new IllegalArgumentException(s"Port $in cannot be accessed in this builder")
     }
 
-    override def assign(out: OutPort, relativeSlot: Int): TraversalBuilder =
-      throw new UnsupportedOperationException("Linear traversal cannot assign offset of arbitrary out port.")
+    override def assign(out: OutPort, relativeSlot: Int): TraversalBuilder = {
+      if (outPort.contains(out))
+        rewireLastOutTo(relativeSlot).copy(outPort = None)
+      else
+        throw new IllegalArgumentException(s"Port $out cannot be assigned in this builder")
+    }
 
     override def isComplete: Boolean = inPort.isEmpty && outPort.isEmpty
 
