@@ -334,7 +334,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val ordinaryStreamId = 3
   private val largeStreamId = 4
 
-  private val taskRunner = new TaskRunner(system, remoteSettings.IdleCpuLevel)
+  private val taskRunner = new TaskRunner(system, remoteSettings.Artery.Advanced.IdleCpuLevel)
 
   private val restartTimeout: FiniteDuration = 5.seconds // FIXME config
   private val maxRestarts = 5 // FIXME config
@@ -389,13 +389,13 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     topLevelFREvents.loFreq(Transport_TaskRunnerStarted, NoMetaData)
 
     val port =
-      if (remoteSettings.ArteryPort == 0) ArteryTransport.autoSelectPort(remoteSettings.ArteryHostname)
-      else remoteSettings.ArteryPort
+      if (remoteSettings.Artery.Port == 0) ArteryTransport.autoSelectPort(remoteSettings.Artery.Hostname)
+      else remoteSettings.Artery.Port
 
     // TODO: Configure materializer properly
     // TODO: Have a supervisor actor
     _localAddress = UniqueAddress(
-      Address(ArteryTransport.ProtocolName, system.name, remoteSettings.ArteryHostname, port),
+      Address(ArteryTransport.ProtocolName, system.name, remoteSettings.Artery.Hostname, port),
       AddressUidExtension(system).longAddressUid)
     _addresses = Set(_localAddress.address)
 
@@ -420,16 +420,16 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def startMediaDriver(): Unit = {
-    if (remoteSettings.EmbeddedMediaDriver) {
+    if (remoteSettings.Artery.Advanced.EmbeddedMediaDriver) {
       val driverContext = new MediaDriver.Context
-      if (remoteSettings.AeronDirectoryName.nonEmpty)
-        driverContext.aeronDirectoryName(remoteSettings.AeronDirectoryName)
+      if (remoteSettings.Artery.Advanced.AeronDirectoryName.nonEmpty)
+        driverContext.aeronDirectoryName(remoteSettings.Artery.Advanced.AeronDirectoryName)
       // FIXME settings from config
       driverContext.clientLivenessTimeoutNs(SECONDS.toNanos(20))
       driverContext.imageLivenessTimeoutNs(SECONDS.toNanos(20))
       driverContext.driverTimeoutMs(SECONDS.toNanos(20))
 
-      val idleCpuLevel = remoteSettings.IdleCpuLevel
+      val idleCpuLevel = remoteSettings.Artery.Advanced.IdleCpuLevel
       if (idleCpuLevel == 10) {
         driverContext
           .threadingMode(ThreadingMode.DEDICATED)
@@ -461,7 +461,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private def aeronDir: String = mediaDriver match {
     case Some(driver) ⇒ driver.aeronDirectoryName
-    case None         ⇒ remoteSettings.AeronDirectoryName
+    case None         ⇒ remoteSettings.Artery.Advanced.AeronDirectoryName
   }
 
   private def stopMediaDriver(): Unit = {
@@ -542,7 +542,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private def runInboundControlStream(compression: InboundCompressions): Unit = {
     val (ctrl, completed) =
-      if (remoteSettings.TestMode) {
+      if (remoteSettings.Artery.Advanced.TestMode) {
         val (mgmt, (ctrl, completed)) =
           aeronSource(controlStreamId, envelopePool)
             .via(inboundFlow(compression))
@@ -617,7 +617,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private def runInboundOrdinaryMessagesStream(compression: InboundCompressions): Unit = {
     val completed =
-      if (remoteSettings.TestMode) {
+      if (remoteSettings.Artery.Advanced.TestMode) {
         val (mgmt, c) = aeronSource(ordinaryStreamId, envelopePool)
           .via(inboundFlow(compression))
           .viaMat(inboundTestFlow)(Keep.right)
@@ -639,7 +639,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     val disableCompression = NoInboundCompressions // no compression on large message stream for now
 
     val completed =
-      if (remoteSettings.TestMode) {
+      if (remoteSettings.Artery.Advanced.TestMode) {
         val (mgmt, c) = aeronSource(largeStreamId, largeEnvelopePool)
           .via(inboundLargeFlow(disableCompression))
           .viaMat(inboundTestFlow)(Keep.right)
@@ -807,7 +807,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def createInboundCompressions(inboundContext: InboundContext): InboundCompressions =
-    if (remoteSettings.ArteryCompressionSettings.enabled) new InboundCompressionsImpl(system, inboundContext)
+    if (remoteSettings.Artery.Advanced.Compression.Enabled) new InboundCompressionsImpl(system, inboundContext, remoteSettings.Artery.Advanced.Compression)
     else NoInboundCompressions
 
   def createEncoder(pool: EnvelopeBufferPool): Flow[OutboundEnvelope, EnvelopeBuffer, ChangeOutboundCompression] =
@@ -864,7 +864,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def initializeFlightRecorder(): Option[(FileChannel, File, FlightRecorder)] = {
-    if (remoteSettings.FlightRecorderEnabled) {
+    if (remoteSettings.Artery.Advanced.FlightRecorderEnabled) {
       // TODO: Figure out where to put it, currently using temporary files
       val afrFile = File.createTempFile("artery", ".afr")
       afrFile.deleteOnExit()
@@ -920,4 +920,3 @@ private[remote] object ArteryTransport {
   }
 
 }
-

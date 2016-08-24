@@ -11,7 +11,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 import akka.actor.{ ActorRef, ActorSystem, Address }
 import akka.event.{ Logging, NoLogging }
-import akka.remote.artery.{ InboundContext, OutboundContext }
+import akka.remote.artery.{ ArterySettings, InboundContext, OutboundContext }
 import akka.util.{ OptionVal, PrettyDuration }
 import org.agrona.collections.Long2ObjectHashMap
 
@@ -106,7 +106,7 @@ private[remote] final class InboundCompressionsImpl(
  */
 private[remote] final class InboundActorRefCompression(
   system:         ActorSystem,
-  settings:       CompressionSettings,
+  settings:       ArterySettings.Compression,
   originUid:      Long,
   inboundContext: InboundContext,
   heavyHitters:   TopHeavyHitters[ActorRef]) extends InboundCompression[ActorRef](system, settings, originUid, inboundContext, heavyHitters) {
@@ -123,7 +123,7 @@ private[remote] final class InboundActorRefCompression(
     else super.decompress(tableVersion, idx)
 
   scheduleNextTableAdvertisement()
-  override protected def tableAdvertisementInterval = settings.actorRefs.advertisementInterval
+  override protected def tableAdvertisementInterval = settings.ActorRefs.AdvertisementInterval
 
   override def advertiseCompressionTable(outboundContext: OutboundContext, table: CompressionTable[ActorRef]): Unit = {
     log.debug(s"Advertise ActorRef compression [$table], from [${inboundContext.localAddress}] to [${outboundContext.remoteAddress}]")
@@ -133,13 +133,13 @@ private[remote] final class InboundActorRefCompression(
 
 final class InboundManifestCompression(
   system:         ActorSystem,
-  settings:       CompressionSettings,
+  settings:       ArterySettings.Compression,
   originUid:      Long,
   inboundContext: InboundContext,
   heavyHitters:   TopHeavyHitters[String]) extends InboundCompression[String](system, settings, originUid, inboundContext, heavyHitters) {
 
   scheduleNextTableAdvertisement()
-  override protected def tableAdvertisementInterval = settings.manifests.advertisementInterval
+  override protected def tableAdvertisementInterval = settings.Manifests.AdvertisementInterval
 
   override lazy val log = NoLogging
 
@@ -183,7 +183,7 @@ private[remote] object InboundCompression {
  */
 private[remote] abstract class InboundCompression[T >: Null](
   val system:       ActorSystem,
-  val settings:     CompressionSettings,
+  val settings:     ArterySettings.Compression,
   originUid:        Long,
   inboundContext:   InboundContext,
   val heavyHitters: TopHeavyHitters[T]) {

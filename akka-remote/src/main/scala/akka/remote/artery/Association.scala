@@ -339,7 +339,7 @@ private[remote] class Association(
     controlQueue = wrapper // use new underlying queue immediately for restarts
 
     val (queueValue, (control, completed)) =
-      if (transport.remoteSettings.TestMode) {
+      if (transport.remoteSettings.Artery.Advanced.TestMode) {
         val ((queueValue, mgmt), (control, completed)) =
           Source.fromGraph(new SendQueue[OutboundEnvelope])
             .via(transport.outboundControlPart1(this))
@@ -382,7 +382,7 @@ private[remote] class Association(
     queue = wrapper // use new underlying queue immediately for restarts
 
     val (queueValue, (changeCompression, completed)) =
-      if (transport.remoteSettings.TestMode) {
+      if (transport.remoteSettings.Artery.Advanced.TestMode) {
         val ((queueValue, mgmt), completed) = Source.fromGraph(new SendQueue[OutboundEnvelope])
           .viaMat(transport.outboundTestFlow(this))(Keep.both)
           .toMat(transport.outbound(this))(Keep.both)
@@ -408,7 +408,7 @@ private[remote] class Association(
     largeQueue = wrapper // use new underlying queue immediately for restarts
 
     val (queueValue, completed) =
-      if (transport.remoteSettings.TestMode) {
+      if (transport.remoteSettings.Artery.Advanced.TestMode) {
         val ((queueValue, mgmt), completed) = Source.fromGraph(new SendQueue[OutboundEnvelope])
           .viaMat(transport.outboundTestFlow(this))(Keep.both)
           .toMat(transport.outboundLarge(this))(Keep.both)
