@@ -108,12 +108,12 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       println(mat)
 
       mat.connections should ===(3)
-      mat.outlets(0) should ===(source.out)
-      mat.inlets(0) should ===(flow1.in)
+      mat.outlets(2) should ===(source.out)
+      mat.inlets(2) should ===(flow1.in)
       mat.outlets(1) should ===(flow1.out)
       mat.inlets(1) should ===(flow2.in)
-      mat.outlets(2) should ===(flow2.out)
-      mat.inlets(2) should ===(sink.in)
+      mat.outlets(0) should ===(flow2.out)
+      mat.inlets(0) should ===(sink.in)
     }
 
     "work with two Flows wired in opposite order" in {
@@ -127,12 +127,12 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       println(mat)
 
       mat.connections should ===(3)
-      mat.outlets(0) should ===(source.out)
-      mat.inlets(0) should ===(flow1.in)
+      mat.outlets(2) should ===(source.out)
+      mat.inlets(2) should ===(flow1.in)
       mat.outlets(1) should ===(flow1.out)
       mat.inlets(1) should ===(flow2.in)
-      mat.outlets(2) should ===(flow2.out)
-      mat.inlets(2) should ===(sink.in)
+      mat.outlets(0) should ===(flow2.out)
+      mat.inlets(0) should ===(sink.in)
     }
 
     "work with two Flows wired in an irregular order" in {
@@ -147,15 +147,15 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       println(mat)
 
       mat.connections should ===(3)
-      mat.outlets(0) should ===(source.out)
-      mat.inlets(0) should ===(flow1.in)
+      mat.outlets(2) should ===(source.out)
+      mat.inlets(2) should ===(flow1.in)
       mat.outlets(1) should ===(flow1.out)
       mat.inlets(1) should ===(flow2.in)
-      mat.outlets(2) should ===(flow2.out)
-      mat.inlets(2) should ===(sink.in)
+      mat.outlets(0) should ===(flow2.out)
+      mat.inlets(0) should ===(sink.in)
     }
 
-    "work with a Flow wired to its imported self" in {
+    "work with a Flow appended to its imported self" in {
       val remappedShape = FlowShape(Inlet[Any]("Remapped.in"), Outlet[Any]("Remapped.out"))
       remappedShape.in.mappedTo = flow1.in
       remappedShape.out.mappedTo = flow1.out
@@ -171,12 +171,12 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       println(mat)
 
       mat.connections should ===(3)
-      mat.outlets(0) should ===(source.out)
-      mat.inlets(0) should ===(flow1.in)
+      mat.outlets(2) should ===(source.out)
+      mat.inlets(2) should ===(flow1.in)
       mat.outlets(1) should ===(flow1.out)
       mat.inlets(1) should ===(flow1.in)
-      mat.outlets(2) should ===(flow1.out)
-      mat.inlets(2) should ===(sink.in)
+      mat.outlets(0) should ===(flow1.out)
+      mat.inlets(0) should ===(sink.in)
     }
 
     "work with a nested Flow chain" in {
@@ -196,15 +196,15 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       println(mat)
 
       mat.connections should ===(3)
-      mat.outlets(0) should ===(source.out)
-      mat.inlets(0) should ===(flow1.in)
+      mat.outlets(2) should ===(source.out)
+      mat.inlets(2) should ===(flow1.in)
       mat.outlets(1) should ===(flow1.out)
       mat.inlets(1) should ===(flow2.in)
-      mat.outlets(2) should ===(flow2.out)
-      mat.inlets(2) should ===(sink.in)
+      mat.outlets(0) should ===(flow2.out)
+      mat.inlets(0) should ===(sink.in)
     }
 
-    "work with a nested Flow chain used twice" in {
+    "work with a nested Flow chain used twice (appended to self)" in {
       val nestedFlows =
         flow1.traversal
           .append(flow2.traversal)
@@ -222,33 +222,77 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       println(mat)
 
       mat.connections should ===(5)
-      mat.outlets(0) should ===(source.out)
-      mat.inlets(0) should ===(flow1.in)
-      mat.outlets(1) should ===(flow1.out)
-      mat.inlets(1) should ===(flow2.in)
-      mat.outlets(2) should ===(flow2.out)
-      mat.inlets(2) should ===(flow1.in)
+      mat.outlets(4) should ===(source.out)
+      mat.inlets(4) should ===(flow1.in)
       mat.outlets(3) should ===(flow1.out)
       mat.inlets(3) should ===(flow2.in)
-      mat.outlets(4) should ===(flow2.out)
-      mat.inlets(4) should ===(sink.in)
+      mat.outlets(2) should ===(flow2.out)
+      mat.inlets(2) should ===(flow1.in)
+      mat.outlets(1) should ===(flow1.out)
+      mat.inlets(1) should ===(flow2.in)
+      mat.outlets(0) should ===(flow2.out)
+      mat.inlets(0) should ===(sink.in)
     }
 
-    //    "work with a Flow wired to self" in {
-    //      val builder = flow1.traversal.wire(flow1.out, flow1.in)
-    //
-    //      printTraversal(builder.traversal.get)
-    //
-    //      val mat = testMaterialize(builder)
-    //
-    //      println(mat)
-    //
-    //      mat.connections should ===(1)
-    //      mat.outlets(0) should ===(flow1.out)
-    //      mat.inlets(0) should ===(flow1.in)
-    //    }
+    "work with a Flow wired to self" in {
+      val builder = flow1.traversal.wire(flow1.out, flow1.in)
 
-    //    "work with a Flow wired to self embedded in a larger graph" in pending
+      printTraversal(builder.traversal.get)
+
+      val mat = testMaterialize(builder)
+
+      println(mat)
+
+      mat.connections should ===(1)
+      mat.outlets(0) should ===(flow1.out)
+      mat.inlets(0) should ===(flow1.in)
+    }
+
+    "work with a two Flows wired back to self" in {
+      val builder =
+        flow1.traversal
+          .append(flow2.traversal)
+          .wire(flow2.out, flow1.in)
+
+      printTraversal(builder.traversal.get)
+
+      val mat = testMaterialize(builder)
+
+      println(mat)
+
+      mat.connections should ===(2)
+      mat.outlets(0) should ===(flow1.out)
+      mat.inlets(0) should ===(flow2.in)
+      mat.outlets(1) should ===(flow2.out)
+      mat.inlets(1) should ===(flow1.in)
+    }
+
+    "work with Flow appended to self then wired back to self" in {
+      val builder =
+        flow1.traversal
+          .append(flow1.traversal)
+          .wire(flow1.out, flow1.in)
+
+      printTraversal(builder.traversal.get)
+
+      val mat = testMaterialize(builder)
+
+      println(mat)
+
+      mat.connections should ===(2)
+      mat.outlets(0) should ===(flow1.out)
+      mat.inlets(0) should ===(flow1.in)
+      mat.outlets(1) should ===(flow1.out)
+      mat.inlets(1) should ===(flow1.in)
+    }
+
+    "be able embed a composite in a linear traversal" in pending
+
+    "be able embed a composite (constructed in reverse) in a linear traversal" in pending
+
+    "be able to be embedded in a composite" in pending
+
+    "be able to be embedded in a composite (with different wiring order)" in pending
 
   }
 

@@ -16,7 +16,6 @@ object NewLayout {
   // Attributes
   // MatValueSource
   // Fusing
-
   sealed trait Traversal {
     def next: Traversal
 
@@ -36,6 +35,8 @@ object NewLayout {
 
   final case class MaterializeAtomic(module: Module, outToSlots: Array[Int]) extends Traversal {
     override def next: Traversal = EmptyTraversal
+
+    override def toString: String = s"MaterializeAtomic($module, ${outToSlots.mkString("[", ", ", "]")})"
   }
 
   object EmptyTraversal extends Traversal {
@@ -82,7 +83,7 @@ object NewLayout {
     }
 
     val wireInPlace: Array[Int] = Array(0)
-    val wireForward: Array[Int] = Array(1)
+    val wireBackward: Array[Int] = Array(-1)
     val noWire: Array[Int] = Array()
 
     def linear(module: AtomicModule): LinearTraversalBuilder = {
@@ -93,10 +94,7 @@ object NewLayout {
       val inPortOpt = module.inPorts.headOption
       val outPortOpt = module.outPorts.headOption
 
-      val wiring = if (outPortOpt.isDefined) {
-        if (inPortOpt.isDefined) wireForward
-        else wireInPlace
-      } else noWire
+      val wiring = if (outPortOpt.isDefined) wireBackward else noWire
 
       LinearTraversalBuilder(
         inPortOpt,
@@ -201,14 +199,39 @@ object NewLayout {
     override def add(submodule: TraversalBuilder, shape: Shape): TraversalBuilder =
       throw new UnsupportedOperationException("Linear traversal cannot add arbitrary modules.")
 
-    override def wire(out: OutPort, in: InPort): TraversalBuilder =
-      throw new UnsupportedOperationException("Linear traversal cannot wire arbitrary modules.")
+    private def rewireLastOutTo(relativeOffset: Int): LinearTraversalBuilder = {
+      var unzipped: List[Traversal] = Nil
+      var current: Traversal = traversalSoFar
+
+      while (current.isInstanceOf[Concat]) {
+        unzipped = current.asInstanceOf[Concat].next :: unzipped
+        current = current.asInstanceOf[Concat].first
+      }
+
+      val mod = current.asInstanceOf[MaterializeAtomic].copy(outToSlots = Array(relativeOffset))
+
+      val newTraversal = unzipped.iterator.fold(mod)(_.concat(_))
+
+      println(newTraversal)
+
+      copy(traversalSoFar = newTraversal)
+    }
+
+    override def wire(out: OutPort, in: InPort): TraversalBuilder = {
+      if (outPort.contains(out) && inPort.contains(in))
+        rewireLastOutTo(inSlots - 1).copy(inPort = None, outPort = None)
+      else
+        throw new IllegalArgumentException(s"The ports $in and $out cannot be accessed in this builder.")
+    }
 
     override def offsetOfModule(out: OutPort): Int =
-      throw new UnsupportedOperationException("Linear traversal cannot look up offset of arbitrary out ports.")
+      throw new UnsupportedOperationException("Linear traversal cannot look up offset of arbitrary modules.")
 
-    override def offsetOf(in: InPort): Int =
-      throw new UnsupportedOperationException("Linear traversal cannot look up offset of arbitrary in ports.")
+    override def offsetOf(in: InPort): Int = {
+      if (inPort.contains(in)) 0
+      else
+        throw new IllegalArgumentException(s"Port $in cannot be accessed in this builder")
+    }
 
     override def assign(out: OutPort, relativeSlot: Int): TraversalBuilder =
       throw new UnsupportedOperationException("Linear traversal cannot assign offset of arbitrary out port.")
@@ -218,11 +241,11 @@ object NewLayout {
     override def unwiredOuts: Int = if (outPort.isDefined) 1 else 0
 
     def append(other: LinearTraversalBuilder): LinearTraversalBuilder = {
-      // TODO: Reverse concatenation to favor left-to-right construnction (not too deep Concat trees)
       copy(
         outPort = other.outPort,
         inSlots = inSlots + other.inSlots,
-        traversalSoFar = this.traversalSoFar.concat(other.traversalSoFar)
+        // Build in reverse so it yields a more efficient layout for left-to-right building
+        traversalSoFar = other.traversalSoFar.concat(this.traversalSoFar)
       )
 
     }
