@@ -3,8 +3,12 @@
  */
 package akka.remote.artery
 
+import akka.stream.ActorMaterializerSettings
 import akka.util.Helpers.{ ConfigOps, Requiring }
+import akka.util.WildcardIndex
+import akka.NotUsed
 import com.typesafe.config.Config
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
 import java.net.InetAddress
@@ -22,17 +26,36 @@ private[akka] final class ArterySettings private (config: Config) {
     case "<getHostName>"         ⇒ InetAddress.getLocalHost.getHostName
     case other                   ⇒ other
   }
+  val LargeMessageDestinations =
+    config.getStringList("large-message-destinations").asScala.foldLeft(WildcardIndex[NotUsed]()) { (tree, entry) ⇒
+      val segments = entry.split('/').tail
+      tree.insert(segments, NotUsed)
+    }
 
   object Advanced {
     val config = getConfig("advanced")
     import config._
 
+    val TestMode: Boolean = getBoolean("test-mode")
+    val MaterializerSettings = ActorMaterializerSettings(config.getConfig("materializer"))
     val EmbeddedMediaDriver = getBoolean("embedded-media-driver")
     val AeronDirectoryName = getString("aeron-dir") requiring (dir ⇒
       EmbeddedMediaDriver || dir.nonEmpty, "aeron-dir must be defined when using external media driver")
-    val TestMode: Boolean = getBoolean("test-mode")
+    val DeleteAeronDirectory = getBoolean("delete-aeron-dir")
     val IdleCpuLevel: Int = getInt("idle-cpu-level").requiring(level ⇒
       1 <= level && level <= 10, "idle-cpu-level must be between 1 and 10")
+    val SystemMessageResendInterval = config.getMillisDuration("system-message-resend-interval")
+    val HandshakeRetryInterval = config.getMillisDuration("handshake-retry-interval")
+    val InjectHandshakeInterval = config.getMillisDuration("inject-handshake-interval")
+    val GiveUpSendAfter = config.getMillisDuration("give-up-send-after")
+    val ShutdownFlushTimeout = config.getMillisDuration("shutdown-flush-timeout")
+    val InboundRestartTimeout = config.getMillisDuration("inbound-restart-timeout")
+    val InboundMaxRestarts = getInt("inbound-max-restarts")
+    val OutboundRestartTimeout = config.getMillisDuration("outbound-restart-timeout")
+    val OutboundMaxRestarts = getInt("outbound-max-restarts")
+    val ClientLivenessTimeout = config.getMillisDuration("client-liveness-timeout")
+    val ImageLivenessTimeoutNs = config.getMillisDuration("image-liveness-timeout")
+    val DriverTimeout = config.getMillisDuration("driver-timeout")
     val FlightRecorderEnabled: Boolean = getBoolean("flight-recorder.enabled")
     val Compression = new Compression(getConfig("compression"))
   }

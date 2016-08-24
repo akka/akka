@@ -296,27 +296,16 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private val testStages: CopyOnWriteArrayList[TestManagementApi] = new CopyOnWriteArrayList
 
-  // FIXME config
-  private val systemMessageResendInterval: FiniteDuration = 1.second
-  private val handshakeRetryInterval: FiniteDuration = 1.second
   private val handshakeTimeout: FiniteDuration =
     system.settings.config.getMillisDuration("akka.remote.handshake-timeout").requiring(
       _ > Duration.Zero,
       "handshake-timeout must be > 0")
-  private val injectHandshakeInterval: FiniteDuration = 1.second
-  private val giveUpSendAfter: FiniteDuration = 60.seconds
-  private val shutdownFlushTimeout = 1.second
 
   private val remoteDispatcher = system.dispatchers.lookup(remoteSettings.Dispatcher)
 
-  private val largeMessageDestinations =
-    system.settings.config.getStringList("akka.remote.artery.large-message-destinations").asScala.foldLeft(WildcardIndex[NotUsed]()) { (tree, entry) ⇒
-      val segments = entry.split('/').tail
-      tree.insert(segments, NotUsed)
-    }
   // TODO use WildcardIndex.isEmpty when merged from master
   val largeMessageChannelEnabled =
-    !largeMessageDestinations.wildcardTree.isEmpty || !largeMessageDestinations.doubleWildcardTree.isEmpty
+    !remoteSettings.Artery.LargeMessageDestinations.wildcardTree.isEmpty || !remoteSettings.Artery.LargeMessageDestinations.doubleWildcardTree.isEmpty
 
   private val priorityMessageDestinations =
     WildcardIndex[NotUsed]()
@@ -336,9 +325,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private val taskRunner = new TaskRunner(system, remoteSettings.Artery.Advanced.IdleCpuLevel)
 
-  private val restartTimeout: FiniteDuration = 5.seconds // FIXME config
-  private val maxRestarts = 5 // FIXME config
-  private val restartCounter = new RestartCounter(maxRestarts, restartTimeout)
+  private val restartCounter = new RestartCounter(remoteSettings.Artery.Advanced.InboundMaxRestarts, remoteSettings.Artery.Advanced.InboundRestartTimeout)
 
   private val envelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
   private val largeEnvelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumLargeFrameSize, ArteryTransport.MaximumPooledBuffers)
@@ -373,7 +360,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       materializer,
       remoteAddress,
       controlSubject,
-      largeMessageDestinations,
+      remoteSettings.Artery.LargeMessageDestinations,
       priorityMessageDestinations,
       outboundEnvelopePool))
 
@@ -402,9 +389,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     // TODO: This probably needs to be a global value instead of an event as events might rotate out of the log
     topLevelFREvents.loFreq(Transport_UniqueAddressSet, _localAddress.toString().getBytes("US-ASCII"))
 
-    val materializerSettings = ActorMaterializerSettings(
-      remoteSettings.config.getConfig("akka.remote.artery.advanced.materializer"))
-    materializer = ActorMaterializer.systemMaterializer(materializerSettings, "remote", system)
+    materializer = ActorMaterializer.systemMaterializer(remoteSettings.Artery.Advanced.MaterializerSettings, "remote", system)
 
     messageDispatcher = new MessageDispatcher(system, provider)
     topLevelFREvents.loFreq(Transport_MaterializerStarted, NoMetaData)
@@ -424,10 +409,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       val driverContext = new MediaDriver.Context
       if (remoteSettings.Artery.Advanced.AeronDirectoryName.nonEmpty)
         driverContext.aeronDirectoryName(remoteSettings.Artery.Advanced.AeronDirectoryName)
-      // FIXME settings from config
-      driverContext.clientLivenessTimeoutNs(SECONDS.toNanos(20))
-      driverContext.imageLivenessTimeoutNs(SECONDS.toNanos(20))
-      driverContext.driverTimeoutMs(SECONDS.toNanos(20))
+      driverContext.clientLivenessTimeoutNs(remoteSettings.Artery.Advanced.ClientLivenessTimeout.toNanos)
+      driverContext.imageLivenessTimeoutNs(remoteSettings.Artery.Advanced.ImageLivenessTimeoutNs.toNanos)
+      driverContext.driverTimeoutMs(remoteSettings.Artery.Advanced.DriverTimeout.toMillis)
 
       val idleCpuLevel = remoteSettings.Artery.Advanced.IdleCpuLevel
       if (idleCpuLevel == 10) {
@@ -469,8 +453,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       // this is only for embedded media driver
       driver.close()
       try {
-        // FIXME it should also be configurable to not delete dir
-        IoUtil.delete(new File(driver.aeronDirectoryName), false)
+        if (remoteSettings.Artery.Advanced.DeleteAeronDirectory) {
+          IoUtil.delete(new File(driver.aeronDirectoryName), false)
+        }
       } catch {
         case NonFatal(e) ⇒
           log.warning(
@@ -668,7 +653,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           restart()
         } else {
           log.error(cause, "{} failed and restarted {} times within {} seconds. Terminating system. {}",
-            streamName, maxRestarts, restartTimeout.toSeconds, cause.getMessage)
+            streamName, remoteSettings.Artery.Advanced.InboundMaxRestarts, remoteSettings.Artery.Advanced.InboundRestartTimeout.toSeconds, cause.getMessage)
           system.terminate()
         }
     }
@@ -681,7 +666,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       if (allAssociations.isEmpty) Future.successful(Done)
       else {
         val flushingPromise = Promise[Done]()
-        system.systemActorOf(FlushOnShutdown.props(flushingPromise, shutdownFlushTimeout,
+        system.systemActorOf(FlushOnShutdown.props(flushingPromise, remoteSettings.Artery.Advanced.ShutdownFlushTimeout,
           this, allAssociations).withDispatcher(remoteSettings.Dispatcher), "remoteFlushOnShutdown")
         flushingPromise.future
       }
@@ -778,10 +763,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
     Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
       .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, handshakeTimeout,
-        handshakeRetryInterval, injectHandshakeInterval))
+        remoteSettings.Artery.Advanced.HandshakeRetryInterval, remoteSettings.Artery.Advanced.InjectHandshakeInterval))
       .viaMat(createEncoder(bufferPool))(Keep.right)
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), streamId, aeron, taskRunner,
-        envelopePool, giveUpSendAfter, createFlightRecorderEventSink()))(Keep.both)
+        envelopePool, remoteSettings.Artery.Advanced.GiveUpSendAfter, createFlightRecorderEventSink()))(Keep.both)
   }
 
   /**
@@ -791,8 +776,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   def outboundControlPart1(outboundContext: OutboundContext): Flow[OutboundEnvelope, OutboundEnvelope, SharedKillSwitch] = {
     Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
       .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, handshakeTimeout,
-        handshakeRetryInterval, injectHandshakeInterval))
-      .via(new SystemMessageDelivery(outboundContext, system.deadLetters, systemMessageResendInterval,
+        remoteSettings.Artery.Advanced.HandshakeRetryInterval, remoteSettings.Artery.Advanced.InjectHandshakeInterval))
+      .via(new SystemMessageDelivery(outboundContext, system.deadLetters, remoteSettings.Artery.Advanced.SystemMessageResendInterval,
         remoteSettings.SysMsgBufferSize))
 
     // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages

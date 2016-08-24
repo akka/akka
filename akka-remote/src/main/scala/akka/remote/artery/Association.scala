@@ -76,9 +76,7 @@ private[remote] class Association(
   private val queueSize = 3072
   private val largeQueueSize = 256
 
-  private val restartTimeout: FiniteDuration = 5.seconds // FIXME config
-  private val maxRestarts = 5 // FIXME config
-  private val restartCounter = new RestartCounter(maxRestarts, restartTimeout)
+  private val restartCounter = new RestartCounter(transport.remoteSettings.Artery.Advanced.OutboundMaxRestarts, transport.remoteSettings.Artery.Advanced.OutboundRestartTimeout)
 
   // We start with the raw wrapped queue and then it is replaced with the materialized value of
   // the `SendQueue` after materialization. Using same underlying queue. This makes it possible to
@@ -442,7 +440,7 @@ private[remote] class Association(
           restart(cause)
         } else {
           log.error(cause, s"{} to {} failed and restarted {} times within {} seconds. Terminating system. ${cause.getMessage}",
-            streamName, remoteAddress, maxRestarts, restartTimeout.toSeconds)
+            streamName, remoteAddress, transport.remoteSettings.Artery.Advanced.OutboundMaxRestarts, transport.remoteSettings.Artery.Advanced.OutboundRestartTimeout.toSeconds)
           transport.system.terminate()
         }
     }
