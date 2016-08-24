@@ -54,6 +54,8 @@ object ActorSubscriberDocSpec {
       case Reply(id) =>
         queue(id) ! Done(id)
         queue -= id
+      case OnComplete =>
+        context.stop(self)
     }
   }
 
@@ -79,11 +81,13 @@ class ActorSubscriberDocSpec extends AkkaSpec {
 
     //#actor-subscriber-usage
     val N = 117
-    Source(1 to N).map(WorkerPool.Msg(_, replyTo))
+    val worker = Source(1 to N).map(WorkerPool.Msg(_, replyTo))
       .runWith(Sink.actorSubscriber(WorkerPool.props))
     //#actor-subscriber-usage
 
+    watch(worker)
     receiveN(N).toSet should be((1 to N).map(WorkerPool.Done).toSet)
+    expectTerminated(worker)
   }
 
 }

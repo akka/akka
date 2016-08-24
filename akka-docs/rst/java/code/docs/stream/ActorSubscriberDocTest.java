@@ -48,7 +48,7 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
     system = null;
     mat = null;
   }
-  
+
     //#worker-pool
     public static class WorkerPoolProtocol {
 
@@ -70,7 +70,7 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
         return new Msg(id, replyTo);
       }
 
-      
+
       public static class Work {
         public final int id;
         public Work(int id) { this.id = id; }
@@ -83,8 +83,8 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
       public static Work work(int id) {
         return new Work(id);
       }
-      
-      
+
+
       public static class Reply {
         public final int id;
         public Reply(int id) { this.id = id; }
@@ -97,8 +97,8 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
       public static Reply reply(int id) {
         return new Reply(id);
       }
-      
-      
+
+
       public static class Done {
         public final int id;
         public Done(int id) { this.id = id; }
@@ -136,16 +136,16 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
       }
 
     }
-  
+
     public static class WorkerPool extends AbstractActorSubscriber {
-      
+
       public static Props props() { return Props.create(WorkerPool.class); }
-      
+
       final int MAX_QUEUE_SIZE = 10;
       final Map<Integer, ActorRef> queue = new HashMap<>();
-      
+
       final Router router;
-      
+
       @Override
       public RequestStrategy requestStrategy() {
         return new MaxInFlightRequestStrategy(MAX_QUEUE_SIZE) {
@@ -161,7 +161,7 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
         for (int i = 0; i < 3; i++)
           routees.add(new ActorRefRoutee(context().actorOf(Props.create(Worker.class))));
         router = new Router(new RoundRobinRoutingLogic(), routees);
-        
+
         receive(ReceiveBuilder.
         match(ActorSubscriberMessage.OnNext.class, on -> on.element() instanceof WorkerPoolProtocol.Msg,
           onNext -> {
@@ -170,8 +170,11 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
 
             if (queue.size() > MAX_QUEUE_SIZE)
               throw new RuntimeException("queued too many: " + queue.size());
-                  
+
             router.route(WorkerPoolProtocol.work(msg.id), self());
+        }).
+        match(ActorSubscriberMessage.onCompleteInstance().getClass(), complete -> {
+          context().stop(self());
         }).
         match(WorkerPoolProtocol.Reply.class, reply -> {
           int id = reply.id;
@@ -181,7 +184,7 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
         build());
       }
     }
-  
+
     static class Worker extends AbstractActor {
       public Worker() {
         receive(ReceiveBuilder.
@@ -192,11 +195,11 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
       }
     }
     //#worker-pool
-  
+
   @Test
   public void demonstrateActorPublisherUsage() {
     new JavaTestKit(system) {
-      
+
       {
         final ActorRef replyTo = getTestActor();
 
@@ -206,11 +209,13 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
         for (int i = 0; i < N; i++) {
           data.add(i);
         }
-        
-        Source.from(data)
+
+        final ActorRef worker = Source.from(data)
           .map(i -> WorkerPoolProtocol.msg(i, replyTo))
           .runWith(Sink.<WorkerPoolProtocol.Msg>actorSubscriber(WorkerPool.props()), mat);
         //#actor-subscriber-usage
+
+        watch(worker);
 
         List<Object> got = Arrays.asList(receiveN(N));
         Collections.sort(got, new Comparator<Object>() {
@@ -226,9 +231,10 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
           assertEquals(String.format("Expected %d, but got %s", i, got.get(i)), WorkerPoolProtocol.done(i), got.get(i));
         }
         assertEquals(String.format("Expected 117 messages but got %d", i), i, 117);
+        expectTerminated(worker);
       }
     };
   }
 
-  
+
 }
