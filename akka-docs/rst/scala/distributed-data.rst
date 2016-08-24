@@ -242,12 +242,11 @@ Subscribers will receive ``Replicator.DataDeleted``.
 
 .. warning::
 
-  As deleted keys continue to be included in the stored data on each node, as well as
-  in gossip messages that are sent out when new nodes joins the cluster, a continuous series of
-  updates and deletes of top-level entities will result in growing memory usage until an
-  ActorSystem runs out of memory. To use Akka Distributed Data where frequent adds and removes are
-  required, you should use a fixed number of top-level data types that support both updates and
-  removals, for example ORMap or ORSet.
+  As deleted keys continue to be included in the stored data on each node as well as in gossip 
+  messages, a continuous series of updates and deletes of top-level entities will result in 
+  growing memory usage until an ActorSystem runs out of memory. To use Akka Distributed Data 
+  where frequent adds and removes are required, you should use a fixed number of top-level data 
+  types that support both updates and removals, for example ``ORMap`` or ``ORSet``.
 
 Data Types
 ==========
