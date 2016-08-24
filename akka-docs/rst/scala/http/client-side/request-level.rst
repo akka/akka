@@ -8,7 +8,7 @@ The request-level API is the most convenient way of using Akka HTTP's client-sid
 Depending on your preference you can pick the flow-based or the future-based variant.
 
 .. note::
-  It is recommended to first read the :ref:`implications-of-streaming-http-entities` section, 
+  It is recommended to first read the :ref:`implications-of-streaming-http-entities` section,
   as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
   from a background with non-"streaming first" HTTP Clients.
 
@@ -68,13 +68,13 @@ Example
 
 .. warning::
   Be sure to consume the response entities ``dataBytes:Source[ByteString,Unit]`` by for example connecting it
-  to a ``Sink`` (for example ``response.entity.dataBytes.runWith(Sink.ignore)`` if you don't care about the
+  to a ``Sink`` (for example ``response.discardEntityBytes()`` if you don't care about the
   response entity), since otherwise Akka HTTP (and the underlying Streams infrastructure) will understand the
   lack of entity consumption as a back-pressure signal and stop reading from the underlying TCP connection!
 
   This is a feature of Akka HTTP that allows consuming entities (and pulling them through the network) in
   a streaming fashion, and only *on demand* when the client is ready to consume the bytes -
-  it may be a bit suprising at first though.
+  it may be a bit surprising at first though.
 
   There are tickets open about automatically dropping entities if not consumed (`#18716`_ and `#18540`_),
   so these may be implemented in the near future.
