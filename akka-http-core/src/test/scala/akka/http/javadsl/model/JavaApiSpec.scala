@@ -19,6 +19,10 @@ class JavaApiSpec extends FreeSpec with MustMatchers {
         Uri.create("/abc")
           .query(Query.create(Pair.create("name", "paul"))) must be(Uri.create("/abc?name=paul"))
       }
+      "query(Iterable)" in {
+        Uri.create("/abc")
+          .query(Query.create(Iterable(Pair.create("name", "tom")).asJava)) must be(Uri.create("/abc?name=tom"))
+      }
       "addSegment" in {
         Uri.create("/abc")
           .addPathSegment("def") must be(Uri.create("/abc/def"))
