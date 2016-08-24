@@ -29,6 +29,8 @@ import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 import akka.util.OptionVal
 import akka.actor.Address
+import scala.concurrent.Future
+import akka.Done
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -57,7 +59,6 @@ class CodecBenchmark {
   private val inboundEnvelopePool = ReusableInboundEnvelope.createObjectPool(capacity = 16)
   private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity = 16)
 
-  val compressionOut = NoOutboundCompressions
   val headerIn = HeaderBuilder.in(NoInboundCompressions)
   val envelopeTemplateBuffer = ByteBuffer.allocate(ArteryTransport.MaximumFrameSize).order(ByteOrder.LITTLE_ENDIAN)
 
@@ -73,7 +74,7 @@ class CodecBenchmark {
     // the following methods are not used by in this test
     override def sendControl(to: Address, message: ControlMessage): Unit = ???
     override def association(remoteAddress: Address): OutboundContext = ???
-    override def completeHandshake(peer: UniqueAddress): Unit = ???
+    override def completeHandshake(peer: UniqueAddress): Future[Done] = ???
   }
 
   private var materializer: ActorMaterializer = _
@@ -136,8 +137,8 @@ class CodecBenchmark {
     val latch = new CountDownLatch(1)
     val N = 100000
 
-    val encoder: Flow[OutboundEnvelope, EnvelopeBuffer, NotUsed] =
-      Flow.fromGraph(new Encoder(uniqueLocalAddress, system, compressionOut, outboundEnvelopePool, envelopePool))
+    val encoder: Flow[OutboundEnvelope, EnvelopeBuffer, Encoder.ChangeOutboundCompression] =
+      Flow.fromGraph(new Encoder(uniqueLocalAddress, system, outboundEnvelopePool, envelopePool))
 
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
       .map(msg ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, payload, OptionVal.Some(remoteRefB)))
@@ -193,8 +194,8 @@ class CodecBenchmark {
     val latch = new CountDownLatch(1)
     val N = 100000
 
-    val encoder: Flow[OutboundEnvelope, EnvelopeBuffer, NotUsed] =
-      Flow.fromGraph(new Encoder(uniqueLocalAddress, system, compressionOut, outboundEnvelopePool, envelopePool))
+    val encoder: Flow[OutboundEnvelope, EnvelopeBuffer, Encoder.ChangeOutboundCompression] =
+      Flow.fromGraph(new Encoder(uniqueLocalAddress, system, outboundEnvelopePool, envelopePool))
 
     val localRecipient = resolvedRef.path.toSerializationFormatWithAddress(uniqueLocalAddress.address)
     val provider = RARP(system).provider

@@ -7,14 +7,14 @@ package akka.remote.artery
 import java.nio.{ ByteBuffer, ByteOrder }
 
 import akka.actor._
-import akka.remote.artery.compress.{ CompressionTable, CompressionTestUtils, InboundCompressions, OutboundCompressions }
+import akka.remote.artery.compress.{ CompressionTable, CompressionTestUtils, InboundCompressions }
 import akka.testkit.AkkaSpec
 import akka.util.{ ByteString, OptionVal }
 
 class EnvelopeBufferSpec extends AkkaSpec {
   import CompressionTestUtils._
 
-  object TestCompressor extends InboundCompressions with OutboundCompressions {
+  object TestCompressor extends InboundCompressions {
     val refToIdx: Map[ActorRef, Int] = Map(
       minimalRef("compressable0") → 0,
       minimalRef("compressable1") → 1,
@@ -31,24 +31,24 @@ class EnvelopeBufferSpec extends AkkaSpec {
       "manifest1" → 1)
     val idxToManifest = manifestToIdx.map(_.swap)
 
-    override def applyActorRefCompressionTable(table: CompressionTable[ActorRef]): Unit = ??? // dynamic allocating not needed in these tests
-    override def actorRefCompressionTableVersion: Int = 0
-    override def compressActorRef(ref: ActorRef): Int = refToIdx.getOrElse(ref, -1)
-    override def hitActorRef(originUid: Long, tableVersion: Int, remote: Address, ref: ActorRef, n: Int): Unit = ()
+    val outboundActorRefTable: CompressionTable[ActorRef] =
+      CompressionTable(version = 0xCAFE, refToIdx)
+
+    val outboundClassManifestTable: CompressionTable[String] =
+      CompressionTable(version = 0xBABE, manifestToIdx)
+
+    override def hitActorRef(originUid: Long, remote: Address, ref: ActorRef, n: Int): Unit = ()
     override def decompressActorRef(originUid: Long, tableVersion: Int, idx: Int): OptionVal[ActorRef] = OptionVal(idxToRef(idx))
     override def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit = ()
 
-    override def applyClassManifestCompressionTable(table: CompressionTable[String]): Unit = ??? // dynamic allocating not needed in these tests
-    override def classManifestCompressionTableVersion: Int = 0
-    override def compressClassManifest(manifest: String): Int = manifestToIdx.getOrElse(manifest, -1)
-    override def hitClassManifest(originUid: Long, tableVersion: Int, remote: Address, manifest: String, n: Int): Unit = ()
+    override def hitClassManifest(originUid: Long, remote: Address, manifest: String, n: Int): Unit = ()
     override def decompressClassManifest(originUid: Long, tableVersion: Int, idx: Int): OptionVal[String] = OptionVal(idxToManifest(idx))
     override def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit = ()
   }
 
   "EnvelopeBuffer" must {
-    val headerIn = HeaderBuilder.bothWays(TestCompressor, TestCompressor)
-    val headerOut = HeaderBuilder.bothWays(TestCompressor, TestCompressor)
+    val headerIn = HeaderBuilder.bothWays(TestCompressor, TestCompressor.outboundActorRefTable, TestCompressor.outboundClassManifestTable)
+    val headerOut = HeaderBuilder.bothWays(TestCompressor, TestCompressor.outboundActorRefTable, TestCompressor.outboundClassManifestTable)
 
     val byteBuffer = ByteBuffer.allocate(1024).order(ByteOrder.LITTLE_ENDIAN)
     val envelope = new EnvelopeBuffer(byteBuffer)
@@ -59,8 +59,6 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerIn setVersion 1
       headerIn setUid 42
       headerIn setSerializer 4
-      headerIn setActorRefCompressionTableVersion 0xCAFE
-      headerIn setClassManifestCompressionTableVersion 0xBABE
       headerIn setRecipientActorRef minimalRef("compressable1")
       headerIn setSenderActorRef minimalRef("compressable0")
 
@@ -74,8 +72,8 @@ class EnvelopeBufferSpec extends AkkaSpec {
 
       headerOut.version should ===(1)
       headerOut.uid should ===(42)
-      headerOut.actorRefCompressionTableVersion should ===(0xCAFE)
-      headerOut.classManifestCompressionTableVersion should ===(0xBABE)
+      headerOut.inboundActorRefCompressionTableVersion should ===(0xCAFE)
+      headerOut.inboundClassManifestCompressionTableVersion should ===(0xBABE)
       headerOut.serializer should ===(4)
       headerOut.senderActorRef(originUid).get.path.toSerializationFormat should ===("akka://EnvelopeBufferSpec/compressable0")
       headerOut.senderActorRefPath should ===(OptionVal.None)
