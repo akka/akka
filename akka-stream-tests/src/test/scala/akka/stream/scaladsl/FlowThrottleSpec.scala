@@ -12,9 +12,8 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 import scala.util.control.NoStackTrace
-import akka.testkit.AkkaSpec
 
-class FlowThrottleSpec extends AkkaSpec {
+class FlowThrottleSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(1, 1))
 
   def genByteString(length: Int) =

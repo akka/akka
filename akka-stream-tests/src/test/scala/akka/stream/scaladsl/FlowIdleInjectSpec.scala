@@ -1,12 +1,11 @@
 package akka.stream.scaladsl
 
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import akka.stream.testkit.{ TestSubscriber, TestPublisher, Utils }
+import akka.stream.testkit.{ StreamSpec, TestSubscriber, TestPublisher, Utils }
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.testkit.AkkaSpec
 
-class FlowIdleInjectSpec extends AkkaSpec {
+class FlowIdleInjectSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)

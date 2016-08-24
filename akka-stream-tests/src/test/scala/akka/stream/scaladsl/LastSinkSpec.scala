@@ -10,9 +10,8 @@ import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.testkit.AkkaSpec
 
-class LastSinkSpec extends AkkaSpec with ScriptedTest {
+class LastSinkSpec extends StreamSpec with ScriptedTest {
 
   val settings = ActorMaterializerSettings(system)
 

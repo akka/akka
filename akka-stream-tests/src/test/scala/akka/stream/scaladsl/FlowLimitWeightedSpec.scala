@@ -3,12 +3,11 @@
  */
 package akka.stream.scaladsl
 
+import akka.stream.testkit.StreamSpec
 import akka.stream.{ StreamLimitReachedException, ActorMaterializer, ActorMaterializerSettings }
-import akka.testkit.AkkaSpec
 import scala.concurrent.Await
-import scala.concurrent.duration._
 
-class FlowLimitWeightedSpec extends AkkaSpec {
+class FlowLimitWeightedSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)

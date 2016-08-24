@@ -330,9 +330,19 @@ abstract class SurviveNetworkInstabilitySpec
       runOn(side1AfterJoin: _*) {
         // side2 removed
         val expected = (side1AfterJoin map address).toSet
-        awaitAssert(clusterView.members.map(_.address) should ===(expected))
-        awaitAssert(clusterView.members.collectFirst { case m if m.address == address(eighth) ⇒ m.status } should ===(
-          Some(MemberStatus.Up)))
+        awaitAssert {
+          // repeat the downing in case it was not successful, which may
+          // happen if the removal was reverted due to gossip merge, see issue #18767
+          runOn(fourth) {
+            for (role2 ← side2) {
+              cluster.down(role2)
+            }
+          }
+
+          clusterView.members.map(_.address) should ===(expected)
+          clusterView.members.collectFirst { case m if m.address == address(eighth) ⇒ m.status } should ===(
+            Some(MemberStatus.Up))
+        }
       }
 
       enterBarrier("side2-removed")

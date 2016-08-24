@@ -3,14 +3,14 @@
  */
 package akka.stream.scaladsl
 
+import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit.Utils._
-import akka.testkit.AkkaSpec
 
 import scala.util.control.NoStackTrace
 
-class FlowRecoverSpec extends AkkaSpec {
+class FlowRecoverSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 1, maxSize = 1)
 

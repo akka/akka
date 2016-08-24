@@ -98,7 +98,7 @@ public class GraphDSLDocTest extends AbstractJavaTest {
         );
       // unconnected zip.out (!) => "The inlets [] and outlets [] must correspond to the inlets [] and outlets [ZipWith2.out]"
       //#simple-graph
-      fail("expected IllegalArgumentException");
+      org.junit.Assert.fail("expected IllegalArgumentException");
     } catch (IllegalArgumentException e) {
       assertTrue(e != null && e.getMessage() != null && e.getMessage().contains("must correspond to"));
     }

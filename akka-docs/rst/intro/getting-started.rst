@@ -37,13 +37,15 @@ Akka is very modular and consists of several JARs containing different features.
 
 - ``akka-cluster`` – Cluster membership management, elastic routers.
 
-- ``akka-osgi`` – utilities for using Akka in OSGi containers
+- ``akka-osgi`` – Utilities for using Akka in OSGi containers
 
 - ``akka-osgi-aries`` – Aries blueprint for provisioning actor systems
 
 - ``akka-remote`` – Remote Actors
 
 - ``akka-slf4j`` – SLF4J Logger (event bus listener)
+
+- ``akka-stream`` – Reactive stream processing
 
 - ``akka-testkit`` – Toolkit for testing Actor systems
 
@@ -212,12 +214,12 @@ For snapshot versions, the snapshot repository needs to be added as well:
 Using Akka with Eclipse
 -----------------------
 
-Setup SBT project and then use `sbteclipse <https://github.com/typesafehub/sbteclipse>`_ to generate a Eclipse project.
+Setup SBT project and then use `sbteclipse <https://github.com/typesafehub/sbteclipse>`_ to generate an Eclipse project.
 
 Using Akka with IntelliJ IDEA
 -----------------------------
 
-Setup SBT project and then use `sbt-idea <https://github.com/mpeltonen/sbt-idea>`_ to generate a IntelliJ IDEA project.
+Setup SBT project and then use `sbt-idea <https://github.com/mpeltonen/sbt-idea>`_ to generate an IntelliJ IDEA project.
 
 Using Akka with NetBeans
 ------------------------

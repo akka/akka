@@ -8,7 +8,9 @@ import scala.concurrent.{ Future, ExecutionContextExecutor }
 import akka.stream.Materializer
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
+
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.settings.{ RoutingSettings, ParserSettings }
 
 /**
@@ -66,6 +68,12 @@ trait RequestContext {
    * Rejects the request with the given rejections.
    */
   def reject(rejections: Rejection*): Future[RouteResult]
+
+  /**
+   * Completes the request with redirection response of the given type to the given URI.
+   *
+   */
+  def redirect(uri: Uri, redirectionType: Redirection): Future[RouteResult]
 
   /**
    * Bubbles the given error up the response chain where it is dealt with by the closest `handleExceptions`

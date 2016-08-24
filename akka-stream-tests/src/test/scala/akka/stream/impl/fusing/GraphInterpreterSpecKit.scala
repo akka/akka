@@ -8,11 +8,11 @@ import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, Failed, GraphAssembly, UpstreamBoundaryStageLogic }
 import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, _ }
-import akka.testkit.AkkaSpec
+import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
 import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
 
-trait GraphInterpreterSpecKit extends AkkaSpec {
+trait GraphInterpreterSpecKit extends StreamSpec {
 
   val logger = Logging(system, "InterpreterSpecKit")
 
@@ -71,17 +71,17 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
       def init(): Unit = {
         val assembly = buildAssembly()
 
-        val (inHandlers, outHandlers, logics) =
+        val (conns, logics) =
           assembly.materialize(Attributes.none, assembly.stages.map(_.module), new java.util.HashMap, _ ⇒ ())
-        _interpreter = new GraphInterpreter(assembly, NoMaterializer, logger, inHandlers, outHandlers, logics,
+        _interpreter = new GraphInterpreter(assembly, NoMaterializer, logger, logics, conns,
           (_, _, _) ⇒ (), fuzzingMode = false, null)
 
         for ((upstream, i) ← upstreams.zipWithIndex) {
-          _interpreter.attachUpstreamBoundary(i, upstream._1)
+          _interpreter.attachUpstreamBoundary(conns(i), upstream._1)
         }
 
         for ((downstream, i) ← downstreams.zipWithIndex) {
-          _interpreter.attachDownstreamBoundary(i + upstreams.size + connections.size, downstream._2)
+          _interpreter.attachDownstreamBoundary(conns(i + upstreams.size + connections.size), downstream._2)
         }
 
         _interpreter.init(null)
@@ -89,9 +89,9 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
     }
 
     def manualInit(assembly: GraphAssembly): Unit = {
-      val (inHandlers, outHandlers, logics) =
+      val (connections, logics) =
         assembly.materialize(Attributes.none, assembly.stages.map(_.module), new java.util.HashMap, _ ⇒ ())
-      _interpreter = new GraphInterpreter(assembly, NoMaterializer, logger, inHandlers, outHandlers, logics,
+      _interpreter = new GraphInterpreter(assembly, NoMaterializer, logger, logics, connections,
         (_, _, _) ⇒ (), fuzzingMode = false, null)
     }
 
@@ -202,7 +202,7 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
 
         // Modified onPush that does not grab() automatically the element. This accesses some internals.
         override def onPush(): Unit = {
-          val internalEvent = interpreter.connectionSlots(portToConn(in.id))
+          val internalEvent = portToConn(in.id).slot
 
           internalEvent match {
             case Failed(_, elem) ⇒ lastEvent += OnNext(DownstreamPortProbe.this, elem)
@@ -224,8 +224,8 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
       outOwners = Array(-1))
 
     manualInit(assembly)
-    interpreter.attachDownstreamBoundary(0, in)
-    interpreter.attachUpstreamBoundary(0, out)
+    interpreter.attachDownstreamBoundary(interpreter.connections(0), in)
+    interpreter.attachUpstreamBoundary(interpreter.connections(0), out)
     interpreter.init(null)
   }
 
@@ -309,8 +309,6 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
 
   abstract class OneBoundedSetup[T](_ops: GraphStageWithMaterializedValue[Shape, Any]*) extends Builder {
     val ops = _ops.toArray
-
-    def this(op: Seq[Stage[_, _]], dummy: Int = 42) = this(op.map(_.toGS): _*)
 
     val upstream = new UpstreamOneBoundedProbe[T]
     val downstream = new DownstreamOneBoundedPortProbe[T]

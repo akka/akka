@@ -35,7 +35,7 @@ class FileUploadExamplesSpec extends RoutingSpec {
               // stream into a file as the chunks of it arrives and return a future
               // file to where it got stored
               val file = File.createTempFile("upload", "tmp")
-              b.entity.dataBytes.runWith(FileIO.toFile(file)).map(_ =>
+              b.entity.dataBytes.runWith(FileIO.toPath(file.toPath)).map(_ =>
                 (b.name -> file))
 
             case b: BodyPart =>

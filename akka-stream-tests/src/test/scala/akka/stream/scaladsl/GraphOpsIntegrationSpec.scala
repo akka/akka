@@ -6,8 +6,6 @@ import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 import akka.stream._
 import akka.stream.testkit._
-import org.scalactic.ConversionCheckedTripleEquals
-import akka.testkit.AkkaSpec
 
 object GraphOpsIntegrationSpec {
   import GraphDSL.Implicits._
@@ -43,7 +41,7 @@ object GraphOpsIntegrationSpec {
 
 }
 
-class GraphOpsIntegrationSpec extends AkkaSpec {
+class GraphOpsIntegrationSpec extends StreamSpec {
   import akka.stream.scaladsl.GraphOpsIntegrationSpec._
   import GraphDSL.Implicits._
 

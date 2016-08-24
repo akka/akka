@@ -12,9 +12,8 @@ import akka.stream.testkit._
 import org.reactivestreams.Publisher
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.testkit.AkkaSpec
 
-class FlowSplitWhenSpec extends AkkaSpec {
+class FlowSplitWhenSpec extends StreamSpec {
   import FlowSplitAfterSpec._
 
   val settings = ActorMaterializerSettings(system)

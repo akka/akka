@@ -9,10 +9,6 @@ import akka.stream.Attributes.inputBuffer
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
-import org.scalatest.concurrent.ScalaFutures
-import org.scalactic.ConversionCheckedTripleEquals
-import scala.concurrent.duration._
-import akka.testkit.AkkaSpec
 
 object ActorRefBackpressureSinkSpec {
   val initMessage = "start"
@@ -48,7 +44,7 @@ object ActorRefBackpressureSinkSpec {
 
 }
 
-class ActorRefBackpressureSinkSpec extends AkkaSpec {
+class ActorRefBackpressureSinkSpec extends StreamSpec {
   import ActorRefBackpressureSinkSpec._
   implicit val mat = ActorMaterializer()
 

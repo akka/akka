@@ -31,7 +31,7 @@ object Timers {
       TimeUnit.NANOSECONDS)
   }
 
-  final class Initial[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
+  final class Initial[T](val timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
     override def initialAttributes = DefaultAttributes.initial
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -58,7 +58,7 @@ object Timers {
 
   }
 
-  final class Completion[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
+  final class Completion[T](val timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
     override def initialAttributes = DefaultAttributes.completion
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -79,7 +79,7 @@ object Timers {
 
   }
 
-  final class Idle[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
+  final class Idle[T](val timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
     override def initialAttributes = DefaultAttributes.idle
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -106,7 +106,7 @@ object Timers {
 
   }
 
-  final class BackpressureTimeout[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
+  final class BackpressureTimeout[T](val timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
     override def initialAttributes = DefaultAttributes.backpressureTimeout
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -208,7 +208,7 @@ object Timers {
 
   }
 
-  final class IdleInject[I, O >: I](val timeout: FiniteDuration, inject: () ⇒ O) extends GraphStage[FlowShape[I, O]] {
+  final class IdleInject[I, O >: I](val timeout: FiniteDuration, val inject: () ⇒ O) extends GraphStage[FlowShape[I, O]] {
     val in: Inlet[I] = Inlet("IdleInject.in")
     val out: Outlet[O] = Outlet("IdleInject.out")
 

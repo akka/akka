@@ -6,6 +6,7 @@ package akka.http.impl.model.parser
 
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.settings.ParserSettings.CookieParsingMode
+import akka.http.scaladsl.settings.ParserSettings.IllegalResponseHeaderValueProcessingMode
 import akka.http.scaladsl.model.headers.HttpCookiePair
 import akka.stream.impl.ConstantFun
 import scala.util.control.NonFatal
@@ -169,19 +170,25 @@ private[http] object HeaderParser {
     def uriParsingMode: Uri.ParsingMode
     def cookieParsingMode: ParserSettings.CookieParsingMode
     def customMediaTypes: MediaTypes.FindCustom
+    def illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode
   }
   def Settings(
-    uriParsingMode:    Uri.ParsingMode                  = Uri.ParsingMode.Relaxed,
-    cookieParsingMode: ParserSettings.CookieParsingMode = ParserSettings.CookieParsingMode.RFC6265,
-    customMediaTypes:  MediaTypes.FindCustom            = ConstantFun.scalaAnyTwoToNone): Settings = {
+    uriParsingMode:    Uri.ParsingMode                          = Uri.ParsingMode.Relaxed,
+    cookieParsingMode: ParserSettings.CookieParsingMode         = ParserSettings.CookieParsingMode.RFC6265,
+    customMediaTypes:  MediaTypes.FindCustom                    = ConstantFun.scalaAnyTwoToNone,
+    mode:              IllegalResponseHeaderValueProcessingMode = ParserSettings.IllegalResponseHeaderValueProcessingMode.Error): Settings = {
+
     val _uriParsingMode = uriParsingMode
     val _cookieParsingMode = cookieParsingMode
     val _customMediaTypes = customMediaTypes
+    val _illegalResponseHeaderValueProcessingMode = mode
 
     new Settings {
       def uriParsingMode: Uri.ParsingMode = _uriParsingMode
       def cookieParsingMode: CookieParsingMode = _cookieParsingMode
       def customMediaTypes: MediaTypes.FindCustom = _customMediaTypes
+      def illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode =
+        _illegalResponseHeaderValueProcessingMode
     }
   }
   val DefaultSettings: Settings = Settings()

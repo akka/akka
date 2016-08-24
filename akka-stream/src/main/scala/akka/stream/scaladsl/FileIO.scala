@@ -51,7 +51,7 @@ object FileIO {
    * It materializes a [[Future]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
    * and a possible exception if IO operation was not completed successfully.
    *
-   * @param f         the file to read from
+   * @param f         the file path to read from
    * @param chunkSize the size of each read operation, defaults to 8192
    */
   def fromPath(f: Path, chunkSize: Int = 8192): Source[ByteString, Future[IOResult]] =
@@ -74,7 +74,7 @@ object FileIO {
     toPath(f.toPath, options)
 
   /**
-   * Creates a Sink which writes incoming [[ByteString]] elements to the given file. Overwrites existing files by default.
+   * Creates a Sink which writes incoming [[ByteString]] elements to the given file path. Overwrites existing files by default.
    *
    * Materializes a [[Future]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
    * and a possible exception if IO operation was not completed successfully.
@@ -82,7 +82,7 @@ object FileIO {
    * This source is backed by an Actor which will use the dedicated `akka.stream.blocking-io-dispatcher`,
    * unless configured otherwise by using [[ActorAttributes]].
    *
-   * @param f the file to write to
+   * @param f the file path to write to
    * @param options File open options, defaults to Set(WRITE, CREATE)
    */
   def toPath(f: Path, options: Set[StandardOpenOption] = Set(WRITE, CREATE)): Sink[ByteString, Future[IOResult]] =

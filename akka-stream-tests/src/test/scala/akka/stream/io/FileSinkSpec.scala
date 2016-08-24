@@ -18,9 +18,8 @@ import akka.util.{ ByteString, Timeout }
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.testkit.AkkaSpec
 
-class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
+class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)

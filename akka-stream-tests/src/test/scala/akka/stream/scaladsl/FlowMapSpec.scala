@@ -4,12 +4,11 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom.{ current ⇒ random }
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
-import akka.stream.testkit._
-import akka.testkit.AkkaSpec
 
-class FlowMapSpec extends AkkaSpec with ScriptedTest {
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.testkit._
+
+class FlowMapSpec extends StreamSpec with ScriptedTest {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)

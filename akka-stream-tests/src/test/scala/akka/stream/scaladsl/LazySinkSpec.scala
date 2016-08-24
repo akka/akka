@@ -8,16 +8,15 @@ import java.util.concurrent.TimeoutException
 import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.Supervision._
 import akka.stream._
-import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.AkkaSpec
 
 import scala.concurrent.{ Promise, Future, Await }
 import scala.concurrent.duration._
 
-class LazySinkSpec extends AkkaSpec {
+class LazySinkSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 1, maxSize = 1)

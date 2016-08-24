@@ -4,23 +4,18 @@
 
 package akka.http.javadsl.server.directives;
 
-import akka.actor.ActorSystem;
+import akka.http.javadsl.coding.Coder;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.AcceptEncoding;
 import akka.http.javadsl.model.headers.ContentEncoding;
 import akka.http.javadsl.model.headers.HttpEncodings;
-import akka.stream.ActorMaterializer;
-import akka.http.javadsl.server.*;
 import akka.util.ByteString;
 
 import org.junit.*;
 
-import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
 import akka.http.javadsl.testkit.*;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 

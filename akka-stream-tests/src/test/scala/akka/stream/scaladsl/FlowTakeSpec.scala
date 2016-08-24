@@ -12,9 +12,8 @@ import akka.stream.actor.ActorSubscriberMessage.OnComplete
 import akka.stream.actor.ActorSubscriberMessage.OnNext
 import akka.stream.impl.RequestMore
 import akka.stream.testkit._
-import akka.testkit.AkkaSpec
 
-class FlowTakeSpec extends AkkaSpec with ScriptedTest {
+class FlowTakeSpec extends StreamSpec with ScriptedTest {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)

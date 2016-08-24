@@ -221,7 +221,7 @@ object GraphStages {
     }
   }
 
-  final class TickSource[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T)
+  final class TickSource[T](val initialDelay: FiniteDuration, val interval: FiniteDuration, val tick: T)
     extends GraphStageWithMaterializedValue[SourceShape[T], Cancellable] {
     override val shape = SourceShape(Outlet[T]("TickSource.out"))
     val out = shape.out

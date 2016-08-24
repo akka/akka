@@ -4,7 +4,9 @@
 
 package akka.http.scaladsl.marshalling
 
-import scala.concurrent.{ Future, ExecutionContext }
+import akka.http.scaladsl.marshalling.Marshalling.Opaque
+
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.control.NonFatal
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture

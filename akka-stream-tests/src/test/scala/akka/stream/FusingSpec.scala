@@ -4,18 +4,15 @@
 package akka.stream
 
 import akka.stream.scaladsl._
-import akka.testkit.AkkaSpec
-import org.scalactic.ConversionCheckedTripleEquals
+import akka.stream.testkit.StreamSpec
 import akka.stream.Attributes._
 import akka.stream.Fusing.FusedGraph
 import scala.annotation.tailrec
 import akka.stream.impl.StreamLayout.{ CopiedModule, Module }
-import org.scalatest.concurrent.ScalaFutures
-import scala.concurrent.duration._
 import akka.stream.impl.fusing.GraphInterpreter
 import akka.event.BusLogging
 
-class FusingSpec extends AkkaSpec {
+class FusingSpec extends StreamSpec {
 
   final val Debug = false
   implicit val materializer = ActorMaterializer()

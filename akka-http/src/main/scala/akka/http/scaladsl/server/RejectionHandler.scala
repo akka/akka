@@ -122,9 +122,9 @@ object RejectionHandler {
   import Directives._
 
   /**
-   * Creates a new default [[RejectionHandler]] instance.
+   * Default [[RejectionHandler]] instance.
    */
-  def default =
+  final val default =
     newBuilder()
       .handleAll[SchemeRejection] { rejections ⇒
         val schemes = rejections.map(_.supported).mkString(", ")
@@ -167,8 +167,8 @@ object RejectionHandler {
           complete((BadRequest, "Request is missing required HTTP header '" + headerName + '\''))
       }
       .handle {
-        case InvalidOriginRejection(invalidOrigin) ⇒
-          complete((Forbidden, s"Invalid `Origin` header values: ${invalidOrigin.mkString(", ")}"))
+        case InvalidOriginRejection(allowedOrigins) ⇒
+          complete((Forbidden, s"Allowed `Origin` header values: ${allowedOrigins.mkString(", ")}"))
       }
       .handle {
         case MissingQueryParamRejection(paramName) ⇒

@@ -16,9 +16,11 @@ import akka.http.javadsl.model.headers.Host;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.server.RequestContext;
 import akka.http.javadsl.testkit.JUnitRouteTest;
+
 import java.util.function.Function;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+
 import akka.http.javadsl.model.Uri;
 import akka.http.javadsl.model.headers.Location;
 import akka.http.javadsl.server.directives.DebuggingDirectives;
@@ -26,10 +28,13 @@ import akka.http.javadsl.server.directives.RouteDirectives;
 import akka.event.Logging;
 import akka.event.Logging.LogLevel;
 import akka.http.javadsl.server.directives.LogEntry;
+
 import java.util.List;
-import akka.http.scaladsl.server.Rejection;
+
+import akka.http.javadsl.server.Rejection;
 
 import static akka.event.Logging.InfoLevel;
+
 import java.util.stream.Collectors;
 import java.util.Optional;
 
@@ -39,18 +44,18 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
   public void testLogRequest() {
     //#logRequest
     // logs request with "get-user"
-    final Route routeBasicLogRequest = get(() -> 
+    final Route routeBasicLogRequest = get(() ->
       logRequest("get-user", () -> complete("logged")));
-    
+
     // logs request with "get-user" as Info
-    final Route routeBasicLogRequestAsInfo = get(() -> 
+    final Route routeBasicLogRequestAsInfo = get(() ->
       logRequest("get-user", InfoLevel(), () -> complete("logged")));
 
     // logs just the request method at info level
-    Function<HttpRequest, LogEntry> requestMethodAsInfo = (request) -> 
-      LogEntry.create(request.method().toString(), InfoLevel());
+    Function<HttpRequest, LogEntry> requestMethodAsInfo = (request) ->
+      LogEntry.create(request.method().name(), InfoLevel());
 
-    final Route routeUsingFunction = get(() -> 
+    final Route routeUsingFunction = get(() ->
       logRequest(requestMethodAsInfo, () -> complete("logged")));
 
     // tests:
@@ -63,32 +68,31 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
   public void testLogRequestResult() {
     //#logRequestResult
     // using logRequestResult
-
     // handle request to optionally generate a log entry
-    BiFunction<HttpRequest, HttpResponse, Optional<LogEntry>> requestMethodAsInfo = 
+    BiFunction<HttpRequest, HttpResponse, Optional<LogEntry>> requestMethodAsInfo =
       (request, response) ->
-        (response.status().isSuccess())  ? 
-            Optional.of(
-              LogEntry.create(
-                request.method().toString() + ":" + response.status().intValue(), 
-                InfoLevel()))
+        (response.status().isSuccess()) ?
+          Optional.of(
+            LogEntry.create(
+              request.method().name() + ":" + response.status().intValue(),
+              InfoLevel()))
           : Optional.empty(); // not a successful response
 
     // handle rejections to optionally generate a log entry
-    BiFunction<HttpRequest, List<Rejection>, Optional<LogEntry>> rejectionsAsInfo = 
+    BiFunction<HttpRequest, List<Rejection>, Optional<LogEntry>> rejectionsAsInfo =
       (request, rejections) ->
-        (!rejections.isEmpty())  ? 
+        (!rejections.isEmpty()) ?
           Optional.of(
             LogEntry.create(
-                rejections
+              rejections
                 .stream()
                 .map(Rejection::toString)
-                .collect(Collectors.joining(", ")), 
+                .collect(Collectors.joining(", ")),
               InfoLevel()))
           : Optional.empty(); // no rejections
 
     final Route route = get(() -> logRequestResultOptional(
-      requestMethodAsInfo, 
+      requestMethodAsInfo,
       rejectionsAsInfo,
       () -> complete("logged")));
     // tests:
@@ -109,16 +113,16 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
 
     // logs the result and the rejections as LogEntry
     Function<HttpResponse, LogEntry> showSuccessAsInfo = (response) ->
-      LogEntry.create(String.format("Response code '%d'", response.status().intValue()), 
+      LogEntry.create(String.format("Response code '%d'", response.status().intValue()),
         InfoLevel());
 
     Function<List<Rejection>, LogEntry> showRejectionAsInfo = (rejections) ->
       LogEntry.create(
         rejections
-        .stream()
-        .map(rejection->rejection.toString())
-        .collect(Collectors.joining(", ")), 
-      InfoLevel());
+          .stream()
+          .map(rejection -> rejection.toString())
+          .collect(Collectors.joining(", ")),
+        InfoLevel());
 
     final Route routeUsingFunction = get(() ->
       logResult(showSuccessAsInfo, showRejectionAsInfo, () -> complete("logged")));
@@ -128,4 +132,50 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
     //#logResult
   }
 
+  @Test
+  public void testLogRequestResultWithResponseTime() {
+    //#logRequestResultWithResponseTime
+    // using logRequestResultOptional for generating Response Time
+    // handle request to optionally generate a log entry
+
+    BiFunction<HttpRequest, HttpResponse, Optional<LogEntry>> requestMethodAsInfo =
+      (request, response) -> {
+        Long requestTime = System.nanoTime();
+        return printResponseTime(request, response, requestTime);
+      };
+
+    // handle rejections to optionally generate a log entry
+    BiFunction<HttpRequest, List<Rejection>, Optional<LogEntry>> rejectionsAsInfo =
+      (request, rejections) ->
+        (!rejections.isEmpty()) ?
+          Optional.of(
+            LogEntry.create(
+              rejections
+                .stream()
+                .map(Rejection::toString)
+                .collect(Collectors.joining(", ")),
+              InfoLevel()))
+          : Optional.empty(); // no rejections
+
+    final Route route = get(() -> logRequestResultOptional(
+      requestMethodAsInfo,
+      rejectionsAsInfo,
+      () -> complete("logged")));
+    // tests:
+    testRoute(route).run(HttpRequest.GET("/")).assertEntity("logged");
+    //#logRequestResult
+  }
+
+  // A function for the logging of Time
+  public static Optional<LogEntry> printResponseTime(HttpRequest request, HttpResponse response, Long requestTime) {
+    if (response.status().isSuccess()) {
+      Long elapsedTime = (requestTime - System.nanoTime()) / 1000000;
+      return Optional.of(
+        LogEntry.create(
+          "Logged Request:" + request.method().name() + ":" + request.getUri() + ":" + response.status() + ":" + elapsedTime,
+          InfoLevel()));
+    } else {
+      return Optional.empty();  //not a successfull response
+    }
+  }
 }

@@ -46,7 +46,7 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.Helpers.ConfigOps
 import akka.util.Helpers.Requiring
-import akka.util.WildcardTree
+import akka.util.WildcardIndex
 import io.aeron.Aeron
 import io.aeron.AvailableImageHandler
 import io.aeron.Image
@@ -320,11 +320,13 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val remoteDispatcher = system.dispatchers.lookup(remoteSettings.Dispatcher)
 
   private val largeMessageDestinations =
-    system.settings.config.getStringList("akka.remote.artery.large-message-destinations").asScala.foldLeft(WildcardTree[NotUsed]()) { (tree, entry) ⇒
+    system.settings.config.getStringList("akka.remote.artery.large-message-destinations").asScala.foldLeft(WildcardIndex[NotUsed]()) { (tree, entry) ⇒
       val segments = entry.split('/').tail
-      tree.insert(segments.iterator, NotUsed)
+      tree.insert(segments, NotUsed)
     }
-  private val largeMessageDestinationsEnabled = largeMessageDestinations.children.nonEmpty
+  // TODO use WildcardIndex.isEmpty when merged from master
+  val largeMessageChannelEnabled =
+    !largeMessageDestinations.wildcardTree.isEmpty || !largeMessageDestinations.doubleWildcardTree.isEmpty
 
   private def inboundChannel = s"aeron:udp?endpoint=${localAddress.address.host.get}:${localAddress.address.port.get}"
   private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
@@ -526,7 +528,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
     runInboundControlStream(noCompressions) // TODO should understand compressions too
     runInboundOrdinaryMessagesStream(compressions)
-    if (largeMessageDestinationsEnabled) {
+    if (largeMessageChannelEnabled) {
       runInboundLargeMessagesStream()
     }
   }

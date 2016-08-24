@@ -11,9 +11,8 @@ import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.testkit.AkkaSpec
 
-class FlowConcatAllSpec extends AkkaSpec {
+class FlowConcatAllSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)

@@ -5,15 +5,15 @@ package akka.stream.impl.fusing
 
 import akka.actor.{ NoSerializationVerificationNeeded, ActorRef }
 import akka.stream.scaladsl.{ Keep, Source }
+import akka.stream.testkit.StreamSpec
 import akka.stream.{ Attributes, Inlet, SinkShape, ActorMaterializer }
 import akka.stream.stage.{ InHandler, AsyncCallback, GraphStageLogic, GraphStageWithMaterializedValue }
-import akka.testkit.AkkaSpec
 import akka.stream.testkit.Utils._
 
 import scala.concurrent.{ Await, Promise, Future }
 import scala.concurrent.duration._
 
-class KeepGoingStageSpec extends AkkaSpec {
+class KeepGoingStageSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 

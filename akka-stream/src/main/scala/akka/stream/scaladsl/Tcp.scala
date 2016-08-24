@@ -183,5 +183,5 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * It represents a prospective TCP client connection to the given endpoint.
    */
   def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
-    outgoingConnection(new InetSocketAddress(host, port))
+    outgoingConnection(InetSocketAddress.createUnresolved(host, port))
 }

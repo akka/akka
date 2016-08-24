@@ -449,10 +449,10 @@ class TcpConnectionSpec extends AkkaSpec("""
           assertThisConnectionActorTerminated()
 
           val buffer = ByteBuffer.allocate(1)
-          val thrown = evaluating {
+          val thrown = the[IOException] thrownBy {
             windowsWorkaroundToDetectAbort()
             serverSideChannel.read(buffer)
-          } should produce[IOException]
+          }
           thrown.getMessage should ===(ConnectionResetByPeerMessage)
         }
       }

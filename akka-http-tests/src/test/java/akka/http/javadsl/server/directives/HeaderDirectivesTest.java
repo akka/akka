@@ -205,5 +205,32 @@ public class HeaderDirectivesTest extends JUnitRouteTest {
       .run(HttpRequest.create().addHeader(Origin.create(invalidOriginHeader)))
       .assertStatusCode(StatusCodes.FORBIDDEN);
   }
+  
+  @Test
+  public void testCheckSameOriginGivenALL() {
+    final HttpOrigin validOriginHeader = HttpOrigin.create("http://localhost", Host.create("8080"));
+
+    // not very interesting case, however here we check that the directive simply avoids performing the check
+    final HttpOriginRange everythingGoes = HttpOriginRanges.ALL;
+
+    final TestRoute route = testRoute(checkSameOrigin(everythingGoes, () -> complete("Result")));
+
+    route
+      .run(HttpRequest.create().addHeader(Origin.create(validOriginHeader)))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("Result");
+
+    route
+      .run(HttpRequest.create())
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("Result");
+
+    final HttpOrigin otherOriginHeader = HttpOrigin.create("http://invalid.com", Host.create("8080"));
+
+    route
+      .run(HttpRequest.create().addHeader(Origin.create(otherOriginHeader)))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("Result");
+  }
 
 }

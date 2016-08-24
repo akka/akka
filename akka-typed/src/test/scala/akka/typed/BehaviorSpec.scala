@@ -3,8 +3,6 @@
  */
 package akka.typed
 
-import org.scalautils.ConversionCheckedTripleEquals
-
 class BehaviorSpec extends TypedSpec {
 
   sealed trait Command {

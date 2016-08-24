@@ -10,8 +10,9 @@ import akka.http.impl.model.JavaInitialization
 
 import language.implicitConversions
 import java.io.File
-import java.nio.file.{ Path, Files }
+import java.nio.file.{ Files, Path }
 import java.lang.{ Iterable ⇒ JIterable }
+
 import scala.util.control.NonFatal
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -20,8 +21,8 @@ import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream._
-import akka.{ NotUsed, stream }
-import akka.http.scaladsl.model.ContentType.{ NonBinary, Binary }
+import akka.{ Done, NotUsed, stream }
+import akka.http.scaladsl.model.ContentType.{ Binary, NonBinary }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.{ JavaMapping, StreamUtils }
@@ -30,6 +31,8 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
+
+import scala.compat.java8.FutureConverters
 
 /**
  * Models the entity (aka "body" or "content) of an HTTP message.
@@ -71,6 +74,25 @@ sealed trait HttpEntity extends jm.HttpEntity {
     dataBytes
       .via(new akka.http.impl.util.ToStrict(timeout, contentType))
       .runWith(Sink.head)
+
+  /**
+   * Discards the entities data bytes by running the `dataBytes` Source contained in this `entity`.
+   *
+   * Note: It is crucial that entities are either discarded, or consumed by running the underlying [[akka.stream.scaladsl.Source]]
+   * as otherwise the lack of consuming of the data will trigger back-pressure to the underlying TCP connection
+   * (as designed), however possibly leading to an idle-timeout that will close the connection, instead of
+   * just having ignored the data.
+   *
+   * Warning: It is not allowed to discard and/or consume the `entity.dataBytes` more than once
+   * as the stream is directly attached to the "live" incoming data source from the underlying TCP connection.
+   * Allowing it to be consumable twice would require buffering the incoming data, thus defeating the purpose
+   * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
+   * "stream can cannot be materialized more than once" exception.
+   *
+   * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
+   */
+  override def discardBytes(mat: Materializer): HttpMessage.DiscardedEntity =
+    new HttpMessage.DiscardedEntity(dataBytes.runWith(Sink.ignore)(mat))
 
   /**
    * Returns a copy of the given entity with the ByteString chunks of this entity transformed by the given transformer.
@@ -145,6 +167,7 @@ sealed trait HttpEntity extends jm.HttpEntity {
   /** Java API */
   override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.HttpEntity.Strict] =
     toStrict(timeoutMillis.millis)(materializer).toJava
+
 }
 
 /* An entity that can be used for body parts */
@@ -369,6 +392,10 @@ object HttpEntity {
 
     override def productPrefix = "HttpEntity.Default"
 
+    override def toString: String = {
+      s"$productPrefix($contentType,$contentLength bytes total)"
+    }
+
     /** Java API */
     override def getContentLength = contentLength
   }
@@ -414,6 +441,10 @@ object HttpEntity {
     override def withData(data: Source[ByteString, Any]): HttpEntity.CloseDelimited = copy(data = data)
 
     override def productPrefix = "HttpEntity.CloseDelimited"
+
+    override def toString: String = {
+      s"$productPrefix($contentType)"
+    }
   }
 
   /**
@@ -431,6 +462,10 @@ object HttpEntity {
     override def withData(data: Source[ByteString, Any]): HttpEntity.IndefiniteLength = copy(data = data)
 
     override def productPrefix = "HttpEntity.IndefiniteLength"
+
+    override def toString: String = {
+      s"$productPrefix($contentType)"
+    }
   }
 
   /**
@@ -468,6 +503,10 @@ object HttpEntity {
       if (contentType == this.contentType) this else copy(contentType = contentType)
 
     override def productPrefix = "HttpEntity.Chunked"
+
+    override def toString: String = {
+      s"$productPrefix($contentType)"
+    }
 
     /** Java API */
     def getChunks: stream.javadsl.Source[jm.HttpEntity.ChunkStreamPart, AnyRef] =
@@ -533,14 +572,14 @@ object HttpEntity {
    * to entity constructors.
    */
   def limitableByteSource[Mat](source: Source[ByteString, Mat]): Source[ByteString, Mat] =
-    limitable(source, sizeOfByteString)
+    source.via(new Limitable(sizeOfByteString))
 
   /**
    * Turns the given source into one that respects the `withSizeLimit` calls when used as a parameter
    * to entity constructors.
    */
   def limitableChunkSource[Mat](source: Source[ChunkStreamPart, Mat]): Source[ChunkStreamPart, Mat] =
-    limitable(source, sizeOfChunkStreamPart)
+    source.via(new Limitable(sizeOfChunkStreamPart))
 
   /**
    * INTERNAL API
@@ -548,35 +587,46 @@ object HttpEntity {
   private val sizeOfByteString: ByteString ⇒ Int = _.size
   private val sizeOfChunkStreamPart: ChunkStreamPart ⇒ Int = _.data.size
 
-  /**
-   * INTERNAL API
-   */
-  private def limitable[Out, Mat](source: Source[Out, Mat], sizeOf: Out ⇒ Int): Source[Out, Mat] =
-    source.via(Flow[Out].transform { () ⇒
-      new PushStage[Out, Out] {
-        var maxBytes = -1L
-        var bytesLeft = Long.MaxValue
+  private val limitableDefaults = Attributes.name("limitable")
 
-        override def preStart(ctx: LifecycleContext) =
-          ctx.attributes.getFirst[SizeLimit] match {
-            case Some(limit: SizeLimit) if limit.isDisabled ⇒
-            // "no limit"
-            case Some(SizeLimit(bytes, cl @ Some(contentLength))) ⇒
-              if (contentLength > bytes) throw EntityStreamSizeException(bytes, cl)
-            // else we still count but never throw an error
-            case Some(SizeLimit(bytes, None)) ⇒
-              maxBytes = bytes
-              bytesLeft = bytes
-            case None ⇒
-          }
+  private final class Limitable[T](sizeOf: T ⇒ Int) extends GraphStage[FlowShape[T, T]] {
+    val in = Inlet[T]("Limitable.in")
+    val out = Outlet[T]("Limitable.out")
+    override val shape = FlowShape.of(in, out)
+    override protected val initialAttributes: Attributes = limitableDefaults
 
-        def onPush(elem: Out, ctx: stage.Context[Out]): stage.SyncDirective = {
-          bytesLeft -= sizeOf(elem)
-          if (bytesLeft >= 0) ctx.push(elem)
-          else ctx.fail(EntityStreamSizeException(maxBytes))
+    override def createLogic(attributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+      private var maxBytes = -1L
+      private var bytesLeft = Long.MaxValue
+
+      override def preStart(): Unit = {
+        attributes.getFirst[SizeLimit] match {
+          case Some(limit: SizeLimit) if limit.isDisabled ⇒
+          // "no limit"
+          case Some(SizeLimit(bytes, cl @ Some(contentLength))) ⇒
+            if (contentLength > bytes) throw EntityStreamSizeException(bytes, cl)
+          // else we still count but never throw an error
+          case Some(SizeLimit(bytes, None)) ⇒
+            maxBytes = bytes
+            bytesLeft = bytes
+          case None ⇒
         }
       }
-    }.named("limitable"))
+
+      override def onPush(): Unit = {
+        val elem = grab(in)
+        bytesLeft -= sizeOf(elem)
+        if (bytesLeft >= 0) push(out, elem)
+        else failStage(EntityStreamSizeException(maxBytes))
+      }
+
+      override def onPull(): Unit = {
+        pull(in)
+      }
+
+      setHandlers(in, out, this)
+    }
+  }
 
   /**
    * INTERNAL API
@@ -607,4 +657,44 @@ object HttpEntity {
         val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
         x.copy(data = newData).asInstanceOf[T] → whenCompleted
     }
+
+  /**
+   * Represents the currently being-drained HTTP Entity which triggers completion of the contained
+   * Future once the entity has been drained for the given HttpMessage completely.
+   */
+  final class DiscardedEntity(f: Future[Done]) extends akka.http.javadsl.model.HttpMessage.DiscardedEntity {
+    /**
+     * This future completes successfully once the underlying entity stream has been
+     * successfully drained (and fails otherwise).
+     */
+    def future: Future[Done] = f
+
+    /**
+     * This future completes successfully once the underlying entity stream has been
+     * successfully drained (and fails otherwise).
+     */
+    def completionStage: CompletionStage[Done] = FutureConverters.toJava(f)
+  }
+
+  /** Adds Scala DSL idiomatic methods to [[HttpEntity]], e.g. versions of methods with an implicit [[Materializer]]. */
+  implicit final class HttpEntityScalaDSLSugar(val httpEntity: HttpEntity) extends AnyVal {
+    /**
+     * Discards the entities data bytes by running the `dataBytes` Source contained in this `entity`.
+     *
+     * Note: It is crucial that entities are either discarded, or consumed by running the underlying [[akka.stream.scaladsl.Source]]
+     * as otherwise the lack of consuming of the data will trigger back-pressure to the underlying TCP connection
+     * (as designed), however possibly leading to an idle-timeout that will close the connection, instead of
+     * just having ignored the data.
+     *
+     * Warning: It is not allowed to discard and/or consume the `entity.dataBytes` more than once
+     * as the stream is directly attached to the "live" incoming data source from the underlying TCP connection.
+     * Allowing it to be consumable twice would require buffering the incoming data, thus defeating the purpose
+     * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
+     * "stream can cannot be materialized more than once" exception.
+     *
+     * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
+     */
+    def discardBytes()(implicit mat: Materializer): HttpMessage.DiscardedEntity =
+      httpEntity.discardBytes(mat)
+  }
 }

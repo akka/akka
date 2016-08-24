@@ -12,9 +12,8 @@ import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.testkit.TestProbe
-import akka.testkit.AkkaSpec
 
-class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
+class FlowOnCompleteSpec extends StreamSpec with ScriptedTest {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
