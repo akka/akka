@@ -94,6 +94,12 @@ class CircuitBreaker(
     this(scheduler, maxFailures, callTimeout, resetTimeout, 36500.days, 1.0)(executor)
   }
 
+  /**
+   * The `resetTimeout` will be increased exponentially for each failed attempt to close the circuit.
+   * The default exponential backoff factor is 2.
+   *
+   * @param maxResetTimeout the upper bound of resetTimeout
+   */
   def withExponentialBackoff(maxResetTimeout: FiniteDuration): CircuitBreaker = {
     new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout, maxResetTimeout, 2.0)(executor)
   }

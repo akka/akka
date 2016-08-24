@@ -45,8 +45,8 @@ What do they do?
 * In `Half-Open` state:
 	* The first call attempted is allowed through without failing fast
 	* All other calls fail-fast with an exception just as in `Open` state
-	* If the first call succeeds, the breaker is reset back to `Closed` state
-	* If the first call fails, the breaker is tripped again into the `Open` state for another full `resetTimeout`
+	* If the first call succeeds, the breaker is reset back to `Closed` state and the `resetTimeout` is reset
+	* If the first call fails, the breaker is tripped again into the `Open` state (as for exponential backoff circuit breaker, the `resetTimeout` is multiplied by the exponential backoff factor)
 * State transition listeners: 
 	* Callbacks can be provided for every state entry via `onOpen`, `onClose`, and `onHalfOpen`
 	* These are executed in the :class:`ExecutionContext` provided. 
