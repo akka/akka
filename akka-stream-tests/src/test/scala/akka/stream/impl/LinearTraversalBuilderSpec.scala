@@ -20,17 +20,18 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
 
     val compositeSource = new CompositeTestSource
     val compositeSink = new CompositeTestSink
-    val compositeFlow = new CompositeTestFlow("C1")
+    val compositeFlow1 = new CompositeTestFlow("C1")
+    val compositeFlow2 = new CompositeTestFlow("C2")
 
     // ADD closed shape, (and composite closed shape)
 
     "work with a single Source and Sink" in {
       println(source.traversal
-        .append(sink.traversal))
+        .append(sink.traversal, sink.shape))
 
       val builder =
         source.traversal
-          .append(sink.traversal)
+          .append(sink.traversal, sink.shape)
 
       println(builder)
 
@@ -43,29 +44,11 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       mat.inlets(0) should ===(sink.in)
     }
 
-    //    "work with a generic builder backed Sink" in {
-    //      val nestedBuilder =
-    //        TraversalBuilder.linear(source)
-    //        CompositeTraversalBuilder().add(source.traversal, source.shape)
-    //
-    //      val builder =
-    //        sink.traversal
-    //          .add(nestedBuilder, source.shape)
-    //          .wire(source.out, sink.in)
-    //
-    //      printTraversal(builder.traversal.get)
-    //      val mat = testMaterialize(builder)
-    //
-    //      mat.connections should ===(1)
-    //      mat.outlets(0) should ===(source.out)
-    //      mat.inlets(0) should ===(sink.in)
-    //    }
-
     "work with two Flows" in {
       val builder = source.traversal
-        .append(flow1.traversal)
-        .append(flow2.traversal)
-        .append(sink.traversal)
+        .append(flow1.traversal, flow1.shape)
+        .append(flow2.traversal, flow2.shape)
+        .append(sink.traversal, sink.shape)
 
       printTraversal(builder.traversal.get)
       val mat = testMaterialize(builder)
@@ -82,9 +65,9 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
     }
 
     "work with two Flows wired in opposite order" in {
-      val s1 = flow2.traversal.append(sink.traversal)
-      val s2 = flow1.traversal.append(s1)
-      val builder = source.traversal.append(s2)
+      val s1 = flow2.traversal.append(sink.traversal, sink.shape)
+      val s2 = flow1.traversal.append(s1, SinkShape(flow2.in))
+      val builder = source.traversal.append(s2, SinkShape(flow1.in))
 
       printTraversal(builder.traversal.get)
       val mat = testMaterialize(builder)
@@ -101,10 +84,10 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
     }
 
     "work with two Flows wired in an irregular order" in {
-      val source2 = source.traversal.append(flow1.traversal)
-      val sink2 = flow2.traversal.append(sink.traversal)
+      val source2 = source.traversal.append(flow1.traversal, flow1.shape)
+      val sink2 = flow2.traversal.append(sink.traversal, sink.shape)
 
-      val builder = source2.append(sink2)
+      val builder = source2.append(sink2, SinkShape(flow2.in))
 
       printTraversal(builder.traversal.get)
       val mat = testMaterialize(builder)
@@ -126,9 +109,9 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       remappedShape.out.mappedTo = flow1.out
 
       val builder = source.traversal
-        .append(flow1.traversal)
-        .append(flow1.traversal)
-        .append(sink.traversal)
+        .append(flow1.traversal, flow1.shape)
+        .append(flow1.traversal, flow1.shape)
+        .append(sink.traversal, sink.shape)
 
       printTraversal(builder.traversal.get)
       val mat = testMaterialize(builder)
@@ -147,13 +130,13 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
     "work with a nested Flow chain" in {
       val nestedFlows =
         flow1.traversal
-          .append(flow2.traversal)
+          .append(flow2.traversal, flow2.shape)
 
       println(nestedFlows)
 
       val builder = source.traversal
-        .append(nestedFlows)
-        .append(sink.traversal)
+        .append(nestedFlows, FlowShape(flow1.in, flow2.out))
+        .append(sink.traversal, sink.shape)
 
       printTraversal(builder.traversal.get)
       val mat = testMaterialize(builder)
@@ -172,14 +155,14 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
     "work with a nested Flow chain used twice (appended to self)" in {
       val nestedFlows =
         flow1.traversal
-          .append(flow2.traversal)
+          .append(flow2.traversal, flow2.shape)
 
       println(nestedFlows)
 
       val builder = source.traversal
-        .append(nestedFlows)
-        .append(nestedFlows)
-        .append(sink.traversal)
+        .append(nestedFlows, FlowShape(flow1.in, flow2.out))
+        .append(nestedFlows, FlowShape(flow1.in, flow2.out))
+        .append(sink.traversal, sink.shape)
 
       printTraversal(builder.traversal.get)
       val mat = testMaterialize(builder)
@@ -216,7 +199,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
     "work with a two Flows wired back to self" in {
       val builder =
         flow1.traversal
-          .append(flow2.traversal)
+          .append(flow2.traversal, flow2.shape)
           .wire(flow2.out, flow1.in)
 
       printTraversal(builder.traversal.get)
@@ -235,7 +218,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
     "work with Flow appended to self then wired back to self" in {
       val builder =
         flow1.traversal
-          .append(flow1.traversal)
+          .append(flow1.traversal, flow1.shape)
           .wire(flow1.out, flow1.in)
 
       printTraversal(builder.traversal.get)
@@ -288,13 +271,13 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
     "be able to be joined with a composite flow" in {
       val embeddedFlow =
         flow1.traversal
-          .append(flow2.traversal)
+          .append(flow2.traversal, flow2.shape)
 
       val builder =
-        compositeFlow.traversal
+        compositeFlow1.traversal
           .add(embeddedFlow, FlowShape(flow1.in, flow2.out))
-          .wire(compositeFlow.out, flow1.in)
-          .wire(flow2.out, compositeFlow.in)
+          .wire(compositeFlow1.out, flow1.in)
+          .wire(flow2.out, compositeFlow1.in)
 
       printTraversal(builder.traversal.get)
 
@@ -304,10 +287,10 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
 
       mat.connections should ===(3)
       mat.outlets(0) should ===(flow2.out)
-      mat.inlets(0) should ===(compositeFlow.in)
+      mat.inlets(0) should ===(compositeFlow1.in)
       mat.outlets(1) should ===(flow1.out)
       mat.inlets(1) should ===(flow2.in)
-      mat.outlets(2) should ===(compositeFlow.out)
+      mat.outlets(2) should ===(compositeFlow1.out)
       mat.inlets(2) should ===(flow1.in)
     }
 
@@ -349,11 +332,120 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       mat.inlets(0) should ===(flow1.in)
     }
 
-    "be able embed a composite in a linear traversal" in pending
+    "be able to embed a composite sink in a linear traversal" in {
+      val builder =
+        source.traversal
+          .append(compositeSink.traversal, compositeSink.shape)
 
-    "be able embed a composite (constructed in reverse) in a linear traversal" in pending
+      println(builder)
 
-    "be able to use a composite flow with a linear source and sink" in pending
+      printTraversal(builder.traversal.get)
+      val mat = testMaterialize(builder)
+
+      mat.connections should ===(1)
+      mat.outlets(0) should ===(source.out)
+      mat.inlets(0) should ===(compositeSink.in)
+    }
+
+    "be able to start from a composite source" in pending
+
+    "be able to start from a composite flow" in pending
+
+    "be able to embed a composite flow in a linear traversal" in {
+      val builder =
+        source.traversal
+          .append(compositeFlow1.traversal, compositeFlow1.shape)
+          .append(sink.traversal, sink.shape)
+
+      println(builder)
+
+      printTraversal(builder.traversal.get)
+      val mat = testMaterialize(builder)
+
+      mat.connections should ===(2)
+      mat.outlets(1) should ===(source.out)
+      mat.inlets(1) should ===(compositeFlow1.in)
+      mat.outlets(0) should ===(compositeFlow1.out)
+      mat.inlets(0) should ===(sink.in)
+    }
+
+    "be able to embed a composite sink with an irregular wiring" in {
+      val sinkBuilder =
+        CompositeTraversalBuilder()
+          .add(compositeFlow2.traversal, compositeFlow2.shape)
+          .add(compositeSink.traversal, compositeSink.shape)
+          .add(compositeFlow1.traversal, compositeFlow1.shape)
+          .wire(compositeFlow2.out, compositeSink.in)
+          .wire(compositeFlow1.out, compositeFlow2.in)
+
+      val builder =
+        source.traversal
+          .append(sinkBuilder, SinkShape(compositeFlow1.in))
+
+      printTraversal(builder.traversal.get)
+      val mat = testMaterialize(builder)
+
+      println(mat)
+
+      mat.connections should ===(3)
+      mat.outlets(2) should ===(source.out)
+      mat.inlets(2) should ===(compositeFlow1.in)
+      mat.outlets(1) should ===(compositeFlow2.out)
+      mat.inlets(1) should ===(compositeSink.in)
+      mat.outlets(0) should ===(compositeFlow1.out)
+      mat.inlets(0) should ===(compositeFlow2.in)
+    }
+
+    "be able to embed a composite flow multiple times appended to self" in {
+      val builder =
+        source.traversal
+          .append(compositeFlow1.traversal, compositeFlow1.shape)
+          .append(compositeFlow1.traversal, compositeFlow1.shape)
+          .append(sink.traversal, sink.shape)
+
+      println(builder)
+
+      printTraversal(builder.traversal.get)
+      val mat = testMaterialize(builder)
+
+      mat.connections should ===(3)
+      mat.outlets(2) should ===(source.out)
+      mat.inlets(2) should ===(compositeFlow1.in)
+      mat.outlets(1) should ===(compositeFlow1.out)
+      mat.inlets(1) should ===(compositeFlow1.in)
+      mat.outlets(0) should ===(compositeFlow1.out)
+      mat.inlets(0) should ===(sink.in)
+    }
+
+    "be able to embed a composite flow multiple times appended to self alternating with linear flow" in {
+
+      val builder =
+        source.traversal
+          .append(compositeFlow1.traversal, compositeFlow1.shape)
+          .append(flow1.traversal, flow1.shape)
+          .append(compositeFlow1.traversal, compositeFlow1.shape)
+          .append(flow1.traversal, flow1.shape)
+          .append(sink.traversal, sink.shape)
+
+      println(builder)
+
+      printTraversal(builder.traversal.get)
+      val mat = testMaterialize(builder)
+      println(mat)
+
+      mat.connections should ===(5)
+
+      mat.outlets(4) should ===(source.out)
+      mat.inlets(4) should ===(compositeFlow1.in)
+      mat.outlets(3) should ===(compositeFlow1.out)
+      mat.inlets(3) should ===(flow1.in)
+      mat.outlets(2) should ===(flow1.out)
+      mat.inlets(2) should ===(compositeFlow1.in)
+      mat.outlets(1) should ===(compositeFlow1.out)
+      mat.inlets(1) should ===(flow1.in)
+      mat.outlets(0) should ===(flow1.out)
+      mat.inlets(0) should ===(sink.in)
+    }
 
   }
 

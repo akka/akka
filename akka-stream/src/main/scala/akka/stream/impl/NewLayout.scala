@@ -6,7 +6,7 @@ package akka.stream.impl
 
 import akka.stream.impl.StreamLayout.{ AtomicModule, Module }
 import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
-import akka.stream.{ Shape, OutPort, InPort, Attributes }
+import akka.stream._
 
 import scala.collection.immutable
 
@@ -82,7 +82,6 @@ object NewLayout {
       }
     }
 
-    val wireInPlace: Array[Int] = Array(0)
     val wireBackward: Array[Int] = Array(-1)
     val noWire: Array[Int] = Array()
 
@@ -195,8 +194,15 @@ object NewLayout {
 
     override def traversal: Option[Traversal] = Some(traversalSoFar)
 
-    override def add(submodule: TraversalBuilder, shape: Shape): TraversalBuilder =
-      throw new UnsupportedOperationException("Linear traversal cannot add arbitrary modules.")
+    override def add(submodule: TraversalBuilder, shape: Shape): TraversalBuilder = {
+      val shape = AmorphousShape(
+        inPort.toList.asInstanceOf[List[Inlet[_]]],
+        outPort.toList.asInstanceOf[List[Outlet[_]]]
+      )
+
+      // Generic composition is solved by the Composite builder
+      CompositeTraversalBuilder().add(this, shape).add(submodule, shape)
+    }
 
     private def rewireLastOutTo(relativeOffset: Int): LinearTraversalBuilder = {
       var unzipped: List[Traversal] = Nil
@@ -245,9 +251,11 @@ object NewLayout {
 
     override def unwiredOuts: Int = if (outPort.isDefined) 1 else 0
 
-    def append(toAppend: TraversalBuilder): LinearTraversalBuilder = {
+    def append(toAppend: TraversalBuilder, shape: Shape): LinearTraversalBuilder = {
+      // We don't really need the Shape for the linear append, but it is nicer to keep the API uniform here
       toAppend match {
         case otherLinear: LinearTraversalBuilder ⇒
+          require(otherLinear.inPort.isDefined, "Appended linear module must have an unwired input port.")
           copy(
             outPort = otherLinear.outPort,
             inSlots = inSlots + otherLinear.inSlots,
@@ -256,7 +264,22 @@ object NewLayout {
           )
 
         case other ⇒
-          ???
+          require(shape.inlets.size == 1, "Module has not exactly one input port, it cannot be used as linear")
+          require(shape.outlets.size <= 1, "Module has more than one output port, it cannot be used as linear")
+
+          val in = shape.inlets.head
+          val outOpt = shape.outlets.headOption
+
+          val additionalTraversal: Traversal = outOpt match {
+            case Some(out) ⇒ other.assign(out, -other.inSlots).traversal.get
+            case None      ⇒ other.traversal.get
+          }
+
+          rewireLastOutTo(inSlots + other.offsetOf(in)).copy(
+            outPort = outOpt,
+            inSlots = inSlots + other.inSlots,
+            traversalSoFar = additionalTraversal.concat(this.traversalSoFar)
+          )
       }
     }
 

@@ -12,7 +12,7 @@ object TraversalTestUtils {
 
   // --- These test classes do not use the optimized linear builder, for testing the composite builder instead
   class CompositeTestSource extends AtomicModule {
-    val out = Outlet[Any]("testSource.out")
+    val out = Outlet[Any]("testSourceC.out")
     override val shape: Shape = SourceShape(out)
     override val attributes: Attributes = Attributes.name("testSource")
     val traversal = TraversalBuilder.atomic(this)
@@ -24,7 +24,7 @@ object TraversalTestUtils {
   }
 
   class CompositeTestSink extends AtomicModule {
-    val in = Inlet[Any]("testSink.in")
+    val in = Inlet[Any]("testSinkC.in")
     override val shape: Shape = SinkShape(in)
     override val attributes: Attributes = Attributes.name("testSink")
     val traversal = TraversalBuilder.atomic(this)
@@ -36,8 +36,8 @@ object TraversalTestUtils {
   }
 
   class CompositeTestFlow(tag: String) extends AtomicModule {
-    val in = Inlet[Any](s"testFlow$tag.in")
-    val out = Outlet[Any](s"testFlow$tag.out")
+    val in = Inlet[Any](s"testFlowC$tag.in")
+    val out = Outlet[Any](s"testFlowC$tag.out")
     override val shape: Shape = FlowShape(in, out)
     override val attributes: Attributes = Attributes.name(s"testFlow$tag")
     val traversal = TraversalBuilder.atomic(this)
