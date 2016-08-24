@@ -240,15 +240,21 @@ object NewLayout {
 
     override def unwiredOuts: Int = if (outPort.isDefined) 1 else 0
 
-    def append(other: LinearTraversalBuilder): LinearTraversalBuilder = {
-      copy(
-        outPort = other.outPort,
-        inSlots = inSlots + other.inSlots,
-        // Build in reverse so it yields a more efficient layout for left-to-right building
-        traversalSoFar = other.traversalSoFar.concat(this.traversalSoFar)
-      )
+    def append(toAppend: TraversalBuilder): LinearTraversalBuilder = {
+      toAppend match {
+        case otherLinear: LinearTraversalBuilder ⇒
+          copy(
+            outPort = otherLinear.outPort,
+            inSlots = inSlots + otherLinear.inSlots,
+            // Build in reverse so it yields a more efficient layout for left-to-right building
+            traversalSoFar = otherLinear.traversalSoFar.concat(this.traversalSoFar)
+          )
 
+        case other ⇒
+          ???
+      }
     }
+
   }
 
   class BuilderKey {

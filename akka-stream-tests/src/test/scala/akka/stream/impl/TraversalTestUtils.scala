@@ -5,9 +5,86 @@
 package akka.stream.impl
 
 import akka.stream.impl.NewLayout._
-import akka.stream.{ InPort, OutPort }
+import akka.stream.impl.StreamLayout.{ AtomicModule, Module }
+import akka.stream._
 
 object TraversalTestUtils {
+
+  // --- These test classes do not use the optimized linear builder, for testing the composite builder instead
+  class CompositeTestSource extends AtomicModule {
+    val out = Outlet[Any]("testSource.out")
+    override val shape: Shape = SourceShape(out)
+    override val attributes: Attributes = Attributes.name("testSource")
+    val traversal = TraversalBuilder.atomic(this)
+
+    override def withAttributes(attributes: Attributes): Module = ???
+    override def carbonCopy: Module = ???
+    override def replaceShape(s: Shape): Module = ???
+    override def toString = "TestSource"
+  }
+
+  class CompositeTestSink extends AtomicModule {
+    val in = Inlet[Any]("testSink.in")
+    override val shape: Shape = SinkShape(in)
+    override val attributes: Attributes = Attributes.name("testSink")
+    val traversal = TraversalBuilder.atomic(this)
+
+    override def withAttributes(attributes: Attributes): Module = ???
+    override def carbonCopy: Module = ???
+    override def replaceShape(s: Shape): Module = ???
+    override def toString = "TestSink"
+  }
+
+  class CompositeTestFlow(tag: String) extends AtomicModule {
+    val in = Inlet[Any](s"testFlow$tag.in")
+    val out = Outlet[Any](s"testFlow$tag.out")
+    override val shape: Shape = FlowShape(in, out)
+    override val attributes: Attributes = Attributes.name(s"testFlow$tag")
+    val traversal = TraversalBuilder.atomic(this)
+
+    override def withAttributes(attributes: Attributes): Module = ???
+    override def carbonCopy: Module = ???
+    override def replaceShape(s: Shape): Module = ???
+    override def toString = s"TestFlow$tag"
+  }
+
+  // --- These test classes DO use the optimized linear builder, for testing the composite builder instead
+  class LinearTestSource extends AtomicModule {
+    val out = Outlet[Any]("testSource.out")
+    override val shape: Shape = SourceShape(out)
+    override val attributes: Attributes = Attributes.name("testSource")
+    val traversal = TraversalBuilder.linear(this)
+
+    override def withAttributes(attributes: Attributes): Module = ???
+    override def carbonCopy: Module = ???
+    override def replaceShape(s: Shape): Module = ???
+    override def toString = "TestSource"
+  }
+
+  class LinearTestSink extends AtomicModule {
+    val in = Inlet[Any]("testSink.in")
+    override val shape: Shape = SinkShape(in)
+    override val attributes: Attributes = Attributes.name("testSink")
+    val traversal = TraversalBuilder.linear(this)
+
+    override def withAttributes(attributes: Attributes): Module = ???
+    override def carbonCopy: Module = ???
+    override def replaceShape(s: Shape): Module = ???
+    override def toString = "TestSink"
+  }
+
+  class LinearTestFlow(tag: String) extends AtomicModule {
+    val in = Inlet[Any](s"testFlow$tag.in")
+    val out = Outlet[Any](s"testFlow$tag.out")
+    override val shape: Shape = FlowShape(in, out)
+    override val attributes: Attributes = Attributes.name(s"testFlow$tag")
+    val traversal = TraversalBuilder.linear(this)
+
+    override def withAttributes(attributes: Attributes): Module = ???
+    override def carbonCopy: Module = ???
+    override def replaceShape(s: Shape): Module = ???
+    override def toString = s"TestFlow$tag"
+  }
 
   class MaterializationResult(
     val connections: Int,

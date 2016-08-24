@@ -13,49 +13,10 @@ import akka.testkit.AkkaSpec
 class LinearTraversalBuilderSpec extends AkkaSpec {
 
   "LinearTraversalBuilder" must {
-
-    // These test classes do not use the optimized linear builder, for testing the composite builder instead
-    class TestSource extends AtomicModule {
-      val out = Outlet[Any]("testSource.out")
-      override val shape: Shape = SourceShape(out)
-      override val attributes: Attributes = Attributes.name("testSource")
-      val traversal = TraversalBuilder.linear(this)
-
-      override def withAttributes(attributes: Attributes): Module = ???
-      override def carbonCopy: Module = ???
-      override def replaceShape(s: Shape): Module = ???
-      override def toString = "TestSource"
-    }
-
-    class TestSink extends AtomicModule {
-      val in = Inlet[Any]("testSink.in")
-      override val shape: Shape = SinkShape(in)
-      override val attributes: Attributes = Attributes.name("testSink")
-      val traversal = TraversalBuilder.linear(this)
-
-      override def withAttributes(attributes: Attributes): Module = ???
-      override def carbonCopy: Module = ???
-      override def replaceShape(s: Shape): Module = ???
-      override def toString = "TestSink"
-    }
-
-    class TestFlow(tag: String) extends AtomicModule {
-      val in = Inlet[Any](s"testFlow$tag.in")
-      val out = Outlet[Any](s"testFlow$tag.out")
-      override val shape: Shape = FlowShape(in, out)
-      override val attributes: Attributes = Attributes.name(s"testFlow$tag")
-      val traversal = TraversalBuilder.linear(this)
-
-      override def withAttributes(attributes: Attributes): Module = ???
-      override def carbonCopy: Module = ???
-      override def replaceShape(s: Shape): Module = ???
-      override def toString = s"TestFlow$tag"
-    }
-
-    val source = new TestSource
-    val sink = new TestSink
-    val flow1 = new TestFlow("1")
-    val flow2 = new TestFlow("2")
+    val source = new LinearTestSource
+    val sink = new LinearTestSink
+    val flow1 = new LinearTestFlow("1")
+    val flow2 = new LinearTestFlow("2")
 
     // ADD closed shape, (and composite closed shape)
 
@@ -286,13 +247,11 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       mat.inlets(1) should ===(flow1.in)
     }
 
+    "be able to be embedded in a composite (with different wiring order)" in pending
+
     "be able embed a composite in a linear traversal" in pending
 
     "be able embed a composite (constructed in reverse) in a linear traversal" in pending
-
-    "be able to be embedded in a composite" in pending
-
-    "be able to be embedded in a composite (with different wiring order)" in pending
 
   }
 
