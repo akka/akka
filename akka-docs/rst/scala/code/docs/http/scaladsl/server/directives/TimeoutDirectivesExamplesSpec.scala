@@ -25,9 +25,7 @@ private[this] object TimeoutDirectivesTestConfig {
     akka.stdout-loglevel = ERROR
     windows-connection-abort-workaround-enabled = auto
     akka.log-dead-letters = OFF
-    akka.http.server.request-timeout = 1000s""")
-  // large timeout - 1000s (please note - setting to infinite will disable Timeout-Access header
-  // and withRequestTimeout will not work)
+    akka.http.server.request-timeout = infinite""")
 }
 
 class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesTestConfig.testConf)
@@ -36,7 +34,7 @@ class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesTestConfig
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
 
-  def slowFuture(): Future[String] = Promise[String].future // move to Future.never in Scala 2.12
+  def slowFuture(): Future[String] = Promise[String].future // TODO: move to Future.never in Scala 2.12
 
   def runRoute(route: Route, routePath: String): HttpResponse = {
     val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
