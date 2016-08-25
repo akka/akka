@@ -18,6 +18,17 @@ private[akka] object NewLayout {
   // MatValueSource
   // Fusing
 
+  /*
+   * TODO: Optimizations
+   * Two approaches are likely to give most gains:
+   *  - replace immutable.Map with something cheaper and better suited for small maps (all maps we have have
+   *    sizes proportional to unwired ports which are usually few. One likely implementation can be a "map" backed
+   *    by a simple array with a linear scan as lookup and copy-on-write for updates.
+   *  - make the Traversal a rope. Materialization is likely constrained by the pointer chasing right now, I would
+   *    expect making the Concat to be copy-on-write array backed instead (linking to the next chunk once a threshold
+   *    is reached) is probably the way to go.
+   */
+
   /**
    * Graphs to be materialized are defined by their traversal. There is no explicit graph information tracked, instead
    * a sequence of steps required to "reconstruct" the graph.
@@ -282,6 +293,7 @@ private[akka] object NewLayout {
   final case class AtomicTraversalBuilder(module: AtomicModule, outToSlot: Array[Int], unwiredOuts: Int) extends TraversalBuilder {
 
     override def add(submodule: TraversalBuilder, shape: Shape): TraversalBuilder = {
+      // TODO: Use automatically a linear builder if applicable
       // Create a composite, add ourselves, then the other.
       CompositeTraversalBuilder().add(this, module.shape).add(submodule, shape)
     }
@@ -307,7 +319,8 @@ private[akka] object NewLayout {
         CompletedTraversalBuilder(
           traversal = Some(MaterializeAtomic(module, newOutToSlot)),
           inSlots = inSlots,
-          inToOffset = module.shape.inlets.map(in ⇒ in → in.id).toMap
+          // TODO Optimize Map creation
+          inToOffset = module.shape.inlets.iterator.map(in ⇒ in → in.id).toMap
         )
       } else copy(outToSlot = newOutToSlot, unwiredOuts = newUnwiredOuts)
     }
@@ -541,6 +554,7 @@ private[akka] object NewLayout {
         copy(
           inBaseOffsetForOut = inBaseOffsetForOut - out,
           outOwners = outOwners - out,
+          // TODO Optimize Map access
           pendingBuilders = pendingBuilders.updated(builderKey, result),
           // pendingBuilders = pendingBuilders - builderKey,
           unwiredOuts = unwiredOuts - 1
@@ -571,6 +585,7 @@ private[akka] object NewLayout {
           val in = inIterator.next()
           // Calculate offset in the current scope. This is the our first unused input slot plus
           // the relative offset of the input port in the submodule.
+          // TODO Optimize Map access
           newInOffsets = newInOffsets.updated(in, inSlots + submodule.offsetOf(in.mappedTo))
         }
 
@@ -592,6 +607,7 @@ private[akka] object NewLayout {
         while (inIterator.hasNext) {
           val in = inIterator.next()
           // Calculate offset in the current scope
+          // TODO Optimize Map access
           newInOffsets = newInOffsets.updated(in, inSlots + submodule.offsetOf(in.mappedTo))
         }
 
@@ -601,6 +617,7 @@ private[akka] object NewLayout {
           // Record the base offsets of all the modules we included and which have unwired output ports. We need
           // to adjust their offset by inSlots as that would be their new position in this module.
           newBaseOffsetsForOut = newBaseOffsetsForOut.updated(out, inSlots + submodule.offsetOfModule(out.mappedTo))
+          // TODO Optimize Map access
           newOutOwners = newOutOwners.updated(out, builderKey)
         }
 

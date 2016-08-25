@@ -4,6 +4,8 @@
 
 package akka.stream.impl
 
+import java.util
+
 import akka.stream.impl.NewLayout._
 import akka.stream.impl.StreamLayout.{ AtomicModule, Module }
 import akka.stream._
@@ -113,36 +115,39 @@ object TraversalTestUtils {
     var inOffs = 0
 
     var current: Traversal = b.traversal.get
-    var traversalStack: List[Traversal] = current :: Nil
+    val traversalStack = new util.ArrayList[Traversal](16)
+    traversalStack.add(current)
 
     // Due to how Concat works, we need a stack. This probably can be optimized for the most common cases.
-    while (traversalStack.nonEmpty) {
-      current = traversalStack.head
-      traversalStack = traversalStack.tail
+    while (!traversalStack.isEmpty) {
+      current = traversalStack.remove(traversalStack.size() - 1)
 
-      while (current != EmptyTraversal) {
+      while (current ne EmptyTraversal) {
         current match {
           case MaterializeAtomic(mod, outToSlot) ⇒
             println(s"materialize: $mod inOffs = $inOffs")
-            mod.shape.inlets.zipWithIndex.foreach {
-              case (in, i) ⇒
-                println(s"in $in (id = ${in.id}) assigned to ${inOffs + i}")
-                // Input ports are simply assigned consecutively.
-                inlets(inOffs + i) = in
+
+            var i = 0
+            val inletsIter = mod.shape.inlets.iterator
+            while (inletsIter.hasNext) {
+              val in = inletsIter.next()
+              println(s"in $in (id = ${in.id}) assigned to ${inOffs + i}")
+              inlets(inOffs + i) = in
+              i += 1
             }
-            mod.shape.outlets.zipWithIndex.foreach {
-              case (out, i) ⇒
-                println(s"out $out (id = ${out.id}) assigned to ${inOffs} + ${outToSlot(out.id)} =" +
-                  s" ${inOffs + outToSlot(out.id)}")
-                // Output ports are assigned relative to the "base offset" of the module (inOffs) using
-                // the lookup table provided by MaterializeAtomic
-                outlets(inOffs + outToSlot(out.id)) = out
+
+            val outletsIter = mod.shape.outlets.iterator
+            while (outletsIter.hasNext) {
+              val out = outletsIter.next()
+              println(s"out $out (id = ${out.id}) assigned to ${inOffs} + ${outToSlot(out.id)} =" +
+                s" ${inOffs + outToSlot(out.id)}")
+              outlets(inOffs + outToSlot(out.id)) = out
             }
             inOffs += mod.shape.inlets.size
             current = current.next
           // And that's it ;)
           case Concat(first, next) ⇒
-            traversalStack = next :: traversalStack
+            traversalStack.add(next)
             current = first
           case _ ⇒
             current = current.next
