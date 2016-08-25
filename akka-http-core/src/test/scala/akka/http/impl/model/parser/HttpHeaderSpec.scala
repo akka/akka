@@ -138,8 +138,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       """Authorization: Fancy yes="n:o", nonce=42""" =!=
         Authorization(GenericHttpCredentials("Fancy", Map("yes" → "n:o", "nonce" → "42"))).renderedTo(
           """Fancy yes="n:o",nonce=42""")
-      """Authorization: Fancy yes=no,nonce="4\\2"""" =!=
-        Authorization(GenericHttpCredentials("Fancy", Map("yes" → "no", "nonce" → """4\2""")))
+      """Authorization: Fancy yes=no,foo=,nonce="4\\2"""" =!=
+        Authorization(GenericHttpCredentials("Fancy", Map("yes" → "no", "foo" → "", "nonce" → """4\2""")))
       "Authorization: Basic Qm9iOg==" =!=
         Authorization(BasicHttpCredentials("Bob", ""))
       """Authorization: Digest name=Bob""" =!=
