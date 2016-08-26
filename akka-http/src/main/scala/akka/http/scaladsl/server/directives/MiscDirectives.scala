@@ -104,7 +104,8 @@ object MiscDirectives extends MiscDirectives {
   private val _extractClientIP: Directive1[RemoteAddress] =
     headerValuePF { case `X-Forwarded-For`(Seq(address, _*)) ⇒ address } |
       headerValuePF { case `Remote-Address`(address) ⇒ address } |
-      headerValuePF { case `X-Real-Ip`(address) ⇒ address }
+      headerValuePF { case `X-Real-Ip`(address) ⇒ address } |
+      extract[RemoteAddress] { case _ ⇒ RemoteAddress.Unknown }
 
   private val _requestEntityEmpty: Directive0 =
     extract(_.request.entity.isKnownEmpty).flatMap(if (_) pass else reject)
