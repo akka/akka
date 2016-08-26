@@ -9,14 +9,14 @@ import akka.{ actor ⇒ a }
 private[typed] object PropsAdapter {
 
   // FIXME dispatcher and queue size
-  def apply(p: Props[_]): a.Props = new a.Props(a.Deploy(), classOf[ActorAdapter[_]], (p.creator: AnyRef) :: Nil)
+  def apply(b: Behavior[_], deploy: DeploymentConfig): a.Props = new a.Props(a.Deploy(), classOf[ActorAdapter[_]], (b: AnyRef) :: Nil)
 
-  def apply[T](p: a.Props): Props[T] = {
+  def apply[T](p: a.Props): Behavior[T] = {
     assert(p.clazz == classOf[ActorAdapter[_]], "typed.Actor must have typed.Props")
     p.args match {
-      case (creator: Function0[_]) :: Nil ⇒
+      case (initial: Behavior[_]) :: Nil ⇒
         // FIXME queue size
-        Props(creator.asInstanceOf[() ⇒ Behavior[T]], DispatcherFromConfig(p.deploy.dispatcher), Int.MaxValue)
+        initial.asInstanceOf[Behavior[T]]
       case _ ⇒ throw new AssertionError("typed.Actor args must be right")
     }
   }

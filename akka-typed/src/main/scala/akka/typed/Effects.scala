@@ -30,8 +30,8 @@ object Effect {
  * An [[ActorContext]] for testing purposes that records the effects performed
  * on it and otherwise stubs them out like a [[StubbedActorContext]].
  */
-class EffectfulActorContext[T](_name: String, _props: Props[T], _system: ActorSystem[Nothing])
-  extends StubbedActorContext[T](_name, _props, _system) {
+class EffectfulActorContext[T](_name: String, _initialBehavior: Behavior[T], _mailboxCapacity: Int, _system: ActorSystem[Nothing])
+  extends StubbedActorContext[T](_name, _mailboxCapacity, _system) {
   import akka.{ actor ⇒ a }
   import Effect._
 
@@ -49,22 +49,23 @@ class EffectfulActorContext[T](_name: String, _props: Props[T], _system: ActorSy
   }
   def hasEffects: Boolean = effectQueue.peek() != null
 
-  private var current = props.creator()
-  signal(PreStart)
+  private var current = _initialBehavior
+
+  if (Behavior.isAlive(current)) signal(PreStart)
 
   def currentBehavior: Behavior[T] = current
 
   def run(msg: T): Unit = current = Behavior.canonicalize(current.message(this, msg), current)
   def signal(signal: Signal): Unit = current = Behavior.canonicalize(current.management(this, signal), current)
 
-  override def spawnAnonymous[U](props: Props[U]): ActorRef[U] = {
-    val ref = super.spawnAnonymous(props)
+  override def spawnAnonymous[U](behavior: Behavior[U], deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[U] = {
+    val ref = super.spawnAnonymous(behavior)
     effectQueue.offer(Spawned(ref.path.name))
     ref
   }
-  override def spawn[U](props: Props[U], name: String): ActorRef[U] = {
+  override def spawn[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[U] = {
     effectQueue.offer(Spawned(name))
-    super.spawn(props, name)
+    super.spawn(behavior, name)
   }
   override def stop(child: ActorRef[Nothing]): Boolean = {
     effectQueue.offer(Stopped(child.path.name))
