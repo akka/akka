@@ -30,6 +30,11 @@ class MiscDirectivesSpec extends RoutingSpec {
         extractClientIP { echoComplete }
       } ~> check { responseAs[String] shouldEqual "1.2.3.4" }
     }
+    "extract unknown when no headers" in {
+      Get() ~> {
+        extractClientIP { echoComplete }
+      } ~> check { responseAs[String] shouldEqual "unknown" }
+    }
   }
 
   "the selectPreferredLanguage directive" should {
