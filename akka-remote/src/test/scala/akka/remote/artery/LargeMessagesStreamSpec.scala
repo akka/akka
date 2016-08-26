@@ -51,7 +51,7 @@ class LargeMessagesStreamSpec extends ArteryMultiNodeSpec(
       senderProbeA.expectMsg(Pong(0))
 
       // flag should be cached now
-      regularRemote.asInstanceOf[RemoteActorRef].cachedLargeMessageDestinationFlag should ===(RegularDestination)
+      regularRemote.asInstanceOf[RemoteActorRef].cachedMessageDestinationFlag should ===(RegularDestination)
 
     }
 
@@ -75,7 +75,7 @@ class LargeMessagesStreamSpec extends ArteryMultiNodeSpec(
       senderProbeA.expectMsg(Pong(0))
 
       // flag should be cached now
-      largeRemote.asInstanceOf[RemoteActorRef].cachedLargeMessageDestinationFlag should ===(LargeDestination)
+      largeRemote.asInstanceOf[RemoteActorRef].cachedMessageDestinationFlag should ===(LargeDestination)
 
     }
 
@@ -112,8 +112,8 @@ class LargeMessagesStreamSpec extends ArteryMultiNodeSpec(
       remoteProbe.expectMsg(10.seconds, Pong(largeBytes))
 
       // cached flags should be set now
-      largeRemote.asInstanceOf[RemoteActorRef].cachedLargeMessageDestinationFlag should ===(LargeDestination)
-      regularRemote.asInstanceOf[RemoteActorRef].cachedLargeMessageDestinationFlag should ===(RegularDestination)
+      largeRemote.asInstanceOf[RemoteActorRef].cachedMessageDestinationFlag should ===(LargeDestination)
+      regularRemote.asInstanceOf[RemoteActorRef].cachedMessageDestinationFlag should ===(RegularDestination)
     }
   }
 

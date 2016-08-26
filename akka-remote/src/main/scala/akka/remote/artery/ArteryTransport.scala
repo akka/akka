@@ -328,11 +328,21 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   val largeMessageChannelEnabled =
     !largeMessageDestinations.wildcardTree.isEmpty || !largeMessageDestinations.doubleWildcardTree.isEmpty
 
+  private val priorityMessageDestinations =
+    WildcardIndex[NotUsed]()
+      // this comes from remoting so is semi-ok to be hardcoded here
+      .insert(Array("system", "remote-watcher"), NotUsed)
+      // these belongs to cluster and should come from there
+      .insert(Array("system", "cluster", "core", "daemon", "heartbeatSender"), NotUsed)
+      .insert(Array("system", "cluster", "heartbeatReceiver"), NotUsed)
+
   private def inboundChannel = s"aeron:udp?endpoint=${localAddress.address.host.get}:${localAddress.address.port.get}"
   private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
+
   private val controlStreamId = 1
   private val ordinaryStreamId = 3
   private val largeStreamId = 4
+
   private val taskRunner = new TaskRunner(system, remoteSettings.IdleCpuLevel)
 
   private val restartTimeout: FiniteDuration = 5.seconds // FIXME config
@@ -367,7 +377,13 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     createFlightRecorderEventSink(synchr = true)
 
   private val associationRegistry = new AssociationRegistry(
-    remoteAddress ⇒ new Association(this, materializer, remoteAddress, controlSubject, largeMessageDestinations,
+    remoteAddress ⇒ new Association(
+      this,
+      materializer,
+      remoteAddress,
+      controlSubject,
+      largeMessageDestinations,
+      priorityMessageDestinations,
       outboundEnvelopePool))
 
   def remoteSettings: RemoteSettings = provider.remoteSettings
@@ -749,21 +765,18 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     association(remoteAddress).quarantine(reason = "", uid.map(_.toLong))
   }
 
-  def outbound(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[OutboundEnvelope, Future[Done]] = {
-    Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
-      .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, handshakeTimeout,
-        handshakeRetryInterval, injectHandshakeInterval))
-      .via(encoder(compression))
-      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), ordinaryStreamId, aeron, taskRunner,
-        envelopePool, giveUpSendAfter, createFlightRecorderEventSink()))(Keep.right)
-  }
+  def outbound(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[OutboundEnvelope, Future[Done]] =
+    createOutboundSink(ordinaryStreamId, outboundContext, compression, envelopePool)
 
-  def outboundLarge(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[OutboundEnvelope, Future[Done]] = {
+  def outboundLarge(outboundContext: OutboundContext, compression: OutboundCompressions): Sink[OutboundEnvelope, Future[Done]] =
+    createOutboundSink(largeStreamId, outboundContext, compression, largeEnvelopePool)
+
+  private def createOutboundSink(streamId: Int, outboundContext: OutboundContext, compression: OutboundCompressions, bufferPool: EnvelopeBufferPool): Sink[OutboundEnvelope, Future[Done]] = {
     Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
       .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, handshakeTimeout,
         handshakeRetryInterval, injectHandshakeInterval))
-      .via(createEncoder(largeEnvelopePool, compression))
-      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), largeStreamId, aeron, taskRunner,
+      .via(createEncoder(bufferPool, compression))
+      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), streamId, aeron, taskRunner,
         envelopePool, giveUpSendAfter, createFlightRecorderEventSink()))(Keep.right)
   }
 
