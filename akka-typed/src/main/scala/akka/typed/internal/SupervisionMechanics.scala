@@ -19,7 +19,7 @@ private[typed] trait SupervisionMechanics[T] {
    * INTERFACE WITH ACTOR CELL
    */
   protected def system: ActorSystem[Nothing]
-  protected def props: Props[T]
+  protected def initialBehavior: Behavior[T]
   protected def self: ActorRefImpl[T]
   protected def parent: ActorRefImpl[Nothing]
   protected def behavior: Behavior[T]
@@ -66,15 +66,11 @@ private[typed] trait SupervisionMechanics[T] {
   }
 
   private def create(): Boolean = {
-    behavior = Behavior.canonicalize(props.creator(), behavior)
-    if (behavior == null) {
-      fail(new IllegalStateException("cannot start actor with “same” or “unhandled” behavior, terminating"))
-    } else {
-      if (system.settings.DebugLifecycle)
-        publish(Logging.Debug(self.path.toString, clazz(behavior), "started"))
-      if (Behavior.isAlive(behavior)) next(behavior.management(ctx, PreStart), PreStart)
-      else self.sendSystem(Terminate())
-    }
+    behavior = initialBehavior
+    if (system.settings.DebugLifecycle)
+      publish(Logging.Debug(self.path.toString, clazz(behavior), "started"))
+    if (Behavior.isAlive(behavior)) next(behavior.management(ctx, PreStart), PreStart)
+    else self.sendSystem(Terminate())
     true
   }
 

@@ -23,11 +23,11 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
   case class Probe(msg: String, replyTo: ActorRef[String])
 
   trait CommonTests {
-    def system[T](name: String, props: Props[T]): ActorSystem[T]
+    def system[T](name: String, behavior: Behavior[T]): ActorSystem[T]
     def suite: String
 
-    def withSystem[T](name: String, props: Props[T], doTerminate: Boolean = true)(block: ActorSystem[T] ⇒ Unit): Terminated = {
-      val sys = system(s"$suite-$name", props)
+    def withSystem[T](name: String, behavior: Behavior[T], doTerminate: Boolean = true)(block: ActorSystem[T] ⇒ Unit): Terminated = {
+      val sys = system(s"$suite-$name", behavior)
       try {
         block(sys)
         if (doTerminate) sys.terminate().futureValue else sys.whenTerminated.futureValue
@@ -39,7 +39,7 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
     }
 
     def `must start the guardian actor and terminate when it terminates`(): Unit = {
-      val t = withSystem("a", Props(Total[Probe] { p ⇒ p.replyTo ! p.msg; Stopped }), doTerminate = false) { sys ⇒
+      val t = withSystem("a", Total[Probe] { p ⇒ p.replyTo ! p.msg; Stopped }, doTerminate = false) { sys ⇒
         val inbox = Inbox[String]("a")
         sys ! Probe("hello", inbox.ref)
         eventually { inbox.hasMessages should ===(true) }
@@ -52,11 +52,11 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
 
     def `must terminate the guardian actor`(): Unit = {
       val inbox = Inbox[String]("terminate")
-      val sys = system("terminate", Props(Full[Probe] {
+      val sys = system("terminate", Full[Probe] {
         case Sig(ctx, PostStop) ⇒
           inbox.ref ! "done"
           Same
-      }))
+      })
       sys.terminate().futureValue
       inbox.receiveAll() should ===("done" :: Nil)
     }
@@ -64,19 +64,19 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
     def `must log to the event stream`(): Unit = pending
 
     def `must have a name`(): Unit =
-      withSystem("name", Props(Empty[String])) { sys ⇒
+      withSystem("name", Empty[String]) { sys ⇒
         sys.name should ===(suite + "-name")
       }
 
     def `must report its uptime`(): Unit =
-      withSystem("uptime", Props(Empty[String])) { sys ⇒
+      withSystem("uptime", Empty[String]) { sys ⇒
         sys.uptime should be < 1L
         Thread.sleep(1000)
         sys.uptime should be >= 1L
       }
 
     def `must have a working thread factory`(): Unit =
-      withSystem("thread", Props(Empty[String])) { sys ⇒
+      withSystem("thread", Empty[String]) { sys ⇒
         val p = Promise[Int]
         sys.threadFactory.newThread(new Runnable {
           def run(): Unit = p.success(42)
@@ -85,7 +85,7 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
       }
 
     def `must be able to run Futures`(): Unit =
-      withSystem("futures", Props(Empty[String])) { sys ⇒
+      withSystem("futures", Empty[String]) { sys ⇒
         val f = Future(42)(sys.executionContext)
         f.futureValue should ===(42)
       }
@@ -93,12 +93,12 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
   }
 
   object `An ActorSystemImpl` extends CommonTests {
-    def system[T](name: String, props: Props[T]): ActorSystem[T] = ActorSystem(name, props)
+    def system[T](name: String, behavior: Behavior[T]): ActorSystem[T] = ActorSystem(name, behavior)
     def suite = "native"
 
     // this is essential to complete ActorCellSpec, see there
     def `must correctly treat Watch dead letters`(): Unit =
-      withSystem("deadletters", Props(Empty[String])) { sys ⇒
+      withSystem("deadletters", Empty[String]) { sys ⇒
         val client = new DebugRef[Int](sys.path / "debug", true)
         sys.deadLetters.sorry.sendSystem(Watch(sys, client))
         client.receiveAll() should ===(Left(DeathWatchNotification(sys, null)) :: Nil)
@@ -106,7 +106,7 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
   }
 
   object `An ActorSystemAdapter` extends CommonTests {
-    def system[T](name: String, props: Props[T]): ActorSystem[T] = ActorSystem.adapter(name, props)
+    def system[T](name: String, behavior: Behavior[T]): ActorSystem[T] = ActorSystem.adapter(name, behavior)
     def suite = "adapter"
   }
 }

@@ -120,13 +120,15 @@ object ActorSystem {
    * Akka Typed [[Behavior]] hierarchies—this system cannot run untyped
    * [[akka.actor.Actor]] instances.
    */
-  def apply[T](name: String, guardianProps: Props[T],
-               config:           Option[Config]           = None,
-               classLoader:      Option[ClassLoader]      = None,
-               executionContext: Option[ExecutionContext] = None): ActorSystem[T] = {
+  def apply[T](name: String, guardianBehavior: Behavior[T],
+               guardianDeployment: DeploymentConfig         = EmptyDeploymentConfig,
+               config:             Option[Config]           = None,
+               classLoader:        Option[ClassLoader]      = None,
+               executionContext:   Option[ExecutionContext] = None): ActorSystem[T] = {
+    Behavior.validateAsInitial(guardianBehavior)
     val cl = classLoader.getOrElse(akka.actor.ActorSystem.findClassLoader())
     val appConfig = config.getOrElse(ConfigFactory.load(cl))
-    new ActorSystemImpl(name, appConfig, cl, executionContext, guardianProps)
+    new ActorSystemImpl(name, appConfig, cl, executionContext, guardianBehavior, guardianDeployment)
   }
 
   /**
@@ -134,13 +136,15 @@ object ActorSystem {
    * which runs Akka Typed [[Behavior]] on an emulation layer. In this
    * system typed and untyped actors can coexist.
    */
-  def adapter[T](name: String, guardianProps: Props[T],
-                 config:           Option[Config]           = None,
-                 classLoader:      Option[ClassLoader]      = None,
-                 executionContext: Option[ExecutionContext] = None): ActorSystem[T] = {
+  def adapter[T](name: String, guardianBehavior: Behavior[T],
+                 guardianDeployment: DeploymentConfig         = EmptyDeploymentConfig,
+                 config:             Option[Config]           = None,
+                 classLoader:        Option[ClassLoader]      = None,
+                 executionContext:   Option[ExecutionContext] = None): ActorSystem[T] = {
+    Behavior.validateAsInitial(guardianBehavior)
     val cl = classLoader.getOrElse(akka.actor.ActorSystem.findClassLoader())
     val appConfig = config.getOrElse(ConfigFactory.load(cl))
-    val untyped = new a.ActorSystemImpl(name, appConfig, cl, executionContext, Some(PropsAdapter(guardianProps)))
+    val untyped = new a.ActorSystemImpl(name, appConfig, cl, executionContext, Some(PropsAdapter(guardianBehavior, guardianDeployment)))
     untyped.start()
     new ActorSystemAdapter(untyped)
   }
