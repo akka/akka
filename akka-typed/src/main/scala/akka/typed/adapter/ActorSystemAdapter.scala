@@ -29,10 +29,10 @@ private[typed] class ActorSystemAdapter[-T](val untyped: a.ActorSystemImpl)
   override def dispatchers: Dispatchers = new Dispatchers {
     override def lookup(selector: DispatcherSelector): ExecutionContextExecutor =
       selector match {
-        case DispatcherDefault                 ⇒ untyped.dispatcher
-        case DispatcherFromConfig(str)         ⇒ untyped.dispatchers.lookup(str)
-        case DispatcherFromExecutionContext(_) ⇒ throw new UnsupportedOperationException("cannot use DispatcherFromExecutionContext with ActorSystemAdapter")
-        case DispatcherFromExecutor(_)         ⇒ throw new UnsupportedOperationException("cannot use DispatcherFromExecutor with ActorSystemAdapter")
+        case DispatcherDefault(_)                 ⇒ untyped.dispatcher
+        case DispatcherFromConfig(str, _)         ⇒ untyped.dispatchers.lookup(str)
+        case DispatcherFromExecutionContext(_, _) ⇒ throw new UnsupportedOperationException("cannot use DispatcherFromExecutionContext with ActorSystemAdapter")
+        case DispatcherFromExecutor(_, _)         ⇒ throw new UnsupportedOperationException("cannot use DispatcherFromExecutor with ActorSystemAdapter")
       }
     override def shutdown(): Unit = () // there was no shutdown in untyped Akka
   }
