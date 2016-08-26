@@ -407,6 +407,25 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
     new SubFlow(delegate.fold(zero)(f.apply))
 
   /**
+   * Similar to `fold` but with an asynchronous function.
+   * Applies the given function towards its current and next value,
+   * yielding the next current value.
+   *
+   * If the function `f` returns a failure and the supervision decision is
+   * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
+   * the stream will continue.
+   *
+   * '''Emits when''' upstream completes
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def foldAsync[T](zero: T)(f: function.Function2[T, Out, CompletionStage[T]]): SubFlow[In, T, Mat] = new SubFlow(delegate.foldAsync(zero) { (out, in) ⇒ f(out, in).toScala })
+
+  /**
    * Similar to `fold` but uses first element as zero element.
    * Applies the given function towards its current and next value,
    * yielding the next current value.

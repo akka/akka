@@ -787,6 +787,27 @@ trait FlowOps[+Out, +Mat] {
   def fold[T](zero: T)(f: (T, Out) ⇒ T): Repr[T] = via(Fold(zero, f))
 
   /**
+   * Similar to `fold` but with an asynchronous function.
+   * Applies the given function towards its current and next value,
+   * yielding the next current value.
+   *
+   * If the function `f` returns a failure and the supervision decision is
+   * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
+   * the stream will continue.
+   *
+   * '''Emits when''' upstream completes
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * See also [[FlowOps.fold]]
+   */
+  def foldAsync[T](zero: T)(f: (T, Out) ⇒ Future[T]): Repr[T] = via(new FoldAsync(zero, f))
+
+  /**
    * Similar to `fold` but uses first element as zero element.
    * Applies the given function towards its current and next value,
    * yielding the next current value.
