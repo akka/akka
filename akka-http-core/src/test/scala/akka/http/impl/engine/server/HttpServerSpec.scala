@@ -40,7 +40,7 @@ class HttpServerSpec extends AkkaSpec(
              |
              |""")
 
-      expectRequest() mapHeaders(_.filterNot(_.is("timeout-access"))) shouldEqual HttpRequest(uri = "http://example.com/", headers = List(Host("example.com")))
+      expectRequest() mapHeaders (_.filterNot(_.is("timeout-access"))) shouldEqual HttpRequest(uri = "http://example.com/", headers = List(Host("example.com")))
 
       shutdownBlueprint()
     })
@@ -141,7 +141,7 @@ class HttpServerSpec extends AkkaSpec(
              |
              |abcdefghijkl""")
 
-      expectRequest() mapHeaders(_.filterNot(_.is("timeout-access"))) shouldEqual
+      expectRequest() mapHeaders (_.filterNot(_.is("timeout-access"))) shouldEqual
         HttpRequest(
           method = POST,
           uri = "http://example.com/strict",
@@ -205,7 +205,7 @@ class HttpServerSpec extends AkkaSpec(
              |
              |abcdefghijkl""")
 
-      expectRequest() mapHeaders(_.filterNot(_.is("timeout-access"))) shouldEqual
+      expectRequest() mapHeaders (_.filterNot(_.is("timeout-access"))) shouldEqual
         HttpRequest(
           method = POST,
           uri = "http://example.com/strict",
@@ -218,7 +218,7 @@ class HttpServerSpec extends AkkaSpec(
              |
              |mnopqrstuvwx""")
 
-      expectRequest() mapHeaders(_.filterNot(_.is("timeout-access"))) shouldEqual
+      expectRequest() mapHeaders (_.filterNot(_.is("timeout-access"))) shouldEqual
         HttpRequest(
           method = POST,
           uri = "http://example.com/next-strict",
@@ -446,7 +446,7 @@ class HttpServerSpec extends AkkaSpec(
              |Host: example.com
              |
              |""")
-      expectRequest() mapHeaders(_.filterNot(_.is("timeout-access"))) shouldEqual HttpRequest(GET, uri = "http://example.com/", headers = List(Host("example.com")))
+      expectRequest() mapHeaders (_.filterNot(_.is("timeout-access"))) shouldEqual HttpRequest(GET, uri = "http://example.com/", headers = List(Host("example.com")))
       shutdownBlueprint()
     })
 
@@ -456,7 +456,7 @@ class HttpServerSpec extends AkkaSpec(
              |Host: example.com
              |
              |""")
-      expectRequest() mapHeaders(_.filterNot(_.is("timeout-access"))) shouldEqual HttpRequest(HEAD, uri = "http://example.com/", headers = List(Host("example.com")))
+      expectRequest() mapHeaders (_.filterNot(_.is("timeout-access"))) shouldEqual HttpRequest(HEAD, uri = "http://example.com/", headers = List(Host("example.com")))
       shutdownBlueprint()
     })
 
@@ -696,7 +696,7 @@ class HttpServerSpec extends AkkaSpec(
              |
              |""".stripMarginWithNewline("\r\n"))
 
-      expectRequest() mapHeaders(_.filterNot(_.is("timeout-access"))) shouldEqual HttpRequest(uri = "http://example.com/", headers = List(Host("example.com")))
+      expectRequest() mapHeaders (_.filterNot(_.is("timeout-access"))) shouldEqual HttpRequest(uri = "http://example.com/", headers = List(Host("example.com")))
 
       responses.expectRequest()
       responses.sendError(new RuntimeException("CRASH BOOM BANG"))
@@ -758,7 +758,7 @@ class HttpServerSpec extends AkkaSpec(
              |
              |""")
 
-      expectRequest() mapHeaders(_.filterNot(_.is("timeout-access"))) shouldEqual HttpRequest(uri = "http://example.com//foo", headers = List(Host("example.com")))
+      expectRequest() mapHeaders (_.filterNot(_.is("timeout-access"))) shouldEqual HttpRequest(uri = "http://example.com//foo", headers = List(Host("example.com")))
       shutdownBlueprint()
     })
 
@@ -767,7 +767,7 @@ class HttpServerSpec extends AkkaSpec(
              |
              |""")
 
-      expectRequest() mapHeaders(_.filterNot(_.is("timeout-access"))) shouldEqual HttpRequest(uri = "http://example.com/abc", protocol = HttpProtocols.`HTTP/1.0`)
+      expectRequest() mapHeaders (_.filterNot(_.is("timeout-access"))) shouldEqual HttpRequest(uri = "http://example.com/abc", protocol = HttpProtocols.`HTTP/1.0`)
 
       override def settings: ServerSettings = super.settings.withDefaultHostHeader(Host("example.com"))
 
