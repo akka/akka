@@ -6,7 +6,7 @@ package akka.typed
 class DeploymentConfigSpec extends TypedSpecSetup {
 
   val dispatcherFirst = DispatcherDefault(MailboxCapacity(666, DispatcherFromConfig("pool")))
-  val mailboxFirst = MailboxCapacity(999) ++ dispatcherFirst
+  val mailboxFirst = MailboxCapacity(999) withNext dispatcherFirst
 
   object `A DeploymentConfig` {
 

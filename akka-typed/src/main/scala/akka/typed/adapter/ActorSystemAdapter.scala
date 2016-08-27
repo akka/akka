@@ -4,14 +4,16 @@
 package akka.typed
 package adapter
 
-import akka.{ actor ⇒ a }
+import akka.{ actor ⇒ a, dispatch ⇒ d }
 import akka.dispatch.sysmsg
 import scala.concurrent.ExecutionContextExecutor
+import akka.util.Timeout
+import scala.concurrent.Future
 
 /**
  * Lightweight wrapper for presenting an untyped ActorSystem to a Behavior (via the context).
  * Therefore it does not have a lot of vals, only the whenTerminated Future is cached after
- * its transformation because redoing that every time will add extra objects that persis for
+ * its transformation because redoing that every time will add extra objects that persist for
  * a longer time; in all other cases the wrapper will just be spawned for a single call in
  * most circumstances.
  */
@@ -37,14 +39,14 @@ private[typed] class ActorSystemAdapter[-T](val untyped: a.ActorSystemImpl)
     override def shutdown(): Unit = () // there was no shutdown in untyped Akka
   }
   override def dynamicAccess: a.DynamicAccess = untyped.dynamicAccess
-  override def eventStream: akka.event.EventStream = untyped.eventStream
+  override def eventStream: EventStream = new EventStreamAdapter(untyped.eventStream)
   implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = untyped.dispatcher
   override def log: akka.event.LoggingAdapter = untyped.log
   override def logConfiguration(): Unit = untyped.logConfiguration()
   override def logFilter: akka.event.LoggingFilter = untyped.logFilter
   override def name: String = untyped.name
   override def scheduler: akka.actor.Scheduler = untyped.scheduler
-  override def settings: akka.actor.ActorSystem.Settings = untyped.settings
+  override def settings: Settings = new Settings(untyped.settings)
   override def startTime: Long = untyped.startTime
   override def threadFactory: java.util.concurrent.ThreadFactory = untyped.threadFactory
   override def uptime: Long = untyped.uptime
@@ -56,6 +58,11 @@ private[typed] class ActorSystemAdapter[-T](val untyped: a.ActorSystemImpl)
     untyped.terminate().map(t ⇒ Terminated(ActorRefAdapter(t.actor))(null))(sameThreadExecutionContext)
   override lazy val whenTerminated: scala.concurrent.Future[akka.typed.Terminated] =
     untyped.whenTerminated.map(t ⇒ Terminated(ActorRefAdapter(t.actor))(null))(sameThreadExecutionContext)
+
+  def systemActorOf[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig)(implicit timeout: Timeout): Future[ActorRef[U]] = {
+    val ref = untyped.systemActorOf(PropsAdapter(behavior, deployment), name)
+    Future.successful(ref)
+  }
 
 }
 
