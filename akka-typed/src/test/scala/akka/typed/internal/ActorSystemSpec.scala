@@ -13,6 +13,8 @@ import org.scalatest.concurrent.Eventually
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
+import akka.util.Timeout
+import akka.Done
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with ScalaFutures with Eventually with ConversionCheckedTripleEquals {
@@ -103,6 +105,24 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
         sys.deadLetters.sorry.sendSystem(Watch(sys, client))
         client.receiveAll() should ===(Left(DeathWatchNotification(sys, null)) :: Nil)
       }
+
+    def `must start system actors and mangle their names`(): Unit = {
+      withSystem("systemActorOf", Empty[String]) { sys ⇒
+        import akka.typed.AskPattern._
+        implicit val timeout = Timeout(1.second)
+        implicit val sched = sys.scheduler
+
+        case class Doner(ref: ActorRef[Done])
+
+        val ref1, ref2 = sys.systemActorOf(Static[Doner](_.ref ! Done), "empty").futureValue
+        (ref1 ? Doner).futureValue should ===(Done)
+        (ref2 ? Doner).futureValue should ===(Done)
+        val RE = "(\\d+)-empty".r
+        val RE(num1) = ref1.path.name.toString
+        val RE(num2) = ref2.path.name.toString
+        num2.toInt should be > num1.toInt
+      }
+    }
   }
 
   object `An ActorSystemAdapter` extends CommonTests {

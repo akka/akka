@@ -134,7 +134,7 @@ private[typed] trait DeathWatch[T] {
     if (watcheeSelf && !watcherSelf) {
       if (!watchedBy.contains(watcher)) maintainAddressTerminatedSubscription(watcher) {
         watchedBy += watcher
-        if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(behavior), s"now watched by $watcher"))
+        if (system.settings.untyped.DebugLifecycle) publish(Debug(self.path.toString, clazz(behavior), s"now watched by $watcher"))
       }
     } else if (!watcheeSelf && watcherSelf) {
       watch[Nothing](watchee)
@@ -150,7 +150,7 @@ private[typed] trait DeathWatch[T] {
     if (watcheeSelf && !watcherSelf) {
       if (watchedBy.contains(watcher)) maintainAddressTerminatedSubscription(watcher) {
         watchedBy -= watcher
-        if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(behavior), s"no longer watched by $watcher"))
+        if (system.settings.untyped.DebugLifecycle) publish(Debug(self.path.toString, clazz(behavior), s"no longer watched by $watcher"))
       }
     } else if (!watcheeSelf && watcherSelf) {
       unwatch[Nothing](watchee)
