@@ -104,7 +104,7 @@ private[typed] class ActorCell[T](
     if (childrenMap contains name) throw new InvalidActorNameException(s"actor name [$name] is not unique")
     if (terminatingMap contains name) throw new InvalidActorNameException(s"actor name [$name] is not yet free")
     val dispatcher = deployment.firstOrElse[DispatcherSelector](DispatcherFromExecutionContext(executionContext))
-    val capacity = deployment.firstOrElse(MailboxCapacity(1000)) // FIXME where should this number come from?
+    val capacity = deployment.firstOrElse(MailboxCapacity(system.settings.DefaultMailboxCapacity))
     val cell = new ActorCell[U](system, Behavior.validateAsInitial(behavior), system.dispatchers.lookup(dispatcher), capacity.capacity, self)
     val ref = new LocalActorRef[U](self.path / name, cell)
     cell.setSelf(ref)

@@ -43,8 +43,8 @@ class TypedSpec(val config: Config) extends TypedSpecSetup {
   // extension point
   def setTimeout: Timeout = Timeout(1.minute)
 
-  val nativeSystem = ActorSystem(AkkaSpec.getCallerName(classOf[TypedSpec]), guardian(), config = Some(config withFallback AkkaSpec.testConf))
-  val adaptedSystem = ActorSystem.adapter(AkkaSpec.getCallerName(classOf[TypedSpec]), guardian(), config = Some(config withFallback AkkaSpec.testConf))
+  lazy val nativeSystem = ActorSystem(AkkaSpec.getCallerName(classOf[TypedSpec]), guardian(), config = Some(config withFallback AkkaSpec.testConf))
+  lazy val adaptedSystem = ActorSystem.adapter(AkkaSpec.getCallerName(classOf[TypedSpec]), guardian(), config = Some(config withFallback AkkaSpec.testConf))
 
   trait NativeSystem {
     def system = nativeSystem
@@ -55,7 +55,7 @@ class TypedSpec(val config: Config) extends TypedSpecSetup {
 
   implicit val timeout = setTimeout
   implicit val patience = PatienceConfig(3.seconds)
-  implicit val scheduler = nativeSystem.scheduler
+  implicit def scheduler = nativeSystem.scheduler
 
   override def afterAll(): Unit = {
     Await.result(nativeSystem ? (Terminate(_)), timeout.duration): Status
@@ -66,7 +66,7 @@ class TypedSpec(val config: Config) extends TypedSpecSetup {
   import akka.testkit._
   def await[T](f: Future[T]): T = Await.result(f, timeout.duration * 1.1)
 
-  val blackhole = await(nativeSystem ? Create(ScalaDSL.Full[Any] { case _ ⇒ ScalaDSL.Same }, "blackhole"))
+  lazy val blackhole = await(nativeSystem ? Create(ScalaDSL.Full[Any] { case _ ⇒ ScalaDSL.Same }, "blackhole"))
 
   /**
    * Run an Actor-based test. The test procedure is most conveniently

@@ -67,7 +67,7 @@ private[typed] trait SupervisionMechanics[T] {
 
   private def create(): Boolean = {
     behavior = initialBehavior
-    if (system.settings.DebugLifecycle)
+    if (system.settings.untyped.DebugLifecycle)
       publish(Logging.Debug(self.path.toString, clazz(behavior), "started"))
     if (Behavior.isAlive(behavior)) next(behavior.management(ctx, PreStart), PreStart)
     else self.sendSystem(Terminate())
@@ -97,7 +97,7 @@ private[typed] trait SupervisionMechanics[T] {
       behavior = null
       _failed = null
       setClosed()
-      if (system.settings.DebugLifecycle)
+      if (system.settings.untyped.DebugLifecycle)
         publish(Logging.Debug(self.path.toString, clazz(a), "stopped"))
     }
   }
