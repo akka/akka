@@ -115,7 +115,9 @@ Tell Pattern
 
 The above ``Call Protection`` pattern works well when the return from a remote call is wrapped in a ``Future``.
 However, when a remote call sends back a message or timeout to the caller ``Actor``, the ``Call Protection`` pattern
-is awkward. In such a case, you can use ``succeed`` and ``fail`` methods on ``CircuitBreaker`` like below.
+is awkward.
+
+CircuitBreaker doesn't support it natively at the moment, so you need to use below low-level power-user APIs.
 
 ^^^^^^^
 Scala

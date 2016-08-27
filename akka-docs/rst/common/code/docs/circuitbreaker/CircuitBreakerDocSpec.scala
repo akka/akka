@@ -8,11 +8,9 @@ package docs.circuitbreaker
 import scala.concurrent.duration._
 import akka.pattern.CircuitBreaker
 import akka.pattern.pipe
-import akka.actor.Actor
-import akka.actor.ActorLogging
+import akka.actor.{Actor, ActorLogging, ActorRef}
 
 import scala.concurrent.Future
-import akka.event.Logging
 
 //#imports1
 
@@ -46,8 +44,7 @@ class DangerousActor extends Actor with ActorLogging {
 
 }
 
-
-class TellPatternActor extends Actor with ActorLogging {
+class TellPatternActor(recipient : ActorRef) extends Actor with ActorLogging {
   import context.dispatcher
 
   val breaker =
@@ -60,34 +57,22 @@ class TellPatternActor extends Actor with ActorLogging {
   def notifyMeOnOpen(): Unit =
     log.warning("My CircuitBreaker is now open, and will not close for one minute")
 
-
-  def handleExpected(s: String) = log.info(s)
-
-  def handleUnExpected(s: String) = log.warning(s)
-
-  import docs.circuitbreaker.TellPatternActor.ExpectedRemoteResponse
-  import docs.circuitbreaker.TellPatternActor.UnExpectedRemoteResponse
-
   //#circuit-breaker-tell-pattern
   import akka.actor.ReceiveTimeout
 
   def receive = {
-    case ExpectedRemoteResponse(s)   => {
-      breaker.succeed()
-      handleExpected(s)
+    case "call" if breaker.isClosed => {
+      recipient ! "message"
     }
-    case UnExpectedRemoteResponse(s) => {
+    case "response" => {
+      breaker.succeed()
+    }
+    case err: Throwable => {
       breaker.fail()
-      handleUnExpected(s)
     }
     case ReceiveTimeout => {
       breaker.fail()
     }
   }
   //#circuit-breaker-tell-pattern
-}
-
-object TellPatternActor {
-  case class ExpectedRemoteResponse(s: String)
-  case class UnExpectedRemoteResponse(s: String)
 }
