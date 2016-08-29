@@ -304,6 +304,11 @@ private[http] object HttpServerBluePrint {
     val timeout:       Duration,
     val handler:       HttpRequest ⇒ HttpResponse)
 
+  private object DummyCancellable extends Cancellable {
+    override def isCancelled: Boolean = true
+    override def cancel(): Boolean = true
+  }
+
   private class TimeoutAccessImpl(request: HttpRequest, initialTimeout: Duration, requestEnd: Future[Unit],
                                   trigger: AsyncCallback[(TimeoutAccess, HttpResponse)], materializer: Materializer)
     extends AtomicReference[Future[TimeoutSetup]] with TimeoutAccess with (HttpRequest ⇒ HttpResponse) { self ⇒
@@ -314,10 +319,7 @@ private[http] object HttpServerBluePrint {
         requestEnd.fast.map(_ ⇒ new TimeoutSetup(Deadline.now, schedule(timeout, this), timeout, this))
       }
       case _ ⇒ set {
-        requestEnd.fast.map(_ ⇒ new TimeoutSetup(Deadline.now, new Cancellable {
-          override def isCancelled: Boolean = true
-          override def cancel(): Boolean = true
-        }, Duration.Inf, this))
+        requestEnd.fast.map(_ ⇒ new TimeoutSetup(Deadline.now, DummyCancellable, Duration.Inf, this))
       }
     }
 
