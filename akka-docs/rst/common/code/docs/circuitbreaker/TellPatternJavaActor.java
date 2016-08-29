@@ -46,6 +46,6 @@ public class TellPatternJavaActor extends UntypedActor {
       breaker.fail();
     }
   }
-  //#
+  //#circuit-breaker-tell-pattern
 
 }
