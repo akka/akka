@@ -4,6 +4,7 @@
 package akka.stream.io
 
 import java.nio.file.{ Files, Path, StandardOpenOption }
+
 import akka.actor.ActorSystem
 import akka.stream.impl.ActorMaterializerImpl
 import akka.stream.impl.StreamSupervisor
@@ -15,6 +16,9 @@ import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.ActorAttributes
 import akka.util.{ ByteString, Timeout }
+import com.google.common.jimfs.{ Configuration, Jimfs }
+import org.scalatest.BeforeAndAfterAll
+
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -23,6 +27,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)
+  val fs = Jimfs.newFileSystem("FileSinkSpec", Configuration.unix())
 
   val TestLines = {
     val b = ListBuffer[String]()
@@ -136,7 +141,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
   }
 
   private def targetFile(block: Path ⇒ Unit, create: Boolean = true) {
-    val targetFile = Files.createTempFile("synchronous-file-sink", ".tmp")
+    val targetFile = Files.createTempFile(fs.getPath("/"), "synchronous-file-sink", ".tmp")
     if (!create) Files.delete(targetFile)
     try block(targetFile) finally Files.delete(targetFile)
   }
@@ -144,6 +149,10 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
   def checkFileContents(f: Path, contents: String): Unit = {
     val out = Files.readAllBytes(f)
     new String(out) should ===(contents)
+  }
+
+  override def afterTermination(): Unit = {
+    fs.close()
   }
 
 }
