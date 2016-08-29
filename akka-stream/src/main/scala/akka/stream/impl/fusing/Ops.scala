@@ -527,7 +527,7 @@ final case class Intersperse[T](start: Option[T], inject: T, end: Option[T]) ext
 
   override val shape = FlowShape(in, out)
 
-  override def createLogic(attr: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+  override def createLogic(attr: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
     val startInHandler = new InHandler {
       override def onPush(): Unit = {
         // if else (to avoid using Iterator[T].flatten in hot code)
@@ -551,12 +551,10 @@ final case class Intersperse[T](start: Option[T], inject: T, end: Option[T]) ext
       }
     }
 
-    val outHandler = new OutHandler {
-      override def onPull(): Unit = pull(in)
-    }
+    def onPull(): Unit = pull(in)
 
     setHandler(in, startInHandler)
-    setHandler(out, outHandler)
+    setHandler(out, this)
   }
 }
 
@@ -775,7 +773,7 @@ final case class Batch[In, Out](val max: Long, val costFn: In ⇒ Long, val seed
 
   override val shape: FlowShape[In, Out] = FlowShape.of(in, out)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
 
     lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
@@ -808,85 +806,81 @@ final case class Batch[In, Out](val max: Long, val costFn: In ⇒ Long, val seed
 
     override def preStart() = pull(in)
 
-    setHandler(in, new InHandler {
+    def onPush(): Unit = {
+      val elem = grab(in)
+      val cost = costFn(elem)
 
-      override def onPush(): Unit = {
-        val elem = grab(in)
-        val cost = costFn(elem)
-
-        if (agg == null) {
-          try {
-            agg = seed(elem)
-            left -= cost
-          } catch {
-            case NonFatal(ex) ⇒ decider(ex) match {
-              case Supervision.Stop ⇒ failStage(ex)
-              case Supervision.Restart ⇒
-                restartState()
-              case Supervision.Resume ⇒
-            }
-          }
-        } else if (left < cost) {
-          pending = elem
-        } else {
-          try {
-            agg = aggregate(agg, elem)
-            left -= cost
-          } catch {
-            case NonFatal(ex) ⇒ decider(ex) match {
-              case Supervision.Stop ⇒ failStage(ex)
-              case Supervision.Restart ⇒
-                restartState()
-              case Supervision.Resume ⇒
-            }
+      if (agg == null) {
+        try {
+          agg = seed(elem)
+          left -= cost
+        } catch {
+          case NonFatal(ex) ⇒ decider(ex) match {
+            case Supervision.Stop ⇒ failStage(ex)
+            case Supervision.Restart ⇒
+              restartState()
+            case Supervision.Resume ⇒
           }
         }
-
-        if (isAvailable(out)) flush()
-        if (pending == null) pull(in)
-      }
-
-      override def onUpstreamFinish(): Unit = {
-        if (agg == null) completeStage()
-      }
-    })
-
-    setHandler(out, new OutHandler {
-
-      override def onPull(): Unit = {
-        if (agg == null) {
-          if (isClosed(in)) completeStage()
-          else if (!hasBeenPulled(in)) pull(in)
-        } else if (isClosed(in)) {
-          push(out, agg)
-          if (pending == null) completeStage()
-          else {
-            try {
-              agg = seed(pending)
-            } catch {
-              case NonFatal(ex) ⇒ decider(ex) match {
-                case Supervision.Stop   ⇒ failStage(ex)
-                case Supervision.Resume ⇒
-                case Supervision.Restart ⇒
-                  restartState()
-                  if (!hasBeenPulled(in)) pull(in)
-              }
-            }
-            pending = null.asInstanceOf[In]
+      } else if (left < cost) {
+        pending = elem
+      } else {
+        try {
+          agg = aggregate(agg, elem)
+          left -= cost
+        } catch {
+          case NonFatal(ex) ⇒ decider(ex) match {
+            case Supervision.Stop ⇒ failStage(ex)
+            case Supervision.Restart ⇒
+              restartState()
+            case Supervision.Resume ⇒
           }
-        } else {
-          flush()
-          if (!hasBeenPulled(in)) pull(in)
         }
-
       }
-    })
+
+      if (isAvailable(out)) flush()
+      if (pending == null) pull(in)
+    }
+
+    override def onUpstreamFinish(): Unit = {
+      if (agg == null) completeStage()
+    }
+
+    def onPull(): Unit = {
+      if (agg == null) {
+        if (isClosed(in)) completeStage()
+        else if (!hasBeenPulled(in)) pull(in)
+      } else if (isClosed(in)) {
+        push(out, agg)
+        if (pending == null) completeStage()
+        else {
+          try {
+            agg = seed(pending)
+          } catch {
+            case NonFatal(ex) ⇒ decider(ex) match {
+              case Supervision.Stop   ⇒ failStage(ex)
+              case Supervision.Resume ⇒
+              case Supervision.Restart ⇒
+                restartState()
+                if (!hasBeenPulled(in)) pull(in)
+            }
+          }
+          pending = null.asInstanceOf[In]
+        }
+      } else {
+        flush()
+        if (!hasBeenPulled(in)) pull(in)
+      }
+
+    }
 
     private def restartState(): Unit = {
       agg = null.asInstanceOf[Out]
       left = max
       pending = null.asInstanceOf[In]
     }
+
+    setHandlers(in, out, this)
   }
 }
 
@@ -900,46 +894,46 @@ final class Expand[In, Out](val extrapolate: In ⇒ Iterator[Out]) extends Graph
   override def initialAttributes = DefaultAttributes.expand
   override val shape = FlowShape(in, out)
 
-  override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
+  override def createLogic(attr: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
     private var iterator: Iterator[Out] = Iterator.empty
     private var expanded = false
 
     override def preStart(): Unit = pull(in)
 
-    setHandler(in, new InHandler {
-      override def onPush(): Unit = {
-        iterator = extrapolate(grab(in))
-        if (iterator.hasNext) {
-          if (isAvailable(out)) {
-            expanded = true
+    def onPush(): Unit = {
+      iterator = extrapolate(grab(in))
+      if (iterator.hasNext) {
+        if (isAvailable(out)) {
+          expanded = true
+          pull(in)
+          push(out, iterator.next())
+        } else expanded = false
+      } else pull(in)
+    }
+
+    override def onUpstreamFinish(): Unit = {
+      if (iterator.hasNext && !expanded) () // need to wait
+      else completeStage()
+    }
+
+    def onPull(): Unit = {
+      if (iterator.hasNext) {
+        if (!expanded) {
+          expanded = true
+          if (isClosed(in)) {
+            push(out, iterator.next())
+            completeStage()
+          } else {
+            // expand needs to pull first to be “fair” when upstream is not actually slow
             pull(in)
             push(out, iterator.next())
-          } else expanded = false
-        } else pull(in)
+          }
+        } else push(out, iterator.next())
       }
-      override def onUpstreamFinish(): Unit = {
-        if (iterator.hasNext && !expanded) () // need to wait
-        else completeStage()
-      }
-    })
+    }
 
-    setHandler(out, new OutHandler {
-      override def onPull(): Unit = {
-        if (iterator.hasNext) {
-          if (!expanded) {
-            expanded = true
-            if (isClosed(in)) {
-              push(out, iterator.next())
-              completeStage()
-            } else {
-              // expand needs to pull first to be “fair” when upstream is not actually slow
-              pull(in)
-              push(out, iterator.next())
-            }
-          } else push(out, iterator.next())
-        }
-      }
-    })
+    setHandler(in, this)
+    setHandler(out, this)
   }
 }
 
@@ -1303,7 +1297,7 @@ final class GroupedWithin[T](val n: Int, val d: FiniteDuration) extends GraphSta
 final class Delay[T](val d: FiniteDuration, val strategy: DelayOverflowStrategy) extends SimpleLinearGraphStage[T] {
   private[this] def timerName = "DelayedTimer"
   override def initialAttributes: Attributes = DefaultAttributes.delay
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with InHandler with OutHandler {
     val size =
       inheritedAttributes.get[InputBuffer] match {
         case None                        ⇒ throw new IllegalStateException(s"Couldn't find InputBuffer Attribute for $this")
@@ -1315,59 +1309,58 @@ final class Delay[T](val d: FiniteDuration, val strategy: DelayOverflowStrategy)
 
     override def preStart(): Unit = buffer = BufferImpl(size, materializer)
 
-    setHandler(in, handler = new InHandler {
-      //FIXME rewrite into distinct strategy functions to avoid matching on strategy for every input when full
-      override def onPush(): Unit = {
-        if (buffer.isFull) strategy match {
-          case EmitEarly ⇒
-            if (!isTimerActive(timerName))
-              push(out, buffer.dequeue()._2)
-            else {
-              cancelTimer(timerName)
-              onTimer(timerName)
-            }
-          case DropHead ⇒
-            buffer.dropHead()
-            grabAndPull(true)
-          case DropTail ⇒
-            buffer.dropTail()
-            grabAndPull(true)
-          case DropNew ⇒
-            grab(in)
-            if (!isTimerActive(timerName)) scheduleOnce(timerName, d)
-          case DropBuffer ⇒
-            buffer.clear()
-            grabAndPull(true)
-          case Fail ⇒
-            failStage(new BufferOverflowException(s"Buffer overflow for delay combinator (max capacity was: $size)!"))
-          case Backpressure ⇒ throw new IllegalStateException("Delay buffer must never overflow in Backpressure mode")
-        }
-        else {
-          grabAndPull(strategy != Backpressure || buffer.used < size - 1)
+    //FIXME rewrite into distinct strategy functions to avoid matching on strategy for every input when full
+    def onPush(): Unit = {
+      if (buffer.isFull) strategy match {
+        case EmitEarly ⇒
+          if (!isTimerActive(timerName))
+            push(out, buffer.dequeue()._2)
+          else {
+            cancelTimer(timerName)
+            onTimer(timerName)
+          }
+        case DropHead ⇒
+          buffer.dropHead()
+          grabAndPull(true)
+        case DropTail ⇒
+          buffer.dropTail()
+          grabAndPull(true)
+        case DropNew ⇒
+          grab(in)
           if (!isTimerActive(timerName)) scheduleOnce(timerName, d)
-        }
+        case DropBuffer ⇒
+          buffer.clear()
+          grabAndPull(true)
+        case Fail ⇒
+          failStage(new BufferOverflowException(s"Buffer overflow for delay combinator (max capacity was: $size)!"))
+        case Backpressure ⇒ throw new IllegalStateException("Delay buffer must never overflow in Backpressure mode")
       }
-
-      def grabAndPull(pullCondition: Boolean): Unit = {
-        buffer.enqueue((System.nanoTime(), grab(in)))
-        if (pullCondition) pull(in)
+      else {
+        grabAndPull(strategy != Backpressure || buffer.used < size - 1)
+        if (!isTimerActive(timerName)) scheduleOnce(timerName, d)
       }
+    }
 
-      override def onUpstreamFinish(): Unit = {
-        if (isAvailable(out) && isTimerActive(timerName)) willStop = true
-        else completeStage()
-      }
-    })
+    def grabAndPull(pullCondition: Boolean): Unit = {
+      buffer.enqueue((System.nanoTime(), grab(in)))
+      if (pullCondition) pull(in)
+    }
 
-    setHandler(out, new OutHandler {
-      override def onPull(): Unit = {
-        if (!isTimerActive(timerName) && !buffer.isEmpty && nextElementWaitTime() < 0)
-          push(out, buffer.dequeue()._2)
+    override def onUpstreamFinish(): Unit = {
+      if (isAvailable(out) && isTimerActive(timerName)) willStop = true
+      else completeStage()
+    }
 
-        if (!willStop && !hasBeenPulled(in)) pull(in)
-        completeIfReady()
-      }
-    })
+    def onPull(): Unit = {
+      if (!isTimerActive(timerName) && !buffer.isEmpty && nextElementWaitTime() < 0)
+        push(out, buffer.dequeue()._2)
+
+      if (!willStop && !hasBeenPulled(in)) pull(in)
+      completeIfReady()
+    }
+
+    setHandler(in, this)
+    setHandler(out, this)
 
     def completeIfReady(): Unit = if (willStop && buffer.isEmpty) completeStage()
 
@@ -1388,14 +1381,12 @@ final class Delay[T](val d: FiniteDuration, val strategy: DelayOverflowStrategy)
 
 final class TakeWithin[T](val timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
-    setHandler(in, new InHandler {
-      override def onPush(): Unit = push(out, grab(in))
-    })
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with InHandler with OutHandler {
+    def onPush(): Unit = push(out, grab(in))
+    def onPull(): Unit = pull(in)
 
-    setHandler(out, new OutHandler {
-      override def onPull(): Unit = pull(in)
-    })
+    setHandler(in, this)
+    setHandler(out, this)
 
     final override protected def onTimer(key: Any): Unit =
       completeStage()
@@ -1407,19 +1398,19 @@ final class TakeWithin[T](val timeout: FiniteDuration) extends SimpleLinearGraph
 }
 
 final class DropWithin[T](val timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
     private var allow = false
 
-    setHandler(in, new InHandler {
-      override def onPush(): Unit =
-        if (allow) push(out, grab(in))
-        else pull(in)
-    })
+    def onPush(): Unit = {
+      if (allow) push(out, grab(in))
+      else pull(in)
+    }
 
-    setHandler(out, new OutHandler {
-      override def onPull(): Unit = pull(in)
-    })
+    def onPull(): Unit = pull(in)
+
+    setHandler(in, this)
+    setHandler(out, this)
 
     final override protected def onTimer(key: Any): Unit = allow = true
 
@@ -1466,6 +1457,7 @@ final class Reduce[T](val f: (T, T) ⇒ T) extends SimpleLinearGraphStage[T] {
 
     setHandler(out, self)
   }
+
   override def toString = "Reduce"
 }
 

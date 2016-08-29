@@ -15,32 +15,32 @@ import java.{ util ⇒ ju }
  */
 private[akka] object IteratorInterpreter {
 
-  final case class IteratorUpstream[T](input: Iterator[T]) extends UpstreamBoundaryStageLogic[T] {
+  final case class IteratorUpstream[T](input: Iterator[T]) extends UpstreamBoundaryStageLogic[T] with OutHandler {
     val out: Outlet[T] = Outlet[T]("IteratorUpstream.out")
     out.id = 0
 
     private var hasNext = input.hasNext
 
-    setHandler(out, new OutHandler {
-      override def onPull(): Unit = {
-        if (!hasNext) complete(out)
-        else {
-          val elem = input.next()
-          hasNext = input.hasNext
-          if (!hasNext) {
-            push(out, elem)
-            complete(out)
-          } else push(out, elem)
-        }
+    def onPull(): Unit = {
+      if (!hasNext) complete(out)
+      else {
+        val elem = input.next()
+        hasNext = input.hasNext
+        if (!hasNext) {
+          push(out, elem)
+          complete(out)
+        } else push(out, elem)
       }
+    }
 
-      override def onDownstreamFinish(): Unit = ()
-    })
+    override def onDownstreamFinish(): Unit = ()
+
+    setHandler(out, this)
 
     override def toString = "IteratorUpstream"
   }
 
-  final case class IteratorDownstream[T]() extends DownstreamBoundaryStageLogic[T] with Iterator[T] {
+  final case class IteratorDownstream[T]() extends DownstreamBoundaryStageLogic[T] with Iterator[T] with InHandler {
     val in: Inlet[T] = Inlet[T]("IteratorDownstream.in")
     in.id = 0
 
@@ -49,21 +49,21 @@ private[akka] object IteratorInterpreter {
     private var needsPull = true
     private var lastFailure: Throwable = null
 
-    setHandler(in, new InHandler {
-      override def onPush(): Unit = {
-        nextElem = grab(in)
-        needsPull = false
-      }
+    def onPush(): Unit = {
+      nextElem = grab(in)
+      needsPull = false
+    }
 
-      override def onUpstreamFinish(): Unit = {
-        done = true
-      }
+    override def onUpstreamFinish(): Unit = {
+      done = true
+    }
 
-      override def onUpstreamFailure(cause: Throwable): Unit = {
-        done = true
-        lastFailure = cause
-      }
-    })
+    override def onUpstreamFailure(cause: Throwable): Unit = {
+      done = true
+      lastFailure = cause
+    }
+
+    setHandler(in, this)
 
     private def pullIfNeeded(): Unit = {
       if (needsPull) {
@@ -93,7 +93,6 @@ private[akka] object IteratorInterpreter {
     // don't let toString consume the iterator
     override def toString: String = "IteratorDownstream"
   }
-
 }
 
 /**

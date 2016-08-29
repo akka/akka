@@ -266,7 +266,7 @@ final class Interleave[T](val inputPorts: Int, val segmentSize: Int, val eagerCl
   val out: Outlet[T] = Outlet[T]("Interleave.out")
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
     private var counter = 0
     private var currentUpstreamIndex = 0
     private var runningUpstreams = inputPorts
@@ -315,9 +315,10 @@ final class Interleave[T](val inputPorts: Int, val segmentSize: Int, val eagerCl
       })
     }
 
-    setHandler(out, new OutHandler {
-      override def onPull(): Unit = if (!hasBeenPulled(currentUpstream)) tryPull(currentUpstream)
-    })
+    def onPull(): Unit =
+      if (!hasBeenPulled(currentUpstream)) tryPull(currentUpstream)
+
+    setHandler(out, this)
   }
 
   override def toString = "Interleave"
@@ -405,30 +406,30 @@ final class Broadcast[T](val outputPorts: Int, val eagerCancel: Boolean) extends
   override def initialAttributes = DefaultAttributes.broadcast
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape(in, out: _*)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler {
     private var pendingCount = outputPorts
     private val pending = Array.fill[Boolean](outputPorts)(true)
     private var downstreamsRunning = outputPorts
 
-    setHandler(in, new InHandler {
-      override def onPush(): Unit = {
-        pendingCount = downstreamsRunning
-        val elem = grab(in)
+    def onPush(): Unit = {
+      pendingCount = downstreamsRunning
+      val elem = grab(in)
 
-        var idx = 0
-        val itr = out.iterator
+      var idx = 0
+      val itr = out.iterator
 
-        while (itr.hasNext) {
-          val o = itr.next()
-          val i = idx
-          if (!isClosed(o)) {
-            push(o, elem)
-            pending(i) = true
-          }
-          idx += 1
+      while (itr.hasNext) {
+        val o = itr.next()
+        val i = idx
+        if (!isClosed(o)) {
+          push(o, elem)
+          pending(i) = true
         }
+        idx += 1
       }
-    })
+    }
+
+    setHandler(in, this)
 
     private def tryPull(): Unit =
       if (pendingCount == 0 && !hasBeenPulled(in)) pull(in)
@@ -502,36 +503,35 @@ final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int) exten
   val out: Seq[Outlet[T]] = Seq.tabulate(outputPorts)(i ⇒ Outlet[T]("Partition.out" + i))
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler {
     private var outPendingElem: Any = null
     private var outPendingIdx: Int = _
     private var downstreamRunning = outputPorts
 
-    setHandler(in, new InHandler {
-      override def onPush() = {
-        val elem = grab(in)
-        val idx = partitioner(elem)
-        if (idx < 0 || idx >= outputPorts)
-          failStage(PartitionOutOfBoundsException(s"partitioner must return an index in the range [0,${outputPorts - 1}]. returned: [$idx] for input [${elem.getClass.getName}]."))
-        else if (!isClosed(out(idx))) {
-          if (isAvailable(out(idx))) {
-            push(out(idx), elem)
-            if (out.exists(isAvailable(_)))
-              pull(in)
-          } else {
-            outPendingElem = elem
-            outPendingIdx = idx
-          }
+    def onPush() = {
+      val elem = grab(in)
+      val idx = partitioner(elem)
+      if (idx < 0 || idx >= outputPorts) {
+        failStage(PartitionOutOfBoundsException(s"partitioner must return an index in the range [0,${outputPorts - 1}]. returned: [$idx] for input [${elem.getClass.getName}]."))
+      } else if (!isClosed(out(idx))) {
+        if (isAvailable(out(idx))) {
+          push(out(idx), elem)
+          if (out.exists(isAvailable(_)))
+            pull(in)
+        } else {
+          outPendingElem = elem
+          outPendingIdx = idx
+        }
 
-        } else if (out.exists(isAvailable(_)))
-          pull(in)
-      }
+      } else if (out.exists(isAvailable(_)))
+        pull(in)
+    }
 
-      override def onUpstreamFinish(): Unit = {
-        if (outPendingElem == null)
-          completeStage()
-      }
-    })
+    override def onUpstreamFinish(): Unit = {
+      if (outPendingElem == null) completeStage()
+    }
+
+    setHandler(in, this)
 
     out.zipWithIndex.foreach {
       case (o, idx) ⇒
@@ -610,7 +610,7 @@ final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean)
   override def initialAttributes = DefaultAttributes.balance
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler {
     private val pendingQueue = FixedSizeBuffer[Outlet[T]](outputPorts)
     private def noPending: Boolean = pendingQueue.isEmpty
 
@@ -633,9 +633,8 @@ final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean)
       }
     }
 
-    setHandler(in, new InHandler {
-      override def onPush(): Unit = dequeueAndDispatch()
-    })
+    def onPush(): Unit = dequeueAndDispatch()
+    setHandler(in, this)
 
     out.foreach { o ⇒
       setHandler(o, new OutHandler {
@@ -802,7 +801,7 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] ⇒ O)(n: Int) extends GraphStage[
   def out = shape.out
   val inSeq = shape.inSeq
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
     var pending = 0
     // Without this field the completion signalling would take one extra pull
     var willShutDown = false
@@ -835,16 +834,15 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] ⇒ O)(n: Int) extends GraphStage[
       })
     })
 
-    setHandler(out, new OutHandler {
-      override def onPull(): Unit = {
-        pending += n
-        if (pending == 0) pushAll()
-      }
-    })
+    def onPull(): Unit = {
+      pending += n
+      if (pending == 0) pushAll()
+    }
+
+    setHandler(out, this)
   }
 
   override def toString = "ZipWithN"
-
 }
 
 object Concat {
@@ -877,7 +875,7 @@ final class Concat[T](val inputPorts: Int) extends GraphStage[UniformFanInShape[
   override def initialAttributes = DefaultAttributes.concat
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
-  override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with OutHandler {
     var activeStream: Int = 0
 
     {
@@ -905,9 +903,9 @@ final class Concat[T](val inputPorts: Int) extends GraphStage[UniformFanInShape[
       }
     }
 
-    setHandler(out, new OutHandler {
-      override def onPull() = pull(in(activeStream))
-    })
+    def onPull() = pull(in(activeStream))
+
+    setHandler(out, this)
   }
 
   override def toString: String = s"Concat($inputPorts)"
