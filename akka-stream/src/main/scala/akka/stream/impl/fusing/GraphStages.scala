@@ -102,8 +102,7 @@ object GraphStages {
         }
       }
 
-      setHandler(in, this)
-      setHandler(out, this)
+      setHandlers(in, out, this)
 
       override def preStart(): Unit = tryPull(in)
     }
@@ -143,8 +142,7 @@ object GraphStages {
           completeStage()
         }
 
-        setHandler(in, this)
-        setHandler(out, this)
+        setHandlers(in, out, this)
       }, finishPromise.future)
     }
 

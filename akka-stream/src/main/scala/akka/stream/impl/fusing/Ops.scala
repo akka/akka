@@ -880,8 +880,7 @@ final case class Batch[In, Out](val max: Long, val costFn: In ⇒ Long, val seed
       pending = null.asInstanceOf[In]
     }
 
-    setHandler(in, this)
-    setHandler(out, this)
+    setHandlers(in, out, this)
   }
 }
 
