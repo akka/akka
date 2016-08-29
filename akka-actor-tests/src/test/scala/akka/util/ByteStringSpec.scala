@@ -21,7 +21,6 @@ import scala.collection.mutable.Builder
 
 class ByteStringSpec extends WordSpec with Matchers with Checkers {
 
-  //  // uncomment when developing locally to get better coverage
   implicit val betterGeneratorDrivenConfig = PropertyCheckConfig().copy(minSuccessful = 1000)
 
   def genSimpleByteString(min: Int, max: Int) = for {
