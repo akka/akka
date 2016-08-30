@@ -3,10 +3,9 @@
  */
 package akka.stream.scaladsl
 
-import akka.event.{ Logging, LoggingAdapter }
+import akka.event.LoggingAdapter
 import akka.stream._
 import akka.Done
-import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.stream.impl.fusing._
