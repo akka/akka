@@ -11,7 +11,8 @@ import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout._
 import akka.stream.scaladsl.Partition.PartitionOutOfBoundsException
-import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -909,6 +910,84 @@ final class Concat[T](val inputPorts: Int) extends GraphStage[UniformFanInShape[
   }
 
   override def toString: String = s"Concat($inputPorts)"
+}
+
+object OrElse {
+  private val singleton = new OrElse[Nothing]
+  def apply[T]() = singleton.asInstanceOf[OrElse[T]]
+}
+
+/**
+ * Takes two streams and passes the first through, the secondary stream is only passed
+ * through if the primary stream completes without passing any elements through. When
+ * the first element is passed through from the primary the secondary is cancelled.
+ * Both incoming streams are materialized when the stage is materialized.
+ *
+ * On errors the stage is failed regardless of source of the error.
+ *
+ * '''Emits when''' element is available from primary stream or the primary stream closed without emitting any elements and an element
+ *                  is available from the secondary stream
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' the primary stream completes after emitting at least one element, when the primary stream completes
+ *                      without emitting and the secondary stream already has completed or when the secondary stream completes
+ *
+ * '''Cancels when''' downstream cancels
+ */
+private[stream] final class OrElse[T] extends GraphStage[UniformFanInShape[T, T]] {
+  val primary = Inlet[T]("OrElse.primary")
+  val secondary = Inlet[T]("OrElse.secondary")
+  val out = Outlet[T]("OrElse.out")
+
+  override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, primary, secondary)
+
+  override protected def initialAttributes: Attributes = DefaultAttributes.orElse
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler with InHandler {
+
+    private[this] var currentIn = primary
+    private[this] var primaryPushed = false
+
+    override def onPull(): Unit = {
+      pull(currentIn)
+    }
+
+    // for the primary inHandler
+    override def onPush(): Unit = {
+      if (!primaryPushed) {
+        primaryPushed = true
+        cancel(secondary)
+      }
+      val elem = grab(primary)
+      push(out, elem)
+    }
+
+    // for the primary inHandler
+    override def onUpstreamFinish(): Unit = {
+      if (!primaryPushed && !isClosed(secondary)) {
+        currentIn = secondary
+        if (isAvailable(out)) pull(secondary)
+      } else {
+        completeStage()
+      }
+    }
+
+    setHandler(secondary, new InHandler {
+      override def onPush(): Unit = {
+        push(out, grab(secondary))
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        if (isClosed(primary)) completeStage()
+      }
+    })
+
+    setHandlers(primary, out, this)
+  }
+
+  override def toString: String = s"OrElse"
+
 }
 
 object GraphDSL extends GraphApply {
