@@ -1075,13 +1075,14 @@ final case class MapAsyncUnordered[In, Out](parallelism: Int, f: In ⇒ Future[O
         }
       }
       private val futureCB = getAsyncCallback(futureCompleted)
+      private val invokeFutureCB: Try[Out] ⇒ Unit = futureCB.invoke
 
       override def onPush(): Unit = {
         try {
           val future = f(grab(in))
           inFlight += 1
           future.value match {
-            case None    ⇒ future.onComplete(futureCB.invoke(_))(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+            case None    ⇒ future.onComplete(invokeFutureCB)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
             case Some(v) ⇒ futureCompleted(v)
           }
         } catch {
