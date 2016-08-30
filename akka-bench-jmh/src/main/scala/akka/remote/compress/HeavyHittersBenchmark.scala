@@ -49,7 +49,7 @@ class HeavyHittersBenchmark {
   @Param(Array("8192"))
   var n: Int = 0
 
-  var topN: TopHeavyHitters[String] = _
+  private var topN: TopHeavyHitters[String] = _
 
   val rand = new Random(1001021)
 
