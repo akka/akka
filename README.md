@@ -1,7 +1,7 @@
 Akka
 ====
 
-We believe that writing correct concurrent & distributed, resilient and elastic applications is too hard. 
+We believe that writing correct concurrent & distributed, resilient and elastic applications is too hard.
 Most of the time it's because we are using the wrong tools and the wrong level of abstraction.
 
 Akka is here to change that.
@@ -17,7 +17,7 @@ Learn more at [akka.io](http://akka.io/).
 Reference Documentation
 -----------------------
 
-The reference documentation is available at [doc.akka.io](http://doc.akka.io), 
+The reference documentation is available at [doc.akka.io](http://doc.akka.io),
 for [Scala](http://doc.akka.io/docs/akka/current/scala.html) and [Java](http://doc.akka.io/docs/akka/current/java.html).
 
 
@@ -31,10 +31,11 @@ You can join these groups and chats to discuss and ask Akka related questions:
 
 In addition to that, you may enjoy following:
 
-- The [news](http://akka.io/news) section of the page, which is updated whenever a new version is released 
+- The [news](http://akka.io/news) section of the page, which is updated whenever a new version is released
 - The [Akka Team Blog](http://blog.akka.io)
 - [@akkateam](https://twitter.com/akkateam) on Twitter
 - Questions tagged [#akka on StackOverflow](http://stackoverflow.com/questions/tagged/akka)
+- Projects built with Akka: [![akka-dependency-badge]][akka-dependency-scaladex]
 
 Contributing
 ------------
@@ -54,3 +55,6 @@ License
 -------
 
 Akka is Open Source and available under the Apache 2 License.
+
+[akka-dependency-badge]: https://index.scala-lang.org/count.svg?q=dependencies:akka/*&subject=scaladex:&color=blue&style=flat-square "Built with Akka"
+[akka-dependency-scaladex]: https://index.scala-lang.org/search?q=dependencies:akka/*
