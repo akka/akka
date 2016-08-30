@@ -114,7 +114,7 @@ class One2OneBidiFlowSpec extends AkkaSpec {
       out.sendComplete() // To please assertAllStagesStopped
     }
 
-    "not pull when input is closed before surpressed pull can be acted on" in assertAllStagesStopped {
+        "not pull when input is closed before surpressed pull can be acted on" in assertAllStagesStopped {
       val in = TestPublisher.probe[Int]()
       val out = TestSubscriber.probe[Int]()
       val wrappedIn = TestSubscriber.probe[Int]()
