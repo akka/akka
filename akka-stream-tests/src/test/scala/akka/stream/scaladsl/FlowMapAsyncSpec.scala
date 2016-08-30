@@ -110,7 +110,7 @@ class FlowMapAsyncSpec extends StreamSpec {
             n
           }
         }
-        .mapAsync(4) { n ⇒
+        .mapAsyncUnordered(4) { n ⇒
           if (n == 1) Future.failed(new RuntimeException("err1") with NoStackTrace)
           else Future.successful(n)
         }.runWith(Sink.ignore)
