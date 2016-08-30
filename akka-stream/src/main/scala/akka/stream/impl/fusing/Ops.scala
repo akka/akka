@@ -942,11 +942,14 @@ final class Expand[In, Out](val extrapolate: In ⇒ Iterator[Out]) extends Graph
  */
 private[akka] object MapAsync {
   final class Holder[T](var elem: Try[T], val cb: AsyncCallback[Holder[T]]) extends (Try[T] ⇒ Unit) {
-    override def apply(t: Try[T]): Unit = {
+    def setElem(t: Try[T]): Unit =
       elem = t match {
         case Success(null) ⇒ Failure[T](ReactiveStreamsCompliance.elementMustNotBeNullException)
         case other         ⇒ other
       }
+
+    override def apply(t: Try[T]): Unit = {
+      setElem(t)
       cb.invoke(this)
     }
   }
@@ -974,12 +977,14 @@ final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Future[Out])
       //FIXME Put Supervision.stoppingDecider as a SupervisionStrategy on DefaultAttributes.mapAsync?
       lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
       var buffer: BufferImpl[Holder[Out]] = _
-      val futureCB =
-        getAsyncCallback[Holder[Out]](
-          _.elem match {
-            case Failure(e) if decider(e) == Supervision.Stop ⇒ failStage(e)
-            case _ ⇒ if (isAvailable(out)) pushOne()
-          })
+
+      def holderCompleted(h: Holder[Out]): Unit = {
+        h.elem match {
+          case Failure(e) if decider(e) == Supervision.Stop ⇒ failStage(e)
+          case _ ⇒ if (isAvailable(out)) pushOne()
+        }
+      }
+      val futureCB = getAsyncCallback[Holder[Out]](holderCompleted)
 
       private[this] def todo = buffer.used
 
@@ -1007,14 +1012,16 @@ final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Future[Out])
           // #20217 We dispatch the future if it's ready to optimize away
           // scheduling it to an execution context
           future.value match {
-            case None    ⇒ future.onComplete(holder)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
-            case Some(f) ⇒ holder.apply(f)
+            case None ⇒ future.onComplete(holder)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+            case Some(v) ⇒
+              holder.setElem(v)
+              holderCompleted(holder)
           }
 
         } catch {
           case NonFatal(ex) ⇒ if (decider(ex) == Supervision.Stop) failStage(ex)
         }
-        if (todo < parallelism) tryPull(in)
+        if (todo < parallelism && !hasBeenPulled(in)) tryPull(in)
       }
       override def onUpstreamFinish(): Unit = if (todo == 0) completeStage()
 
@@ -1049,38 +1056,39 @@ final case class MapAsyncUnordered[In, Out](parallelism: Int, f: In ⇒ Future[O
 
       override def preStart(): Unit = buffer = BufferImpl(parallelism, materializer)
 
-      private val futureCB =
-        getAsyncCallback((result: Try[Out]) ⇒ {
-          inFlight -= 1
-          result match {
-            case Success(elem) if elem != null ⇒
-              if (isAvailable(out)) {
-                if (!hasBeenPulled(in)) tryPull(in)
-                push(out, elem)
-              } else buffer.enqueue(elem)
-            case other ⇒
-              val ex = other match {
-                case Failure(t)              ⇒ t
-                case Success(s) if s == null ⇒ ReactiveStreamsCompliance.elementMustNotBeNullException
-              }
-              if (decider(ex) == Supervision.Stop) failStage(ex)
-              else if (isClosed(in) && todo == 0) completeStage()
-              else if (!hasBeenPulled(in)) tryPull(in)
-          }
-        }).invoke _
+      def futureCompleted(result: Try[Out]): Unit = {
+        inFlight -= 1
+        result match {
+          case Success(elem) if elem != null ⇒
+            if (isAvailable(out)) {
+              if (!hasBeenPulled(in)) tryPull(in)
+              push(out, elem)
+            } else buffer.enqueue(elem)
+          case other ⇒
+            val ex = other match {
+              case Failure(t)              ⇒ t
+              case Success(s) if s == null ⇒ ReactiveStreamsCompliance.elementMustNotBeNullException
+            }
+            if (decider(ex) == Supervision.Stop) failStage(ex)
+            else if (isClosed(in) && todo == 0) completeStage()
+            else if (!hasBeenPulled(in)) tryPull(in)
+        }
+      }
+      private val futureCB = getAsyncCallback(futureCompleted)
+      private val invokeFutureCB: Try[Out] ⇒ Unit = futureCB.invoke
 
       override def onPush(): Unit = {
         try {
           val future = f(grab(in))
           inFlight += 1
           future.value match {
-            case None    ⇒ future.onComplete(futureCB)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
-            case Some(f) ⇒ futureCB.apply(f)
+            case None    ⇒ future.onComplete(invokeFutureCB)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+            case Some(v) ⇒ futureCompleted(v)
           }
         } catch {
           case NonFatal(ex) ⇒ if (decider(ex) == Supervision.Stop) failStage(ex)
         }
-        if (todo < parallelism) tryPull(in)
+        if (todo < parallelism && !hasBeenPulled(in)) tryPull(in)
       }
 
       override def onUpstreamFinish(): Unit = {

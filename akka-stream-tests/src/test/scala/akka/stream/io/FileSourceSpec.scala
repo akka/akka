@@ -3,7 +3,7 @@
  */
 package akka.stream.io
 
-import java.nio.file.{FileSystems, Files}
+import java.nio.file.{ FileSystems, Files }
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.Random
 
@@ -16,14 +16,14 @@ import akka.stream.impl.ActorMaterializerImpl
 import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.io.FileSourceSpec.Settings
-import akka.stream.scaladsl.{FileIO, Keep, Sink}
+import akka.stream.scaladsl.{ FileIO, Keep, Sink }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestDuration
 import akka.util.ByteString
 import akka.util.Timeout
-import com.google.common.jimfs.{Configuration, Jimfs}
+import com.google.common.jimfs.{ Configuration, Jimfs }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
