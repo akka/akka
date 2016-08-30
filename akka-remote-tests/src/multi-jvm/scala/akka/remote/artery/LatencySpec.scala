@@ -30,6 +30,7 @@ object LatencySpec extends MultiNodeConfig {
        # for serious measurements you should increase the totalMessagesFactor (30) and repeatCount (3)
        akka.test.LatencySpec.totalMessagesFactor = 1.0
        akka.test.LatencySpec.repeatCount = 1
+       akka.test.LatencySpec.real-message = off
        akka {
          loglevel = ERROR
          # avoid TestEventListener
@@ -86,18 +87,24 @@ object LatencySpec extends MultiNodeConfig {
     def receive = {
       case bytes: Array[Byte] ⇒
         if (bytes.length != 0) {
-          if (count == 0)
-            startTime = System.nanoTime()
           if (bytes.length != payloadSize) throw new IllegalArgumentException("Invalid message")
-          reporter.onMessage(1, payloadSize)
-          count += 1
-          val d = System.nanoTime() - sendTimes.get(count - 1)
-          histogram.recordValue(d)
-          if (count == totalMessages) {
-            printTotal(testName, bytes.length, histogram, System.nanoTime() - startTime)
-            context.stop(self)
-          }
+          receiveMessage(bytes.length)
         }
+      case _: TestMessage ⇒
+        receiveMessage(payloadSize)
+    }
+
+    def receiveMessage(size: Int): Unit = {
+      if (count == 0)
+        startTime = System.nanoTime()
+      reporter.onMessage(1, payloadSize)
+      count += 1
+      val d = System.nanoTime() - sendTimes.get(count - 1)
+      histogram.recordValue(d)
+      if (count == totalMessages) {
+        printTotal(testName, size, histogram, System.nanoTime() - startTime)
+        context.stop(self)
+      }
     }
 
     def printTotal(testName: String, payloadSize: Long, histogram: Histogram, totalDurationNanos: Long): Unit = {
@@ -133,7 +140,8 @@ object LatencySpec extends MultiNodeConfig {
     testName:    String,
     messageRate: Int, // msg/s
     payloadSize: Int,
-    repeat:      Int)
+    repeat:      Int,
+    realMessage: Boolean)
 
 }
 
@@ -148,6 +156,7 @@ abstract class LatencySpec
 
   val totalMessagesFactor = system.settings.config.getDouble("akka.test.LatencySpec.totalMessagesFactor")
   val repeatCount = system.settings.config.getInt("akka.test.LatencySpec.repeatCount")
+  val realMessage = system.settings.config.getBoolean("akka.test.LatencySpec.real-message")
 
   var plots = LatencyPlots()
 
@@ -183,32 +192,38 @@ abstract class LatencySpec
       testName = "warmup",
       messageRate = 10000,
       payloadSize = 100,
-      repeat = repeatCount),
+      repeat = repeatCount,
+      realMessage),
     TestSettings(
       testName = "rate-100-size-100",
       messageRate = 100,
       payloadSize = 100,
-      repeat = repeatCount),
+      repeat = repeatCount,
+      realMessage),
     TestSettings(
       testName = "rate-1000-size-100",
       messageRate = 1000,
       payloadSize = 100,
-      repeat = repeatCount),
+      repeat = repeatCount,
+      realMessage),
     TestSettings(
       testName = "rate-10000-size-100",
       messageRate = 10000,
       payloadSize = 100,
-      repeat = repeatCount),
+      repeat = repeatCount,
+      realMessage),
     TestSettings(
       testName = "rate-20000-size-100",
       messageRate = 20000,
       payloadSize = 100,
-      repeat = repeatCount),
+      repeat = repeatCount,
+      realMessage),
     TestSettings(
       testName = "rate-1000-size-1k",
       messageRate = 1000,
       payloadSize = 1000,
-      repeat = repeatCount))
+      repeat = repeatCount,
+      realMessage))
 
   def test(testSettings: TestSettings): Unit = {
     import testSettings._
@@ -258,6 +273,17 @@ abstract class LatencySpec
               val diff = now - sendTimes.get(i - 1)
               adjust = math.max(0L, (diff - targetDelay) / 2)
             }
+
+            val msg =
+              if (testSettings.realMessage)
+                TestMessage(
+                  id = i,
+                  name = "abc",
+                  status = i % 2 == 0,
+                  description = "ABC",
+                  payload = payload,
+                  items = Vector(TestMessage.Item(1, "A"), TestMessage.Item(2, "B")))
+              else payload
 
             echo.tell(payload, receiver)
             i += 1

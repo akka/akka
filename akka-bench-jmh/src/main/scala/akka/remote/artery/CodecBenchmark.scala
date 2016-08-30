@@ -55,12 +55,12 @@ class CodecBenchmark {
   implicit val system = ActorSystem("CodecBenchmark", config)
   val systemB = ActorSystem("systemB", system.settings.config)
 
-  private val envelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
+  private val envelopePool = new EnvelopeBufferPool(1024 * 1024, 128)
   private val inboundEnvelopePool = ReusableInboundEnvelope.createObjectPool(capacity = 16)
   private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity = 16)
 
   val headerIn = HeaderBuilder.in(NoInboundCompressions)
-  val envelopeTemplateBuffer = ByteBuffer.allocate(ArteryTransport.MaximumFrameSize).order(ByteOrder.LITTLE_ENDIAN)
+  val envelopeTemplateBuffer = ByteBuffer.allocate(1024 * 1024).order(ByteOrder.LITTLE_ENDIAN)
 
   val uniqueLocalAddress = UniqueAddress(
     system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,

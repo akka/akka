@@ -51,25 +51,43 @@ private[akka] final class ArterySettings private (config: Config) {
     val DeleteAeronDirectory = getBoolean("delete-aeron-dir")
     val IdleCpuLevel: Int = getInt("idle-cpu-level").requiring(level ⇒
       1 <= level && level <= 10, "idle-cpu-level must be between 1 and 10")
+    val OutboundLanes = getInt("outbound-lanes").requiring(n ⇒
+      n > 0, "outbound-lanes must be greater than zero")
+    val InboundLanes = getInt("inbound-lanes").requiring(n ⇒
+      n > 0, "inbound-lanes must be greater than zero")
     val SysMsgBufferSize: Int = getInt("system-message-buffer-size").requiring(
       _ > 0, "system-message-buffer-size must be more than zero")
     val SystemMessageResendInterval = config.getMillisDuration("system-message-resend-interval").requiring(interval ⇒
-      interval > 0.seconds, "system-message-resend-interval must be more than zero")
+      interval > Duration.Zero, "system-message-resend-interval must be more than zero")
+    val HandshakeTimeout = config.getMillisDuration("handshake-timeout").requiring(interval ⇒
+      interval > Duration.Zero, "handshake-timeout must be more than zero")
     val HandshakeRetryInterval = config.getMillisDuration("handshake-retry-interval").requiring(interval ⇒
-      interval > 0.seconds, "handshake-retry-interval must be more than zero")
+      interval > Duration.Zero, "handshake-retry-interval must be more than zero")
     val InjectHandshakeInterval = config.getMillisDuration("inject-handshake-interval").requiring(interval ⇒
-      interval > 0.seconds, "inject-handshake-interval must be more than zero")
-    val GiveUpSendAfter = config.getMillisDuration("give-up-send-after")
-    val ShutdownFlushTimeout = config.getMillisDuration("shutdown-flush-timeout")
-    val InboundRestartTimeout = config.getMillisDuration("inbound-restart-timeout")
+      interval > Duration.Zero, "inject-handshake-interval must be more than zero")
+    val GiveUpSendAfter = config.getMillisDuration("give-up-send-after").requiring(interval ⇒
+      interval > Duration.Zero, "give-up-send-after must be more than zero")
+    val ShutdownFlushTimeout = config.getMillisDuration("shutdown-flush-timeout").requiring(interval ⇒
+      interval > Duration.Zero, "shutdown-flush-timeout must be more than zero")
+    val InboundRestartTimeout = config.getMillisDuration("inbound-restart-timeout").requiring(interval ⇒
+      interval > Duration.Zero, "inbound-restart-timeout must be more than zero")
     val InboundMaxRestarts = getInt("inbound-max-restarts")
-    val OutboundRestartTimeout = config.getMillisDuration("outbound-restart-timeout")
+    val OutboundRestartTimeout = config.getMillisDuration("outbound-restart-timeout").requiring(interval ⇒
+      interval > Duration.Zero, "outbound-restart-timeout must be more than zero")
     val OutboundMaxRestarts = getInt("outbound-max-restarts")
-    val ClientLivenessTimeout = config.getMillisDuration("client-liveness-timeout")
-    val ImageLivenessTimeoutNs = config.getMillisDuration("image-liveness-timeout")
-    val DriverTimeout = config.getMillisDuration("driver-timeout")
+    val ClientLivenessTimeout = config.getMillisDuration("client-liveness-timeout").requiring(interval ⇒
+      interval > Duration.Zero, "client-liveness-timeout must be more than zero")
+    val ImageLivenessTimeoutNs = config.getMillisDuration("image-liveness-timeout").requiring(interval ⇒
+      interval > Duration.Zero, "image-liveness-timeout must be more than zero")
+    val DriverTimeout = config.getMillisDuration("driver-timeout").requiring(interval ⇒
+      interval > Duration.Zero, "driver-timeout must be more than zero")
     val FlightRecorderEnabled: Boolean = getBoolean("flight-recorder.enabled")
     val Compression = new Compression(getConfig("compression"))
+
+    final val MaximumFrameSize = 1024 * 1024
+    final val MaximumPooledBuffers = 128
+    final val MaximumLargeFrameSize = MaximumFrameSize * 5
+    final val InboundBroadcastHubBufferSize = MaximumPooledBuffers / 2
   }
 }
 

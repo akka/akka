@@ -10,6 +10,7 @@ import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.testkit.SocketUtil
 import akka.testkit.TestActors
 import com.typesafe.config.ConfigFactory
+import akka.testkit.TestProbe
 
 object HandshakeFailureSpec {
 
@@ -22,7 +23,7 @@ object HandshakeFailureSpec {
        remote.artery.enabled = on
        remote.artery.hostname = localhost
        remote.artery.port = 0
-       remote.handshake-timeout = 2s
+       remote.artery.advanced.handshake-timeout = 2s
      }
   """)
 
