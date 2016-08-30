@@ -29,11 +29,12 @@ import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
-class ConnectionPoolSpec extends AkkaSpec("""
+class ConnectionPoolSpec extends AkkaSpec(
+  """
     akka.loggers = []
-    akka.loglevel = OFF
+    akka.loglevel = DEBUG
     akka.io.tcp.windows-connection-abort-workaround-enabled = auto
-    akka.io.tcp.trace-logging = off""") {
+    akka.io.tcp.trace-logging = on""") {
   implicit val materializer = ActorMaterializer()
 
   // FIXME: Extract into proper util class to be reusable
@@ -178,6 +179,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
       responseOutSub.request(2)
 
       val remainingResponsesToKill = new AtomicInteger(1)
+
       override def mapServerSideOutboundRawBytes(bytes: ByteString): ByteString =
         if (bytes.utf8String.contains("/crash") && remainingResponsesToKill.decrementAndGet() >= 0)
           sys.error("CRASH BOOM BANG")
@@ -197,6 +199,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
       responseOutSub.request(2)
 
       val remainingResponsesToKill = new AtomicInteger(5)
+
       override def mapServerSideOutboundRawBytes(bytes: ByteString): ByteString =
         if (bytes.utf8String.contains("/crash") && remainingResponsesToKill.decrementAndGet() >= 0)
           sys.error("CRASH BOOM BANG")
@@ -213,7 +216,9 @@ class ConnectionPoolSpec extends AkkaSpec("""
       val (_, _, _, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second)
       val gateway = hcp.gateway
       Await.result(gateway.poolStatus(), 1500.millis).get shouldBe a[PoolInterfaceRunning]
-      awaitCond({ Await.result(gateway.poolStatus(), 1500.millis).isEmpty }, 2000.millis)
+      awaitCond({
+        Await.result(gateway.poolStatus(), 1500.millis).isEmpty
+      }, 2000.millis)
     }
 
     "transparently restart after idle shutdown" in new TestSetup() {
@@ -221,7 +226,9 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
       val gateway = hcp.gateway
       Await.result(gateway.poolStatus(), 1500.millis).get shouldBe a[PoolInterfaceRunning]
-      awaitCond({ Await.result(gateway.poolStatus(), 1500.millis).isEmpty }, 2000.millis)
+      awaitCond({
+        Await.result(gateway.poolStatus(), 1500.millis).isEmpty
+      }, 2000.millis)
 
       requestIn.sendNext(HttpRequest(uri = "/") → 42)
 
@@ -277,7 +284,9 @@ class ConnectionPoolSpec extends AkkaSpec("""
       val (_, _, _, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second, minConnections = 0)
       val gateway = hcp.gateway
       Await.result(gateway.poolStatus(), 1500.millis).get shouldBe a[PoolInterfaceRunning]
-      awaitCond({ Await.result(gateway.poolStatus(), 1500.millis).isEmpty }, 2000.millis)
+      awaitCond({
+        Await.result(gateway.poolStatus(), 1500.millis).isEmpty
+      }, 2000.millis)
     }
   }
 
@@ -331,6 +340,72 @@ class ConnectionPoolSpec extends AkkaSpec("""
         case (Success(x), 42) ⇒ requestUri(x) shouldEqual s"http://$serverHostName:$serverPort/a"
         case (Success(x), 43) ⇒ requestUri(x) shouldEqual s"http://$serverHostName2:$serverPort2/b"
         case x                ⇒ fail(x.toString)
+      }
+    }
+  }
+
+  "be able to handle 500 `Connection: close` requests against the test server" in new TestSetup {
+    val settings = ConnectionPoolSettings(system).withMaxConnections(4)
+    val poolFlow = Http().cachedHostConnectionPool[Int](serverHostName, serverPort, settings = settings)
+
+    val N = 500
+    val requestIds = Source.fromIterator(() ⇒ Iterator.from(1)).take(N)
+    val idSum = requestIds.map(id ⇒ HttpRequest(uri = s"/r$id").withHeaders(Connection("close")) → id).via(poolFlow).map {
+      case (Success(response), id) ⇒
+        requestUri(response) should endWith(s"/r$id")
+        id
+      case x ⇒ fail(x.toString)
+    }.runFold(0)(_ + _)
+
+    (1 to N).foreach(_ ⇒ acceptIncomingConnection())
+
+    Await.result(idSum, 10.seconds) shouldEqual N * (N + 1) / 2
+  }
+
+  "xoxo be able to handle 500 pipelined requests with connection termination" in new TestSetup(autoAccept = true) {
+    def closeHeader(): List[Connection] =
+      //      if (util.Random.nextInt(8) == 0) 
+      Connection("close") :: Nil
+
+    //      else Nil
+
+    override def testServerHandler(connNr: Int): HttpRequest ⇒ HttpResponse = { r ⇒
+      val idx = r.uri.path.tail.head.toString
+      HttpResponse()
+        .withHeaders(RawHeader("Req-Idx", idx) +: responseHeaders(r, connNr))
+        .withDefaultHeaders(closeHeader())
+    }
+
+    for (pipeliningLimit ← Iterator.from(1).map(math.pow(2, _).toInt).take(4)) {
+      val settings = ConnectionPoolSettings(system).withMaxConnections(4).withPipeliningLimit(pipeliningLimit)
+      val poolFlow = Http().cachedHostConnectionPool[Int](serverHostName, serverPort, settings = settings)
+
+      println("pipeliningLimit = " + pipeliningLimit)
+
+      def method() =
+        if (util.Random.nextInt(2) == 0) HttpMethods.POST else HttpMethods.GET
+
+      def request(i: Int) =
+        HttpRequest(method = method(), headers = closeHeader(), uri = s"/$i") → i
+
+      try {
+        val N = 200
+        info(s"n=${N}, poolFlow=${poolFlow}")
+        val (pool, idSum) =
+          Source.fromIterator(() ⇒ Iterator.from(1)).take(N)
+            .map(request)
+            .viaMat(poolFlow)(Keep.right)
+            .map {
+              case (Success(response), id) ⇒
+                requestUri(response) should endWith(s"/$id")
+                id
+              case x ⇒ fail(x.toString)
+            }.toMat(Sink.fold(0)(_ + _))(Keep.both).run()
+
+        Await.result(idSum, 30.seconds) shouldEqual N * (N + 1) / 2
+      } catch {
+        case thr: Throwable ⇒
+          throw new RuntimeException(s"Failed at pipeliningLimit=${pipeliningLimit}, poolFlow=${poolFlow}", thr)
       }
     }
   }
@@ -413,6 +488,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
     }
 
     def connNr(r: HttpResponse): Int = r.headers.find(_ is "conn-nr").get.value.toInt
+
     def requestUri(r: HttpResponse): String = r.headers.find(_ is "req-uri").get.value
 
     /**
@@ -434,8 +510,11 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
   case class ConnNrHeader(nr: Int) extends CustomHeader {
     def renderInRequests = false
+
     def renderInResponses = true
+
     def name = "Conn-Nr"
+
     def value = nr.toString
   }
 
@@ -445,4 +524,5 @@ class ConnectionPoolSpec extends AkkaSpec("""
   }
 
   object NoErrorComplete extends SingletonException
+
 }

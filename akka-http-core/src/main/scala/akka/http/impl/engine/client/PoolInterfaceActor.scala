@@ -5,6 +5,7 @@
 package akka.http.impl.engine.client
 
 import akka.actor._
+import akka.event.Logging
 import akka.http.impl.engine.client.PoolFlow._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.{ Http, HttpsConnectionContext }
@@ -13,7 +14,7 @@ import akka.stream.actor.ActorSubscriberMessage._
 import akka.stream.actor.{ ActorPublisher, ActorSubscriber, ZeroRequestStrategy }
 import akka.stream.impl.{ Buffer, SeqActorName }
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
-import akka.stream.{ BufferOverflowException, Materializer }
+import akka.stream.{ ActorAttributes, BufferOverflowException, Materializer }
 
 import scala.annotation.tailrec
 import scala.concurrent.Promise
@@ -63,7 +64,9 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
 
     val connectionFlow = connectionContext match {
       case httpsContext: HttpsConnectionContext ⇒ Http().outgoingConnectionHttps(host, port, httpsContext, None, settings.connectionSettings, setup.log)
-      case _                                    ⇒ Http().outgoingConnection(host, port, None, settings.connectionSettings, setup.log)
+      case _ ⇒
+        Http().outgoingConnection(host, port, None, settings.connectionSettings, setup.log)
+          .log("=== POOL").withAttributes(ActorAttributes.logLevels(Logging.WarningLevel, Logging.WarningLevel, Logging.WarningLevel))
     }
 
     val poolFlow =
@@ -112,7 +115,9 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
         // if we can't dispatch right now we buffer and dispatch when demand from the pool arrives
         if (inputBuffer.isFull) {
           x.responsePromise.failure(
-            new BufferOverflowException(s"Exceeded configured max-open-requests value of [${inputBuffer.capacity}]"))
+            BufferOverflowException(s"Exceeded configured max-open-requests value of [${inputBuffer.capacity}]. " +
+              s"This is a security feature, protecting you from overflowing request queues with too many requests. " +
+              s"You can either increase the maxOpenRequests setting, or properly abide to back-pressure, e.g. by using the Flow based APIs."))
         } else inputBuffer.enqueue(x)
       } else dispatchRequest(x) // if we can dispatch right now, do it
       request(1) // for every incoming request we demand one response from the pool

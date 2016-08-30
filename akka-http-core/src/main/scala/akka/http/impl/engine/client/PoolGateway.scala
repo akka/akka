@@ -33,6 +33,7 @@ private[http] final class PoolGateway(gatewayRef: ActorRef, val hcps: HostConnec
    * @return the response
    */
   def apply(request: HttpRequest): Future[HttpResponse] = {
+    println(s"== apply(${request})")
     val responsePromise = Promise[HttpResponse]()
     gatewayRef ! SendRequest(this, request, responsePromise, fm)
     responsePromise.future
@@ -46,6 +47,7 @@ private[http] final class PoolGateway(gatewayRef: ActorRef, val hcps: HostConnec
    * @return the gateway itself
    */
   def startPool(): PoolGateway = {
+    println("== startPool()")
     gatewayRef ! StartPool(this, fm)
     this
   }
