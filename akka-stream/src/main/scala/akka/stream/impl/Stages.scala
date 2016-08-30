@@ -83,6 +83,7 @@ object Stages {
     val zipWithN = name("zipWithN")
     val unzip = name("unzip")
     val concat = name("concat")
+    val orElse = name("orElse")
     val repeat = name("repeat")
     val unfold = name("unfold")
     val unfoldAsync = name("unfoldAsync")
