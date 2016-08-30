@@ -6,11 +6,13 @@ package akka.persistence
 
 import akka.actor.{ OneForOneStrategy, _ }
 import akka.persistence.journal.AsyncWriteJournal
-import akka.testkit.{ EventFilter, ImplicitSender, TestEvent }
+import akka.testkit.{ EventFilter, ImplicitSender, TestEvent, TestProbe }
+
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
 import scala.util.{ Failure, Try }
 import akka.persistence.journal.inmem.InmemJournal
+
 import scala.concurrent.Future
 
 object PersistentActorFailureSpec {
@@ -181,9 +183,13 @@ class PersistentActorFailureSpec extends PersistenceSpec(PersistenceSpec.config(
       expectMsg(List("corrupt"))
 
       // recover by creating another with same name
-      system.actorOf(Props(classOf[Supervisor], testActor)) ! props
+      // note that if we used testActor as failure detector passed in
+      // the props we'd have a race on our hands (#21229)
+      val failProbe = TestProbe()
+      val sameNameProps = Props(classOf[OnRecoveryFailurePersistentActor], name, failProbe.ref)
+      system.actorOf(Props(classOf[Supervisor], testActor)) ! sameNameProps
       val ref = expectMsgType[ActorRef]
-      expectMsg("recovery-failure:blahonga 1 1")
+      failProbe.expectMsg("recovery-failure:blahonga 1 1")
       watch(ref)
       expectTerminated(ref)
     }
