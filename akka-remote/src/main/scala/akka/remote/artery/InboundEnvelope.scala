@@ -11,7 +11,10 @@ import akka.actor.ActorRef
 /**
  * INTERNAL API
  */
-private[akka] object InboundEnvelope {
+private[remote] object InboundEnvelope {
+  /**
+   * Only used in tests
+   */
   def apply(
     recipient:        OptionVal[InternalActorRef],
     recipientAddress: Address,
@@ -20,7 +23,8 @@ private[akka] object InboundEnvelope {
     originUid:        Long,
     association:      OptionVal[OutboundContext]): InboundEnvelope = {
     val env = new ReusableInboundEnvelope
-    env.init(recipient, recipientAddress, message, sender, originUid, association)
+    env.init(recipient, recipientAddress, sender, originUid, -1, "", null, association)
+      .withMessage(message)
   }
 
 }
@@ -28,15 +32,21 @@ private[akka] object InboundEnvelope {
 /**
  * INTERNAL API
  */
-private[akka] trait InboundEnvelope {
+private[remote] trait InboundEnvelope {
   def recipient: OptionVal[InternalActorRef]
   def recipientAddress: Address
-  def message: AnyRef
   def sender: OptionVal[ActorRef]
   def originUid: Long
   def association: OptionVal[OutboundContext]
 
+  def serializer: Int
+  def classManifest: String
+  def message: AnyRef
+  def envelopeBuffer: EnvelopeBuffer
+
   def withMessage(message: AnyRef): InboundEnvelope
+
+  def releaseEnvelopeBuffer(): InboundEnvelope
 
   def withRecipient(ref: InternalActorRef): InboundEnvelope
 }
@@ -44,7 +54,7 @@ private[akka] trait InboundEnvelope {
 /**
  * INTERNAL API
  */
-private[akka] object ReusableInboundEnvelope {
+private[remote] object ReusableInboundEnvelope {
   def createObjectPool(capacity: Int) = new ObjectPool[ReusableInboundEnvelope](
     capacity,
     create = () ⇒ new ReusableInboundEnvelope, clear = inEnvelope ⇒ inEnvelope.asInstanceOf[ReusableInboundEnvelope].clear())
@@ -56,20 +66,31 @@ private[akka] object ReusableInboundEnvelope {
 private[akka] final class ReusableInboundEnvelope extends InboundEnvelope {
   private var _recipient: OptionVal[InternalActorRef] = OptionVal.None
   private var _recipientAddress: Address = null
-  private var _message: AnyRef = null
   private var _sender: OptionVal[ActorRef] = OptionVal.None
   private var _originUid: Long = 0L
   private var _association: OptionVal[OutboundContext] = OptionVal.None
+  private var _serializer: Int = -1
+  private var _classManifest: String = null
+  private var _message: AnyRef = null
+  private var _envelopeBuffer: EnvelopeBuffer = null
 
   override def recipient: OptionVal[InternalActorRef] = _recipient
   override def recipientAddress: Address = _recipientAddress
-  override def message: AnyRef = _message
   override def sender: OptionVal[ActorRef] = _sender
   override def originUid: Long = _originUid
   override def association: OptionVal[OutboundContext] = _association
+  override def serializer: Int = _serializer
+  override def classManifest: String = _classManifest
+  override def message: AnyRef = _message
+  override def envelopeBuffer: EnvelopeBuffer = _envelopeBuffer
 
   override def withMessage(message: AnyRef): InboundEnvelope = {
     _message = message
+    this
+  }
+
+  def releaseEnvelopeBuffer(): InboundEnvelope = {
+    _envelopeBuffer = null
     this
   }
 
@@ -90,15 +111,19 @@ private[akka] final class ReusableInboundEnvelope extends InboundEnvelope {
   def init(
     recipient:        OptionVal[InternalActorRef],
     recipientAddress: Address,
-    message:          AnyRef,
     sender:           OptionVal[ActorRef],
     originUid:        Long,
+    serializer:       Int,
+    classManifest:    String,
+    envelopeBuffer:   EnvelopeBuffer,
     association:      OptionVal[OutboundContext]): InboundEnvelope = {
     _recipient = recipient
     _recipientAddress = recipientAddress
-    _message = message
     _sender = sender
     _originUid = originUid
+    _serializer = serializer
+    _classManifest = classManifest
+    _envelopeBuffer = envelopeBuffer
     _association = association
     this
   }

@@ -21,6 +21,7 @@ import akka.remote.artery.compress.CompressionTable
 import akka.Done
 import akka.stream.stage.GraphStageWithMaterializedValue
 import scala.concurrent.Promise
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * INTERNAL API
@@ -34,6 +35,7 @@ private[remote] object Encoder {
 
   private[remote] class ChangeOutboundCompressionFailed extends RuntimeException(
     "Change of outbound compression table failed (will be retried), because materialization did not complete yet")
+
 }
 
 /**
@@ -212,7 +214,6 @@ private[remote] class Decoder(
       import Decoder.RetryResolveRemoteDeployedRecipient
       private val localAddress = inboundContext.localAddress.address
       private val headerBuilder = HeaderBuilder.in(compression)
-      private val serialization = SerializationExtension(system)
 
       private val retryResolveRemoteDeployedRecipientInterval = 50.millis
       private val retryResolveRemoteDeployedRecipientAttempts = 20
@@ -284,35 +285,24 @@ private[remote] class Decoder(
           // --- end of hit refs and manifests for heavy-hitter counting
         }
 
-        try {
-          val deserializedMessage = MessageSerializer.deserializeForArtery(
-            system, originUid, serialization, headerBuilder.serializer, classManifest, envelope)
+        val decoded = inEnvelopePool.acquire().init(
+          recipient,
+          localAddress, // FIXME: Is this needed anymore? What should we do here?
+          sender,
+          originUid,
+          headerBuilder.serializer,
+          classManifest,
+          envelope,
+          association)
 
-          val decoded = inEnvelopePool.acquire().init(
-            recipient,
-            localAddress, // FIXME: Is this needed anymore? What should we do here?
-            deserializedMessage,
-            sender, // FIXME: No need for an option, decode simply to deadLetters instead
-            originUid,
-            association)
-
-          if (recipient.isEmpty && !headerBuilder.isNoRecipient) {
-            // the remote deployed actor might not be created yet when resolving the
-            // recipient for the first message that is sent to it, best effort retry
-            scheduleOnce(RetryResolveRemoteDeployedRecipient(
-              retryResolveRemoteDeployedRecipientAttempts,
-              headerBuilder.recipientActorRefPath.get, decoded), retryResolveRemoteDeployedRecipientInterval) // FIXME IS THIS SAFE?
-          } else
-            push(out, decoded)
-        } catch {
-          case NonFatal(e) ⇒
-            log.warning(
-              "Failed to deserialize message with serializer id [{}] and manifest [{}]. {}",
-              headerBuilder.serializer, classManifest, e.getMessage)
-            pull(in)
-        } finally {
-          bufferPool.release(envelope)
-        }
+        if (recipient.isEmpty && !headerBuilder.isNoRecipient) {
+          // the remote deployed actor might not be created yet when resolving the
+          // recipient for the first message that is sent to it, best effort retry
+          scheduleOnce(RetryResolveRemoteDeployedRecipient(
+            retryResolveRemoteDeployedRecipientAttempts,
+            headerBuilder.recipientActorRefPath.get, decoded), retryResolveRemoteDeployedRecipientInterval) // FIXME IS THIS SAFE?
+        } else
+          push(out, decoded)
       }
 
       private def resolveRecipient(path: String): OptionVal[InternalActorRef] = {
@@ -364,6 +354,51 @@ private[remote] class Decoder(
             }
         }
       }
+
+      setHandlers(in, out, this)
+    }
+}
+
+/**
+ * INTERNAL API
+ */
+private[remote] class Deserializer(
+  inboundContext: InboundContext,
+  system:         ExtendedActorSystem,
+  bufferPool:     EnvelopeBufferPool) extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
+
+  val in: Inlet[InboundEnvelope] = Inlet("Artery.Deserializer.in")
+  val out: Outlet[InboundEnvelope] = Outlet("Artery.Deserializer.out")
+  val shape: FlowShape[InboundEnvelope, InboundEnvelope] = FlowShape(in, out)
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+      private val serialization = SerializationExtension(system)
+
+      override protected def logSource = classOf[Deserializer]
+
+      override def onPush(): Unit = {
+        val envelope = grab(in)
+
+        try {
+          val deserializedMessage = MessageSerializer.deserializeForArtery(
+            system, envelope.originUid, serialization, envelope.serializer, envelope.classManifest, envelope.envelopeBuffer)
+
+          push(out, envelope.withMessage(deserializedMessage))
+        } catch {
+          case NonFatal(e) ⇒
+            log.warning(
+              "Failed to deserialize message with serializer id [{}] and manifest [{}]. {}",
+              envelope.serializer, envelope.classManifest, e.getMessage)
+            pull(in)
+        } finally {
+          val buf = envelope.envelopeBuffer
+          envelope.releaseEnvelopeBuffer()
+          bufferPool.release(buf)
+        }
+      }
+
+      override def onPull(): Unit = pull(in)
 
       setHandlers(in, out, this)
     }
