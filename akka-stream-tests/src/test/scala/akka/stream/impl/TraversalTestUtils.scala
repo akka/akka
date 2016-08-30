@@ -4,8 +4,6 @@
 
 package akka.stream.impl
 
-import java.util
-
 import akka.stream.impl.NewLayout._
 import akka.stream.impl.StreamLayout.{ AtomicModule, Module }
 import akka.stream._
@@ -115,7 +113,7 @@ object TraversalTestUtils {
     var inOffs = 0
 
     var current: Traversal = b.traversal.get
-    val traversalStack = new util.ArrayList[Traversal](16)
+    val traversalStack = new java.util.ArrayList[Traversal](16)
     traversalStack.add(current)
 
     // Due to how Concat works, we need a stack. This probably can be optimized for the most common cases.

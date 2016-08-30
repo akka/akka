@@ -103,6 +103,9 @@ private[akka] object NewLayout {
     override def concat(that: Traversal): Traversal = that
   }
 
+  // TODO: Replace with attribute?
+  final case class AsyncBoundary(next: Traversal) extends Traversal
+
   // Below classes are not yet used !!!
   final case class PushMaterializedValue(next: Traversal) extends Traversal
   final case class PopMaterializedValue(next: Traversal) extends Traversal
