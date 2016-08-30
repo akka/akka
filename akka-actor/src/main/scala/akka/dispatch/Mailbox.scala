@@ -17,7 +17,6 @@ import com.typesafe.config.Config
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.concurrent.forkjoin.ForkJoinTask
 import scala.util.control.NonFatal
 
 /**

@@ -16,7 +16,6 @@ import com.typesafe.config.Config
 import scala.annotation.tailrec
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.concurrent.forkjoin.{ ForkJoinPool, ForkJoinTask }
 import scala.util.control.NonFatal
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
