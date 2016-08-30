@@ -4,41 +4,43 @@
 package akka.remote.artery
 
 import java.util.Queue
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
-
-import akka.remote.artery.compress.{ CompressionProtocol, CompressionTable, OutboundCompressions, OutboundCompressionsImpl }
 
 import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
-import scala.util.Success
+
 import akka.{ Done, NotUsed }
 import akka.actor.ActorRef
 import akka.actor.ActorSelectionMessage
 import akka.actor.Address
-import akka.actor.RootActorPath
 import akka.dispatch.sysmsg.SystemMessage
 import akka.event.Logging
 import akka.remote._
+import akka.remote.DaemonMsgCreate
+import akka.remote.QuarantinedEvent
 import akka.remote.artery.AeronSink.GaveUpSendingException
+import akka.remote.artery.Encoder.ChangeOutboundCompression
+import akka.remote.artery.Encoder.ChangeOutboundCompressionFailed
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.remote.artery.OutboundHandshake.HandshakeTimeoutException
 import akka.remote.artery.SendQueue.ProducerApi
 import akka.remote.artery.SystemMessageDelivery.ClearSystemMessageDelivery
+import akka.remote.artery.compress.CompressionProtocol._
+import akka.remote.artery.compress.CompressionTable
 import akka.stream.AbruptTerminationException
 import akka.stream.Materializer
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
 import akka.util.{ Unsafe, WildcardIndex }
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 import akka.util.OptionVal
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 import akka.remote.artery.compress.CompressionProtocol._
 
 /**
@@ -82,9 +84,6 @@ private[remote] class Association(
   // the `SendQueue` after materialization. Using same underlying queue. This makes it possible to
   // start sending (enqueuing) to the Association immediate after construction.
 
-  /** Accesses the currently active outbound compression. */
-  def outboundCompression: OutboundCompressions = associationState.outboundCompressions
-
   def createQueue(capacity: Int): Queue[OutboundEnvelope] =
     new ManyToOneConcurrentArrayQueue[OutboundEnvelope](capacity)
 
@@ -93,6 +92,25 @@ private[remote] class Association(
   @volatile private[this] var controlQueue: SendQueue.ProducerApi[OutboundEnvelope] = QueueWrapper(createQueue(controlQueueSize))
   @volatile private[this] var _outboundControlIngress: OutboundControlIngress = _
   @volatile private[this] var materializing = new CountDownLatch(1)
+  @volatile private[this] var changeOutboundCompression: Option[ChangeOutboundCompression] = None
+
+  def changeActorRefCompression(table: CompressionTable[ActorRef]): Future[Done] =
+    changeOutboundCompression match {
+      case Some(c) ⇒ c.changeActorRefCompression(table)
+      case None    ⇒ Future.failed(new ChangeOutboundCompressionFailed)
+    }
+
+  def changeClassManifestCompression(table: CompressionTable[String]): Future[Done] =
+    changeOutboundCompression match {
+      case Some(c) ⇒ c.changeClassManifestCompression(table)
+      case None    ⇒ Future.failed(new ChangeOutboundCompressionFailed)
+    }
+
+  def clearCompression(): Future[Done] =
+    changeOutboundCompression match {
+      case Some(c) ⇒ c.clearCompression()
+      case None    ⇒ Future.failed(new ChangeOutboundCompressionFailed)
+    }
 
   private val _testStages: CopyOnWriteArrayList[TestManagementApi] = new CopyOnWriteArrayList
 
@@ -138,31 +156,41 @@ private[remote] class Association(
   def associationState: AssociationState =
     Unsafe.instance.getObjectVolatile(this, AbstractAssociation.sharedStateOffset).asInstanceOf[AssociationState]
 
-  def completeHandshake(peer: UniqueAddress): Unit = {
+  def completeHandshake(peer: UniqueAddress): Future[Done] = {
     require(
       remoteAddress == peer.address,
       s"wrong remote address in completeHandshake, got ${peer.address}, expected $remoteAddress")
     val current = associationState
-    current.uniqueRemoteAddressPromise.trySuccess(peer)
+
     current.uniqueRemoteAddressValue() match {
       case Some(`peer`) ⇒
-        // our value
-        if (current.outboundCompressions == NoOutboundCompressions) {
-          // enable outbound compression (here, since earlier we don't know the remote address)
-          swapState(current, current.withCompression(createOutboundCompressions(remoteAddress)))
-        }
+        // handshake already completed
+        Future.successful(Done)
       case _ ⇒
-        val newState = current.newIncarnation(Promise.successful(peer), createOutboundCompressions(remoteAddress))
-        if (swapState(current, newState)) {
+        // clear outbound compression, it's safe to do that several times if someone else
+        // completes handshake at same time, but it's important to clear it before
+        // we signal that the handshake is completed (uniqueRemoteAddressPromise.trySuccess)
+        import transport.system.dispatcher
+        clearCompression().map { _ ⇒
+          current.uniqueRemoteAddressPromise.trySuccess(peer)
           current.uniqueRemoteAddressValue() match {
-            case Some(old) ⇒
-              log.debug(
-                "Incarnation {} of association to [{}] with new UID [{}] (old UID [{}])",
-                newState.incarnation, peer.address, peer.uid, old.uid)
-            case None ⇒
-            // Failed, nothing to do
+            case Some(`peer`) ⇒
+            // our value
+            case _ ⇒
+              val newState = current.newIncarnation(Promise.successful(peer))
+              if (swapState(current, newState)) {
+                current.uniqueRemoteAddressValue() match {
+                  case Some(old) ⇒
+                    log.debug(
+                      "Incarnation {} of association to [{}] with new UID [{}] (old UID [{}])",
+                      newState.incarnation, peer.address, peer.uid, old.uid)
+                  case None ⇒
+                  // Failed, nothing to do
+                }
+                // if swap failed someone else completed before us, and that is fine
+              }
           }
-          // if swap failed someone else completed before us, and that is fine
+          Done
         }
     }
   }
@@ -253,6 +281,8 @@ private[remote] class Association(
                 log.warning(
                   "Association to [{}] with UID [{}] is irrecoverably failed. Quarantining address. {}",
                   remoteAddress, u, reason)
+                // clear outbound compression
+                clearCompression()
                 // FIXME when we complete the switch to Long UID we must use Long here also, issue #20644
                 transport.eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, u.toInt))
                 // end delivery of system messages to that incarnation after this point
@@ -291,20 +321,16 @@ private[remote] class Association(
   }
 
   private def runOutboundStreams(): Unit = {
-    // TODO no compression for control / large streams currently
-    val disableCompression = NoOutboundCompressions
-
     // it's important to materialize the outboundControl stream first,
     // so that outboundControlIngress is ready when stages for all streams start
-    runOutboundControlStream(disableCompression)
-    runOutboundOrdinaryMessagesStream(CurrentAssociationStateOutboundCompressionsProxy)
+    runOutboundControlStream()
+    runOutboundOrdinaryMessagesStream()
 
-    if (transport.largeMessageChannelEnabled) {
-      runOutboundLargeMessagesStream(disableCompression)
-    }
+    if (transport.largeMessageChannelEnabled)
+      runOutboundLargeMessagesStream()
   }
 
-  private def runOutboundControlStream(compression: OutboundCompressions): Unit = {
+  private def runOutboundControlStream(): Unit = {
     // stage in the control stream may access the outboundControlIngress before returned here
     // using CountDownLatch to make sure that materialization is completed before accessing outboundControlIngress
     materializing = new CountDownLatch(1)
@@ -318,14 +344,14 @@ private[remote] class Association(
           Source.fromGraph(new SendQueue[OutboundEnvelope])
             .via(transport.outboundControlPart1(this))
             .viaMat(transport.outboundTestFlow(this))(Keep.both)
-            .toMat(transport.outboundControlPart2(this, compression))(Keep.both)
+            .toMat(transport.outboundControlPart2(this))(Keep.both)
             .run()(materializer)
         _testStages.add(mgmt)
         (queueValue, (control, completed))
       } else {
         Source.fromGraph(new SendQueue[OutboundEnvelope])
           .via(transport.outboundControlPart1(this))
-          .toMat(transport.outboundControlPart2(this, compression))(Keep.both)
+          .toMat(transport.outboundControlPart2(this))(Keep.both)
           .run()(materializer)
       }
 
@@ -335,7 +361,7 @@ private[remote] class Association(
     _outboundControlIngress = control
     materializing.countDown()
     attachStreamRestart("Outbound control stream", completed, cause ⇒ {
-      runOutboundControlStream(compression)
+      runOutboundControlStream()
       cause match {
         case _: HandshakeTimeoutException ⇒ // ok, quarantine not possible without UID
         case _                            ⇒ quarantine("Outbound control stream restarted")
@@ -351,32 +377,33 @@ private[remote] class Association(
         QueueWrapper(createQueue(capacity))
     }
 
-  private def runOutboundOrdinaryMessagesStream(compression: OutboundCompressions): Unit = {
+  private def runOutboundOrdinaryMessagesStream(): Unit = {
     val wrapper = getOrCreateQueueWrapper(queue, queueSize)
     queue = wrapper // use new underlying queue immediately for restarts
 
-    val (queueValue, completed) =
+    val (queueValue, (changeCompression, completed)) =
       if (transport.remoteSettings.TestMode) {
         val ((queueValue, mgmt), completed) = Source.fromGraph(new SendQueue[OutboundEnvelope])
           .viaMat(transport.outboundTestFlow(this))(Keep.both)
-          .toMat(transport.outbound(this, compression))(Keep.both)
+          .toMat(transport.outbound(this))(Keep.both)
           .run()(materializer)
         _testStages.add(mgmt)
         (queueValue, completed)
       } else {
         Source.fromGraph(new SendQueue[OutboundEnvelope])
-          .toMat(transport.outbound(this, compression))(Keep.both)
+          .toMat(transport.outbound(this))(Keep.both)
           .run()(materializer)
       }
 
     queueValue.inject(wrapper.queue)
     // replace with the materialized value, still same underlying queue
     queue = queueValue
+    changeOutboundCompression = Some(changeCompression)
 
-    attachStreamRestart("Outbound message stream", completed, _ ⇒ runOutboundOrdinaryMessagesStream(compression))
+    attachStreamRestart("Outbound message stream", completed, _ ⇒ runOutboundOrdinaryMessagesStream())
   }
 
-  private def runOutboundLargeMessagesStream(compression: OutboundCompressions): Unit = {
+  private def runOutboundLargeMessagesStream(): Unit = {
     val wrapper = getOrCreateQueueWrapper(largeQueue, largeQueueSize)
     largeQueue = wrapper // use new underlying queue immediately for restarts
 
@@ -384,20 +411,20 @@ private[remote] class Association(
       if (transport.remoteSettings.TestMode) {
         val ((queueValue, mgmt), completed) = Source.fromGraph(new SendQueue[OutboundEnvelope])
           .viaMat(transport.outboundTestFlow(this))(Keep.both)
-          .toMat(transport.outboundLarge(this, compression))(Keep.both)
+          .toMat(transport.outboundLarge(this))(Keep.both)
           .run()(materializer)
         _testStages.add(mgmt)
         (queueValue, completed)
       } else {
         Source.fromGraph(new SendQueue[OutboundEnvelope])
-          .toMat(transport.outboundLarge(this, compression))(Keep.both)
+          .toMat(transport.outboundLarge(this))(Keep.both)
           .run()(materializer)
       }
 
     queueValue.inject(wrapper.queue)
     // replace with the materialized value, still same underlying queue
     largeQueue = queueValue
-    attachStreamRestart("Outbound large message stream", completed, _ ⇒ runOutboundLargeMessagesStream(compression))
+    attachStreamRestart("Outbound large message stream", completed, _ ⇒ runOutboundLargeMessagesStream())
   }
 
   private def attachStreamRestart(streamName: String, streamCompleted: Future[Done], restart: Throwable ⇒ Unit): Unit = {
@@ -419,41 +446,6 @@ private[remote] class Association(
           transport.system.terminate()
         }
     }
-  }
-
-  // TODO: Make sure that once other channels use Compression, each gets it's own
-  private def createOutboundCompressions(remoteAddress: Address): OutboundCompressions = {
-    if (transport.provider.remoteSettings.ArteryCompressionSettings.enabled) {
-      val compression = new OutboundCompressionsImpl(transport.system, remoteAddress)
-      log.debug("Creating Outbound compression table to [{}]", remoteAddress)
-      compression
-    } else NoOutboundCompressions
-  }
-
-  /**
-   * This proxy uses the current associationStates compression table, which is reset for a new incarnation.
-   * This way the same outgoing stream will switch to using the new table without the need of restarting it.
-   */
-  private object CurrentAssociationStateOutboundCompressionsProxy extends OutboundCompressions {
-
-    override def actorRefCompressionTableVersion: Int =
-      associationState.outboundCompressions.actorRefCompressionTableVersion
-    override def applyActorRefCompressionTable(table: CompressionTable[ActorRef]): Unit = {
-      associationState.outboundCompressions.applyActorRefCompressionTable(table)
-    }
-    override final def compressActorRef(ref: ActorRef): Int = {
-      associationState.outboundCompressions.compressActorRef(ref)
-    }
-
-    override def classManifestCompressionTableVersion: Int =
-      associationState.outboundCompressions.classManifestCompressionTableVersion
-    override def applyClassManifestCompressionTable(table: CompressionTable[String]): Unit =
-      associationState.outboundCompressions.applyClassManifestCompressionTable(table)
-    override final def compressClassManifest(manifest: String): Int =
-      associationState.outboundCompressions.compressClassManifest(manifest)
-
-    override def toString =
-      s"${Logging.simpleName(getClass)}(current delegate: ${associationState.outboundCompressions})"
   }
 
   override def toString: String =
@@ -489,17 +481,23 @@ private[remote] class AssociationRegistry(createAssociation: Address ⇒ Associa
   @tailrec final def setUID(peer: UniqueAddress): Association = {
     val currentMap = associationsByUid.get
     val a = association(peer.address)
-    // make sure we don't overwrite same UID with different association
+
     currentMap.get(peer.uid) match {
-      case OptionVal.Some(previous) if (previous ne a) ⇒
-        throw new IllegalArgumentException(s"UID collision old [$previous] new [$a]")
-      case _ ⇒ // ok
+      case OptionVal.Some(previous) ⇒
+        if (previous eq a)
+          // associationsByUid Map already contains the right association
+          a
+        else
+          // make sure we don't overwrite same UID with different association
+          throw new IllegalArgumentException(s"UID collision old [$previous] new [$a]")
+      case _ ⇒
+        // update associationsByUid Map with the uid -> assocation
+        val newMap = currentMap.updated(peer.uid, a)
+        if (associationsByUid.compareAndSet(currentMap, newMap))
+          a
+        else
+          setUID(peer) // lost CAS, retry
     }
-    val newMap = currentMap.updated(peer.uid, a)
-    if (associationsByUid.compareAndSet(currentMap, newMap))
-      a
-    else
-      setUID(peer) // lost CAS, retry
   }
 
   def allAssociations: Set[Association] =
