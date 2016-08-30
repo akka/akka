@@ -107,3 +107,35 @@ Java
 	will return a :class:`CircuitBreaker` where callbacks are executed in the caller's thread.
 	This can be useful if the asynchronous :class:`Future` behavior is unnecessary, for
 	example invoking a synchronous-only API.
+
+
+------------
+Tell Pattern
+------------
+
+The above ``Call Protection`` pattern works well when the return from a remote call is wrapped in a ``Future``.
+However, when a remote call sends back a message or timeout to the caller ``Actor``, the ``Call Protection`` pattern
+is awkward. CircuitBreaker doesn't support it natively at the moment, so you need to use below low-level power-user APIs,
+``succeed``  and  ``fail`` methods, as well as ``isClose``, ``isOpen``, ``isHalfOpen``.
+
+.. note::
+
+	The below examples doesn't make a remote call when the state is `HalfOpen`. Using the power-user APIs, it is
+	your responsibility to judge when to make remote calls in `HalfOpen`.
+
+
+^^^^^^^
+Scala
+^^^^^^^
+
+.. includecode:: code/docs/circuitbreaker/CircuitBreakerDocSpec.scala
+   :include: circuit-breaker-tell-pattern
+
+^^^^^^^
+Java
+^^^^^^^
+
+.. includecode:: code/docs/circuitbreaker/TellPatternJavaActor.java
+   :include: circuit-breaker-tell-pattern
+
+

@@ -73,6 +73,22 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
       checkLatch(breaker.halfOpenLatch)
     }
+
+    "still be in open state after calling success method" in {
+      val breaker = CircuitBreakerSpec.longResetTimeoutCb()
+      intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
+      checkLatch(breaker.openLatch)
+      breaker().succeed()
+      checkLatch(breaker.openLatch)
+    }
+
+    "still be in open state after calling fail method" in {
+      val breaker = CircuitBreakerSpec.longResetTimeoutCb()
+      intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
+      checkLatch(breaker.openLatch)
+      breaker().fail()
+      checkLatch(breaker.openLatch)
+    }
   }
 
   "A synchronous circuit breaker that is half-open" must {
@@ -91,6 +107,22 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
       checkLatch(breaker.openLatch)
     }
+
+    "open on calling fail method" in {
+      val breaker = CircuitBreakerSpec.shortResetTimeoutCb()
+      intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
+      checkLatch(breaker.halfOpenLatch)
+      breaker().fail()
+      checkLatch(breaker.openLatch)
+    }
+
+    "close on calling success method" in {
+      val breaker = CircuitBreakerSpec.shortResetTimeoutCb()
+      intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
+      checkLatch(breaker.halfOpenLatch)
+      breaker().succeed()
+      checkLatch(breaker.closedLatch)
+    }
   }
 
   "A synchronous circuit breaker that is closed" must {
@@ -107,6 +139,14 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       breaker().currentFailureCount should ===(1)
     }
 
+    "increment failure count on fail method" in {
+      val breaker = CircuitBreakerSpec.longCallTimeoutCb()
+      breaker().currentFailureCount should ===(0)
+      breaker().fail()
+      checkLatch(breaker.openLatch)
+      breaker().currentFailureCount should ===(1)
+    }
+
     "reset failure count after success" in {
       val breaker = CircuitBreakerSpec.multiFailureCb()
       breaker().currentFailureCount should ===(0)
@@ -116,6 +156,18 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       }
       breaker().currentFailureCount should ===(1)
       breaker().withSyncCircuitBreaker(sayHi)
+      breaker().currentFailureCount should ===(0)
+    }
+
+    "reset failure count after success method" in {
+      val breaker = CircuitBreakerSpec.multiFailureCb()
+      breaker().currentFailureCount should ===(0)
+      intercept[TestException] {
+        val ct = Thread.currentThread() // Ensure that the thunk is executed in the tests thread
+        breaker().withSyncCircuitBreaker({ if (Thread.currentThread() eq ct) throwException else "fail" })
+      }
+      breaker().currentFailureCount should ===(1)
+      breaker().succeed()
       breaker().currentFailureCount should ===(0)
     }
 
