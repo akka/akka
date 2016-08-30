@@ -81,7 +81,7 @@ private[http] object One2OneBidiFlow {
             push(out, element)
             if (pullSuppressed) {
               pullSuppressed = false
-              pull(in)
+              if (!isClosed(in)) pull(in)
             }
           } else throw new UnexpectedOutputException(element)
         }
