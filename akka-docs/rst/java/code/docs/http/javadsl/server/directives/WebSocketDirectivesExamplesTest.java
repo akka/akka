@@ -90,8 +90,6 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
 
     final Flow<Message, Message, NotUsed> echoService = Flow.of(Message.class).buffer(1, OverflowStrategy.backpressure());
 
-    // Tricky part: use mapMaterializedValue mapping to identity to make the parameter conform to Flow<Message, Message, Object>
-    // Will be better if we can simply change the signature of handleWebSocketMessagesForProtocol
     final Route websocketMultipleProtocolRoute = path("services", () ->
       route(
         handleWebSocketMessagesForProtocol(greeterService, "greeter"),
