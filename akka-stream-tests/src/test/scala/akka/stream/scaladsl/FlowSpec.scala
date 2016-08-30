@@ -445,7 +445,6 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
         downstream.expectNext("element2")
         upstreamSubscription.expectRequest(1)
         upstreamSubscription.sendNext("element3")
-        upstreamSubscription.expectRequest(1)
 
         downstream.expectNoMsg(200.millis.dilated)
         downstream2.expectNoMsg(200.millis.dilated)
@@ -453,6 +452,7 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
 
         // should unblock fanoutbox
         downstream2Subscription.cancel()
+        upstreamSubscription.expectRequest(1)
         downstream.expectNext("element3")
         upstreamSubscription.sendNext("element4")
         downstream.expectNext("element4")

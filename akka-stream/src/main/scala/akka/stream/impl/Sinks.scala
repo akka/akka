@@ -5,35 +5,32 @@ package akka.stream.impl
 
 import akka.dispatch.ExecutionContexts
 import akka.stream.ActorAttributes.SupervisionStrategy
-import akka.stream.Supervision.{ stoppingDecider, Stop }
+import akka.stream.Supervision.stoppingDecider
 import akka.stream.impl.QueueSink.{ Output, Pull }
-import akka.stream.impl.fusing.GraphInterpreter
+import akka.stream.impl.ReactiveStreamsCompliance._
+import akka.stream.impl.VirtualProcessor.Inert
 import akka.{ Done, NotUsed }
-import akka.actor.{ ActorRef, Actor, Props }
-import akka.stream.Attributes.InputBuffer
-import akka.stream._
+
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.AtomicModule
-import java.util.concurrent.atomic.AtomicReference
-import java.util.function.BiConsumer
 import akka.actor.{ ActorRef, Props }
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
-import akka.stream.impl.StreamLayout.Module
 import akka.stream.stage._
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Promise, Future }
 import scala.language.postfixOps
 import scala.util.control.NonFatal
+import scala.collection.immutable
+import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
-import akka.stream.scaladsl.{ Source, Sink, SinkQueueWithCancel, SinkQueue }
+import akka.stream.scaladsl.{ Source, Sink, SinkQueueWithCancel }
 import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import java.util.Optional
 import akka.event.Logging
+import scala.language.existentials
 
 /**
  * INTERNAL API
@@ -86,38 +83,14 @@ private[akka] class PublisherSink[In](val attributes: Attributes, shape: SinkSha
    * subscription a VirtualProcessor would perform (and it also saves overhead).
    */
   override def create(context: MaterializationContext): (AnyRef, Publisher[In]) = {
-    val proc = new VirtualPublisher[In]
+    val proc = new VirtualPublisher[In]()
     (proc, proc)
   }
 
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] = new PublisherSink[In](attributes, shape)
-  override def withAttributes(attr: Attributes): AtomicModule = new PublisherSink[In](attr, amendShape(attr))
-}
-
-/**
- * INTERNAL API
- */
-private[akka] final class FanoutPublisherSink[In](
-  val attributes: Attributes,
-  shape:          SinkShape[In])
-  extends SinkModule[In, Publisher[In]](shape) {
-
-  override def create(context: MaterializationContext): (Subscriber[In], Publisher[In]) = {
-    val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
-    val impl = actorMaterializer.actorOf(
-      context,
-      FanoutProcessorImpl.props(actorMaterializer.effectiveSettings(attributes)))
-    val fanoutProcessor = new ActorProcessor[In, In](impl)
-    impl ! ExposedPublisher(fanoutProcessor.asInstanceOf[ActorPublisher[Any]])
-    // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
-    (fanoutProcessor, fanoutProcessor)
-  }
-
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
-    new FanoutPublisherSink[In](attributes, shape)
-
+    new PublisherSink[In](attributes, shape)
   override def withAttributes(attr: Attributes): AtomicModule =
-    new FanoutPublisherSink[In](attr, amendShape(attr))
+    new PublisherSink[In](attr, amendShape(attr))
 }
 
 /**
@@ -548,3 +521,155 @@ final private[stream] class LazySink[T, M](sinkFactory: T ⇒ Future[Sink[T, M]]
     (stageLogic, promise.future)
   }
 }
+
+private[stream] object AdvancedPublisherSink {
+  sealed trait PublisherSinkMessages[+T]
+  private case class RequestMore[T](subscriber: SubscriptionWithCursor[T], demand: Long) extends PublisherSinkMessages[T]
+  private case class Cancel[T](subscriber: SubscriptionWithCursor[T]) extends PublisherSinkMessages[T]
+  private case class Subscribe[T](subscriber: Subscriber[_ >: T]) extends PublisherSinkMessages[T]
+  private case object Shutdown extends PublisherSinkMessages[Nothing]
+  private case class Abort(ex: Throwable) extends PublisherSinkMessages[Nothing]
+
+  sealed trait Directive
+  case object Fanout extends Directive
+  case object FanoutWithDrainIfNoSubscriptions extends Directive
+  case object DrainIfNoSubscriptions extends Directive
+
+  def createPublisherSink[T](): AdvancedPublisherSink[T] = new AdvancedPublisherSink[T](Fanout)
+
+  def createDurablePublisherSink[T](fanout: Boolean): AdvancedPublisherSink[T] =
+    new AdvancedPublisherSink[T](if (fanout) FanoutWithDrainIfNoSubscriptions else DrainIfNoSubscriptions)
+}
+
+/**
+ * INTERNAL API
+ */
+final private[stream] class AdvancedPublisherSink[T](strategy: AdvancedPublisherSink.Directive) extends GraphStageWithMaterializedValue[SinkShape[T], Publisher[T]] {
+  val in = Inlet[T]("AdvancedPublisherSink.in")
+  override def initialAttributes = DefaultAttributes.advancedPublisherSink
+  override val shape: SinkShape[T] = SinkShape.of(in)
+
+  override def toString: String = "AdvancedPublisherSink"
+
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+    import AdvancedPublisherSink._
+    val InputBuffer(initBuffer, maxBuffer) = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16))
+    require(maxBuffer > 0, "Max buffer size must be greater than 0")
+    require(initBuffer > 0, "Init buffer size must be greater than 0")
+
+    val stageLogic = new GraphStageLogic(shape) with CallbackWrapper[PublisherSinkMessages[T]] with SubscriberManagement[T] with InHandler {
+      private var downstreamDemand: Long = 0L
+      private var upstreamCompleted = false
+      private var failedWithError: Throwable = null
+
+      override type S = SubscriptionWithCursor[T]
+
+      override def maxBufferSize: Int = maxBuffer
+      override def initialBufferSize: Int = initBuffer
+
+      setHandler(in, this)
+
+      override def preStart(): Unit = {
+        setKeepGoing(true)
+        initCallback(callback.invoke)
+      }
+
+      override def postStop(): Unit = {
+        stopCallback {
+          case Subscribe(subscriber) ⇒
+            subscriber.onSubscribe(CancelledSubscription)
+            subscriber.onError(if (failedWithError == null) ActorPublisher.NormalShutdownReason else failedWithError)
+          case _ ⇒ //keep silence
+        }
+      }
+
+      private val callback: AsyncCallback[PublisherSinkMessages[T]] =
+        getAsyncCallback {
+          case Subscribe(subscriber) ⇒ strategy match {
+            case DrainIfNoSubscriptions if cursors.nonEmpty ⇒ rejectAdditionalSubscriber(subscriber, "Sink.asPublisher(fanout = false)")
+            case _ ⇒ registerSubscriber(subscriber.asInstanceOf[Subscriber[_ >: T]])
+          }
+          case RequestMore(subscriber, elements) ⇒ moreRequested(subscriber, elements)
+          case Cancel(subscription) ⇒
+            unregisterSubscription(subscription)
+            if (cursors.isEmpty && strategy == Fanout) completeStage()
+          case Shutdown ⇒
+            completeDownstream()
+            completeStage()
+            if (cursors.nonEmpty) {
+              upstreamCompleted = true
+              setKeepGoing(true)
+            }
+          case Abort(ex) ⇒ failStage(ex)
+        }
+
+      override def onPush(): Unit = {
+        if (cursors.isEmpty) {
+          //drain if no subscriptions
+          downstreamDemand = 0
+          grab(in)
+          pull(in)
+        } else {
+          pushToDownstream(grab(in))
+          pullIfNeeded()
+        }
+      }
+
+      private def pullIfNeeded(): Unit = {
+        if (downstreamDemand > 0 && !hasBeenPulled(in)) {
+          downstreamDemand -= 1
+          pull(in)
+        }
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        completeDownstream()
+        if (cursors.isEmpty) completeStage()
+        else {
+          upstreamCompleted = true
+          setKeepGoing(true)
+        }
+      }
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        failedWithError = ex
+        abortDownstream(ex)
+        failStage(ex)
+      }
+
+      override protected def shutdown(): Unit = completeStage()
+
+      override protected def shutdownWhenNoMoreSubscriptions(): Boolean = {
+        strategy match {
+          case FanoutWithDrainIfNoSubscriptions | DrainIfNoSubscriptions if upstreamCompleted ⇒
+            completeStage()
+            true
+          case _ ⇒
+            if (cursors.isEmpty) {
+              downstreamDemand = 0
+              if (!hasBeenPulled(in)) pull(in)
+            }
+            false
+        }
+      }
+
+      override protected def requestFromUpstream(elements: Long): Unit = {
+        downstreamDemand += elements
+        pullIfNeeded()
+      }
+
+      override protected def createSubscription(_subscriber: Subscriber[_ >: T]): S = new SubscriptionWithCursor[T]() {
+        override def cancel(): Unit = invoke(Cancel[T](this))
+        override def request(l: Long): Unit = invoke(RequestMore[T](this, l))
+        override def subscriber: Subscriber[_ >: T] = _subscriber
+      }
+    }
+
+    (stageLogic, new Publisher[T] {
+      override def subscribe(subs: Subscriber[_ >: T]): Unit = {
+        ReactiveStreamsCompliance.requireNonNullSubscriber(subs)
+        stageLogic.invoke(Subscribe(subs))
+      }
+    })
+  }
+}
+

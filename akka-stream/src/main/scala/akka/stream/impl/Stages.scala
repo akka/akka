@@ -122,13 +122,13 @@ object Stages {
     val lastOptionSink = name("lastOptionSink")
     val seqSink = name("seqSink")
     val publisherSink = name("publisherSink")
-    val fanoutPublisherSink = name("fanoutPublisherSink")
     val ignoreSink = name("ignoreSink")
     val actorRefSink = name("actorRefSink")
     val actorRefWithAck = name("actorRefWithAckSink")
     val actorSubscriberSink = name("actorSubscriberSink")
     val queueSink = name("queueSink")
     val lazySink = name("lazySink")
+    val advancedPublisherSink = name("advancedPublisherSink")
     val outputStreamSink = name("outputStreamSink") and IODispatcher
     val inputStreamSink = name("inputStreamSink") and IODispatcher
     val fileSink = name("fileSink") and IODispatcher

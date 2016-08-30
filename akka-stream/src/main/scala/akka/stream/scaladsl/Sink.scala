@@ -15,7 +15,7 @@ import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.stream.stage.{ Context, PushStage, SyncDirective, TerminationDirective }
 import akka.stream.{ javadsl, _ }
-import org.reactivestreams.{ Publisher, Subscriber }
+import org.reactivestreams.{ Subscription, Publisher, Subscriber }
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.Duration.Inf
@@ -183,9 +183,24 @@ object Sink {
    * reject any additional `Subscriber`s.
    */
   def asPublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
-    new Sink(
-      if (fanout) new FanoutPublisherSink[T](DefaultAttributes.fanoutPublisherSink, shape("FanoutPublisherSink"))
-      else new PublisherSink[T](DefaultAttributes.publisherSink, shape("PublisherSink")))
+    if (fanout) Sink.fromGraph(AdvancedPublisherSink.createPublisherSink[T]())
+    else new Sink(new PublisherSink[T](DefaultAttributes.publisherSink, shape("PublisherSink")))
+
+  /**
+   * A `Sink` that materializes into a [[org.reactivestreams.Publisher]] with additional cancel method.
+   * The difference from [[Sink.asPublisher]] is that sink is still doing backpressure without publishers
+   * connected and does not finalize stream when last publisher cancels. It completes state when cancel
+   * is called or complete came from upstream.
+   *
+   * The materialized `Publisher` will support multiple `Subscriber`s and
+   * the size of the `inputBuffer` configured for this stage becomes the maximum number of elements that
+   * the fastest [[org.reactivestreams.Subscriber]] can be ahead of the slowest one before slowing
+   * the processing down due to back pressure.
+   *
+   * @see [[#asPublisher]]
+   */
+  def asLongLivedPublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
+    Sink.fromGraph(AdvancedPublisherSink.createDurablePublisherSink[T](fanout))
 
   /**
    * A `Sink` that will consume the stream and discard the elements.

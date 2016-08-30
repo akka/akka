@@ -59,16 +59,16 @@ private[akka] abstract class FanoutOutputs(
   private def subscribePending(): Unit =
     exposedPublisher.takePendingSubscribers() foreach registerSubscriber
 
-  override protected def shutdown(completed: Boolean): Unit = {
+  override protected def shutdown(): Unit = {
     if (exposedPublisher ne null) {
-      if (completed) exposedPublisher.shutdown(None)
-      else exposedPublisher.shutdown(ActorPublisher.SomeNormalShutdownReason)
+      exposedPublisher.shutdown(ActorPublisher.SomeNormalShutdownReason)
     }
     afterShutdown()
   }
 
-  override protected def cancelUpstream(): Unit = {
+  override protected def shutdownWhenNoMoreSubscriptions(): Boolean = {
     downstreamCompleted = true
+    true
   }
 
   protected def waitingExposedPublisher: Actor.Receive = {

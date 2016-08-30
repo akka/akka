@@ -86,6 +86,22 @@ object Sink {
     new Sink(scaladsl.Sink.asPublisher(fanout == AsPublisher.WITH_FANOUT))
 
   /**
+   * A `Sink` that materializes into a [[org.reactivestreams.Publisher]] with additional cancel method.
+   * The difference from [[Sink.asPublisher]] is that sink is still doing backpressure without publishers
+   * connected and does not finalize stream when last publisher cancels. It completes state when cancel
+   * is called or complete came from upstream.
+   *
+   * The materialized `Publisher` will support multiple `Subscriber`s and
+   * the size of the `inputBuffer` configured for this stage becomes the maximum number of elements that
+   * the fastest [[org.reactivestreams.Subscriber]] can be ahead of the slowest one before slowing
+   * the processing down due to back pressure.
+   *
+   * @see [[#asPublisher]]
+   */
+  def asLongLivedPublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
+    new Sink(scaladsl.Sink.asLongLivedPublisher(fanout))
+
+  /**
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized
    * into a [[java.util.concurrent.CompletionStage]] will be completed with `Success` when reaching the
    * normal end of the stream, or completed with `Failure` if there is a failure is signaled in
@@ -119,7 +135,7 @@ object Sink {
   /**
    * A `Sink` that materializes into a `CompletionStage` of the first value received.
    * If the stream completes before signaling at least a single element, the CompletionStage will be failed with a [[NoSuchElementException]].
-   * If the stream signals an error before signaling at least a single element, the CompletionStage will be failed with the streams exception.
+   * If the stream signals an error errors before signaling at least a single element, the CompletionStage will be failed with the streams exception.
    *
    * See also [[headOption]].
    */
@@ -237,8 +253,8 @@ object Sink {
   }
 
   /**
-   * Creates a `Sink` that is materialized as an [[akka.stream.javadsl.SinkQueue]].
-   * [[akka.stream.javadsl.SinkQueue.pull]] method is pulling element from the stream and returns ``CompletionStage[Option[T]]``.
+   * Creates a `Sink` that is materialized as an [[akka.stream.SinkQueue]].
+   * [[akka.stream.SinkQueue.pull]] method is pulling element from the stream and returns ``CompletionStage[Option[T]]``.
    * `CompletionStage` completes when element is available.
    *
    * Before calling pull method second time you need to wait until previous CompletionStage completes.
@@ -248,12 +264,12 @@ object Sink {
    * upstream and then stop back pressure.  You can configure size of input
    * buffer by using [[Sink.withAttributes]] method.
    *
-   * For stream completion you need to pull all elements from [[akka.stream.javadsl.SinkQueue]] including last None
+   * For stream completion you need to pull all elements from [[akka.stream.SinkQueue]] including last None
    * as completion marker
    *
-   * @see [[akka.stream.javadsl.SinkQueueWithCancel]]
+   * @see [[akka.stream.SinkQueue]]
    */
-  def queue[T](): Sink[T, SinkQueueWithCancel[T]] =
+  def queue[T](): Sink[T, SinkQueue[T]] =
     new Sink(scaladsl.Sink.queue[T]().mapMaterializedValue(new SinkQueueAdapter(_)))
 
   /**
@@ -275,19 +291,17 @@ object Sink {
 /**
  * Java API
  *
- * A `Sink` is a set of stream processing steps that has one open input.
+ * A `Sink` is a set of stream processing steps that has one open input and an attached output.
  * Can be used as a `Subscriber`
  */
 final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[In], Mat] {
 
   override def shape: SinkShape[In] = delegate.shape
-  def module: StreamLayout.Module = delegate.module
+  private[stream] def module: StreamLayout.Module = delegate.module
 
   override def toString: String = delegate.toString
 
-  /**
-   * Converts this Sink to its Scala DSL counterpart.
-   */
+  /** Converts this Sink to its Scala DSL counterpart */
   def asScala: scaladsl.Sink[In, Mat] = delegate
 
   /**
@@ -314,7 +328,7 @@ final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[Sink
     new Sink(delegate.mapMaterializedValue(f.apply _))
 
   /**
-   * Change the attributes of this [[Sink]] to the given ones and seal the list
+   * Change the attributes of this [[Source]] to the given ones and seal the list
    * of attributes. This means that further calls will not be able to remove these
    * attributes, but instead add new ones. Note that this
    * operation has no effect on an empty Flow (because the attributes apply
@@ -324,7 +338,7 @@ final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[Sink
     new Sink(delegate.withAttributes(attr))
 
   /**
-   * Add the given attributes to this Sink. Further calls to `withAttributes`
+   * Add the given attributes to this Source. Further calls to `withAttributes`
    * will not remove these attributes. Note that this
    * operation has no effect on an empty Flow (because the attributes apply
    * only to the contained processing stages).
@@ -333,7 +347,7 @@ final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[Sink
     new Sink(delegate.addAttributes(attr))
 
   /**
-   * Add a ``name`` attribute to this Sink.
+   * Add a ``name`` attribute to this Flow.
    */
   override def named(name: String): javadsl.Sink[In, Mat] =
     new Sink(delegate.named(name))
