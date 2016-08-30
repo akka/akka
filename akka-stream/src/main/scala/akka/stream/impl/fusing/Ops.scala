@@ -1007,7 +1007,8 @@ final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Future[Out])
           // #20217 We dispatch the future if it's ready to optimize away
           // scheduling it to an execution context
           future.value match {
-            case None    ⇒ future.onComplete(holder)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+            case None ⇒ future.onComplete(holder)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+            case Some(Failure(e)) if decider(e) == Supervision.Stop ⇒ failStage(e) // fail fast
             case Some(f) ⇒ holder.apply(f)
           }
 

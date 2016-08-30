@@ -93,6 +93,27 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       latch.countDown()
     }
 
+    "signal future failure asap" in assertAllStagesStopped {
+      val latch = TestLatch(1)
+      val done = Source(1 to 5)
+        .map { n ⇒
+          if (n == 1) n
+          else {
+            // slow upstream should not block the error
+            Await.ready(latch, 10.seconds)
+            n
+          }
+        }
+        .mapAsync(4) { n ⇒
+          if (n == 1) Future.failed(new RuntimeException("err1") with NoStackTrace)
+          else Future.successful(n)
+        }.runWith(Sink.ignore)
+      intercept[RuntimeException] {
+        Await.result(done, remainingOrDefault)
+      }.getMessage should be("err1")
+      latch.countDown()
+    }
+
     "signal error from mapAsyncUnordered" in assertAllStagesStopped {
       val latch = TestLatch(1)
       val c = TestSubscriber.manualProbe[Int]()
