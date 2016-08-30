@@ -39,7 +39,7 @@ class AeronSinkSpec extends AkkaSpec with ImplicitSender {
     r
   }
 
-  val pool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
+  val pool = new EnvelopeBufferPool(1034 * 1024, 128)
 
   val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
   implicit val mat = ActorMaterializer(matSettings)(system)

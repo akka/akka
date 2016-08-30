@@ -42,6 +42,7 @@ import akka.util.{ Unsafe, WildcardIndex }
 import akka.util.OptionVal
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 import akka.remote.artery.compress.CompressionProtocol._
+import akka.stream.scaladsl.MergeHub
 
 /**
  * INTERNAL API
@@ -50,6 +51,10 @@ private[remote] object Association {
   final case class QueueWrapper(queue: Queue[OutboundEnvelope]) extends SendQueue.ProducerApi[OutboundEnvelope] {
     override def offer(message: OutboundEnvelope): Boolean = queue.offer(message)
   }
+
+  final val ControlQueueIndex = 0
+  final val LargeQueueIndex = 1
+  final val OrdinaryQueueIndex = 2
 }
 
 /**
@@ -70,11 +75,6 @@ private[remote] class Association(
   import Association._
 
   private val log = Logging(transport.system, getClass.getName)
-  private val controlQueueSize = transport.settings.Advanced.SysMsgBufferSize
-  // FIXME config queue size, and it should perhaps also be possible to use some kind of LinkedQueue
-  //       such as agrona.ManyToOneConcurrentLinkedQueue or AbstractNodeQueue for less memory consumption
-  private val queueSize = 3072
-  private val largeQueueSize = 256
 
   private val restartCounter = new RestartCounter(transport.settings.Advanced.OutboundMaxRestarts, transport.settings.Advanced.OutboundRestartTimeout)
 
@@ -85,30 +85,57 @@ private[remote] class Association(
   def createQueue(capacity: Int): Queue[OutboundEnvelope] =
     new ManyToOneConcurrentArrayQueue[OutboundEnvelope](capacity)
 
-  @volatile private[this] var queue: SendQueue.ProducerApi[OutboundEnvelope] = QueueWrapper(createQueue(queueSize))
-  @volatile private[this] var largeQueue: SendQueue.ProducerApi[OutboundEnvelope] = QueueWrapper(createQueue(largeQueueSize))
-  @volatile private[this] var controlQueue: SendQueue.ProducerApi[OutboundEnvelope] = QueueWrapper(createQueue(controlQueueSize))
+  private val outboundLanes = transport.settings.Advanced.OutboundLanes
+  private val controlQueueSize = transport.settings.Advanced.SysMsgBufferSize
+  // FIXME config queue size, and it should perhaps also be possible to use some kind of LinkedQueue
+  //       such as agrona.ManyToOneConcurrentLinkedQueue or AbstractNodeQueue for less memory consumption
+  private val queueSize = 3072
+  private val largeQueueSize = 256
+
+  private[this] val queues: Array[SendQueue.ProducerApi[OutboundEnvelope]] = Array.ofDim(2 + outboundLanes)
+  queues(ControlQueueIndex) = QueueWrapper(createQueue(controlQueueSize)) // control stream
+  queues(LargeQueueIndex) = QueueWrapper(createQueue(largeQueueSize)) // large messages stream
+  (0 until outboundLanes).foreach { i ⇒
+    queues(OrdinaryQueueIndex + i) = QueueWrapper(createQueue(queueSize)) // ordinary messages stream
+  }
+  @volatile private[this] var queuesVisibility = false
+
+  private def controlQueue: SendQueue.ProducerApi[OutboundEnvelope] = queues(ControlQueueIndex)
+  private def largeQueue: SendQueue.ProducerApi[OutboundEnvelope] = queues(LargeQueueIndex)
+
   @volatile private[this] var _outboundControlIngress: OutboundControlIngress = _
   @volatile private[this] var materializing = new CountDownLatch(1)
-  @volatile private[this] var changeOutboundCompression: Option[ChangeOutboundCompression] = None
+  @volatile private[this] var changeOutboundCompression: Option[Vector[ChangeOutboundCompression]] = None
 
-  def changeActorRefCompression(table: CompressionTable[ActorRef]): Future[Done] =
+  def changeActorRefCompression(table: CompressionTable[ActorRef]): Future[Done] = {
+    import transport.system.dispatcher
     changeOutboundCompression match {
-      case Some(c) ⇒ c.changeActorRefCompression(table)
-      case None    ⇒ Future.failed(new ChangeOutboundCompressionFailed)
+      case Some(c) ⇒
+        if (c.size == 1) c.head.changeActorRefCompression(table)
+        else Future.sequence(c.map(_.changeActorRefCompression(table))).map(_ ⇒ Done)
+      case None ⇒ Future.failed(new ChangeOutboundCompressionFailed)
     }
+  }
 
-  def changeClassManifestCompression(table: CompressionTable[String]): Future[Done] =
+  def changeClassManifestCompression(table: CompressionTable[String]): Future[Done] = {
+    import transport.system.dispatcher
     changeOutboundCompression match {
-      case Some(c) ⇒ c.changeClassManifestCompression(table)
-      case None    ⇒ Future.failed(new ChangeOutboundCompressionFailed)
+      case Some(c) ⇒
+        if (c.size == 1) c.head.changeClassManifestCompression(table)
+        else Future.sequence(c.map(_.changeClassManifestCompression(table))).map(_ ⇒ Done)
+      case None ⇒ Future.failed(new ChangeOutboundCompressionFailed)
     }
+  }
 
-  def clearCompression(): Future[Done] =
+  def clearCompression(): Future[Done] = {
+    import transport.system.dispatcher
     changeOutboundCompression match {
-      case Some(c) ⇒ c.clearCompression()
-      case None    ⇒ Future.failed(new ChangeOutboundCompressionFailed)
+      case Some(c) ⇒
+        if (c.size == 1) c.head.clearCompression()
+        else Future.sequence(c.map(_.clearCompression())).map(_ ⇒ Done)
+      case None ⇒ Future.failed(new ChangeOutboundCompressionFailed)
     }
+  }
 
   private val _testStages: CopyOnWriteArrayList[TestManagementApi] = new CopyOnWriteArrayList
 
@@ -201,6 +228,9 @@ private[remote] class Association(
     def createOutboundEnvelope(): OutboundEnvelope =
       outboundEnvelopePool.acquire().init(recipient, message.asInstanceOf[AnyRef], sender)
 
+    // volatile read to see latest queue array
+    val unused = queuesVisibility
+
     // allow ActorSelectionMessage to pass through quarantine, to be able to establish interaction with new system
     // FIXME where is that ActorSelectionMessage check in old remoting?
     if (message.isInstanceOf[ActorSelectionMessage] || !associationState.isQuarantined() || message == ClearSystemMessageDelivery) {
@@ -219,9 +249,11 @@ private[remote] class Association(
           val outboundEnvelope1 = createOutboundEnvelope()
           if (!controlQueue.offer(outboundEnvelope1))
             transport.system.deadLetters ! outboundEnvelope1
-          val outboundEnvelope2 = createOutboundEnvelope()
-          if (!queue.offer(outboundEnvelope2))
-            transport.system.deadLetters ! outboundEnvelope2
+          (0 until outboundLanes).foreach { i ⇒
+            val outboundEnvelope2 = createOutboundEnvelope()
+            if (!queues(OrdinaryQueueIndex + i).offer(outboundEnvelope2))
+              transport.system.deadLetters ! outboundEnvelope2
+          }
         case _ ⇒
           val outboundEnvelope = createOutboundEnvelope()
           val queue = selectQueue(recipient)
@@ -233,30 +265,35 @@ private[remote] class Association(
       log.debug("Dropping message to quarantined system {}", remoteAddress)
   }
 
-  @tailrec
   private def selectQueue(recipient: OptionVal[RemoteActorRef]): ProducerApi[OutboundEnvelope] = {
     recipient match {
       case OptionVal.Some(r) ⇒
-        r.cachedMessageDestinationFlag match {
-          case RegularDestination  ⇒ queue
-          case PriorityDestination ⇒ controlQueue
-          case LargeDestination    ⇒ largeQueue
-          case null ⇒
+        val queueIndex = r.cachedSendQueueIndex match {
+          case -1 ⇒
             // only happens when messages are sent to new remote destination
             // and is then cached on the RemoteActorRef
             val elements = r.path.elements
-            if (priorityMessageDestinations.find(elements).isDefined) {
-              log.debug("Using priority message stream for {}", r.path)
-              r.cachedMessageDestinationFlag = PriorityDestination
-            } else if (transport.largeMessageChannelEnabled && largeMessageDestinations.find(elements).isDefined) {
-              log.debug("Using large message stream for {}", r.path)
-              r.cachedMessageDestinationFlag = LargeDestination
-            } else {
-              r.cachedMessageDestinationFlag = RegularDestination
-            }
-            selectQueue(recipient)
+            val idx =
+              if (priorityMessageDestinations.find(elements).isDefined) {
+                log.debug("Using priority message stream for {}", r.path)
+                ControlQueueIndex
+              } else if (transport.largeMessageChannelEnabled && largeMessageDestinations.find(elements).isDefined) {
+                log.debug("Using large message stream for {}", r.path)
+                LargeQueueIndex
+              } else if (outboundLanes == 1) {
+                OrdinaryQueueIndex
+              } else {
+                // select lane based on destination, to preserve message order
+                OrdinaryQueueIndex + (math.abs(r.path.uid) % outboundLanes)
+              }
+            r.cachedSendQueueIndex = idx
+            idx
+          case idx ⇒ idx
         }
-      case OptionVal.None ⇒ queue
+        queues(queueIndex)
+
+      case OptionVal.None ⇒
+        queues(OrdinaryQueueIndex)
     }
   }
 
@@ -333,29 +370,22 @@ private[remote] class Association(
     // using CountDownLatch to make sure that materialization is completed before accessing outboundControlIngress
     materializing = new CountDownLatch(1)
 
-    val wrapper = getOrCreateQueueWrapper(controlQueue, queueSize)
-    controlQueue = wrapper // use new underlying queue immediately for restarts
+    val wrapper = getOrCreateQueueWrapper(ControlQueueIndex, queueSize)
+    queues(ControlQueueIndex) = wrapper // use new underlying queue immediately for restarts
+    queuesVisibility = true // volatile write for visibility of the queues array
 
-    val (queueValue, (control, completed)) =
-      if (transport.settings.Advanced.TestMode) {
-        val ((queueValue, mgmt), (control, completed)) =
-          Source.fromGraph(new SendQueue[OutboundEnvelope])
-            .via(transport.outboundControlPart1(this))
-            .viaMat(transport.outboundTestFlow(this))(Keep.both)
-            .toMat(transport.outboundControlPart2(this))(Keep.both)
-            .run()(materializer)
-        _testStages.add(mgmt)
-        (queueValue, (control, completed))
-      } else {
-        Source.fromGraph(new SendQueue[OutboundEnvelope])
-          .via(transport.outboundControlPart1(this))
-          .toMat(transport.outboundControlPart2(this))(Keep.both)
-          .run()(materializer)
-      }
+    val (queueValue, (testMgmt, control, completed)) =
+      Source.fromGraph(new SendQueue[OutboundEnvelope])
+        .toMat(transport.outboundControl(this))(Keep.both)
+        .run()(materializer)
+
+    if (transport.settings.Advanced.TestMode)
+      _testStages.add(testMgmt)
 
     queueValue.inject(wrapper.queue)
     // replace with the materialized value, still same underlying queue
-    controlQueue = queueValue
+    queues(ControlQueueIndex) = queueValue
+    queuesVisibility = true // volatile write for visibility of the queues array
     _outboundControlIngress = control
     materializing.countDown()
     attachStreamRestart("Outbound control stream", completed, cause ⇒ {
@@ -367,61 +397,103 @@ private[remote] class Association(
     })
   }
 
-  private def getOrCreateQueueWrapper(q: SendQueue.ProducerApi[OutboundEnvelope], capacity: Int): QueueWrapper =
-    q match {
+  private def getOrCreateQueueWrapper(queueIndex: Int, capacity: Int): QueueWrapper = {
+    val unused = queuesVisibility // volatile read to see latest queues array
+    queues(queueIndex) match {
       case existing: QueueWrapper ⇒ existing
       case _ ⇒
         // use new queue for restarts
         QueueWrapper(createQueue(capacity))
     }
+  }
 
   private def runOutboundOrdinaryMessagesStream(): Unit = {
-    val wrapper = getOrCreateQueueWrapper(queue, queueSize)
-    queue = wrapper // use new underlying queue immediately for restarts
+    if (outboundLanes == 1) {
+      val queueIndex = OrdinaryQueueIndex
+      val wrapper = getOrCreateQueueWrapper(queueIndex, queueSize)
+      queues(queueIndex) = wrapper // use new underlying queue immediately for restarts
+      queuesVisibility = true // volatile write for visibility of the queues array
 
-    val (queueValue, (changeCompression, completed)) =
-      if (transport.settings.Advanced.TestMode) {
-        val ((queueValue, mgmt), completed) = Source.fromGraph(new SendQueue[OutboundEnvelope])
+      val ((queueValue, testMgmt), (changeCompression, completed)) =
+        Source.fromGraph(new SendQueue[OutboundEnvelope])
           .viaMat(transport.outboundTestFlow(this))(Keep.both)
           .toMat(transport.outbound(this))(Keep.both)
           .run()(materializer)
-        _testStages.add(mgmt)
-        (queueValue, completed)
-      } else {
-        Source.fromGraph(new SendQueue[OutboundEnvelope])
-          .toMat(transport.outbound(this))(Keep.both)
-          .run()(materializer)
+
+      if (transport.settings.Advanced.TestMode)
+        _testStages.add(testMgmt)
+
+      queueValue.inject(wrapper.queue)
+      // replace with the materialized value, still same underlying queue
+      queues(queueIndex) = queueValue
+      queuesVisibility = true // volatile write for visibility of the queues array
+      changeOutboundCompression = Some(Vector(changeCompression))
+
+      attachStreamRestart("Outbound message stream", completed, _ ⇒ runOutboundOrdinaryMessagesStream())
+
+    } else {
+      val wrappers = (0 until outboundLanes).map { i ⇒
+        val wrapper = getOrCreateQueueWrapper(OrdinaryQueueIndex + i, queueSize)
+        queues(OrdinaryQueueIndex + i) = wrapper // use new underlying queue immediately for restarts
+        queuesVisibility = true // volatile write for visibility of the queues array
+        wrapper
+      }.toVector
+
+      val lane = Source.fromGraph(new SendQueue[OutboundEnvelope])
+        .viaMat(transport.outboundTestFlow(this))(Keep.both)
+        .viaMat(transport.outboundLane(this))(Keep.both)
+        .watchTermination()(Keep.both)
+        .mapMaterializedValue {
+          case (((q, m), c), w) ⇒ ((q, m), (c, w))
+        }
+
+      val (mergeHub, aeronSinkCompleted) = MergeHub.source[EnvelopeBuffer].toMat(transport.aeronSink(this))(Keep.both).run()(materializer)
+
+      val values: Vector[((SendQueue.QueueValue[OutboundEnvelope], TestManagementApi), (Encoder.ChangeOutboundCompression, Future[Done]))] =
+        (0 until outboundLanes).map { _ ⇒
+          lane.to(mergeHub).run()(materializer)
+        }(collection.breakOut)
+
+      val (a, b) = values.unzip
+      val (queueValues, testMgmtValues) = a.unzip
+      val (changeCompressionValues, laneCompletedValues) = b.unzip
+
+      if (transport.settings.Advanced.TestMode)
+        testMgmtValues.foreach(_testStages.add)
+
+      import transport.system.dispatcher
+      val completed = Future.sequence(laneCompletedValues).flatMap(_ ⇒ aeronSinkCompleted)
+
+      queueValues.zip(wrappers).zipWithIndex.foreach {
+        case ((q, w), i) ⇒
+          q.inject(w.queue)
+          queues(OrdinaryQueueIndex + i) = q // replace with the materialized value, still same underlying queue
       }
+      queuesVisibility = true // volatile write for visibility of the queues array
 
-    queueValue.inject(wrapper.queue)
-    // replace with the materialized value, still same underlying queue
-    queue = queueValue
-    changeOutboundCompression = Some(changeCompression)
+      changeOutboundCompression = Some(changeCompressionValues)
 
-    attachStreamRestart("Outbound message stream", completed, _ ⇒ runOutboundOrdinaryMessagesStream())
+      attachStreamRestart("Outbound message stream", completed, _ ⇒ runOutboundOrdinaryMessagesStream())
+    }
   }
 
   private def runOutboundLargeMessagesStream(): Unit = {
-    val wrapper = getOrCreateQueueWrapper(largeQueue, largeQueueSize)
-    largeQueue = wrapper // use new underlying queue immediately for restarts
+    val wrapper = getOrCreateQueueWrapper(LargeQueueIndex, largeQueueSize)
+    queues(LargeQueueIndex) = wrapper // use new underlying queue immediately for restarts
+    queuesVisibility = true // volatile write for visibility of the queues array
 
-    val (queueValue, completed) =
-      if (transport.settings.Advanced.TestMode) {
-        val ((queueValue, mgmt), completed) = Source.fromGraph(new SendQueue[OutboundEnvelope])
-          .viaMat(transport.outboundTestFlow(this))(Keep.both)
-          .toMat(transport.outboundLarge(this))(Keep.both)
-          .run()(materializer)
-        _testStages.add(mgmt)
-        (queueValue, completed)
-      } else {
-        Source.fromGraph(new SendQueue[OutboundEnvelope])
-          .toMat(transport.outboundLarge(this))(Keep.both)
-          .run()(materializer)
-      }
+    val ((queueValue, testMgmt), completed) = Source.fromGraph(new SendQueue[OutboundEnvelope])
+      .viaMat(transport.outboundTestFlow(this))(Keep.both)
+      .toMat(transport.outboundLarge(this))(Keep.both)
+      .run()(materializer)
+
+    if (transport.settings.Advanced.TestMode)
+      _testStages.add(testMgmt)
 
     queueValue.inject(wrapper.queue)
     // replace with the materialized value, still same underlying queue
-    largeQueue = queueValue
+    queues(LargeQueueIndex) = queueValue
+    queuesVisibility = true // volatile write for visibility of the queues array
     attachStreamRestart("Outbound large message stream", completed, _ ⇒ runOutboundLargeMessagesStream())
   }
 

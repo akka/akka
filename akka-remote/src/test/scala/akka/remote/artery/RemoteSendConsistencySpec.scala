@@ -12,6 +12,8 @@ import akka.remote.RARP
 import akka.testkit.TestActors
 import akka.actor.PoisonPill
 import akka.testkit.TestProbe
+import akka.actor.ActorRef
+import com.typesafe.config.Config
 
 object RemoteSendConsistencySpec {
 
@@ -26,7 +28,15 @@ object RemoteSendConsistencySpec {
 
 }
 
-class RemoteSendConsistencySpec extends AkkaSpec(RemoteSendConsistencySpec.config) with ImplicitSender {
+class RemoteSendConsistencySpec extends AbstractRemoteSendConsistencySpec(RemoteSendConsistencySpec.config)
+
+class RemoteSendConsistencyWithThreeLanesSpec extends AbstractRemoteSendConsistencySpec(
+  ConfigFactory.parseString("""
+      akka.remote.artery.advanced.outbound-lanes = 3
+      akka.remote.artery.advanced.inbound-lanes = 3
+    """).withFallback(RemoteSendConsistencySpec.config))
+
+abstract class AbstractRemoteSendConsistencySpec(config: Config) extends AkkaSpec(config) with ImplicitSender {
 
   val systemB = ActorSystem("systemB", system.settings.config)
   val addressB = RARP(systemB).provider.getDefaultAddress
@@ -78,18 +88,24 @@ class RemoteSendConsistencySpec extends AkkaSpec(RemoteSendConsistencySpec.confi
     }
 
     "be able to send messages concurrently preserving order" in {
-      val actorOnSystemB = systemB.actorOf(Props(new Actor {
-        def receive = {
-          case i: Int ⇒ sender() ! i
-        }
-      }), "echo2")
+      systemB.actorOf(TestActors.echoActorProps, "echoA")
+      systemB.actorOf(TestActors.echoActorProps, "echoB")
+      systemB.actorOf(TestActors.echoActorProps, "echoC")
 
-      val remoteRef = {
-        system.actorSelection(rootB / "user" / "echo2") ! Identify(None)
+      val remoteRefA = {
+        system.actorSelection(rootB / "user" / "echoA") ! Identify(None)
+        expectMsgType[ActorIdentity].ref.get
+      }
+      val remoteRefB = {
+        system.actorSelection(rootB / "user" / "echoB") ! Identify(None)
+        expectMsgType[ActorIdentity].ref.get
+      }
+      val remoteRefC = {
+        system.actorSelection(rootB / "user" / "echoC") ! Identify(None)
         expectMsgType[ActorIdentity].ref.get
       }
 
-      val senderProps = Props(new Actor {
+      def senderProps(remoteRef: ActorRef) = Props(new Actor {
         var counter = 1000
         remoteRef ! counter
 
@@ -106,10 +122,10 @@ class RemoteSendConsistencySpec extends AkkaSpec(RemoteSendConsistencySpec.confi
         }
       }).withDeploy(Deploy.local)
 
-      system.actorOf(senderProps)
-      system.actorOf(senderProps)
-      system.actorOf(senderProps)
-      system.actorOf(senderProps)
+      system.actorOf(senderProps(remoteRefA))
+      system.actorOf(senderProps(remoteRefB))
+      system.actorOf(senderProps(remoteRefC))
+      system.actorOf(senderProps(remoteRefA))
 
       within(10.seconds) {
         expectMsg("success")

@@ -457,14 +457,6 @@ private[akka] trait RemoteRef extends ActorRefScope {
 
 /**
  * INTERNAL API
- */
-private[remote] sealed abstract class MessageDestinationFlag
-private[remote] case object RegularDestination extends MessageDestinationFlag
-private[remote] case object LargeDestination extends MessageDestinationFlag
-private[remote] case object PriorityDestination extends MessageDestinationFlag
-
-/**
- * INTERNAL API
  * Remote ActorRef that is used when referencing the Actor on a different node than its "home" node.
  * This reference is network-aware (remembers its origin) and immutable.
  */
@@ -488,7 +480,7 @@ private[akka] class RemoteActorRef private[akka] (
   @volatile private[remote] var cachedAssociation: artery.Association = null
 
   // used by artery to direct messages to separate specialized streams
-  @volatile private[remote] var cachedMessageDestinationFlag: MessageDestinationFlag = null
+  @volatile private[remote] var cachedSendQueueIndex: Int = -1
 
   def getChild(name: Iterator[String]): InternalActorRef = {
     val s = name.toStream
