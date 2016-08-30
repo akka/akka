@@ -48,10 +48,12 @@ class FlowMapAsyncSpec extends StreamSpec {
     "produce future elements in order" in {
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 50).mapAsync(4)(n ⇒ Future {
-        Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
-        n
-      }).to(Sink.fromSubscriber(c)).run()
+      val p = Source(1 to 50).mapAsync(4)(n ⇒
+        if (n % 3 == 0) Future.successful(n)
+        else Future {
+          Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
+          n
+        }).to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
       sub.request(1000)
       for (n ← 1 to 50) c.expectNext(n)
@@ -110,7 +112,7 @@ class FlowMapAsyncSpec extends StreamSpec {
             n
           }
         }
-        .mapAsyncUnordered(4) { n ⇒
+        .mapAsync(4) { n ⇒
           if (n == 1) Future.failed(new RuntimeException("err1") with NoStackTrace)
           else Future.successful(n)
         }.runWith(Sink.ignore)
