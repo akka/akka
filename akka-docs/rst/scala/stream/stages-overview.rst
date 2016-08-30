@@ -1256,8 +1256,11 @@ If materialized values needs to be collected ``prependMat`` is available.
 
 orElse
 ^^^^^^
-If the first source completes without emitting any elements, the elements from the second source
-are emitted. If the first source emits any elements the second source is cancelled.
+If the primary source completes without emitting any elements, the elements from the secondary source
+are emitted. If the primary source emits any elements the secondary source is cancelled.
+
+Note that both sources are materialized directly and the secondary source is backpressured until it becomes
+the source of elements or is cancelled.
 
 Signal errors downstream, regardless which of the two sources emitted the error.
 
@@ -1266,7 +1269,8 @@ is available from the second stream
 
 **backpressures** when downstream backpressures
 
-**completes** when the first stream completes after emitting at least one element or else when the second stream completes
+**completes** the primary stream completes after emitting at least one element, when the primary stream completes
+without emitting and the secondary stream already has completed or when the secondary stream completes
 
 interleave
 ^^^^^^^^^^
