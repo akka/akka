@@ -3,9 +3,10 @@
  */
 package akka.stream.io
 
-import java.nio.file.Files
+import java.nio.file.{ FileSystems, Files }
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.Random
+
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
@@ -22,6 +23,8 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestDuration
 import akka.util.ByteString
 import akka.util.Timeout
+import com.google.common.jimfs.{ Configuration, Jimfs }
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -34,6 +37,8 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)
 
+  val fs = Jimfs.newFileSystem("FileSourceSpec", Configuration.unix())
+
   val TestText = {
     ("a" * 1000) +
       ("b" * 1000) +
@@ -44,14 +49,14 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
   }
 
   val testFile = {
-    val f = Files.createTempFile("file-source-spec", ".tmp")
+    val f = Files.createTempFile(fs.getPath("/"), "file-source-spec", ".tmp")
     Files.newBufferedWriter(f, UTF_8).append(TestText).close()
     f
   }
 
   val notExistingFile = {
     // this way we make sure it doesn't accidentally exist
-    val f = Files.createTempFile("not-existing-file", ".tmp")
+    val f = Files.createTempFile(fs.getPath("/"), "not-existing-file", ".tmp")
     Files.delete(f)
     f
   }
@@ -59,7 +64,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
   val LinesCount = 2000 + new Random().nextInt(300)
 
   val manyLines = {
-    val f = Files.createTempFile(s"file-source-spec-lines_$LinesCount", "tmp")
+    val f = Files.createTempFile(fs.getPath("/"), s"file-source-spec-lines_$LinesCount", "tmp")
     val w = Files.newBufferedWriter(f, UTF_8)
     (1 to LinesCount).foreach { l ⇒
       w.append("a" * l).append("\n")
@@ -206,8 +211,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
   }
 
   override def afterTermination(): Unit = {
-    Files.delete(testFile)
-    Files.delete(manyLines)
+    fs.close()
   }
 
 }

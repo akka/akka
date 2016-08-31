@@ -72,7 +72,7 @@ public class MiscDirectivesTest extends JUnitRouteTest {
 
     route
       .run(HttpRequest.create())
-      .assertStatusCode(StatusCodes.NOT_FOUND);
+      .assertStatusCode(StatusCodes.OK);
   }
 
   @Test

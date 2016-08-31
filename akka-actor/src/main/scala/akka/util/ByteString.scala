@@ -163,8 +163,8 @@ object ByteString {
       else toByteString1.drop(n)
 
     override def slice(from: Int, until: Int): ByteString =
-      if ((from == 0) && (until == length)) this
-      else if (from > length) ByteString.empty
+      if (from <= 0 && until >= length) this
+      else if (from >= length || until <= 0 || from >= until) ByteString.empty
       else toByteString1.slice(from, until)
 
     private[akka] override def writeToOutputStream(os: ObjectOutputStream): Unit =
@@ -252,11 +252,8 @@ object ByteString {
       if (n <= 0) ByteString.empty
       else ByteString1(bytes, startIndex, Math.min(n, length))
 
-    override def slice(from: Int, until: Int): ByteString = {
-      if (from <= 0 && until >= length) this // we can do < / > since we're Compact
-      else if (until <= from) ByteString1.empty
-      else ByteString1(bytes, startIndex + from, until - from)
-    }
+    override def slice(from: Int, until: Int): ByteString =
+      drop(from).take(until - Math.max(0, from))
 
     override def copyToBuffer(buffer: ByteBuffer): Int =
       writeToBuffer(buffer)
@@ -466,7 +463,7 @@ object ByteString {
       }
 
     override def slice(from: Int, until: Int): ByteString =
-      if ((from == 0) && (until == length)) this
+      if (from <= 0 && until >= length) this
       else if (from > length || until <= from) ByteString.empty
       else drop(from).dropRight(length - until)
 

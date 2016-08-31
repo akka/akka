@@ -24,7 +24,7 @@ private[akka] class ActorRefBackpressureSinkStage[In](ref: ActorRef, onInitMessa
   override val shape: SinkShape[In] = SinkShape(in)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) {
+    new GraphStageLogic(shape) with InHandler {
       implicit def self: ActorRef = stageActor.ref
 
       val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
@@ -67,24 +67,26 @@ private[akka] class ActorRefBackpressureSinkStage[In](ref: ActorRef, onInitMessa
         completeStage()
       }
 
-      setHandler(in, new InHandler {
-        override def onPush(): Unit = {
-          buffer offer grab(in)
-          if (acknowledgementReceived) {
-            dequeueAndSend()
-            acknowledgementReceived = false
-          }
-          if (buffer.size() < maxBuffer) pull(in)
+      def onPush(): Unit = {
+        buffer offer grab(in)
+        if (acknowledgementReceived) {
+          dequeueAndSend()
+          acknowledgementReceived = false
         }
-        override def onUpstreamFinish(): Unit = {
-          if (buffer.isEmpty) finish()
-          else completeReceived = true
-        }
-        override def onUpstreamFailure(ex: Throwable): Unit = {
-          ref ! onFailureMessage(ex)
-          failStage(ex)
-        }
-      })
+        if (buffer.size() < maxBuffer) pull(in)
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        if (buffer.isEmpty) finish()
+        else completeReceived = true
+      }
+
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        ref ! onFailureMessage(ex)
+        failStage(ex)
+      }
+
+      setHandler(in, this)
     }
 
   override def toString = "ActorRefBackpressureSink"
