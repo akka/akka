@@ -59,14 +59,12 @@ object GraphStages {
   object Identity extends SimpleLinearGraphStage[Any] {
     override def initialAttributes = DefaultAttributes.identityOp
 
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-      setHandler(in, new InHandler {
-        override def onPush(): Unit = push(out, grab(in))
-      })
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+      def onPush(): Unit = push(out, grab(in))
+      def onPull(): Unit = pull(in)
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = pull(in)
-      })
+      setHandler(in, this)
+      setHandler(out, this)
     }
 
     override def toString = "Identity"
@@ -83,29 +81,28 @@ object GraphStages {
     override def initialAttributes = DefaultAttributes.detacher
     override val shape = FlowShape(in, out)
 
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
 
-      setHandler(in, new InHandler {
-        override def onPush(): Unit = {
-          if (isAvailable(out)) {
-            push(out, grab(in))
-            tryPull(in)
-          }
+      def onPush(): Unit = {
+        if (isAvailable(out)) {
+          push(out, grab(in))
+          tryPull(in)
         }
-        override def onUpstreamFinish(): Unit = {
-          if (!isAvailable(in)) completeStage()
-        }
-      })
+      }
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
-          if (isAvailable(in)) {
-            push(out, grab(in))
-            if (isClosed(in)) completeStage()
-            else pull(in)
-          }
+      override def onUpstreamFinish(): Unit = {
+        if (!isAvailable(in)) completeStage()
+      }
+
+      def onPull(): Unit = {
+        if (isAvailable(in)) {
+          push(out, grab(in))
+          if (isClosed(in)) completeStage()
+          else pull(in)
         }
-      })
+      }
+
+      setHandlers(in, out, this)
 
       override def preStart(): Unit = tryPull(in)
     }
@@ -125,27 +122,27 @@ object GraphStages {
     override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
       val finishPromise = Promise[Done]()
 
-      (new GraphStageLogic(shape) {
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = push(out, grab(in))
+      (new GraphStageLogic(shape) with InHandler with OutHandler {
+        def onPush(): Unit = push(out, grab(in))
 
-          override def onUpstreamFinish(): Unit = {
-            finishPromise.success(Done)
-            completeStage()
-          }
+        override def onUpstreamFinish(): Unit = {
+          finishPromise.success(Done)
+          completeStage()
+        }
 
-          override def onUpstreamFailure(ex: Throwable): Unit = {
-            finishPromise.failure(ex)
-            failStage(ex)
-          }
-        })
-        setHandler(out, new OutHandler {
-          override def onPull(): Unit = pull(in)
-          override def onDownstreamFinish(): Unit = {
-            finishPromise.success(Done)
-            completeStage()
-          }
-        })
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          finishPromise.failure(ex)
+          failStage(ex)
+        }
+
+        def onPull(): Unit = pull(in)
+
+        override def onDownstreamFinish(): Unit = {
+          finishPromise.success(Done)
+          completeStage()
+        }
+
+        setHandlers(in, out, this)
       }, finishPromise.future)
     }
 
@@ -170,29 +167,33 @@ object GraphStages {
     override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, FlowMonitor[T]) = {
       val monitor: FlowMonitorImpl[T] = new FlowMonitorImpl[T]
 
-      val logic: GraphStageLogic = new GraphStageLogic(shape) {
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = {
-            val msg = grab(in)
-            push(out, msg)
-            monitor.set(if (msg.isInstanceOf[StreamState[_]]) Received(msg) else msg)
-          }
-          override def onUpstreamFinish(): Unit = {
-            super.onUpstreamFinish()
-            monitor.set(Finished)
-          }
-          override def onUpstreamFailure(ex: Throwable): Unit = {
-            super.onUpstreamFailure(ex)
-            monitor.set(Failed(ex))
-          }
-        })
-        setHandler(out, new OutHandler {
-          override def onPull(): Unit = pull(in)
-          override def onDownstreamFinish(): Unit = {
-            super.onDownstreamFinish()
-            monitor.set(Finished)
-          }
-        })
+      val logic: GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+
+        def onPush(): Unit = {
+          val msg = grab(in)
+          push(out, msg)
+          monitor.set(if (msg.isInstanceOf[StreamState[_]]) Received(msg) else msg)
+        }
+
+        override def onUpstreamFinish(): Unit = {
+          super.onUpstreamFinish()
+          monitor.set(Finished)
+        }
+
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          super.onUpstreamFailure(ex)
+          monitor.set(Failed(ex))
+        }
+
+        def onPull(): Unit = pull(in)
+
+        override def onDownstreamFinish(): Unit = {
+          super.onDownstreamFinish()
+          monitor.set(Finished)
+        }
+
+        setHandler(in, this)
+        setHandler(out, this)
 
         override def toString = "MonitorFlowLogic"
       }
@@ -293,14 +294,15 @@ object GraphStages {
     ReactiveStreamsCompliance.requireNonNullElement(elem)
     val out = Outlet[T]("single.out")
     val shape = SourceShape(out)
-    override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
+    def createLogic(attr: Attributes) =
+      new GraphStageLogic(shape) with OutHandler {
+        def onPull(): Unit = {
           push(out, elem)
           completeStage()
         }
-      })
-    }
+        setHandler(out, this)
+      }
+
     override def toString: String = s"SingleSource($elem)"
   }
 
@@ -309,9 +311,9 @@ object GraphStages {
     val shape = SourceShape(Outlet[T]("future.out"))
     val out = shape.out
     override def initialAttributes: Attributes = DefaultAttributes.futureSource
-    override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
+    override def createLogic(attr: Attributes) =
+      new GraphStageLogic(shape) with OutHandler {
+        def onPull(): Unit = {
           val cb = getAsyncCallback[Try[T]] {
             case scala.util.Success(v) ⇒ emit(out, v, () ⇒ completeStage())
             case scala.util.Failure(t) ⇒ failStage(t)
@@ -319,8 +321,10 @@ object GraphStages {
           future.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext)
           setHandler(out, eagerTerminateOutput) // After first pull we won't produce anything more
         }
-      })
-    }
+
+        setHandler(out, this)
+      }
+
     override def toString: String = "FutureSource"
   }
 

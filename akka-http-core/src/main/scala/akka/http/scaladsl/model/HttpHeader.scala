@@ -92,7 +92,7 @@ object HttpHeader {
       case h if clazz.isInstance(h) ⇒ return OptionVal.Some[T](h.asInstanceOf[T])
       case _                        ⇒ // continue ...
     }
-    OptionVal.None.asInstanceOf[OptionVal[T]]
+    OptionVal.None
   }
 
   sealed trait ParsingResult {

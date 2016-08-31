@@ -1,7 +1,7 @@
 package akka.persistence
 
 import akka.actor.Status.Failure
-import akka.actor.{ Actor, ActorRef, Props }
+import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
 import akka.persistence.journal.SteppingInmemJournal
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import com.typesafe.config.ConfigFactory
@@ -32,7 +32,7 @@ object PersistentActorRecoveryTimeoutSpec {
     }
   }
 
-  class TestReceiveTimeoutActor(receiveTimeout: FiniteDuration, probe: ActorRef) extends NamedPersistentActor("recovery-timeout-actor-2") {
+  class TestReceiveTimeoutActor(receiveTimeout: FiniteDuration, probe: ActorRef) extends NamedPersistentActor("recovery-timeout-actor-2") with ActorLogging {
 
     override def preStart(): Unit = {
       context.setReceiveTimeout(receiveTimeout)
@@ -50,6 +50,7 @@ object PersistentActorRecoveryTimeoutSpec {
     }
 
     override protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Unit = {
+      log.error(cause, "Recovery of TestReceiveTimeoutActor failed")
       probe ! Failure(cause)
     }
   }

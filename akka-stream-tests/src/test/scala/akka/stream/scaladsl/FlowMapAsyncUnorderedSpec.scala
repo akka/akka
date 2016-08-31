@@ -55,10 +55,15 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       val probe = TestProbe()
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 20).mapAsyncUnordered(4)(n ⇒ Future {
-        probe.ref ! n
-        n
-      }).to(Sink.fromSubscriber(c)).run()
+      val p = Source(1 to 20).mapAsyncUnordered(4)(n ⇒
+        if (n % 3 == 0) {
+          probe.ref ! n
+          Future.successful(n)
+        } else
+          Future {
+            probe.ref ! n
+            n
+          }).to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
       c.expectNoMsg(200.millis)
       probe.expectNoMsg(Duration.Zero)
@@ -90,6 +95,27 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError.getMessage should be("err1")
+      latch.countDown()
+    }
+
+    "signal future failure asap" in assertAllStagesStopped {
+      val latch = TestLatch(1)
+      val done = Source(1 to 5)
+        .map { n ⇒
+          if (n == 1) n
+          else {
+            // slow upstream should not block the error
+            Await.ready(latch, 10.seconds)
+            n
+          }
+        }
+        .mapAsyncUnordered(4) { n ⇒
+          if (n == 1) Future.failed(new RuntimeException("err1") with NoStackTrace)
+          else Future.successful(n)
+        }.runWith(Sink.ignore)
+      intercept[RuntimeException] {
+        Await.result(done, remainingOrDefault)
+      }.getMessage should be("err1")
       latch.countDown()
     }
 

@@ -126,6 +126,7 @@ object ActorGraphInterpreter {
       nextInputElementCursor = (nextInputElementCursor + 1) & IndexMask
       elem
     }
+
     private def clear(): Unit = {
       java.util.Arrays.fill(inputBuffer, 0, inputBuffer.length, null)
       inputBufferElements = 0
