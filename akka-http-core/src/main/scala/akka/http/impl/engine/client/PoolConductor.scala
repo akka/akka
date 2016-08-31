@@ -61,7 +61,7 @@ private object PoolConductor {
                     |             +----+----+
                     |                  | RawSlotEvent
                     | Request-         |
-                    | Context     +---------+
+                    | Context     +---------+ // TODO retry merge to be replaced with Retry stage
                     +-------------+  retry  |<-------- RawSlotEvent (from slotEventMerge)
                                   |  Split  |
                                   +---------+

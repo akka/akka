@@ -624,6 +624,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
     clientFlow[T](hcps.setup.settings)(_ → gateway)
       .mapMaterializedValue(_ ⇒ HostConnectionPool(hcps)(gateway))
+      .named(s"gatewayClientFlow-${hcps.host}-${hcps.port}")
 
   private def clientFlow[T](settings: ConnectionPoolSettings)(f: HttpRequest ⇒ (HttpRequest, PoolGateway))(
     implicit

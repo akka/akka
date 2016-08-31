@@ -72,7 +72,7 @@ private object PoolFlow {
     connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
     settings:       ConnectionPoolSettings, log: LoggingAdapter)(
     implicit
-    system: ActorSystem, fm: Materializer): Flow[RequestContext, ResponseContext, NotUsed] =
+    system: ActorSystem, mat: Materializer): Flow[RequestContext, ResponseContext, NotUsed] =
     Flow.fromGraph(GraphDSL.create[FlowShape[RequestContext, ResponseContext]]() { implicit b ⇒
       import settings._
       import GraphDSL.Implicits._
@@ -82,7 +82,7 @@ private object PoolFlow {
       )
 
       val slots = Vector
-        .tabulate(maxConnections)(PoolSlot(_, connectionFlow))
+        .tabulate(maxConnections)(PoolSlot(_, connectionFlow)(mat))
         .map(b.add)
 
       val responseMerge = b.add(Merge[ResponseContext](maxConnections))
