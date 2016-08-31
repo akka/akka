@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit.NANOSECONDS
 import scala.concurrent.duration._
 import akka.actor._
 import akka.remote.RemoteActorRefProvider
-import akka.remote.artery.compress.CompressionSettings
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -117,7 +116,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
 
     val compressionEnabled =
       RARP(context.system).provider.transport.isInstanceOf[ArteryTransport] &&
-        RARP(context.system).provider.remoteSettings.ArteryCompressionSettings.enabled
+        RARP(context.system).provider.remoteSettings.Artery.Enabled
 
     def receive = {
       case Run ⇒
@@ -174,7 +173,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
             f"throughput ${throughput * testSettings.senderReceiverPairs}%,.0f msg/s, " +
             f"${throughput * payloadSize * testSettings.senderReceiverPairs}%,.0f bytes/s (payload), " +
             f"${throughput * totalSize(context.system) * testSettings.senderReceiverPairs}%,.0f bytes/s (total" +
-            (if (CompressionSettings(context.system).enabled) ",compression" else "") + "), " +
+            (if (RARP(context.system).provider.remoteSettings.Artery.Advanced.Compression.Enabled) ",compression" else "") + "), " +
             s"dropped ${totalMessages - totalReceived}, " +
             s"max round-trip $maxRoundTripMillis ms, " +
             s"burst size $burstSize, " +
@@ -217,7 +216,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
     payloadSize:         Int,
     senderReceiverPairs: Int) {
     // data based on measurement
-    def totalSize(system: ActorSystem) = payloadSize + (if (CompressionSettings(system).enabled) 38 else 110)
+    def totalSize(system: ActorSystem) = payloadSize + (if (RARP(system).provider.remoteSettings.Artery.Advanced.Compression.Enabled) 38 else 110)
   }
 
   class TestSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with ByteBufferSerializer {

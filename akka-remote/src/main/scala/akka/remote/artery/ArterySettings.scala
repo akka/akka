@@ -44,9 +44,12 @@ private[akka] final class ArterySettings private (config: Config) {
     val DeleteAeronDirectory = getBoolean("delete-aeron-dir")
     val IdleCpuLevel: Int = getInt("idle-cpu-level").requiring(level ⇒
       1 <= level && level <= 10, "idle-cpu-level must be between 1 and 10")
-    val SystemMessageResendInterval = config.getMillisDuration("system-message-resend-interval")
-    val HandshakeRetryInterval = config.getMillisDuration("handshake-retry-interval")
-    val InjectHandshakeInterval = config.getMillisDuration("inject-handshake-interval")
+    val SystemMessageResendInterval = config.getMillisDuration("system-message-resend-interval").requiring(interval ⇒
+      interval > 0.seconds, "system-message-resend-interval must be more than zero")
+    val HandshakeRetryInterval = config.getMillisDuration("handshake-retry-interval").requiring(interval ⇒
+      interval > 0.seconds, "handshake-retry-interval must be more than zero")
+    val InjectHandshakeInterval = config.getMillisDuration("inject-handshake-interval").requiring(interval ⇒
+      interval > 0.seconds, "inject-handshake-interval must be more than zero")
     val GiveUpSendAfter = config.getMillisDuration("give-up-send-after")
     val ShutdownFlushTimeout = config.getMillisDuration("shutdown-flush-timeout")
     val InboundRestartTimeout = config.getMillisDuration("inbound-restart-timeout")
@@ -69,8 +72,9 @@ private[akka] object ArterySettings {
   private[akka] final class Compression private[ArterySettings] (config: Config) {
     import config._
 
-    val Enabled = getBoolean("enabled")
-    val Debug = getBoolean("debug")
+    // Compile time constants
+    final val Enabled = true
+    final val Debug = false // unlocks additional very verbose debug logging of compression events (on DEBUG log level)
 
     object ActorRefs {
       val config = getConfig("actor-refs")

@@ -123,8 +123,8 @@ trait Conductor { this: TestConductorExt ⇒
     throttle(node, target, direction, 0f)
 
   private def requireTestConductorTranport(): Unit = {
-    if (transport.provider.remoteSettings.EnableArtery) {
-      if (!transport.provider.remoteSettings.TestMode)
+    if (transport.provider.remoteSettings.Artery.Enabled) {
+      if (!transport.provider.remoteSettings.Artery.Advanced.TestMode)
         throw new ConfigurationException("To use this feature you must activate the test mode " +
           "by specifying `testTransport(on = true)` in your MultiNodeConfig.")
     } else {

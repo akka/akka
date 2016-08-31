@@ -38,15 +38,14 @@ private[remote] trait InboundCompressions {
  */
 private[remote] final class InboundCompressionsImpl(
   system:         ActorSystem,
-  inboundContext: InboundContext) extends InboundCompressions {
-
-  private val settings = CompressionSettings(system)
+  inboundContext: InboundContext,
+  settings:       ArterySettings.Compression) extends InboundCompressions {
 
   // FIXME we also must remove the ones that won't be used anymore - when quarantine triggers
   private[this] val _actorRefsIns = new Long2ObjectHashMap[InboundActorRefCompression]()
   private val createInboundActorRefsForOrigin = new LongFunction[InboundActorRefCompression] {
     override def apply(originUid: Long): InboundActorRefCompression = {
-      val actorRefHitters = new TopHeavyHitters[ActorRef](settings.actorRefs.max)
+      val actorRefHitters = new TopHeavyHitters[ActorRef](settings.ActorRefs.Max)
       new InboundActorRefCompression(system, settings, originUid, inboundContext, actorRefHitters)
     }
   }
@@ -56,7 +55,7 @@ private[remote] final class InboundCompressionsImpl(
   private[this] val _classManifestsIns = new Long2ObjectHashMap[InboundManifestCompression]()
   private val createInboundManifestsForOrigin = new LongFunction[InboundManifestCompression] {
     override def apply(originUid: Long): InboundManifestCompression = {
-      val manifestHitters = new TopHeavyHitters[String](settings.manifests.max)
+      val manifestHitters = new TopHeavyHitters[String](settings.Manifests.Max)
       new InboundManifestCompression(system, settings, originUid, inboundContext, manifestHitters)
     }
   }
