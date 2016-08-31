@@ -9,9 +9,4 @@ Dependencies.cluster
 // disable parallel tests
 parallelExecution in Test := false
 
-// pass on the artery enable/disable flag for the tests
-jvmOptions in MultiJvm ++=
-  (if (sys.props.get("akka.cluster.test.use-artery").exists(_ == "true")) Seq("-Dakka.cluster.test.use-artery=true")
-  else Seq.empty)
-
 enablePlugins(MultiNodeScalaTest)
