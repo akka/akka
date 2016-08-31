@@ -18,25 +18,23 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import akka.testkit.AkkaSpec
 
-private[this] object TimeoutDirectivesTestConfig {
+private[this] object TimeoutDirectivesInfiniteTimeoutTestConfig {
   val testConf: Config = ConfigFactory.parseString("""
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = ERROR
     akka.stdout-loglevel = ERROR
     windows-connection-abort-workaround-enabled = auto
     akka.log-dead-letters = OFF
-    akka.http.server.request-timeout = 1000s""")
-  // large timeout - 1000s (please note - setting to infinite will disable Timeout-Access header
-  // and withRequestTimeout will not work)
+    akka.http.server.request-timeout = infinite""")
 }
 
-class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesTestConfig.testConf)
+class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesInfiniteTimeoutTestConfig.testConf)
   with ScalaFutures with CompileOnlySpec {
   //#testSetup
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
 
-  def slowFuture(): Future[String] = Promise[String].future // move to Future.never in Scala 2.12
+  def slowFuture(): Future[String] = Promise[String].future // TODO: move to Future.never in Scala 2.12
 
   def runRoute(route: Route, routePath: String): HttpResponse = {
     val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
@@ -51,8 +49,9 @@ class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesTestConfig
 
   //#
 
+  // demonstrates that timeout is correctly set despite infinite initial value of akka.http.server.request-timeout
   "Request Timeout" should {
-    "be configurable in routing layer" in {
+    "be configurable in routing layer despite infinite initial value of request-timeout" in {
       //#withRequestTimeout-plain
       val route =
         path("timeout") {
@@ -120,6 +119,50 @@ class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesTestConfig
       // check
       runRoute(route, "timeout").status should ===(StatusCodes.EnhanceYourCalm) // the timeout response
       //#
+    }
+  }
+
+}
+
+private[this] object TimeoutDirectivesFiniteTimeoutTestConfig {
+  val testConf: Config = ConfigFactory.parseString("""
+    akka.loggers = ["akka.testkit.TestEventListener"]
+    akka.loglevel = ERROR
+    akka.stdout-loglevel = ERROR
+    windows-connection-abort-workaround-enabled = auto
+    akka.log-dead-letters = OFF
+    akka.http.server.request-timeout = 1000s""")
+}
+
+class TimeoutDirectivesFiniteTimeoutExamplesSpec extends AkkaSpec(TimeoutDirectivesFiniteTimeoutTestConfig.testConf)
+  with ScalaFutures with CompileOnlySpec {
+  import system.dispatcher
+  implicit val materializer = ActorMaterializer()
+
+  def slowFuture(): Future[String] = Promise[String].future // TODO: move to Future.never in Scala 2.12
+
+  def runRoute(route: Route, routePath: String): HttpResponse = {
+    val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+    val binding = Http().bindAndHandle(route, hostname, port)
+
+    val response = Http().singleRequest(HttpRequest(uri = s"http://$hostname:$port/$routePath")).futureValue
+
+    binding.flatMap(_.unbind()).futureValue
+
+    response
+  }
+
+  // demonstrates that timeout is correctly modified for finite initial values of akka.http.server.request-timeout
+  "Request Timeout" should {
+    "be configurable in routing layer for finite initial value of request-timeout" in {
+      val route =
+        path("timeout") {
+          withRequestTimeout(1.seconds) { // modifies the global akka.http.server.request-timeout for this request
+            val response: Future[String] = slowFuture() // very slow
+            complete(response)
+          }
+        }
+      runRoute(route, "timeout").status should ===(StatusCodes.ServiceUnavailable) // the timeout response
     }
   }
 
