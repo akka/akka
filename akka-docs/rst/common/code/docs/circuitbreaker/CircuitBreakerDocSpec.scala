@@ -8,10 +8,9 @@ package docs.circuitbreaker
 import scala.concurrent.duration._
 import akka.pattern.CircuitBreaker
 import akka.pattern.pipe
-import akka.actor.Actor
-import akka.actor.ActorLogging
+import akka.actor.{Actor, ActorLogging, ActorRef}
+
 import scala.concurrent.Future
-import akka.event.Logging
 
 //#imports1
 
@@ -45,3 +44,35 @@ class DangerousActor extends Actor with ActorLogging {
 
 }
 
+class TellPatternActor(recipient : ActorRef) extends Actor with ActorLogging {
+  import context.dispatcher
+
+  val breaker =
+    new CircuitBreaker(
+      context.system.scheduler,
+      maxFailures = 5,
+      callTimeout = 10.seconds,
+      resetTimeout = 1.minute).onOpen(notifyMeOnOpen())
+
+  def notifyMeOnOpen(): Unit =
+    log.warning("My CircuitBreaker is now open, and will not close for one minute")
+
+  //#circuit-breaker-tell-pattern
+  import akka.actor.ReceiveTimeout
+
+  def receive = {
+    case "call" if breaker.isClosed => {
+      recipient ! "message"
+    }
+    case "response" => {
+      breaker.succeed()
+    }
+    case err: Throwable => {
+      breaker.fail()
+    }
+    case ReceiveTimeout => {
+      breaker.fail()
+    }
+  }
+  //#circuit-breaker-tell-pattern
+}
