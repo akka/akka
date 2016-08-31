@@ -165,7 +165,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
         }
       }
     }
-    """))
+    """).withFallback(if (MultiNodeClusterSpec.useArtery) MultiNodeClusterSpec.arteryEnablerFragment else ConfigFactory.empty()))
 
   class Settings(conf: Config) {
     private val testConfig = conf.getConfig("akka.test.cluster-stress-spec")
