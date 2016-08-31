@@ -909,7 +909,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * The messages are looped through the [[getAsyncCallback]] mechanism of [[GraphStage]] so they are safe to modify
    * internal state of this stage.
    *
-   * This method must not (the earliest) be called after the [[GraphStageLogic]] constructor has finished running,
+   * This method must (the earliest) be called after the [[GraphStageLogic]] constructor has finished running,
    * for example from the [[preStart]] callback the graph stage logic provides.
    *
    * Created [[StageActorRef]] to get messages and watch other actors in synchronous way.
