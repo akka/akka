@@ -37,7 +37,8 @@ class TimeoutDirectivesSpec extends IntegrationRoutingSpec {
 
     val route =
       path("timeout") {
-        withRequestTimeout(500.millis) {
+        // needs to be long because of the race between wRT and wRTR
+        withRequestTimeout(1.second) {
           withRequestTimeoutResponse(request ⇒ timeoutResponse) {
             val response: Future[String] = slowFuture() // very slow
             complete(response)
@@ -46,13 +47,18 @@ class TimeoutDirectivesSpec extends IntegrationRoutingSpec {
       } ~
         path("equivalent") {
           // updates timeout and handler at
-          withRequestTimeout(500.millis, request ⇒ timeoutResponse) {
+          withRequestTimeout(1.second, request ⇒ timeoutResponse) {
             val response: Future[String] = slowFuture() // very slow
             complete(response)
           }
         }
 
     Get("/timeout") ~!> route ~!> { response ⇒
+      import response._
+      status should ===(StatusCodes.EnhanceYourCalm)
+    }
+
+    Get("/equivalent") ~!> route ~!> { response ⇒
       import response._
       status should ===(StatusCodes.EnhanceYourCalm)
     }

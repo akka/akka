@@ -22,7 +22,7 @@ private[akka] abstract class ByteStringParser[T] extends GraphStage[FlowShape[By
   override def initialAttributes = Attributes.name("ByteStringParser")
   final override val shape = FlowShape(bytesIn, objOut)
 
-  class ParsingLogic extends GraphStageLogic(shape) {
+  class ParsingLogic extends GraphStageLogic(shape) with InHandler {
     var pullOnParserRequest = false
     override def preStart(): Unit = pull(bytesIn)
     setHandler(objOut, eagerTerminateOutput)
@@ -58,16 +58,18 @@ private[akka] abstract class ByteStringParser[T] extends GraphStage[FlowShape[By
         if (cont) doParse()
       } else pull(bytesIn)
 
-    setHandler(bytesIn, new InHandler {
-      override def onPush(): Unit = {
-        pullOnParserRequest = false
-        buffer ++= grab(bytesIn)
-        doParse()
-      }
-      override def onUpstreamFinish(): Unit =
-        if (buffer.isEmpty && acceptUpstreamFinish) completeStage()
-        else current.onTruncation()
-    })
+    def onPush(): Unit = {
+      pullOnParserRequest = false
+      buffer ++= grab(bytesIn)
+      doParse()
+    }
+
+    override def onUpstreamFinish(): Unit = {
+      if (buffer.isEmpty && acceptUpstreamFinish) completeStage()
+      else current.onTruncation()
+    }
+
+    setHandler(bytesIn, this)
   }
 }
 

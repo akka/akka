@@ -3,23 +3,20 @@
  */
 package akka.stream.scaladsl
 
-import java.util.{ Spliterators, Spliterator }
-import java.util.stream.StreamSupport
-
 import akka.{ Done, NotUsed }
 import akka.dispatch.ExecutionContexts
-import akka.actor.{ Status, ActorRef, Props }
+import akka.actor.{ ActorRef, Props, Status }
 import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
-import akka.stream.stage.{ Context, PushStage, SyncDirective, TerminationDirective }
+import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, InHandler }
 import akka.stream.{ javadsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
+
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.duration.Duration.Inf
-import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
 /**
@@ -244,9 +241,22 @@ object Sink {
    * The returned [[scala.concurrent.Future]] will be completed with value of the final
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure signaled in the stream.
+   *
+   * @see [[#foldAsync]]
    */
   def fold[U, T](zero: U)(f: (U, T) ⇒ U): Sink[T, Future[U]] =
     Flow[T].fold(zero)(f).toMat(Sink.head)(Keep.right).named("foldSink")
+
+  /**
+   * A `Sink` that will invoke the given asynchronous function for every received element, giving it its previous
+   * output (or the given `zero` value) and the element as input.
+   * The returned [[scala.concurrent.Future]] will be completed with value of the final
+   * function evaluation when the input stream ends, or completed with `Failure`
+   * if there is a failure signaled in the stream.
+   *
+   * @see [[#fold]]
+   */
+  def foldAsync[U, T](zero: U)(f: (U, T) ⇒ Future[U]): Sink[T, Future[U]] = Flow[T].foldAsync(zero)(f).toMat(Sink.head)(Keep.right).named("foldAsyncSink")
 
   /**
    * A `Sink` that will invoke the given function for every received element, giving it its previous
@@ -270,23 +280,35 @@ object Sink {
    */
   def onComplete[T](callback: Try[Done] ⇒ Unit): Sink[T, NotUsed] = {
 
-    def newOnCompleteStage(): PushStage[T, NotUsed] = {
-      new PushStage[T, NotUsed] {
-        override def onPush(elem: T, ctx: Context[NotUsed]): SyncDirective = ctx.pull()
+    def newOnCompleteStage(): GraphStage[FlowShape[T, NotUsed]] = {
+      new GraphStage[FlowShape[T, NotUsed]] {
 
-        override def onUpstreamFailure(cause: Throwable, ctx: Context[NotUsed]): TerminationDirective = {
-          callback(Failure(cause))
-          ctx.fail(cause)
-        }
+        val in = Inlet[T]("in")
+        val out = Outlet[NotUsed]("out")
+        override val shape = FlowShape.of(in, out)
 
-        override def onUpstreamFinish(ctx: Context[NotUsed]): TerminationDirective = {
-          callback(Success(Done))
-          ctx.finish()
-        }
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+          new GraphStageLogic(shape) with InHandler with OutHandler {
+
+            override def onPush(): Unit = pull(in)
+
+            override def onPull(): Unit = pull(in)
+
+            override def onUpstreamFailure(cause: Throwable): Unit = {
+              callback(Failure(cause))
+              failStage(cause)
+            }
+
+            override def onUpstreamFinish(): Unit = {
+              callback(Success(Done))
+              completeStage()
+            }
+
+            setHandlers(in, out, this)
+          }
       }
     }
-
-    Flow[T].transform(newOnCompleteStage).to(Sink.ignore).named("onCompleteSink")
+    Flow[T].via(newOnCompleteStage()).to(Sink.ignore).named("onCompleteSink")
   }
 
   /**

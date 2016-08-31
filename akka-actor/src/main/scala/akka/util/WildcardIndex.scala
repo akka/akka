@@ -9,8 +9,6 @@ import scala.collection.immutable.HashMap
 
 private[akka] final case class WildcardIndex[T](wildcardTree: WildcardTree[T] = WildcardTree[T](), doubleWildcardTree: WildcardTree[T] = WildcardTree[T]()) {
 
-  val empty = WildcardTree[T]()
-
   def insert(elems: Array[String], d: T): WildcardIndex[T] = elems.lastOption match {
     case Some("**") ⇒ copy(doubleWildcardTree = doubleWildcardTree.insert(elems.iterator, d))
     case Some(_)    ⇒ copy(wildcardTree = wildcardTree.insert(elems.iterator, d))
@@ -20,7 +18,7 @@ private[akka] final case class WildcardIndex[T](wildcardTree: WildcardTree[T] = 
   def find(elems: Iterable[String]): Option[T] =
     (if (wildcardTree.isEmpty) {
       if (doubleWildcardTree.isEmpty) {
-        empty
+        WildcardTree[T]() // empty
       } else {
         doubleWildcardTree.findWithTerminalDoubleWildcard(elems.iterator)
       }
@@ -33,6 +31,8 @@ private[akka] final case class WildcardIndex[T](wildcardTree: WildcardTree[T] = 
       }
     }).data
 
+  def isEmpty: Boolean = wildcardTree.isEmpty && doubleWildcardTree.isEmpty
+
 }
 
 private[akka] object WildcardTree {
@@ -42,7 +42,7 @@ private[akka] object WildcardTree {
 
 private[akka] final case class WildcardTree[T](data: Option[T] = None, children: Map[String, WildcardTree[T]] = HashMap[String, WildcardTree[T]]()) {
 
-  lazy val isEmpty: Boolean = data.isEmpty && children.isEmpty
+  def isEmpty: Boolean = data.isEmpty && children.isEmpty
 
   def insert(elems: Iterator[String], d: T): WildcardTree[T] =
     if (!elems.hasNext) {

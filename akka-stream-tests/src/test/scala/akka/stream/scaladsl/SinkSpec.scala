@@ -11,7 +11,6 @@ import java.util.stream.{ Collector, Collectors }
 import akka.stream._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
-import org.scalactic.ConversionCheckedTripleEquals
 import akka.testkit.DefaultTimeout
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.{ Await, Future }
@@ -139,7 +138,6 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
   }
 
   "Java collector Sink" must {
-    import scala.compat.java8.FunctionConverters._
 
     class TestCollector(
       _supplier:    () ⇒ Supplier[Array[Int]],

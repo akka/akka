@@ -58,13 +58,13 @@ to the Actor as a message:
 
 .. warning::
   Be sure to consume the response entities ``dataBytes:Source[ByteString,Unit]`` by for example connecting it
-  to a ``Sink`` (for example ``response.entity.dataBytes.runWith(Sink.ignore)`` if you don't care about the
+  to a ``Sink`` (for example ``response.discardEntityBytes(Materializer)`` if you don't care about the
   response entity), since otherwise Akka HTTP (and the underlying Streams infrastructure) will understand the
   lack of entity consumption as a back-pressure signal and stop reading from the underlying TCP connection!
 
   This is a feature of Akka HTTP that allows consuming entities (and pulling them through the network) in
   a streaming fashion, and only *on demand* when the client is ready to consume the bytes -
-  it may be a bit suprising at first though.
+  it may be a bit surprising at first though.
 
   There are tickets open about automatically dropping entities if not consumed (`#18716`_ and `#18540`_),
   so these may be implemented in the near future.

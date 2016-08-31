@@ -16,7 +16,7 @@ import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
-import scala.concurrent.duration.{ FiniteDuration }
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters._
@@ -88,8 +88,17 @@ final class Source[+Out, +Mat](override val module: Module)
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure signaled in the stream.
    */
-  def runFold[U](zero: U)(f: (U, Out) ⇒ U)(implicit materializer: Materializer): Future[U] =
-    runWith(Sink.fold(zero)(f))
+  def runFold[U](zero: U)(f: (U, Out) ⇒ U)(implicit materializer: Materializer): Future[U] = runWith(Sink.fold(zero)(f))
+
+  /**
+   * Shortcut for running this `Source` with a foldAsync function.
+   * The given function is invoked for every received element, giving it its previous
+   * output (or the given `zero` value) and the element as input.
+   * The returned [[scala.concurrent.Future]] will be completed with value of the final
+   * function evaluation when the input stream ends, or completed with `Failure`
+   * if there is a failure signaled in the stream.
+   */
+  def runFoldAsync[U](zero: U)(f: (U, Out) ⇒ Future[U])(implicit materializer: Materializer): Future[U] = runWith(Sink.foldAsync(zero)(f))
 
   /**
    * Shortcut for running this `Source` with a reduce function.

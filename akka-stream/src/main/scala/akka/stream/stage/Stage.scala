@@ -49,7 +49,7 @@ object AbstractStage {
     private var currentStage: AbstractStage[In, Out, Directive, Directive, Context[Out], LifecycleContext] = stage
 
     {
-      // No need to refer to the handle in a private val
+      // No need to refer to the handler in a private val
       val handler = new InHandler with OutHandler {
         override def onPush(): Unit =
           try { currentStage.onPush(grab(shape.in), ctx) } catch { case NonFatal(ex) ⇒ onSupervision(ex) }

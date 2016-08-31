@@ -205,29 +205,30 @@ final class LastOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val p: Promise[Option[T]] = Promise()
-    (new GraphStageLogic(shape) {
+    (new GraphStageLogic(shape) with InHandler {
+      private[this] var prev: T = null.asInstanceOf[T]
+
       override def preStart(): Unit = pull(in)
-      setHandler(in, new InHandler {
-        private[this] var prev: T = null.asInstanceOf[T]
 
-        override def onPush(): Unit = {
-          prev = grab(in)
-          pull(in)
-        }
+      def onPush(): Unit = {
+        prev = grab(in)
+        pull(in)
+      }
 
-        override def onUpstreamFinish(): Unit = {
-          val head = prev
-          prev = null.asInstanceOf[T]
-          p.trySuccess(Option(head))
-          completeStage()
-        }
+      override def onUpstreamFinish(): Unit = {
+        val head = prev
+        prev = null.asInstanceOf[T]
+        p.trySuccess(Option(head))
+        completeStage()
+      }
 
-        override def onUpstreamFailure(ex: Throwable): Unit = {
-          prev = null.asInstanceOf[T]
-          p.tryFailure(ex)
-          failStage(ex)
-        }
-      })
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        prev = null.asInstanceOf[T]
+        p.tryFailure(ex)
+        failStage(ex)
+      }
+
+      setHandler(in, this)
     }, p.future)
   }
 
@@ -242,24 +243,25 @@ final class HeadOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val p: Promise[Option[T]] = Promise()
-    (new GraphStageLogic(shape) {
+    (new GraphStageLogic(shape) with InHandler {
       override def preStart(): Unit = pull(in)
-      setHandler(in, new InHandler {
-        override def onPush(): Unit = {
-          p.trySuccess(Option(grab(in)))
-          completeStage()
-        }
 
-        override def onUpstreamFinish(): Unit = {
-          p.trySuccess(None)
-          completeStage()
-        }
+      def onPush(): Unit = {
+        p.trySuccess(Option(grab(in)))
+        completeStage()
+      }
 
-        override def onUpstreamFailure(ex: Throwable): Unit = {
-          p.tryFailure(ex)
-          failStage(ex)
-        }
-      })
+      override def onUpstreamFinish(): Unit = {
+        p.trySuccess(None)
+        completeStage()
+      }
+
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        p.tryFailure(ex)
+        failStage(ex)
+      }
+
+      setHandler(in, this)
     }, p.future)
   }
 
@@ -277,29 +279,28 @@ final class SeqStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Fu
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val p: Promise[immutable.Seq[T]] = Promise()
-    val logic = new GraphStageLogic(shape) {
+    val logic = new GraphStageLogic(shape) with InHandler {
       val buf = Vector.newBuilder[T]
 
       override def preStart(): Unit = pull(in)
 
-      setHandler(in, new InHandler {
+      def onPush(): Unit = {
+        buf += grab(in)
+        pull(in)
+      }
 
-        override def onPush(): Unit = {
-          buf += grab(in)
-          pull(in)
-        }
+      override def onUpstreamFinish(): Unit = {
+        val result = buf.result()
+        p.trySuccess(result)
+        completeStage()
+      }
 
-        override def onUpstreamFinish(): Unit = {
-          val result = buf.result()
-          p.trySuccess(result)
-          completeStage()
-        }
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        p.tryFailure(ex)
+        failStage(ex)
+      }
 
-        override def onUpstreamFailure(ex: Throwable): Unit = {
-          p.tryFailure(ex)
-          failStage(ex)
-        }
-      })
+      setHandler(in, this)
     }
 
     (logic, p.future)
@@ -325,7 +326,7 @@ final class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkShape[T],
   override def toString: String = "QueueSink"
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    val stageLogic = new GraphStageLogic(shape) with CallbackWrapper[Output[T]] {
+    val stageLogic = new GraphStageLogic(shape) with CallbackWrapper[Output[T]] with InHandler {
       type Received[E] = Try[Option[E]]
 
       val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
@@ -383,14 +384,15 @@ final class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkShape[T],
         }
       }
 
-      setHandler(in, new InHandler {
-        override def onPush(): Unit = {
-          enqueueAndNotify(Success(Some(grab(in))))
-          if (buffer.used < maxBuffer) pull(in)
-        }
-        override def onUpstreamFinish(): Unit = enqueueAndNotify(Success(None))
-        override def onUpstreamFailure(ex: Throwable): Unit = enqueueAndNotify(Failure(ex))
-      })
+      def onPush(): Unit = {
+        enqueueAndNotify(Success(Some(grab(in))))
+        if (buffer.used < maxBuffer) pull(in)
+      }
+
+      override def onUpstreamFinish(): Unit = enqueueAndNotify(Success(None))
+      override def onUpstreamFailure(ex: Throwable): Unit = enqueueAndNotify(Failure(ex))
+
+      setHandler(in, this)
     }
 
     (stageLogic, new SinkQueueWithCancel[T] {

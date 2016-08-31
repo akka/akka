@@ -32,7 +32,6 @@ final class FlattenMerge[T, M](val breadth: Int) extends GraphStage[FlowShape[Gr
   override val shape = FlowShape(in, out)
 
   override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
-
     var sources = Set.empty[SubSinkInlet[T]]
     def activeSources = sources.size
 
