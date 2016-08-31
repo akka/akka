@@ -3,14 +3,16 @@
  */
 package akka.remote.artery
 
+import akka.ConfigurationException
+import akka.event.Logging
+import akka.event.Logging.LogLevel
 import akka.stream.ActorMaterializerSettings
-import akka.util.Helpers.{ ConfigOps, Requiring }
+import akka.util.Helpers.{ ConfigOps, Requiring, toRootLowerCase }
 import akka.util.WildcardIndex
 import akka.NotUsed
 import com.typesafe.config.Config
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
-
 import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 
@@ -31,6 +33,11 @@ private[akka] final class ArterySettings private (config: Config) {
       val segments = entry.split('/').tail
       tree.insert(segments, NotUsed)
     }
+  val LifecycleEventsLogLevel: LogLevel = Logging.levelFor(toRootLowerCase(getString("log-lifecycle-events"))) match {
+    case Some(level) ⇒ level
+    case None        ⇒ throw new ConfigurationException("Logging level must be one of (off, debug, info, warning, error)")
+  }
+  val Dispatcher = getString("use-dispatcher")
 
   object Advanced {
     val config = getConfig("advanced")
@@ -44,6 +51,8 @@ private[akka] final class ArterySettings private (config: Config) {
     val DeleteAeronDirectory = getBoolean("delete-aeron-dir")
     val IdleCpuLevel: Int = getInt("idle-cpu-level").requiring(level ⇒
       1 <= level && level <= 10, "idle-cpu-level must be between 1 and 10")
+    val SysMsgBufferSize: Int = getInt("system-message-buffer-size").requiring(
+      _ > 0, "system-message-buffer-size must be more than zero")
     val SystemMessageResendInterval = config.getMillisDuration("system-message-resend-interval").requiring(interval ⇒
       interval > 0.seconds, "system-message-resend-interval must be more than zero")
     val HandshakeRetryInterval = config.getMillisDuration("handshake-retry-interval").requiring(interval ⇒

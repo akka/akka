@@ -70,13 +70,13 @@ private[remote] class Association(
   import Association._
 
   private val log = Logging(transport.system, getClass.getName)
-  private val controlQueueSize = transport.remoteSettings.SysMsgBufferSize
+  private val controlQueueSize = transport.settings.Advanced.SysMsgBufferSize
   // FIXME config queue size, and it should perhaps also be possible to use some kind of LinkedQueue
   //       such as agrona.ManyToOneConcurrentLinkedQueue or AbstractNodeQueue for less memory consumption
   private val queueSize = 3072
   private val largeQueueSize = 256
 
-  private val restartCounter = new RestartCounter(transport.remoteSettings.Artery.Advanced.OutboundMaxRestarts, transport.remoteSettings.Artery.Advanced.OutboundRestartTimeout)
+  private val restartCounter = new RestartCounter(transport.settings.Advanced.OutboundMaxRestarts, transport.settings.Advanced.OutboundRestartTimeout)
 
   // We start with the raw wrapped queue and then it is replaced with the materialized value of
   // the `SendQueue` after materialization. Using same underlying queue. This makes it possible to
@@ -337,7 +337,7 @@ private[remote] class Association(
     controlQueue = wrapper // use new underlying queue immediately for restarts
 
     val (queueValue, (control, completed)) =
-      if (transport.remoteSettings.Artery.Advanced.TestMode) {
+      if (transport.settings.Advanced.TestMode) {
         val ((queueValue, mgmt), (control, completed)) =
           Source.fromGraph(new SendQueue[OutboundEnvelope])
             .via(transport.outboundControlPart1(this))
@@ -380,7 +380,7 @@ private[remote] class Association(
     queue = wrapper // use new underlying queue immediately for restarts
 
     val (queueValue, (changeCompression, completed)) =
-      if (transport.remoteSettings.Artery.Advanced.TestMode) {
+      if (transport.settings.Advanced.TestMode) {
         val ((queueValue, mgmt), completed) = Source.fromGraph(new SendQueue[OutboundEnvelope])
           .viaMat(transport.outboundTestFlow(this))(Keep.both)
           .toMat(transport.outbound(this))(Keep.both)
@@ -406,7 +406,7 @@ private[remote] class Association(
     largeQueue = wrapper // use new underlying queue immediately for restarts
 
     val (queueValue, completed) =
-      if (transport.remoteSettings.Artery.Advanced.TestMode) {
+      if (transport.settings.Advanced.TestMode) {
         val ((queueValue, mgmt), completed) = Source.fromGraph(new SendQueue[OutboundEnvelope])
           .viaMat(transport.outboundTestFlow(this))(Keep.both)
           .toMat(transport.outboundLarge(this))(Keep.both)
@@ -440,7 +440,7 @@ private[remote] class Association(
           restart(cause)
         } else {
           log.error(cause, s"{} to {} failed and restarted {} times within {} seconds. Terminating system. ${cause.getMessage}",
-            streamName, remoteAddress, transport.remoteSettings.Artery.Advanced.OutboundMaxRestarts, transport.remoteSettings.Artery.Advanced.OutboundRestartTimeout.toSeconds)
+            streamName, remoteAddress, transport.settings.Advanced.OutboundMaxRestarts, transport.settings.Advanced.OutboundRestartTimeout.toSeconds)
           transport.system.terminate()
         }
     }
