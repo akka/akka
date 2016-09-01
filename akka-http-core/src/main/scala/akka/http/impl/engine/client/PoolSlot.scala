@@ -162,6 +162,8 @@ private object PoolSlot {
               .via(connectionFlow).runWith(Sink.fromGraph(connectionFlowSink.sink))(subFusingMaterializer)
 
             connectionFlowSink.pull()
+            pull(in)
+
             push(out1, ConnectedEagerly(slotIx))
 
           case DispatchCommand(rc: RequestContext) ⇒
