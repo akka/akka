@@ -121,6 +121,17 @@ class ParentChildSpec extends WordSpec with Matchers with TestKitBase with Befor
     }
   }
 
+  //#test-TestProbe-parent
+  "A TestProbe serving as parent" should {
+    "test its child responses" in {
+      val parent = TestProbe()
+      val child = parent.childActorOf(Props[Child])
+      parent.send(child, "ping")
+      parent.expectMsg("pong")
+    }
+  }
+  //#test-TestProbe-parent
+
   //#test-fabricated-parent
   "A fabricated parent" should {
     "test its child responses" in {
