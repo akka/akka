@@ -32,7 +32,7 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
       remote.log-remote-lifecycle-events = off
       cluster.failure-detector.monitored-by-nr-of-members = 3
     }
-    """).withFallback(if (MultiNodeClusterSpec.useArtery) MultiNodeClusterSpec.arteryEnablerFragment else ConfigFactory.empty()))
+    """))
 
 }
 
