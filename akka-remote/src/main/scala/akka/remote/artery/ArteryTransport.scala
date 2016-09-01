@@ -33,7 +33,6 @@ import akka.remote.AddressUidExtension
 import akka.remote.EventPublisher
 import akka.remote.RemoteActorRef
 import akka.remote.RemoteActorRefProvider
-import akka.remote.RemoteSettings
 import akka.remote.RemoteTransport
 import akka.remote.RemotingLifecycleEvent
 import akka.remote.ThisActorSystemQuarantinedEvent
@@ -125,9 +124,9 @@ private[akka] object AssociationState {
  * INTERNAL API
  */
 private[akka] final class AssociationState(
-  val incarnation: Int,
+  val incarnation:                Int,
   val uniqueRemoteAddressPromise: Promise[UniqueAddress],
-  val quarantined: ImmutableLongMap[AssociationState.QuarantinedTimestamp]) {
+  val quarantined:                ImmutableLongMap[AssociationState.QuarantinedTimestamp]) {
 
   import AssociationState.QuarantinedTimestamp
 
@@ -225,7 +224,7 @@ private[akka] trait OutboundContext {
  */
 private[remote] object FlushOnShutdown {
   def props(done: Promise[Done], timeout: FiniteDuration,
-    inboundContext: InboundContext, associations: Set[Association]): Props = {
+            inboundContext: InboundContext, associations: Set[Association]): Props = {
     require(associations.nonEmpty)
     Props(new FlushOnShutdown(done, timeout, inboundContext, associations))
   }
@@ -237,7 +236,7 @@ private[remote] object FlushOnShutdown {
  * INTERNAL API
  */
 private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDuration,
-  inboundContext: InboundContext, associations: Set[Association]) extends Actor {
+                                      inboundContext: InboundContext, associations: Set[Association]) extends Actor {
 
   var remaining = associations.flatMap(_.associationState.uniqueRemoteAddressValue)
 
@@ -288,7 +287,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def addresses: Set[Address] = _addresses
   override def localAddressForRemote(remote: Address): Address = defaultAddress
   override val log: LoggingAdapter = Logging(system, getClass.getName)
-  val eventPublisher = new EventPublisher(system, log, remoteSettings.RemoteLifecycleEventsLogLevel)
+  val eventPublisher = new EventPublisher(system, log, settings.LifecycleEventsLogLevel)
 
   private val codec: AkkaPduCodec = AkkaPduProtobufCodec
   private val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
@@ -296,27 +295,16 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private val testStages: CopyOnWriteArrayList[TestManagementApi] = new CopyOnWriteArrayList
 
-  // FIXME config
-  private val systemMessageResendInterval: FiniteDuration = 1.second
-  private val handshakeRetryInterval: FiniteDuration = 1.second
   private val handshakeTimeout: FiniteDuration =
     system.settings.config.getMillisDuration("akka.remote.handshake-timeout").requiring(
       _ > Duration.Zero,
       "handshake-timeout must be > 0")
-  private val injectHandshakeInterval: FiniteDuration = 1.second
-  private val giveUpSendAfter: FiniteDuration = 60.seconds
-  private val shutdownFlushTimeout = 1.second
 
-  private val remoteDispatcher = system.dispatchers.lookup(remoteSettings.Dispatcher)
+  private val remoteDispatcher = system.dispatchers.lookup(settings.Dispatcher)
 
-  private val largeMessageDestinations =
-    system.settings.config.getStringList("akka.remote.artery.large-message-destinations").asScala.foldLeft(WildcardIndex[NotUsed]()) { (tree, entry) ⇒
-      val segments = entry.split('/').tail
-      tree.insert(segments, NotUsed)
-    }
   // TODO use WildcardIndex.isEmpty when merged from master
   val largeMessageChannelEnabled =
-    !largeMessageDestinations.wildcardTree.isEmpty || !largeMessageDestinations.doubleWildcardTree.isEmpty
+    !settings.LargeMessageDestinations.wildcardTree.isEmpty || !settings.LargeMessageDestinations.doubleWildcardTree.isEmpty
 
   private val priorityMessageDestinations =
     WildcardIndex[NotUsed]()
@@ -334,11 +322,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val ordinaryStreamId = 3
   private val largeStreamId = 4
 
-  private val taskRunner = new TaskRunner(system, remoteSettings.IdleCpuLevel)
+  private val taskRunner = new TaskRunner(system, settings.Advanced.IdleCpuLevel)
 
-  private val restartTimeout: FiniteDuration = 5.seconds // FIXME config
-  private val maxRestarts = 5 // FIXME config
-  private val restartCounter = new RestartCounter(maxRestarts, restartTimeout)
+  private val restartCounter = new RestartCounter(settings.Advanced.InboundMaxRestarts, settings.Advanced.InboundRestartTimeout)
 
   private val envelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
   private val largeEnvelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumLargeFrameSize, ArteryTransport.MaximumPooledBuffers)
@@ -373,11 +359,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       materializer,
       remoteAddress,
       controlSubject,
-      largeMessageDestinations,
+      settings.LargeMessageDestinations,
       priorityMessageDestinations,
       outboundEnvelopePool))
 
-  def remoteSettings: RemoteSettings = provider.remoteSettings
+  def settings = provider.remoteSettings.Artery
 
   override def start(): Unit = {
     startMediaDriver()
@@ -389,22 +375,20 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     topLevelFREvents.loFreq(Transport_TaskRunnerStarted, NoMetaData)
 
     val port =
-      if (remoteSettings.ArteryPort == 0) ArteryTransport.autoSelectPort(remoteSettings.ArteryHostname)
-      else remoteSettings.ArteryPort
+      if (settings.Port == 0) ArteryTransport.autoSelectPort(settings.Hostname)
+      else settings.Port
 
     // TODO: Configure materializer properly
     // TODO: Have a supervisor actor
     _localAddress = UniqueAddress(
-      Address(ArteryTransport.ProtocolName, system.name, remoteSettings.ArteryHostname, port),
+      Address(ArteryTransport.ProtocolName, system.name, settings.Hostname, port),
       AddressUidExtension(system).longAddressUid)
     _addresses = Set(_localAddress.address)
 
     // TODO: This probably needs to be a global value instead of an event as events might rotate out of the log
     topLevelFREvents.loFreq(Transport_UniqueAddressSet, _localAddress.toString().getBytes("US-ASCII"))
 
-    val materializerSettings = ActorMaterializerSettings(
-      remoteSettings.config.getConfig("akka.remote.artery.advanced.materializer"))
-    materializer = ActorMaterializer.systemMaterializer(materializerSettings, "remote", system)
+    materializer = ActorMaterializer.systemMaterializer(settings.Advanced.MaterializerSettings, "remote", system)
 
     messageDispatcher = new MessageDispatcher(system, provider)
     topLevelFREvents.loFreq(Transport_MaterializerStarted, NoMetaData)
@@ -420,16 +404,15 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def startMediaDriver(): Unit = {
-    if (remoteSettings.EmbeddedMediaDriver) {
+    if (settings.Advanced.EmbeddedMediaDriver) {
       val driverContext = new MediaDriver.Context
-      if (remoteSettings.AeronDirectoryName.nonEmpty)
-        driverContext.aeronDirectoryName(remoteSettings.AeronDirectoryName)
-      // FIXME settings from config
-      driverContext.clientLivenessTimeoutNs(SECONDS.toNanos(20))
-      driverContext.imageLivenessTimeoutNs(SECONDS.toNanos(20))
-      driverContext.driverTimeoutMs(SECONDS.toNanos(20))
+      if (settings.Advanced.AeronDirectoryName.nonEmpty)
+        driverContext.aeronDirectoryName(settings.Advanced.AeronDirectoryName)
+      driverContext.clientLivenessTimeoutNs(settings.Advanced.ClientLivenessTimeout.toNanos)
+      driverContext.imageLivenessTimeoutNs(settings.Advanced.ImageLivenessTimeoutNs.toNanos)
+      driverContext.driverTimeoutMs(settings.Advanced.DriverTimeout.toMillis)
 
-      val idleCpuLevel = remoteSettings.IdleCpuLevel
+      val idleCpuLevel = settings.Advanced.IdleCpuLevel
       if (idleCpuLevel == 10) {
         driverContext
           .threadingMode(ThreadingMode.DEDICATED)
@@ -461,7 +444,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private def aeronDir: String = mediaDriver match {
     case Some(driver) ⇒ driver.aeronDirectoryName
-    case None         ⇒ remoteSettings.AeronDirectoryName
+    case None         ⇒ settings.Advanced.AeronDirectoryName
   }
 
   private def stopMediaDriver(): Unit = {
@@ -469,8 +452,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       // this is only for embedded media driver
       driver.close()
       try {
-        // FIXME it should also be configurable to not delete dir
-        IoUtil.delete(new File(driver.aeronDirectoryName), false)
+        if (settings.Advanced.DeleteAeronDirectory) {
+          IoUtil.delete(new File(driver.aeronDirectoryName), false)
+        }
       } catch {
         case NonFatal(e) ⇒
           log.warning(
@@ -542,7 +526,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private def runInboundControlStream(compression: InboundCompressions): Unit = {
     val (ctrl, completed) =
-      if (remoteSettings.TestMode) {
+      if (settings.Advanced.TestMode) {
         val (mgmt, (ctrl, completed)) =
           aeronSource(controlStreamId, envelopePool)
             .via(inboundFlow(compression))
@@ -617,7 +601,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private def runInboundOrdinaryMessagesStream(compression: InboundCompressions): Unit = {
     val completed =
-      if (remoteSettings.TestMode) {
+      if (settings.Advanced.TestMode) {
         val (mgmt, c) = aeronSource(ordinaryStreamId, envelopePool)
           .via(inboundFlow(compression))
           .viaMat(inboundTestFlow)(Keep.right)
@@ -639,7 +623,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     val disableCompression = NoInboundCompressions // no compression on large message stream for now
 
     val completed =
-      if (remoteSettings.TestMode) {
+      if (settings.Advanced.TestMode) {
         val (mgmt, c) = aeronSource(largeStreamId, largeEnvelopePool)
           .via(inboundLargeFlow(disableCompression))
           .viaMat(inboundTestFlow)(Keep.right)
@@ -668,7 +652,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           restart()
         } else {
           log.error(cause, "{} failed and restarted {} times within {} seconds. Terminating system. {}",
-            streamName, maxRestarts, restartTimeout.toSeconds, cause.getMessage)
+            streamName, settings.Advanced.InboundMaxRestarts, settings.Advanced.InboundRestartTimeout.toSeconds, cause.getMessage)
           system.terminate()
         }
     }
@@ -681,8 +665,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       if (allAssociations.isEmpty) Future.successful(Done)
       else {
         val flushingPromise = Promise[Done]()
-        system.systemActorOf(FlushOnShutdown.props(flushingPromise, shutdownFlushTimeout,
-          this, allAssociations).withDispatcher(remoteSettings.Dispatcher), "remoteFlushOnShutdown")
+        system.systemActorOf(FlushOnShutdown.props(flushingPromise, settings.Advanced.ShutdownFlushTimeout,
+          this, allAssociations).withDispatcher(settings.Dispatcher), "remoteFlushOnShutdown")
         flushingPromise.future
       }
     implicit val ec = remoteDispatcher
@@ -774,14 +758,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .mapMaterializedValue { case (_, d) ⇒ d }
 
   private def createOutboundSink(streamId: Int, outboundContext: OutboundContext,
-    bufferPool: EnvelopeBufferPool): Sink[OutboundEnvelope, (ChangeOutboundCompression, Future[Done])] = {
+                                 bufferPool: EnvelopeBufferPool): Sink[OutboundEnvelope, (ChangeOutboundCompression, Future[Done])] = {
 
     Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
       .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, handshakeTimeout,
-        handshakeRetryInterval, injectHandshakeInterval))
+        settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval))
       .viaMat(createEncoder(bufferPool))(Keep.right)
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), streamId, aeron, taskRunner,
-        envelopePool, giveUpSendAfter, createFlightRecorderEventSink()))(Keep.both)
+        envelopePool, settings.Advanced.GiveUpSendAfter, createFlightRecorderEventSink()))(Keep.both)
   }
 
   /**
@@ -791,9 +775,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   def outboundControlPart1(outboundContext: OutboundContext): Flow[OutboundEnvelope, OutboundEnvelope, SharedKillSwitch] = {
     Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
       .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, handshakeTimeout,
-        handshakeRetryInterval, injectHandshakeInterval))
-      .via(new SystemMessageDelivery(outboundContext, system.deadLetters, systemMessageResendInterval,
-        remoteSettings.SysMsgBufferSize))
+        settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval))
+      .via(new SystemMessageDelivery(outboundContext, system.deadLetters, settings.Advanced.SystemMessageResendInterval,
+        settings.Advanced.SysMsgBufferSize))
 
     // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
   }
@@ -807,7 +791,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def createInboundCompressions(inboundContext: InboundContext): InboundCompressions =
-    if (remoteSettings.ArteryCompressionSettings.enabled) new InboundCompressionsImpl(system, inboundContext)
+    if (settings.Advanced.Compression.Enabled) new InboundCompressionsImpl(system, inboundContext, settings.Advanced.Compression)
     else NoInboundCompressions
 
   def createEncoder(pool: EnvelopeBufferPool): Flow[OutboundEnvelope, EnvelopeBuffer, ChangeOutboundCompression] =
@@ -864,7 +848,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def initializeFlightRecorder(): Option[(FileChannel, File, FlightRecorder)] = {
-    if (remoteSettings.FlightRecorderEnabled) {
+    if (settings.Advanced.FlightRecorderEnabled) {
       // TODO: Figure out where to put it, currently using temporary files
       val afrFile = File.createTempFile("artery", ".afr")
       afrFile.deleteOnExit()
@@ -920,4 +904,3 @@ private[remote] object ArteryTransport {
   }
 
 }
-

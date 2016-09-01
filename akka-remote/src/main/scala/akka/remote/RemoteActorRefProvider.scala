@@ -187,7 +187,7 @@ private[akka] class RemoteActorRefProvider(
       d
     },
       serialization = SerializationExtension(system),
-      transport = if (remoteSettings.EnableArtery) new ArteryTransport(system, this) else new Remoting(system, this))
+      transport = if (remoteSettings.Artery.Enabled) new ArteryTransport(system, this) else new Remoting(system, this))
 
     _internals = internals
     remotingTerminator ! internals

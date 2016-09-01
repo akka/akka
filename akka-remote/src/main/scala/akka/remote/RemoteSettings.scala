@@ -3,7 +3,6 @@
  */
 package akka.remote
 
-import akka.remote.artery.compress.CompressionSettings
 import com.typesafe.config.Config
 import scala.concurrent.duration._
 import akka.util.Timeout
@@ -14,29 +13,13 @@ import akka.actor.Props
 import akka.event.Logging
 import akka.event.Logging.LogLevel
 import akka.ConfigurationException
-import java.net.InetAddress
+import akka.remote.artery.ArterySettings
 
 final class RemoteSettings(val config: Config) {
   import config._
   import scala.collection.JavaConverters._
 
-  val EnableArtery: Boolean = getBoolean("akka.remote.artery.enabled")
-  val ArteryPort: Int = getInt("akka.remote.artery.port")
-  val ArteryHostname: String = getString("akka.remote.artery.hostname") match {
-    case "" | "<getHostAddress>" ⇒ InetAddress.getLocalHost.getHostAddress
-    case "<getHostName>"         ⇒ InetAddress.getLocalHost.getHostName
-    case other                   ⇒ other
-  }
-  val EmbeddedMediaDriver = getBoolean("akka.remote.artery.advanced.embedded-media-driver")
-  val AeronDirectoryName = getString("akka.remote.artery.advanced.aeron-dir") requiring (dir ⇒
-    EmbeddedMediaDriver || dir.nonEmpty, "aeron-dir must be defined when using external media driver")
-  val TestMode: Boolean = getBoolean("akka.remote.artery.advanced.test-mode")
-  val IdleCpuLevel: Int = getInt("akka.remote.artery.advanced.idle-cpu-level").requiring(level ⇒
-    1 <= level && level <= 10, "idle-cpu-level must be between 1 and 10")
-
-  val FlightRecorderEnabled: Boolean = getBoolean("akka.remote.artery.advanced.flight-recorder.enabled")
-
-  val ArteryCompressionSettings = CompressionSettings(getConfig("akka.remote.artery.advanced.compression"))
+  val Artery = ArterySettings(getConfig("akka.remote.artery"))
 
   val LogReceive: Boolean = getBoolean("akka.remote.log-received-messages")
 
