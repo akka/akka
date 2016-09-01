@@ -11,7 +11,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 import akka.actor.{ ActorRef, ActorSystem, Address }
 import akka.event.{ Logging, NoLogging }
-import akka.remote.artery.{ InboundContext, OutboundContext }
+import akka.remote.artery.{ ArterySettings, InboundContext, OutboundContext }
 import akka.util.{ OptionVal, PrettyDuration }
 import org.agrona.collections.Long2ObjectHashMap
 
@@ -38,15 +38,14 @@ private[remote] trait InboundCompressions {
  */
 private[remote] final class InboundCompressionsImpl(
   system:         ActorSystem,
-  inboundContext: InboundContext) extends InboundCompressions {
-
-  private val settings = CompressionSettings(system)
+  inboundContext: InboundContext,
+  settings:       ArterySettings.Compression) extends InboundCompressions {
 
   // FIXME we also must remove the ones that won't be used anymore - when quarantine triggers
   private[this] val _actorRefsIns = new Long2ObjectHashMap[InboundActorRefCompression]()
   private val createInboundActorRefsForOrigin = new LongFunction[InboundActorRefCompression] {
     override def apply(originUid: Long): InboundActorRefCompression = {
-      val actorRefHitters = new TopHeavyHitters[ActorRef](settings.actorRefs.max)
+      val actorRefHitters = new TopHeavyHitters[ActorRef](settings.ActorRefs.Max)
       new InboundActorRefCompression(system, settings, originUid, inboundContext, actorRefHitters)
     }
   }
@@ -56,7 +55,7 @@ private[remote] final class InboundCompressionsImpl(
   private[this] val _classManifestsIns = new Long2ObjectHashMap[InboundManifestCompression]()
   private val createInboundManifestsForOrigin = new LongFunction[InboundManifestCompression] {
     override def apply(originUid: Long): InboundManifestCompression = {
-      val manifestHitters = new TopHeavyHitters[String](settings.manifests.max)
+      val manifestHitters = new TopHeavyHitters[String](settings.Manifests.Max)
       new InboundManifestCompression(system, settings, originUid, inboundContext, manifestHitters)
     }
   }
@@ -106,7 +105,7 @@ private[remote] final class InboundCompressionsImpl(
  */
 private[remote] final class InboundActorRefCompression(
   system:         ActorSystem,
-  settings:       CompressionSettings,
+  settings:       ArterySettings.Compression,
   originUid:      Long,
   inboundContext: InboundContext,
   heavyHitters:   TopHeavyHitters[ActorRef]) extends InboundCompression[ActorRef](system, settings, originUid, inboundContext, heavyHitters) {
@@ -123,7 +122,7 @@ private[remote] final class InboundActorRefCompression(
     else super.decompress(tableVersion, idx)
 
   scheduleNextTableAdvertisement()
-  override protected def tableAdvertisementInterval = settings.actorRefs.advertisementInterval
+  override protected def tableAdvertisementInterval = settings.ActorRefs.AdvertisementInterval
 
   override def advertiseCompressionTable(outboundContext: OutboundContext, table: CompressionTable[ActorRef]): Unit = {
     log.debug(s"Advertise ActorRef compression [$table], from [${inboundContext.localAddress}] to [${outboundContext.remoteAddress}]")
@@ -133,13 +132,13 @@ private[remote] final class InboundActorRefCompression(
 
 final class InboundManifestCompression(
   system:         ActorSystem,
-  settings:       CompressionSettings,
+  settings:       ArterySettings.Compression,
   originUid:      Long,
   inboundContext: InboundContext,
   heavyHitters:   TopHeavyHitters[String]) extends InboundCompression[String](system, settings, originUid, inboundContext, heavyHitters) {
 
   scheduleNextTableAdvertisement()
-  override protected def tableAdvertisementInterval = settings.manifests.advertisementInterval
+  override protected def tableAdvertisementInterval = settings.Manifests.AdvertisementInterval
 
   override lazy val log = NoLogging
 
@@ -183,7 +182,7 @@ private[remote] object InboundCompression {
  */
 private[remote] abstract class InboundCompression[T >: Null](
   val system:       ActorSystem,
-  val settings:     CompressionSettings,
+  val settings:     ArterySettings.Compression,
   originUid:        Long,
   inboundContext:   InboundContext,
   val heavyHitters: TopHeavyHitters[T]) {
