@@ -50,8 +50,12 @@ abstract class RestartNode3Spec
 
   lazy val restartedSecondSystem = ActorSystem(
     system.name,
-    ConfigFactory.parseString("akka.remote.netty.tcp.port=" + secondUniqueAddress.address.port.get).
-      withFallback(system.settings.config))
+    ConfigFactory.parseString(
+      if (system.settings.config.getBoolean("akka.remote.artery.enabled"))
+        "akka.remote.artery.port=" + secondUniqueAddress.address.port.get
+      else
+        "akka.remote.netty.tcp.port=" + secondUniqueAddress.address.port.get
+    ).withFallback(system.settings.config))
 
   override def afterAll(): Unit = {
     runOn(second) {
