@@ -64,13 +64,13 @@ private[remote] object Association {
  * remote address.
  */
 private[remote] class Association(
-  val transport: ArteryTransport,
-  val materializer: Materializer,
-  override val remoteAddress: Address,
+  val transport:               ArteryTransport,
+  val materializer:            Materializer,
+  override val remoteAddress:  Address,
   override val controlSubject: ControlMessageSubject,
-  largeMessageDestinations: WildcardIndex[NotUsed],
+  largeMessageDestinations:    WildcardIndex[NotUsed],
   priorityMessageDestinations: WildcardIndex[NotUsed],
-  outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope])
+  outboundEnvelopePool:        ObjectPool[ReusableOutboundEnvelope])
   extends AbstractAssociation with OutboundContext {
   import Association._
 
