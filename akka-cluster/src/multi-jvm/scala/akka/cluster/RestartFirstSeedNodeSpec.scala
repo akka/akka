@@ -52,8 +52,12 @@ abstract class RestartFirstSeedNodeSpec
 
   lazy val restartedSeed1System = ActorSystem(
     system.name,
-    ConfigFactory.parseString("akka.remote.netty.tcp.port=" + seedNodes.head.port.get).
-      withFallback(system.settings.config))
+    ConfigFactory.parseString(
+      if (system.settings.config.getBoolean("akka.remote.artery.enabled"))
+        "akka.remote.artery.port=" + seedNodes.head.port.get
+      else
+        "akka.remote.netty.tcp.port=" + seedNodes.head.port.get
+    ).withFallback(system.settings.config))
 
   override def afterAll(): Unit = {
     runOn(seed1) {
