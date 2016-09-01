@@ -84,7 +84,7 @@ abstract class AeronStreamMaxThroughputSpec
 
   val driver = MediaDriver.launchEmbedded()
 
-  val pool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
+  val pool = new EnvelopeBufferPool(1024 * 1024, 128)
 
   val stats =
     new AeronStat(AeronStat.mapCounters(new File(driver.aeronDirectoryName, CncFileDescriptor.CNC_FILE)))

@@ -83,6 +83,11 @@ private[akka] final class ArterySettings private (config: Config) {
       interval > Duration.Zero, "driver-timeout must be more than zero")
     val FlightRecorderEnabled: Boolean = getBoolean("flight-recorder.enabled")
     val Compression = new Compression(getConfig("compression"))
+
+    final val MaximumFrameSize = 1024 * 1024
+    final val MaximumPooledBuffers = 128
+    final val MaximumLargeFrameSize = MaximumFrameSize * 5
+    final val InboundBroadcastHubBufferSize = MaximumPooledBuffers / 2
   }
 }
 
