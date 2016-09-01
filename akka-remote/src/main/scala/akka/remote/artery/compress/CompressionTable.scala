@@ -20,7 +20,7 @@ private[artery] final case class CompressionTable[T](version: Int, map: Map[T, I
   def invert: DecompressionTable[T] =
     if (map.isEmpty) DecompressionTable.empty[T].copy(version = version)
     else {
-      // TODO: these are some expensive sanity checks, about the numbers being consequitive, without gaps
+      // TODO: these are some expensive sanity checks, about the numbers being consecutive, without gaps
       // TODO: we can remove them, make them re-map (not needed I believe though)
       val expectedGaplessSum = Integer.valueOf((map.size * (map.size + 1)) / 2) /* Dirichlet */
       require(map.values.min == 0, "Compression table should start allocating from 0, yet lowest allocated id was " + map.values.min)

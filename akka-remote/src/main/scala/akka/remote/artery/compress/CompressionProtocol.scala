@@ -5,7 +5,7 @@
 package akka.remote.artery.compress
 
 import scala.language.existentials
-import akka.actor.{ ActorRef, Address }
+import akka.actor.ActorRef
 import akka.remote.UniqueAddress
 import akka.remote.artery.ControlMessage
 
