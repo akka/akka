@@ -26,10 +26,6 @@ import akka.actor.RootActorPath
 
 object MultiNodeClusterSpec {
 
-  /** run all tests using artery, rather than the "old" remoting */
-  val useArtery = sys.props.get("akka.cluster.test.use-artery").contains("true")
-  def arteryEnablerFragment = ConfigFactory.parseString("akka.remote.artery.enabled=on")
-
   def clusterConfigWithFailureDetectorPuppet: Config =
     ConfigFactory.parseString("akka.cluster.failure-detector.implementation-class = akka.cluster.FailureDetectorPuppet").
       withFallback(clusterConfig)
@@ -37,31 +33,26 @@ object MultiNodeClusterSpec {
   def clusterConfig(failureDetectorPuppet: Boolean): Config =
     if (failureDetectorPuppet) clusterConfigWithFailureDetectorPuppet else clusterConfig
 
-  def clusterConfig: Config = {
-    val default = ConfigFactory.parseString("""
-      akka.actor.provider = cluster
-      akka.cluster {
-        jmx.enabled                         = off
-        gossip-interval                     = 200 ms
-        leader-actions-interval             = 200 ms
-        unreachable-nodes-reaper-interval   = 500 ms
-        periodic-tasks-initial-delay        = 300 ms
-        publish-stats-interval              = 0 s # always, when it happens
-        failure-detector.heartbeat-interval = 500 ms
-      }
-      akka.loglevel = INFO
-      akka.log-dead-letters = off
-      akka.log-dead-letters-during-shutdown = off
-      akka.remote.log-remote-lifecycle-events = off
-      akka.loggers = ["akka.testkit.TestEventListener"]
-      akka.test {
-        single-expect-default = 5 s
-      }
+  def clusterConfig: Config = ConfigFactory.parseString("""
+    akka.actor.provider = cluster
+    akka.cluster {
+      jmx.enabled                         = off
+      gossip-interval                     = 200 ms
+      leader-actions-interval             = 200 ms
+      unreachable-nodes-reaper-interval   = 500 ms
+      periodic-tasks-initial-delay        = 300 ms
+      publish-stats-interval              = 0 s # always, when it happens
+      failure-detector.heartbeat-interval = 500 ms
+    }
+    akka.loglevel = INFO
+    akka.log-dead-letters = off
+    akka.log-dead-letters-during-shutdown = off
+    akka.remote.log-remote-lifecycle-events = off
+    akka.loggers = ["akka.testkit.TestEventListener"]
+    akka.test {
+      single-expect-default = 5 s
+    }
     """)
-
-    if (useArtery) arteryEnablerFragment.withFallback(default)
-    else default
-  }
 
   // sometimes we need to coordinate test shutdown with messages instead of barriers
   object EndActor {
