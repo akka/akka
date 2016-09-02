@@ -4,7 +4,6 @@
 
 package akka.http.impl.engine.client
 
-import akka.event.LoggingAdapter
 import akka.http.impl.engine.client.PoolConductor.{ ConnectEagerlyCommand, DispatchCommand, SlotCommand }
 import akka.http.impl.engine.client.PoolSlot.SlotEvent.{ ConnectedEagerly, RetryRequest }
 import akka.http.scaladsl.model.headers.Connection
@@ -36,10 +35,8 @@ private object PoolSlot {
     final case class ConnectedEagerly(slotIx: Int) extends SlotEvent
   }
 
-  def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any])(implicit m: Materializer): Graph[FanOutShape2[SlotCommand, ResponseContext, RawSlotEvent], Any] = {
-    val log = ActorMaterializerHelper.downcast(m).logger
-    new SlotProcessor(slotIx, connectionFlow, log)
-  }
+  def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any])(implicit m: Materializer): Graph[FanOutShape2[SlotCommand, ResponseContext, RawSlotEvent], Any] =
+    new SlotProcessor(slotIx, connectionFlow)
 
   /**
    * To the outside it provides a stable flow stage, consuming `SlotCommand` instances on its
@@ -48,7 +45,7 @@ private object PoolSlot {
    * Completion and errors from the connection are not surfaced to the outside (unless we are
    * shutting down completely).
    */
-  private class SlotProcessor(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any], log: LoggingAdapter)(implicit fm: Materializer)
+  private class SlotProcessor(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any])(implicit fm: Materializer)
     extends GraphStage[FanOutShape2[SlotCommand, ResponseContext, RawSlotEvent]] {
 
     val in: Inlet[SlotCommand] = Inlet("SlotProcessor.in")
@@ -67,11 +64,11 @@ private object PoolSlot {
 
       override def preStart(): Unit = pull(in)
 
-      def disconnect(retries: List[RetryRequest] = Nil) = {
+      def disconnect(failedRequests: Int = 0, retries: List[RetryRequest] = Nil) = {
         connectionFlowSource.complete()
         if (isConnected) {
           isConnected = false
-          emitMultiple(out1, SlotEvent.Disconnected(slotIx, retries.size) :: retries, () ⇒ pull(in))
+          emitMultiple(out1, SlotEvent.Disconnected(slotIx, failedRequests) :: retries, () ⇒ pull(in))
         }
       }
 
@@ -108,14 +105,14 @@ private object PoolSlot {
         override def onUpstreamFinish(): Unit = disconnect()
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
-          val retryRequests: List[RetryRequest] = inflightRequests.iterator().asScala.filter(_.retriesLeft > 0)
+          val retryRequests = inflightRequests.iterator().asScala.filter(_.retriesLeft > 0)
             .map(rc ⇒ SlotEvent.RetryRequest(rc.copy(retriesLeft = rc.retriesLeft - 1))).toList
           val failures = inflightRequests.iterator().asScala.filter(_.retriesLeft == 0).map(rc ⇒ ResponseContext(rc, Failure(ex))).toList
 
           inflightRequests.clear()
 
           emitMultiple(out0, failures)
-          disconnect(retryRequests)
+          disconnect(retryRequests.size + failures.size, retryRequests)
         }
       }
 
@@ -164,7 +161,6 @@ private object PoolSlot {
       setHandler(out0, EagerTerminateOutput)
       setHandler(out1, EagerTerminateOutput)
     }
-
   }
 
   final class UnexpectedDisconnectException(msg: String, cause: Throwable) extends RuntimeException(msg, cause) {
