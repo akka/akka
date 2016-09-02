@@ -8,7 +8,7 @@ import java.net.InetSocketAddress
 import java.nio.channels.{ DatagramChannel, FileChannel }
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong, AtomicReference }
+import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -436,7 +436,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       log.debug("Started embedded media driver in directory [{}]", driver.aeronDirectoryName)
       topLevelFREvents.loFreq(Transport_MediaDriverStarted, driver.aeronDirectoryName().getBytes("US-ASCII"))
       Runtime.getRuntime.addShutdownHook(stopMediaDriverShutdownHook)
-      mediaDriver.set(Some(driver))
+      if (!mediaDriver.compareAndSet(None, Some(driver))) {
+        throw new IllegalStateException("media driver started more than once")
+      }
     }
   }
 
