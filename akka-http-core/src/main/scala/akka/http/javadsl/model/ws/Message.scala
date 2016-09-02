@@ -11,7 +11,7 @@ import akka.util.ByteString
 /**
  * Represents a WebSocket message. A message can either be a binary message or a text message.
  */
-sealed abstract class Message {
+abstract class Message {
   /**
    * Is this message a text message? If true, [[asTextMessage]] will return this
    * text message, if false, [[asBinaryMessage]] will return this binary message.
