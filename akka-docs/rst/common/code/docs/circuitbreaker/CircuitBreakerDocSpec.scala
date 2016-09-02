@@ -8,7 +8,7 @@ package docs.circuitbreaker
 import scala.concurrent.duration._
 import akka.pattern.CircuitBreaker
 import akka.pattern.pipe
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{ Actor, ActorLogging, ActorRef }
 
 import scala.concurrent.Future
 
@@ -44,7 +44,7 @@ class DangerousActor extends Actor with ActorLogging {
 
 }
 
-class TellPatternActor(recipient : ActorRef) extends Actor with ActorLogging {
+class TellPatternActor(recipient: ActorRef) extends Actor with ActorLogging {
   import context.dispatcher
 
   val breaker =

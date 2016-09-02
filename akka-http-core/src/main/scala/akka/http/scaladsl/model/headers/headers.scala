@@ -766,11 +766,14 @@ private[http] object `Sec-WebSocket-Protocol` extends ModeledCompanion[`Sec-WebS
  * INTERNAL API
  */
 private[http] final case class `Sec-WebSocket-Protocol`(protocols: immutable.Seq[String])
-  extends RequestResponseHeader {
+  extends jm.headers.SecWebSocketProtocol with RequestResponseHeader {
   require(protocols.nonEmpty, "Sec-WebSocket-Protocol.protocols must not be empty")
   import `Sec-WebSocket-Protocol`.protocolsRenderer
   protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ protocols
   protected def companion = `Sec-WebSocket-Protocol`
+
+  /** Java API */
+  override def getProtocols: Iterable[String] = protocols.asJava
 }
 
 // http://tools.ietf.org/html/rfc6455#section-4.3
