@@ -5,7 +5,7 @@
 package akka.remote.artery.compress
 
 /** INTERNAL API */
-private[remote] final case class DecompressionTable[T](version: Int, table: Array[T]) {
+private[artery] final case class DecompressionTable[T](version: Int, table: Array[T]) {
   // TODO version maybe better as Long? // OR implement roll-over
   private[this] val length = table.length
 
@@ -29,7 +29,7 @@ private[remote] final case class DecompressionTable[T](version: Int, table: Arra
 }
 
 /** INTERNAL API */
-private[remote] object DecompressionTable {
+private[artery] object DecompressionTable {
   private[this] val _empty = DecompressionTable(0, Array.empty)
   def empty[T] = _empty.asInstanceOf[DecompressionTable[T]]
 }

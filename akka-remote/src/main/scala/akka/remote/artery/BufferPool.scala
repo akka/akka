@@ -178,12 +178,14 @@ private[remote] final class HeaderBuilderImpl(
   override def inboundActorRefCompressionTableVersion: Int = _inboundActorRefCompressionTableVersion
   override def inboundClassManifestCompressionTableVersion: Int = _inboundClassManifestCompressionTableVersion
 
-  def setOutboundActorRefCompression(table: CompressionTable[ActorRef]): Unit =
+  def setOutboundActorRefCompression(table: CompressionTable[ActorRef]): Unit = {
     _outboundActorRefCompression = table
+  }
   override def outboundActorRefCompression: CompressionTable[ActorRef] = _outboundActorRefCompression
 
-  def setOutboundClassManifestCompression(table: CompressionTable[String]): Unit =
+  def setOutboundClassManifestCompression(table: CompressionTable[String]): Unit = {
     _outboundClassManifestCompression = table
+  }
   def outboundClassManifestCompression: CompressionTable[String] = _outboundClassManifestCompression
 
   override def setSenderActorRef(ref: ActorRef): Unit = {

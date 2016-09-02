@@ -199,7 +199,7 @@ private[remote] class Decoder(
   inboundContext:                  InboundContext,
   system:                          ExtendedActorSystem,
   resolveActorRefWithLocalAddress: String ⇒ InternalActorRef,
-  compression:                     InboundCompressions, // TODO has to do demuxing on remote address It would seem, as decoder does not yet know
+  compression:                     InboundCompressions,
   bufferPool:                      EnvelopeBufferPool,
   inEnvelopePool:                  ObjectPool[ReusableInboundEnvelope]) extends GraphStage[FlowShape[EnvelopeBuffer, InboundEnvelope]] {
   import Decoder.Tick

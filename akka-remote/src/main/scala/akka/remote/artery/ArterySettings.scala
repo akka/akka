@@ -81,9 +81,7 @@ private[akka] object ArterySettings {
   private[akka] final class Compression private[ArterySettings] (config: Config) {
     import config._
 
-    // Compile time constants
     final val Enabled = true
-    final val Debug = false // unlocks additional very verbose debug logging of compression events (on DEBUG log level)
 
     object ActorRefs {
       val config = getConfig("actor-refs")
@@ -99,5 +97,9 @@ private[akka] object ArterySettings {
       val AdvertisementInterval = config.getMillisDuration("advertisement-interval")
       val Max = getInt("max")
     }
+  }
+  object Compression {
+    // Compile time constants
+    final val Debug = false // unlocks additional very verbose debug logging of compression events (on DEBUG log level)
   }
 }
