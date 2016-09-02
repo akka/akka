@@ -122,6 +122,7 @@ private[remote] class Association(
   @volatile private[this] var _outboundControlIngress: OutboundControlIngress = _
   @volatile private[this] var materializing = new CountDownLatch(1)
   @volatile private[this] var changeOutboundCompression: Option[Vector[ChangeOutboundCompression]] = None
+  private[this] val streamCompletions = new AtomicReference(Map.empty[String, Future[Done]])
 
   def changeActorRefCompression(table: CompressionTable[ActorRef]): Future[Done] = {
     import transport.system.dispatcher
@@ -534,6 +535,7 @@ private[remote] class Association(
     }
 
     implicit val ec = materializer.executionContext
+    updateStreamCompletion(streamName, streamCompleted)
     streamCompleted.onFailure {
       case _ if transport.isShutdown     ⇒ // don't restart after shutdown
       case _: AbruptTerminationException ⇒ // ActorSystem shutdown
@@ -559,6 +561,21 @@ private[remote] class Association(
           transport.system.terminate()
         }
     }
+  }
+
+  // set the future that completes when the current stream for a given name completes
+  @tailrec
+  private def updateStreamCompletion(streamName: String, streamCompleted: Future[Done]): Unit = {
+    val prev = streamCompletions.get()
+    if (!streamCompletions.compareAndSet(prev, prev + (streamName → streamCompleted))) {
+      updateStreamCompletion(streamName, streamCompleted)
+    }
+  }
+
+  // for orderly shutdown purposes, can not be trusted except for during shutdown as streams may restart
+  def streamsCompleted: Future[Done] = {
+    implicit val ec = materializer.executionContext
+    Future.sequence(streamCompletions.get().values).map(_ ⇒ Done)
   }
 
   override def toString: String =
