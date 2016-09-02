@@ -791,8 +791,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def createInboundCompressions(inboundContext: InboundContext): InboundCompressions =
-    if (settings.Advanced.Compression.Enabled) new InboundCompressionsImpl(system, inboundContext, settings.Advanced.Compression)
-    else NoInboundCompressions
+    new InboundCompressionsImpl(system, inboundContext, settings.Advanced.Compression)
 
   def createEncoder(pool: EnvelopeBufferPool): Flow[OutboundEnvelope, EnvelopeBuffer, ChangeOutboundCompression] =
     Flow.fromGraph(new Encoder(localAddress, system, outboundEnvelopePool, pool))

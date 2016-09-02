@@ -4,8 +4,11 @@
 
 package akka.remote.artery.compress
 
+import java.util
+import java.util.Comparator
+
 /** INTERNAL API: Versioned compression table to be advertised between systems */
-private[akka] final case class CompressionTable[T](version: Int, map: Map[T, Int]) {
+private[artery] final case class CompressionTable[T](version: Int, map: Map[T, Int]) {
   import CompressionTable.NotCompressedId
 
   def compress(value: T): Int =
@@ -24,15 +27,35 @@ private[akka] final case class CompressionTable[T](version: Int, map: Map[T, Int
       require(map.values.sum + map.size == expectedGaplessSum, "Given compression map does not seem to be gap-less and starting from zero, " +
         "which makes compressing it into an Array difficult, bailing out! Map was: " + map)
 
-      val vals = map.toList.sortBy(_._2).iterator.map(_._1)
-      val dtab = Array.ofDim[Object](map.size).asInstanceOf[Array[T]]
-      vals.copyToArray(dtab) // TODO HEAVY, AVOID COPYING AND THE MAP ETC!!!
-      DecompressionTable[T](version, dtab)
+      val tups = Array.ofDim[(Object, Int)](map.size).asInstanceOf[Array[(T, Int)]]
+      val ts = Array.ofDim[Object](map.size).asInstanceOf[Array[T]]
+
+      var i = 0
+      val mit = map.iterator
+      while (i < tups.length) {
+        tups(i) = mit.next()
+        i += 1
+      }
+      util.Arrays.sort(tups, CompressionTable.compareBy2ndValue[T])
+
+      i = 0
+      while (i < tups.length) {
+        ts(i) = tups(i)._1
+        i += 1
+      }
+
+      DecompressionTable[T](version, ts)
     }
 }
 /** INTERNAL API */
-private[remote] object CompressionTable {
+private[artery] object CompressionTable {
   final val NotCompressedId = -1
+
+  final val CompareBy2ndValue: Comparator[(Object, Int)] = new Comparator[(Object, Int)] {
+    override def compare(o1: (Object, Int), o2: (Object, Int)): Int =
+      o1._2 compare o2._2
+  }
+  def compareBy2ndValue[T]: Comparator[Tuple2[T, Int]] = CompareBy2ndValue.asInstanceOf[Comparator[(T, Int)]]
 
   private[this] val _empty = new CompressionTable[Any](0, Map.empty)
   def empty[T] = _empty.asInstanceOf[CompressionTable[T]]

@@ -8,12 +8,13 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.function.LongFunction
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
-
 import akka.actor.{ ActorRef, ActorSystem, Address }
 import akka.event.{ Logging, NoLogging }
 import akka.remote.artery.{ ArterySettings, InboundContext, OutboundContext }
 import akka.util.{ OptionVal, PrettyDuration }
 import org.agrona.collections.Long2ObjectHashMap
+
+import scala.annotation.tailrec
 
 /**
  * INTERNAL API
@@ -66,17 +67,23 @@ private[remote] final class InboundCompressionsImpl(
 
   override def decompressActorRef(originUid: Long, tableVersion: Int, idx: Int): OptionVal[ActorRef] =
     actorRefsIn(originUid).decompress(tableVersion, idx)
-  override def hitActorRef(originUid: Long, address: Address, ref: ActorRef, n: Int): Unit =
+  override def hitActorRef(originUid: Long, address: Address, ref: ActorRef, n: Int): Unit = {
+    if (ArterySettings.Compression.Debug) println(s"[compress] hitActorRef($originUid, $address, $ref, $n)")
     actorRefsIn(originUid).increment(address, ref, n)
-  override def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit =
+  }
+
+  override def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit = {
     actorRefsIn(originUid).confirmAdvertisement(tableVersion)
+  }
 
   // class manifest compression ---
 
   override def decompressClassManifest(originUid: Long, tableVersion: Int, idx: Int): OptionVal[String] =
     classManifestsIn(originUid).decompress(tableVersion, idx)
-  override def hitClassManifest(originUid: Long, address: Address, manifest: String, n: Int): Unit =
+  override def hitClassManifest(originUid: Long, address: Address, manifest: String, n: Int): Unit = {
+    if (ArterySettings.Compression.Debug) println(s"[compress] hitClassManifest($originUid, $address, $manifest, $n)")
     classManifestsIn(originUid).increment(address, manifest, n)
+  }
   override def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit =
     actorRefsIn(originUid).confirmAdvertisement(tableVersion)
 
@@ -114,12 +121,12 @@ private[remote] final class InboundActorRefCompression(
 
   /* Since the table is empty here, anything we increment here becomes a heavy hitter immediately. */
   def preAllocate(allocations: ActorRef*): Unit = {
-    allocations foreach { case ref ⇒ increment(null, ref, 100000) }
+    allocations foreach { ref ⇒ increment(null, ref, 100000) }
   }
 
   override def decompress(tableVersion: Int, idx: Int): OptionVal[ActorRef] =
     if (idx == 0) OptionVal.Some(system.deadLetters)
-    else super.decompress(tableVersion, idx)
+    else super.decompressInternal(tableVersion, idx, 0)
 
   scheduleNextTableAdvertisement()
   override protected def tableAdvertisementInterval = settings.ActorRefs.AdvertisementInterval
@@ -140,12 +147,16 @@ final class InboundManifestCompression(
   scheduleNextTableAdvertisement()
   override protected def tableAdvertisementInterval = settings.Manifests.AdvertisementInterval
 
-  override lazy val log = NoLogging
-
   override def advertiseCompressionTable(outboundContext: OutboundContext, table: CompressionTable[String]): Unit = {
-    log.debug(s"Advertise ClassManifest compression [$table] to [${outboundContext.remoteAddress}]")
+    log.debug(s"Advertise {} compression [{}] to [{}]", Logging.simpleName(getClass), table, outboundContext.remoteAddress)
     outboundContext.sendControl(CompressionProtocol.ClassManifestCompressionAdvertisement(inboundContext.localAddress, table))
   }
+
+  override def increment(remoteAddress: Address, value: String, n: Long): Unit =
+    if (value != "") super.increment(remoteAddress, value, n)
+
+  override def decompress(incomingTableVersion: Int, idx: Int): OptionVal[String] =
+    decompressInternal(incomingTableVersion, idx, 0)
 }
 /**
  * INTERNAL API
@@ -202,6 +213,9 @@ private[remote] abstract class InboundCompression[T >: Null](
 
   /* ==== COMPRESSION ==== */
 
+  /** Override and specialize if needed, for default compression logic delegate to 3-param overload */
+  def decompress(incomingTableVersion: Int, idx: Int): OptionVal[T]
+
   /**
    * Decompress given identifier into its original representation.
    * Passed in tableIds must only ever be in not-decreasing order (as old tables are dropped),
@@ -209,8 +223,10 @@ private[remote] abstract class InboundCompression[T >: Null](
    *
    * @throws UnknownCompressedIdException if given id is not known, this may indicate a bug – such situation should not happen.
    */
-  // not tailrec because we allow special casing in sub-class, however recursion is always at most 1 level deep
-  def decompress(incomingTableVersion: Int, idx: Int): OptionVal[T] = {
+  @tailrec final def decompressInternal(incomingTableVersion: Int, idx: Int, attemptCounter: Int): OptionVal[T] = {
+    // effectively should never loop more than once, to avoid infinite recursion blow up eagerly 
+    if (attemptCounter > 2) throw new IllegalStateException(s"Unable to decompress $idx from table $incomingTableVersion. Internal state: ${state.get}")
+
     val current = state.get
     val oldVersion = current.oldTable.version
     val activeVersion = current.activeTable.version
@@ -226,14 +242,14 @@ private[remote] abstract class InboundCompression[T >: Null](
       if (value != null) OptionVal.Some[T](value)
       else throw new UnknownCompressedIdException(idx)
     } else if (incomingTableVersion < activeVersion) {
-      log.warning("Received value compressed with old table: [{}], current table version is: [{}]", incomingTableVersion, activeVersion)
+      log.debug("Received value compressed with old table: [{}], current table version is: [{}]", incomingTableVersion, activeVersion)
       OptionVal.None
     } else if (incomingTableVersion == current.nextTable.version) {
       log.debug(
         "Received first value compressed using the next prepared compression table, flipping to it (version: {})",
         current.nextTable.version)
       confirmAdvertisement(incomingTableVersion)
-      decompress(incomingTableVersion, idx) // recurse, activeTable will not be able to handle this
+      decompressInternal(incomingTableVersion, idx, attemptCounter + 1) // recurse, activeTable will not be able to handle this
     } else {
       // which means that incoming version was > nextTable.version, which likely is a bug
       log.error(
@@ -261,12 +277,8 @@ private[remote] abstract class InboundCompression[T >: Null](
    * Add `n` occurance for the given key and call `heavyHittedDetected` if element has become a heavy hitter.
    * Empty keys are omitted.
    */
-  // TODO not so happy about passing around address here, but in incoming there's no other earlier place to get it?
   def increment(remoteAddress: Address, value: T, n: Long): Unit = {
     val count = cms.addObjectAndEstimateCount(value, n)
-
-    // TODO optimise order of these, what is more expensive?
-    // TODO (now the `previous` is, but if aprox datatype there it would be faster)... Needs pondering.
     addAndCheckIfheavyHitterDetected(value, count)
   }
 
@@ -320,6 +332,7 @@ private[remote] abstract class InboundCompression[T >: Null](
    */
   private[remote] def runNextTableAdvertisement() = {
     val current = state.get
+    if (ArterySettings.Compression.Debug) println(s"[compress] runNextTableAdvertisement, state = $current")
     current.advertisementInProgress match {
       case None ⇒
         inboundContext.association(originUid) match {
