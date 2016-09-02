@@ -7,7 +7,7 @@ package akka.remote.artery
 import java.nio.charset.Charset
 import java.nio.{ ByteBuffer, ByteOrder }
 
-import akka.actor.{ ActorRef, Address }
+import akka.actor.{ ActorPath, ChildActorPath, ActorRef, Address }
 import akka.remote.artery.compress.CompressionProtocol._
 import akka.remote.artery.compress.{ CompressionTable, InboundCompressions }
 import akka.serialization.Serialization
@@ -150,10 +150,28 @@ private[remote] sealed trait HeaderBuilder {
 /**
  * INTERNAL API
  */
+private[remote] final class SerializationFormatCache
+  extends LruBoundedCache[ActorRef, String](capacity = 1024, evictAgeThreshold = 600) {
+
+  override protected def compute(ref: ActorRef): String = ref.path.toSerializationFormat
+
+  // Not calling ref.hashCode since it does a path.hashCode if ActorCell.undefinedUid is encountered.
+  // Refs with ActorCell.undefinedUid will now collide all the time, but this is not a usual scenario anyway.
+  override protected def hash(ref: ActorRef): Int = ref.path.uid
+
+  override protected def isCacheable(v: String): Boolean = true
+}
+
+/**
+ * INTERNAL API
+ */
 private[remote] final class HeaderBuilderImpl(
   inboundCompression:                    InboundCompressions,
   var _outboundActorRefCompression:      CompressionTable[ActorRef],
   var _outboundClassManifestCompression: CompressionTable[String]) extends HeaderBuilder {
+
+  private[this] val toSerializationFormat: SerializationFormatCache = new SerializationFormatCache
+
   // Fields only available for EnvelopeBuffer
   var _version: Int = _
   var _uid: Long = _
@@ -215,7 +233,7 @@ private[remote] final class HeaderBuilderImpl(
   def setRecipientActorRef(ref: ActorRef): Unit = {
     _recipientActorRefIdx = outboundActorRefCompression.compress(ref)
     if (_recipientActorRefIdx == -1) {
-      _recipientActorRef = ref.path.toSerializationFormat
+      _recipientActorRef = toSerializationFormat.getOrCompute(ref)
     }
   }
   def recipientActorRef(originUid: Long): OptionVal[ActorRef] =
