@@ -167,7 +167,7 @@ class CodecBenchmark {
 
     val decoder: Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] =
       Flow.fromGraph(new Decoder(inboundContext, system.asInstanceOf[ExtendedActorSystem],
-        resolveActorRefWithLocalAddress, NoInboundCompressions, envelopePool, inboundEnvelopePool))
+        uniqueLocalAddress, NoInboundCompressions, envelopePool, inboundEnvelopePool))
 
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
       .map { _ =>
@@ -208,7 +208,7 @@ class CodecBenchmark {
 
     val decoder: Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] =
       Flow.fromGraph(new Decoder(inboundContext, system.asInstanceOf[ExtendedActorSystem],
-        resolveActorRefWithLocalAddress, NoInboundCompressions, envelopePool, inboundEnvelopePool))
+        uniqueLocalAddress, NoInboundCompressions, envelopePool, inboundEnvelopePool))
 
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
       .map(msg ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, payload, OptionVal.Some(remoteRefB)))
