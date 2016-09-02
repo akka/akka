@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.http.impl.engine.client.PoolMasterActor.PoolInterfaceRunning
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
-import akka.http.impl.util.{ SingletonException, StreamUtils }
+import akka.http.impl.util.SingletonException
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
@@ -353,12 +353,10 @@ class ConnectionPoolSpec extends AkkaSpec("""
     Await.result(idSum, 10.seconds) shouldEqual N * (N + 1) / 2
   }
 
-  "xoxo be able to handle 500 pipelined requests with connection termination" in new TestSetup(autoAccept = true) {
+  "be able to handle 500 pipelined requests with connection termination" in new TestSetup(autoAccept = true) {
     def closeHeader(): List[Connection] =
-      //      if (util.Random.nextInt(8) == 0)
-      Connection("close") :: Nil
-
-    //      else Nil
+      if (util.Random.nextInt(8) == 0) Connection("close") :: Nil
+      else Nil
 
     override def testServerHandler(connNr: Int): HttpRequest ⇒ HttpResponse = { r ⇒
       val idx = r.uri.path.tail.head.toString
@@ -379,8 +377,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
       try {
         val N = 200
-        info(s"n=${N}, poolFlow=${poolFlow}")
-        val (pool, idSum) =
+        val (_, idSum) =
           Source.fromIterator(() ⇒ Iterator.from(1)).take(N)
             .map(request)
             .viaMat(poolFlow)(Keep.right)
@@ -394,7 +391,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
         Await.result(idSum, 30.seconds) shouldEqual N * (N + 1) / 2
       } catch {
         case thr: Throwable ⇒
-          throw new RuntimeException(s"Failed at pipeliningLimit=${pipeliningLimit}, poolFlow=${poolFlow}", thr)
+          throw new RuntimeException(s"Failed at pipeliningLimit=$pipeliningLimit, poolFlow=$poolFlow", thr)
       }
     }
   }
