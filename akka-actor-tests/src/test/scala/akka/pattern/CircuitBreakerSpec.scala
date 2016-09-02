@@ -40,6 +40,9 @@ object CircuitBreakerSpec {
 
   def multiFailureCb()(implicit system: ActorSystem, ec: ExecutionContext): Breaker =
     new Breaker(new CircuitBreaker(system.scheduler, 5, 200.millis.dilated, 500.millis.dilated))
+
+  def nonOneFactorCb()(implicit system: ActorSystem, ec: ExecutionContext): Breaker =
+    new Breaker(new CircuitBreaker(system.scheduler, 1, 2000.millis.dilated, 1000.millis.dilated, 1.day.dilated, 5))
 }
 
 class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
@@ -208,6 +211,28 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       val breaker = CircuitBreakerSpec.shortResetTimeoutCb()
       breaker().withCircuitBreaker(Future(throwException))
       checkLatch(breaker.halfOpenLatch)
+    }
+
+    "increase the reset timeout after it transits to open again" in {
+      val breaker = CircuitBreakerSpec.nonOneFactorCb()
+      breaker().withCircuitBreaker(Future(throwException))
+      checkLatch(breaker.openLatch)
+
+      val e1 = intercept[CircuitBreakerOpenException] { breaker().withSyncCircuitBreaker(sayHi) }
+      val shortRemainingDuration = e1.remainingDuration
+
+      Thread.sleep(1000.millis.dilated.toMillis)
+      checkLatch(breaker.halfOpenLatch)
+
+      // transit to open again
+      breaker().withCircuitBreaker(Future(throwException))
+      checkLatch(breaker.openLatch)
+
+      val e2 = intercept[CircuitBreakerOpenException] { breaker().withSyncCircuitBreaker(sayHi) }
+      val longRemainingDuration = e2.remainingDuration
+
+      (shortRemainingDuration < longRemainingDuration) should ===(true)
+
     }
   }
 
