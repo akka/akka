@@ -89,7 +89,7 @@ private[remote] class Association(
   private val controlQueueSize = transport.settings.Advanced.SysMsgBufferSize
   // FIXME config queue size, and it should perhaps also be possible to use some kind of LinkedQueue
   //       such as agrona.ManyToOneConcurrentLinkedQueue or AbstractNodeQueue for less memory consumption
-  private val queueSize = 3072 / outboundLanes
+  private val queueSize = 3072
   private val largeQueueSize = 256
 
   private[this] val queues: Array[SendQueue.ProducerApi[OutboundEnvelope]] = Array.ofDim(2 + outboundLanes)
