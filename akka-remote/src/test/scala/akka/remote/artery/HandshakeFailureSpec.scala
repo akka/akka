@@ -49,8 +49,9 @@ class HandshakeFailureSpec extends AkkaSpec(HandshakeFailureSpec.commonConfig) w
 
       within(10.seconds) {
         awaitAssert {
-          sel ! "hello2"
-          expectMsg(1.second, "hello2")
+          val probe = TestProbe()
+          sel.tell("hello2", probe.ref)
+          probe.expectMsg(1.second, "hello2")
         }
       }
 
