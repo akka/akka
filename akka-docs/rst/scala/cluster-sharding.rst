@@ -25,6 +25,12 @@ to route the message with the entity id to the final destination.
 Cluster sharding will not be active on members with status :ref:`WeaklyUp <weakly_up_scala>` 
 if that feature is enabled.
 
+.. warning::
+   **Don't use Cluster Sharding together with Automatic Downing**,
+   since it allows the cluster to split up into two separate clusters, which in turn will result
+   in *multiple shards and entities* being started, one in each separate cluster! 
+   See :ref:`automatic-vs-manual-downing-java`.
+
 An Example
 ----------
 
@@ -305,6 +311,12 @@ It can be needed to remove the data if the Cluster Sharding coordinator
 cannot startup because of corrupt data, which may happen if accidentally
 two clusters were running at the same time, e.g. caused by using auto-down
 and there was a network partition.
+
+.. warning::
+   **Don't use Cluster Sharding together with Automatic Downing**,
+   since it allows the cluster to split up into two separate clusters, which in turn will result
+   in *multiple shards and entities* being started, one in each separate cluster! 
+   See :ref:`automatic-vs-manual-downing-scala`.
 
 Use this program as a standalone Java main program::
  
