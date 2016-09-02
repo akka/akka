@@ -10,7 +10,6 @@ import org.scalatest.matchers.Matcher
 import org.scalatest.{ FreeSpec, Matchers }
 import akka.util.ByteString
 import akka.stream.scaladsl.Source
-import akka.stream.stage.Stage
 import akka.http.impl.util._
 
 import Protocol.Opcode
@@ -310,10 +309,10 @@ class FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
     Source(bytes.toVector).via(FrameEventParser).runFold(Vector.empty[FrameEvent])(_ :+ _)
       .awaitResult(1.second)
   private def renderToByteString(events: immutable.Seq[FrameEvent]): ByteString =
-    Source(events).transform(newRenderer).runFold(ByteString.empty)(_ ++ _)
+    Source(events).via(newRenderer()).runFold(ByteString.empty)(_ ++ _)
       .awaitResult(1.second)
 
-  protected def newRenderer(): Stage[FrameEvent, ByteString] = new FrameEventRenderer
+  protected def newRenderer(): FrameEventRenderer = new FrameEventRenderer
 
   import scala.language.implicitConversions
   private implicit def headerToEvent(header: FrameHeader): FrameEvent =

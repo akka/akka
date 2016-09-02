@@ -869,7 +869,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         .stack(serverSide, maskingRandomFactory = Randoms.SecureRandomInstances, closeTimeout = closeTimeout, log = system.log)
         .join(messageHandler))
       .via(printEvent("frameRendererIn"))
-      .transform(() ⇒ new FrameEventRenderer)
+      .via(new FrameEventRenderer)
       .via(printEvent("frameRendererOut"))
       .buffer(1, OverflowStrategy.backpressure) // alternatively need to request(1) before expectComplete
       .to(netOut.sink)
