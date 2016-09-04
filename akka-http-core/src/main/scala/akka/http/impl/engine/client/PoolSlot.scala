@@ -68,11 +68,14 @@ private object PoolSlot {
         if (isConnected) {
           isConnected = false
 
-          val (inflightRetry, inflightFail) = if (ex.isEmpty) (inflightRequests.asScala, Nil)
-          else inflightRequests.iterator().asScala.partition(_.retriesLeft > 0)
-
-          val retries = inflightRetry.map(rc ⇒ SlotEvent.RetryRequest(if (rc.retriesLeft > 0) rc.copy(retriesLeft = rc.retriesLeft - 1) else rc)).toList
-          val failures = inflightFail.map(rc ⇒ ResponseContext(rc, Failure(ex.getOrElse(new UnexpectedDisconnectException("Unexpected (early) disconnect"))))).toList
+          // if there was an error sending the request may have been sent so decrement retriesLeft
+          // otherwise the downstream hasn't sent so sent them back without modifying retriesLeft
+          val (retries, failures) = ex.map { fail ⇒
+            val (inflightRetry, inflightFail) = inflightRequests.iterator().asScala.partition(_.retriesLeft > 0)
+            val retries = inflightRetry.map(rc ⇒ SlotEvent.RetryRequest(rc.copy(retriesLeft = rc.retriesLeft - 1))).toList
+            val failures = inflightFail.map(rc ⇒ ResponseContext(rc, Failure(fail))).toList
+            (retries, failures)
+          }.getOrElse((inflightRequests.iterator().asScala.map(rc ⇒ SlotEvent.RetryRequest(rc)).toList, Nil))
 
           inflightRequests.clear()
 
@@ -163,9 +166,5 @@ private object PoolSlot {
 
       setHandler(eventsOut, EagerTerminateOutput)
     }
-  }
-
-  final class UnexpectedDisconnectException(msg: String, cause: Throwable) extends RuntimeException(msg, cause) {
-    def this(msg: String) = this(msg, null)
   }
 }
