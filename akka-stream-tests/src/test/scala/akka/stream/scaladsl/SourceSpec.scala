@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 import akka.testkit.DefaultTimeout
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{ Span, Millis }
-import scala.concurrent.{ Future, Await }
+import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.control.NoStackTrace
@@ -48,7 +48,41 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       p.subscribe(c2)
       c2.expectSubscriptionAndError()
     }
+  }
 
+  "Future Source" must {
+    import akka.stream.impl.fusing.GraphStages.FutureFlattenSource
+
+    "flatten elements" in Utils.assertAllStagesStopped {
+      implicit def ec = materializer.executionContext
+
+      val subSource: Source[Int, String] =
+        Source(List(1, 2, 3)).mapMaterializedValue(_ ⇒ "foo")
+
+      val futureSource = new FutureFlattenSource(Future(subSource))
+      val source: Source[Int, Future[String]] = Source.fromGraph(futureSource)
+
+      val materialized = Promise[String]()
+      val watched: Source[Int, NotUsed] = source.watchTermination() { (m, d) ⇒
+        materialized.completeWith(d.flatMap(_ ⇒ m))
+        NotUsed
+      }
+
+      val p = watched.runWith(Sink.asPublisher(false))
+      val c = TestSubscriber.manualProbe[Int]()
+      p.subscribe(c)
+
+      val sub = c.expectSubscription()
+      sub.request(5)
+
+      c.expectNext(1)
+      c.expectNext(2)
+      c.expectNext(3)
+
+      c.expectComplete()
+
+      Await.result(materialized.future, 3.seconds) should ===("foo")
+    }
   }
 
   "Empty Source" must {
@@ -417,5 +451,4 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       closed should ===(true)
     }
   }
-
 }
