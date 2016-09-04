@@ -257,7 +257,6 @@ class ActorGraphInterpreterSpec extends StreamSpec {
       EventFilter[IllegalArgumentException](pattern = "Error in stage.*", occurrences = 1).intercept {
         Await.result(Source.fromGraph(failyStage).runWith(Sink.ignore), 3.seconds)
       }
-
     }
 
     "be able to properly handle case where a stage fails before subscription happens" in assertAllStagesStopped {
