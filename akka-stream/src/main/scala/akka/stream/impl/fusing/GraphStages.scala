@@ -276,6 +276,71 @@ object GraphStages {
     override def toString: String = "SingleSource"
   }
 
+  final class FutureFlattenSource[T, M](
+    val future: Future[Graph[SourceShape[T], M]])
+    extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
+
+    ReactiveStreamsCompliance.requireNonNullElement(future)
+
+    val out = Outlet[T]("futureFlatten.out")
+    val shape = SourceShape(out)
+
+    override def initialAttributes = DefaultAttributes.futureSource
+
+    def createLogicAndMaterializedValue(attr: Attributes): (GraphStageLogic, Future[M]) = {
+      val materialized = Promise[M]()
+
+      val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
+        private val sinkIn = new SubSinkInlet[T]("FlattenMergeSink")
+
+        private val cb = getAsyncCallback[Try[Graph[SourceShape[T], M]]] {
+          case scala.util.Success(graph) ⇒ {
+            setHandler(out, this)
+            sinkIn.setHandler(this)
+
+            sinkIn.pull()
+
+            val src = Source.fromGraph(graph)
+            val runnable = src.to(sinkIn.sink)
+
+            try {
+              materialized.success(interpreter.subFusingMaterializer.
+                materialize(runnable, initialAttributes = attr))
+            } catch {
+              case cause: Throwable ⇒
+                materialized.failure(cause)
+            }
+          }
+
+          case scala.util.Failure(t) ⇒ failStage(t)
+        }.invoke _
+
+        setHandler(out, new OutHandler {
+          def onPull(): Unit =
+            future.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext)
+        })
+
+        def onPush(): Unit = {
+          if (isAvailable(out)) {
+            push(out, sinkIn.grab())
+            sinkIn.pull()
+          }
+        }
+
+        def onPull(): Unit = {}
+
+        override def onUpstreamFinish(): Unit =
+          if (!sinkIn.isAvailable) completeStage()
+
+        override def postStop(): Unit = sinkIn.cancel()
+      }
+
+      (logic, materialized.future)
+    }
+
+    override def toString: String = "FutureFlattenSource"
+  }
+
   final class FutureSource[T](val future: Future[T]) extends GraphStage[SourceShape[T]] {
     ReactiveStreamsCompliance.requireNonNullElement(future)
     val shape = SourceShape(Outlet[T]("future.out"))
