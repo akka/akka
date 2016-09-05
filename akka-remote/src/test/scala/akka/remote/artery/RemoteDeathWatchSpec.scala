@@ -26,8 +26,6 @@ object RemoteDeathWatchSpec {
             }
         }
         remote.watch-failure-detector.acceptable-heartbeat-pause = 3s
-        # FIXME do we need the initial-system-message-delivery-timeout?
-        remote.initial-system-message-delivery-timeout = 3 s
         remote.artery.enabled = on
         remote.artery.hostname = localhost
         remote.artery.port = 0

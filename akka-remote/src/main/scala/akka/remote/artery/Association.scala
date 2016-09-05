@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import akka.stream.KillSwitches
 import scala.util.Failure
 import scala.util.Success
+import akka.remote.artery.ArteryTransport.AeronTerminated
 
 /**
  * INTERNAL API
@@ -280,7 +281,6 @@ private[remote] class Association(
     }
 
     // allow ActorSelectionMessage to pass through quarantine, to be able to establish interaction with new system
-    // FIXME where is that ActorSelectionMessage check in old remoting?
     if (message.isInstanceOf[ActorSelectionMessage] || !associationState.isQuarantined() || message == ClearSystemMessageDelivery) {
       message match {
         case _: SystemMessage | ClearSystemMessageDelivery | _: ControlMessage ⇒
@@ -388,7 +388,6 @@ private[remote] class Association(
               remoteAddress, reason)
         }
       case None ⇒
-        // FIXME should we do something more, old impl used gating?
         log.warning("Quarantine of [{}] ignored because unknown UID", remoteAddress)
     }
 
@@ -573,6 +572,7 @@ private[remote] class Association(
     updateStreamCompletion(streamName, streamCompleted.recover { case _ ⇒ Done })
     streamCompleted.onFailure {
       case ArteryTransport.ShutdownSignal ⇒ // shutdown as expected
+      case _: AeronTerminated             ⇒ // shutdown already in progress
       case cause if transport.isShutdown ⇒
         // don't restart after shutdown, but log some details so we notice
         log.error(cause, s"{} to {} failed after shutdown. {}", streamName, remoteAddress, cause.getMessage)
@@ -593,10 +593,8 @@ private[remote] class Association(
           log.error(cause, "{} to {} failed. Restarting it. {}", streamName, remoteAddress, cause.getMessage)
           lazyRestart()
         } else {
-          log.error(cause, s"{} to {} failed and restarted {} times within {} seconds. Terminating system. {cause.getMessage}",
+          log.error(cause, s"{} to {} failed and restarted {} times within {} seconds. Terminating system. ${cause.getMessage}",
             streamName, remoteAddress, transport.settings.Advanced.OutboundMaxRestarts, transport.settings.Advanced.OutboundRestartTimeout.toSeconds)
-
-          // FIXME is this the right thing to do for outbound?
           transport.system.terminate()
         }
     }
