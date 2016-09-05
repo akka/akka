@@ -89,18 +89,20 @@ private[akka] object RemoteActorRefProvider {
     import EndpointManager.Send
 
     override def !(message: Any)(implicit sender: ActorRef): Unit = message match {
-      case Send(m, senderOption, _, seqOpt) ⇒
+      case Send(m, senderOption, recipient, seqOpt) ⇒
         // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
         // the dead letter status
-        if (seqOpt.isEmpty) super.!(m)(senderOption.orNull)
+        if (seqOpt.isEmpty) super.!(DeadLetter(m, senderOption.getOrElse(_provider.deadLetters), recipient))
       case DeadLetter(Send(m, senderOption, recipient, seqOpt), _, _) ⇒
         // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
         // the dead letter status
-        if (seqOpt.isEmpty) super.!(m)(senderOption.orNull)
+        if (seqOpt.isEmpty) super.!(DeadLetter(m, senderOption.getOrElse(_provider.deadLetters), recipient))
       case env: OutboundEnvelope ⇒
-        super.!(env.message)(env.sender.orNull)
+        super.!(DeadLetter(env.message, env.sender.getOrElse(_provider.deadLetters),
+          env.recipient.getOrElse(_provider.deadLetters)))
       case DeadLetter(env: OutboundEnvelope, _, _) ⇒
-        super.!(env.message)(env.sender.orNull)
+        super.!(DeadLetter(env.message, env.sender.getOrElse(_provider.deadLetters),
+          env.recipient.getOrElse(_provider.deadLetters)))
       case _ ⇒ super.!(message)(sender)
     }
 
