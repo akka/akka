@@ -89,18 +89,20 @@ private[akka] object RemoteActorRefProvider {
     import EndpointManager.Send
 
     override def !(message: Any)(implicit sender: ActorRef): Unit = message match {
-      case Send(m, senderOption, _, seqOpt) ⇒
+      case Send(m, senderOption, recipient, seqOpt) ⇒
         // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
         // the dead letter status
-        if (seqOpt.isEmpty) super.!(m)(senderOption.orNull)
+        if (seqOpt.isEmpty) super.!(DeadLetter(m, senderOption.getOrElse(_provider.deadLetters), recipient))
       case DeadLetter(Send(m, senderOption, recipient, seqOpt), _, _) ⇒
         // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
         // the dead letter status
-        if (seqOpt.isEmpty) super.!(m)(senderOption.orNull)
+        if (seqOpt.isEmpty) super.!(DeadLetter(m, senderOption.getOrElse(_provider.deadLetters), recipient))
       case env: OutboundEnvelope ⇒
-        super.!(env.message)(env.sender.orNull)
+        super.!(DeadLetter(env.message, env.sender.getOrElse(_provider.deadLetters),
+          env.recipient.getOrElse(_provider.deadLetters)))
       case DeadLetter(env: OutboundEnvelope, _, _) ⇒
-        super.!(env.message)(env.sender.orNull)
+        super.!(DeadLetter(env.message, env.sender.getOrElse(_provider.deadLetters),
+          env.recipient.getOrElse(_provider.deadLetters)))
       case _ ⇒ super.!(message)(sender)
     }
 
@@ -457,14 +459,6 @@ private[akka] trait RemoteRef extends ActorRefScope {
 
 /**
  * INTERNAL API
- */
-private[remote] sealed abstract class MessageDestinationFlag
-private[remote] case object RegularDestination extends MessageDestinationFlag
-private[remote] case object LargeDestination extends MessageDestinationFlag
-private[remote] case object PriorityDestination extends MessageDestinationFlag
-
-/**
- * INTERNAL API
  * Remote ActorRef that is used when referencing the Actor on a different node than its "home" node.
  * This reference is network-aware (remembers its origin) and immutable.
  */
@@ -488,7 +482,7 @@ private[akka] class RemoteActorRef private[akka] (
   @volatile private[remote] var cachedAssociation: artery.Association = null
 
   // used by artery to direct messages to separate specialized streams
-  @volatile private[remote] var cachedMessageDestinationFlag: MessageDestinationFlag = null
+  @volatile private[remote] var cachedSendQueueIndex: Int = -1
 
   def getChild(name: Iterator[String]): InternalActorRef = {
     val s = name.toStream

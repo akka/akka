@@ -21,7 +21,6 @@ object RemoteMessageSerializationSpec {
       case s if sender().path == another.path ⇒ one ! s
     }
   }
-  val maxPayloadBytes = ArteryTransport.MaximumFrameSize
 }
 
 class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec("""
@@ -30,6 +29,8 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec("""
   """) with ImplicitSender {
 
   import RemoteMessageSerializationSpec._
+
+  val maxPayloadBytes = RARP(system).provider.remoteSettings.Artery.Advanced.MaximumFrameSize
 
   val remoteSystem = newRemoteSystem()
   val remotePort = port(remoteSystem)

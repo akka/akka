@@ -4,7 +4,7 @@
 package akka.remote.artery
 
 import akka.actor.{ Actor, ActorRef, ActorSelection, Props, RootActorPath }
-import akka.remote.{ LargeDestination, RARP, RegularDestination, RemoteActorRef }
+import akka.remote.{ RARP, RemoteActorRef }
 import akka.testkit.TestProbe
 import akka.util.ByteString
 
@@ -51,7 +51,7 @@ class LargeMessagesStreamSpec extends ArteryMultiNodeSpec(
       senderProbeA.expectMsg(Pong(0))
 
       // flag should be cached now
-      regularRemote.asInstanceOf[RemoteActorRef].cachedMessageDestinationFlag should ===(RegularDestination)
+      regularRemote.asInstanceOf[RemoteActorRef].cachedSendQueueIndex should be >= (Association.OrdinaryQueueIndex)
 
     }
 
@@ -75,7 +75,7 @@ class LargeMessagesStreamSpec extends ArteryMultiNodeSpec(
       senderProbeA.expectMsg(Pong(0))
 
       // flag should be cached now
-      largeRemote.asInstanceOf[RemoteActorRef].cachedMessageDestinationFlag should ===(LargeDestination)
+      largeRemote.asInstanceOf[RemoteActorRef].cachedSendQueueIndex should ===(Association.LargeQueueIndex)
 
     }
 
@@ -112,8 +112,8 @@ class LargeMessagesStreamSpec extends ArteryMultiNodeSpec(
       remoteProbe.expectMsg(10.seconds, Pong(largeBytes))
 
       // cached flags should be set now
-      largeRemote.asInstanceOf[RemoteActorRef].cachedMessageDestinationFlag should ===(LargeDestination)
-      regularRemote.asInstanceOf[RemoteActorRef].cachedMessageDestinationFlag should ===(RegularDestination)
+      largeRemote.asInstanceOf[RemoteActorRef].cachedSendQueueIndex should ===(Association.LargeQueueIndex)
+      regularRemote.asInstanceOf[RemoteActorRef].cachedSendQueueIndex should be >= (Association.OrdinaryQueueIndex)
     }
   }
 
