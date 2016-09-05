@@ -231,15 +231,11 @@ private[akka] trait HandleBackoff { this: Actor ⇒
 
   var child: Option[ActorRef] = None
   var restartCount = 0
-  var lastResetTime = Deadline.now
 
   import BackoffSupervisor._
   import context.dispatcher
 
-  override def preStart(): Unit = {
-    lastResetTime = Deadline.now
-    startChild()
-  }
+  override def preStart(): Unit = startChild()
 
   def startChild(): Unit = {
     if (child.isEmpty) {
@@ -258,16 +254,13 @@ private[akka] trait HandleBackoff { this: Actor ⇒
 
     case Reset ⇒
       reset match {
-        case ManualReset ⇒
-          restartCount = 0
-          lastResetTime = Deadline.now
+        case ManualReset ⇒ restartCount = 0
         case msg         ⇒ unhandled(msg)
       }
 
     case ResetRestartCount(current) ⇒
       if (current == restartCount) {
         restartCount = 0
-        lastResetTime = Deadline.now
       }
 
     case GetRestartCount ⇒

@@ -194,22 +194,32 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
 
     "respect withinTimeRange property of OneForOneStrategy" in {
       val probe = TestProbe()
-      // The minimum backoff needs to be larger than "withinTimeRange" - otherwise it'll reset
-      val options = Backoff.onFailure(TestActor.props(probe.ref), "someChildName", 500 millis, 10 seconds, 0.0)
-        .withSupervisorStrategy(OneForOneStrategy(withinTimeRange = 300 millis) {
+      // withinTimeRange indicates the time range in which maxNrOfRetries will cause the child to
+      // stop. IE: If we restart more than maxNrOfRetries in a time range longer than withinTimeRange
+      // that is acceptible.
+      val options = Backoff.onFailure(TestActor.props(probe.ref), "someChildName", 300 millis, 10 seconds, 0.0)
+        .withSupervisorStrategy(OneForOneStrategy(withinTimeRange = 1 seconds, maxNrOfRetries = 3) {
           case _: TestActor.StoppingException ⇒ SupervisorStrategy.Stop
         })
       val supervisor = system.actorOf(BackoffSupervisor.props(options))
       probe.expectMsg("STARTED")
       filterException[TestActor.TestException] {
         probe.watch(supervisor)
-        // Throw something immediately, we should get restarted
+        // Throw three times rapidly
+        for (i ← 1 to 3) {
+          supervisor ! "THROW"
+          probe.expectMsg("STARTED")
+        }
+        // Now wait the length of our window, and throw again. We should still restart.
+        Thread.sleep(1000)
         supervisor ! "THROW"
         probe.expectMsg("STARTED")
-        // AFter waiting longer than the time range, throw again, we should not be restarted.
-        Thread.sleep(320)
+        // Now we'll issue three more requests, and should be terminated.
         supervisor ! "THROW"
-        // Superviser should've terminated.
+        probe.expectMsg("STARTED")
+        supervisor ! "THROW"
+        probe.expectMsg("STARTED")
+        supervisor ! "THROW"
         probe.expectTerminated(supervisor)
       }
     }

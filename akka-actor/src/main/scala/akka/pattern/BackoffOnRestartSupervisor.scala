@@ -27,6 +27,14 @@ private class BackoffOnRestartSupervisor(
 
   import context._
   import BackoffSupervisor._
+
+  if (strategy.withinTimeRange.isFinite()) {
+    // If the user has defined a time range for the maxNrOfRetries, we'll queue up a message
+    // to ourselves every time that range elapses, to reset the restart counter.
+    val finiteWithinTimeRange = strategy.withinTimeRange.asInstanceOf[FiniteDuration]
+    system.scheduler.schedule(finiteWithinTimeRange, finiteWithinTimeRange, self, ResetRestartCount(restartCount))
+  }
+
   override val supervisorStrategy = OneForOneStrategy(strategy.maxNrOfRetries, strategy.withinTimeRange, strategy.loggingEnabled) {
     case ex ⇒
       val defaultDirective: Directive =
@@ -39,13 +47,7 @@ private class BackoffOnRestartSupervisor(
         case Restart ⇒
           val childRef = sender()
           val nextRestartCount = restartCount + 1
-          if (strategy.withinTimeRange.isFinite() && lastResetTime + strategy.withinTimeRange.asInstanceOf[FiniteDuration] < Deadline.now) {
-            // If we've been restarting for longer than allowed by the strategy, stop.
-            log.debug(s"Terminating on restart #{} because it has been longer than {} since the last reset",
-              nextRestartCount, strategy.withinTimeRange)
-            become(receive)
-            stop(self)
-          } else if (strategy.maxNrOfRetries >= 0 && nextRestartCount > strategy.maxNrOfRetries) {
+          if (strategy.maxNrOfRetries >= 0 && nextRestartCount > strategy.maxNrOfRetries) {
             // If we've exceeded the maximum # of retries allowed by the Strategy, die.
             log.debug(s"Terminating on restart #{} which exceeds max allowed restarts ({})", nextRestartCount, strategy.maxNrOfRetries)
             become(receive)
