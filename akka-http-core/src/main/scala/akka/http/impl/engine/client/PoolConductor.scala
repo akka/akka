@@ -128,14 +128,25 @@ private object PoolConductor {
     override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       val slotStates = Array.fill[SlotState](slotSettings.maxSlots)(Unconnected)
       var nextSlot = 0
+      var stashed: RequestContext = _
 
       setHandler(ctxIn, new InHandler {
         override def onPush(): Unit = {
           val ctx = grab(ctxIn)
-          val slot = nextSlot
-          slotStates(slot) = slotStateAfterDispatch(slotStates(slot), ctx.request.method)
-          nextSlot = bestSlot()
-          emit(out, SwitchSlotCommand(DispatchCommand(ctx), slot), tryPullCtx)
+          // if we have a non-idempotent request, pipelining is enabled and the slot is currently
+          // processing requests then try get a new slot suitable for idempotent requests
+          val slot =
+            if (!ctx.request.method.isIdempotent && pipeliningLimit > 1 && (nextSlot == -1 || slotStates(nextSlot).isInstanceOf[Loaded])) bestSlotNonIdempotent()
+            else nextSlot
+
+          if (slot == -1) {
+            nextSlot = -1
+            stashed = ctx
+          } else {
+            slotStates(slot) = slotStateAfterDispatch(slotStates(slot), ctx.request.method)
+            nextSlot = bestSlot()
+            emit(out, SwitchSlotCommand(DispatchCommand(ctx), slot), tryPullCtx)
+          }
         }
       })
 
@@ -152,9 +163,17 @@ private object PoolConductor {
           }
           pull(slotIn)
           val wasBlocked = nextSlot == -1
-          nextSlot = bestSlot()
+          nextSlot = if (stashed == null) bestSlot() else bestSlotNonIdempotent()
           val nowUnblocked = nextSlot != -1
-          if (wasBlocked && nowUnblocked) pull(ctxIn) // get next request context
+          if (wasBlocked && nowUnblocked) {
+            if (stashed != null) {
+              val slot = nextSlot
+              slotStates(nextSlot) = slotStateAfterDispatch(slotStates(slot), stashed.request.method)
+              nextSlot = bestSlot()
+              emit(out, SwitchSlotCommand(DispatchCommand(stashed), slot), tryPullCtx)
+              stashed = null
+            } else pull(ctxIn)
+          }
         }
       })
 
@@ -225,6 +244,16 @@ private object PoolConductor {
             case (x @ Loaded(a), Loaded(b)) if a < b ⇒ bestSlot(ix + 1, ix, x)
             case (x @ Loaded(a), Busy) if a < pl     ⇒ bestSlot(ix + 1, ix, x)
             case _                                   ⇒ bestSlot(ix + 1, bestIx, bestState)
+          }
+        } else bestIx
+
+      @tailrec def bestSlotNonIdempotent(ix: Int = 0, bestIx: Int = -1, bestState: SlotState = Busy): Int =
+        if (ix < slotStates.length) {
+          val pl = pipeliningLimit
+          slotStates(ix) → bestState match {
+            case (Idle, _)                           ⇒ ix
+            case (Unconnected, Loaded(_) | Busy)     ⇒ bestSlotNonIdempotent(ix + 1, ix, Unconnected)
+            case _                                   ⇒ bestSlotNonIdempotent(ix + 1, bestIx, bestState)
           }
         } else bestIx
     }
