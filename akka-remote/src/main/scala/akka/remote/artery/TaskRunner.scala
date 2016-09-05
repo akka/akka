@@ -3,16 +3,16 @@
  */
 package akka.remote.artery
 
-import java.util.concurrent.TimeUnit.{MICROSECONDS, MILLISECONDS}
+import java.util.concurrent.TimeUnit.{ MICROSECONDS, MILLISECONDS }
 
 import akka.Done
 import akka.actor.ExtendedActorSystem
-import akka.dispatch.{AbstractNodeQueue, MonitorableThreadFactory}
+import akka.dispatch.{ AbstractNodeQueue, MonitorableThreadFactory }
 import akka.event.Logging
-import org.agrona.concurrent.{BackoffIdleStrategy, BusySpinIdleStrategy, IdleStrategy, SleepingIdleStrategy}
+import org.agrona.concurrent.{ BackoffIdleStrategy, BusySpinIdleStrategy, IdleStrategy, SleepingIdleStrategy }
 
 import scala.annotation.tailrec
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ Future, Promise }
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
