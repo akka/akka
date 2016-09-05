@@ -32,10 +32,10 @@ private[akka] trait OutboundEnvelope {
   def recipient: OptionVal[RemoteActorRef]
   def message: AnyRef
   def sender: OptionVal[ActorRef]
-  def metadata: OptionVal[Map[Byte, ByteString]]
+  def metadata: MetadataMap[AnyRef]
 
   def withMessage(message: AnyRef): OutboundEnvelope
-  def withMetadata(metadata: Map[Byte, ByteString]): OutboundEnvelope
+  def setMetadata(id: Byte, metadata: AnyRef): OutboundEnvelope
 
   def copy(): OutboundEnvelope
 }
@@ -56,12 +56,12 @@ private[akka] final class ReusableOutboundEnvelope extends OutboundEnvelope {
   private var _recipient: OptionVal[RemoteActorRef] = OptionVal.None
   private var _message: AnyRef = null
   private var _sender: OptionVal[ActorRef] = OptionVal.None
-  private var _metadata: OptionVal[Map[Byte, ByteString]] = OptionVal.None
+  private val _metadata: MetadataMap[AnyRef] = MetadataMap()
 
   override def recipient: OptionVal[RemoteActorRef] = _recipient
   override def message: AnyRef = _message
   override def sender: OptionVal[ActorRef] = _sender
-  override def metadata: OptionVal[Map[Byte, ByteString]] = _metadata
+  override def metadata: MetadataMap[AnyRef] = _metadata
 
   override def withMessage(message: AnyRef): OutboundEnvelope = {
     _message = message
@@ -75,8 +75,8 @@ private[akka] final class ReusableOutboundEnvelope extends OutboundEnvelope {
    *
    * The keys 0–7 are reserved for Akka internal purposes and future extensions.
    */
-  def withMetadata(metadata: Map[Byte, ByteString]): OutboundEnvelope = {
-    _metadata = OptionVal.Some(metadata)
+  def setMetadata(id: Byte, metadata: AnyRef): OutboundEnvelope = {
+    _metadata.set(id.toInt, metadata)
     this
   }
 

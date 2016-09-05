@@ -47,6 +47,18 @@ private[remote] class EnvelopeBufferPool(maximumPayload: Int, maximumBuffers: In
 
 }
 
+/** INTERNAL API */
+private[remote] final class ByteFlag(val mask: Byte) extends AnyVal {
+  override def toString = s"ByteFlag(${ByteFlag.binaryLeftPad(mask)})"
+}
+object ByteFlag {
+  def binaryLeftPad(byte: Byte): String = {
+    val string = Integer.toBinaryString(byte)
+    val pad = "0" * (8 - string.length) // leftPad
+    pad + string
+  }
+}
+
 /**
  * INTERNAL API
  */
@@ -55,7 +67,12 @@ private[remote] object EnvelopeBuffer {
   val TagTypeMask = 0xFF000000
   val TagValueMask = 0x0000FFFF
 
-  val VersionOffset = 0 // Int
+  // Flags (1 byte allocated for them)
+  val MetadataPresentFlag = new ByteFlag(0x1)
+
+  val VersionOffset = 0 // Byte 
+  val FlagsOffset = 1 // Byte
+  // 2 bytes free // TODO re-align values to not have this empty space
   val UidOffset = 4 // Long
   val SerializerOffset = 12 // Int
 
@@ -65,8 +82,9 @@ private[remote] object EnvelopeBuffer {
   val ActorRefCompressionTableVersionTagOffset = 28 // Int // TODO handle roll-over and move to Short
   val ClassManifestCompressionTableVersionTagOffset = 32 // Int // TODO handle roll-over and move to Short
 
-  // EITHER metadata or literals start at this offset
-  val MetadataContainerPresentTagOffset = 36 // Int
+  // EITHER metadata followed by literals directly OR literals directly in this spot.
+  // Mode depends on the `MetadataPresentFlag`.
+  val MetadataContainerOffset = 36 // Int
   val LiteralsSectionOffset = 36 // Int
 
   val UsAscii = Charset.forName("US-ASCII")
@@ -94,8 +112,13 @@ private[remote] object HeaderBuilder {
  * INTERNAL API
  */
 private[remote] sealed trait HeaderBuilder {
-  def setVersion(v: Int): Unit
-  def version: Int
+  def setVersion(v: Byte): Unit
+  def version: Byte
+
+  def setFlags(v: Byte): Unit
+  def flags: Byte
+  def flag(byteFlag: ByteFlag): Boolean
+  def setFlag(byteFlag: ByteFlag, value: Boolean): Unit
 
   def inboundActorRefCompressionTableVersion: Int
   def inboundClassManifestCompressionTableVersion: Int
@@ -110,7 +133,7 @@ private[remote] sealed trait HeaderBuilder {
   def uid: Long
 
   /** Metadata SPI, internally multiple metadata sections can be represented. */
-  def metadata: ByteString
+  def metadataContainer: ByteString
 
   def setSenderActorRef(ref: ActorRef): Unit
   /**
@@ -142,9 +165,8 @@ private[remote] sealed trait HeaderBuilder {
    */
   def recipientActorRefPath: OptionVal[String]
 
-  def setMetadata(meta: ByteString): Unit
-  def clearMetadata(): Unit
-  def hasMetadataContainer: Boolean
+  def setMetadataContainer(container: ByteString): Unit
+  def clearMetadataContainer(): Unit
 
   def setSerializer(serializer: Int): Unit
   def serializer: Int
@@ -179,7 +201,8 @@ private[remote] final class HeaderBuilderImpl(
   private[this] val toSerializationFormat: SerializationFormatCache = new SerializationFormatCache
 
   // Fields only available for EnvelopeBuffer
-  var _version: Int = _
+  var _version: Byte = _
+  var _flags: Byte = _
   var _uid: Long = _
   var _inboundActorRefCompressionTableVersion: Int = 0
   var _inboundClassManifestCompressionTableVersion: Int = 0
@@ -193,10 +216,17 @@ private[remote] final class HeaderBuilderImpl(
   var _manifest: String = null
   var _manifestIdx: Int = -1
 
-  var _metadata: ByteString = null
+  var _metadataContainer: ByteString = null
 
-  override def setVersion(v: Int) = _version = v
+  override def setVersion(v: Byte) = _version = v
   override def version = _version
+
+  override def setFlags(v: Byte) = _flags = v
+  override def flags = _flags
+  override def flag(byteFlag: ByteFlag): Boolean = (_flags.toInt & byteFlag.mask) != 0
+  override def setFlag(byteFlag: ByteFlag, value: Boolean): Unit =
+    if (value) _flags = (flags | byteFlag.mask).toByte
+    else _flags = (flags & ~byteFlag.mask).toByte
 
   override def setUid(uid: Long) = _uid = uid
   override def uid: Long = _uid
@@ -271,18 +301,21 @@ private[remote] final class HeaderBuilderImpl(
     }
   }
 
-  def setMetadata(metadata: ByteString): Unit =
-    _metadata = metadata
-  def metadata: ByteString =
-    _metadata
-  def clearMetadata(): Unit =
-    _metadata = null
-  def hasMetadataContainer: Boolean =
-    _metadata == null
+  def setMetadataContainer(container: ByteString): Unit = {
+    setFlag(EnvelopeBuffer.MetadataPresentFlag, value = container != null)
+    _metadataContainer = container
+  }
+  def metadataContainer: ByteString =
+    _metadataContainer
+  def clearMetadataContainer(): Unit = {
+    setFlag(EnvelopeBuffer.MetadataPresentFlag, value = false)
+    _metadataContainer = null
+  }
 
   override def toString =
     "HeaderBuilderImpl(" +
       "version:" + version + ", " +
+      "flags:" + ByteFlag.binaryLeftPad(flags) + ", " +
       "uid:" + uid + ", " +
       "_senderActorRef:" + _senderActorRef + ", " +
       "_senderActorRefIdx:" + _senderActorRefIdx + ", " +
@@ -291,7 +324,7 @@ private[remote] final class HeaderBuilderImpl(
       "_serializer:" + _serializer + ", " +
       "_manifest:" + _manifest + ", " +
       "_manifestIdx:" + _manifestIdx + ", " +
-      "_metadata:" + _manifest + ")"
+      "_metadataContainer:" + _metadataContainer + ")"
 
 }
 
@@ -310,18 +343,20 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     byteBuffer.clear()
 
     // Write fixed length parts
-    byteBuffer.putInt(header.version)
+    byteBuffer.put(header.version)
+    byteBuffer.put(header.flags)
     byteBuffer.putLong(header.uid)
     byteBuffer.putInt(header.serializer)
 
     // compression table version numbers
     byteBuffer.putInt(ActorRefCompressionTableVersionTagOffset, header.outboundActorRefCompression.version | TagTypeMask)
     byteBuffer.putInt(ClassManifestCompressionTableVersionTagOffset, header.outboundClassManifestCompression.version | TagTypeMask)
+    byteBuffer.putInt(SenderActorRefTagOffset, header._senderActorRefIdx | TagTypeMask)
 
     // tag if we have metadata or not, as the layout next follows different patterns depending on that
-    byteBuffer.putInt(SenderActorRefTagOffset, header._senderActorRefIdx | TagTypeMask)
-    if (header.hasMetadataContainer && header.metadata != null) { // FIXME cleanup
-      writeByteString(MetadataContainerPresentTagOffset, header.metadata)
+    if (header.flag(MetadataPresentFlag)) {
+      byteBuffer.position(MetadataContainerOffset)
+      writeByteString(header.metadataContainer)
       // after metadata is written, buffer is at correct position to continue writing literals (they "moved forward")
     } else {
       // Write compressable, variable-length parts always to the actual position of the buffer
@@ -353,7 +388,8 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     val header = h.asInstanceOf[HeaderBuilderImpl]
 
     // Read fixed length parts
-    header setVersion byteBuffer.getInt
+    header setVersion byteBuffer.get()
+    header setFlags byteBuffer.get()
     header setUid byteBuffer.getLong
     header setSerializer byteBuffer.getInt
 
@@ -362,24 +398,24 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     if ((refCompressionVersionTag & TagTypeMask) != 0) {
       header._inboundActorRefCompressionTableVersion = refCompressionVersionTag & TagValueMask
     }
-    val manifestCompressionVersionTag = byteBuffer.getInt(ClassManifestCompressionTableVersionTagOffset)
+    val manifestCompressionVersionTag = byteBuffer.getShort(ClassManifestCompressionTableVersionTagOffset)
     if ((manifestCompressionVersionTag & TagTypeMask) != 0) {
       header._inboundClassManifestCompressionTableVersion = manifestCompressionVersionTag & TagValueMask
     }
 
-    val metadataTag = byteBuffer.getInt(MetadataContainerPresentTagOffset)
-    println("metadataTag = " + (metadataTag & TagValueMask))
-    if ((manifestCompressionVersionTag & TagTypeMask) > 0) {
-      byteBuffer.position(LiteralsSectionOffset)
-      val bytes = Array.ofDim[Byte](metadataTag % TagValueMask)
-      byteBuffer.get(bytes, 0, metadataTag)
-      header._metadata = ByteString1C(bytes) // 1C to avoid copying
-      println("header._metadata.utf8String = " + header._metadata.utf8String)
+    if (header.flag(MetadataPresentFlag)) {
+      byteBuffer.position(MetadataContainerOffset)
+      val totalMetadataLength = byteBuffer.getInt()
+
+      ensureLiteralCharsLength(totalMetadataLength)
+      val bytes = literalBytes
+
+      byteBuffer.get(bytes, 0, totalMetadataLength)
+      header._metadataContainer = ByteString(bytes).take(totalMetadataLength)
       // the literals section starts here, right after the metadata has ended
       // thus, no need to move position the buffer again
     } else {
-      // Read compressable, variable-length parts always from the actual position of the buffer
-      // Read tag values explicitly from their proper offset
+      // No metadata present, we position the buffer on the place where literals start
       byteBuffer.position(LiteralsSectionOffset)
     }
 
@@ -416,8 +452,7 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
 
   private def readLiteral(): String = {
     val length = byteBuffer.getShort
-    if (length == 0)
-      ""
+    if (length == 0) ""
     else {
       ensureLiteralCharsLength(length)
       val chars = literalChars
@@ -457,27 +492,12 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     }
   }
 
-  private def writeByteString(tagOffset: Int, bs: ByteString): Unit = {
-    val length = bs.length
-    if (length > 65535)
-      throw new IllegalArgumentException("ByteStrings longer than 65535 cannot be encoded in the envelope")
-
-    byteBuffer.putInt(tagOffset, byteBuffer.position())
-
-    if (length == 0) {
-      byteBuffer.putShort(0)
-    } else {
-      byteBuffer.putShort(length.toShort)
-      ensureLiteralCharsLength(length)
-
-      @tailrec def doWriteByteString(bs: ByteString): Unit = {
-        bs match {
-          case cs: ByteString1C ⇒ byteBuffer.put(cs.asByteBuffer)
-          case _                ⇒ doWriteByteString(bs.compact)
-        }
-      }
-
-      doWriteByteString(bs)
+  @tailrec private def writeByteString(bs: ByteString): Unit = {
+    bs match {
+      case cs: ByteString1C ⇒
+        byteBuffer.putInt(bs.length)
+        cs.copyToBuffer(byteBuffer)
+      case _ ⇒ writeByteString(bs.compact)
     }
   }
 

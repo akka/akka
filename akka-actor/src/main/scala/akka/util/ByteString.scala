@@ -178,7 +178,6 @@ object ByteString {
       val copyLength = Math.min(buffer.remaining, offset + length)
       if (copyLength > 0) {
         buffer.put(bytes, offset, copyLength)
-        drop(copyLength)
       }
       copyLength
     }

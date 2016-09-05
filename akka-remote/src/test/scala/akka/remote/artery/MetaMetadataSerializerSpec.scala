@@ -3,21 +3,22 @@
  */
 package akka.remote.artery
 
-import akka.util.OptionVal
 import org.scalatest.{ Matchers, WordSpec }
 
-import scala.util.Random
-
 class MetaMetadataSerializerSpec extends WordSpec with Matchers {
+  // TODO scalacheck
 
   "MetaMetadataSerializer" must {
 
     "perform roundtrip masking/unmasking of entry key+length" in {
-      val key: Byte = 13
-      val len = 1337
-      val kl = MetaMetadataSerializer.muxEntryKeyLength(key, len)
-      MetaMetadataSerializer.unmaskEntryKey(kl) should ===(key)
-      MetaMetadataSerializer.unmaskEntryLength(kl) should ===(len)
+      val key: Byte = 1
+      val len = 7
+      val kl = MetadataEnvelopeSerializer.muxEntryKeyLength(key, len)
+
+      val key2 = MetadataEnvelopeSerializer.unmaskEntryKey(kl)
+      key2 should ===(key)
+      val len2 = MetadataEnvelopeSerializer.unmaskEntryLength(kl)
+      len2 should ===(len)
     }
 
   }

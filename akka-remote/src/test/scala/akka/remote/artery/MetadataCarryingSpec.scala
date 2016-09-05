@@ -3,25 +3,50 @@
  */
 package akka.remote.artery
 
-import akka.actor.{ Actor, ActorRef, ActorSelection, Props, RootActorPath }
-import akka.remote.{ LargeDestination, RARP, RegularDestination, RemoteActorRef }
+import java.util.concurrent.atomic.AtomicReference
+
+import akka.actor.{ Actor, ActorRef, Props }
+import akka.remote.artery.MetadataCarryingSpy.{ RemoteMessageReceived, RemoteMessageSent }
 import akka.testkit.SocketUtil._
 import akka.testkit.TestProbe
-import akka.util.ByteString
+import akka.util.{ ByteString, OptionVal }
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
+object MetadataCarryingSpy {
+  def ref: Option[ActorRef] = Option(_ref.get())
+  def setProbe(bs: ActorRef): Unit = _ref.set(bs)
+  private[this] val _ref = new AtomicReference[ActorRef]()
+
+  case class RemoteMessageSent(recipient: OptionVal[ActorRef], message: Object, sender: OptionVal[ActorRef], context: OptionVal[AnyRef])
+  case class RemoteMessageReceived(recipient: OptionVal[ActorRef], message: Object, sender: OptionVal[ActorRef], metadata: ByteString)
+}
+
+class TestInstrument extends RemoteInstrument {
+
+  override val identifier: Byte = 1
+
+  // TODO remove from the Akka one or not? It explains why we pass in metadata in the remoteMessageSent method
+  override def remoteActorTold(actorRef: ActorRef, message: Any, sender: ActorRef): OptionVal[AnyRef] = {
+    OptionVal.None // THIS IS NOT USED
+  }
+
+  override def remoteMessageSent(recipient: OptionVal[ActorRef], message: Object, sender: OptionVal[ActorRef], context: OptionVal[AnyRef]): OptionVal[ByteString] = {
+    recipient match {
+      case OptionVal.Some(rec) ⇒
+        val metadata = ByteString("!!!")
+        MetadataCarryingSpy.ref.foreach(_ ! RemoteMessageSent(recipient, message, sender, context))
+        OptionVal.Some(metadata) // this data will be attached to the remote message
+      case _ ⇒
+        OptionVal.None
+    }
+
+  }
+
+  override def remoteMessageReceived(recipient: OptionVal[ActorRef], message: Object, sender: OptionVal[ActorRef], metadata: ByteString): Unit = {
+    MetadataCarryingSpy.ref.foreach(_ ! RemoteMessageReceived(recipient, message, sender, metadata))
+  }
+}
 
 object MetadataCarryingSpec {
-
-  val testMetadataHolder = MetadataCarrying.holder
-
-  object TestMetadataListener extends RemoteMetadataListener {
-    override def accept(id: Int, metadata: ByteString): Unit = {
-      val string = metadata.utf8String
-      testMetadataHolder.set(string)
-    }
-  }
 
   final case class Ping(payload: ByteString = ByteString.empty)
 
@@ -31,28 +56,15 @@ object MetadataCarryingSpec {
     def receive = {
       case Ping(bytes) ⇒
         replyTo = sender()
-
-        println(s"INIT: th: ${Thread.currentThread().getName} => testMetadataHolder = " + testMetadataHolder.get())
-        testMetadataHolder.set(s"SET_IN(${self.path.name})")
-        println(s"SET : th: ${Thread.currentThread().getName} => testMetadataHolder = " + testMetadataHolder.get())
-
-        sender() ! s"${testMetadataHolder.get()}@${self.path.name}"
         to ! Ping(bytes) // sending should include metadata in envelope
 
       case s ⇒
-        println(s"REC2: th: ${Thread.currentThread().getName} => testMetadataHolder = " + testMetadataHolder.get())
-        testMetadataHolder.set(s"SET_IN(${self.path.name})")
         context.actorSelection(replyTo.path) ! s
-        context.actorSelection(replyTo.path) ! s"${testMetadataHolder.get()}@${self.path.name}"
-        testMetadataHolder.set("")
     }
   }
   class SimpleReply extends Actor {
     def receive = {
-      case Ping(bytes) ⇒
-        println(s"REC1: th: ${Thread.currentThread().getName} => testMetadataHolder = " + testMetadataHolder.get())
-        sender() ! s"${testMetadataHolder.get()}@${self.path.name}"
-        testMetadataHolder.set(null)
+      case Ping(bytes) ⇒ // sender() ! s"@${self.path.name}"
     }
   }
 }
@@ -61,6 +73,10 @@ class MetadataCarryingSpec extends ArteryMultiNodeSpec(
   """
     akka {
       loglevel = ERROR
+      
+      remote.artery.advanced {
+        instruments = [ "akka.remote.artery.TestInstrument" ]
+      }
     }
   """.stripMargin) {
 
@@ -73,16 +89,20 @@ class MetadataCarryingSpec extends ArteryMultiNodeSpec(
       val remotePort = temporaryServerAddress(udp = true).getPort
       val systemB = newRemoteSystem(extraConfig = Some(s"akka.remote.artery.port=$remotePort"))
 
-      val senderProbeB = TestProbe()(systemB)
+      val instrumentProbe = TestProbe()(systemB)
+      MetadataCarryingSpy.setProbe(instrumentProbe.ref)
 
       val replyActor = systemA.actorOf(Props(new SimpleReply), "reply")
       val proxyActor = systemB.actorOf(Props(new Proxy(replyActor)), "proxy")
       val proxy = systemA.actorSelection(s"artery://${systemB.name}@localhost:$remotePort/user/proxy")
 
-      proxy.tell(Ping(), senderProbeB.ref)
-      senderProbeB.expectMsgType[String] should ===("SET_IN(proxy)@proxy")
-      senderProbeB.expectMsgType[String] should ===("SET_IN(proxy)@reply")
-      senderProbeB.expectMsgType[String] should ===("SET_IN(proxy)@proxy")
+      proxy.tell(Ping(), instrumentProbe.ref)
+
+      // TODO add more assertions (but tricky, since actor selection)
+      val sent = instrumentProbe.expectMsgType[RemoteMessageSent]
+      sent.context should ===(OptionVal.None)
+      val recvd = instrumentProbe.expectMsgType[RemoteMessageReceived]
+      recvd.metadata should ===(ByteString("!!!"))
     }
   }
 
