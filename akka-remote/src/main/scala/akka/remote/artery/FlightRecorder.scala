@@ -329,7 +329,7 @@ private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicB
 
     private def prepareRichRecord(recordBuffer: ByteBuffer, code: Int, metadata: Array[Byte]): Unit = {
       recordBuffer.clear()
-      // FIXME: This is a bit overkill, needs some smarter scheme later, no need to always store the wallclock
+      // TODO: This is a bit overkill, needs some smarter scheme later, no need to always store the wallclock
       recordBuffer.putLong(clock.wallClockPart)
       recordBuffer.putLong(clock.highSpeedPart)
       recordBuffer.putInt(code)
@@ -342,7 +342,7 @@ private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicB
       recordBuffer.position(0)
     }
 
-    // FIXME: Try to save as many bytes here as possible! We will see crazy throughput here
+    // TODO: Try to save as many bytes here as possible! We will see crazy throughput here
     override def hiFreq(code: Long, param: Long): Unit = {
       hiFreqBatchedEntries += 1
       hiFreqBatchBuffer.putLong(code)
