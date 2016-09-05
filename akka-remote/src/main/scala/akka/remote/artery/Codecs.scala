@@ -16,6 +16,7 @@ import akka.actor.EmptyLocalActorRef
 import akka.remote.artery.compress.InboundCompressions
 import akka.stream.stage.TimerGraphStageLogic
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 import scala.concurrent.Future
 import akka.remote.artery.compress.CompressionTable
@@ -38,6 +39,11 @@ private[remote] object Encoder {
   private[remote] class ChangeOutboundCompressionFailed extends RuntimeException(
     "Change of outbound compression table failed (will be retried), because materialization did not complete yet")
 
+}
+
+// FIXME REMOVE THIS, but how to test then...
+object MetadataCarrying {
+  val holder = new AtomicReference[String]()
 }
 
 /**
@@ -86,7 +92,11 @@ private[remote] class Encoder(
       override protected def logSource = classOf[Encoder]
 
       override def onPush(): Unit = {
-        val outboundEnvelope = grab(in)
+        val outboundEnvelope = {
+          val meta = MetadataCarrying.holder.get()
+          if (meta ne null) grab(in).withMetadata(Map(1.toByte → ByteString(meta)))
+          else grab(in)
+        }
         val envelope = bufferPool.acquire()
 
         // internally compression is applied by the builder:

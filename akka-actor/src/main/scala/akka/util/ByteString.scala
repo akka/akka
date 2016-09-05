@@ -183,6 +183,11 @@ object ByteString {
       copyLength
     }
 
+    /** INTERNAL API: Specialized for internal use, appending ByteString1C to a ByteStringBuilder. */
+    private[akka] def appendToBuilder(buffer: ByteStringBuilder) = {
+      buffer.putByteArrayUnsafe(bytes)
+    }
+
   }
 
   /** INTERNAL API: ByteString backed by exactly one array, with start / end markers */
