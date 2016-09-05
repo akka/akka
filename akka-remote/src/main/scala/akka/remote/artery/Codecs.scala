@@ -248,61 +248,70 @@ private[remote] class Decoder(
             OptionVal.None
         }
 
-        val sender: OptionVal[InternalActorRef] = headerBuilder.senderActorRef(originUid) match {
-          case OptionVal.Some(ref) ⇒
-            OptionVal(ref.asInstanceOf[InternalActorRef])
-          case OptionVal.None if headerBuilder.senderActorRefPath.isDefined ⇒
-            OptionVal(resolveActorRefWithLocalAddress(headerBuilder.senderActorRefPath.get))
-          case _ ⇒
-            OptionVal.None
-        }
+        if (recipient.isEmpty && headerBuilder.recipientActorRefPath.isEmpty && !headerBuilder.isNoRecipient) {
+          log.debug("Dropping message for unknown recipient. It was probably sent from system [{}] with compression " +
+            "table [{}] built for previous incarnation of the destination system, or it was compressed with a table " +
+            "that has already been discarded in the destination system.", originUid,
+            headerBuilder.inboundActorRefCompressionTableVersion)
+          pull(in)
+        } else {
 
-        val classManifest = headerBuilder.manifest(originUid)
-
-        if ((messageCount & heavyHitterMask) == 0) {
-          // --- hit refs and manifests for heavy-hitter counting
-          association match {
-            case OptionVal.Some(assoc) ⇒
-              val remoteAddress = assoc.remoteAddress
-              sender match {
-                case OptionVal.Some(snd) ⇒
-                  compression.hitActorRef(originUid, remoteAddress, snd, 1)
-                case OptionVal.None ⇒
-              }
-
-              recipient match {
-                case OptionVal.Some(rcp) ⇒
-                  compression.hitActorRef(originUid, remoteAddress, rcp, 1)
-                case OptionVal.None ⇒
-              }
-
-              compression.hitClassManifest(originUid, remoteAddress, classManifest, 1)
-
+          val sender: OptionVal[InternalActorRef] = headerBuilder.senderActorRef(originUid) match {
+            case OptionVal.Some(ref) ⇒
+              OptionVal(ref.asInstanceOf[InternalActorRef])
+            case OptionVal.None if headerBuilder.senderActorRefPath.isDefined ⇒
+              OptionVal(resolveActorRefWithLocalAddress(headerBuilder.senderActorRefPath.get))
             case _ ⇒
-              // we don't want to record hits for compression while handshake is still in progress.
-              log.debug("Decoded message but unable to record hits for compression as no remoteAddress known. No association yet?")
+              OptionVal.None
           }
-          // --- end of hit refs and manifests for heavy-hitter counting
+
+          val classManifest = headerBuilder.manifest(originUid)
+
+          if ((messageCount & heavyHitterMask) == 0) {
+            // --- hit refs and manifests for heavy-hitter counting
+            association match {
+              case OptionVal.Some(assoc) ⇒
+                val remoteAddress = assoc.remoteAddress
+                sender match {
+                  case OptionVal.Some(snd) ⇒
+                    compression.hitActorRef(originUid, remoteAddress, snd, 1)
+                  case OptionVal.None ⇒
+                }
+
+                recipient match {
+                  case OptionVal.Some(rcp) ⇒
+                    compression.hitActorRef(originUid, remoteAddress, rcp, 1)
+                  case OptionVal.None ⇒
+                }
+
+                compression.hitClassManifest(originUid, remoteAddress, classManifest, 1)
+
+              case _ ⇒
+                // we don't want to record hits for compression while handshake is still in progress.
+                log.debug("Decoded message but unable to record hits for compression as no remoteAddress known. No association yet?")
+            }
+            // --- end of hit refs and manifests for heavy-hitter counting
+          }
+
+          val decoded = inEnvelopePool.acquire().init(
+            recipient,
+            localAddress, // FIXME: Is this needed anymore? What should we do here?
+            sender,
+            originUid,
+            headerBuilder.serializer,
+            classManifest,
+            envelope,
+            association)
+
+          if (recipient.isEmpty && !headerBuilder.isNoRecipient) {
+            // the remote deployed actor might not be created yet when resolving the
+            // recipient for the first message that is sent to it, best effort retry
+            scheduleOnce(RetryResolveRemoteDeployedRecipient(
+              retryResolveRemoteDeployedRecipientAttempts,
+              headerBuilder.recipientActorRefPath.get, decoded), retryResolveRemoteDeployedRecipientInterval) // FIXME IS THIS SAFE?
+          } else
+            push(out, decoded)
         }
-
-        val decoded = inEnvelopePool.acquire().init(
-          recipient,
-          localAddress, // FIXME: Is this needed anymore? What should we do here?
-          sender,
-          originUid,
-          headerBuilder.serializer,
-          classManifest,
-          envelope,
-          association)
-
-        if (recipient.isEmpty && !headerBuilder.isNoRecipient) {
-          // the remote deployed actor might not be created yet when resolving the
-          // recipient for the first message that is sent to it, best effort retry
-          scheduleOnce(RetryResolveRemoteDeployedRecipient(
-            retryResolveRemoteDeployedRecipientAttempts,
-            headerBuilder.recipientActorRefPath.get, decoded), retryResolveRemoteDeployedRecipientInterval) // FIXME IS THIS SAFE?
-        } else
-          push(out, decoded)
       }
 
       private def resolveRecipient(path: String): OptionVal[InternalActorRef] = {

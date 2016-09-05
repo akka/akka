@@ -251,10 +251,12 @@ private[remote] abstract class InboundCompression[T >: Null](
       confirmAdvertisement(incomingTableVersion)
       decompressInternal(incomingTableVersion, idx, attemptCounter + 1) // recurse, activeTable will not be able to handle this
     } else {
-      // which means that incoming version was > nextTable.version, which likely is a bug
-      log.error(
+      // which means that incoming version was > nextTable.version, which likely that
+      // it is using a table that was built for previous incarnation of this system
+      log.warning(
         "Inbound message is using compression table version higher than the highest allocated table on this node. " +
-          "This should not happen! State: activeTable: {}, nextTable: {}, incoming tableVersion: {}",
+          "It was probably sent with compression table built for previous incarnation of this system. " +
+          "State: activeTable: {}, nextTable: {}, incoming tableVersion: {}",
         activeVersion, current.nextTable.version, incomingTableVersion)
       OptionVal.None
     }
