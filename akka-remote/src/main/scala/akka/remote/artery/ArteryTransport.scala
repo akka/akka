@@ -68,6 +68,7 @@ import io.aeron.exceptions.ConductorServiceTimeoutException
 import org.agrona.ErrorHandler
 import org.agrona.IoUtil
 import org.agrona.concurrent.BackoffIdleStrategy
+import akka.stream.scaladsl.BroadcastHub
 
 /**
  * INTERNAL API
@@ -293,10 +294,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private val testStages: CopyOnWriteArrayList[TestManagementApi] = new CopyOnWriteArrayList
 
-  private val handshakeTimeout: FiniteDuration =
-    system.settings.config.getMillisDuration("akka.remote.handshake-timeout").requiring(
-      _ > Duration.Zero,
-      "handshake-timeout must be > 0")
+  private val inboundLanes = settings.Advanced.InboundLanes
 
   private val remoteDispatcher = system.dispatchers.lookup(settings.Dispatcher)
 
@@ -317,15 +315,15 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
 
   private val controlStreamId = 1
-  private val ordinaryStreamId = 3
-  private val largeStreamId = 4
+  private val ordinaryStreamId = 2
+  private val largeStreamId = 3
 
   private val taskRunner = new TaskRunner(system, settings.Advanced.IdleCpuLevel)
 
   private val restartCounter = new RestartCounter(settings.Advanced.InboundMaxRestarts, settings.Advanced.InboundRestartTimeout)
 
-  private val envelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
-  private val largeEnvelopePool = new EnvelopeBufferPool(ArteryTransport.MaximumLargeFrameSize, ArteryTransport.MaximumPooledBuffers)
+  private val envelopeBufferPool = new EnvelopeBufferPool(settings.Advanced.MaximumFrameSize, settings.Advanced.MaximumPooledBuffers)
+  private val largeEnvelopeBufferPool = new EnvelopeBufferPool(settings.Advanced.MaximumLargeFrameSize, settings.Advanced.MaximumPooledBuffers)
 
   private val inboundEnvelopePool = ReusableInboundEnvelope.createObjectPool(capacity = 16)
   // FIXME capacity of outboundEnvelopePool should probably be derived from the sendQueue capacity
@@ -528,22 +526,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def runInboundControlStream(compression: InboundCompressions): Unit = {
-    val (ctrl, completed) =
-      if (settings.Advanced.TestMode) {
-        val (mgmt, (ctrl, completed)) =
-          aeronSource(controlStreamId, envelopePool)
-            .via(inboundFlow(compression))
-            .viaMat(inboundTestFlow)(Keep.right)
-            .toMat(inboundControlSink)(Keep.both)
-            .run()(materializer)
-        testStages.add(mgmt)
-        (ctrl, completed)
-      } else {
-        aeronSource(controlStreamId, envelopePool)
-          .via(inboundFlow(compression))
-          .toMat(inboundControlSink)(Keep.right)
-          .run()(materializer)
-      }
+    val (testMgmt, ctrl, completed) =
+      aeronSource(controlStreamId, envelopeBufferPool)
+        .via(inboundFlow(compression))
+        .toMat(inboundControlSink)(Keep.right)
+        .run()(materializer)
+
+    if (settings.Advanced.TestMode)
+      testStages.add(testMgmt)
 
     controlSubject = ctrl
 
@@ -604,19 +594,54 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private def runInboundOrdinaryMessagesStream(compression: InboundCompressions): Unit = {
     val completed =
-      if (settings.Advanced.TestMode) {
-        val (mgmt, c) = aeronSource(ordinaryStreamId, envelopePool)
+      if (inboundLanes == 1) {
+        val (testMgmt, completed) = aeronSource(ordinaryStreamId, envelopeBufferPool)
           .via(inboundFlow(compression))
-          .viaMat(inboundTestFlow)(Keep.right)
-          .toMat(inboundSink)(Keep.both)
+          .toMat(inboundSink(envelopeBufferPool))(Keep.right)
           .run()(materializer)
-        testStages.add(mgmt)
-        c
+
+        if (settings.Advanced.TestMode)
+          testStages.add(testMgmt)
+
+        completed
+
       } else {
-        aeronSource(ordinaryStreamId, envelopePool)
+        val source = aeronSource(ordinaryStreamId, envelopeBufferPool)
           .via(inboundFlow(compression))
-          .toMat(inboundSink)(Keep.right)
-          .run()(materializer)
+          .map(env ⇒ (env.recipient, env))
+
+        val broadcastHub = source.runWith(BroadcastHub.sink(bufferSize = settings.Advanced.InboundBroadcastHubBufferSize))(materializer)
+
+        val lane = inboundSink(envelopeBufferPool)
+
+        // select lane based on destination, to preserve message order
+        val partitionFun: OptionVal[ActorRef] ⇒ Int = {
+          _ match {
+            case OptionVal.Some(r) ⇒ math.abs(r.path.uid) % inboundLanes
+            case OptionVal.None    ⇒ 0
+          }
+        }
+
+        val values: Vector[(TestManagementApi, Future[Done])] =
+          (0 until inboundLanes).map { i ⇒
+            broadcastHub.runWith(
+              // TODO replace filter with "PartitionHub" when that is implemented
+              // must use a tuple here because envelope is pooled and must only be touched in the selected lane
+              Flow[(OptionVal[ActorRef], InboundEnvelope)].collect {
+                case (recipient, env) if partitionFun(recipient) == i ⇒ env
+              }
+                .toMat(lane)(Keep.right))(materializer)
+          }(collection.breakOut)
+
+        val (testMgmtValues, completedValues) = values.unzip
+
+        if (settings.Advanced.TestMode)
+          testMgmtValues.foreach(testStages.add)
+
+        import system.dispatcher
+        val completed = Future.sequence(completedValues).map(_ ⇒ Done)
+
+        completed
       }
 
     attachStreamRestart("Inbound message stream", completed, () ⇒ runInboundOrdinaryMessagesStream(compression))
@@ -625,21 +650,13 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def runInboundLargeMessagesStream(): Unit = {
     val disableCompression = NoInboundCompressions // no compression on large message stream for now
 
-    val completed =
-      if (settings.Advanced.TestMode) {
-        val (mgmt, c) = aeronSource(largeStreamId, largeEnvelopePool)
-          .via(inboundLargeFlow(disableCompression))
-          .viaMat(inboundTestFlow)(Keep.right)
-          .toMat(inboundSink)(Keep.both)
-          .run()(materializer)
-        testStages.add(mgmt)
-        c
-      } else {
-        aeronSource(largeStreamId, largeEnvelopePool)
-          .via(inboundLargeFlow(disableCompression))
-          .toMat(inboundSink)(Keep.right)
-          .run()(materializer)
-      }
+    val (testMgmt, completed) = aeronSource(largeStreamId, largeEnvelopeBufferPool)
+      .via(inboundLargeFlow(disableCompression))
+      .toMat(inboundSink(largeEnvelopeBufferPool))(Keep.right)
+      .run()(materializer)
+
+    if (settings.Advanced.TestMode)
+      testStages.add(testMgmt)
 
     attachStreamRestart("Inbound large message stream", completed, () ⇒ runInboundLargeMessagesStream())
   }
@@ -753,44 +770,59 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     association(remoteAddress).quarantine(reason = "", uid.map(_.toLong))
   }
 
-  def outbound(outboundContext: OutboundContext): Sink[OutboundEnvelope, (ChangeOutboundCompression, Future[Done])] =
-    createOutboundSink(ordinaryStreamId, outboundContext, envelopePool)
-
   def outboundLarge(outboundContext: OutboundContext): Sink[OutboundEnvelope, Future[Done]] =
-    createOutboundSink(largeStreamId, outboundContext, largeEnvelopePool)
+    createOutboundSink(largeStreamId, outboundContext, largeEnvelopeBufferPool)
       .mapMaterializedValue { case (_, d) ⇒ d }
+
+  def outbound(outboundContext: OutboundContext): Sink[OutboundEnvelope, (ChangeOutboundCompression, Future[Done])] =
+    createOutboundSink(ordinaryStreamId, outboundContext, envelopeBufferPool)
 
   private def createOutboundSink(streamId: Int, outboundContext: OutboundContext,
                                  bufferPool: EnvelopeBufferPool): Sink[OutboundEnvelope, (ChangeOutboundCompression, Future[Done])] = {
 
-    Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
-      .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, handshakeTimeout,
-        settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval))
-      .viaMat(createEncoder(bufferPool))(Keep.right)
-      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), streamId, aeron, taskRunner,
-        envelopePool, settings.Advanced.GiveUpSendAfter, createFlightRecorderEventSink()))(Keep.both)
+    outboundLane(outboundContext, bufferPool)
+      .toMat(aeronSink(outboundContext, streamId))(Keep.both)
   }
 
-  /**
-   * The outbound stream is defined as two parts to be able to add test stage in-between.
-   * System messages must not be dropped before the SystemMessageDelivery stage.
-   */
-  def outboundControlPart1(outboundContext: OutboundContext): Flow[OutboundEnvelope, OutboundEnvelope, SharedKillSwitch] = {
+  def aeronSink(outboundContext: OutboundContext): Sink[EnvelopeBuffer, Future[Done]] =
+    aeronSink(outboundContext, ordinaryStreamId)
+
+  private def aeronSink(outboundContext: OutboundContext, streamId: Int): Sink[EnvelopeBuffer, Future[Done]] = {
+    Sink.fromGraph(new AeronSink(outboundChannel(outboundContext.remoteAddress), streamId, aeron, taskRunner,
+      envelopeBufferPool, settings.Advanced.GiveUpSendAfter, createFlightRecorderEventSink()))
+  }
+
+  def outboundLane(outboundContext: OutboundContext): Flow[OutboundEnvelope, EnvelopeBuffer, ChangeOutboundCompression] =
+    outboundLane(outboundContext, envelopeBufferPool)
+
+  private def outboundLane(
+    outboundContext: OutboundContext,
+    bufferPool:      EnvelopeBufferPool): Flow[OutboundEnvelope, EnvelopeBuffer, ChangeOutboundCompression] = {
+
     Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
-      .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, handshakeTimeout,
+      .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, settings.Advanced.HandshakeTimeout,
+        settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval))
+      .viaMat(createEncoder(bufferPool))(Keep.right)
+  }
+
+  def outboundControl(outboundContext: OutboundContext): Sink[OutboundEnvelope, (TestManagementApi, OutboundControlIngress, Future[Done])] = {
+
+    Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
+      .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, settings.Advanced.HandshakeTimeout,
         settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval))
       .via(new SystemMessageDelivery(outboundContext, system.deadLetters, settings.Advanced.SystemMessageResendInterval,
         settings.Advanced.SysMsgBufferSize))
-
-    // FIXME we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
-  }
-
-  def outboundControlPart2(outboundContext: OutboundContext): Sink[OutboundEnvelope, (OutboundControlIngress, Future[Done])] = {
-    Flow[OutboundEnvelope]
-      .viaMat(new OutboundControlJunction(outboundContext, outboundEnvelopePool))(Keep.right)
-      .via(createEncoder(envelopePool))
+      // note that System messages must not be dropped before the SystemMessageDelivery stage
+      .viaMat(outboundTestFlow(outboundContext))(Keep.right)
+      .viaMat(new OutboundControlJunction(outboundContext, outboundEnvelopePool))(Keep.both)
+      .via(createEncoder(envelopeBufferPool))
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), controlStreamId, aeron, taskRunner,
-        envelopePool, Duration.Inf, createFlightRecorderEventSink()))(Keep.both)
+        envelopeBufferPool, Duration.Inf, createFlightRecorderEventSink()))(Keep.both)
+      .mapMaterializedValue {
+        case ((a, b), c) ⇒ (a, b, c)
+      }
+
+    // TODO we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
   }
 
   private def createInboundCompressions(inboundContext: InboundContext): InboundCompressions =
@@ -819,34 +851,41 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       inboundEnvelopePool))
   }
 
-  def decoder(compression: InboundCompressions): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] =
-    createDecoder(compression, envelopePool)
+  def createDeserializer(bufferPool: EnvelopeBufferPool): Flow[InboundEnvelope, InboundEnvelope, NotUsed] =
+    Flow.fromGraph(new Deserializer(this, system, bufferPool))
 
-  def inboundSink: Sink[InboundEnvelope, Future[Done]] =
+  def inboundSink(bufferPool: EnvelopeBufferPool): Sink[InboundEnvelope, (TestManagementApi, Future[Done])] =
     Flow[InboundEnvelope]
+      .via(createDeserializer(bufferPool))
+      .viaMat(new InboundTestStage(this, settings.Advanced.TestMode))(Keep.right)
       .via(new InboundHandshake(this, inControlStream = false))
       .via(new InboundQuarantineCheck(this))
-      .toMat(messageDispatcherSink)(Keep.right)
+      .toMat(messageDispatcherSink)(Keep.both)
 
   def inboundFlow(compression: InboundCompressions): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
     Flow[EnvelopeBuffer]
       .via(killSwitch.flow)
-      .via(decoder(compression))
+      .via(createDecoder(compression, envelopeBufferPool))
   }
 
   def inboundLargeFlow(compression: InboundCompressions): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
     Flow[EnvelopeBuffer]
       .via(killSwitch.flow)
-      .via(createDecoder(compression, largeEnvelopePool))
+      .via(createDecoder(compression, largeEnvelopeBufferPool))
   }
 
-  def inboundControlSink: Sink[InboundEnvelope, (ControlMessageSubject, Future[Done])] = {
+  def inboundControlSink: Sink[InboundEnvelope, (TestManagementApi, ControlMessageSubject, Future[Done])] = {
     Flow[InboundEnvelope]
+      .via(createDeserializer(envelopeBufferPool))
+      .viaMat(new InboundTestStage(this, settings.Advanced.TestMode))(Keep.right)
       .via(new InboundHandshake(this, inControlStream = true))
       .via(new InboundQuarantineCheck(this))
-      .viaMat(new InboundControlJunction)(Keep.right)
+      .viaMat(new InboundControlJunction)(Keep.both)
       .via(new SystemMessageAcker(this))
       .toMat(messageDispatcherSink)(Keep.both)
+      .mapMaterializedValue {
+        case ((a, b), c) ⇒ (a, b, c)
+      }
   }
 
   private def initializeFlightRecorder(): Option[(FileChannel, File, FlightRecorder)] = {
@@ -861,11 +900,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       None
   }
 
-  def inboundTestFlow: Flow[InboundEnvelope, InboundEnvelope, TestManagementApi] =
-    Flow.fromGraph(new InboundTestStage(this))
-
-  def outboundTestFlow(association: Association): Flow[OutboundEnvelope, OutboundEnvelope, TestManagementApi] =
-    Flow.fromGraph(new OutboundTestStage(association))
+  def outboundTestFlow(outboundContext: OutboundContext): Flow[OutboundEnvelope, OutboundEnvelope, TestManagementApi] =
+    Flow.fromGraph(new OutboundTestStage(outboundContext, settings.Advanced.TestMode))
 
   /** INTERNAL API: for testing only. */
   private[remote] def triggerCompressionAdvertisements(actorRef: Boolean, manifest: Boolean) = {
@@ -888,9 +924,6 @@ private[remote] object ArteryTransport {
   val ProtocolName = "artery"
 
   val Version = 0
-  val MaximumFrameSize = 1024 * 1024
-  val MaximumPooledBuffers = 256
-  val MaximumLargeFrameSize = MaximumFrameSize * 5
 
   /**
    * Internal API

@@ -20,7 +20,7 @@ import akka.util.OptionVal
 import akka.actor.InternalActorRef
 import akka.dispatch.ExecutionContexts
 
-private[akka] class TestInboundContext(
+private[remote] class TestInboundContext(
   override val localAddress: UniqueAddress,
   val controlSubject:        TestControlMessageSubject = new TestControlMessageSubject,
   val controlProbe:          Option[ActorRef]          = None,
@@ -61,7 +61,7 @@ private[akka] class TestInboundContext(
     new TestOutboundContext(localAddress, remoteAddress, controlSubject, controlProbe)
 }
 
-private[akka] class TestOutboundContext(
+private[remote] class TestOutboundContext(
   override val localAddress:   UniqueAddress,
   override val remoteAddress:  Address,
   override val controlSubject: TestControlMessageSubject,
@@ -96,7 +96,7 @@ private[akka] class TestOutboundContext(
 
 }
 
-private[akka] class TestControlMessageSubject extends ControlMessageSubject {
+private[remote] class TestControlMessageSubject extends ControlMessageSubject {
 
   private val observers = new CopyOnWriteArrayList[ControlMessageObserver]
 
@@ -119,7 +119,7 @@ private[akka] class TestControlMessageSubject extends ControlMessageSubject {
 
 }
 
-private[akka] class ManualReplyInboundContext(
+private[remote] class ManualReplyInboundContext(
   replyProbe:     ActorRef,
   localAddress:   UniqueAddress,
   controlSubject: TestControlMessageSubject) extends TestInboundContext(localAddress, controlSubject) {

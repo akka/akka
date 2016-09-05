@@ -69,7 +69,7 @@ abstract class AeronStreamConsistencySpec
     r
   }
 
-  val pool = new EnvelopeBufferPool(ArteryTransport.MaximumFrameSize, ArteryTransport.MaximumPooledBuffers)
+  val pool = new EnvelopeBufferPool(1024 * 1024, 128)
 
   lazy implicit val mat = ActorMaterializer()(system)
   import system.dispatcher

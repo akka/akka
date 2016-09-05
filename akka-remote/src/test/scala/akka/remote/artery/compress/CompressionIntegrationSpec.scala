@@ -28,7 +28,7 @@ object CompressionIntegrationSpec {
        remote.artery.enabled = on
        remote.artery.hostname = localhost
        remote.artery.port = 0
-       remote.handshake-timeout = 10s
+       remote.artery.advanced.handshake-timeout = 10s
 
        remote.artery.advanced.compression {
          actor-refs.advertisement-interval = 3 seconds
