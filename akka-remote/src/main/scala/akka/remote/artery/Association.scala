@@ -122,6 +122,7 @@ private[remote] class Association(
   @volatile private[this] var _outboundControlIngress: OutboundControlIngress = _
   @volatile private[this] var materializing = new CountDownLatch(1)
   @volatile private[this] var changeOutboundCompression: Option[Vector[ChangeOutboundCompression]] = None
+  private[this] val streamCompletions = new AtomicReference(Map.empty[String, Future[Done]])
 
   def changeActorRefCompression(table: CompressionTable[ActorRef]): Future[Done] = {
     import transport.system.dispatcher
@@ -534,8 +535,11 @@ private[remote] class Association(
     }
 
     implicit val ec = materializer.executionContext
+    updateStreamCompletion(streamName, streamCompleted.recover { case _ ⇒ Done })
     streamCompleted.onFailure {
-      case _ if transport.isShutdown     ⇒ // don't restart after shutdown
+      case cause if transport.isShutdown ⇒
+        // don't restart after shutdown, but log some details so we notice
+        log.error(cause, s"{} to {} failed after shutdown. {}", streamName, remoteAddress, cause.getMessage)
       case _: AbruptTerminationException ⇒ // ActorSystem shutdown
       case cause: GaveUpSendingException ⇒
         log.debug("{} to {} failed. Restarting it. {}", streamName, remoteAddress, cause.getMessage)
@@ -546,7 +550,7 @@ private[remote] class Association(
           log.error(cause, "{} to {} failed. Restarting it. {}", streamName, remoteAddress, cause.getMessage)
           lazyRestart()
         } else {
-          log.error(cause, s"{} to {} failed and restarted {} times within {} seconds. Terminating system. ${cause.getMessage}",
+          log.error(cause, s"{} to {} failed and restarted {} times within {} seconds. Terminating system. {cause.getMessage}",
             streamName, remoteAddress, transport.settings.Advanced.OutboundMaxRestarts, transport.settings.Advanced.OutboundRestartTimeout.toSeconds)
           if (queueIndex == ControlQueueIndex) {
             cause match {
@@ -559,6 +563,24 @@ private[remote] class Association(
           transport.system.terminate()
         }
     }
+  }
+
+  // set the future that completes when the current stream for a given name completes
+  @tailrec
+  private def updateStreamCompletion(streamName: String, streamCompleted: Future[Done]): Unit = {
+    val prev = streamCompletions.get()
+    if (!streamCompletions.compareAndSet(prev, prev + (streamName → streamCompleted))) {
+      updateStreamCompletion(streamName, streamCompleted)
+    }
+  }
+
+  /**
+   * Exposed for orderly shutdown purposes, can not be trusted except for during shutdown as streams may restart.
+   * Will complete successfully even if one of the stream completion futures failed
+   */
+  def streamsCompleted: Future[Done] = {
+    implicit val ec = materializer.executionContext
+    Future.sequence(streamCompletions.get().values).map(_ ⇒ Done)
   }
 
   override def toString: String =
