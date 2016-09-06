@@ -15,8 +15,8 @@ import akka.testkit.AkkaSpec
 
 class ArteryControlMessageSerializerSpec extends AkkaSpec {
   "ArteryControlMessageSerializer" must {
-    val actorA = system.actorOf(Props(new Actor { def receive = PartialFunction.empty }))
-    val actorB = system.actorOf(Props(new Actor { def receive = PartialFunction.empty }))
+    val actorA = system.actorOf(Props.empty)
+    val actorB = system.actorOf(Props.empty)
 
     Seq(
       "Quarantined" → Quarantined(uniqueAddress(), uniqueAddress()),
@@ -24,7 +24,7 @@ class ArteryControlMessageSerializerSpec extends AkkaSpec {
       "ActorSystemTerminatingAck" → ActorSystemTerminatingAck(uniqueAddress()),
       "HandshakeReq" → HandshakeReq(uniqueAddress()),
       "HandshakeRsp" → HandshakeRsp(uniqueAddress()),
-      "ActorRefCompressionAdvertisement" → ActorRefCompressionAdvertisement(uniqueAddress(), CompressionTable(123, Map(actorA → 123, actorB → 456))),
+      "ActorRefCompressionAdvertisement" → ActorRefCompressionAdvertisement(uniqueAddress(), CompressionTable(123, Map(actorA → 123, actorB → 456, system.deadLetters → 0))),
       "ActorRefCompressionAdvertisementAck" → ActorRefCompressionAdvertisementAck(uniqueAddress(), 23),
       "ClassManifestCompressionAdvertisement" → ClassManifestCompressionAdvertisement(uniqueAddress(), CompressionTable(42, Map("a" → 535, "b" → 23))),
       "ClassManifestCompressionAdvertisementAck" → ClassManifestCompressionAdvertisementAck(uniqueAddress(), 23),

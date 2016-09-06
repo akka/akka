@@ -58,7 +58,7 @@ private[akka] class ArteryControlMessageSerializer(val system: ExtendedActorSyst
     case q: Quarantined                                     ⇒ serializeQuarantined(q)
     case ActorSystemTerminating(from)                       ⇒ serializeWithAddress(from)
     case ActorSystemTerminatingAck(from)                    ⇒ serializeWithAddress(from)
-    case adv: ActorRefCompressionAdvertisement              ⇒ serializeCompressionAdvertisement(adv)(serializeActorRef)
+    case adv: ActorRefCompressionAdvertisement              ⇒ serializeActorRefCompressionAdvertisement(adv)
     case ActorRefCompressionAdvertisementAck(from, id)      ⇒ serializeCompressionTableAdvertisementAck(from, id)
     case adv: ClassManifestCompressionAdvertisement         ⇒ serializeCompressionAdvertisement(adv)(identity)
     case ClassManifestCompressionAdvertisementAck(from, id) ⇒ serializeCompressionTableAdvertisementAck(from, id)
@@ -73,7 +73,7 @@ private[akka] class ArteryControlMessageSerializer(val system: ExtendedActorSyst
     case QuarantinedManifest ⇒ deserializeQuarantined(ArteryControlFormats.Quarantined.parseFrom(bytes))
     case ActorSystemTerminatingManifest ⇒ deserializeWithFromAddress(bytes, ActorSystemTerminating)
     case ActorSystemTerminatingAckManifest ⇒ deserializeWithFromAddress(bytes, ActorSystemTerminatingAck)
-    case ActorRefCompressionAdvertisementManifest ⇒ deserializeCompressionAdvertisement(bytes, deserializeActorRef, ActorRefCompressionAdvertisement)
+    case ActorRefCompressionAdvertisementManifest ⇒ deserializeActorRefCompressionAdvertisement(bytes)
     case ActorRefCompressionAdvertisementAckManifest ⇒ deserializeCompressionTableAdvertisementAck(bytes, ActorRefCompressionAdvertisementAck)
     case ClassManifestCompressionAdvertisementManifest ⇒ deserializeCompressionAdvertisement(bytes, identity, ClassManifestCompressionAdvertisement)
     case ClassManifestCompressionAdvertisementAckManifest ⇒ deserializeCompressionTableAdvertisementAck(bytes, ClassManifestCompressionAdvertisementAck)
@@ -91,39 +91,42 @@ private[akka] class ArteryControlMessageSerializer(val system: ExtendedActorSyst
   def deserializeQuarantined(quarantined: ArteryControlFormats.Quarantined): Quarantined =
     Quarantined(deserializeUniqueAddress(quarantined.getFrom), deserializeUniqueAddress(quarantined.getTo))
 
-  def serializeActorRef(ref: ActorRef): String =
-    if (ref == system.deadLetters) "DEADLETTER"
-    else Serialization.serializedActorPath(ref)
+  def serializeActorRef(ref: ActorRef): String = Serialization.serializedActorPath(ref)
+  def deserializeActorRef(str: String): ActorRef = system.provider.resolveActorRef(str)
 
-  def deserializeActorRef(str: String): ActorRef =
-    if (str == "DEADLETTER") system.deadLetters
-    else system.provider.resolveActorRef(str)
+  def serializeActorRefCompressionAdvertisement(adv: ActorRefCompressionAdvertisement): ArteryControlFormats.CompressionTableAdvertisement =
+    // FIXME: is it guaranteed that idx 0 is reserved for DeadLetters? In the best case, this knowledge should be managed in only one place.
+    serializeCompressionAdvertisement(adv)(serializeActorRef, _ != 0 /* 0 is reserved for DeadLetters and doesn't need to be serialized explicitly */ )
 
-  def serializeCompressionAdvertisement[T](adv: CompressionAdvertisement[T])(keySerializer: T ⇒ String): ArteryControlFormats.CompressionTableAdvertisement = {
+  def deserializeActorRefCompressionAdvertisement(bytes: Array[Byte]): ActorRefCompressionAdvertisement =
+    deserializeCompressionAdvertisement(bytes, deserializeActorRef, ActorRefCompressionAdvertisement, Seq(system.deadLetters → 0) /* add DeadLetters explicitly */ )
+
+  def serializeCompressionAdvertisement[T](adv: CompressionAdvertisement[T])(keySerializer: T ⇒ String, valueFilter: Int ⇒ Boolean = _ ⇒ true): ArteryControlFormats.CompressionTableAdvertisement = {
     val builder =
       ArteryControlFormats.CompressionTableAdvertisement.newBuilder
         .setFrom(serializeUniqueAddress(adv.from))
         .setTableVersion(adv.table.version)
 
     adv.table.map.foreach {
-      case (key, value) ⇒
+      case (key, value) if valueFilter(value) ⇒
         builder
           .addKeys(keySerializer(key))
           .addValues(value)
+      case _ ⇒
     }
 
     builder.build
   }
 
-  def deserializeCompressionAdvertisement[T, U](bytes: Array[Byte], keyDeserializer: String ⇒ T, create: (UniqueAddress, CompressionTable[T]) ⇒ U): U = {
+  def deserializeCompressionAdvertisement[T, U](bytes: Array[Byte], keyDeserializer: String ⇒ T, create: (UniqueAddress, CompressionTable[T]) ⇒ U, extraValues: Seq[(T, Int)] = Nil): U = {
     val protoAdv = ArteryControlFormats.CompressionTableAdvertisement.parseFrom(bytes)
 
-    val map =
+    val kvs =
       protoAdv.getKeysList.asScala.map(keyDeserializer).zip(
-        protoAdv.getValuesList.asScala.asInstanceOf[Iterable[Int]] /* to avoid having to call toInt explicitly */ )
-        .toMap
+        protoAdv.getValuesList.asScala.asInstanceOf[Iterable[Int]] /* to avoid having to call toInt explicitly */ ) ++
+        extraValues
 
-    val table = CompressionTable(protoAdv.getTableVersion, map)
+    val table = CompressionTable(protoAdv.getTableVersion, kvs.toMap)
     create(deserializeUniqueAddress(protoAdv.getFrom), table)
   }
 
