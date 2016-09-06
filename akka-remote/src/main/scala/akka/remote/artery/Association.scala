@@ -45,6 +45,9 @@ import akka.remote.artery.compress.CompressionProtocol._
 import akka.stream.scaladsl.MergeHub
 import akka.actor.DeadLetter
 import java.util.concurrent.atomic.AtomicBoolean
+import akka.stream.KillSwitches
+import scala.util.Failure
+import scala.util.Success
 
 /**
  * INTERNAL API
@@ -465,7 +468,10 @@ private[remote] class Association(
         wrapper
       }.toVector
 
+      val laneKillSwitch = KillSwitches.shared("outboundLaneKillSwitch")
+
       val lane = Source.fromGraph(new SendQueue[OutboundEnvelope])
+        .via(laneKillSwitch.flow)
         .viaMat(transport.outboundTestFlow(this))(Keep.both)
         .viaMat(transport.outboundLane(this))(Keep.both)
         .watchTermination()(Keep.both)
@@ -473,7 +479,9 @@ private[remote] class Association(
           case (((q, m), c), w) ⇒ ((q, m), (c, w))
         }
 
-      val (mergeHub, aeronSinkCompleted) = MergeHub.source[EnvelopeBuffer].toMat(transport.aeronSink(this))(Keep.both).run()(materializer)
+      val (mergeHub, aeronSinkCompleted) = MergeHub.source[EnvelopeBuffer]
+        .via(laneKillSwitch.flow)
+        .toMat(transport.aeronSink(this))(Keep.both).run()(materializer)
 
       val values: Vector[((SendQueue.QueueValue[OutboundEnvelope], TestManagementApi), (Encoder.ChangeOutboundCompression, Future[Done]))] =
         (0 until outboundLanes).map { _ ⇒
@@ -489,6 +497,12 @@ private[remote] class Association(
 
       import transport.system.dispatcher
       val completed = Future.sequence(laneCompletedValues).flatMap(_ ⇒ aeronSinkCompleted)
+
+      // tear down all parts if one part fails or completes
+      completed.onFailure {
+        case reason: Throwable ⇒ laneKillSwitch.abort(reason)
+      }
+      (laneCompletedValues :+ aeronSinkCompleted).foreach(_.onSuccess { case _ ⇒ laneKillSwitch.shutdown() })
 
       queueValues.zip(wrappers).zipWithIndex.foreach {
         case ((q, w), i) ⇒
