@@ -61,9 +61,13 @@ private[remote] object Association {
   final case class LazyQueueWrapper(queue: Queue[OutboundEnvelope], materialize: () ⇒ Unit) extends QueueWrapper {
     private val onlyOnce = new AtomicBoolean
 
-    override def offer(message: OutboundEnvelope): Boolean = {
+    def runMaterialize(): Unit = {
       if (onlyOnce.compareAndSet(false, true))
         materialize()
+    }
+
+    override def offer(message: OutboundEnvelope): Boolean = {
+      runMaterialize()
       queue.offer(message)
     }
   }
@@ -119,39 +123,48 @@ private[remote] class Association(
   private def controlQueue: SendQueue.ProducerApi[OutboundEnvelope] = queues(ControlQueueIndex)
   private def largeQueue: SendQueue.ProducerApi[OutboundEnvelope] = queues(LargeQueueIndex)
 
-  @volatile private[this] var _outboundControlIngress: OutboundControlIngress = _
+  @volatile private[this] var _outboundControlIngress: OptionVal[OutboundControlIngress] = OptionVal.None
   @volatile private[this] var materializing = new CountDownLatch(1)
-  @volatile private[this] var changeOutboundCompression: Option[Vector[ChangeOutboundCompression]] = None
+  @volatile private[this] var changeOutboundCompression: Vector[ChangeOutboundCompression] = Vector.empty
+  // in case there is a restart at the same time as a compression table update
+  private val changeCompressionTimeout = 5.seconds
+
+  private[artery] def changeActorRefCompression(table: CompressionTable[ActorRef]): Future[Done] = {
+    import transport.system.dispatcher
+    val c = changeOutboundCompression
+    val result =
+      if (c.isEmpty) Future.successful(Done)
+      else if (c.size == 1) c.head.changeActorRefCompression(table)
+      else Future.sequence(c.map(_.changeActorRefCompression(table))).map(_ ⇒ Done)
+    timeoutAfter(result, changeCompressionTimeout, new ChangeOutboundCompressionFailed)
+  }
   private[this] val streamCompletions = new AtomicReference(Map.empty[String, Future[Done]])
 
-  def changeActorRefCompression(table: CompressionTable[ActorRef]): Future[Done] = {
+  private[artery] def changeClassManifestCompression(table: CompressionTable[String]): Future[Done] = {
     import transport.system.dispatcher
-    changeOutboundCompression match {
-      case Some(c) ⇒
-        if (c.size == 1) c.head.changeActorRefCompression(table)
-        else Future.sequence(c.map(_.changeActorRefCompression(table))).map(_ ⇒ Done)
-      case None ⇒ Future.failed(new ChangeOutboundCompressionFailed)
-    }
+    val c = changeOutboundCompression
+    val result =
+      if (c.isEmpty) Future.successful(Done)
+      else if (c.size == 1) c.head.changeClassManifestCompression(table)
+      else Future.sequence(c.map(_.changeClassManifestCompression(table))).map(_ ⇒ Done)
+    timeoutAfter(result, changeCompressionTimeout, new ChangeOutboundCompressionFailed)
   }
 
-  def changeClassManifestCompression(table: CompressionTable[String]): Future[Done] = {
+  private[artery] def clearCompression(): Future[Done] = {
     import transport.system.dispatcher
-    changeOutboundCompression match {
-      case Some(c) ⇒
-        if (c.size == 1) c.head.changeClassManifestCompression(table)
-        else Future.sequence(c.map(_.changeClassManifestCompression(table))).map(_ ⇒ Done)
-      case None ⇒ Future.failed(new ChangeOutboundCompressionFailed)
-    }
+    val c = changeOutboundCompression
+    val result =
+      if (c.isEmpty) Future.successful(Done)
+      else if (c.size == 1) c.head.clearCompression()
+      else Future.sequence(c.map(_.clearCompression())).map(_ ⇒ Done)
+    timeoutAfter(result, changeCompressionTimeout, new ChangeOutboundCompressionFailed)
   }
 
-  def clearCompression(): Future[Done] = {
+  private def timeoutAfter[T](f: Future[T], timeout: FiniteDuration, e: ⇒ Throwable): Future[T] = {
+    import akka.pattern.after
     import transport.system.dispatcher
-    changeOutboundCompression match {
-      case Some(c) ⇒
-        if (c.size == 1) c.head.clearCompression()
-        else Future.sequence(c.map(_.clearCompression())).map(_ ⇒ Done)
-      case None ⇒ Future.failed(new ChangeOutboundCompressionFailed)
-    }
+    val f2 = after(timeout, transport.system.scheduler)(Future.failed(e))
+    Future.firstCompletedOf(List(f, f2))
   }
 
   private val _testStages: CopyOnWriteArrayList[TestManagementApi] = new CopyOnWriteArrayList
@@ -164,14 +177,19 @@ private[remote] class Association(
   private def deadletters = transport.system.deadLetters
 
   def outboundControlIngress: OutboundControlIngress = {
-    if (_outboundControlIngress ne null)
-      _outboundControlIngress
-    else {
-      // materialization not completed yet
-      materializing.await(10, TimeUnit.SECONDS)
-      if (_outboundControlIngress eq null)
-        throw new IllegalStateException("outboundControlIngress not initialized yet")
-      _outboundControlIngress
+    _outboundControlIngress match {
+      case OptionVal.Some(o) ⇒ o
+      case OptionVal.None ⇒
+        controlQueue match {
+          case w: LazyQueueWrapper ⇒ w.runMaterialize()
+          case _                   ⇒
+        }
+        // materialization not completed yet
+        materializing.await(10, TimeUnit.SECONDS)
+        _outboundControlIngress match {
+          case OptionVal.Some(o) ⇒ o
+          case OptionVal.None    ⇒ throw new IllegalStateException("outboundControlIngress not initialized yet")
+        }
     }
   }
 
@@ -416,7 +434,7 @@ private[remote] class Association(
     // replace with the materialized value, still same underlying queue
     queues(ControlQueueIndex) = queueValue
     queuesVisibility = true // volatile write for visibility of the queues array
-    _outboundControlIngress = control
+    _outboundControlIngress = OptionVal.Some(control)
     materializing.countDown()
     attachStreamRestart("Outbound control stream", ControlQueueIndex, controlQueueSize,
       completed, () ⇒ runOutboundControlStream())
@@ -452,7 +470,7 @@ private[remote] class Association(
       // replace with the materialized value, still same underlying queue
       queues(queueIndex) = queueValue
       queuesVisibility = true // volatile write for visibility of the queues array
-      changeOutboundCompression = Some(Vector(changeCompression))
+      changeOutboundCompression = Vector(changeCompression)
 
       attachStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
         completed, () ⇒ runOutboundOrdinaryMessagesStream())
@@ -497,7 +515,7 @@ private[remote] class Association(
       }
       queuesVisibility = true // volatile write for visibility of the queues array
 
-      changeOutboundCompression = Some(changeCompressionValues)
+      changeOutboundCompression = changeCompressionValues
 
       attachStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
         completed, () ⇒ runOutboundOrdinaryMessagesStream())
@@ -529,6 +547,9 @@ private[remote] class Association(
                                   streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
 
     def lazyRestart(): Unit = {
+      changeOutboundCompression = Vector.empty
+      if (queueIndex == ControlQueueIndex)
+        _outboundControlIngress = OptionVal.None
       // LazyQueueWrapper will invoke the `restart` function when first message is offered
       queues(queueIndex) = LazyQueueWrapper(createQueue(queueCapacity), restart)
       queuesVisibility = true // volatile write for visibility of the queues array
@@ -546,18 +567,19 @@ private[remote] class Association(
         // restart unconditionally, without counting restarts
         lazyRestart()
       case cause ⇒
+        if (queueIndex == ControlQueueIndex) {
+          cause match {
+            case _: HandshakeTimeoutException ⇒ // ok, quarantine not possible without UID
+            case _                            ⇒ quarantine("Outbound control stream restarted")
+          }
+        }
+
         if (restartCounter.restart()) {
           log.error(cause, "{} to {} failed. Restarting it. {}", streamName, remoteAddress, cause.getMessage)
           lazyRestart()
         } else {
           log.error(cause, s"{} to {} failed and restarted {} times within {} seconds. Terminating system. {cause.getMessage}",
             streamName, remoteAddress, transport.settings.Advanced.OutboundMaxRestarts, transport.settings.Advanced.OutboundRestartTimeout.toSeconds)
-          if (queueIndex == ControlQueueIndex) {
-            cause match {
-              case _: HandshakeTimeoutException ⇒ // ok, quarantine not possible without UID
-              case _                            ⇒ quarantine("Outbound control stream restarted")
-            }
-          }
 
           // FIXME is this the right thing to do for outbound?
           transport.system.terminate()
