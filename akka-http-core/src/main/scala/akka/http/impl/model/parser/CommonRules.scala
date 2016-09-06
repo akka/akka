@@ -167,7 +167,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
 
   def `auth-scheme` = rule { token }
 
-  def `auth-param` = rule { token ~ ws('=') ~ word }
+  def `auth-param` = rule { token ~ ws('=') ~ optional(word) ~> ((key: String, value: Option[String]) => (key -> value.getOrElse(""))) }
 
   def `token68` = rule { capture(oneOrMore(`token68-start`) ~ zeroOrMore('=')) ~ OWS }
 
@@ -180,7 +180,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
 
   def `challenge-or-credentials`: Rule2[String, Seq[(String, String)]] = rule {
     `auth-scheme` ~ (
-      oneOrMore(`auth-param` ~> (_ → _)).separatedBy(listSep)
+      oneOrMore(`auth-param`).separatedBy(listSep)
       | `token68` ~> (x ⇒ ("" → x) :: Nil)
       | push(Nil))
   }
