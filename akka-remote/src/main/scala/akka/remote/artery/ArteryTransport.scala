@@ -664,9 +664,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private def attachStreamRestart(streamName: String, streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
     implicit val ec = materializer.executionContext
-    updateStreamCompletion(streamName, streamCompleted)
+    updateStreamCompletion(streamName, streamCompleted.recover { case _ ⇒ Done })
     streamCompleted.onFailure {
-      case _ if isShutdown               ⇒ // don't restart after shutdown
+      case cause if isShutdown ⇒
+        // don't restart after shutdown, but log some details so we notice
+        log.error(cause, s"{} failed after shutdown. {}", streamName, cause.getMessage)
       case _: AbruptTerminationException ⇒ // ActorSystem shutdown
       case cause ⇒
         if (restartCounter.restart()) {
@@ -732,7 +734,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     }
   }
 
-  // for orderly shutdown purposes, can not be trusted except for during shutdown as streams may restart
+  /**
+   * Exposed for orderly shutdown purposes, can not be trusted except for during shutdown as streams may restart.
+   * Will complete successfully even if one of the stream completion futures failed
+   */
   private def streamsCompleted: Future[Done] = {
     implicit val ec = remoteDispatcher
     for {
