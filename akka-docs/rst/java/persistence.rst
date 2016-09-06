@@ -150,6 +150,13 @@ The identifier must be defined with the ``persistenceId`` method.
 
 .. _recovery-java:
 
+.. note::
+  ``persistenceId`` must be unique to a given entity in the journal (database table/keyspace).
+  When replaying messages persisted to the journal, you query messages with a ``persistenceId``.
+  So, if two different entities share the same ``persistenceId``, message-replaying
+  behavior is corrupted.
+
+
 Recovery
 --------
 
