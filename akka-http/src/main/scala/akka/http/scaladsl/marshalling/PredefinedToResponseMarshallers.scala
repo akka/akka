@@ -33,7 +33,11 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
 
   implicit val fromStatusCode: TRM[StatusCode] =
     Marshaller.withOpenCharset(`text/plain`) { (status, charset) ⇒
-      HttpResponse(status, entity = HttpEntity(ContentType(`text/plain`, charset), status.defaultMessage))
+      HttpResponse(status, entity = if (status.allowsEntity) {
+        HttpEntity(ContentType(`text/plain`, charset), status.defaultMessage)
+      } else {
+        HttpEntity.Empty
+      })
     }
 
   implicit def fromStatusCodeAndValue[S, T](implicit sConv: S ⇒ StatusCode, mt: ToEntityMarshaller[T]): TRM[(S, T)] =

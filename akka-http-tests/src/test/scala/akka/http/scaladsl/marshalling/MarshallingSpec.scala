@@ -39,6 +39,12 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
     }
   }
 
+  "The PredefinedToResponseMarshallers." - {
+    "fromStatusCode should properly marshal entities that are not supposed to have a body" in {
+      marshalToResponse(StatusCodes.NoContent) shouldEqual HttpResponse(StatusCodes.NoContent, entity = HttpEntity.Empty)
+    }
+  }
+
   "The GenericMarshallers." - {
     "optionMarshaller should enable marshalling of Option[T]" in {
 
