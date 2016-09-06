@@ -19,6 +19,7 @@ import akka.actor.{ Props, OneForOneStrategy, SupervisorStrategy }
  *                    case e: RetryableException => Restart
  *                 }
  *               )
+ *               .withReplyWhileStopped(TheSystemIsDown)
  *
  * }}}
  */
@@ -178,6 +179,15 @@ trait BackoffOptions {
   def withDefaultStoppingStrategy: BackoffOptions
 
   /**
+   * Returns a new BackoffOptions with a constant reply to messages that the supervisor receives while its
+   * child is stopped. By default, a message received while the child is stopped is forwarded to `deadLetters`.
+   * With this option, the supervisor will reply to the sender instead.
+   * @param replyWhileStopped The message that the supervisor will send in response to all messages while
+   *   its child is stopped.
+   */
+  def withReplyWhileStopped(replyWhileStopped: Any): BackoffOptions
+
+  /**
    * Returns the props to create the back-off supervisor.
    */
   private[akka] def props: Props
@@ -191,7 +201,8 @@ private final case class BackoffOptionsImpl(
   maxBackoff:         FiniteDuration,
   randomFactor:       Double,
   reset:              Option[BackoffReset] = None,
-  supervisorStrategy: OneForOneStrategy    = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider)) extends BackoffOptions {
+  supervisorStrategy: OneForOneStrategy    = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
+  replyWhileStopped:  Option[Any]          = None) extends BackoffOptions {
 
   val backoffReset = reset.getOrElse(AutoReset(minBackoff))
 
@@ -199,6 +210,7 @@ private final case class BackoffOptionsImpl(
   def withManualReset = copy(reset = Some(ManualReset))
   def withSupervisorStrategy(supervisorStrategy: OneForOneStrategy) = copy(supervisorStrategy = supervisorStrategy)
   def withDefaultStoppingStrategy = copy(supervisorStrategy = OneForOneStrategy()(SupervisorStrategy.stoppingStrategy.decider))
+  def withReplyWhileStopped(replyWhileStopped: Any) = copy(replyWhileStopped = Some(replyWhileStopped))
 
   def props = {
     require(minBackoff > Duration.Zero, "minBackoff must be > 0")
@@ -212,9 +224,9 @@ private final case class BackoffOptionsImpl(
 
     backoffType match {
       case RestartImpliesFailure ⇒
-        Props(new BackoffOnRestartSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy))
+        Props(new BackoffOnRestartSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped))
       case StopImpliesFailure ⇒
-        Props(new BackoffSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy))
+        Props(new BackoffSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped))
     }
   }
 }

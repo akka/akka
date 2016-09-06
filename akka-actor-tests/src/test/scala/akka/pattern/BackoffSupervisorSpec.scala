@@ -174,5 +174,8 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender {
             .withSupervisorStrategy(restartingStrategy)))
       }
     }
+
+    "Reply " in {
+    }
   }
 }
