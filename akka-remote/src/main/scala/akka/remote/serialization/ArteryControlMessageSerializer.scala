@@ -12,7 +12,8 @@ import akka.remote.artery.{ ActorSystemTerminating, ActorSystemTerminatingAck, Q
 import akka.remote.{ ArteryControlFormats, MessageSerializer, UniqueAddress, WireFormats }
 import akka.serialization.{ BaseSerializer, Serialization, SerializerWithStringManifest }
 
-object ArteryControlMessageSerializer {
+/** INTERNAL API */
+private[akka] object ArteryControlMessageSerializer {
   private val QuarantinedManifest = "a"
   private val ActorSystemTerminatingManifest = "b"
   private val ActorSystemTerminatingAckManifest = "c"
@@ -27,7 +28,8 @@ object ArteryControlMessageSerializer {
   private val SystemMessageDeliveryNackManifest = "l"
 }
 
-class ArteryControlMessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
+/** INTERNAL API */
+private[akka] class ArteryControlMessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
   import ArteryControlMessageSerializer._
 
   override def manifest(o: AnyRef): String = o match {
@@ -104,6 +106,7 @@ class ArteryControlMessageSerializer(val system: ExtendedActorSystem) extends Se
 
     builder.build
   }
+
   def deserializeCompressionAdvertisement[T, U](bytes: Array[Byte], keyDeserializer: String ⇒ T, create: (UniqueAddress, CompressionTable[T]) ⇒ U): U = {
     val protoAdv = ArteryControlFormats.CompressionTableAdvertisement.parseFrom(bytes)
 
@@ -115,6 +118,7 @@ class ArteryControlMessageSerializer(val system: ExtendedActorSystem) extends Se
     val table = CompressionTable(protoAdv.getTableVersion, map)
     create(deserializeUniqueAddress(protoAdv.getFrom), table)
   }
+
   def serializeCompressionTableAdvertisementAck(from: UniqueAddress, version: Int): MessageLite =
     ArteryControlFormats.CompressionTableAdvertisementAck.newBuilder
       .setFrom(serializeUniqueAddress(from))
