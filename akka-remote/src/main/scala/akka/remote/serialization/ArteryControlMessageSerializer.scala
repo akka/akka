@@ -3,7 +3,7 @@
  */
 package akka.remote.serialization
 
-import akka.actor.{ Address, ExtendedActorSystem }
+import akka.actor.{ ActorRef, Address, ExtendedActorSystem }
 import akka.protobuf.MessageLite
 import akka.remote.artery.OutboundHandshake.{ HandshakeReq, HandshakeRsp }
 import akka.remote.artery.compress.CompressionProtocol._
@@ -55,7 +55,7 @@ private[akka] class ArteryControlMessageSerializer(val system: ExtendedActorSyst
     case ActorSystemTerminatingAck(from)                    ⇒ serializeWithAddress(from)
     case HandshakeReq(from)                                 ⇒ serializeWithAddress(from)
     case HandshakeRsp(from)                                 ⇒ serializeWithAddress(from)
-    case adv: ActorRefCompressionAdvertisement              ⇒ serializeCompressionAdvertisement(adv)(Serialization.serializedActorPath)
+    case adv: ActorRefCompressionAdvertisement              ⇒ serializeCompressionAdvertisement(adv)(serializeActorRef)
     case ActorRefCompressionAdvertisementAck(from, id)      ⇒ serializeCompressionTableAdvertisementAck(from, id)
     case adv: ClassManifestCompressionAdvertisement         ⇒ serializeCompressionAdvertisement(adv)(identity)
     case ClassManifestCompressionAdvertisementAck(from, id) ⇒ serializeCompressionTableAdvertisementAck(from, id)
@@ -70,7 +70,7 @@ private[akka] class ArteryControlMessageSerializer(val system: ExtendedActorSyst
     case ActorSystemTerminatingAckManifest ⇒ deserializeWithFromAddress(bytes, ActorSystemTerminatingAck)
     case HandshakeReqManifest ⇒ deserializeWithFromAddress(bytes, HandshakeReq)
     case HandshakeRspManifest ⇒ deserializeWithFromAddress(bytes, HandshakeRsp)
-    case ActorRefCompressionAdvertisementManifest ⇒ deserializeCompressionAdvertisement(bytes, system.provider.resolveActorRef, ActorRefCompressionAdvertisement)
+    case ActorRefCompressionAdvertisementManifest ⇒ deserializeCompressionAdvertisement(bytes, deserializeActorRef, ActorRefCompressionAdvertisement)
     case ActorRefCompressionAdvertisementAckManifest ⇒ deserializeCompressionTableAdvertisementAck(bytes, ActorRefCompressionAdvertisementAck)
     case ClassManifestCompressionAdvertisementManifest ⇒ deserializeCompressionAdvertisement(bytes, identity, ClassManifestCompressionAdvertisement)
     case ClassManifestCompressionAdvertisementAckManifest ⇒ deserializeCompressionTableAdvertisementAck(bytes, ClassManifestCompressionAdvertisementAck)
@@ -90,6 +90,14 @@ private[akka] class ArteryControlMessageSerializer(val system: ExtendedActorSyst
 
   def deserializeQuarantined(quarantined: ArteryControlFormats.Quarantined): Quarantined =
     Quarantined(deserializeUniqueAddress(quarantined.getFrom), deserializeUniqueAddress(quarantined.getTo))
+
+  def serializeActorRef(ref: ActorRef): String =
+    if (ref == system.deadLetters) "DEADLETTER"
+    else Serialization.serializedActorPath(ref)
+
+  def deserializeActorRef(str: String): ActorRef =
+    if (str == "DEADLETTER") system.deadLetters
+    else system.provider.resolveActorRef(str)
 
   def serializeCompressionAdvertisement[T](adv: CompressionAdvertisement[T])(keySerializer: T ⇒ String): ArteryControlFormats.CompressionTableAdvertisement = {
     val builder =
