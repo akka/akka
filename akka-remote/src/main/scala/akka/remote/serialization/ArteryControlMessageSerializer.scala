@@ -32,51 +32,51 @@ private[akka] object ArteryControlMessageSerializer {
 private[akka] class ArteryControlMessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
   import ArteryControlMessageSerializer._
 
-  override def manifest(o: AnyRef): String = o match {
+  override def manifest(o: AnyRef): String = o match { // most frequent ones first
+    case _: HandshakeReq ⇒ HandshakeReqManifest
+    case _: HandshakeRsp ⇒ HandshakeRspManifest
+    case _: SystemMessageDelivery.SystemMessageEnvelope ⇒ SystemMessageEnvelopeManifest
+    case _: SystemMessageDelivery.Ack ⇒ SystemMessageDeliveryAckManifest
+    case _: SystemMessageDelivery.Nack ⇒ SystemMessageDeliveryNackManifest
     case _: Quarantined ⇒ QuarantinedManifest
     case _: ActorSystemTerminating ⇒ ActorSystemTerminatingManifest
     case _: ActorSystemTerminatingAck ⇒ ActorSystemTerminatingAckManifest
-    case _: HandshakeReq ⇒ HandshakeReqManifest
-    case _: HandshakeRsp ⇒ HandshakeRspManifest
     case _: CompressionProtocol.ActorRefCompressionAdvertisement ⇒ ActorRefCompressionAdvertisementManifest
     case _: CompressionProtocol.ActorRefCompressionAdvertisementAck ⇒ ActorRefCompressionAdvertisementAckManifest
     case _: CompressionProtocol.ClassManifestCompressionAdvertisement ⇒ ClassManifestCompressionAdvertisementManifest
     case _: CompressionProtocol.ClassManifestCompressionAdvertisementAck ⇒ ClassManifestCompressionAdvertisementAckManifest
-    case _: SystemMessageDelivery.SystemMessageEnvelope ⇒ SystemMessageEnvelopeManifest
-    case _: SystemMessageDelivery.Ack ⇒ SystemMessageDeliveryAckManifest
-    case _: SystemMessageDelivery.Nack ⇒ SystemMessageDeliveryNackManifest
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
 
-  override def toBinary(o: AnyRef): Array[Byte] = (o match {
+  override def toBinary(o: AnyRef): Array[Byte] = (o match { // most frequent ones first
+    case HandshakeReq(from)                                 ⇒ serializeWithAddress(from)
+    case HandshakeRsp(from)                                 ⇒ serializeWithAddress(from)
+    case env: SystemMessageDelivery.SystemMessageEnvelope   ⇒ serializeSystemMessageEnvelope(env)
+    case SystemMessageDelivery.Ack(seqNo, from)             ⇒ serializeSystemMessageDeliveryAck(seqNo, from)
+    case SystemMessageDelivery.Nack(seqNo, from)            ⇒ serializeSystemMessageDeliveryAck(seqNo, from)
     case q: Quarantined                                     ⇒ serializeQuarantined(q)
     case ActorSystemTerminating(from)                       ⇒ serializeWithAddress(from)
     case ActorSystemTerminatingAck(from)                    ⇒ serializeWithAddress(from)
-    case HandshakeReq(from)                                 ⇒ serializeWithAddress(from)
-    case HandshakeRsp(from)                                 ⇒ serializeWithAddress(from)
     case adv: ActorRefCompressionAdvertisement              ⇒ serializeCompressionAdvertisement(adv)(serializeActorRef)
     case ActorRefCompressionAdvertisementAck(from, id)      ⇒ serializeCompressionTableAdvertisementAck(from, id)
     case adv: ClassManifestCompressionAdvertisement         ⇒ serializeCompressionAdvertisement(adv)(identity)
     case ClassManifestCompressionAdvertisementAck(from, id) ⇒ serializeCompressionTableAdvertisementAck(from, id)
-    case env: SystemMessageDelivery.SystemMessageEnvelope   ⇒ serializeSystemMessageEnvelope(env)
-    case SystemMessageDelivery.Ack(seqNo, from)             ⇒ serializeSystemMessageDeliveryAck(seqNo, from)
-    case SystemMessageDelivery.Nack(seqNo, from)            ⇒ serializeSystemMessageDeliveryAck(seqNo, from)
   }).toByteArray
 
-  override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
+  override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match { // most frequent ones first (could be made a HashMap in the future)
+    case HandshakeReqManifest ⇒ deserializeWithFromAddress(bytes, HandshakeReq)
+    case HandshakeRspManifest ⇒ deserializeWithFromAddress(bytes, HandshakeRsp)
+    case SystemMessageEnvelopeManifest ⇒ deserializeSystemMessageEnvelope(bytes)
+    case SystemMessageDeliveryAckManifest ⇒ deserializeSystemMessageDeliveryAck(bytes, SystemMessageDelivery.Ack)
+    case SystemMessageDeliveryNackManifest ⇒ deserializeSystemMessageDeliveryAck(bytes, SystemMessageDelivery.Nack)
     case QuarantinedManifest ⇒ deserializeQuarantined(ArteryControlFormats.Quarantined.parseFrom(bytes))
     case ActorSystemTerminatingManifest ⇒ deserializeWithFromAddress(bytes, ActorSystemTerminating)
     case ActorSystemTerminatingAckManifest ⇒ deserializeWithFromAddress(bytes, ActorSystemTerminatingAck)
-    case HandshakeReqManifest ⇒ deserializeWithFromAddress(bytes, HandshakeReq)
-    case HandshakeRspManifest ⇒ deserializeWithFromAddress(bytes, HandshakeRsp)
     case ActorRefCompressionAdvertisementManifest ⇒ deserializeCompressionAdvertisement(bytes, deserializeActorRef, ActorRefCompressionAdvertisement)
     case ActorRefCompressionAdvertisementAckManifest ⇒ deserializeCompressionTableAdvertisementAck(bytes, ActorRefCompressionAdvertisementAck)
     case ClassManifestCompressionAdvertisementManifest ⇒ deserializeCompressionAdvertisement(bytes, identity, ClassManifestCompressionAdvertisement)
     case ClassManifestCompressionAdvertisementAckManifest ⇒ deserializeCompressionTableAdvertisementAck(bytes, ClassManifestCompressionAdvertisementAck)
-    case SystemMessageEnvelopeManifest ⇒ deserializeSystemMessageEnvelope(bytes)
-    case SystemMessageDeliveryAckManifest ⇒ deserializeSystemMessageDeliveryAck(bytes, SystemMessageDelivery.Ack)
-    case SystemMessageDeliveryNackManifest ⇒ deserializeSystemMessageDeliveryAck(bytes, SystemMessageDelivery.Nack)
     case _ ⇒ throw new IllegalArgumentException(s"Manifest '$manifest' not defined for ArteryControlMessageSerializer (serializer id $identifier)")
   }
 
