@@ -70,6 +70,8 @@ import org.agrona.IoUtil
 import org.agrona.concurrent.BackoffIdleStrategy
 import akka.stream.scaladsl.BroadcastHub
 import scala.util.control.NoStackTrace
+import io.aeron.exceptions.DriverTimeoutException
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * INTERNAL API
@@ -245,21 +247,27 @@ private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDurati
   override def preStart(): Unit = {
     // FIXME shall we also try to flush the ordinary message stream, not only control stream?
     val msg = ActorSystemTerminating(inboundContext.localAddress)
-    associations.foreach { a ⇒ a.send(msg, OptionVal.Some(self), OptionVal.None) }
+    try {
+      associations.foreach { a ⇒ a.send(msg, OptionVal.Some(self), OptionVal.None) }
+    } catch {
+      case NonFatal(e) ⇒
+        // send may throw
+        done.tryFailure(e)
+        throw e
+    }
   }
 
-  override def postStop(): Unit =
+  override def postStop(): Unit = {
     timeoutTask.cancel()
+    done.trySuccess(Done)
+  }
 
   def receive = {
     case ActorSystemTerminatingAck(from) ⇒
       remaining -= from
-      if (remaining.isEmpty) {
-        done.trySuccess(Done)
+      if (remaining.isEmpty)
         context.stop(self)
-      }
     case FlushOnShutdown.Timeout ⇒
-      done.trySuccess(Done)
       context.stop(self)
   }
 }
@@ -271,6 +279,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   extends RemoteTransport(_system, _provider) with InboundContext {
   import FlightRecorderEvents._
   import ArteryTransport.ShutdownSignal
+  import ArteryTransport.AeronTerminated
 
   // these vars are initialized once in the start method
   @volatile private[this] var _localAddress: UniqueAddress = _
@@ -474,6 +483,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def startAeron(): Unit = {
     val ctx = new Aeron.Context
 
+    ctx.driverTimeoutMs(settings.Advanced.DriverTimeout.toMillis)
+
     ctx.availableImageHandler(new AvailableImageHandler {
       override def onAvailableImage(img: Image): Unit = {
         if (log.isDebugEnabled)
@@ -487,16 +498,36 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         // FIXME we should call FragmentAssembler.freeSessionBuffer when image is unavailable
       }
     })
+
     ctx.errorHandler(new ErrorHandler {
+      private val fatalErrorOccured = new AtomicBoolean
+
       override def onError(cause: Throwable): Unit = {
         cause match {
-          case e: ConductorServiceTimeoutException ⇒
-            // Timeout between service calls
-            log.error(cause, s"Aeron ServiceTimeoutException, ${cause.getMessage}")
-
+          case e: ConductorServiceTimeoutException ⇒ handleFatalError(e)
+          case e: DriverTimeoutException           ⇒ handleFatalError(e)
+          case _: AeronTerminated                  ⇒ // already handled, via handleFatalError
           case _ ⇒
             log.error(cause, s"Aeron error, ${cause.getMessage}")
         }
+      }
+
+      private def handleFatalError(cause: Throwable): Unit = {
+        if (fatalErrorOccured.compareAndSet(false, true)) {
+          if (!isShutdown) {
+            log.error(cause, "Fatal Aeron error {}. Have to terminate ActorSystem because it lost contact with the " +
+              "{} Aeron media driver. Possible configuration properties to mitigate the problem are " +
+              "'client-liveness-timeout' or 'driver-timeout'. {}",
+              Logging.simpleName(cause),
+              if (settings.Advanced.EmbeddedMediaDriver) "embedded" else "external",
+              cause.getMessage)
+            taskRunner.stop()
+            aeronErrorLogTask.cancel()
+            system.terminate()
+            throw new AeronTerminated(cause)
+          }
+        } else
+          throw new AeronTerminated(cause)
       }
     })
 
@@ -713,10 +744,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       _ ← streamsCompleted
     } yield {
       topLevelFREvents.loFreq(Transport_KillSwitchPulled, NoMetaData)
-      if (taskRunner != null) {
-        taskRunner.stop()
-        topLevelFREvents.loFreq(Transport_Stopped, NoMetaData)
-      }
+      taskRunner.stop()
+      topLevelFREvents.loFreq(Transport_Stopped, NoMetaData)
+
       if (aeronErrorLogTask != null) {
         aeronErrorLogTask.cancel()
         topLevelFREvents.loFreq(Transport_AeronErrorLogTaskStopped, NoMetaData)
@@ -965,19 +995,16 @@ private[remote] object ArteryTransport {
 
   val Version = 0
 
-  /**
-   * Internal API
-   *
-   * @return A port that is hopefully available
-   */
-  private[remote] def autoSelectPort(hostname: String): Int = {
+  class AeronTerminated(e: Throwable) extends RuntimeException(e)
+
+  object ShutdownSignal extends RuntimeException with NoStackTrace
+
+  def autoSelectPort(hostname: String): Int = {
     val socket = DatagramChannel.open().socket()
     socket.bind(new InetSocketAddress(hostname, 0))
     val port = socket.getLocalPort
     socket.close()
     port
   }
-
-  object ShutdownSignal extends RuntimeException with NoStackTrace
 
 }
