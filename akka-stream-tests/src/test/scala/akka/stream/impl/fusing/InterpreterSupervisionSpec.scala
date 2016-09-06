@@ -58,7 +58,7 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
 
     "resume when Map throws" in new OneBoundedSetupWithDecider[Int](
       Supervision.resumingDecider,
-      new Map((x: Int) ⇒ if (x == 0) throw TE else x)
+      Map((x: Int) ⇒ if (x == 0) throw TE else x)
     ) {
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
@@ -85,9 +85,9 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
 
     "resume when Map throws in middle of the chain" in new OneBoundedSetupWithDecider[Int](
       Supervision.resumingDecider,
-      new Map((x: Int) ⇒ x + 1),
-      new Map((x: Int) ⇒ if (x == 0) throw TE else x + 10),
-      new Map((x: Int) ⇒ x + 100)
+      Map((x: Int) ⇒ x + 1),
+      Map((x: Int) ⇒ if (x == 0) throw TE else x + 10),
+      Map((x: Int) ⇒ x + 100)
     ) {
 
       downstream.requestOne()
@@ -106,8 +106,8 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
 
     "resume when Map throws before Grouped" in new OneBoundedSetupWithDecider[Int](
       Supervision.resumingDecider,
-      new Map((x: Int) ⇒ x + 1),
-      new Map((x: Int) ⇒ if (x <= 0) throw TE else x + 10),
+      Map((x: Int) ⇒ x + 1),
+      Map((x: Int) ⇒ if (x <= 0) throw TE else x + 10),
       Grouped(3)) {
 
       downstream.requestOne()
@@ -127,8 +127,8 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
 
     "complete after resume when Map throws before Grouped" in new OneBoundedSetupWithDecider[Int](
       Supervision.resumingDecider,
-      new Map((x: Int) ⇒ x + 1),
-      new Map((x: Int) ⇒ if (x <= 0) throw TE else x + 10),
+      Map((x: Int) ⇒ x + 1),
+      Map((x: Int) ⇒ if (x <= 0) throw TE else x + 10),
       Grouped(1000)) {
 
       downstream.requestOne()
