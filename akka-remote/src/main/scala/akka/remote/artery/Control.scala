@@ -29,22 +29,22 @@ private[akka] trait Reply extends ControlMessage
  * Marker trait for control messages that can be sent via the system message sub-channel
  * but don't need full reliable delivery. E.g. `HandshakeReq` and `Reply`.
  */
-private[akka] trait ControlMessage
+private[akka] trait ControlMessage extends Serializable
 
 /**
  * INTERNAL API
  */
-private[akka] final case class Quarantined(from: UniqueAddress, to: UniqueAddress) extends ControlMessage // FIXME serialization
+private[akka] final case class Quarantined(from: UniqueAddress, to: UniqueAddress) extends ControlMessage
 
 /**
  * INTERNAL API
  */
-private[akka] case class ActorSystemTerminating(from: UniqueAddress) extends ControlMessage // FIXME serialization
+private[akka] case class ActorSystemTerminating(from: UniqueAddress) extends ControlMessage
 
 /**
  * INTERNAL API
  */
-private[akka] case class ActorSystemTerminatingAck(from: UniqueAddress) // FIXME serialization
+private[akka] case class ActorSystemTerminatingAck(from: UniqueAddress)
 
 /**
  * INTERNAL API

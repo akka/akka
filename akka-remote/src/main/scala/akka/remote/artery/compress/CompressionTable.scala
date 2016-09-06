@@ -8,7 +8,7 @@ import java.util
 import java.util.Comparator
 
 /** INTERNAL API: Versioned compression table to be advertised between systems */
-private[artery] final case class CompressionTable[T](version: Int, map: Map[T, Int]) {
+private[remote] final case class CompressionTable[T](version: Int, map: Map[T, Int]) {
   import CompressionTable.NotCompressedId
 
   def compress(value: T): Int =
@@ -48,7 +48,7 @@ private[artery] final case class CompressionTable[T](version: Int, map: Map[T, I
     }
 }
 /** INTERNAL API */
-private[artery] object CompressionTable {
+private[remote] object CompressionTable {
   final val NotCompressedId = -1
 
   final val CompareBy2ndValue: Comparator[(Object, Int)] = new Comparator[(Object, Int)] {
