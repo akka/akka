@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.http.impl.engine.client.PoolMasterActor.PoolInterfaceRunning
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
-import akka.http.impl.util.{ SingletonException, StreamUtils }
+import akka.http.impl.util.SingletonException
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
@@ -331,6 +331,67 @@ class ConnectionPoolSpec extends AkkaSpec("""
         case (Success(x), 42) ⇒ requestUri(x) shouldEqual s"http://$serverHostName:$serverPort/a"
         case (Success(x), 43) ⇒ requestUri(x) shouldEqual s"http://$serverHostName2:$serverPort2/b"
         case x                ⇒ fail(x.toString)
+      }
+    }
+  }
+
+  "be able to handle 500 `Connection: close` requests against the test server" in new TestSetup {
+    val settings = ConnectionPoolSettings(system).withMaxConnections(4)
+    val poolFlow = Http().cachedHostConnectionPool[Int](serverHostName, serverPort, settings = settings)
+
+    val N = 500
+    val requestIds = Source.fromIterator(() ⇒ Iterator.from(1)).take(N)
+    val idSum = requestIds.map(id ⇒ HttpRequest(uri = s"/r$id").withHeaders(Connection("close")) → id).via(poolFlow).map {
+      case (Success(response), id) ⇒
+        requestUri(response) should endWith(s"/r$id")
+        id
+      case x ⇒ fail(x.toString)
+    }.runFold(0)(_ + _)
+
+    (1 to N).foreach(_ ⇒ acceptIncomingConnection())
+
+    Await.result(idSum, 10.seconds) shouldEqual N * (N + 1) / 2
+  }
+
+  "be able to handle 500 pipelined requests with connection termination" in new TestSetup(autoAccept = true) {
+    def closeHeader(): List[Connection] =
+      if (util.Random.nextInt(8) == 0) Connection("close") :: Nil
+      else Nil
+
+    override def testServerHandler(connNr: Int): HttpRequest ⇒ HttpResponse = { r ⇒
+      val idx = r.uri.path.tail.head.toString
+      HttpResponse()
+        .withHeaders(RawHeader("Req-Idx", idx) +: responseHeaders(r, connNr))
+        .withDefaultHeaders(closeHeader())
+    }
+
+    for (pipeliningLimit ← Iterator.from(1).map(math.pow(2, _).toInt).take(4)) {
+      val settings = ConnectionPoolSettings(system).withMaxConnections(4).withPipeliningLimit(pipeliningLimit).withMaxOpenRequests(4 * pipeliningLimit)
+      val poolFlow = Http().cachedHostConnectionPool[Int](serverHostName, serverPort, settings = settings)
+
+      def method() =
+        if (util.Random.nextInt(2) == 0) HttpMethods.POST else HttpMethods.GET
+
+      def request(i: Int) =
+        HttpRequest(method = method(), headers = closeHeader(), uri = s"/$i") → i
+
+      try {
+        val N = 200
+        val (_, idSum) =
+          Source.fromIterator(() ⇒ Iterator.from(1)).take(N)
+            .map(request)
+            .viaMat(poolFlow)(Keep.right)
+            .map {
+              case (Success(response), id) ⇒
+                requestUri(response) should endWith(s"/$id")
+                id
+              case x ⇒ fail(x.toString)
+            }.toMat(Sink.fold(0)(_ + _))(Keep.both).run()
+
+        Await.result(idSum, 30.seconds) shouldEqual N * (N + 1) / 2
+      } catch {
+        case thr: Throwable ⇒
+          throw new RuntimeException(s"Failed at pipeliningLimit=$pipeliningLimit, poolFlow=$poolFlow", thr)
       }
     }
   }
