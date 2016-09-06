@@ -290,6 +290,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private val codec: AkkaPduCodec = AkkaPduProtobufCodec
   private val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
+  private[this] val streamCompletions = new AtomicReference(Map.empty[String, Future[Done]])
   @volatile private[this] var _shutdown = false
 
   private val testStages: CopyOnWriteArrayList[TestManagementApi] = new CopyOnWriteArrayList
@@ -663,8 +664,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private def attachStreamRestart(streamName: String, streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
     implicit val ec = materializer.executionContext
+    updateStreamCompletion(streamName, streamCompleted.recover { case _ ⇒ Done })
     streamCompleted.onFailure {
-      case _ if isShutdown               ⇒ // don't restart after shutdown
+      case cause if isShutdown ⇒
+        // don't restart after shutdown, but log some details so we notice
+        log.error(cause, s"{} failed after shutdown. {}", streamName, cause.getMessage)
       case _: AbruptTerminationException ⇒ // ActorSystem shutdown
       case cause ⇒
         if (restartCounter.restart()) {
@@ -690,9 +694,12 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         flushingPromise.future
       }
     implicit val ec = remoteDispatcher
-    flushing.recover { case _ ⇒ Done }.map { _ ⇒
-      killSwitch.shutdown()
 
+    for {
+      _ ← flushing.recover { case _ ⇒ Done }
+      _ = killSwitch.shutdown()
+      _ ← streamsCompleted
+    } yield {
       topLevelFREvents.loFreq(Transport_KillSwitchPulled, NoMetaData)
       if (taskRunner != null) {
         taskRunner.stop()
@@ -716,6 +723,27 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       afrFlie.foreach(_.delete())
       Done
     }
+  }
+
+  // set the future that completes when the current stream for a given name completes
+  @tailrec
+  private def updateStreamCompletion(streamName: String, streamCompleted: Future[Done]): Unit = {
+    val prev = streamCompletions.get()
+    if (!streamCompletions.compareAndSet(prev, prev + (streamName → streamCompleted))) {
+      updateStreamCompletion(streamName, streamCompleted)
+    }
+  }
+
+  /**
+   * Exposed for orderly shutdown purposes, can not be trusted except for during shutdown as streams may restart.
+   * Will complete successfully even if one of the stream completion futures failed
+   */
+  private def streamsCompleted: Future[Done] = {
+    implicit val ec = remoteDispatcher
+    for {
+      _ ← Future.traverse(associationRegistry.allAssociations)(_.streamsCompleted)
+      _ ← Future.sequence(streamCompletions.get().valuesIterator)
+    } yield Done
   }
 
   private[remote] def isShutdown: Boolean = _shutdown
