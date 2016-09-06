@@ -140,6 +140,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
           """Fancy yes="n:o",nonce=42""")
       """Authorization: Fancy yes=no,nonce="4\\2"""" =!=
         Authorization(GenericHttpCredentials("Fancy", Map("yes" → "no", "nonce" → """4\2""")))
+      """Authorization: Other yes=no,empty=""""" =!=
+        Authorization(GenericHttpCredentials("Other", Map("yes" → "no", "empty" → "")))
       "Authorization: Basic Qm9iOg==" =!=
         Authorization(BasicHttpCredentials("Bob", ""))
       """Authorization: Digest name=Bob""" =!=
@@ -182,6 +184,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Content-Disposition: form-data" =!= `Content-Disposition`(ContentDispositionTypes.`form-data`)
       "Content-Disposition: attachment; name=field1; filename=\"file/txt\"" =!=
         `Content-Disposition`(ContentDispositionTypes.attachment, Map("name" → "field1", "filename" → "file/txt"))
+      "Content-Disposition: attachment; name=field1; other=\"\"" =!=
+        `Content-Disposition`(ContentDispositionTypes.attachment, Map("name" → "field1", "other" → ""))
     }
 
     "Content-Encoding" in {

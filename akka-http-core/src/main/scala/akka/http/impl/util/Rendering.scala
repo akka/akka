@@ -185,10 +185,10 @@ private[http] trait Rendering {
 
   /**
    * Renders the given string either directly (if it only contains token chars)
-   * or in double quotes (if it contains at least one non-token char).
+   * or in double quotes (if it is empty or contains at least one non-token char).
    */
   def ~~#(s: String): this.type =
-    if (CharacterClasses.tchar matchesAll s) this ~~ s else ~~#!(s)
+    if (s.nonEmpty && CharacterClasses.tchar.matchesAll(s)) this ~~ s else ~~#!(s)
 
   /**
    * Renders the given string in double quotes.
