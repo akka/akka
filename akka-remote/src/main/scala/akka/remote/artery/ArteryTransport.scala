@@ -607,7 +607,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         completed
 
       } else {
+        val hubKillSwitch = KillSwitches.shared("hubKillSwitch")
         val source = aeronSource(ordinaryStreamId, envelopeBufferPool)
+          .via(hubKillSwitch.flow)
           .via(inboundFlow(compression))
           .map(env ⇒ (env.recipient, env))
 
@@ -641,6 +643,12 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
         import system.dispatcher
         val completed = Future.sequence(completedValues).map(_ ⇒ Done)
+
+        // tear down the upstream hub part if downstream lane fails
+        // lanes are not completed with success by themselves so we don't have to care about onSuccess
+        completed.onFailure {
+          case reason: Throwable ⇒ hubKillSwitch.abort(reason)
+        }
 
         completed
       }
