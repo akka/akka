@@ -100,7 +100,10 @@ private[remote] class Association(
 
   private val log = Logging(transport.system, getClass.getName)
 
-  private val restartCounter = new RestartCounter(transport.settings.Advanced.OutboundMaxRestarts, transport.settings.Advanced.OutboundRestartTimeout)
+  override def settings = transport.settings
+  private def advancedSettings = transport.settings.Advanced
+
+  private val restartCounter = new RestartCounter(advancedSettings.OutboundMaxRestarts, advancedSettings.OutboundRestartTimeout)
 
   // We start with the raw wrapped queue and then it is replaced with the materialized value of
   // the `SendQueue` after materialization. Using same underlying queue. This makes it possible to
@@ -109,12 +112,10 @@ private[remote] class Association(
   def createQueue(capacity: Int): Queue[OutboundEnvelope] =
     new ManyToOneConcurrentArrayQueue[OutboundEnvelope](capacity)
 
-  private val outboundLanes = transport.settings.Advanced.OutboundLanes
-  private val controlQueueSize = transport.settings.Advanced.SysMsgBufferSize
-  // FIXME config queue size, and it should perhaps also be possible to use some kind of LinkedQueue
-  //       such as agrona.ManyToOneConcurrentLinkedQueue or AbstractNodeQueue for less memory consumption
-  private val queueSize = 3072
-  private val largeQueueSize = 256
+  private val outboundLanes = advancedSettings.OutboundLanes
+  private val controlQueueSize = advancedSettings.OutboundControlQueueSize
+  private val queueSize = advancedSettings.OutboundMessageQueueSize
+  private val largeQueueSize = advancedSettings.OutboundLargeMessageQueueSize
 
   private[this] val queues: Array[SendQueue.ProducerApi[OutboundEnvelope]] = Array.ofDim(2 + outboundLanes)
   queues(ControlQueueIndex) = QueueWrapperImpl(createQueue(controlQueueSize)) // control stream
@@ -429,7 +430,7 @@ private[remote] class Association(
         .toMat(transport.outboundControl(this))(Keep.both)
         .run()(materializer)
 
-    if (transport.settings.Advanced.TestMode)
+    if (advancedSettings.TestMode)
       _testStages.add(testMgmt)
 
     queueValue.inject(wrapper.queue)
@@ -465,7 +466,7 @@ private[remote] class Association(
           .toMat(transport.outbound(this))(Keep.both)
           .run()(materializer)
 
-      if (transport.settings.Advanced.TestMode)
+      if (advancedSettings.TestMode)
         _testStages.add(testMgmt)
 
       queueValue.inject(wrapper.queue)
@@ -509,7 +510,7 @@ private[remote] class Association(
       val (queueValues, testMgmtValues) = a.unzip
       val (changeCompressionValues, laneCompletedValues) = b.unzip
 
-      if (transport.settings.Advanced.TestMode)
+      if (advancedSettings.TestMode)
         testMgmtValues.foreach(_testStages.add)
 
       import transport.system.dispatcher
@@ -545,7 +546,7 @@ private[remote] class Association(
       .toMat(transport.outboundLarge(this))(Keep.both)
       .run()(materializer)
 
-    if (transport.settings.Advanced.TestMode)
+    if (advancedSettings.TestMode)
       _testStages.add(testMgmt)
 
     queueValue.inject(wrapper.queue)
@@ -594,7 +595,7 @@ private[remote] class Association(
           lazyRestart()
         } else {
           log.error(cause, s"{} to {} failed and restarted {} times within {} seconds. Terminating system. ${cause.getMessage}",
-            streamName, remoteAddress, transport.settings.Advanced.OutboundMaxRestarts, transport.settings.Advanced.OutboundRestartTimeout.toSeconds)
+            streamName, remoteAddress, advancedSettings.OutboundMaxRestarts, advancedSettings.OutboundRestartTimeout.toSeconds)
           transport.system.terminate()
         }
     }

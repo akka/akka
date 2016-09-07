@@ -176,7 +176,7 @@ private[akka] class OutboundControlJunction(
       import OutboundControlJunction._
 
       private val sendControlMessageCallback = getAsyncCallback[ControlMessage](internalSendControlMessage)
-      private val maxControlMessageBufferSize: Int = 1024 // FIXME config
+      private val maxControlMessageBufferSize: Int = outboundContext.settings.Advanced.OutboundControlQueueSize
       private val buffer = new ArrayDeque[OutboundEnvelope]
 
       override def preStart(): Unit = {
