@@ -132,7 +132,8 @@ private[remote] class RollingEventLogSection(
   recordSize:    Int) {
   import RollingEventLogSection._
 
-  // FIXME: check if power of two
+  require(entryCount > 0, "entryCount must be greater than 0")
+  require((entryCount & (entryCount - 1)) == 0, "entryCount must be power of two")
   private[this] val LogMask: Long = entryCount - 1L
 
   private[this] val buffers: Array[MappedResizeableBuffer] = Array.tabulate(FlightRecorder.SnapshotCount) { logId ⇒
@@ -237,7 +238,8 @@ private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicB
 
   private[this] val globalSection = new MappedResizeableBuffer(fileChannel, 0, GlobalSectionSize)
 
-  // FIXME: check if power of two
+  require(SnapshotCount > 0, "SnapshotCount must be greater than 0")
+  require((SnapshotCount & (SnapshotCount - 1)) == 0, "SnapshotCount must be power of two")
   private[this] val SnapshotMask = SnapshotCount - 1
   private[this] val alertLogs =
     new RollingEventLogSection(
