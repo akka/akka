@@ -20,6 +20,7 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.RootActorPath
 import akka.cluster.MultiNodeClusterSpec.EndActor
+import akka.remote.RARP
 
 object UnreachableNodeJoinsAgainMultiNodeConfig extends MultiNodeConfig {
   val first = role("first")
@@ -162,7 +163,7 @@ abstract class UnreachableNodeJoinsAgainSpec
         val victimAddress = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
         val freshConfig =
           ConfigFactory.parseString(
-            if (system.settings.config.getBoolean("akka.remote.artery.enabled"))
+            if (RARP(system).provider.remoteSettings.Artery.Enabled)
               s"""
                 akka.remote.artery {
                   hostname = ${victimAddress.host.get}

@@ -5,7 +5,6 @@ package akka.cluster
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-
 import akka.actor.Actor
 import akka.actor.ActorSystem
 import akka.actor.Address
@@ -13,6 +12,7 @@ import akka.actor.Deploy
 import akka.actor.Props
 import akka.actor.RootActorPath
 import akka.cluster.MemberStatus._
+import akka.remote.RARP
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
@@ -51,7 +51,7 @@ abstract class RestartNode3Spec
   lazy val restartedSecondSystem = ActorSystem(
     system.name,
     ConfigFactory.parseString(
-      if (system.settings.config.getBoolean("akka.remote.artery.enabled"))
+      if (RARP(system).provider.remoteSettings.Artery.Enabled)
         "akka.remote.artery.port=" + secondUniqueAddress.address.port.get
       else
         "akka.remote.netty.tcp.port=" + secondUniqueAddress.address.port.get
