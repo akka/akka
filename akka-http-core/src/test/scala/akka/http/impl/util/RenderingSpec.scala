@@ -29,7 +29,7 @@ class RenderingSpec extends WordSpec with Matchers {
     }
 
     "correctly render escaped Strings" in {
-      (new StringRendering ~~# "").get shouldEqual ""
+      (new StringRendering ~~# "").get shouldEqual "\"\""
       (new StringRendering ~~# "hello").get shouldEqual "hello"
       (new StringRendering ~~# """hel"lo""").get shouldEqual """"hel\"lo""""
     }
