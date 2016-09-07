@@ -97,8 +97,10 @@ private[remote] class Association(
   outboundEnvelopePool:        ObjectPool[ReusableOutboundEnvelope])
   extends AbstractAssociation with OutboundContext {
   import Association._
+  import FlightRecorderEvents._
 
   private val log = Logging(transport.system, getClass.getName)
+  private val flightRecorder = transport.createFlightRecorderEventSink(synchr = true)
 
   override def settings = transport.settings
   private def advancedSettings = transport.settings.Advanced
@@ -274,11 +276,11 @@ private[remote] class Association(
     // volatile read to see latest queue array
     val unused = queuesVisibility
 
-    def dropped(qSize: Int, env: OutboundEnvelope): Unit = {
+    def dropped(queueIndex: Int, qSize: Int, env: OutboundEnvelope): Unit = {
       log.debug(
         "Dropping message [{}] from [{}] to [{}] due to overflow of send queue, size [{}]",
         message.getClass, sender.getOrElse(deadletters), recipient.getOrElse(recipient), qSize)
-      // FIXME AFR
+      flightRecorder.hiFreq(Transport_SendQueueOverflow, queueIndex)
       deadletters ! env
     }
 
@@ -289,7 +291,7 @@ private[remote] class Association(
           val outboundEnvelope = createOutboundEnvelope()
           if (!controlQueue.offer(createOutboundEnvelope())) {
             quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
-            dropped(controlQueueSize, outboundEnvelope)
+            dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
           }
         case _: DaemonMsgCreate ⇒
           // DaemonMsgCreate is not a SystemMessage, but must be sent over the control stream because
@@ -298,18 +300,19 @@ private[remote] class Association(
           // destination) before the first ordinary message arrives.
           val outboundEnvelope1 = createOutboundEnvelope()
           if (!controlQueue.offer(outboundEnvelope1))
-            dropped(controlQueueSize, outboundEnvelope1)
+            dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope1)
           (0 until outboundLanes).foreach { i ⇒
             val outboundEnvelope2 = createOutboundEnvelope()
             if (!queues(OrdinaryQueueIndex + i).offer(outboundEnvelope2))
-              dropped(queueSize, outboundEnvelope2)
+              dropped(OrdinaryQueueIndex + i, queueSize, outboundEnvelope2)
           }
         case _ ⇒
           val outboundEnvelope = createOutboundEnvelope()
-          val queue = selectQueue(recipient)
+          val queueIndex = selectQueue(recipient)
+          val queue = queues(queueIndex)
           val offerOk = queue.offer(outboundEnvelope)
           if (!offerOk)
-            dropped(queueSize, outboundEnvelope)
+            dropped(queueIndex, queueSize, outboundEnvelope)
 
       }
     } else if (log.isDebugEnabled)
@@ -318,10 +321,10 @@ private[remote] class Association(
         message.getClass, sender.getOrElse(deadletters), recipient.getOrElse(recipient), remoteAddress)
   }
 
-  private def selectQueue(recipient: OptionVal[RemoteActorRef]): ProducerApi[OutboundEnvelope] = {
+  private def selectQueue(recipient: OptionVal[RemoteActorRef]): Int = {
     recipient match {
       case OptionVal.Some(r) ⇒
-        val queueIndex = r.cachedSendQueueIndex match {
+        r.cachedSendQueueIndex match {
           case -1 ⇒
             // only happens when messages are sent to new remote destination
             // and is then cached on the RemoteActorRef
@@ -343,10 +346,9 @@ private[remote] class Association(
             idx
           case idx ⇒ idx
         }
-        queues(queueIndex)
 
       case OptionVal.None ⇒
-        queues(OrdinaryQueueIndex)
+        OrdinaryQueueIndex
     }
   }
 

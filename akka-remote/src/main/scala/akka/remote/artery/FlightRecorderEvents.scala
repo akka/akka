@@ -18,29 +18,30 @@ object FlightRecorderEvents {
   val Transport_AeronErrorLogTaskStopped = 10
   val Transport_MediaFileDeleted = 11
   val Transport_FlightRecorderClose = 12
+  val Transport_SendQueueOverflow = 13
 
   // Aeron Sink events
-  val AeronSink_Started = 13
-  val AeronSink_TaskRunnerRemoved = 14
-  val AeronSink_PublicationClosed = 15
-  val AeronSink_Stopped = 16
-  val AeronSink_EnvelopeGrabbed = 17
-  val AeronSink_EnvelopeOffered = 18
-  val AeronSink_GaveUpEnvelope = 19
-  val AeronSink_DelegateToTaskRunner = 20
-  val AeronSink_ReturnFromTaskRunner = 21
+  val AeronSink_Started = 50
+  val AeronSink_TaskRunnerRemoved = 51
+  val AeronSink_PublicationClosed = 52
+  val AeronSink_Stopped = 53
+  val AeronSink_EnvelopeGrabbed = 54
+  val AeronSink_EnvelopeOffered = 55
+  val AeronSink_GaveUpEnvelope = 56
+  val AeronSink_DelegateToTaskRunner = 57
+  val AeronSink_ReturnFromTaskRunner = 58
 
   // Aeron Source events
-  val AeronSource_Started = 22
-  val AeronSource_Stopped = 23
-  val AeronSource_Received = 24
-  val AeronSource_DelegateToTaskRunner = 25
-  val AeronSource_ReturnFromTaskRunner = 26
+  val AeronSource_Started = 70
+  val AeronSource_Stopped = 71
+  val AeronSource_Received = 72
+  val AeronSource_DelegateToTaskRunner = 72
+  val AeronSource_ReturnFromTaskRunner = 73
 
   // Compression events
-  val Compression_CompressedActorRef = 25
-  val Compression_AllocatedActorRefCompressionId = 26
-  val Compression_CompressedManifest = 27
-  val Compression_AllocatedManifestCompressionId = 28
+  val Compression_CompressedActorRef = 90
+  val Compression_AllocatedActorRefCompressionId = 91
+  val Compression_CompressedManifest = 91
+  val Compression_AllocatedManifestCompressionId = 92
 
 }
