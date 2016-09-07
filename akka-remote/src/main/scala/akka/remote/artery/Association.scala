@@ -537,6 +537,7 @@ private[remote] class Association(
     implicit val ec = materializer.executionContext
     updateStreamCompletion(streamName, streamCompleted.recover { case _ ⇒ Done })
     streamCompleted.onFailure {
+      case ArteryTransport.ShutdownSignal ⇒ // shutdown as expected
       case cause if transport.isShutdown ⇒
         // don't restart after shutdown, but log some details so we notice
         log.error(cause, s"{} to {} failed after shutdown. {}", streamName, remoteAddress, cause.getMessage)
