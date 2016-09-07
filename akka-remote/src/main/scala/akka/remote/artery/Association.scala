@@ -267,6 +267,7 @@ private[remote] class Association(
     outboundControlIngress.sendControlMessage(message)
 
   def send(message: Any, sender: OptionVal[ActorRef], recipient: OptionVal[RemoteActorRef]): Unit = {
+
     def createOutboundEnvelope(): OutboundEnvelope =
       outboundEnvelopePool.acquire().init(recipient, message.asInstanceOf[AnyRef], sender)
 
