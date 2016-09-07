@@ -171,9 +171,17 @@ abstract class SplitSpec
       }
 
       runOn(side2: _*) {
-        val expected = ((side2 ++ side1) map address).toSet
-        clusterView.members.map(_.address) should ===(expected)
-        assertUnreachable(side1: _*)
+        if (system.settings.config.getBoolean("akka.remote.artery.enabled")) {
+          // with artery the other side stays quarantined
+          val expected = ((side2) map address).toSet
+          clusterView.members.map(_.address) should ===(expected)
+
+        } else {
+          // with the old remoting side2 comes back but stays unreachable
+          val expected = ((side2 ++ side1) map address).toSet
+          clusterView.members.map(_.address) should ===(expected)
+          assertUnreachable(side1: _*)
+        }
       }
 
       enterBarrier("after")
