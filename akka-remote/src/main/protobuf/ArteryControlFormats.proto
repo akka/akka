@@ -42,9 +42,11 @@ message CompressionTableAdvertisementAck {
 
 // SystemMessageDelivery.SystemMessageEnvelope
 message SystemMessageEnvelope {
-  required bytes message = 1; // FIXME: is that the right way? WireFormats.SerializedMessage underneath
-  required uint64 seqNo = 2;
-  required UniqueAddress ackReplyTo = 3;
+  required bytes message = 1;
+  required int32 serializerId = 2;
+  optional bytes messageManifest = 3;
+  required uint64 seqNo = 4;
+  required UniqueAddress ackReplyTo = 5;
 }
 
 // SystemMessageDelivery.Ack

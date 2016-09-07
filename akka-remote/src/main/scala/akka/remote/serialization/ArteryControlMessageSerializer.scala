@@ -10,7 +10,7 @@ import akka.remote.artery.compress.CompressionProtocol._
 import akka.remote.artery.compress.{ CompressionProtocol, CompressionTable }
 import akka.remote.artery.{ ActorSystemTerminating, ActorSystemTerminatingAck, Quarantined, SystemMessageDelivery }
 import akka.remote.{ ArteryControlFormats, MessageSerializer, UniqueAddress, WireFormats }
-import akka.serialization.{ BaseSerializer, Serialization, SerializerWithStringManifest }
+import akka.serialization.{ BaseSerializer, Serialization, SerializationExtension, SerializerWithStringManifest }
 
 /** INTERNAL API */
 private[akka] object ArteryControlMessageSerializer {
@@ -29,8 +29,10 @@ private[akka] object ArteryControlMessageSerializer {
 }
 
 /** INTERNAL API */
-private[akka] class ArteryControlMessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
+private[akka] final class ArteryControlMessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
   import ArteryControlMessageSerializer._
+
+  private lazy val serialization = SerializationExtension(system)
 
   override def manifest(o: AnyRef): String = o match { // most frequent ones first
     case _: HandshakeReq ⇒ HandshakeReqManifest
@@ -144,17 +146,25 @@ private[akka] class ArteryControlMessageSerializer(val system: ExtendedActorSyst
   def serializeSystemMessageEnvelope(env: SystemMessageDelivery.SystemMessageEnvelope): ArteryControlFormats.SystemMessageEnvelope = {
     val msg = MessageSerializer.serialize(system, env.message)
 
-    ArteryControlFormats.SystemMessageEnvelope.newBuilder
-      .setMessage(msg.toByteString)
-      .setSeqNo(env.seqNo)
-      .setAckReplyTo(serializeUniqueAddress(env.ackReplyTo))
-      .build
+    val builder =
+      ArteryControlFormats.SystemMessageEnvelope.newBuilder
+        .setMessage(msg.getMessage)
+        .setSerializerId(msg.getSerializerId)
+        .setSeqNo(env.seqNo)
+        .setAckReplyTo(serializeUniqueAddress(env.ackReplyTo))
+
+    if (msg.hasMessageManifest) builder.setMessageManifest(msg.getMessageManifest)
+
+    builder.build
   }
   def deserializeSystemMessageEnvelope(bytes: Array[Byte]): SystemMessageDelivery.SystemMessageEnvelope = {
     val protoEnv = ArteryControlFormats.SystemMessageEnvelope.parseFrom(bytes)
 
     SystemMessageDelivery.SystemMessageEnvelope(
-      MessageSerializer.deserialize(system, WireFormats.SerializedMessage.parseFrom(protoEnv.getMessage)),
+      serialization.deserialize(
+      protoEnv.getMessage.toByteArray,
+      protoEnv.getSerializerId,
+      if (protoEnv.hasMessageManifest) protoEnv.getMessageManifest.toStringUtf8 else "").get,
       protoEnv.getSeqNo,
       deserializeUniqueAddress(protoEnv.getAckReplyTo))
   }

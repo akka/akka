@@ -762,6 +762,10 @@ public final class ArteryControlFormats {
    * <pre>
    * Generic message declaration that is used for all types of message that (currently) have a single
    * address field. A message that needs to changed later can be cloned from this one and then adapted.
+   * ActorSystemTerminating
+   * ActorSystemTerminating.Ack
+   * OutboundHandshake.HandshakeReq
+   * OutboundHandshake.HandshakeRsp
    * </pre>
    */
   public static final class MessageWithAddress extends
@@ -1010,6 +1014,10 @@ public final class ArteryControlFormats {
      * <pre>
      * Generic message declaration that is used for all types of message that (currently) have a single
      * address field. A message that needs to changed later can be cloned from this one and then adapted.
+     * ActorSystemTerminating
+     * ActorSystemTerminating.Ack
+     * OutboundHandshake.HandshakeReq
+     * OutboundHandshake.HandshakeRsp
      * </pre>
      */
     public static final class Builder extends
@@ -2966,42 +2974,54 @@ public final class ArteryControlFormats {
     // required bytes message = 1;
     /**
      * <code>required bytes message = 1;</code>
-     *
-     * <pre>
-     * FIXME: is that the right way? WireFormats.SerializedMessage underneath
-     * </pre>
      */
     boolean hasMessage();
     /**
      * <code>required bytes message = 1;</code>
-     *
-     * <pre>
-     * FIXME: is that the right way? WireFormats.SerializedMessage underneath
-     * </pre>
      */
     akka.protobuf.ByteString getMessage();
 
-    // required uint64 seqNo = 2;
+    // required int32 serializerId = 2;
     /**
-     * <code>required uint64 seqNo = 2;</code>
+     * <code>required int32 serializerId = 2;</code>
+     */
+    boolean hasSerializerId();
+    /**
+     * <code>required int32 serializerId = 2;</code>
+     */
+    int getSerializerId();
+
+    // optional bytes messageManifest = 3;
+    /**
+     * <code>optional bytes messageManifest = 3;</code>
+     */
+    boolean hasMessageManifest();
+    /**
+     * <code>optional bytes messageManifest = 3;</code>
+     */
+    akka.protobuf.ByteString getMessageManifest();
+
+    // required uint64 seqNo = 4;
+    /**
+     * <code>required uint64 seqNo = 4;</code>
      */
     boolean hasSeqNo();
     /**
-     * <code>required uint64 seqNo = 2;</code>
+     * <code>required uint64 seqNo = 4;</code>
      */
     long getSeqNo();
 
-    // required .UniqueAddress ackReplyTo = 3;
+    // required .UniqueAddress ackReplyTo = 5;
     /**
-     * <code>required .UniqueAddress ackReplyTo = 3;</code>
+     * <code>required .UniqueAddress ackReplyTo = 5;</code>
      */
     boolean hasAckReplyTo();
     /**
-     * <code>required .UniqueAddress ackReplyTo = 3;</code>
+     * <code>required .UniqueAddress ackReplyTo = 5;</code>
      */
     akka.remote.ArteryControlFormats.UniqueAddress getAckReplyTo();
     /**
-     * <code>required .UniqueAddress ackReplyTo = 3;</code>
+     * <code>required .UniqueAddress ackReplyTo = 5;</code>
      */
     akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getAckReplyToOrBuilder();
   }
@@ -3067,12 +3087,22 @@ public final class ArteryControlFormats {
             }
             case 16: {
               bitField0_ |= 0x00000002;
-              seqNo_ = input.readUInt64();
+              serializerId_ = input.readInt32();
               break;
             }
             case 26: {
+              bitField0_ |= 0x00000004;
+              messageManifest_ = input.readBytes();
+              break;
+            }
+            case 32: {
+              bitField0_ |= 0x00000008;
+              seqNo_ = input.readUInt64();
+              break;
+            }
+            case 42: {
               akka.remote.ArteryControlFormats.UniqueAddress.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000004) == 0x00000004)) {
+              if (((bitField0_ & 0x00000010) == 0x00000010)) {
                 subBuilder = ackReplyTo_.toBuilder();
               }
               ackReplyTo_ = input.readMessage(akka.remote.ArteryControlFormats.UniqueAddress.PARSER, extensionRegistry);
@@ -3080,7 +3110,7 @@ public final class ArteryControlFormats {
                 subBuilder.mergeFrom(ackReplyTo_);
                 ackReplyTo_ = subBuilder.buildPartial();
               }
-              bitField0_ |= 0x00000004;
+              bitField0_ |= 0x00000010;
               break;
             }
           }
@@ -3128,58 +3158,82 @@ public final class ArteryControlFormats {
     private akka.protobuf.ByteString message_;
     /**
      * <code>required bytes message = 1;</code>
-     *
-     * <pre>
-     * FIXME: is that the right way? WireFormats.SerializedMessage underneath
-     * </pre>
      */
     public boolean hasMessage() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
      * <code>required bytes message = 1;</code>
-     *
-     * <pre>
-     * FIXME: is that the right way? WireFormats.SerializedMessage underneath
-     * </pre>
      */
     public akka.protobuf.ByteString getMessage() {
       return message_;
     }
 
-    // required uint64 seqNo = 2;
-    public static final int SEQNO_FIELD_NUMBER = 2;
-    private long seqNo_;
+    // required int32 serializerId = 2;
+    public static final int SERIALIZERID_FIELD_NUMBER = 2;
+    private int serializerId_;
     /**
-     * <code>required uint64 seqNo = 2;</code>
+     * <code>required int32 serializerId = 2;</code>
      */
-    public boolean hasSeqNo() {
+    public boolean hasSerializerId() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
-     * <code>required uint64 seqNo = 2;</code>
+     * <code>required int32 serializerId = 2;</code>
+     */
+    public int getSerializerId() {
+      return serializerId_;
+    }
+
+    // optional bytes messageManifest = 3;
+    public static final int MESSAGEMANIFEST_FIELD_NUMBER = 3;
+    private akka.protobuf.ByteString messageManifest_;
+    /**
+     * <code>optional bytes messageManifest = 3;</code>
+     */
+    public boolean hasMessageManifest() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>optional bytes messageManifest = 3;</code>
+     */
+    public akka.protobuf.ByteString getMessageManifest() {
+      return messageManifest_;
+    }
+
+    // required uint64 seqNo = 4;
+    public static final int SEQNO_FIELD_NUMBER = 4;
+    private long seqNo_;
+    /**
+     * <code>required uint64 seqNo = 4;</code>
+     */
+    public boolean hasSeqNo() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    /**
+     * <code>required uint64 seqNo = 4;</code>
      */
     public long getSeqNo() {
       return seqNo_;
     }
 
-    // required .UniqueAddress ackReplyTo = 3;
-    public static final int ACKREPLYTO_FIELD_NUMBER = 3;
+    // required .UniqueAddress ackReplyTo = 5;
+    public static final int ACKREPLYTO_FIELD_NUMBER = 5;
     private akka.remote.ArteryControlFormats.UniqueAddress ackReplyTo_;
     /**
-     * <code>required .UniqueAddress ackReplyTo = 3;</code>
+     * <code>required .UniqueAddress ackReplyTo = 5;</code>
      */
     public boolean hasAckReplyTo() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000010) == 0x00000010);
     }
     /**
-     * <code>required .UniqueAddress ackReplyTo = 3;</code>
+     * <code>required .UniqueAddress ackReplyTo = 5;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddress getAckReplyTo() {
       return ackReplyTo_;
     }
     /**
-     * <code>required .UniqueAddress ackReplyTo = 3;</code>
+     * <code>required .UniqueAddress ackReplyTo = 5;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getAckReplyToOrBuilder() {
       return ackReplyTo_;
@@ -3187,6 +3241,8 @@ public final class ArteryControlFormats {
 
     private void initFields() {
       message_ = akka.protobuf.ByteString.EMPTY;
+      serializerId_ = 0;
+      messageManifest_ = akka.protobuf.ByteString.EMPTY;
       seqNo_ = 0L;
       ackReplyTo_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
     }
@@ -3196,6 +3252,10 @@ public final class ArteryControlFormats {
       if (isInitialized != -1) return isInitialized == 1;
 
       if (!hasMessage()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasSerializerId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -3222,10 +3282,16 @@ public final class ArteryControlFormats {
         output.writeBytes(1, message_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeUInt64(2, seqNo_);
+        output.writeInt32(2, serializerId_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeMessage(3, ackReplyTo_);
+        output.writeBytes(3, messageManifest_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeUInt64(4, seqNo_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeMessage(5, ackReplyTo_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -3242,11 +3308,19 @@ public final class ArteryControlFormats {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += akka.protobuf.CodedOutputStream
-          .computeUInt64Size(2, seqNo_);
+          .computeInt32Size(2, serializerId_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(3, ackReplyTo_);
+          .computeBytesSize(3, messageManifest_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeUInt64Size(4, seqNo_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeMessageSize(5, ackReplyTo_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -3371,14 +3445,18 @@ public final class ArteryControlFormats {
         super.clear();
         message_ = akka.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000001);
-        seqNo_ = 0L;
+        serializerId_ = 0;
         bitField0_ = (bitField0_ & ~0x00000002);
+        messageManifest_ = akka.protobuf.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000004);
+        seqNo_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000008);
         if (ackReplyToBuilder_ == null) {
           ackReplyTo_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
         } else {
           ackReplyToBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000004);
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -3414,9 +3492,17 @@ public final class ArteryControlFormats {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
-        result.seqNo_ = seqNo_;
+        result.serializerId_ = serializerId_;
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
+        }
+        result.messageManifest_ = messageManifest_;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.seqNo_ = seqNo_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
         }
         if (ackReplyToBuilder_ == null) {
           result.ackReplyTo_ = ackReplyTo_;
@@ -3442,6 +3528,12 @@ public final class ArteryControlFormats {
         if (other.hasMessage()) {
           setMessage(other.getMessage());
         }
+        if (other.hasSerializerId()) {
+          setSerializerId(other.getSerializerId());
+        }
+        if (other.hasMessageManifest()) {
+          setMessageManifest(other.getMessageManifest());
+        }
         if (other.hasSeqNo()) {
           setSeqNo(other.getSeqNo());
         }
@@ -3454,6 +3546,10 @@ public final class ArteryControlFormats {
 
       public final boolean isInitialized() {
         if (!hasMessage()) {
+          
+          return false;
+        }
+        if (!hasSerializerId()) {
           
           return false;
         }
@@ -3495,30 +3591,18 @@ public final class ArteryControlFormats {
       private akka.protobuf.ByteString message_ = akka.protobuf.ByteString.EMPTY;
       /**
        * <code>required bytes message = 1;</code>
-       *
-       * <pre>
-       * FIXME: is that the right way? WireFormats.SerializedMessage underneath
-       * </pre>
        */
       public boolean hasMessage() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
        * <code>required bytes message = 1;</code>
-       *
-       * <pre>
-       * FIXME: is that the right way? WireFormats.SerializedMessage underneath
-       * </pre>
        */
       public akka.protobuf.ByteString getMessage() {
         return message_;
       }
       /**
        * <code>required bytes message = 1;</code>
-       *
-       * <pre>
-       * FIXME: is that the right way? WireFormats.SerializedMessage underneath
-       * </pre>
        */
       public Builder setMessage(akka.protobuf.ByteString value) {
         if (value == null) {
@@ -3531,10 +3615,6 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required bytes message = 1;</code>
-       *
-       * <pre>
-       * FIXME: is that the right way? WireFormats.SerializedMessage underneath
-       * </pre>
        */
       public Builder clearMessage() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -3543,51 +3623,120 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      // required uint64 seqNo = 2;
-      private long seqNo_ ;
+      // required int32 serializerId = 2;
+      private int serializerId_ ;
       /**
-       * <code>required uint64 seqNo = 2;</code>
+       * <code>required int32 serializerId = 2;</code>
        */
-      public boolean hasSeqNo() {
+      public boolean hasSerializerId() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>required uint64 seqNo = 2;</code>
+       * <code>required int32 serializerId = 2;</code>
+       */
+      public int getSerializerId() {
+        return serializerId_;
+      }
+      /**
+       * <code>required int32 serializerId = 2;</code>
+       */
+      public Builder setSerializerId(int value) {
+        bitField0_ |= 0x00000002;
+        serializerId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required int32 serializerId = 2;</code>
+       */
+      public Builder clearSerializerId() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        serializerId_ = 0;
+        onChanged();
+        return this;
+      }
+
+      // optional bytes messageManifest = 3;
+      private akka.protobuf.ByteString messageManifest_ = akka.protobuf.ByteString.EMPTY;
+      /**
+       * <code>optional bytes messageManifest = 3;</code>
+       */
+      public boolean hasMessageManifest() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional bytes messageManifest = 3;</code>
+       */
+      public akka.protobuf.ByteString getMessageManifest() {
+        return messageManifest_;
+      }
+      /**
+       * <code>optional bytes messageManifest = 3;</code>
+       */
+      public Builder setMessageManifest(akka.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        messageManifest_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bytes messageManifest = 3;</code>
+       */
+      public Builder clearMessageManifest() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        messageManifest_ = getDefaultInstance().getMessageManifest();
+        onChanged();
+        return this;
+      }
+
+      // required uint64 seqNo = 4;
+      private long seqNo_ ;
+      /**
+       * <code>required uint64 seqNo = 4;</code>
+       */
+      public boolean hasSeqNo() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      /**
+       * <code>required uint64 seqNo = 4;</code>
        */
       public long getSeqNo() {
         return seqNo_;
       }
       /**
-       * <code>required uint64 seqNo = 2;</code>
+       * <code>required uint64 seqNo = 4;</code>
        */
       public Builder setSeqNo(long value) {
-        bitField0_ |= 0x00000002;
+        bitField0_ |= 0x00000008;
         seqNo_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required uint64 seqNo = 2;</code>
+       * <code>required uint64 seqNo = 4;</code>
        */
       public Builder clearSeqNo() {
-        bitField0_ = (bitField0_ & ~0x00000002);
+        bitField0_ = (bitField0_ & ~0x00000008);
         seqNo_ = 0L;
         onChanged();
         return this;
       }
 
-      // required .UniqueAddress ackReplyTo = 3;
+      // required .UniqueAddress ackReplyTo = 5;
       private akka.remote.ArteryControlFormats.UniqueAddress ackReplyTo_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> ackReplyToBuilder_;
       /**
-       * <code>required .UniqueAddress ackReplyTo = 3;</code>
+       * <code>required .UniqueAddress ackReplyTo = 5;</code>
        */
       public boolean hasAckReplyTo() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000010) == 0x00000010);
       }
       /**
-       * <code>required .UniqueAddress ackReplyTo = 3;</code>
+       * <code>required .UniqueAddress ackReplyTo = 5;</code>
        */
       public akka.remote.ArteryControlFormats.UniqueAddress getAckReplyTo() {
         if (ackReplyToBuilder_ == null) {
@@ -3597,7 +3746,7 @@ public final class ArteryControlFormats {
         }
       }
       /**
-       * <code>required .UniqueAddress ackReplyTo = 3;</code>
+       * <code>required .UniqueAddress ackReplyTo = 5;</code>
        */
       public Builder setAckReplyTo(akka.remote.ArteryControlFormats.UniqueAddress value) {
         if (ackReplyToBuilder_ == null) {
@@ -3609,11 +3758,11 @@ public final class ArteryControlFormats {
         } else {
           ackReplyToBuilder_.setMessage(value);
         }
-        bitField0_ |= 0x00000004;
+        bitField0_ |= 0x00000010;
         return this;
       }
       /**
-       * <code>required .UniqueAddress ackReplyTo = 3;</code>
+       * <code>required .UniqueAddress ackReplyTo = 5;</code>
        */
       public Builder setAckReplyTo(
           akka.remote.ArteryControlFormats.UniqueAddress.Builder builderForValue) {
@@ -3623,15 +3772,15 @@ public final class ArteryControlFormats {
         } else {
           ackReplyToBuilder_.setMessage(builderForValue.build());
         }
-        bitField0_ |= 0x00000004;
+        bitField0_ |= 0x00000010;
         return this;
       }
       /**
-       * <code>required .UniqueAddress ackReplyTo = 3;</code>
+       * <code>required .UniqueAddress ackReplyTo = 5;</code>
        */
       public Builder mergeAckReplyTo(akka.remote.ArteryControlFormats.UniqueAddress value) {
         if (ackReplyToBuilder_ == null) {
-          if (((bitField0_ & 0x00000004) == 0x00000004) &&
+          if (((bitField0_ & 0x00000010) == 0x00000010) &&
               ackReplyTo_ != akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance()) {
             ackReplyTo_ =
               akka.remote.ArteryControlFormats.UniqueAddress.newBuilder(ackReplyTo_).mergeFrom(value).buildPartial();
@@ -3642,11 +3791,11 @@ public final class ArteryControlFormats {
         } else {
           ackReplyToBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000004;
+        bitField0_ |= 0x00000010;
         return this;
       }
       /**
-       * <code>required .UniqueAddress ackReplyTo = 3;</code>
+       * <code>required .UniqueAddress ackReplyTo = 5;</code>
        */
       public Builder clearAckReplyTo() {
         if (ackReplyToBuilder_ == null) {
@@ -3655,19 +3804,19 @@ public final class ArteryControlFormats {
         } else {
           ackReplyToBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000004);
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
       /**
-       * <code>required .UniqueAddress ackReplyTo = 3;</code>
+       * <code>required .UniqueAddress ackReplyTo = 5;</code>
        */
       public akka.remote.ArteryControlFormats.UniqueAddress.Builder getAckReplyToBuilder() {
-        bitField0_ |= 0x00000004;
+        bitField0_ |= 0x00000010;
         onChanged();
         return getAckReplyToFieldBuilder().getBuilder();
       }
       /**
-       * <code>required .UniqueAddress ackReplyTo = 3;</code>
+       * <code>required .UniqueAddress ackReplyTo = 5;</code>
        */
       public akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getAckReplyToOrBuilder() {
         if (ackReplyToBuilder_ != null) {
@@ -3677,7 +3826,7 @@ public final class ArteryControlFormats {
         }
       }
       /**
-       * <code>required .UniqueAddress ackReplyTo = 3;</code>
+       * <code>required .UniqueAddress ackReplyTo = 5;</code>
        */
       private akka.protobuf.SingleFieldBuilder<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> 
@@ -5911,15 +6060,16 @@ public final class ArteryControlFormats {
       "\002(\0132\016.UniqueAddress\022\024\n\014tableVersion\030\002 \002(" +
       "\r\022\014\n\004keys\030\003 \003(\t\022\016\n\006values\030\004 \003(\r\"Q\n Compr" +
       "essionTableAdvertisementAck\022\034\n\004from\030\001 \002(" +
-      "\0132\016.UniqueAddress\022\017\n\007version\030\002 \002(\r\"[\n\025Sy" +
-      "stemMessageEnvelope\022\017\n\007message\030\001 \002(\014\022\r\n\005",
-      "seqNo\030\002 \002(\004\022\"\n\nackReplyTo\030\003 \002(\0132\016.Unique" +
-      "Address\"G\n\030SystemMessageDeliveryAck\022\r\n\005s" +
-      "eqNo\030\001 \002(\004\022\034\n\004from\030\002 \002(\0132\016.UniqueAddress" +
-      "\"K\n\007Address\022\020\n\010protocol\030\001 \002(\t\022\016\n\006system\030" +
-      "\002 \002(\t\022\020\n\010hostname\030\003 \002(\t\022\014\n\004port\030\004 \002(\r\"7\n" +
-      "\rUniqueAddress\022\031\n\007address\030\001 \002(\0132\010.Addres" +
-      "s\022\013\n\003uid\030\002 \002(\004B\017\n\013akka.remoteH\001"
+      "\0132\016.UniqueAddress\022\017\n\007version\030\002 \002(\r\"\212\001\n\025S" +
+      "ystemMessageEnvelope\022\017\n\007message\030\001 \002(\014\022\024\n",
+      "\014serializerId\030\002 \002(\005\022\027\n\017messageManifest\030\003" +
+      " \001(\014\022\r\n\005seqNo\030\004 \002(\004\022\"\n\nackReplyTo\030\005 \002(\0132" +
+      "\016.UniqueAddress\"G\n\030SystemMessageDelivery" +
+      "Ack\022\r\n\005seqNo\030\001 \002(\004\022\034\n\004from\030\002 \002(\0132\016.Uniqu" +
+      "eAddress\"K\n\007Address\022\020\n\010protocol\030\001 \002(\t\022\016\n" +
+      "\006system\030\002 \002(\t\022\020\n\010hostname\030\003 \002(\t\022\014\n\004port\030" +
+      "\004 \002(\r\"7\n\rUniqueAddress\022\031\n\007address\030\001 \002(\0132" +
+      "\010.Address\022\013\n\003uid\030\002 \002(\004B\017\n\013akka.remoteH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -5955,7 +6105,7 @@ public final class ArteryControlFormats {
           internal_static_SystemMessageEnvelope_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_SystemMessageEnvelope_descriptor,
-              new java.lang.String[] { "Message", "SeqNo", "AckReplyTo", });
+              new java.lang.String[] { "Message", "SerializerId", "MessageManifest", "SeqNo", "AckReplyTo", });
           internal_static_SystemMessageDeliveryAck_descriptor =
             getDescriptor().getMessageTypes().get(5);
           internal_static_SystemMessageDeliveryAck_fieldAccessorTable = new
