@@ -225,7 +225,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
     case None ⇒ throw new RemoteTransportExceptionNoStackTrace("Attempted to send management command but Remoting is not running.", null)
   }
 
-  override def quarantine(remoteAddress: Address, uid: Option[Int]): Unit = endpointManager match {
+  override def quarantine(remoteAddress: Address, uid: Option[Int], reason: String): Unit = endpointManager match {
     case Some(manager) ⇒ manager ! Quarantine(remoteAddress, uid)
     case _ ⇒ throw new RemoteTransportExceptionNoStackTrace(
       s"Attempted to quarantine address [$remoteAddress] with uid [$uid] but Remoting is not running", null)

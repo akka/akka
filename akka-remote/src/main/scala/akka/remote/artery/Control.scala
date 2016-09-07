@@ -60,13 +60,13 @@ private[akka] object InboundControlJunction {
    * subject to get notification of incoming control
    * messages.
    */
-  private[akka] trait ControlMessageSubject {
+  private[remote] trait ControlMessageSubject {
     def attach(observer: ControlMessageObserver): Future[Done]
     def detach(observer: ControlMessageObserver): Unit
     def stopped: Future[Done]
   }
 
-  private[akka] trait ControlMessageObserver {
+  private[remote] trait ControlMessageObserver {
 
     /**
      * Notification of incoming control message. The message
