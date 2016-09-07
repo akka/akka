@@ -126,12 +126,12 @@ private[remote] class ManualReplyInboundContext(
 
   private var lastReply: Option[(Address, ControlMessage)] = None
 
-  override def sendControl(to: Address, message: ControlMessage) = {
+  override def sendControl(to: Address, message: ControlMessage): Unit = synchronized {
     lastReply = Some((to, message))
     replyProbe ! message
   }
 
-  def deliverLastReply(): Unit = {
+  def deliverLastReply(): Unit = synchronized {
     lastReply.foreach { case (to, message) ⇒ super.sendControl(to, message) }
     lastReply = None
   }
