@@ -7,17 +7,19 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
+
 import scala.concurrent.duration._
 import akka.testkit._
 import akka.testkit.TestEvent._
 import java.util.concurrent.ThreadLocalRandom
+
 import akka.remote.testconductor.RoleName
 import akka.actor.Props
 import akka.actor.Actor
+
 import scala.util.control.NoStackTrace
-import akka.remote.QuarantinedEvent
+import akka.remote.{ QuarantinedEvent, RARP, RemoteActorRefProvider }
 import akka.actor.ExtendedActorSystem
-import akka.remote.RemoteActorRefProvider
 import akka.actor.ActorRef
 import akka.dispatch.sysmsg.Failed
 import akka.actor.PoisonPill
@@ -36,6 +38,7 @@ object SurviveNetworkInstabilityMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(
     ConfigFactory.parseString("""
       akka.remote.system-message-buffer-size=100
+      akka.remote.artery.advanced.system-message-buffer-size=100
       akka.remote.netty.tcp.connection-timeout = 10s
       """)).
     withFallback(MultiNodeClusterSpec.clusterConfig))
@@ -363,13 +366,21 @@ abstract class SurviveNetworkInstabilitySpec
       }
 
       runOn(side2: _*) {
-        val expected = ((side2 ++ side1) map address).toSet
-        clusterView.members.map(_.address) should ===(expected)
-        assertUnreachable(side1: _*)
+        if (RARP(system).provider.remoteSettings.Artery.Enabled) {
+          // with artery the other side stays quarantined
+          val expected = (side2 map address).toSet
+          clusterView.members.map(_.address) should ===(expected)
+
+        } else {
+          // with the old remoting side2 comes back but stays unreachable
+          val expected = ((side2 ++ side1) map address).toSet
+          clusterView.members.map(_.address) should ===(expected)
+          assertUnreachable(side1: _*)
+        }
       }
 
       enterBarrier("after-7")
-      assertCanTalk((side1AfterJoin): _*)
+      assertCanTalk(side1AfterJoin: _*)
     }
 
   }

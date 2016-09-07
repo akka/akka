@@ -14,14 +14,16 @@ import scala.collection.immutable.SortedSet
 import akka.actor.Props
 import akka.actor.Actor
 
-class SunnyWeatherMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
+object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
   val fourth = role("fourth")
   val fifth = role("fifth")
 
-  val common =
+  // Note that this test uses default configuration,
+  // not MultiNodeClusterSpec.clusterConfig
+  commonConfig(ConfigFactory.parseString(
     """
     akka {
       actor.provider = cluster
@@ -30,43 +32,20 @@ class SunnyWeatherMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
       remote.log-remote-lifecycle-events = off
       cluster.failure-detector.monitored-by-nr-of-members = 3
     }
-    """
-
-  val arteryConfig =
-    """
-    akka.remote.artery {
-      enabled = on
-    }
-    """
-
-  // Note that this test uses default configuration,
-  // not MultiNodeClusterSpec.clusterConfig
-  commonConfig(
-    if (artery) ConfigFactory.parseString(arteryConfig).withFallback(ConfigFactory.parseString(common))
-    else ConfigFactory.parseString(common))
+    """))
 
 }
 
-class SunnyWeatherRemotingMultiJvmNode1 extends SunnyWeatherRemotingSpec
-class SunnyWeatherRemotingMultiJvmNode2 extends SunnyWeatherRemotingSpec
-class SunnyWeatherRemotingMultiJvmNode3 extends SunnyWeatherRemotingSpec
-class SunnyWeatherRemotingMultiJvmNode4 extends SunnyWeatherRemotingSpec
-class SunnyWeatherRemotingMultiJvmNode5 extends SunnyWeatherRemotingSpec
+class SunnyWeatherMultiJvmNode1 extends SunnyWeatherSpec
+class SunnyWeatherMultiJvmNode2 extends SunnyWeatherSpec
+class SunnyWeatherMultiJvmNode3 extends SunnyWeatherSpec
+class SunnyWeatherMultiJvmNode4 extends SunnyWeatherSpec
+class SunnyWeatherMultiJvmNode5 extends SunnyWeatherSpec
 
-class SunnyWeatherArteryMultiJvmNode1 extends SunnyWeatherArterySpec
-class SunnyWeatherArteryMultiJvmNode2 extends SunnyWeatherArterySpec
-class SunnyWeatherArteryMultiJvmNode3 extends SunnyWeatherArterySpec
-class SunnyWeatherArteryMultiJvmNode4 extends SunnyWeatherArterySpec
-class SunnyWeatherArteryMultiJvmNode5 extends SunnyWeatherArterySpec
-
-abstract class SunnyWeatherRemotingSpec extends SunnyWeatherSpec(new SunnyWeatherMultiJvmSpec(artery = false))
-abstract class SunnyWeatherArterySpec extends SunnyWeatherSpec(new SunnyWeatherMultiJvmSpec(artery = true))
-
-abstract class SunnyWeatherSpec(multiNodeConfig: SunnyWeatherMultiJvmSpec)
-  extends MultiNodeSpec(multiNodeConfig)
+abstract class SunnyWeatherSpec extends MultiNodeSpec(SunnyWeatherMultiJvmSpec)
   with MultiNodeClusterSpec {
 
-  import multiNodeConfig._
+  import SunnyWeatherMultiJvmSpec._
 
   import ClusterEvent._
 
