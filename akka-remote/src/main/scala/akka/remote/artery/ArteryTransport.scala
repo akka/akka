@@ -543,7 +543,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def startAeronErrorLog(): Unit = {
     val errorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE))
     val lastTimestamp = new AtomicLong(0L)
-    import system.dispatcher // FIXME perhaps use another dispatcher for this
+    import system.dispatcher
     aeronErrorLogTask = system.scheduler.schedule(3.seconds, 5.seconds) {
       if (!isShutdown) {
         val newLastTimestamp = errorLog.logErrors(log, lastTimestamp.get)
@@ -840,9 +840,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def publishLifecycleEvent(event: RemotingLifecycleEvent): Unit =
     eventPublisher.notifyListeners(event)
 
-  override def quarantine(remoteAddress: Address, uid: Option[Int]): Unit = {
-    // FIXME change the method signature (old remoting) to include reason and use Long uid?
-    association(remoteAddress).quarantine(reason = "", uid.map(_.toLong))
+  override def quarantine(remoteAddress: Address, uid: Option[Int], reason: String): Unit = {
+    // FIXME use Long uid
+    association(remoteAddress).quarantine(reason, uid.map(_.toLong))
   }
 
   def outboundLarge(outboundContext: OutboundContext): Sink[OutboundEnvelope, Future[Done]] =
