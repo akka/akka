@@ -5,17 +5,15 @@
 package akka.http.scaladsl.marshalling
 
 import akka.http.scaladsl.common.EntityStreamingSupport
-import akka.stream.impl.ConstantFun
-
-import scala.collection.immutable
-import akka.http.scaladsl.util.FastFuture._
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.ContentNegotiator
 import akka.http.scaladsl.util.FastFuture
+import akka.http.scaladsl.util.FastFuture._
+import akka.stream.impl.ConstantFun
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
+import scala.collection.immutable
 import scala.language.higherKinds
 
 trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImplicits {
@@ -33,7 +31,10 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
 
   implicit val fromStatusCode: TRM[StatusCode] =
     Marshaller.withOpenCharset(`text/plain`) { (status, charset) ⇒
-      HttpResponse(status, entity = HttpEntity(ContentType(`text/plain`, charset), status.defaultMessage))
+      val responseEntity =
+        if (status.allowsEntity) HttpEntity(status.defaultMessage)
+        else HttpEntity.Empty
+      HttpResponse(status, entity = responseEntity)
     }
 
   implicit def fromStatusCodeAndValue[S, T](implicit sConv: S ⇒ StatusCode, mt: ToEntityMarshaller[T]): TRM[(S, T)] =

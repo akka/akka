@@ -478,6 +478,27 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
     }
   }
 
+  "the default marshaller" should {
+    "allow compressed responses with no body for informational messages" in {
+      Get() ~> `Accept-Encoding`(HttpEncodings.compress) ~> {
+        encodeResponse {
+          complete { StatusCodes.Continue }
+        }
+      } ~> check {
+        status shouldBe StatusCodes.Continue
+      }
+    }
+    "allow gzipped responses with no body for 204 messages" in {
+      Get() ~> `Accept-Encoding`(HttpEncodings.gzip) ~> {
+        encodeResponse {
+          complete { StatusCodes.NoContent }
+        }
+      } ~> check {
+        status shouldBe StatusCodes.NoContent
+      }
+    }
+  }
+
   def compress(input: String, encoder: Encoder): ByteString = {
     val compressor = encoder.newCompressor
     compressor.compressAndFlush(ByteString(input)) ++ compressor.finish()
