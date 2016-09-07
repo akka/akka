@@ -36,13 +36,13 @@ private[remote] object AddressUrlEncoder {
 /**
  * INTERNAL API
  */
-private[remote] final case class RARP(provider: RemoteActorRefProvider) extends Extension {
+private[akka] final case class RARP(provider: RemoteActorRefProvider) extends Extension {
   def configureDispatcher(props: Props): Props = provider.remoteSettings.configureDispatcher(props)
 }
 /**
  * INTERNAL API
  */
-private[remote] object RARP extends ExtensionId[RARP] with ExtensionIdProvider {
+private[akka] object RARP extends ExtensionId[RARP] with ExtensionIdProvider {
 
   override def lookup() = RARP
 
