@@ -104,6 +104,8 @@ private[akka] trait InboundContext {
 
   def completeHandshake(peer: UniqueAddress): Future[Done]
 
+  def settings: ArterySettings
+
 }
 
 /**
@@ -218,6 +220,8 @@ private[akka] trait OutboundContext {
    * via this observer subject.
    */
   def controlSubject: ControlMessageSubject
+
+  def settings: ArterySettings
 
 }
 
@@ -372,7 +376,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       priorityMessageDestinations,
       outboundEnvelopePool))
 
-  def settings = provider.remoteSettings.Artery
+  override def settings = provider.remoteSettings.Artery
 
   override def start(): Unit = {
     startMediaDriver()
