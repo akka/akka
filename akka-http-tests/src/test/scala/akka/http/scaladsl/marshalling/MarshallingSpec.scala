@@ -23,7 +23,7 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
   implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
-  "The PredefinedToEntityMarshallers." - {
+  "The PredefinedToEntityMarshallers" - {
     "StringMarshaller should marshal strings to `text/plain` content in UTF-8" in {
       marshal("Ha“llo") shouldEqual HttpEntity("Ha“llo")
     }
@@ -39,7 +39,17 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
     }
   }
 
-  "The GenericMarshallers." - {
+  "The PredefinedToResponseMarshallers" - {
+    "fromStatusCode should properly marshal entities that are not supposed to have a body" in {
+      marshalToResponse(StatusCodes.NoContent) shouldEqual HttpResponse(StatusCodes.NoContent, entity = HttpEntity.Empty)
+    }
+    "fromStatusCode should properly marshal entities that contain pre-defined content" in {
+      marshalToResponse(StatusCodes.EnhanceYourCalm) shouldEqual
+        HttpResponse(StatusCodes.EnhanceYourCalm, entity = HttpEntity(StatusCodes.EnhanceYourCalm.defaultMessage))
+    }
+  }
+
+  "The GenericMarshallers" - {
     "optionMarshaller should enable marshalling of Option[T]" in {
 
       marshal(Some("Ha“llo")) shouldEqual HttpEntity("Ha“llo")
@@ -51,7 +61,7 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
     }
   }
 
-  "The MultipartMarshallers." - {
+  "The MultipartMarshallers" - {
     "multipartMarshaller should correctly marshal multipart content with" - {
       "one empty part" in {
         marshal(Multipart.General(`multipart/mixed`, Multipart.General.BodyPart.Strict(""))) shouldEqual HttpEntity(
