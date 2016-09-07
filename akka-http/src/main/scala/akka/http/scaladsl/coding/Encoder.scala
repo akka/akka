@@ -43,7 +43,10 @@ trait Encoder {
 }
 
 object Encoder {
-  val DefaultFilter: HttpMessage ⇒ Boolean = isCompressible _
+  val DefaultFilter: HttpMessage ⇒ Boolean = {
+    case req: HttpRequest                    ⇒ isCompressible(req)
+    case res @ HttpResponse(status, _, _, _) ⇒ isCompressible(res) && status.allowsEntity
+  }
   private[coding] def isCompressible(msg: HttpMessage): Boolean =
     msg.entity.contentType.mediaType.isCompressible
 
