@@ -914,10 +914,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   def createDecoder(compression: InboundCompressions, bufferPool: EnvelopeBufferPool): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
-    val resolveActorRefWithLocalAddress: String ⇒ InternalActorRef = {
-      recipient ⇒ provider.resolveActorRefWithLocalAddress(recipient, localAddress.address)
-    }
-    Flow.fromGraph(new Decoder(this, system, resolveActorRefWithLocalAddress, compression, bufferPool,
+    Flow.fromGraph(new Decoder(this, system, localAddress, compression, bufferPool,
       inboundEnvelopePool))
   }
 
