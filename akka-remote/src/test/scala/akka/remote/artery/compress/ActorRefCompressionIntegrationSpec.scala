@@ -33,7 +33,7 @@ class ActorRefCompressionIntegrationSpec extends AkkaSpec(CompressionIntegration
       system.eventStream.subscribe(aProbe.ref, classOf[CompressionProtocol.Events.ReceivedActorRefCompressionTable])
       systemB.eventStream.subscribe(b1Probe.ref, classOf[CompressionProtocol.Events.ReceivedActorRefCompressionTable])
 
-      def voidSel = system.actorSelection(s"artery://systemB@localhost:$portB/user/void")
+      def voidSel = system.actorSelection(s"akka://systemB@localhost:$portB/user/void")
       systemB.actorOf(TestActors.blackholeProps, "void")
 
       // cause testActor-1 to become a heavy hitter
@@ -53,7 +53,7 @@ class ActorRefCompressionIntegrationSpec extends AkkaSpec(CompressionIntegration
   }
 
   def identify(_system: String, port: Int, name: String): ActorRef = {
-    val selection = system.actorSelection(s"artery://${_system}@localhost:$port/user/$name").resolveOne(3.seconds)
+    val selection = system.actorSelection(s"akka://${_system}@localhost:$port/user/$name").resolveOne(3.seconds)
     Await.result(selection, 4.seconds)
   }
 

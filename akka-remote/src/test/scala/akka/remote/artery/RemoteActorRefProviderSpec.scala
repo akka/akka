@@ -19,12 +19,12 @@ class RemoteActorRefProviderSpec extends ArteryMultiNodeSpec {
   "RemoteActorRefProvider" must {
 
     "resolve local actor selection" in {
-      val sel = system.actorSelection(s"artery://${system.name}@${addressA.host.get}:${addressA.port.get}/user/echo")
+      val sel = system.actorSelection(s"akka://${system.name}@${addressA.host.get}:${addressA.port.get}/user/echo")
       sel.anchor.asInstanceOf[InternalActorRef].isLocal should be(true)
     }
 
     "resolve remote actor selection" in {
-      val sel = system.actorSelection(s"artery://${systemB.name}@${addressB.host.get}:${addressB.port.get}/user/echo")
+      val sel = system.actorSelection(s"akka://${systemB.name}@${addressB.host.get}:${addressB.port.get}/user/echo")
       sel.anchor.getClass should ===(classOf[RemoteActorRef])
       sel.anchor.asInstanceOf[InternalActorRef].isLocal should be(false)
     }

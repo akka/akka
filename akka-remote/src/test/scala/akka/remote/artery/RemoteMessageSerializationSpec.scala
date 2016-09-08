@@ -92,7 +92,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec("""
         case x      ⇒ sender() ! x
       }
     }), bigBounceId)
-    val bigBounceHere = localSystem.actorFor(s"artery://${remoteSystem.name}@localhost:$remotePort/user/$bigBounceId")
+    val bigBounceHere = localSystem.actorFor(s"akka://${remoteSystem.name}@localhost:$remotePort/user/$bigBounceId")
 
     val eventForwarder = localSystem.actorOf(Props(new Actor {
       def receive = {

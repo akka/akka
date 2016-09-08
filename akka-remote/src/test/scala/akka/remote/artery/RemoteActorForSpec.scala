@@ -25,7 +25,7 @@ class RemoteActorForSpec extends ArteryMultiNodeSpec("akka.loglevel=INFO") with 
 
     "support remote look-ups" in {
       remoteSystem.actorOf(TestActors.echoActorProps, "remote-look-ups")
-      val remoteRef = localSystem.actorFor(s"artery://${remoteSystem.name}@localhost:$remotePort/user/remote-look-ups")
+      val remoteRef = localSystem.actorFor(s"akka://${remoteSystem.name}@localhost:$remotePort/user/remote-look-ups")
       remoteRef ! "ping"
       expectMsg("ping")
     }
@@ -33,13 +33,13 @@ class RemoteActorForSpec extends ArteryMultiNodeSpec("akka.loglevel=INFO") with 
     // FIXME does not log anything currently
     "send warning message for wrong address" ignore {
       filterEvents(EventFilter.warning(pattern = "Address is now gated for ", occurrences = 1)) {
-        localSystem.actorFor("artery://nonexistingsystem@localhost:12346/user/echo") ! "ping"
+        localSystem.actorFor("akka://nonexistingsystem@localhost:12346/user/echo") ! "ping"
       }
     }
 
     "support ask" in {
       remoteSystem.actorOf(TestActors.echoActorProps, "support-ask")
-      val remoteRef = localSystem.actorFor(s"artery://${remoteSystem.name}@localhost:$remotePort/user/support-ask")
+      val remoteRef = localSystem.actorFor(s"akka://${remoteSystem.name}@localhost:$remotePort/user/support-ask")
 
       implicit val timeout: Timeout = 10.seconds
       (remoteRef ? "ping").futureValue should ===("ping")
@@ -47,7 +47,7 @@ class RemoteActorForSpec extends ArteryMultiNodeSpec("akka.loglevel=INFO") with 
 
     "send dead letters on remote if actor does not exist" in {
       EventFilter.warning(pattern = "dead.*buh", occurrences = 1).intercept {
-        localSystem.actorFor(s"artery://${remoteSystem.name}@localhost:$remotePort/dead-letters-on-remote") ! "buh"
+        localSystem.actorFor(s"akka://${remoteSystem.name}@localhost:$remotePort/dead-letters-on-remote") ! "buh"
       }(remoteSystem)
     }
 
