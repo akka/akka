@@ -15,6 +15,8 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
   private var watchedBy: Set[ActorRef] = ActorCell.emptyActorRefSet
   private var terminatedQueued: Set[ActorRef] = ActorCell.emptyActorRefSet
 
+  def isWatching(ref: ActorRef): Boolean = watching contains ref
+
   override final def watch(subject: ActorRef): ActorRef = subject match {
     case a: InternalActorRef ⇒
       if (a != self && !watchingContains(a)) {
