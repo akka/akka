@@ -4,11 +4,11 @@
 
 package akka.http.scaladsl.testkit
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import akka.testkit.TestProbe
-import akka.util.Timeout
 import akka.pattern.ask
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server._
@@ -16,6 +16,7 @@ import akka.http.scaladsl.model._
 import StatusCodes._
 import HttpMethods._
 import Directives._
+import akka.util.Timeout
 
 class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteTest {
 
@@ -48,6 +49,18 @@ class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteT
       }
     }
 
+    "long running routes" in {
+      implicit val timeout = Timeout(2.seconds)
+      Post("/abc", "content") ~> complete {
+        Future {
+          Thread.sleep(1200)
+          "res"
+        }
+      } ~> check {
+        responseAs[String] shouldEqual "res"
+      }
+    }
+
     "separation of route execution from checking" in {
       val pinkHeader = RawHeader("Fancy", "pink")
 
@@ -55,7 +68,6 @@ class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteT
       val service = TestProbe()
       val handler = TestProbe()
       implicit def serviceRef = service.ref
-      implicit val askTimeout: Timeout = 1.second
 
       val result =
         Get() ~> pinkHeader ~> {
