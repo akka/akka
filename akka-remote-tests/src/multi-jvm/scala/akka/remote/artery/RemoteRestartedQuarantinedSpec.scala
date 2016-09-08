@@ -73,7 +73,7 @@ abstract class RemoteRestartedQuarantinedSpec
         val (uid, ref) = identifyWithUid(second, "subject", 5.seconds)
 
         enterBarrier("before-quarantined")
-        RARP(system).provider.transport.quarantine(node(second).address, Some(uid))
+        RARP(system).provider.transport.quarantine(node(second).address, Some(uid), "test")
 
         enterBarrier("quarantined")
         enterBarrier("still-quarantined")

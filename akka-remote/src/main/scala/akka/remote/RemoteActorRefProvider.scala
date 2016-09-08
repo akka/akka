@@ -449,7 +449,8 @@ private[akka] class RemoteActorRefProvider(
    * @param uid UID of the remote system, if the uid is not defined it will not be a strong quarantine but
    *   the current endpoint writer will be stopped (dropping system messages) and the address will be gated
    */
-  def quarantine(address: Address, uid: Option[Int]): Unit = transport.quarantine(address, uid)
+  def quarantine(address: Address, uid: Option[Int], reason: String): Unit =
+    transport.quarantine(address, uid, reason)
 
 }
 

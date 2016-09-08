@@ -104,6 +104,8 @@ private[akka] trait InboundContext {
 
   def completeHandshake(peer: UniqueAddress): Future[Done]
 
+  def settings: ArterySettings
+
 }
 
 /**
@@ -218,6 +220,8 @@ private[akka] trait OutboundContext {
    * via this observer subject.
    */
   def controlSubject: ControlMessageSubject
+
+  def settings: ArterySettings
 
 }
 
@@ -339,9 +343,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val largeEnvelopeBufferPool = new EnvelopeBufferPool(settings.Advanced.MaximumLargeFrameSize, settings.Advanced.MaximumPooledBuffers)
 
   private val inboundEnvelopePool = ReusableInboundEnvelope.createObjectPool(capacity = 16)
-  // FIXME capacity of outboundEnvelopePool should probably be derived from the sendQueue capacity
-  //       times a factor (for reasonable number of outbound streams)
-  private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity = 3072 * 2)
+  // The outboundEnvelopePool is shared among all outbound associations
+  private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity =
+    settings.Advanced.OutboundMessageQueueSize * settings.Advanced.OutboundLanes * 3)
 
   val (afrFileChannel, afrFlie, flightRecorder) = initializeFlightRecorder() match {
     case None            ⇒ (None, None, None)
@@ -372,7 +376,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       priorityMessageDestinations,
       outboundEnvelopePool))
 
-  def settings = provider.remoteSettings.Artery
+  override def settings = provider.remoteSettings.Artery
 
   override def start(): Unit = {
     startMediaDriver()
@@ -539,7 +543,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def startAeronErrorLog(): Unit = {
     val errorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE))
     val lastTimestamp = new AtomicLong(0L)
-    import system.dispatcher // FIXME perhaps use another dispatcher for this
+    import system.dispatcher
     aeronErrorLogTask = system.scheduler.schedule(3.seconds, 5.seconds) {
       if (!isShutdown) {
         val newLastTimestamp = errorLog.logErrors(log, lastTimestamp.get)
@@ -708,7 +712,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     implicit val ec = materializer.executionContext
     updateStreamCompletion(streamName, streamCompleted.recover { case _ ⇒ Done })
     streamCompleted.onFailure {
-      case ShutdownSignal ⇒ // shutdown as expected
+      case ShutdownSignal     ⇒ // shutdown as expected
+      case _: AeronTerminated ⇒ // shutdown already in progress
       case cause if isShutdown ⇒
         // don't restart after shutdown, but log some details so we notice
         log.error(cause, s"{} failed after shutdown. {}", streamName, cause.getMessage)
@@ -835,9 +840,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def publishLifecycleEvent(event: RemotingLifecycleEvent): Unit =
     eventPublisher.notifyListeners(event)
 
-  override def quarantine(remoteAddress: Address, uid: Option[Int]): Unit = {
-    // FIXME change the method signature (old remoting) to include reason and use Long uid?
-    association(remoteAddress).quarantine(reason = "", uid.map(_.toLong))
+  override def quarantine(remoteAddress: Address, uid: Option[Int], reason: String): Unit = {
+    // FIXME use Long uid
+    association(remoteAddress).quarantine(reason, uid.map(_.toLong))
   }
 
   def outboundLarge(outboundContext: OutboundContext): Sink[OutboundEnvelope, Future[Done]] =

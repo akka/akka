@@ -57,6 +57,12 @@ private[akka] final class ArterySettings private (config: Config) {
       n > 0, "inbound-lanes must be greater than zero")
     val SysMsgBufferSize: Int = getInt("system-message-buffer-size").requiring(
       _ > 0, "system-message-buffer-size must be more than zero")
+    val OutboundMessageQueueSize: Int = getInt("outbound-message-queue-size").requiring(
+      _ > 0, "outbound-message-queue-size must be more than zero")
+    val OutboundControlQueueSize: Int = getInt("outbound-control-queue-size").requiring(
+      _ > 0, "outbound-control-queue-size must be more than zero")
+    val OutboundLargeMessageQueueSize: Int = getInt("outbound-large-message-queue-size").requiring(
+      _ > 0, "outbound-large-message-queue-size must be more than zero")
     val SystemMessageResendInterval = config.getMillisDuration("system-message-resend-interval").requiring(interval ⇒
       interval > Duration.Zero, "system-message-resend-interval must be more than zero")
     val HandshakeTimeout = config.getMillisDuration("handshake-timeout").requiring(interval ⇒

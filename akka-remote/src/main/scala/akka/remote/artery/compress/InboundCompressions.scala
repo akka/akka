@@ -42,7 +42,9 @@ private[remote] final class InboundCompressionsImpl(
   inboundContext: InboundContext,
   settings:       ArterySettings.Compression) extends InboundCompressions {
 
-  // FIXME we also must remove the ones that won't be used anymore - when quarantine triggers
+  // TODO we also must remove the ones that won't be used anymore - when quarantine triggers?
+  //      Why is that important? Won't be naturally be removed in new advertisements since they
+  //      are not used any more?
   private[this] val _actorRefsIns = new Long2ObjectHashMap[InboundActorRefCompression]()
   private val createInboundActorRefsForOrigin = new LongFunction[InboundActorRefCompression] {
     override def apply(originUid: Long): InboundActorRefCompression = {
@@ -200,12 +202,6 @@ private[remote] abstract class InboundCompression[T >: Null](
 
   lazy val log = Logging(system, getClass.getSimpleName)
 
-  // FIXME NOTE: there exist edge cases around, we advertise table 1, accumulate table 2, the remote system has not used 2 yet,
-  // yet we technically could already prepare table 3, then it starts using table 1 suddenly. Edge cases like that.
-  // SOLUTION 1: We don't start building new tables until we've seen the previous one be used (move from new to active)
-  //             This is nice as it practically disables all the "build the table" work when the other side is not interested in using it.
-  // SOLUTION 2: We end up dropping messages when old table comes in (we do that anyway)
-
   private[this] val state: AtomicReference[InboundCompression.State[T]] = new AtomicReference(InboundCompression.State.empty)
 
   // TODO calibrate properly (h/w have direct relation to preciseness and max capacity)
@@ -224,7 +220,7 @@ private[remote] abstract class InboundCompression[T >: Null](
    * @throws UnknownCompressedIdException if given id is not known, this may indicate a bug – such situation should not happen.
    */
   @tailrec final def decompressInternal(incomingTableVersion: Int, idx: Int, attemptCounter: Int): OptionVal[T] = {
-    // effectively should never loop more than once, to avoid infinite recursion blow up eagerly 
+    // effectively should never loop more than once, to avoid infinite recursion blow up eagerly
     if (attemptCounter > 2) throw new IllegalStateException(s"Unable to decompress $idx from table $incomingTableVersion. Internal state: ${state.get}")
 
     val current = state.get

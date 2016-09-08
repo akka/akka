@@ -132,7 +132,8 @@ private[remote] class RollingEventLogSection(
   recordSize:    Int) {
   import RollingEventLogSection._
 
-  // FIXME: check if power of two
+  require(entryCount > 0, "entryCount must be greater than 0")
+  require((entryCount & (entryCount - 1)) == 0, "entryCount must be power of two")
   private[this] val LogMask: Long = entryCount - 1L
 
   private[this] val buffers: Array[MappedResizeableBuffer] = Array.tabulate(FlightRecorder.SnapshotCount) { logId ⇒
@@ -237,7 +238,8 @@ private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicB
 
   private[this] val globalSection = new MappedResizeableBuffer(fileChannel, 0, GlobalSectionSize)
 
-  // FIXME: check if power of two
+  require(SnapshotCount > 0, "SnapshotCount must be greater than 0")
+  require((SnapshotCount & (SnapshotCount - 1)) == 0, "SnapshotCount must be power of two")
   private[this] val SnapshotMask = SnapshotCount - 1
   private[this] val alertLogs =
     new RollingEventLogSection(
@@ -329,7 +331,7 @@ private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicB
 
     private def prepareRichRecord(recordBuffer: ByteBuffer, code: Int, metadata: Array[Byte]): Unit = {
       recordBuffer.clear()
-      // FIXME: This is a bit overkill, needs some smarter scheme later, no need to always store the wallclock
+      // TODO: This is a bit overkill, needs some smarter scheme later, no need to always store the wallclock
       recordBuffer.putLong(clock.wallClockPart)
       recordBuffer.putLong(clock.highSpeedPart)
       recordBuffer.putInt(code)
@@ -342,7 +344,7 @@ private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicB
       recordBuffer.position(0)
     }
 
-    // FIXME: Try to save as many bytes here as possible! We will see crazy throughput here
+    // TODO: Try to save as many bytes here as possible! We will see crazy throughput here
     override def hiFreq(code: Long, param: Long): Unit = {
       hiFreqBatchedEntries += 1
       hiFreqBatchBuffer.putLong(code)

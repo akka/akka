@@ -99,6 +99,7 @@ private[remote] final class SendQueue[T] extends GraphStageWithMaterializedValue
       }
 
       override def postStop(): Unit = {
+        // TODO quarantine will currently always be done when control stream is terminated, see issue #21359
         if (consumerQueue ne null)
           consumerQueue.clear()
         super.postStop()

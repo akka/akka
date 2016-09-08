@@ -59,7 +59,6 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
   }
 
   "Outgoing compression table" must {
-    // FIXME this is failing, we must rethink how tables are identified and updated
     "be dropped on system restart" in {
       val messagesToExchange = 10
       val systemATransport = RARP(system).provider.transport.asInstanceOf[ArteryTransport]

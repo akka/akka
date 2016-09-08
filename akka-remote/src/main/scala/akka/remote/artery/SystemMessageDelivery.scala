@@ -29,7 +29,6 @@ import akka.actor.ActorRef
  */
 private[akka] object SystemMessageDelivery {
   // FIXME serialization of these messages
-  // FIXME ackReplyTo should not be needed
   final case class SystemMessageEnvelope(message: AnyRef, seqNo: Long, ackReplyTo: UniqueAddress) extends ArteryMessage
   final case class Ack(seqNo: Long, from: UniqueAddress) extends Reply
   final case class Nack(seqNo: Long, from: UniqueAddress) extends Reply
@@ -80,7 +79,6 @@ private[akka] class SystemMessageDelivery(
 
         outboundContext.controlSubject.stopped.onComplete {
           getAsyncCallback[Try[Done]] {
-            // FIXME quarantine
             case Success(_)     ⇒ completeStage()
             case Failure(cause) ⇒ failStage(cause)
           }.invoke
@@ -88,6 +86,7 @@ private[akka] class SystemMessageDelivery(
       }
 
       override def postStop(): Unit = {
+        // TODO quarantine will currently always be done when control stream is terminated, see issue #21359
         sendUnacknowledgedToDeadLetters()
         unacknowledged.clear()
         outboundContext.controlSubject.detach(this)
