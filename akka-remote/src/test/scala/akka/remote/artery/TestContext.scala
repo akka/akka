@@ -19,6 +19,7 @@ import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.util.OptionVal
 import akka.actor.InternalActorRef
 import akka.dispatch.ExecutionContexts
+import com.typesafe.config.ConfigFactory
 
 private[remote] class TestInboundContext(
   override val localAddress: UniqueAddress,
@@ -59,6 +60,9 @@ private[remote] class TestInboundContext(
 
   protected def createAssociation(remoteAddress: Address): TestOutboundContext =
     new TestOutboundContext(localAddress, remoteAddress, controlSubject, controlProbe)
+
+  override lazy val settings: ArterySettings =
+    ArterySettings(ConfigFactory.load().getConfig("akka.remote.artery"))
 }
 
 private[remote] class TestOutboundContext(
@@ -93,6 +97,9 @@ private[remote] class TestOutboundContext(
     controlSubject.sendControl(InboundEnvelope(OptionVal.None, remoteAddress, message, OptionVal.None, localAddress.uid,
       OptionVal.None))
   }
+
+  override lazy val settings: ArterySettings =
+    ArterySettings(ConfigFactory.load().getConfig("akka.remote.artery"))
 
 }
 

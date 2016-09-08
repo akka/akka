@@ -30,11 +30,13 @@ object AeronSink {
 
   final class GaveUpSendingException(msg: String) extends RuntimeException(msg) with NoStackTrace
 
+  final class PublicationClosedException(msg: String) extends RuntimeException(msg) with NoStackTrace
+
   private val TimerCheckPeriod = 1 << 13 // 8192
   private val TimerCheckMask = TimerCheckPeriod - 1
 
   private final class OfferTask(pub: Publication, var buffer: UnsafeBuffer, var msgSize: Int, onOfferSuccess: AsyncCallback[Unit],
-                                giveUpAfter: Duration, onGiveUp: AsyncCallback[Unit])
+                                giveUpAfter: Duration, onGiveUp: AsyncCallback[Unit], onPublicationClosed: AsyncCallback[Unit])
     extends (() ⇒ Boolean) {
     val giveUpAfterNanos = giveUpAfter match {
       case f: FiniteDuration ⇒ f.toNanos
@@ -53,6 +55,9 @@ object AeronSink {
       if (result >= 0) {
         n = 0L
         onOfferSuccess.invoke(())
+        true
+      } else if (result == Publication.CLOSED) {
+        onPublicationClosed.invoke(())
         true
       } else if (giveUpAfterNanos >= 0 && (n & TimerCheckMask) == 0 && (System.nanoTime() - startTime) > giveUpAfterNanos) {
         // the task is invoked by the spinning thread, only check nanoTime each 8192th invocation
@@ -99,7 +104,7 @@ class AeronSink(
       private var backoffCount = spinning
       private var lastMsgSize = 0
       private val offerTask = new OfferTask(pub, null, lastMsgSize, getAsyncCallback(_ ⇒ taskOnOfferSuccess()),
-        giveUpSendAfter, getAsyncCallback(_ ⇒ onGiveUp()))
+        giveUpSendAfter, getAsyncCallback(_ ⇒ onGiveUp()), getAsyncCallback(_ ⇒ onPublicationClosed()))
       private val addOfferTask: Add = Add(offerTask)
 
       private var offerTaskInProgress = false
@@ -135,26 +140,34 @@ class AeronSink(
 
       @tailrec private def publish(): Unit = {
         val result = pub.offer(envelopeInFlight.aeronBuffer, 0, lastMsgSize)
-        // FIXME handle Publication.CLOSED
         if (result < 0) {
-          backoffCount -= 1
-          if (backoffCount > 0) {
-            ThreadHints.onSpinWait()
-            publish() // recursive
-          } else {
-            // delegate backoff to shared TaskRunner
-            offerTaskInProgress = true
-            // visibility of these assignments are ensured by adding the task to the command queue
-            offerTask.buffer = envelopeInFlight.aeronBuffer
-            offerTask.msgSize = lastMsgSize
-            delegateTaskStartTime = System.nanoTime()
-            taskRunner.command(addOfferTask)
-            flightRecorder.hiFreq(AeronSink_DelegateToTaskRunner, countBeforeDelegate)
+          if (result == Publication.CLOSED)
+            onPublicationClosed()
+          else if (result == Publication.NOT_CONNECTED)
+            delegateBackoff()
+          else {
+            backoffCount -= 1
+            if (backoffCount > 0) {
+              ThreadHints.onSpinWait()
+              publish() // recursive
+            } else
+              delegateBackoff()
           }
         } else {
           countBeforeDelegate += 1
           onOfferSuccess()
         }
+      }
+
+      private def delegateBackoff(): Unit = {
+        // delegate backoff to shared TaskRunner
+        offerTaskInProgress = true
+        // visibility of these assignments are ensured by adding the task to the command queue
+        offerTask.buffer = envelopeInFlight.aeronBuffer
+        offerTask.msgSize = lastMsgSize
+        delegateTaskStartTime = System.nanoTime()
+        taskRunner.command(addOfferTask)
+        flightRecorder.hiFreq(AeronSink_DelegateToTaskRunner, countBeforeDelegate)
       }
 
       private def taskOnOfferSuccess(): Unit = {
@@ -180,6 +193,15 @@ class AeronSink(
         offerTaskInProgress = false
         val cause = new GaveUpSendingException(s"Gave up sending message to $channel after $giveUpSendAfter.")
         flightRecorder.alert(AeronSink_GaveUpEnvelope, cause.getMessage.getBytes("US-ASCII"))
+        completedValue = Failure(cause)
+        failStage(cause)
+      }
+
+      private def onPublicationClosed(): Unit = {
+        offerTaskInProgress = false
+        val cause = new PublicationClosedException(s"Aeron Publication to [${channel}] was closed.")
+        // this is not exepected, since we didn't close the publication ourselves
+        flightRecorder.alert(AeronSink_PublicationClosed, channelMetadata)
         completedValue = Failure(cause)
         failStage(cause)
       }

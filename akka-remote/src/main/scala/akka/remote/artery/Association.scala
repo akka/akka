@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import akka.stream.KillSwitches
 import scala.util.Failure
 import scala.util.Success
+import akka.remote.artery.ArteryTransport.AeronTerminated
 
 /**
  * INTERNAL API
@@ -96,10 +97,15 @@ private[remote] class Association(
   outboundEnvelopePool:        ObjectPool[ReusableOutboundEnvelope])
   extends AbstractAssociation with OutboundContext {
   import Association._
+  import FlightRecorderEvents._
 
   private val log = Logging(transport.system, getClass.getName)
+  private val flightRecorder = transport.createFlightRecorderEventSink(synchr = true)
 
-  private val restartCounter = new RestartCounter(transport.settings.Advanced.OutboundMaxRestarts, transport.settings.Advanced.OutboundRestartTimeout)
+  override def settings = transport.settings
+  private def advancedSettings = transport.settings.Advanced
+
+  private val restartCounter = new RestartCounter(advancedSettings.OutboundMaxRestarts, advancedSettings.OutboundRestartTimeout)
 
   // We start with the raw wrapped queue and then it is replaced with the materialized value of
   // the `SendQueue` after materialization. Using same underlying queue. This makes it possible to
@@ -108,12 +114,10 @@ private[remote] class Association(
   def createQueue(capacity: Int): Queue[OutboundEnvelope] =
     new ManyToOneConcurrentArrayQueue[OutboundEnvelope](capacity)
 
-  private val outboundLanes = transport.settings.Advanced.OutboundLanes
-  private val controlQueueSize = transport.settings.Advanced.SysMsgBufferSize
-  // FIXME config queue size, and it should perhaps also be possible to use some kind of LinkedQueue
-  //       such as agrona.ManyToOneConcurrentLinkedQueue or AbstractNodeQueue for less memory consumption
-  private val queueSize = 3072
-  private val largeQueueSize = 256
+  private val outboundLanes = advancedSettings.OutboundLanes
+  private val controlQueueSize = advancedSettings.OutboundControlQueueSize
+  private val queueSize = advancedSettings.OutboundMessageQueueSize
+  private val largeQueueSize = advancedSettings.OutboundLargeMessageQueueSize
 
   private[this] val queues: Array[SendQueue.ProducerApi[OutboundEnvelope]] = Array.ofDim(2 + outboundLanes)
   queues(ControlQueueIndex) = QueueWrapperImpl(createQueue(controlQueueSize)) // control stream
@@ -265,29 +269,29 @@ private[remote] class Association(
     outboundControlIngress.sendControlMessage(message)
 
   def send(message: Any, sender: OptionVal[ActorRef], recipient: OptionVal[RemoteActorRef]): Unit = {
+
     def createOutboundEnvelope(): OutboundEnvelope =
       outboundEnvelopePool.acquire().init(recipient, message.asInstanceOf[AnyRef], sender)
 
     // volatile read to see latest queue array
     val unused = queuesVisibility
 
-    def dropped(qSize: Int, env: OutboundEnvelope): Unit = {
+    def dropped(queueIndex: Int, qSize: Int, env: OutboundEnvelope): Unit = {
       log.debug(
         "Dropping message [{}] from [{}] to [{}] due to overflow of send queue, size [{}]",
         message.getClass, sender.getOrElse(deadletters), recipient.getOrElse(recipient), qSize)
-      // FIXME AFR
+      flightRecorder.hiFreq(Transport_SendQueueOverflow, queueIndex)
       deadletters ! env
     }
 
     // allow ActorSelectionMessage to pass through quarantine, to be able to establish interaction with new system
-    // FIXME where is that ActorSelectionMessage check in old remoting?
     if (message.isInstanceOf[ActorSelectionMessage] || !associationState.isQuarantined() || message == ClearSystemMessageDelivery) {
       message match {
         case _: SystemMessage | ClearSystemMessageDelivery | _: ControlMessage ⇒
           val outboundEnvelope = createOutboundEnvelope()
           if (!controlQueue.offer(createOutboundEnvelope())) {
             quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
-            dropped(controlQueueSize, outboundEnvelope)
+            dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
           }
         case _: DaemonMsgCreate ⇒
           // DaemonMsgCreate is not a SystemMessage, but must be sent over the control stream because
@@ -296,18 +300,19 @@ private[remote] class Association(
           // destination) before the first ordinary message arrives.
           val outboundEnvelope1 = createOutboundEnvelope()
           if (!controlQueue.offer(outboundEnvelope1))
-            dropped(controlQueueSize, outboundEnvelope1)
+            dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope1)
           (0 until outboundLanes).foreach { i ⇒
             val outboundEnvelope2 = createOutboundEnvelope()
             if (!queues(OrdinaryQueueIndex + i).offer(outboundEnvelope2))
-              dropped(queueSize, outboundEnvelope2)
+              dropped(OrdinaryQueueIndex + i, queueSize, outboundEnvelope2)
           }
         case _ ⇒
           val outboundEnvelope = createOutboundEnvelope()
-          val queue = selectQueue(recipient)
+          val queueIndex = selectQueue(recipient)
+          val queue = queues(queueIndex)
           val offerOk = queue.offer(outboundEnvelope)
           if (!offerOk)
-            dropped(queueSize, outboundEnvelope)
+            dropped(queueIndex, queueSize, outboundEnvelope)
 
       }
     } else if (log.isDebugEnabled)
@@ -316,10 +321,10 @@ private[remote] class Association(
         message.getClass, sender.getOrElse(deadletters), recipient.getOrElse(recipient), remoteAddress)
   }
 
-  private def selectQueue(recipient: OptionVal[RemoteActorRef]): ProducerApi[OutboundEnvelope] = {
+  private def selectQueue(recipient: OptionVal[RemoteActorRef]): Int = {
     recipient match {
       case OptionVal.Some(r) ⇒
-        val queueIndex = r.cachedSendQueueIndex match {
+        r.cachedSendQueueIndex match {
           case -1 ⇒
             // only happens when messages are sent to new remote destination
             // and is then cached on the RemoteActorRef
@@ -341,10 +346,9 @@ private[remote] class Association(
             idx
           case idx ⇒ idx
         }
-        queues(queueIndex)
 
       case OptionVal.None ⇒
-        queues(OrdinaryQueueIndex)
+        OrdinaryQueueIndex
     }
   }
 
@@ -388,7 +392,6 @@ private[remote] class Association(
               remoteAddress, reason)
         }
       case None ⇒
-        // FIXME should we do something more, old impl used gating?
         log.warning("Quarantine of [{}] ignored because unknown UID", remoteAddress)
     }
 
@@ -430,7 +433,7 @@ private[remote] class Association(
         .toMat(transport.outboundControl(this))(Keep.both)
         .run()(materializer)
 
-    if (transport.settings.Advanced.TestMode)
+    if (advancedSettings.TestMode)
       _testStages.add(testMgmt)
 
     queueValue.inject(wrapper.queue)
@@ -466,7 +469,7 @@ private[remote] class Association(
           .toMat(transport.outbound(this))(Keep.both)
           .run()(materializer)
 
-      if (transport.settings.Advanced.TestMode)
+      if (advancedSettings.TestMode)
         _testStages.add(testMgmt)
 
       queueValue.inject(wrapper.queue)
@@ -510,7 +513,7 @@ private[remote] class Association(
       val (queueValues, testMgmtValues) = a.unzip
       val (changeCompressionValues, laneCompletedValues) = b.unzip
 
-      if (transport.settings.Advanced.TestMode)
+      if (advancedSettings.TestMode)
         testMgmtValues.foreach(_testStages.add)
 
       import transport.system.dispatcher
@@ -546,7 +549,7 @@ private[remote] class Association(
       .toMat(transport.outboundLarge(this))(Keep.both)
       .run()(materializer)
 
-    if (transport.settings.Advanced.TestMode)
+    if (advancedSettings.TestMode)
       _testStages.add(testMgmt)
 
     queueValue.inject(wrapper.queue)
@@ -573,6 +576,7 @@ private[remote] class Association(
     updateStreamCompletion(streamName, streamCompleted.recover { case _ ⇒ Done })
     streamCompleted.onFailure {
       case ArteryTransport.ShutdownSignal ⇒ // shutdown as expected
+      case _: AeronTerminated             ⇒ // shutdown already in progress
       case cause if transport.isShutdown ⇒
         // don't restart after shutdown, but log some details so we notice
         log.error(cause, s"{} to {} failed after shutdown. {}", streamName, remoteAddress, cause.getMessage)
@@ -593,10 +597,8 @@ private[remote] class Association(
           log.error(cause, "{} to {} failed. Restarting it. {}", streamName, remoteAddress, cause.getMessage)
           lazyRestart()
         } else {
-          log.error(cause, s"{} to {} failed and restarted {} times within {} seconds. Terminating system. {cause.getMessage}",
-            streamName, remoteAddress, transport.settings.Advanced.OutboundMaxRestarts, transport.settings.Advanced.OutboundRestartTimeout.toSeconds)
-
-          // FIXME is this the right thing to do for outbound?
+          log.error(cause, s"{} to {} failed and restarted {} times within {} seconds. Terminating system. ${cause.getMessage}",
+            streamName, remoteAddress, advancedSettings.OutboundMaxRestarts, advancedSettings.OutboundRestartTimeout.toSeconds)
           transport.system.terminate()
         }
     }

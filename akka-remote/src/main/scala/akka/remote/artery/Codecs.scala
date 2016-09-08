@@ -313,7 +313,7 @@ private[remote] class Decoder(
 
           val decoded = inEnvelopePool.acquire().init(
             recipient,
-            localAddress, // FIXME: Is this needed anymore? What should we do here?
+            localAddress, // FIXME: this is used for the "non-local recipient" check in MessageDispatcher. Is this needed anymore?
             sender,
             originUid,
             headerBuilder.serializer,
@@ -326,7 +326,7 @@ private[remote] class Decoder(
             // recipient for the first message that is sent to it, best effort retry
             scheduleOnce(RetryResolveRemoteDeployedRecipient(
               retryResolveRemoteDeployedRecipientAttempts,
-              headerBuilder.recipientActorRefPath.get, decoded), retryResolveRemoteDeployedRecipientInterval) // FIXME IS THIS SAFE?
+              headerBuilder.recipientActorRefPath.get, decoded), retryResolveRemoteDeployedRecipientInterval)
           } else
             push(out, decoded)
         }
