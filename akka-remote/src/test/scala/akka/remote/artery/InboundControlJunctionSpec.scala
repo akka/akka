@@ -29,10 +29,10 @@ object InboundControlJunctionSpec {
 
 class InboundControlJunctionSpec
   extends AkkaSpec("""
-                     |akka.actor.serialization-bindings {
-                     |  "akka.remote.artery.InboundControlJunctionSpec$TestControlMessage" = java
-                     |}
-                     |""".stripMargin) with ImplicitSender {
+                   akka.actor.serialization-bindings {
+                     "akka.remote.artery.InboundControlJunctionSpec$TestControlMessage" = java
+                   }
+                   """) with ImplicitSender {
   import InboundControlJunctionSpec._
 
   val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
