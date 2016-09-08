@@ -21,13 +21,13 @@ object HandshakeFailureSpec {
      akka {
        actor.provider = remote
        remote.artery.enabled = on
-       remote.artery.hostname = localhost
-       remote.artery.port = 0
+       remote.artery.canonical.hostname = localhost
+       remote.artery.canonical.port = 0
        remote.artery.advanced.handshake-timeout = 2s
      }
   """)
 
-  val configB = ConfigFactory.parseString(s"akka.remote.artery.port = $portB")
+  val configB = ConfigFactory.parseString(s"akka.remote.artery.canonical.port = $portB")
     .withFallback(commonConfig)
 
 }

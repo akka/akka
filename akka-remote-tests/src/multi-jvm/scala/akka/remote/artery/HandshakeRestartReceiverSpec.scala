@@ -105,7 +105,7 @@ abstract class HandshakeRestartReceiverSpec
         Await.result(system.whenTerminated, 10.seconds)
 
         val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
-              akka.remote.artery.port = ${addr.port.get}
+              akka.remote.artery.canonical.port = ${addr.port.get}
               """).withFallback(system.settings.config))
         freshSystem.actorOf(Props[Subject], "subject2")
 

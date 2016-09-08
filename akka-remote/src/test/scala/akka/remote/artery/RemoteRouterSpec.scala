@@ -24,8 +24,8 @@ object RemoteRouterSpec {
 class RemoteRouterSpec extends AkkaSpec("""
     akka.actor.provider = remote
     akka.remote.artery.enabled = on
-    akka.remote.artery.hostname = localhost
-    akka.remote.artery.port = 0
+    akka.remote.artery.canonical.hostname = localhost
+    akka.remote.artery.canonical.port = 0
     akka.actor.deployment {
       /remote-override {
         router = round-robin-pool

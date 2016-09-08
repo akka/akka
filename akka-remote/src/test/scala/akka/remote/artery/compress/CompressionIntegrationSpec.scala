@@ -17,7 +17,7 @@ object CompressionIntegrationSpec {
 
        actor {
          provider = "akka.remote.RemoteActorRefProvider"
-         
+
          serializers {
            test-message = "akka.remote.artery.compress.TestMessageSerializer"
          }
@@ -26,8 +26,8 @@ object CompressionIntegrationSpec {
          }
        }
        remote.artery.enabled = on
-       remote.artery.hostname = localhost
-       remote.artery.port = 0
+       remote.artery.canonical.hostname = localhost
+       remote.artery.canonical.port = 0
        remote.artery.advanced.handshake-timeout = 10s
 
        remote.artery.advanced.compression {
@@ -38,6 +38,6 @@ object CompressionIntegrationSpec {
      }
   """)
 
-  val configB = ConfigFactory.parseString(s"akka.remote.artery.port = $portB")
+  val configB = ConfigFactory.parseString(s"akka.remote.artery.canonical.port = $portB")
     .withFallback(commonConfig)
 }

@@ -27,8 +27,8 @@ object RemoteDeathWatchSpec {
         }
         remote.watch-failure-detector.acceptable-heartbeat-pause = 3s
         remote.artery.enabled = on
-        remote.artery.hostname = localhost
-        remote.artery.port = 0
+        remote.artery.canonical.hostname = localhost
+        remote.artery.canonical.port = 0
     }
     """)
 }
@@ -39,7 +39,7 @@ class RemoteDeathWatchSpec extends AkkaSpec(RemoteDeathWatchSpec.config) with Im
   system.eventStream.publish(TestEvent.Mute(
     EventFilter[io.aeron.exceptions.RegistrationException]()))
 
-  val other = ActorSystem("other", ConfigFactory.parseString(s"akka.remote.artery.port=$otherPort")
+  val other = ActorSystem("other", ConfigFactory.parseString(s"akka.remote.artery.canonical.port=$otherPort")
     .withFallback(system.settings.config))
 
   override def afterTermination() {

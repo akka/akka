@@ -69,8 +69,8 @@ class RemoteWatcherSpec extends AkkaSpec(
        log-dead-letters-during-shutdown = false
        actor.provider = remote
        remote.artery.enabled = on
-       remote.artery.hostname = localhost
-       remote.artery.port = 0
+       remote.artery.canonical.hostname = localhost
+       remote.artery.canonical.port = 0
      }""") with ImplicitSender {
 
   import RemoteWatcherSpec._

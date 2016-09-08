@@ -115,7 +115,7 @@ abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePie
 
         val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
           akka.remote.netty.tcp.port = ${addr.port.get}
-          akka.remote.artery.port = ${addr.port.get}
+          akka.remote.artery.canonical.port = ${addr.port.get}
           """).withFallback(system.settings.config))
         freshSystem.actorOf(Props[Subject], "subject")
 

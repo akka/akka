@@ -16,8 +16,10 @@ object ArteryMultiNodeSpec {
         actor.warn-about-java-serializer-usage = off
         remote.artery {
           enabled = on
-          hostname = localhost
-          port = 0
+          canonical {
+            hostname = localhost
+            port = 0
+          }
         }
       }
     """)
