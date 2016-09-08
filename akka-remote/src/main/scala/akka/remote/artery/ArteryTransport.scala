@@ -988,7 +988,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
  */
 private[remote] object ArteryTransport {
 
-  val ProtocolName = "artery"
+  val ProtocolName = "akka"
 
   val Version = 0
 

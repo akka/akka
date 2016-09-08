@@ -46,7 +46,7 @@ class RemoteDeploymentSpec extends AkkaSpec("""
   val conf = ConfigFactory.parseString(
     s"""
     akka.actor.deployment {
-      /blub.remote = "artery://${system.name}@localhost:$port"
+      /blub.remote = "akka://${system.name}@localhost:$port"
     }
     """).withFallback(system.settings.config)
 
@@ -62,7 +62,7 @@ class RemoteDeploymentSpec extends AkkaSpec("""
     "create and supervise children on remote node" in {
       val senderProbe = TestProbe()(masterSystem)
       val r = masterSystem.actorOf(Props[Echo1], "blub")
-      r.path.toString should ===(s"artery://${system.name}@localhost:${port}/remote/artery/${masterSystem.name}@localhost:${masterPort}/user/blub")
+      r.path.toString should ===(s"akka://${system.name}@localhost:${port}/remote/akka/${masterSystem.name}@localhost:${masterPort}/user/blub")
 
       r.tell(42, senderProbe.ref)
       senderProbe.expectMsg(42)

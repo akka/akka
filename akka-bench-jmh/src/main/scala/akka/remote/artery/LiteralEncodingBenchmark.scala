@@ -18,7 +18,7 @@ import org.openjdk.jmh.annotations._
 class LiteralEncodingBenchmark {
 
   private val UsAscii = Charset.forName("US-ASCII")
-  private val str = "artery://SomeSystem@host12:1234/user/foo"
+  private val str = "akka://SomeSystem@host12:1234/user/foo"
   private val buffer = ByteBuffer.allocate(128).order(ByteOrder.LITTLE_ENDIAN)
   private val literalChars = Array.ofDim[Char](64)
   private val literalBytes = Array.ofDim[Byte](64)

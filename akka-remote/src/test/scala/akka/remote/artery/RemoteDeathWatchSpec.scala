@@ -22,7 +22,7 @@ object RemoteDeathWatchSpec {
         actor {
             provider = remote
             deployment {
-                /watchers.remote = "artery://other@localhost:$otherPort"
+                /watchers.remote = "akka://other@localhost:$otherPort"
             }
         }
         remote.watch-failure-detector.acceptable-heartbeat-pause = 3s
@@ -54,7 +54,7 @@ class RemoteDeathWatchSpec extends AkkaSpec(RemoteDeathWatchSpec.config) with Im
     // pick an unused port
     val port = SocketUtil.temporaryServerAddress("localhost", udp = true).getPort
     // simulate de-serialized ActorRef
-    val ref = rarp.resolveActorRef(s"artery://OtherSystem@localhost:$port/user/foo/bar#1752527294")
+    val ref = rarp.resolveActorRef(s"akka://OtherSystem@localhost:$port/user/foo/bar#1752527294")
 
     // we don't expect real quarantine when the UID is unknown, i.e. QuarantinedEvent is not published
     EventFilter.warning(pattern = "Quarantine of .* ignored because unknown UID", occurrences = 1).intercept {
@@ -73,7 +73,7 @@ class RemoteDeathWatchSpec extends AkkaSpec(RemoteDeathWatchSpec.config) with Im
   }
 
   "receive Terminated when watched node is unknown host" in {
-    val path = RootActorPath(Address("artery", system.name, "unknownhost", 2552)) / "user" / "subject"
+    val path = RootActorPath(Address("akka", system.name, "unknownhost", 2552)) / "user" / "subject"
     system.actorOf(Props(new Actor {
       context.watch(context.actorFor(path))
       def receive = {
@@ -85,7 +85,7 @@ class RemoteDeathWatchSpec extends AkkaSpec(RemoteDeathWatchSpec.config) with Im
   }
 
   "receive ActorIdentity(None) when identified node is unknown host" in {
-    val path = RootActorPath(Address("artery", system.name, "unknownhost2", 2552)) / "user" / "subject"
+    val path = RootActorPath(Address("akka", system.name, "unknownhost2", 2552)) / "user" / "subject"
     system.actorSelection(path) ! Identify(path)
     expectMsg(60.seconds, ActorIdentity(path, None))
   }

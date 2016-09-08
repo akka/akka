@@ -35,7 +35,7 @@ class ClassManifestCompressionIntegrationSpec extends AkkaSpec(CompressionIntegr
       systemB.actorOf(TestActors.blackholeProps, "void-2")
 
       Thread.sleep(1000)
-      val voidRef = Await.result(system.actorSelection(s"artery://systemB@localhost:$portB/user/void-2").resolveOne(3.second), 3.seconds)
+      val voidRef = Await.result(system.actorSelection(s"akka://systemB@localhost:$portB/user/void-2").resolveOne(3.second), 3.seconds)
 
       // cause testActor-1 to become a heavy hitter
       (1 to messagesToExchange).foreach { i ⇒ voidRef ! TestMessage("hello") } // does not reply, but a hot receiver should be advertised
@@ -56,7 +56,7 @@ class ClassManifestCompressionIntegrationSpec extends AkkaSpec(CompressionIntegr
 
   def identify(_system: String, port: Int, name: String) = {
     val selection =
-      system.actorSelection(s"artery://${_system}@localhost:$port/user/$name")
+      system.actorSelection(s"akka://${_system}@localhost:$port/user/$name")
     val ActorIdentity(1, ref) = Await.result(selection ? Identify(1), 3.seconds)
     ref.get
   }
