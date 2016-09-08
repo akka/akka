@@ -4,6 +4,8 @@
 package akka.stream.impl.fusing
 
 import akka.event.Logging
+import akka.stream.ActorAttributes.SupervisionStrategy
+import akka.stream.Supervision.Decider
 import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, Failed, GraphAssembly, UpstreamBoundaryStageLogic }
 import akka.stream.stage.AbstractStage.PushPullGraphStage
@@ -307,7 +309,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
     }
   }
 
-  abstract class OneBoundedSetup[T](_ops: GraphStageWithMaterializedValue[Shape, Any]*) extends Builder {
+  abstract class OneBoundedSetupWithDecider[T](decider: Decider, _ops: GraphStageWithMaterializedValue[Shape, Any]*) extends Builder {
     val ops = _ops.toArray
 
     val upstream = new UpstreamOneBoundedProbe[T]
@@ -329,7 +331,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
       import GraphInterpreter.Boundary
 
       var i = 0
-      val attributes = Array.fill[Attributes](ops.length)(Attributes.none)
+      val attributes = Array.fill[Attributes](ops.length)(ActorAttributes.supervisionStrategy(decider))
       val ins = Array.ofDim[Inlet[_]](ops.length + 1)
       val inOwners = Array.ofDim[Int](ops.length + 1)
       val outs = Array.ofDim[Outlet[_]](ops.length + 1)
@@ -429,4 +431,5 @@ trait GraphInterpreterSpecKit extends StreamSpec {
 
   }
 
+  abstract class OneBoundedSetup[T](_ops: GraphStageWithMaterializedValue[Shape, Any]*) extends OneBoundedSetupWithDecider[T](Supervision.stoppingDecider, _ops: _*)
 }
