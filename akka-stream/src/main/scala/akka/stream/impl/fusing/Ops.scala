@@ -25,8 +25,7 @@ import akka.stream.impl.Stages.DefaultAttributes
 /**
  * INTERNAL API
  */
-// FIXME: Not final because InterpreterSupervisionSpec. Some better option is needed here
-case class Map[In, Out](f: In ⇒ Out) extends GraphStage[FlowShape[In, Out]] {
+final case class Map[In, Out](f: In ⇒ Out) extends GraphStage[FlowShape[In, Out]] {
   val in = Inlet[In]("Map.in")
   val out = Outlet[Out]("Map.out")
   override val shape = FlowShape(in, out)
