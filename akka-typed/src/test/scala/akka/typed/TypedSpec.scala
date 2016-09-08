@@ -21,49 +21,79 @@ import akka.testkit.TestEvent.Mute
 import org.scalatest.concurrent.ScalaFutures
 import org.scalactic.ConversionCheckedTripleEquals
 import org.scalactic.Constraint
+import org.junit.runner.RunWith
+import scala.util.control.NonFatal
+import org.scalatest.exceptions.TestFailedException
 
 /**
  * Helper class for writing tests for typed Actors with ScalaTest.
  */
-abstract class TypedSpec(config: Config) extends Spec with Matchers with BeforeAndAfterAll with ScalaFutures with ConversionCheckedTripleEquals {
+@RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class TypedSpecSetup extends Spec with Matchers with BeforeAndAfterAll with ScalaFutures with ConversionCheckedTripleEquals
+
+/**
+ * Helper class for writing tests against both ActorSystemImpl and ActorSystemAdapter.
+ */
+class TypedSpec(val config: Config) extends TypedSpecSetup {
   import TypedSpec._
   import AskPattern._
 
   def this() = this(ConfigFactory.empty)
 
-  implicit val system = ActorSystem(TypedSpec.getCallerName(classOf[TypedSpec]), Props(guardian()), Some(config withFallback AkkaSpec.testConf))
+  // extension point
+  def setTimeout: Timeout = Timeout(1.minute)
 
-  implicit val timeout = Timeout(1.minute)
+  val nativeSystem = ActorSystem(AkkaSpec.getCallerName(classOf[TypedSpec]), Props(guardian()), Some(config withFallback AkkaSpec.testConf))
+  val adaptedSystem = ActorSystem.adapter(AkkaSpec.getCallerName(classOf[TypedSpec]), Props(guardian()), Some(config withFallback AkkaSpec.testConf))
+
+  trait NativeSystem {
+    def system = nativeSystem
+  }
+  trait AdaptedSystem {
+    def system = adaptedSystem
+  }
+
+  implicit val timeout = setTimeout
   implicit val patience = PatienceConfig(3.seconds)
+  implicit val scheduler = nativeSystem.scheduler
 
   override def afterAll(): Unit = {
-    Await.result(system ? (Terminate(_)), timeout.duration): Status
+    Await.result(nativeSystem ? (Terminate(_)), timeout.duration): Status
+    Await.result(adaptedSystem ? (Terminate(_)), timeout.duration): Status
   }
 
   // TODO remove after basing on ScalaTest 3 with async support
   import akka.testkit._
-  def await[T](f: Future[T]): T = Await.result(f, 60.seconds.dilated(system.untyped))
+  def await[T](f: Future[T]): T = Await.result(f, timeout.duration * 1.1)
 
-  val blackhole = await(system ? Create(Props(ScalaDSL.Full[Any] { case _ ⇒ ScalaDSL.Same }), "blackhole"))
+  val blackhole = await(nativeSystem ? Create(Props(ScalaDSL.Full[Any] { case _ ⇒ ScalaDSL.Same }), "blackhole"))
 
   /**
    * Run an Actor-based test. The test procedure is most conveniently
    * formulated using the [[StepWise$]] behavior type.
    */
-  def runTest[T: ClassTag](name: String)(behavior: Behavior[T]): Future[Status] =
+  def runTest[T: ClassTag](name: String)(behavior: Behavior[T])(implicit system: ActorSystem[Command]): Future[Status] =
     system ? (RunTest(name, Props(behavior), _, timeout.duration))
 
   // TODO remove after basing on ScalaTest 3 with async support
-  def sync(f: Future[Status]): Unit = {
+  def sync(f: Future[Status])(implicit system: ActorSystem[Command]): Unit = {
     def unwrap(ex: Throwable): Throwable = ex match {
       case ActorInitializationException(_, _, ex) ⇒ ex
       case other                                  ⇒ other
     }
 
-    await(f) match {
-      case Success    ⇒ ()
-      case Failed(ex) ⇒ throw unwrap(ex)
-      case Timedout   ⇒ fail("test timed out")
+    try await(f) match {
+      case Success ⇒ ()
+      case Failed(ex) ⇒
+        println(system.printTree)
+        throw unwrap(ex)
+      case Timedout ⇒
+        println(system.printTree)
+        fail("test timed out")
+    } catch {
+      case NonFatal(ex) ⇒
+        println(system.printTree)
+        throw ex
     }
   }
 
@@ -72,7 +102,7 @@ abstract class TypedSpec(config: Config) extends Spec with Matchers with BeforeA
     source:      String = null,
     start:       String = "",
     pattern:     String = null,
-    occurrences: Int    = Int.MaxValue): EventFilter = {
+    occurrences: Int    = Int.MaxValue)(implicit system: ActorSystem[Command]): EventFilter = {
     val filter = EventFilter(message, source, start, pattern, occurrences)
     system.eventStream.publish(Mute(filter))
     filter
@@ -81,7 +111,7 @@ abstract class TypedSpec(config: Config) extends Spec with Matchers with BeforeA
   /**
    * Group assertion that ensures that the given inboxes are empty.
    */
-  def assertEmpty(inboxes: Inbox.SyncInbox[_]*): Unit = {
+  def assertEmpty(inboxes: Inbox[_]*): Unit = {
     inboxes foreach (i ⇒ withClue(s"inbox $i had messages")(i.hasMessages should be(false)))
   }
 
@@ -116,20 +146,11 @@ object TypedSpec {
 
   def guardian(outstanding: Map[ActorRef[_], ActorRef[Status]] = Map.empty): Behavior[Command] =
     FullTotal {
-      case Sig(ctx, f @ t.Failed(ex, test)) ⇒
+      case Sig(ctx, t @ Terminated(test)) ⇒
         outstanding get test match {
           case Some(reply) ⇒
-            reply ! Failed(ex)
-            f.decide(t.Failed.Stop)
-            guardian(outstanding - test)
-          case None ⇒
-            f.decide(t.Failed.Stop)
-            Same
-        }
-      case Sig(ctx, Terminated(test)) ⇒
-        outstanding get test match {
-          case Some(reply) ⇒
-            reply ! Success
+            if (t.failure eq null) reply ! Success
+            else reply ! Failed(t.failure)
             guardian(outstanding - test)
           case None ⇒ Same
         }
@@ -155,5 +176,27 @@ object TypedSpec {
       case z  ⇒ s drop (z + 1)
     }
     reduced.head.replaceFirst(""".*\.""", "").replaceAll("[^a-zA-Z_0-9]", "_")
+  }
+}
+
+class TypedSpecSpec extends TypedSpec {
+  object `A TypedSpec` {
+
+    trait CommonTests {
+      implicit def system: ActorSystem[TypedSpec.Command]
+
+      def `must report failures`(): Unit = {
+        a[TestFailedException] must be thrownBy {
+          sync(runTest("failure")(StepWise[String]((ctx, startWith) ⇒
+            startWith {
+              fail("expected")
+            }
+          )))
+        }
+      }
+    }
+
+    object `when using the native implementation` extends CommonTests with NativeSystem
+    object `when using the adapted implementation` extends CommonTests with AdaptedSystem
   }
 }
