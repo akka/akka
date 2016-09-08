@@ -6,7 +6,7 @@ package akka.remote.artery
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import akka.actor._
-import akka.remote.{ MessageSerializer, OversizedPayloadException, UniqueAddress }
+import akka.remote.{ MessageSerializer, OversizedPayloadException, RemoteActorRefProvider, UniqueAddress }
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.stream._
@@ -16,10 +16,12 @@ import akka.actor.EmptyLocalActorRef
 import akka.remote.artery.compress.InboundCompressions
 import akka.stream.stage.TimerGraphStageLogic
 import java.util.concurrent.TimeUnit
+
 import scala.concurrent.Future
 import akka.remote.artery.compress.CompressionTable
 import akka.Done
 import akka.stream.stage.GraphStageWithMaterializedValue
+
 import scala.concurrent.Promise
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -197,13 +199,27 @@ private[remote] object Decoder {
 /**
  * INTERNAL API
  */
+private[akka] final class ActorRefResolveCache(provider: RemoteActorRefProvider, localAddress: UniqueAddress)
+  extends LruBoundedCache[String, InternalActorRef](capacity = 1024, evictAgeThreshold = 600) {
+
+  override protected def compute(k: String): InternalActorRef =
+    provider.resolveActorRefWithLocalAddress(k, localAddress.address)
+
+  override protected def hash(k: String): Int = FastHash.ofString(k)
+
+  override protected def isCacheable(v: InternalActorRef): Boolean = !v.isInstanceOf[EmptyLocalActorRef]
+}
+
+/**
+ * INTERNAL API
+ */
 private[remote] class Decoder(
-  inboundContext:                  InboundContext,
-  system:                          ExtendedActorSystem,
-  resolveActorRefWithLocalAddress: String ⇒ InternalActorRef,
-  compression:                     InboundCompressions,
-  bufferPool:                      EnvelopeBufferPool,
-  inEnvelopePool:                  ObjectPool[ReusableInboundEnvelope]) extends GraphStage[FlowShape[EnvelopeBuffer, InboundEnvelope]] {
+  inboundContext:     InboundContext,
+  system:             ExtendedActorSystem,
+  uniqueLocalAddress: UniqueAddress,
+  compression:        InboundCompressions,
+  bufferPool:         EnvelopeBufferPool,
+  inEnvelopePool:     ObjectPool[ReusableInboundEnvelope]) extends GraphStage[FlowShape[EnvelopeBuffer, InboundEnvelope]] {
   import Decoder.Tick
   val in: Inlet[EnvelopeBuffer] = Inlet("Artery.Decoder.in")
   val out: Outlet[InboundEnvelope] = Outlet("Artery.Decoder.out")
@@ -214,6 +230,8 @@ private[remote] class Decoder(
       import Decoder.RetryResolveRemoteDeployedRecipient
       private val localAddress = inboundContext.localAddress.address
       private val headerBuilder = HeaderBuilder.in(compression)
+      private val actorRefResolver: ActorRefResolveCache =
+        new ActorRefResolveCache(system.provider.asInstanceOf[RemoteActorRefProvider], uniqueLocalAddress)
 
       private val retryResolveRemoteDeployedRecipientInterval = 50.millis
       private val retryResolveRemoteDeployedRecipientAttempts = 20
@@ -260,7 +278,7 @@ private[remote] class Decoder(
             case OptionVal.Some(ref) ⇒
               OptionVal(ref.asInstanceOf[InternalActorRef])
             case OptionVal.None if headerBuilder.senderActorRefPath.isDefined ⇒
-              OptionVal(resolveActorRefWithLocalAddress(headerBuilder.senderActorRefPath.get))
+              OptionVal(actorRefResolver.getOrCompute(headerBuilder.senderActorRefPath.get))
             case _ ⇒
               OptionVal.None
           }
@@ -315,7 +333,7 @@ private[remote] class Decoder(
       }
 
       private def resolveRecipient(path: String): OptionVal[InternalActorRef] = {
-        resolveActorRefWithLocalAddress(path) match {
+        actorRefResolver.getOrCompute(path) match {
           case empty: EmptyLocalActorRef ⇒
             val pathElements = empty.path.elements
             // FIXME remote deployment corner case, please fix @patriknw (see also below, in onTimer)
@@ -354,7 +372,7 @@ private[remote] class Decoder(
                     attemptsLeft - 1,
                     recipientPath, inboundEnvelope), retryResolveRemoteDeployedRecipientInterval)
                 else {
-                  val recipient = resolveActorRefWithLocalAddress(recipientPath)
+                  val recipient = actorRefResolver.getOrCompute(recipientPath)
                   // FIXME only retry for the first message, need to keep them in a cache
                   push(out, inboundEnvelope.withRecipient(recipient))
                 }
