@@ -36,6 +36,9 @@ object RemoteDeathWatchSpec {
 class RemoteDeathWatchSpec extends AkkaSpec(RemoteDeathWatchSpec.config) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
   import RemoteDeathWatchSpec._
 
+  system.eventStream.publish(TestEvent.Mute(
+    EventFilter[io.aeron.exceptions.RegistrationException]()))
+
   val other = ActorSystem("other", ConfigFactory.parseString(s"akka.remote.artery.port=$otherPort")
     .withFallback(system.settings.config))
 
