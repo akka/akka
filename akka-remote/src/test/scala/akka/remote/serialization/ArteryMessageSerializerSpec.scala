@@ -13,8 +13,8 @@ import akka.remote.artery.{ ActorSystemTerminating, ActorSystemTerminatingAck, Q
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 
-class ArteryControlMessageSerializerSpec extends AkkaSpec {
-  "ArteryControlMessageSerializer" must {
+class ArteryMessageSerializerSpec extends AkkaSpec {
+  "ArteryMessageSerializer" must {
     val actorA = system.actorOf(Props.empty)
     val actorB = system.actorOf(Props.empty)
 
@@ -35,7 +35,7 @@ class ArteryControlMessageSerializerSpec extends AkkaSpec {
         case (scenario, item) ⇒
           s"resolve serializer for $scenario" in {
             val serializer = SerializationExtension(system)
-            serializer.serializerFor(item.getClass).getClass should ===(classOf[ArteryControlMessageSerializer])
+            serializer.serializerFor(item.getClass).getClass should ===(classOf[ArteryMessageSerializer])
           }
 
           s"serialize and de-serialize $scenario" in {
@@ -47,20 +47,20 @@ class ArteryControlMessageSerializerSpec extends AkkaSpec {
 
     "reject invalid manifest" in {
       intercept[IllegalArgumentException] {
-        val serializer = new ArteryControlMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
+        val serializer = new ArteryMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
         serializer.manifest("INVALID")
       }
     }
 
     "reject deserialization with invalid manifest" in {
       intercept[IllegalArgumentException] {
-        val serializer = new ArteryControlMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
+        val serializer = new ArteryMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
         serializer.fromBinary(Array.empty[Byte], "INVALID")
       }
     }
 
     def verifySerialization(msg: AnyRef): Unit = {
-      val serializer = new ArteryControlMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
+      val serializer = new ArteryMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
       serializer.fromBinary(serializer.toBinary(msg), serializer.manifest(msg)) should ===(msg)
     }
 

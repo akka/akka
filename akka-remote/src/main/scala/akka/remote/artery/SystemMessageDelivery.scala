@@ -30,7 +30,7 @@ import akka.actor.ActorRef
 private[akka] object SystemMessageDelivery {
   // FIXME serialization of these messages
   // FIXME ackReplyTo should not be needed
-  final case class SystemMessageEnvelope(message: AnyRef, seqNo: Long, ackReplyTo: UniqueAddress)
+  final case class SystemMessageEnvelope(message: AnyRef, seqNo: Long, ackReplyTo: UniqueAddress) extends ArteryMessage
   final case class Ack(seqNo: Long, from: UniqueAddress) extends Reply
   final case class Nack(seqNo: Long, from: UniqueAddress) extends Reply
 

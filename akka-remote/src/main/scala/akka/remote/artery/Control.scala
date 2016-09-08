@@ -19,6 +19,9 @@ import akka.stream.stage.OutHandler
 import akka.remote.UniqueAddress
 import akka.util.OptionVal
 
+/** INTERNAL API: marker trait for protobuf-serializable artery messages */
+private[akka] trait ArteryMessage extends Serializable
+
 /**
  * INTERNAL API: Marker trait for reply messages
  */
@@ -29,7 +32,7 @@ private[akka] trait Reply extends ControlMessage
  * Marker trait for control messages that can be sent via the system message sub-channel
  * but don't need full reliable delivery. E.g. `HandshakeReq` and `Reply`.
  */
-private[akka] trait ControlMessage extends Serializable
+private[akka] trait ControlMessage extends ArteryMessage
 
 /**
  * INTERNAL API
@@ -44,7 +47,7 @@ private[akka] case class ActorSystemTerminating(from: UniqueAddress) extends Con
 /**
  * INTERNAL API
  */
-private[akka] case class ActorSystemTerminatingAck(from: UniqueAddress)
+private[akka] case class ActorSystemTerminatingAck(from: UniqueAddress) extends ArteryMessage
 
 /**
  * INTERNAL API
