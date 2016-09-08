@@ -21,8 +21,8 @@ object LateConnectSpec {
      akka {
        actor.provider = remote
        remote.artery.enabled = on
-       remote.artery.hostname = localhost
-       remote.artery.port = 0
+       remote.artery.canonical.hostname = localhost
+       remote.artery.canonical.port = 0
        remote.artery.advanced.handshake-timeout = 3s
      }
   """)
