@@ -23,6 +23,9 @@ import akka.stream.stage.OutHandler
 import akka.stream.stage.TimerGraphStageLogic
 import akka.remote.artery.OutboundHandshake.HandshakeReq
 import akka.actor.ActorRef
+import akka.remote.PriorityMessage
+import akka.actor.ActorSelectionMessage
+import akka.dispatch.sysmsg.SystemMessage
 
 /**
  * INTERNAL API
@@ -36,6 +39,10 @@ private[akka] object SystemMessageDelivery {
   final case object ClearSystemMessageDelivery
 
   private case object ResendTick
+
+  // If other message types than SystemMesage need acked delivery they can extend this trait.
+  // Used in tests since real SystemMessage are somewhat cumbersome to create.
+  trait AckedDeliveryMessage
 }
 
 /**
@@ -166,22 +173,7 @@ private[akka] class SystemMessageDelivery(
       override def onPush(): Unit = {
         val outboundEnvelope = grab(in)
         outboundEnvelope.message match {
-          case _: HandshakeReq ⇒
-            // pass on HandshakeReq
-            if (isAvailable(out))
-              pushCopy(outboundEnvelope)
-          case ClearSystemMessageDelivery ⇒
-            clear()
-            pull(in)
-          case _: ControlMessage ⇒
-            // e.g. ActorSystemTerminating, no need for acked delivery
-            if (resending.isEmpty && isAvailable(out))
-              pushCopy(outboundEnvelope)
-            else {
-              resending.offer(outboundEnvelope)
-              tryResend()
-            }
-          case msg ⇒
+          case msg @ (_: SystemMessage | _: AckedDeliveryMessage) ⇒
             if (unacknowledged.size < maxBufferSize) {
               seqNo += 1
               val sendEnvelope = outboundEnvelope.withMessage(SystemMessageEnvelope(msg, seqNo, localAddress))
@@ -198,6 +190,21 @@ private[akka] class SystemMessageDelivery(
               outboundContext.quarantine(reason = s"System message delivery buffer overflow, size [$maxBufferSize]")
               deadLetters ! outboundEnvelope
               pull(in)
+            }
+          case _: HandshakeReq ⇒
+            // pass on HandshakeReq
+            if (isAvailable(out))
+              pushCopy(outboundEnvelope)
+          case ClearSystemMessageDelivery ⇒
+            clear()
+            pull(in)
+          case _ ⇒
+            // e.g. ActorSystemTerminating or ActorSelectionMessage with PriorityMessage, no need for acked delivery
+            if (resending.isEmpty && isAvailable(out))
+              push(out, outboundEnvelope)
+            else {
+              resending.offer(outboundEnvelope)
+              tryResend()
             }
         }
       }

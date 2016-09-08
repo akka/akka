@@ -45,6 +45,8 @@ object SystemMessageDeliverySpec {
      akka.actor.serialize-messages = off
   """)
 
+  case class TestSysMsg(s: String) extends SystemMessageDelivery.AckedDeliveryMessage
+
 }
 
 class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.config) with ImplicitSender {
@@ -68,7 +70,7 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
   private def send(sendCount: Int, resendInterval: FiniteDuration, outboundContext: OutboundContext): Source[OutboundEnvelope, NotUsed] = {
     val deadLetters = TestProbe().ref
     Source(1 to sendCount)
-      .map(n ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, "msg-" + n, OptionVal.None))
+      .map(n ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, TestSysMsg("msg-" + n), OptionVal.None))
       .via(new SystemMessageDelivery(outboundContext, deadLetters, resendInterval, maxBufferSize = 1000))
   }
 
@@ -159,12 +161,12 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
       val sink = send(sendCount = 5, resendInterval = 60.seconds, outboundContextA)
         .via(drop(dropSeqNumbers = Vector(3L, 4L)))
         .via(inbound(inboundContextB))
-        .map(_.message.asInstanceOf[String])
+        .map(_.message.asInstanceOf[TestSysMsg])
         .runWith(TestSink.probe)
 
       sink.request(100)
-      sink.expectNext("msg-1")
-      sink.expectNext("msg-2")
+      sink.expectNext(TestSysMsg("msg-1"))
+      sink.expectNext(TestSysMsg("msg-2"))
       replyProbe.expectMsg(Ack(1L, addressB))
       replyProbe.expectMsg(Ack(2L, addressB))
       // 3 and 4 was dropped
@@ -172,11 +174,11 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
       sink.expectNoMsg(100.millis) // 3 was dropped
       inboundContextB.deliverLastReply()
       // resending 3, 4, 5
-      sink.expectNext("msg-3")
+      sink.expectNext(TestSysMsg("msg-3"))
       replyProbe.expectMsg(Ack(3L, addressB))
-      sink.expectNext("msg-4")
+      sink.expectNext(TestSysMsg("msg-4"))
       replyProbe.expectMsg(Ack(4L, addressB))
-      sink.expectNext("msg-5")
+      sink.expectNext(TestSysMsg("msg-5"))
       replyProbe.expectMsg(Ack(5L, addressB))
       replyProbe.expectNoMsg(100.millis)
       inboundContextB.deliverLastReply()
@@ -193,7 +195,7 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
       val sink = send(sendCount = 3, resendInterval = 60.seconds, outboundContextA)
         .via(drop(dropSeqNumbers = Vector(1L)))
         .via(inbound(inboundContextB))
-        .map(_.message.asInstanceOf[String])
+        .map(_.message.asInstanceOf[TestSysMsg])
         .runWith(TestSink.probe)
 
       sink.request(100)
@@ -202,11 +204,11 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
       sink.expectNoMsg(100.millis) // 1 was dropped
       inboundContextB.deliverLastReply() // it's ok to not delivery all nacks
       // resending 1, 2, 3
-      sink.expectNext("msg-1")
+      sink.expectNext(TestSysMsg("msg-1"))
       replyProbe.expectMsg(Ack(1L, addressB))
-      sink.expectNext("msg-2")
+      sink.expectNext(TestSysMsg("msg-2"))
       replyProbe.expectMsg(Ack(2L, addressB))
-      sink.expectNext("msg-3")
+      sink.expectNext(TestSysMsg("msg-3"))
       replyProbe.expectMsg(Ack(3L, addressB))
       inboundContextB.deliverLastReply()
       sink.expectComplete()
@@ -222,19 +224,19 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
       val sink = send(sendCount = 3, resendInterval = 2.seconds, outboundContextA)
         .via(drop(dropSeqNumbers = Vector(3L)))
         .via(inbound(inboundContextB))
-        .map(_.message.asInstanceOf[String])
+        .map(_.message.asInstanceOf[TestSysMsg])
         .runWith(TestSink.probe)
 
       sink.request(100)
-      sink.expectNext("msg-1")
+      sink.expectNext(TestSysMsg("msg-1"))
       replyProbe.expectMsg(Ack(1L, addressB))
       inboundContextB.deliverLastReply()
-      sink.expectNext("msg-2")
+      sink.expectNext(TestSysMsg("msg-2"))
       replyProbe.expectMsg(Ack(2L, addressB))
       inboundContextB.deliverLastReply()
       sink.expectNoMsg(200.millis) // 3 was dropped
       // resending 3 due to timeout
-      sink.expectNext("msg-3")
+      sink.expectNext(TestSysMsg("msg-3"))
       replyProbe.expectMsg(4.seconds, Ack(3L, addressB))
       // continue resending
       replyProbe.expectMsg(4.seconds, Ack(3L, addressB))
@@ -255,10 +257,10 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
         send(N, 1.second, outboundContextA)
           .via(randomDrop(dropRate))
           .via(inbound(inboundContextB))
-          .map(_.message.asInstanceOf[String])
+          .map(_.message.asInstanceOf[TestSysMsg])
           .runWith(Sink.seq)
 
-      Await.result(output, 20.seconds) should ===((1 to N).map("msg-" + _).toVector)
+      Await.result(output, 20.seconds) should ===((1 to N).map(n ⇒ TestSysMsg("msg-" + n)).toVector)
     }
 
     "deliver all during throttling and random dropping" in {
@@ -274,10 +276,10 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
           .throttle(200, 1.second, 10, ThrottleMode.shaping)
           .via(randomDrop(dropRate))
           .via(inbound(inboundContextB))
-          .map(_.message.asInstanceOf[String])
+          .map(_.message.asInstanceOf[TestSysMsg])
           .runWith(Sink.seq)
 
-      Await.result(output, 20.seconds) should ===((1 to N).map("msg-" + _).toVector)
+      Await.result(output, 20.seconds) should ===((1 to N).map(n ⇒ TestSysMsg("msg-" + n)).toVector)
     }
 
   }

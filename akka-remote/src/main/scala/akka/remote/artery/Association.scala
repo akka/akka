@@ -287,10 +287,16 @@ private[remote] class Association(
     // allow ActorSelectionMessage to pass through quarantine, to be able to establish interaction with new system
     if (message.isInstanceOf[ActorSelectionMessage] || !associationState.isQuarantined() || message == ClearSystemMessageDelivery) {
       message match {
-        case _: SystemMessage | ClearSystemMessageDelivery | _: ControlMessage ⇒
+        case _: SystemMessage ⇒
           val outboundEnvelope = createOutboundEnvelope()
           if (!controlQueue.offer(createOutboundEnvelope())) {
             quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
+            dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
+          }
+        case ActorSelectionMessage(_: PriorityMessage, _, _) | _: ControlMessage | ClearSystemMessageDelivery ⇒
+          // ActorSelectionMessage with PriorityMessage is used by cluster and remote failure detector heartbeating
+          val outboundEnvelope = createOutboundEnvelope()
+          if (!controlQueue.offer(createOutboundEnvelope())) {
             dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
           }
         case _: DaemonMsgCreate ⇒
