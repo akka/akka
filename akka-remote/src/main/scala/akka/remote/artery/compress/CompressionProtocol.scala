@@ -5,7 +5,7 @@
 package akka.remote.artery.compress
 
 import scala.language.existentials
-import akka.actor.{ ActorRef, Address }
+import akka.actor.ActorRef
 import akka.remote.UniqueAddress
 import akka.remote.artery.ControlMessage
 
@@ -16,12 +16,18 @@ object CompressionProtocol {
   /** INTERNAL API */
   sealed trait CompressionMessage
 
+  /** INTERNAL API */
+  sealed trait CompressionAdvertisement[T] extends ControlMessage with CompressionMessage {
+    def from: UniqueAddress
+    def table: CompressionTable[T]
+  }
+
   /**
    * INTERNAL API
    * Sent by the "receiving" node after allocating a compression id to a given [[akka.actor.ActorRef]]
    */
   private[remote] final case class ActorRefCompressionAdvertisement(from: UniqueAddress, table: CompressionTable[ActorRef])
-    extends ControlMessage with CompressionMessage
+    extends CompressionAdvertisement[ActorRef]
 
   /**
    * INTERNAL API
@@ -38,7 +44,7 @@ object CompressionProtocol {
    * Sent by the "receiving" node after allocating a compression id to a given class manifest
    */
   private[remote] final case class ClassManifestCompressionAdvertisement(from: UniqueAddress, table: CompressionTable[String])
-    extends ControlMessage with CompressionMessage
+    extends CompressionAdvertisement[String]
 
   /**
    * INTERNAL API

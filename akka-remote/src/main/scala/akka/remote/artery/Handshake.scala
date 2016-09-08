@@ -32,7 +32,6 @@ private[akka] object OutboundHandshake {
    */
   class HandshakeTimeoutException(msg: String) extends RuntimeException(msg) with NoStackTrace
 
-  // FIXME serialization for these messages
   final case class HandshakeReq(from: UniqueAddress) extends ControlMessage
   final case class HandshakeRsp(from: UniqueAddress) extends Reply
 

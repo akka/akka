@@ -20,12 +20,19 @@ import akka.testkit.TestProbe
 import akka.util.OptionVal
 
 object InboundControlJunctionSpec {
-  case object Control1 extends ControlMessage
-  case object Control2 extends ControlMessage
-  case object Control3 extends ControlMessage
+  trait TestControlMessage extends ControlMessage
+
+  case object Control1 extends TestControlMessage
+  case object Control2 extends TestControlMessage
+  case object Control3 extends TestControlMessage
 }
 
-class InboundControlJunctionSpec extends AkkaSpec with ImplicitSender {
+class InboundControlJunctionSpec
+  extends AkkaSpec("""
+                   akka.actor.serialization-bindings {
+                     "akka.remote.artery.InboundControlJunctionSpec$TestControlMessage" = java
+                   }
+                   """) with ImplicitSender {
   import InboundControlJunctionSpec._
 
   val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
