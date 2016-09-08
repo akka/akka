@@ -72,7 +72,7 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
       system.eventStream.subscribe(aProbe.ref, classOf[Event])
       systemB.eventStream.subscribe(b1Probe.ref, classOf[Event])
 
-      def echoSel = system.actorSelection(s"artery://systemB@localhost:$portB/user/echo")
+      def echoSel = system.actorSelection(s"akka://systemB@localhost:$portB/user/echo")
       systemB.actorOf(TestActors.echoActorProps, "echo")
 
       // cause testActor-1 to become a heavy hitter
@@ -134,7 +134,7 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
 
   def identify(_system: String, port: Int, name: String) = {
     val selection =
-      system.actorSelection(s"artery://${_system}@localhost:$port/user/$name")
+      system.actorSelection(s"akka://${_system}@localhost:$port/user/$name")
     val ActorIdentity(1, ref) = Await.result(selection ? Identify(1), 3.seconds)
     ref.get
   }

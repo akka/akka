@@ -31,8 +31,8 @@ class InboundControlJunctionSpec extends AkkaSpec with ImplicitSender {
   val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
   implicit val mat = ActorMaterializer(matSettings)(system)
 
-  val addressA = UniqueAddress(Address("artery", "sysA", "hostA", 1001), 1)
-  val addressB = UniqueAddress(Address("artery", "sysB", "hostB", 1002), 2)
+  val addressA = UniqueAddress(Address("akka", "sysA", "hostA", 1001), 1)
+  val addressB = UniqueAddress(Address("akka", "sysB", "hostB", 1002), 2)
 
   "Control messages" must {
 

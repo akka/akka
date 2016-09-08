@@ -29,7 +29,7 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec("akka.remote.retry-gate-c
       val remotePort = temporaryServerAddress(udp = true).getPort
 
       // try to talk to it before it is up
-      val selection = localSystem.actorSelection(s"artery://$nextGeneratedSystemName@localhost:$remotePort/user/echo")
+      val selection = localSystem.actorSelection(s"akka://$nextGeneratedSystemName@localhost:$remotePort/user/echo")
       selection.tell("ping", localProbe.ref)
       localProbe.expectNoMsg(1.seconds)
 
@@ -60,7 +60,7 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec("akka.remote.retry-gate-c
       val remotePort = temporaryServerAddress(udp = true).getPort
 
       // try to talk to remote before it is up
-      val selection = localSystem.actorSelection(s"artery://$nextGeneratedSystemName@localhost:$remotePort/user/echo")
+      val selection = localSystem.actorSelection(s"akka://$nextGeneratedSystemName@localhost:$remotePort/user/echo")
       selection.tell("ping", localProbe.ref)
       localProbe.expectNoMsg(1.seconds)
 
@@ -71,7 +71,7 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec("akka.remote.retry-gate-c
       localProbe.expectNoMsg(2.seconds)
       val otherProbe = new TestProbe(remoteSystem)
       val otherSender = otherProbe.ref
-      val thisSelection = remoteSystem.actorSelection(s"artery://${localSystem.name}@localhost:$localPort/user/echo")
+      val thisSelection = remoteSystem.actorSelection(s"akka://${localSystem.name}@localhost:$localPort/user/echo")
       within(5.seconds) {
         awaitAssert {
           thisSelection.tell("ping", otherSender)

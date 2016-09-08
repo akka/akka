@@ -41,7 +41,7 @@ class LateConnectSpec extends AkkaSpec(LateConnectSpec.config) with ImplicitSend
     "be established after initial lazy restart" in {
       system.actorOf(TestActors.echoActorProps, "echoA")
 
-      val echoB = system.actorSelection(s"artery://systemB@localhost:$portB/user/echoB")
+      val echoB = system.actorSelection(s"akka://systemB@localhost:$portB/user/echoB")
       echoB ! "ping1"
 
       // let the outbound streams be restarted (lazy), systemB is not started yet
