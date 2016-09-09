@@ -121,8 +121,8 @@ be allowed to join.
 
 .. _automatic-vs-manual-downing-scala:
 
-Automatic vs. Manual Downing
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Downing
+^^^^^^^
 
 When a member is considered by the failure detector to be unreachable the
 leader is not allowed to perform its duties, such as changing status of
@@ -133,7 +133,17 @@ can be performed automatically or manually. By default it must be done manually,
 
 It can also be performed programmatically with ``Cluster(system).down(address)``.
 
-You can enable automatic downing with configuration::
+A pre-packaged solution for the downing problem is provided by
+`Split Brain Resolver <http://doc.akka.io/docs/akka/akka-commercial-addons-1.0/scala/split-brain-resolver.html>`_,
+which is part of the `Lightbend Reactive Platform <http://www.lightbend.com/platform>`_. 
+If you don’t use RP, you should anyway carefully read the `documentation <http://doc.akka.io/docs/akka/akka-commercial-addons-1.0/scala/split-brain-resolver.html>`_
+of the Split Brain Resolver and make sure that the solution you are using handles the concerns
+described there.
+
+Auto-downing (DO NOT USE)
+-------------------------
+
+There is an atomatic downing feature that you should not use in production. For testing purpose you can enable it with configuration::
 
       akka.cluster.auto-down-unreachable-after = 120s
 
@@ -152,19 +162,9 @@ can also happen because of long GC pauses or system overload.
   We recommend against using the auto-down feature of Akka Cluster in production.
   This is crucial for correct behavior if you use :ref:`cluster-singleton-scala` or
   :ref:`cluster_sharding_scala`, especially together with Akka :ref:`persistence-scala`.
+  For Akka Persistence with Cluster Sharding it can result in corrupt data in case
+  of network partitions.
 
-A pre-packaged solution for the downing problem is provided by
-`Split Brain Resolver <http://doc.akka.io/docs/akka/rp-16s01p03/scala/split-brain-resolver.html>`_,
-which is part of the Lightbend Reactive Platform. If you don’t use RP, you should anyway carefully
-read the `documentation <http://doc.akka.io/docs/akka/rp-16s01p03/scala/split-brain-resolver.html>`_
-of the Split Brain Resolver and make sure that the solution you are using handles the concerns
-described there.
-
-.. note:: If you have *auto-down* enabled and the failure detector triggers, you
-   can over time end up with a lot of single node clusters if you don't put
-   measures in place to shut down nodes that have become ``unreachable``. This
-   follows from the fact that the ``unreachable`` node will likely see the rest of
-   the cluster as ``unreachable``, become its own leader and form its own cluster.
 
 Leaving
 ^^^^^^^

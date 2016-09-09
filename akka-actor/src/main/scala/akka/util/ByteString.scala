@@ -561,7 +561,7 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   override def init: ByteString = dropRight(1)
 
   // *must* be overridden by derived classes.
-  override def take(n: Int): ByteString = throw new UnsupportedOperationException("Method slice is not implemented in ByteString")
+  override def take(n: Int): ByteString = throw new UnsupportedOperationException("Method take is not implemented in ByteString")
   override def takeRight(n: Int): ByteString = slice(length - n, length)
 
   // these methods are optimized in derived classes utilising the maximum knowlage about data layout available to them:

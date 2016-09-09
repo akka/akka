@@ -22,7 +22,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     val sinkUnderTest = Flow[Int].map(_ * 2).toMat(Sink.fold(0)(_ + _))(Keep.right)
 
     val future = Source(1 to 4).runWith(sinkUnderTest)
-    val result = Await.result(future, 100.millis)
+    val result = Await.result(future, 3.seconds)
     assert(result == 20)
     //#strict-collection
   }
@@ -34,8 +34,8 @@ class StreamTestKitDocSpec extends AkkaSpec {
 
     val sourceUnderTest = Source.repeat(1).map(_ * 2)
 
-    val future = sourceUnderTest.grouped(10).runWith(Sink.head)
-    val result = Await.result(future, 100.millis)
+    val future = sourceUnderTest.take(10).runWith(Sink.seq)
+    val result = Await.result(future, 3.seconds)
     assert(result == Seq.fill(10)(2))
     //#grouped-infinite
   }
@@ -45,7 +45,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     val flowUnderTest = Flow[Int].takeWhile(_ < 5)
 
     val future = Source(1 to 10).via(flowUnderTest).runWith(Sink.fold(Seq.empty[Int])(_ :+ _))
-    val result = Await.result(future, 100.millis)
+    val result = Await.result(future, 3.seconds)
     assert(result == (1 to 4))
     //#folded-stream
   }
@@ -58,8 +58,8 @@ class StreamTestKitDocSpec extends AkkaSpec {
     val sourceUnderTest = Source(1 to 4).grouped(2)
 
     val probe = TestProbe()
-    sourceUnderTest.grouped(2).runWith(Sink.head).pipeTo(probe.ref)
-    probe.expectMsg(100.millis, Seq(Seq(1, 2), Seq(3, 4)))
+    sourceUnderTest.runWith(Sink.seq).pipeTo(probe.ref)
+    probe.expectMsg(3.seconds, Seq(Seq(1, 2), Seq(3, 4)))
     //#pipeto-testprobe
   }
 
@@ -73,9 +73,9 @@ class StreamTestKitDocSpec extends AkkaSpec {
 
     probe.expectMsg(1.second, Tick)
     probe.expectNoMsg(100.millis)
-    probe.expectMsg(200.millis, Tick)
+    probe.expectMsg(3.seconds, Tick)
     cancellable.cancel()
-    probe.expectMsg(200.millis, "completed")
+    probe.expectMsg(3.seconds, "completed")
     //#sink-actorref
   }
 
@@ -91,7 +91,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     ref ! 3
     ref ! akka.actor.Status.Success("done")
 
-    val result = Await.result(future, 100.millis)
+    val result = Await.result(future, 3.seconds)
     assert(result == "123")
     //#source-actorref
   }
@@ -128,7 +128,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
       .run()
     probe.sendError(new Exception("boom"))
 
-    Await.ready(future, 100.millis)
+    Await.ready(future, 3.seconds)
     val Failure(exception) = future.value.get
     assert(exception.getMessage == "boom")
     //#injecting-failure
