@@ -22,12 +22,30 @@ private[akka] final class ArterySettings private (config: Config) {
   import ArterySettings._
 
   val Enabled: Boolean = getBoolean("enabled")
-  val Port: Int = getInt("port")
-  val Hostname: String = getString("hostname") match {
-    case "" | "<getHostAddress>" ⇒ InetAddress.getLocalHost.getHostAddress
-    case "<getHostName>"         ⇒ InetAddress.getLocalHost.getHostName
-    case other                   ⇒ other
+
+  object Canonical {
+    val config = getConfig("canonical")
+    import config._
+
+    val Port: Int = getInt("port").requiring(port ⇒
+      0 to 65535 contains port, "canonical.port must be 0 through 65535")
+    val Hostname: String = getHostname("hostname", config)
   }
+
+  object Bind {
+    val config = getConfig("bind")
+    import config._
+
+    val Port: Int = getString("port") match {
+      case ""    ⇒ Canonical.Port
+      case other ⇒ getInt("port").requiring(port ⇒ 0 to 65535 contains port, "bind.port must be 0 through 65535")
+    }
+    val Hostname: String = getHostname("hostname", config) match {
+      case ""    ⇒ Canonical.Hostname
+      case other ⇒ other
+    }
+  }
+
   val LargeMessageDestinations =
     config.getStringList("large-message-destinations").asScala.foldLeft(WildcardIndex[NotUsed]()) { (tree, entry) ⇒
       val segments = entry.split('/').tail
@@ -125,5 +143,11 @@ private[akka] object ArterySettings {
   object Compression {
     // Compile time constants
     final val Debug = false // unlocks additional very verbose debug logging of compression events (on DEBUG log level)
+  }
+
+  def getHostname(key: String, config: Config) = config.getString(key) match {
+    case "<getHostAddress>" ⇒ InetAddress.getLocalHost.getHostAddress
+    case "<getHostName>"    ⇒ InetAddress.getLocalHost.getHostName
+    case other              ⇒ other
   }
 }

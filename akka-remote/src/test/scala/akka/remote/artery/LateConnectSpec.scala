@@ -21,8 +21,8 @@ object LateConnectSpec {
      akka {
        actor.provider = remote
        remote.artery.enabled = on
-       remote.artery.hostname = localhost
-       remote.artery.port = 0
+       remote.artery.canonical.hostname = localhost
+       remote.artery.canonical.port = 0
        remote.artery.advanced.handshake-timeout = 3s
      }
   """)
@@ -32,7 +32,7 @@ object LateConnectSpec {
 class LateConnectSpec extends AkkaSpec(LateConnectSpec.config) with ImplicitSender {
 
   val portB = SocketUtil.temporaryServerAddress("localhost", udp = true).getPort
-  val configB = ConfigFactory.parseString(s"akka.remote.artery.port = $portB")
+  val configB = ConfigFactory.parseString(s"akka.remote.artery.canonical.port = $portB")
     .withFallback(system.settings.config)
   lazy val systemB = ActorSystem("systemB", configB)
 

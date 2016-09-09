@@ -22,8 +22,8 @@ object RemoteDeployerSpec {
         }
       }
       akka.remote.artery.enabled = on
-      akka.remote.artery.hostname = localhost
-      akka.remote.artery.port = 0
+      akka.remote.artery.canonical.hostname = localhost
+      akka.remote.artery.canonical.port = 0
       """, ConfigParseOptions.defaults)
 
   class RecipeActor extends Actor {

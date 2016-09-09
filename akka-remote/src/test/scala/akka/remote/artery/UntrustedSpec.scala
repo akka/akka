@@ -65,8 +65,8 @@ class UntrustedSpec extends AkkaSpec("""
   akka.remote.untrusted-mode = on
   akka.remote.trusted-selection-paths = ["/user/receptionist", ]
   akka.remote.artery.enabled = on
-  akka.remote.artery.hostname = localhost
-  akka.remote.artery.port = 0
+  akka.remote.artery.canonical.hostname = localhost
+  akka.remote.artery.canonical.port = 0
   akka.loglevel = DEBUG # the test is verifying some Debug logging
   """) with ImplicitSender {
 
@@ -75,8 +75,8 @@ class UntrustedSpec extends AkkaSpec("""
   val client = ActorSystem("UntrustedSpec-client", ConfigFactory.parseString("""
       akka.actor.provider = remote
       akka.remote.artery.enabled = on
-      akka.remote.artery.hostname = localhost
-      akka.remote.artery.port = 0
+      akka.remote.artery.canonical.hostname = localhost
+      akka.remote.artery.canonical.port = 0
       """))
   val addr = RARP(system).provider.getDefaultAddress
 

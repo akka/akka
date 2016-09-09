@@ -28,8 +28,8 @@ object HandshakeShouldDropCompressionTableSpec {
 
        actor.provider = "akka.remote.RemoteActorRefProvider"
        remote.artery.enabled = on
-       remote.artery.hostname = localhost
-       remote.artery.port = 0
+       remote.artery.canonical.hostname = localhost
+       remote.artery.canonical.port = 0
        remote.artery.advanced.handshake-timeout = 10s
 
        remote.artery.advanced.compression {
@@ -41,7 +41,7 @@ object HandshakeShouldDropCompressionTableSpec {
      }
   """)
 
-  val configB = ConfigFactory.parseString(s"akka.remote.artery.port = $portB")
+  val configB = ConfigFactory.parseString(s"akka.remote.artery.canonical.port = $portB")
     .withFallback(commonConfig)
 
 }
@@ -149,4 +149,3 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
     if (systemB != null) shutdown(systemB)
   }
 }
-

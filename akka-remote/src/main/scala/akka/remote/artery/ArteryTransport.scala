@@ -287,6 +287,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   // these vars are initialized once in the start method
   @volatile private[this] var _localAddress: UniqueAddress = _
+  @volatile private[this] var _bindAddress: UniqueAddress = _
   @volatile private[this] var _addresses: Set[Address] = _
   @volatile private[this] var materializer: Materializer = _
   @volatile private[this] var controlSubject: ControlMessageSubject = _
@@ -297,6 +298,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   @volatile private[this] var inboundCompressions: Option[InboundCompressions] = None
 
+  def bindAddress: UniqueAddress = _bindAddress
   override def localAddress: UniqueAddress = _localAddress
   override def defaultAddress: Address = localAddress.address
   override def addresses: Set[Address] = _addresses
@@ -328,7 +330,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .insert(Array("system", "cluster", "core", "daemon", "heartbeatSender"), NotUsed)
       .insert(Array("system", "cluster", "heartbeatReceiver"), NotUsed)
 
-  private def inboundChannel = s"aeron:udp?endpoint=${localAddress.address.host.get}:${localAddress.address.port.get}"
+  private def inboundChannel = s"aeron:udp?endpoint=${_bindAddress.address.host.get}:${_bindAddress.address.port.get}"
   private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
 
   private val controlStreamId = 1
@@ -388,15 +390,26 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     topLevelFREvents.loFreq(Transport_TaskRunnerStarted, NoMetaData)
 
     val port =
-      if (settings.Port == 0) ArteryTransport.autoSelectPort(settings.Hostname)
-      else settings.Port
+      if (settings.Canonical.Port == 0) {
+        if (settings.Bind.Port != 0) settings.Bind.Port // if bind port is set, use bind port instead of random
+        else ArteryTransport.autoSelectPort(settings.Canonical.Hostname)
+      } else settings.Canonical.Port
+
+    val bindPort = if (settings.Bind.Port == 0) {
+      if (settings.Canonical.Port == 0) port // canonical and bind ports are zero. Use random port for both
+      else ArteryTransport.autoSelectPort(settings.Bind.Hostname)
+    } else settings.Bind.Port
 
     // TODO: Configure materializer properly
     // TODO: Have a supervisor actor
     _localAddress = UniqueAddress(
-      Address(ArteryTransport.ProtocolName, system.name, settings.Hostname, port),
+      Address(ArteryTransport.ProtocolName, system.name, settings.Canonical.Hostname, port),
       AddressUidExtension(system).longAddressUid)
     _addresses = Set(_localAddress.address)
+
+    _bindAddress = UniqueAddress(
+      Address(ArteryTransport.ProtocolName, system.name, settings.Bind.Hostname, bindPort),
+      AddressUidExtension(system).longAddressUid)
 
     // TODO: This probably needs to be a global value instead of an event as events might rotate out of the log
     topLevelFREvents.loFreq(Transport_UniqueAddressSet, _localAddress.toString().getBytes("US-ASCII"))
