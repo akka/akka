@@ -4,8 +4,9 @@
 package akka.remote.artery
 
 import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicLongArray
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLongArray }
 import java.util.concurrent.locks.LockSupport
+
 import scala.concurrent.duration._
 import akka.actor._
 import akka.remote.testconductor.RoleName
@@ -83,6 +84,7 @@ object LatencySpec extends MultiNodeConfig {
     var count = 0
     var startTime = System.nanoTime()
     val taskRunnerMetrics = new TaskRunnerMetrics(context.system)
+    var reportedArrayOOB = false
 
     def receive = {
       case bytes: Array[Byte] ⇒
@@ -100,7 +102,16 @@ object LatencySpec extends MultiNodeConfig {
       reporter.onMessage(1, payloadSize)
       count += 1
       val d = System.nanoTime() - sendTimes.get(count - 1)
-      histogram.recordValue(d)
+      try {
+        histogram.recordValue(d)
+      } catch {
+        case e: ArrayIndexOutOfBoundsException ⇒
+          // Report it only once instead of flooding the console
+          if (!reportedArrayOOB) {
+            e.printStackTrace()
+            reportedArrayOOB = true
+          }
+      }
       if (count == totalMessages) {
         printTotal(testName, size, histogram, System.nanoTime() - startTime)
         context.stop(self)
