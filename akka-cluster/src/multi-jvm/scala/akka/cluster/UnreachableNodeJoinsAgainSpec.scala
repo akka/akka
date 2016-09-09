@@ -165,7 +165,7 @@ abstract class UnreachableNodeJoinsAgainSpec
           ConfigFactory.parseString(
             if (RARP(system).provider.remoteSettings.Artery.Enabled)
               s"""
-                akka.remote.artery {
+                akka.remote.artery.canonical {
                   hostname = ${victimAddress.host.get}
                   port = ${victimAddress.port.get}
                 }
