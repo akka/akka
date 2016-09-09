@@ -13,7 +13,7 @@ import akka.util.Timeout
 import scala.concurrent.duration._
 
 object RemoteActorForSpec {
-  final case class ActorForReq(s: String)
+  final case class ActorForReq(s: String) extends JavaSerializable
 }
 
 class RemoteActorForSpec extends ArteryMultiNodeSpec("akka.loglevel=INFO") with ImplicitSender with DefaultTimeout {

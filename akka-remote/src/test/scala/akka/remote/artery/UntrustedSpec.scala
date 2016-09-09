@@ -25,10 +25,11 @@ import akka.testkit.TestEvent
 import akka.event.Logging
 import akka.remote.RARP
 import akka.testkit.EventFilter
+import akka.testkit.JavaSerializable
 
 object UntrustedSpec {
-  final case class IdentifyReq(path: String)
-  final case class StopChild(name: String)
+  final case class IdentifyReq(path: String) extends JavaSerializable
+  final case class StopChild(name: String) extends JavaSerializable
 
   class Receptionist(testActor: ActorRef) extends Actor {
     context.actorOf(Props(classOf[Child], testActor), "child1")
