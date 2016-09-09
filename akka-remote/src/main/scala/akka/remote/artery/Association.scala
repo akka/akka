@@ -496,6 +496,8 @@ private[remote] class Association(
         .viaMat(transport.outboundTestFlow(this))(Keep.both)
         .viaMat(transport.outboundLane(this))(Keep.both)
         .watchTermination()(Keep.both)
+        // recover to avoid error logging by MergeHub
+        .recoverWithRetries(-1, { case _: Throwable ⇒ Source.empty })
         .mapMaterializedValue {
           case (((q, m), c), w) ⇒ ((q, m), (c, w))
         }
