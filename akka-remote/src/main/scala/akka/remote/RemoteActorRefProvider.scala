@@ -20,6 +20,7 @@ import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.remote.artery.ArteryTransport
 import akka.util.OptionVal
 import akka.remote.artery.OutboundEnvelope
+import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 
 /**
  * INTERNAL API
@@ -98,12 +99,17 @@ private[akka] object RemoteActorRefProvider {
         // the dead letter status
         if (seqOpt.isEmpty) super.!(DeadLetter(m, senderOption.getOrElse(_provider.deadLetters), recipient))
       case env: OutboundEnvelope ⇒
-        super.!(DeadLetter(env.message, env.sender.getOrElse(_provider.deadLetters),
+        super.!(DeadLetter(unwrapSystemMessageEnvelope(env.message), env.sender.getOrElse(_provider.deadLetters),
           env.recipient.getOrElse(_provider.deadLetters)))
       case DeadLetter(env: OutboundEnvelope, _, _) ⇒
-        super.!(DeadLetter(env.message, env.sender.getOrElse(_provider.deadLetters),
+        super.!(DeadLetter(unwrapSystemMessageEnvelope(env.message), env.sender.getOrElse(_provider.deadLetters),
           env.recipient.getOrElse(_provider.deadLetters)))
       case _ ⇒ super.!(message)(sender)
+    }
+
+    private def unwrapSystemMessageEnvelope(msg: AnyRef): AnyRef = msg match {
+      case SystemMessageEnvelope(m, _, _) ⇒ m
+      case _                              ⇒ msg
     }
 
     @throws(classOf[java.io.ObjectStreamException])

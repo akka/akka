@@ -24,7 +24,7 @@ import akka.event.Logging
 import akka.remote._
 import akka.remote.DaemonMsgCreate
 import akka.remote.QuarantinedEvent
-import akka.remote.artery.AeronSink.GaveUpSendingException
+import akka.remote.artery.AeronSink.GaveUpMessageException
 import akka.remote.artery.Encoder.ChangeOutboundCompression
 import akka.remote.artery.Encoder.ChangeOutboundCompressionFailed
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
@@ -589,7 +589,7 @@ private[remote] class Association(
         // don't restart after shutdown, but log some details so we notice
         log.error(cause, s"{} to {} failed after shutdown. {}", streamName, remoteAddress, cause.getMessage)
       case _: AbruptTerminationException ⇒ // ActorSystem shutdown
-      case cause: GaveUpSendingException ⇒
+      case cause: GaveUpMessageException ⇒
         log.debug("{} to {} failed. Restarting it. {}", streamName, remoteAddress, cause.getMessage)
         // restart unconditionally, without counting restarts
         lazyRestart()
