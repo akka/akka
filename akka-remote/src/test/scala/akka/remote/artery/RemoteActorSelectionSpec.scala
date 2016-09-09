@@ -9,10 +9,11 @@ import akka.testkit.{ AkkaSpec, ImplicitSender, SocketUtil, TestActors }
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
+import akka.testkit.JavaSerializable
 
 object RemoteActorSelectionSpec {
-  final case class ActorSelReq(s: String)
-  final case class ActorCreateReq(props: Props, name: String)
+  final case class ActorSelReq(s: String) extends JavaSerializable
+  final case class ActorCreateReq(props: Props, name: String) extends JavaSerializable
 
   class SelectionActor extends Actor with ActorLogging {
     log.info("Started")

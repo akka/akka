@@ -70,10 +70,10 @@ object MaxThroughputSpec extends MultiNodeConfig {
        """)))
 
   case object Run
-  sealed trait Echo extends DeadLetterSuppression
+  sealed trait Echo extends DeadLetterSuppression with JavaSerializable
   final case object Start extends Echo
   final case object End extends Echo
-  final case class EndResult(totalReceived: Long)
+  final case class EndResult(totalReceived: Long) extends JavaSerializable
   final case class FlowControl(burstStartTime: Long) extends Echo
 
   def receiverProps(reporter: RateReporter, payloadSize: Int, printTaskRunnerMetrics: Boolean): Props =
