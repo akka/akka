@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 import akka.actor.ExtendedActorSystem
-import akka.remote.artery.AeronSink.GaveUpSendingException
+import akka.remote.artery.AeronSink.GaveUpMessageException
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl.Sink
@@ -75,7 +75,7 @@ class AeronSinkSpec extends AkkaSpec with ImplicitSender {
         .runWith(new AeronSink(channel, 1, aeron, taskRunner, pool, 500.millis, IgnoreEventSink))
 
       // without the give up timeout the stream would not complete/fail
-      intercept[GaveUpSendingException] {
+      intercept[GaveUpMessageException] {
         Await.result(done, 5.seconds)
       }
     }
