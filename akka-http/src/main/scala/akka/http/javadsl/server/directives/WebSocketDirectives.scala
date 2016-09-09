@@ -52,9 +52,8 @@ abstract class WebSocketDirectives extends SecurityDirectives {
    * Handles WebSocket requests with the given handler if the given subprotocol is offered in the request and
    * rejects other requests with an [[ExpectedWebSocketRequestRejection]] or an [[UnsupportedWebSocketSubprotocolRejection]].
    */
-  def handleWebSocketMessagesForProtocol(handler: Flow[Message, Message, Any], subprotocol: String): Route = RouteAdapter {
-    val adapted = scaladsl.Flow[s.Message].map(_.asJava).via(handler).map(_.asScala)
-    D.handleWebSocketMessagesForProtocol(adapted, subprotocol)
+  def handleWebSocketMessagesForProtocol[T](handler: Flow[Message, Message, T], subprotocol: String): Route = RouteAdapter {
+    D.handleWebSocketMessagesForProtocol(adapt(handler), subprotocol)
   }
 
   /**
@@ -68,12 +67,10 @@ abstract class WebSocketDirectives extends SecurityDirectives {
    *
    * To support several subprotocols you may chain several `handleWebSocketMessage` Routes.
    */
-  def handleWebSocketMessagesForOptionalProtocol(handler: Flow[Message, Message, Any], subprotocol: Optional[String]): Route = RouteAdapter {
-    val adapted = scaladsl.Flow[s.Message].map(_.asJava).via(handler).map(_.asScala)
-    D.handleWebSocketMessagesForOptionalProtocol(adapted, subprotocol.asScala)
+  def handleWebSocketMessagesForOptionalProtocol[T](handler: Flow[Message, Message, T], subprotocol: Optional[String]): Route = RouteAdapter {
+    D.handleWebSocketMessagesForOptionalProtocol(adapt(handler), subprotocol.asScala)
   }
 
-  // TODO this is because scala Message does not extend java Message - we could fix that, but http-core is stable
   private def adapt[T](handler: Flow[Message, Message, T]): scaladsl.Flow[s.Message, s.Message, NotUsed] = {
     scaladsl.Flow[s.Message].map(_.asJava).via(handler).map(_.asScala)
   }

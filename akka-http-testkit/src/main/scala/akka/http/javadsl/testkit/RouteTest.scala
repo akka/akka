@@ -29,7 +29,7 @@ import akka.stream.Materializer
  *
  * See `JUnitRouteTest` for an example of a concrete implementation.
  */
-abstract class RouteTest extends AllDirectives {
+abstract class RouteTest extends AllDirectives with WSTestRequestBuilding {
   implicit def system: ActorSystem
   implicit def materializer: Materializer
   implicit def executionContext: ExecutionContextExecutor = system.dispatcher
