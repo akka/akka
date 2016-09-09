@@ -37,8 +37,8 @@ object RemoteWatcherSpec {
   }
 
   object TestRemoteWatcher {
-    final case class AddressTerm(address: Address)
-    final case class Quarantined(address: Address, uid: Option[Int])
+    final case class AddressTerm(address: Address) extends JavaSerializable
+    final case class Quarantined(address: Address, uid: Option[Int]) extends JavaSerializable
   }
 
   class TestRemoteWatcher(heartbeatExpectedResponseAfter: FiniteDuration) extends RemoteWatcher(

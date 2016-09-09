@@ -10,10 +10,12 @@ import akka.util.ByteString
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import akka.testkit.JavaSerializable
 
 object LargeMessagesStreamSpec {
-  case class Ping(payload: ByteString = ByteString.empty)
-  case class Pong(bytesReceived: Long)
+  case class Ping(payload: ByteString = ByteString.empty) extends JavaSerializable
+  case class Pong(bytesReceived: Long) extends JavaSerializable
+
   class EchoSize extends Actor {
     def receive = {
       case Ping(bytes) ⇒ sender() ! Pong(bytes.size)
