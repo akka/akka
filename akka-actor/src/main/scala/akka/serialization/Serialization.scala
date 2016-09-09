@@ -34,12 +34,20 @@ object Serialization {
   private[akka] val currentTransportInformation = new DynamicVariable[Information](null)
 
   class Settings(val config: Config) {
-    val Serializers: Map[String, String] = configToMap("akka.actor.serializers")
-    val SerializationBindings: Map[String, String] = configToMap("akka.actor.serialization-bindings")
+    val Serializers: Map[String, String] = configToMap(config.getConfig("akka.actor.serializers"))
+    val SerializationBindings: Map[String, String] = {
+      val defaultBindings = config.getConfig("akka.actor.serialization-bindings")
+      val bindings =
+        if (config.getBoolean("akka.actor.enable-additional-serialization-bindings") ||
+          config.getBoolean("akka.remote.artery.enabled"))
+          defaultBindings.withFallback(config.getConfig("akka.actor.additional-serialization-bindings"))
+        else defaultBindings
+      configToMap(bindings)
+    }
 
-    private final def configToMap(path: String): Map[String, String] = {
+    private final def configToMap(cfg: Config): Map[String, String] = {
       import scala.collection.JavaConverters._
-      config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) ⇒ (k → v.toString) }
+      cfg.root.unwrapped.asScala.toMap map { case (k, v) ⇒ (k → v.toString) }
     }
   }
 
