@@ -3,6 +3,7 @@
  */
 package akka.remote.artery
 
+import akka.util.PrettyDuration.PrettyPrintableDuration
 import java.util.ArrayDeque
 import scala.annotation.tailrec
 import scala.concurrent.duration._
@@ -26,6 +27,7 @@ import akka.actor.ActorRef
 import akka.remote.PriorityMessage
 import akka.actor.ActorSelectionMessage
 import akka.dispatch.sysmsg.SystemMessage
+import scala.util.control.NoStackTrace
 
 /**
  * INTERNAL API
@@ -38,11 +40,14 @@ private[akka] object SystemMessageDelivery {
 
   final case object ClearSystemMessageDelivery
 
+  final class GaveUpSystemMessageException(msg: String) extends RuntimeException(msg) with NoStackTrace
+
   private case object ResendTick
 
   // If other message types than SystemMesage need acked delivery they can extend this trait.
   // Used in tests since real SystemMessage are somewhat cumbersome to create.
   trait AckedDeliveryMessage
+
 }
 
 /**
@@ -70,6 +75,9 @@ private[akka] class SystemMessageDelivery(
       private var resending = new ArrayDeque[OutboundEnvelope]
       private var resendingFromSeqNo = -1L
       private var stopping = false
+
+      private val giveUpAfterNanos = outboundContext.settings.Advanced.GiveUpSystemMessageAfter.toNanos
+      private var ackTimestamp = System.nanoTime()
 
       private def localAddress = outboundContext.localAddress
       private def remoteAddress = outboundContext.remoteAddress
@@ -109,13 +117,13 @@ private[akka] class SystemMessageDelivery(
       override protected def onTimer(timerKey: Any): Unit =
         timerKey match {
           case ResendTick ⇒
+            checkGiveUp()
             if (resending.isEmpty && !unacknowledged.isEmpty) {
               resending = unacknowledged.clone()
               tryResend()
             }
             if (!unacknowledged.isEmpty)
               scheduleOnce(ResendTick, resendInterval)
-          // FIXME give up resending after a long while, i.e. config property quarantine-after-silence
         }
 
       // ControlMessageObserver, external call
@@ -141,6 +149,7 @@ private[akka] class SystemMessageDelivery(
       }
 
       private def ack(n: Long): Unit = {
+        ackTimestamp = System.nanoTime()
         if (n <= seqNo)
           clearUnacknowledged(n)
       }
@@ -176,6 +185,10 @@ private[akka] class SystemMessageDelivery(
           case msg @ (_: SystemMessage | _: AckedDeliveryMessage) ⇒
             if (unacknowledged.size < maxBufferSize) {
               seqNo += 1
+              if (unacknowledged.isEmpty)
+                ackTimestamp = System.nanoTime()
+              else
+                checkGiveUp()
               val sendEnvelope = outboundEnvelope.withMessage(SystemMessageEnvelope(msg, seqNo, localAddress))
               unacknowledged.offer(sendEnvelope)
               scheduleOnce(ResendTick, resendInterval)
@@ -207,6 +220,13 @@ private[akka] class SystemMessageDelivery(
               tryResend()
             }
         }
+      }
+
+      private def checkGiveUp(): Unit = {
+        if (!unacknowledged.isEmpty && (System.nanoTime() - ackTimestamp > giveUpAfterNanos))
+          throw new GaveUpSystemMessageException(
+            s"Gave up sending system message to [${outboundContext.remoteAddress}] after " +
+              s"${outboundContext.settings.Advanced.GiveUpSystemMessageAfter.pretty}.")
       }
 
       private def clear(): Unit = {
