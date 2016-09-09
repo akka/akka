@@ -347,7 +347,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity =
     settings.Advanced.OutboundMessageQueueSize * settings.Advanced.OutboundLanes * 3)
 
-  val (afrFileChannel, afrFlie, flightRecorder) = initializeFlightRecorder() match {
+  val (afrFileChannel, afrFile, flightRecorder) = initializeFlightRecorder() match {
     case None            ⇒ (None, None, None)
     case Some((c, f, r)) ⇒ (Some(c), Some(f), Some(r))
   }
@@ -767,7 +767,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       afrFileChannel.foreach(_.force(true))
       afrFileChannel.foreach(_.close())
       // TODO: Be smarter about this in tests and make it always-on-for prod
-      afrFlie.foreach(_.delete())
+      afrFile.foreach(_.delete())
       Done
     }
   }
