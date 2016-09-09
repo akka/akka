@@ -72,7 +72,7 @@ abstract class QuickRestartSpec
                   if (RARP(system).provider.remoteSettings.Artery.Enabled)
                     s"""
                        akka.cluster.roles = [round-$n]
-                       akka.remote.artery.port = ${Cluster(restartingSystem).selfAddress.port.get}
+                       akka.remote.artery.canonical.port = ${Cluster(restartingSystem).selfAddress.port.get}
                      """
                   else
                     s"""

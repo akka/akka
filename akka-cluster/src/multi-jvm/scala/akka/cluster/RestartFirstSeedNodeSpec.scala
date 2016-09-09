@@ -56,7 +56,7 @@ abstract class RestartFirstSeedNodeSpec
     system.name,
     ConfigFactory.parseString(
       if (RARP(system).provider.remoteSettings.Artery.Enabled)
-        "akka.remote.artery.port=" + seedNodes.head.port.get
+        "akka.remote.artery.canonical.port=" + seedNodes.head.port.get
       else
         "akka.remote.netty.tcp.port=" + seedNodes.head.port.get
     ).withFallback(system.settings.config))
