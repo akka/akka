@@ -88,8 +88,9 @@ abstract class AeronStreamLatencySpec
 
   val pool = new EnvelopeBufferPool(1024 * 1024, 128)
 
+  val cncByteBuffer = IoUtil.mapExistingFile(new File(driver.aeronDirectoryName, CncFileDescriptor.CNC_FILE), "cnc");
   val stats =
-    new AeronStat(AeronStat.mapCounters(new File(driver.aeronDirectoryName, CncFileDescriptor.CNC_FILE)))
+    new AeronStat(AeronStat.mapCounters(cncByteBuffer))
 
   val aeron = {
     val ctx = new Aeron.Context
@@ -129,6 +130,7 @@ abstract class AeronStreamLatencySpec
     taskRunner.stop()
     aeron.close()
     driver.close()
+    IoUtil.unmap(cncByteBuffer)
     IoUtil.delete(new File(driver.aeronDirectoryName), true)
     runOn(first) {
       println(plots.plot50.csv(system.name + "50"))
