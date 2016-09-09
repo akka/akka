@@ -3,6 +3,7 @@
  */
 package akka.remote.artery
 
+import akka.util.PrettyDuration.PrettyPrintableDuration
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicInteger
 import scala.annotation.tailrec
@@ -28,7 +29,7 @@ import org.agrona.hints.ThreadHints
 
 object AeronSink {
 
-  final class GaveUpSendingException(msg: String) extends RuntimeException(msg) with NoStackTrace
+  final class GaveUpMessageException(msg: String) extends RuntimeException(msg) with NoStackTrace
 
   final class PublicationClosedException(msg: String) extends RuntimeException(msg) with NoStackTrace
 
@@ -75,13 +76,13 @@ object AeronSink {
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
  */
 class AeronSink(
-  channel:         String,
-  streamId:        Int,
-  aeron:           Aeron,
-  taskRunner:      TaskRunner,
-  pool:            EnvelopeBufferPool,
-  giveUpSendAfter: Duration,
-  flightRecorder:  EventSink)
+  channel:        String,
+  streamId:       Int,
+  aeron:          Aeron,
+  taskRunner:     TaskRunner,
+  pool:           EnvelopeBufferPool,
+  giveUpAfter:    Duration,
+  flightRecorder: EventSink)
   extends GraphStageWithMaterializedValue[SinkShape[EnvelopeBuffer], Future[Done]] {
   import AeronSink._
   import TaskRunner._
@@ -104,7 +105,7 @@ class AeronSink(
       private var backoffCount = spinning
       private var lastMsgSize = 0
       private val offerTask = new OfferTask(pub, null, lastMsgSize, getAsyncCallback(_ ⇒ taskOnOfferSuccess()),
-        giveUpSendAfter, getAsyncCallback(_ ⇒ onGiveUp()), getAsyncCallback(_ ⇒ onPublicationClosed()))
+        giveUpAfter, getAsyncCallback(_ ⇒ onGiveUp()), getAsyncCallback(_ ⇒ onPublicationClosed()))
       private val addOfferTask: Add = Add(offerTask)
 
       private var offerTaskInProgress = false
@@ -191,7 +192,7 @@ class AeronSink(
 
       private def onGiveUp(): Unit = {
         offerTaskInProgress = false
-        val cause = new GaveUpSendingException(s"Gave up sending message to $channel after $giveUpSendAfter.")
+        val cause = new GaveUpMessageException(s"Gave up sending message to $channel after ${giveUpAfter.pretty}.")
         flightRecorder.alert(AeronSink_GaveUpEnvelope, cause.getMessage.getBytes("US-ASCII"))
         completedValue = Failure(cause)
         failStage(cause)
