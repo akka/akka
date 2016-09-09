@@ -34,7 +34,7 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec("akka.remote.retry-gate-c
       localProbe.expectNoMsg(1.seconds)
 
       // then start the remote system and try again
-      val remoteSystem = newRemoteSystem(extraConfig = Some(s"akka.remote.artery.port=$remotePort"))
+      val remoteSystem = newRemoteSystem(extraConfig = Some(s"akka.remote.artery.canonical.port=$remotePort"))
 
       muteSystem(remoteSystem)
       localProbe.expectNoMsg(2.seconds)
@@ -65,7 +65,7 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec("akka.remote.retry-gate-c
       localProbe.expectNoMsg(1.seconds)
 
       // then when it is up, talk from other system
-      val remoteSystem = newRemoteSystem(extraConfig = Some(s"akka.remote.artery.port=$remotePort"))
+      val remoteSystem = newRemoteSystem(extraConfig = Some(s"akka.remote.artery.canonical.port=$remotePort"))
 
       muteSystem(remoteSystem)
       localProbe.expectNoMsg(2.seconds)
@@ -82,4 +82,3 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec("akka.remote.retry-gate-c
   }
 
 }
-

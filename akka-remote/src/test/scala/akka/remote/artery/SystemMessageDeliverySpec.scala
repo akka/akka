@@ -38,8 +38,8 @@ object SystemMessageDeliverySpec {
      akka {
        actor.provider = remote
        remote.artery.enabled = on
-       remote.artery.hostname = localhost
-       remote.artery.port = 0
+       remote.artery.canonical.hostname = localhost
+       remote.artery.canonical.port = 0
      }
      akka.actor.serialize-creators = off
      akka.actor.serialize-messages = off

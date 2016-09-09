@@ -17,8 +17,8 @@ object SerializationErrorSpec {
      akka {
        actor.provider = remote
        remote.artery.enabled = on
-       remote.artery.hostname = localhost
-       remote.artery.port = 0
+       remote.artery.canonical.hostname = localhost
+       remote.artery.canonical.port = 0
        actor {
          serialize-creators = false
          serialize-messages = false

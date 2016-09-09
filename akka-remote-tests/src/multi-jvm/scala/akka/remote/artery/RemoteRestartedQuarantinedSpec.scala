@@ -116,7 +116,7 @@ abstract class RemoteRestartedQuarantinedSpec
         Await.result(system.whenTerminated, 10.seconds)
 
         val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
-              akka.remote.artery.port = ${addr.port.get}
+              akka.remote.artery.canonical.port = ${addr.port.get}
               """).withFallback(system.settings.config))
 
         val probe = TestProbe()(freshSystem)
