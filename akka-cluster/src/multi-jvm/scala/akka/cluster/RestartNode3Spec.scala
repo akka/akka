@@ -52,7 +52,7 @@ abstract class RestartNode3Spec
     system.name,
     ConfigFactory.parseString(
       if (RARP(system).provider.remoteSettings.Artery.Enabled)
-        "akka.remote.artery.port=" + secondUniqueAddress.address.port.get
+        "akka.remote.artery.canonical.port=" + secondUniqueAddress.address.port.get
       else
         "akka.remote.netty.tcp.port=" + secondUniqueAddress.address.port.get
     ).withFallback(system.settings.config))
