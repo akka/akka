@@ -73,7 +73,7 @@ Especially the last point is something you should be aware of — in general whe
 you should take care of downing nodes yourself and not rely on the timing based auto-down feature.
 
 .. warning::
-   **Be very careful when using Cluster Singleton together with Automatic Downing**,
+   **Don't use Cluster Singleton together with Automatic Downing**,
    since it allows the cluster to split up into two separate clusters, which in turn will result
    in *multiple Singletons* being started, one in each separate cluster!
 

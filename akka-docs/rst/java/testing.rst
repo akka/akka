@@ -470,24 +470,50 @@ Testing parent-child relationships
 
 The parent of an actor is always the actor that created it. At times this leads to
 a coupling between the two that may not be straightforward to test.
-Broadly, there are three approaches to improve testability of parent-child
-relationships:
+There are several approaches to improve testability of a child actor that
+needs to refer to its parent:
 
 1. when creating a child, pass an explicit reference to its parent
-2. when creating a parent, tell the parent how to create its child
+2. create the child with a ``TestProbe`` as parent
 3. create a fabricated parent when testing
+
+Conversely, a parent's binding to its child can be lessened as follows:
+
+4. when creating a parent, tell the parent how to create its child
 
 For example, the structure of the code you want to test may follow this pattern:
 
 .. includecode:: code/docs/testkit/ParentChildTest.java#test-example
 
-Using dependency-injection
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+Introduce child to its parent
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The first option is to avoid use of the :meth:`context.parent` function and create
 a child with a custom parent by passing an explicit reference to its parent instead.
 
 .. includecode:: code/docs/testkit/ParentChildTest.java#test-dependentchild
+
+Create the child using JavaTestKit
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``JavaTestKit`` class can in fact create actors that will run with the test probe as parent.
+This will cause any messages the the child actor sends to `context().getParent()` to
+end up in the test probe.
+
+.. includecode:: code/docs/testkit/ParentChildTest.java#test-TestProbe-parent
+
+Using a fabricated parent
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you prefer to avoid modifying the child constructor you can
+create a fabricated parent in your test. This, however, does not enable you to test
+the parent actor in isolation.
+
+.. includecode:: code/docs/testkit/ParentChildTest.java#test-fabricated-parent-creator
+.. includecode:: code/docs/testkit/ParentChildTest.java#test-fabricated-parent
+
+Externalize child making from the parent
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Alternatively, you can tell the parent how to create its child. There are two ways
 to do this: by giving it a :class:`Props` object or by giving it a function which takes care of creating the child actor:
@@ -503,19 +529,10 @@ And like this in your application code:
 
 .. includecode:: code/docs/testkit/ParentChildTest.java#child-maker-prod
 
-Using a fabricated parent
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If you prefer to avoid modifying the parent or child constructor you can
-create a fabricated parent in your test. This, however, does not enable you to test
-the parent actor in isolation.
-
-.. includecode:: code/docs/testkit/ParentChildTest.java#test-fabricated-parent-creator
-.. includecode:: code/docs/testkit/ParentChildTest.java#test-fabricated-parent
 
 Which of these methods is the best depends on what is most important to test. The
 most generic option is to create the parent actor by passing it a function that is
-responsible for the Actor creation, but the fabricated parent is often sufficient.
+responsible for the Actor creation, but using TestProbe or having a fabricated parent is often sufficient.
 
 .. _Java-CallingThreadDispatcher:
 

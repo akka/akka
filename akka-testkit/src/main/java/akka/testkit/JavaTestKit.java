@@ -4,9 +4,12 @@
 package akka.testkit;
 
 import akka.actor.Terminated;
+import scala.Option;
 import scala.runtime.AbstractFunction0;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import akka.actor.Props;
+import akka.actor.SupervisorStrategy;
 import akka.event.Logging;
 import akka.event.Logging.LogEvent;
 import akka.japi.JavaPartialFunction;
@@ -683,5 +686,44 @@ public class JavaTestKit {
   }
   public void shutdown(ActorSystem actorSystem, Boolean verifySystemShutdown) {
       shutdown(actorSystem, null, verifySystemShutdown);
+  }
+  
+  /**
+   * Spawns an actor as a child of this test actor, and returns the child's ActorRef.
+   * @param props Props to create the child actor
+   * @param name Actor name for the child actor
+   * @param supervisorStrategy Strategy should decide what to do with failures in the actor.
+   */
+  public ActorRef childActorOf(Props props, String name, SupervisorStrategy supervisorStrategy) {
+      return p.childActorOf(props, name, supervisorStrategy);
+  }
+  
+  /**
+   * Spawns an actor as a child of this test actor, and returns the child's ActorRef.
+   * The actor will have an auto-generated name.
+   * @param props Props to create the child actor
+   * @param supervisorStrategy Strategy should decide what to do with failures in the actor.
+   */
+  public ActorRef childActorOf(Props props, SupervisorStrategy supervisorStrategy) {
+      return p.childActorOf(props, supervisorStrategy);
+  }
+  
+  /**
+   * Spawns an actor as a child of this test actor, and returns the child's ActorRef.
+   * The actor will be supervised using {@link SupervisorStrategy.stoppingStrategy}.
+   * @param props Props to create the child actor
+   * @param name Actor name for the child actor
+   */
+  public ActorRef childActorOf(Props props, String name) {
+      return p.childActorOf(props, name);
+  }
+  
+  /**
+   * Spawns an actor as a child of this test actor, and returns the child's ActorRef.
+   * The actor will have an auto-generated name and will be supervised using {@link SupervisorStrategy.stoppingStrategy}.
+   * @param props Props to create the child actor
+   */
+  public ActorRef childActorOf(Props props) {
+      return p.childActorOf(props);
   }
 }

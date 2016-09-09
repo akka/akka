@@ -85,10 +85,7 @@ private[http] object HttpServerBluePrint {
     BidiFlow.fromFlows(Flow[HttpResponse], new PrepareRequests(settings))
 
   def requestTimeoutSupport(timeout: Duration): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] =
-    timeout match {
-      case x: FiniteDuration ⇒ BidiFlow.fromGraph(new RequestTimeoutSupport(x)).reversed
-      case _                 ⇒ BidiFlow.identity
-    }
+    BidiFlow.fromGraph(new RequestTimeoutSupport(timeout)).reversed
 
   /**
    * Two state stage, either transforms an incoming RequestOutput into a HttpRequest with strict entity and then pushes
@@ -249,7 +246,7 @@ private[http] object HttpServerBluePrint {
       .via(MapError[ResponseRenderingOutput](errorHandler).named("errorLogger"))
   }
 
-  class RequestTimeoutSupport(initialTimeout: FiniteDuration)
+  class RequestTimeoutSupport(initialTimeout: Duration)
     extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
     private val requestIn = Inlet[HttpRequest]("requestIn")
     private val requestOut = Outlet[HttpRequest]("requestOut")
@@ -307,13 +304,23 @@ private[http] object HttpServerBluePrint {
     val timeout:       Duration,
     val handler:       HttpRequest ⇒ HttpResponse)
 
-  private class TimeoutAccessImpl(request: HttpRequest, initialTimeout: FiniteDuration, requestEnd: Future[Unit],
+  private object DummyCancellable extends Cancellable {
+    override def isCancelled: Boolean = true
+    override def cancel(): Boolean = true
+  }
+
+  private class TimeoutAccessImpl(request: HttpRequest, initialTimeout: Duration, requestEnd: Future[Unit],
                                   trigger: AsyncCallback[(TimeoutAccess, HttpResponse)], materializer: Materializer)
     extends AtomicReference[Future[TimeoutSetup]] with TimeoutAccess with (HttpRequest ⇒ HttpResponse) { self ⇒
     import materializer.executionContext
 
-    set {
-      requestEnd.fast.map(_ ⇒ new TimeoutSetup(Deadline.now, schedule(initialTimeout, this), initialTimeout, this))
+    initialTimeout match {
+      case timeout: FiniteDuration ⇒ set {
+        requestEnd.fast.map(_ ⇒ new TimeoutSetup(Deadline.now, schedule(timeout, this), timeout, this))
+      }
+      case _ ⇒ set {
+        requestEnd.fast.map(_ ⇒ new TimeoutSetup(Deadline.now, DummyCancellable, Duration.Inf, this))
+      }
     }
 
     override def apply(request: HttpRequest) =

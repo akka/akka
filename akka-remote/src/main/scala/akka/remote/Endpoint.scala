@@ -805,7 +805,10 @@ private[remote] class EndpointWriter(
     }
   } catch {
     case e: NotSerializableException ⇒
-      log.error(e, "Transient association error (association remains live)")
+      log.error(e, "Serializer not defined for message type []. Transient association error (association remains live)", s.message.getClass)
+      true
+    case e: MessageSerializer.SerializationException ⇒
+      log.error(e, "{} Transient association error (association remains live)", e.getMessage)
       true
     case e: EndpointException ⇒
       publishAndThrow(e, Logging.ErrorLevel)

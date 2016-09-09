@@ -30,7 +30,7 @@ sink:
 The same strategy can be applied for sources as well. In the next example we
 have a source that produces an infinite stream of elements. Such source can be
 tested by asserting that first arbitrary number of elements hold some
-condition. Here the ``grouped`` combinator and ``Sink.head`` are very useful.
+condition. Here the ``take`` combinator and ``Sink.seq`` are very useful.
 
 .. includecode:: ../code/docs/stream/StreamTestKitDocTest.java#grouped-infinite
 

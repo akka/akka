@@ -8,7 +8,7 @@ Akka requires that you have `Java 8 <http://www.oracle.com/technetwork/java/java
 later installed on your machine.
 
 `Lightbend Inc. <http://www.lightbend.com>`_ provides a commercial build of Akka and related projects such as Scala or Play
-as part of the `Reactive Platform <http://www.lightbend.com/products/lightbend-reactive-platform>`_ which is made available
+as part of the `Lightbend Reactive Platform <http://www.lightbend.com/platform>`_ which is made available
 for Java 6 in case your project can not upgrade to Java 8 just yet. It also includes additional commercial features or libraries.
 
 Getting Started Guides and Template Projects
