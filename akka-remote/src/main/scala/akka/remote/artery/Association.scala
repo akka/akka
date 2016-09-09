@@ -24,7 +24,7 @@ import akka.event.Logging
 import akka.remote._
 import akka.remote.DaemonMsgCreate
 import akka.remote.QuarantinedEvent
-import akka.remote.artery.AeronSink.GaveUpSendingException
+import akka.remote.artery.AeronSink.GaveUpMessageException
 import akka.remote.artery.Encoder.ChangeOutboundCompression
 import akka.remote.artery.Encoder.ChangeOutboundCompressionFailed
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
@@ -287,10 +287,16 @@ private[remote] class Association(
     // allow ActorSelectionMessage to pass through quarantine, to be able to establish interaction with new system
     if (message.isInstanceOf[ActorSelectionMessage] || !associationState.isQuarantined() || message == ClearSystemMessageDelivery) {
       message match {
-        case _: SystemMessage | ClearSystemMessageDelivery | _: ControlMessage ⇒
+        case _: SystemMessage ⇒
           val outboundEnvelope = createOutboundEnvelope()
           if (!controlQueue.offer(createOutboundEnvelope())) {
             quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
+            dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
+          }
+        case ActorSelectionMessage(_: PriorityMessage, _, _) | _: ControlMessage | ClearSystemMessageDelivery ⇒
+          // ActorSelectionMessage with PriorityMessage is used by cluster and remote failure detector heartbeating
+          val outboundEnvelope = createOutboundEnvelope()
+          if (!controlQueue.offer(createOutboundEnvelope())) {
             dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
           }
         case _: DaemonMsgCreate ⇒
@@ -583,7 +589,7 @@ private[remote] class Association(
         // don't restart after shutdown, but log some details so we notice
         log.error(cause, s"{} to {} failed after shutdown. {}", streamName, remoteAddress, cause.getMessage)
       case _: AbruptTerminationException ⇒ // ActorSystem shutdown
-      case cause: GaveUpSendingException ⇒
+      case cause: GaveUpMessageException ⇒
         log.debug("{} to {} failed. Restarting it. {}", streamName, remoteAddress, cause.getMessage)
         // restart unconditionally, without counting restarts
         lazyRestart()
