@@ -37,8 +37,8 @@ class BindCanonicalAddressSpec extends WordSpec with Matchers {
 
       implicit val sys = ActorSystem("sys", config.withFallback(commonConfig))
 
-      getExternal should ===(address.toAkkaAddress("artery"))
-      getInternal should not contain (address.toAkkaAddress("artery"))
+      getExternal should ===(address.toAkkaAddress("akka"))
+      getInternal should not contain (address.toAkkaAddress("akka"))
 
       Await.result(sys.terminate(), Duration.Inf)
     }
@@ -53,8 +53,8 @@ class BindCanonicalAddressSpec extends WordSpec with Matchers {
 
       implicit val sys = ActorSystem("sys", config.withFallback(commonConfig))
 
-      getExternal should ===(address.toAkkaAddress("artery"))
-      getInternal should contain(address.toAkkaAddress("artery"))
+      getExternal should ===(address.toAkkaAddress("akka"))
+      getInternal should contain(address.toAkkaAddress("akka"))
     }
 
     "bind to all interfaces" in {
