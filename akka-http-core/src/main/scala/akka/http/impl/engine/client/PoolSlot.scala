@@ -5,17 +5,19 @@
 package akka.http.impl.engine.client
 
 import akka.event.LoggingAdapter
-import akka.http.impl.engine.client.PoolConductor.{ ConnectEagerlyCommand, DispatchCommand, SlotCommand }
+import akka.http.impl.engine.client.PoolConductor.{ConnectEagerlyCommand, DispatchCommand, SlotCommand}
 import akka.http.impl.engine.client.PoolSlot.SlotEvent.ConnectedEagerly
-import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.headers.Connection
+import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse}
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.stage.GraphStageLogic.EagerTerminateOutput
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 
 import scala.concurrent.Future
 import scala.language.existentials
-import scala.util.{ Failure, Success }
+import scala.util.{Failure, Success, Try}
 import scala.collection.JavaConverters._
 
 private object PoolSlot {
@@ -26,7 +28,7 @@ private object PoolSlot {
   object SlotEvent {
     final case class RequestCompletedFuture(future: Future[RequestCompleted]) extends RawSlotEvent
     final case class RetryRequest(rc: RequestContext) extends RawSlotEvent
-    final case class RequestCompleted(slotIx: Int) extends SlotEvent
+    final case class RequestCompleted(slotIx: Int, willClose: Boolean) extends SlotEvent
     final case class Disconnected(slotIx: Int, failedRequests: Int) extends SlotEvent
     /**
      * Slot with id "slotIx" has responded to request from PoolConductor and connected immediately
@@ -35,7 +37,7 @@ private object PoolSlot {
     final case class ConnectedEagerly(slotIx: Int) extends SlotEvent
   }
 
-  def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any])(implicit m: Materializer): Graph[FanOutShape2[SlotCommand, ResponseContext, RawSlotEvent], Any] =
+  def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]])(implicit m: Materializer): Graph[FanOutShape2[SlotCommand, ResponseContext, RawSlotEvent], Any] =
     new SlotProcessor(slotIx, connectionFlow, ActorMaterializerHelper.downcast(m).logger)
 
   /**
@@ -45,7 +47,7 @@ private object PoolSlot {
    * Completion and errors from the connection are not surfaced to the outside (unless we are
    * shutting down completely).
    */
-  private class SlotProcessor(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any], log: LoggingAdapter)(implicit fm: Materializer)
+  private class SlotProcessor(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]], log: LoggingAdapter)(implicit fm: Materializer)
     extends GraphStage[FanOutShape2[SlotCommand, ResponseContext, RawSlotEvent]] {
 
     val in: Inlet[SlotCommand] = Inlet("SlotProcessor.in")
@@ -62,11 +64,20 @@ private object PoolSlot {
       private var connectionFlowSink: SubSinkInlet[HttpResponse] = _
 
       private var isConnected = false
+      private var isConnecting = false
 
       def disconnect(ex: Option[Throwable] = None) = {
+        log.debug("{} disconnect isConnecting {} isConnected {}", slotIx, isConnecting, isConnected)
         connectionFlowSource.complete()
         if (isConnected) {
           isConnected = false
+
+          if (isAvailable(in)) {
+            log.debug("{} pulling final event in disconnect", slotIx)
+            grab(in) match {
+              case DispatchCommand(rc) => inflightRequests.add(rc)
+            }
+          }
 
           // if there was an error sending the request may have been sent so decrement retriesLeft
           // otherwise the downstream hasn't sent so sent them back without modifying retriesLeft
@@ -79,8 +90,15 @@ private object PoolSlot {
 
           inflightRequests.clear()
 
+          log.debug("{} pushing {} failures responses out", slotIx, failures.size)
           emitMultiple(responsesOut, failures)
-          emitMultiple(eventsOut, SlotEvent.Disconnected(slotIx, retries.size + failures.size) :: retries, () ⇒ if (failures.isEmpty && !hasBeenPulled(in)) pull(in))
+          log.debug("{} pushing {} to events out", slotIx, 1 + retries.size)
+          // if we are disconnecting normally we need to pull(in) to get the next command
+          log.debug("{} disconnecting hasBeenPulled(in) {} isAvailable(eventsOut) {}", slotIx, hasBeenPulled(in), isAvailable(eventsOut))
+          emitMultiple(eventsOut, SlotEvent.Disconnected(slotIx, retries.size + failures.size) :: retries, () ⇒ {
+            log.debug("{} disconnecting events all pushed isConnecting {} hasBeenPulled(in) {}", slotIx, isConnecting, hasBeenPulled(in))
+            if (failures.isEmpty && !hasBeenPulled(in) && !isConnecting) pull(in)
+          })
         }
       }
 
@@ -89,14 +107,18 @@ private object PoolSlot {
       private val connectionOutFlowHandler = new OutHandler {
         // inner stream pulls, we either give first request or pull upstream
         override def onPull(): Unit = {
+          log.debug("{} connectionOut.onPull fr {} isConnecting {}", slotIx, firstRequest, isConnecting)
           if (firstRequest != null) {
             inflightRequests.add(firstRequest)
             connectionFlowSource.push(firstRequest.request)
             firstRequest = null
-          } else pull(in)
+          } else if (!hasBeenPulled(in)) pull(in)
         }
 
-        override def onDownstreamFinish(): Unit = connectionFlowSource.complete()
+        override def onDownstreamFinish(): Unit = {
+          log.debug("{} onDownstreamFinish isConnecting {} isConnected {}", slotIx, isConnecting, isConnected)
+          connectionFlowSource.complete()
+        }
       }
 
       // SinkInlet is connected to the connectionFlow's outlet, an upstream
@@ -109,32 +131,74 @@ private object PoolSlot {
           val response = connectionFlowSink.grab()
           val requestContext = inflightRequests.pop
 
+          log.debug("{} response done {} still in flight {} response out avail SlotProcessor.eventsOut {} responsesOut " + isAvailable(responsesOut), slotIx, response, inflightRequests.size(), isAvailable(eventsOut))
+
           val (entity, whenCompleted) = HttpEntity.captureTermination(response.entity)
+          log.debug("{} entity {}", slotIx, entity)
           import fm.executionContext
           push(responsesOut, ResponseContext(requestContext, Success(response withEntity entity)))
-          push(eventsOut, SlotEvent.RequestCompletedFuture(whenCompleted.map(_ ⇒ SlotEvent.RequestCompleted(slotIx))))
+          emit(eventsOut, SlotEvent.RequestCompletedFuture(whenCompleted.map(_ ⇒ SlotEvent.RequestCompleted(slotIx, response.header[Connection].exists(_.hasClose)))), () => log.debug("{} event sent", slotIx))
         }
 
-        override def onUpstreamFinish(): Unit = disconnect()
+        override def onUpstreamFinish(): Unit = {
+          log.debug("{} onUpstreamFinish isConnecting {} isConnected {}", slotIx, isConnecting, isConnected)
+          disconnect()
+        }
 
-        override def onUpstreamFailure(ex: Throwable): Unit = disconnect(Some(ex))
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          log.debug("{} onUpstreamFailure isConnecting {} isConnected {}", slotIx, isConnecting, isConnected)
+          disconnect(Some(ex))
+        }
       }
 
       // upstream pushes we create the inner stream if necessary or push if we're already connected
       override def onPush(): Unit = {
         def establishConnectionFlow() = {
           connectionFlowSource = new SubSourceOutlet[HttpRequest]("RequestSource")
-          connectionFlowSource.setHandler(connectionOutFlowHandler)
+
+          // when connecting we just ignore pulls
+          connectionFlowSource.setHandler(new OutHandler() {
+            override def onPull(): Unit = {
+              log.debug("{} connectionOut.onPull connecting fr {}", slotIx, firstRequest)
+            }
+
+            override def onDownstreamFinish(): Unit = {
+              log.debug("{} onDownstreamFinish connecting", slotIx)
+              connectionFlowSource.complete()
+            }
+          })
 
           connectionFlowSink = new SubSinkInlet[HttpResponse]("ResponseSink")
           connectionFlowSink.setHandler(connectionInFlowHandler)
 
           isConnected = true
+          isConnecting = true
 
-          Source.fromGraph(connectionFlowSource.source)
-            .via(connectionFlow).runWith(Sink.fromGraph(connectionFlowSink.sink))(subFusingMaterializer)
+          log.debug("{} connecting", slotIx)
+          val connection = Source.fromGraph(connectionFlowSource.source)
+            .viaMat(connectionFlow)(Keep.right)
+            .toMat(Sink.fromGraph(connectionFlowSink.sink))(Keep.left).run()(subFusingMaterializer)
 
-          connectionFlowSink.pull()
+          val connectedCallback = getAsyncCallback[Try[Http.OutgoingConnection]] {
+              case Success(c) =>
+                log.debug("{} connection success {}", slotIx, c)
+                isConnecting = false
+
+                connectionFlowSource.setHandler(connectionOutFlowHandler)
+                connectionFlowSink.pull()
+
+                if (firstRequest != null && connectionFlowSource.isAvailable && !connectionFlowSource.isClosed) {
+                  inflightRequests.add(firstRequest)
+                  connectionFlowSource.push(firstRequest.request)
+                  firstRequest = null
+                }
+
+              case Failure(e) =>
+                log.error(e, "{} connection failed", slotIx)
+            }
+
+          import fm.executionContext
+          connection.onComplete(connectedCallback.invoke)
         }
 
         grab(in) match {
@@ -146,6 +210,9 @@ private object PoolSlot {
           case DispatchCommand(rc: RequestContext) ⇒
             if (isConnected) {
               inflightRequests.add(rc)
+              log.debug("{} dispatch {} isConnecting {} inflight size {} fr " + firstRequest, slotIx, rc, isConnecting, inflightRequests.size())
+
+              if (isConnecting) log.debug("{} this is going to fail, need to buffer here!", slotIx)
               connectionFlowSource.push(rc.request)
             } else {
               firstRequest = rc
@@ -158,13 +225,16 @@ private object PoolSlot {
 
       setHandler(responsesOut, new OutHandler {
         override def onPull(): Unit = {
+          log.debug("{} responsesOut.onPull isConnected {} isConnecting {} hasBeenPulled(in) {}", slotIx, isConnected, isConnecting, hasBeenPulled(in))
           // downstream pulls, if connected we pull inner
           if (isConnected) connectionFlowSink.pull()
           else if (!hasBeenPulled(in)) pull(in)
         }
       })
 
-      setHandler(eventsOut, EagerTerminateOutput)
+      setHandler(eventsOut, new OutHandler {
+        override def onPull(): Unit = log.debug("{} eventsOut.onPull", slotIx)
+      })
     }
   }
 }
