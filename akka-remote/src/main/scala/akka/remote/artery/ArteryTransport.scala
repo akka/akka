@@ -295,6 +295,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private[this] val mediaDriver = new AtomicReference[Option[MediaDriver]](None)
   @volatile private[this] var aeron: Aeron = _
   @volatile private[this] var aeronErrorLogTask: Cancellable = _
+  @volatile private[this] var areonErrorLog: AeronErrorLog = _
 
   @volatile private[this] var inboundCompressions: Option[InboundCompressions] = None
 
@@ -554,12 +555,12 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   // TODO Add FR Events
   private def startAeronErrorLog(): Unit = {
-    val errorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE))
+    areonErrorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE))
     val lastTimestamp = new AtomicLong(0L)
     import system.dispatcher
     aeronErrorLogTask = system.scheduler.schedule(3.seconds, 5.seconds) {
       if (!isShutdown) {
-        val newLastTimestamp = errorLog.logErrors(log, lastTimestamp.get)
+        val newLastTimestamp = areonErrorLog.logErrors(log, lastTimestamp.get)
         lastTimestamp.set(newLastTimestamp + 1)
       }
     }
@@ -770,6 +771,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         topLevelFREvents.loFreq(Transport_AeronErrorLogTaskStopped, NoMetaData)
       }
       if (aeron != null) aeron.close()
+      if (areonErrorLog != null) areonErrorLog.close()
       if (mediaDriver.get.isDefined) {
         stopMediaDriver()
         topLevelFREvents.loFreq(Transport_MediaFileDeleted, NoMetaData)

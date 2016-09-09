@@ -37,26 +37,31 @@ import java.util.concurrent.atomic.AtomicLong;
 public class AeronErrorLog
 {
     private final File cncFile;
+    final MappedByteBuffer cncByteBuffer;
+    final DirectBuffer cncMetaDataBuffer;
+    final int cncVersion;
+    final AtomicBuffer buffer;
+    final SimpleDateFormat dateFormat;
 
     public AeronErrorLog(File cncFile)
     {
       this.cncFile = cncFile;
+      cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
+      cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+      cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
+      buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
+      dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+
+
+      if (CncFileDescriptor.CNC_VERSION != cncVersion)
+      {
+          IoUtil.unmap(cncByteBuffer);
+          throw new IllegalStateException("CNC version not supported: file version=" + cncVersion);
+      }
     }
 
     public long logErrors(LoggingAdapter log, long sinceTimestamp)
     {
-        final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
-        final DirectBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-        final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
-
-        if (CncFileDescriptor.CNC_VERSION != cncVersion)
-        {
-            throw new IllegalStateException("CNC version not supported: file version=" + cncVersion);
-        }
-
-        final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
-        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
-
         // using AtomicLong because access from lambda, not because of currency
         final AtomicLong lastTimestamp = new AtomicLong(sinceTimestamp);
 
@@ -72,5 +77,9 @@ public class AeronErrorLog
                   lastTimestamp.set(Math.max(lastTimestamp.get(), lastObservationTimestamp));
                 }, sinceTimestamp);
         return lastTimestamp.get();
+    }
+
+    public void close() {
+        IoUtil.unmap(cncByteBuffer);
     }
 }

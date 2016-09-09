@@ -117,7 +117,22 @@ public class AeronStat
     {
       return mapCounters(CommonContext.newDefaultCncFile()); 
     }
-    
+
+    public static CountersReader mapCounters(final MappedByteBuffer cncByteBuffer)
+    {
+        final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
+        final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
+
+        if (CncFileDescriptor.CNC_VERSION != cncVersion)
+        {
+            throw new IllegalStateException("CnC version not supported: file version=" + cncVersion);
+        }
+
+        return new CountersReader(
+          createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
+          createCountersValuesBuffer(cncByteBuffer, cncMetaData));
+    }
+
     public static CountersReader mapCounters(final File cncFile)
     {
         System.out.println("Command `n Control file " + cncFile);
@@ -132,8 +147,8 @@ public class AeronStat
         }
 
         return new CountersReader(
-            createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
-            createCountersValuesBuffer(cncByteBuffer, cncMetaData));
+          createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
+          createCountersValuesBuffer(cncByteBuffer, cncMetaData));
     }
 
     public static void main(final String[] args) throws Exception
