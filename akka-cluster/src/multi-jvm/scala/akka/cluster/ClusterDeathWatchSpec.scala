@@ -63,7 +63,7 @@ abstract class ClusterDeathWatchSpec
       pending
     }
 
-/*    "receive Terminated when watched node becomes Down/Removed" in within(20 seconds) {
+    /*    "receive Terminated when watched node becomes Down/Removed" in within(20 seconds) {
       awaitClusterUp(first, second, third, fourth)
       enterBarrier("cluster-up")
 
