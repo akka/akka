@@ -4,14 +4,16 @@
 package docs.testkit;
 
 import static org.junit.Assert.*;
-
 import akka.actor.*;
 import akka.japi.Creator;
 import akka.japi.Function;
 import akka.testkit.AkkaJUnitActorSystemResource;
+import akka.testkit.JavaTestKit;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestProbe;
+
 import com.typesafe.config.ConfigFactory;
+
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -187,6 +189,17 @@ public class ParentChildTest {
   }
   //#test-fabricated-parent-creator
 
+  @Test
+  public void testProbeParentTest() throws Exception {
+  //#test-TestProbe-parent
+    JavaTestKit parent = new JavaTestKit(system);
+    ActorRef child = parent.childActorOf(Props.create(Child.class));
+    
+    parent.send(child, "ping");
+    parent.expectMsgEquals("pong");
+  //#test-TestProbe-parent
+  }
+  
   @Test
   public void fabricatedParentTestsItsChildResponses() throws Exception {
     // didn't put final on these in order to make the parent fit in one line in the html docs

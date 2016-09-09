@@ -36,7 +36,7 @@ Building Advanced Directives
 ----------------------------
 
 This example will showcase the advanced logging using the ``DebuggingDirectives``.
-The built `logResponseTime ` directive will log the request time (or rejection reason):
+The built `logResponseTime` directive will log the request time (or rejection reason):
 
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala
    :snippet: logRequestResultWithResponseTime

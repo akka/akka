@@ -588,7 +588,7 @@ it returns false the element is discarded.
 **completes** when upstream completes
 
 filterNot
-^^^^^^^^
+^^^^^^^^^
 Filter the incoming elements using a predicate. If the predicate returns false the element is passed downstream, if
 it returns true the element is discarded.
 

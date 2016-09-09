@@ -41,6 +41,12 @@ object TestActor {
   final case class Watch(ref: ActorRef) extends NoSerializationVerificationNeeded
   final case class UnWatch(ref: ActorRef) extends NoSerializationVerificationNeeded
   final case class SetAutoPilot(ap: AutoPilot) extends NoSerializationVerificationNeeded
+  final case class Spawn(props: Props, name: Option[String] = None, strategy: Option[SupervisorStrategy] = None) extends NoSerializationVerificationNeeded {
+    def apply(context: ActorRefFactory): ActorRef = name match {
+      case Some(n) ⇒ context.actorOf(props, n)
+      case None    ⇒ context.actorOf(props)
+    }
+  }
 
   trait Message {
     def msg: AnyRef
@@ -54,12 +60,39 @@ object TestActor {
 
   val FALSE = (x: Any) ⇒ false
 
+  /** INTERNAL API */
+  private[TestActor] class DelegatingSupervisorStrategy extends SupervisorStrategy {
+    import SupervisorStrategy._
+
+    private var delegates = Map.empty[ActorRef, SupervisorStrategy]
+
+    private def delegate(child: ActorRef) = delegates.get(child).getOrElse(stoppingStrategy)
+
+    def update(child: ActorRef, supervisor: SupervisorStrategy): Unit = delegates += (child → supervisor)
+
+    override def decider = defaultDecider // not actually invoked
+
+    override def handleChildTerminated(context: ActorContext, child: ActorRef, children: Iterable[ActorRef]): Unit = {
+      delegates -= child
+    }
+
+    override def processFailure(context: ActorContext, restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Unit = {
+      delegates(child).processFailure(context, restart, child, cause, stats, children)
+    }
+
+    override def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Boolean = {
+      delegates(child).handleFailure(context, child, cause, stats, children)
+    }
+  }
+
   // make creator serializable, for VerifySerializabilitySpec
   def props(queue: BlockingDeque[Message]): Props = Props(classOf[TestActor], queue)
 }
 
 class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
   import TestActor._
+
+  override val supervisorStrategy: DelegatingSupervisorStrategy = new DelegatingSupervisorStrategy
 
   var ignore: Ignore = None
 
@@ -70,6 +103,10 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
     case Watch(ref)          ⇒ context.watch(ref)
     case UnWatch(ref)        ⇒ context.unwatch(ref)
     case SetAutoPilot(pilot) ⇒ autopilot = pilot
+    case spawn: Spawn ⇒
+      val actor = spawn(context)
+      for (s ← spawn.strategy) supervisorStrategy(actor) = s
+      queue.offerLast(RealMessage(actor, self))
     case x: AnyRef ⇒
       autopilot = autopilot.run(sender(), x) match {
         case KeepRunning ⇒ autopilot
@@ -102,7 +139,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
  */
 trait TestKitBase {
 
-  import TestActor.{ Message, RealMessage, NullMessage }
+  import TestActor.{ Message, RealMessage, NullMessage, Spawn }
 
   implicit val system: ActorSystem
   val testKitSettings = TestKitExtension(system)
@@ -686,6 +723,46 @@ trait TestKitBase {
     duration:             Duration    = 5.seconds.dilated.min(10.seconds),
     verifySystemShutdown: Boolean     = false) {
     TestKit.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
+  }
+
+  /**
+   * Spawns an actor as a child of this test actor, and returns the child's ActorRef.
+   * @param props Props to create the child actor
+   * @param name Actor name for the child actor
+   * @param supervisorStrategy Strategy should decide what to do with failures in the actor.
+   */
+  def childActorOf(props: Props, name: String, supervisorStrategy: SupervisorStrategy): ActorRef = {
+    testActor ! Spawn(props, Some(name), Some(supervisorStrategy))
+    expectMsgType[ActorRef]
+  }
+
+  /**
+   * Spawns an actor as a child of this test actor with an auto-generated name, and returns the child's ActorRef.
+   * @param props Props to create the child actor
+   * @param supervisorStrategy Strategy should decide what to do with failures in the actor.
+   */
+  def childActorOf(props: Props, supervisorStrategy: SupervisorStrategy): ActorRef = {
+    testActor ! Spawn(props, None, Some(supervisorStrategy))
+    expectMsgType[ActorRef]
+  }
+
+  /**
+   * Spawns an actor as a child of this test actor with a stopping supervisor strategy, and returns the child's ActorRef.
+   * @param props Props to create the child actor
+   * @param name Actor name for the child actor
+   */
+  def childActorOf(props: Props, name: String): ActorRef = {
+    testActor ! Spawn(props, Some(name), None)
+    expectMsgType[ActorRef]
+  }
+
+  /**
+   * Spawns an actor as a child of this test actor with an auto-generated name and stopping supervisor strategy, returning the child's ActorRef.
+   * @param props Props to create the child actor
+   */
+  def childActorOf(props: Props): ActorRef = {
+    testActor ! Spawn(props, None, None)
+    expectMsgType[ActorRef]
   }
 
   private def format(u: TimeUnit, d: Duration) = "%.3f %s".format(d.toUnit(u), u.toString.toLowerCase)
