@@ -43,7 +43,7 @@ class FlightRecorderBench {
 
   @Benchmark
   @OperationsPerInvocation(10000000)
-  def flight_recorder_wrtites(): Unit = {
+  def flight_recorder_writes(): Unit = {
     val latch = new CountDownLatch(writers)
     (1 to writers).foreach { _ =>
       val sink = recorder.createEventSink()

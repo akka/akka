@@ -4,12 +4,12 @@
 package akka.remote.artery
 
 import java.io.{ File, RandomAccessFile }
-import java.nio.{ ByteBuffer, ByteOrder }
 import java.nio.channels.FileChannel
 import java.nio.file.StandardOpenOption
-import java.util.concurrent.atomic.AtomicBoolean
+import java.nio.{ ByteBuffer, ByteOrder }
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
-import akka.util.ByteString
 import org.agrona.BitUtil
 import org.agrona.concurrent.MappedResizeableBuffer
 
@@ -233,7 +233,15 @@ private[remote] object FlightRecorder {
 /**
  * INTERNAL API
  */
-private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicBoolean {
+private[akka] sealed trait FlightRecorderStatus
+case object Running extends FlightRecorderStatus
+case object ShutDown extends FlightRecorderStatus
+final case class SnapshotInProgress(latch: CountDownLatch) extends FlightRecorderStatus
+
+/**
+ * INTERNAL API
+ */
+private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicReference[FlightRecorderStatus](Running) {
   import FlightRecorder._
 
   private[this] val globalSection = new MappedResizeableBuffer(fileChannel, 0, GlobalSectionSize)
@@ -276,7 +284,9 @@ private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicB
     // Coalesce concurrent snapshot requests into one, i.e. ignore the "late-comers".
     // In other words, this is a critical section in which participants either enter, or just
     // simply skip ("Hm, seems someone else already does it. ¯\_(ツ)_/¯ ")
-    if (!get && compareAndSet(false, true)) {
+    val snapshotLatch = new CountDownLatch(1)
+    val snapshotInProgress = SnapshotInProgress(snapshotLatch)
+    if (compareAndSet(Running, snapshotInProgress)) {
       val previousLog = currentLog
       val nextLog = (currentLog + 1) & SnapshotMask
       // Mark new log as Live
@@ -293,13 +303,18 @@ private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicB
       loFreqLogs.markSnapshot(previousLog)
       alertLogs.markSnapshot(previousLog)
       fileChannel.force(true)
-      set(false)
+      snapshotLatch.countDown()
+      compareAndSet(snapshotInProgress, Running)
       // At this point it is NOT GUARANTEED that all writers have finished writing to the currently snapshotted
       // buffer!
     }
   }
 
   def close(): Unit = {
+    getAndSet(ShutDown) match {
+      case SnapshotInProgress(latch) ⇒ latch.await(3, TimeUnit.SECONDS)
+      case _                         ⇒ // Nothing to unlock
+    }
     alertLogs.close()
     hiFreqLogs.close()
     loFreqLogs.close()
@@ -316,17 +331,22 @@ private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicB
     startHiFreqBatch()
 
     override def alert(code: Int, metadata: Array[Byte]): Unit = {
-      clock.updateWallClock()
-      prepareRichRecord(alertRecordBuffer, code, metadata)
-      alertLogs.write(currentLog, alertRecordBuffer)
-      flushHiFreqBatch()
-      snapshot()
+      if (FlightRecorder.this.get eq Running) {
+        clock.updateWallClock()
+        prepareRichRecord(alertRecordBuffer, code, metadata)
+        alertLogs.write(currentLog, alertRecordBuffer)
+        flushHiFreqBatch()
+        snapshot()
+      }
     }
 
     override def loFreq(code: Int, metadata: Array[Byte]): Unit = {
-      clock.updateHighSpeedClock()
-      prepareRichRecord(loFreqRecordBuffer, code, metadata)
-      loFreqLogs.write(currentLog, loFreqRecordBuffer)
+      val status = FlightRecorder.this.get
+      if (status eq Running) {
+        clock.updateHighSpeedClock()
+        prepareRichRecord(loFreqRecordBuffer, code, metadata)
+        loFreqLogs.write(currentLog, loFreqRecordBuffer)
+      }
     }
 
     private def prepareRichRecord(recordBuffer: ByteBuffer, code: Int, metadata: Array[Byte]): Unit = {
@@ -346,12 +366,15 @@ private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicB
 
     // TODO: Try to save as many bytes here as possible! We will see crazy throughput here
     override def hiFreq(code: Long, param: Long): Unit = {
-      hiFreqBatchedEntries += 1
-      hiFreqBatchBuffer.putLong(code)
-      hiFreqBatchBuffer.putLong(param)
+      val status = FlightRecorder.this.get
+      if (status eq Running) {
+        hiFreqBatchedEntries += 1
+        hiFreqBatchBuffer.putLong(code)
+        hiFreqBatchBuffer.putLong(param)
 
-      // If batch is full, time to flush
-      if (!hiFreqBatchBuffer.hasRemaining) flushHiFreqBatch()
+        // If batch is full, time to flush
+        if (!hiFreqBatchBuffer.hasRemaining) flushHiFreqBatch()
+      }
     }
 
     private def startHiFreqBatch(): Unit = {
@@ -370,12 +393,15 @@ private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicB
     }
 
     override def flushHiFreqBatch(): Unit = {
-      if (hiFreqBatchedEntries > 0) {
-        hiFreqBatchBuffer.putLong(HiFreqEntryCountFieldOffset, hiFreqBatchedEntries)
-        hiFreqBatchedEntries = 0
-        hiFreqBatchBuffer.position(0)
-        hiFreqLogs.write(currentLog, hiFreqBatchBuffer)
-        startHiFreqBatch()
+      val status = FlightRecorder.this.get
+      if (status eq Running) {
+        if (hiFreqBatchedEntries > 0) {
+          hiFreqBatchBuffer.putLong(HiFreqEntryCountFieldOffset, hiFreqBatchedEntries)
+          hiFreqBatchedEntries = 0
+          hiFreqBatchBuffer.position(0)
+          hiFreqLogs.write(currentLog, hiFreqBatchBuffer)
+          startHiFreqBatch()
+        }
       }
     }
 
