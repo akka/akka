@@ -11,6 +11,14 @@ as the library does it transparently for you.
 
 .. _Actor based TCP handling: http://doc.akka.io/docs/akka/current/java/io-tcp.html
 
+.. note::
+  If you are not familiar with Akka Streams basic concepts, like ``Source``, ``Sink`` and ``Flow``,
+  please refer to the `Streams section`_ of the document. Also higher level APIs like ``bind`` are
+  used in Akka HTTP too. So you may get some hints from the `Akka HTTP introduction section`_.
+
+.. _Streams section: http://doc.akka.io/docs/akka/current/scala/stream/index.html
+.. _Akka HTTP introduction section: http://doc.akka.io/docs/akka/current/scala/http/introduction.html
+
 Streaming TCP
 =============
 
