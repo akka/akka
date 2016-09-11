@@ -488,19 +488,22 @@ object ByteString {
 
     override def dropRight(n: Int): ByteString =
       if (n <= 0) this
-      else {
-        val last = bytestrings.last
-        if (n < last.length) new ByteStrings(bytestrings.init :+ last.dropRight1(n), length - n)
-        else {
-          val remaining = bytestrings.init
-          if (remaining.isEmpty) ByteString.empty
-          else {
-            val s = new ByteStrings(remaining, length - last.length)
-            val remainingToBeDropped = n - last.length
-            s.dropRight(remainingToBeDropped)
-          }
-        }
+      else if (n >= length) ByteString.empty
+      else dropRight0(n)
+
+    private[akka] def dropRight0(n: Int): ByteString = {
+      @tailrec def go(last: Int, restToDropRight: Int): (Int, Int) = {
+        val bs = bytestrings(last)
+        if (bs.length > restToDropRight) (last, restToDropRight)
+        else go(last - 1, restToDropRight - bs.length)
       }
+
+      val (last, restToDropRight) = go(bytestrings.length - 1, n)
+
+      if (last == 0) bytestrings(0).dropRight(restToDropRight)
+      else if (restToDropRight == 0) new ByteStrings(bytestrings.take(last + 1), length - n)
+      else new ByteStrings(bytestrings.take(last) :+ bytestrings(last).dropRight1(restToDropRight), length - n)
+    }
 
     override def slice(from: Int, until: Int): ByteString =
       if (from <= 0 && until >= length) this

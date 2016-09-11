@@ -437,14 +437,20 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       ByteStrings(ByteString1.fromString("ab"), ByteString1.fromString("cd")).slice(4, 0) should ===(ByteString(""))
     }
     "dropRight" in {
+      ByteString.empty.dropRight(-1) should ===(ByteString(""))
+      ByteString.empty.dropRight(0) should ===(ByteString(""))
+      ByteString.empty.dropRight(1) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(0) should ===(ByteString("a"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(-1) should ===(ByteString("a"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(Int.MinValue) should ===(ByteString("a"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(1) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(Int.MaxValue) should ===(ByteString(""))
+      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).dropRight(-1) should ===(ByteString("abc"))
+      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).dropRight(0) should ===(ByteString("abc"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).dropRight(1) should ===(ByteString("ab"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).dropRight(2) should ===(ByteString("a"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).dropRight(3) should ===(ByteString(""))
+      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).dropRight(4) should ===(ByteString(""))
     }
     "take" in {
       ByteString.empty.take(-1) should ===(ByteString(""))
