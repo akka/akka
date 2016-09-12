@@ -6,9 +6,9 @@ package akka.remote.artery
 import java.io.File
 import java.net.InetSocketAddress
 import java.nio.channels.{ DatagramChannel, FileChannel }
-import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
+import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -18,7 +18,9 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
+
 import akka.Done
 import akka.NotUsed
 import akka.actor._
@@ -43,18 +45,19 @@ import akka.remote.artery.compress._
 import akka.remote.artery.compress.CompressionProtocol.CompressionMessage
 import akka.remote.transport.AkkaPduCodec
 import akka.remote.transport.AkkaPduProtobufCodec
+import akka.remote.transport.ThrottlerTransportAdapter.Blackhole
+import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
+import akka.remote.transport.ThrottlerTransportAdapter.Unthrottled
 import akka.stream.AbruptTerminationException
 import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.KillSwitches
 import akka.stream.Materializer
 import akka.stream.SharedKillSwitch
+import akka.stream.scaladsl.BroadcastHub
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.util.Helpers.ConfigOps
-import akka.util.Helpers.Requiring
 import akka.util.OptionVal
 import akka.util.WildcardIndex
 import io.aeron.Aeron
@@ -65,13 +68,10 @@ import io.aeron.UnavailableImageHandler
 import io.aeron.driver.MediaDriver
 import io.aeron.driver.ThreadingMode
 import io.aeron.exceptions.ConductorServiceTimeoutException
+import io.aeron.exceptions.DriverTimeoutException
 import org.agrona.ErrorHandler
 import org.agrona.IoUtil
 import org.agrona.concurrent.BackoffIdleStrategy
-import akka.stream.scaladsl.BroadcastHub
-import scala.util.control.NoStackTrace
-import io.aeron.exceptions.DriverTimeoutException
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * INTERNAL API
@@ -281,9 +281,9 @@ private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDurati
  */
 private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
   extends RemoteTransport(_system, _provider) with InboundContext {
-  import FlightRecorderEvents._
-  import ArteryTransport.ShutdownSignal
   import ArteryTransport.AeronTerminated
+  import ArteryTransport.ShutdownSignal
+  import FlightRecorderEvents._
 
   // these vars are initialized once in the start method
   @volatile private[this] var _localAddress: UniqueAddress = _
@@ -312,7 +312,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private[this] val streamCompletions = new AtomicReference(Map.empty[String, Future[Done]])
   @volatile private[this] var _shutdown = false
 
-  private val testStages: CopyOnWriteArrayList[TestManagementApi] = new CopyOnWriteArrayList
+  private val testState = new SharedTestState
 
   private val inboundLanes = settings.Advanced.InboundLanes
 
@@ -579,14 +579,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def runInboundControlStream(compression: InboundCompressions): Unit = {
-    val (testMgmt, ctrl, completed) =
+    val (ctrl, completed) =
       aeronSource(controlStreamId, envelopeBufferPool)
         .via(inboundFlow(compression))
         .toMat(inboundControlSink)(Keep.right)
         .run()(materializer)
-
-    if (settings.Advanced.TestMode)
-      testStages.add(testMgmt)
 
     controlSubject = ctrl
 
@@ -648,15 +645,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def runInboundOrdinaryMessagesStream(compression: InboundCompressions): Unit = {
     val completed =
       if (inboundLanes == 1) {
-        val (testMgmt, completed) = aeronSource(ordinaryStreamId, envelopeBufferPool)
+        aeronSource(ordinaryStreamId, envelopeBufferPool)
           .via(inboundFlow(compression))
           .toMat(inboundSink(envelopeBufferPool))(Keep.right)
           .run()(materializer)
-
-        if (settings.Advanced.TestMode)
-          testStages.add(testMgmt)
-
-        completed
 
       } else {
         val hubKillSwitch = KillSwitches.shared("hubKillSwitch")
@@ -677,7 +669,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           }
         }
 
-        val values: Vector[(TestManagementApi, Future[Done])] =
+        val completedValues: Vector[Future[Done]] =
           (0 until inboundLanes).map { i ⇒
             broadcastHub.runWith(
               // TODO replace filter with "PartitionHub" when that is implemented
@@ -687,11 +679,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
               }
                 .toMat(lane)(Keep.right))(materializer)
           }(collection.breakOut)
-
-        val (testMgmtValues, completedValues) = values.unzip
-
-        if (settings.Advanced.TestMode)
-          testMgmtValues.foreach(testStages.add)
 
         import system.dispatcher
         val completed = Future.sequence(completedValues).map(_ ⇒ Done)
@@ -711,13 +698,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def runInboundLargeMessagesStream(): Unit = {
     val disableCompression = NoInboundCompressions // no compression on large message stream for now
 
-    val (testMgmt, completed) = aeronSource(largeStreamId, largeEnvelopeBufferPool)
+    val completed = aeronSource(largeStreamId, largeEnvelopeBufferPool)
       .via(inboundLargeFlow(disableCompression))
       .toMat(inboundSink(largeEnvelopeBufferPool))(Keep.right)
       .run()(materializer)
-
-    if (settings.Advanced.TestMode)
-      testStages.add(testMgmt)
 
     attachStreamRestart("Inbound large message stream", completed, () ⇒ runInboundLargeMessagesStream())
   }
@@ -811,14 +795,13 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private[remote] def isShutdown: Boolean = _shutdown
 
   override def managementCommand(cmd: Any): Future[Boolean] = {
-    if (testStages.isEmpty)
-      Future.successful(false)
-    else {
-      import system.dispatcher
-      import scala.collection.JavaConverters._
-      val allTestStages = testStages.asScala.toVector ++ associationRegistry.allAssociations.flatMap(_.testStages)
-      Future.sequence(allTestStages.map(_.send(cmd))).map(_ ⇒ true)
+    cmd match {
+      case SetThrottle(address, direction, Blackhole) ⇒
+        testState.blackhole(localAddress.address, address, direction)
+      case SetThrottle(address, direction, Unthrottled) ⇒
+        testState.passThrough(localAddress.address, address, direction)
     }
+    Future.successful(true)
   }
 
   // InboundContext
@@ -898,7 +881,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .viaMat(createEncoder(bufferPool))(Keep.right)
   }
 
-  def outboundControl(outboundContext: OutboundContext): Sink[OutboundEnvelope, (TestManagementApi, OutboundControlIngress, Future[Done])] = {
+  def outboundControl(outboundContext: OutboundContext): Sink[OutboundEnvelope, (OutboundControlIngress, Future[Done])] = {
 
     Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
       .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, settings.Advanced.HandshakeTimeout,
@@ -906,14 +889,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .via(new SystemMessageDelivery(outboundContext, system.deadLetters, settings.Advanced.SystemMessageResendInterval,
         settings.Advanced.SysMsgBufferSize))
       // note that System messages must not be dropped before the SystemMessageDelivery stage
-      .viaMat(outboundTestFlow(outboundContext))(Keep.right)
-      .viaMat(new OutboundControlJunction(outboundContext, outboundEnvelopePool))(Keep.both)
+      .via(outboundTestFlow(outboundContext))
+      .viaMat(new OutboundControlJunction(outboundContext, outboundEnvelopePool))(Keep.right)
       .via(createEncoder(envelopeBufferPool))
       .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), controlStreamId, aeron, taskRunner,
         envelopeBufferPool, Duration.Inf, createFlightRecorderEventSink()))(Keep.both)
-      .mapMaterializedValue {
-        case ((a, b), c) ⇒ (a, b, c)
-      }
 
     // TODO we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
   }
@@ -944,13 +924,13 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   def createDeserializer(bufferPool: EnvelopeBufferPool): Flow[InboundEnvelope, InboundEnvelope, NotUsed] =
     Flow.fromGraph(new Deserializer(this, system, bufferPool))
 
-  def inboundSink(bufferPool: EnvelopeBufferPool): Sink[InboundEnvelope, (TestManagementApi, Future[Done])] =
+  def inboundSink(bufferPool: EnvelopeBufferPool): Sink[InboundEnvelope, Future[Done]] =
     Flow[InboundEnvelope]
       .via(createDeserializer(bufferPool))
-      .viaMat(new InboundTestStage(this, settings.Advanced.TestMode))(Keep.right)
+      .via(new InboundTestStage(this, testState, settings.Advanced.TestMode))
       .via(new InboundHandshake(this, inControlStream = false))
       .via(new InboundQuarantineCheck(this))
-      .toMat(messageDispatcherSink)(Keep.both)
+      .toMat(messageDispatcherSink)(Keep.right)
 
   def inboundFlow(compression: InboundCompressions): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
     Flow[EnvelopeBuffer]
@@ -964,18 +944,15 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .via(createDecoder(compression, largeEnvelopeBufferPool))
   }
 
-  def inboundControlSink: Sink[InboundEnvelope, (TestManagementApi, ControlMessageSubject, Future[Done])] = {
+  def inboundControlSink: Sink[InboundEnvelope, (ControlMessageSubject, Future[Done])] = {
     Flow[InboundEnvelope]
       .via(createDeserializer(envelopeBufferPool))
-      .viaMat(new InboundTestStage(this, settings.Advanced.TestMode))(Keep.right)
+      .via(new InboundTestStage(this, testState, settings.Advanced.TestMode))
       .via(new InboundHandshake(this, inControlStream = true))
       .via(new InboundQuarantineCheck(this))
-      .viaMat(new InboundControlJunction)(Keep.both)
+      .viaMat(new InboundControlJunction)(Keep.right)
       .via(new SystemMessageAcker(this))
       .toMat(messageDispatcherSink)(Keep.both)
-      .mapMaterializedValue {
-        case ((a, b), c) ⇒ (a, b, c)
-      }
   }
 
   private def initializeFlightRecorder(): Option[(FileChannel, File, FlightRecorder)] = {
@@ -990,8 +967,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       None
   }
 
-  def outboundTestFlow(outboundContext: OutboundContext): Flow[OutboundEnvelope, OutboundEnvelope, TestManagementApi] =
-    Flow.fromGraph(new OutboundTestStage(outboundContext, settings.Advanced.TestMode))
+  def outboundTestFlow(outboundContext: OutboundContext): Flow[OutboundEnvelope, OutboundEnvelope, NotUsed] =
+    Flow.fromGraph(new OutboundTestStage(outboundContext, testState, settings.Advanced.TestMode))
 
   /** INTERNAL API: for testing only. */
   private[remote] def triggerCompressionAdvertisements(actorRef: Boolean, manifest: Boolean) = {

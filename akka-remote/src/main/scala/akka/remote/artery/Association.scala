@@ -4,9 +4,9 @@
 package akka.remote.artery
 
 import java.util.Queue
-import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
@@ -21,34 +21,29 @@ import akka.actor.ActorSelectionMessage
 import akka.actor.Address
 import akka.dispatch.sysmsg.SystemMessage
 import akka.event.Logging
+import akka.pattern.after
 import akka.remote._
 import akka.remote.DaemonMsgCreate
 import akka.remote.QuarantinedEvent
 import akka.remote.artery.AeronSink.GaveUpMessageException
+import akka.remote.artery.ArteryTransport.AeronTerminated
 import akka.remote.artery.Encoder.ChangeOutboundCompression
 import akka.remote.artery.Encoder.ChangeOutboundCompressionFailed
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.remote.artery.OutboundHandshake.HandshakeTimeoutException
-import akka.remote.artery.SendQueue.ProducerApi
 import akka.remote.artery.SystemMessageDelivery.ClearSystemMessageDelivery
 import akka.remote.artery.compress.CompressionProtocol._
 import akka.remote.artery.compress.CompressionTable
 import akka.stream.AbruptTerminationException
+import akka.stream.KillSwitches
 import akka.stream.Materializer
 import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.MergeHub
 import akka.stream.scaladsl.Source
 import akka.util.{ Unsafe, WildcardIndex }
 import akka.util.OptionVal
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
-import akka.remote.artery.compress.CompressionProtocol._
-import akka.stream.scaladsl.MergeHub
-import akka.actor.DeadLetter
-import java.util.concurrent.atomic.AtomicBoolean
-import akka.stream.KillSwitches
-import scala.util.Failure
-import scala.util.Success
-import akka.remote.artery.ArteryTransport.AeronTerminated
 
 /**
  * INTERNAL API
@@ -168,17 +163,9 @@ private[remote] class Association(
   }
 
   private def timeoutAfter[T](f: Future[T], timeout: FiniteDuration, e: ⇒ Throwable): Future[T] = {
-    import akka.pattern.after
     import transport.system.dispatcher
     val f2 = after(timeout, transport.system.scheduler)(Future.failed(e))
     Future.firstCompletedOf(List(f, f2))
-  }
-
-  private val _testStages: CopyOnWriteArrayList[TestManagementApi] = new CopyOnWriteArrayList
-
-  def testStages(): List[TestManagementApi] = {
-    import scala.collection.JavaConverters._
-    _testStages.asScala.toList
   }
 
   private def deadletters = transport.system.deadLetters
@@ -265,8 +252,10 @@ private[remote] class Association(
   }
 
   // OutboundContext
-  override def sendControl(message: ControlMessage): Unit =
-    outboundControlIngress.sendControlMessage(message)
+  override def sendControl(message: ControlMessage): Unit = {
+    if (!transport.isShutdown)
+      outboundControlIngress.sendControlMessage(message)
+  }
 
   def send(message: Any, sender: OptionVal[ActorRef], recipient: OptionVal[RemoteActorRef]): Unit = {
 
@@ -434,13 +423,10 @@ private[remote] class Association(
     queues(ControlQueueIndex) = wrapper // use new underlying queue immediately for restarts
     queuesVisibility = true // volatile write for visibility of the queues array
 
-    val (queueValue, (testMgmt, control, completed)) =
+    val (queueValue, (control, completed)) =
       Source.fromGraph(new SendQueue[OutboundEnvelope])
         .toMat(transport.outboundControl(this))(Keep.both)
         .run()(materializer)
-
-    if (advancedSettings.TestMode)
-      _testStages.add(testMgmt)
 
     queueValue.inject(wrapper.queue)
     // replace with the materialized value, still same underlying queue
@@ -475,9 +461,6 @@ private[remote] class Association(
           .toMat(transport.outbound(this))(Keep.both)
           .run()(materializer)
 
-      if (advancedSettings.TestMode)
-        _testStages.add(testMgmt)
-
       queueValue.inject(wrapper.queue)
       // replace with the materialized value, still same underlying queue
       queues(queueIndex) = queueValue
@@ -499,30 +482,25 @@ private[remote] class Association(
 
       val lane = Source.fromGraph(new SendQueue[OutboundEnvelope])
         .via(laneKillSwitch.flow)
-        .viaMat(transport.outboundTestFlow(this))(Keep.both)
+        .via(transport.outboundTestFlow(this))
         .viaMat(transport.outboundLane(this))(Keep.both)
         .watchTermination()(Keep.both)
         // recover to avoid error logging by MergeHub
         .recoverWithRetries(-1, { case _: Throwable ⇒ Source.empty })
         .mapMaterializedValue {
-          case (((q, m), c), w) ⇒ ((q, m), (c, w))
+          case ((q, c), w) ⇒ (q, c, w)
         }
 
       val (mergeHub, aeronSinkCompleted) = MergeHub.source[EnvelopeBuffer]
         .via(laneKillSwitch.flow)
         .toMat(transport.aeronSink(this))(Keep.both).run()(materializer)
 
-      val values: Vector[((SendQueue.QueueValue[OutboundEnvelope], TestManagementApi), (Encoder.ChangeOutboundCompression, Future[Done]))] =
+      val values: Vector[(SendQueue.QueueValue[OutboundEnvelope], Encoder.ChangeOutboundCompression, Future[Done])] =
         (0 until outboundLanes).map { _ ⇒
           lane.to(mergeHub).run()(materializer)
         }(collection.breakOut)
 
-      val (a, b) = values.unzip
-      val (queueValues, testMgmtValues) = a.unzip
-      val (changeCompressionValues, laneCompletedValues) = b.unzip
-
-      if (advancedSettings.TestMode)
-        testMgmtValues.foreach(_testStages.add)
+      val (queueValues, changeCompressionValues, laneCompletedValues) = values.unzip3
 
       import transport.system.dispatcher
       val completed = Future.sequence(laneCompletedValues).flatMap(_ ⇒ aeronSinkCompleted)
@@ -552,13 +530,10 @@ private[remote] class Association(
     queues(LargeQueueIndex) = wrapper // use new underlying queue immediately for restarts
     queuesVisibility = true // volatile write for visibility of the queues array
 
-    val ((queueValue, testMgmt), completed) = Source.fromGraph(new SendQueue[OutboundEnvelope])
-      .viaMat(transport.outboundTestFlow(this))(Keep.both)
+    val (queueValue, completed) = Source.fromGraph(new SendQueue[OutboundEnvelope])
+      .via(transport.outboundTestFlow(this))
       .toMat(transport.outboundLarge(this))(Keep.both)
       .run()(materializer)
-
-    if (advancedSettings.TestMode)
-      _testStages.add(testMgmt)
 
     queueValue.inject(wrapper.queue)
     // replace with the materialized value, still same underlying queue
