@@ -1,11 +1,9 @@
 import akka._
 
-AkkaBuild.defaultSettings
-AkkaBuild.experimentalSettings
-Formatting.formatSettings
-OSGi.http
-Dependencies.http
+//OSGi.http
 
-disablePlugins(MimaPlugin) // still experimental
-enablePlugins(spray.boilerplate.BoilerplatePlugin)
+Dependencies.http
 scalacOptions in Compile += "-language:_"
+
+//disablePlugins(MimaPlugin) // still experimental
+enablePlugins(spray.boilerplate.BoilerplatePlugin)

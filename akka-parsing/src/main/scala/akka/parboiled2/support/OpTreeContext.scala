@@ -133,7 +133,7 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
     opTreePF.applyOrElse(tree, (t: Tree) ⇒ c.abort(t.pos, "Invalid rule definition: " + t))
 
   def Sequence(lhs: OpTree, rhs: OpTree): Sequence =
-    lhs -> rhs match {
+    lhs → rhs match {
       case (Sequence(lops), Sequence(rops)) ⇒ Sequence(lops ++ rops)
       case (Sequence(lops), _)              ⇒ Sequence(lops :+ rhs)
       case (_, Sequence(ops))               ⇒ Sequence(lhs +: ops)
@@ -160,7 +160,7 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
   }
 
   def FirstOf(lhs: OpTree, rhs: OpTree): FirstOf =
-    lhs -> rhs match {
+    lhs → rhs match {
       case (FirstOf(lops), FirstOf(rops)) ⇒ FirstOf(lops ++ rops)
       case (FirstOf(lops), _)             ⇒ FirstOf(lops :+ rhs)
       case (_, FirstOf(ops))              ⇒ FirstOf(lhs +: ops)
@@ -599,8 +599,8 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
   }
 
   def CharRange(lowerTree: Tree, upperTree: Tree): CharacterRange = {
-    val (lower, upper) = lowerTree -> upperTree match {
-      case (Literal(Constant(l: String)), Literal(Constant(u: String))) ⇒ l -> u
+    val (lower, upper) = lowerTree → upperTree match {
+      case (Literal(Constant(l: String)), Literal(Constant(u: String))) ⇒ l → u
       case _ ⇒ c.abort(lowerTree.pos, "Character ranges must be specified with string literals")
     }
     if (lower.length != 1) c.abort(lowerTree.pos, "lower bound must be a single char string")
