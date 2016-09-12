@@ -454,6 +454,39 @@ mechanism when ``persist()`` is used. Notice the early stop behaviour that occur
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#safe-shutdown-example-bad
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#safe-shutdown-example-good
 
+
+.. _replay-filter-java:
+
+Replay Filter
+-------------
+There could be cases where event streams are corrupted and multiple writers (i.e. multiple persistent actor instances)
+journaled different messages with the same sequence number.
+In such a case, you can configure how you filter replayed messages from multiple writers, upon recovery.
+
+In your configuration, under the ``akka.persistence.journal.xxx.replay-filter`` section (where ``xxx`` is your journal plugin id),
+you can select the replay filter ``mode`` from one of the following values:
+
+* repair-by-discard-old
+* fail
+* warn
+* off
+
+For example, if you configure the replay filter for leveldb plugin, it looks like this::
+
+      # The replay filter can detect a corrupt event stream by inspecting
+      # sequence numbers and writerUuid when replaying events.
+      akka.persistence.journal.leveldb.replay-filter {
+        # What the filter should do when detecting invalid events.
+        # Supported values:
+        # `repair-by-discard-old` : discard events from old writers,
+        #                           warning is logged
+        # `fail` : fail the replay, error is logged
+        # `warn` : log warning but emit events untouched
+        # `off` : disable this feature completely
+        mode = repair-by-discard-old
+      }
+
+
 .. _persistent-views-java:
 
 Persistent Views
