@@ -69,7 +69,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerIn setManifest "manifest1"
 
       envelope.writeHeader(headerIn)
-      envelope.byteBuffer.position() should ===(EnvelopeBuffer.LiteralsSectionOffset) // Fully compressed header
+      envelope.byteBuffer.position() should ===(EnvelopeBuffer.MetadataContainerAndLiteralSectionOffset) // Fully compressed header
 
       envelope.byteBuffer.flip()
       envelope.parseHeader(headerOut)
@@ -98,7 +98,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerIn setManifest "uncompressable3333"
 
       val expectedHeaderLength =
-        EnvelopeBuffer.LiteralsSectionOffset + // Constant header part
+        EnvelopeBuffer.MetadataContainerAndLiteralSectionOffset + // Constant header part
           2 + lengthOfSerializedActorRefPath(senderRef) + // Length field + literal
           2 + lengthOfSerializedActorRefPath(recipientRef) + // Length field + literal
           2 + "uncompressable3333".length // Length field + literal
@@ -131,7 +131,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
 
       envelope.writeHeader(headerIn)
       envelope.byteBuffer.position() should ===(
-        EnvelopeBuffer.LiteralsSectionOffset +
+        EnvelopeBuffer.MetadataContainerAndLiteralSectionOffset +
           2 + lengthOfSerializedActorRefPath(recipientRef))
 
       envelope.byteBuffer.flip()
@@ -157,7 +157,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
 
       envelope.writeHeader(headerIn)
       envelope.byteBuffer.position() should ===(
-        EnvelopeBuffer.LiteralsSectionOffset +
+        EnvelopeBuffer.MetadataContainerAndLiteralSectionOffset +
           2 + lengthOfSerializedActorRefPath(senderRef) +
           2 + "longlonglongliteralmanifest".length)
 

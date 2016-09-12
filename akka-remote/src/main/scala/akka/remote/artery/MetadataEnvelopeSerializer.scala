@@ -16,23 +16,34 @@ import akka.util.{ ByteString, ByteStringBuilder }
  */
 private[akka] object MetadataEnvelopeSerializer {
 
+  private[akka] val EmptyRendered = {
+    implicit val _ByteOrder = ByteOrder.LITTLE_ENDIAN
+
+    val bsb = new ByteStringBuilder
+    bsb.putInt(0) // 0 length
+    bsb.result
+  }
+
   // key/length of a metadata element are encoded within a single integer:
-  final val EntryKeyMask = Integer.parseInt("1" * 4, 2) << 28
-  def maskEntryKey(k: Byte): Int = (k.toInt << 28) & EntryKeyMask
-  def unmaskEntryKey(kv: Int): Byte = ((kv & EntryKeyMask) >> 28).toByte
+  // supports keys in the range of <0-31>
+  final val EntryKeyMask = Integer.parseInt("1111 1000 0000 0000 0000 0000 0000 000".replace(" ", ""), 2)
+  def maskEntryKey(k: Byte): Int = (k.toInt << 26) & EntryKeyMask
+  def unmaskEntryKey(kv: Int): Byte = ((kv & EntryKeyMask) >> 26).toByte
 
   final val EntryLengthMask = ~EntryKeyMask
 
   def maskEntryLength(k: Int): Int = k & EntryLengthMask
   def unmaskEntryLength(kv: Int): Int = kv & EntryLengthMask
 
-  def muxEntryKeyLength(k: Byte, l: Int): Int =
+  def muxEntryKeyLength(k: Byte, l: Int): Int = {
     maskEntryKey(k) | maskEntryLength(l)
+  }
 
   def serialize(metadatas: MetadataMap[ByteString], headerBuilder: HeaderBuilder): Unit = {
     if (metadatas.isEmpty) headerBuilder.clearMetadataContainer()
     else {
       val container = new MetadataMapRendering(metadatas)
+      println("container = " + container)
       headerBuilder.setMetadataContainer(container.render())
     }
   }
@@ -55,7 +66,7 @@ private[akka] object MetadataEnvelopeSerializer {
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |   Key   |               Metadata entry length                   |
+ *  |   Key     |             Metadata entry length                   |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *  |                   ... metadata entry ...                        |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -66,14 +77,18 @@ private[akka] final class MetadataMapRendering(val metadataMap: MetadataMap[Byte
   import MetadataEnvelopeSerializer._
 
   def render(): ByteString =
-    if (metadataMap.isEmpty) ByteString.empty
-    else {
+    if (metadataMap.isEmpty) {
+      // usually no-one will want to render an empty metadata section - it should not be there at all
+      EmptyRendered
+    } else {
       implicit val _ByteOrder = ByteOrder.LITTLE_ENDIAN
 
-      val size = metadataMap.usedSlots * 4 /* bytes (Int) */ + metadataMap.foldLeftValues(0)(_ + _.length)
-      val b = new ByteStringBuilder
-      b.sizeHint(size)
+      // TODO optimise this, we could just count along the way and then prefix with the length
+      val totalSize = 4 /* length int field */ + metadataMap.usedSlots * 4 /* metadata length */ + metadataMap.foldLeftValues(0)(_ + _.length)
+      val b = new ByteStringBuilder // TODO could we reuse one?
+      b.sizeHint(totalSize)
 
+      b.putInt(totalSize - 4 /* don't count itself, the length prefix */ )
       // TODO: move through and then prepend length
       metadataMap.foreach { (key: Byte, value: ByteString) ⇒
         // TODO try to remove allocation? Iterator otherwise, but that's also allocation
@@ -89,23 +104,27 @@ private[akka] final class MetadataMapRendering(val metadataMap: MetadataMap[Byte
 }
 
 /** INTERNAL API */
-private[akka] object MetadataMapRendering {
+private[akka] object MetadataMapParsing {
   import MetadataEnvelopeSerializer._
 
   /** Allocates an MetadataMap */
-  def parse(headerBuilder: HeaderBuilder): MetadataMapRendering = {
-    parseRaw(headerBuilder.metadataContainer)
+  def parse(envelope: InboundEnvelope): MetadataMapRendering = {
+    val buf = envelope.envelopeBuffer.byteBuffer
+    buf.position(EnvelopeBuffer.MetadataContainerAndLiteralSectionOffset)
+    parseRaw(buf)
   }
 
-  /** Allocates an MetadataMap */
-  def parseRaw(serializedMetadataContainer: ByteString): MetadataMapRendering = {
-    val buf = serializedMetadataContainer.asByteBuffer
+  /**
+   * INTERNAL API, only for testing
+   * The buffer MUST be already at the right position where the Metadata container starts.
+   */
+  private[akka] def parseRaw(buf: ByteBuffer) = {
     buf.order(ByteOrder.LITTLE_ENDIAN)
-    val totalLength = serializedMetadataContainer.length
-
+    val metadataContainerLength = buf.getInt()
+    val endOfMetadataPos = metadataContainerLength + buf.position()
     val map = MetadataMap[ByteString]()
 
-    while (buf.position() < totalLength) {
+    while (buf.position() < endOfMetadataPos) {
       val kl = buf.getInt()
       val k = unmaskEntryKey(kl) // k
       val l = unmaskEntryLength(kl) // l
@@ -120,11 +139,23 @@ private[akka] object MetadataMapRendering {
   }
 
   /** Implemented in a way to avoid allocations of any envelopes or arrays */
-  def applyAllRemoteMessageReceived(instruments: Vector[RemoteInstrument], decoded: InboundEnvelope, headerBuilder: HeaderBuilder): Unit = {
-    val buf = headerBuilder.metadataContainer.asByteBuffer
+  def applyAllRemoteMessageReceived(instruments: Vector[RemoteInstrument], envelope: InboundEnvelope): Unit = {
+    val buf = envelope.envelopeBuffer.byteBuffer
+    buf.position(EnvelopeBuffer.MetadataContainerAndLiteralSectionOffset)
+    applyAllRemoteMessageReceivedRaw(instruments, envelope, buf)
+  }
+
+  /**
+   * INTERNAL API, only for testing
+   * The buffer MUST be already at the right position where the Metadata container starts.
+   */
+  private[akka] def applyAllRemoteMessageReceivedRaw(instruments: Vector[RemoteInstrument], envelope: InboundEnvelope, buf: ByteBuffer): Unit = {
     buf.order(ByteOrder.LITTLE_ENDIAN)
 
-    while (buf.hasRemaining) {
+    val metadataContainerLength = buf.getInt()
+    val endOfMetadataPos = metadataContainerLength + buf.position()
+
+    while (buf.position() < endOfMetadataPos) {
       val keyAndLength = buf.getInt()
       val key = unmaskEntryKey(keyAndLength)
       val length = unmaskEntryLength(keyAndLength)
@@ -133,8 +164,11 @@ private[akka] object MetadataMapRendering {
       buf.get(arr)
       val data = ByteString(arr) // bytes
 
-      instruments.find(_.identifier == key).getOrElse(throw new Exception(s"No RemoteInstrument for id $key available!"))
-        .remoteMessageReceived(decoded.recipient, decoded.message, decoded.sender, data)
+      instruments.find(_.identifier == key) match {
+        case Some(instr) ⇒ instr.remoteMessageReceived(envelope.recipient.orNull, envelope.message, envelope.sender.orNull, data)
+        case _           ⇒ throw new Exception(s"No RemoteInstrument for id $key available!")
+
+      }
     }
   }
 }

@@ -23,7 +23,7 @@ private[remote] object InboundEnvelope {
     originUid:        Long,
     association:      OptionVal[OutboundContext]): InboundEnvelope = {
     val env = new ReusableInboundEnvelope
-    env.init(recipient, recipientAddress, sender, originUid, -1, "", null, association)
+    env.init(recipient, recipientAddress, sender, originUid, -1, "", 0, null, association)
       .withMessage(message)
   }
 
@@ -43,6 +43,9 @@ private[remote] trait InboundEnvelope {
   def classManifest: String
   def message: AnyRef
   def envelopeBuffer: EnvelopeBuffer
+
+  def flags: Byte
+  def flag(byteFlag: ByteFlag): Boolean
 
   def withMessage(message: AnyRef): InboundEnvelope
 
@@ -71,6 +74,7 @@ private[akka] final class ReusableInboundEnvelope extends InboundEnvelope {
   private var _association: OptionVal[OutboundContext] = OptionVal.None
   private var _serializer: Int = -1
   private var _classManifest: String = null
+  private var _flags: Byte = 0
   private var _message: AnyRef = null
   private var _envelopeBuffer: EnvelopeBuffer = null
 
@@ -83,6 +87,9 @@ private[akka] final class ReusableInboundEnvelope extends InboundEnvelope {
   override def classManifest: String = _classManifest
   override def message: AnyRef = _message
   override def envelopeBuffer: EnvelopeBuffer = _envelopeBuffer
+
+  override def flags: Byte = _flags
+  override def flag(byteFlag: ByteFlag): Boolean = byteFlag.isEnabled(_flags)
 
   override def withMessage(message: AnyRef): InboundEnvelope = {
     _message = message
@@ -115,6 +122,7 @@ private[akka] final class ReusableInboundEnvelope extends InboundEnvelope {
     originUid:        Long,
     serializer:       Int,
     classManifest:    String,
+    flags:            Byte,
     envelopeBuffer:   EnvelopeBuffer,
     association:      OptionVal[OutboundContext]): InboundEnvelope = {
     _recipient = recipient
@@ -123,6 +131,7 @@ private[akka] final class ReusableInboundEnvelope extends InboundEnvelope {
     _originUid = originUid
     _serializer = serializer
     _classManifest = classManifest
+    _flags = flags
     _envelopeBuffer = envelopeBuffer
     _association = association
     this

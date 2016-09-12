@@ -268,7 +268,6 @@ private[remote] class Association(
   override def sendControl(message: ControlMessage): Unit =
     outboundControlIngress.sendControlMessage(message)
 
-  // FIXME attach metadata here
   def send(message: Any, sender: OptionVal[ActorRef], recipient: OptionVal[RemoteActorRef]): Unit = {
 
     def createOutboundEnvelope(): OutboundEnvelope =

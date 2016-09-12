@@ -60,7 +60,6 @@ private[remote] class Encoder(
    * INTERNAL API
    * Creates [[RemoteInstrument]] instances for use in this Encoder.
    */
-  // TODO perhaps as extension, to always have 1 instance of an instrument
   def createInstruments(system: ExtendedActorSystem): Vector[RemoteInstrument] = RemoteInstruments.create(system)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, ChangeOutboundCompression) = {
@@ -74,8 +73,8 @@ private[remote] class Encoder(
       private val serializationInfo = Serialization.Information(localAddress, system)
 
       private val instruments: Vector[RemoteInstrument] = createInstruments(system)
-      // holder for serialized metadata, rendered into here from OutboundEnvelope, and from here into HeaderBuilder as raw ByteString:
-      private val serializedMetadatas: MetadataMap[ByteString] = MetadataMap()
+      // by being backed by an Array, this allows us to not allocate any wrapper type for the metadata (since we need its ID)
+      private val serializedMetadatas: MetadataMap[ByteString] = MetadataMap() // TODO: possibly can be optimised a more for the specific access pattern (during write) 
 
       private val changeActorRefCompressionCb = getAsyncCallback[(CompressionTable[ActorRef], Promise[Done])] {
         case (table, done) ⇒
@@ -98,7 +97,7 @@ private[remote] class Encoder(
       override protected def logSource = classOf[Encoder]
 
       override def onPush(): Unit = {
-        val outboundEnvelope = grab(in) // may contain `context` metadata attachments
+        val outboundEnvelope = grab(in)
         val envelope = bufferPool.acquire()
 
         // internally compression is applied by the builder:
@@ -159,28 +158,26 @@ private[remote] class Encoder(
        * into the instrument, otherwise it receives an OptionVal.None as context, and may still decide to attach rendered
        * metadata by returning it.
        */
-      private def applyAndRenderRemoteMessageSentMetadata(instruments: Vector[RemoteInstrument], envelope: OutboundEnvelope, headerBuilder: HeaderBuilder) = {
-        // apply all outgoing instruments, 0 and 1 instrumentation has fast-path
+      private def applyAndRenderRemoteMessageSentMetadata(instruments: Vector[RemoteInstrument], envelope: OutboundEnvelope, headerBuilder: HeaderBuilder): Unit = {
         if (instruments.nonEmpty) {
           val n = instruments.length
-          serializedMetadatas.clear()
 
           var i = 0
           while (i < n) {
             val instrument = instruments(i)
             val instrumentId = instrument.identifier
 
-            val context: OptionVal[AnyRef] = envelope.metadata(instrumentId)
-            instrument.remoteMessageSent(envelope.recipient, envelope.message, envelope.sender, context) match {
-              case OptionVal.Some(renderedMetadata) ⇒ serializedMetadatas.set(instrumentId, renderedMetadata)
-              case _                                ⇒ // no metadata to attach
-            }
+            val metadata = instrument.remoteMessageSent(envelope.recipient.orNull, envelope.message, envelope.sender.orNull)
+            if (metadata ne null) serializedMetadatas.set(instrumentId, metadata)
 
             i += 1
           }
         }
 
-        MetadataEnvelopeSerializer.serialize(serializedMetadatas, headerBuilder)
+        if (serializedMetadatas.nonEmpty) {
+          MetadataEnvelopeSerializer.serialize(serializedMetadatas, headerBuilder)
+          serializedMetadatas.clear()
+        }
       }
 
       /**
@@ -269,12 +266,6 @@ private[remote] class Decoder(
   val out: Outlet[InboundEnvelope] = Outlet("Artery.Decoder.out")
   val shape: FlowShape[EnvelopeBuffer, InboundEnvelope] = FlowShape(in, out)
 
-  /**
-   * INTERNAL API
-   * Creates [[RemoteInstrument]] instances for use in this Decoder.
-   */
-  def createInstruments(system: ExtendedActorSystem): Vector[RemoteInstrument] = RemoteInstruments.create(system)
-
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
       import Decoder.RetryResolveRemoteDeployedRecipient
@@ -293,8 +284,6 @@ private[remote] class Decoder(
       private val adaptiveSamplingRateThreshold = 1000
       private var tickTimestamp = System.nanoTime()
       private var tickMessageCount = 0L
-
-      private val instruments: Vector[RemoteInstrument] = createInstruments(system)
 
       override protected def logSource = classOf[Decoder]
 
@@ -371,10 +360,11 @@ private[remote] class Decoder(
             originUid,
             headerBuilder.serializer,
             classManifest,
+            headerBuilder.flags,
             envelope,
             association)
 
-          applyIncomingInstruments(decoded, headerBuilder)
+          // applyIncomingInstruments(decoded, headerBuilder)
 
           if (recipient.isEmpty && !headerBuilder.isNoRecipient) {
 
@@ -457,19 +447,6 @@ private[remote] class Decoder(
         }
       }
 
-      private def applyIncomingInstruments(decoded: InboundEnvelope, headerBuilder: HeaderBuilder): Unit = {
-        if (headerBuilder.flag(EnvelopeBuffer.MetadataPresentFlag)) {
-          val length = instruments.length
-          if (length == 0) {
-            val metaMetadataEnvelope = MetadataMapRendering.parse(headerBuilder)
-            log.warning("Incoming message envelope contains metadata for instruments: {}, " +
-              "however no RemoteInstrument was registered in local system!", metaMetadataEnvelope.metadataMap.keysWithValues.mkString("[", ",", "]"))
-          } else {
-            MetadataMapRendering.applyAllRemoteMessageReceived(instruments, decoded, headerBuilder)
-          }
-        }
-      }
-
       setHandlers(in, out, this)
     }
 }
@@ -486,8 +463,15 @@ private[remote] class Deserializer(
   val out: Outlet[InboundEnvelope] = Outlet("Artery.Deserializer.out")
   val shape: FlowShape[InboundEnvelope, InboundEnvelope] = FlowShape(in, out)
 
+  /**
+   * INTERNAL API
+   * Creates [[RemoteInstrument]] instances for use in this Decoder.
+   */
+  def createInstruments(system: ExtendedActorSystem): Vector[RemoteInstrument] = RemoteInstruments.create(system)
+
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+      private val instruments: Vector[RemoteInstrument] = createInstruments(system)
       private val serialization = SerializationExtension(system)
 
       override protected def logSource = classOf[Deserializer]
@@ -499,7 +483,11 @@ private[remote] class Deserializer(
           val deserializedMessage = MessageSerializer.deserializeForArtery(
             system, envelope.originUid, serialization, envelope.serializer, envelope.classManifest, envelope.envelopeBuffer)
 
-          push(out, envelope.withMessage(deserializedMessage))
+          val envelopeWithMessage = envelope.withMessage(deserializedMessage)
+
+          applyIncomingInstruments(envelopeWithMessage)
+
+          push(out, envelopeWithMessage)
         } catch {
           case NonFatal(e) ⇒
             log.warning(
@@ -514,6 +502,21 @@ private[remote] class Deserializer(
       }
 
       override def onPull(): Unit = pull(in)
+
+      private def applyIncomingInstruments(envelope: InboundEnvelope): Unit = {
+        if (envelope.flag(EnvelopeBuffer.MetadataPresentFlag)) {
+          val length = instruments.length
+          if (length == 0) {
+            val metaMetadataEnvelope = MetadataMapParsing.parse(envelope)
+            if (log.isDebugEnabled)
+              log.debug("Incoming message envelope contains metadata for instruments: {}, " +
+                "however no RemoteInstrument was registered in local system!", metaMetadataEnvelope.metadataMap.keysWithValues.mkString("[", ",", "]"))
+          } else {
+            // we avoid emitting a MetadataMap and instead directly apply the instruments onto the received metadata
+            MetadataMapParsing.applyAllRemoteMessageReceived(instruments, envelope)
+          }
+        }
+      }
 
       setHandlers(in, out, this)
     }

@@ -4,8 +4,6 @@
 
 package akka.remote.artery
 
-import java.{ util ⇒ jutil }
-
 import akka.actor.{ ActorRef, ExtendedActorSystem }
 import akka.util.{ ByteString, OptionVal }
 
@@ -28,24 +26,17 @@ abstract class RemoteInstrument {
   def identifier: Byte
 
   /**
-   * Can be used to instrument a place in the code to collect "tell-side" data,
-   * The returned value will be attached to the [[OutboundEnvelope]] under this instruments identifier,
-   * and passed into the `remoteMessageSent` method at a later point in time (and space).
-   *
-   * @return `context` that will be passed into [[remoteMessageSent]] once the message reaches the Encoder
-   */
-  def remoteActorTold(actorRef: ActorRef, message: Any, sender: ActorRef): OptionVal[AnyRef]
-
-  /**
    * Called right before putting the message onto the wire.
+   * Parameters MAY be `null` (except `message`)!
+   *
    * @return `metadata` rendered to be serialized into the remove envelope, or `null` if no metadata should be attached
    */
-  def remoteMessageSent(recipient: OptionVal[ActorRef], message: Object, sender: OptionVal[ActorRef], context: OptionVal[AnyRef]): OptionVal[ByteString]
+  def remoteMessageSent(recipient: ActorRef, message: Object, sender: ActorRef): ByteString
 
   /**
    * Called once a message (containing a metadata field designated for this instrument) has been deserialized from the wire.
    */
-  def remoteMessageReceived(recipient: OptionVal[ActorRef], message: Object, sender: OptionVal[ActorRef], metadata: ByteString): Unit
+  def remoteMessageReceived(recipient: ActorRef, message: Object, sender: ActorRef, metadata: ByteString): Unit
 
 }
 
@@ -53,13 +44,10 @@ object NoopRemoteInstrument extends RemoteInstrument {
   override def identifier: Byte =
     -1
 
-  override def remoteActorTold(actorRef: ActorRef, message: Any, sender: ActorRef): OptionVal[AnyRef] =
-    OptionVal.None
+  override def remoteMessageSent(recipient: ActorRef, message: Object, sender: ActorRef): ByteString =
+    null
 
-  override def remoteMessageSent(recipient: OptionVal[ActorRef], message: Object, sender: OptionVal[ActorRef], context: OptionVal[AnyRef]): OptionVal[ByteString] =
-    OptionVal.None
-
-  override def remoteMessageReceived(recipient: OptionVal[ActorRef], message: Object, sender: OptionVal[ActorRef], metadata: ByteString): Unit =
+  override def remoteMessageReceived(recipient: ActorRef, message: Object, sender: ActorRef, metadata: ByteString): Unit =
     ()
 }
 
@@ -91,6 +79,9 @@ private[remote] object RemoteInstruments {
 /**
  * INTERNAL API
  *
+ * This datastructure is specialized for addressing directly into a known IDs slot.
+ * It is used when deserializing/serializing metadata and we know the ID we want to reach into.
+ *
  * Mutable & NOT thread-safe.
  *
  * Fixed-size: 32-slots array-backed Map-like structure.
@@ -104,7 +95,7 @@ private[remote] object RemoteInstruments {
 private[remote] final class MetadataMap[T >: Null] {
   val capacity = 32
 
-  protected var backing: Array[T] = null
+  protected var backing: Array[T] = null // TODO re-think if a plain LinkedList wouldn't be fine here?
 
   private var _usedSlots = 0
 
