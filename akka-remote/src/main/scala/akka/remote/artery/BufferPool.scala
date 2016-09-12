@@ -80,15 +80,9 @@ private[remote] object HeaderBuilder {
 
   def in(compression: InboundCompressions): HeaderBuilder =
     new HeaderBuilderImpl(compression, CompressionTable.empty[ActorRef], CompressionTable.empty[String])
+
   def out(): HeaderBuilder =
     new HeaderBuilderImpl(NoInboundCompressions, CompressionTable.empty[ActorRef], CompressionTable.empty[String])
-
-  /** INTERNAL API, FOR TESTING ONLY */
-  private[remote] def bothWays(
-    in:                               InboundCompressions,
-    outboundActorRefCompression:      CompressionTable[ActorRef],
-    outboundClassManifestCompression: CompressionTable[String]): HeaderBuilder =
-    new HeaderBuilderImpl(in, outboundActorRefCompression, outboundClassManifestCompression)
 }
 
 /**
