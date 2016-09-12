@@ -8,6 +8,7 @@ import java.nio.{ ByteBuffer, ByteOrder }
 
 import akka.actor._
 import akka.remote.artery.compress.{ CompressionTable, CompressionTestUtils, InboundCompressions }
+import akka.serialization.Serialization
 import akka.testkit.AkkaSpec
 import akka.util.{ ByteString, OptionVal }
 
@@ -47,8 +48,11 @@ class EnvelopeBufferSpec extends AkkaSpec {
   }
 
   "EnvelopeBuffer" must {
-    val headerIn = HeaderBuilder.bothWays(TestCompressor, TestCompressor.outboundActorRefTable, TestCompressor.outboundClassManifestTable)
-    val headerOut = HeaderBuilder.bothWays(TestCompressor, TestCompressor.outboundActorRefTable, TestCompressor.outboundClassManifestTable)
+    val headerOut = HeaderBuilder.in(TestCompressor)
+    val headerIn = HeaderBuilder.out()
+
+    headerIn.setOutboundActorRefCompression(TestCompressor.outboundActorRefTable)
+    headerIn.setOutboundClassManifestCompression(TestCompressor.outboundClassManifestTable)
 
     val byteBuffer = ByteBuffer.allocate(1024).order(ByteOrder.LITTLE_ENDIAN)
     val envelope = new EnvelopeBuffer(byteBuffer)
@@ -83,18 +87,21 @@ class EnvelopeBufferSpec extends AkkaSpec {
     }
 
     "be able to encode and decode headers with uncompressed literals" in {
+      val senderRef = minimalRef("uncompressable0")
+      val recipientRef = minimalRef("uncompressable11")
+
       headerIn setVersion 1
       headerIn setUid 42
       headerIn setSerializer 4
-      headerIn setSenderActorRef minimalRef("uncompressable0")
-      headerIn setRecipientActorRef minimalRef("uncompressable11")
+      headerIn setSenderActorRef senderRef
+      headerIn setRecipientActorRef recipientRef
       headerIn setManifest "uncompressable3333"
 
       val expectedHeaderLength =
         EnvelopeBuffer.LiteralsSectionOffset + // Constant header part
-          2 + headerIn.senderActorRefPath.get.length + // Length field + literal
-          2 + headerIn.recipientActorRefPath.get.length + // Length field + literal
-          2 + headerIn.manifest(originUid).length // Length field + literal
+          2 + lengthOfSerializedActorRefPath(senderRef) + // Length field + literal
+          2 + lengthOfSerializedActorRefPath(recipientRef) + // Length field + literal
+          2 + "uncompressable3333".length // Length field + literal
 
       envelope.writeHeader(headerIn)
       envelope.byteBuffer.position() should ===(expectedHeaderLength)
@@ -113,17 +120,19 @@ class EnvelopeBufferSpec extends AkkaSpec {
     }
 
     "be able to encode and decode headers with mixed literals" in {
+      val recipientRef = minimalRef("uncompressable1")
+
       headerIn setVersion 1
       headerIn setUid 42
       headerIn setSerializer 4
       headerIn setSenderActorRef minimalRef("reallylongcompressablestring")
-      headerIn setRecipientActorRef minimalRef("uncompressable1")
+      headerIn setRecipientActorRef recipientRef
       headerIn setManifest "manifest1"
 
       envelope.writeHeader(headerIn)
       envelope.byteBuffer.position() should ===(
         EnvelopeBuffer.LiteralsSectionOffset +
-          2 + headerIn.recipientActorRefPath.get.length)
+          2 + lengthOfSerializedActorRefPath(recipientRef))
 
       envelope.byteBuffer.flip()
       envelope.parseHeader(headerOut)
@@ -137,18 +146,20 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerOut.recipientActorRef(originUid) should ===(OptionVal.None)
       headerOut.manifest(originUid) should ===("manifest1")
 
+      val senderRef = minimalRef("uncompressable0")
+
       headerIn setVersion 3
       headerIn setUid Long.MinValue
       headerIn setSerializer -1
-      headerIn setSenderActorRef minimalRef("uncompressable0")
+      headerIn setSenderActorRef senderRef
       headerIn setRecipientActorRef minimalRef("reallylongcompressablestring")
       headerIn setManifest "longlonglongliteralmanifest"
 
       envelope.writeHeader(headerIn)
       envelope.byteBuffer.position() should ===(
         EnvelopeBuffer.LiteralsSectionOffset +
-          2 + headerIn.senderActorRefPath.get.length +
-          2 + headerIn.manifest(originUid).length)
+          2 + lengthOfSerializedActorRefPath(senderRef) +
+          2 + "longlonglongliteralmanifest".length)
 
       envelope.byteBuffer.flip()
       envelope.parseHeader(headerOut)
@@ -193,4 +204,6 @@ class EnvelopeBufferSpec extends AkkaSpec {
 
   }
 
+  def lengthOfSerializedActorRefPath(ref: ActorRef): Int =
+    Serialization.serializedActorPath(ref).length
 }

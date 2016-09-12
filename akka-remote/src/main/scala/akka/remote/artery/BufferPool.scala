@@ -7,14 +7,14 @@ package akka.remote.artery
 import java.nio.charset.Charset
 import java.nio.{ ByteBuffer, ByteOrder }
 
-import akka.actor.{ ActorPath, ChildActorPath, ActorRef, Address }
+import akka.actor.{ ActorPath, ActorRef, Address, ChildActorPath }
+import akka.io.DirectByteBufferPool
 import akka.remote.artery.compress.CompressionProtocol._
 import akka.remote.artery.compress.{ CompressionTable, InboundCompressions }
 import akka.serialization.Serialization
 import org.agrona.concurrent.{ ManyToManyConcurrentArrayQueue, UnsafeBuffer }
 import akka.util.{ OptionVal, Unsafe }
 
-import scala.util.control.NonFatal
 import akka.remote.artery.compress.NoInboundCompressions
 
 /**
@@ -80,15 +80,9 @@ private[remote] object HeaderBuilder {
 
   def in(compression: InboundCompressions): HeaderBuilder =
     new HeaderBuilderImpl(compression, CompressionTable.empty[ActorRef], CompressionTable.empty[String])
+
   def out(): HeaderBuilder =
     new HeaderBuilderImpl(NoInboundCompressions, CompressionTable.empty[ActorRef], CompressionTable.empty[String])
-
-  /** INTERNAL API, FOR TESTING ONLY */
-  private[remote] def bothWays(
-    in:                               InboundCompressions,
-    outboundActorRefCompression:      CompressionTable[ActorRef],
-    outboundClassManifestCompression: CompressionTable[String]): HeaderBuilder =
-    new HeaderBuilderImpl(in, outboundActorRefCompression, outboundClassManifestCompression)
 }
 
 /**
@@ -426,27 +420,5 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     }
   }
 
-  /**
-   * DirectByteBuffers are garbage collected by using a phantom reference and a
-   * reference queue. Every once a while, the JVM checks the reference queue and
-   * cleans the DirectByteBuffers. However, as this doesn't happen
-   * immediately after discarding all references to a DirectByteBuffer, it's
-   * easy to OutOfMemoryError yourself using DirectByteBuffers. This function
-   * explicitly calls the Cleaner method of a DirectByteBuffer.
-   *
-   * Utilizes reflection to avoid dependency to `sun.misc.Cleaner`.
-   */
-  def tryCleanDirectByteBuffer(): Unit = try {
-    if (byteBuffer.isDirect) {
-      val cleanerMethod = byteBuffer.getClass.getMethod("cleaner")
-      cleanerMethod.setAccessible(true)
-      val cleaner = cleanerMethod.invoke(byteBuffer)
-      val cleanMethod = cleaner.getClass.getMethod("clean")
-      cleanMethod.setAccessible(true)
-      cleanMethod.invoke(cleaner)
-    }
-  } catch {
-    case NonFatal(_) ⇒ // attempt failed, ok
-  }
-
+  def tryCleanDirectByteBuffer(): Unit = DirectByteBufferPool.tryCleanDirectByteBuffer(byteBuffer)
 }
