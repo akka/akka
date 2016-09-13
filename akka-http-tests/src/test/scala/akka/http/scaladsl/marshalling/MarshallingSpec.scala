@@ -47,6 +47,14 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
       marshalToResponse(StatusCodes.EnhanceYourCalm) shouldEqual
         HttpResponse(StatusCodes.EnhanceYourCalm, entity = HttpEntity(StatusCodes.EnhanceYourCalm.defaultMessage))
     }
+    "fromStatusCodeAndHeadersAndValue should properly marshal entities that are not supposed to have a body" in {
+      marshalToResponse((StatusCodes.NoContent, "This Content was intentionally left blank.")) shouldEqual
+        HttpResponse(StatusCodes.NoContent, entity = HttpEntity.Empty)
+    }
+    "fromStatusCodeAndHeadersAndValue should properly marshal entities that contain pre-defined content" in {
+      marshalToResponse((StatusCodes.EnhanceYourCalm, "Patience, young padawan!")) shouldEqual
+        HttpResponse(StatusCodes.EnhanceYourCalm, entity = HttpEntity("Patience, young padawan!"))
+    }
   }
 
   "The GenericMarshallers" - {

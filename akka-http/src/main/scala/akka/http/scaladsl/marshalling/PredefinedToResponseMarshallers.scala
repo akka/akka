@@ -37,6 +37,16 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
       HttpResponse(status, entity = responseEntity)
     }
 
+  implicit val fromStatusCodeAndHeaders: TRM[(StatusCode, immutable.Seq[HttpHeader])] =
+    Marshaller.withOpenCharset(`text/plain`) { (statusAndHeaders, charset) ⇒
+      val status = statusAndHeaders._1
+      val headers = statusAndHeaders._2
+      val responseEntity =
+        if (status.allowsEntity) HttpEntity(status.defaultMessage)
+        else HttpEntity.Empty
+      HttpResponse(status, headers, entity = responseEntity)
+    }
+
   implicit def fromStatusCodeAndValue[S, T](implicit sConv: S ⇒ StatusCode, mt: ToEntityMarshaller[T]): TRM[(S, T)] =
     fromStatusCodeAndHeadersAndValue[T] compose { case (status, value) ⇒ (sConv(status), Nil, value) }
 
@@ -47,7 +57,8 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
 
   implicit def fromStatusCodeAndHeadersAndValue[T](implicit mt: ToEntityMarshaller[T]): TRM[(StatusCode, immutable.Seq[HttpHeader], T)] =
     Marshaller(implicit ec ⇒ {
-      case (status, headers, value) ⇒ mt(value).fast map (_ map (_ map (HttpResponse(status, headers, _))))
+      case (status, headers, value) if (status.allowsEntity) ⇒ mt(value).fast map (_ map (_ map (HttpResponse(status, headers, _))))
+      case (status, headers, _)                              ⇒ fromStatusCodeAndHeaders((status, headers))
     })
 
   implicit def fromEntityStreamingSupportAndByteStringMarshaller[T, M](implicit s: EntityStreamingSupport, m: ToByteStringMarshaller[T]): ToResponseMarshaller[Source[T, M]] = {
