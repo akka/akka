@@ -205,7 +205,7 @@ private[remote] abstract class InboundCompression[T >: Null](
   private[this] val state: AtomicReference[InboundCompression.State[T]] = new AtomicReference(InboundCompression.State.empty)
 
   // TODO calibrate properly (h/w have direct relation to preciseness and max capacity)
-  private[this] val cms = new CountMinSketch(100, 100, System.currentTimeMillis().toInt)
+  private[this] val cms = new CountMinSketch(16, 1024, System.currentTimeMillis().toInt)
 
   /* ==== COMPRESSION ==== */
 
