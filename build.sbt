@@ -68,8 +68,10 @@ lazy val httpCore = project("akka-http-core")
   //.disablePlugins(MimaPlugin)
 
 lazy val http = project("akka-http")
-  .settings(Dependencies.http)
   .dependsOn(httpCore)
+
+lazy val http2 = project("akka-http2-support")
+  .dependsOn(httpCore, httpTestkit % "test", httpCore % "test->test")
 
 lazy val httpTestkit = project("akka-http-testkit")
   .settings(Dependencies.httpTestkit)
