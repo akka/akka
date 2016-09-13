@@ -408,6 +408,8 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends PersistenceSpec(c
 }
 
 class LeveldbAtLeastOnceDeliverySpec extends AtLeastOnceDeliverySpec(
-  PersistenceSpec.config("leveldb", "AtLeastOnceDeliverySpec"))
+  PersistenceSpec.config("leveldb", "AtLeastOnceDeliverySpec")
+    .withFallback(ConfigFactory.parseString("akka.loglevel=debug")) // to iron out #20724
+)
 
 class InmemAtLeastOnceDeliverySpec extends AtLeastOnceDeliverySpec(PersistenceSpec.config("inmem", "AtLeastOnceDeliverySpec"))
