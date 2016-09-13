@@ -54,8 +54,6 @@ object AkkaBuild extends Build {
   lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
     actor,
     actorTests,
-    agent,
-    benchJmh,
     camel,
     cluster,
     clusterMetrics,
@@ -103,7 +101,7 @@ object AkkaBuild extends Build {
     base = file("akka-scala-nightly"),
     // remove dependencies that we have to build ourselves (Scala STM)
     // samples don't work with dbuild right now
-    aggregate = aggregatedProjects diff List(agent, docs, samples)
+    aggregate = aggregatedProjects diff List(docs, samples)
   ).disablePlugins(ValidatePullRequest, MimaPlugin)
 
   lazy val actor = Project(
@@ -128,17 +126,6 @@ object AkkaBuild extends Build {
     base = file("akka-actor-tests"),
     dependencies = Seq(testkit % "compile;test->test")
   )
-
-  lazy val benchJmh = Project(
-    id = "akka-bench-jmh",
-    base = file("akka-bench-jmh"),
-    dependencies = Seq(
-      actor,
-      http, stream, streamTests,
-      persistence, distributedData,
-      testkit
-    ).map(_ % "compile;compile->test;provided->provided")
-  ).disablePlugins(ValidatePullRequest)
 
   lazy val protobuf = Project(
     id = "akka-protobuf",
@@ -204,12 +191,6 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, testkit % "test->test")
   )
 
-  lazy val agent = Project(
-    id = "akka-agent",
-    base = file("akka-agent"),
-    dependencies = Seq(actor, testkit % "test->test")
-  )
-
   lazy val persistence = Project(
     id = "akka-persistence",
     base = file("akka-persistence"),
@@ -260,7 +241,7 @@ object AkkaBuild extends Build {
     id = "akka-http-tests",
     base = file("akka-http-tests"),
     dependencies = Seq(
-      httpTestkit % "test", streamTestkit % "test->test", testkit % "test->test", httpSprayJson, httpXml, httpJackson, 
+      httpTestkit % "test", streamTestkit % "test->test", testkit % "test->test", httpSprayJson, httpXml, httpJackson,
       multiNodeTestkit, remoteTests % "test->test") // required for multi-node latency/throughput Spec
   ).configs(MultiJvm)
 
@@ -354,7 +335,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(
       actor,
       testkit % "compile;test->test",
-      remote % "compile;test->test", cluster, clusterMetrics, slf4j, agent, camel, osgi,
+      remote % "compile;test->test", cluster, clusterMetrics, slf4j, camel, osgi,
       persistence % "compile;provided->provided;test->test", persistenceTck, persistenceQuery,
       typed % "compile;test->test", distributedData,
       stream, streamTestkit % "compile;test->test",

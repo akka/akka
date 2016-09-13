@@ -21,7 +21,7 @@ val project = Project(
       "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
       "com.typesafe.akka" %% "akka-distributed-data-experimental" % akkaVersion,
       "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion,
-      "org.scalatest" %% "scalatest" % "2.2.1" % "test"),
+      "org.scalatest" %% "scalatest" % "3.0.0" % "test"),
     javaOptions in run ++= Seq(
       "-Xms128m", "-Xmx1024m"),
     Keys.fork in run := true,

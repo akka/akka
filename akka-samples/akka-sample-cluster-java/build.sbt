@@ -22,7 +22,7 @@ val project = Project(
       "com.typesafe.akka" %% "akka-cluster-metrics" % akkaVersion,
       "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion,
       "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion,
-      "org.scalatest" %% "scalatest" % "2.2.1" % "test",
+      "org.scalatest" %% "scalatest" % "3.0.0" % "test",
       "io.kamon" % "sigar-loader" % "1.6.6-rev002"),
     javaOptions in run ++= Seq(
       "-Xms128m", "-Xmx1024m", "-Djava.library.path=./target/native"),

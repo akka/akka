@@ -27,6 +27,12 @@ object SchedulerSpec {
   """).withFallback(AkkaSpec.testConf)
 }
 
+case object Tick
+case object Tock
+object Ping
+object Crash
+case object Msg
+
 trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with ImplicitSender { this: AkkaSpec ⇒
   import system.dispatcher
 
@@ -35,8 +41,9 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
   "A Scheduler" must {
 
     "schedule more than once" taggedAs TimingTest in {
-      case object Tick
-      case object Tock
+      //FIXME For Scala 2.12.0-RC1 these need to be moved to top level
+      //case object Tick
+      //case object Tock
 
       val tickActor, tickActor2 = system.actorOf(Props(new Actor {
         var ticks = 0
@@ -93,7 +100,8 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
     }
 
     "schedule once" taggedAs TimingTest in {
-      case object Tick
+      //FIXME For Scala 2.12.0-RC1 these need to be moved to top level
+      //case object Tick
       val countDownLatch = new CountDownLatch(3)
       val tickActor = system.actorOf(Props(new Actor {
         def receive = { case Tick ⇒ countDownLatch.countDown() }
@@ -175,8 +183,9 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
      */
     "pick up schedule after actor restart" taggedAs TimingTest in {
 
-      object Ping
-      object Crash
+      //FIXME For Scala 2.12.0-RC1 these need to be moved to top level
+      //object Ping
+      //object Crash
 
       val restartLatch = new TestLatch
       val pingLatch = new TestLatch(6)
@@ -229,7 +238,8 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
     "schedule with different initial delay and frequency" taggedAs TimingTest in {
       val ticks = new TestLatch(3)
 
-      case object Msg
+      //FIXME For Scala 2.12.0-RC1 these need to be moved to top level
+      //case object Msg
 
       val actor = system.actorOf(Props(new Actor {
         def receive = { case Msg ⇒ ticks.countDown() }
