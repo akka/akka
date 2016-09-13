@@ -623,10 +623,12 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
             }
 
           case Quarantined(from, to) if to == localAddress ⇒
+            // Don't quarantine the other system here, since that will result cluster member removal
+            // and can result in forming two separate clusters (cluster split).
+            // Instead, the downing strategy should act on ThisActorSystemQuarantinedEvent, e.g.
+            // use it as a STONITH signal.
             val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress.address, from.address)
             publishLifecycleEvent(lifecycleEvent)
-            // quarantine the other system from here
-            association(from.address).quarantine(lifecycleEvent.toString, Some(from.uid))
 
           case _: ActorSystemTerminating ⇒
             inboundEnvelope.sender match {
