@@ -15,6 +15,7 @@ import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.http2.Http2Blueprint
+import akka.http.impl.http2.WrappedSslContextSPI
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
@@ -46,10 +47,10 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
   def bindAndHandleAsync(
     handler:   HttpRequest ⇒ Future[HttpResponse],
     interface: String, port: Int = DefaultPortForProtocol,
-    connectionContext: HttpsConnectionContext,
-    settings:          ServerSettings         = ServerSettings(system),
-    parallelism:       Int                    = 1,
-    log:               LoggingAdapter         = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
+    httpsContext: HttpsConnectionContext,
+    settings:     ServerSettings         = ServerSettings(system),
+    parallelism:  Int                    = 1,
+    log:          LoggingAdapter         = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
     // TODO: split up similarly to what `Http` does into `serverLayer`, `bindAndHandle`, etc.
 
     // automatically preserves association between request and response by setting the right headers, can use mapAsyncUnordered
@@ -57,7 +58,8 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
     val effectivePort = if (port >= 0) port else 443
 
     val serverLayer: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
-      val tls = http.sslTlsStage(connectionContext, TLSRole.server)
+      val wrappedContext = WrappedSslContextSPI.wrapContext(httpsContext)
+      val tls = http.sslTlsStage(wrappedContext, TLSRole.server)
 
       val unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, NotUsed] =
         BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect {

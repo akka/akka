@@ -66,6 +66,8 @@ object Dependencies {
 
     val hpack       = "com.twitter"                   % "hpack"                        % "1.0.2"       // ApacheV2
 
+    val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
+
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
       val gson        = "com.google.code.gson"        % "gson"                         % "2.3.1"             % "test"
@@ -143,7 +145,7 @@ object Dependencies {
   
   lazy val http = l ++= Seq()
 
-  lazy val http2 = l ++= Seq(hpack)
+  lazy val http2 = l ++= Seq(hpack, alpnApi)
 
   lazy val httpTestkit = l ++= Seq(
     Test.junit, Test.junitIntf, Compile.junit % "provided", 
