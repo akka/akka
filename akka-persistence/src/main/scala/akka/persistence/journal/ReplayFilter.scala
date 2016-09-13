@@ -75,8 +75,9 @@ private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.M
         if (r.persistent.writerUuid == writerUuid) {
           // from same writer
           if (r.persistent.sequenceNr < seqNo) {
-            val errMsg = s"Invalid replayed event [${r.persistent.sequenceNr}] in wrong order from " +
-              s"writer [${r.persistent.writerUuid}] with persistenceId [${r.persistent.persistenceId}]"
+            val errMsg = s"Invalid replayed event [sequenceNr=${r.persistent.sequenceNr}, writerUUID=${r.persistent.writerUuid}] as " +
+              s"the sequenceNr should be equal to or greater than already-processed event [sequenceNr=${seqNo}, writerUUID=${writerUuid}] from the same writer, for the same persistenceId [${r.persistent.persistenceId}]. " +
+              "Perhaps, events were journaled out of sequence, or duplicate persistentId for different entities?"
             logIssue(errMsg)
             mode match {
               case RepairByDiscardOld ⇒ // discard
@@ -92,8 +93,9 @@ private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.M
 
         } else if (oldWriters.contains(r.persistent.writerUuid)) {
           // from old writer
-          val errMsg = s"Invalid replayed event [${r.persistent.sequenceNr}] from old " +
-            s"writer [${r.persistent.writerUuid}] with persistenceId [${r.persistent.persistenceId}]"
+          val errMsg = s"Invalid replayed event [sequenceNr=${r.persistent.sequenceNr}, writerUUID=${r.persistent.writerUuid}]. " +
+            s"There was already a newer writer whose last replayed event was [sequenceNr=${seqNo}, writerUUID=${writerUuid}] for the same persistenceId [${r.persistent.persistenceId}]." +
+            "Perhaps, the old writer kept journaling messages after the new writer created, or duplicate persistentId for different entities?"
           logIssue(errMsg)
           mode match {
             case RepairByDiscardOld ⇒ // discard
@@ -112,13 +114,14 @@ private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.M
           writerUuid = r.persistent.writerUuid
           seqNo = r.persistent.sequenceNr
 
-          // clear the buffer from messages from other writers with higher seqNo
+          // clear the buffer for messages from old writers with higher seqNo
           val iter = buffer.iterator()
           while (iter.hasNext()) {
             val msg = iter.next()
             if (msg.persistent.sequenceNr >= seqNo) {
-              val errMsg = s"Invalid replayed event [${msg.persistent.sequenceNr}] in buffer from old " +
-                s"writer [${msg.persistent.writerUuid}] with persistenceId [${msg.persistent.persistenceId}]"
+              val errMsg = s"Invalid replayed event [sequenceNr=${r.persistent.sequenceNr}, writerUUID=${r.persistent.writerUuid}] from a new writer. " +
+                s"An older writer already sent an event [sequenceNr=${msg.persistent.sequenceNr}, writerUUID=${msg.persistent.writerUuid}] whose sequence number was equal or greater for the same persistenceId [${r.persistent.persistenceId}]. " +
+                "Perhaps, the new writer journaled the event out of sequence, or duplicate persistentId for different entities?"
               logIssue(errMsg)
               mode match {
                 case RepairByDiscardOld ⇒ iter.remove() // discard
