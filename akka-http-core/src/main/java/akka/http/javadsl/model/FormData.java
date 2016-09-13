@@ -4,8 +4,9 @@
 
 package akka.http.javadsl.model;
 
-import akka.japi.Pair;
 import java.util.Map;
+
+import akka.japi.Pair;
 
 /**
  * Simple model for `application/x-www-form-urlencoded` form data.
@@ -49,6 +50,13 @@ public final class FormData {
    * Creates the FormData from the given parameters.
    */
   public static FormData create(Map<String, String> params) {
+    return new FormData(Query.create(params));
+  }
+
+  /**
+   * Creates a FormData from the given parameters.
+   */
+  public static FormData create(Iterable<Pair<String, String>> params) {
     return new FormData(Query.create(params));
   }
 }
